@@ -43,6 +43,7 @@ function toSchoolRow(sourceRow) {
     current_name: sourceRow.current_name,
     status: sourceRow.status,
     la_name: sourceRow.la_name,
+    la_code: sourceRow.la_code,
     establishment_type_group: sourceRow.establishment_type_group,
     establishment_type: sourceRow.establishment_type,
     town: sourceRow.town,
