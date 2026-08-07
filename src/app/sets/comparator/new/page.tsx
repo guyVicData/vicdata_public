@@ -12,7 +12,10 @@ type Candidate = {
   establishment_type_group: string | null;
   number_of_pupils: number | null;
   boarding_establishment: string | null;
+  distance_metres?: number;
 };
+
+type Mode = "attributes" | "local_rivals";
 
 function ComparatorSetBuilder() {
   const params = useSearchParams();
@@ -21,6 +24,7 @@ function ComparatorSetBuilder() {
   const schoolAccountId = params.get("school_account_id")!;
   const anchorUrn = params.get("anchor_urn")!;
 
+  const [mode, setMode] = useState<Mode>("attributes");
   const [sector, setSector] = useState<string>("");
   const [boarding, setBoarding] = useState<string>("");
   const [sizeBand, setSizeBand] = useState<string>("");
@@ -57,6 +61,45 @@ function ComparatorSetBuilder() {
   }, [schoolAccountId]);
 
   async function search() {
+    if (mode === "local_rivals") {
+      // "Local rivals" (rolls spec §6): geography as the PRIMARY filter, the same
+      // adaptive target-count-per-sector mechanism Feeder Set uses (deliberately
+      // reused, not a second implementation) -- attribute filters apply as
+      // secondary narrowing on top of the geography-primary result, not the other
+      // way round.
+      const { data, error } = await supabase.rpc("feeder_candidates", {
+        p_receiving_urn: anchorUrn,
+        p_target_count_per_sector: 15,
+      });
+      if (!error && data) {
+        let rows = data as Candidate[];
+        if (sector) {
+          rows = rows.filter((r) =>
+            sector === "independent"
+              ? r.establishment_type_group === "Independent schools"
+              : r.establishment_type_group !== "Independent schools",
+          );
+        }
+        if (boarding) {
+          rows = rows.filter((r) =>
+            boarding === "boarding"
+              ? r.boarding_establishment === "Has boarders"
+              : r.boarding_establishment !== "Has boarders",
+          );
+        }
+        if (sizeBand) {
+          rows = rows.filter((r) => {
+            const n = r.number_of_pupils ?? 0;
+            if (sizeBand === "small") return n < 300;
+            if (sizeBand === "medium") return n >= 300 && n <= 800;
+            return n > 800;
+          });
+        }
+        setCandidates(rows);
+      }
+      return;
+    }
+
     const { data, error } = await supabase.rpc("comparator_candidates", {
       p_school_urn: anchorUrn,
       p_sector: sector || null,
@@ -138,6 +181,29 @@ function ComparatorSetBuilder() {
         </p>
       )}
 
+      <div className="mb-3 flex gap-2 text-sm">
+        <button
+          type="button"
+          onClick={() => setMode("attributes")}
+          className={`rounded-md border px-3 py-1 ${mode === "attributes" ? "border-neutral-900 dark:border-white" : "border-neutral-300 dark:border-neutral-700"}`}
+        >
+          By attributes
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("local_rivals")}
+          className={`rounded-md border px-3 py-1 ${mode === "local_rivals" ? "border-neutral-900 dark:border-white" : "border-neutral-300 dark:border-neutral-700"}`}
+        >
+          Local rivals
+        </button>
+      </div>
+      {mode === "local_rivals" && (
+        <p className="mb-3 text-xs text-neutral-500">
+          Geography is the primary filter here — nearest schools per sector, same
+          mechanism Feeder Set uses. Attribute filters below narrow within that.
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <select
           value={sector}
@@ -187,6 +253,9 @@ function ComparatorSetBuilder() {
               />
               <span>
                 {c.current_name} — {c.town}, {c.number_of_pupils ?? "?"} pupils
+                {mode === "local_rivals" && c.distance_metres !== undefined
+                  ? ` (${Math.round(c.distance_metres / 1000)}km)`
+                  : ""}
               </span>
             </label>
           </li>
