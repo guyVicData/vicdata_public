@@ -42,28 +42,52 @@ export function buildRollSnapshot(
   facts: ReferenceFact[],
   urn: string,
 ): RollSnapshot | null {
-  const period = latestPeriod(facts);
-  if (period === null) return null;
+  // Walk periods newest-first, not just the newest period present: confirmed for real
+  // (Reigate College, a converted 16-19 academy, urn 145005) that a school can have
+  // census rows for its most recent period that are ALL genuinely zero -- a real
+  // source data-quality quirk for this institution type, not something ingest can fix
+  // by re-parsing. Displaying "0 pupils" as if it were a real current-state fact would
+  // be actively misleading, so this looks back for the most recent period with a real
+  // non-zero total rather than trusting period recency alone.
+  const periodsDesc = Array.from(new Set(facts.map((f) => f.period))).sort((a, b) => b - a);
 
-  const currentFacts = facts.filter((f) => f.period === period);
+  for (const period of periodsDesc) {
+    const currentFacts = facts.filter((f) => f.period === period);
 
-  const byBand = new Map<AgeBandKey, number>(AGE_BANDS.map((b) => [b.key, 0]));
-  let male = 0;
-  let female = 0;
+    const byBand = new Map<AgeBandKey, number>(AGE_BANDS.map((b) => [b.key, 0]));
+    let male = 0;
+    let female = 0;
 
-  for (const fact of currentFacts) {
-    const match = AGE_BREAKDOWN_RE.exec(fact.breakdown);
-    if (!match || fact.value_numeric === null) continue;
-    const [, , sex, ageStr] = match;
-    const age = Number(ageStr);
-    const band = bandForAge(age);
-    if (!band) continue;
-    byBand.set(band, (byBand.get(band) ?? 0) + fact.value_numeric);
-    if (sex === "male") male += fact.value_numeric;
-    else female += fact.value_numeric;
+    for (const fact of currentFacts) {
+      const match = AGE_BREAKDOWN_RE.exec(fact.breakdown);
+      if (!match || fact.value_numeric === null) continue;
+      const [, , sex, ageStr] = match;
+      const age = Number(ageStr);
+      const band = bandForAge(age);
+      if (!band) continue;
+      byBand.set(band, (byBand.get(band) ?? 0) + fact.value_numeric);
+      if (sex === "male") male += fact.value_numeric;
+      else female += fact.value_numeric;
+    }
+
+    const totalRoll = male + female;
+    if (totalRoll === 0) continue; // try the next-most-recent period instead
+
+    return finishSnapshot(currentFacts, period, totalRoll, male, female, byBand, urn);
   }
 
-  const totalRoll = male + female;
+  return null;
+}
+
+function finishSnapshot(
+  currentFacts: ReferenceFact[],
+  period: number,
+  totalRoll: number,
+  male: number,
+  female: number,
+  byBand: Map<AgeBandKey, number>,
+  urn: string,
+): RollSnapshot {
 
   // Single-sex-school gender-count suppression (rolls spec §8): documentation
   // discipline applies now -- log any arithmetic inconsistency, without a causal
