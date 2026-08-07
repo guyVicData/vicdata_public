@@ -21,6 +21,7 @@ type School = {
   current_name: string;
   town: string | null;
   postcode: string | null;
+  la_name: string | null;
   establishment_type_group: string | null;
   establishment_type: string | null;
   phase: string | null;
@@ -34,12 +35,37 @@ async function getSchool(urn: string): Promise<School | null> {
   const { data, error } = await supabase
     .from("schools")
     .select(
-      "urn, current_name, town, postcode, establishment_type_group, establishment_type, phase, boarding_establishment, statutory_low_age, statutory_high_age",
+      "urn, current_name, town, postcode, la_name, establishment_type_group, establishment_type, phase, boarding_establishment, statutory_low_age, statutory_high_age",
     )
     .eq("urn", urn)
     .maybeSingle();
   if (error || !data) return null;
   return data as School;
+}
+
+type RollAggregate = {
+  scope_key: string;
+  total_roll: number;
+  school_count: number;
+  shape_label: ShapeLabel | null;
+  period: number;
+};
+
+async function getContextAggregates(laName: string | null): Promise<{
+  national: RollAggregate | null;
+  regional: RollAggregate | null;
+}> {
+  const supabase = createServerAnonSupabaseClient();
+  const scopeKeys = laName ? ["", laName] : [""];
+  const { data } = await supabase
+    .from("roll_aggregates")
+    .select("scope_key, total_roll, school_count, shape_label, period")
+    .in("scope_key", scopeKeys);
+  const rows = (data as RollAggregate[]) ?? [];
+  return {
+    national: rows.find((r) => r.scope_key === "") ?? null,
+    regional: laName ? rows.find((r) => r.scope_key === laName) ?? null : null,
+  };
 }
 
 export default async function SchoolPage({
@@ -57,6 +83,7 @@ export default async function SchoolPage({
   const surrounding = roll
     ? await computeSurroundingSchoolsStat(urn, roll.period)
     : null;
+  const context = await getContextAggregates(school.la_name);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
@@ -158,6 +185,49 @@ export default async function SchoolPage({
 
           <PaidTrendsSection urn={urn} />
         </>
+      )}
+
+      {(context.national || context.regional) && (
+        <Section title="Regional & national context">
+          <p className="text-xs text-neutral-400 mb-2">
+            About the world, not about this school — free regardless of tier (rolls
+            spec §2).
+          </p>
+          <table className="w-full text-sm">
+            <tbody>
+              {context.regional && (
+                <tr className="border-t border-neutral-100 dark:border-neutral-800">
+                  <td className="py-1.5 text-neutral-600 dark:text-neutral-400">
+                    {school.la_name} ({context.regional.school_count} schools)
+                  </td>
+                  <td className="py-1.5 text-right">
+                    {context.regional.total_roll.toLocaleString()} pupils
+                    {context.regional.shape_label && (
+                      <span className="ml-2 text-neutral-500">
+                        — {SHAPE_LABELS[context.regional.shape_label]}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              )}
+              {context.national && (
+                <tr className="border-t border-neutral-100 dark:border-neutral-800">
+                  <td className="py-1.5 text-neutral-600 dark:text-neutral-400">
+                    England ({context.national.school_count.toLocaleString()} schools)
+                  </td>
+                  <td className="py-1.5 text-right">
+                    {context.national.total_roll.toLocaleString()} pupils
+                    {context.national.shape_label && (
+                      <span className="ml-2 text-neutral-500">
+                        — {SHAPE_LABELS[context.national.shape_label]}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Section>
       )}
 
       <Section title="Academic">
