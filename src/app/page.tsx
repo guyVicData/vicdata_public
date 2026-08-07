@@ -6,7 +6,8 @@ export default function Home() {
       <div className="text-center">
         <h1 className="text-2xl font-semibold">VicData</h1>
         <p className="mt-2 text-sm text-neutral-500">
-          School roll data, decision-ready.
+          Roll data and catchment context for school leaders, governors, and
+          admissions teams.
         </p>
       </div>
       <SchoolSearch />
