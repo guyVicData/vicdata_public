@@ -4,6 +4,7 @@ import { lookupReferenceData } from "@/lib/vicdata-reference";
 import { buildRollSnapshot } from "@/lib/roll-data";
 import { classifyShape, type ShapeLabel } from "@/lib/shape-classifier";
 import { computeSurroundingSchoolsStat } from "@/lib/surrounding-schools";
+import PaidTrendsSection from "@/components/PaidTrendsSection";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
 
@@ -154,6 +155,8 @@ export default async function SchoolPage({
               </p>
             )}
           </Section>
+
+          <PaidTrendsSection urn={urn} />
         </>
       )}
 
