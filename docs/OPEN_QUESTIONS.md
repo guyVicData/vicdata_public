@@ -6,6 +6,72 @@ with, rather than blocking.
 
 ---
 
+## 2026-08-07 — Cohort-progression intake-size estimator: reasoning and judgment calls
+
+Rolls spec §7, explicitly flagged there as "not yet built or validated — this is new
+engineering, not a data check." This entry documents the actual judgment calls, per
+Guy's explicit request that this one get real reasoning, not just "done."
+`src/lib/intake-estimate.ts`.
+
+**Method, directly from the spec**: track a specific single age across consecutive
+census years; growth beyond natural continuity is the net external intake at that
+transition. Implemented literally: `count(age, year) - count(age-1, year-1)`, using the
+single-year-of-age breakdown (not the age-band groupings used elsewhere), for every
+consecutive-year pair the data supports.
+
+**Judgment call 1 — which age represents each entry point.** Y7 → age 11, 6th form →
+age 16. Standard UK convention (DfE's January census date falls after most of a Y7
+cohort has turned 11; most incoming Y12s are 16). Not spec-specified, low-risk given how
+standard the convention is, but still a real mapping choice, not a fact pulled from data.
+
+**Judgment call 2 — presented as a range, not a single number.** The spec explicitly
+calls for "ranges not point estimates" (its own words, referencing the roadmap's
+existing honesty principle). Implemented as `rangeLow`/`rangeHigh` across every
+available yearly transition, plus `mostRecent` as the single freshest figure. This
+was validated as the right call by testing against real data, not just following the
+instruction blindly: Woldingham's 6th-form transition estimate varies from -7 to -23
+across six years — a single year picked at random would have told a materially
+different story than the range does.
+
+**Judgment call 3 — zero-quirk guard.** A transition is only computed when BOTH years
+have a genuinely non-zero count at the relevant age — reusing the same guard added to
+`buildRollSnapshot` after finding Reigate College's all-zero 2021 data. Without this, a
+genuine data gap would produce a nonsense "entire cohort is new intake" estimate rather
+than being skipped.
+
+**Judgment call 4 — negative values are kept, not hidden.** A transition can be
+negative (net attrition — pupils leaving faster than joining at that point). This is
+real information, not noise: Woldingham's 6th form is consistently negative across
+every one of six transitions (-7 to -23), a genuine and consistent pattern (most girls'
+6th forms there appear to be internal progression with net leavers, not an external
+recruitment point), not a data artifact. `estimateIntake` returns the raw signal
+unclipped; only `targetCountFromIntakeEstimate` (below) floors it, and only because a
+search radius can't be negative.
+
+**Judgment call 5 (the least-grounded one — flagging this specifically) — the
+Feeder-Set target-count formula.** Rolls spec §5 says target count "scales with intake
+size" but gives no formula. Implemented `target_count_per_sector = clamp(round(most
+_recent_estimate / 2), 8, 40)` — reasoning: most individual prep/primary feeder schools
+send a handful of pupils, not a whole cohort, to any one senior school, so the
+candidate net needs to be wider than the raw intake number, not equal to it. The "/2"
+multiplier has no empirical basis at all — it's a plausible starting guess, not
+something checked against a real feeder relationship. This is the one number in this
+whole estimator worth treating as a placeholder pending real feedback, not a finished
+piece of engineering.
+
+**Verified against three real schools with three genuinely different profiles, not
+just one happy path**: Leighton Park (11-18) — Y7 estimate 49-56, consistently positive
+and stable, exactly the shape a normal external Y7 intake should have. Woldingham
+(11-18 girls') — Y7 estimate 55-69 (same healthy pattern), 6th form consistently
+negative (-7 to -23, a real net-attrition pattern, not a bug). Charterhouse (13+ entry,
+no Year 7 at all) — Y7 estimator correctly returned an empty range (no age-10→11
+transition ever has data, because the school has no age-11 pupils full stop) rather
+than fabricating a number, and correctly fell back to the flat default target count;
+6th form estimate came back positive and substantial (32-86), plausible for a school
+whose main entry points are 13+ and 16+.
+
+---
+
 ## 2026-08-07 — Deferred for this build pass: trends, market share, ranks, regional/national context
 
 **Not built this pass, deliberately**: historical roll/shape/gender/boarding trend

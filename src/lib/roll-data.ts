@@ -79,6 +79,57 @@ export function buildRollSnapshot(
   return null;
 }
 
+// Multi-year trend (rolls spec §3: "Roll trends (historical line, by age band)" etc.,
+// paid tier). Same zero-period skip as buildRollSnapshot above -- a genuinely
+// all-zero year (Reigate College's data quirk) is dropped from the trend line rather
+// than plotted as a real dip to 0, which would misrepresent the source, not the school.
+export function buildRollTrend(facts: ReferenceFact[], urn: string): RollSnapshot[] {
+  const periodsAsc = Array.from(new Set(facts.map((f) => f.period))).sort((a, b) => a - b);
+  const trend: RollSnapshot[] = [];
+
+  for (const period of periodsAsc) {
+    const currentFacts = facts.filter((f) => f.period === period);
+    const byBand = new Map<AgeBandKey, number>(AGE_BANDS.map((b) => [b.key, 0]));
+    let male = 0;
+    let female = 0;
+
+    for (const fact of currentFacts) {
+      const match = AGE_BREAKDOWN_RE.exec(fact.breakdown);
+      if (!match || fact.value_numeric === null) continue;
+      const [, , sex, ageStr] = match;
+      const band = bandForAge(Number(ageStr));
+      if (!band) continue;
+      byBand.set(band, (byBand.get(band) ?? 0) + fact.value_numeric);
+      if (sex === "male") male += fact.value_numeric;
+      else female += fact.value_numeric;
+    }
+
+    const totalRoll = male + female;
+    if (totalRoll === 0) continue;
+
+    trend.push(finishSnapshot(currentFacts, period, totalRoll, male, female, byBand, urn));
+  }
+
+  return trend;
+}
+
+// Single-year-of-age headcount per period (both sexes, full_time + part_time summed) --
+// finer granularity than the age bands above. Needed by the cohort-progression
+// intake-size estimator (rolls spec §7), which tracks one specific age across
+// consecutive years, not a banded group.
+export function singleAgeCountsByPeriod(facts: ReferenceFact[]): Map<number, Map<number, number>> {
+  const byPeriod = new Map<number, Map<number, number>>();
+  for (const fact of facts) {
+    const match = AGE_BREAKDOWN_RE.exec(fact.breakdown);
+    if (!match || fact.value_numeric === null) continue;
+    const age = Number(match[3]);
+    if (!byPeriod.has(fact.period)) byPeriod.set(fact.period, new Map());
+    const byAge = byPeriod.get(fact.period)!;
+    byAge.set(age, (byAge.get(age) ?? 0) + fact.value_numeric);
+  }
+  return byPeriod;
+}
+
 function finishSnapshot(
   currentFacts: ReferenceFact[],
   period: number,
