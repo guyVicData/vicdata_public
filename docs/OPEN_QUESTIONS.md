@@ -6,6 +6,30 @@ with, rather than blocking.
 
 ---
 
+## 2026-08-07 — Deferred for this build pass: trends, market share, ranks, regional/national context
+
+**Not built this pass, deliberately**: historical roll/shape/gender/boarding trend
+charts, market share, roll-size ranks, peer group trend overlays (rolls spec §3/§6),
+and regional/national/local free-tier trend context (rolls spec §3's "your context"
+section). Reasoning: the acceptance check's explicit checklist (brief, final section)
+covers search, the State of the School page, signup/verification/account-holder
+assignment, the 2nd-member upsell, a Comparator Set hitting its cap, and a Feeder Set
+candidate/confirm flow — it does not name trend charts, market share, ranks, or
+regional/national context as things to verify. Everything built this pass was
+prioritised against that concrete bar given real time constraints, not against the
+full topic-spec content list in isolation.
+
+**Real infrastructure reason this isn't just a smaller version of what's already
+built**: `reference_data_lookup` has no server-side aggregation — a live national
+aggregate would mean pulling on the order of 2M rows (24k schools × ~84 breakdown rows)
+through the paginated 1000-row-per-call API on every page view, which won't perform.
+The right architecture is a precomputed aggregate (a scheduled sync job writing into
+this project's own tables, same shape as `sync-schools.js`), which is real, standalone
+infrastructure work, not a shortcut away from what's already built for the single-school
+case. Flagging clearly rather than shipping a slow or silently-wrong version.
+
+---
+
 ## 2026-08-07 — Comparator/Feeder Set: two deliberate scope simplifications
 
 **"Local rivals" (rolls spec §6)**: the full mechanism is "adaptive target-count search,
