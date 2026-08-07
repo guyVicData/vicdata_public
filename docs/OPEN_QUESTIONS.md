@@ -35,6 +35,42 @@ Commit: `vicdata@6ace071`.
 
 ---
 
+## 2026-08-07 — State of the School page: implementation defaults
+
+**Age-band boundaries**: the spec fixes the age-band *axis* (not year groups) but not
+exact boundaries. Used a standard UK schooling-phase default: Early Years (0-4), Primary
+(5-10), Secondary (11-15), Sixth Form (16-18), 19+. `src/lib/roll-data.ts`.
+
+**Shape classifier interpretation**: rolls spec §4 names five shapes (tube,
+pyramid/funnel, mushroom, wineglass, irregular) and a bucket-transition *method*, but not
+a precise rule — explicitly "provisional throughout... expected to move once run against
+real school profiles." Implemented a first defensible version in
+`src/lib/shape-classifier.ts`: tube = all moves flat; pyramid/funnel = monotonic
+decrease young→old; mushroom = single rise-then-fall (a bulge); wineglass = single
+fall-then-rise (a waist, matching the spec's own "hourglass" cross-reference);
+irregular = anything else. ±15% relative change threshold for "stationary," also
+provisional. Two age bands with data minimum to classify at all — one or zero bands
+returns null rather than force-fitting a label.
+
+**6th-form/FE nearest-20 gap, resolved per rolls spec §4's own framing ("Claude Code's
+call")**: skip-and-backfill, not show-fewer-than-20 as the primary behavior —
+`nearest_schools` RPC returns a 30-candidate buffer (not 20), and
+`computeSurroundingSchoolsStat` walks it nearest-first, keeping the first 20 with actual
+DfE census roll data and skipping any with none (standalone FE-corporation institutions,
+the confirmed permanent gap). Only falls back to reporting fewer than 20 if the buffer
+itself doesn't contain 20 schools with data — an honest degrade, not silently
+misrepresented as a full 20.
+
+**PRU/AP exclusion filter**: confirmed via real data before writing the filter — matched
+by `establishment_type ilike '%alternative provision%' or ilike '%referral%'`, covering
+'Academy alternative provision converter/sponsor led', 'Free schools alternative
+provision', 'Pupil referral unit' (1,088 rows combined). **Secure units (48 rows,
+`establishment_type_group = 'Other types'`) and 'Academy secure 16 to 19' (1 row) are
+left unexcluded** — exactly the edge case rolls spec §4/§10 flags as known and
+deliberately unresolved, not a bug introduced here.
+
+---
+
 ## Template for future entries
 
 **Decision**: ...

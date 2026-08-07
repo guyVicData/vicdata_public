@@ -28,3 +28,17 @@ export function createServiceRoleSupabaseClient() {
     { auth: { persistSession: false } },
   );
 }
+
+// Server-only, anon key, RLS still enforced -- for Server Component / lib code that
+// needs public data (schools table, search_schools, nearest_schools) without a user
+// session. Not the browser singleton above: no localStorage in a server runtime, and
+// this and the browser client have genuinely different lifetimes (per-request vs.
+// per-tab), so sharing one instance across both would be the wrong fix, not a
+// convenience.
+export function createServerAnonSupabaseClient(): SupabaseClient {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
