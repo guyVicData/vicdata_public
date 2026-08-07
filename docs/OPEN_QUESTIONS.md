@@ -6,6 +6,33 @@ with, rather than blocking.
 
 ---
 
+## 2026-08-07 — Comparator/Feeder Set: two deliberate scope simplifications
+
+**"Local rivals" (rolls spec §6)**: the full mechanism is "adaptive target-count search,
+geography as primary filter, self-curated and saved" — the same adaptive-radius
+machinery Feeder Set uses. Built as a simpler LA-name equality filter on top of
+`comparator_candidates`' attribute filters instead, not the full adaptive-radius search.
+Reasoning: time-boxed against the acceptance check's actual bar ("a Comparator Set can
+be built, saved, and hits its cap at 3"), which doesn't require the local-rivals
+variant specifically. Worth building properly before this is member-facing for real.
+
+**Feeder Set target count (rolls spec §5)**: "target count scales with the receiving
+school's own intake size at that entry point" — needs the cohort-progression intake-size
+estimator (§7), which the spec itself flags as "not yet built or validated," i.e. new,
+separate engineering, not a data lookup. Used a flat default (15 per sector) instead.
+The adaptive-radius mechanism itself (nearest-N-by-distance per sector, unioned) is
+built for real per §5 — only the intake-based target-count scaling is deferred.
+
+**Verified end-to-end against real data, not just read code**: 3 personal comparator
+sets created successfully, a 4th correctly rejected by the DB-level cap trigger
+(`P0001`); a feeder set saved with confirmed/excluded member statuses stored correctly.
+Also found and fixed two real candidate-quality bugs while testing (see the
+`comparator_candidates`/`feeder_candidates` commit) — an unfiltered comparator query
+surfaced 4-13-pupil specialist study centres ahead of genuine peers, and feeder
+candidates included University of Reading with no institution-type filter at all.
+
+---
+
 ## 2026-08-07 — Auth: mailer_autoconfirm enabled for this testing phase
 
 **Decision**: set `mailer_autoconfirm: true` on the new Supabase project's Auth config,
