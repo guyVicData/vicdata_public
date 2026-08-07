@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
-type SearchResult = {
+export type SchoolSearchResult = {
   urn: string;
   current_name: string;
   town: string | null;
@@ -13,6 +13,7 @@ type SearchResult = {
   phase: string | null;
   boarding_establishment: string | null;
 };
+type SearchResult = SchoolSearchResult;
 
 const DEBOUNCE_MS = 300;
 const MIN_CHARS = 2;
@@ -24,7 +25,13 @@ function describeSchool(r: SearchResult): string {
   return [parts.join(", "), tag].filter(Boolean).join(" — ");
 }
 
-export default function SchoolSearch() {
+export default function SchoolSearch({
+  onSelect,
+  placeholder,
+}: {
+  onSelect?: (school: SchoolSearchResult) => void;
+  placeholder?: string;
+} = {}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,7 +75,7 @@ export default function SchoolSearch() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results.length > 0 && setOpen(true)}
-        placeholder="Search for a school by name, town, or postcode"
+        placeholder={placeholder ?? "Search for a school by name, town, or postcode"}
         className="w-full rounded-md border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
         aria-label="Search for a school"
       />
@@ -93,7 +100,8 @@ export default function SchoolSearch() {
                 className="block w-full border-b border-neutral-100 px-4 py-3 text-left last:border-b-0 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
                 onClick={() => {
                   setOpen(false);
-                  router.push(`/schools/${r.urn}`);
+                  if (onSelect) onSelect(r);
+                  else router.push(`/schools/${r.urn}`);
                 }}
               >
                 <div className="font-medium">{r.current_name}</div>

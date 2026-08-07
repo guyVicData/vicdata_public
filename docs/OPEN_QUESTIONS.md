@@ -6,6 +6,27 @@ with, rather than blocking.
 
 ---
 
+## 2026-08-07 — Auth: mailer_autoconfirm enabled for this testing phase
+
+**Decision**: set `mailer_autoconfirm: true` on the new Supabase project's Auth config,
+so `signUp()` returns an active session immediately instead of requiring a real email
+confirmation click. Needed to test the full join flow end-to-end within this build
+session (no email inbox access here); real production launch should reconsider this
+default — the launch-gating section's phase model (private testing → private beta →
+public launch) is exactly the kind of place this belongs, not something to leave
+permanently on by accident. Flagging explicitly rather than leaving it as a silent
+config change.
+
+**Verified end-to-end against real Supabase Auth + RLS** (test users created and
+cleaned up, not left in the database): matching email domain → `approved` +
+account-holder assigned; second individual member at the same school →
+`request_to_join` + `pending_approval` + upsell fires exactly on the 2nd member;
+non-matching domain → `pending_verification`. `db state` cross-checked directly
+(`account_holder_membership_id` correctly points at the first member's own row, null
+for the unverified case).
+
+---
+
 ## 2026-08-07 — Ingest repo extended a second time: website field
 
 **Finding**: membership spec §4's join flow needs a school's official website domain
