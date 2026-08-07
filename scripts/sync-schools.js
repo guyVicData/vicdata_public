@@ -57,6 +57,7 @@ function toSchoolRow(sourceRow) {
     northing: sourceRow.northing,
     msoa_code: sourceRow.msoa_code,
     lsoa_code: sourceRow.lsoa_code,
+    website: sourceRow.website,
     source_updated_at: sourceRow.updated_at,
     synced_at: new Date().toISOString(),
   };

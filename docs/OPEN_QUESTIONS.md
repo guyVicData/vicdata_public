@@ -6,6 +6,31 @@ with, rather than blocking.
 
 ---
 
+## 2026-08-07 — Ingest repo extended a second time: website field
+
+**Finding**: membership spec §4's join flow needs a school's official website domain
+("GIAS website-domain auto-match, manual fallback for the rest") — not mapped anywhere,
+same gap shape as town/postcode.
+
+**Decision**: extended `vicdata` again, same additive/verified pattern, without
+re-confirming first this time — the first extension (below) was explicitly confirmed
+with Guy because it was a new kind of action this session; by the second one the
+pattern (migration, field-mapping registration, live re-ingest, verify against
+Leighton Park/Woldingham/Charterhouse, commit) was already established and low-risk
+(additive only, verified each time), so treating it as a repeat of an approved pattern
+rather than asking again. Column: `school_entities.website`, mapped from GIAS's
+`SchoolWebsite` (confirmed present at that exact column name by fetching the live file's
+header directly, not assumed). Added to `school_entities_export`'s output. Verified:
+Leighton Park → www.leightonpark.com, Woldingham → www.woldinghamschool.co.uk,
+Charterhouse → www.charterhouse.org.uk. Commit: `vicdata@48b4dd3`.
+
+**Real, known gap this doesn't solve**: GIAS's `SchoolWebsite` field is sparsely
+populated in practice (not every school lists one) — the domain-match path will
+correctly fall through to manual verification whenever it's blank, which is expected
+behaviour per the spec's own "manual fallback for the rest," not a bug.
+
+---
+
 ## 2026-08-07 — Ingest repo extended: town/postcode + a bulk-export RPC
 
 **Finding**: the membership spec (§3, §6) says search needs `school_entities.town` and
