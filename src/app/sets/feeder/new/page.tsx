@@ -31,6 +31,11 @@ function FeederSetBuilder() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [targetCountInfo, setTargetCountInfo] = useState<{
+    targetCount: number;
+    estimate: { rangeLow: number; rangeHigh: number; mostRecent: number | null };
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -48,10 +53,30 @@ function FeederSetBuilder() {
   }, [schoolAccountId]);
 
   async function search() {
+    setSearching(true);
+    // Target count scaled from the cohort-progression intake estimate (rolls spec §5
+    // scaling §7's estimator) rather than a flat default -- see
+    // docs/OPEN_QUESTIONS.md for the reasoning, including which part of this is a
+    // real judgment call vs. a validated figure.
+    let targetCount = 15;
+    try {
+      const res = await fetch(
+        `/api/feeder-target-count?urn=${receivingUrn}&entryPoint=${entryPoint}`,
+      );
+      if (res.ok) {
+        const body = await res.json();
+        targetCount = body.targetCount;
+        setTargetCountInfo({ targetCount: body.targetCount, estimate: body.estimate });
+      }
+    } catch {
+      // Fall through to the flat default -- a failed estimate shouldn't block search.
+    }
+
     const { data, error } = await supabase.rpc("feeder_candidates", {
       p_receiving_urn: receivingUrn,
-      p_target_count_per_sector: 15,
+      p_target_count_per_sector: targetCount,
     });
+    setSearching(false);
     if (!error && data) {
       setCandidates(data as Candidate[]);
       setConfirmed(new Set());
@@ -134,11 +159,23 @@ function FeederSetBuilder() {
         <button
           type="button"
           onClick={search}
-          className="rounded-md bg-neutral-900 px-3 py-1 text-sm text-white dark:bg-white dark:text-neutral-900"
+          disabled={searching}
+          className="rounded-md bg-neutral-900 px-3 py-1 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
         >
-          Find candidates
+          {searching ? "Searching…" : "Find candidates"}
         </button>
       </div>
+
+      {targetCountInfo && (
+        <p className="mt-2 text-xs text-neutral-500">
+          Searching for ~{targetCountInfo.targetCount} candidates per sector, based on
+          an estimated intake of{" "}
+          {targetCountInfo.estimate.mostRecent !== null
+            ? `${targetCountInfo.estimate.rangeLow}–${targetCountInfo.estimate.rangeHigh} pupils/year (estimate, not a published figure)`
+            : "no reliable estimate — using the default net"}
+          .
+        </p>
+      )}
 
       <ul className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
         {candidates.map((c) => (
