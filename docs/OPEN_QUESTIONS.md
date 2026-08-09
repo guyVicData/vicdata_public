@@ -234,6 +234,98 @@ deliberately unresolved, not a bug introduced here.
 
 ---
 
+## 2026-08-09 — Public View rebuild: typology tags, matching, and open colour/threshold decisions
+
+Design changes 1-5 and confirmed bugs 6-7 from the design review session (chart
+palette doc + review log). This entry logs the genuinely undecided items the doc
+itself flagged as open, plus judgment calls made while implementing that weren't
+fully specified.
+
+**"Through" phase tag: not built separately, per explicit instruction.** A
+genuinely all-through school (e.g. low age ≤10, high age 17-18) already renders as
+Junior + Senior + Sixth stacked together under the confirmed phase-tag table
+(`src/lib/typology.ts`'s `phaseTags()`), which reads as "all-through" without a
+fifth tag. Adding a separate "Through" tag would either duplicate that information or
+require deciding exactly when a stacked combination "counts" as through-ness, which
+the doc itself says is still genuinely open ("does 'Through' survive as its own tag...
+not yet answered"). Not adding it this round; revisit once real schools' stacked-tag
+displays have been seen in practice.
+
+**Boarding threshold for the three-way tag (Boarding/Day/Boarding & day):**
+`src/lib/typology.ts`'s `boardingTag()`. GIAS's own `boarders_name` field is only a
+binary "has boarding or not" — it can't distinguish a boarding-only school from a
+genuinely mixed one (Leighton Park and Woldingham both show GIAS "Boarding school"
+despite very different day/boarder splits). Implemented as a ratio read off the DfE
+census boarders/day counts: ≥80% boarders → Boarding, ≤5% → Day, else → Boarding &
+day. No empirical basis for the exact cutoffs — provisional, same discipline as the
+shape classifier's own STATIONARY_THRESHOLD. Verified sane against both real
+examples the doc itself raises: Leighton Park (136/581 = 23%, the doc's own
+"genuinely mixed" example) → Boarding & day; Woldingham (243/528 = 46%) → Boarding &
+day.
+
+**Boarding excluded from surrounding-schools matching — supersedes the chart palette
+doc's own "Surrounding-schools matching" section.** The doc (an earlier design-session
+snapshot) lists Boarding as a fourth exact-match filter alongside Sector/Phase/Gender.
+The task instructions that authorized this build explicitly override that: boarding is
+display-only this round, deliberately deferred to subscription-tier percentage-based
+filtering (Guy's own call). Flagging the conflict explicitly rather than silently
+picking one, since the doc itself warned it "has changed several times during
+design."
+
+**Phase matching mechanism: tag-SET intersection, not raw age-range overlap —
+changed mid-implementation based on real-data verification.** Started out reusing
+`nearest_schools`' existing statutory age-range overlap prefilter for "same phase" (a
+provisional reading of the doc's ambiguous "Phase — already established" wording).
+Real-data verification against Acland Burghley (11-18, Senior+Sixth) surfaced a
+genuine bug: the overlap test only requires ranges to touch at a single boundary age,
+so an 11-and-under primary school (low 3/high 11) counted as "overlapping" purely
+because both include age 11 — dragging small primary schools into a "nearest senior
+schools" pool and producing a nonsensical "288% above average" roll comparison.
+Fixed by narrowing to genuine phase-tag-set intersection (shares at least one of
+Junior/Prep/Senior/Sixth) in `src/lib/surrounding-schools.ts`. Confirmed the fix:
+Acland Burghley's comparison average moved from a polluted 322 (10 candidates,
+several of them primary schools) to a plausible 628 (4 candidates, honestly fewer
+but genuinely comparable) — exactly the "honest degrade over a padded but wrong
+pool" principle already established elsewhere in this project.
+
+**Typology tag colours: six of twelve are still first-pass, unvalidated.** The
+palette doc names colours for Independent/Boarding & day/Boarding/Senior/Girls/Co-ed
+only, flagging State/Day/Junior/Prep/Sixth/Boys as "not yet assigned." Filled in here
+(`src/components/TypologyTags.tsx`) with slate/sky/lime/violet/orange/cyan
+respectively, chosen to stay visually distinct from their siblings. Not run through
+the colourblind-safety validator the gender pupil-count chart was: every tag pill
+always carries its own text label, so identity is never colour-alone here (the
+validator's own "relief rule" — visible labels obviate strict CVD separation — applies
+by construction). Still worth a real validator pass before this is treated as final,
+same as the gender chart was.
+
+**Size-band words in the surrounding-schools summary sentence** (`src/lib/
+surrounding-summary.ts`): reused `comparator_candidates`' existing thresholds (small
+<300, large >800) rather than inventing new ones, for consistency with an
+already-established system boundary. Worth noting: this produces "medium-sized" for
+Leighton Park's actual 581-pupil roll, while the design doc's own worked example used
+"large" for what's presumably the same school — a real wording mismatch against the
+doc's illustrative example, not a bug, just an unverified assumption in that example.
+
+**Resolved 2026-08-09, later same day: migration pushed live.**
+`supabase/migrations/20260809103000_nearest_schools_mainstream_filter.sql` (bug #7 —
+the mainstream-K-12-only filter comparator_candidates/feeder_candidates already have)
+was applied directly via `supabase db query --linked` (Management-API auth, once Guy
+supplied the DB password) rather than a full `supabase db push` — deliberately
+surgical, since `db push` without the CLI's own migration-history bookkeeping in sync
+would have replayed all 21 migrations, including ones already live (confirmed the
+remote history table wasn't tracking earlier migrations applied by some other means,
+which risked duplicate-column/table errors on a full push). Verified live via
+`pg_proc.prosrc` showing the updated function body, then re-checked all 7 review
+schools' surrounding-schools output against the live RPC — no change from the
+pre-push numbers, since the application-code phase-tag-intersection fix above was
+already doing the precision work; this migration adds a second, redundant-but-correct
+layer at the RPC level. Everything downstream already works with the current live
+function — this was a precision improvement, not
+a blocker for anything shipped this round.
+
+---
+
 ## Template for future entries
 
 **Decision**: ...

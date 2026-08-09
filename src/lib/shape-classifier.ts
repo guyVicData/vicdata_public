@@ -3,7 +3,14 @@
 // versioned, expected to move once run against real school profiles, not fixed in
 // advance of real data. This is a first, defensible implementation of the
 // bucket-transition method (classify by the sequence of increase/decrease/stationary
-// moves between age bands), not a final calibration.
+// moves between points in the input sequence), not a final calibration.
+//
+// As of the "Public View rebuild" design review, every caller feeds this single
+// individual ages 5-17 (roll-data.ts's shapeClassifierInput()), not the 5 age bands
+// this module originally shipped with -- ages 4/18 are structurally incomplete
+// cohorts at census date and were producing a false "rise" that biased almost every
+// school toward "Mushroom." The function itself is unchanged and still generic over
+// any ordered { key, total }[] sequence; only what callers pass in changed.
 //
 // Single-year snapshot only (this module). Multi-year stability trajectory is a
 // separate, paid-tier concern (rolls spec §3/§4) -- sequencing multiple calls to this

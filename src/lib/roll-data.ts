@@ -4,6 +4,16 @@
 
 import type { ReferenceFact } from "./vicdata-reference";
 
+// Fallback census period for surrounding-schools lookups when the target school has
+// no roll data of its own to read a period off (bug fix, "Public View rebuild": a
+// standalone 6th-form/FE-corporation school like Worcester Sixth Form College has no
+// DfE census roll data -- confirmed real, permanent gap -- so buildRollSnapshot
+// returns null for it, but its surrounding-schools section still needs *some* period
+// to query candidate schools' roll data at). Same year sync-roll-aggregates.ts
+// targets for its own precomputed aggregates -- kept as one shared constant so the
+// two can't drift apart.
+export const CURRENT_CENSUS_PERIOD = 2025;
+
 // Age-band boundaries: a reasonable, standard UK schooling-phase default -- not fixed
 // by the spec (which specifies the age-band *axis* itself, not exact boundaries).
 // Provisional, same discipline as the shape taxonomy itself (rolls spec §4) -- expected
@@ -128,6 +138,55 @@ export function singleAgeCountsByPeriod(facts: ReferenceFact[]): Map<number, Map
     byAge.set(age, (byAge.get(age) ?? 0) + fact.value_numeric);
   }
   return byPeriod;
+}
+
+// Single-year-of-age headcount, split by sex, for one specific period -- the
+// population-pyramid shape chart's data source (chart palette doc, "Public View
+// rebuild"). Same full_time + part_time summing as everything else in this module.
+export type AgeGenderCounts = Map<number, { male: number; female: number }>;
+
+export function singleAgeGenderCountsForPeriod(
+  facts: ReferenceFact[],
+  period: number,
+): AgeGenderCounts {
+  const byAge: AgeGenderCounts = new Map();
+  for (const fact of facts) {
+    if (fact.period !== period) continue;
+    const match = AGE_BREAKDOWN_RE.exec(fact.breakdown);
+    if (!match || fact.value_numeric === null) continue;
+    const [, , sex, ageStr] = match;
+    const age = Number(ageStr);
+    if (!byAge.has(age)) byAge.set(age, { male: 0, female: 0 });
+    const entry = byAge.get(age)!;
+    if (sex === "male") entry.male += fact.value_numeric;
+    else entry.female += fact.value_numeric;
+  }
+  return byAge;
+}
+
+// Ages 5-17 only: the design review's resolved shape-classification range (chart
+// palette doc / review log). Ages 4 and 18 are excluded because they're structurally
+// incomplete cohorts at census date (most 4- and 18-year-olds nationally aren't in a
+// school-age census bracket yet/any more), which was producing a false "rise" at the
+// very start of every primary school's age profile -- the root cause behind the
+// classifier's universal "Mushroom" bias found in the Task 3 review. Ages 4 and 18
+// still appear on the pyramid chart itself (task 31), just tinted to mark them as
+// partial, and are never part of the classification input.
+export const SHAPE_CLASSIFICATION_MIN_AGE = 5;
+export const SHAPE_CLASSIFICATION_MAX_AGE = 17;
+
+// Builds classifyShape()'s input from a single-age/sex breakdown: one point per age
+// 5-17, both sexes combined, in age order so the bucket-transition method reads left
+// to right by age the same way it used to read band to band.
+export function shapeClassifierInput(
+  ageGenderCounts: AgeGenderCounts,
+): { key: string; total: number }[] {
+  const points: { key: string; total: number }[] = [];
+  for (let age = SHAPE_CLASSIFICATION_MIN_AGE; age <= SHAPE_CLASSIFICATION_MAX_AGE; age++) {
+    const counts = ageGenderCounts.get(age);
+    points.push({ key: String(age), total: (counts?.male ?? 0) + (counts?.female ?? 0) });
+  }
+  return points;
 }
 
 function finishSnapshot(

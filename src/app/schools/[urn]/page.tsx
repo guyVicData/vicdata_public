@@ -1,10 +1,23 @@
 import { notFound } from "next/navigation";
 import { createServerAnonSupabaseClient } from "@/lib/supabase";
 import { lookupReferenceData } from "@/lib/vicdata-reference";
-import { buildRollSnapshot } from "@/lib/roll-data";
+import {
+  buildRollSnapshot,
+  singleAgeGenderCountsForPeriod,
+  shapeClassifierInput,
+  CURRENT_CENSUS_PERIOD,
+} from "@/lib/roll-data";
 import { classifyShape, type ShapeLabel } from "@/lib/shape-classifier";
-import { computeSurroundingSchoolsStat } from "@/lib/surrounding-schools";
+import { findSurroundingSchools, aggregateSurroundingStat } from "@/lib/surrounding-schools";
+import { getGssCodeForLaCode, fetchLaBoundary } from "@/lib/la-boundary";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
+import ShapeChart from "@/components/ShapeChart";
+import AggregateShapeChart from "@/components/AggregateShapeChart";
+import TypologyTags from "@/components/TypologyTags";
+import SurroundingSchoolsMemberList from "@/components/SurroundingSchoolsMemberList";
+import SchoolMap from "@/components/SchoolMap";
+import { computeTypology } from "@/lib/typology";
+import { buildSurroundingSummary } from "@/lib/surrounding-summary";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
 
@@ -26,8 +39,13 @@ type School = {
   establishment_type: string | null;
   phase: string | null;
   boarding_establishment: string | null;
+  boarders_name: string | null;
   statutory_low_age: number | null;
   statutory_high_age: number | null;
+  gender: string | null;
+  la_code: string | null;
+  easting: number | null;
+  northing: number | null;
 };
 
 async function getSchool(urn: string): Promise<School | null> {
@@ -35,7 +53,7 @@ async function getSchool(urn: string): Promise<School | null> {
   const { data, error } = await supabase
     .from("schools")
     .select(
-      "urn, current_name, town, postcode, la_name, establishment_type_group, establishment_type, phase, boarding_establishment, statutory_low_age, statutory_high_age",
+      "urn, current_name, town, postcode, la_name, establishment_type_group, establishment_type, phase, boarding_establishment, boarders_name, statutory_low_age, statutory_high_age, gender, la_code, easting, northing",
     )
     .eq("urn", urn)
     .maybeSingle();
@@ -79,11 +97,27 @@ export default async function SchoolPage({
 
   const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: [urn] });
   const roll = buildRollSnapshot(facts, urn);
-  const shape = roll ? classifyShape(roll.byAgeBand) : null;
-  const surrounding = roll
-    ? await computeSurroundingSchoolsStat(urn, roll.period)
-    : null;
+  const ageGenderCounts = roll ? singleAgeGenderCountsForPeriod(facts, roll.period) : null;
+  const shape = ageGenderCounts ? classifyShape(shapeClassifierInput(ageGenderCounts)) : null;
+  // Bug fix (Task 3 review): this used to be gated on the target school having its
+  // own roll data, backwards -- a standalone 6th-form/FE college (Worcester Sixth
+  // Form College, confirmed real) has none of its own, but its surrounding schools
+  // still need showing, just via a fallback period since there's no roll.period to
+  // read one off. Fetched once here (not via computeSurroundingSchoolsStat) so the
+  // same match list feeds both the aggregate stat and the map's marker positions.
+  const matchedSurrounding = await findSurroundingSchools(urn, roll?.period ?? CURRENT_CENSUS_PERIOD);
+  const surrounding = aggregateSurroundingStat(matchedSurrounding);
   const context = await getContextAggregates(school.la_name);
+  const typology = computeTypology(school, roll?.boarding ?? null);
+  const surroundingSummary = buildSurroundingSummary(
+    school.current_name,
+    typology,
+    roll?.totalRoll ?? null,
+    surrounding.found,
+    surrounding.averageRoll,
+  );
+  const gssCode = await getGssCodeForLaCode(school.la_code);
+  const laBoundary = gssCode ? await fetchLaBoundary(gssCode) : null;
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
@@ -93,7 +127,23 @@ export default async function SchoolPage({
           {[school.town, school.postcode].filter(Boolean).join(", ")}
           {school.establishment_type_group ? ` — ${school.establishment_type_group}` : ""}
         </p>
+        <div className="mt-3">
+          <TypologyTags typology={typology} />
+        </div>
       </header>
+
+      {school.easting !== null && school.northing !== null && (
+        <Section title="Map">
+          <SchoolMap
+            urn={urn}
+            school={{ name: school.current_name, town: school.town, easting: school.easting, northing: school.northing }}
+            laBoundary={laBoundary}
+            freeSurroundingPoints={matchedSurrounding
+              .filter((m) => m.easting !== null && m.northing !== null)
+              .map((m) => ({ easting: m.easting as number, northing: m.northing as number }))}
+          />
+        </Section>
+      )}
 
       {!roll && (
         <section className="mb-10 rounded-md border border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-800">
@@ -128,18 +178,19 @@ export default async function SchoolPage({
           </Section>
 
           <Section title="Shape">
+            {ageGenderCounts && <ShapeChart ageGenderCounts={ageGenderCounts} />}
             {shape ? (
               <>
-                <p className="text-lg font-medium">{SHAPE_LABELS[shape.label]}</p>
+                <p className="mt-3 text-lg font-medium">{SHAPE_LABELS[shape.label]}</p>
                 <p className="text-sm text-neutral-500">
-                  Single-year snapshot, based on this year&rsquo;s age-band profile.
+                  Single-year snapshot, based on this year&rsquo;s age 5–17 profile.
                   Provisional classification — this typology is still being calibrated
                   against real school data.
                 </p>
               </>
             ) : (
-              <p className="text-sm text-neutral-500">
-                Not enough age-band data to classify a shape this year.
+              <p className="mt-3 text-sm text-neutral-500">
+                Not enough age 5–17 data to classify a shape this year.
               </p>
             )}
           </Section>
@@ -149,6 +200,10 @@ export default async function SchoolPage({
               {roll.gender.female.toLocaleString()} girls, {roll.gender.male.toLocaleString()}{" "}
               boys
             </p>
+            <p className="mt-1 text-xs text-neutral-400">
+              Full-roll headcount, all ages — not the same age range as the shape chart
+              above.
+            </p>
           </Section>
 
           {roll.boarding && (
@@ -157,35 +212,45 @@ export default async function SchoolPage({
                 {roll.boarding.boarders.toLocaleString()} boarders,{" "}
                 {roll.boarding.day.toLocaleString()} day pupils
               </p>
+              <p className="mt-1 text-xs text-neutral-400">
+                DfE census boarding headcount, same period as the roll above.
+              </p>
             </Section>
           )}
-
-          <Section title="Surrounding schools">
-            {surrounding && surrounding.found > 0 ? (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                Among the {surrounding.found} nearest schools of the same phase and
-                sector{surrounding.found < surrounding.requested ? " found" : ""}, the
-                average roll is{" "}
-                <strong>{Math.round(surrounding.averageRoll ?? 0).toLocaleString()}</strong>
-                {surrounding.aggregateShape && (
-                  <>
-                    {" "}
-                    and the combined shape is{" "}
-                    <strong>{SHAPE_LABELS[surrounding.aggregateShape]}</strong>
-                  </>
-                )}
-                .
-              </p>
-            ) : (
-              <p className="text-sm text-neutral-500">
-                Not enough nearby comparable schools with roll data to show this yet.
-              </p>
-            )}
-          </Section>
 
           <PaidTrendsSection urn={urn} />
         </>
       )}
+
+      <Section title="Surrounding schools">
+        {surrounding.found > 0 && surroundingSummary ? (
+          <>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {surroundingSummary}
+              {surrounding.aggregateShape && (
+                <>
+                  {" "}
+                  The combined shape is <strong>{SHAPE_LABELS[surrounding.aggregateShape]}</strong>.
+                </>
+              )}
+            </p>
+            {surrounding.aggregateAgeCounts && (
+              <div className="mt-3">
+                <AggregateShapeChart ageCounts={surrounding.aggregateAgeCounts} />
+              </div>
+            )}
+            <p className="mt-3 text-xs text-neutral-400">
+              The {surrounding.found} schools behind this comparison are visible to
+              verified members.
+            </p>
+            <SurroundingSchoolsMemberList urn={urn} />
+          </>
+        ) : (
+          <p className="text-sm text-neutral-500">
+            Not enough nearby comparable schools with roll data to show this yet.
+          </p>
+        )}
+      </Section>
 
       {(context.national || context.regional) && (
         <Section title="Regional & national context">
