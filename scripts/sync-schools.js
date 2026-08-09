@@ -60,6 +60,7 @@ function toSchoolRow(sourceRow) {
     lsoa_code: sourceRow.lsoa_code,
     website: sourceRow.website,
     number_of_pupils: sourceRow.number_of_pupils,
+    gender: sourceRow.gender,
     source_updated_at: sourceRow.updated_at,
     synced_at: new Date().toISOString(),
   };
