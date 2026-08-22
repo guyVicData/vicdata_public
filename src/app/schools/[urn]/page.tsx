@@ -7,6 +7,7 @@ import {
   shapeClassifierInput,
   CURRENT_CENSUS_PERIOD,
 } from "@/lib/roll-data";
+import { buildIlrParticipationSnapshot } from "@/lib/ilr-participation-data";
 import { classifyShape, type ShapeLabel } from "@/lib/shape-classifier";
 import { findSurroundingSchools, aggregateSurroundingStat } from "@/lib/surrounding-schools";
 import { getGssCodeForLaCode, fetchLaBoundary } from "@/lib/la-boundary";
@@ -98,6 +99,23 @@ export default async function SchoolPage({
   const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: [urn] });
   const roll = buildRollSnapshot(facts, urn);
   const ageGenderCounts = roll ? singleAgeGenderCountsForPeriod(facts, roll.period) : null;
+
+  // FE-participation backfill card (2026-08-22, docs/OPEN_QUESTIONS.md in the vicdata
+  // ingest repo -- built after confirming most Academy 16-19 converter/Free schools 16
+  // to 19 institutions' real census coverage stops at 2021). A RULE evaluated per
+  // institution at render time, not a static list of the institutions known to need it
+  // today: shown only when this institution's own census data is genuinely stale or
+  // missing AND real ILR data actually exists for it. This means it adapts on its own if
+  // census coverage for any of these institutions is restored in a future DfE release --
+  // no list to maintain -- and correctly shows nothing for an institution with neither
+  // source (e.g. one opened too recently for either), same honest degrade as the census
+  // card's own !roll branch, not a new failure mode.
+  const ilrFacts = await lookupReferenceData({
+    sourceId: "dfe_fe_participation_academy",
+    entityIds: [urn],
+  });
+  const ilrSnapshot = buildIlrParticipationSnapshot(ilrFacts);
+  const showIlrCard = ilrSnapshot !== null && (!roll || roll.period < CURRENT_CENSUS_PERIOD);
   const shape = ageGenderCounts ? classifyShape(shapeClassifierInput(ageGenderCounts)) : null;
   // Bug fix (Task 3 review): this used to be gated on the target school having its
   // own roll data, backwards -- a standalone 6th-form/FE college (Worcester Sixth
@@ -152,6 +170,30 @@ export default async function SchoolPage({
           until the academic-results topic is built), or for a very recently opened
           school.
         </section>
+      )}
+
+      {showIlrCard && ilrSnapshot && (
+        <Section title="FE participation data (ILR)">
+          <p className="text-3xl font-semibold">{ilrSnapshot.total.toLocaleString()}</p>
+          <p className="text-sm text-neutral-500">
+            learners, {ilrSnapshot.period}/{String(ilrSnapshot.period + 1).slice(2)}
+          </p>
+          {ilrSnapshot.male !== null && ilrSnapshot.female !== null && (
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              {ilrSnapshot.female.toLocaleString()} girls, {ilrSnapshot.male.toLocaleString()}{" "}
+              boys
+            </p>
+          )}
+          <p className="mt-3 text-xs text-neutral-400">
+            DfE&rsquo;s own experimental &ldquo;in development&rdquo; statistics
+            (Individualised Learner Record) — not the DfE school census figure{roll ? " above" : ""}.
+            A count of learners participating in further education courses across the
+            academic year, not a single-day headcount, shown here because {roll
+              ? "this school's own census data hasn't been updated since " + roll.period + "/" + String(roll.period + 1).slice(2)
+              : "this school has no DfE census roll data"}. Shown separately, never
+            combined with the census figure — they measure different things.
+          </p>
+        </Section>
       )}
 
       {roll && (
