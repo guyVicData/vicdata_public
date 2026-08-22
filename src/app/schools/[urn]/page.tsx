@@ -156,7 +156,16 @@ export default async function SchoolPage({
 
       {roll && (
         <>
-          <Section title="Current roll">
+          {/* 2026-08-22 fix: was "Current roll" -- genuinely misleading for the many
+              academy-16-19-converter/free-school-16-19 institutions whose most recent
+              real census data is 1-5 years stale (a real, newly-confirmed census-coverage
+              gap for this establishment type, not a display bug in isolation -- see
+              docs/OPEN_QUESTIONS.md in the vicdata ingest repo, 2026-08-22). The actual
+              academic year is already shown correctly in the caption directly below: the
+              bug was the bold header claiming currency the data doesn't have, not the
+              underlying number or the period label itself, so this is a text-only fix,
+              nothing data-side changed. */}
+          <Section title="Roll">
             <p className="text-3xl font-semibold">{roll.totalRoll.toLocaleString()}</p>
             <p className="text-sm text-neutral-500">
               pupils, {roll.period}/{String(roll.period + 1).slice(2)}

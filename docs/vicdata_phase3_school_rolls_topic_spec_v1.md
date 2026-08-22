@@ -95,7 +95,7 @@ Tiered by curation effort, not by subject or time — a built/saved comparator s
 
 **Resolved:**
 - **Headcount, not FTE-adjusted**, for the classifier at all age bands — matches DfE's own standard NOR metric (consistent with roll trends, §3, which already uses headcount), avoids inventing an unsupported FTE-conversion assumption on top of already-estimated data, and a genuinely large part-time nursery intake is treated as a real enrolment pattern rather than distortion to correct for.
-- **Local/catchment-level shape classification is needed and meaningful** — genuinely different question from regional/national shape: "what's the shape of the total population of local schools" (e.g. birth-rate decline showing up as a narrowing base almost everywhere, a real pattern worth the classifier catching directly, not just a scalar trend number). **Public-tier mechanism, simple and fixed, distinct from the member-tier Comparator Set (§6)**: DfE census aggregate over the nearest 20 schools matching this school's own age band/phase and sector (state/independent), same simple candidate logic used for the State of the School page's "surrounding schools" stat — no adaptive radius, no sector-union, no member curation. **Exclusion filter, confirmed**: special schools are clean — `establishment_type_group = 'Special schools'` catches every one in a single filter. PRU/alternative provision is **not** clean — scattered across three different top-level groups (Academies, Free Schools, LA-maintained), needs substring matching on `establishment_type` instead of the group field. **Known edge case, not resolved**: "Secure units" (48 rows, structurally AP-like but named differently) slip through either filter as currently defined. **6th-form/FE data gap, confirmed and refined** — three-way split, not a single blanket gap: genuine FE-corporation-status institutions (Further education, HE institutions, sixth-form centres, special post-16 — 502 combined) have zero census facts, a real and permanent gap only closed once the academic-results topic (post-16 performance tables) is built; sixth-form colleges that converted to academy/free-school status **are** covered (35/42 and 35/36 respectively) since they're legally schools; the 8 remaining exceptions are a **timing gap**, not structural — all converted 2023-2025, likely resolves as more recent data cycles process. GIAS lists all of these regardless of census coverage, so identification/location is never blocked, only roll-figure availability. Worth deciding how the nearest-20 count handles a candidate with no roll data available (skip and backfill to a 21st, or just show as fewer than 20). Worth an early classifier test case regardless: a recent-years narrowing specifically at the youngest band, driven by falling birth rates, doesn't cleanly match any of the five current shape names as defined — a real stress-test for the still-provisional taxonomy once built.
+- **Local/catchment-level shape classification is needed and meaningful** — genuinely different question from regional/national shape: "what's the shape of the total population of local schools" (e.g. birth-rate decline showing up as a narrowing base almost everywhere, a real pattern worth the classifier catching directly, not just a scalar trend number). **Public-tier mechanism, simple and fixed, distinct from the member-tier Comparator Set (§6)**: DfE census aggregate over the nearest 20 schools matching this school's own age band/phase and sector (state/independent), same simple candidate logic used for the State of the School page's "surrounding schools" stat — no adaptive radius, no sector-union, no member curation. **Exclusion filter, confirmed**: special schools are clean — `establishment_type_group = 'Special schools'` catches every one in a single filter. PRU/alternative provision is **not** clean — scattered across three different top-level groups (Academies, Free Schools, LA-maintained), needs substring matching on `establishment_type` instead of the group field. **Known edge case, not resolved**: "Secure units" (48 rows, structurally AP-like but named differently) slip through either filter as currently defined. **6th-form/FE data gap, confirmed and refined** — three-way split, not a single blanket gap: genuine FE-corporation-status institutions (Further education, HE institutions, sixth-form centres, special post-16 — 502 combined) have zero census facts, a real and permanent gap only closed once the academic-results topic (post-16 performance tables) is built; sixth-form colleges that converted to academy/free-school status have census coverage that varies a lot by establishment type and is **not** the clean "35/42, 35/36, 8 remaining timing-gap exceptions" this used to say — see §10 item 7 (corrected 2026-08-22) for the real, verified numbers: most Academy 16-19 converters (32/42) have real census data that stops at 2021 regardless of conversion date, not a small timing-gap exception set; most Free schools 16 to 19 (31/39) genuinely are current. GIAS lists all of these regardless of census coverage, so identification/location is never blocked, only roll-figure availability. Worth deciding how the nearest-20 count handles a candidate with no roll data available (skip and backfill to a 21st, or just show as fewer than 20). Worth an early classifier test case regardless: a recent-years narrowing specifically at the youngest band, driven by falling birth rates, doesn't cleanly match any of the five current shape names as defined — a real stress-test for the still-provisional taxonomy once built.
 
 ---
 
@@ -195,7 +195,52 @@ Worth reusing this exact pattern for Phase 3's own presentation-ready export (ro
 4. **Part-time/FTE handling** — resolved: classifier uses headcount, not FTE-adjusted, at all age bands (§4).
 5. **`source_field_mappings` — confirmed a genuine gap, not a deliberate bypass**, with a clear practical consequence. Traced directly: `dfe_school_census.py` calls neither `check_field_mappings` nor `edit_field_mapping` in either era — no documented exception exists, and the schema's own build-plan doc names DfE census by name as the example this table exists to serve. **Practically**: both eras build column mapping as a plain in-process Python dict, which never queries `source_field_mappings` at all — inserting a row there would have **zero effect**. The boarding mapping (item 3) needs to go into the module's own dict directly, alongside the existing age/year-group helpers.
 6. **Non-mainstream exclusion filter for the "nearest 20" mechanism (§4) — confirmed, with one open edge case.** Special schools: clean, single-field filter (`establishment_type_group = 'Special schools'`). PRU/alternative provision: not clean — scattered across three top-level groups, needs `establishment_type` substring matching instead. Open edge case: "Secure units" (48 rows) are AP-like but named differently, and slip through either filter as currently defined.
-7. **6th-form/FE census coverage — the original assumption was half right, now precise.** Three-way split: genuine FE-corporation institutions (502 combined) have zero census facts, a permanent gap pending the academic-results topic; sixth-form colleges converted to academy/free-school status **are** covered (35/42, 35/36); the 8 remaining exceptions are a timing gap from 2023-2025 conversions, not structural. GIAS lists all of these regardless of census coverage, so identification is never blocked.
+7. **6th-form/FE census coverage — corrected 2026-08-22.** The original "35/42, 35/36,
+   8 remaining timing-gap exceptions" framing (this item's earlier text, and the shorter
+   duplicate of it in §4) was wrong; both are superseded by the real numbers below.
+   Investigated for real (Worcester Sixth Form College, URN 144888, surfaced this while
+   chasing an unrelated "no surrounding schools section" bug — see the vicdata ingest
+   repo's `docs/OPEN_QUESTIONS.md`, 2026-08-21/22 entries, for the full trail) by querying
+   real current census coverage for every one of the 81 real institutions across both
+   converted-sixth-form-college establishment types, not assumed from the original
+   headline ratio:
+
+   | Establishment type | total | fully current (2025) | stale (has data, but &lt;2025) | zero census data |
+   |---|---|---|---|---|
+   | Academy 16-19 converter | 42 | 3 | 32 | 7 |
+   | Free schools 16 to 19 | 39 (not 36) | 31 | 6 | 2 |
+
+   **The real picture is the opposite of what "35/42 covered" implied.** For Academy
+   16-19 converters specifically, only 3 of 42 have census data through the current year
+   -- the other 32 (the large majority of the whole establishment type, not a handful of
+   exceptions) have real census data that stops dead at 2021 (one at 2020), regardless of
+   how long ago they converted (Shooters Hill converted 2012, still stops at 2021 -- this
+   is not correlated with conversion recency the way the old framing assumed). Free
+   schools 16 to 19 are the opposite case -- most (31/39) genuinely are current. The
+   7 Academy 16-19 converters with zero census data at all are genuinely all 2024-2025
+   conversions (Queen Elizabeth Sixth Form College, The Sixth Form College Colchester,
+   Long Road Sixth Form College, The Blackpool Sixth Form College, Hills Road Sixth Form
+   College, The College of Richard Collyer In Horsham, Franklin Sixth Form College) --
+   this part of the old framing (a genuine, benign timing gap for very recent conversions)
+   was correct, just miscounted (7 real cases, not 8 -- Durham Sixth Form Centre,
+   converted 2023-11, was likely miscounted into this group before; it actually has full
+   current coverage since it opened, 2023-2025).
+
+   **A real, checked, not-yet-actioned option for closing the 32-institution stale-data
+   gap**: cross-referenced all 47 stale/zero institutions' UKPRNs directly against the
+   real `dfe_fe_participation` source's underlying file (the same ILR-derived "Further
+   education and skills" `national_provider_summary` file, built 2026-08-21 for the
+   genuine FE-corporation gap) -- **42 of the 47 have real, plausible, smoothly year-on-
+   year-trending `education_and_training`/Under-19 figures for exactly the years their
+   census data goes missing** (2022/23 onward). This is a real, available data option,
+   not wired into this topic or any display -- deliberately not blended into the roll
+   figure these institutions already show (mixing a school-census point-in-time headcount
+   with an ILR participation count for the same "roll" label would be exactly the kind of
+   silent conflation this project has avoided everywhere else). A genuine product decision
+   for Guy, not decided here.
+
+   GIAS lists all of these regardless of census coverage, so identification/location is
+   never blocked, only roll-figure availability -- unchanged from the original framing.
 
 **Still outstanding:**
 
