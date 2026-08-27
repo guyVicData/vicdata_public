@@ -117,7 +117,23 @@ function boundsToBng(map: LeafletMap): { minEasting: number; maxEasting: number;
   };
 }
 
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+// 2026-08-28: CARTO's anonymous, no-signup basemap access (confirmed working when this
+// map was first built) has been discontinued -- tiles now return 200 with a real PNG,
+// but the PNG itself is watermarked "API KEY REQUIRED" across the whole image, not a
+// blocked request. Confirmed directly (curl, both this exact path and rastertiles/
+// light_all, with and without a key param): the URL path is unchanged and correct, this
+// is purely CARTO's own auth gate. Current correct usage (carto.com/basemaps,
+// docs.carto.com, checked 2026-08-28) is still genuinely free -- 5M tile requests/month,
+// no CARTO account needed -- but does need a key, requested via carto.com/basemaps/apikey
+// (a couple of minutes, just an email + domain, still no account/login). Key is read from
+// NEXT_PUBLIC_CARTO_API_KEY (same NEXT_PUBLIC_ pattern as the Supabase anon key already
+// used in this repo) -- it's fetched directly by the browser as a tile request, so like
+// the Supabase anon key it's necessarily public, not a server-side secret. Falls back to
+// the unauthenticated (watermarked) URL if the env var isn't set, so this doesn't break
+// local dev before the key exists.
+const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
+  ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
+  : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
@@ -754,8 +770,17 @@ export default function SchoolMap({
               inspection -- a real map marker was visibly painting through the space
               this box's own bounding rect occupied), just losing every paint battle
               to markers/tiles underneath it. z-[1000] matches Leaflet's own highest
-              pane z-index (its zoom control), guaranteeing this box wins. */}
-          <div className="absolute right-3 top-3 z-[1000] flex w-56 flex-col gap-3">
+              pane z-index (its zoom control), guaranteeing this box wins.
+
+              Real bug caught live in production, 2026-08-28 (Playwright-verified across
+              390/768/1024/1440/1920px, including live resize, not just fresh loads):
+              below 640px this box's fixed w-56 (224px) is more than half the viewport,
+              so floating it absolutely over the map buried the focus-school popup card
+              underneath it -- readable at 768px+ (plenty of map width left over) but a
+              real usability break on an actual phone. Same fix shape the filter panel
+              already uses (flex-col below lg, flex-row at lg+): plain stacked flow
+              content below the map under sm (640px), absolute-over-the-map at sm and up. */}
+          <div className="mt-3 flex flex-col gap-3 sm:absolute sm:right-3 sm:top-3 sm:z-[1000] sm:mt-0 sm:w-56">
             <MapColourKey
               modes={colourModes}
               mode={colourMode}
