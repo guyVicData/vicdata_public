@@ -70,3 +70,41 @@ export async function lookupReferenceData(params: {
   }
   return rows;
 }
+
+// Age-aggregated roll totals for a batch of schools -- reference_data_age_gender_totals
+// (2026-08-27, docs/OPEN_QUESTIONS.md), the server-side-aggregated replacement for
+// schools-in-bounds's old "fetch every raw breakdown row, sum client-side" approach, which
+// was silently truncating results once a viewport's row volume passed lookupReferenceData's
+// 50-page pagination cap. One row per (school, age actually present) with both sexes as
+// columns, zero-total ages dropped -- ~5.5x fewer rows than a first columnar-free version
+// measured on a real 418-school viewport (16,680 -> 3,018), since PostgREST hard-caps every
+// RPC response at 1000 rows regardless of the function's own p_limit, so fewer rows means
+// fewer paginated round-trips, not just a smaller payload. Includes the same
+// clean-1:1-Predecessor lineage fallback as reference_data_lookup, so a school with no
+// direct rows for the period still resolves via its predecessor here too.
+export type AgeGenderTotal = {
+  entity_id: string;
+  age: number;
+  male_total: number;
+  female_total: number;
+};
+
+export async function lookupAgeGenderTotals(params: {
+  sourceId: string;
+  entityIds: string[];
+  period: number;
+}): Promise<AgeGenderTotal[]> {
+  const rows: AgeGenderTotal[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage("reference_data_age_gender_totals", {
+      p_source_id: params.sourceId,
+      p_entity_ids: params.entityIds,
+      p_period: params.period,
+      p_limit: PAGE_SIZE,
+      p_offset: page * PAGE_SIZE,
+    })) as AgeGenderTotal[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
