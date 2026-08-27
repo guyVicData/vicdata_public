@@ -9,17 +9,18 @@
 //
 // "Phase" matching started out reusing nearest_schools' existing statutory age-range
 // overlap prefilter, but real-data verification against Acland Burghley (11-18,
-// Senior+Sixth) surfaced a genuine bug in that approach: the overlap test only
-// requires ranges to touch at a single boundary age, so an 11-and-under primary
-// school (low 3/high 11) counts as "overlapping" an 11-18 secondary purely because
-// both include age 11 -- which was dragging small primary schools into a "nearest
-// senior schools" pool and producing a nonsensical "288% above average" stat. Fixed
-// here by narrowing the RPC's broad overlap prefilter with a genuine phase-TAG-set
-// intersection in application code (shares at least one of Junior/Prep/Senior/Sixth)
-// -- a Junior-only school shares no tag with a Senior+Sixth school and is correctly
-// excluded, while genuinely phase-adjacent schools (e.g. Senior-only vs Senior+Sixth)
-// still match on their shared tag. "Gender" is the other new axis this round: exact
-// match (Boys<->Boys, Girls<->Girls, Co-ed<->Co-ed), also applied in application code.
+// Senior only as of the 2026-08-28 Post 16 narrowing -- Senior+Sixth at the time this
+// was found) surfaced a genuine bug in that approach: the overlap test only requires
+// ranges to touch at a single boundary age, so an 11-and-under primary school (low
+// 3/high 11) counts as "overlapping" an 11-18 secondary purely because both include
+// age 11 -- which was dragging small primary schools into a "nearest senior schools"
+// pool and producing a nonsensical "288% above average" stat. Fixed here by narrowing
+// the RPC's broad overlap prefilter with a genuine phase-TAG-set intersection in
+// application code (shares at least one of Junior/Prep/Senior/Post 16) -- a
+// Junior-only school shares no tag with a Senior school and is correctly excluded,
+// while genuinely phase-adjacent schools still match on their shared tag. "Gender" is
+// the other new axis this round: exact match (Boys<->Boys, Girls<->Girls, Co-ed<->
+// Co-ed), also applied in application code.
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupReferenceData } from "./vicdata-reference";

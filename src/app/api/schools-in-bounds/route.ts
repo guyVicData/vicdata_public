@@ -7,10 +7,13 @@ import {
   phaseTagAgeRange,
   genderTag,
   STATE_ESTABLISHMENT_GROUPS,
+  FE_INSTITUTION_TYPES,
+  FE_PARTICIPATION_ESTABLISHMENT_TYPES,
   type PhaseTag,
 } from "@/lib/typology";
-import { lookupAgeGenderTotals } from "@/lib/vicdata-reference";
+import { lookupAgeGenderTotals, lookupReferenceData } from "@/lib/vicdata-reference";
 import { CURRENT_CENSUS_PERIOD, type AgeGenderCounts } from "@/lib/roll-data";
+import { under19Totals, adultTotals, UNDER_19_TOTAL_BREAKDOWN, ADULT_TOTAL_BREAKDOWN } from "@/lib/fe-participation-roll";
 
 // 2026-08-27, map popup/card redesign: the age-band + gender-split breakdown is
 // member-tier only (Guy's own instruction), so a caller needs to prove they're a
@@ -79,10 +82,15 @@ function genderSplitFor(counts: AgeGenderCounts): { girls: number; boys: number 
 // PostGIS or a reprojection per row here.
 //
 // Restricted to the four mainstream establishment_type_group values (same list
-// nearest_schools' own mainstream filter uses) -- without this, sectorTag() would
-// return null for a genuine slice of what's in view (special schools, colleges,
-// universities), which would either need a third "no colour" rendering path or just
-// silently misrender. NOT applying nearest_schools' extra alternative-provision/
+// nearest_schools' own mainstream filter uses) PLUS, as of 2026-08-28, a third bucket
+// for FE_INSTITUTION_TYPES (typology.ts) -- the ~382 real FE-corporation/sixth-form/
+// special-post-16/HE/Welsh institutions previously invisible here entirely (per Guy's
+// direct instruction, following the same-day investigation into why). Genuine special
+// schools/PRUs/etc. outside all of these are still excluded -- without SOME
+// restriction, sectorTag() would return null for a slice of what's in view, which
+// would either need a further "no colour" rendering path or just silently misrender;
+// FE_INSTITUTION_TYPES is deliberately that exact 6-value list, not "everything else."
+// NOT applying nearest_schools' extra alternative-provision/
 // referral substring exclusion here -- that's real, flagged scope: a PRU or AP
 // institution classified under one of the four mainstream groups (confirmed to happen
 // in nearest_schools' own migration comment) will still show up here with a sector
@@ -126,6 +134,14 @@ function genderSplitFor(counts: AgeGenderCounts): { girls: number; boys: number 
 // (150+250=400) is also strictly lower than the old shared 500, not just fairer.
 const STATE_CAP = 150;
 const INDEPENDENT_CAP = 250;
+// 2026-08-28: third bucket for the previously entirely-excluded FE/sixth-form/
+// special-post-16/HE/Welsh population (typology.ts's FE_INSTITUTION_TYPES) -- see
+// that constant's own comment for why this is establishment_type, not
+// establishment_type_group. Nationally only ~382 real institutions exist in this
+// population at all (confirmed directly against live data), so this cap exists purely
+// for the same defensive "never one pathological viewport" discipline STATE_CAP/
+// INDEPENDENT_CAP already apply, not because it's expected to trip in practice.
+const FE_CAP = 100;
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -148,6 +164,7 @@ export async function GET(request: NextRequest) {
     urn: string;
     current_name: string;
     establishment_type_group: string | null;
+    establishment_type: string | null;
     statutory_low_age: number | null;
     statutory_high_age: number | null;
     gender: string | null;
@@ -177,7 +194,7 @@ export async function GET(request: NextRequest) {
   const baseQuery = () =>
     supabase
       .from("schools")
-      .select("urn, current_name, establishment_type_group, statutory_low_age, statutory_high_age, gender, easting, northing")
+      .select("urn, current_name, establishment_type_group, establishment_type, statutory_low_age, statutory_high_age, gender, easting, northing")
       .neq("status", "closed")
       .gte("easting", minEasting)
       .lte("easting", maxEasting)
@@ -185,12 +202,15 @@ export async function GET(request: NextRequest) {
       .lte("northing", maxNorthing)
       .abortSignal(request.signal);
 
-  const [stateResult, independentResult] = await Promise.all([
+  const [stateResult, independentResult, feResult] = await Promise.all([
     baseQuery().in("establishment_type_group", STATE_ESTABLISHMENT_GROUPS).limit(STATE_CAP + 1),
     baseQuery().eq("establishment_type_group", "Independent schools").limit(INDEPENDENT_CAP + 1),
+    // 2026-08-28: third bucket, establishment_type (not group) -- see FE_CAP's own
+    // comment and typology.ts's FE_INSTITUTION_TYPES for why.
+    baseQuery().in("establishment_type", FE_INSTITUTION_TYPES).limit(FE_CAP + 1),
   ]);
 
-  if (stateResult.error || independentResult.error) {
+  if (stateResult.error || independentResult.error || feResult.error) {
     // AbortError surfaces here as a Postgrest error, not a thrown exception (the
     // supabase-js client catches the abort internally) -- a 499-style "client gave up"
     // response, not a real server failure worth a 500 / worth logging as one.
@@ -202,8 +222,10 @@ export async function GET(request: NextRequest) {
 
   const stateRows = (stateResult.data as Row[]) ?? [];
   const independentRows = (independentResult.data as Row[]) ?? [];
+  const feRows = (feResult.data as Row[]) ?? [];
   const stateOverCap = stateRows.length > STATE_CAP;
   const independentOverCap = independentRows.length > INDEPENDENT_CAP;
+  const feOverCap = feRows.length > FE_CAP;
 
   // Over-cap sectors are OMITTED entirely, not truncated to their own cap -- showing
   // an arbitrary CAP-sized subset of a much larger real population would misleadingly
@@ -214,6 +236,7 @@ export async function GET(request: NextRequest) {
   const rows = [
     ...(stateOverCap ? [] : stateRows),
     ...(independentOverCap ? [] : independentRows),
+    ...(feOverCap ? [] : feRows),
   ];
 
   const includeRoll = rows.length > 0;
@@ -235,6 +258,14 @@ export async function GET(request: NextRequest) {
   // never receive.
   const ageBandsByUrn = new Map<string, { band1: number; band2: number; band3: number }>();
   const genderSplitByUrn = new Map<string, { girls: number; boys: number }>();
+  // 2026-08-28: which source each URN's rollByUrn figure actually came from -- census
+  // (dfe_school_census, the ordinary case) or ilr (any of the three
+  // dfe_fe_participation* sources, only ever reached as a fallback below when census
+  // has nothing). The client renders these with a visibly distinct marker style (per
+  // Guy's explicit instruction) since an ILR whole-year participant count is not the
+  // same measurement as a census single-day headcount -- never silently blended into
+  // one undifferentiated "totalRoll" the way the number itself might suggest.
+  const rollSourceByUrn = new Map<string, "census" | "ilr">();
   if (includeRoll && rows.length > 0) {
     // 2026-08-27: replaces a per-school lookupReferenceData() call returning every raw
     // breakdown row (fine for a single school, but ~163 rows/school/period was silently
@@ -272,13 +303,16 @@ export async function GET(request: NextRequest) {
       const counts = countsByUrn.get(r.urn) ?? new Map();
       let total = 0;
       for (const v of counts.values()) total += v.male + v.female;
-      if (total > 0) rollByUrn.set(r.urn, total);
+      if (total > 0) {
+        rollByUrn.set(r.urn, total);
+        rollSourceByUrn.set(r.urn, "census");
+      }
 
       const phase = phaseTags(r.statutory_low_age, r.statutory_high_age);
       if (phase.length > 1 && r.statutory_low_age !== null && r.statutory_high_age !== null) {
         const byPhase: Partial<Record<PhaseTag, number>> = {};
         for (const tag of phase) {
-          const [lo, hi] = phaseTagAgeRange(tag, r.statutory_low_age, r.statutory_high_age, phase);
+          const [lo, hi] = phaseTagAgeRange(tag, r.statutory_low_age, r.statutory_high_age);
           let sum = 0;
           for (const [age, c] of counts) {
             if (age >= lo && age <= hi) sum += c.male + c.female;
@@ -297,15 +331,97 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // 2026-08-28: ILR fallback, only for URNs census left with nothing. Two genuinely
+  // separate candidate populations, each going through its own source:
+  //  - ilrCandidates: the newly-included FE population (establishment_type in
+  //    FE_PARTICIPATION_ESTABLISHMENT_TYPES) -- census structurally never covers these
+  //    at all (confirmed directly, zero rows for any of them), so this is the ONLY
+  //    source they can ever get a roll figure from.
+  //  - academyCandidates: ordinary State-sector rows (Academies/Free Schools/LA
+  //    maintained) that got no census figure -- dfe_fe_participation_academy exists
+  //    specifically because real Academy 16-19 converter/Free schools 16-19 census
+  //    coverage is often stale/absent (ingest/sources/dfe_fe_participation_academy.py).
+  //    Harmless to try for every State-sector census-miss, not just 16-19 institutions
+  //    -- that source's own UKPRN crosswalk simply returns nothing for anything else,
+  //    same "try it, get nothing back, move on" cost as any other cache-miss.
+  // Both stay OUT of Independent-sector census-misses entirely -- no dfe_fe_participation*
+  // source's crosswalk ever targets an independent school.
+  const ilrCandidates = rows
+    .filter((r) => !rollByUrn.has(r.urn) && FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(r.establishment_type ?? ""))
+    .map((r) => r.urn);
+  const academyCandidates = rows
+    .filter((r) => !rollByUrn.has(r.urn) && r.establishment_type_group && STATE_ESTABLISHMENT_GROUPS.includes(r.establishment_type_group))
+    .map((r) => r.urn);
+
+  try {
+    if (ilrCandidates.length > 0) {
+      const feFacts = await lookupReferenceData({
+        sourceId: "dfe_fe_participation",
+        entityIds: ilrCandidates,
+        breakdowns: [UNDER_19_TOTAL_BREAKDOWN],
+        signal: request.signal,
+      });
+      for (const [urn, t] of under19Totals(feFacts)) {
+        rollByUrn.set(urn, t.total);
+        rollSourceByUrn.set(urn, "ilr");
+      }
+      const stillMissing = ilrCandidates.filter((u) => !rollByUrn.has(u));
+      if (stillMissing.length > 0) {
+        // Last-resort adult fallback -- real for the HE-leaning/adult-serving
+        // institutions among this population (see fe-participation-roll.ts's own
+        // comment on why this is still rendered as ILR-sourced, not a third,
+        // further-distinguished marker style).
+        const adultFacts = await lookupReferenceData({
+          sourceId: "dfe_fe_participation_adult",
+          entityIds: stillMissing,
+          breakdowns: [ADULT_TOTAL_BREAKDOWN],
+          signal: request.signal,
+        });
+        for (const [urn, t] of adultTotals(adultFacts)) {
+          rollByUrn.set(urn, t.total);
+          rollSourceByUrn.set(urn, "ilr");
+        }
+      }
+    }
+
+    if (academyCandidates.length > 0) {
+      const academyFacts = await lookupReferenceData({
+        sourceId: "dfe_fe_participation_academy",
+        entityIds: academyCandidates,
+        breakdowns: [UNDER_19_TOTAL_BREAKDOWN],
+        signal: request.signal,
+      });
+      for (const [urn, t] of under19Totals(academyFacts)) {
+        rollByUrn.set(urn, t.total);
+        rollSourceByUrn.set(urn, "ilr");
+      }
+    }
+  } catch (e) {
+    if ((e as Error).name === "AbortError") {
+      return NextResponse.json({ error: "Client aborted" }, { status: 499 });
+    }
+    throw e;
+  }
+
   const schools = rows.map((r) => ({
     urn: r.urn,
     currentName: r.current_name,
     easting: r.easting,
     northing: r.northing,
-    sector: sectorTag(r.establishment_type_group),
+    sector: sectorTag(r.establishment_type_group, r.establishment_type),
+    // 2026-08-28: only for the client's own no-data-caveat wording (SchoolMap.tsx's
+    // noDataCaveat) -- Sixth form centres get a more specific honest reason than the
+    // rest of the FE population. Not used for any filtering/matching here or client-side.
+    establishmentType: r.establishment_type,
     phase: phaseTags(r.statutory_low_age, r.statutory_high_age),
     gender: genderTag(r.gender),
     totalRoll: rollByUrn.get(r.urn) ?? null,
+    // 2026-08-28: null for every pre-existing row (unchanged, always census -- the
+    // client renders it exactly as before), "census"/"ilr" only meaningful once
+    // totalRoll is non-null. A row with sector "FE" and totalRoll still null after
+    // every fallback above genuinely has no roll data anywhere -- see SchoolMap.tsx's
+    // own honest no-data marker for that case.
+    rollSource: rollSourceByUrn.get(r.urn) ?? null,
     rollByPhase: rollByPhaseByUrn.get(r.urn) ?? null,
     ageBands: ageBandsByUrn.get(r.urn) ?? null,
     genderSplit: genderSplitByUrn.get(r.urn) ?? null,
@@ -316,8 +432,8 @@ export async function GET(request: NextRequest) {
   // actually matters right now (e.g. filtered to Independent only, the state cap
   // being tripped is irrelevant noise, not something worth a banner over).
   return NextResponse.json({
-    overCap: { state: stateOverCap, independent: independentOverCap },
-    cap: { state: STATE_CAP, independent: INDEPENDENT_CAP },
+    overCap: { state: stateOverCap, independent: independentOverCap, fe: feOverCap },
+    cap: { state: STATE_CAP, independent: INDEPENDENT_CAP, fe: FE_CAP },
     rollDataIncluded: includeRoll,
     memberDetailIncluded: includeMemberDetail,
     schools,

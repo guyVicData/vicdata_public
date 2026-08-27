@@ -16,8 +16,9 @@ import AggregateShapeChart from "@/components/AggregateShapeChart";
 import TypologyTags from "@/components/TypologyTags";
 import SurroundingSchoolsMemberList from "@/components/SurroundingSchoolsMemberList";
 import SchoolMap from "@/components/SchoolMap";
-import { computeTypology, phaseTagAgeRange, type PhaseTag } from "@/lib/typology";
+import { computeTypology, phaseTagAgeRange, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type PhaseTag } from "@/lib/typology";
 import { buildSurroundingSummary } from "@/lib/surrounding-summary";
+import { under19Totals, adultTotals, UNDER_19_TOTAL_BREAKDOWN, ADULT_TOTAL_BREAKDOWN } from "@/lib/fe-participation-roll";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
 
@@ -116,6 +117,44 @@ export default async function SchoolPage({
   const ilrSnapshot = buildIlrParticipationSnapshot(ilrFacts);
   const showIlrCard = ilrSnapshot !== null && (!roll || roll.period < CURRENT_CENSUS_PERIOD);
   const shape = ageGenderCounts ? classifyShape(shapeClassifierInput(ageGenderCounts)) : null;
+
+  // 2026-08-28: the viewed school's own map dot needs the same ILR fallback the map's
+  // NEIGHBOUR dots get (schools-in-bounds/route.ts) -- otherwise visiting a genuine
+  // FE-corporation institution's own page would show its centre dot with no roll at
+  // all while its neighbours (fetched via the batch route) correctly show one. Only
+  // reached when census has NOTHING (roll === null), matching the batch route's own
+  // rule exactly, not "stale" -- stale-but-present is the different, already-handled
+  // case the ILR card above exists for.
+  let viewedRollSource: "census" | "ilr" | null = roll ? "census" : null;
+  let viewedIlrTotal: number | null = null;
+  if (!roll) {
+    if (FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(school.establishment_type ?? "")) {
+      const feFacts = await lookupReferenceData({
+        sourceId: "dfe_fe_participation",
+        entityIds: [urn],
+        breakdowns: [UNDER_19_TOTAL_BREAKDOWN],
+      });
+      const under19 = under19Totals(feFacts).get(urn);
+      if (under19) {
+        viewedIlrTotal = under19.total;
+      } else {
+        const adultFacts = await lookupReferenceData({
+          sourceId: "dfe_fe_participation_adult",
+          entityIds: [urn],
+          breakdowns: [ADULT_TOTAL_BREAKDOWN],
+        });
+        const adult = adultTotals(adultFacts).get(urn);
+        if (adult) viewedIlrTotal = adult.total;
+      }
+    } else if (ilrSnapshot) {
+      // Academy 16-19/Free school 16-19 with genuinely no census at all (not just
+      // stale) -- reuse the SAME dfe_fe_participation_academy figure the ILR card
+      // above already fetched, rather than a second query for the same data.
+      viewedIlrTotal = ilrSnapshot.total;
+    }
+    if (viewedIlrTotal !== null) viewedRollSource = "ilr";
+  }
+  const viewedTotalRoll = roll?.totalRoll ?? viewedIlrTotal;
   // Bug fix (Task 3 review): this used to be gated on the target school having its
   // own roll data, backwards -- a standalone 6th-form/FE college (Worcester Sixth
   // Form College, confirmed real) has none of its own, but its surrounding schools
@@ -142,7 +181,7 @@ export default async function SchoolPage({
   ) {
     const byPhase: Partial<Record<PhaseTag, number>> = {};
     for (const tag of typology.phase) {
-      const [lo, hi] = phaseTagAgeRange(tag, school.statutory_low_age, school.statutory_high_age, typology.phase);
+      const [lo, hi] = phaseTagAgeRange(tag, school.statutory_low_age, school.statutory_high_age);
       let sum = 0;
       for (const [age, c] of ageGenderCounts) {
         if (age >= lo && age <= hi) sum += c.male + c.female;
@@ -209,7 +248,9 @@ export default async function SchoolPage({
             sector: typology.sector,
             phase: typology.phase,
             gender: typology.gender,
-            totalRoll: roll?.totalRoll ?? null,
+            totalRoll: viewedTotalRoll,
+            rollSource: viewedRollSource,
+            establishmentType: school.establishment_type,
             rollByPhase: viewedRollByPhase,
             ageBands: viewedAgeBands,
             genderSplit: viewedGenderSplit,

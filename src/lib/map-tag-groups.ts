@@ -10,7 +10,7 @@ import type { SectorTag, PhaseTag, GenderTag } from "@/lib/typology";
 // arriving over time."
 //
 // Phase options are the real shipped taxonomy (typology.ts's phaseTags()) --
-// Junior/Prep/Senior/Sixth. An earlier build brief described this category as
+// Junior/Prep/Senior/Post 16. An earlier build brief described this category as
 // "junior/senior/through," which doesn't match what's actually implemented (no
 // "Through" tag exists in code) -- built against the real tags, flagged rather than
 // silently reconciled (carried over from the 2026-08-24 report).
@@ -35,12 +35,17 @@ export type TagGroupConfig = {
 };
 
 // 2026-08-28, per Guy's direct instruction: a school carrying BOTH Junior and Senior
-// tags (whatever else it also carries -- Prep/Sixth don't change this) is a genuine
+// tags (whatever else it also carries -- Prep/Post 16 don't change this) is a genuine
 // through-school, not just "some phase tag or other happened to win priority." Scoped
 // deliberately to exactly Junior+Senior, not any 2+-tag combination -- Guy named this
-// pairing specifically; Senior+Sixth (a completely ordinary GCSE-plus-sixth-form
-// school) and Junior+Prep stay under the existing single-tag priority logic unless a
-// later round says otherwise.
+// pairing specifically; Junior+Prep stays under the existing single-tag priority logic
+// unless a later round says otherwise. (Senior+Post 16 was the other combination
+// originally called out here, but phaseTags() no longer produces it at all as of the
+// same-day Post 16 narrowing -- Post 16 now only ever appears alone, see typology.ts.)
+//
+// Confirmed still true after that narrowing (2026-08-28): this function itself checks
+// only tag presence (Junior+Senior) plus, when rollByPhase is given, real non-zero
+// pupils in both bands -- no roll-size or priority comparison anywhere in it.
 //
 // rollByPhase, added same day: real bug caught immediately after shipping the tag-only
 // version -- Woldingham (the exact school this whole round started with) carries a
@@ -64,14 +69,17 @@ export const TAG_GROUPS: TagGroupConfig[] = [
   {
     key: "sector",
     title: "Sector",
-    options: ["Independent", "State"],
+    // FE added 2026-08-28, per Guy's direct instruction -- FE-corporation/sixth-form/
+    // special-post-16 institutions (typology.ts's sectorTag()), a genuine third
+    // sector, not folded into State or Independent.
+    options: ["Independent", "State", "FE"],
     getValues: (s) => (s.sector ? [s.sector] : []),
   },
   {
     key: "phase",
     title: "Phase",
-    options: ["Junior", "Prep", "Senior", "Sixth", "Through School"],
-    // A through-school still carries its own real Junior/Senior/(Prep/Sixth) tags
+    options: ["Junior", "Prep", "Senior", "Post 16", "Through School"],
+    // A through-school still carries its own real Junior/Senior/(Prep/Post 16) tags
     // alongside "Through School" -- filtering by "Junior" should still catch it (it
     // does have a Junior offering), "Through School" narrows to exactly this
     // population, both filters genuinely true at once, same stackable-tag semantics
@@ -104,7 +112,7 @@ export const TAG_GROUPS: TagGroupConfig[] = [
 // something nobody's decided yet.
 export const COLOUR_MODE_KEYS = ["sector", "phase", "gender"];
 
-export const PHASE_COLOUR_PRIORITY: string[] = ["Junior", "Prep", "Senior", "Sixth"];
+export const PHASE_COLOUR_PRIORITY: string[] = ["Junior", "Prep", "Senior", "Post 16"];
 
 // 2026-08-26, map phase-band roll sizing: which of a through-school's own phase tags
 // is "the one this dot is currently about" -- drives BOTH colour and radius when

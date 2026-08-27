@@ -16,15 +16,15 @@ function sizeWord(totalRoll: number | null): string | null {
 }
 
 // A single descriptive phase word from the stacked tag set, for natural-language
-// prose -- not the same as the tag pills themselves. "Senior" wins over "Sixth" when
-// both are present (a school with Senior+Sixth reads naturally as "a senior school,"
-// not "a sixth form school," in everyday English -- matches the design doc's own
-// worked example for Leighton Park, which stacks Senior+Sixth but is described as
-// simply "senior").
+// prose -- not the same as the tag pills themselves. Senior is checked ahead of Post
+// 16 for the same reason as ever (design doc's Leighton Park worked example: "a senior
+// school," not "a post-16 school") -- though as of the 2026-08-28 Post 16 narrowing
+// (typology.ts) the two can no longer both be present on the same school at all, so
+// this ordering is now just defensive, not load-bearing.
 function phaseWord(phaseTags: SchoolTypology["phase"]): string | null {
   if (phaseTags.includes("Senior")) return "senior";
   if (phaseTags.includes("Junior")) return "junior";
-  if (phaseTags.includes("Sixth")) return "sixth form";
+  if (phaseTags.includes("Post 16")) return "post-16";
   if (phaseTags.includes("Prep")) return "prep";
   return null;
 }
@@ -45,7 +45,12 @@ export function buildSurroundingSummary(
   if (found === 0 || averageRoll === null || averageRoll === 0) return null;
 
   const size = sizeWord(totalRoll);
-  const sector = typology.sector?.toLowerCase() ?? null;
+  // "FE" is an acronym, not an ordinary word like "independent"/"state" -- lowercasing
+  // it the same way they get lowercased for this prose would read as a typo ("fe
+  // school"), not a real word. Special-cased rather than generalising this to some
+  // "which sector values are acronyms" list of one -- if a future sector value needs
+  // the same treatment, it can join this check then.
+  const sector = typology.sector === "FE" ? "FE" : typology.sector?.toLowerCase() ?? null;
   const boarding = typology.boarding?.toLowerCase() ?? null;
   const phase = phaseWord(typology.phase);
   const gender = genderWord(typology.gender);

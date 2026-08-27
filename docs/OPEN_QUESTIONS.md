@@ -352,7 +352,111 @@ silently treated as settled.
 
 ---
 
-## Template for future entries
+## 2026-08-28 — Sixth renamed to Post 16 and narrowed to standalone institutions only
+
+**Decision**: `src/lib/typology.ts`'s `PhaseTag` literal "Sixth" is renamed "Post 16"
+and `phaseTags()` now only produces it for standalone post-16 institutions (`lowAge >=
+16` — sixth-form colleges, FE colleges), never alongside Senior. Previously any school
+reaching statutory high age 17-19 got Sixth tacked on regardless of whether Senior was
+also present, which read wrong for ordinary through-to-18/19 schools: Leighton Park
+(11-18) showed Senior+Sixth, Woldingham (10-19) showed Junior+Senior+Sixth. Both now
+read as Senior (Woldingham also carrying a nominal Junior tag from its statutory
+low-age floor — see below). This partially supersedes the 2026-08-09 entry above
+("'Through' phase tag: not built separately") — that entry's own worked example ("low
+age ≤10, high age 17-18 already renders as Junior + Senior + Sixth stacked together")
+described exactly the behaviour being corrected here.
+
+**Why**: Guy's direct instruction, following on from the same-day investigation that
+also produced the county-in-town GIAS fix (this project's own reference to that work).
+Confirmed against live production data before narrowing: 7,698 schools nationally lose
+the tag under the new rule (2,648 Junior+Senior+Sixth → Junior+Senior; 5,050
+Senior+Sixth → Senior), while 872 genuinely-standalone institutions (King Edward VI
+College, Richard Taunton Sixth Form College, and similar — `lowAge >= 16`, never
+combined with Senior/Junior) keep it, renamed. Checked every other codebase site that
+mentioned "Sixth": the FE-participation/ILR work (`dfe_fe_participation_academy`,
+`showIlrCard` in `schools/[urn]/page.tsx`) is gated on roll staleness, not on
+`typology.phase` — unaffected. `roll-data.ts`'s `sixth_form` age-band (16-18, feeding
+the "6th Form" market-share metric in `PaidTrendsSection.tsx`) is a separate DfE-roll
+concept keyed on real Y12/13 headcount, not this tag — deliberately left alone, not
+renamed, since conflating the two would be wrong.
+
+Senior and Post 16 can now never both appear in a school's tag set, which let
+`phaseTagAgeRange()` drop its now-dead `allTags` parameter and the ternary that used
+it (Senior's own upper bound always extends to the real `highAge` now, previously
+capped at 15 when Sixth was also present).
+
+**Confirmed unrelated, not re-investigated (Guy's own instruction, a constraint to
+preserve not a question to explore)**: the Prep boundary (`highAge` 12-14 → Prep, not
+Senior — a school with no pupils aged 15) lives in a branch this change never touches.
+
+**Confirmed still correct, not changed**: `isGenuineThroughSchool()`
+(`src/lib/map-tag-groups.ts`) already checked exactly Junior-tag-present AND
+Senior-tag-present, with an optional roll-aware refinement (both bands need a genuine
+non-zero entry in `rollByPhase`, not just the nominal tag) — no size or priority
+comparison anywhere in it. Verified directly with Woldingham as the clean negative
+example: nominal Junior tag (from its statutory low age of 10), zero real Junior
+pupils in DfE census roll data → `isGenuineThroughSchool` correctly returns `false`,
+so it reads as plain Senior, not Senior+Through School.
+
+---
+
+## 2026-08-28 — FE/sixth-form/special-post-16 institutions built onto the map, third sector
+
+**Decision**: The ~382 real institutions previously entirely invisible on the map
+(genuine FE corporations, standalone sixth-form/special-post-16 colleges, plus a
+small HE/Miscellaneous/Welsh tail) are now included, as a genuinely new third sector
+("FE", fuchsia in `tag-colours.ts`) -- not folded into State or Independent, per
+Guy's direct instruction. `schools-in-bounds/route.ts` gained a third query bucket
+(`typology.ts`'s `FE_INSTITUTION_TYPES`, an exact 6-value `establishment_type` list --
+`establishment_type_group` was checked and rejected, since e.g. the "Welsh schools"
+group is 1,576 ordinary Welsh schools, only 2 of which are this population) alongside
+its own `FE_CAP` (100).
+
+Roll data: census structurally never covers this population at all (confirmed
+directly, zero rows for any of the ~504 real target institutions). Falls back to
+`dfe_fe_participation` (under-19), then `dfe_fe_participation_adult` (19+, last
+resort) for the 3 of the 6 types actually in either source's own UKPRN crosswalk
+(`FE_PARTICIPATION_ESTABLISHMENT_TYPES` -- Further education/Special post 16
+institution/Sixth form centres; Higher education institutions/Miscellaneous/Welsh
+establishment are never in that crosswalk, so no ILR figure will ever exist for
+them). Same fallback extended to ordinary State-sector rows with no census figure at
+all, via `dfe_fe_participation_academy` -- the same real gap
+`ilr-participation-data.ts`'s existing profile-page card already covers, now also
+reaching the map. Each URN's roll comes from exactly ONE source; which one is
+recorded (`rollSource`) and never blended into a single undifferentiated number.
+
+**Why**: Guy's explicit instruction, following the same-day investigation that found
+this population structurally excluded. Verified live: Ealing, Hammersmith and West
+London College (URN 130408) -- zero census rows, real `dfe_fe_participation` figure
+(1,950 under-19 `education_and_training`) -- now renders sector FE, `rollSource:
+"ilr"`. Harrow Collegiate (URN 135469, a genuine Sixth form centre) -- zero rows from
+EVERY source, including both ILR sources (confirmed: Sixth form centres report ILR
+activity under a parent institution's own URN, not theirs, per
+`dfe_fe_participation.py`'s own documented finding) -- renders sector FE, `totalRoll:
+null`, `rollSource: null`.
+
+**Visible marker distinction, not just colour** (Guy's explicit instruction -- an ILR
+whole-year participant count is not the same measurement as a census single-day
+headcount, same discipline as the profile page's separate labelled ILR card):
+ILR-sourced dots get a thick dashed outline over their normal solid fill; genuine
+no-data dots (FE sector, null after every fallback) are hollow with a finer dash, at
+the fixed no-roll-data radius -- never silently indistinguishable from either an
+ordinary dot or a small-but-real one. Both states also carry an explicit popup/focus-
+card caveat line (`SchoolMap.tsx`'s `caveatFor`) -- Sixth form centres get the
+specific "reports via a parent institution" reason, the rest get a general "no data
+from any current source." Verified this is genuinely additive: a 30-school regression
+spot-check plus Leighton Park's own page (already used as the regression check for the
+same-day Post 16 rename) confirmed every pre-existing (census-sourced or already-
+blank) dot's style, colour, and popup text is byte-for-byte unchanged -- no
+`rollSource`/caveat/dash styling applied unless the new "ilr"/"no-data" states
+actually apply.
+
+**Scope held deliberately**: `nearest_schools`/`surrounding-schools.ts` (the free-tier
+"surrounding schools" aggregate and named list) were NOT extended to include FE
+institutions as comparators -- Guy did not ask for that, only the map itself. One
+small necessary side-effect fix: `surrounding-summary.ts`'s prose sentence lowercases
+sector names for natural reading ("independent", "state") -- "FE" is an acronym, so
+lowercasing it read as a typo ("fe school"); special-cased to stay "FE".
 
 **Decision**: ...
 **Why**: ...

@@ -2,7 +2,7 @@
 // family from the pupil-count gender chart (this tag means the school's own type,
 // not an individual pupil). Six of twelve were named in the doc (Independent/
 // Boarding & day/Boarding/Senior/Girls/Co-ed); the rest (State/Day/Junior/Prep/
-// Sixth/Boys) are filled in here from the same standard hue families, chosen to stay
+// Post 16/Boys) are filled in here from the same standard hue families, chosen to stay
 // visually distinct from their siblings.
 //
 // 2026-08-24: moved here from TypologyTags.tsx (which still owns the pill rendering)
@@ -22,9 +22,9 @@
 // SHARED value -- changing it here changes every Independent pill site-wide (school
 // headers, member lists), not just the map dots, since that's the whole point of this
 // file existing as one source of truth. Puts Independent in the same warm-orange
-// family as the existing Sixth tag (#9a3412/#fdba74 dark) -- not identical, but
+// family as the existing Post 16 tag (#9a3412/#fdba74 dark) -- not identical, but
 // visually close; worth knowing since both can appear on the same school (e.g. an
-// independent sixth form) -- flagged, not resolved here.
+// independent standalone sixth-form college) -- flagged, not resolved here.
 //
 // State was asked about directly ("was one ever defined?") -- the honest answer is
 // the OLD value here was #1e293b (light) / #cbd5e1 (dark), a generic slate chosen as
@@ -41,16 +41,26 @@
 // Replaced with indigo -- distinct from Prep's violet and Boys' cyan, and not a hue
 // used anywhere else in this palette. Same "provisional pending Guy reacting to it
 // live" status as every other colour choice in this file.
+//
+// 2026-08-28: FE is a genuinely new THIRD sector (typology.ts's sectorTag(), per
+// Guy's direct instruction -- "not folded into State or Independent") for the
+// previously map-invisible FE-corporation/sixth-form/special-post-16/HE/Welsh
+// population. Fuchsia -- the one saturated hue family nothing else in this palette
+// uses (Girls' pink and Prep's violet both sit either side of it but read distinctly
+// different in practice, checked side by side), and deliberately far from both
+// Independent's orange and State's green so a three-way sector legend stays easy to
+// tell apart at a glance.
 export const TAG_COLOURS: Record<string, { light: [string, string]; dark: [string, string] }> = {
   Independent: { light: ["#fef2e8", "#F37521"], dark: ["#3d2410", "#F37521"] }, // ISC orange (Guy's brand, exact hex)
   State: { light: ["#f0fdf4", "#15803d"], dark: ["#14532d", "#4ade80"] }, // provisional green
+  FE: { light: ["#fdf4ff", "#86198f"], dark: ["#451a4d", "#f0abfc"] }, // fuchsia
   Boarding: { light: ["#fff1ee", "#9a3324"], dark: ["#4a241d", "#f4a58f"] }, // coral
   Day: { light: ["#f0f9ff", "#075985"], dark: ["#173a4d", "#7dd3fc"] }, // sky
   "Boarding & day": { light: ["#f0fdfa", "#115e59"], dark: ["#14403c", "#5eead4"] }, // teal
   Junior: { light: ["#f7fee7", "#3f6212"], dark: ["#33400f", "#bef264"] }, // lime
   Prep: { light: ["#f5f3ff", "#5b21b6"], dark: ["#332355", "#c4b5fd"] }, // violet
   Senior: { light: ["#fffbeb", "#92400e"], dark: ["#4d3410", "#fcd34d"] }, // amber
-  Sixth: { light: ["#fff7ed", "#9a3412"], dark: ["#4a2b14", "#fdba74"] }, // orange
+  "Post 16": { light: ["#fff7ed", "#9a3412"], dark: ["#4a2b14", "#fdba74"] }, // orange
   Boys: { light: ["#ecfeff", "#155e75"], dark: ["#173d45", "#67e8f9"] }, // cyan -- flagged in
   // OPEN_QUESTIONS.md 2026-08-27 as a provisional, explicitly non-final gender pairing
   Girls: { light: ["#fdf2f8", "#9d174d"], dark: ["#4a2237", "#f9a8d4"] }, // pink -- see same entry
@@ -58,7 +68,7 @@ export const TAG_COLOURS: Record<string, { light: [string, string]; dark: [strin
   // 2026-08-28, per Guy's direct instruction: a genuine through-school (real pupils in
   // both Junior and Senior phases -- City of London Freemen's and the newly-covered
   // high-age-19 population like Woldingham) needs its OWN colour, not the fixed
-  // Junior->Prep->Senior->Sixth priority order picking whichever single tag happens to
+  // Junior->Prep->Senior->Post 16 priority order picking whichever single tag happens to
   // be first regardless of which phase the school is actually biggest in (Freemen's:
   // Junior 242 pupils, Senior 514 -- picking Junior implied something false). Reuses
   // the exact blue TypologyTags.tsx's own TAG_STYLES used for Independent before that

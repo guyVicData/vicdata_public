@@ -35,7 +35,7 @@ import MapColourKey, { type ColourSwatch } from "./MapColourKey";
 //     of a wiring bug; Guy's live review made clear all three were expected
 //     selectable. Phase is stackable (0-3 tags per school) with no "master tag"
 //     decision made yet -- phase-mode colour uses the FIRST tag in canonical
-//     Junior->Prep->Senior->Sixth order (PHASE_COLOUR_PRIORITY) as a simple,
+//     Junior->Prep->Senior->Post 16 order (PHASE_COLOUR_PRIORITY) as a simple,
 //     deterministic placeholder, not a resolution of that open question.
 //   - CSS custom properties for EVERY tag colour (not just sector) are now generated
 //     from TAG_COLOURS programmatically (cssVarNameForTag, tag-colours.ts) rather
@@ -252,6 +252,16 @@ type MemberDetail = {
   genderSplit: { girls: number; boys: number };
 };
 
+// 2026-08-28: which source a dot's totalRoll actually came from -- "census"
+// (dfe_school_census, every pre-existing dot, unchanged rendering) or "ilr" (any of
+// the three dfe_fe_participation* sources, schools-in-bounds/route.ts's own
+// documented fallback order). null means either census hasn't loaded yet OR every
+// source came back with genuinely nothing -- effectiveRollSource below (near the
+// marker-drawing code) is what actually decides which of those two null means for a
+// given dot, since only an FE-sector dot with a null totalRoll AND null rollSource
+// means the second, honest-no-data case.
+type RollSource = "census" | "ilr" | null;
+
 type ViewedSchool = {
   name: string;
   town: string | null;
@@ -261,6 +271,8 @@ type ViewedSchool = {
   phase: PhaseTag[];
   gender: GenderTag | null;
   totalRoll: number | null;
+  rollSource: RollSource;
+  establishmentType: string | null;
   rollByPhase: Partial<Record<PhaseTag, number>> | null;
   ageBands: MemberDetail["ageBands"] | null;
   genderSplit: MemberDetail["genderSplit"] | null;
@@ -285,6 +297,8 @@ type BoundsSchool = {
   phase: PhaseTag[];
   gender: GenderTag | null;
   totalRoll: number | null;
+  rollSource: RollSource;
+  establishmentType: string | null;
   rollByPhase: Partial<Record<PhaseTag, number>> | null;
   ageBands: MemberDetail["ageBands"] | null;
   genderSplit: MemberDetail["genderSplit"] | null;
@@ -304,10 +318,24 @@ function escapeHtml(s: string): string {
 // radius in Phase mode -- a field explicitly labelled "Total" showing a partial
 // figure would read as a factual error, not a deliberate slice. The dot's own size
 // still uses the sliced figure; only this label's number doesn't.
-function buildPopupHtml(name: string, totalRoll: number | null, memberDetail: MemberDetail | null): string {
+// caveat (2026-08-28): the explicit "ILR-sourced, not census" / honest-no-data text
+// for an FE-population dot -- see effectiveRollState below (marker-drawing code) for
+// which of the three states (ilr/no-data/ordinary) produces which caveat string.
+// Deliberately its own row, not folded into the roll line itself -- matches the
+// profile page's own separate labelled ILR card, same "flag the different
+// measurement basis explicitly, don't just report a number" discipline.
+function buildPopupHtml(
+  name: string,
+  totalRoll: number | null,
+  memberDetail: MemberDetail | null,
+  caveat: string | null = null,
+): string {
   const rollText = totalRoll !== null ? totalRoll.toLocaleString() : "—";
   let html = `<div class="vd-popup-name">${escapeHtml(name)}</div>`;
   html += `<div>Total roll: <strong>${rollText}</strong></div>`;
+  if (caveat) {
+    html += `<div class="vd-popup-caveat">${escapeHtml(caveat)}</div>`;
+  }
   if (memberDetail) {
     const { band1, band2, band3 } = memberDetail.ageBands;
     const { girls, boys } = memberDetail.genderSplit;
@@ -315,6 +343,61 @@ function buildPopupHtml(name: string, totalRoll: number | null, memberDetail: Me
     html += `<div class="vd-popup-row">Girls: <strong>${girls.toLocaleString()}</strong>&nbsp;&nbsp; Boys: <strong>${boys.toLocaleString()}</strong></div>`;
   }
   return html;
+}
+
+// 2026-08-28: a dot's roll-data STATE, not just its number -- three genuinely
+// different cases a dot can be in, each with its own marker style (see the
+// marker-drawing loop) and popup caveat:
+//  - "ordinary": totalRoll from census (or no roll at all for a non-FE dot, the
+//    existing pre-2026-08-28 UNIFORM_RADIUS behaviour, unchanged).
+//  - "ilr": totalRoll came from one of the three dfe_fe_participation* sources
+//    (schools-in-bounds/route.ts's own fallback order) -- a real number, but a
+//    genuinely different measurement basis (whole-year ILR participants, not a
+//    census single-day headcount).
+//  - "no-data": an FE-sector institution where EVERY source (census + all three ILR
+//    sources) came back with nothing -- a genuine, permanent structural gap for some
+//    of this population (Sixth form centres report ILR activity under a parent
+//    institution's own URN, not theirs; Higher education institutions/Miscellaneous/
+//    Welsh establishment were never in any dfe_fe_participation* source's target
+//    scope at all -- see typology.ts's FE_PARTICIPATION_ESTABLISHMENT_TYPES). Only
+//    ever applies to sector "FE" -- an ordinary mainstream school with no roll yet is
+//    the pre-existing "ordinary" case, not this one; that distinction is deliberate,
+//    not a new gap being silently introduced for schools this build didn't touch.
+type RollState = "ordinary" | "ilr" | "no-data";
+
+function rollState(sector: SectorTag | null, totalRoll: number | null, rollSource: RollSource): RollState {
+  if (sector === "FE" && totalRoll === null) return "no-data";
+  if (rollSource === "ilr" && totalRoll !== null) return "ilr";
+  return "ordinary";
+}
+
+const ILR_CAVEAT = "ILR-sourced (whole-year participants), not a census headcount.";
+
+function noDataCaveat(establishmentType: string | null): string {
+  if (establishmentType === "Sixth form centres") {
+    return "No roll data available — sixth form centres report ILR activity under a parent institution, not their own.";
+  }
+  return "No roll data available from any current source.";
+}
+
+function caveatFor(state: RollState, establishmentType: string | null): string | null {
+  if (state === "ilr") return ILR_CAVEAT;
+  if (state === "no-data") return noDataCaveat(establishmentType);
+  return null;
+}
+
+// The actual visible marker distinction (per Guy's explicit instruction -- "the dot
+// itself needs to look genuinely different... not just colour"): "ilr" gets a dashed,
+// thicker outline over its normal solid fill (still sized/coloured exactly like any
+// other real-data dot -- only the outline says "different basis"); "no-data" is
+// hollow (fillOpacity 0) with a finer dash, at the fixed UNIFORM_RADIUS every
+// no-roll-data dot already uses -- reads as "outline only, deliberately," not a
+// smaller version of a real dot. "ordinary" is the exact pre-2026-08-28 style,
+// unchanged, for every dot this build didn't touch.
+function markerStyleOverrides(state: RollState): { weight: number; dashArray?: string; fillOpacity: number } {
+  if (state === "ilr") return { weight: 2.5, dashArray: "4 3", fillOpacity: 0.65 };
+  if (state === "no-data") return { weight: 1.5, dashArray: "2 2", fillOpacity: 0 };
+  return { weight: 1.5, fillOpacity: 0.65 };
 }
 
 // 2026-08-26, map phase-band roll sizing, scoped to Phase colour-mode only (Guy's
@@ -372,8 +455,8 @@ export default function SchoolMap({
   // caps state and independent schools separately (150/250) so a viewport dense with
   // state schools no longer blanks independent ones out too. Which of the two actually
   // matters right now depends on the active sector filter -- computed below, not here.
-  const [boundsOverCap, setBoundsOverCap] = useState({ state: false, independent: false });
-  const [boundsCap, setBoundsCap] = useState<{ state: number; independent: number } | null>(null);
+  const [boundsOverCap, setBoundsOverCap] = useState({ state: false, independent: false, fe: false });
+  const [boundsCap, setBoundsCap] = useState<{ state: number; independent: number; fe: number } | null>(null);
   // 2026-08-28, per Guy's live review: the map can genuinely look blank for two
   // different reasons (still fetching the current viewport; genuinely over cap, no
   // markers to show) and needs to say WHICH, clearly -- silence read as broken, not
@@ -478,10 +561,14 @@ export default function SchoolMap({
         );
         if (!res.ok) { setBoundsLoading(false); return; }
         const body = await res.json();
-        setBoundsOverCap({ state: !!body.overCap?.state, independent: !!body.overCap?.independent });
+        setBoundsOverCap({
+          state: !!body.overCap?.state,
+          independent: !!body.overCap?.independent,
+          fe: !!body.overCap?.fe,
+        });
         setBoundsCap(
           body.cap && typeof body.cap.state === "number" && typeof body.cap.independent === "number"
-            ? { state: body.cap.state, independent: body.cap.independent }
+            ? { state: body.cap.state, independent: body.cap.independent, fe: body.cap.fe ?? 0 }
             : null,
         );
         setBoundsSchools(body.schools ?? []);
@@ -790,13 +877,14 @@ export default function SchoolMap({
         const radius = roll !== null ? rollRadius(roll, minRoll, maxRoll) : UNIFORM_RADIUS;
         const colour = colourForSchool(s, colourMode, colours, phaseFilter);
         const [lat, lng] = bngToLatLng(s.easting, s.northing);
+        const state = rollState(s.sector, s.totalRoll, s.rollSource);
+        const styleOverrides = markerStyleOverrides(state);
 
         const marker = L.circleMarker([lat, lng], {
           radius,
           color: colour,
-          weight: 1.5,
           fillColor: colour,
-          fillOpacity: 0.65,
+          ...styleOverrides,
         });
 
         // Name + total roll, shown to every visitor (2026-08-25 -- see module comment
@@ -806,9 +894,10 @@ export default function SchoolMap({
         // both null -- schools-in-bounds/route.ts's own logic, not re-checked here).
         const memberDetail: MemberDetail | null =
           s.ageBands && s.genderSplit ? { ageBands: s.ageBands, genderSplit: s.genderSplit } : null;
-        marker.bindTooltip(buildPopupHtml(s.currentName, s.totalRoll, memberDetail), {
-          direction: "top", offset: [0, -4], className: "vd-popup",
-        });
+        marker.bindTooltip(
+          buildPopupHtml(s.currentName, s.totalRoll, memberDetail, caveatFor(state, s.establishmentType)),
+          { direction: "top", offset: [0, -4], className: "vd-popup" },
+        );
         marker.on("click", () => router.push(`/schools/${s.urn}`));
         // circleMarker renders as an SVG <path> -- getElement()'s declared return
         // type is the base DOM Element, which has no .style; SVG elements do.
@@ -824,6 +913,8 @@ export default function SchoolMap({
       // floating above the comparison.
       const viewedRadius = viewedRoll !== null ? rollRadius(viewedRoll, minRoll, maxRoll) : UNIFORM_RADIUS;
       const viewedColour = colourForSchool(school, colourMode, colours, phaseFilter);
+      const viewedState = rollState(school.sector, school.totalRoll, school.rollSource);
+      const viewedStyleOverrides = markerStyleOverrides(viewedState);
       L.circleMarker([schoolLat, schoolLng], {
         radius: SCHOOL_MARKER_RING_RADIUS, color: colours.schoolMarker, weight: 2.5, fill: false,
       }).addTo(group);
@@ -841,11 +932,16 @@ export default function SchoolMap({
           ? { ageBands: school.ageBands, genderSplit: school.genderSplit }
           : null;
       L.circleMarker([schoolLat, schoolLng], {
-        radius: viewedRadius, color: viewedColour, weight: 1.5,
-        fillColor: viewedColour, fillOpacity: 0.65,
+        radius: viewedRadius, color: viewedColour, fillColor: viewedColour,
+        ...viewedStyleOverrides,
       })
         .bindTooltip(
-          buildPopupHtml(`${school.name}${school.town ? ` (${school.town})` : ""}`, school.totalRoll, viewedMemberDetail),
+          buildPopupHtml(
+            `${school.name}${school.town ? ` (${school.town})` : ""}`,
+            school.totalRoll,
+            viewedMemberDetail,
+            caveatFor(viewedState, school.establishmentType),
+          ),
           {
             permanent: true, direction: "right", offset: [SCHOOL_MARKER_RING_RADIUS + 2, 0], className: "vd-focus-card",
           },
@@ -891,13 +987,15 @@ export default function SchoolMap({
   const sectorFilter = filters.sector ?? new Set<string>();
   const stateSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("State");
   const independentSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("Independent");
+  const feSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("FE");
   const relevantOverCapSectors: string[] = [
     ...(stateSectorRelevant && boundsOverCap.state ? ["state"] : []),
     ...(independentSectorRelevant && boundsOverCap.independent ? ["independent"] : []),
+    ...(feSectorRelevant && boundsOverCap.fe ? ["fe"] : []),
   ];
   const showOverCapCard = relevantOverCapSectors.length > 0;
   const overCapMessage = relevantOverCapSectors
-    .map((sector) => `${boundsCap?.[sector as "state" | "independent"] ?? "too many"} ${sector}`)
+    .map((sector) => `${boundsCap?.[sector as "state" | "independent" | "fe"] ?? "too many"} ${sector}`)
     .join(" and ");
 
   return (
@@ -935,6 +1033,18 @@ export default function SchoolMap({
         .vd-popup { font-size: 12px; line-height: 1.6; }
         .vd-popup-name { font-weight: 700; margin-bottom: 2px; }
         .vd-popup-row { margin-top: 2px; white-space: nowrap; }
+        /* 2026-08-28: the ILR-sourced/no-data caveat text -- a real sentence, not a
+           short nowrap row like the others above, so it needs to actually wrap
+           (overriding the nowrap both .vd-popup and .vd-focus-card apply to
+           everything else in these tooltips) and a sane max-width so it doesn't just
+           stretch the tooltip box to the sentence's own full length instead. */
+        .vd-popup-caveat {
+          margin-top: 2px;
+          white-space: normal;
+          max-width: 200px;
+          font-style: italic;
+          color: #57534e;
+        }
         /* Persistent focus-school card (2026-08-27, restyled same day per Guy
            directly) -- replaces the old plain red text label. Same shape as the
            neighbour popups: literally Leaflet's own default .leaflet-tooltip values
@@ -1126,7 +1236,7 @@ export default function SchoolMap({
       </div>
 
       <p className="mt-1 text-xs text-neutral-400">
-        Hover or tap a dot for its name and roll. Dashed ring: a {school.sector === "Independent" ? DISTANCE_RING_KM_INDEPENDENT : DISTANCE_RING_KM_STATE}km reference distance, not a real catchment boundary.
+        Hover or tap a dot for its name and roll. Dashed ring: a {school.sector === "Independent" ? DISTANCE_RING_KM_INDEPENDENT : DISTANCE_RING_KM_STATE}km reference distance, not a real catchment boundary. Thick dashed-outline dot: ILR-sourced roll, not census. Hollow dot: no roll data available from any current source.
       </p>
     </div>
   );

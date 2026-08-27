@@ -56,6 +56,12 @@ export async function GET(request: NextRequest) {
     typology: computeTypology(
       {
         establishment_type_group: m.establishmentTypeGroup,
+        // findSurroundingSchools' own candidates are already restricted to the
+        // mainstream sector groups (nearest_schools' own filter -- Guy did not ask to
+        // extend surrounding-schools matching to FE institutions, only the map's
+        // bounds query) -- null is always safe/correct here, this population can
+        // never actually resolve to the "FE" sector.
+        establishment_type: null,
         boarders_name: m.boardersName,
         statutory_low_age: m.statutoryLowAge,
         statutory_high_age: m.statutoryHighAge,
