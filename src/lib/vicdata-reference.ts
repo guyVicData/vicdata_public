@@ -26,6 +26,7 @@ function requireEnv(name: string): string {
 async function fetchPage(
   path: string,
   body: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<unknown[]> {
   const apiUrl = requireEnv("VICDATA_API_URL");
   const anonKey = requireEnv("VICDATA_ANON_KEY");
@@ -40,6 +41,12 @@ async function fetchPage(
     // This is per-school-page live data, not a static asset -- never cache across
     // requests for different schools at the framework layer.
     cache: "no-store",
+    // 2026-08-28: real bug caught live -- a caller's own AbortSignal (schools-in-bounds
+    // aborting on a fast pan/zoom, propagating the original NextRequest's signal) needs
+    // to reach THIS fetch specifically, or the abort stops meaning anything the moment
+    // it crosses into this module -- the actual Supabase network call keeps running
+    // regardless, wasting real backend time on work nobody's waiting for any more.
+    signal,
   });
   if (!res.ok) {
     throw new Error(`${path} failed: HTTP ${res.status} ${await res.text()}`);
@@ -53,18 +60,23 @@ export async function lookupReferenceData(params: {
   periodMin?: number;
   periodMax?: number;
   breakdowns?: string[];
+  signal?: AbortSignal;
 }): Promise<ReferenceFact[]> {
   const rows: ReferenceFact[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
-    const batch = (await fetchPage("reference_data_lookup", {
-      p_source_id: params.sourceId,
-      p_entity_ids: params.entityIds ?? null,
-      p_period_min: params.periodMin ?? null,
-      p_period_max: params.periodMax ?? null,
-      p_limit: PAGE_SIZE,
-      p_offset: page * PAGE_SIZE,
-      p_breakdowns: params.breakdowns ?? null,
-    })) as ReferenceFact[];
+    const batch = (await fetchPage(
+      "reference_data_lookup",
+      {
+        p_source_id: params.sourceId,
+        p_entity_ids: params.entityIds ?? null,
+        p_period_min: params.periodMin ?? null,
+        p_period_max: params.periodMax ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+        p_breakdowns: params.breakdowns ?? null,
+      },
+      params.signal,
+    )) as ReferenceFact[];
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
   }
@@ -93,16 +105,21 @@ export async function lookupAgeGenderTotals(params: {
   sourceId: string;
   entityIds: string[];
   period: number;
+  signal?: AbortSignal;
 }): Promise<AgeGenderTotal[]> {
   const rows: AgeGenderTotal[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
-    const batch = (await fetchPage("reference_data_age_gender_totals", {
-      p_source_id: params.sourceId,
-      p_entity_ids: params.entityIds,
-      p_period: params.period,
-      p_limit: PAGE_SIZE,
-      p_offset: page * PAGE_SIZE,
-    })) as AgeGenderTotal[];
+    const batch = (await fetchPage(
+      "reference_data_age_gender_totals",
+      {
+        p_source_id: params.sourceId,
+        p_entity_ids: params.entityIds,
+        p_period: params.period,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+      },
+      params.signal,
+    )) as AgeGenderTotal[];
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
   }

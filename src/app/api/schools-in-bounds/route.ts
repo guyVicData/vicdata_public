@@ -145,6 +145,21 @@ export async function GET(request: NextRequest) {
 
   // Fetch one row past the hard cap -- enough to detect "over cap" without a second,
   // separate COUNT(*) query.
+  //
+  // abortSignal(request.signal), 2026-08-28: real bug caught live -- a fast pan/zoom
+  // session fires several of these requests in quick succession; the client-side
+  // debounce+AbortController (SchoolMap.tsx's scheduleBoundsFetch) correctly cancels
+  // the STALE PROMISE on the client, but neither this query nor the roll-data lookup
+  // below were ever told about that abort -- both kept running to full completion on
+  // the server regardless, so a burst of pans left a real backlog of abandoned-but-
+  // still-executing queries competing for the same Supabase connection/compute, and
+  // the user's actual current viewport's response had to wait behind all of them.
+  // Reproduced directly: markers correctly recovered after a zoom-out/zoom-in burst,
+  // but only after ~12s -- reading as "disappeared and didn't come back" to a live
+  // user who (reasonably) doesn't wait that long. request.signal is a real
+  // AbortSignal on NextRequest, true when the client has actually disconnected --
+  // wiring it through here and into lookupAgeGenderTotals below lets an abandoned
+  // request actually stop instead of running to completion for nothing.
   const { data, error } = await supabase
     .from("schools")
     .select("urn, current_name, establishment_type_group, statutory_low_age, statutory_high_age, gender, easting, northing")
@@ -154,9 +169,16 @@ export async function GET(request: NextRequest) {
     .lte("easting", maxEasting)
     .gte("northing", minNorthing)
     .lte("northing", maxNorthing)
-    .limit(HARD_CAP + 1);
+    .limit(HARD_CAP + 1)
+    .abortSignal(request.signal);
 
   if (error) {
+    // AbortError surfaces here as a Postgrest error, not a thrown exception (the
+    // supabase-js client catches the abort internally) -- a 499-style "client gave up"
+    // response, not a real server failure worth a 500 / worth logging as one.
+    if (request.signal.aborted) {
+      return NextResponse.json({ error: "Client aborted" }, { status: 499 });
+    }
     return NextResponse.json({ error: "Query failed" }, { status: 500 });
   }
 
@@ -195,11 +217,23 @@ export async function GET(request: NextRequest) {
     // the same lineage fallback reference_data_lookup does. Grouped into a Map once here
     // (O(n)) rather than filtering the flat row list per school (O(n*schools)) -- a real cost
     // at HARD_CAP, not just tidiness.
-    const totals = await lookupAgeGenderTotals({
-      sourceId: "dfe_school_census",
-      entityIds: rows.map((r) => r.urn),
-      period: CURRENT_CENSUS_PERIOD,
-    });
+    let totals;
+    try {
+      totals = await lookupAgeGenderTotals({
+        sourceId: "dfe_school_census",
+        entityIds: rows.map((r) => r.urn),
+        period: CURRENT_CENSUS_PERIOD,
+        signal: request.signal,
+      });
+    } catch (e) {
+      // Same abort-is-not-a-real-failure handling as the schools query above --
+      // lookupAgeGenderTotals's own fetch() rejects with a real AbortError once the
+      // signal fires, no point building a response for a client that's already gone.
+      if ((e as Error).name === "AbortError") {
+        return NextResponse.json({ error: "Client aborted" }, { status: 499 });
+      }
+      throw e;
+    }
     const countsByUrn = new Map<string, AgeGenderCounts>();
     for (const t of totals) {
       if (!countsByUrn.has(t.entity_id)) countsByUrn.set(t.entity_id, new Map());
