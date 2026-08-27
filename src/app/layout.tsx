@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import NavBar from "@/components/NavBar";
 import "./globals.css";
+// Map redesign (2026-08-23, State of the School page): Leaflet + CartoDB Positron,
+// a deliberate, agreed exception to this project's usual "no charting/map library"
+// pattern -- see SchoolMap.tsx's own module comment. Leaflet's stylesheet must be a
+// real global import, not scoped to the component -- Next's App Router only reliably
+// applies global (non-module) CSS imported from the root layout.
+import "leaflet/dist/leaflet.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

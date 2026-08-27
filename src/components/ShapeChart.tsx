@@ -3,13 +3,32 @@
 import { useState } from "react";
 import type { AgeGenderCounts } from "@/lib/roll-data";
 import { SHAPE_CLASSIFICATION_MIN_AGE, SHAPE_CLASSIFICATION_MAX_AGE } from "@/lib/roll-data";
+import { TAG_COLOURS } from "@/lib/tag-colours";
 
 // Horizontal population-pyramid shape chart (chart palette doc, "Public View
 // rebuild"). Ages on the y-axis, oldest at top / youngest at bottom -- boys extend
-// left of a centred zero line, girls extend right. Colors validated through the
-// colourblind-safety validator (dataviz skill) before being treated as final: ΔE 34.9
-// CVD separation, one dark-mode contrast WARN on the purple, addressed by never
-// relying on the bar color alone -- a legend and a value readout are always present.
+// left of a centred zero line, girls extend right.
+//
+// 2026-08-27: boys/girls colours now come from TAG_COLOURS (tag-colours.ts) --
+// the SAME cyan/pink the map's Gender colour mode already uses -- rather than this
+// chart's own separate purple (#8000ff)/red (#fb0207). Guy's explicit instruction:
+// "one shared, easily-editable colour source for every chart/graph/map," with THIS
+// specific swap (not a repo-wide rewrite) as the first real migration onto it. Also a
+// genuine improvement in passing: the old colours were hardcoded identically in both
+// the light and dark CSS blocks below (never actually theme-aware despite the
+// per-theme block structure); TAG_COLOURS' own light/dark pair now makes these bars
+// properly theme-aware for the first time.
+//
+// This REPLACES a formal colourblind-safety validator pass this chart's own colours
+// had been through (ΔE 34.9 CVD separation, logged when those colours were chosen) --
+// the shared palette hasn't been re-validated for bar-chart use specifically. Still
+// never relying on colour alone here (legend + hover value readout stay), and this
+// whole pairing is logged as explicitly provisional in docs/OPEN_QUESTIONS.md
+// (2026-08-27) -- Guy does not want a stereotypical pink/blue gender pairing
+// long-term and wants to revisit the whole palette later; this round is a consistency
+// pass, not the final answer.
+const BOYS_COLOUR = { light: TAG_COLOURS.Boys.light[1], dark: TAG_COLOURS.Boys.dark[1] };
+const GIRLS_COLOUR = { light: TAG_COLOURS.Girls.light[1], dark: TAG_COLOURS.Girls.dark[1] };
 
 const EDGE_AGE_MIN = SHAPE_CLASSIFICATION_MIN_AGE - 1; // 4: shown, tinted, excluded from classification
 const EDGE_AGE_MAX = SHAPE_CLASSIFICATION_MAX_AGE + 1; // 18: shown, tinted, excluded from classification
@@ -52,8 +71,8 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
           --surface-1: #fcfcfb;
           --axis-label: #4d4d4d;
           --grid: #e4e2dc;
-          --boys: #8000ff;
-          --girls: #fb0207;
+          --boys: ${BOYS_COLOUR.light};
+          --girls: ${GIRLS_COLOUR.light};
         }
         @media (prefers-color-scheme: dark) {
           :root:where(:not([data-theme="light"])) .viz-root {
@@ -61,8 +80,8 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
             --surface-1: #1a1a19;
             --axis-label: #cccccc;
             --grid: #333230;
-            --boys: #8000ff;
-            --girls: #fb0207;
+            --boys: ${BOYS_COLOUR.dark};
+            --girls: ${GIRLS_COLOUR.dark};
           }
         }
         :root[data-theme="dark"] .viz-root {
@@ -70,8 +89,8 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
           --surface-1: #1a1a19;
           --axis-label: #cccccc;
           --grid: #333230;
-          --boys: #8000ff;
-          --girls: #fb0207;
+          --boys: ${BOYS_COLOUR.dark};
+          --girls: ${GIRLS_COLOUR.dark};
         }
       `}</style>
 

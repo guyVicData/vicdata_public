@@ -10,14 +10,13 @@ import {
 import { buildIlrParticipationSnapshot } from "@/lib/ilr-participation-data";
 import { classifyShape, type ShapeLabel } from "@/lib/shape-classifier";
 import { findSurroundingSchools, aggregateSurroundingStat } from "@/lib/surrounding-schools";
-import { getGssCodeForLaCode, fetchLaBoundary } from "@/lib/la-boundary";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
 import ShapeChart from "@/components/ShapeChart";
 import AggregateShapeChart from "@/components/AggregateShapeChart";
 import TypologyTags from "@/components/TypologyTags";
 import SurroundingSchoolsMemberList from "@/components/SurroundingSchoolsMemberList";
 import SchoolMap from "@/components/SchoolMap";
-import { computeTypology } from "@/lib/typology";
+import { computeTypology, phaseTagAgeRange, type PhaseTag } from "@/lib/typology";
 import { buildSurroundingSummary } from "@/lib/surrounding-summary";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
@@ -127,6 +126,54 @@ export default async function SchoolPage({
   const surrounding = aggregateSurroundingStat(matchedSurrounding);
   const context = await getContextAggregates(school.la_name);
   const typology = computeTypology(school, roll?.boarding ?? null);
+  // 2026-08-27: the map's own centre dot is now sized/coloured exactly like its
+  // neighbours (Guy's live review -- "a big school should look big even at the
+  // centre"), which needs the same phase-sliced roll data schools-in-bounds/route.ts
+  // computes for through-schools. Same zero-cost reasoning as that route: ageGenderCounts
+  // is already fetched above for the Shape chart, this is a different reduction over
+  // the SAME data, not a new query. Only computed for a genuine through-school (more
+  // than one phase tag) -- a single-tag school's own roll IS that one phase already.
+  let viewedRollByPhase: Partial<Record<PhaseTag, number>> | null = null;
+  if (
+    typology.phase.length > 1 &&
+    ageGenderCounts &&
+    school.statutory_low_age !== null &&
+    school.statutory_high_age !== null
+  ) {
+    const byPhase: Partial<Record<PhaseTag, number>> = {};
+    for (const tag of typology.phase) {
+      const [lo, hi] = phaseTagAgeRange(tag, school.statutory_low_age, school.statutory_high_age, typology.phase);
+      let sum = 0;
+      for (const [age, c] of ageGenderCounts) {
+        if (age >= lo && age <= hi) sum += c.male + c.female;
+      }
+      if (sum > 0) byPhase[tag] = sum;
+    }
+    if (Object.keys(byPhase).length > 0) viewedRollByPhase = byPhase;
+  }
+  // 2026-08-27, map popup/card redesign (point d): the focus school's own card
+  // always shows the member-tier age-band/gender-split breakdown (not gated on
+  // membership here) -- this exact data is already public elsewhere on this SAME
+  // page (the Roll and Gender split sections below), so gating it again on the map
+  // card would just be a visible inconsistency, not a real privacy boundary. Reuses
+  // the SAME 11/16 band split as schools-in-bounds/route.ts's own ageBandsFor (kept
+  // in sync deliberately, not duplicated by copy-paste -- both read the confirmed
+  // phase-split boundaries). genderSplit reuses roll.gender directly rather than
+  // re-summing ageGenderCounts -- roll.gender already carries the single-sex-school
+  // suppression handling buildRollSnapshot applies (rolls spec §8); re-deriving it
+  // here could silently diverge from that.
+  let viewedAgeBands: { band1: number; band2: number; band3: number } | null = null;
+  if (ageGenderCounts) {
+    let band1 = 0, band2 = 0, band3 = 0;
+    for (const [age, c] of ageGenderCounts) {
+      const total = c.male + c.female;
+      if (age <= 11) band1 += total;
+      else if (age <= 16) band2 += total;
+      else band3 += total;
+    }
+    if (band1 + band2 + band3 > 0) viewedAgeBands = { band1, band2, band3 };
+  }
+  const viewedGenderSplit = roll ? { girls: roll.gender.female, boys: roll.gender.male } : null;
   const surroundingSummary = buildSurroundingSummary(
     school.current_name,
     typology,
@@ -134,11 +181,43 @@ export default async function SchoolPage({
     surrounding.found,
     surrounding.averageRoll,
   );
-  const gssCode = await getGssCodeForLaCode(school.la_code);
-  const laBoundary = gssCode ? await fetchLaBoundary(gssCode) : null;
-
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <>
+      {/* Map redesign (2026-08-23): full-bleed, top of the page, outside the
+          max-w-3xl content column below -- the page's visual centerpiece, not a
+          small boxed section. See SchoolMap.tsx's own module comment for the full
+          precedent/scope trail. LA boundary overlay removed 2026-08-24 (Guy's call,
+          seen live -- "not adding value now that the map's job is just 'which
+          schools are we looking at'"); la-boundary.ts's own fetch is no longer
+          called from here at all -- see that module's own top-of-file note.
+          2026-08-24, sector-colour/bounds-fetch round: the map draws its own live
+          viewport-based school pool now (schools-in-bounds), not matchedSurrounding
+          -- no freeSurroundingPoints prop any more. matchedSurrounding is still used
+          below, unchanged, for the "Surrounding schools" aggregate stat and the
+          member-only named list -- those are a different, curated data path from
+          what the map now shows. school.sector (2026-08-25) is the viewed school's
+          own sector, reusing the typology already computed above -- feeds the map's
+          sector-aware default distance-ring radius, not a new lookup. */}
+      {school.easting !== null && school.northing !== null && (
+        <SchoolMap
+          urn={urn}
+          school={{
+            name: school.current_name,
+            town: school.town,
+            easting: school.easting,
+            northing: school.northing,
+            sector: typology.sector,
+            phase: typology.phase,
+            gender: typology.gender,
+            totalRoll: roll?.totalRoll ?? null,
+            rollByPhase: viewedRollByPhase,
+            ageBands: viewedAgeBands,
+            genderSplit: viewedGenderSplit,
+          }}
+        />
+      )}
+
+      <main className="mx-auto max-w-3xl px-6 py-16">
       <header className="mb-10">
         <h1 className="text-2xl font-semibold">{school.current_name}</h1>
         <p className="mt-1 text-sm text-neutral-500">
@@ -149,19 +228,6 @@ export default async function SchoolPage({
           <TypologyTags typology={typology} />
         </div>
       </header>
-
-      {school.easting !== null && school.northing !== null && (
-        <Section title="Map">
-          <SchoolMap
-            urn={urn}
-            school={{ name: school.current_name, town: school.town, easting: school.easting, northing: school.northing }}
-            laBoundary={laBoundary}
-            freeSurroundingPoints={matchedSurrounding
-              .filter((m) => m.easting !== null && m.northing !== null)
-              .map((m) => ({ easting: m.easting as number, northing: m.northing as number }))}
-          />
-        </Section>
-      )}
 
       {!roll && (
         <section className="mb-10 rounded-md border border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-800">
@@ -355,7 +421,8 @@ export default async function SchoolPage({
       <Section title="Destinations">
         <ComingSoon />
       </Section>
-    </main>
+      </main>
+    </>
   );
 }
 

@@ -26,6 +26,14 @@ export function sectorTag(establishmentTypeGroup: string | null): SectorTag | nu
   return null; // e.g. special schools, colleges, universities -- expected fall-through
 }
 
+// Exported for the map's bounds-based schools query (schools-in-bounds route,
+// 2026-08-24 map redesign round): restricting to these four groups is what makes
+// sectorTag() resolve to Independent/State for every row rather than null, so a
+// viewport of "state + independent schools" is the same restriction as this list,
+// not a separate filtering decision. Same four groups nearest_schools' own
+// mainstream filter uses (20260809103000_nearest_schools_mainstream_filter.sql).
+export const MAINSTREAM_ESTABLISHMENT_GROUPS = [...STATE_GROUPS, "Independent schools"];
+
 // Boarding threshold: provisional, no empirical basis yet -- same discipline as the
 // shape classifier's STATIONARY_THRESHOLD. GIAS's own boarders_name field is only a
 // binary "has boarding provision or not," which can't distinguish a Boarding-only
@@ -74,6 +82,37 @@ export function phaseTags(lowAge: number | null, highAge: number | null): PhaseT
   }
   if (lowAge >= 16) return ["Sixth"];
   return [];
+}
+
+// Per-tag age sub-range within a through-school's own (lowAge, highAge) -- 2026-08-26,
+// map phase-band roll sizing. Reuses the SAME 11/16 boundaries phaseTags() itself
+// already encodes above (11 = Junior/next-phase split, 12-14 = Prep's own highAge
+// band, 16 = next-phase/Sixth split) -- not new invented numbers, confirmed with Guy
+// directly before building this (see the report that preceded this round).
+//
+// Only meaningful for a school carrying MORE than one phase tag at once (a genuine
+// through-school) -- for a single-tag school the school's whole roll already IS that
+// one phase, so callers should use totalRoll directly and never call this (see
+// schools-in-bounds/route.ts's own comment for where this is actually used, gated on
+// phase.length > 1).
+//
+// allTags matters for Senior specifically: Senior's own upper bound is 15 when Sixth
+// is ALSO present (the 16-cutoff goes to Sixth instead), but extends to the school's
+// real highAge when Sixth is absent (Junior+Senior with no Sixth, highAge 15-16).
+export function phaseTagAgeRange(
+  tag: PhaseTag,
+  lowAge: number,
+  highAge: number,
+  allTags: PhaseTag[],
+): [number, number] {
+  if (tag === "Junior") return [lowAge, Math.min(10, highAge)];
+  if (tag === "Prep") return [11, highAge];
+  if (tag === "Senior") {
+    const lo = Math.max(lowAge, 11);
+    const hi = allTags.includes("Sixth") ? 15 : highAge;
+    return [lo, hi];
+  }
+  return [16, highAge]; // Sixth
 }
 
 // Direct pass-through of GIAS's own policy-level Gender (name) field -- not derived

@@ -326,6 +326,32 @@ a blocker for anything shipped this round.
 
 ---
 
+## 2026-08-27 — Shared chart colour source: gender pairing is provisional, not a final choice
+
+**Decision**: `src/lib/tag-colours.ts`'s `TAG_COLOURS` is now the one shared colour
+source for gender (Boys/Girls) across the app, not just the map. This round
+specifically propagated it into `ShapeChart.tsx` (the population-pyramid roll graph),
+replacing that chart's own separate purple/red with the map's existing cyan
+(Boys)/pink (Girls) pair — Guy's explicit instruction, not a default I chose. Other
+charts with their own hardcoded colours (`PeerTrendChart.tsx` among them) were left
+untouched this round — only the one graph named was in scope, though the shared
+source now exists for them to migrate onto later without much friction.
+
+**Why**: the map's Gender colour mode and the roll graph disagreeing about what
+colour "Boys"/"Girls" means was a real, visible inconsistency once both existed on
+the same page. A single shared source means a future colour change happens once, not
+once per chart.
+
+**Flagged explicitly, per Guy's own instruction — do not let this get lost**: cyan
+for boys / pink for girls is a stereotypical gender pairing, and Guy has said
+directly he does NOT want to keep it long-term. This round is a **consistency
+pass** (make every chart agree with each other), not a decision that pink/blue-family
+colours are the right final choice. The whole gender palette (not just these two
+values) is due a real revisit later — not solved here, just logged so it isn't
+silently treated as settled.
+
+---
+
 ## Template for future entries
 
 **Decision**: ...
