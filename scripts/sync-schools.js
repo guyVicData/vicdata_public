@@ -37,6 +37,30 @@ async function fetchSourcePage(apiUrl, anonKey, offset) {
   return res.json();
 }
 
+// 2026-08-28 investigation ("Kings Worcester" search failure): GIAS's Town field is
+// sometimes wrongly populated with a bare county name instead of a real town (413
+// schools nationally, all "shire"-suffixed -- Worcestershire, Denbighshire, etc.).
+// Only 7 of those are genuinely search-affected (their current_name is also ambiguous
+// enough that town is needed to disambiguate), but the fix is applied to the whole
+// detected pattern rather than an allowlist of 7 URNs, since the same fallback is safe
+// wherever the pattern actually fires. Address3 usually carries the real town; where
+// Address3 ALSO just repeats the county name (St Hugh's School, URN 123299), Locality
+// carries it instead. Deliberately narrow: this only ever touches town when town itself
+// matches the county-name pattern -- every other school's town is passed through
+// untouched, exactly as it always was, since Address3/Locality aren't reliably clean
+// town names for the general population.
+function isBareCountyName(value) {
+  return typeof value === "string" && /shire$/i.test(value.trim());
+}
+
+function resolveTown(sourceRow) {
+  const town = sourceRow.town;
+  if (!isBareCountyName(town)) return town;
+  if (sourceRow.address3 && !isBareCountyName(sourceRow.address3)) return sourceRow.address3;
+  if (sourceRow.locality && !isBareCountyName(sourceRow.locality)) return sourceRow.locality;
+  return town;
+}
+
 function toSchoolRow(sourceRow) {
   return {
     urn: sourceRow.urn,
@@ -46,7 +70,7 @@ function toSchoolRow(sourceRow) {
     la_code: sourceRow.la_code,
     establishment_type_group: sourceRow.establishment_type_group,
     establishment_type: sourceRow.establishment_type,
-    town: sourceRow.town,
+    town: resolveTown(sourceRow),
     postcode: sourceRow.postcode,
     phase: sourceRow.phase,
     boarders_code: sourceRow.boarders_code,
