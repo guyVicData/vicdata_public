@@ -953,8 +953,14 @@ export default function SchoolMap({
            +/-) via line-height matching the button's fixed size -- an inline SVG
            doesn't participate in that the same way (baseline-aligns, not
            line-height-centered), so it needs its own flex centering to actually sit in
-           the middle of the button rather than sitting low. */
-        .vd-fullscreen-btn { display: flex; align-items: center; justify-content: center; }
+           the middle of the button rather than sitting low.
+           Real bug caught live: this rule was losing to Leaflet's OWN ".leaflet-bar a"
+           (confirmed via computed styles -- display stayed "block", never applied),
+           because that selector's specificity (element+class) beats a bare class
+           selector. !important, not a more specific selector, to match how this file
+           already handles every other "must beat Leaflet's/Tailwind's own CSS" case
+           (the fullscreen height override just above). */
+        .vd-fullscreen-btn { display: flex !important; align-items: center; justify-content: center; }
         /* Loading/over-cap status card (2026-08-28) -- deliberately high-contrast
            (solid border, solid background, bold text) rather than the previous
            discreet pill, per Guy's direct feedback that it needed to be very clear,
