@@ -11,6 +11,7 @@ import {
   TAG_GROUPS,
   COLOUR_MODE_KEYS,
   relevantPhaseTag,
+  isGenuineThroughSchool,
   emptyFilterState,
   passesFilters,
   type FilterState,
@@ -204,7 +205,12 @@ function rollRadius(roll: number, minRoll: number, maxRoll: number): number {
 // school's tags the active phase filter selected, not just the fixed priority order
 // -- see relevantPhaseTag's own comment (map-tag-groups.ts) for why.
 function colourForSchool(
-  s: { sector: SectorTag | null; phase: PhaseTag[]; gender: GenderTag | null },
+  s: {
+    sector: SectorTag | null;
+    phase: PhaseTag[];
+    gender: GenderTag | null;
+    rollByPhase?: Partial<Record<PhaseTag, number>> | null;
+  },
   colourMode: string,
   colours: ReturnType<typeof readThemeColours>,
   phaseFilter: Set<string>,
@@ -212,7 +218,15 @@ function colourForSchool(
   if (colourMode === "sector") return s.sector ? colours.tag(s.sector) : colours.dot;
   if (colourMode === "gender") return s.gender ? colours.tag(s.gender) : colours.dot;
   if (colourMode === "phase") {
-    const tag = relevantPhaseTag(s.phase, phaseFilter);
+    // 2026-08-28: a genuine through-school (Junior+Senior both present) gets its own
+    // colour rather than whichever single tag wins fixed priority -- unless a phase
+    // filter is actively narrowing to one specific sub-phase, in which case that
+    // existing behaviour (colour by the filtered phase) still applies, same as any
+    // other multi-tag school.
+    if (phaseFilter.size === 0 && isGenuineThroughSchool(s.phase, s.rollByPhase)) {
+      return colours.tag("Through School");
+    }
+    const tag = relevantPhaseTag(s.phase, phaseFilter, s.rollByPhase);
     return tag ? colours.tag(tag) : colours.dot;
   }
   return colours.dot;
@@ -320,7 +334,10 @@ function effectiveRoll(
   phaseFilter: Set<string>,
 ): number | null {
   if (colourMode !== "phase" || s.phase.length <= 1) return s.totalRoll;
-  const tag = relevantPhaseTag(s.phase, phaseFilter);
+  // Through-school sizing matches its own colour (2026-08-28): the whole school's
+  // roll, not one phase's slice -- see colourForSchool's own comment.
+  if (phaseFilter.size === 0 && isGenuineThroughSchool(s.phase, s.rollByPhase)) return s.totalRoll;
+  const tag = relevantPhaseTag(s.phase, phaseFilter, s.rollByPhase);
   if (!tag) return s.totalRoll;
   return s.rollByPhase?.[tag] ?? s.totalRoll;
 }
@@ -744,7 +761,7 @@ export default function SchoolMap({
       // Excluded here by URN, not in the API -- the API's job is "what's in this
       // box," not "what's in this box excluding one specific school."
       const visible = boundsSchools.filter(
-        (s) => s.urn !== urn && passesFilters({ sector: s.sector, phase: s.phase, gender: s.gender }, filters),
+        (s) => s.urn !== urn && passesFilters({ sector: s.sector, phase: s.phase, gender: s.gender, rollByPhase: s.rollByPhase }, filters),
       );
 
       const phaseFilter = filters.phase ?? new Set<string>();
@@ -840,7 +857,7 @@ export default function SchoolMap({
   // out, since it's two lines and both need the exact same "visible, filtered,
   // roll-known" set.
   const visibleForLegend = boundsSchools.filter(
-    (s) => s.urn !== urn && passesFilters({ sector: s.sector, phase: s.phase, gender: s.gender }, filters),
+    (s) => s.urn !== urn && passesFilters({ sector: s.sector, phase: s.phase, gender: s.gender, rollByPhase: s.rollByPhase }, filters),
   );
   const legendPhaseFilter = filters.phase ?? new Set<string>();
   const legendRolls = visibleForLegend

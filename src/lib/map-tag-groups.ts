@@ -22,6 +22,9 @@ export type FilterableSchool = {
   sector: SectorTag | null;
   phase: PhaseTag[];
   gender: GenderTag | null;
+  // Optional: only needed for the "Through School" roll-aware check below (see
+  // isGenuineThroughSchool's own comment) -- every other tag group ignores it.
+  rollByPhase?: Partial<Record<PhaseTag, number>> | null;
 };
 
 export type TagGroupConfig = {
@@ -30,6 +33,32 @@ export type TagGroupConfig = {
   options: string[];
   getValues: (school: FilterableSchool) => string[];
 };
+
+// 2026-08-28, per Guy's direct instruction: a school carrying BOTH Junior and Senior
+// tags (whatever else it also carries -- Prep/Sixth don't change this) is a genuine
+// through-school, not just "some phase tag or other happened to win priority." Scoped
+// deliberately to exactly Junior+Senior, not any 2+-tag combination -- Guy named this
+// pairing specifically; Senior+Sixth (a completely ordinary GCSE-plus-sixth-form
+// school) and Junior+Prep stay under the existing single-tag priority logic unless a
+// later round says otherwise.
+//
+// rollByPhase, added same day: real bug caught immediately after shipping the tag-only
+// version -- Woldingham (the exact school this whole round started with) carries a
+// Junior TAG now (typology.ts's high-age-19 extension) but has ZERO real Junior-age
+// pupils, so tag-only through-school detection reclassified it from the correct
+// "Senior" (its real, roll-aware colour) to "Through School" -- same underlying
+// mistake as the original bug, just one label further along. Requires a genuine,
+// non-zero entry in rollByPhase for BOTH Junior and Senior, not just the nominal
+// statutory age range. Falls back to tag-only when rollByPhase isn't available at all
+// (rather than always returning false) so this degrades gracefully, not silently.
+export function isGenuineThroughSchool(
+  schoolPhases: PhaseTag[],
+  rollByPhase?: Partial<Record<PhaseTag, number>> | null,
+): boolean {
+  if (!schoolPhases.includes("Junior") || !schoolPhases.includes("Senior")) return false;
+  if (!rollByPhase) return true;
+  return rollByPhase.Junior !== undefined && rollByPhase.Senior !== undefined;
+}
 
 export const TAG_GROUPS: TagGroupConfig[] = [
   {
@@ -41,8 +70,14 @@ export const TAG_GROUPS: TagGroupConfig[] = [
   {
     key: "phase",
     title: "Phase",
-    options: ["Junior", "Prep", "Senior", "Sixth"],
-    getValues: (s) => s.phase,
+    options: ["Junior", "Prep", "Senior", "Sixth", "Through School"],
+    // A through-school still carries its own real Junior/Senior/(Prep/Sixth) tags
+    // alongside "Through School" -- filtering by "Junior" should still catch it (it
+    // does have a Junior offering), "Through School" narrows to exactly this
+    // population, both filters genuinely true at once, same stackable-tag semantics
+    // every other multi-value phase combination already has.
+    getValues: (s) =>
+      isGenuineThroughSchool(s.phase, s.rollByPhase) ? [...s.phase, "Through School"] : s.phase,
   },
   {
     key: "gender",
@@ -81,14 +116,38 @@ export const PHASE_COLOUR_PRIORITY: string[] = ["Junior", "Prep", "Senior", "Six
 // PHASE_COLOUR_PRIORITY order when no phase filter is active (or, defensively, if
 // none of the selected values end up matching -- passesFilters should already have
 // excluded that school, but this never throws either way).
-export function relevantPhaseTag(schoolPhases: PhaseTag[], phaseFilterSelection: Set<string>): PhaseTag | null {
+//
+// rollByPhase, 2026-08-28: optional, and when given, a tag only counts as a real
+// candidate if it has a genuine non-zero entry there. Real bug caught extending
+// phaseTags() to cover high age 19 (typology.ts) -- Woldingham's own
+// statutory_low_age (10) is a nominal registration floor, not real enrolment (its
+// actual youngest pupils are 11), so it now carries a "Junior" tag with ZERO real
+// Junior pupils. Without this check it would show as a Junior-coloured dot sized by
+// its FULL total roll (effectiveRoll's rollByPhase?.[tag] ?? totalRoll fallback,
+// triggered by Junior simply being absent from rollByPhase) -- confidently wrong, a
+// worse result than the plain grey dot this was meant to fix. Falls back to the
+// roll-blind priority order when rollByPhase is omitted (single-tag schools skip this
+// function entirely, per effectiveRoll's own early return) or when NONE of a school's
+// tags have real roll data (nothing to prefer either way).
+export function relevantPhaseTag(
+  schoolPhases: PhaseTag[],
+  phaseFilterSelection: Set<string>,
+  rollByPhase?: Partial<Record<PhaseTag, number>> | null,
+): PhaseTag | null {
+  const hasRealRoll = (p: string) => !rollByPhase || rollByPhase[p as PhaseTag] !== undefined;
+
   if (phaseFilterSelection.size > 0) {
     const matching = PHASE_COLOUR_PRIORITY.filter(
       (p) => schoolPhases.includes(p as PhaseTag) && phaseFilterSelection.has(p),
     );
+    const matchingWithRoll = matching.filter(hasRealRoll);
+    if (matchingWithRoll.length > 0) return matchingWithRoll[0] as PhaseTag;
     if (matching.length > 0) return matching[0] as PhaseTag;
   }
-  return (PHASE_COLOUR_PRIORITY.find((p) => schoolPhases.includes(p as PhaseTag)) as PhaseTag | undefined) ?? null;
+  const present = PHASE_COLOUR_PRIORITY.filter((p) => schoolPhases.includes(p as PhaseTag));
+  const presentWithRoll = present.filter(hasRealRoll);
+  if (presentWithRoll.length > 0) return presentWithRoll[0] as PhaseTag;
+  return (present[0] as PhaseTag | undefined) ?? null;
 }
 
 export type FilterState = Record<string, Set<string>>;

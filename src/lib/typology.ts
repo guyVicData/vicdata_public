@@ -61,10 +61,19 @@ export function boardingTag(
 }
 
 // Stackable phase tags (chart palette doc's confirmed table) -- StatutoryLowAge/
-// StatutoryHighAge, not a single mutually-exclusive band. Some real schools fall
-// through every branch (Woldingham: low 10/high 19, neither the "starts young" nor
-// the "starts 11+" sub-ranges cover high age 19) -- confirmed expected by Guy
-// directly ("that is good," not something to over-fit the boundaries to avoid).
+// StatutoryHighAge, not a single mutually-exclusive band.
+//
+// 2026-08-28: high age 19 folded into the same bucket as 17/18 (Sixth included), per
+// Guy's direct decision after a real-data check -- 1,689 schools nationally have
+// statutory_high_age exactly 19 (Woldingham among them: low 10/high 19), the large
+// majority of everything above 18, and every one was falling through every branch
+// here, showing no phase tag/colour on the map at all. Scoped deliberately to exactly
+// 19, not "17 and up" -- the same check found real but much smaller and stranger
+// populations at 20-35 (33/14/5/7/25/155/1/3/1 schools) plus 235 schools recorded as
+// 99, almost certainly a data sentinel (unknown/not-applicable), not a genuine age --
+// none of that was part of what Guy actually decided here, so none of it is folded in
+// by extension; a real decision, not guessed at, same discipline this function
+// already applies to its own boundaries.
 export function phaseTags(lowAge: number | null, highAge: number | null): PhaseTag[] {
   if (lowAge === null || highAge === null) return [];
 
@@ -72,12 +81,12 @@ export function phaseTags(lowAge: number | null, highAge: number | null): PhaseT
     if (highAge <= 11) return ["Junior"];
     if (highAge >= 12 && highAge <= 14) return ["Junior", "Prep"];
     if (highAge >= 15 && highAge <= 16) return ["Junior", "Senior"];
-    if (highAge >= 17 && highAge <= 18) return ["Junior", "Senior", "Sixth"];
+    if (highAge >= 17 && highAge <= 19) return ["Junior", "Senior", "Sixth"];
     return [];
   }
   if (lowAge >= 11 && lowAge <= 15) {
     if (highAge === 16) return ["Senior"];
-    if (highAge >= 17 && highAge <= 18) return ["Senior", "Sixth"];
+    if (highAge >= 17 && highAge <= 19) return ["Senior", "Sixth"];
     return [];
   }
   if (lowAge >= 16) return ["Sixth"];

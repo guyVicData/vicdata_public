@@ -55,6 +55,16 @@ export const TAG_COLOURS: Record<string, { light: [string, string]; dark: [strin
   // OPEN_QUESTIONS.md 2026-08-27 as a provisional, explicitly non-final gender pairing
   Girls: { light: ["#fdf2f8", "#9d174d"], dark: ["#4a2237", "#f9a8d4"] }, // pink -- see same entry
   "Co-ed": { light: ["#eef2ff", "#4338ca"], dark: ["#312e81", "#a5b4fc"] }, // indigo (was grey)
+  // 2026-08-28, per Guy's direct instruction: a genuine through-school (real pupils in
+  // both Junior and Senior phases -- City of London Freemen's and the newly-covered
+  // high-age-19 population like Woldingham) needs its OWN colour, not the fixed
+  // Junior->Prep->Senior->Sixth priority order picking whichever single tag happens to
+  // be first regardless of which phase the school is actually biggest in (Freemen's:
+  // Junior 242 pupils, Senior 514 -- picking Junior implied something false). Reuses
+  // the exact blue TypologyTags.tsx's own TAG_STYLES used for Independent before that
+  // moved to ISC orange -- already vetted for contrast in this palette, just unused
+  // since.
+  "Through School": { light: ["#eff6ff", "#1e40af"], dark: ["#1e3a5f", "#93c5fd"] },
 };
 
 // 2026-08-25: filter buttons now fill with the tag's own colour when selected
