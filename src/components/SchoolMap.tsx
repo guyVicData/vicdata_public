@@ -353,6 +353,13 @@ export default function SchoolMap({
   const [boundsSchools, setBoundsSchools] = useState<BoundsSchool[]>([]);
   const [boundsOverCap, setBoundsOverCap] = useState(false);
   const [boundsCap, setBoundsCap] = useState<number | null>(null);
+  // 2026-08-28, per Guy's live review: the map can genuinely look blank for two
+  // different reasons (still fetching the current viewport; genuinely over cap, no
+  // markers to show) and needs to say WHICH, clearly -- silence read as broken, not
+  // as "working, just empty right now." True from the moment a debounced fetch
+  // actually goes out to when it resolves/errors -- NOT from the moment the user
+  // starts panning, or continuous panning would flicker it constantly.
+  const [boundsLoading, setBoundsLoading] = useState(false);
   // 2026-08-27, corrected mid-round per Guy directly: the focus school's own card
   // shows the SAME public/member split as every other dot -- total roll only in the
   // public view, age bands + gender split only once the server confirms real
@@ -438,6 +445,7 @@ export default function SchoolMap({
       boundsAbortRef.current?.abort();
       const controller = new AbortController();
       boundsAbortRef.current = controller;
+      setBoundsLoading(true);
       try {
         const token = authTokenRef.current;
         const res = await fetch(
@@ -447,17 +455,24 @@ export default function SchoolMap({
             headers: token ? { Authorization: `Bearer ${token}` } : undefined,
           },
         );
-        if (!res.ok) return;
+        if (!res.ok) { setBoundsLoading(false); return; }
         const body = await res.json();
         setBoundsOverCap(!!body.overCap);
         setBoundsCap(typeof body.cap === "number" ? body.cap : null);
         setBoundsSchools(body.schools ?? []);
         setMemberDetailIncluded(!!body.memberDetailIncluded);
+        setBoundsLoading(false);
       } catch (e) {
         if ((e as Error).name !== "AbortError") {
           // Non-critical -- a failed viewport refresh just leaves the previous
           // markers on screen rather than erroring the page.
+          setBoundsLoading(false);
         }
+        // AbortError: a newer request has already taken over (aborted at the top of
+        // THIS same function, for the request this replaced) and owns loading state
+        // from here -- touching it here would flicker loading off for one tick before
+        // the new request's own setBoundsLoading(true) (already run, synchronously
+        // above, before this one's fetch() even rejected) takes effect.
       }
     }, BOUNDS_FETCH_DEBOUNCE_MS);
   }
@@ -940,6 +955,25 @@ export default function SchoolMap({
            line-height-centered), so it needs its own flex centering to actually sit in
            the middle of the button rather than sitting low. */
         .vd-fullscreen-btn { display: flex; align-items: center; justify-content: center; }
+        /* Loading/over-cap status card (2026-08-28) -- deliberately high-contrast
+           (solid border, solid background, bold text) rather than the previous
+           discreet pill, per Guy's direct feedback that it needed to be very clear,
+           not easy to miss against live map tiles. */
+        .vd-status-card { max-width: 320px; }
+        .vd-spinner {
+          width: 28px;
+          height: 28px;
+          border: 3px solid var(--dot);
+          border-top-color: transparent;
+          border-radius: 50%;
+          animation: vd-spin 0.8s linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .vd-spinner { animation: none; }
+        }
+        @keyframes vd-spin {
+          to { transform: rotate(360deg); }
+        }
       `}</style>
 
       {/* 2026-08-28, per Guy's live review: filters moved off the side column onto
@@ -952,10 +986,35 @@ export default function SchoolMap({
       <div ref={fullscreenTargetRef} className="vd-map-fullscreen-target relative w-full">
         <div ref={mapElRef} className="vd-map-el h-[520px] w-full sm:h-[560px]" />
 
-        {boundsOverCap && (
-          <div className="pointer-events-none absolute inset-x-0 top-3 z-[1000] flex justify-center">
-            <div className="rounded-full bg-neutral-900/90 px-3 py-1 text-xs font-medium text-neutral-50 dark:bg-neutral-100/90 dark:text-neutral-900">
-              {boundsCap ? `More than ${boundsCap} schools here` : "Too many schools here"} — zoom in to see them
+        {/* 2026-08-28, per Guy's live review: the map can go genuinely blank for two
+            different reasons (still fetching the current viewport; genuinely over
+            cap, nothing to show) and silence read as broken, not as "working, just
+            empty right now" -- the old over-cap message was a small discreet pill
+            easy to miss entirely. Same centered card handles both, loading taking
+            priority when both are momentarily true (a new, still-resolving fetch
+            after an over-cap viewport) so there's never two overlapping messages. */}
+        {(boundsLoading || boundsOverCap) && (
+          <div className="pointer-events-none absolute inset-0 z-[1000] flex items-center justify-center px-4">
+            <div
+              role="status"
+              aria-live="polite"
+              className="vd-status-card rounded-lg border-2 border-neutral-900 bg-white px-6 py-5 text-center shadow-lg dark:border-neutral-100 dark:bg-neutral-950"
+            >
+              {boundsLoading ? (
+                <>
+                  <div className="vd-spinner mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Loading schools…</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-base font-bold text-neutral-900 dark:text-neutral-50">
+                    {boundsCap ? `More than ${boundsCap} schools here` : "Too many schools here"}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                    Zoom in to see them
+                  </p>
+                </>
+              )}
             </div>
           </div>
         )}
