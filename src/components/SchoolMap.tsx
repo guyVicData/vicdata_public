@@ -137,6 +137,14 @@ const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
+// Fullscreen control icons (2026-08-28) -- plain inline SVG, matching the rest of this
+// file's own hand-rolled Leaflet controls rather than pulling in leaflet.fullscreen or
+// similar: two tiny "expand/collapse to corners" glyphs, no external asset or icon font.
+const EXPAND_ICON =
+  '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 5V1h4M15 5V1h-4M1 11v4h4M15 11v4h-4"/></svg>';
+const COLLAPSE_ICON =
+  '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 1v4H1M11 1v4h4M5 15v-4H1M11 15v-4h4"/></svg>';
+
 // 2026-08-25: widened twice this round (3-9 -> 4-16 -> 4-22) -- both rounds of live
 // review flagged the small/large difference as too subtle. Tuned against REAL
 // bounds-pool data: Leighton Park's default view spans roll 64-1,841 across 26
@@ -356,6 +364,16 @@ export default function SchoolMap({
   const [mapReady, setMapReady] = useState(false);
   const [colourMode, setColourMode] = useState<string>("sector");
   const [filters, setFilters] = useState<FilterState>(emptyFilterState());
+  // Fullscreen toggle (2026-08-28): the wrapper that already holds the map + colour-key
+  // + size-legend (rendered below) is what actually goes fullscreen -- the filter panel
+  // column sits outside it, deliberately (fullscreen means "more map," not "more of
+  // everything"). isFullscreen only drives the CSS class below; the control button
+  // itself is raw DOM (added imperatively in the init effect, matching this file's
+  // existing Leaflet-control style), not JSX, so its own icon/label are updated
+  // directly in the fullscreenchange handler rather than through React state.
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenTargetRef = useRef<HTMLDivElement | null>(null);
+  const fullscreenBtnRef = useRef<HTMLAnchorElement | null>(null);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -448,6 +466,47 @@ export default function SchoolMap({
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
+      // Fullscreen toggle, 2026-08-28: native browser Fullscreen API on
+      // fullscreenTargetRef (the wrapper holding the map + colour-key + size-legend,
+      // set up in the JSX below), not a Leaflet plugin -- matches this file's own
+      // pattern of hand-rolled controls (MapColourKey, MapFilterPanel) rather than an
+      // off-the-shelf plugin for something the platform already does directly. A real
+      // L.Control (same mechanism as the zoom control above), not a separately
+      // positioned React div, so it sits correctly in Leaflet's own control stacking
+      // for free -- avoiding the exact z-index bug already documented on the
+      // colour-key box below. Feature-detected: requestFullscreen isn't universal
+      // (older Safari needs a webkit-prefixed call this doesn't attempt), so the
+      // button simply doesn't render if the API isn't there rather than shipping a
+      // control that does nothing.
+      if (fullscreenTargetRef.current?.requestFullscreen) {
+        const FullscreenControl = L.Control.extend({
+          options: { position: "bottomright" },
+          onAdd: function () {
+            const container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+            const link = L.DomUtil.create("a", "vd-fullscreen-btn", container) as HTMLAnchorElement;
+            link.href = "#";
+            link.title = "Fullscreen";
+            link.setAttribute("role", "button");
+            link.setAttribute("aria-label", "Enter fullscreen");
+            link.innerHTML = EXPAND_ICON;
+            fullscreenBtnRef.current = link;
+            L.DomEvent.on(link, "click", (e: Event) => {
+              L.DomEvent.stopPropagation(e);
+              L.DomEvent.preventDefault(e);
+              const target = fullscreenTargetRef.current;
+              if (!target) return;
+              if (document.fullscreenElement) {
+                document.exitFullscreen();
+              } else {
+                target.requestFullscreen();
+              }
+            });
+            return container;
+          },
+        });
+        new FullscreenControl().addTo(map);
+      }
+
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
 
@@ -503,9 +562,32 @@ export default function SchoolMap({
     const handleResize = () => mapRef.current?.invalidateSize();
     window.addEventListener("resize", handleResize);
 
+    // Fullscreen toggle can also exit via the browser's own UI (Escape key, or a
+    // "leave fullscreen" affordance browsers show), not just this control's own
+    // button -- fullscreenchange is the one event that fires either way, so it's the
+    // only reliable place to keep isFullscreen/the button icon and Leaflet's own
+    // cached container size in sync, regardless of how fullscreen was left.
+    const handleFullscreenChange = () => {
+      const active = document.fullscreenElement === fullscreenTargetRef.current;
+      setIsFullscreen(active);
+      const btn = fullscreenBtnRef.current;
+      if (btn) {
+        btn.innerHTML = active ? COLLAPSE_ICON : EXPAND_ICON;
+        btn.title = active ? "Exit fullscreen" : "Fullscreen";
+        btn.setAttribute("aria-label", active ? "Exit fullscreen" : "Enter fullscreen");
+      }
+      // The container's real pixel size just changed (screen-filling vs its normal
+      // in-page size) -- same invalidateSize need as a window resize, just triggered
+      // by a different browser API. A raf tick, not immediate: the fullscreen
+      // transition itself hasn't finished painting yet when this event fires.
+      requestAnimationFrame(() => mapRef.current?.invalidateSize());
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
     return () => {
       cancelled = true;
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
       if (boundsFetchTimerRef.current) clearTimeout(boundsFetchTimerRef.current);
       boundsAbortRef.current?.abort();
       if (mapRef.current) {
@@ -737,6 +819,42 @@ export default function SchoolMap({
           font-size: 10px; font-weight: 600; color: var(--distance-ring);
           text-align: center; white-space: nowrap; background: transparent;
         }
+        /* Fullscreen (2026-08-28): the target div itself gets width/height 100% from
+           every browser's UA stylesheet for free once :fullscreen applies -- what it
+           does NOT do is stretch to fit CHILDREN with their own fixed sizing.
+           .vd-map-el's normal h-[520px]/sm:h-[560px] is exactly that -- a fixed height
+           that's correct for its normal in-page box, meaningless once the wrapper
+           around it is the whole screen. !important because it's overriding an
+           inline-specificity-equivalent Tailwind utility class, not fighting anything
+           else -- there's no other rule this could clobber. Background colour matters
+           too: fullscreen elements paint against black by default in some browsers
+           with no page chrome behind them to show through, unlike their normal in-page
+           box which sits on the page's own background. */
+        .vd-map-fullscreen-target:fullscreen {
+          /* Matches globals.css's own --background exactly (light #ffffff / dark
+             #0a0a0a), not a value invented for this rule alone. */
+          background: #ffffff;
+          display: flex;
+          padding: 12px;
+        }
+        @media (prefers-color-scheme: dark) {
+          :root:where(:not([data-theme="light"])) .vd-map-fullscreen-target:fullscreen {
+            background: #0a0a0a;
+          }
+        }
+        :root[data-theme="dark"] .vd-map-fullscreen-target:fullscreen {
+          background: #0a0a0a;
+        }
+        .vd-map-fullscreen-target:fullscreen .vd-map-el {
+          height: 100% !important;
+          flex: 1;
+        }
+        /* Leaflet's own .leaflet-bar a centers TEXT content (the zoom control's own
+           +/-) via line-height matching the button's fixed size -- an inline SVG
+           doesn't participate in that the same way (baseline-aligns, not
+           line-height-centered), so it needs its own flex centering to actually sit in
+           the middle of the button rather than sitting low. */
+        .vd-fullscreen-btn { display: flex; align-items: center; justify-content: center; }
       `}</style>
 
       {/* Two columns: filters on the left (unchanged position), a rectangle map
@@ -748,8 +866,8 @@ export default function SchoolMap({
           <MapFilterPanel filters={filters} onFiltersChange={setFilters} />
         </div>
 
-        <div className="relative w-full lg:flex-1">
-          <div ref={mapElRef} className="h-[520px] w-full sm:h-[560px]" />
+        <div ref={fullscreenTargetRef} className="vd-map-fullscreen-target relative w-full lg:flex-1">
+          <div ref={mapElRef} className="vd-map-el h-[520px] w-full sm:h-[560px]" />
 
           {boundsOverCap && (
             <div className="pointer-events-none absolute inset-x-0 top-3 z-[1000] flex justify-center">
