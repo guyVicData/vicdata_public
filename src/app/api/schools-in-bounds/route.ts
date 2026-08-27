@@ -413,6 +413,12 @@ export async function GET(request: NextRequest) {
     // noDataCaveat) -- Sixth form centres get a more specific honest reason than the
     // rest of the FE population. Not used for any filtering/matching here or client-side.
     establishmentType: r.establishment_type,
+    // 2026-08-29: raw statutory high age, for the client's own "Post 16" filter fix
+    // (map-tag-groups.ts's hasRealSixthForm) -- a Senior/through school with a real
+    // sixth form (high age 17-19) needs to pass that filter even though its own
+    // phase TAG stays plain "Senior" (phaseTags() narrowed 2026-08-28). Not used for
+    // any filtering/matching server-side -- purely passed through for the client.
+    statutoryHighAge: r.statutory_high_age,
     phase: phaseTags(r.statutory_low_age, r.statutory_high_age),
     gender: genderTag(r.gender),
     totalRoll: rollByUrn.get(r.urn) ?? null,

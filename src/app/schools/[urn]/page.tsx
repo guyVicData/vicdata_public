@@ -251,6 +251,7 @@ export default async function SchoolPage({
             totalRoll: viewedTotalRoll,
             rollSource: viewedRollSource,
             establishmentType: school.establishment_type,
+            statutoryHighAge: school.statutory_high_age,
             rollByPhase: viewedRollByPhase,
             ageBands: viewedAgeBands,
             genderSplit: viewedGenderSplit,

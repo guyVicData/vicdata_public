@@ -25,6 +25,10 @@ export type FilterableSchool = {
   // Optional: only needed for the "Through School" roll-aware check below (see
   // isGenuineThroughSchool's own comment) -- every other tag group ignores it.
   rollByPhase?: Partial<Record<PhaseTag, number>> | null;
+  // 2026-08-29: only needed for the "Post 16" filter's own roll-aware check (see
+  // hasRealSixthForm below) -- every other tag group ignores these two.
+  statutoryHighAge?: number | null;
+  totalRoll?: number | null;
 };
 
 export type TagGroupConfig = {
@@ -65,6 +69,40 @@ export function isGenuineThroughSchool(
   return rollByPhase.Junior !== undefined && rollByPhase.Senior !== undefined;
 }
 
+// 2026-08-29, real bug: the "Post 16" FILTER chip was checking membership against the
+// exact same narrowed phaseTags() array the DISPLAY pill/colour reads (phaseTags()
+// narrowed 2026-08-28 to standalone institutions only, lowAge >= 16, never alongside
+// Senior -- correct for what a dot's label/colour should read). That's the wrong
+// source of truth for the FILTER, which has a genuinely different question to answer:
+// "does this school have real 16+ pupils at all," not "should its dot literally say
+// Post 16." A Senior (or Junior+Senior through-school) with a genuine sixth form --
+// Leighton Park, statutory high age 18 -- was being wrongly excluded from the Post 16
+// filter entirely, even though it obviously has one.
+//
+// Basis: statutory high age 17-19 (the school's own stated LEAVING age) plus real
+// roll data existing at all (totalRoll !== null) -- "confirmed age range plus real
+// roll data," not just a nominal age range alone. Deliberately NOT the same
+// nominal-vs-real distinction Woldingham needed for its LOW age (a registration-floor
+// artefact) -- a school's stated HIGH age doesn't have that problem, it's the age it
+// actually intends to teach up to. totalRoll !== null is still required alongside it
+// so a record with a stated age range but no confirmed real enrolment doesn't pass on
+// the age claim alone.
+export function hasRealSixthForm(
+  phase: PhaseTag[],
+  statutoryHighAge: number | null | undefined,
+  totalRoll: number | null | undefined,
+): boolean {
+  if (!phase.includes("Senior")) return false;
+  return (
+    statutoryHighAge !== null &&
+    statutoryHighAge !== undefined &&
+    statutoryHighAge >= 17 &&
+    statutoryHighAge <= 19 &&
+    totalRoll !== null &&
+    totalRoll !== undefined
+  );
+}
+
 export const TAG_GROUPS: TagGroupConfig[] = [
   {
     key: "sector",
@@ -84,8 +122,21 @@ export const TAG_GROUPS: TagGroupConfig[] = [
     // does have a Junior offering), "Through School" narrows to exactly this
     // population, both filters genuinely true at once, same stackable-tag semantics
     // every other multi-value phase combination already has.
-    getValues: (s) =>
-      isGenuineThroughSchool(s.phase, s.rollByPhase) ? [...s.phase, "Through School"] : s.phase,
+    //
+    // 2026-08-29: "Post 16" is ADDED to the returned values (not swapped in place of
+    // "Senior") for a Senior/through school with hasRealSixthForm() true -- the school
+    // keeps its real Senior tag/colour/label untouched (this only affects what the
+    // FILTER matches against), it just ALSO now passes the Post 16 filter, same
+    // stackable-tag reasoning as Through School above. Guarded on !tags.includes
+    // ("Post 16") even though phaseTags() itself never produces both today (Post 16 is
+    // standalone-only) -- defensive, not load-bearing.
+    getValues: (s) => {
+      const tags = isGenuineThroughSchool(s.phase, s.rollByPhase) ? [...s.phase, "Through School"] : s.phase;
+      if (!tags.includes("Post 16") && hasRealSixthForm(s.phase, s.statutoryHighAge, s.totalRoll)) {
+        return [...tags, "Post 16"];
+      }
+      return tags;
+    },
   },
   {
     key: "gender",
@@ -113,6 +164,24 @@ export const TAG_GROUPS: TagGroupConfig[] = [
 export const COLOUR_MODE_KEYS = ["sector", "phase", "gender"];
 
 export const PHASE_COLOUR_PRIORITY: string[] = ["Junior", "Prep", "Senior", "Post 16"];
+
+// 2026-08-29, real bug: SchoolMap.tsx's colourForSchool/effectiveRoll both used to gate
+// their "genuine through-school gets its own colour/size" override on `phaseFilter.size
+// === 0` -- i.e. ANY active phase filter selection, including "Through School" itself,
+// disabled the override. Selecting the Through School filter chip therefore
+// (perversely) recoloured through schools FROM through-blue TO whichever component tag
+// won fixed priority (Junior green) -- the one filter you'd expect to keep them
+// through-blue was the one that broke it. "Through School" is a synthetic,
+// filter-only value (never appears in PHASE_COLOUR_PRIORITY, phaseTags() never
+// produces it) -- it carries no real component-tag preference the override needs to
+// defer to, unlike selecting a real tag (e.g. "Senior", where relevantPhaseTag's own
+// existing behaviour -- colour/size by the filtered phase specifically -- is correct
+// and deliberate, see its own comment). This is the real distinction the gate needs:
+// has the filter selected a REAL phase tag to narrow to, not just "is any phase filter
+// active at all."
+export function hasRealPhaseTagFilter(phaseFilter: Set<string>): boolean {
+  return PHASE_COLOUR_PRIORITY.some((p) => phaseFilter.has(p));
+}
 
 // 2026-08-26, map phase-band roll sizing: which of a through-school's own phase tags
 // is "the one this dot is currently about" -- drives BOTH colour and radius when
