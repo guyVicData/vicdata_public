@@ -34,6 +34,15 @@ export function sectorTag(establishmentTypeGroup: string | null): SectorTag | nu
 // mainstream filter uses (20260809103000_nearest_schools_mainstream_filter.sql).
 export const MAINSTREAM_ESTABLISHMENT_GROUPS = [...STATE_GROUPS, "Independent schools"];
 
+// Exported 2026-08-28 for schools-in-bounds' own per-sector split cap (150 state / 250
+// independent instead of one shared 500 total, per Guy's direct instruction) -- state
+// schools are dense enough that a shared cap was crowding independents out of mixed
+// viewports entirely (confirmed against real data: independent schools are 2-5x
+// sparser per km² even in populated areas, worse in rural ones), so the query needs
+// these two groups split apart, not just the combined MAINSTREAM_ESTABLISHMENT_GROUPS
+// list above.
+export const STATE_ESTABLISHMENT_GROUPS = [...STATE_GROUPS];
+
 // Boarding threshold: provisional, no empirical basis yet -- same discipline as the
 // shape classifier's STATIONARY_THRESHOLD. GIAS's own boarders_name field is only a
 // binary "has boarding provision or not," which can't distinguish a Boarding-only

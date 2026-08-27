@@ -368,8 +368,12 @@ export default function SchoolMap({
 }) {
   const router = useRouter();
   const [boundsSchools, setBoundsSchools] = useState<BoundsSchool[]>([]);
-  const [boundsOverCap, setBoundsOverCap] = useState(false);
-  const [boundsCap, setBoundsCap] = useState<number | null>(null);
+  // 2026-08-28: per-sector, not a single combined flag+number -- schools-in-bounds now
+  // caps state and independent schools separately (150/250) so a viewport dense with
+  // state schools no longer blanks independent ones out too. Which of the two actually
+  // matters right now depends on the active sector filter -- computed below, not here.
+  const [boundsOverCap, setBoundsOverCap] = useState({ state: false, independent: false });
+  const [boundsCap, setBoundsCap] = useState<{ state: number; independent: number } | null>(null);
   // 2026-08-28, per Guy's live review: the map can genuinely look blank for two
   // different reasons (still fetching the current viewport; genuinely over cap, no
   // markers to show) and needs to say WHICH, clearly -- silence read as broken, not
@@ -474,8 +478,12 @@ export default function SchoolMap({
         );
         if (!res.ok) { setBoundsLoading(false); return; }
         const body = await res.json();
-        setBoundsOverCap(!!body.overCap);
-        setBoundsCap(typeof body.cap === "number" ? body.cap : null);
+        setBoundsOverCap({ state: !!body.overCap?.state, independent: !!body.overCap?.independent });
+        setBoundsCap(
+          body.cap && typeof body.cap.state === "number" && typeof body.cap.independent === "number"
+            ? { state: body.cap.state, independent: body.cap.independent }
+            : null,
+        );
         setBoundsSchools(body.schools ?? []);
         setMemberDetailIncluded(!!body.memberDetailIncluded);
         setBoundsLoading(false);
@@ -875,6 +883,23 @@ export default function SchoolMap({
     ? activeGroup.options.map((opt) => ({ label: opt, colourVar: cssVarNameForTag(opt) }))
     : [];
 
+  // 2026-08-28: which sector(s) actually matter for the over-cap banner depends on the
+  // active sector filter -- e.g. filtered to Independent only, the state cap tripping
+  // is irrelevant noise (state schools aren't shown either way), not something worth
+  // a banner over. Empty filter = both sectors relevant, same as "no restriction"
+  // everywhere else this Set is read.
+  const sectorFilter = filters.sector ?? new Set<string>();
+  const stateSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("State");
+  const independentSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("Independent");
+  const relevantOverCapSectors: string[] = [
+    ...(stateSectorRelevant && boundsOverCap.state ? ["state"] : []),
+    ...(independentSectorRelevant && boundsOverCap.independent ? ["independent"] : []),
+  ];
+  const showOverCapCard = relevantOverCapSectors.length > 0;
+  const overCapMessage = relevantOverCapSectors
+    .map((sector) => `${boundsCap?.[sector as "state" | "independent"] ?? "too many"} ${sector}`)
+    .join(" and ");
+
   return (
     <div ref={rootRef} className="map-widget w-full">
       <style>{`
@@ -1016,7 +1041,7 @@ export default function SchoolMap({
             easy to miss entirely. Same centered card handles both, loading taking
             priority when both are momentarily true (a new, still-resolving fetch
             after an over-cap viewport) so there's never two overlapping messages. */}
-        {(boundsLoading || boundsOverCap) && (
+        {(boundsLoading || showOverCapCard) && (
           <div className="pointer-events-none absolute inset-0 z-[1000] flex items-center justify-center px-4">
             <div
               role="status"
@@ -1031,7 +1056,7 @@ export default function SchoolMap({
               ) : (
                 <>
                   <p className="text-base font-bold text-neutral-900 dark:text-neutral-50">
-                    {boundsCap ? `More than ${boundsCap} schools here` : "Too many schools here"}
+                    More than {overCapMessage} schools here
                   </p>
                   <p className="mt-1 text-sm font-medium text-neutral-600 dark:text-neutral-400">
                     Zoom in to see them

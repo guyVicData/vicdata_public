@@ -6,7 +6,7 @@ import {
   phaseTags,
   phaseTagAgeRange,
   genderTag,
-  MAINSTREAM_ESTABLISHMENT_GROUPS,
+  STATE_ESTABLISHMENT_GROUPS,
   type PhaseTag,
 } from "@/lib/typology";
 import { lookupAgeGenderTotals } from "@/lib/vicdata-reference";
@@ -113,7 +113,19 @@ function genderSplitFor(counts: AgeGenderCounts): { girls: number; boys: number 
 // a few hundred schools can already need multiple full pages, each a separate remote
 // round-trip. Whatever the exact cause, every measurement past ~200 schools was a
 // clearly felt, multi-second wait on a real pan/zoom -- not a borderline case.
-const HARD_CAP = 500;
+//
+// 2026-08-28, split per sector, per Guy's direct instruction: real data check (a
+// separate investigation, not re-run here) confirmed independent schools are 2-5x
+// sparser per km2 than state schools even in populated areas -- a single shared cap
+// meant a viewport dense with state schools (say 450 state + 80 independent, 530
+// total) tripped the WHOLE thing over cap and showed nothing, even though the 80
+// independent schools were perfectly fine on their own. Two separate caps mean that
+// same viewport now shows all 80 independents (well under 250) while only state
+// schools wait on a "zoom in" prompt (well over 150) -- no viewport can ever go fully
+// blank for a sector that isn't actually over-represented. Combined worst case
+// (150+250=400) is also strictly lower than the old shared 500, not just fairer.
+const STATE_CAP = 150;
+const INDEPENDENT_CAP = 250;
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -143,8 +155,10 @@ export async function GET(request: NextRequest) {
     northing: number;
   };
 
-  // Fetch one row past the hard cap -- enough to detect "over cap" without a second,
-  // separate COUNT(*) query.
+  // Two separate queries, one per sector, each fetching one row past ITS OWN cap --
+  // enough to detect that sector's own over-cap without a separate COUNT(*). Run
+  // concurrently (Promise.all), not sequentially -- same total round-trip cost as the
+  // old single query, not double.
   //
   // abortSignal(request.signal), 2026-08-28: real bug caught live -- a fast pan/zoom
   // session fires several of these requests in quick succession; the client-side
@@ -160,19 +174,23 @@ export async function GET(request: NextRequest) {
   // AbortSignal on NextRequest, true when the client has actually disconnected --
   // wiring it through here and into lookupAgeGenderTotals below lets an abandoned
   // request actually stop instead of running to completion for nothing.
-  const { data, error } = await supabase
-    .from("schools")
-    .select("urn, current_name, establishment_type_group, statutory_low_age, statutory_high_age, gender, easting, northing")
-    .neq("status", "closed")
-    .in("establishment_type_group", MAINSTREAM_ESTABLISHMENT_GROUPS)
-    .gte("easting", minEasting)
-    .lte("easting", maxEasting)
-    .gte("northing", minNorthing)
-    .lte("northing", maxNorthing)
-    .limit(HARD_CAP + 1)
-    .abortSignal(request.signal);
+  const baseQuery = () =>
+    supabase
+      .from("schools")
+      .select("urn, current_name, establishment_type_group, statutory_low_age, statutory_high_age, gender, easting, northing")
+      .neq("status", "closed")
+      .gte("easting", minEasting)
+      .lte("easting", maxEasting)
+      .gte("northing", minNorthing)
+      .lte("northing", maxNorthing)
+      .abortSignal(request.signal);
 
-  if (error) {
+  const [stateResult, independentResult] = await Promise.all([
+    baseQuery().in("establishment_type_group", STATE_ESTABLISHMENT_GROUPS).limit(STATE_CAP + 1),
+    baseQuery().eq("establishment_type_group", "Independent schools").limit(INDEPENDENT_CAP + 1),
+  ]);
+
+  if (stateResult.error || independentResult.error) {
     // AbortError surfaces here as a Postgrest error, not a thrown exception (the
     // supabase-js client catches the abort internally) -- a 499-style "client gave up"
     // response, not a real server failure worth a 500 / worth logging as one.
@@ -182,13 +200,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Query failed" }, { status: 500 });
   }
 
-  const rows = (data as Row[]) ?? [];
+  const stateRows = (stateResult.data as Row[]) ?? [];
+  const independentRows = (independentResult.data as Row[]) ?? [];
+  const stateOverCap = stateRows.length > STATE_CAP;
+  const independentOverCap = independentRows.length > INDEPENDENT_CAP;
 
-  if (rows.length > HARD_CAP) {
-    return NextResponse.json({ overCap: true, cap: HARD_CAP, rollDataIncluded: false, schools: [] });
-  }
+  // Over-cap sectors are OMITTED entirely, not truncated to their own cap -- showing
+  // an arbitrary CAP-sized subset of a much larger real population would misleadingly
+  // read as "this is everything here," the same reason the old single-cap version
+  // showed nothing rather than a partial 500. A sector that's within its own cap
+  // still renders normally even when the OTHER sector is over -- that's the entire
+  // point of splitting the cap in the first place.
+  const rows = [
+    ...(stateOverCap ? [] : stateRows),
+    ...(independentOverCap ? [] : independentRows),
+  ];
 
-  const includeRoll = rows.length <= HARD_CAP; // was rows.length <= 100 -- see module comment
+  const includeRoll = rows.length > 0;
   const rollByUrn = new Map<string, number>();
   // 2026-08-26, map phase-band roll sizing: only populated for THROUGH-schools (more
   // than one phase tag) -- a single-tag school's whole roll already IS that one
@@ -283,9 +311,13 @@ export async function GET(request: NextRequest) {
     genderSplit: genderSplitByUrn.get(r.urn) ?? null,
   }));
 
+  // overCap/cap are now per-sector objects, not a single combined flag+number -- a
+  // client showing an active sector filter decides for itself which of the two
+  // actually matters right now (e.g. filtered to Independent only, the state cap
+  // being tripped is irrelevant noise, not something worth a banner over).
   return NextResponse.json({
-    overCap: false,
-    cap: HARD_CAP,
+    overCap: { state: stateOverCap, independent: independentOverCap },
+    cap: { state: STATE_CAP, independent: INDEPENDENT_CAP },
     rollDataIncluded: includeRoll,
     memberDetailIncluded: includeMemberDetail,
     schools,
