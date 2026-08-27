@@ -35,7 +35,14 @@ export default function MapFilterPanel({
   const activeCount = Object.values(filters).reduce((sum, set) => sum + set.size, 0);
 
   return (
-    <div className="w-full rounded-md border border-neutral-200 p-4 text-sm dark:border-neutral-800">
+    <div className="w-full rounded-md border border-neutral-200 bg-white p-4 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+      {/* bg-white/dark:bg-neutral-950 added 2026-08-28 when this panel moved onto the
+          map itself (previously a side column, always on the page's own background --
+          never needed one of its own). Same shape as the size-legend box's own
+          bg-white/dark:bg-neutral-950, same reason: without it, transparent + muted
+          text over live map tiles is unreadable (the exact bug already documented on
+          SchoolMap.tsx's colour-key box, caught the same way -- verify it's actually
+          visible, not just present in the DOM, before trusting it). */}
       <style>{`
         @media (prefers-color-scheme: dark) {
           :root:where(:not([data-theme="light"])) .filter-pill-active {

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import proj4 from "proj4";
-import type { Map as LeafletMap, LayerGroup } from "leaflet";
+import type { Map as LeafletMap, LayerGroup, LatLng, Point } from "leaflet";
 import type { SectorTag, PhaseTag, GenderTag } from "@/lib/typology";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
@@ -374,6 +374,37 @@ export default function SchoolMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const fullscreenTargetRef = useRef<HTMLDivElement | null>(null);
   const fullscreenBtnRef = useRef<HTMLAnchorElement | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  // Real bug caught live, 2026-08-28: entering fullscreen made schools disappear --
+  // NOT a leftover invalidateSize-timing bug (confirmed via live network capture: the
+  // container resizes correctly and fast, invalidateSize fires correctly). The real
+  // cause is more basic -- a bigger container at the SAME zoom level shows a WIDER
+  // real-world area, and that wider area genuinely has 500+ schools, correctly
+  // tripping the existing over-cap "zoom in to see them" state. Technically correct,
+  // still a bad experience: fullscreen should show the same content bigger, not
+  // surprise you with less.
+  //
+  // Second real bug, caught fixing the first: naively fitBounds()-ing the OLD bounds
+  // into the NEW (differently-shaped) container doesn't work either -- fitBounds
+  // preserves the bounding box's OWN aspect ratio only as far as it can; fit into a
+  // container with a DIFFERENT aspect ratio, one axis necessarily overflows to fill
+  // the container's shape, silently growing the real-world area again (confirmed
+  // directly: zoom barely moved, one axis' span came back essentially unchanged). Same
+  // family of bug as this file's OWN "shape the fit box to the container's actual
+  // aspect ratio" note on the initial ring-fit, just triggered by fullscreen instead
+  // of page load.
+  //
+  // Fixed by computing the zoom delta directly from the pixel-size change instead of
+  // re-fitting a bounding box: capture size+zoom+center at the click (not in the
+  // fullscreenchange handler -- the container may already be at its new size by the
+  // time that event fires), then after the resize settles (the ResizeObserver below),
+  // zoom in by log2(the LARGER of the width/height growth ratios). Using the larger
+  // ratio (not the smaller, and not their average) is deliberate: it guarantees
+  // NEITHER axis ever ends up showing more real-world extent than before, at the cost
+  // of the smaller-growth axis showing a bit less (extra blank margin, never a
+  // surprise over-cap).
+  const preFullscreenViewRef = useRef<{ center: LatLng; zoom: number; size: Point } | null>(null);
+  const fullscreenSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -495,6 +526,12 @@ export default function SchoolMap({
               L.DomEvent.preventDefault(e);
               const target = fullscreenTargetRef.current;
               if (!target) return;
+              // Captured here, before either call below -- see preFullscreenViewRef's
+              // own comment for why this has to happen at the click, not afterward.
+              const m = mapRef.current;
+              preFullscreenViewRef.current = m
+                ? { center: m.getCenter(), zoom: m.getZoom(), size: m.getSize() }
+                : null;
               if (document.fullscreenElement) {
                 document.exitFullscreen();
               } else {
@@ -509,6 +546,53 @@ export default function SchoolMap({
 
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
+
+      // 2026-08-28: real bug caught live -- entering fullscreen made every marker
+      // disappear. Root cause: the fullscreenchange handler below called
+      // invalidateSize() on a requestAnimationFrame tick, guessing that was enough
+      // time for the transition to finish -- it wasn't. invalidateSize() run against
+      // the container's OLD (pre-transition) size recomputes Leaflet's pixel origin
+      // wrong, which silently places every existing marker at bogus off-screen
+      // coordinates rather than erroring -- looks exactly like "disappeared," not a
+      // crash. ResizeObserver fires on the container's ACTUAL size change, whenever
+      // that genuinely happens, instead of guessing at transition timing -- covers
+      // fullscreen either direction and makes the existing window-resize listener
+      // below redundant for this same container (left in place regardless;
+      // invalidateSize() is cheap and idempotent, not worth the risk of removing a
+      // working, independent safeguard just to deduplicate).
+      if (mapElRef.current && typeof ResizeObserver !== "undefined") {
+        const ro = new ResizeObserver(() => {
+          const m = mapRef.current;
+          if (!m) return;
+          m.invalidateSize();
+          // Fires on every genuine size change (ordinary window resize included) --
+          // only restore the view when a fullscreen toggle actually just happened
+          // (preFullscreenViewRef set at the click, see its own comment); an ordinary
+          // resize legitimately DOES show more/less real-world area at the same zoom,
+          // which is expected and not what this is fixing.
+          //
+          // Debounced, not applied on the FIRST firing: a fullscreen transition isn't
+          // one instant resize -- ResizeObserver can fire more than once as the
+          // container grows toward its final size, and computing the restoration
+          // against an intermediate, not-yet-final size gets clobbered by the next
+          // (correctly-sized) firing anyway. Waiting for 150ms of genuine
+          // size-stability means it's always the FINAL settled size being used.
+          if (fullscreenSettleTimerRef.current) clearTimeout(fullscreenSettleTimerRef.current);
+          fullscreenSettleTimerRef.current = setTimeout(() => {
+            const pre = preFullscreenViewRef.current;
+            if (pre) {
+              const newSize = m.getSize();
+              const widthRatio = newSize.x / pre.size.x;
+              const heightRatio = newSize.y / pre.size.y;
+              const zoomDelta = Math.log2(Math.max(widthRatio, heightRatio));
+              m.setView(pre.center, pre.zoom + zoomDelta, { animate: false });
+              preFullscreenViewRef.current = null;
+            }
+          }, 150);
+        });
+        ro.observe(mapElRef.current);
+        resizeObserverRef.current = ro;
+      }
 
       // Real bug caught while verifying the distance ring this round: at the fixed
       // MIN_INITIAL_ZOOM (14, from an earlier "tighter default zoom" round), the
@@ -576,11 +660,10 @@ export default function SchoolMap({
         btn.title = active ? "Exit fullscreen" : "Fullscreen";
         btn.setAttribute("aria-label", active ? "Exit fullscreen" : "Enter fullscreen");
       }
-      // The container's real pixel size just changed (screen-filling vs its normal
-      // in-page size) -- same invalidateSize need as a window resize, just triggered
-      // by a different browser API. A raf tick, not immediate: the fullscreen
-      // transition itself hasn't finished painting yet when this event fires.
-      requestAnimationFrame(() => mapRef.current?.invalidateSize());
+      // invalidateSize() itself is NOT called here any more -- see the ResizeObserver
+      // set up alongside map init above for why a guessed-timing rAF call was the
+      // actual bug (markers disappearing on entering fullscreen). This handler now
+      // only owns the button icon/aria-label and isFullscreen state.
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
 
@@ -588,6 +671,8 @@ export default function SchoolMap({
       cancelled = true;
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      resizeObserverRef.current?.disconnect();
+      if (fullscreenSettleTimerRef.current) clearTimeout(fullscreenSettleTimerRef.current);
       if (boundsFetchTimerRef.current) clearTimeout(boundsFetchTimerRef.current);
       boundsAbortRef.current?.abort();
       if (mapRef.current) {
@@ -857,73 +942,78 @@ export default function SchoolMap({
         .vd-fullscreen-btn { display: flex; align-items: center; justify-content: center; }
       `}</style>
 
-      {/* Two columns: filters on the left (unchanged position), a rectangle map
-          taking the rest of the width -- back from last round's square, per Guy's
-          live review. Colour-by and size key boxes float ON the map itself
-          (top-right, solid backgrounds) rather than sitting in a side column. */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <div className="w-full lg:w-64 lg:shrink-0">
+      {/* 2026-08-28, per Guy's live review: filters moved off the side column onto
+          the map itself, top-left, matching the colour-by/size-key boxes' own
+          top-right float -- one full-width map with all its controls floating over
+          it, not a map competing with a column for width. Same responsive shape
+          those boxes already use (stacked flow content below the map under 640px,
+          absolute-over-the-map at 640px and up) -- verified working at that size
+          already, so reusing it here rather than inventing a second pattern. */}
+      <div ref={fullscreenTargetRef} className="vd-map-fullscreen-target relative w-full">
+        <div ref={mapElRef} className="vd-map-el h-[520px] w-full sm:h-[560px]" />
+
+        {boundsOverCap && (
+          <div className="pointer-events-none absolute inset-x-0 top-3 z-[1000] flex justify-center">
+            <div className="rounded-full bg-neutral-900/90 px-3 py-1 text-xs font-medium text-neutral-50 dark:bg-neutral-100/90 dark:text-neutral-900">
+              {boundsCap ? `More than ${boundsCap} schools here` : "Too many schools here"} — zoom in to see them
+            </div>
+          </div>
+        )}
+
+        {/* 2026-08-28, per Guy's live review: filters moved off the side column onto
+            the map itself, top-left -- same responsive shape the colour-key/legend
+            box below already uses and was already verified working at (stacked flow
+            content below the map under 640px, absolute-over-the-map at 640px and up). */}
+        <div className="mt-3 sm:absolute sm:left-3 sm:top-3 sm:z-[1000] sm:mt-0 sm:w-64">
           <MapFilterPanel filters={filters} onFiltersChange={setFilters} />
         </div>
 
-        <div ref={fullscreenTargetRef} className="vd-map-fullscreen-target relative w-full lg:flex-1">
-          <div ref={mapElRef} className="vd-map-el h-[520px] w-full sm:h-[560px]" />
+        {/* Real bug caught while verifying this box was actually visible (not just
+            present in the DOM): Leaflet's .leaflet-container has position:relative
+            but NO explicit z-index, so it never establishes its own stacking
+            context -- its internal panes' z-index values (overlay pane 400, marker
+            pane 600, controls 1000) compare directly against THIS box's implicit
+            z-index:auto in the shared outer stacking context and win, regardless of
+            DOM order. The box was genuinely rendering (confirmed via
+            getComputedStyle, elementFromPoint, and pixel-level screenshot
+            inspection -- a real map marker was visibly painting through the space
+            this box's own bounding rect occupied), just losing every paint battle
+            to markers/tiles underneath it. z-[1000] matches Leaflet's own highest
+            pane z-index (its zoom control), guaranteeing this box wins.
 
-          {boundsOverCap && (
-            <div className="pointer-events-none absolute inset-x-0 top-3 z-[1000] flex justify-center">
-              <div className="rounded-full bg-neutral-900/90 px-3 py-1 text-xs font-medium text-neutral-50 dark:bg-neutral-100/90 dark:text-neutral-900">
-                {boundsCap ? `More than ${boundsCap} schools here` : "Too many schools here"} — zoom in to see them
+            Real bug caught live in production, 2026-08-28 (Playwright-verified across
+            390/768/1024/1440/1920px, including live resize, not just fresh loads):
+            below 640px this box's fixed w-56 (224px) is more than half the viewport,
+            so floating it absolutely over the map buried the focus-school popup card
+            underneath it -- readable at 768px+ (plenty of map width left over) but a
+            real usability break on an actual phone. Stacked flow content below the
+            map under sm (640px), absolute-over-the-map at sm and up -- the filter
+            panel above reuses this exact same shape, not a second pattern. */}
+        <div className="mt-3 flex flex-col gap-3 sm:absolute sm:right-3 sm:top-3 sm:z-[1000] sm:mt-0 sm:w-56">
+          <MapColourKey
+            modes={colourModes}
+            mode={colourMode}
+            onModeChange={setColourMode}
+            swatches={colourSwatches}
+          />
+
+          <div className="w-full rounded-md border border-neutral-200 bg-white p-3 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Size</h3>
+            {legendMinRoll !== null && legendMaxRoll !== null ? (
+              <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                <LegendDot radius={MIN_RADIUS} />
+                <span>{legendMinRoll.toLocaleString()}</span>
+                <LegendDot radius={MAX_RADIUS} />
+                <span>{legendMaxRoll.toLocaleString()} pupils</span>
               </div>
-            </div>
-          )}
-
-          {/* Real bug caught while verifying this box was actually visible (not just
-              present in the DOM): Leaflet's .leaflet-container has position:relative
-              but NO explicit z-index, so it never establishes its own stacking
-              context -- its internal panes' z-index values (overlay pane 400, marker
-              pane 600, controls 1000) compare directly against THIS box's implicit
-              z-index:auto in the shared outer stacking context and win, regardless of
-              DOM order. The box was genuinely rendering (confirmed via
-              getComputedStyle, elementFromPoint, and pixel-level screenshot
-              inspection -- a real map marker was visibly painting through the space
-              this box's own bounding rect occupied), just losing every paint battle
-              to markers/tiles underneath it. z-[1000] matches Leaflet's own highest
-              pane z-index (its zoom control), guaranteeing this box wins.
-
-              Real bug caught live in production, 2026-08-28 (Playwright-verified across
-              390/768/1024/1440/1920px, including live resize, not just fresh loads):
-              below 640px this box's fixed w-56 (224px) is more than half the viewport,
-              so floating it absolutely over the map buried the focus-school popup card
-              underneath it -- readable at 768px+ (plenty of map width left over) but a
-              real usability break on an actual phone. Same fix shape the filter panel
-              already uses (flex-col below lg, flex-row at lg+): plain stacked flow
-              content below the map under sm (640px), absolute-over-the-map at sm and up. */}
-          <div className="mt-3 flex flex-col gap-3 sm:absolute sm:right-3 sm:top-3 sm:z-[1000] sm:mt-0 sm:w-56">
-            <MapColourKey
-              modes={colourModes}
-              mode={colourMode}
-              onModeChange={setColourMode}
-              swatches={colourSwatches}
-            />
-
-            <div className="w-full rounded-md border border-neutral-200 bg-white p-3 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Size</h3>
-              {legendMinRoll !== null && legendMaxRoll !== null ? (
-                <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-                  <LegendDot radius={MIN_RADIUS} />
-                  <span>{legendMinRoll.toLocaleString()}</span>
-                  <LegendDot radius={MAX_RADIUS} />
-                  <span>{legendMaxRoll.toLocaleString()} pupils</span>
-                </div>
-              ) : (
-                <p className="text-neutral-500 dark:text-neutral-400">Dot size reflects roll where available.</p>
-              )}
-              {colourMode === "phase" && (
-                <p className="mt-1.5 text-xs text-neutral-400">
-                  Through-schools are sized to pupils in the matched phase only, not their whole roll.
-                </p>
-              )}
-            </div>
+            ) : (
+              <p className="text-neutral-500 dark:text-neutral-400">Dot size reflects roll where available.</p>
+            )}
+            {colourMode === "phase" && (
+              <p className="mt-1.5 text-xs text-neutral-400">
+                Through-schools are sized to pupils in the matched phase only, not their whole roll.
+              </p>
+            )}
           </div>
         </div>
       </div>
