@@ -239,3 +239,23 @@ export async function computeSurroundingSchoolsStat(
 ): Promise<SurroundingSchoolsStat> {
   return aggregateSurroundingStat(await findSurroundingSchools(urn, targetPeriod));
 }
+
+// 2026-08-28, dashboard rebuild's Gender split card: the peer-average side of that
+// card needs a girls/boys SPLIT across the matched pool, not just the combined
+// headcount aggregateSurroundingStat already exposes (aggregateAgeCounts is
+// deliberately both-sexes-combined, the free-tier "no-gender" chart). A separate
+// small aggregator over the same already-fetched MatchedSchool[] rather than
+// widening SurroundingSchoolsStat's own shape -- every other existing caller of that
+// type doesn't need this, and this repeats the same real-pupils-only reasoning
+// (summing genuine ageGenderCounts, not a guessed 50/50 split).
+export function aggregatePeerGenderSplit(matched: MatchedSchool[]): { girls: number; boys: number } | null {
+  let girls = 0;
+  let boys = 0;
+  for (const m of matched) {
+    for (const c of m.ageGenderCounts.values()) {
+      girls += c.female;
+      boys += c.male;
+    }
+  }
+  return girls + boys > 0 ? { girls, boys } : null;
+}

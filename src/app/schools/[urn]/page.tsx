@@ -1,34 +1,48 @@
 import { notFound } from "next/navigation";
+import { Newsreader, IBM_Plex_Sans } from "next/font/google";
 import { createServerAnonSupabaseClient } from "@/lib/supabase";
 import { lookupReferenceData } from "@/lib/vicdata-reference";
 import {
   buildRollSnapshot,
   singleAgeGenderCountsForPeriod,
   shapeClassifierInput,
+  AGE_BANDS,
   CURRENT_CENSUS_PERIOD,
 } from "@/lib/roll-data";
 import { buildIlrParticipationSnapshot } from "@/lib/ilr-participation-data";
 import { classifyShape, type ShapeLabel } from "@/lib/shape-classifier";
-import { findSurroundingSchools, aggregateSurroundingStat } from "@/lib/surrounding-schools";
+import { findSurroundingSchools, aggregateSurroundingStat, aggregatePeerGenderSplit } from "@/lib/surrounding-schools";
+import { computeLaSectorComposition } from "@/lib/la-sector-composition";
+import { lookupAgeBandDistributions } from "@/lib/age-band-distributions";
+import { lookupPopulationTrend } from "@/lib/population-trend-lookup";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
-import ShapeChart from "@/components/ShapeChart";
-import AggregateShapeChart from "@/components/AggregateShapeChart";
 import TypologyTags from "@/components/TypologyTags";
-import SurroundingSchoolsMemberList from "@/components/SurroundingSchoolsMemberList";
 import SchoolMap from "@/components/SchoolMap";
 import { computeTypology, phaseTagAgeRange, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type PhaseTag } from "@/lib/typology";
 import { buildSurroundingSummary } from "@/lib/surrounding-summary";
 import { under19Totals, adultTotals, UNDER_19_TOTAL_BREAKDOWN, ADULT_TOTAL_BREAKDOWN } from "@/lib/fe-participation-roll";
+import { DashboardGrid } from "@/components/dashboard/Card";
+import { RollCard } from "@/components/dashboard/RollCard";
+import { PhaseBreakdownCard } from "@/components/dashboard/PhaseBreakdownCard";
+import { ShapeCard } from "@/components/dashboard/ShapeCard";
+import { GenderSplitCard } from "@/components/dashboard/GenderSplitCard";
+import {
+  BoardingCard,
+  SurroundingSchoolsCard,
+  RegionalNationalCard,
+  IlrParticipationCard,
+  NoCensusDataCard,
+  ComingSoonCard,
+} from "@/components/dashboard/SmallCards";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
 
-const SHAPE_LABELS: Record<ShapeLabel, string> = {
-  tube: "Tube",
-  pyramid_funnel: "Pyramid / Funnel",
-  mushroom: "Mushroom",
-  wineglass: "Wineglass",
-  irregular: "Irregular",
-};
+// Scoped to this page only, not the global layout (Geist stays the site-wide default
+// everywhere else -- nav, search, other pages) -- design-reference typography for the
+// card-grid rebuild specifically (2026-08-28). next/font/google self-hosts and
+// subsets these at build time, same mechanism the root layout already uses for Geist.
+const newsreader = Newsreader({ subsets: ["latin"], variable: "--font-newsreader", weight: ["400", "500", "600"] });
+const plexSans = IBM_Plex_Sans({ subsets: ["latin"], variable: "--font-plex-sans", weight: ["400", "500", "600"] });
 
 type School = {
   urn: string;
@@ -47,6 +61,7 @@ type School = {
   la_code: string | null;
   easting: number | null;
   northing: number | null;
+  number_of_pupils: number | null;
 };
 
 async function getSchool(urn: string): Promise<School | null> {
@@ -54,7 +69,7 @@ async function getSchool(urn: string): Promise<School | null> {
   const { data, error } = await supabase
     .from("schools")
     .select(
-      "urn, current_name, town, postcode, la_name, establishment_type_group, establishment_type, phase, boarding_establishment, boarders_name, statutory_low_age, statutory_high_age, gender, la_code, easting, northing",
+      "urn, current_name, town, postcode, la_name, establishment_type_group, establishment_type, phase, boarding_establishment, boarders_name, statutory_low_age, statutory_high_age, gender, la_code, easting, northing, number_of_pupils",
     )
     .eq("urn", urn)
     .maybeSingle();
@@ -220,6 +235,24 @@ export default async function SchoolPage({
     surrounding.found,
     surrounding.averageRoll,
   );
+
+  // Dashboard rebuild (2026-08-28) additions -- all gated behind `roll` existing,
+  // same as every other census-derived card below, since none of these mean anything
+  // without a real roll to attach them to.
+  const laComposition = roll
+    ? await computeLaSectorComposition(school.la_name ?? "", typology.sector, school.number_of_pupils)
+    : null;
+  const bandDistributions = roll ? await lookupAgeBandDistributions(school.la_name, roll.period) : null;
+  const populationTrend = roll ? await lookupPopulationTrend(school.la_name, school.la_code, roll.period) : null;
+  const peerGenderSplit = aggregatePeerGenderSplit(matchedSurrounding);
+  // "Peer average across the N nearest {descriptors} schools" -- reuses the exact
+  // same descriptor words buildSurroundingSummary already computes for the free-tier
+  // sentence (sector/gender/phase), not a second, possibly-diverging phrase.
+  const peerGenderLabel =
+    surrounding.found > 0
+      ? `Peer average across the ${surrounding.found} nearest matched schools`
+      : "";
+
   return (
     <>
       {/* Map redesign (2026-08-23): full-bleed, top of the page, outside the
@@ -259,226 +292,115 @@ export default async function SchoolPage({
         />
       )}
 
-      <main className="mx-auto max-w-3xl px-6 py-16">
-      <header className="mb-10">
-        <h1 className="text-2xl font-semibold">{school.current_name}</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          {[school.town, school.postcode].filter(Boolean).join(", ")}
-          {school.establishment_type_group ? ` — ${school.establishment_type_group}` : ""}
-        </p>
-        <div className="mt-3">
-          <TypologyTags typology={typology} />
-        </div>
-      </header>
-
-      {!roll && (
-        <section className="mb-10 rounded-md border border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-800">
-          No DfE census roll data is available for this school — this is expected for
-          standalone 6th-form/FE-corporation institutions (a confirmed, permanent gap
-          until the academic-results topic is built), or for a very recently opened
-          school.
-        </section>
-      )}
-
-      {showIlrCard && ilrSnapshot && (
-        <Section title="FE participation data (ILR)">
-          <p className="text-3xl font-semibold">{ilrSnapshot.total.toLocaleString()}</p>
-          <p className="text-sm text-neutral-500">
-            learners, {ilrSnapshot.period}/{String(ilrSnapshot.period + 1).slice(2)}
+      {/* Card-grid rebuild (2026-08-28) -- design reference: "VicData State of School
+          Dashboard" canvas. Font variables scoped to this wrapper only, not the root
+          layout (Geist stays the site default everywhere else). max-w-6xl, not the
+          old max-w-3xl -- a 12-column card grid genuinely needs the room a single
+          reading column didn't. */}
+      <main className={`${newsreader.variable} ${plexSans.variable} mx-auto max-w-6xl px-6 py-16`} style={{ fontFamily: "var(--font-plex-sans)" }}>
+        <header className="mb-8">
+          <h1 className="font-[family-name:var(--font-newsreader)] text-[32px] font-semibold text-stone-900 dark:text-stone-100">
+            {school.current_name}
+          </h1>
+          <p className="mt-1 text-[14px] text-stone-500 dark:text-stone-400">
+            {[school.town, school.postcode].filter(Boolean).join(", ")}
+            {school.establishment_type_group ? ` — ${school.establishment_type_group}` : ""}
           </p>
-          {ilrSnapshot.male !== null && ilrSnapshot.female !== null && (
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              {ilrSnapshot.female.toLocaleString()} girls, {ilrSnapshot.male.toLocaleString()}{" "}
-              boys
-            </p>
-          )}
-          <p className="mt-3 text-xs text-neutral-400">
-            DfE&rsquo;s own experimental &ldquo;in development&rdquo; statistics
-            (Individualised Learner Record) — not the DfE school census figure{roll ? " above" : ""}.
-            A count of learners participating in further education courses across the
-            academic year, not a single-day headcount, shown here because {roll
-              ? "this school's own census data hasn't been updated since " + roll.period + "/" + String(roll.period + 1).slice(2)
-              : "this school has no DfE census roll data"}. Shown separately, never
-            combined with the census figure — they measure different things.
-          </p>
-        </Section>
-      )}
+          <div className="mt-3">
+            <TypologyTags typology={typology} />
+          </div>
+        </header>
 
-      {roll && (
-        <>
-          {/* 2026-08-22 fix: was "Current roll" -- genuinely misleading for the many
-              academy-16-19-converter/free-school-16-19 institutions whose most recent
-              real census data is 1-5 years stale (a real, newly-confirmed census-coverage
-              gap for this establishment type, not a display bug in isolation -- see
-              docs/OPEN_QUESTIONS.md in the vicdata ingest repo, 2026-08-22). The actual
-              academic year is already shown correctly in the caption directly below: the
-              bug was the bold header claiming currency the data doesn't have, not the
-              underlying number or the period label itself, so this is a text-only fix,
-              nothing data-side changed. */}
-          <Section title="Roll">
-            <p className="text-3xl font-semibold">{roll.totalRoll.toLocaleString()}</p>
-            <p className="text-sm text-neutral-500">
-              pupils, {roll.period}/{String(roll.period + 1).slice(2)}
-            </p>
-            <table className="mt-4 w-full text-sm">
-              <tbody>
-                {roll.byAgeBand
-                  .filter((b) => b.total > 0)
-                  .map((b) => (
-                    <tr key={b.key} className="border-t border-neutral-100 dark:border-neutral-800">
-                      <td className="py-1.5 text-neutral-600 dark:text-neutral-400">{b.label}</td>
-                      <td className="py-1.5 text-right font-medium">
-                        {b.total.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </Section>
+        <DashboardGrid>
+          {!roll && <NoCensusDataCard />}
 
-          <Section title="Shape">
-            {ageGenderCounts && <ShapeChart ageGenderCounts={ageGenderCounts} />}
-            {shape ? (
-              <>
-                <p className="mt-3 text-lg font-medium">{SHAPE_LABELS[shape.label]}</p>
-                <p className="text-sm text-neutral-500">
-                  Single-year snapshot, based on this year&rsquo;s age 5–17 profile.
-                  Provisional classification — this typology is still being calibrated
-                  against real school data.
-                </p>
-              </>
-            ) : (
-              <p className="mt-3 text-sm text-neutral-500">
-                Not enough age 5–17 data to classify a shape this year.
-              </p>
-            )}
-          </Section>
-
-          <Section title="Gender split">
-            <p>
-              {roll.gender.female.toLocaleString()} girls, {roll.gender.male.toLocaleString()}{" "}
-              boys
-            </p>
-            <p className="mt-1 text-xs text-neutral-400">
-              Full-roll headcount, all ages — not the same age range as the shape chart
-              above.
-            </p>
-          </Section>
-
-          {roll.boarding && (
-            <Section title="Boarding">
-              <p>
-                {roll.boarding.boarders.toLocaleString()} boarders,{" "}
-                {roll.boarding.day.toLocaleString()} day pupils
-              </p>
-              <p className="mt-1 text-xs text-neutral-400">
-                DfE census boarding headcount, same period as the roll above.
-              </p>
-            </Section>
+          {showIlrCard && ilrSnapshot && (
+            <IlrParticipationCard
+              total={ilrSnapshot.total}
+              period={ilrSnapshot.period}
+              girls={ilrSnapshot.female}
+              boys={ilrSnapshot.male}
+              reason={
+                roll
+                  ? `this school's own census data hasn't been updated since ${roll.period}/${String(roll.period + 1).slice(2)}`
+                  : "this school has no DfE census roll data"
+              }
+            />
           )}
 
-          <PaidTrendsSection urn={urn} />
-        </>
-      )}
+          {roll && (
+            <>
+              <RollCard totalRoll={roll.totalRoll} period={roll.period} laComposition={laComposition} />
 
-      <Section title="Surrounding schools">
-        {surrounding.found > 0 && surroundingSummary ? (
-          <>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              {surroundingSummary}
-              {surrounding.aggregateShape && (
-                <>
-                  {" "}
-                  The combined shape is <strong>{SHAPE_LABELS[surrounding.aggregateShape]}</strong>.
-                </>
+              {bandDistributions && (
+                <PhaseBreakdownCard
+                  laName={school.la_name}
+                  bands={AGE_BANDS.map((b) => ({
+                    key: b.key,
+                    label: b.label,
+                    total: roll.byAgeBand.find((r) => r.key === b.key)?.total ?? 0,
+                    distribution: bandDistributions.get(b.key) ?? null,
+                  }))}
+                />
               )}
-            </p>
-            {surrounding.aggregateAgeCounts && (
-              <div className="mt-3">
-                <AggregateShapeChart ageCounts={surrounding.aggregateAgeCounts} />
-              </div>
-            )}
-            <p className="mt-3 text-xs text-neutral-400">
-              The {surrounding.found} schools behind this comparison are visible to
-              verified members.
-            </p>
-            <SurroundingSchoolsMemberList urn={urn} />
-          </>
-        ) : (
-          <p className="text-sm text-neutral-500">
-            Not enough nearby comparable schools with roll data to show this yet.
-          </p>
-        )}
-      </Section>
 
-      {(context.national || context.regional) && (
-        <Section title="Regional & national context">
-          <p className="text-xs text-neutral-400 mb-2">
-            About the world, not about this school — free regardless of tier (rolls
-            spec §2).
-          </p>
-          <table className="w-full text-sm">
-            <tbody>
-              {context.regional && (
-                <tr className="border-t border-neutral-100 dark:border-neutral-800">
-                  <td className="py-1.5 text-neutral-600 dark:text-neutral-400">
-                    {school.la_name} ({context.regional.school_count} schools)
-                  </td>
-                  <td className="py-1.5 text-right">
-                    {context.regional.total_roll.toLocaleString()} pupils
-                    {context.regional.shape_label && (
-                      <span className="ml-2 text-neutral-500">
-                        — {SHAPE_LABELS[context.regional.shape_label]}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              )}
-              {context.national && (
-                <tr className="border-t border-neutral-100 dark:border-neutral-800">
-                  <td className="py-1.5 text-neutral-600 dark:text-neutral-400">
-                    England ({context.national.school_count.toLocaleString()} schools)
-                  </td>
-                  <td className="py-1.5 text-right">
-                    {context.national.total_roll.toLocaleString()} pupils
-                    {context.national.shape_label && (
-                      <span className="ml-2 text-neutral-500">
-                        — {SHAPE_LABELS[context.national.shape_label]}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Section>
-      )}
+              <ShapeCard
+                ageGenderCounts={ageGenderCounts}
+                shape={shape?.label ?? null}
+                aggregateAgeCounts={surrounding.aggregateAgeCounts}
+                aggregateShape={surrounding.aggregateShape}
+                populationTrend={populationTrend}
+              />
 
-      <Section title="Academic">
-        <ComingSoon />
-      </Section>
-      <Section title="Social context">
-        <ComingSoon />
-      </Section>
-      <Section title="Destinations">
-        <ComingSoon />
-      </Section>
+              <GenderSplitCard
+                girls={roll.gender.female}
+                boys={roll.gender.male}
+                peer={peerGenderSplit}
+                peerLabel={peerGenderLabel}
+              />
+
+              {roll.boarding && <BoardingCard boarders={roll.boarding.boarders} day={roll.boarding.day} />}
+
+              <PaidTrendsSection urn={urn} />
+            </>
+          )}
+
+          <SurroundingSchoolsCard
+            urn={urn}
+            summary={surroundingSummary}
+            aggregateShape={surrounding.aggregateShape}
+            found={surrounding.found}
+          />
+
+          {(context.national || context.regional) && (
+            <RegionalNationalCard
+              laName={school.la_name}
+              regional={
+                context.regional
+                  ? {
+                      schoolCount: context.regional.school_count,
+                      totalRoll: context.regional.total_roll,
+                      shape: context.regional.shape_label,
+                    }
+                  : null
+              }
+              national={
+                context.national
+                  ? {
+                      schoolCount: context.national.school_count,
+                      totalRoll: context.national.total_roll,
+                      shape: context.national.shape_label,
+                    }
+                  : null
+              }
+            />
+          )}
+
+          <ComingSoonCard title="Academic snapshot" />
+          <ComingSoonCard title="Social context" />
+          <ComingSoonCard title="Destinations" />
+        </DashboardGrid>
       </main>
     </>
   );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mb-10">
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function ComingSoon() {
-  return <p className="text-sm text-neutral-400">Coming soon.</p>;
 }

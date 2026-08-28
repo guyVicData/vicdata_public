@@ -458,6 +458,122 @@ small necessary side-effect fix: `surrounding-summary.ts`'s prose sentence lower
 sector names for natural reading ("independent", "state") -- "FE" is an acronym, so
 lowercasing it read as a typo ("fe school"); special-cased to stay "FE".
 
-**Decision**: ...
-**Why**: ...
-**Default proceeding with**: ...
+---
+
+## 2026-08-28 — State of the School page rebuilt as a card grid; real judgment calls
+
+**Design system scope**: the design-reference canvas's new typography (Newsreader
+serif + IBM Plex Sans) and warm-neutral card style are applied ONLY inside
+`schools/[urn]/page.tsx` via `next/font/google`, not the root layout -- the rest of
+the site (nav, search, other pages) stays on Geist. A real, deliberate scope
+narrowing: the brief said "rebuilding the State of the School page," not a site-wide
+rebrand, and introducing a second global typeface without being asked felt like the
+wrong default. Tag pill colours were confirmed directly with Guy (not assumed) to keep
+the existing `TAG_COLOURS` rather than the mockup's own separate palette -- one tag,
+one colour, everywhere in the app.
+
+**Phase-breakdown quintiles: new precomputed infrastructure, confirmed necessary
+first**. No live per-request computation was viable (6,574 schools nationally carry
+just the Senior phase tag alone; same category of problem `roll_aggregates` already
+exists to avoid). Built `age_band_pupil_distributions` (migration
+`20260828120000`) + `scripts/sync-age-band-distributions.ts`, same shape as
+`sync-roll-aggregates.ts`. Two real, first-pass interpretation choices, not final
+definitions:
+  - Reference population is NATIONAL only (a school's own LA is a subset of it) --
+    "same-phase schools within the LA and nationally combined" (the original
+    instruction's exact wording) is genuinely ambiguous between that reading and a
+    literal pooled LA+national list; "regional" rows are computed and stored, but only
+    ever feed the descriptive LA-average caption number, not a second quintile scale.
+  - Only schools with a genuine NON-ZERO headcount in a band count toward that band's
+    distribution -- a primary school with zero Sixth Form pupils would otherwise
+    silently drag the Sixth Form quintiles/mean toward zero.
+  - Real data quirk surfaced running this for real: the "secondary" band's national
+    distribution is bimodal (p20=1, p40=47, p60=518) -- a large population of schools
+    with only a handful of secondary-age SEN/repeater pupils sits well below the
+    genuine secondary-school population. Worth Guy's attention before trusting the
+    XS/S badges for that specific band.
+  - Found running the sync job for real: the shared `reference_data_lookup` RPC
+    intermittently statement-timeouts under this job's own concurrency (reproduced
+    twice, at genuinely different progress points -- not the documented >160k-OFFSET
+    ceiling `sync-roll-aggregates.ts` already knows about). Added retry-with-backoff
+    rather than treating it as a hard failure; the job completed cleanly once retries
+    were in place (3,661,187 rows read, 717 distribution rows written).
+
+**Roll card's LA sector-composition donut**: uses GIAS's own `number_of_pupils`
+snapshot field (`schools` table, ~89% filled), NOT the DfE census figure the rest of
+the page uses -- confirmed via investigation this is a single cheap live query
+(`GROUP BY establishment_type_group` for the LA), not a new aggregate, but it's a
+genuinely different data provenance from the census "Roll" number directly above it in
+the same card. Flagged explicitly in the card's own caption text, not silently
+blended -- same discipline as the map's ILR-vs-census distinction.
+
+**Shape icons**: five new hand-drawn line icons (`ShapeIcon.tsx`), built to actually
+depict what `shape-classifier.ts`'s own logic means (flat/monotonic-down/rise-then-
+fall/fall-then-rise/other), not decorative glyphs. No prior art existed for these.
+
+**"Deliberately NOT built this round" above (population trend) is superseded --
+built later the same day, after Guy corrected the scope twice.** Worth recording
+both corrections plainly, not just the final answer:
+
+1. **First correction**: the original framing (ONS true-population data, needed
+   because school census "undercounts home-schooled/not-yet-enrolled children") was
+   answering a different, bigger feature (a future birth-rate projection tool) that
+   was never actually in scope. What's genuinely wanted here is simpler -- the same
+   real DfE census school-enrolment data already powering Regional & National
+   context, summed by single year of age instead of one lump total. The one real gap
+   that DID apply: no LA->region crosswalk existed. Built as static reference data,
+   not a new source dependency -- `la_gss_crosswalk` gained a `region` column
+   (migration `20260828130000`), England's 9 ONS regions, reasoned from stable
+   administrative geography and cross-checked against all 182 real rows already in
+   that table (the 22 Welsh W06 rows correctly get no region). `age_profile_aggregates`
+   (migration `20260828140000` + `scripts/sync-age-profile-aggregates.ts`) precomputes
+   ages 5-15 by LA and by region, same "don't live-aggregate across thousands of
+   schools" reasoning as `roll_aggregates`.
+
+2. **Second, more consequential correction, on the classification rule itself**:
+   an initial theory explained the universal age5-younger-than-age15 gap (every
+   region +7.8% to +18.75%) as DfE census under-enrolling Reception-age children from
+   "late starts" around the Sept/Aug cutoff, and proposed anchoring the metric at
+   age 10 (empirically the point the year-on-year rise flattens) to get a
+   "reliable" reference age free of that artifact. **Guy caught this directly:
+   late starts don't happen in England -- that explanation was invented, not real.**
+   The actual cause of the age5-15 gap is real and well-documented: England's birth
+   rate peaked around 2012 and has been declining since, so a 15-year-old in 2025
+   (born ~2010) really did belong to a bigger birth cohort than a 5-year-old (born
+   ~2020). Age 10 sat almost exactly where that real decline was already fully
+   priced in relative to age 15 -- anchoring there didn't remove noise, it discarded
+   the actual signal the card exists to show (confirmed: the "corrected" national
+   figure came out near zero, i.e. blind to a real, large, genuine trend).
+   **Final metric: `(age15 - age5) / age15`** -- age 5 and age 15 exactly as
+   originally chosen (5 = youngest age with full compulsory attendance, 15 = oldest
+   still reliably counted in school census before dispersing into FE colleges,
+   which report via ILR not census -- this project's own earlier FE work). age15 as
+   the denominator (not age5) was itself checked, not assumed: using age5 instead
+   moved 17 of 153 LAs across a tier boundary, including Surrey (a real worked
+   example, Steep Decline -> Decline) -- a real, meaningful shift, not cosmetic.
+
+**Banding, also built from real distribution checks, not guessed**: an initial
+tercile (percentile-rank) approach was explicitly rejected -- ranking each LA
+against its 152 peers would force a third of them into "Growing" even under
+uniform national decline, which is the wrong behaviour for a literal, absolute
+label. Final bands are real fixed cut points, each checked against the actual
+153-LA distribution before being fixed: **Growing < 0%** (22 LAs -- literally more
+5-year-olds than 15-year-olds, rare and meaningful precisely because it's rare),
+**Stable 0-2%** (5 LAs -- thin but real, not empty; ±1% was checked first and found
+genuinely too sparse at just 2 LAs), **Decline 2-15%** (80 LAs, the real dense
+core of the distribution), **Steep Decline 15-25%** (32 LAs -- 25% is a real
+histogram break: dense and continuous below it, a sharp drop above), **Severe
+Decline >25%** (13 LAs). A further real gap exists at 55-90% (completely empty)
+separating 3 known demographic outliers (Westminster, City of London, Rutland --
+genuinely small resident child populations, not noise) from the rest of Severe
+Decline; not split into its own tier since it would only ever contain those 3 LAs.
+Reliability floor (age5 >= 100) excludes only Isles of Scilly (1 school) from all
+153. Verified: Reading 9.6% Decline, Surrey 14.9% Decline, Worcestershire 15.9%
+Steep Decline, South West region 15.8% Steep Decline (its own margin above the 15%
+line is a bare +0.8pp under the age15-denominator metric -- worth knowing it's a
+close call).
+
+Both mistakes are logged here deliberately, not just the corrected answer -- the
+same "why," not just "what changed" discipline every other entry in this file
+follows, and a real reminder that a plausible-sounding mechanism (late starts) is
+not the same as a confirmed one.
