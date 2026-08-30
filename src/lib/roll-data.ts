@@ -164,25 +164,81 @@ export function singleAgeGenderCountsForPeriod(
   return byAge;
 }
 
-// Ages 5-17 only: the design review's resolved shape-classification range (chart
-// palette doc / review log). Ages 4 and 18 are excluded because they're structurally
-// incomplete cohorts at census date (most 4- and 18-year-olds nationally aren't in a
-// school-age census bracket yet/any more), which was producing a false "rise" at the
-// very start of every primary school's age profile -- the root cause behind the
-// classifier's universal "Mushroom" bias found in the Task 3 review. Ages 4 and 18
-// still appear on the pyramid chart itself (task 31), just tinted to mark them as
-// partial, and are never part of the classification input.
+// 2026-08-29, first pass: replaced the old fixed ages-5-17 window with each school's
+// own observed non-zero data span, unclamped, plus a standalone age-18 carve-out
+// (retake/held-back population, not the standard cohort). Reverted: unclamped span
+// cropping reintroduced real non-zero ages 0-4 (nursery/reception, generally a
+// genuinely partial/ramping-up cohort, not yet comparable to the rest of the roll) --
+// exactly the "false rise" artifact a still-earlier round had already found and fixed
+// by excluding ages 4/18 outright. This time it showed up as a false "wineglass"
+// rather than the previously-documented false "mushroom" (a single early "up" into an
+// otherwise flat plateau trips classifyShape's own up-then-no-down rule), at a larger
+// scale: ~2,300 real schools nationally, confirmed via two independent stratified
+// samples of real per-age data.
+//
+// 2026-08-29, second pass (current): the observed span is now CLAMPED to
+// [SHAPE_CLASSIFICATION_MIN_AGE, SHAPE_CLASSIFICATION_MAX_AGE] before cropping to
+// real non-zero data within that clamp -- ages 0-4 and 18+ never enter the
+// classification input, however real or non-zero, but a school's real span within
+// 5-17 (e.g. a senior school starting at 11, not 5) is still read from the data, not
+// assumed. The clamp's own upper bound (17) makes the old standalone age-18 carve-out
+// redundant -- age 18 was never going to survive a max-age-17 clamp anyway -- so it's
+// removed rather than kept alongside a now-overlapping rule.
 export const SHAPE_CLASSIFICATION_MIN_AGE = 5;
 export const SHAPE_CLASSIFICATION_MAX_AGE = 17;
 
+// True observed span, UNCLAMPED -- first age with any real (non-zero) pupil count
+// through the last age with any real count, for the year being classified. No minimum
+// -count threshold: even 1 pupil at an edge age is real data. This is deliberately the
+// full real range (nursery ages, 18, 19 all included when present) -- it feeds the
+// displayed roll-by-age chart, which should show the whole real picture even though
+// the classifier itself only looks at a clamped window (see
+// classificationAgeSpan/shapeClassifierInput below). Returns null when there's no
+// non-zero data at all.
+export function observedAgeSpan(
+  ageGenderCounts: AgeGenderCounts,
+): { minAge: number; maxAge: number } | null {
+  let minAge: number | null = null;
+  let maxAge: number | null = null;
+  for (const [age, counts] of ageGenderCounts) {
+    if (counts.male + counts.female <= 0) continue;
+    if (minAge === null || age < minAge) minAge = age;
+    if (maxAge === null || age > maxAge) maxAge = age;
+  }
+  if (minAge === null || maxAge === null) return null;
+  return { minAge, maxAge };
+}
+
+// Same first/last-non-zero logic as observedAgeSpan, but bounded to
+// [SHAPE_CLASSIFICATION_MIN_AGE, SHAPE_CLASSIFICATION_MAX_AGE] -- the classifier's own
+// span, not the chart's. Not exported: only shapeClassifierInput needs it.
+function classificationAgeSpan(
+  ageGenderCounts: AgeGenderCounts,
+): { minAge: number; maxAge: number } | null {
+  let minAge: number | null = null;
+  let maxAge: number | null = null;
+  for (const [age, counts] of ageGenderCounts) {
+    if (age < SHAPE_CLASSIFICATION_MIN_AGE || age > SHAPE_CLASSIFICATION_MAX_AGE) continue;
+    if (counts.male + counts.female <= 0) continue;
+    if (minAge === null || age < minAge) minAge = age;
+    if (maxAge === null || age > maxAge) maxAge = age;
+  }
+  if (minAge === null || maxAge === null) return null;
+  return { minAge, maxAge };
+}
+
 // Builds classifyShape()'s input from a single-age/sex breakdown: one point per age
-// 5-17, both sexes combined, in age order so the bucket-transition method reads left
-// to right by age the same way it used to read band to band.
+// across the school's own observed span WITHIN the 5-17 clamp (see
+// classificationAgeSpan above), both sexes combined, in age order so the
+// bucket-transition method reads left to right by age the same way it used to read
+// band to band.
 export function shapeClassifierInput(
   ageGenderCounts: AgeGenderCounts,
 ): { key: string; total: number }[] {
+  const span = classificationAgeSpan(ageGenderCounts);
+  if (!span) return [];
   const points: { key: string; total: number }[] = [];
-  for (let age = SHAPE_CLASSIFICATION_MIN_AGE; age <= SHAPE_CLASSIFICATION_MAX_AGE; age++) {
+  for (let age = span.minAge; age <= span.maxAge; age++) {
     const counts = ageGenderCounts.get(age);
     points.push({ key: String(age), total: (counts?.male ?? 0) + (counts?.female ?? 0) });
   }

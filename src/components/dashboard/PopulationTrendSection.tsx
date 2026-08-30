@@ -98,8 +98,8 @@ function TrendColumn({
 
 // "Population trend in the area" -- ages 5-15 real DfE census school-enrolment
 // figures (NOT true population data -- see population-trend.ts's own comment),
-// deliberately a different classification system from the school-level Tube/
-// Pyramid-Funnel/Mushroom/Wineglass/Irregular taxonomy above: a population profile
+// deliberately a different classification system from the school-level Tube/Pyramid/
+// Top Step/Funnel/Mushroom/Wineglass/Irregular taxonomy above: a population profile
 // reflects birth-rate history across years, a structurally different thing from one
 // institution's own enrolment shape.
 export function PopulationTrendSection({

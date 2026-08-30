@@ -36,10 +36,15 @@ function bandForAge(age: number): AgeBandKey | null {
 
 type Accumulator = {
   byBand: Map<AgeBandKey, number>;
-  // Single ages 5-17 only -- the shape classifier's basis as of the "Public View
-  // rebuild" design review (roll-data.ts's SHAPE_CLASSIFICATION_MIN_AGE/MAX_AGE).
-  // Kept separate from byBand: byBand still feeds age_band_totals for display, this
-  // feeds shape_label only.
+  // Single ages, every age present (no fixed window at accumulate time) -- the shape
+  // classifier's basis as of the 2026-08-29 clamped-span change (roll-data.ts's
+  // classificationAgeSpan()/shapeClassifierInput()). Kept separate from byBand: byBand
+  // still feeds age_band_totals for display, this feeds shape_label only. toRow()
+  // below crops to this accumulator's own observed non-zero span WITHIN
+  // [SHAPE_CLASSIFICATION_MIN_AGE, SHAPE_CLASSIFICATION_MAX_AGE], mirroring
+  // shapeClassifierInput() exactly since this pooled aggregate can't call that
+  // function directly (it accumulates straight from breakdown rows across many
+  // schools, not one school's AgeGenderCounts map).
   byShapeAge: Map<number, number>;
   male: number;
   female: number;
@@ -127,9 +132,7 @@ async function main() {
       const age = Number(ageStr);
       const band = bandForAge(age);
       if (band) acc.byBand.set(band, (acc.byBand.get(band) ?? 0) + value);
-      if (age >= SHAPE_CLASSIFICATION_MIN_AGE && age <= SHAPE_CLASSIFICATION_MAX_AGE) {
-        acc.byShapeAge.set(age, (acc.byShapeAge.get(age) ?? 0) + value);
-      }
+      acc.byShapeAge.set(age, (acc.byShapeAge.get(age) ?? 0) + value);
       if (sex === "male") acc.male += value;
       else acc.female += value;
     };
@@ -182,9 +185,16 @@ async function main() {
   function toRow(scope: "national" | "regional", scopeKey: string | null, acc: Accumulator) {
     const bandTotals = AGE_BANDS.map((b) => ({ key: b.key, total: acc.byBand.get(b.key) ?? 0 }));
     const totalRoll = acc.male + acc.female;
+    const nonZeroAgesInClamp = Array.from(acc.byShapeAge.entries()).filter(
+      ([age, total]) => total > 0 && age >= SHAPE_CLASSIFICATION_MIN_AGE && age <= SHAPE_CLASSIFICATION_MAX_AGE,
+    );
     const shapeAgeTotals: { key: string; total: number }[] = [];
-    for (let age = SHAPE_CLASSIFICATION_MIN_AGE; age <= SHAPE_CLASSIFICATION_MAX_AGE; age++) {
-      shapeAgeTotals.push({ key: String(age), total: acc.byShapeAge.get(age) ?? 0 });
+    if (nonZeroAgesInClamp.length > 0) {
+      const minAge = Math.min(...nonZeroAgesInClamp.map(([age]) => age));
+      const maxAge = Math.max(...nonZeroAgesInClamp.map(([age]) => age));
+      for (let age = minAge; age <= maxAge; age++) {
+        shapeAgeTotals.push({ key: String(age), total: acc.byShapeAge.get(age) ?? 0 });
+      }
     }
     const shape = classifyShape(shapeAgeTotals);
     return {

@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import type { AgeGenderCounts } from "@/lib/roll-data";
-import { SHAPE_CLASSIFICATION_MIN_AGE, SHAPE_CLASSIFICATION_MAX_AGE } from "@/lib/roll-data";
+import {
+  observedAgeSpan,
+  SHAPE_CLASSIFICATION_MIN_AGE,
+  SHAPE_CLASSIFICATION_MAX_AGE,
+} from "@/lib/roll-data";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 
 // Horizontal population-pyramid shape chart (chart palette doc, "Public View
@@ -30,10 +34,6 @@ import { TAG_COLOURS } from "@/lib/tag-colours";
 const BOYS_COLOUR = { light: TAG_COLOURS.Boys.light[1], dark: TAG_COLOURS.Boys.dark[1] };
 const GIRLS_COLOUR = { light: TAG_COLOURS.Girls.light[1], dark: TAG_COLOURS.Girls.dark[1] };
 
-const EDGE_AGE_MIN = SHAPE_CLASSIFICATION_MIN_AGE - 1; // 4: shown, tinted, excluded from classification
-const EDGE_AGE_MAX = SHAPE_CLASSIFICATION_MAX_AGE + 1; // 18: shown, tinted, excluded from classification
-const EDGE_AGES = new Set([EDGE_AGE_MIN, EDGE_AGE_MAX]);
-
 const ROW_HEIGHT = 20;
 const ROW_GAP = 2;
 const WIDTH = 560;
@@ -42,12 +42,22 @@ const PAD = { top: 8, right: 40, bottom: 28, left: 40 };
 export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGenderCounts }) {
   const [hoverAge, setHoverAge] = useState<number | null>(null);
 
+  const span = observedAgeSpan(ageGenderCounts);
+  if (!span) {
+    return <p className="text-sm text-neutral-500">No age-by-age roll data to chart.</p>;
+  }
+
   const ages: number[] = [];
-  for (let age = EDGE_AGE_MAX; age >= EDGE_AGE_MIN; age--) ages.push(age); // oldest first (top row)
+  for (let age = span.maxAge; age >= span.minAge; age--) ages.push(age); // oldest first (top row)
 
   const rows = ages.map((age) => {
     const c = ageGenderCounts.get(age);
-    return { age, male: c?.male ?? 0, female: c?.female ?? 0, isEdge: EDGE_AGES.has(age) };
+    return {
+      age,
+      male: c?.male ?? 0,
+      female: c?.female ?? 0,
+      isEdge: age < SHAPE_CLASSIFICATION_MIN_AGE || age > SHAPE_CLASSIFICATION_MAX_AGE,
+    };
   });
 
   const maxVal = Math.max(1, ...rows.map((r) => Math.max(r.male, r.female)));
@@ -58,10 +68,6 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
   const scale = halfWidth / maxVal;
 
   const rowY = (i: number) => PAD.top + i * (ROW_HEIGHT + ROW_GAP);
-
-  if (rows.every((r) => r.male === 0 && r.female === 0)) {
-    return <p className="text-sm text-neutral-500">No age-by-age roll data to chart.</p>;
-  }
 
   return (
     <div className="viz-root">
@@ -178,8 +184,9 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
         </span>
       </div>
       <p className="mt-1 text-xs text-neutral-400">
-        Ages {EDGE_AGE_MIN} and {EDGE_AGE_MAX} shown at reduced opacity — structurally
-        incomplete cohorts at census date, excluded from the shape classification above.
+        Ages {SHAPE_CLASSIFICATION_MIN_AGE - 1} and under, and {SHAPE_CLASSIFICATION_MAX_AGE + 1}{" "}
+        and over, shown at reduced opacity — outside the standard-cohort range,
+        excluded from the shape classification above.
       </p>
 
       {hoverAge !== null && (
