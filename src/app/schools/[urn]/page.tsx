@@ -8,6 +8,8 @@ import {
   shapeClassifierInput,
   AGE_BANDS,
   CURRENT_CENSUS_PERIOD,
+  SHAPE_CLASSIFICATION_MIN_AGE,
+  SHAPE_CLASSIFICATION_MAX_AGE,
 } from "@/lib/roll-data";
 import { buildIlrParticipationSnapshot } from "@/lib/ilr-participation-data";
 import { classifyShape, type ShapeLabel } from "@/lib/shape-classifier";
@@ -18,8 +20,15 @@ import { lookupPopulationTrend } from "@/lib/population-trend-lookup";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
 import TypologyTags from "@/components/TypologyTags";
 import SchoolMap from "@/components/SchoolMap";
-import { computeTypology, phaseTagAgeRange, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type PhaseTag } from "@/lib/typology";
+import { computeTypology, phaseTagAgeRange, effectivePhaseTags, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type PhaseTag } from "@/lib/typology";
 import { buildSurroundingSummary } from "@/lib/surrounding-summary";
+import {
+  topic1Sector, topic2PhaseGender, topic4aShape, topic4bGenderVariation, renderTopic4b,
+  topic5Regularity, topic6Boarding, topic7LaRegion, topic8QuestionsToExplore,
+  observedSpanForPhase, primaryPhaseTag,
+} from "@/lib/narrative";
+import { computeTopic3 } from "@/lib/narrative-lookup";
+import { CurrentStateNarrative } from "@/components/dashboard/CurrentStateNarrative";
 import { under19Totals, adultTotals, UNDER_19_TOTAL_BREAKDOWN, ADULT_TOTAL_BREAKDOWN } from "@/lib/fe-participation-roll";
 import { DashboardGrid } from "@/components/dashboard/Card";
 import { RollCard } from "@/components/dashboard/RollCard";
@@ -253,6 +262,59 @@ export default async function SchoolPage({
       ? `Peer average across the ${surrounding.found} nearest matched schools`
       : "";
 
+  // Narrative generator (state-of-school narrative spec v1, built 2026-08-31) --
+  // every input here is already computed above for the existing cards; this section
+  // adds no new network calls of its own except computeTopic3's own peer-geography
+  // lookup (LA/region for the matched peers, not otherwise needed by any other
+  // card). Gated on `roll` existing, same as the dashboard-rebuild cards below.
+  let narrativeParagraphs: (string | null)[] = [];
+  if (roll && ageGenderCounts) {
+    const effectiveTags = effectivePhaseTags(school.statutory_low_age, school.statutory_high_age, ageGenderCounts);
+    const primaryTag = primaryPhaseTag(effectiveTags);
+    const observedSpan =
+      primaryTag && school.statutory_low_age !== null && school.statutory_high_age !== null
+        ? observedSpanForPhase(ageGenderCounts, primaryTag, school.statutory_low_age, school.statutory_high_age, effectiveTags)
+        : null;
+    const sectorWord = typology.sector === "FE" ? "FE" : typology.sector?.toLowerCase() ?? null;
+
+    let clampedFemale = 0;
+    let clampedMale = 0;
+    for (const [age, c] of ageGenderCounts) {
+      if (age < SHAPE_CLASSIFICATION_MIN_AGE || age > SHAPE_CLASSIFICATION_MAX_AGE) continue;
+      clampedFemale += c.female;
+      clampedMale += c.male;
+    }
+
+    const topic3 = await computeTopic3(
+      school.statutory_low_age,
+      school.statutory_high_age,
+      ageGenderCounts,
+      sectorWord,
+      school.la_name,
+      school.la_code,
+      matchedSurrounding,
+    );
+
+    narrativeParagraphs = [
+      topic1Sector(school.current_name, laComposition),
+      topic2PhaseGender(school.current_name, effectiveTags, observedSpan, roll.gender.female, roll.gender.male),
+      topic3,
+      topic4aShape(school.current_name, shape?.label ?? null),
+      renderTopic4b(topic4bGenderVariation(shape?.dominantTransition ?? null, ageGenderCounts, clampedFemale, clampedMale)),
+      shape ? topic5Regularity(shape.moves) : null,
+      topic6Boarding(school.current_name, typology.boarding, roll.boarding),
+      topic7LaRegion(
+        school.current_name,
+        populationTrend?.laTrend ?? null,
+        school.la_name,
+        populationTrend?.region ?? null,
+        populationTrend?.regionTrend ?? null,
+        shape?.label ?? null,
+      ),
+      topic8QuestionsToExplore(school.current_name),
+    ];
+  }
+
   return (
     <>
       {/* Map redesign (2026-08-23): full-bleed, top of the page, outside the
@@ -312,6 +374,8 @@ export default async function SchoolPage({
         </header>
 
         <DashboardGrid>
+          {roll && <CurrentStateNarrative paragraphs={narrativeParagraphs} />}
+
           {!roll && <NoCensusDataCard />}
 
           {showIlrCard && ilrSnapshot && (

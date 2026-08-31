@@ -305,9 +305,20 @@ function checkMagnitudeWineglass(
   return "wineglass";
 }
 
+// The real transition the narrative generator's gender-variation clause (state-of-
+// school narrative spec §5b) reports against: the domShare move itself for every
+// domShare-computed branch below (top_step/mushroom/pyramid/funnel/wineglass/
+// irregular all share the one domIdx computation, so this is uniform across them,
+// not a per-branch special case), or the whole cropped span's own endpoints for a
+// Thornton-resolved pyramid/funnel (no single per-step move to point to -- the real
+// signal there is the cumulative run, per the Thornton mechanism's own comment
+// above). null for tube and the insufficient-data case, where there's no real
+// transition of any kind to report.
+type DominantTransition = { fromAge: string; toAge: string };
+
 export function classifyShape(
   bandTotals: { key: string; total: number }[],
-): { label: ShapeLabel; moves: Move[]; flag?: Diagnostic } | null {
+): { label: ShapeLabel; moves: Move[]; flag?: Diagnostic; dominantTransition: DominantTransition | null } | null {
   // Only bands with any real presence count toward the sequence -- an all-zero band
   // (e.g. no sixth form at a primary school) isn't a "move," it's absence.
   const present = bandTotals.filter((b) => b.total > 0);
@@ -373,11 +384,15 @@ export function classifyShape(
           consistency >= THORNTON_CONSISTENCY_THRESHOLD &&
           peakRoll >= THORNTON_MIN_PEAK_ROLL
         ) {
-          return { label: netChange < 0 ? "pyramid" : "funnel", moves };
+          return {
+            label: netChange < 0 ? "pyramid" : "funnel",
+            moves,
+            dominantTransition: { fromAge: anchored[0].key, toAge: anchored[anchored.length - 1].key },
+          };
         }
       }
     }
-    return { label: "tube", moves };
+    return { label: "tube", moves, dominantTransition: null };
   }
 
   const magnitudes = new Map<number, number>(
@@ -388,6 +403,7 @@ export function classifyShape(
     magnitudes.get(i)! > magnitudes.get(best)! ? i : best,
   );
   const domShare = magnitudes.get(domIdx)! / totalMagnitude;
+  const dominantTransition: DominantTransition = { fromAge: anchored[domIdx].key, toAge: anchored[domIdx + 1].key };
 
   // One transition dominates the whole sequence -- Top Step (down) or Mushroom (up,
   // at the very top of the range).
@@ -398,7 +414,7 @@ export function classifyShape(
       const postPoints = anchored.slice(domIdx + 1);
       const postAvg = postPoints.reduce((a, p) => a + p.total, 0) / postPoints.length;
       if (postAvg >= TOP_STEP_MIN_ABSOLUTE && postAvg >= TOP_STEP_MIN_SHARE_OF_PEAK * prePeak) {
-        return { label: "top_step", moves };
+        return { label: "top_step", moves, dominantTransition };
       }
       // A real dominant drop, but too small a surviving population to call it a real
       // post-step cohort (Aston University Mathematics School: 61 -> 3, no third
@@ -406,7 +422,7 @@ export function classifyShape(
       // were genuinely near-zero noise -- reaching here with real, non-croppable data
       // means it's a real (if severe) narrowing with no separate "step" to report;
       // falls back to Pyramid rather than inventing a zero-survivor label.
-      return { label: "pyramid", moves, flag: "single_down_below_top_step_threshold" };
+      return { label: "pyramid", moves, flag: "single_down_below_top_step_threshold", dominantTransition };
     }
     // direction === "up"
     //
@@ -439,10 +455,10 @@ export function classifyShape(
     // after the jump to actually look like a stable larger plateau.
     const hasRealMoveAfterDominant = nonFlatIdxs.some((i) => i > domIdx);
     const isEdgeCase = domIdx === 0 && moves.length > 1;
-    if (!isEdgeCase && !hasRealMoveAfterDominant) return { label: "mushroom", moves };
+    if (!isEdgeCase && !hasRealMoveAfterDominant) return { label: "mushroom", moves, dominantTransition };
     const magnitudeLabel = checkMagnitudeWineglass(anchored, moves, nonFlatIdxs);
-    if (magnitudeLabel) return { label: magnitudeLabel, moves };
-    return { label: "irregular", moves, flag: "single_up_not_at_top" };
+    if (magnitudeLabel) return { label: magnitudeLabel, moves, dominantTransition };
+    return { label: "irregular", moves, flag: "single_up_not_at_top", dominantTransition };
   }
 
   // No single transition dominates -- gradual (Pyramid/Funnel) vs concentrated
@@ -453,17 +469,17 @@ export function classifyShape(
     const direction = directions.values().next().value as "up" | "down";
     const concentrated = nonFlatIdxs.length <= CONCENTRATED_MAX_MOVES && domShare > CONCENTRATED_SHARE;
     if (concentrated) {
-      if (direction === "up") return { label: "wineglass", moves };
+      if (direction === "up") return { label: "wineglass", moves, dominantTransition };
       // Concentrated narrowing across 2-3 real steps rather than one dominant one, or
       // spread gradually -- the taxonomy only names a concentrated shape for the "up"
       // case (staged joins). No real named example forced a decision here; falls back
       // to Pyramid (still a real net narrowing) and is flagged for review.
-      return { label: "pyramid", moves, flag: "down_concentrated_multi_transition" };
+      return { label: "pyramid", moves, flag: "down_concentrated_multi_transition", dominantTransition };
     }
-    return { label: direction === "down" ? "pyramid" : "funnel", moves };
+    return { label: direction === "down" ? "pyramid" : "funnel", moves, dominantTransition };
   }
 
   const magnitudeLabel = checkMagnitudeWineglass(anchored, moves, nonFlatIdxs);
-  if (magnitudeLabel) return { label: magnitudeLabel, moves };
-  return { label: "irregular", moves };
+  if (magnitudeLabel) return { label: magnitudeLabel, moves, dominantTransition };
+  return { label: "irregular", moves, dominantTransition };
 }

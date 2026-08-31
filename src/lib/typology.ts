@@ -197,6 +197,34 @@ export function genderTag(giasGender: string | null): GenderTag | null {
   return null; // "Not applicable", blank, or an unrecognised value
 }
 
+// Real-enrollment-aware phase tags: phaseTags() above reads only the nominal
+// statutory_low_age/high_age fields, which can claim a phase with zero real current
+// pupils. Confirmed real case (narrative spec diagnostic, 2026-08-31): Woldingham
+// School's statutory_low_age=10 technically produces a Junior tag alongside Senior,
+// but its real 2025 census data has zero pupils at age 10 -- not a genuine junior
+// department, just a GIAS registration technicality. Drops any tag whose own
+// phaseTagAgeRange has zero real pupils, so "phase" reflects what a school actually
+// teaches today, not a nominal registration. Falls back to the unfiltered tags if
+// every tag would otherwise be dropped (never returns an empty set when the school
+// has any real data at all) -- a defensive floor, not expected to fire in practice.
+export function effectivePhaseTags(
+  lowAge: number | null,
+  highAge: number | null,
+  ageGenderCounts: Map<number, { male: number; female: number }>,
+): PhaseTag[] {
+  const tags = phaseTags(lowAge, highAge);
+  if (tags.length <= 1 || lowAge === null || highAge === null) return tags;
+  const filtered = tags.filter((tag) => {
+    const [lo, hi] = phaseTagAgeRange(tag, lowAge, highAge);
+    let total = 0;
+    for (const [age, c] of ageGenderCounts) {
+      if (age >= lo && age <= hi) total += c.male + c.female;
+    }
+    return total > 0;
+  });
+  return filtered.length > 0 ? filtered : tags;
+}
+
 export type SchoolTypology = {
   sector: SectorTag | null;
   boarding: BoardingTag | null;

@@ -21,7 +21,7 @@ function sizeWord(totalRoll: number | null): string | null {
 // school," not "a post-16 school") -- though as of the 2026-08-28 Post 16 narrowing
 // (typology.ts) the two can no longer both be present on the same school at all, so
 // this ordering is now just defensive, not load-bearing.
-function phaseWord(phaseTags: SchoolTypology["phase"]): string | null {
+export function phaseWord(phaseTags: SchoolTypology["phase"]): string | null {
   if (phaseTags.includes("Senior")) return "senior";
   if (phaseTags.includes("Junior")) return "junior";
   if (phaseTags.includes("Post 16")) return "post-16";
@@ -29,7 +29,7 @@ function phaseWord(phaseTags: SchoolTypology["phase"]): string | null {
   return null;
 }
 
-function genderWord(gender: SchoolTypology["gender"]): string | null {
+export function genderWord(gender: SchoolTypology["gender"]): string | null {
   if (gender === "Girls") return "girls'";
   if (gender === "Boys") return "boys'";
   return null; // Co-ed is the unmarked case, dropped from prose -- matches the worked example
