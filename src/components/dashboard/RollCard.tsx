@@ -1,10 +1,18 @@
 import { Card, CardDivider, Caption, StatNumber } from "./Card";
 import type { LaSectorComposition } from "@/lib/la-sector-composition";
+import { TAG_COLOURS } from "@/lib/tag-colours";
 
+// Layout/graphs spec v1 §5, round 3: wiring fix, not a recolour -- this card
+// previously defined its own local sector hex values here, which had drifted from
+// TAG_COLOURS' own State/Independent/FE (used everywhere else on this page, including
+// this school's own TypologyTags pills in the header above). Now reads directly from
+// the shared registry instead of a second, conflicting copy. Light[1] values only,
+// same as before -- no dark-mode branching added here (round 3 explicitly scoped that
+// to GenderSplitCard alone).
 const SECTOR_COLOUR: Record<string, string> = {
-  State: "#3f5f8a",
-  Independent: "#b8863f",
-  FE: "#a8437a",
+  State: TAG_COLOURS.State.light[1],
+  Independent: TAG_COLOURS.Independent.light[1],
+  FE: TAG_COLOURS.FE.light[1],
 };
 
 function donutGradient(bySector: LaSectorComposition["bySector"], total: number): string {

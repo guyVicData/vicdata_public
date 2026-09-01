@@ -5,11 +5,16 @@ import { Card, CardHeading } from "./Card";
 // rendered in spec order. Each topic is independently nullable (a school with no
 // boarding provision, or with 4b's gender-variation clause not firing, simply omits
 // that paragraph) -- callers pass only the strings that actually rendered.
+//
+// Layout/graphs spec v1 §4, round 3: full (12-col) -> medium (6-col), paired with a
+// Roll/Gender split stack to its right in the page's own top row -- see page.tsx's
+// own comment at the call site for why that pairing has to be built as sibling
+// DashboardGrid children rather than nested here.
 export function CurrentStateNarrative({ paragraphs }: { paragraphs: (string | null)[] }) {
   const real = paragraphs.filter((p): p is string => p !== null);
   if (real.length === 0) return null;
   return (
-    <Card size="full">
+    <Card size="medium">
       <CardHeading title="Current state of the school" subtitle="A snapshot from the most recent DfE census and GIAS figures -- no trend data, no history." />
       <div className="flex flex-col gap-3">
         {real.map((p, i) => (

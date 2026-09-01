@@ -37,6 +37,7 @@ import { ShapeCard } from "@/components/dashboard/ShapeCard";
 import { GenderSplitCard } from "@/components/dashboard/GenderSplitCard";
 import {
   BoardingCard,
+  LaBoardersCard,
   SurroundingSchoolsCard,
   RegionalNationalCard,
   IlrParticipationCard,
@@ -92,6 +93,7 @@ type RollAggregate = {
   school_count: number;
   shape_label: ShapeLabel | null;
   period: number;
+  boarders_total: number | null;
 };
 
 async function getContextAggregates(laName: string | null): Promise<{
@@ -102,7 +104,7 @@ async function getContextAggregates(laName: string | null): Promise<{
   const scopeKeys = laName ? ["", laName] : [""];
   const { data } = await supabase
     .from("roll_aggregates")
-    .select("scope_key, total_roll, school_count, shape_label, period")
+    .select("scope_key, total_roll, school_count, shape_label, period, boarders_total")
     .in("scope_key", scopeKeys);
   const rows = (data as RollAggregate[]) ?? [];
   return {
@@ -188,6 +190,12 @@ export default async function SchoolPage({
   const matchedSurrounding = await findSurroundingSchools(urn, roll?.period ?? CURRENT_CENSUS_PERIOD);
   const surrounding = aggregateSurroundingStat(matchedSurrounding);
   const context = await getContextAggregates(school.la_name);
+  // Layout/graphs spec v1 §7, round 3: LA-boarders stat denominator -- already-precomputed
+  // roll_aggregates.boarders_total (context.regional, same row RegionalNationalCard already
+  // reads other fields from), no new aggregate table needed (round-3 discovery confirmed
+  // this exists). Null when the LA has no regional aggregate row at all, distinct from a
+  // real zero -- the render gate below treats both as "can't show a meaningful %."
+  const laBoardersTotal = context.regional?.boarders_total ?? null;
   const typology = computeTypology(school, roll?.boarding ?? null);
   // 2026-08-27: the map's own centre dot is now sized/coloured exactly like its
   // neighbours (Guy's live review -- "a big school should look big even at the
@@ -376,7 +384,35 @@ export default async function SchoolPage({
         </header>
 
         <DashboardGrid>
-          {roll && <CurrentStateNarrative paragraphs={narrativeParagraphs} />}
+          {/* Layout/graphs spec v1 §4, round 3: top row is narrative (6-col) beside a
+              Roll/Gender split stack (6-col) -- built as two sibling 6-col DashboardGrid
+              children (not a nested sub-grid) so the grid's own implicit row-1 auto-
+              placement fills them side by side exactly, the same "no explicit
+              row/position" discipline DashboardGrid's own dense auto-flow already relies
+              on elsewhere. The stack itself is a plain flex column, not a Card -- RollCard
+              and GenderSplitCard keep rendering as real Card components (own border/
+              padding/size classes), just re-parented into a flex wrapper instead of being
+              direct grid children, so their own `col-span-*` classes go inert (harmless
+              under a flex parent) and they simply stack full-width inside the 6-col slot.
+              PhaseBreakdownCard/ShapeCard/BoardingCard stay in the SECOND `roll &&` block
+              below, unmoved from their prior relative order -- ShapeCard's position was
+              left exactly where it sat before (its own `full` 12-col size means it always
+              starts a fresh row regardless of neighbours, so it doesn't conflict with the
+              new top row; see the round-3 report for the explicit confirmation). */}
+          {roll && (
+            <>
+              <CurrentStateNarrative paragraphs={narrativeParagraphs} />
+              <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
+                <RollCard totalRoll={roll.totalRoll} period={roll.period} laComposition={laComposition} />
+                <GenderSplitCard
+                  girls={roll.gender.female}
+                  boys={roll.gender.male}
+                  peer={peerGenderSplit}
+                  peerLabel={peerGenderLabel}
+                />
+              </div>
+            </>
+          )}
 
           {!roll && <NoCensusDataCard />}
 
@@ -396,8 +432,6 @@ export default async function SchoolPage({
 
           {roll && (
             <>
-              <RollCard totalRoll={roll.totalRoll} period={roll.period} laComposition={laComposition} />
-
               {bandDistributions && (
                 <PhaseBreakdownCard
                   laName={school.la_name}
@@ -418,14 +452,27 @@ export default async function SchoolPage({
                 populationTrend={populationTrend}
               />
 
-              <GenderSplitCard
-                girls={roll.gender.female}
-                boys={roll.gender.male}
-                peer={peerGenderSplit}
-                peerLabel={peerGenderLabel}
-              />
+              {/* Layout/graphs spec v1 §6, round 3: pie chart now renders unconditionally
+                  (a day-only school has no falsy `roll.boarding` in practice -- confirmed
+                  against real data, the census reports boarders_total=0 explicitly for day
+                  schools, not an absent fact -- but falling back to day=totalRoll/boarders=0
+                  here too covers the theoretical case where the fact really is absent, same
+                  "show the honest zero" principle as the rest of this page). */}
+              <BoardingCard boarders={roll.boarding?.boarders ?? 0} day={roll.boarding?.day ?? roll.totalRoll} />
 
-              {roll.boarding && <BoardingCard boarders={roll.boarding.boarders} day={roll.boarding.day} />}
+              {/* Layout/graphs spec v1 §7, round 3: LA-boarders stat -- only when this
+                  school itself has real boarders (hidden entirely for day-only schools,
+                  per Guy's explicit instruction -- genuinely irrelevant to them, unlike
+                  the pie chart above which always renders). laBoardersTotal null/0-guarded
+                  defensively (no divide-by-zero), not expected to fire for a school that
+                  itself has boarders. */}
+              {(roll.boarding?.boarders ?? 0) > 0 && laBoardersTotal !== null && laBoardersTotal > 0 && school.la_name && (
+                <LaBoardersCard
+                  boarders={roll.boarding!.boarders}
+                  laBoardersTotal={laBoardersTotal}
+                  laName={school.la_name}
+                />
+              )}
 
               <PaidTrendsSection urn={urn} />
             </>
