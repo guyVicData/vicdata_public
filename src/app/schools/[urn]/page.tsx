@@ -38,7 +38,6 @@ import { GenderSplitCard } from "@/components/dashboard/GenderSplitCard";
 import {
   BoardingCard,
   LaBoardersCard,
-  SurroundingSchoolsCard,
   RegionalNationalCard,
   IlrParticipationCard,
   NoCensusDataCard,
@@ -447,9 +446,14 @@ export default async function SchoolPage({
               <ShapeCard
                 ageGenderCounts={ageGenderCounts}
                 shape={shape?.label ?? null}
-                aggregateAgeCounts={surrounding.aggregateAgeCounts}
-                aggregateShape={surrounding.aggregateShape}
                 populationTrend={populationTrend}
+                urn={urn}
+                schoolName={school.current_name}
+                schoolRoll={roll.totalRoll}
+                peerRolls={matchedSurrounding.map((m) => m.totalRoll)}
+                summary={surroundingSummary}
+                aggregateShape={surrounding.aggregateShape}
+                found={surrounding.found}
               />
 
               {/* Layout/graphs spec v1 §6, round 3: pie chart now renders unconditionally
@@ -478,13 +482,10 @@ export default async function SchoolPage({
             </>
           )}
 
-          <SurroundingSchoolsCard
-            urn={urn}
-            summary={surroundingSummary}
-            aggregateShape={surrounding.aggregateShape}
-            found={surrounding.found}
-          />
-
+          {/* Layout/graphs spec v1 §13, round 5: Regional & national context moves up
+              into the slot SurroundingSchoolsCard used to hold, now that its own
+              content has moved into ShapeCard's right-hand side above -- a pure
+              relocation, no change to RegionalNationalCard itself. */}
           {(context.national || context.regional) && (
             <RegionalNationalCard
               laName={school.la_name}

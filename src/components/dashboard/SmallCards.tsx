@@ -4,9 +4,7 @@
 // fragments of a shared layout.
 
 import { Card, Eyebrow, Caption } from "./Card";
-import { ShapeIcon, SHAPE_LABELS } from "./ShapeIcon";
 import type { ShapeLabel } from "@/lib/shape-classifier";
-import SurroundingSchoolsMemberList from "@/components/SurroundingSchoolsMemberList";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 
 // Layout/graphs spec v1 §6, round 3: boarding/day pie chart, TAG_COLOURS.Boarding
@@ -87,44 +85,12 @@ export function LaBoardersCard({
   );
 }
 
-export function SurroundingSchoolsCard({
-  urn,
-  summary,
-  aggregateShape,
-  found,
-}: {
-  urn: string;
-  summary: string | null;
-  aggregateShape: ShapeLabel | null;
-  found: number;
-}) {
-  return (
-    <Card size="medium">
-      <Eyebrow>Surrounding schools</Eyebrow>
-      {found > 0 && summary ? (
-        <>
-          <p className="text-[13.5px] leading-relaxed text-stone-700 dark:text-stone-300">
-            {summary}
-            {aggregateShape && (
-              <>
-                {" "}
-                The combined shape is{" "}
-                <span className="inline-flex items-center gap-1 align-text-bottom font-semibold">
-                  <ShapeIcon shape={aggregateShape} size={14} /> {SHAPE_LABELS[aggregateShape]}
-                </span>
-                .
-              </>
-            )}
-          </p>
-          <Caption className="mt-2.5">The {found} schools behind this comparison are visible to verified members.</Caption>
-          <SurroundingSchoolsMemberList urn={urn} />
-        </>
-      ) : (
-        <Caption>Not enough nearby comparable schools with roll data to show this yet.</Caption>
-      )}
-    </Card>
-  );
-}
+// SurroundingSchoolsCard used to live here (free-tier prose summary + "combined
+// shape is X" + member-gated caption + named list). Layout/graphs spec v1 §11, round
+// 5: moved wholesale into ShapeCard.tsx's right-hand "Nearest matched schools" slot,
+// replacing AggregateShapeChart there -- not duplicated, this function no longer
+// exists as a separate page card. See ShapeCard.tsx's own comment for where the
+// content landed and page.tsx for the prop wiring.
 
 export function RegionalNationalCard({
   laName,
