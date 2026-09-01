@@ -23,11 +23,11 @@ import SchoolMap from "@/components/SchoolMap";
 import { computeTypology, phaseTagAgeRange, effectivePhaseTags, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type PhaseTag } from "@/lib/typology";
 import { buildSurroundingSummary } from "@/lib/surrounding-summary";
 import {
-  topic1Sector, topic2PhaseGender, topic4aShape, topic4bGenderVariation, renderTopic4b,
-  topic5Regularity, topic6Boarding, topic7LaRegion, topic8QuestionsToExplore,
-  observedSpanForPhase, primaryPhaseTag,
+  paragraph1PhaseGender, paragraph2SectorSize, paragraph3Shape, paragraph4LocalContext,
+  topic4bGenderVariation, renderTopic4b,
+  observedSpanForPhase, primaryPhaseTag, hasEarlyYearsProvision,
 } from "@/lib/narrative";
-import { computeTopic3 } from "@/lib/narrative-lookup";
+import { computeTopic3SizeSentence } from "@/lib/narrative-lookup";
 import { CurrentStateNarrative } from "@/components/dashboard/CurrentStateNarrative";
 import { under19Totals, adultTotals, UNDER_19_TOTAL_BREAKDOWN, ADULT_TOTAL_BREAKDOWN } from "@/lib/fe-participation-roll";
 import { DashboardGrid } from "@/components/dashboard/Card";
@@ -262,20 +262,20 @@ export default async function SchoolPage({
       ? `Peer average across the ${surrounding.found} nearest matched schools`
       : "";
 
-  // Narrative generator (state-of-school narrative spec v1, built 2026-08-31) --
-  // every input here is already computed above for the existing cards; this section
-  // adds no new network calls of its own except computeTopic3's own peer-geography
-  // lookup (LA/region for the matched peers, not otherwise needed by any other
-  // card). Gated on `roll` existing, same as the dashboard-rebuild cards below.
+  // Narrative generator v2 (state-of-school narrative spec v2 draft, restructured
+  // 2026-08-31 from Guy's hand-edits of the v1 output) -- four merged paragraphs
+  // instead of v1's eight topic-sentences. Every input here except Paragraph 2's
+  // LA-average is already computed above for the existing cards. Gated on `roll`
+  // existing, same as the dashboard-rebuild cards below.
   let narrativeParagraphs: (string | null)[] = [];
   if (roll && ageGenderCounts) {
     const effectiveTags = effectivePhaseTags(school.statutory_low_age, school.statutory_high_age, ageGenderCounts);
     const primaryTag = primaryPhaseTag(effectiveTags);
+    const hasEarlyYears = hasEarlyYearsProvision(school.statutory_low_age);
     const observedSpan =
       primaryTag && school.statutory_low_age !== null && school.statutory_high_age !== null
         ? observedSpanForPhase(ageGenderCounts, primaryTag, school.statutory_low_age, school.statutory_high_age, effectiveTags)
         : null;
-    const sectorWord = typology.sector === "FE" ? "FE" : typology.sector?.toLowerCase() ?? null;
 
     let clampedFemale = 0;
     let clampedMale = 0;
@@ -284,34 +284,36 @@ export default async function SchoolPage({
       clampedFemale += c.female;
       clampedMale += c.male;
     }
+    const realMoveCount = shape ? shape.moves.filter((m) => m !== "flat").length : 0;
 
-    const topic3 = await computeTopic3(
+    const sizeSentence = await computeTopic3SizeSentence(
+      urn,
       school.statutory_low_age,
       school.statutory_high_age,
       ageGenderCounts,
-      sectorWord,
+      school.establishment_type_group,
       school.la_name,
-      school.la_code,
-      matchedSurrounding,
+      roll.period,
     );
 
+    const p4bResult = topic4bGenderVariation(shape?.dominantTransition ?? null, ageGenderCounts, clampedFemale, clampedMale);
+
     narrativeParagraphs = [
-      topic1Sector(school.current_name, laComposition),
-      topic2PhaseGender(school.current_name, effectiveTags, observedSpan, roll.gender.female, roll.gender.male),
-      topic3,
-      topic4aShape(school.current_name, shape?.label ?? null),
-      renderTopic4b(topic4bGenderVariation(shape?.dominantTransition ?? null, ageGenderCounts, clampedFemale, clampedMale)),
-      shape ? topic5Regularity(shape.moves) : null,
-      topic6Boarding(school.current_name, typology.boarding, roll.boarding),
-      topic7LaRegion(
+      paragraph1PhaseGender(school.current_name, effectiveTags, hasEarlyYears, observedSpan, roll.gender.female, roll.gender.male),
+      paragraph2SectorSize(school.current_name, laComposition, sizeSentence),
+      paragraph3Shape(school.current_name, shape?.label ?? null, realMoveCount),
+      renderTopic4b(p4bResult),
+      ...paragraph4LocalContext(
         school.current_name,
+        typology.sector,
+        typology.boarding,
+        roll.boarding,
         populationTrend?.laTrend ?? null,
         school.la_name,
         populationTrend?.region ?? null,
         populationTrend?.regionTrend ?? null,
         shape?.label ?? null,
       ),
-      topic8QuestionsToExplore(school.current_name),
     ];
   }
 

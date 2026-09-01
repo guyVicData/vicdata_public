@@ -56,6 +56,20 @@ export function computePopulationTrend(byAge: Record<string, number>): Populatio
 
 export type AgeProfileSeries = { age: number; total: number }[];
 
+// Display-only sign flip (narrative generator v2, round 3, Guy's decision,
+// 2026-08-31): the metric itself is positive for decline (a "how much smaller is
+// the young cohort" measure) -- a real, deliberate technical definition, unchanged
+// here. But a reader expects positive = growth, the near-universal convention
+// (finance, weather, any signed percentage seen before). Negate ONLY at render time,
+// in every place this pct is shown to a user -- currently PopulationTrendSection.tsx
+// and the narrative generator's Paragraph 4 -- so the same real value never reads
+// with opposite signs in two places on the platform. classifyPopulationTrend() and
+// its tier boundaries above are untouched; they still classify on the real,
+// un-negated metric.
+export function displayPopulationTrendPct(pct: number): number {
+  return -pct;
+}
+
 export function ageProfileSeries(byAge: Record<string, number>): AgeProfileSeries {
   const series: AgeProfileSeries = [];
   for (let age = 15; age >= 5; age--) series.push({ age, total: byAge[String(age)] ?? 0 });

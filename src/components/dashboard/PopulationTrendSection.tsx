@@ -1,5 +1,5 @@
 import { CardSubheading, Caption } from "./Card";
-import { POPULATION_TREND_LABELS, type PopulationTrend, type AgeProfileSeries, type PopulationTrendTier } from "@/lib/population-trend";
+import { POPULATION_TREND_LABELS, displayPopulationTrendPct, type PopulationTrend, type AgeProfileSeries, type PopulationTrendTier } from "@/lib/population-trend";
 
 const TIER_COLOUR: Record<PopulationTrendTier, string> = {
   growing: "#2f7d4f",
@@ -85,8 +85,11 @@ function TrendColumn({
           <TrendIcon tier={trend.tier} />
           <span className="text-[13px] font-semibold">{POPULATION_TREND_LABELS[trend.tier]}</span>
           <span className="text-[12px] text-stone-500 dark:text-stone-400">
-            ({trend.pct >= 0 ? "+" : ""}
-            {trend.pct.toFixed(1)}% age 5 vs age 15)
+            {/* displayPopulationTrendPct: display-only sign flip, see population-trend.ts's
+                own comment -- kept in sync with the narrative generator's Paragraph 4,
+                the only other place this metric is shown to a user. */}
+            ({displayPopulationTrendPct(trend.pct) >= 0 ? "+" : ""}
+            {displayPopulationTrendPct(trend.pct).toFixed(1)}% age 5 vs age 15)
           </span>
         </div>
       ) : (
