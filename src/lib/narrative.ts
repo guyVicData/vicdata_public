@@ -124,7 +124,21 @@ export function observedSpanForPhase(
   highAge: number,
   allTags: PhaseTag[],
 ): { minAge: number; maxAge: number } | null {
-  const [lo, hi] = allTags.length > 1 ? phaseTagAgeRange(tag, lowAge, highAge) : [lowAge, highAge];
+  // Round 10 fix: a Junior+Prep tag pair is ONE continuous real population, not two
+  // departments -- confirmed against real data on both sides (state middle schools,
+  // e.g. Robert Bloomfield Academy/Alameda Middle School, ages ~9-13; and ordinary
+  // independent prep schools, e.g. Devonshire House Preparatory School/The Hall
+  // School, ages ~2-13, share this exact tag pairing). phaseTagAgeRange's own
+  // hardcoded Prep floor (11) was built for a narrower assumption and crops the
+  // real younger population here specifically -- Alameda rendered "Year 7 to Year
+  // 9" for a real 9-13 span, losing ages 9-10 entirely. Search the FULL statutory
+  // range instead of either tag's own narrow sub-range whenever both are present.
+  const juniorPrepPair = allTags.includes("Junior") && allTags.includes("Prep");
+  const [lo, hi] = juniorPrepPair
+    ? [lowAge, highAge]
+    : allTags.length > 1
+      ? phaseTagAgeRange(tag, lowAge, highAge)
+      : [lowAge, highAge];
   let minAge: number | null = null;
   let maxAge: number | null = null;
   for (const [age, c] of ageGenderCounts) {
@@ -173,8 +187,22 @@ export function paragraph1PhaseGender(
   male: number,
 ): string | null {
   if (!observedSpan) return null;
-  const phase = effectiveTags.length > 1 ? "through" : phaseWord(effectiveTags);
+  // Round 10 fix: "Junior" is the only tag covering infant-only, junior-only, and
+  // full-primary schools alike -- phaseWord() has no separate word for any of
+  // them, so an infant-only school (Thomas A Becket Infant School, real ages 4-7)
+  // was rendering as "a junior school", which a reader would reasonably read as
+  // wrong (Years 3-6, not Reception-Year 2). Junior-only itself (ages ~7-11) keeps
+  // rendering as "junior" -- that's the one real sub-case the word already
+  // describes correctly, per Guy's explicit instruction not to touch it. Detected
+  // from the real observed span, not a new tag: a single "Junior" tag whose real
+  // population never reaches Year 3 (age 8) is infant-only.
+  const INFANT_MAX_AGE = 7; // Year 2's top age (Reception=4 .. Year 1=6 .. Year 2=7)
+  const isInfantOnly = effectiveTags.length === 1 && effectiveTags[0] === "Junior" && observedSpan.maxAge <= INFANT_MAX_AGE;
+  const phase = effectiveTags.length > 1 ? "through" : isInfantOnly ? "infant" : phaseWord(effectiveTags);
   if (!phase) return null;
+  // "infant" is the only phase word starting with a vowel sound -- "an infant
+  // school", not "a infant school".
+  const article = /^[aeiou]/i.test(phase) ? "an" : "a";
   const comp = classifyGenderComposition(female, male);
   if (!comp) return null;
 
@@ -187,7 +215,7 @@ export function paragraph1PhaseGender(
   const ageRangeClause = `with pupils from ${youngLabel} to ${oldLabel}`;
 
   if (comp.kind === "single_sex") {
-    return `${schoolName} is a ${phase} school, ${ageRangeClause}. It is single-sex (${comp.dominantGender}). ${GENDER_ALWAYS_ON_HEDGE}`;
+    return `${schoolName} is ${article} ${phase} school, ${ageRangeClause}. It is single-sex (${comp.dominantGender}). ${GENDER_ALWAYS_ON_HEDGE}`;
   }
 
   // Hedge zone (spec §7 item 8, unresolved -- see narrative-config.ts's own comment):
@@ -199,7 +227,7 @@ export function paragraph1PhaseGender(
   const qualifier = comp.kind === "balanced" ? ", roughly balanced" : inHedgeZone ? "" : `, mostly ${comp.dominantGender}`;
 
   return (
-    `${schoolName} is a ${phase} school, ${ageRangeClause}. It is co-educational${qualifier}, ` +
+    `${schoolName} is ${article} ${phase} school, ${ageRangeClause}. It is co-educational${qualifier}, ` +
     `with ${comp.dominantGender} making up ${comp.dominantSharePct.toFixed(0)}% of all pupils. ${GENDER_ALWAYS_ON_HEDGE}`
   );
 }
@@ -311,7 +339,18 @@ export function formatSizeSentence(
     })
     .join(", and ");
 
-  return `The school is ${overallBand} — ${earlyYearsClause}${perPhase}.`;
+  // Round 8: a single Senior clause with no sixth-form sibling only ever comes from
+  // the secondary/sixth-form split's own fallback path (the split always produces
+  // two clauses when it fires -- see reliableSeniorHeadcounts's caller in
+  // narrative-lookup.ts) -- i.e. a genuine 11-16-style secondary with no real
+  // post-16 presence. That's exactly the one case a reader might plausibly expect a
+  // sixth form and not find one, so it gets a caveat. A single Junior/Prep clause
+  // (a primary-only or prep-only school) is the ordinary, unremarkable
+  // configuration and does NOT get this -- nobody expects a sixth form there.
+  const noSixthFormCaveat =
+    clauses.length === 1 && clauses[0].phaseTag === "Senior" ? " The school does not have a sixth form." : "";
+
+  return `The school is ${overallBand} — ${earlyYearsClause}${perPhase}.${noSixthFormCaveat}`;
 }
 
 export function paragraph2SectorSize(

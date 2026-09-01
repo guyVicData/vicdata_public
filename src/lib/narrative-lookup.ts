@@ -6,17 +6,23 @@
 // v2 rebuild (2026-08-31, Priority 2): the nearest-10-peers/dynamic-geography
 // mechanism shipped last round is gone. Replaced with a genuine Local-Authority-
 // average computation -- for each of the target school's real phases, average that
-// same phase's headcount across every other same-sector school in the same LA, using
-// server-side-aggregated DfE census data (lookupAgeGenderTotals), not a client-side
-// sum of raw breakdown rows. Ages below EARLY_YEARS_PROXY_AGE_THRESHOLD are excluded
-// from every quantitative total here -- both the target's own headcount and every
-// peer's -- so an early-years phase is never compared to a peer average built on the
-// same patchy census coverage (spec §6): the phase can still be *named* (Paragraph 1,
-// Paragraph 2's own early-years clause) without ever being *measured*.
+// same phase's headcount across every other same-sector school in the same LA. Ages
+// below EARLY_YEARS_PROXY_AGE_THRESHOLD are excluded from every quantitative total
+// here -- both the target's own headcount and every peer's -- so an early-years
+// phase is never compared to a peer average built on the same patchy census
+// coverage (spec §6): the phase can still be *named* (Paragraph 1, Paragraph 2's
+// own early-years clause) without ever being *measured*.
+//
+// Round 10 performance fix: peer data now reads from the precomputed
+// census_age_gender_cache table (scripts/sync-census-age-gender-cache.ts), not a
+// live reference_data_age_gender_totals call -- that live RPC's own "direct" CTE
+// timed out on large LAs (Hampshire, Birmingham; root cause confirmed via
+// EXPLAIN ANALYZE, see the cache table's own migration comment for the full
+// diagnosis). The target's own data still comes in live from the caller (a single
+// school, cheap, never the bottleneck).
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import { effectivePhaseTags, phaseTagAgeRange, type PhaseTag } from "./typology";
-import { lookupAgeGenderTotals } from "./vicdata-reference";
 import type { AgeGenderCounts } from "./roll-data";
 import {
   hasEarlyYearsProvision,
@@ -117,6 +123,22 @@ function reliableSeniorHeadcounts(
   return { secondary, sixthForm };
 }
 
+// Round 10 fix: a Junior+Prep tag pair is ONE continuous real population, not two
+// departments -- see observedSpanForPhase's own comment in narrative.ts for the full
+// evidence (state middle schools and ordinary independent prep schools alike share
+// this exact tag pairing with no real structural break at age 10/11). Combines the
+// two tags' own ranges into a single [lowAge,highAge] search, mirroring
+// reliableSeniorHeadcounts's shape but with no split -- one clause, not two.
+function reliableJuniorPrepHeadcount(
+  lowAge: number | null,
+  highAge: number | null,
+  ageGenderCounts: AgeGenderCounts,
+): { total: number; minAge: number; maxAge: number } | null {
+  if (lowAge === null || highAge === null) return null;
+  const lo = Math.max(lowAge, EARLY_YEARS_PROXY_AGE_THRESHOLD);
+  return reliableRangeHeadcount(lo, highAge, ageGenderCounts);
+}
+
 function reliableWholeRoll(ageGenderCounts: AgeGenderCounts): number {
   let total = 0;
   for (const [age, c] of ageGenderCounts) {
@@ -153,13 +175,27 @@ export async function computeTopic3SizeSentence(
   const peers = (peerRows ?? []) as { urn: string; statutory_low_age: number | null; statutory_high_age: number | null }[];
   if (peers.length === 0) return null;
 
+  // Round 10 performance fix: reads the precomputed census_age_gender_cache table
+  // (scripts/sync-census-age-gender-cache.ts) instead of calling
+  // lookupAgeGenderTotals live. Root cause confirmed via EXPLAIN ANALYZE against the
+  // real production database (see that table's own migration comment): the live RPC's
+  // "direct" CTE alone took 2.56s / 11,140 buffer reads for Hampshire's 416-school
+  // peer list, before its own regex-parse/group-by stages add more -- any LA with
+  // several hundred schools hits this, not a Hampshire-specific fluke (reproduced on
+  // Birmingham independently). The cache table is small and indexed on (urn, age,
+  // period) directly, so this is a plain fast lookup, no live aggregation.
   const peerUrns = peers.map((p) => p.urn);
-  const totals = await lookupAgeGenderTotals({ sourceId: "dfe_school_census", entityIds: peerUrns, period: targetPeriod });
+  const { data: cacheRows, error: cacheError } = await supabase
+    .from("census_age_gender_cache")
+    .select("urn, age, male_total, female_total")
+    .in("urn", peerUrns)
+    .eq("period", targetPeriod);
+  if (cacheError) throw cacheError;
 
   const peerCounts = new Map<string, AgeGenderCounts>();
-  for (const row of totals) {
-    if (!peerCounts.has(row.entity_id)) peerCounts.set(row.entity_id, new Map());
-    peerCounts.get(row.entity_id)!.set(row.age, { male: row.male_total, female: row.female_total });
+  for (const row of (cacheRows ?? []) as { urn: string; age: number; male_total: number; female_total: number }[]) {
+    if (!peerCounts.has(row.urn)) peerCounts.set(row.urn, new Map());
+    peerCounts.get(row.urn)!.set(row.age, { male: row.male_total, female: row.female_total });
   }
 
   // Overall whole-roll comparison, all same-sector LA peers regardless of phase tag.
@@ -177,11 +213,47 @@ export async function computeTopic3SizeSentence(
   if (peerRollCount === 0 || targetRoll === 0) return null;
   const overallBand = sizeWordFromRatio(targetRoll, peerRollSum / peerRollCount);
 
+  // Round 10: Junior+Prep is one combined phase (see reliableJuniorPrepHeadcount's
+  // own comment) -- collapsed to a single "Junior" clause covering the school's
+  // whole statutory range, "Prep" skipped entirely in the loop below so it isn't
+  // also processed as its own (wrongly cropped) clause.
+  const juniorPrepPair = effectiveTags.includes("Junior") && effectiveTags.includes("Prep");
+
   // Per-phase comparison. "Senior" gets special-cased into a secondary/sixth-form
   // split (see reliableSeniorHeadcounts's own comment) -- every other tag gets one
   // clause.
   const clauses: PhaseSizeClause[] = [];
   for (const tag of effectiveTags) {
+    if (juniorPrepPair && tag === "Prep") continue; // handled together with "Junior" below
+
+    if (juniorPrepPair && tag === "Junior") {
+      const target = reliableJuniorPrepHeadcount(schoolLowAge, schoolHighAge, ageGenderCounts);
+      if (target === null || target.total === 0) continue;
+
+      let sum = 0;
+      let count = 0;
+      for (const p of peers) {
+        const counts = peerCounts.get(p.urn);
+        if (!counts || p.statutory_low_age === null || p.statutory_high_age === null) continue;
+        const peerTags = effectivePhaseTags(p.statutory_low_age, p.statutory_high_age, counts);
+        if (!(peerTags.includes("Junior") && peerTags.includes("Prep"))) continue;
+        const v = reliableJuniorPrepHeadcount(p.statutory_low_age, p.statutory_high_age, counts);
+        if (v === null || v.total === 0) continue;
+        sum += v.total;
+        count++;
+      }
+      if (count === 0) continue;
+      const laAverage = sum / count;
+      clauses.push({
+        phaseTag: tag,
+        phaseLabel: phaseSizeLabel(tag),
+        yearRangeLabel: yearGroupLabel(target.minAge, target.maxAge),
+        band: sizeWordFromRatio(target.total, laAverage),
+        ratio: target.total / laAverage,
+      });
+      continue;
+    }
+
     if (tag === "Senior" && schoolLowAge !== null && schoolHighAge !== null) {
       const { secondary, sixthForm } = reliableSeniorHeadcounts(schoolLowAge, schoolHighAge, effectiveTags, ageGenderCounts);
       if (secondary && sixthForm) {
