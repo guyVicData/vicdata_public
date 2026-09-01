@@ -1,3 +1,5 @@
+import { TAG_COLOURS } from "@/lib/tag-colours";
+
 // Layout/graphs spec v1 §12, round 5: one bar per school in the nearest-matched
 // comparison set, showing roll size. Peer schools stay grey and numbered (not named --
 // same free-tier "never a named school without membership" rule surrounding-schools.ts
@@ -9,12 +11,17 @@
 //
 // PEER_COLOUR reuses AggregateShapeChart's own "anonymous aggregate" grey (#a3a3a3) --
 // same meaning, same value, even though that chart no longer shares this card (see
-// ShapeCard.tsx's own comment). FOCUS_COLOUR reuses PhaseBreakdownCard's ACTIVE_BG
-// (#a97a1f) -- the same "this one, not the muted field around it" role, just applied
-// to a different chart. Light-mode-only fill, matching the round-3/4 precedent of not
-// expanding dark-mode CSS-custom-property branching beyond what's explicitly asked
-// (RollCard's sector donut and BoardingCard's pie chart both stayed light-only too).
-const FOCUS_COLOUR = "#a97a1f";
+// ShapeCard.tsx's own comment).
+//
+// FOCUS_COLOUR (round 6, layout/graphs spec v1 §14): now sourced from
+// TAG_COLOURS.Focus.light[1] -- a proper shared token, not a second hardcoded copy --
+// instead of the literal "#a97a1f" this file used to carry directly. Wiring only: the
+// rendered value is unchanged (TAG_COLOURS.Focus.light[1] IS that exact hex), so a
+// future recolour project now reaches this chart too. Still reads only the light
+// variant -- this chart has no dark-mode CSS-custom-property branching yet, same
+// "not this round" scoping as RollCard's sector donut and BoardingCard's pie chart;
+// TAG_COLOURS.Focus.dark exists and is ready whenever that gets built.
+const FOCUS_COLOUR = TAG_COLOURS.Focus.light[1];
 const PEER_COLOUR = "#a3a3a3";
 
 const WIDTH = 320;

@@ -75,6 +75,18 @@ export const TAG_COLOURS: Record<string, { light: [string, string]; dark: [strin
   // moved to ISC orange -- already vetted for contrast in this palette, just unused
   // since.
   "Through School": { light: ["#eff6ff", "#1e40af"], dark: ["#1e3a5f", "#93c5fd"] },
+  // 2026-09-01, layout/graphs spec v1 §14: not a school-typology tag like everything
+  // else in this file -- the surrounding-schools bar chart's "this is the one that
+  // matters, not the muted grey field around it" highlight (SurroundingRollBarChart.tsx),
+  // the same role PhaseBreakdownCard's own local ACTIVE_BG constant already plays for
+  // its size badges. Added here as a proper token, not a second hardcoded copy, so a
+  // future recolour project reaches this value too. Wiring only -- light[1] is the
+  // exact #a97a1f already shipping, unchanged; dark[1] is a genuinely new value (this
+  // chart had no dark-mode branching before and still doesn't consume this one yet),
+  // constructed the same way every other entry's dark pair is: a brighter tint of the
+  // same gold hue for contrast against a dark background, ready for whenever this
+  // chart's own dark-mode branching gets built.
+  Focus: { light: ["#fdf6e3", "#a97a1f"], dark: ["#4a3712", "#e0b23d"] },
 };
 
 // 2026-08-25: filter buttons now fill with the tag's own colour when selected
