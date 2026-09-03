@@ -13,6 +13,7 @@ import {
 } from "@/lib/roll-data";
 import { buildIlrParticipationSnapshot } from "@/lib/ilr-participation-data";
 import { classifyShape, type ShapeLabel } from "@/lib/shape-classifier";
+import { computeShapeQualifiers } from "@/lib/shape-qualifiers";
 import { findSurroundingSchools, aggregateSurroundingStat, aggregatePeerGenderSplit } from "@/lib/surrounding-schools";
 import { computeLaSectorComposition } from "@/lib/la-sector-composition";
 import { lookupAgeBandDistributions } from "@/lib/age-band-distributions";
@@ -26,6 +27,13 @@ import {
   paragraph1PhaseGender, paragraph2SectorSize, paragraph3Shape, paragraph4LocalContext,
   topic4bGenderVariation, renderTopic4b,
   observedSpanForPhase, primaryPhaseTag, hasEarlyYearsProvision,
+  renderNumericShapeDefinition,
+  computeErraticQualifier, renderErraticQualifier,
+  computeSingleAgeAnomalyQualifier, renderSingleAgeAnomalyQualifier,
+  computeGenderShapeDivergenceQualifier, renderGenderShapeDivergenceQualifier,
+  computeGenderMixQualifier, renderGenderMixQualifier,
+  computeStillDriftingQualifier, renderStillDriftingQualifier,
+  joinShapeQualifierAddenda,
 } from "@/lib/narrative";
 import { computeTopic3SizeSentence } from "@/lib/narrative-lookup";
 import { CurrentStateNarrative } from "@/components/dashboard/CurrentStateNarrative";
@@ -142,6 +150,33 @@ export default async function SchoolPage({
   const ilrSnapshot = buildIlrParticipationSnapshot(ilrFacts);
   const showIlrCard = ilrSnapshot !== null && (!roll || roll.period < CURRENT_CENSUS_PERIOD);
   const shape = ageGenderCounts ? classifyShape(shapeClassifierInput(ageGenderCounts)) : null;
+  // 2026-09-09, qualifier build round 15: first live wiring of shape-qualifiers.ts --
+  // needs both classifyShape's own result AND the raw per-age/sex counts (the gender-
+  // split check runs classifyShape a second time internally, on each sex alone).
+  const shapeQualifiers = shape && ageGenderCounts ? computeShapeQualifiers(shape, ageGenderCounts) : null;
+  const shapeDefinition = shape ? renderNumericShapeDefinition(shape.label, shape.metrics, shape.dominantTransition) : null;
+  // Deterministic order per Guy's own brief: the shape itself first (erratic, single-
+  // age anomaly), then gender-related (divergence, mix), then still-drifting.
+  // Borderline/multipleSteps are deliberately absent -- no end-user wording yet.
+  const shapeQualifierAddenda: string | null =
+    shape && shapeQualifiers
+      ? joinShapeQualifierAddenda([
+          renderErraticQualifier(computeErraticQualifier(shapeQualifiers.erratic)),
+          renderSingleAgeAnomalyQualifier(
+            computeSingleAgeAnomalyQualifier(shapeQualifiers.singleAgeAnomaly, shape.moves, shape.metrics.anchored),
+          ),
+          shapeQualifiers.genderShapeDivergenceMaterial && shapeQualifiers.genderShapeDivergence
+            ? renderGenderShapeDivergenceQualifier(
+                computeGenderShapeDivergenceQualifier({
+                  maleDirection: shapeQualifiers.genderShapeDivergence.maleDirection,
+                  femaleDirection: shapeQualifiers.genderShapeDivergence.femaleDirection,
+                }),
+              )
+            : null,
+          renderGenderMixQualifier(computeGenderMixQualifier(shapeQualifiers.genderMix?.notable ?? false)),
+          renderStillDriftingQualifier(computeStillDriftingQualifier(shapeQualifiers.stillDrifting)),
+        ])
+      : null;
 
   // 2026-08-28: the viewed school's own map dot needs the same ILR fallback the map's
   // NEIGHBOUR dots get (schools-in-bounds/route.ts) -- otherwise visiting a genuine
@@ -308,7 +343,7 @@ export default async function SchoolPage({
     narrativeParagraphs = [
       paragraph1PhaseGender(school.current_name, effectiveTags, hasEarlyYears, observedSpan, roll.gender.female, roll.gender.male),
       paragraph2SectorSize(school.current_name, laComposition, sizeSentence),
-      paragraph3Shape(school.current_name, shape?.label ?? null, realMoveCount),
+      paragraph3Shape(school.current_name, shape?.label ?? null, realMoveCount, shape?.metrics ?? null, shape?.dominantTransition ?? null),
       renderTopic4b(p4bResult),
       ...paragraph4LocalContext(
         school.current_name,
@@ -402,7 +437,14 @@ export default async function SchoolPage({
             <>
               <CurrentStateNarrative paragraphs={narrativeParagraphs} />
               <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
-                <RollCard totalRoll={roll.totalRoll} period={roll.period} laComposition={laComposition} />
+                <RollCard
+                  totalRoll={roll.totalRoll}
+                  period={roll.period}
+                  laComposition={laComposition}
+                  laSchoolCount={context.regional?.school_count ?? null}
+                  laTotalRoll={context.regional?.total_roll ?? null}
+                  schoolName={school.current_name}
+                />
                 <GenderSplitCard
                   girls={roll.gender.female}
                   boys={roll.gender.male}
@@ -448,6 +490,8 @@ export default async function SchoolPage({
                 shape={shape?.label ?? null}
                 shapeMetrics={shape?.metrics ?? undefined}
                 shapeDominantTransition={shape?.dominantTransition ?? null}
+                shapeDefinition={shapeDefinition}
+                shapeQualifierAddenda={shapeQualifierAddenda}
                 populationTrend={populationTrend}
                 urn={urn}
                 schoolName={school.current_name}

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { Card, CardDivider, Caption, StatNumber } from "./Card";
 import type { LaSectorComposition } from "@/lib/la-sector-composition";
 import { TAG_COLOURS } from "@/lib/tag-colours";
+import { paragraph2SectorSize } from "@/lib/narrative";
 
 // Layout/graphs spec v1 §5, round 3: wiring fix, not a recolour -- this card
 // previously defined its own local sector hex values here, which had drifted from
@@ -34,11 +36,27 @@ export function RollCard({
   totalRoll,
   period,
   laComposition,
+  laSchoolCount,
+  laTotalRoll,
+  schoolName,
 }: {
   totalRoll: number;
   period: number;
   laComposition: LaSectorComposition | null;
+  // 2026-09-10, round 16: the SAME LA all-sector figures RegionalNationalCard already
+  // reads (context.regional.school_count/total_roll, page.tsx) -- duplicated here, not
+  // moved, RegionalNationalCard is untouched. Null whenever the LA has no regional
+  // aggregate row at all (context.regional itself null), same as laBoardersTotal
+  // elsewhere on this page.
+  laSchoolCount: number | null;
+  laTotalRoll: number | null;
+  // 2026-09-10, round 16: needed for the sector-share sentence below, which now calls
+  // narrative.ts's own paragraph2SectorSize directly (the exact sentence already used
+  // in the page's main narrative paragraph) instead of a hand-written near-duplicate.
+  schoolName: string;
 }) {
+  const sectorSentence = paragraph2SectorSize(schoolName, laComposition, null);
+
   return (
     <Card size="medium" className="flex flex-col gap-4">
       <div>
@@ -55,13 +73,15 @@ export function RollCard({
         <>
           <CardDivider />
           <div>
-            <h3 className="mb-0.5 font-[family-name:var(--font-newsreader)] text-[15px] font-medium text-stone-900 dark:text-stone-100">
+            <h3 className="mb-2 font-[family-name:var(--font-newsreader)] text-[15px] font-medium text-stone-900 dark:text-stone-100">
               Where this school sits locally
             </h3>
-            <Caption className="mb-3.5">
-              Schooling across {laComposition.laName}, by sector — not a size comparison of this school. GIAS pupil-count
-              snapshot, a different source from the census figure above.
-            </Caption>
+            {laSchoolCount !== null && laTotalRoll !== null && (
+              <p className="mb-3 text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">
+                There are {laSchoolCount.toLocaleString()} schools in {laComposition.laName}, with{" "}
+                {laTotalRoll.toLocaleString()} pupils between them.
+              </p>
+            )}
             <div className="flex items-center gap-5">
               <div
                 className="h-24 w-24 shrink-0 rounded-full"
@@ -80,25 +100,19 @@ export function RollCard({
               </div>
             </div>
           </div>
-          {laComposition.thisSchoolSector && laComposition.thisSchoolPupilShareOfSector !== null && (
+          {sectorSentence && (
             <>
               <CardDivider />
-              <Caption>
-                This school is{" "}
-                <strong className="text-stone-900 dark:text-stone-100">
-                  1 of {laComposition.thisSchoolSectorSchoolCount}
-                </strong>{" "}
-                {laComposition.thisSchoolSector === "FE" ? "FE" : laComposition.thisSchoolSector.toLowerCase()} schools in{" "}
-                {laComposition.laName}, and its pupils are{" "}
-                <strong className="text-stone-900 dark:text-stone-100">
-                  {laComposition.thisSchoolPupilShareOfSector.toFixed(1)}%
-                </strong>{" "}
-                of the {laComposition.laName === "" ? "area" : "county"}&rsquo;s{" "}
-                {laComposition.thisSchoolSector === "FE" ? "FE-sector" : `${laComposition.thisSchoolSector.toLowerCase()}-sector`}{" "}
-                pupils (GIAS figures).
-              </Caption>
+              <Caption>{sectorSentence}</Caption>
             </>
           )}
+          <Caption className="italic">
+            Schooling across {laComposition.laName}, by sector — not a comparison of this school&rsquo;s own size. Source:{" "}
+            <Link href="/sources" className="underline hover:text-stone-700 dark:hover:text-stone-300">
+              GIAS
+            </Link>
+            , the Department for Education&rsquo;s school register, a different snapshot from the pupil figures above.
+          </Caption>
         </>
       )}
     </Card>

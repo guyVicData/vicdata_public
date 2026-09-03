@@ -25,6 +25,18 @@ import SurroundingSchoolsMemberList from "@/components/SurroundingSchoolsMemberL
 // bar per school in the same nearest-10 set, grey/numbered for peers, named+coloured
 // for the focus school -- see that component's own comment for the colour choices.
 //
+// 2026-09-09, round 15: the icon+label moved OUT of the left column entirely -- it's
+// now the lead visual of the RIGHT column, above "Nearest matched schools", paired
+// with the new numeric shape definition (narrative.ts's numericShapeDefinition,
+// replacing the old static SHAPE_EXPLANATIONS prose) and the qualifier addenda
+// (shape-qualifiers.ts, wired live here for the first time -- erratic, single-age
+// anomaly, gender-shape divergence, gender-mix, still-drifting, in that deterministic
+// order; borderline/multipleSteps stay data-only, no wording yet). The left column
+// now holds only the chart -- this school's own age/gender profile is the thing a
+// reader looks at first, the icon+definition is the thing that tells them what
+// they're looking at, which reads better as the right column's own headline than as
+// a small aside under the chart.
+//
 // AggregateShapeChart itself is NOT deleted -- flagged as currently unused rather than
 // removed outright (round 5 instruction: may want it again later for a different
 // slot). Its own pooled-age-profile data (aggregateAgeCounts) is still computed by
@@ -35,6 +47,8 @@ export function ShapeCard({
   shape,
   shapeMetrics,
   shapeDominantTransition,
+  shapeDefinition,
+  shapeQualifierAddenda,
   populationTrend,
   urn,
   schoolName,
@@ -52,6 +66,15 @@ export function ShapeCard({
   // because `shape` itself is (insufficient data for a school this young/small).
   shapeMetrics?: ShapeMetrics;
   shapeDominantTransition?: { fromAge: string; toAge: string } | null;
+  // 2026-09-09, round 15: both already fully rendered by page.tsx (narrative.ts's
+  // numericShapeDefinition/renderNumericShapeDefinition + the qualifier render
+  // functions, in shape-qualifiers.ts's own deterministic order) -- ShapeCard is
+  // presentational here, same as how it already receives `summary` pre-rendered
+  // rather than computing prose itself. Needed shape.moves (only on classifyShape's
+  // own result, not on ShapeQualifiers) to locate the single-age-anomaly's own year,
+  // which page.tsx already has and this component doesn't.
+  shapeDefinition: string | null;
+  shapeQualifierAddenda: string | null;
   populationTrend: {
     laName: string;
     laTrend: PopulationTrend | null;
@@ -74,24 +97,38 @@ export function ShapeCard({
       <div className="flex flex-col gap-6 border-b border-stone-100 pb-2 sm:flex-row sm:gap-8 dark:border-stone-800">
         <div className="min-w-0 flex-1">
           <CardSubheading title="This school" subtitle="Ages 4–18, by gender — the single-year roll profile" />
-          {ageGenderCounts && (
+          {ageGenderCounts ? (
             <ShapeChart
               ageGenderCounts={ageGenderCounts}
               metrics={shapeMetrics}
               dominantTransition={shapeDominantTransition}
             />
-          )}
-          {shape ? (
-            <div className="mt-3 flex items-center gap-2 text-stone-900 dark:text-stone-100">
-              <ShapeIcon shape={shape} />
-              <span className="font-[family-name:var(--font-newsreader)] text-[17px] font-medium">{SHAPE_LABELS[shape]}</span>
-            </div>
           ) : (
-            <Caption className="mt-3">Not enough age 5–17 data to classify a shape this year.</Caption>
+            <Caption>No age-by-age roll data to chart.</Caption>
           )}
         </div>
         <div className="hidden w-px self-stretch bg-stone-100 sm:block dark:bg-stone-800" />
         <div className="min-w-0 flex-1">
+          {shape ? (
+            <div className="mb-5 flex items-start gap-4">
+              <ShapeIcon shape={shape} size={48} />
+              <div className="min-w-0 pt-0.5">
+                <h3 className="font-[family-name:var(--font-newsreader)] text-[24px] font-semibold leading-tight text-stone-900 dark:text-stone-100">
+                  {SHAPE_LABELS[shape]}
+                </h3>
+                {shapeDefinition && (
+                  <p className="mt-1.5 text-[13.5px] leading-relaxed text-stone-700 dark:text-stone-300">{shapeDefinition}</p>
+                )}
+                {shapeQualifierAddenda && (
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-stone-500 dark:text-stone-400">
+                    {shapeQualifierAddenda}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Caption className="mb-5">Not enough age 5–17 data to classify a shape this year.</Caption>
+          )}
           <Eyebrow>Nearest matched schools</Eyebrow>
           {found > 0 && summary ? (
             <>

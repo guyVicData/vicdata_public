@@ -11,7 +11,7 @@
 // here for formatting).
 
 import type { RollSnapshot, AgeGenderCounts } from "./roll-data";
-import type { ShapeLabel } from "./shape-classifier";
+import type { ShapeLabel, ShapeMetrics } from "./shape-classifier";
 import type { SchoolTypology, PhaseTag } from "./typology";
 import { phaseWord } from "./surrounding-summary";
 import type { LaSectorComposition } from "./la-sector-composition";
@@ -385,16 +385,13 @@ export function paragraph2SectorSize(
 // into the shape sentence's own wording instead (config-gated, in case a future
 // round wants it back).
 // ---------------------------------------------------------------------------
-const SHAPE_EXPLANATIONS: Partial<Record<ShapeLabel, string>> = {
-  tube: "year groups are broadly similar in size all the way through the school",
-  pyramid: "year groups gradually narrow from the youngest ages to the oldest, typical of a school where pupils leave gradually across several year groups rather than all at once",
-  top_step: "year groups stay a similar size until one point, where the roll steps down and then holds steady, typical of a school where a group of pupils leaves together at one specific transition",
-  funnel: "year groups gradually widen from the youngest ages to the oldest, typical of a school that gains pupils gradually across several year groups rather than all at once",
-  mushroom: "year groups stay a similar size until the oldest ages, where the roll grows sharply, typical of a school with a large sixth-form-style intake",
-  wineglass: "the top of the school is much larger than the bottom, and students join at multiple entry points",
-};
-
-export function paragraph3Shape(schoolName: string, shapeLabel: ShapeLabel | null, realMoveCount: number): string {
+export function paragraph3Shape(
+  schoolName: string,
+  shapeLabel: ShapeLabel | null,
+  realMoveCount: number,
+  metrics: ShapeMetrics | null,
+  dominantTransition: { fromAge: string; toAge: string } | null,
+): string {
   const scopeNote = SHAPE_SENTENCE_INCLUDE_SCOPE_NOTE ? " (ages 5 to 17)" : "";
 
   if (!shapeLabel) return `There isn't enough current census data to classify ${schoolName}'s roll shape.`;
@@ -413,7 +410,7 @@ export function paragraph3Shape(schoolName: string, shapeLabel: ShapeLabel | nul
     );
   }
 
-  const explanation = SHAPE_EXPLANATIONS[shapeLabel];
+  const explanation = metrics ? numericShapeDefinition(shapeLabel, metrics, dominantTransition) : null;
   const label = shapeLabel.charAt(0).toUpperCase() + shapeLabel.slice(1).replace("_", " ");
   return `VicData defines ${schoolName}'s current roll as having a ${label} shape${scopeNote}${explanation ? `, meaning that ${explanation}.` : "."}`;
 }
@@ -466,60 +463,204 @@ export function renderTopic4b(result: { ageA: number; ageB: number; gender: "gir
 }
 
 // ---------------------------------------------------------------------------
-// Shape qualifier sentences (qualifier build round, 2026-09-04) -- same compute/
-// render split as topic4bGenderVariation/renderTopic4b above. Only these three: the
-// other qualifiers (gender-mix %, borderline, still-drifting) don't have a
-// real-distribution-derived threshold yet (shape-qualifiers.ts's own placeholders
-// are reported this round, not locked), so stay data-only/chart-visual until a real
-// cutoff is chosen -- no prose built for them here. compute functions take the
-// already-computed shape-qualifiers.ts result, never re-derive it; render functions
-// are pure formatting, no decision logic.
+// Numeric shape definitions (Round 10's agreed direction, replacing the old static
+// SHAPE_EXPLANATIONS prose above -- deleted, not just unused, since nothing else read
+// it). One sentence per shape, built from the real numbers behind the classification
+// (metrics/dominantTransition) rather than written in advance -- fixes Wineglass's
+// own stale "students join at multiple entry points" line along the way, which was
+// never true under the current ratio-based Wineglass definition, just carried over
+// from an earlier taxonomy round that never got corrected when the definition
+// changed under it.
+//
+// Returns a lowercase, no-trailing-period fragment: paragraph3Shape's own "meaning
+// that {fragment}." wrapper below supplies capitalisation and the period; ShapeCard's
+// own standalone rendering (dashboard/ShapeCard.tsx) capitalises it separately as its
+// own sentence, same source either way.
 // ---------------------------------------------------------------------------
-export type ErraticQualifier = { reversalCount: number } | null;
+export function numericShapeDefinition(
+  shapeLabel: ShapeLabel,
+  metrics: ShapeMetrics,
+  dominantTransition: { fromAge: string; toAge: string } | null,
+): string | null {
+  const anchored = metrics.anchored;
+  if (anchored.length === 0) return null;
+  const first = anchored[0];
+  const last = anchored[anchored.length - 1];
 
-export function computeErraticQualifier(erratic: boolean, reversalCount: number): ErraticQualifier {
-  return erratic ? { reversalCount } : null;
+  if (shapeLabel === "mushroom" || shapeLabel === "top_step") {
+    if (!dominantTransition || metrics.stepPostVsPrePct === null) return null;
+    const toAge = Number(dominantTransition.toAge);
+    const postPoints = anchored.filter((p) => Number(p.key) >= toAge);
+    if (postPoints.length === 0) return null;
+    const z = Math.round(Math.abs(metrics.stepPostVsPrePct) * 100);
+    const direction = shapeLabel === "mushroom" ? "larger" : "smaller";
+    if (postPoints.length === 1) {
+      return `the last year group (${yearGroupSingleLabel(Number(postPoints[0].key))}) is ${z}% ${direction} than the years below`;
+    }
+    // "(Years X-Y)" -- one shared "Years" prefix, so a plain "Year N" label drops its
+    // own redundant "Year " (kept in full for "Reception"/"Early Years", which don't
+    // read as a bare number).
+    const compact = (age: number) => {
+      const label = yearGroupSingleLabel(age);
+      return label.startsWith("Year ") ? label.slice("Year ".length) : label;
+    };
+    const x = compact(Number(postPoints[0].key));
+    const y = compact(Number(postPoints[postPoints.length - 1].key));
+    return `the last ${numberToWords(postPoints.length)} year groups (Years ${x}–${y}) are ${z}% ${direction} than the years below`;
+  }
+
+  if (shapeLabel === "funnel" || shapeLabel === "pyramid") {
+    if (metrics.ratio === null) return null;
+    const x = yearGroupSingleLabel(Number(first.key));
+    const y = yearGroupSingleLabel(Number(last.key));
+    const z = Math.round(Math.abs(metrics.ratio - 1) * 100);
+    const verb = shapeLabel === "funnel" ? "grow" : "shrink";
+    const direction = shapeLabel === "funnel" ? "larger" : "smaller";
+    return `year groups ${verb} steadily from ${x} to ${y}, ending ${z}% ${direction} than they start`;
+  }
+
+  if (shapeLabel === "wineglass") {
+    if (metrics.ratio === null) return null;
+    const x = yearGroupSingleLabel(Number(first.key));
+    const y = yearGroupSingleLabel(Number(last.key));
+    const z = Math.round((metrics.ratio - 1) * 100);
+    return `${y} is ${z}% larger than ${x}`;
+  }
+
+  if (shapeLabel === "tube") {
+    if (metrics.ratio === null) return null;
+    const x = yearGroupSingleLabel(Number(first.key));
+    const y = yearGroupSingleLabel(Number(last.key));
+    const z = Math.round(Math.abs(metrics.ratio - 1) * 100);
+    return `year groups stay within ${z}% of each other, ${x} to ${y}`;
+  }
+
+  return null; // irregular -- dead code, classifyShape() never returns it
 }
 
-export function renderErraticQualifier(schoolName: string, result: ErraticQualifier): string | null {
-  if (!result) return null;
-  const plural = result.reversalCount === 1 ? "reversal" : "reversals";
-  return (
-    `${schoolName}'s year groups move up and down repeatedly rather than following one steady direction, ` +
-    `with ${numberToWords(result.reversalCount)} genuine ${plural} across the school's age range.`
-  );
+// 2026-09-09, ShapeCard's own standalone rendering: the same fragment above, as its
+// own capitalised, period-terminated sentence rather than folded into paragraph3Shape's
+// "meaning that..." wrapper.
+export function renderNumericShapeDefinition(
+  shapeLabel: ShapeLabel,
+  metrics: ShapeMetrics,
+  dominantTransition: { fromAge: string; toAge: string } | null,
+): string | null {
+  const fragment = numericShapeDefinition(shapeLabel, metrics, dominantTransition);
+  if (!fragment) return null;
+  return `${fragment.charAt(0).toUpperCase()}${fragment.slice(1)}.`;
 }
 
-export function computeSingleAgeAnomalyQualifier(isSingleAgeAnomaly: boolean): boolean {
-  return isSingleAgeAnomaly;
+// ---------------------------------------------------------------------------
+// Shape qualifier sentences (qualifier build round, extended round 15 with exact
+// agreed wording, joining fixed round 16) -- same compute/render split as
+// topic4bGenderVariation/renderTopic4b above. Borderline and multipleSteps get no
+// end-user wording this round -- stay internal/reported data only
+// (shape-qualifiers.ts). compute functions take the already-computed
+// shape-qualifiers.ts result, never re-derive it; render functions are pure
+// formatting, no decision logic.
+//
+// 2026-09-10 fix (round 16): each render function returns a LOWERCASE, no-trailing-
+// period fragment, not a standalone capitalised sentence -- round 15's "each addendum
+// is its own sentence" produced real sentence fragments for the "though"-led clauses
+// (erratic, stillDrifting), which are grammatically subordinate and need a main
+// clause, not a full stop of their own. joinShapeQualifierAddenda below assembles all
+// firing fragments into ONE sentence (comma-joined, one capital letter, one final
+// stop) -- see its own comment for the one exception (a lone "though" clause).
+// ---------------------------------------------------------------------------
+export function computeErraticQualifier(erratic: boolean): boolean {
+  return erratic;
 }
 
-export function renderSingleAgeAnomalyQualifier(schoolName: string, isSingleAgeAnomaly: boolean): string | null {
+export function renderErraticQualifier(erratic: boolean): string | null {
+  if (!erratic) return null;
+  return "though it moves up and down from year to year rather than following one clear trend";
+}
+
+export type SingleAgeAnomalyQualifier = { yearLabel: string } | null;
+
+export function computeSingleAgeAnomalyQualifier(
+  isSingleAgeAnomaly: boolean,
+  moves: ("up" | "down" | "flat")[],
+  anchored: { key: string; total: number }[],
+): SingleAgeAnomalyQualifier {
   if (!isSingleAgeAnomaly) return null;
-  return `${schoolName}'s shape this year is driven by a single age group — every other year group is a similar size to its neighbours.`;
+  const idx = moves.findIndex((m) => m !== "flat");
+  if (idx === -1 || !anchored[idx + 1]) return null;
+  return { yearLabel: yearGroupSingleLabel(Number(anchored[idx + 1].key)) };
 }
 
-function shapeLabelText(label: ShapeLabel): string {
-  return label.charAt(0).toUpperCase() + label.slice(1).replace("_", " ");
+export function renderSingleAgeAnomalyQualifier(result: SingleAgeAnomalyQualifier): string | null {
+  if (!result) return null;
+  return `with one clear exception: numbers jump noticeably in ${result.yearLabel}`;
 }
 
-export type GenderShapeDivergenceQualifier = { maleLabel: ShapeLabel; femaleLabel: ShapeLabel } | null;
+// broadDirection's own three values, duck-typed rather than imported from
+// shape-qualifiers.ts -- that module already imports SINGLE_SEX_SUPPRESSION_BAND
+// FROM this file, so importing back would be circular. The caller (ShapeCard.tsx)
+// already has the real computed direction on the qualifier result; this just needs
+// its shape, not the function that produced it.
+type GenderDirection = "top_heavy" | "bottom_heavy" | "flat";
+const GENDER_DIRECTION_PHRASE: Record<GenderDirection, string> = {
+  top_heavy: "grow through the school",
+  bottom_heavy: "narrow through the school",
+  flat: "stay a similar size throughout",
+};
+
+export type GenderShapeDivergenceQualifier = {
+  maleDirection: GenderDirection;
+  femaleDirection: GenderDirection;
+} | null;
 
 export function computeGenderShapeDivergenceQualifier(
-  divergence: { maleLabel: ShapeLabel; femaleLabel: ShapeLabel } | null,
+  divergence: { maleDirection: GenderDirection; femaleDirection: GenderDirection } | null,
 ): GenderShapeDivergenceQualifier {
   return divergence;
 }
 
-export function renderGenderShapeDivergenceQualifier(
-  schoolName: string,
-  result: GenderShapeDivergenceQualifier,
-): string | null {
+export function renderGenderShapeDivergenceQualifier(result: GenderShapeDivergenceQualifier): string | null {
   if (!result) return null;
   return (
-    `Looked at separately, boys and girls follow different shapes at ${schoolName}: boys are ` +
-    `${shapeLabelText(result.maleLabel)}, girls are ${shapeLabelText(result.femaleLabel)}.`
+    `boys and girls don't follow the same pattern here — boys ${GENDER_DIRECTION_PHRASE[result.maleDirection]}, ` +
+    `girls ${GENDER_DIRECTION_PHRASE[result.femaleDirection]}`
   );
+}
+
+export function computeGenderMixQualifier(notable: boolean): boolean {
+  return notable;
+}
+
+export function renderGenderMixQualifier(notable: boolean): string | null {
+  if (!notable) return null;
+  return "and the balance between boys and girls shifts noticeably across the years (see chart)";
+}
+
+export function computeStillDriftingQualifier(stillDrifting: boolean): boolean {
+  return stillDrifting;
+}
+
+export function renderStillDriftingQualifier(stillDrifting: boolean): string | null {
+  if (!stillDrifting) return null;
+  return "though it continues to ease down slightly in the years after";
+}
+
+// Joins the firing lowercase fragments above into one sentence: comma-separated,
+// one capital letter at the very start, one final stop. The one exception is a lone
+// "though..." clause -- grammatically a subordinate clause, not a sentence, so with
+// no main clause to attach to it drops the leading "though" and stands as its own
+// plain independent sentence instead (never ships a dangling subordinate clause).
+// A "though" clause appearing anywhere but first in a longer joined sentence is left
+// alone -- mid-sentence "..., though it continues to ease down..." is ordinary,
+// grammatical English, the fragment problem is specific to standing alone.
+export function joinShapeQualifierAddenda(fragments: (string | null)[]): string | null {
+  const real = fragments.filter((f): f is string => f !== null && f.length > 0);
+  if (real.length === 0) return null;
+  if (real.length === 1 && real[0].toLowerCase().startsWith("though ")) {
+    const rest = real[0].slice("though ".length);
+    return `${rest.charAt(0).toUpperCase()}${rest.slice(1)}.`;
+  }
+  const joined = real.join(", ");
+  return `${joined.charAt(0).toUpperCase()}${joined.slice(1)}.`;
 }
 
 // ---------------------------------------------------------------------------

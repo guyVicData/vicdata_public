@@ -258,6 +258,18 @@ export type ShapeMetrics = {
   // populated for Top Step).
   tailNetChange: number | null;
   tailConsistency: number | null;
+  // 2026-09-09 (numeric shape definitions round): post-step average vs pre-step
+  // average, signed, as a fraction (0.2 = 20% larger) -- only when a step actually
+  // decided the label (mushroom/top_step), same population as stepShare above. Pre =
+  // anchored[0..stepIdx] (the points at or before the step's own starting point);
+  // post = anchored[stepIdx+1..] (the landing point onward -- same points
+  // dominantTransition.toAge already points at). Deliberately average-vs-average, not
+  // the existing Top Step survival gate's peak-vs-average (prePeak/postAvg) -- that
+  // gate is answering a different question ("is the surviving population big enough
+  // to be real at all"), this one is "how much smaller/larger does the post-step
+  // group read as a whole," which a reader expects as an average comparison, not a
+  // peak-anchored one.
+  stepPostVsPrePct: number | null;
 };
 
 // Best available Mushroom/Top Step candidate: the highest-share real (non-flat) move
@@ -376,12 +388,18 @@ export function classifyShape(
   // Metrics builders -- reuse the exact intermediate values each return path already
   // computed, never a second computation of them. See ShapeMetrics's own comment for
   // which fields are populated on which kind of return.
-  const stepMetrics = (share: number, tailNetChange: number | null, tailConsistency: number | null): ShapeMetrics => ({
+  const stepMetrics = (
+    share: number,
+    tailNetChange: number | null,
+    tailConsistency: number | null,
+    stepPostVsPrePct: number | null,
+  ): ShapeMetrics => ({
     anchored,
     stepShare: share,
     ratio: null,
     tailNetChange,
     tailConsistency,
+    stepPostVsPrePct,
   });
   const ratioMetrics = (ratioValue: number | null): ShapeMetrics => ({
     anchored,
@@ -389,6 +407,7 @@ export function classifyShape(
     ratio: ratioValue,
     tailNetChange: null,
     tailConsistency: null,
+    stepPostVsPrePct: null,
   });
 
   const best = findBestStepCandidate(anchored, moves, nonFlatIdxs);
@@ -397,7 +416,12 @@ export function classifyShape(
       fromAge: anchored[best.idx].key,
       toAge: anchored[best.idx + 1].key,
     };
-    const metrics = stepMetrics(best.share, best.tailNetChange, best.tailConsistency);
+    const prePoints = anchored.slice(0, best.idx + 1);
+    const postPointsForPct = anchored.slice(best.idx + 1);
+    const preAvg = prePoints.reduce((a, p) => a + p.total, 0) / prePoints.length;
+    const postAvgForPct = postPointsForPct.reduce((a, p) => a + p.total, 0) / postPointsForPct.length;
+    const stepPostVsPrePct = preAvg > 0 ? (postAvgForPct - preAvg) / preAvg : null;
+    const metrics = stepMetrics(best.share, best.tailNetChange, best.tailConsistency, stepPostVsPrePct);
     if (best.direction === "up") {
       return { label: "mushroom", moves, dominantTransition, metrics };
     }
