@@ -470,8 +470,8 @@ export default function SchoolMap({
   // caps state and independent schools separately (150/250) so a viewport dense with
   // state schools no longer blanks independent ones out too. Which of the two actually
   // matters right now depends on the active sector filter -- computed below, not here.
-  const [boundsOverCap, setBoundsOverCap] = useState({ state: false, independent: false, fe: false });
-  const [boundsCap, setBoundsCap] = useState<{ state: number; independent: number; fe: number } | null>(null);
+  const [boundsOverCap, setBoundsOverCap] = useState({ state: false, independent: false, fe: false, special: false });
+  const [boundsCap, setBoundsCap] = useState<{ state: number; independent: number; fe: number; special: number } | null>(null);
   // 2026-08-28, per Guy's live review: the map can genuinely look blank for two
   // different reasons (still fetching the current viewport; genuinely over cap, no
   // markers to show) and needs to say WHICH, clearly -- silence read as broken, not
@@ -580,10 +580,11 @@ export default function SchoolMap({
           state: !!body.overCap?.state,
           independent: !!body.overCap?.independent,
           fe: !!body.overCap?.fe,
+          special: !!body.overCap?.special,
         });
         setBoundsCap(
           body.cap && typeof body.cap.state === "number" && typeof body.cap.independent === "number"
-            ? { state: body.cap.state, independent: body.cap.independent, fe: body.cap.fe ?? 0 }
+            ? { state: body.cap.state, independent: body.cap.independent, fe: body.cap.fe ?? 0, special: body.cap.special ?? 0 }
             : null,
         );
         setBoundsSchools(body.schools ?? []);
@@ -1003,14 +1004,16 @@ export default function SchoolMap({
   const stateSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("State");
   const independentSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("Independent");
   const feSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("FE");
+  const specialSectorRelevant = sectorFilter.size === 0 || sectorFilter.has("Special Schools");
   const relevantOverCapSectors: string[] = [
     ...(stateSectorRelevant && boundsOverCap.state ? ["state"] : []),
     ...(independentSectorRelevant && boundsOverCap.independent ? ["independent"] : []),
     ...(feSectorRelevant && boundsOverCap.fe ? ["fe"] : []),
+    ...(specialSectorRelevant && boundsOverCap.special ? ["special"] : []),
   ];
   const showOverCapCard = relevantOverCapSectors.length > 0;
   const overCapMessage = relevantOverCapSectors
-    .map((sector) => `${boundsCap?.[sector as "state" | "independent" | "fe"] ?? "too many"} ${sector}`)
+    .map((sector) => `${boundsCap?.[sector as "state" | "independent" | "fe" | "special"] ?? "too many"} ${sector}`)
     .join(" and ");
 
   return (

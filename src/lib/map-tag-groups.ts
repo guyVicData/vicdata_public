@@ -109,8 +109,12 @@ export const TAG_GROUPS: TagGroupConfig[] = [
     title: "Sector",
     // FE added 2026-08-28, per Guy's direct instruction -- FE-corporation/sixth-form/
     // special-post-16 institutions (typology.ts's sectorTag()), a genuine third
-    // sector, not folded into State or Independent.
-    options: ["Independent", "State", "FE"],
+    // sector, not folded into State or Independent. Special Schools added 2026-09-03,
+    // same reasoning, same pattern -- a genuine fourth sector (establishment_type_group
+    // "Special schools", confirmed clean against real data in typology.ts's own
+    // comment), not folded into State even though some special schools legally
+    // structured as academies already resolve to State via STATE_GROUPS untouched.
+    options: ["Independent", "State", "FE", "Special Schools"],
     getValues: (s) => (s.sector ? [s.sector] : []),
   },
   {

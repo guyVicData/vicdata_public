@@ -5,7 +5,7 @@
 // filtering (Guy's own call, logged in docs/OPEN_QUESTIONS.md) -- so it lives in this
 // module for display consistency but callers must not treat it as filter input.
 
-export type SectorTag = "Independent" | "State" | "FE";
+export type SectorTag = "Independent" | "State" | "FE" | "Special Schools";
 export type BoardingTag = "Boarding" | "Day" | "Boarding & day";
 export type PhaseTag = "Junior" | "Prep" | "Senior" | "Post 16";
 export type GenderTag = "Boys" | "Girls" | "Co-ed";
@@ -38,6 +38,28 @@ const FE_ESTABLISHMENT_TYPES = new Set([
   "Welsh establishment",
 ]);
 
+// 2026-09-03, per Guy's direct instruction: Special Schools as a genuine fourth map
+// sector, same "checked from real data first" discipline the FE addition used.
+// Checked directly (not assumed): establishment_type_group === "Special schools"
+// (1,498 open schools) is itself already a clean, narrow group -- exactly four real
+// establishment_type values underneath it (Other independent special school 952,
+// Community special school 419, Foundation special school 75, Non-maintained special
+// school 52), zero PRU/alternative-provision-looking types mixed in, zero overlap
+// with any mainstream group (structurally a single field, confirmed 0 anyway). Unlike
+// FE, this does NOT need an establishment_type-level allowlist the way FE_ESTABLISHMENT_
+// TYPES did -- the group itself is already the right boundary, not a broad catch-all
+// like "Colleges"/"Other types" were for FE.
+//
+// Two related establishment_type values were checked and deliberately excluded from
+// this: "Academy special converter"/"Academy special sponsor led" (439 schools) and
+// "Free schools special" (133) are real special schools too, but GIAS files them
+// under establishment_type_group "Academies"/"Free Schools" -- they already resolve
+// to "State" via STATE_GROUPS below and are already visible on the map today, not
+// part of the gap this addition closes. "Special post 16 institution" (154, under
+// "Other types") is already claimed by FE_ESTABLISHMENT_TYPES above and stays FE, not
+// reassigned here.
+const SPECIAL_SCHOOLS_GROUP = "Special schools";
+
 export function sectorTag(
   establishmentTypeGroup: string | null,
   establishmentType: string | null,
@@ -45,7 +67,8 @@ export function sectorTag(
   if (establishmentType && FE_ESTABLISHMENT_TYPES.has(establishmentType)) return "FE";
   if (establishmentTypeGroup === "Independent schools") return "Independent";
   if (establishmentTypeGroup && STATE_GROUPS.has(establishmentTypeGroup)) return "State";
-  return null; // e.g. special schools -- expected fall-through
+  if (establishmentTypeGroup === SPECIAL_SCHOOLS_GROUP) return "Special Schools";
+  return null; // e.g. Welsh schools, PRUs/AP, Colleges/Universities -- expected fall-through
 }
 
 // Exported for the map's bounds-based schools query (schools-in-bounds route,
@@ -63,6 +86,10 @@ export const MAINSTREAM_ESTABLISHMENT_GROUPS = [...STATE_GROUPS, "Independent sc
 // Exported for schools-in-bounds' own three-way query -- the array form of the Set
 // above, for a Postgrest .in() filter.
 export const FE_INSTITUTION_TYPES = [...FE_ESTABLISHMENT_TYPES];
+
+// Exported for schools-in-bounds' own fourth query bucket -- a single group value,
+// not an array, since (unlike FE) this is already the right boundary on its own.
+export const SPECIAL_SCHOOLS_ESTABLISHMENT_GROUP = SPECIAL_SCHOOLS_GROUP;
 
 // Of the six FE_ESTABLISHMENT_TYPES, only these three are ever in scope for
 // vicdata's dfe_fe_participation/_adult ingest at all (its own UKPRN->URN crosswalk,

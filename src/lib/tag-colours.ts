@@ -54,6 +54,13 @@ export const TAG_COLOURS: Record<string, { light: [string, string]; dark: [strin
   Independent: { light: ["#fef2e8", "#F37521"], dark: ["#3d2410", "#F37521"] }, // ISC orange (Guy's brand, exact hex)
   State: { light: ["#f0fdf4", "#15803d"], dark: ["#14532d", "#4ade80"] }, // provisional green
   FE: { light: ["#fdf4ff", "#86198f"], dark: ["#451a4d", "#f0abfc"] }, // fuchsia
+  // 2026-09-03: Special Schools, a genuine fourth sector (typology.ts's sectorTag(),
+  // per Guy's direct instruction). True red -- the one saturated hue family nothing
+  // else in this palette uses (checked against every existing entry: Boarding/coral
+  // and Post 16/orange both read as warm brick/rust, not red; Girls/pink is a distinct
+  // magenta), and clearly separable from the other three sector colours (Independent
+  // orange, State green, FE fuchsia) at a glance on a four-way sector legend.
+  "Special Schools": { light: ["#fef2f2", "#b91c1c"], dark: ["#4a1515", "#f87171"] }, // red
   Boarding: { light: ["#fff1ee", "#9a3324"], dark: ["#4a241d", "#f4a58f"] }, // coral
   Day: { light: ["#f0f9ff", "#075985"], dark: ["#173a4d", "#7dd3fc"] }, // sky
   "Boarding & day": { light: ["#f0fdfa", "#115e59"], dark: ["#14403c", "#5eead4"] }, // teal

@@ -9,6 +9,7 @@ import {
   STATE_ESTABLISHMENT_GROUPS,
   FE_INSTITUTION_TYPES,
   FE_PARTICIPATION_ESTABLISHMENT_TYPES,
+  SPECIAL_SCHOOLS_ESTABLISHMENT_GROUP,
   type PhaseTag,
 } from "@/lib/typology";
 import { lookupAgeGenderTotals, lookupReferenceData } from "@/lib/vicdata-reference";
@@ -142,6 +143,16 @@ const INDEPENDENT_CAP = 250;
 // for the same defensive "never one pathological viewport" discipline STATE_CAP/
 // INDEPENDENT_CAP already apply, not because it's expected to trip in practice.
 const FE_CAP = 100;
+// 2026-09-03: fourth bucket, Special Schools (typology.ts's SPECIAL_SCHOOLS_ESTABLISHMENT_
+// GROUP -- previously entirely invisible here, sectorTag() returned null for the whole
+// population). Same defensive-cap discipline as FE_CAP, sized from real geography rather
+// than copied from FE's own number: 1,498 open Special-schools-group institutions
+// nationally (nearly 4x FE's ~382), and a real density sweep found the densest real
+// cluster anywhere in the country (central London) is 128 schools in a 30km x 30km box,
+// 180 in 50km x 50km -- comfortably under 150 for any realistic zoomed-in viewport, only
+// tripping for an unusually wide zoom centred exactly there, same "defensive, not
+// expected to trip in practice" territory STATE_CAP/INDEPENDENT_CAP/FE_CAP already sit in.
+const SPECIAL_CAP = 150;
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -202,15 +213,19 @@ export async function GET(request: NextRequest) {
       .lte("northing", maxNorthing)
       .abortSignal(request.signal);
 
-  const [stateResult, independentResult, feResult] = await Promise.all([
+  const [stateResult, independentResult, feResult, specialResult] = await Promise.all([
     baseQuery().in("establishment_type_group", STATE_ESTABLISHMENT_GROUPS).limit(STATE_CAP + 1),
     baseQuery().eq("establishment_type_group", "Independent schools").limit(INDEPENDENT_CAP + 1),
     // 2026-08-28: third bucket, establishment_type (not group) -- see FE_CAP's own
     // comment and typology.ts's FE_INSTITUTION_TYPES for why.
     baseQuery().in("establishment_type", FE_INSTITUTION_TYPES).limit(FE_CAP + 1),
+    // 2026-09-03: fourth bucket, establishment_type_group this time -- see SPECIAL_CAP's
+    // own comment and typology.ts's SPECIAL_SCHOOLS_ESTABLISHMENT_GROUP for why the
+    // group itself, unlike FE, is already the right boundary.
+    baseQuery().eq("establishment_type_group", SPECIAL_SCHOOLS_ESTABLISHMENT_GROUP).limit(SPECIAL_CAP + 1),
   ]);
 
-  if (stateResult.error || independentResult.error || feResult.error) {
+  if (stateResult.error || independentResult.error || feResult.error || specialResult.error) {
     // AbortError surfaces here as a Postgrest error, not a thrown exception (the
     // supabase-js client catches the abort internally) -- a 499-style "client gave up"
     // response, not a real server failure worth a 500 / worth logging as one.
@@ -223,9 +238,11 @@ export async function GET(request: NextRequest) {
   const stateRows = (stateResult.data as Row[]) ?? [];
   const independentRows = (independentResult.data as Row[]) ?? [];
   const feRows = (feResult.data as Row[]) ?? [];
+  const specialRows = (specialResult.data as Row[]) ?? [];
   const stateOverCap = stateRows.length > STATE_CAP;
   const independentOverCap = independentRows.length > INDEPENDENT_CAP;
   const feOverCap = feRows.length > FE_CAP;
+  const specialOverCap = specialRows.length > SPECIAL_CAP;
 
   // Over-cap sectors are OMITTED entirely, not truncated to their own cap -- showing
   // an arbitrary CAP-sized subset of a much larger real population would misleadingly
@@ -237,6 +254,7 @@ export async function GET(request: NextRequest) {
     ...(stateOverCap ? [] : stateRows),
     ...(independentOverCap ? [] : independentRows),
     ...(feOverCap ? [] : feRows),
+    ...(specialOverCap ? [] : specialRows),
   ];
 
   const includeRoll = rows.length > 0;
@@ -438,8 +456,8 @@ export async function GET(request: NextRequest) {
   // actually matters right now (e.g. filtered to Independent only, the state cap
   // being tripped is irrelevant noise, not something worth a banner over).
   return NextResponse.json({
-    overCap: { state: stateOverCap, independent: independentOverCap, fe: feOverCap },
-    cap: { state: STATE_CAP, independent: INDEPENDENT_CAP, fe: FE_CAP },
+    overCap: { state: stateOverCap, independent: independentOverCap, fe: feOverCap, special: specialOverCap },
+    cap: { state: STATE_CAP, independent: INDEPENDENT_CAP, fe: FE_CAP, special: SPECIAL_CAP },
     rollDataIncluded: includeRoll,
     memberDetailIncluded: includeMemberDetail,
     schools,

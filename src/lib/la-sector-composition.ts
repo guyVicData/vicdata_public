@@ -19,14 +19,20 @@
 import { createServerAnonSupabaseClient } from "./supabase";
 import { sectorTag, type SectorTag } from "./typology";
 
+// This donut's own deliberate scope -- three sectors, unaffected by the map's 2026-09-03
+// Special Schools addition (typology.ts's sectorTag() now returns a real fourth value
+// instead of null for that population, but this feature was never asked to track it).
+type TrackedSector = "State" | "Independent" | "FE";
+const SECTORS: TrackedSector[] = ["State", "Independent", "FE"];
+
 export type LaSectorComposition = {
   laName: string;
-  bySector: Record<SectorTag, { schools: number; pupils: number }>;
+  bySector: Record<TrackedSector, { schools: number; pupils: number }>;
   totalPupils: number;
   // The viewed school's own sector -- null if it doesn't resolve to one of the three
-  // (e.g. a special school), in which case the caller shouldn't render the "1 of N"
-  // line at all.
-  thisSchoolSector: SectorTag | null;
+  // tracked here (e.g. Special Schools, or anything else sectorTag() can't place at
+  // all), in which case the caller shouldn't render the "1 of N" line at all.
+  thisSchoolSector: TrackedSector | null;
   thisSchoolSectorSchoolCount: number;
   // This school's own number_of_pupils as a % of its sector's LA total -- null when
   // thisSchoolSector is null, or when this school's own number_of_pupils is null (no
@@ -34,7 +40,9 @@ export type LaSectorComposition = {
   thisSchoolPupilShareOfSector: number | null;
 };
 
-const SECTORS: SectorTag[] = ["State", "Independent", "FE"];
+function asTrackedSector(sector: SectorTag | null): TrackedSector | null {
+  return sector && (SECTORS as SectorTag[]).includes(sector) ? (sector as TrackedSector) : null;
+}
 
 export async function computeLaSectorComposition(
   laName: string,
@@ -65,18 +73,19 @@ export async function computeLaSectorComposition(
     establishment_type: string | null;
     number_of_pupils: number | null;
   }[]) {
-    const sector = sectorTag(row.establishment_type_group, row.establishment_type);
-    if (!sector || !SECTORS.includes(sector)) continue;
+    const sector = asTrackedSector(sectorTag(row.establishment_type_group, row.establishment_type));
+    if (!sector) continue;
     if (row.number_of_pupils === null) continue;
     bySector[sector].schools += 1;
     bySector[sector].pupils += row.number_of_pupils;
   }
 
   const totalPupils = SECTORS.reduce((sum, s) => sum + bySector[s].pupils, 0);
-  const thisSchoolSectorSchoolCount = thisSchoolSector ? bySector[thisSchoolSector].schools : 0;
-  const sectorPupils = thisSchoolSector ? bySector[thisSchoolSector].pupils : 0;
+  const trackedThisSchoolSector = asTrackedSector(thisSchoolSector);
+  const thisSchoolSectorSchoolCount = trackedThisSchoolSector ? bySector[trackedThisSchoolSector].schools : 0;
+  const sectorPupils = trackedThisSchoolSector ? bySector[trackedThisSchoolSector].pupils : 0;
   const thisSchoolPupilShareOfSector =
-    thisSchoolSector && thisSchoolNumberOfPupils !== null && sectorPupils > 0
+    trackedThisSchoolSector && thisSchoolNumberOfPupils !== null && sectorPupils > 0
       ? (thisSchoolNumberOfPupils / sectorPupils) * 100
       : null;
 
@@ -84,7 +93,7 @@ export async function computeLaSectorComposition(
     laName,
     bySector,
     totalPupils,
-    thisSchoolSector,
+    thisSchoolSector: trackedThisSchoolSector,
     thisSchoolSectorSchoolCount,
     thisSchoolPupilShareOfSector,
   };
