@@ -11,7 +11,7 @@ import {
   SHAPE_CLASSIFICATION_MIN_AGE,
   SHAPE_CLASSIFICATION_MAX_AGE,
 } from "@/lib/roll-data";
-import { buildIlrParticipationSnapshot } from "@/lib/ilr-participation-data";
+import { buildIlrParticipationSnapshot, type IlrParticipationSnapshot } from "@/lib/ilr-participation-data";
 import { classifyShape, type ShapeLabel } from "@/lib/shape-classifier";
 import { computeShapeQualifiers } from "@/lib/shape-qualifiers";
 import { findSurroundingSchools, aggregateSurroundingStat, aggregatePeerGenderSplit } from "@/lib/surrounding-schools";
@@ -39,7 +39,6 @@ import {
 } from "@/lib/narrative";
 import { computeTopic3SizeSentence } from "@/lib/narrative-lookup";
 import { CurrentStateNarrative } from "@/components/dashboard/CurrentStateNarrative";
-import { under19Totals, adultTotals, UNDER_19_TOTAL_BREAKDOWN, ADULT_TOTAL_BREAKDOWN } from "@/lib/fe-participation-roll";
 import { DashboardGrid } from "@/components/dashboard/Card";
 import { RollCard } from "@/components/dashboard/RollCard";
 import { PhaseBreakdownCard } from "@/components/dashboard/PhaseBreakdownCard";
@@ -199,25 +198,28 @@ export default async function SchoolPage({
   // case the ILR card above exists for.
   let viewedRollSource: "census" | "ilr" | null = roll ? "census" : null;
   let viewedIlrTotal: number | null = null;
+  // 2026-09-12, FE-sector build: genuine FE-sector schools (Further education/Sixth
+  // form centres/Special post 16 institution -- FE_PARTICIPATION_ESTABLISHMENT_TYPES,
+  // the real ILR crosswalk scope) structurally never have census roll data, so almost
+  // everything on the page was blank for them. These two snapshots feed the new
+  // participation cards below (step 2 of the FE-college build) -- fetched once here
+  // (full facts, not breakdown-filtered) and reused for both the cards and the map-dot
+  // total (viewedIlrTotal), rather than a second round-trip for the same two sources.
+  let feUnder19Snapshot: IlrParticipationSnapshot | null = null;
+  let feAdultSnapshot: IlrParticipationSnapshot | null = null;
   if (!roll) {
     if (FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(school.establishment_type ?? "")) {
-      const feFacts = await lookupReferenceData({
-        sourceId: "dfe_fe_participation",
-        entityIds: [urn],
-        breakdowns: [UNDER_19_TOTAL_BREAKDOWN],
-      });
-      const under19 = under19Totals(feFacts).get(urn);
-      if (under19) {
-        viewedIlrTotal = under19.total;
-      } else {
-        const adultFacts = await lookupReferenceData({
-          sourceId: "dfe_fe_participation_adult",
-          entityIds: [urn],
-          breakdowns: [ADULT_TOTAL_BREAKDOWN],
-        });
-        const adult = adultTotals(adultFacts).get(urn);
-        if (adult) viewedIlrTotal = adult.total;
-      }
+      const feFacts = await lookupReferenceData({ sourceId: "dfe_fe_participation", entityIds: [urn] });
+      feUnder19Snapshot = buildIlrParticipationSnapshot(feFacts, "under_19");
+      if (feUnder19Snapshot) viewedIlrTotal = feUnder19Snapshot.total;
+
+      // Adult (19+) participation is always fetched too when this is a genuine
+      // FE-sector school, not just as a total-only fallback for the map dot --
+      // step 2 wants it surfaced as its own card whenever it exists, alongside (never
+      // combined with) the under-19 figure.
+      const adultFacts = await lookupReferenceData({ sourceId: "dfe_fe_participation_adult", entityIds: [urn] });
+      feAdultSnapshot = buildIlrParticipationSnapshot(adultFacts, "19_plus");
+      if (viewedIlrTotal === null && feAdultSnapshot) viewedIlrTotal = feAdultSnapshot.total;
     } else if (ilrSnapshot) {
       // Academy 16-19/Free school 16-19 with genuinely no census at all (not just
       // stale) -- reuse the SAME dfe_fe_participation_academy figure the ILR card
@@ -516,6 +518,39 @@ export default async function SchoolPage({
                   ? `this school's own census data hasn't been updated since ${roll.period}/${String(roll.period + 1).slice(2)}`
                   : "this school has no DfE census roll data"
               }
+            />
+          )}
+
+          {/* 2026-09-12, FE-sector build step 2: genuine FE-sector schools (Further
+              education/Sixth form centres/Special post 16 institution) structurally
+              never have census data -- NoCensusDataCard above explains the gap, these
+              are the real content that sits alongside it. Two separate cards, never
+              one blended number -- under-19 and 19+/adult are different populations
+              (same discipline the ingest side's dfe_fe_participation/_adult split
+              exists to enforce). A sixth-form centre reporting under a parent
+              institution's own URN (Harrow Collegiate, confirmed real, urn 135469) or
+              an institution outside ILR's coverage window correctly renders neither
+              card -- an honest gap, not a bug. */}
+          {feUnder19Snapshot && (
+            <IlrParticipationCard
+              eyebrow="Under-19 FE participation (ILR)"
+              total={feUnder19Snapshot.total}
+              period={feUnder19Snapshot.period}
+              girls={feUnder19Snapshot.female}
+              boys={feUnder19Snapshot.male}
+              reason="this school reports through the Individualised Learner Record (ILR), not DfE school census"
+            />
+          )}
+
+          {feAdultSnapshot && (
+            <IlrParticipationCard
+              eyebrow="Adult (19+) FE participation (ILR)"
+              total={feAdultSnapshot.total}
+              period={feAdultSnapshot.period}
+              girls={feAdultSnapshot.female}
+              boys={feAdultSnapshot.male}
+              sexLabels={{ female: "female", male: "male" }}
+              reason="this is a separate, adult (19+) population, reported separately from any under-19 figure above -- never combined into one number"
             />
           )}
 

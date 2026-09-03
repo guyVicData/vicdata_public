@@ -6,18 +6,32 @@
 // aggregates exist to avoid (see docs/OPEN_QUESTIONS.md, 2026-08-28 investigation).
 //
 // Real, deliberate scope note: pupil counts here are GIAS's own `number_of_pupils`
-// snapshot field (ingest/sources/gias.py, ~89% filled), NOT the same DfE census
-// figure the rest of this page uses -- a genuinely different source/provenance, same
-// "flag it, don't blend it silently" discipline as the map's ILR-vs-census marker
-// distinction. Schools with a null number_of_pupils are excluded from every
-// percentage/count here (not treated as zero), so a sparse LA doesn't silently
-// under-report. The viewed school's own share is computed from ITS OWN
-// number_of_pupils too (not the census totalRoll shown elsewhere on the page) --
-// mixing the two sources for one ratio would be the exact silent-blend this project
-// avoids everywhere else.
+// snapshot field (ingest/sources/gias.py), NOT the same DfE census figure the rest of
+// this page uses -- a genuinely different source/provenance, same "flag it, don't
+// blend it silently" discipline as the map's ILR-vs-census marker distinction.
+// Schools with a null number_of_pupils are excluded from every percentage/count here
+// (not treated as zero), so a sparse LA doesn't silently under-report. The viewed
+// school's own share is computed from ITS OWN number_of_pupils too (not the census
+// totalRoll shown elsewhere on the page) -- mixing the two sources for one ratio would
+// be the exact silent-blend this project avoids everywhere else.
+//
+// 2026-09-12, FE-sector build step 3: number_of_pupils' real fill rate for FE-sector
+// rows is 0.0% (confirmed live, all 6 FE_ESTABLISHMENT_TYPES, 2,156 open schools) --
+// the ~89% figure this comment used to cite was a whole-table average dominated by
+// mainstream schools (Academies alone sample at 94.1%), not representative of FE at
+// all. This is the entire cause of FE's silent 0% in this donut. Fixed with the same
+// under-19 ILR fallback the map's own batch route already uses (schools-in-bounds/
+// route.ts's ilrCandidates block is the direct template) -- under-19 total ONLY, never
+// the adult/19+ figure, since this donut compares school-age footprint across sectors
+// and pulling in adult FE participants would inflate FE's slice in a way that isn't
+// like-for-like with State/Independent's own child-only counts. A row with neither
+// number_of_pupils nor under-19 ILR data stays excluded, same honest-gap behaviour as
+// before -- no number is fabricated for it.
 
 import { createServerAnonSupabaseClient } from "./supabase";
-import { sectorTag, type SectorTag } from "./typology";
+import { lookupReferenceData } from "./vicdata-reference";
+import { sectorTag, type SectorTag, FE_PARTICIPATION_ESTABLISHMENT_TYPES } from "./typology";
+import { under19Totals, UNDER_19_TOTAL_BREAKDOWN } from "./fe-participation-roll";
 
 // This donut's own deliberate scope -- three sectors, unaffected by the map's 2026-09-03
 // Special Schools addition (typology.ts's sectorTag() now returns a real fourth value
@@ -38,6 +52,12 @@ export type LaSectorComposition = {
   // thisSchoolSector is null, or when this school's own number_of_pupils is null (no
   // GIAS figure to compute a share from).
   thisSchoolPupilShareOfSector: number | null;
+  // 2026-09-12, FE-sector build step 3: how many of bySector.FE's schools were sized
+  // from ILR data (dfe_fe_participation's under-19 total) rather than GIAS's
+  // number_of_pupils -- a count, not a per-school breakdown, so the donut's caption can
+  // say "N of these were sized from a different source" without a third data source
+  // silently blending into the figure. Always 0 when bySector.FE.schools itself is 0.
+  feIlrFallbackSchoolCount: number;
 };
 
 function asTrackedSector(sector: SectorTag | null): TrackedSector | null {
@@ -53,7 +73,7 @@ export async function computeLaSectorComposition(
   const supabase = createServerAnonSupabaseClient();
   const { data, error } = await supabase
     .from("schools")
-    .select("establishment_type_group, establishment_type, number_of_pupils")
+    .select("urn, establishment_type_group, establishment_type, number_of_pupils")
     .eq("la_name", laName)
     .neq("status", "closed")
     // Defensive upper bound -- real LAs run to a few hundred schools, well under
@@ -68,16 +88,51 @@ export async function computeLaSectorComposition(
     FE: { schools: 0, pupils: 0 },
   };
 
-  for (const row of data as {
+  const rows = data as {
+    urn: string;
     establishment_type_group: string | null;
     establishment_type: string | null;
     number_of_pupils: number | null;
-  }[]) {
+  }[];
+
+  // FE rows with no GIAS figure at all -- collected during the first pass, resolved
+  // via a single batched ILR lookup below (never one round-trip per school). Pre-
+  // filtered to FE_PARTICIPATION_ESTABLISHMENT_TYPES (the actual dfe_fe_participation
+  // UKPRN<->URN crosswalk scope) so HE institutions/Miscellaneous/Welsh establishment
+  // -- never in that crosswalk -- don't spend a lookup that's guaranteed to return
+  // nothing, same reasoning fe-participation-roll.ts's own comment already gives.
+  const feIlrCandidateUrns: string[] = [];
+
+  for (const row of rows) {
     const sector = asTrackedSector(sectorTag(row.establishment_type_group, row.establishment_type));
     if (!sector) continue;
-    if (row.number_of_pupils === null) continue;
-    bySector[sector].schools += 1;
-    bySector[sector].pupils += row.number_of_pupils;
+    if (row.number_of_pupils !== null) {
+      bySector[sector].schools += 1;
+      bySector[sector].pupils += row.number_of_pupils;
+      continue;
+    }
+    if (sector === "FE" && FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(row.establishment_type ?? "")) {
+      feIlrCandidateUrns.push(row.urn);
+    }
+    // else: genuinely excluded, no number_of_pupils and no possible ILR fallback --
+    // same honest-gap behaviour as before this fix.
+  }
+
+  let feIlrFallbackSchoolCount = 0;
+  if (feIlrCandidateUrns.length > 0) {
+    const feFacts = await lookupReferenceData({
+      sourceId: "dfe_fe_participation",
+      entityIds: feIlrCandidateUrns,
+      breakdowns: [UNDER_19_TOTAL_BREAKDOWN],
+    });
+    const totals = under19Totals(feFacts);
+    for (const urn of feIlrCandidateUrns) {
+      const t = totals.get(urn);
+      if (!t) continue; // no real ILR data either -- stays excluded, not fabricated
+      bySector.FE.schools += 1;
+      bySector.FE.pupils += t.total;
+      feIlrFallbackSchoolCount += 1;
+    }
   }
 
   const totalPupils = SECTORS.reduce((sum, s) => sum + bySector[s].pupils, 0);
@@ -96,5 +151,6 @@ export async function computeLaSectorComposition(
     thisSchoolSector: trackedThisSchoolSector,
     thisSchoolSectorSchoolCount,
     thisSchoolPupilShareOfSector,
+    feIlrFallbackSchoolCount,
   };
 }

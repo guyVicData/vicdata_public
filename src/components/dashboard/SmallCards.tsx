@@ -128,21 +128,29 @@ export function RegionalNationalCard({
 }
 
 export function IlrParticipationCard({
+  eyebrow = "FE participation data (ILR)",
   total,
   period,
   girls,
   boys,
+  // 2026-09-12, FE-sector build: "girls"/"boys" reads fine for the original Academy
+  // 16-19/under-19 use of this card, but not for a 19+/adult participation stat --
+  // adult male/female learners aren't "boys"/"girls". Defaults preserve the existing
+  // card's exact wording for every call site that doesn't pass this.
+  sexLabels = { female: "girls", male: "boys" },
   reason,
 }: {
+  eyebrow?: string;
   total: number;
   period: number;
   girls: number | null;
   boys: number | null;
+  sexLabels?: { female: string; male: string };
   reason: string;
 }) {
   return (
     <Card size="medium">
-      <Eyebrow>FE participation data (ILR)</Eyebrow>
+      <Eyebrow>{eyebrow}</Eyebrow>
       <p className="font-[family-name:var(--font-newsreader)] text-[32px] font-semibold leading-none text-stone-900 dark:text-stone-100">
         {total.toLocaleString()}
       </p>
@@ -151,7 +159,21 @@ export function IlrParticipationCard({
       </p>
       {girls !== null && boys !== null && (
         <p className="mt-2 text-[13px] text-stone-700 dark:text-stone-300">
-          {girls.toLocaleString()} girls, {boys.toLocaleString()} boys
+          {girls.toLocaleString()} {sexLabels.female}, {boys.toLocaleString()} {sexLabels.male}
+        </p>
+      )}
+      {/* 2026-09-13: DfE rounds every ILR-participation figure independently to the
+          nearest 10 (confirmed live -- every value across dfe_fe_participation,
+          _adult and _academy is a multiple of 10) -- real institutions' own published
+          male/female split doesn't always sum to the published total as a result
+          (~22-29% of institutions, checked across all three sources; City Lit 2025,
+          urn 130401, is one real example: 15,380 + 6,570 = 21,950 against a published
+          total of 21,960). Not a parsing bug and not a hidden third category -- every
+          value here is the exact published DfE figure. Flagged only when it actually
+          diverges, so the note never appears on the ~75% of cards that do sum. */}
+      {girls !== null && boys !== null && girls + boys !== total && (
+        <p className="mt-1 text-[11.5px] text-stone-400 dark:text-stone-600">
+          DfE rounds each figure to the nearest 10 independently, so this split may not sum exactly to the total above.
         </p>
       )}
       <Caption className="mt-3">

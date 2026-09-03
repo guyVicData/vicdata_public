@@ -117,6 +117,18 @@ export function RollCard({
             </Link>
             , the Department for Education&rsquo;s school register. Figures here are a different snapshot from the pupil
             numbers above.
+            {laComposition.feIlrFallbackSchoolCount > 0 && (
+              <>
+                {" "}
+                {laComposition.feIlrFallbackSchoolCount} of the FE / Technical{" "}
+                {laComposition.feIlrFallbackSchoolCount === 1 ? "figure is" : "schools here are"} sized from{" "}
+                <Link href="/sources" className="underline hover:text-stone-700 dark:hover:text-stone-300">
+                  DfE ILR
+                </Link>{" "}
+                participation data, not GIAS — the school register has no pupil count for{" "}
+                {laComposition.feIlrFallbackSchoolCount === 1 ? "it" : "them"}, a third source feeding this one chart.
+              </>
+            )}
           </Caption>
         </>
       )}

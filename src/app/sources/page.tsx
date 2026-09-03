@@ -3,8 +3,8 @@ export default function SourcesPage() {
     <main className="mx-auto max-w-2xl px-6 py-24">
       <h1 className="text-2xl font-semibold">Sources & methodology</h1>
       <p className="mt-2 text-sm text-neutral-500">
-        Every figure on VicData comes from one of two public data sources, kept clearly
-        separate rather than blended into one number.
+        Every figure on VicData comes from one of three public data sources, kept
+        clearly separate rather than blended into one number.
       </p>
 
       <div className="mt-10 space-y-8">
@@ -25,6 +25,18 @@ export default function SourcesPage() {
             snapshots used in &ldquo;where this school sits locally&rdquo; comparisons. It is a
             separate dataset from the Census, on its own refresh schedule, so
             GIAS-sourced counts won&rsquo;t always match Census-sourced counts exactly.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">ILR (Individualised Learner Record)</h2>
+          <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+            DfE&rsquo;s own experimental &ldquo;in development&rdquo; participation statistics for
+            further education colleges and sixth-form/post-16 institutions, which report
+            through the ILR rather than the School Census. Used only where Census and
+            GIAS have nothing for an institution — a count of learners participating
+            over the academic year, not a single-day headcount, so it is never combined
+            into the same figure as Census- or GIAS-sourced numbers.
           </p>
         </section>
       </div>
