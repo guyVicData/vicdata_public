@@ -3,6 +3,7 @@
 // FTE-adjusted, at all age bands -- rolls spec §4's resolved rule.
 
 import type { ReferenceFact } from "./vicdata-reference";
+import { STATIONARY_ABS_FLOOR } from "./shape-classifier";
 
 // Fallback census period for surrounding-schools lookups when the target school has
 // no roll data of its own to read a period off (bug fix, "Public View rebuild": a
@@ -211,8 +212,15 @@ export function observedAgeSpan(
 
 // Same first/last-non-zero logic as observedAgeSpan, but bounded to
 // [SHAPE_CLASSIFICATION_MIN_AGE, SHAPE_CLASSIFICATION_MAX_AGE] -- the classifier's own
-// span, not the chart's. Not exported: only shapeClassifierInput needs it.
-function classificationAgeSpan(
+// span, not the chart's.
+//
+// Exported 2026-09-04 (qualifier build round): shape-qualifiers.ts's gender-shape-
+// divergence check needs this SAME span computed once from the combined (both-sexes)
+// counts, then reused for both the male-only and female-only sequences it builds via
+// shapeClassifierInputByGender below -- so all three sequences (combined/male/female)
+// read the same age range and stay directly comparable, rather than each sex
+// independently (and possibly differently) cropping its own observed span.
+export function classificationAgeSpan(
   ageGenderCounts: AgeGenderCounts,
 ): { minAge: number; maxAge: number } | null {
   let minAge: number | null = null;
@@ -243,6 +251,54 @@ export function shapeClassifierInput(
     points.push({ key: String(age), total: (counts?.male ?? 0) + (counts?.female ?? 0) });
   }
   return points;
+}
+
+// 2026-09-04, qualifier build round: single-sex counterpart to shapeClassifierInput
+// above, for shape-qualifiers.ts's gender-shape-divergence check -- male-only or
+// female-only classifyShape() input, built over a CALLER-SUPPLIED span rather than
+// each sex's own independently-observed one (deliberately: the caller computes the
+// span once, from the combined counts via classificationAgeSpan, so the combined/
+// male/female sequences all read the exact same age range and stay comparable --
+// a boys-only jump at an age where girls have zero real presence should still show
+// up as a real zero point in the girls' own sequence, not silently crop that age
+// away). Same zero-fill-between-real-points behaviour as shapeClassifierInput.
+export function shapeClassifierInputByGender(
+  ageGenderCounts: AgeGenderCounts,
+  span: { minAge: number; maxAge: number },
+  gender: "male" | "female",
+): { key: string; total: number }[] {
+  const points: { key: string; total: number }[] = [];
+  for (let age = span.minAge; age <= span.maxAge; age++) {
+    const counts = ageGenderCounts.get(age);
+    points.push({ key: String(age), total: counts?.[gender] ?? 0 });
+  }
+  return points;
+}
+
+// 2026-09-04, qualifier build round: female share of roll per age, over a caller-
+// supplied span (same reasoning as shapeClassifierInputByGender above -- typically
+// the combined classification's own span, so this lines up with what classifyShape
+// actually classified from). Only ages whose own total clears STATIONARY_ABS_FLOOR
+// (shape-classifier.ts's own noise floor, reused rather than re-derived) are
+// included -- a single-digit age-band total makes its own female share nearly
+// meaningless (one pupil either way swings it by double-digit percentage points),
+// the same small-N problem the floor already exists to protect against everywhere
+// else in the shape taxonomy. Shared by ShapeChart.tsx's per-bar % labels and the
+// gender-mix qualifier (both need the identical per-age share reading, not two
+// independently-computed versions of it).
+export function genderShareByAge(
+  ageGenderCounts: AgeGenderCounts,
+  span: { minAge: number; maxAge: number },
+): Map<number, number> {
+  const shares = new Map<number, number>();
+  for (let age = span.minAge; age <= span.maxAge; age++) {
+    const counts = ageGenderCounts.get(age);
+    if (!counts) continue;
+    const total = counts.male + counts.female;
+    if (total <= STATIONARY_ABS_FLOOR) continue;
+    shares.set(age, counts.female / total);
+  }
+  return shares;
 }
 
 function finishSnapshot(

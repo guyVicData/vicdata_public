@@ -94,7 +94,10 @@ const STATIONARY_THRESHOLD = 0.15;
 // zigzag nets out close to flat -> Tube; Weston-on-Trent's nets out a real -28.6% ->
 // Pyramid -- see the redesign comment above for why a reversal-heavy school landing in
 // either of those is the intended behaviour now, not a bug).
-const STATIONARY_ABS_FLOOR = 4;
+// Exported 2026-09-04 (qualifier build round) -- roll-data.ts's genderShareByAge
+// reuses this exact value ("only where that age's total clears the floor") rather
+// than a second, potentially-drifting copy of the same number.
+export const STATIONARY_ABS_FLOOR = 4;
 
 // Second half of an OR alongside the relative threshold: a move counts as up/down if
 // it clears the 15% relative bar OR this absolute one, once past the floor. Fixes a
@@ -131,7 +134,7 @@ function classifyMove(prev: number, next: number): Move {
 // real choice it is, same discipline as every other threshold in this file, not a
 // discovered natural break (checked the national step-share distribution for one;
 // there isn't one, it's smooth from 0 to 1.0).
-const MUSHROOM_TOP_STEP_SHARE_THRESHOLD = 0.4;
+export const MUSHROOM_TOP_STEP_SHARE_THRESHOLD = 0.4;
 
 // Mushroom's own top-width cap: even a genuinely flat plateau doesn't count as
 // Mushroom if it spans 3+ years after the step -- that's sustained widening
@@ -180,8 +183,8 @@ const TOP_STEP_MIN_ABSOLUTE = 10;
 // gate. consistency is how one-directional the real (ignoring the floor) step-by-step
 // movement is: concordant magnitude (diffs whose sign matches netChange's) over total
 // magnitude.
-const THORNTON_NET_CHANGE_THRESHOLD = 0.25;
-const THORNTON_CONSISTENCY_THRESHOLD = 0.5;
+export const THORNTON_NET_CHANGE_THRESHOLD = 0.25;
+export const THORNTON_CONSISTENCY_THRESHOLD = 0.5;
 
 // Minimum whole-school peak (the largest single real per-age count anywhere in the
 // cropped span, before any floor-drop) required for the zero-real-moves Thornton gate
@@ -204,8 +207,8 @@ const THORNTON_MIN_PEAK_ROLL = 10;
 // under this round's design that's the correct, honest read: net trajectory alone
 // says "flat," and Marlborough's real internal reversal becomes reported qualifier
 // data (2 reversals) rather than something that changes its primary shape.
-const FLAT_RATIO_HIGH = 1.15;
-const FLAT_RATIO_LOW = 1 / FLAT_RATIO_HIGH;
+export const FLAT_RATIO_HIGH = 1.15;
+export const FLAT_RATIO_LOW = 1 / FLAT_RATIO_HIGH;
 
 // Magnitude ratio deciding Wineglass (>=) vs Funnel (<) within the top-heavy
 // remainder -- the old WINEGLASS_MAGNITUDE_RATIO candidate, re-derived this round
@@ -222,9 +225,40 @@ const FLAT_RATIO_LOW = 1 / FLAT_RATIO_HIGH;
 // clears it too, landing Wineglass rather than the Funnel its old, domShare-based
 // "genuine gradual widening" characterisation suggested -- flagged here as a real,
 // reported change in that one school's own label, not silently absorbed.
-const WINEGLASS_MAGNITUDE_RATIO = 2.0;
+export const WINEGLASS_MAGNITUDE_RATIO = 2.0;
 
 type DominantTransition = { fromAge: string; toAge: string };
+
+// 2026-09-04, qualifier build round: values already computed internally by
+// classifyShape/findBestStepCandidate along the way to a label, exposed rather than
+// discarded, so the qualifier layer (shape-qualifiers.ts) can consume them without
+// duplicating any classification logic. Purely additive -- label/moves/
+// dominantTransition are computed exactly as before; this is a second field on the
+// same return object, read from the same intermediate values, never fed back into the
+// decision tree itself.
+export type ShapeMetrics = {
+  // The noise-filtered (floor-dropped) sequence classifyShape actually classified
+  // from -- same points, same order, as used throughout this file.
+  anchored: { key: string; total: number }[];
+  // The winning step's own share of total real movement, only when a step actually
+  // decided the label (mushroom/top_step) -- null whenever net trajectory decided
+  // instead (including the case where a real dominant step was found but failed
+  // Top Step's own survival gate and fell through to the ratio-based read below).
+  stepShare: number | null;
+  // Anchored last/first -- only when net trajectory decided the label (every
+  // non-step-won return). Null on a step-won return, same reasoning as stepShare
+  // above: whichever value didn't actually decide the label is left null, not
+  // computed defensively for its own sake.
+  ratio: number | null;
+  // The winning step's own tail net change/consistency (same Thornton computation
+  // findBestStepCandidate already runs to validate the candidate) -- only present
+  // when a step won AND its tail had >=3 points (the same condition that makes the
+  // computation meaningful at all; Mushroom's own tail is capped at 2 points, so
+  // these are structurally always null for a mushroom-labelled result, only ever
+  // populated for Top Step).
+  tailNetChange: number | null;
+  tailConsistency: number | null;
+};
 
 // Best available Mushroom/Top Step candidate: the highest-share real (non-flat) move
 // whose own tail (every point after it) is genuinely flat -- checked entirely on the
@@ -246,14 +280,14 @@ function findBestStepCandidate(
   anchored: { key: string; total: number }[],
   moves: Move[],
   nonFlatIdxs: number[],
-): { idx: number; share: number; direction: "up" | "down" } | null {
+): { idx: number; share: number; direction: "up" | "down"; tailNetChange: number | null; tailConsistency: number | null } | null {
   if (nonFlatIdxs.length === 0) return null;
   const magnitudes = new Map<number, number>(
     nonFlatIdxs.map((i) => [i, Math.abs(anchored[i + 1].total - anchored[i].total)]),
   );
   const totalMagnitude = Array.from(magnitudes.values()).reduce((a, b) => a + b, 0);
 
-  let best: { idx: number; share: number; direction: "up" | "down" } | null = null;
+  let best: { idx: number; share: number; direction: "up" | "down"; tailNetChange: number | null; tailConsistency: number | null } | null = null;
   for (const i of nonFlatIdxs) {
     const direction = moves[i] as "up" | "down";
     const tail = anchored.slice(i + 1);
@@ -267,6 +301,8 @@ function findBestStepCandidate(
     }
     if (!tailFlatPerStep) continue;
 
+    let tailNetChange: number | null = null;
+    let tailConsistency: number | null = null;
     if (tail.length >= 3) {
       const tailStart = tail[0].total;
       const tailEnd = tail[tail.length - 1].total;
@@ -282,6 +318,8 @@ function findBestStepCandidate(
         }
         const totalTailMagnitude = concordant + discordant;
         const consistency = totalTailMagnitude > 0 ? concordant / totalTailMagnitude : 1;
+        tailNetChange = netChange;
+        tailConsistency = consistency;
         const tailHasRealDrift =
           Math.abs(netChange) > THORNTON_NET_CHANGE_THRESHOLD && consistency >= THORNTON_CONSISTENCY_THRESHOLD;
         if (tailHasRealDrift) continue;
@@ -291,14 +329,14 @@ function findBestStepCandidate(
     if (direction === "up" && tail.length > MUSHROOM_MAX_TAIL_POINTS) continue;
 
     const share = magnitudes.get(i)! / totalMagnitude;
-    if (!best || share > best.share) best = { idx: i, share, direction };
+    if (!best || share > best.share) best = { idx: i, share, direction, tailNetChange, tailConsistency };
   }
   return best;
 }
 
 export function classifyShape(
   bandTotals: { key: string; total: number }[],
-): { label: ShapeLabel; moves: Move[]; dominantTransition: DominantTransition | null } | null {
+): { label: ShapeLabel; moves: Move[]; dominantTransition: DominantTransition | null; metrics: ShapeMetrics } | null {
   // Only bands with any real presence count toward the sequence -- an all-zero band
   // (e.g. no sixth form at a primary school) isn't a "move," it's absence.
   const present = bandTotals.filter((b) => b.total > 0);
@@ -335,20 +373,39 @@ export function classifyShape(
     return acc;
   }, []);
 
+  // Metrics builders -- reuse the exact intermediate values each return path already
+  // computed, never a second computation of them. See ShapeMetrics's own comment for
+  // which fields are populated on which kind of return.
+  const stepMetrics = (share: number, tailNetChange: number | null, tailConsistency: number | null): ShapeMetrics => ({
+    anchored,
+    stepShare: share,
+    ratio: null,
+    tailNetChange,
+    tailConsistency,
+  });
+  const ratioMetrics = (ratioValue: number | null): ShapeMetrics => ({
+    anchored,
+    stepShare: null,
+    ratio: ratioValue,
+    tailNetChange: null,
+    tailConsistency: null,
+  });
+
   const best = findBestStepCandidate(anchored, moves, nonFlatIdxs);
   if (best && best.share >= MUSHROOM_TOP_STEP_SHARE_THRESHOLD) {
     const dominantTransition: DominantTransition = {
       fromAge: anchored[best.idx].key,
       toAge: anchored[best.idx + 1].key,
     };
+    const metrics = stepMetrics(best.share, best.tailNetChange, best.tailConsistency);
     if (best.direction === "up") {
-      return { label: "mushroom", moves, dominantTransition };
+      return { label: "mushroom", moves, dominantTransition, metrics };
     }
     const prePeak = Math.max(...anchored.slice(0, best.idx + 1).map((p) => p.total));
     const postPoints = anchored.slice(best.idx + 1);
     const postAvg = postPoints.reduce((a, p) => a + p.total, 0) / postPoints.length;
     if (postAvg >= TOP_STEP_MIN_ABSOLUTE && postAvg >= TOP_STEP_MIN_SHARE_OF_PEAK * prePeak) {
-      return { label: "top_step", moves, dominantTransition };
+      return { label: "top_step", moves, dominantTransition, metrics };
     }
     // A real dominant drop, but too small a surviving population to call it a real
     // post-step cohort -- falls through to the net-trajectory read below rather than
@@ -364,7 +421,7 @@ export function classifyShape(
   // at.
   const first = anchored[0].total;
   const last = anchored[anchored.length - 1].total;
-  if (first <= 0) return { label: "tube", moves, dominantTransition: null };
+  if (first <= 0) return { label: "tube", moves, dominantTransition: null, metrics: ratioMetrics(null) };
   const ratio = last / first;
 
   const domIdx = nonFlatIdxs.length > 0
@@ -395,12 +452,13 @@ export function classifyShape(
       Math.abs(netChange) > THORNTON_NET_CHANGE_THRESHOLD &&
       consistency >= THORNTON_CONSISTENCY_THRESHOLD &&
       peakRoll >= THORNTON_MIN_PEAK_ROLL;
-    if (!realDrift) return { label: "tube", moves, dominantTransition: null };
+    if (!realDrift) return { label: "tube", moves, dominantTransition: null, metrics: ratioMetrics(ratio) };
     const dominantTransition: DominantTransition = { fromAge: anchored[0].key, toAge: anchored[anchored.length - 1].key };
     return {
       label: ratio > 1 ? (ratio >= WINEGLASS_MAGNITUDE_RATIO ? "wineglass" : "funnel") : "pyramid",
       moves,
       dominantTransition,
+      metrics: ratioMetrics(ratio),
     };
   }
 
@@ -410,14 +468,15 @@ export function classifyShape(
   };
 
   if (ratio >= FLAT_RATIO_LOW && ratio <= FLAT_RATIO_HIGH) {
-    return { label: "tube", moves, dominantTransition: null };
+    return { label: "tube", moves, dominantTransition: null, metrics: ratioMetrics(ratio) };
   }
   if (ratio > 1) {
     return {
       label: ratio >= WINEGLASS_MAGNITUDE_RATIO ? "wineglass" : "funnel",
       moves,
       dominantTransition,
+      metrics: ratioMetrics(ratio),
     };
   }
-  return { label: "pyramid", moves, dominantTransition };
+  return { label: "pyramid", moves, dominantTransition, metrics: ratioMetrics(ratio) };
 }

@@ -4,9 +4,11 @@ import { useState } from "react";
 import type { AgeGenderCounts } from "@/lib/roll-data";
 import {
   observedAgeSpan,
+  genderShareByAge,
   SHAPE_CLASSIFICATION_MIN_AGE,
   SHAPE_CLASSIFICATION_MAX_AGE,
 } from "@/lib/roll-data";
+import type { ShapeMetrics } from "@/lib/shape-classifier";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 
 // Horizontal population-pyramid shape chart (chart palette doc, "Public View
@@ -39,7 +41,27 @@ const ROW_GAP = 2;
 const WIDTH = 560;
 const PAD = { top: 8, right: 40, bottom: 28, left: 40 };
 
-export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGenderCounts }) {
+// 2026-09-04, qualifier build round: signal-line/reference-envelope overlay colour --
+// distinct from both gender bar colours and the existing Focus token (that's the
+// surrounding-schools bar chart's own highlight, a different chart/purpose). A plain
+// neutral works fine here since both overlays carry their own shape (solid vs dashed)
+// as the real distinguishing signal, not colour alone.
+const SIGNAL_LINE_COLOUR = { light: "#171717", dark: "#e5e5e5" };
+const REFERENCE_ENVELOPE_COLOUR = { light: "#a3a3a3", dark: "#737373" };
+
+export default function ShapeChart({
+  ageGenderCounts,
+  metrics,
+  dominantTransition,
+}: {
+  ageGenderCounts: AgeGenderCounts;
+  // 2026-09-04, qualifier build round -- both optional and both from classifyShape()'s
+  // own return object, passed straight through by whichever caller has already run
+  // the classifier (never re-derived here). Omitting them renders exactly the
+  // pre-existing chart, unchanged -- these are additive overlays, not a redesign.
+  metrics?: ShapeMetrics;
+  dominantTransition?: { fromAge: string; toAge: string } | null;
+}) {
   const [hoverAge, setHoverAge] = useState<number | null>(null);
 
   const span = observedAgeSpan(ageGenderCounts);
@@ -50,6 +72,12 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
   const ages: number[] = [];
   for (let age = span.maxAge; age >= span.minAge; age--) ages.push(age); // oldest first (top row)
 
+  // (a) % labels: female share per row, same STATIONARY_ABS_FLOOR suppression the
+  // gender-mix qualifier itself uses (genderShareByAge, roll-data.ts) -- computed over
+  // the chart's own full displayed span (observedAgeSpan), not the narrower 5-17
+  // classification clamp, so every row that's actually drawn can carry a label.
+  const femaleShareByAge = genderShareByAge(ageGenderCounts, span);
+
   const rows = ages.map((age) => {
     const c = ageGenderCounts.get(age);
     return {
@@ -57,6 +85,7 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
       male: c?.male ?? 0,
       female: c?.female ?? 0,
       isEdge: age < SHAPE_CLASSIFICATION_MIN_AGE || age > SHAPE_CLASSIFICATION_MAX_AGE,
+      femaleSharePct: femaleShareByAge.has(age) ? femaleShareByAge.get(age)! * 100 : null,
     };
   });
 
@@ -68,6 +97,38 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
   const scale = halfWidth / maxVal;
 
   const rowY = (i: number) => PAD.top + i * (ROW_HEIGHT + ROW_GAP);
+  const rowMidY = (i: number) => rowY(i) + ROW_HEIGHT / 2;
+
+  // Total-roll half-width per row -- male+female <= 2*maxVal always (maxVal is the
+  // global max of any single gender/age cell), so total*scale/2 always fits within
+  // halfWidth, the same scale the existing per-gender bars already use. Shared basis
+  // for both overlays below: (b) traces it only through the ANCHORED (floor-surviving)
+  // ages classifyShape actually classified from; (c) draws it as a full reference
+  // envelope through every displayed row, independent of anchoring, so the real
+  // boy/girl bars can be read directly against "what an even 50/50 split would look
+  // like at this total."
+  const totalHalfWidth = (r: { male: number; female: number }) => ((r.male + r.female) * scale) / 2;
+
+  // (b) Signal-line overlay: metrics.anchored is the exact noise-filtered sequence
+  // classifyShape classified from (shape-classifier.ts) -- only ages that survived the
+  // floor-drop appear here, in the same age order. Matched back to this chart's own
+  // rows by age key so the line only visits rows the classifier actually used.
+  const anchoredAges = new Set((metrics?.anchored ?? []).map((p) => Number(p.key)));
+  const signalPoints = rows
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => anchoredAges.has(r.age));
+  const dominantAges =
+    dominantTransition != null
+      ? [Number(dominantTransition.fromAge), Number(dominantTransition.toAge)]
+      : [];
+
+  const pathFor = (points: { r: (typeof rows)[number]; i: number }[], side: "left" | "right") =>
+    points
+      .map(({ r, i }, idx) => {
+        const x = side === "left" ? centerX - totalHalfWidth(r) : centerX + totalHalfWidth(r);
+        return `${idx === 0 ? "M" : "L"} ${x} ${rowMidY(i)}`;
+      })
+      .join(" ");
 
   return (
     <div className="viz-root">
@@ -79,6 +140,8 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
           --grid: #e4e2dc;
           --boys: ${BOYS_COLOUR.light};
           --girls: ${GIRLS_COLOUR.light};
+          --signal-line: ${SIGNAL_LINE_COLOUR.light};
+          --reference-envelope: ${REFERENCE_ENVELOPE_COLOUR.light};
         }
         @media (prefers-color-scheme: dark) {
           :root:where(:not([data-theme="light"])) .viz-root {
@@ -88,6 +151,8 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
             --grid: #333230;
             --boys: ${BOYS_COLOUR.dark};
             --girls: ${GIRLS_COLOUR.dark};
+            --signal-line: ${SIGNAL_LINE_COLOUR.dark};
+            --reference-envelope: ${REFERENCE_ENVELOPE_COLOUR.dark};
           }
         }
         :root[data-theme="dark"] .viz-root {
@@ -97,12 +162,40 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
           --grid: #333230;
           --boys: ${BOYS_COLOUR.dark};
           --girls: ${GIRLS_COLOUR.dark};
+          --signal-line: ${SIGNAL_LINE_COLOUR.dark};
+          --reference-envelope: ${REFERENCE_ENVELOPE_COLOUR.dark};
         }
       `}</style>
 
       <svg viewBox={`0 0 ${WIDTH} ${height}`} className="w-full" onMouseLeave={() => setHoverAge(null)}>
         {/* Zero line */}
         <line x1={centerX} x2={centerX} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--grid)" strokeWidth={1} />
+
+        {/* (c) Symmetric gender-comparison envelope: total roll mirrored evenly
+            left/right, drawn through every displayed row regardless of anchoring --
+            "what an even 50/50 split of this row's real total would look like." Real
+            boy/girl bars (below) are plotted against this same reference, direct
+            visual support for the gender-shape-divergence qualifier: a bar pulling
+            noticeably inside this outline on one side is that gender under-
+            represented at that age relative to the school's own overall split. */}
+        {rows.length > 1 && (
+          <>
+            <path
+              d={pathFor(rows.map((r, i) => ({ r, i })), "left")}
+              fill="none"
+              stroke="var(--reference-envelope)"
+              strokeWidth={1}
+              strokeDasharray="3 3"
+            />
+            <path
+              d={pathFor(rows.map((r, i) => ({ r, i })), "right")}
+              fill="none"
+              stroke="var(--reference-envelope)"
+              strokeWidth={1}
+              strokeDasharray="3 3"
+            />
+          </>
+        )}
 
         {rows.map((r, i) => {
           const y = rowY(i);
@@ -142,6 +235,22 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
                   fillOpacity={opacity}
                 />
               )}
+              {/* (a) % label: female share of this row's total, only where the row
+                  clears the same noise floor the gender-mix qualifier itself uses
+                  (genderShareByAge) -- a single-digit-total row's own share is close
+                  to meaningless, so it's simply omitted rather than shown misleadingly
+                  precise. */}
+              {r.femaleSharePct !== null && (
+                <text
+                  x={WIDTH - PAD.right + 6}
+                  y={y + ROW_HEIGHT / 2 + 4}
+                  fontSize={9}
+                  fill="var(--axis-label)"
+                  textAnchor="start"
+                >
+                  {Math.round(r.femaleSharePct)}%
+                </text>
+              )}
               <rect
                 x={PAD.left}
                 y={y}
@@ -153,6 +262,28 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
             </g>
           );
         })}
+
+        {/* (b) Signal-line overlay: traces metrics.anchored -- the exact noise-
+            filtered sequence classifyShape classified from -- through only the rows
+            that survived the floor-drop, so it shows what the classifier actually
+            saw, not the full raw chart. The dominantTransition segment (the specific
+            move that decided the shape) is highlighted with a heavier stroke and end
+            markers, on both the left and right traces. */}
+        {metrics && signalPoints.length > 1 && (
+          <>
+            <path d={pathFor(signalPoints, "left")} fill="none" stroke="var(--signal-line)" strokeWidth={1.25} />
+            <path d={pathFor(signalPoints, "right")} fill="none" stroke="var(--signal-line)" strokeWidth={1.25} />
+            {dominantAges.length === 2 &&
+              signalPoints
+                .filter(({ r }) => dominantAges.includes(r.age))
+                .map(({ r, i }) => (
+                  <g key={`dom-${r.age}`}>
+                    <circle cx={centerX - totalHalfWidth(r)} cy={rowMidY(i)} r={2.5} fill="var(--signal-line)" />
+                    <circle cx={centerX + totalHalfWidth(r)} cy={rowMidY(i)} r={2.5} fill="var(--signal-line)" />
+                  </g>
+                ))}
+          </>
+        )}
 
         {/* x-axis reference labels: 0 at centre, max at each edge */}
         <text x={centerX} y={PAD.top + innerH + 16} fontSize={10} fill="var(--axis-label)" textAnchor="middle">
@@ -181,6 +312,19 @@ export default function ShapeChart({ ageGenderCounts }: { ageGenderCounts: AgeGe
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "var(--girls)" }} />
           Girls
+        </span>
+        {metrics && (
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-0.5 w-3" style={{ backgroundColor: "var(--signal-line)" }} />
+            What the shape was read from
+          </span>
+        )}
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block h-0.5 w-3"
+            style={{ backgroundImage: "linear-gradient(to right, var(--reference-envelope) 50%, transparent 50%)", backgroundSize: "4px 1px" }}
+          />
+          Even 50/50 split at this total
         </span>
       </div>
       <p className="mt-1 text-xs text-neutral-400">

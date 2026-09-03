@@ -88,7 +88,9 @@ export function hasEarlyYearsProvision(statutoryLowAge: number | null): boolean 
 // directly (Paragraph 1's template states the percentage inline, not just a category
 // label).
 // ---------------------------------------------------------------------------
-const SINGLE_SEX_SUPPRESSION_BAND = 0.02;
+// Exported 2026-09-04 (qualifier build round) -- shape-qualifiers.ts's gender-shape-
+// divergence check reuses this exact value rather than a second copy.
+export const SINGLE_SEX_SUPPRESSION_BAND = 0.02;
 const BALANCED_BAND_HIGH = 0.55;
 
 export type GenderComposition = {
@@ -459,6 +461,63 @@ export function topic4bGenderVariation(
 export function renderTopic4b(result: { ageA: number; ageB: number; gender: "girls" | "boys" } | null): string | null {
   if (!result) return null;
   return `The main change, between ages ${result.ageA} and ${result.ageB}, is concentrated more among ${result.gender} than the school's overall gender balance would suggest.`;
+}
+
+// ---------------------------------------------------------------------------
+// Shape qualifier sentences (qualifier build round, 2026-09-04) -- same compute/
+// render split as topic4bGenderVariation/renderTopic4b above. Only these three: the
+// other qualifiers (gender-mix %, borderline, still-drifting) don't have a
+// real-distribution-derived threshold yet (shape-qualifiers.ts's own placeholders
+// are reported this round, not locked), so stay data-only/chart-visual until a real
+// cutoff is chosen -- no prose built for them here. compute functions take the
+// already-computed shape-qualifiers.ts result, never re-derive it; render functions
+// are pure formatting, no decision logic.
+// ---------------------------------------------------------------------------
+export type ErraticQualifier = { reversalCount: number } | null;
+
+export function computeErraticQualifier(erratic: boolean, reversalCount: number): ErraticQualifier {
+  return erratic ? { reversalCount } : null;
+}
+
+export function renderErraticQualifier(schoolName: string, result: ErraticQualifier): string | null {
+  if (!result) return null;
+  const plural = result.reversalCount === 1 ? "reversal" : "reversals";
+  return (
+    `${schoolName}'s year groups move up and down repeatedly rather than following one steady direction, ` +
+    `with ${numberToWords(result.reversalCount)} genuine ${plural} across the school's age range.`
+  );
+}
+
+export function computeSingleAgeAnomalyQualifier(isSingleAgeAnomaly: boolean): boolean {
+  return isSingleAgeAnomaly;
+}
+
+export function renderSingleAgeAnomalyQualifier(schoolName: string, isSingleAgeAnomaly: boolean): string | null {
+  if (!isSingleAgeAnomaly) return null;
+  return `${schoolName}'s shape this year is driven by a single age group — every other year group is a similar size to its neighbours.`;
+}
+
+function shapeLabelText(label: ShapeLabel): string {
+  return label.charAt(0).toUpperCase() + label.slice(1).replace("_", " ");
+}
+
+export type GenderShapeDivergenceQualifier = { maleLabel: ShapeLabel; femaleLabel: ShapeLabel } | null;
+
+export function computeGenderShapeDivergenceQualifier(
+  divergence: { maleLabel: ShapeLabel; femaleLabel: ShapeLabel } | null,
+): GenderShapeDivergenceQualifier {
+  return divergence;
+}
+
+export function renderGenderShapeDivergenceQualifier(
+  schoolName: string,
+  result: GenderShapeDivergenceQualifier,
+): string | null {
+  if (!result) return null;
+  return (
+    `Looked at separately, boys and girls follow different shapes at ${schoolName}: boys are ` +
+    `${shapeLabelText(result.maleLabel)}, girls are ${shapeLabelText(result.femaleLabel)}.`
+  );
 }
 
 // ---------------------------------------------------------------------------
