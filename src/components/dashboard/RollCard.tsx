@@ -80,6 +80,26 @@ export function RollCard({
               <p className="mb-3 text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">
                 There are {laSchoolCount.toLocaleString()} schools in {laComposition.laName}, with{" "}
                 {laTotalRoll.toLocaleString()} pupils between them.
+                {/* 2026-09-14: mainstream-only stat above (roll_aggregates, DfE census,
+                    MAINSTREAM_GROUPS -- never includes FE establishment types), always
+                    structurally excludes FE colleges -- correct, untouched here. This
+                    second sentence is a separate, real FE count/total, already computed
+                    for this same card's own pie chart and feIlrFallbackSchoolCount
+                    caption below -- no new query. Renders nothing at all (not "There
+                    are 0 FE colleges") when the LA genuinely has none. */}
+                {laComposition.bySector.FE.schools === 1 && (
+                  <>
+                    {" "}
+                    There is 1 FE college, with {laComposition.bySector.FE.pupils.toLocaleString()} under-19 students.
+                  </>
+                )}
+                {laComposition.bySector.FE.schools > 1 && (
+                  <>
+                    {" "}
+                    There are {laComposition.bySector.FE.schools.toLocaleString()} FE colleges, with{" "}
+                    {laComposition.bySector.FE.pupils.toLocaleString()} under-19 students between them.
+                  </>
+                )}
               </p>
             )}
             <div className="flex items-center gap-5">
