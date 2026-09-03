@@ -446,6 +446,8 @@ export default async function SchoolPage({
               <ShapeCard
                 ageGenderCounts={ageGenderCounts}
                 shape={shape?.label ?? null}
+                shapeMetrics={shape?.metrics ?? undefined}
+                shapeDominantTransition={shape?.dominantTransition ?? null}
                 populationTrend={populationTrend}
                 urn={urn}
                 schoolName={school.current_name}

@@ -1,7 +1,7 @@
 import { Card, CardHeading, CardSubheading, Caption, Eyebrow } from "./Card";
 import { ShapeIcon, SHAPE_LABELS } from "./ShapeIcon";
 import { PopulationTrendSection } from "./PopulationTrendSection";
-import type { ShapeLabel } from "@/lib/shape-classifier";
+import type { ShapeLabel, ShapeMetrics } from "@/lib/shape-classifier";
 import type { AgeGenderCounts } from "@/lib/roll-data";
 import type { PopulationTrend, AgeProfileSeries } from "@/lib/population-trend";
 import ShapeChart from "@/components/ShapeChart";
@@ -33,6 +33,8 @@ import SurroundingSchoolsMemberList from "@/components/SurroundingSchoolsMemberL
 export function ShapeCard({
   ageGenderCounts,
   shape,
+  shapeMetrics,
+  shapeDominantTransition,
   populationTrend,
   urn,
   schoolName,
@@ -44,6 +46,12 @@ export function ShapeCard({
 }: {
   ageGenderCounts: AgeGenderCounts | null;
   shape: ShapeLabel | null;
+  // 2026-09-06, qualifier build round 12: threaded straight through from
+  // classifyShape()'s own result (page.tsx) into ShapeChart's overlay props --
+  // ShapeCard doesn't read either itself, just passes them on. Optional/nullable
+  // because `shape` itself is (insufficient data for a school this young/small).
+  shapeMetrics?: ShapeMetrics;
+  shapeDominantTransition?: { fromAge: string; toAge: string } | null;
   populationTrend: {
     laName: string;
     laTrend: PopulationTrend | null;
@@ -66,7 +74,13 @@ export function ShapeCard({
       <div className="flex flex-col gap-6 border-b border-stone-100 pb-2 sm:flex-row sm:gap-8 dark:border-stone-800">
         <div className="min-w-0 flex-1">
           <CardSubheading title="This school" subtitle="Ages 4–18, by gender — the single-year roll profile" />
-          {ageGenderCounts && <ShapeChart ageGenderCounts={ageGenderCounts} />}
+          {ageGenderCounts && (
+            <ShapeChart
+              ageGenderCounts={ageGenderCounts}
+              metrics={shapeMetrics}
+              dominantTransition={shapeDominantTransition}
+            />
+          )}
           {shape ? (
             <div className="mt-3 flex items-center gap-2 text-stone-900 dark:text-stone-100">
               <ShapeIcon shape={shape} />
