@@ -17,6 +17,8 @@ import { computeShapeQualifiers } from "@/lib/shape-qualifiers";
 import { findSurroundingSchools, aggregateSurroundingStat, aggregatePeerGenderSplit } from "@/lib/surrounding-schools";
 import { computeLaSectorComposition } from "@/lib/la-sector-composition";
 import { lookupAgeBandDistributions } from "@/lib/age-band-distributions";
+import { lookupFeParticipationDistributions } from "@/lib/fe-participation-distributions";
+import { findFeCollegeGenderPeers } from "@/lib/surrounding-fe-colleges";
 import { lookupPopulationTrend } from "@/lib/population-trend-lookup";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
 import TypologyTags from "@/components/TypologyTags";
@@ -52,6 +54,11 @@ import {
   NoCensusDataCard,
   ComingSoonCard,
 } from "@/components/dashboard/SmallCards";
+import {
+  FeCollegeLocalContextCard,
+  FeParticipationSizeCard,
+  FeParticipationSplitCard,
+} from "@/components/dashboard/FeCollegeCards";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
 
@@ -205,10 +212,14 @@ export default async function SchoolPage({
   // participation cards below (step 2 of the FE-college build) -- fetched once here
   // (full facts, not breakdown-filtered) and reused for both the cards and the map-dot
   // total (viewedIlrTotal), rather than a second round-trip for the same two sources.
+  // Prompt A: shared by items 1-4 below (laComposition's own FE-sector widening,
+  // the gender-peer search, the size-distribution lookup, and every new FE-sector
+  // card's own render gate) -- computed once, not re-derived at each call site.
+  const isGenuineFeSector = FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(school.establishment_type ?? "");
   let feUnder19Snapshot: IlrParticipationSnapshot | null = null;
   let feAdultSnapshot: IlrParticipationSnapshot | null = null;
   if (!roll) {
-    if (FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(school.establishment_type ?? "")) {
+    if (isGenuineFeSector) {
       const feFacts = await lookupReferenceData({ sourceId: "dfe_fe_participation", entityIds: [urn] });
       feUnder19Snapshot = buildIlrParticipationSnapshot(feFacts, "under_19");
       if (feUnder19Snapshot) viewedIlrTotal = feUnder19Snapshot.total;
@@ -338,14 +349,31 @@ export default async function SchoolPage({
     effectiveTags,
   );
 
-  // Dashboard rebuild (2026-08-28) additions -- all gated behind `roll` existing,
-  // same as every other census-derived card below, since none of these mean anything
-  // without a real roll to attach them to.
-  const laComposition = roll
+  // Dashboard rebuild (2026-08-28) additions -- gated behind `roll` existing, same as
+  // every other census-derived card below, since none of these mean anything without
+  // a real roll to attach them to. laComposition is the one exception (2026-09-15,
+  // Prompt A item 1): a genuine FE-sector school never has `roll` but still needs
+  // laComposition.bySector.FE for its own local-context card -- thisSchoolNumberOfPupils
+  // stays school.number_of_pupils (always null for FE, confirmed last round; the FE
+  // card computes its own share from feUnder19Snapshot instead, not this function's
+  // own thisSchoolPupilShareOfSector).
+  const laComposition = roll || isGenuineFeSector
     ? await computeLaSectorComposition(school.la_name ?? "", typology.sector, school.number_of_pupils)
     : null;
   const bandDistributions = roll ? await lookupAgeBandDistributions(school.la_name, roll.period) : null;
   const populationTrend = roll ? await lookupPopulationTrend(school.la_name, school.la_code, roll.period) : null;
+  // Prompt A item 3: national-only, no LA/regional cut -- most LAs have 0-1 real FE
+  // colleges, too thin for a meaningful per-LA distribution.
+  const feDistributions = isGenuineFeSector
+    ? await lookupFeParticipationDistributions(CURRENT_CENSUS_PERIOD)
+    : { under19: null, adult: null };
+  // Prompt A item 2: only worth the (small, ~370-candidate) search when this school
+  // is a genuine FE college with a real under-19 gender split of its own to pair a
+  // peer average against -- feUnder19Snapshot itself gates this, not isGenuineFeSector
+  // alone (City Lit, a real FE-sector college, has no under-19 data at all).
+  const feGenderPeers = feUnder19Snapshot
+    ? await findFeCollegeGenderPeers(urn)
+    : { found: 0, maxDistanceKm: null, peer: null };
   const peerGenderSplit = aggregatePeerGenderSplit(matchedSurrounding);
   // "Peer average across the N nearest {descriptors} schools" -- reuses the exact
   // same descriptor words buildSurroundingSummary already computes for the free-tier
@@ -552,6 +580,45 @@ export default async function SchoolPage({
               sexLabels={{ female: "female", male: "male" }}
               reason="this is a separate, adult (19+) population, reported separately from any under-19 figure above -- never combined into one number"
             />
+          )}
+
+          {/* Prompt A, 2026-09-15: the start of developing the FE-sector page toward
+              parity with the mainstream page -- items 1/2/3/4, staying honestly
+              different where the data genuinely is (no phase breakdown, no LA/regional
+              size distribution, no paired State+Independent sixth-form half yet). */}
+          {isGenuineFeSector && (
+            <FeCollegeLocalContextCard
+              collegeName={school.current_name}
+              laComposition={laComposition}
+              ownUnder19Total={feUnder19Snapshot?.total ?? null}
+            />
+          )}
+
+          {feUnder19Snapshot && feUnder19Snapshot.female !== null && feUnder19Snapshot.male !== null && (
+            <GenderSplitCard
+              girls={feUnder19Snapshot.female}
+              boys={feUnder19Snapshot.male}
+              peer={feGenderPeers.peer}
+              peerLabel={
+                feGenderPeers.found > 0
+                  ? `Peer average across the ${feGenderPeers.found} nearest FE colleges with real under-19 ILR data` +
+                    (feGenderPeers.maxDistanceKm !== null ? `, up to ${Math.round(feGenderPeers.maxDistanceKm)}km away` : "")
+                  : ""
+              }
+            />
+          )}
+
+          {isGenuineFeSector && (
+            <FeParticipationSizeCard
+              under19Total={feUnder19Snapshot?.total ?? null}
+              adultTotal={feAdultSnapshot?.total ?? null}
+              under19Distribution={feDistributions.under19}
+              adultDistribution={feDistributions.adult}
+            />
+          )}
+
+          {isGenuineFeSector && (
+            <FeParticipationSplitCard under19Total={feUnder19Snapshot?.total ?? null} adultTotal={feAdultSnapshot?.total ?? null} />
           )}
 
           {roll && (

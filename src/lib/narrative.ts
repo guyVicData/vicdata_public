@@ -388,6 +388,53 @@ export function paragraph2SectorSize(
 }
 
 // ---------------------------------------------------------------------------
+// FE-college local-context sentences (Prompt A, item 1) -- the FE half of "where
+// this college sits locally in 16+ provision" (the paired State+Independent
+// sixth-form half and the three-way pie both need a new sector-split, sixth-form-age
+// aggregate that doesn't exist yet, deliberately not built this round). Both
+// functions read laComposition.bySector.FE, the same real, under-19-only ILR figures
+// already feeding the mainstream RollCard's own FE sentence and this LA's pie-chart
+// FE slice -- no new query, no new source.
+// ---------------------------------------------------------------------------
+
+// Shared with RollCard.tsx's own "There are N schools..." FE half-sentence -- same
+// three rules (0/1/plural), one function instead of two copies of the same
+// conditional.
+export function renderFeCollegeCountSentence(feSchools: number, fePupils: number): string | null {
+  if (feSchools === 0) return null;
+  if (feSchools === 1) return `There is 1 FE college, with ${fePupils.toLocaleString()} under-19 students.`;
+  return `There are ${feSchools.toLocaleString()} FE colleges, with ${fePupils.toLocaleString()} under-19 students between them.`;
+}
+
+// This college's own share of the LA's FE-college under-19 population -- same
+// pattern as paragraph2SectorSize above, but the numerator is this college's own
+// real ILR under-19 total (feUnder19Snapshot.total, page.tsx), not a GIAS
+// number_of_pupils figure (structurally always null for FE, confirmed last round) --
+// and the wording says "FE college students", not "{sector}-sector pupils", per the
+// exact wording given for this sentence.
+export function paragraphFeCollegeLocalShare(
+  collegeName: string,
+  laComposition: LaSectorComposition | null,
+  ownUnder19Total: number | null,
+): string | null {
+  if (!laComposition || ownUnder19Total === null) return null;
+  const { schools, pupils } = laComposition.bySector.FE;
+  if (schools === 0 || pupils <= 0) return null;
+  const pct = (ownUnder19Total / pupils) * 100;
+  // 2026-09-15 fix: oneOfCountLabel(1) renders the bare cardinal "one", which reads
+  // as "is one of one FE colleges" at schools===1 -- grammatically wrong, and common
+  // for FE (most LAs have 0-1 real FE colleges; Hammersmith and Fulham, a real
+  // verification anchor, has exactly 1). paragraph2SectorSize has the same latent
+  // issue for a schools===1 mainstream sector, just rarer in practice -- not touched
+  // here, out of this change's scope, but the same fix would apply there too.
+  const opening =
+    schools === 1
+      ? `${collegeName} is the only FE college in ${laComposition.laName}`
+      : `${collegeName} is one of ${oneOfCountLabel(schools)} FE colleges in ${laComposition.laName}`;
+  return `${opening}, and its pupils make up ${pct.toFixed(1)}% of the FE college students in this Local Authority.`;
+}
+
+// ---------------------------------------------------------------------------
 // Paragraph 3 -- Shape (spec §4, Topics 4a + 5 merged). The "N genuine changes"
 // count is dropped as a separate sentence per Priority 3 -- its substance folds
 // into the shape sentence's own wording instead (config-gated, in case a future

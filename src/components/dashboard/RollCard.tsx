@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card, CardDivider, Caption, StatNumber } from "./Card";
 import type { LaSectorComposition } from "@/lib/la-sector-composition";
 import { TAG_COLOURS } from "@/lib/tag-colours";
-import { paragraph2SectorSize } from "@/lib/narrative";
+import { paragraph2SectorSize, renderFeCollegeCountSentence } from "@/lib/narrative";
 
 // Layout/graphs spec v1 §5, round 3: wiring fix, not a recolour -- this card
 // previously defined its own local sector hex values here, which had drifted from
@@ -56,6 +56,9 @@ export function RollCard({
   schoolName: string;
 }) {
   const sectorSentence = paragraph2SectorSize(schoolName, laComposition, null);
+  const feCountSentence = laComposition
+    ? renderFeCollegeCountSentence(laComposition.bySector.FE.schools, laComposition.bySector.FE.pupils)
+    : null;
 
   return (
     <Card size="medium" className="flex flex-col gap-4">
@@ -86,20 +89,11 @@ export function RollCard({
                     second sentence is a separate, real FE count/total, already computed
                     for this same card's own pie chart and feIlrFallbackSchoolCount
                     caption below -- no new query. Renders nothing at all (not "There
-                    are 0 FE colleges") when the LA genuinely has none. */}
-                {laComposition.bySector.FE.schools === 1 && (
-                  <>
-                    {" "}
-                    There is 1 FE college, with {laComposition.bySector.FE.pupils.toLocaleString()} under-19 students.
-                  </>
-                )}
-                {laComposition.bySector.FE.schools > 1 && (
-                  <>
-                    {" "}
-                    There are {laComposition.bySector.FE.schools.toLocaleString()} FE colleges, with{" "}
-                    {laComposition.bySector.FE.pupils.toLocaleString()} under-19 students between them.
-                  </>
-                )}
+                    are 0 FE colleges") when the LA genuinely has none. 2026-09-15:
+                    wording now shared with the FE-sector page's own local-context card
+                    via narrative.ts's renderFeCollegeCountSentence, not a second copy
+                    of the same three-way rule. */}
+                {feCountSentence && <> {feCountSentence}</>}
               </p>
             )}
             <div className="flex items-center gap-5">
