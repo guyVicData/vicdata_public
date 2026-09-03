@@ -13,7 +13,6 @@
 import type { RollSnapshot, AgeGenderCounts } from "./roll-data";
 import type { ShapeLabel } from "./shape-classifier";
 import type { SchoolTypology, PhaseTag } from "./typology";
-import { phaseTagAgeRange } from "./typology";
 import { phaseWord } from "./surrounding-summary";
 import type { LaSectorComposition } from "./la-sector-composition";
 import type { PopulationTrend, PopulationTrendTier } from "./population-trend";
@@ -121,30 +120,28 @@ export function classifyGenderComposition(female: number, male: number): GenderC
 // ---------------------------------------------------------------------------
 export function observedSpanForPhase(
   ageGenderCounts: AgeGenderCounts,
-  tag: PhaseTag,
   lowAge: number,
   highAge: number,
-  allTags: PhaseTag[],
 ): { minAge: number; maxAge: number } | null {
-  // Round 10 fix: a Junior+Prep tag pair is ONE continuous real population, not two
-  // departments -- confirmed against real data on both sides (state middle schools,
-  // e.g. Robert Bloomfield Academy/Alameda Middle School, ages ~9-13; and ordinary
-  // independent prep schools, e.g. Devonshire House Preparatory School/The Hall
-  // School, ages ~2-13, share this exact tag pairing). phaseTagAgeRange's own
-  // hardcoded Prep floor (11) was built for a narrower assumption and crops the
-  // real younger population here specifically -- Alameda rendered "Year 7 to Year
-  // 9" for a real 9-13 span, losing ages 9-10 entirely. Search the FULL statutory
-  // range instead of either tag's own narrow sub-range whenever both are present.
-  const juniorPrepPair = allTags.includes("Junior") && allTags.includes("Prep");
-  const [lo, hi] = juniorPrepPair
-    ? [lowAge, highAge]
-    : allTags.length > 1
-      ? phaseTagAgeRange(tag, lowAge, highAge)
-      : [lowAge, highAge];
+  // Round 10 fix, generalized round 13: a multi-tag school is ONE continuous real
+  // population, not separate departments, regardless of which pair of tags it is --
+  // confirmed directly against phaseTags() (typology.ts): it can only ever produce
+  // two multi-tag combinations, ["Junior","Prep"] or ["Junior","Senior"] (every other
+  // branch returns a single tag or none; Prep never appears without Junior). Round 10
+  // only fixed the Junior+Prep pairing by name (Alameda Middle School, ages ~9-13,
+  // was rendering "Year 7 to Year 9" -- phaseTagAgeRange's hardcoded Prep floor of 11
+  // cropped the real younger population), which left Junior+Senior schools falling
+  // through to Senior's own narrow phaseTagAgeRange and silently dropping real
+  // younger years the same way (Withington Girls' School, urn 105595, real ages
+  // 7-18, rendered "Year 7 to Year 13" instead of "Year 3 to Year 13"). Since
+  // phaseTagAgeRange's narrow per-tag sub-range is never actually wanted for either
+  // real multi-tag case, and a single-tag school's own statutory range already IS
+  // that one phase's range, this always searches the full statutory range -- no
+  // per-tag narrowing left to do here at all.
   let minAge: number | null = null;
   let maxAge: number | null = null;
   for (const [age, c] of ageGenderCounts) {
-    if (age < lo || age > hi) continue;
+    if (age < lowAge || age > highAge) continue;
     if (c.male + c.female <= 0) continue;
     if (minAge === null || age < minAge) minAge = age;
     if (maxAge === null || age > maxAge) maxAge = age;
@@ -217,7 +214,12 @@ export function paragraph1PhaseGender(
   const ageRangeClause = `with pupils from ${youngLabel} to ${oldLabel}`;
 
   if (comp.kind === "single_sex") {
-    return `${schoolName} is ${article} ${phase} school, ${ageRangeClause}. It is single-sex (${comp.dominantGender}). ${GENDER_ALWAYS_ON_HEDGE}`;
+    // 2026-09-07 fix (round 13, found via live-page review): GENDER_ALWAYS_ON_HEDGE
+    // ("The gender balance varies from year to year") was firing here unconditionally
+    // -- wrong for a school at >=98% one gender (classifyGenderComposition's own
+    // SINGLE_SEX_SUPPRESSION_BAND), where there IS no balance to vary. The hedge stays
+    // on the balanced/mostly branches below, where it's actually true.
+    return `${schoolName} is ${article} ${phase} school, ${ageRangeClause}. It is single-sex (${comp.dominantGender}).`;
   }
 
   // Hedge zone (spec §7 item 8, unresolved -- see narrative-config.ts's own comment):

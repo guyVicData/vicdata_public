@@ -10,6 +10,7 @@ import {
 } from "@/lib/roll-data";
 import type { ShapeMetrics } from "@/lib/shape-classifier";
 import { TAG_COLOURS } from "@/lib/tag-colours";
+import { SINGLE_SEX_SUPPRESSION_BAND } from "@/lib/narrative";
 
 // Horizontal population-pyramid shape chart (chart palette doc, "Public View
 // rebuild"). Ages on the y-axis, oldest at top / youngest at bottom -- boys extend
@@ -89,12 +90,39 @@ export default function ShapeChart({
     };
   });
 
+  // 2026-09-07 fix (round 13, found via live-page review): single-sex detection,
+  // same threshold narrative.ts's classifyGenderComposition already uses (reused, not
+  // reinvented) -- >=98% one gender across the chart's own full displayed total. Below
+  // this, splitting the canvas 50/50 wastes half of it on an always-empty side, and
+  // the reference envelope's "even 50/50 split" comparison is meaningless against a
+  // real ~100/0 split. Single-sex renders the one real gender full-width instead: no
+  // center split, no reference envelope (nothing to compare against), no % labels
+  // (trivially ~100/0 or ~0/100 on every row) -- the signal line stays, single-sided.
+  const totalMale = rows.reduce((sum, r) => sum + r.male, 0);
+  const totalFemale = rows.reduce((sum, r) => sum + r.female, 0);
+  const totalAll = totalMale + totalFemale;
+  const singleSexGender: "male" | "female" | null =
+    totalAll > 0 && Math.min(totalMale, totalFemale) / totalAll <= SINGLE_SEX_SUPPRESSION_BAND
+      ? totalMale >= totalFemale
+        ? "male"
+        : "female"
+      : null;
+
   const maxVal = Math.max(1, ...rows.map((r) => Math.max(r.male, r.female)));
   const innerH = ages.length * ROW_HEIGHT + (ages.length - 1) * ROW_GAP;
   const height = PAD.top + PAD.bottom + innerH;
   const halfWidth = (WIDTH - PAD.left - PAD.right) / 2;
   const centerX = PAD.left + halfWidth;
   const scale = halfWidth / maxVal;
+
+  // Single-sex layout: full plot width for the one real gender's own values (male+
+  // female combined -- indistinguishable from the dominant gender alone at this
+  // threshold, and keeps the signal line's own total-based positions consistent with
+  // the bars rather than introducing a second, slightly different scale).
+  const fullPlotWidth = WIDTH - PAD.left - PAD.right;
+  const singleSexMaxVal = Math.max(1, ...rows.map((r) => r.male + r.female));
+  const singleSexScale = fullPlotWidth / singleSexMaxVal;
+  const singleSexColourVar = singleSexGender === "male" ? "var(--boys)" : "var(--girls)";
 
   const rowY = (i: number) => PAD.top + i * (ROW_HEIGHT + ROW_GAP);
   const rowMidY = (i: number) => rowY(i) + ROW_HEIGHT / 2;
@@ -129,6 +157,12 @@ export default function ShapeChart({
         return `${idx === 0 ? "M" : "L"} ${x} ${rowMidY(i)}`;
       })
       .join(" ");
+
+  // Single-sex signal line: single-sided (from the left baseline, same as the bars),
+  // no left/right mirror -- there's no second side to mirror against.
+  const singleSexX = (r: { male: number; female: number }) => PAD.left + (r.male + r.female) * singleSexScale;
+  const pathForSingleSex = (points: { r: (typeof rows)[number]; i: number }[]) =>
+    points.map(({ r, i }, idx) => `${idx === 0 ? "M" : "L"} ${singleSexX(r)} ${rowMidY(i)}`).join(" ");
 
   return (
     <div className="viz-root">
@@ -168,8 +202,16 @@ export default function ShapeChart({
       `}</style>
 
       <svg viewBox={`0 0 ${WIDTH} ${height}`} className="w-full" onMouseLeave={() => setHoverAge(null)}>
-        {/* Zero line */}
-        <line x1={centerX} x2={centerX} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--grid)" strokeWidth={1} />
+        {/* Zero line -- centred for the co-ed split chart, at the left baseline for
+            the single-sex full-width layout (no split to centre on). */}
+        <line
+          x1={singleSexGender ? PAD.left : centerX}
+          x2={singleSexGender ? PAD.left : centerX}
+          y1={PAD.top}
+          y2={PAD.top + innerH}
+          stroke="var(--grid)"
+          strokeWidth={1}
+        />
 
         {/* (c) Symmetric gender-comparison envelope: total roll mirrored evenly
             left/right, drawn through every displayed row regardless of anchoring --
@@ -177,8 +219,11 @@ export default function ShapeChart({
             boy/girl bars (below) are plotted against this same reference, direct
             visual support for the gender-shape-divergence qualifier: a bar pulling
             noticeably inside this outline on one side is that gender under-
-            represented at that age relative to the school's own overall split. */}
-        {rows.length > 1 && (
+            represented at that age relative to the school's own overall split.
+            Skipped entirely for a single-sex school -- there's no second gender to
+            compare against, so "what an even 50/50 split would look like" isn't a
+            meaningful reference for a real ~100/0 school. */}
+        {!singleSexGender && rows.length > 1 && (
           <>
             <path
               d={pathFor(rows.map((r, i) => ({ r, i })), "left")}
@@ -199,9 +244,10 @@ export default function ShapeChart({
 
         {rows.map((r, i) => {
           const y = rowY(i);
+          const opacity = r.isEdge ? 0.5 : 1;
+          const totalW = (r.male + r.female) * singleSexScale;
           const maleW = r.male * scale;
           const femaleW = r.female * scale;
-          const opacity = r.isEdge ? 0.5 : 1;
           return (
             <g key={r.age}>
               <text
@@ -213,43 +259,60 @@ export default function ShapeChart({
               >
                 {r.age}
               </text>
-              {maleW > 0 && (
-                <rect
-                  x={centerX - maleW}
-                  y={y}
-                  width={maleW}
-                  height={ROW_HEIGHT}
-                  rx={2}
-                  fill="var(--boys)"
-                  fillOpacity={opacity}
-                />
-              )}
-              {femaleW > 0 && (
-                <rect
-                  x={centerX}
-                  y={y}
-                  width={femaleW}
-                  height={ROW_HEIGHT}
-                  rx={2}
-                  fill="var(--girls)"
-                  fillOpacity={opacity}
-                />
-              )}
-              {/* (a) % label: female share of this row's total, only where the row
-                  clears the same noise floor the gender-mix qualifier itself uses
-                  (genderShareByAge) -- a single-digit-total row's own share is close
-                  to meaningless, so it's simply omitted rather than shown misleadingly
-                  precise. */}
-              {r.femaleSharePct !== null && (
-                <text
-                  x={WIDTH - PAD.right + 6}
-                  y={y + ROW_HEIGHT / 2 + 4}
-                  fontSize={9}
-                  fill="var(--axis-label)"
-                  textAnchor="start"
-                >
-                  {Math.round(r.femaleSharePct)}%
-                </text>
+              {singleSexGender ? (
+                totalW > 0 && (
+                  <rect
+                    x={PAD.left}
+                    y={y}
+                    width={totalW}
+                    height={ROW_HEIGHT}
+                    rx={2}
+                    fill={singleSexColourVar}
+                    fillOpacity={opacity}
+                  />
+                )
+              ) : (
+                <>
+                  {maleW > 0 && (
+                    <rect
+                      x={centerX - maleW}
+                      y={y}
+                      width={maleW}
+                      height={ROW_HEIGHT}
+                      rx={2}
+                      fill="var(--boys)"
+                      fillOpacity={opacity}
+                    />
+                  )}
+                  {femaleW > 0 && (
+                    <rect
+                      x={centerX}
+                      y={y}
+                      width={femaleW}
+                      height={ROW_HEIGHT}
+                      rx={2}
+                      fill="var(--girls)"
+                      fillOpacity={opacity}
+                    />
+                  )}
+                  {/* (a) % label: female share of this row's total, only where the row
+                      clears the same noise floor the gender-mix qualifier itself uses
+                      (genderShareByAge) -- a single-digit-total row's own share is close
+                      to meaningless, so it's simply omitted rather than shown misleadingly
+                      precise. Skipped entirely for single-sex (trivially ~0% or ~100% on
+                      every row -- see singleSexGender's own comment). */}
+                  {r.femaleSharePct !== null && (
+                    <text
+                      x={WIDTH - PAD.right + 6}
+                      y={y + ROW_HEIGHT / 2 + 4}
+                      fontSize={9}
+                      fill="var(--axis-label)"
+                      textAnchor="start"
+                    >
+                      {Math.round(r.femaleSharePct)}%
+                    </text>
+                  )}
+                </>
               )}
               <rect
                 x={PAD.left}
@@ -267,9 +330,20 @@ export default function ShapeChart({
             filtered sequence classifyShape classified from -- through only the rows
             that survived the floor-drop, so it shows what the classifier actually
             saw, not the full raw chart. The dominantTransition segment (the specific
-            move that decided the shape) is highlighted with a heavier stroke and end
-            markers, on both the left and right traces. */}
-        {metrics && signalPoints.length > 1 && (
+            move that decided the shape) is highlighted with end markers. Kept for
+            single-sex, single-sided (from the left baseline, same as the bars) --
+            there's no second side to trace, unlike the reference envelope which is
+            dropped entirely. */}
+        {metrics && signalPoints.length > 1 && singleSexGender && (
+          <>
+            <path d={pathForSingleSex(signalPoints)} fill="none" stroke="var(--signal-line)" strokeWidth={1.25} />
+            {dominantAges.length === 2 &&
+              signalPoints
+                .filter(({ r }) => dominantAges.includes(r.age))
+                .map(({ r, i }) => <circle key={`dom-${r.age}`} cx={singleSexX(r)} cy={rowMidY(i)} r={2.5} fill="var(--signal-line)" />)}
+          </>
+        )}
+        {metrics && signalPoints.length > 1 && !singleSexGender && (
           <>
             <path d={pathFor(signalPoints, "left")} fill="none" stroke="var(--signal-line)" strokeWidth={1.25} />
             <path d={pathFor(signalPoints, "right")} fill="none" stroke="var(--signal-line)" strokeWidth={1.25} />
@@ -285,13 +359,24 @@ export default function ShapeChart({
           </>
         )}
 
-        {/* x-axis reference labels: 0 at centre, max at each edge */}
-        <text x={centerX} y={PAD.top + innerH + 16} fontSize={10} fill="var(--axis-label)" textAnchor="middle">
-          0
-        </text>
-        <text x={PAD.left} y={PAD.top + innerH + 16} fontSize={10} fill="var(--axis-label)" textAnchor="start">
-          {Math.round(maxVal).toLocaleString()}
-        </text>
+        {/* x-axis reference labels: 0 at the baseline (left edge for single-sex, centre
+            for the split chart), max at the right edge (and left edge too, mirrored,
+            for the split chart). */}
+        {!singleSexGender && (
+          <text x={centerX} y={PAD.top + innerH + 16} fontSize={10} fill="var(--axis-label)" textAnchor="middle">
+            0
+          </text>
+        )}
+        {!singleSexGender && (
+          <text x={PAD.left} y={PAD.top + innerH + 16} fontSize={10} fill="var(--axis-label)" textAnchor="start">
+            {Math.round(maxVal).toLocaleString()}
+          </text>
+        )}
+        {singleSexGender && (
+          <text x={PAD.left} y={PAD.top + innerH + 16} fontSize={10} fill="var(--axis-label)" textAnchor="start">
+            0
+          </text>
+        )}
         <text
           x={WIDTH - PAD.right}
           y={PAD.top + innerH + 16}
@@ -299,33 +384,47 @@ export default function ShapeChart({
           fill="var(--axis-label)"
           textAnchor="end"
         >
-          {Math.round(maxVal).toLocaleString()}
+          {Math.round(singleSexGender ? singleSexMaxVal : maxVal).toLocaleString()}
         </text>
       </svg>
 
       {/* Legend */}
       <div className="mt-2 flex flex-wrap gap-4 text-xs text-neutral-600 dark:text-neutral-400">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "var(--boys)" }} />
-          Boys
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "var(--girls)" }} />
-          Girls
-        </span>
+        {singleSexGender ? (
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: singleSexColourVar }} />
+            {singleSexGender === "male" ? "Boys" : "Girls"}
+          </span>
+        ) : (
+          <>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "var(--boys)" }} />
+              Boys
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "var(--girls)" }} />
+              Girls
+            </span>
+          </>
+        )}
         {metrics && (
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-0.5 w-3" style={{ backgroundColor: "var(--signal-line)" }} />
             What the shape was read from
           </span>
         )}
-        <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-0.5 w-3"
-            style={{ backgroundImage: "linear-gradient(to right, var(--reference-envelope) 50%, transparent 50%)", backgroundSize: "4px 1px" }}
-          />
-          Even 50/50 split at this total
-        </span>
+        {/* Even-50/50 reference envelope legend entry -- co-ed only, matching the
+            envelope itself being skipped entirely for single-sex (see its own
+            comment above). */}
+        {!singleSexGender && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-0.5 w-3"
+              style={{ backgroundImage: "linear-gradient(to right, var(--reference-envelope) 50%, transparent 50%)", backgroundSize: "4px 1px" }}
+            />
+            Even 50/50 split at this total
+          </span>
+        )}
       </div>
       <p className="mt-1 text-xs text-neutral-400">
         Ages {SHAPE_CLASSIFICATION_MIN_AGE - 1} and under, and {SHAPE_CLASSIFICATION_MAX_AGE + 1}{" "}

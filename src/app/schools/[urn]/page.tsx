@@ -281,7 +281,7 @@ export default async function SchoolPage({
     const hasEarlyYears = hasEarlyYearsProvision(school.statutory_low_age);
     const observedSpan =
       primaryTag && school.statutory_low_age !== null && school.statutory_high_age !== null
-        ? observedSpanForPhase(ageGenderCounts, primaryTag, school.statutory_low_age, school.statutory_high_age, effectiveTags)
+        ? observedSpanForPhase(ageGenderCounts, school.statutory_low_age, school.statutory_high_age)
         : null;
 
     let clampedFemale = 0;
