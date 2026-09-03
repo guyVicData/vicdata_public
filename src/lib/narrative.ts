@@ -11,7 +11,7 @@
 // here for formatting).
 
 import type { RollSnapshot, AgeGenderCounts } from "./roll-data";
-import type { ShapeLabel, ShapeMetrics } from "./shape-classifier";
+import { FLAT_RATIO_HIGH, FLAT_RATIO_LOW, type ShapeLabel, type ShapeMetrics } from "./shape-classifier";
 import type { SchoolTypology, PhaseTag } from "./typology";
 import { phaseWord } from "./surrounding-summary";
 import type { LaSectorComposition } from "./la-sector-composition";
@@ -367,14 +367,22 @@ export function paragraph2SectorSize(
   if (thisSchoolSectorSchoolCount === 0 || thisSchoolPupilShareOfSector === null) return null;
   const sectorWord = thisSchoolSector === "FE" ? "FE" : thisSchoolSector.toLowerCase();
 
-  // Round 3, §3: prepositional "in this local authority" (lowercase), not the
-  // round-2 build's possessive "of the Local Authority's..." -- confirmed 3/3 across
-  // round 3's real edits. Keeps the article ("of THE independent-sector pupils") --
-  // King's own round-3 edit dropped it, but 2 of 3 (Malvern, Leighton Park) kept it
-  // and it reads more naturally; not treated as a genuine 3-way disagreement.
+  // Round 3, §3: prepositional "in this Local Authority", not the round-2 build's
+  // possessive "of the Local Authority's...". Keeps the article ("of THE
+  // independent-sector pupils") -- King's own round-3 edit dropped it, but 2 of 3
+  // (Malvern, Leighton Park) kept it and it reads more naturally; not treated as a
+  // genuine 3-way disagreement.
+  //
+  // 2026-09-11, round 19: schoolName-first ("{schoolName} is one of...") and
+  // capitalised "Local Authority", not the previous "One of N... schools in LA,
+  // {schoolName}'s pupils make up..." order -- confirmed twice now (this exact
+  // wording was given again this round, unchanged, after being flagged as a real
+  // discrepancy from the function's own prior output last round) -- this is now the
+  // one shared sentence RollCard and the main narrative paragraph both use, not two
+  // descriptions of the same fact.
   const sectorSentence =
-    `One of ${oneOfCountLabel(thisSchoolSectorSchoolCount)} ${sectorWord} schools in ${laName}, ${schoolName}'s pupils make up ` +
-    `${thisSchoolPupilShareOfSector.toFixed(1)}% of the ${sectorWord}-sector pupils in this local authority.`;
+    `${schoolName} is one of ${oneOfCountLabel(thisSchoolSectorSchoolCount)} ${sectorWord} schools in ${laName}, and its ` +
+    `pupils make up ${thisSchoolPupilShareOfSector.toFixed(1)}% of the ${sectorWord}-sector pupils in this Local Authority.`;
 
   return sizeSentence ? `${sectorSentence} ${sizeSentence}` : sectorSentence;
 }
@@ -552,6 +560,44 @@ export function renderNumericShapeDefinition(
 }
 
 // ---------------------------------------------------------------------------
+// Phase-split sentence (round 19, item 7) -- a second sentence for the shape
+// definition block, through-schools only (typology.phase.length > 1). The senior
+// roll (secondary + sixth_form age bands, Years 7-13) against the roll below it
+// (early_years + primary, Early Years-Year 6) -- a fixed split by construction of
+// roll-data.ts's own AGE_BANDS boundaries, not tied to which specific phase tags a
+// given through-school happens to carry, so the labels below are correct for any
+// through-school, not just a Junior+Senior one. "About the same" reuses the
+// classifier's own FLAT_RATIO_LOW/HIGH band (already the platform's answer to "how
+// close counts as flat") rather than inventing a second threshold for the same idea.
+// This is a real, true, but CORRELATED fact (bigger senior roll often co-occurs with
+// certain shapes) -- never the stated reason for the classification, which stays tied
+// to the actual decisive mechanism (numericShapeDefinition's ratio/step maths above).
+// No "now"/"currently" wording -- single-year census snapshot, not a trend.
+// ---------------------------------------------------------------------------
+export type PhaseSplitComparison = "bigger" | "smaller" | "about_the_same" | null;
+
+export function computePhaseSplitComparison(seniorRoll: number, belowRoll: number): PhaseSplitComparison {
+  if (seniorRoll <= 0 || belowRoll <= 0) return null;
+  const ratio = seniorRoll / belowRoll;
+  if (ratio >= FLAT_RATIO_LOW && ratio <= FLAT_RATIO_HIGH) return "about_the_same";
+  return ratio > 1 ? "bigger" : "smaller";
+}
+
+const PHASE_SPLIT_PHRASE: Record<Exclude<PhaseSplitComparison, null>, string> = {
+  bigger: "is bigger than",
+  smaller: "is smaller than",
+  about_the_same: "is about the same size as",
+};
+
+export function renderPhaseSplitSentence(comparison: PhaseSplitComparison): string | null {
+  if (!comparison) return null;
+  return (
+    `The senior-school roll (Years 7–13) ${PHASE_SPLIT_PHRASE[comparison]} the roll below it ` +
+    "(Early Years–Year 6)."
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Shape qualifier sentences (qualifier build round, extended round 15 with exact
 // agreed wording, joining fixed round 16) -- same compute/render split as
 // topic4bGenderVariation/renderTopic4b above. Borderline and multipleSteps get no
@@ -626,13 +672,25 @@ export function renderGenderShapeDivergenceQualifier(result: GenderShapeDivergen
   );
 }
 
-export function computeGenderMixQualifier(notable: boolean): boolean {
-  return notable;
+// 2026-09-11, round 19, item 7: restores the % range into the rendered text -- it was
+// chart-only before (bare "(see chart)"). Takes the whole shape-qualifiers.ts
+// GenderMixVariation-shaped object rather than just `notable` alone, since the min/max
+// share values live there, not on a derived boolean.
+export type GenderMixQualifier = { minSharePct: number; maxSharePct: number } | null;
+
+export function computeGenderMixQualifier(
+  genderMix: { notable: boolean; minSharePct: number; maxSharePct: number } | null,
+): GenderMixQualifier {
+  if (!genderMix || !genderMix.notable) return null;
+  return { minSharePct: genderMix.minSharePct, maxSharePct: genderMix.maxSharePct };
 }
 
-export function renderGenderMixQualifier(notable: boolean): string | null {
-  if (!notable) return null;
-  return "and the balance between boys and girls shifts noticeably across the years (see chart)";
+export function renderGenderMixQualifier(result: GenderMixQualifier): string | null {
+  if (!result) return null;
+  return (
+    "and the balance between boys and girls shifts noticeably across the years, with girls making up between " +
+    `${Math.round(result.minSharePct)}% and ${Math.round(result.maxSharePct)}% of their year group`
+  );
 }
 
 export function computeStillDriftingQualifier(stillDrifting: boolean): boolean {
@@ -641,25 +699,91 @@ export function computeStillDriftingQualifier(stillDrifting: boolean): boolean {
 
 export function renderStillDriftingQualifier(stillDrifting: boolean): string | null {
   if (!stillDrifting) return null;
-  return "though it continues to ease down slightly in the years after";
+  // 2026-09-11 fix (round 19): "it" is referentially ambiguous once this clause
+  // trails a gender-specific clause (could read as the gender balance, not the roll)
+  // -- "the tail" names what's actually still moving, unconditionally, not just when
+  // a gender clause happens to precede it.
+  return "though the tail continues to ease down slightly in the years after";
 }
 
-// Joins the firing lowercase fragments above into one sentence: comma-separated,
-// one capital letter at the very start, one final stop. The one exception is a lone
-// "though..." clause -- grammatically a subordinate clause, not a sentence, so with
-// no main clause to attach to it drops the leading "though" and stands as its own
-// plain independent sentence instead (never ships a dangling subordinate clause).
-// A "though" clause appearing anywhere but first in a longer joined sentence is left
-// alone -- mid-sentence "..., though it continues to ease down..." is ordinary,
-// grammatical English, the fragment problem is specific to standing alone.
-export function joinShapeQualifierAddenda(fragments: (string | null)[]): string | null {
-  const real = fragments.filter((f): f is string => f !== null && f.length > 0);
+// 2026-09-11, round 19: which of the five qualifiers a fragment came from -- needed by
+// joinShapeQualifierAddenda below to decide "though" vs semicolon, not carried on the
+// render functions themselves (they stay plain string producers, unchanged).
+export type ShapeQualifierKind = "erratic" | "singleAgeAnomaly" | "genderShapeDivergence" | "genderMix" | "stillDrifting";
+export type ShapeQualifierFragment = { kind: ShapeQualifierKind; text: string } | null;
+
+// Only these two clauses' own raw text starts with "though " -- everything below is
+// about deciding, per adjacency, whether that "though" is kept (a genuine
+// qualification of its neighbour) or dropped (an unrelated fact, wrongly implying a
+// causal/contrastive link "though X, Y" always carries).
+const THOUGH_CAPABLE = new Set<ShapeQualifierKind>(["erratic", "stillDrifting"]);
+
+// Confirmed pairs, not guessed: erratic+genderShapeDivergence keeps "though"
+// (Marlborough, round 16's own original worked example, never flagged as wrong) --
+// a real link, since an erratic COMBINED trend is often exactly what you get once two
+// genuinely different per-gender shapes are added together. erratic+genderMix drops
+// it (this round's own illustrative example -- a % split shifting is too surface-
+// level a fact to be "explained by" or "qualify" an erratic combined trend).
+// genderShapeDivergence+stillDrifting drops it (Good Shepherd, flagged from the
+// round 16 review artifact -- the tail's own drift is a fact about the AGGREGATE
+// shape's mechanism, unconnected to the genders having different underlying shapes).
+// erratic+stillDrifting is the one pair with no named example either way -- kept
+// here as genuinely related (both describe the same shape's own trajectory
+// behaviour, nothing about gender diluting the connection) but flagged as a real
+// extrapolation, not a given fact, in case that judgment call is wrong.
+const THOUGH_RELATED: [ShapeQualifierKind, ShapeQualifierKind][] = [
+  ["erratic", "genderShapeDivergence"],
+  ["erratic", "stillDrifting"],
+];
+
+function thoughRelated(a: ShapeQualifierKind, b: ShapeQualifierKind): boolean {
+  return THOUGH_RELATED.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+}
+
+// Joins the firing fragments into one sentence: one capital letter at the very
+// start, one final stop, per-pair connector decided as follows --
+//  - Neither side of the pair is a "though"-capable clause: plain ", " (unaffected
+//    by any of this -- e.g. genderShapeDivergence next to genderMix).
+//  - One side IS "though"-capable and the pair is a confirmed-related one
+//    (THOUGH_RELATED): ", ", and that clause's own leading "though" is kept.
+//  - Otherwise (a "though"-capable clause adjacent to something it doesn't
+//    genuinely qualify, on EITHER side, including standing completely alone): "; ",
+//    and the leading "though" is stripped -- the clause becomes its own independent
+//    clause rather than falsely implying a contrast/qualification that isn't there.
+//    A lone "though" clause (round 16's original edge case) falls out of this same
+//    rule for free: no neighbour on either side means no related neighbour, so it
+//    strips and stands alone.
+//
+// One more wrinkle, caught in testing rather than given: erratic and stillDrifting
+// are BOTH though-capable and (per THOUGH_RELATED) related to each other, so a naive
+// "keep though if related to EITHER neighbour" rule doubles up -- "though it moves
+// up and down..., though the tail continues..." repeats the subordinating word.
+// Fixed by only ever introducing "though" at the START of a related run: a
+// though-capable clause that's continuing a run its own PRECEDING neighbour already
+// started (prevRelated) drops its own "though" rather than repeating it: the
+// preceding clause's "though" already covers the whole run.
+export function joinShapeQualifierAddenda(fragments: ShapeQualifierFragment[]): string | null {
+  const real = fragments.filter((f): f is { kind: ShapeQualifierKind; text: string } => f !== null && f.text.length > 0);
   if (real.length === 0) return null;
-  if (real.length === 1 && real[0].toLowerCase().startsWith("though ")) {
-    const rest = real[0].slice("though ".length);
-    return `${rest.charAt(0).toUpperCase()}${rest.slice(1)}.`;
+
+  const texts = real.map((f, i) => {
+    if (!THOUGH_CAPABLE.has(f.kind)) return f.text;
+    const prev = real[i - 1];
+    const prevRelated = prev !== undefined && thoughRelated(prev.kind, f.kind);
+    if (prevRelated) return f.text.slice("though ".length); // continues a run already introduced
+    const next = real[i + 1];
+    const keepThough = next !== undefined && thoughRelated(f.kind, next.kind);
+    return keepThough ? f.text : f.text.slice("though ".length);
+  });
+
+  let joined = texts[0];
+  for (let i = 1; i < texts.length; i++) {
+    const a = real[i - 1].kind;
+    const b = real[i].kind;
+    const involvesThoughClause = THOUGH_CAPABLE.has(a) || THOUGH_CAPABLE.has(b);
+    const connector = !involvesThoughClause || thoughRelated(a, b) ? ", " : "; ";
+    joined += connector + texts[i];
   }
-  const joined = real.join(", ");
   return `${joined.charAt(0).toUpperCase()}${joined.slice(1)}.`;
 }
 

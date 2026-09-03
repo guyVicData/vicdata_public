@@ -28,12 +28,14 @@ import {
   topic4bGenderVariation, renderTopic4b,
   observedSpanForPhase, primaryPhaseTag, hasEarlyYearsProvision,
   renderNumericShapeDefinition,
+  computePhaseSplitComparison, renderPhaseSplitSentence,
   computeErraticQualifier, renderErraticQualifier,
   computeSingleAgeAnomalyQualifier, renderSingleAgeAnomalyQualifier,
   computeGenderShapeDivergenceQualifier, renderGenderShapeDivergenceQualifier,
   computeGenderMixQualifier, renderGenderMixQualifier,
   computeStillDriftingQualifier, renderStillDriftingQualifier,
   joinShapeQualifierAddenda,
+  type ShapeQualifierKind,
 } from "@/lib/narrative";
 import { computeTopic3SizeSentence } from "@/lib/narrative-lookup";
 import { CurrentStateNarrative } from "@/components/dashboard/CurrentStateNarrative";
@@ -158,23 +160,33 @@ export default async function SchoolPage({
   // Deterministic order per Guy's own brief: the shape itself first (erratic, single-
   // age anomaly), then gender-related (divergence, mix), then still-drifting.
   // Borderline/multipleSteps are deliberately absent -- no end-user wording yet.
+  // tag(): pairs a render function's own output with which qualifier produced it --
+  // joinShapeQualifierAddenda needs to know that to decide "though" vs semicolon
+  // between adjacent clauses (narrative.ts's own THOUGH_RELATED table).
+  const tag = (kind: ShapeQualifierKind, text: string | null) => (text !== null ? { kind, text } : null);
   const shapeQualifierAddenda: string | null =
     shape && shapeQualifiers
       ? joinShapeQualifierAddenda([
-          renderErraticQualifier(computeErraticQualifier(shapeQualifiers.erratic)),
-          renderSingleAgeAnomalyQualifier(
-            computeSingleAgeAnomalyQualifier(shapeQualifiers.singleAgeAnomaly, shape.moves, shape.metrics.anchored),
+          tag("erratic", renderErraticQualifier(computeErraticQualifier(shapeQualifiers.erratic))),
+          tag(
+            "singleAgeAnomaly",
+            renderSingleAgeAnomalyQualifier(
+              computeSingleAgeAnomalyQualifier(shapeQualifiers.singleAgeAnomaly, shape.moves, shape.metrics.anchored),
+            ),
           ),
-          shapeQualifiers.genderShapeDivergenceMaterial && shapeQualifiers.genderShapeDivergence
-            ? renderGenderShapeDivergenceQualifier(
-                computeGenderShapeDivergenceQualifier({
-                  maleDirection: shapeQualifiers.genderShapeDivergence.maleDirection,
-                  femaleDirection: shapeQualifiers.genderShapeDivergence.femaleDirection,
-                }),
-              )
-            : null,
-          renderGenderMixQualifier(computeGenderMixQualifier(shapeQualifiers.genderMix?.notable ?? false)),
-          renderStillDriftingQualifier(computeStillDriftingQualifier(shapeQualifiers.stillDrifting)),
+          tag(
+            "genderShapeDivergence",
+            shapeQualifiers.genderShapeDivergenceMaterial && shapeQualifiers.genderShapeDivergence
+              ? renderGenderShapeDivergenceQualifier(
+                  computeGenderShapeDivergenceQualifier({
+                    maleDirection: shapeQualifiers.genderShapeDivergence.maleDirection,
+                    femaleDirection: shapeQualifiers.genderShapeDivergence.femaleDirection,
+                  }),
+                )
+              : null,
+          ),
+          tag("genderMix", renderGenderMixQualifier(computeGenderMixQualifier(shapeQualifiers.genderMix ?? null))),
+          tag("stillDrifting", renderStillDriftingQualifier(computeStillDriftingQualifier(shapeQualifiers.stillDrifting))),
         ])
       : null;
 
@@ -223,6 +235,15 @@ export default async function SchoolPage({
   // same match list feeds both the aggregate stat and the map's marker positions.
   const matchedSurrounding = await findSurroundingSchools(urn, roll?.period ?? CURRENT_CENSUS_PERIOD);
   const surrounding = aggregateSurroundingStat(matchedSurrounding);
+  // 2026-09-11, round 19, item 6: same numericShapeDefinition treatment the focus
+  // school's own shapeDefinition gets above, applied to the pooled aggregate now that
+  // aggregateSurroundingStat exposes aggregateMetrics/aggregateDominantTransition
+  // alongside aggregateShape. Deliberately no qualifier addenda for the aggregate --
+  // qualifiers describe one real school's trajectory, not a pooled average.
+  const aggregateDefinition =
+    surrounding.aggregateShape && surrounding.aggregateMetrics
+      ? renderNumericShapeDefinition(surrounding.aggregateShape, surrounding.aggregateMetrics, surrounding.aggregateDominantTransition)
+      : null;
   const context = await getContextAggregates(school.la_name);
   // Layout/graphs spec v1 §7, round 3: LA-boarders stat denominator -- already-precomputed
   // roll_aggregates.boarders_total (context.regional, same row RegionalNationalCard already
@@ -256,6 +277,23 @@ export default async function SchoolPage({
     }
     if (Object.keys(byPhase).length > 0) viewedRollByPhase = byPhase;
   }
+  // 2026-09-11, round 19, item 7: second sentence for the shape definition block,
+  // through-schools only -- roll.byAgeBand's own fixed boundaries (secondary+
+  // sixth_form vs early_years+primary), not viewedRollByPhase above (that's keyed by
+  // this specific school's own phase tags, which vary school to school; the Years
+  // 7-13 / Early Years-Year 6 split is the same for every through-school by
+  // construction of AGE_BANDS, so the fixed band sum is the right source here).
+  const phaseSplitSentence =
+    typology.phase.length > 1 && roll
+      ? renderPhaseSplitSentence(
+          computePhaseSplitComparison(
+            (roll.byAgeBand.find((b) => b.key === "secondary")?.total ?? 0) +
+              (roll.byAgeBand.find((b) => b.key === "sixth_form")?.total ?? 0),
+            (roll.byAgeBand.find((b) => b.key === "early_years")?.total ?? 0) +
+              (roll.byAgeBand.find((b) => b.key === "primary")?.total ?? 0),
+          ),
+        )
+      : null;
   // 2026-08-27, map popup/card redesign (point d): the focus school's own card
   // always shows the member-tier age-band/gender-split breakdown (not gated on
   // membership here) -- this exact data is already public elsewhere on this SAME
@@ -279,12 +317,23 @@ export default async function SchoolPage({
     if (band1 + band2 + band3 > 0) viewedAgeBands = { band1, band2, band3 };
   }
   const viewedGenderSplit = roll ? { girls: roll.gender.female, boys: roll.gender.male } : null;
+  // 2026-09-11, round 19, item 5 bug A: hoisted above buildSurroundingSummary (was
+  // previously only computed later, inside the `roll && ageGenderCounts` narrative
+  // block below) so the free-tier surrounding-schools sentence gets the same
+  // enrollment-aware, through-school-collapsing tags the main narrative already uses --
+  // computed once here, reused there too (no second call). Falls back to the raw
+  // nominal typology.phase only when there's no real census data to derive effective
+  // tags from at all.
+  const effectiveTags = ageGenderCounts
+    ? effectivePhaseTags(school.statutory_low_age, school.statutory_high_age, ageGenderCounts)
+    : typology.phase;
   const surroundingSummary = buildSurroundingSummary(
     school.current_name,
     typology,
     roll?.totalRoll ?? null,
     surrounding.found,
     surrounding.averageRoll,
+    effectiveTags,
   );
 
   // Dashboard rebuild (2026-08-28) additions -- all gated behind `roll` existing,
@@ -311,7 +360,6 @@ export default async function SchoolPage({
   // existing, same as the dashboard-rebuild cards below.
   let narrativeParagraphs: (string | null)[] = [];
   if (roll && ageGenderCounts) {
-    const effectiveTags = effectivePhaseTags(school.statutory_low_age, school.statutory_high_age, ageGenderCounts);
     const primaryTag = primaryPhaseTag(effectiveTags);
     const hasEarlyYears = hasEarlyYearsProvision(school.statutory_low_age);
     const observedSpan =
@@ -491,6 +539,7 @@ export default async function SchoolPage({
                 shapeMetrics={shape?.metrics ?? undefined}
                 shapeDominantTransition={shape?.dominantTransition ?? null}
                 shapeDefinition={shapeDefinition}
+                phaseSplitSentence={phaseSplitSentence}
                 shapeQualifierAddenda={shapeQualifierAddenda}
                 populationTrend={populationTrend}
                 urn={urn}
@@ -499,6 +548,7 @@ export default async function SchoolPage({
                 peerRolls={matchedSurrounding.map((m) => m.totalRoll)}
                 summary={surroundingSummary}
                 aggregateShape={surrounding.aggregateShape}
+                aggregateDefinition={aggregateDefinition}
                 found={surrounding.found}
               />
 

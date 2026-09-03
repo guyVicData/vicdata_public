@@ -106,12 +106,17 @@ export function RollCard({
               <Caption>{sectorSentence}</Caption>
             </>
           )}
+          {/* 2026-09-11, round 19: split into two sentences -- the earlier draft's
+              appositive stack ("GIAS, the Department for Education's school
+              register, a different snapshot from...") read as if the register
+              ITSELF were being called "a snapshot", not just sourced from one. */}
           <Caption className="italic">
             Schooling across {laComposition.laName}, by sector — not a comparison of this school&rsquo;s own size. Source:{" "}
             <Link href="/sources" className="underline hover:text-stone-700 dark:hover:text-stone-300">
               GIAS
             </Link>
-            , the Department for Education&rsquo;s school register, a different snapshot from the pupil figures above.
+            , the Department for Education&rsquo;s school register. Figures here are a different snapshot from the pupil
+            numbers above.
           </Caption>
         </>
       )}

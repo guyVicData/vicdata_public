@@ -48,6 +48,7 @@ export function ShapeCard({
   shapeMetrics,
   shapeDominantTransition,
   shapeDefinition,
+  phaseSplitSentence,
   shapeQualifierAddenda,
   populationTrend,
   urn,
@@ -56,6 +57,7 @@ export function ShapeCard({
   peerRolls,
   summary,
   aggregateShape,
+  aggregateDefinition,
   found,
 }: {
   ageGenderCounts: AgeGenderCounts | null;
@@ -74,6 +76,12 @@ export function ShapeCard({
   // own result, not on ShapeQualifiers) to locate the single-age-anomaly's own year,
   // which page.tsx already has and this component doesn't.
   shapeDefinition: string | null;
+  // 2026-09-11, round 19, item 7: through-schools only (page.tsx gates on
+  // typology.phase.length > 1) -- a second sentence in the same block, real/true but
+  // correlated (not the classification's own decisive mechanism), so it renders after
+  // shapeDefinition, never folded into it or into the qualifier addenda below (those
+  // are the shape's own trajectory qualifiers, this is a different, independent fact).
+  phaseSplitSentence: string | null;
   shapeQualifierAddenda: string | null;
   populationTrend: {
     laName: string;
@@ -89,6 +97,12 @@ export function ShapeCard({
   peerRolls: number[];
   summary: string | null;
   aggregateShape: ShapeLabel | null;
+  // 2026-09-11, round 19, item 6: pre-rendered by page.tsx (renderNumericShapeDefinition
+  // over aggregateSurroundingStat()'s new aggregateMetrics/aggregateDominantTransition
+  // fields), same pattern as shapeDefinition above -- ShapeCard doesn't call narrative.ts
+  // itself. Deliberately no qualifier addenda here: qualifiers describe one real
+  // school's own trajectory, not a pooled average across ten different schools.
+  aggregateDefinition: string | null;
   found: number;
 }) {
   return (
@@ -119,6 +133,9 @@ export function ShapeCard({
                 {shapeDefinition && (
                   <p className="mt-1.5 text-[13.5px] leading-relaxed text-stone-700 dark:text-stone-300">{shapeDefinition}</p>
                 )}
+                {phaseSplitSentence && (
+                  <p className="mt-1.5 text-[13.5px] leading-relaxed text-stone-700 dark:text-stone-300">{phaseSplitSentence}</p>
+                )}
                 {shapeQualifierAddenda && (
                   <p className="mt-1 text-[12.5px] leading-relaxed text-stone-500 dark:text-stone-400">
                     {shapeQualifierAddenda}
@@ -132,20 +149,21 @@ export function ShapeCard({
           <Eyebrow>Nearest matched schools</Eyebrow>
           {found > 0 && summary ? (
             <>
-              <p className="text-[13.5px] leading-relaxed text-stone-700 dark:text-stone-300">
-                {summary}
-                {aggregateShape && (
-                  <>
-                    {" "}
-                    The combined shape is{" "}
-                    <span className="inline-flex items-center gap-1 align-text-bottom font-semibold">
-                      <ShapeIcon shape={aggregateShape} size={14} /> {SHAPE_LABELS[aggregateShape]}
-                    </span>
-                    .
-                  </>
-                )}
-              </p>
+              <p className="text-[13.5px] leading-relaxed text-stone-700 dark:text-stone-300">{summary}</p>
               <SurroundingRollBarChart focusName={schoolName} focusRoll={schoolRoll} peerRolls={peerRolls} />
+              {aggregateShape && (
+                <div className="mt-4 flex items-start gap-3">
+                  <ShapeIcon shape={aggregateShape} size={28} />
+                  <div className="min-w-0 pt-0.5">
+                    <h4 className="font-[family-name:var(--font-newsreader)] text-[15px] font-medium text-stone-900 dark:text-stone-100">
+                      The combined shape of these local schools is {SHAPE_LABELS[aggregateShape]}
+                    </h4>
+                    {aggregateDefinition && (
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-stone-600 dark:text-stone-400">{aggregateDefinition}</p>
+                    )}
+                  </div>
+                </div>
+              )}
               <Caption className="mt-2.5">The {found} schools behind this comparison are visible to verified members.</Caption>
               <SurroundingSchoolsMemberList urn={urn} />
             </>

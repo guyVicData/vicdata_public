@@ -29,7 +29,7 @@ import {
   shapeClassifierInput,
   type AgeGenderCounts,
 } from "./roll-data";
-import { classifyShape, type ShapeLabel } from "./shape-classifier";
+import { classifyShape, type ShapeLabel, type ShapeMetrics, type DominantTransition } from "./shape-classifier";
 import { genderTag, phaseTags, type GenderTag } from "./typology";
 
 const TARGET_COUNT = 10; // reduced from 20, chart palette doc's "Public View rebuild"
@@ -93,12 +93,26 @@ export async function findSurroundingSchools(urn: string, targetPeriod: number):
   // with the target's? If the target itself falls through every phase-tag branch
   // (e.g. Woldingham, low 10/high 19), there's nothing to intersect against, so no
   // phase filter is applied -- same "can't match on the unknown" handling as gender.
+  //
+  // 2026-09-11, round 19, item 5 bug B: a shared-tag-only test lets a single-tag
+  // Senior-only school into a genuine through-school's peer pool purely because they
+  // both carry "Senior" -- real-data check (Stockport Grammar, Junior/Prep + Senior)
+  // confirmed this was happening. When the target itself has more than one phase tag,
+  // also require the candidate to have more than one -- keeps this on the same raw,
+  // nominal phaseTags() the rest of this module already uses (not effectivePhaseTags,
+  // which would need a per-candidate census fetch this module doesn't otherwise do).
+  // A genuine consequence: the peer pool for through-schools can legitimately shrink
+  // below TARGET_COUNT where few through-school peers exist nearby -- an honest
+  // reflection of a thin pool, not a bug to work around.
   const phaseFiltered =
     targetPhase.length === 0
       ? candidateList
       : candidateList.filter((c) => {
           const candidatePhase = phaseTags(c.statutory_low_age, c.statutory_high_age);
-          return candidatePhase.some((p) => targetPhase.includes(p));
+          const sharesTag = candidatePhase.some((p) => targetPhase.includes(p));
+          if (!sharesTag) return false;
+          if (targetPhase.length > 1) return candidatePhase.length > 1;
+          return true;
         });
 
   if (phaseFiltered.length === 0) return [];
@@ -190,6 +204,13 @@ export type SurroundingSchoolsStat = {
   found: number; // per rolls spec §4: may be fewer than 10 if the combined-filter pool is genuinely thin
   averageRoll: number | null;
   aggregateShape: ShapeLabel | null;
+  // 2026-09-11, round 19, item 6: additive alongside aggregateShape (previously the
+  // only field kept from classifyShape's result -- .label, with .metrics and
+  // .dominantTransition discarded). Needed to give the combined-shape block the same
+  // full icon+name+numeric-definition treatment (narrative.ts's numericShapeDefinition)
+  // the focus school's own shape already gets, rather than a bare label.
+  aggregateMetrics: ShapeMetrics | null;
+  aggregateDominantTransition: DominantTransition | null;
   aggregateAgeCounts: Map<number, number> | null; // ages 4-18, both sexes combined -- the free-tier "no-gender" grey chart
 };
 
@@ -199,7 +220,15 @@ export type SurroundingSchoolsStat = {
 // and DfE census lookup twice for the same page view.
 export function aggregateSurroundingStat(matched: MatchedSchool[]): SurroundingSchoolsStat {
   if (matched.length === 0) {
-    return { requested: TARGET_COUNT, found: 0, averageRoll: null, aggregateShape: null, aggregateAgeCounts: null };
+    return {
+      requested: TARGET_COUNT,
+      found: 0,
+      averageRoll: null,
+      aggregateShape: null,
+      aggregateMetrics: null,
+      aggregateDominantTransition: null,
+      aggregateAgeCounts: null,
+    };
   }
 
   const totalRoll = matched.reduce((sum, m) => sum + m.totalRoll, 0);
@@ -222,13 +251,15 @@ export function aggregateSurroundingStat(matched: MatchedSchool[]): SurroundingS
       aggregateAgeGenderCounts.set(age, { male: existing.male + c.male, female: existing.female + c.female });
     }
   }
-  const aggregateShape = classifyShape(shapeClassifierInput(aggregateAgeGenderCounts))?.label ?? null;
+  const aggregateResult = classifyShape(shapeClassifierInput(aggregateAgeGenderCounts));
 
   return {
     requested: TARGET_COUNT,
     found: matched.length,
     averageRoll,
-    aggregateShape,
+    aggregateShape: aggregateResult?.label ?? null,
+    aggregateMetrics: aggregateResult?.metrics ?? null,
+    aggregateDominantTransition: aggregateResult?.dominantTransition ?? null,
     aggregateAgeCounts,
   };
 }

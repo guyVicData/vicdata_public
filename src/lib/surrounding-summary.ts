@@ -4,7 +4,7 @@
 // nearest independent senior schools." Aggregate/summary only, no named schools --
 // the named list is member-area only (a separate module).
 
-import type { SchoolTypology } from "./typology";
+import type { SchoolTypology, PhaseTag } from "./typology";
 
 const SIZE_BANDS = { small: 300, large: 800 } as const; // same thresholds as comparator_candidates RPC
 
@@ -41,6 +41,13 @@ export function buildSurroundingSummary(
   totalRoll: number | null,
   found: number,
   averageRoll: number | null,
+  // 2026-09-11, round 19, item 5 bug A: enrollment-aware tags (page.tsx's
+  // effectivePhaseTags()), NOT the raw typology.phase this used to read directly --
+  // a through-school (Junior/Prep + Senior both present) needs the same "through"
+  // collapse narrative.ts's paragraph1PhaseGender already applies, or phaseWord()'s
+  // Senior-first check mislabels it "senior" alone. Falls back to typology.phase
+  // only when the caller has no real enrollment data to compute effective tags from.
+  effectiveTags: PhaseTag[],
 ): string | null {
   if (found === 0 || averageRoll === null || averageRoll === 0) return null;
 
@@ -52,7 +59,7 @@ export function buildSurroundingSummary(
   // the same treatment, it can join this check then.
   const sector = typology.sector === "FE" ? "FE" : typology.sector?.toLowerCase() ?? null;
   const boarding = typology.boarding?.toLowerCase() ?? null;
-  const phase = phaseWord(typology.phase);
+  const phase = effectiveTags.length > 1 ? "through" : phaseWord(effectiveTags);
   const gender = genderWord(typology.gender);
 
   const descriptors = [size, sector, boarding, gender, phase].filter(Boolean).join(" ");

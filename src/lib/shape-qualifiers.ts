@@ -233,7 +233,18 @@ export function isGenderShapeDivergenceMaterial(
 export const GENDER_MIX_MIN_RANGE_PP = 0.2;
 export const GENDER_MIX_MIN_PEAK_ROLL = 100;
 
-export type GenderMixVariation = { rangePp: number; consistency: number; peakRoll: number; notable: boolean };
+export type GenderMixVariation = {
+  rangePp: number;
+  consistency: number;
+  peakRoll: number;
+  notable: boolean;
+  // 2026-09-11, round 19, item 7: min/max female share across the classified span --
+  // additive alongside rangePp (their difference), needed to restore the qualifier's
+  // rendered text ("girls making up between X% and Y% of their year group") which
+  // rangePp alone can't reconstruct (a width doesn't recover its own endpoints).
+  minSharePct: number;
+  maxSharePct: number;
+};
 
 export function genderMixVariation(ageGenderCounts: AgeGenderCounts): GenderMixVariation | null {
   const span = classificationAgeSpan(ageGenderCounts);
@@ -264,7 +275,14 @@ export function genderMixVariation(ageGenderCounts: AgeGenderCounts): GenderMixV
   }
 
   const notable = range > GENDER_MIX_MIN_RANGE_PP && peakRoll >= GENDER_MIX_MIN_PEAK_ROLL;
-  return { rangePp: range, consistency, peakRoll, notable };
+  return {
+    rangePp: range,
+    consistency,
+    peakRoll,
+    notable,
+    minSharePct: Math.min(...values) * 100,
+    maxSharePct: Math.max(...values) * 100,
+  };
 }
 
 // ---------------------------------------------------------------------------

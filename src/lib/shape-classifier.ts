@@ -227,7 +227,7 @@ export const FLAT_RATIO_LOW = 1 / FLAT_RATIO_HIGH;
 // reported change in that one school's own label, not silently absorbed.
 export const WINEGLASS_MAGNITUDE_RATIO = 2.0;
 
-type DominantTransition = { fromAge: string; toAge: string };
+export type DominantTransition = { fromAge: string; toAge: string };
 
 // 2026-09-04, qualifier build round: values already computed internally by
 // classifyShape/findBestStepCandidate along the way to a label, exposed rather than
