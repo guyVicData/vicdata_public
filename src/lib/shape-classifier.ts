@@ -1,9 +1,7 @@
 // Shape typology classifier (rolls spec §4). Status: provisional throughout, same
 // discipline as breakdown_taxonomy_versions elsewhere in the schema -- documented,
 // versioned, expected to move once run against real school profiles, not fixed in
-// advance of real data. This is a first, defensible implementation of the
-// bucket-transition method (classify by the sequence of increase/decrease/stationary
-// moves between points in the input sequence), not a final calibration.
+// advance of real data.
 //
 // As of the "Public View rebuild" design review, every caller feeds this single
 // individual ages, both sexes combined (roll-data.ts's shapeClassifierInput()), not
@@ -16,20 +14,48 @@
 // shapeClassifierInput()/observedAgeSpan() -- see that file's comments). Age 18 no
 // longer needs a standalone carve-out -- the clamp already excludes it.
 //
-// 2026-08-29, taxonomy split: "pyramid_funnel" replaced with six shapes --
-// tube/pyramid/top_step/funnel/mushroom/wineglass/irregular. Real data (junior-school
-// "leaves at 11, real population continues to 13" schools; senior-school "sixth form
-// collapses to near-nothing" schools; Queen Anne's School's genuine smooth widening
-// vs St Bernard's Grammar/Winchmore/St Mary Redcliffe's single sixth-form join-point
-// jump) showed the old combined pyramid_funnel bucket was hiding at least three
-// structurally different real patterns: a genuine gradual multi-transition taper
-// (Pyramid), a single deliberate step with a real surviving population past it (Top
-// Step), and -- via the old "any up + zero down = wineglass" shortcut -- both genuine
-// smooth widening (which needed its own Funnel bucket) and genuine staged-join
-// concentration (correctly Wineglass) were landing in the same label as pure noise
-// artifacts. See classifyShape's body below for the decision tree and the two
-// empirically-calibrated share thresholds (DOMINANT_TRANSITION_SHARE,
-// CONCENTRATED_SHARE) this split runs on.
+// 2026-09-03, taxonomy REDESIGN (rolls spec §4 characterization pass, promoted this
+// round): the six-shape split (2026-08-29) stays, but the whole decision tree is
+// rebuilt around net trajectory ALONE, with no reversal-based disqualification
+// anywhere. The previous tree treated "genuine multi-reversal complexity" as
+// grounds to fall back to a seventh "irregular" bucket (a real, if genuine, dead end
+// for ~146+ well-known day schools -- Alleyn's, Highgate, Hampton, Latymer Upper,
+// James Allen's, City of London School among them -- whose real shape, net of the
+// reversal, was Wineglass all along). "Irregular" is no longer a classifyShape()
+// output at all -- every school now resolves to one of the six real shapes. A
+// reversal-aware QUALIFIER, layered on top of the primary shape rather than
+// gatekeeping it, is next round's work, not built here -- classifyShape() still
+// returns moves and dominantTransition (unchanged shape) specifically so that round
+// has real, already-computed material to build from, not so this round's callers
+// need them.
+//
+// The decision tree, in order:
+//  1. Mushroom (up) / Top Step (down): is there a single, disproportionately large
+//     step whose own tail (points after it) is genuinely flat -- checked
+//     independently of what the sequence does BEFORE the step (a trending or
+//     reversing base doesn't disqualify a real step; Rugby School's real
+//     up-then-immediate-comparable-down never even reaches this stage, since its own
+//     candidate step fails the tail check on its own terms, not via any reversal
+//     rule). See findBestStepCandidate below for the full test (share, per-step
+//     tail flatness, cumulative tail-drift, and Mushroom's own top-width cap).
+//  2. Otherwise: net trajectory only. First-vs-last ratio of the cropped+anchored
+//     span decides top-heavy/bottom-heavy/flat (Tube), then, for the top-heavy
+//     remainder, magnitude ratio decides Funnel vs Wineglass. Bottom-heavy remainder
+//     is Pyramid throughout -- no second bottom-heavy bucket yet (Guy's own explicit
+//     scope call this round).
+//
+// Full named regression set (both this round and the original six-shape-split
+// audit) reverified against this tree before promotion: Harrow/Eton/Canford/
+// Wellington/St Mary Redcliffe and Temple (Mushroom), Newland House/Hallfield (Top
+// Step), Malvern College/Ampleforth/Alleyn's/Highgate/Hampton/Latymer Upper/James
+// Allen's/City of London School/Solihull School/Cottesmore School/The Pilgrims
+// School (Wineglass), Charterhouse/Thornton College (Funnel), Weston-on-Trent CofE
+// Primary/Aston University Mathematics School (Pyramid), Marlborough College/
+// Turvey Primary/Winchmore School/Bethany School/Queensway Primary/Harris
+// Westminster Sixth Form (Tube), Malvern Way Infant School (Mushroom, the genuine
+// two-point edge case), Seaton Sluice Middle School/Blackhall Primary School (must
+// NOT be Mushroom -- a small cohort stepping up to a stable LARGER plateau, the
+// structural opposite of a bulge at the old end).
 //
 // Single-year snapshot only (this module). Multi-year stability trajectory is a
 // separate, paid-tier concern (rolls spec §3/§4) -- sequencing multiple calls to this
@@ -42,7 +68,11 @@ export type ShapeLabel =
   | "funnel"
   | "mushroom"
   | "wineglass"
-  | "irregular";
+  | "irregular"; // 2026-09-03: never returned by classifyShape any more (see the
+// redesign comment above) -- kept in the type only because two real downstream
+// consumers (ShapeIcon.tsx's exhaustive switch, SHAPE_LABELS' Record) already handle
+// it correctly and harmlessly as dead code; removing it from the type is a separate,
+// unrequested cleanup, not part of this round.
 
 type Move = "up" | "down" | "flat";
 
@@ -50,76 +80,33 @@ type Move = "up" | "down" | "flat";
 // empirical basis yet, same as the shape names themselves.
 const STATIONARY_THRESHOLD = 0.15;
 
-// 2026-08-29: absolute-pupil-count floor, added alongside the relative threshold
-// above -- a move only counts as "up"/"down" if it clears BOTH. The relative
-// threshold alone flips small cohorts on a swing of 1-2 pupils (Bethany School:
-// 6→9→6→10→7→5→9→9→9→8→7 across ~90 pupils/12 ages was reading as "irregular" purely
-// from ±30-80% swings on single-digit counts). Calibrated against that real case plus
-// Queensway Primary (3→6→2→3→5→8, 35 pupils/6 ages): floor=4 is the smallest value
-// that fully flattens both to "tube" (the honest read -- stable small schools, not a
-// real shape). floor=3 partially flattens them but lands on different wrong labels
-// (Bethany -> "wineglass", Queensway -> "pyramid_funnel") via this function's own
-// bucket-transition quirks, rather than the correct "tube". floor=5/6 give the same
-// result as 4 for these two cases, so 4 is kept as the tightest floor that clears the
-// known noise without swallowing more real signal than necessary. Verified this does
-// NOT rescue every small-roll school -- Turvey Primary (10→15→8→17→10→11→1, 81
-// pupils) and Weston-on-Trent CofE Primary (28→20→27→12→28→20, 147 pupils) stay
-// "irregular" even at floor=6, because their swings are large in absolute terms too,
-// not just relative -- that's real volatility, not noise, and floor=4 correctly
-// leaves it alone.
-//
-// Also reused one level down, in classifyShape's point-anchoring step below -- same
-// value, different job. classifyMove's use above gates the SIZE of a transition; it
-// doesn't help when one endpoint of the transition is itself a negligible count next
-// to the sequence's own dominant scale (Harris Westminster Sixth Form: 1 pupil at age
-// 15 against a core of 304/296 at 16/17 -- the transition 1→304 has an abs change of
-// 303, nowhere near this floor, so classifyMove correctly calls it "up," but that
-// spurious "up" was the only thing making the genuinely flat 304→296 pair read as
-// "wineglass" rather than "tube," via this function's own up-then-no-down rule below).
+// Absolute-pupil-count floor, alongside the relative threshold above -- a move only
+// counts as "up"/"down" if it clears BOTH. Calibrated against Bethany School
+// (6->9->6->10->7->5->9->9->9->8->7 across ~90 pupils/12 ages, reading as false
+// "irregular"/noise purely from +-30-80% swings on single-digit counts) and Queensway
+// Primary (3->6->2->3->5->8, 35 pupils/6 ages): floor=4 is the smallest value that
+// fully flattens both to the honest "no real per-step move" read. Verified this does
+// NOT rescue every small-roll school -- Turvey Primary (10->15->8->17->10->11->1, 81
+// pupils) and Weston-on-Trent CofE Primary (28->20->27->12->28->20, 147 pupils) still
+// have real per-step signal even at this floor, because their swings are large in
+// absolute terms too, not just relative -- that's real volatility, not noise, and the
+// floor correctly leaves it alone (both now resolve via net trajectory: Turvey's real
+// zigzag nets out close to flat -> Tube; Weston-on-Trent's nets out a real -28.6% ->
+// Pyramid -- see the redesign comment above for why a reversal-heavy school landing in
+// either of those is the intended behaviour now, not a bug).
 const STATIONARY_ABS_FLOOR = 4;
 
-// 2026-08-29: relative-threshold fix. The floor above is unchanged and correctly
-// suppresses small-N noise -- confirmed again this round (Bethany/Queensway/Turvey/
-// Weston-on-Trent all still classify exactly as before). The problem is the OTHER
-// side of classifyMove: a fixed 15% relative bar scales wrong with school size --
-// Charterhouse/Wellington/Rugby/Marlborough College (all real ~150-260-pupil boarding
-// schools, real per-age census data) each have 2-3 genuine admissions-scale swings of
-// 8-23 pupils that never clear 15% of a 150-260 base, leaving only their single
-// sixth-form jump visible and making it look artificially "dominant" -- an algorithm
-// artifact, not the real shape.
-//
-// This threshold is the second half of an OR: a move counts as up/down if it clears
-// the (unchanged) 15% relative bar OR this absolute one, once past the floor. Checked
-// the real distribution of currently-masked transitions in every school with a
-// 100+-pupil peak (8,292 of them) looking for a natural gap the way
-// DOMINANT_TRANSITION_SHARE had one -- there isn't one; it's a smooth, continuous
-// curve from 5 pupils up into the 60s, so any fixed value here is a real choice, not a
-// discovered boundary, and is reported as such rather than dressed up as more precise
-// than it is. Set to 2x the floor (8) -- the smallest clean, auditable relationship to
-// the already-validated floor. First tried 2x the floor (8) -- the smallest clean,
-// auditable relationship to the already-validated floor -- but that produced an exact
-// numeric collision against the other named canary in this same validation round:
-// Wellington College's real 16→17 transition (256→264, +8) needed to register as real,
-// while Harris Westminster Sixth Form's real 16→17 transition (304→296, -8) needed to
-// stay flat (it's already correctly "tube" and was explicitly named as the case to
-// protect, precisely because it produced a nonsensical result under an earlier,
-// unrelated bug in a previous round's analysis). classifyMove only ever sees the two
-// raw numbers, not which school they came from, so both +8 and -8 must get the same
-// treatment -- no value of this threshold can honour both requirements at once at 8.
-// Raised to 9 to resolve the collision in Harris Westminster's favour (the more
-// explicitly-flagged case): Charterhouse's and Rugby's named transitions all clear 9
-// with room to spare (smallest is Charterhouse's +9, still included), so this costs
-// only Wellington's two ±8 transitions (an honest, reported boundary miss, alongside
-// Marlborough's already-reported +5/+2.7% miss) and Malvern's real 16→17 (+10, still
-// clears) is unaffected either way. Wellington's own larger transition (+22) still
-// clears on relative-adjacent absolute size regardless, which is enough on its own to
-// break the false single-dominant-transition reading this fix targets. Checked the
-// real distribution of currently-masked transitions in every school with a
-// 100+-pupil peak (8,292 of them) looking for a natural gap the way
-// DOMINANT_TRANSITION_SHARE had one -- there isn't one; it's a smooth, continuous
-// curve from 5 pupils up into the 60s, so this value is a real choice constrained by
-// two exact named collisions, not a discovered boundary, and is reported as such
-// rather than dressed up as more precise than it is.
+// Second half of an OR alongside the relative threshold: a move counts as up/down if
+// it clears the 15% relative bar OR this absolute one, once past the floor. Fixes a
+// real bias the relative-only rule has toward large schools (Charterhouse/Wellington/
+// Rugby/Marlborough College all have genuine 150-260-pupil-scale admissions swings of
+// 8-23 pupils that never clear 15% of their own base). Set to 9 -- the smallest value
+// that resolves an exact real-data collision between two named canaries at the
+// original candidate value of 8: Wellington College's real 16->17 transition
+// (256->264, +8) needed to register as real, Harris Westminster Sixth Form's real
+// 16->17 transition (304->296, -8) needed to stay flat. No value of this threshold can
+// honour both at 8; 9 resolves it in Harris Westminster's favour without losing any
+// other named transition.
 const STATIONARY_ABS_ALT = 9;
 
 function classifyMove(prev: number, next: number): Move {
@@ -132,193 +119,186 @@ function classifyMove(prev: number, next: number): Move {
   return "flat";
 }
 
-// A move is "dominant" once its own magnitude clears this share of the total
-// magnitude across all non-flat moves -- the operational stand-in for the plain-
-// language "one non-flat move with every other transition flat," which turned out too
-// literal: nearly every real top-step school (Cumnor House, North Bridge House
-// Senior, St John's College School) has a second, smaller real wobble (a partial
-// rebound, a minor earlier dip) alongside its real step, so a strict "exactly one
-// non-flat move" count excluded 9 of 10 real named top-step examples. Calibrated on
-// the full named validation set: every real top-step/mushroom candidate's dominant
-// move clears 0.38+ share; the highest share among real GRADUAL multi-transition
-// examples (Queen Anne's School, a genuine smooth Funnel: three roughly-equal up
-// moves at 0.30/0.33/0.37) sits at 0.37. 0.375 is the value in that gap -- real, but
-// thin (0.01 of headroom on the Queen Anne's side), flagged here as a calibration to
-// revisit with more data rather than a robust separation.
-const DOMINANT_TRANSITION_SHARE = 0.375;
+// A candidate step's own share of ALL real (non-flat) movement in the sequence must
+// clear this before it can be considered "disproportionate" at all. Calibrated
+// against the full named Mushroom/Top Step set (both this round and the original
+// audit): the tightest real "must be" case is Wellington College at 0.645 (two real
+// admissions-scale rises, the larger one dominant) and Hallfield School at 0.506; the
+// highest real "must NOT be" case, once the tail checks below are applied on top, is
+// 0.176 (Charterhouse -- its own real dominant rise is immediately followed by a real
+// decline, failing the tail-flatness test before share is even compared against this
+// bar). 0.4 sits centred in that wide, genuinely gap-free range -- reported as the
+// real choice it is, same discipline as every other threshold in this file, not a
+// discovered natural break (checked the national step-share distribution for one;
+// there isn't one, it's smooth from 0 to 1.0).
+const MUSHROOM_TOP_STEP_SHARE_THRESHOLD = 0.4;
 
-// Within a same-direction multi-move sequence that did NOT clear the dominant-
-// transition bar above (domShare < DOMINANT_TRANSITION_SHARE, by construction --
-// anything higher was already claimed by the single-dominant path), this decides
-// gradual (Pyramid/Funnel) vs concentrated (Wineglass, or Pyramid's own
-// concentrated-multi-down fallback -- see below): the single biggest non-flat move
-// still carrying a clear share of the total magnitude (no move-count cap -- see
-// CONCENTRATED_MAX_MOVES below).
-//
-// MUST stay below DOMINANT_TRANSITION_SHARE, or this branch is unreachable dead code
-// -- caught exactly that way on first implementation (an earlier value of 0.50 here,
-// above the 0.375 dominant bar, meant nothing with domShare > 0.375 could ever reach
-// this check, and everything below 0.375 failed it too since nothing that low is
-// ">0.50" -- wineglass came back 0% nationally on the first population run, a bug,
-// not a finding). Queen Anne's School -- the one real named gradual (Funnel) example,
-// 3 real up-moves at roughly 0.30/0.33/0.37 -- must stay on the gradual side, which
-// pins this value inside a genuinely thin real gap: 0.370 (Queen Anne's own share) <
-// this value < 0.375 (the dominant bar). No named example requires anything to
-// actually land as concentrated-via-this-path, so this is a real but narrow value,
-// not a robustly separated one -- the national scan below reports how rarely (if at
-// all) real schools fall inside a gap this thin, which is itself the honest finding.
-const CONCENTRATED_SHARE = 0.373;
-// 2026-08-29: dropped. A cap of 3 excluded genuine multi-join schools from the
-// concentration check before their share was ever evaluated -- Ampleforth College
-// (real Common Entry + Sixth Form growth, 5 real moves) was the named case that
-// exposed this, but checking the real national population of same-direction
-// multi-move schools (the only ones this cap could ever apply to) shows it's not an
-// outlier: of 51 such schools nationally, the real nonFlatCount distribution is
-// {3: 17, 4: 15, 5: 9, 6: 9, 8: 1} -- a smooth, continuous spread with no natural
-// break anywhere near 3, let alone one that would justify excluding the 34 schools
-// (67%) with more than 3 real moves. Removing the cap doesn't make concentration
-// fire more often on its own -- CONCENTRATED_SHARE still gates it -- it just stops
-// pre-judging a school as ineligible purely because it has several real moves.
-const CONCENTRATED_MAX_MOVES = Infinity;
+// Mushroom's own top-width cap: even a genuinely flat plateau doesn't count as
+// Mushroom if it spans 3+ years after the step -- that's sustained widening
+// (Wineglass's territory), not a short overhang. Concretely, the step's landing year
+// must be within the last two years of the cropped span (the landing year itself,
+// plus at most one more). Checked against the full named Mushroom set first: every
+// real anchor's own top is comfortably at or under this cap (Wellington College sits
+// exactly at the boundary, 2 real years after its step -- the tightest real case, not
+// a coincidence the cap was set here rather than 1). Checked nationally: this cap
+// alone (independent of the tail-drift check below) drops Mushroom from 6,467 to
+// 2,755 schools -- by far the larger of this round's two Mushroom-narrowing changes,
+// confirming a wide flat top was genuinely common under the old, width-blind rule.
+// Deliberately NOT applied to Top Step's own tail -- no equivalent fixed-length
+// structural reason exists on the declining side (a "step down then several years of
+// real survivors" reads as a genuine, different pattern, not sustained widening) --
+// left as an explicit open question: 22.4% of Top Step schools nationally do have a
+// 3+-year tail, a real but proportionally much smaller population than Mushroom's,
+// evidence for a future round rather than a decision made here.
+const MUSHROOM_MAX_TAIL_POINTS = 2;
 
 // Top Step's "real surviving population past the step" bar -- both must clear.
 // Calibrated on the real junior-school sample: Hallfield's post-step average (11
-// pupils, 18.3% of its 60-pupil peak) is the closest real example to this boundary on
-// the "include" side. Three named schools (Cumnor House: 7 pupils, just under the
-// 10-pupil floor; Thomas More Catholic School 8.6%, South Wirral High School 8.9%,
-// both just under the 10% floor) fall just short and land in Pyramid instead --
-// reported, not force-included.
+// pupils, 18.3% of its 62-pupil peak) is the closest real example to this boundary on
+// the "include" side.
 const TOP_STEP_MIN_SHARE_OF_PEAK = 0.1;
 const TOP_STEP_MIN_ABSOLUTE = 10;
 
-// Thornton-pattern net-change mechanism (named for Thornton College: 13→12→10→11→8,
-// every individual step ≤ the floor, but a real ~38.5% cumulative decline across the
-// run). Fires only when the standard per-transition analysis finds zero real moves
-// (would otherwise resolve tube) -- a school with any real per-step signal already
-// gets classified correctly by the logic below and never reaches this (Solihull
-// School: a real +38% single step already makes it Irregular via genuine multi-
-// reversal complexity, without needing this mechanism at all).
+// Thornton-pattern net-change mechanism (named for Thornton College's own real
+// historical data at the time this was calibrated: several individually sub-floor
+// steps whose CUMULATIVE movement was real). Used in two places this round: (a) the
+// zero-real-per-step-move population's own flat/not-flat decision (see classifyShape
+// below -- the general 15% flat floor is too tight for a population with no
+// classifyMove-confirmed real signal at all to anchor a smaller threshold on; this
+// wider, three-part gate is deliberately reused rather than re-derived, since it's
+// already validated against exactly this population), and (b) the tail-drift check
+// inside findBestStepCandidate, extended this round to catch a Mushroom/Top Step
+// candidate whose tail LOOKS flat one step at a time (every individual post-step move
+// under the abs-alt floor) but is real, sustained movement in aggregate (Cottesmore
+// School: tail steps of +0/+6/+6, each individually flat, cumulative +48% -- The
+// Pilgrims School: +6/+5/+1, cumulative +40% -- both real prep schools with genuine
+// continued growth through Common Entrance age, now correctly Wineglass rather than
+// Mushroom).
 //
-// netChange is the plain first-to-last change across the whole cropped span, ignoring
-// every per-step gate. consistency is how one-directional the real (ignoring the
-// floor) step-by-step movement is: concordant magnitude (diffs whose sign matches
-// netChange's) over total magnitude. Checked against the full real population of
-// zero-real-move schools with |netChange| > 25%: minimum observed consistency was
-// 0.542, median 0.800 -- there is no real school in this population with genuinely
-// balanced (low-consistency) movement, so 0.50 (bare majority) is a real margin, not a
-// tight fit calibrated to force a specific case through.
+// netChange is the plain first-to-last change across whichever span is being tested
+// (the whole cropped span for (a), just the tail for (b)), ignoring every per-step
+// gate. consistency is how one-directional the real (ignoring the floor) step-by-step
+// movement is: concordant magnitude (diffs whose sign matches netChange's) over total
+// magnitude.
 const THORNTON_NET_CHANGE_THRESHOLD = 0.25;
 const THORNTON_CONSISTENCY_THRESHOLD = 0.5;
 
 // Minimum whole-school peak (the largest single real per-age count anywhere in the
-// cropped span, before any floor-drop) required for the Thornton mechanism to fire.
-// Added after Queensway Primary School (peak 8 pupils) surfaced as a real regression:
-// its anchor-dropped survivor sequence (age 6:6, age 9:5, age 10:8 -- ages 5, 7, 8
-// dropped as sub-floor noise) has a real 33.3% net change and 0.69 consistency,
-// clearing both Thornton thresholds even though the underlying school (roll 3-8 per
-// age) is exactly the kind of small-N noise the floor exists to protect against.
-// Checked whether reading the full pre-drop span instead of the anchored survivor
-// would fix this -- it doesn't: Queensway's full span (3,6,2,3,5,8) has an even more
-// extreme apparent net change (+166.7%) and still clears consistency, because the
-// underlying problem isn't which sequence gets read, it's that a peak-8 school's
-// ordinary year-to-year bounce clears both thresholds under either representation.
-// 156 of 630 real Thornton-driven schools nationally have peak roll under 10; this
-// gate removes them from the mechanism entirely (they revert to tube, the same
-// "genuinely too small to call a shape" read the floor already gives everywhere
-// else), without touching the 474 schools with a real, substantial peak roll.
+// cropped span, before any floor-drop) required for the zero-real-moves Thornton gate
+// to fire. Added after Queensway Primary School (peak 8 pupils) surfaced as a real
+// regression: its anchored survivor sequence (age 6:6, age 9:5, age 10:8) has a real
+// 33.3% net change and 75% consistency, clearing both Thornton thresholds even though
+// the underlying school (roll 2-8 per age) is exactly the kind of small-N noise the
+// floor above exists to protect against everywhere else in this file.
 const THORNTON_MIN_PEAK_ROLL = 10;
 
-// 2026-08-30: magnitude-based Wineglass, additive to the domShare-based tree above
-// (DOMINANT_TRANSITION_SHARE/CONCENTRATED_SHARE/CONCENTRATED_MAX_MOVES are closed --
-// not touched here). Targets exactly the population that tree structurally can't
-// reach: schools with one numerically dominant move (Charterhouse/Rugby/Marlborough-
-// style) or a mixed-direction sequence with no dominant move at all, which the
-// existing tree correctly routes to Irregular because "one dominant transition, rest
-// flat" (Top Step/Mushroom) and "every move the same direction" (the closed gradual/
-// concentrated check) both require properties these schools don't have. Checked only
-// at the two points classifyShape would otherwise return Irregular -- see the two
-// call sites below.
-//
-// Ratio = anchored last value / anchored first value (the same basis Guy's own named
-// ratios use -- confirmed by exact match: Malvern 160/40=4.00, Ampleforth 94/13=7.23,
-// Charterhouse 221/173=1.28, Rugby 202/144=1.40, Marlborough 208/185=1.12, Wellington
-// 264/202=1.31). Checked the real national distribution (Funnel + Group A's irregular
-// subset, ~2,800 schools) for a natural break the way DOMINANT_TRANSITION_SHARE had
-// one -- there isn't one, it's smooth from 1.0x into double digits, so 2.0x ("the
-// roll has genuinely doubled from where the cropped span starts") is a real, chosen
-// value, not a discovered boundary. It sits centred in the wide, unforced gap between
-// the named low-ratio schools (Charterhouse 1.28x, Wellington 1.31x, Rugby 1.40x,
-// Marlborough 1.12x -- none of which are meant to qualify) and the named high-ratio
-// ones (Malvern 4.00x, Ampleforth 7.23x, both already correctly resolving via other
-// paths) -- every value in roughly [1.5, 3.9] satisfies the same named examples
-// equally, so 2.0x is chosen for being a clean, explainable concept rather than for
-// being pinned by any one boundary case.
+// Ratio = anchored last value / anchored first value. This round's own top-heavy/
+// bottom-heavy/flat split (replacing the old domShare-based gradual/concentrated
+// tree entirely for the remainder population -- see classifyShape below): checked the
+// real national ratio distribution near 1.0x for a natural "flat enough" break; there
+// isn't one (smooth from 0.8 into 1.3, same as every other threshold in this file
+// without a discovered boundary), so +-15% (matching STATIONARY_THRESHOLD -- reused
+// rather than invented, same value, different job, same pattern the abs-floor already
+// uses one section up) is the real, chosen floor. Checked by hand against Marlborough
+// College (ratio 1.124, a real down/up/down zigzag) -- it lands inside this band, and
+// under this round's design that's the correct, honest read: net trajectory alone
+// says "flat," and Marlborough's real internal reversal becomes reported qualifier
+// data (2 reversals) rather than something that changes its primary shape.
+const FLAT_RATIO_HIGH = 1.15;
+const FLAT_RATIO_LOW = 1 / FLAT_RATIO_HIGH;
+
+// Magnitude ratio deciding Wineglass (>=) vs Funnel (<) within the top-heavy
+// remainder -- the old WINEGLASS_MAGNITUDE_RATIO candidate, re-derived this round
+// against the real distribution now that the reversal gate and the old "must
+// otherwise be irregular" scoping are both gone (nothing in the old checkMagnitude
+// Wineglass mechanism survives this round -- the whole remainder population, not just
+// two Irregular-bound call sites, now goes through this same ratio check). Checked
+// the real national distribution for a natural break; none found (smooth from 1.0x
+// into double digits, same as when this candidate was first chosen), so 2.0x is kept
+// as the same real, chosen value, now doing more work than before. Named regression:
+// Malvern College 4.00x and Ampleforth College 7.23x both clear it (Wineglass, the
+// latter resolving an explicitly open question from the previous round); Charterhouse
+// 1.28x and Rugby School 1.40x both fall short (Funnel); Queen Anne's School 9.17x
+// clears it too, landing Wineglass rather than the Funnel its old, domShare-based
+// "genuine gradual widening" characterisation suggested -- flagged here as a real,
+// reported change in that one school's own label, not silently absorbed.
 const WINEGLASS_MAGNITUDE_RATIO = 2.0;
 
-// Reversal gate: at most this many direction changes among the real (non-flat) moves.
-// Rugby School (up, down, up, down -- 3 reversals) and Marlborough College (down, up,
-// down -- 2 reversals) are genuine zigzags, not "broadens from a narrower base," and
-// must not qualify regardless of their ratio (both are well under 2.0x anyway, but
-// the gate is real and independently necessary): checked the national population and
-// found 146 real schools with ratio >= 2.0x AND >= 2 reversals -- including major,
-// well-known day schools (Alleyn's School 4.78x/2 reversals, Highgate School 3.47x/2,
-// Hampton School 7.86x/3, Latymer Upper 4.55x/3, James Allen's Girls' School 2.97x/2,
-// City of London School 3.41x/2), all showing a real "junior department, senior
-// department, genuine sixth-form wobble" pattern that a magnitude-only rule would
-// misfile. Charterhouse (1 reversal) needs to pass this gate; the threshold is set at
-// 1 specifically to keep it in while excluding every real >=2-reversal case checked.
-const WINEGLASS_MAX_REVERSALS = 1;
+type DominantTransition = { fromAge: string; toAge: string };
 
-type Diagnostic =
-  | "single_down_below_top_step_threshold"
-  | "single_up_not_at_top"
-  | "down_concentrated_multi_transition";
-
-// Only called from the two points classifyShape would otherwise return Irregular.
-// Returns "wineglass" if the whole-span ratio clears WINEGLASS_MAGNITUDE_RATIO, the
-// real growth isn't confined to just the final 1-2 transitions (the Mushroom
-// exclusion -- that pattern already has its own, correct home), and the real moves
-// don't reverse direction more than WINEGLASS_MAX_REVERSALS times. Returns null
-// (stay Irregular) otherwise.
-function checkMagnitudeWineglass(
+// Best available Mushroom/Top Step candidate: the highest-share real (non-flat) move
+// whose own tail (every point after it) is genuinely flat -- checked entirely on the
+// tail's own terms, never on what precedes the step. Two independent tail tests, both
+// must pass, plus Mushroom's own extra cap:
+//  1. Per-step: every adjacent pair within the tail must have |diff| < the abs-alt
+//     floor (STATIONARY_ABS_ALT) -- deliberately NOT the local-relative-% clause
+//     classifyMove itself uses, which over-triggers on a small surviving population
+//     (Newland House's real top-step tail, 20->13, is a genuine -35% swing on its own
+//     tiny base but is noise in absolute terms against the school's real ~63-pupil
+//     scale elsewhere).
+//  2. Cumulative: the tail's own net change, run through the Thornton mechanism
+//     above -- catches the case (1) can't reach, several individually-sub-floor tail
+//     steps that are real, sustained movement in aggregate (see the Thornton
+//     constant's own comment for the Cottesmore/Pilgrims worked examples).
+// Mushroom (direction "up") candidates additionally require a tail of at most
+// MUSHROOM_MAX_TAIL_POINTS points -- see that constant's own comment.
+function findBestStepCandidate(
   anchored: { key: string; total: number }[],
   moves: Move[],
   nonFlatIdxs: number[],
-): ShapeLabel | null {
-  const first = anchored[0].total;
-  const last = anchored[anchored.length - 1].total;
-  if (first <= 0) return null;
-  const ratio = last / first;
-  if (ratio < WINEGLASS_MAGNITUDE_RATIO) return null;
+): { idx: number; share: number; direction: "up" | "down" } | null {
+  if (nonFlatIdxs.length === 0) return null;
+  const magnitudes = new Map<number, number>(
+    nonFlatIdxs.map((i) => [i, Math.abs(anchored[i + 1].total - anchored[i].total)]),
+  );
+  const totalMagnitude = Array.from(magnitudes.values()).reduce((a, b) => a + b, 0);
 
-  // Mushroom exclusion: every real move confined to the final 1-2 transitions means
-  // there's no growth before that point at all -- not "broadens from a base."
-  if (nonFlatIdxs.every((i) => i >= moves.length - 2)) return null;
+  let best: { idx: number; share: number; direction: "up" | "down" } | null = null;
+  for (const i of nonFlatIdxs) {
+    const direction = moves[i] as "up" | "down";
+    const tail = anchored.slice(i + 1);
 
-  const nonFlatMoves = nonFlatIdxs.map((i) => moves[i]);
-  let reversals = 0;
-  for (let i = 1; i < nonFlatMoves.length; i++) {
-    if (nonFlatMoves[i] !== nonFlatMoves[i - 1]) reversals++;
+    let tailFlatPerStep = true;
+    for (let j = i + 1; j < anchored.length - 1; j++) {
+      if (Math.abs(anchored[j + 1].total - anchored[j].total) >= STATIONARY_ABS_ALT) {
+        tailFlatPerStep = false;
+        break;
+      }
+    }
+    if (!tailFlatPerStep) continue;
+
+    if (tail.length >= 3) {
+      const tailStart = tail[0].total;
+      const tailEnd = tail[tail.length - 1].total;
+      if (tailStart > 0) {
+        const netChange = (tailEnd - tailStart) / tailStart;
+        let concordant = 0;
+        let discordant = 0;
+        for (let k = 1; k < tail.length; k++) {
+          const diff = tail[k].total - tail[k - 1].total;
+          if (diff === 0) continue;
+          if (Math.sign(diff) === Math.sign(netChange)) concordant += Math.abs(diff);
+          else discordant += Math.abs(diff);
+        }
+        const totalTailMagnitude = concordant + discordant;
+        const consistency = totalTailMagnitude > 0 ? concordant / totalTailMagnitude : 1;
+        const tailHasRealDrift =
+          Math.abs(netChange) > THORNTON_NET_CHANGE_THRESHOLD && consistency >= THORNTON_CONSISTENCY_THRESHOLD;
+        if (tailHasRealDrift) continue;
+      }
+    }
+
+    if (direction === "up" && tail.length > MUSHROOM_MAX_TAIL_POINTS) continue;
+
+    const share = magnitudes.get(i)! / totalMagnitude;
+    if (!best || share > best.share) best = { idx: i, share, direction };
   }
-  if (reversals > WINEGLASS_MAX_REVERSALS) return null;
-
-  return "wineglass";
+  return best;
 }
-
-// The real transition the narrative generator's gender-variation clause (state-of-
-// school narrative spec §5b) reports against: the domShare move itself for every
-// domShare-computed branch below (top_step/mushroom/pyramid/funnel/wineglass/
-// irregular all share the one domIdx computation, so this is uniform across them,
-// not a per-branch special case), or the whole cropped span's own endpoints for a
-// Thornton-resolved pyramid/funnel (no single per-step move to point to -- the real
-// signal there is the cumulative run, per the Thornton mechanism's own comment
-// above). null for tube and the insufficient-data case, where there's no real
-// transition of any kind to report.
-type DominantTransition = { fromAge: string; toAge: string };
 
 export function classifyShape(
   bandTotals: { key: string; total: number }[],
-): { label: ShapeLabel; moves: Move[]; flag?: Diagnostic; dominantTransition: DominantTransition | null } | null {
+): { label: ShapeLabel; moves: Move[]; dominantTransition: DominantTransition | null } | null {
   // Only bands with any real presence count toward the sequence -- an all-zero band
   // (e.g. no sixth form at a primary school) isn't a "move," it's absence.
   const present = bandTotals.filter((b) => b.total > 0);
@@ -326,13 +306,10 @@ export function classifyShape(
 
   // Drop points that sit at or below the noise floor while ≥2 points remain
   // afterwards -- a count that small can't anchor a real inflection next to whatever
-  // dominant scale the rest of the sequence has (see STATIONARY_ABS_FLOOR's comment
-  // above). Smallest-first, one at a time, never below 2: if a school's ENTIRE real
-  // signal is two small points (e.g. a maths free school's actual Year 12/13
-  // headcount, both under the floor), that's real data to classify from, not noise to
-  // erase -- Aston University Mathematics School (61 pupils at 16, 3 at 17) is a
-  // genuine decline on the numbers as they stand, not a case for this step to blank
-  // out into "insufficient data."
+  // dominant scale the rest of the sequence has. Smallest-first, one at a time, never
+  // below 2: if a school's ENTIRE real signal is two small points, that's real data
+  // to classify from, not noise to erase (Aston University Mathematics School: 61
+  // pupils at 16, 3 at 17, a genuine decline on the numbers as they stand).
   const anchored = [...present];
   for (;;) {
     if (anchored.length <= 2) break;
@@ -358,128 +335,89 @@ export function classifyShape(
     return acc;
   }, []);
 
-  if (nonFlatIdxs.length === 0) {
-    // At least 3 points (2 diffs) -- a single masked step reread as a "trend" off a
-    // tiny base (e.g. 2 -> 3 pupils, +50% but floor-flat) isn't the pattern this
-    // targets; Thornton's own case is real cumulative movement across MULTIPLE small
-    // steps, not one.
-    if (anchored.length >= 3) {
-      const first = anchored[0].total;
-      const last = anchored[anchored.length - 1].total;
-      if (first > 0) {
-        const netChange = (last - first) / first;
-        let concordant = 0;
-        let discordant = 0;
-        for (let i = 1; i < anchored.length; i++) {
-          const diff = anchored[i].total - anchored[i - 1].total;
-          if (diff === 0) continue;
-          if (Math.sign(diff) === Math.sign(netChange)) concordant += Math.abs(diff);
-          else discordant += Math.abs(diff);
-        }
-        const totalDiffMagnitude = concordant + discordant;
-        const consistency = totalDiffMagnitude > 0 ? concordant / totalDiffMagnitude : 1;
-        const peakRoll = Math.max(...present.map((p) => p.total));
-        if (
-          Math.abs(netChange) > THORNTON_NET_CHANGE_THRESHOLD &&
-          consistency >= THORNTON_CONSISTENCY_THRESHOLD &&
-          peakRoll >= THORNTON_MIN_PEAK_ROLL
-        ) {
-          return {
-            label: netChange < 0 ? "pyramid" : "funnel",
-            moves,
-            dominantTransition: { fromAge: anchored[0].key, toAge: anchored[anchored.length - 1].key },
-          };
-        }
-      }
+  const best = findBestStepCandidate(anchored, moves, nonFlatIdxs);
+  if (best && best.share >= MUSHROOM_TOP_STEP_SHARE_THRESHOLD) {
+    const dominantTransition: DominantTransition = {
+      fromAge: anchored[best.idx].key,
+      toAge: anchored[best.idx + 1].key,
+    };
+    if (best.direction === "up") {
+      return { label: "mushroom", moves, dominantTransition };
     }
+    const prePeak = Math.max(...anchored.slice(0, best.idx + 1).map((p) => p.total));
+    const postPoints = anchored.slice(best.idx + 1);
+    const postAvg = postPoints.reduce((a, p) => a + p.total, 0) / postPoints.length;
+    if (postAvg >= TOP_STEP_MIN_ABSOLUTE && postAvg >= TOP_STEP_MIN_SHARE_OF_PEAK * prePeak) {
+      return { label: "top_step", moves, dominantTransition };
+    }
+    // A real dominant drop, but too small a surviving population to call it a real
+    // post-step cohort -- falls through to the net-trajectory read below rather than
+    // inventing a zero-survivor label.
+  }
+
+  // Net trajectory only, from here down. dominantTransition still reported for the
+  // narrative's gender-variation clause (topic4bGenderVariation) wherever there's a
+  // real transition to point to -- the domIdx move itself when one exists, or the
+  // whole span's own endpoints when every per-step move was flat -- but null for
+  // Tube, whichever path reaches it: a school described as "broadly similar in size
+  // all the way through" has no single transition to point a gender-variation clause
+  // at.
+  const first = anchored[0].total;
+  const last = anchored[anchored.length - 1].total;
+  if (first <= 0) return { label: "tube", moves, dominantTransition: null };
+  const ratio = last / first;
+
+  const domIdx = nonFlatIdxs.length > 0
+    ? nonFlatIdxs.reduce((biggest, i) => {
+        const mag = Math.abs(anchored[i + 1].total - anchored[i].total);
+        const biggestMag = Math.abs(anchored[biggest + 1].total - anchored[biggest].total);
+        return mag > biggestMag ? i : biggest;
+      })
+    : null;
+
+  if (nonFlatIdxs.length === 0) {
+    // No real per-step move anywhere. The general +-15% flat floor below is too tight
+    // for this population (see FLAT_RATIO_HIGH's own comment and THORNTON_NET_CHANGE_
+    // THRESHOLD's) -- reuse the wider, already-validated Thornton mechanism instead.
+    let concordant = 0;
+    let discordant = 0;
+    for (let i = 1; i < anchored.length; i++) {
+      const diff = anchored[i].total - anchored[i - 1].total;
+      if (diff === 0) continue;
+      if (Math.sign(diff) === Math.sign(ratio - 1)) concordant += Math.abs(diff);
+      else discordant += Math.abs(diff);
+    }
+    const totalMagnitude = concordant + discordant;
+    const consistency = totalMagnitude > 0 ? concordant / totalMagnitude : 1;
+    const netChange = ratio - 1;
+    const peakRoll = Math.max(...present.map((p) => p.total));
+    const realDrift =
+      Math.abs(netChange) > THORNTON_NET_CHANGE_THRESHOLD &&
+      consistency >= THORNTON_CONSISTENCY_THRESHOLD &&
+      peakRoll >= THORNTON_MIN_PEAK_ROLL;
+    if (!realDrift) return { label: "tube", moves, dominantTransition: null };
+    const dominantTransition: DominantTransition = { fromAge: anchored[0].key, toAge: anchored[anchored.length - 1].key };
+    return {
+      label: ratio > 1 ? (ratio >= WINEGLASS_MAGNITUDE_RATIO ? "wineglass" : "funnel") : "pyramid",
+      moves,
+      dominantTransition,
+    };
+  }
+
+  const dominantTransition: DominantTransition = {
+    fromAge: anchored[domIdx!].key,
+    toAge: anchored[domIdx! + 1].key,
+  };
+
+  if (ratio >= FLAT_RATIO_LOW && ratio <= FLAT_RATIO_HIGH) {
     return { label: "tube", moves, dominantTransition: null };
   }
-
-  const magnitudes = new Map<number, number>(
-    nonFlatIdxs.map((i) => [i, Math.abs(anchored[i + 1].total - anchored[i].total)]),
-  );
-  const totalMagnitude = Array.from(magnitudes.values()).reduce((a, b) => a + b, 0);
-  const domIdx = nonFlatIdxs.reduce((best, i) =>
-    magnitudes.get(i)! > magnitudes.get(best)! ? i : best,
-  );
-  const domShare = magnitudes.get(domIdx)! / totalMagnitude;
-  const dominantTransition: DominantTransition = { fromAge: anchored[domIdx].key, toAge: anchored[domIdx + 1].key };
-
-  // One transition dominates the whole sequence -- Top Step (down) or Mushroom (up,
-  // at the very top of the range).
-  if (domShare >= DOMINANT_TRANSITION_SHARE) {
-    const direction = moves[domIdx];
-    if (direction === "down") {
-      const prePeak = Math.max(...anchored.slice(0, domIdx + 1).map((p) => p.total));
-      const postPoints = anchored.slice(domIdx + 1);
-      const postAvg = postPoints.reduce((a, p) => a + p.total, 0) / postPoints.length;
-      if (postAvg >= TOP_STEP_MIN_ABSOLUTE && postAvg >= TOP_STEP_MIN_SHARE_OF_PEAK * prePeak) {
-        return { label: "top_step", moves, dominantTransition };
-      }
-      // A real dominant drop, but too small a surviving population to call it a real
-      // post-step cohort (Aston University Mathematics School: 61 -> 3, no third
-      // point to average). This should already have been span-cropped away if it
-      // were genuinely near-zero noise -- reaching here with real, non-croppable data
-      // means it's a real (if severe) narrowing with no separate "step" to report;
-      // falls back to Pyramid rather than inventing a zero-survivor label.
-      return { label: "pyramid", moves, flag: "single_down_below_top_step_threshold", dominantTransition };
-    }
-    // direction === "up"
-    //
-    // "At the top" means no REAL transition follows the dominant one -- not literally
-    // the last array index. The literal-index version missed real named cases: Harrow
-    // School, Eton College, and Canford School (real dominant rise at the sixth-form
-    // join, then a genuinely flat trailing transition, not the array's last position)
-    // were reading as Irregular purely because a non-informative flat move happened to
-    // sit after them.
-    //
-    // Scoped to INTERIOR dominant transitions only (domIdx > 0, when there's more than
-    // one move in the sequence) -- checked the domIdx === 0 population specifically
-    // (the dominant move is the school's very first real transition) before applying
-    // this everywhere. Real examples there (Seaton Sluice Middle School: 65→83→84→82;
-    // Blackhall Primary School: 27→36→41→44→40→42) are a small starting cohort jumping
-    // up to a stable, LARGER plateau that persists through most of the rest of the
-    // range -- structurally the opposite of Mushroom (a bulge concentrated at the OLD
-    // end, small elsewhere): here the "big" part is nearly the whole school, not a peak
-    // at the top. Calling these Mushroom would be wrong. 1,189 real schools would have
-    // flipped under an unscoped version of this fix; they're deliberately left as
-    // "single_up_not_at_top" -> Irregular, unchanged.
-    //
-    // That guard must NOT catch the genuinely two-point case (moves.length === 1,
-    // domIdx necessarily 0) -- caught this exactly that way in validation: 360 real
-    // schools (all real 2-point sequences, e.g. Malvern Way Infant School: 59 -> 72)
-    // flipped from the already-correct Mushroom to Irregular, because a bare
-    // `domIdx > 0` check excludes them too. With only two data points there's no
-    // "before" and no "plateau" to distinguish from Mushroom in the first place --
-    // the domIdx===0 concern only applies when there's a real multi-point structure
-    // after the jump to actually look like a stable larger plateau.
-    const hasRealMoveAfterDominant = nonFlatIdxs.some((i) => i > domIdx);
-    const isEdgeCase = domIdx === 0 && moves.length > 1;
-    if (!isEdgeCase && !hasRealMoveAfterDominant) return { label: "mushroom", moves, dominantTransition };
-    const magnitudeLabel = checkMagnitudeWineglass(anchored, moves, nonFlatIdxs);
-    if (magnitudeLabel) return { label: magnitudeLabel, moves, dominantTransition };
-    return { label: "irregular", moves, flag: "single_up_not_at_top", dominantTransition };
+  if (ratio > 1) {
+    return {
+      label: ratio >= WINEGLASS_MAGNITUDE_RATIO ? "wineglass" : "funnel",
+      moves,
+      dominantTransition,
+    };
   }
-
-  // No single transition dominates -- gradual (Pyramid/Funnel) vs concentrated
-  // (Wineglass) only applies when every non-flat move points the same way; a genuine
-  // mix of ups and downs with no dominant move is Irregular, unchanged.
-  const directions = new Set(nonFlatIdxs.map((i) => moves[i]));
-  if (directions.size === 1) {
-    const direction = directions.values().next().value as "up" | "down";
-    const concentrated = nonFlatIdxs.length <= CONCENTRATED_MAX_MOVES && domShare > CONCENTRATED_SHARE;
-    if (concentrated) {
-      if (direction === "up") return { label: "wineglass", moves, dominantTransition };
-      // Concentrated narrowing across 2-3 real steps rather than one dominant one, or
-      // spread gradually -- the taxonomy only names a concentrated shape for the "up"
-      // case (staged joins). No real named example forced a decision here; falls back
-      // to Pyramid (still a real net narrowing) and is flagged for review.
-      return { label: "pyramid", moves, flag: "down_concentrated_multi_transition", dominantTransition };
-    }
-    return { label: direction === "down" ? "pyramid" : "funnel", moves, dominantTransition };
-  }
-
-  const magnitudeLabel = checkMagnitudeWineglass(anchored, moves, nonFlatIdxs);
-  if (magnitudeLabel) return { label: magnitudeLabel, moves, dominantTransition };
-  return { label: "irregular", moves, dominantTransition };
+  return { label: "pyramid", moves, dominantTransition };
 }
