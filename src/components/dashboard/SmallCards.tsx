@@ -3,7 +3,7 @@
 // independent components (each takes its own props, renders its own Card), not
 // fragments of a shared layout.
 
-import { Card, Eyebrow, Caption } from "./Card";
+import { Card, Eyebrow, Caption, type CardSize } from "./Card";
 import type { ShapeLabel } from "@/lib/shape-classifier";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 
@@ -23,11 +23,23 @@ function boardingDonut(boardingPct: number): string {
 // boarders=0/day=totalRoll (page.tsx's own call site falls back to this when
 // roll.boarding itself is null), which renders as a plain sky-coloured circle at 0%
 // boarding, not a missing/blank state.
-export function BoardingCard({ boarders, day }: { boarders: number; day: number }) {
+export function BoardingCard({
+  boarders,
+  day,
+  // 2026-09-25: mainstream page now pairs this with Gender split + Roll history/
+  // market share (6+3+3=12, Guy's own live layout call) instead of standing alone
+  // after ShapeCard -- "narrow" (3-col) here, default stays "small" (4-col) in case
+  // this is ever used standalone again.
+  size = "small",
+}: {
+  boarders: number;
+  day: number;
+  size?: CardSize;
+}) {
   const total = boarders + day;
   const boardingPct = total > 0 ? (boarders / total) * 100 : 0;
   return (
-    <Card size="small">
+    <Card size={size}>
       <Eyebrow>Boarding</Eyebrow>
       <div className="flex items-center gap-3">
         <div className="h-14 w-14 shrink-0 rounded-full" style={{ background: boardingDonut(boardingPct) }} />

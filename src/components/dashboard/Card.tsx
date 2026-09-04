@@ -17,14 +17,17 @@
 // component that only works wired into one fixed grid position would have to be
 // rebuilt for that, not just re-parented.
 
-export type CardSize = "small" | "medium" | "wide" | "full";
+export type CardSize = "narrow" | "small" | "medium" | "wide" | "full";
 
 // col-span-12 on mobile (stacked), half at sm, real size at lg -- same three-tier
 // responsive discipline the rest of this app already uses (e.g. MapFilterPanel's own
 // sm:/lg: breakpoints). grid-auto-flow: dense (set on the grid container, not here)
 // lets a "small" card slot into a gap next to a taller neighbour rather than forcing
 // a rigid row-by-row layout -- the "not hard-coded absolute positions" requirement.
+// "narrow" (2026-09-25) is a quarter-width slot -- Boarding + Roll history/market
+// share paired alongside a 6-col Gender split (6+3+3=12), Guy's own live layout call.
 const SIZE_CLASSES: Record<CardSize, string> = {
+  narrow: "col-span-12 sm:col-span-6 lg:col-span-3",
   small: "col-span-12 sm:col-span-6 lg:col-span-4",
   medium: "col-span-12 sm:col-span-6 lg:col-span-6",
   wide: "col-span-12 lg:col-span-8",

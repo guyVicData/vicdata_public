@@ -5,7 +5,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import RollTrendChart from "./RollTrendChart";
 import type { RollSnapshot } from "@/lib/roll-data";
 import type { MarketShareEstimate } from "@/lib/market-share";
-import { Card, Eyebrow, Caption } from "./dashboard/Card";
+import { Card, Eyebrow, Caption, type CardSize } from "./dashboard/Card";
 
 type PaidTrendsResponse = {
   trend: RollSnapshot[];
@@ -42,7 +42,14 @@ function MarketShareLine({ label, ms }: { label: string; ms: MarketShareEstimate
   );
 }
 
-export default function PaidTrendsSection({ urn }: { urn: string }) {
+// 2026-09-25: size threaded through to BOTH the locked and loaded states (they used
+// to hardcode two different sizes, "small" and "medium" -- a pre-existing inconsistency
+// harmless while each rendered alone, but wrong now that the mainstream page pairs
+// this into a fixed-width row alongside Gender split + Boarding: the row's own width
+// can't depend on whether THIS viewer happens to be signed in). Default "medium"
+// preserves the loaded state's prior implicit size for any future caller that doesn't
+// override it.
+export default function PaidTrendsSection({ urn, size = "medium" }: { urn: string; size?: CardSize }) {
   const supabase = createBrowserSupabaseClient();
   const [state, setState] = useState<"loading" | "unauthorized" | "loaded">("loading");
   const [data, setData] = useState<PaidTrendsResponse | null>(null);
@@ -75,7 +82,7 @@ export default function PaidTrendsSection({ urn }: { urn: string }) {
     // not just plain text, so the grid visibly shows "there's real content here,
     // sign in to see it" rather than reading as an empty stub.
     return (
-      <Card size="small" className="relative overflow-hidden">
+      <Card size={size} className="relative overflow-hidden">
         <Eyebrow>Roll history &amp; market share</Eyebrow>
         <div
           className="my-2 h-14 rounded-md opacity-50 blur-[5px]"
@@ -98,7 +105,7 @@ export default function PaidTrendsSection({ urn }: { urn: string }) {
   if (!data) return null;
 
   return (
-    <Card size="medium">
+    <Card size={size}>
       <Eyebrow>Roll history &amp; market share</Eyebrow>
       <RollTrendChart trend={data.trend} />
       <div className="mt-4 space-y-1">

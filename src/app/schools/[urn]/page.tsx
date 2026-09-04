@@ -686,21 +686,24 @@ export default async function SchoolPage({
                 schoolName={school.current_name}
               />
 
-              {/* 2026-09-25: Gender split + Boarding, side by side -- GenderSplitCard's
-                  `size="wide"` (8-col) beside BoardingCard's own unmodified `small`
-                  (4-col) sums to 12 at lg, so dense auto-flow places them on the same
-                  row (2/3 + 1/3), Guy's own live layout call. Moved here from its old
-                  position after ShapeCard -- BoardingCard's own conditional rendering
-                  (pie chart unconditional, day=totalRoll fallback) is unchanged, just
-                  relocated. */}
+              {/* 2026-09-25: Gender split (6-col, default `medium`) + Boarding (3-col)
+                  + Roll history/market share (3-col), side by side -- 6+3+3=12, Guy's
+                  own live layout call. PaidTrendsSection moved up here from its old
+                  position at the end of the second `roll &&` block below; both it and
+                  BoardingCard's own conditional rendering is otherwise unchanged, just
+                  relocated + resized. */}
               <GenderSplitCard
-                size="wide"
                 girls={roll.gender.female}
                 boys={roll.gender.male}
                 peer={peerGenderSplit}
                 peerLabel={peerGenderLabel}
               />
-              <BoardingCard boarders={roll.boarding?.boarders ?? 0} day={roll.boarding?.day ?? roll.totalRoll} />
+              <BoardingCard
+                size="narrow"
+                boarders={roll.boarding?.boarders ?? 0}
+                day={roll.boarding?.day ?? roll.totalRoll}
+              />
+              <PaidTrendsSection urn={urn} size="narrow" />
             </>
           )}
 
@@ -828,6 +831,23 @@ export default async function SchoolPage({
                 />
               )}
 
+              {/* 2026-09-25: "Nearest matched schools" (prose summary, bar chart,
+                  member-gated named list), extracted out of ShapeCard's own right-hand
+                  column into its own card -- now sized `small` (4-col) to sit
+                  alongside PhaseBreakdownCard's own unchanged `wide` (8-col), Guy's own
+                  live layout call. Rendered here, directly after PhaseBreakdownCard and
+                  before ShapeCard, so the two share a row regardless of ShapeCard's own
+                  full-width size sitting between them in the dashboard's visual order. */}
+              <NearestMatchedSchoolsCard
+                size="small"
+                urn={urn}
+                schoolName={school.current_name}
+                schoolRoll={roll.totalRoll}
+                peerRolls={matchedSurrounding.map((m) => m.totalRoll)}
+                summary={surroundingSummary}
+                found={surrounding.found}
+              />
+
               <ShapeCard
                 ageGenderCounts={ageGenderCounts}
                 shape={shape?.label ?? null}
@@ -837,19 +857,6 @@ export default async function SchoolPage({
                 phaseSplitSentence={phaseSplitSentence}
                 shapeQualifierAddenda={shapeQualifierAddenda}
                 populationTrend={populationTrend}
-              />
-
-              {/* 2026-09-25: "Nearest matched schools" (prose summary, bar chart,
-                  member-gated named list), extracted out of ShapeCard's own right-hand
-                  column into its own card -- sits in BoardingCard's old slot now that
-                  BoardingCard itself moved up alongside GenderSplitCard above. */}
-              <NearestMatchedSchoolsCard
-                urn={urn}
-                schoolName={school.current_name}
-                schoolRoll={roll.totalRoll}
-                peerRolls={matchedSurrounding.map((m) => m.totalRoll)}
-                summary={surroundingSummary}
-                found={surrounding.found}
               />
 
               {/* Layout/graphs spec v1 §7, round 3: LA-boarders stat -- only when this
@@ -865,8 +872,6 @@ export default async function SchoolPage({
                   laName={school.la_name}
                 />
               )}
-
-              <PaidTrendsSection urn={urn} />
             </>
           )}
 

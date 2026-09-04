@@ -1,4 +1,4 @@
-import { Card, Eyebrow, Caption } from "./Card";
+import { Card, Eyebrow, Caption, type CardSize } from "./Card";
 import SurroundingRollBarChart from "@/components/SurroundingRollBarChart";
 import SurroundingSchoolsMemberList from "@/components/SurroundingSchoolsMemberList";
 
@@ -16,6 +16,11 @@ export function NearestMatchedSchoolsCard({
   peerRolls,
   summary,
   found,
+  // 2026-09-25: now sits alongside the Roll-by-phase panel (Guy's own live layout
+  // call), which stays "wide" (8-col) -- "small" (4-col) here fills out the rest of
+  // that row. Default stays "full" (its original, standalone width) in case this is
+  // ever used without a wide neighbour.
+  size = "full",
 }: {
   urn: string;
   schoolName: string;
@@ -23,9 +28,10 @@ export function NearestMatchedSchoolsCard({
   peerRolls: number[];
   summary: string | null;
   found: number;
+  size?: CardSize;
 }) {
   return (
-    <Card size="full">
+    <Card size={size}>
       <Eyebrow>Nearest matched schools</Eyebrow>
       {found > 0 && summary ? (
         <>
