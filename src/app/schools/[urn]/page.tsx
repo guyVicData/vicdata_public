@@ -33,6 +33,7 @@ import { computeTypology, phaseTagAgeRange, effectivePhaseTags, FE_PARTICIPATION
 import { buildSurroundingSummary } from "@/lib/surrounding-summary";
 import {
   paragraph1PhaseGender, paragraph2SectorSize, paragraph3Shape, paragraph4LocalContext,
+  feParagraphParticipation, feParagraphNationalStanding, feParagraphLocalContext, feParagraphRegionalStanding,
   topic4bGenderVariation, renderTopic4b,
   observedSpanForPhase, primaryPhaseTag, hasEarlyYearsProvision,
   renderNumericShapeDefinition,
@@ -64,6 +65,7 @@ import {
   FeCollegeLocalContextCard,
   FeParticipationSizeCard,
   FeParticipationSplitCard,
+  FeNoParticipationDataCard,
 } from "@/components/dashboard/FeCollegeCards";
 import { RegionalSixthFormCard } from "@/components/dashboard/RegionalSixthFormCard";
 
@@ -475,6 +477,22 @@ export default async function SchoolPage({
     ];
   }
 
+  // Item 7 (never built until now): "current state of the college" narrative,
+  // FE-sector branch only. Same compute-then-render discipline as the mainstream
+  // block above -- four independently-nullable paragraphs from the four real data
+  // groups already computed for this branch (participation snapshots, national
+  // distributions, local/LA context, regional standing). Paragraphs 3/4 reuse the
+  // exact sentences FeCollegeLocalContextCard/RegionalSixthFormCard already render --
+  // not a second, possibly-diverging description of the same real numbers.
+  const feNarrativeParagraphs: (string | null)[] = isGenuineFeSector
+    ? [
+        feParagraphParticipation(school.current_name, feUnder19Snapshot, feAdultSnapshot),
+        feParagraphNationalStanding(school.current_name, feUnder19Snapshot?.total ?? null, feDistributions.under19),
+        feParagraphLocalContext(school.current_name, laComposition, sixthFormLa, feUnder19Snapshot?.total ?? null),
+        feParagraphRegionalStanding(ownRegion, ownRegionTotals, nationalSixthFormTotals),
+      ]
+    : [];
+
   return (
     <>
       {/* Map redesign (2026-08-23): full-bleed, top of the page, outside the
@@ -571,7 +589,16 @@ export default async function SchoolPage({
             </>
           )}
 
-          {!roll && <NoCensusDataCard />}
+          {/* 2026-09-17: gated off isGenuineFeSector -- NoCensusDataCard's own
+              wording ("expected for standalone 6th-form/FE-corporation institutions")
+              was true but redundant on the FE branch, which already explains the same
+              structural gap via the real cards next to it. FeNoParticipationDataCard
+              below covers the one case that would otherwise go genuinely silent: a
+              real FE-sector institution with neither census NOR any ILR data of its
+              own (Harrow Collegiate, confirmed real -- reports under a parent URN). */}
+          {!roll && !isGenuineFeSector && <NoCensusDataCard />}
+
+          {isGenuineFeSector && !feUnder19Snapshot && !feAdultSnapshot && <FeNoParticipationDataCard />}
 
           {showIlrCard && ilrSnapshot && (
             <IlrParticipationCard
@@ -587,64 +614,69 @@ export default async function SchoolPage({
             />
           )}
 
-          {/* 2026-09-12, FE-sector build step 2: genuine FE-sector schools (Further
-              education/Sixth form centres/Special post 16 institution) structurally
-              never have census data -- NoCensusDataCard above explains the gap, these
-              are the real content that sits alongside it. Two separate cards, never
-              one blended number -- under-19 and 19+/adult are different populations
-              (same discipline the ingest side's dfe_fe_participation/_adult split
-              exists to enforce). A sixth-form centre reporting under a parent
-              institution's own URN (Harrow Collegiate, confirmed real, urn 135469) or
-              an institution outside ILR's coverage window correctly renders neither
-              card -- an honest gap, not a bug. */}
-          {feUnder19Snapshot && (
-            <IlrParticipationCard
-              eyebrow="Under-19 FE participation (ILR)"
-              total={feUnder19Snapshot.total}
-              period={feUnder19Snapshot.period}
-              girls={feUnder19Snapshot.female}
-              boys={feUnder19Snapshot.male}
-              reason="this school reports through the Individualised Learner Record (ILR), not DfE school census"
-            />
-          )}
-
-          {feAdultSnapshot && (
-            <IlrParticipationCard
-              eyebrow="Adult (19+) FE participation (ILR)"
-              total={feAdultSnapshot.total}
-              period={feAdultSnapshot.period}
-              girls={feAdultSnapshot.female}
-              boys={feAdultSnapshot.male}
-              sexLabels={{ female: "female", male: "male" }}
-              reason="this is a separate, adult (19+) population, reported separately from any under-19 figure above -- never combined into one number"
-            />
-          )}
-
-          {/* Prompt A, then this build: developing the FE-sector page toward parity
-              with the mainstream page, staying honestly different where the data
-              genuinely is (no phase breakdown, no paired LA/national totals blended
-              into one number without a caveat). */}
+          {/* 2026-09-17: mirrors the mainstream top row exactly (narrative 6-col
+              beside a flex stack 6-col, sibling DashboardGrid children -- see that
+              block's own comment for why) -- the FE-sector branch's own "current
+              state of the college" narrative (item 7, narrative.ts's feParagraph*
+              functions) beside a stack of this college's own real cards: the two ILR
+              participation cards (moved here from their own former standalone grid
+              slots, same medium size/visual weight, just repositioned), the local-
+              context card, and the under-19 gender split -- in that order, per Guy's
+              own live layout feedback (urn 130519, Trafford and Stockport College
+              Group). FeParticipationSizeCard/FeParticipationSplitCard/
+              RegionalSixthFormCard stay in their own slots below, unmoved -- not
+              asked for in this round, and no real overlap/redundancy with the new
+              narrative surfaced (it narrates the same real numbers those cards
+              already visualise, the same "prose beside the card that shows it"
+              pattern the mainstream page already uses throughout). */}
           {isGenuineFeSector && (
-            <FeCollegeLocalContextCard
-              collegeName={school.current_name}
-              laComposition={laComposition}
-              ownUnder19Total={feUnder19Snapshot?.total ?? null}
-              sixthFormLa={sixthFormLa}
-            />
-          )}
-
-          {feUnder19Snapshot && feUnder19Snapshot.female !== null && feUnder19Snapshot.male !== null && (
-            <GenderSplitCard
-              girls={feUnder19Snapshot.female}
-              boys={feUnder19Snapshot.male}
-              peer={feGenderPeers.peer}
-              peerLabel={
-                feGenderPeers.found > 0
-                  ? `Peer average across the ${feGenderPeers.found} nearest FE colleges with real under-19 ILR data` +
-                    (feGenderPeers.maxDistanceKm !== null ? `, up to ${Math.round(feGenderPeers.maxDistanceKm)}km away` : "")
-                  : ""
-              }
-            />
+            <>
+              <CurrentStateNarrative
+                paragraphs={feNarrativeParagraphs}
+                title="Current state of the college"
+                subtitle="A snapshot from DfE ILR participation and GIAS figures -- no trend data, no history."
+              />
+              <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
+                {feUnder19Snapshot && (
+                  <IlrParticipationCard
+                    eyebrow="Under-19 FE participation (ILR)"
+                    total={feUnder19Snapshot.total}
+                    period={feUnder19Snapshot.period}
+                    girls={feUnder19Snapshot.female}
+                    boys={feUnder19Snapshot.male}
+                  />
+                )}
+                {feAdultSnapshot && (
+                  <IlrParticipationCard
+                    eyebrow="Adult (19+) FE participation (ILR)"
+                    total={feAdultSnapshot.total}
+                    period={feAdultSnapshot.period}
+                    girls={feAdultSnapshot.female}
+                    boys={feAdultSnapshot.male}
+                    sexLabels={{ female: "female", male: "male" }}
+                  />
+                )}
+                <FeCollegeLocalContextCard
+                  collegeName={school.current_name}
+                  laComposition={laComposition}
+                  ownUnder19Total={feUnder19Snapshot?.total ?? null}
+                  sixthFormLa={sixthFormLa}
+                />
+                {feUnder19Snapshot && feUnder19Snapshot.female !== null && feUnder19Snapshot.male !== null && (
+                  <GenderSplitCard
+                    girls={feUnder19Snapshot.female}
+                    boys={feUnder19Snapshot.male}
+                    peer={feGenderPeers.peer}
+                    peerLabel={
+                      feGenderPeers.found > 0
+                        ? `Peer average across the ${feGenderPeers.found} nearest FE colleges with real under-19 ILR data` +
+                          (feGenderPeers.maxDistanceKm !== null ? `, up to ${Math.round(feGenderPeers.maxDistanceKm)}km away` : "")
+                        : ""
+                    }
+                  />
+                )}
+              </div>
+            </>
           )}
 
           {isGenuineFeSector && (
@@ -731,8 +763,13 @@ export default async function SchoolPage({
           {/* Layout/graphs spec v1 §13, round 5: Regional & national context moves up
               into the slot SurroundingSchoolsCard used to hold, now that its own
               content has moved into ShapeCard's right-hand side above -- a pure
-              relocation, no change to RegionalNationalCard itself. */}
-          {(context.national || context.regional) && (
+              relocation, no change to RegionalNationalCard itself.
+              2026-09-17: gated off isGenuineFeSector -- context.regional is
+              roll_aggregates' LA-level MAINSTREAM figure (Academies/LA-maintained/
+              Independent/Free Schools only), which was showing on FE college pages
+              regardless, now redundant and misleading there next to
+              RegionalSixthFormCard's own real FE-sector regional/national context. */}
+          {(context.national || context.regional) && !isGenuineFeSector && (
             <RegionalNationalCard
               laName={school.la_name}
               regional={

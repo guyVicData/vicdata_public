@@ -146,7 +146,14 @@ export function IlrParticipationCard({
   girls: number | null;
   boys: number | null;
   sexLabels?: { female: string; male: string };
-  reason: string;
+  // 2026-09-17: optional -- the FE-sector branch's two cards (under-19, adult) no
+  // longer pass this at all (the explanatory paragraph moved to /sources, a standing
+  // methodology page rather than a per-card caption repeated on every FE college's
+  // page). The academy-fallback call site (stale-census Academy 16-19/Free School
+  // 16-19 institutions) still passes it and still gets the inline "shown here
+  // because..." caption -- that's still the right place for it there, a genuinely
+  // different, rarer case worth explaining inline.
+  reason?: string;
 }) {
   return (
     <Card size="medium">
@@ -176,12 +183,14 @@ export function IlrParticipationCard({
           DfE rounds each figure to the nearest 10 independently, so this split may not sum exactly to the total above.
         </p>
       )}
-      <Caption className="mt-3">
-        DfE&rsquo;s own experimental &ldquo;in development&rdquo; statistics (Individualised Learner Record) — not the DfE
-        school census figure. A count of learners participating in further education courses across the academic year, not a
-        single-day headcount, shown here because {reason}. Shown separately, never combined with the census figure — they
-        measure different things.
-      </Caption>
+      {reason !== undefined && (
+        <Caption className="mt-3">
+          DfE&rsquo;s own experimental &ldquo;in development&rdquo; statistics (Individualised Learner Record) — not the DfE
+          school census figure. A count of learners participating in further education courses across the academic year, not
+          a single-day headcount, shown here because {reason}. Shown separately, never combined with the census figure — they
+          measure different things.
+        </Caption>
+      )}
     </Card>
   );
 }

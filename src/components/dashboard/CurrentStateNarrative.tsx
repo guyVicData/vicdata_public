@@ -10,12 +10,26 @@ import { Card, CardHeading } from "./Card";
 // Roll/Gender split stack to its right in the page's own top row -- see page.tsx's
 // own comment at the call site for why that pairing has to be built as sibling
 // DashboardGrid children rather than nested here.
-export function CurrentStateNarrative({ paragraphs }: { paragraphs: (string | null)[] }) {
+// 2026-09-17, FE-sector build: title/subtitle parametrized (defaults preserve the
+// mainstream page's exact previous text) -- the FE-sector branch's own narrative
+// (page.tsx) is built from DfE ILR/GIAS figures, not "the most recent DfE census",
+// so the hardcoded mainstream subtitle would be a real factual error there, not just
+// an aesthetic mismatch. The component itself stays generic/reusable, as before --
+// no FE-specific logic lives here.
+export function CurrentStateNarrative({
+  paragraphs,
+  title = "Current state of the school",
+  subtitle = "A snapshot from the most recent DfE census and GIAS figures -- no trend data, no history.",
+}: {
+  paragraphs: (string | null)[];
+  title?: string;
+  subtitle?: string;
+}) {
   const real = paragraphs.filter((p): p is string => p !== null);
   if (real.length === 0) return null;
   return (
     <Card size="medium">
-      <CardHeading title="Current state of the school" subtitle="A snapshot from the most recent DfE census and GIAS figures -- no trend data, no history." />
+      <CardHeading title={title} subtitle={subtitle} />
       <div className="flex flex-col gap-3">
         {real.map((p, i) => (
           <p key={i} className="text-[14px] leading-relaxed text-stone-700 dark:text-stone-300">

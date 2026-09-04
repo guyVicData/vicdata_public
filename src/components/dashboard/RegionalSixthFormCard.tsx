@@ -106,24 +106,31 @@ export function RegionalSixthFormCard({
   const maxTotal = regionRows[0]?.total ?? 0;
 
   return (
-    <Card size="wide">
+    <Card size="full">
       <CardHeading
         title="16-18 provision by region"
         subtitle="State, Independent and FE colleges' 16-18/under-19 students, region by region"
       />
-      {regionRows.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {regionRows.map((r) => (
-            <StackedBarRow key={r.region} region={r.region} totals={r.totals} maxTotal={maxTotal} isOwnRegion={r.region === ownRegion} />
-          ))}
-        </div>
-      )}
-      {hasPies && (
-        <div className="mt-5 flex flex-wrap gap-8 border-t border-stone-100 pt-5 dark:border-stone-800">
-          {ownRegionTotals && <SectorPie label={ownRegion ?? "This region"} totals={ownRegionTotals} />}
-          {nationalTotals && <SectorPie label="England" totals={nationalTotals} />}
-        </div>
-      )}
+      {/* 2026-09-17: full-width (col-span-12, ShapeCard/BoardingCard's own precedent
+          for full-bleed cards), bar list and both pies side by side instead of pies
+          stacked below the bars -- the extra width from going full-bleed is exactly
+          what makes a genuine two-column layout worthwhile here; at the old wide
+          (col-span-8) size the pies would have had too little room beside the bars. */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        {regionRows.length > 0 && (
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            {regionRows.map((r) => (
+              <StackedBarRow key={r.region} region={r.region} totals={r.totals} maxTotal={maxTotal} isOwnRegion={r.region === ownRegion} />
+            ))}
+          </div>
+        )}
+        {hasPies && (
+          <div className="flex shrink-0 flex-col items-center gap-6 lg:border-l lg:border-stone-100 lg:pl-8 dark:lg:border-stone-800">
+            {ownRegionTotals && <SectorPie label={ownRegion ?? "This region"} totals={ownRegionTotals} />}
+            {nationalTotals && <SectorPie label="England" totals={nationalTotals} />}
+          </div>
+        )}
+      </div>
       <Caption className="mt-3 italic">
         State/Independent figures are DfE school census 16-18 sixth-form rolls; FE colleges&rsquo; figure is{" "}
         <Link href="/sources" className="underline hover:text-stone-700 dark:hover:text-stone-300">

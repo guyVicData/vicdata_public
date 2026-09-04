@@ -28,6 +28,9 @@ import {
   MAJORITY_BOARDING_THRESHOLD,
 } from "./narrative-config";
 import { displayPopulationTrendPct } from "./population-trend";
+import type { SixthFormSectorTotals } from "./sixth-form-sector-aggregates";
+import type { FeParticipationDistribution } from "./fe-participation-distributions";
+import { sizeBadgeForValue } from "./age-band-distributions";
 
 // ---------------------------------------------------------------------------
 // Cross-cutting: word-form numerals for "one of X" framing only (spec §1) --
@@ -479,6 +482,105 @@ export function paragraphFeCollegeLocalShare(
       ? `${collegeName} is the only FE college in ${laComposition.laName}`
       : `${collegeName} is one of ${oneOfCountLabel(schools)} FE colleges in ${laComposition.laName}`;
   return `${opening}, and its pupils make up ${pct.toFixed(1)}% of the FE college students in this Local Authority.`;
+}
+
+// ---------------------------------------------------------------------------
+// "Current state of the college" narrative -- item 7 from the original spec, never
+// built until now. Same discipline as paragraph1PhaseGender/paragraph2SectorSize/
+// paragraph4LocalContext above: deterministic sentences from real computed values,
+// each paragraph independently nullable (a college with no adult data, or no
+// resolvable region, simply omits that paragraph), no fabrication. Draft 1 -- four
+// paragraphs from the four real data groups already computed in page.tsx for this
+// branch, not forced into paragraph-for-paragraph parity with the mainstream page's
+// own four-paragraph structure (the underlying data genuinely doesn't support the
+// same shape -- no shape/gender-variation/boarding topics exist for an FE college).
+// Paragraphs 3/4 deliberately call the SAME functions FeCollegeLocalContextCard
+// already uses (renderLocalSixthFormProvisionSentence/paragraphFeCollegeLocalShare)
+// rather than re-deriving the same sentences a second way.
+// ---------------------------------------------------------------------------
+
+// Paragraph 1: this college's own participation figures (under-19 + adult, kept as
+// two clauses -- never summed into one number, same discipline as the cards
+// themselves).
+export function feParagraphParticipation(
+  collegeName: string,
+  under19: { total: number; female: number | null; male: number | null } | null,
+  adult: { total: number } | null,
+): string | null {
+  if (!under19 && !adult) return null;
+  const clauses: string[] = [];
+  if (under19) {
+    let sentence = `${collegeName} reports ${under19.total.toLocaleString()} under-19 learners in further education courses this academic year`;
+    if (under19.female !== null && under19.male !== null) {
+      const genderTotal = under19.female + under19.male;
+      if (genderTotal > 0) sentence += `, ${Math.round((under19.female / genderTotal) * 100)}% of them female`;
+    }
+    clauses.push(`${sentence}.`);
+  }
+  if (adult) {
+    clauses.push(
+      `Alongside this, ${adult.total.toLocaleString()} adult (19+) learners are recorded separately — a different population, not combined into the figure above.`,
+    );
+  }
+  return clauses.join(" ");
+}
+
+// Paragraph 2: national size standing, same badge/comparison logic
+// FeParticipationSizeCard already renders (its own nationalComparisonCaption), just
+// in prose form here rather than a badge row.
+export function feParagraphNationalStanding(
+  collegeName: string,
+  under19Total: number | null,
+  under19Distribution: FeParticipationDistribution | null,
+): string | null {
+  if (under19Total === null || !under19Distribution) return null;
+  const badge = sizeBadgeForValue(under19Total, under19Distribution.quintiles);
+  const mean = Math.round(under19Distribution.meanTotal);
+  const direction =
+    under19Total > under19Distribution.meanTotal * 1.1
+      ? "larger than"
+      : under19Total < under19Distribution.meanTotal * 0.9
+        ? "smaller than"
+        : "about the same size as";
+  return (
+    `Nationally, this places ${collegeName} in the ${badge} size band for under-19 FE participation — ` +
+    `${direction} the average real FE college (${mean.toLocaleString()} students).`
+  );
+}
+
+// Paragraph 3: local context -- reuses the exact sentences FeCollegeLocalContextCard
+// already renders (renderLocalSixthFormProvisionSentence + paragraphFeCollegeLocalShare),
+// not a second, possibly-diverging description of the same facts.
+export function feParagraphLocalContext(
+  collegeName: string,
+  laComposition: LaSectorComposition | null,
+  sixthFormLa: { state: { total: number; schoolCount: number } | null; independent: { total: number; schoolCount: number } | null },
+  ownUnder19Total: number | null,
+): string | null {
+  const feSchools = laComposition?.bySector.FE.schools ?? 0;
+  const fePupils = laComposition?.bySector.FE.pupils ?? 0;
+  const sixthFormSchoolCount = (sixthFormLa.state?.schoolCount ?? 0) + (sixthFormLa.independent?.schoolCount ?? 0);
+  const sixthFormPupilTotal = (sixthFormLa.state?.total ?? 0) + (sixthFormLa.independent?.total ?? 0);
+  const provisionSentence = laComposition
+    ? renderLocalSixthFormProvisionSentence(laComposition.laName, sixthFormSchoolCount, sixthFormPupilTotal, feSchools, fePupils)
+    : null;
+  const shareSentence = paragraphFeCollegeLocalShare(collegeName, laComposition, ownUnder19Total);
+  return [provisionSentence, shareSentence].filter((s): s is string => s !== null).join(" ") || null;
+}
+
+// Paragraph 4: regional standing -- this college's own region's FE-college share of
+// England's total, same real totals RegionalSixthFormCard's own pies read.
+export function feParagraphRegionalStanding(
+  ownRegion: string | null,
+  ownRegionTotals: SixthFormSectorTotals | null,
+  nationalTotals: SixthFormSectorTotals | null,
+): string | null {
+  if (!ownRegion || !ownRegionTotals || !nationalTotals) return null;
+  const regionFe = ownRegionTotals.fe?.total ?? 0;
+  const nationalFe = nationalTotals.fe?.total ?? 0;
+  if (regionFe <= 0 || nationalFe <= 0) return null;
+  const pct = (regionFe / nationalFe) * 100;
+  return `Across ${ownRegion}, FE colleges report ${regionFe.toLocaleString()} under-19 students between them — ${pct.toFixed(1)}% of England's total.`;
 }
 
 // ---------------------------------------------------------------------------

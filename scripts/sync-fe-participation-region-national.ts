@@ -13,17 +13,18 @@
 // sync-fe-participation-distributions.ts (national QUINTILE distribution, for the
 // XS-XL size-badge card) -- this is a plain SUM per scope, the shape item 1/6's pie
 // and stacked-bar charts actually need. Not a variant of that script; the two share
-// only the "latest non-suppressed total per institution" extraction logic, reimplemented
-// here rather than imported (that script's own function is private/unexported, and this
-// one additionally needs each institution's LA code to attribute it to a region, which
-// the distribution script has no use for).
+// only the "latest non-suppressed total per institution" extraction logic (reimplemented
+// here, not imported -- that script's own function returns a period alongside each
+// total, this one doesn't need it) and the open-institution filter
+// (scripts/lib/fe-open-institutions.ts, shared -- see that module's own comment for
+// why duplicating it a third time isn't the move).
 //
 // Usage: npx tsx --env-file=.env scripts/sync-fe-participation-region-national.ts
 
 import { createServiceRoleSupabaseClient } from "../src/lib/supabase";
 import { lookupReferenceData } from "../src/lib/vicdata-reference";
 import { CURRENT_CENSUS_PERIOD } from "../src/lib/roll-data";
-import { FE_PARTICIPATION_ESTABLISHMENT_TYPES } from "../src/lib/typology";
+import { loadOpenFeParticipationInstitutions, excludeClosedInstitutions } from "./lib/fe-open-institutions";
 
 const TARGET_PERIOD = CURRENT_CENSUS_PERIOD;
 const UNDER_19_TOTAL_BREAKDOWN = "education_and_training_under_19_total";
@@ -63,18 +64,9 @@ async function main() {
   }
   console.log(`  ${regionByLaCode.size} LAs with a region`);
 
-  console.log("loading FE-participation-scope school -> LA map...");
-  const laCodeByUrn = new Map<string, string | null>();
-  {
-    const { data, error } = await supabase
-      .from("schools")
-      .select("urn, la_code")
-      .in("establishment_type", FE_PARTICIPATION_ESTABLISHMENT_TYPES)
-      .neq("status", "closed");
-    if (error) throw error;
-    for (const row of data as { urn: string; la_code: string | null }[]) laCodeByUrn.set(row.urn, row.la_code);
-  }
-  console.log(`  ${laCodeByUrn.size} FE-participation-scope institutions loaded`);
+  console.log("loading FE-participation-scope school -> LA map (open institutions only)...");
+  const laCodeByUrn = await loadOpenFeParticipationInstitutions(supabase);
+  console.log(`  ${laCodeByUrn.size} open FE-participation-scope institutions loaded`);
 
   console.log("fetching dfe_fe_participation under-19 totals...");
   const facts = await lookupReferenceData({
@@ -86,17 +78,12 @@ async function main() {
   // carries facts for institutions that have SINCE closed in GIAS's own current data
   // (e.g. Newham Sixth Form College, Richmond-upon-Thames College -- real, recognisable
   // closures, not junk data) -- latestNonZeroTotalPerUrn happily returns their last real
-  // pre-closure figure. laCodeByUrn above is already built from an open-institutions-
-  // only query, so those URNs silently drop out of the region rollup while staying IN
-  // an unfiltered national sum -- region totals would never sum to the national total,
-  // not because of a genuine crosswalk gap but because the two accumulators were
-  // scoped to two different institution populations. Filtered to laCodeByUrn's own
-  // keys (open institutions only) BEFORE accumulating either scope, so both read the
-  // exact same population and can never silently disagree -- same "one pass, one
-  // population, region+national filled together" discipline
+  // pre-closure figure. Filtered to loadOpenFeParticipationInstitutions' own keys (open
+  // institutions only) BEFORE accumulating either scope, so region and national both
+  // read the exact same population and can never silently disagree -- same "one pass,
+  // one population, region+national filled together" discipline
   // sync-age-profile-aggregates.ts already established for LA+region.
-  const totalByUrn = new Map(Array.from(totalByUrnRaw).filter(([urn]) => laCodeByUrn.has(urn)));
-  const closedInstitutionCount = totalByUrnRaw.size - totalByUrn.size;
+  const { open: totalByUrn, excludedCount: closedInstitutionCount } = excludeClosedInstitutions(totalByUrnRaw, laCodeByUrn);
   console.log(
     `  ${totalByUrnRaw.size} institutions with a real under-19 total, ${closedInstitutionCount} excluded as since-closed, ${totalByUrn.size} used`,
   );

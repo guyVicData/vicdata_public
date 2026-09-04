@@ -260,3 +260,27 @@ export function FeParticipationSplitCard({
     </Card>
   );
 }
+
+// 2026-09-17: the rare real case -- a genuine FE-sector institution with neither
+// census (structural, always true for this branch) NOR any real ILR data of its own
+// from either source (feUnder19Snapshot and feAdultSnapshot both null). Harrow
+// Collegiate (urn 135469, an established anchor in this thread) is exactly this: a
+// genuine sixth-form centre that reports its ILR activity under a parent
+// institution's own URN rather than its own, confirmed real, not a bug. NoCensusDataCard
+// no longer covers this branch at all (gated off for isGenuineFeSector, its own census-
+// framed wording doesn't fit here anyway -- ILR IS the applicable source, it's just
+// this specific institution missing from it), so without this card the page would go
+// genuinely silent on "do we have anything about THIS institution itself" -- an honest
+// gap needs an honest, explicit statement, not silence just because every other card
+// on the page happens to be LA/region/national context rather than this college's own.
+export function FeNoParticipationDataCard() {
+  return (
+    <Card size="full" ghost>
+      <Caption>
+        No DfE ILR participation data is available for this institution — this can happen when a sixth-form centre
+        reports its activity under a parent institution&rsquo;s own URN rather than its own, or for an institution
+        outside ILR&rsquo;s current coverage window. A confirmed, honest gap, not a bug.
+      </Caption>
+    </Card>
+  );
+}
