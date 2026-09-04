@@ -10,6 +10,7 @@ import {
   FE_INSTITUTION_TYPES,
   FE_PARTICIPATION_ESTABLISHMENT_TYPES,
   SPECIAL_SCHOOLS_ESTABLISHMENT_GROUP,
+  CONSORTIUM_SIXTH_FORM_CENTRE_TYPE,
   type PhaseTag,
 } from "@/lib/typology";
 import { lookupAgeGenderTotals, lookupReferenceData } from "@/lib/vicdata-reference";
@@ -218,7 +219,16 @@ export async function GET(request: NextRequest) {
     baseQuery().eq("establishment_type_group", "Independent schools").limit(INDEPENDENT_CAP + 1),
     // 2026-08-28: third bucket, establishment_type (not group) -- see FE_CAP's own
     // comment and typology.ts's FE_INSTITUTION_TYPES for why.
-    baseQuery().in("establishment_type", FE_INSTITUTION_TYPES).limit(FE_CAP + 1),
+    // 2026-09-22: CONSORTIUM_SIXTH_FORM_CENTRE_TYPE excluded specifically -- confirmed
+    // live, 0 of 14 open Sixth form centres institutions have any real roll/
+    // participation data of their own (their real activity lives on constituent
+    // secondary schools instead), so a map pin for one currently leads nowhere real.
+    // The other five FE_ESTABLISHMENT_TYPES values are untouched -- real FE colleges
+    // still belong on the map.
+    baseQuery()
+      .in("establishment_type", FE_INSTITUTION_TYPES)
+      .neq("establishment_type", CONSORTIUM_SIXTH_FORM_CENTRE_TYPE)
+      .limit(FE_CAP + 1),
     // 2026-09-03: fourth bucket, establishment_type_group this time -- see SPECIAL_CAP's
     // own comment and typology.ts's SPECIAL_SCHOOLS_ESTABLISHMENT_GROUP for why the
     // group itself, unlike FE, is already the right boundary.

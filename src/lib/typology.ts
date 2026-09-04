@@ -87,6 +87,20 @@ export const MAINSTREAM_ESTABLISHMENT_GROUPS = [...STATE_GROUPS, "Independent sc
 // above, for a Postgrest .in() filter.
 export const FE_INSTITUTION_TYPES = [...FE_ESTABLISHMENT_TYPES];
 
+// 2026-09-22: consortium sixth-form-centre institutions (e.g. LaSWAP, PGW Partnership
+// of Greenacre and Walderslade) report no roll or participation data under their own
+// URN at all -- confirmed live, 0 of 14 open "Sixth form centres" institutions have
+// any real dfe_school_census OR dfe_fe_participation/_adult data. Their real activity
+// lives on the constituent secondary schools instead (a real, findable pattern for
+// most of them -- see the group-page characterization). Excluded from DISCOVERY
+// surfaces (map pins, search results) until the group-page feature gives them a
+// proper home -- deliberately NOT removed from FE_ESTABLISHMENT_TYPES/
+// FE_INSTITUTION_TYPES/sectorTag() itself, since a direct /schools/<urn> visit still
+// needs to resolve them correctly, and this is the only one of the six
+// FE_ESTABLISHMENT_TYPES values this applies to (real FE colleges, HE institutions,
+// etc. still belong on the map/in search).
+export const CONSORTIUM_SIXTH_FORM_CENTRE_TYPE = "Sixth form centres";
+
 // Exported for schools-in-bounds' own fourth query bucket -- a single group value,
 // not an array, since (unlike FE) this is already the right boundary on its own.
 export const SPECIAL_SCHOOLS_ESTABLISHMENT_GROUP = SPECIAL_SCHOOLS_GROUP;
