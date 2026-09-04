@@ -1,4 +1,4 @@
-import { Card, CardHeading, Caption } from "./Card";
+import { Card, CardHeading, Caption, type CardSize } from "./Card";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 
 // Layout/graphs spec v1 §5, round 3: colour-consistency wiring fix. The values here
@@ -56,6 +56,13 @@ export function GenderSplitCard({
   subjectLabel = "This school",
   sexLabels = { female: "girls", male: "boys" },
   subtitle = "Full roll, all ages — a different age range from the Shape chart above. Shown as a share, so it's comparable with the peer average.",
+  // 2026-09-25: mainstream page now pairs this directly with BoardingCard (2/3 + 1/3
+  // row, Guy's own live layout call) instead of stacking it under RollCard -- "wide"
+  // (8-col) gives exactly that 2/3 share alongside BoardingCard's own unmodified
+  // "small" (4-col). Default stays "medium" for the FE-sector branch's own call site,
+  // which still stacks this under FeCollegeLocalContextCard in a flex column (where
+  // the size classes go inert anyway).
+  size = "medium",
 }: {
   girls: number;
   boys: number;
@@ -64,9 +71,10 @@ export function GenderSplitCard({
   subjectLabel?: string;
   sexLabels?: { female: string; male: string };
   subtitle?: string;
+  size?: CardSize;
 }) {
   return (
-    <Card size="medium" className="flex flex-col gap-4">
+    <Card size={size} className="flex flex-col gap-4">
       <style>{`
         .gender-donut-root {
           --girls: ${GIRLS_COLOUR.light};

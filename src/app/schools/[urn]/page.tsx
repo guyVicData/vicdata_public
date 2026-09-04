@@ -62,6 +62,7 @@ import { DashboardGrid } from "@/components/dashboard/Card";
 import { RollCard } from "@/components/dashboard/RollCard";
 import { PhaseBreakdownCard } from "@/components/dashboard/PhaseBreakdownCard";
 import { ShapeCard } from "@/components/dashboard/ShapeCard";
+import { NearestMatchedSchoolsCard } from "@/components/dashboard/NearestMatchedSchoolsCard";
 import { GenderSplitCard } from "@/components/dashboard/GenderSplitCard";
 import {
   BoardingCard,
@@ -374,15 +375,6 @@ export default async function SchoolPage({
   // same match list feeds both the aggregate stat and the map's marker positions.
   const matchedSurrounding = await findSurroundingSchools(urn, roll?.period ?? CURRENT_CENSUS_PERIOD);
   const surrounding = aggregateSurroundingStat(matchedSurrounding);
-  // 2026-09-11, round 19, item 6: same numericShapeDefinition treatment the focus
-  // school's own shapeDefinition gets above, applied to the pooled aggregate now that
-  // aggregateSurroundingStat exposes aggregateMetrics/aggregateDominantTransition
-  // alongside aggregateShape. Deliberately no qualifier addenda for the aggregate --
-  // qualifiers describe one real school's trajectory, not a pooled average.
-  const aggregateDefinition =
-    surrounding.aggregateShape && surrounding.aggregateMetrics
-      ? renderNumericShapeDefinition(surrounding.aggregateShape, surrounding.aggregateMetrics, surrounding.aggregateDominantTransition)
-      : null;
   const context = await getContextAggregates(school.la_name);
   // Layout/graphs spec v1 §7, round 3: LA-boarders stat denominator -- already-precomputed
   // roll_aggregates.boarders_total (context.regional, same row RegionalNationalCard already
@@ -662,51 +654,53 @@ export default async function SchoolPage({
         </header>
 
         <DashboardGrid>
-          {/* Layout/graphs spec v1 §4, round 3: top row is narrative (6-col) beside a
-              Roll/Gender split stack (6-col) -- built as two sibling 6-col DashboardGrid
-              children (not a nested sub-grid) so the grid's own implicit row-1 auto-
-              placement fills them side by side exactly, the same "no explicit
-              row/position" discipline DashboardGrid's own dense auto-flow already relies
-              on elsewhere. The stack itself is a plain flex column, not a Card -- RollCard
-              and GenderSplitCard keep rendering as real Card components (own border/
-              padding/size classes), just re-parented into a flex wrapper instead of being
-              direct grid children, so their own `col-span-*` classes go inert (harmless
-              under a flex parent) and they simply stack full-width inside the 6-col slot.
-              PhaseBreakdownCard/ShapeCard/BoardingCard stay in the SECOND `roll &&` block
-              below, unmoved from their prior relative order -- ShapeCard's position was
-              left exactly where it sat before (its own `full` 12-col size means it always
-              starts a fresh row regardless of neighbours, so it doesn't conflict with the
-              new top row; see the round-3 report for the explicit confirmation). */}
+          {/* Layout/graphs spec v1 §4, round 3: top row is narrative (6-col) beside
+              Roll (6-col) -- two sibling 6-col DashboardGrid children (not a nested
+              sub-grid) so the grid's own implicit row-1 auto-placement fills them side
+              by side exactly, the same "no explicit row/position" discipline
+              DashboardGrid's own dense auto-flow already relies on elsewhere.
+              2026-09-25: GenderSplitCard moved OUT of this row (Guy's own live layout
+              call) -- it now pairs with BoardingCard in its own row below instead of
+              stacking under RollCard, so RollCard renders alone here, a direct grid
+              child using its own `medium` (6-col) sizing rather than a flex wrapper. */}
           {roll && (
             <>
-              {/* Consortium cross-link (item 3) moved into this same flex column,
+              {/* Consortium cross-link (item 3) sits in this same 6-col column,
                   directly under the narrative -- Guy's own live layout call: it reads
-                  as a footnote to "current state," not a fifth stat card competing with
-                  Roll/Gender split on the other side. Same inert-col-span trick as the
-                  RollCard/GenderSplitCard stack opposite -- CurrentStateNarrative's own
-                  `medium` Card sizing goes inert under this flex parent. */}
+                  as a footnote to "current state," not a fifth stat card. A flex
+                  wrapper (not a bare grid child) because it may hold more than one
+                  child; CurrentStateNarrative's own `medium` Card sizing goes inert
+                  under this flex parent, same as everywhere else this pattern is used. */}
               <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
                 <CurrentStateNarrative paragraphs={narrativeParagraphs} />
                 {consortiumGroups.map((g) => (
                   <ConsortiumCrossLinkNote key={g.urn} groupName={g.current_name} groupUrn={g.urn} />
                 ))}
               </div>
-              <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
-                <RollCard
-                  totalRoll={roll.totalRoll}
-                  period={roll.period}
-                  laComposition={laComposition}
-                  laSchoolCount={context.regional?.school_count ?? null}
-                  laTotalRoll={context.regional?.total_roll ?? null}
-                  schoolName={school.current_name}
-                />
-                <GenderSplitCard
-                  girls={roll.gender.female}
-                  boys={roll.gender.male}
-                  peer={peerGenderSplit}
-                  peerLabel={peerGenderLabel}
-                />
-              </div>
+              <RollCard
+                totalRoll={roll.totalRoll}
+                period={roll.period}
+                laComposition={laComposition}
+                laSchoolCount={context.regional?.school_count ?? null}
+                laTotalRoll={context.regional?.total_roll ?? null}
+                schoolName={school.current_name}
+              />
+
+              {/* 2026-09-25: Gender split + Boarding, side by side -- GenderSplitCard's
+                  `size="wide"` (8-col) beside BoardingCard's own unmodified `small`
+                  (4-col) sums to 12 at lg, so dense auto-flow places them on the same
+                  row (2/3 + 1/3), Guy's own live layout call. Moved here from its old
+                  position after ShapeCard -- BoardingCard's own conditional rendering
+                  (pie chart unconditional, day=totalRoll fallback) is unchanged, just
+                  relocated. */}
+              <GenderSplitCard
+                size="wide"
+                girls={roll.gender.female}
+                boys={roll.gender.male}
+                peer={peerGenderSplit}
+                peerLabel={peerGenderLabel}
+              />
+              <BoardingCard boarders={roll.boarding?.boarders ?? 0} day={roll.boarding?.day ?? roll.totalRoll} />
             </>
           )}
 
@@ -843,23 +837,20 @@ export default async function SchoolPage({
                 phaseSplitSentence={phaseSplitSentence}
                 shapeQualifierAddenda={shapeQualifierAddenda}
                 populationTrend={populationTrend}
+              />
+
+              {/* 2026-09-25: "Nearest matched schools" (prose summary, bar chart,
+                  member-gated named list), extracted out of ShapeCard's own right-hand
+                  column into its own card -- sits in BoardingCard's old slot now that
+                  BoardingCard itself moved up alongside GenderSplitCard above. */}
+              <NearestMatchedSchoolsCard
                 urn={urn}
                 schoolName={school.current_name}
                 schoolRoll={roll.totalRoll}
                 peerRolls={matchedSurrounding.map((m) => m.totalRoll)}
                 summary={surroundingSummary}
-                aggregateShape={surrounding.aggregateShape}
-                aggregateDefinition={aggregateDefinition}
                 found={surrounding.found}
               />
-
-              {/* Layout/graphs spec v1 §6, round 3: pie chart now renders unconditionally
-                  (a day-only school has no falsy `roll.boarding` in practice -- confirmed
-                  against real data, the census reports boarders_total=0 explicitly for day
-                  schools, not an absent fact -- but falling back to day=totalRoll/boarders=0
-                  here too covers the theoretical case where the fact really is absent, same
-                  "show the honest zero" principle as the rest of this page). */}
-              <BoardingCard boarders={roll.boarding?.boarders ?? 0} day={roll.boarding?.day ?? roll.totalRoll} />
 
               {/* Layout/graphs spec v1 §7, round 3: LA-boarders stat -- only when this
                   school itself has real boarders (hidden entirely for day-only schools,
