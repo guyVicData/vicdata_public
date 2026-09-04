@@ -679,7 +679,18 @@ export default async function SchoolPage({
               new top row; see the round-3 report for the explicit confirmation). */}
           {roll && (
             <>
-              <CurrentStateNarrative paragraphs={narrativeParagraphs} />
+              {/* Consortium cross-link (item 3) moved into this same flex column,
+                  directly under the narrative -- Guy's own live layout call: it reads
+                  as a footnote to "current state," not a fifth stat card competing with
+                  Roll/Gender split on the other side. Same inert-col-span trick as the
+                  RollCard/GenderSplitCard stack opposite -- CurrentStateNarrative's own
+                  `medium` Card sizing goes inert under this flex parent. */}
+              <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
+                <CurrentStateNarrative paragraphs={narrativeParagraphs} />
+                {consortiumGroups.map((g) => (
+                  <ConsortiumCrossLinkNote key={g.urn} groupName={g.current_name} groupUrn={g.urn} />
+                ))}
+              </div>
               <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
                 <RollCard
                   totalRoll={roll.totalRoll}
@@ -698,10 +709,6 @@ export default async function SchoolPage({
               </div>
             </>
           )}
-
-          {consortiumGroups.map((g) => (
-            <ConsortiumCrossLinkNote key={g.urn} groupName={g.current_name} groupUrn={g.urn} />
-          ))}
 
           {/* 2026-09-17: gated off isGenuineFeSector -- NoCensusDataCard's own
               wording ("expected for standalone 6th-form/FE-corporation institutions")
@@ -751,11 +758,17 @@ export default async function SchoolPage({
               RollCard+GenderSplitCard's own shape exactly. */}
           {isGenuineFeSector && (
             <>
-              <CurrentStateNarrative
-                paragraphs={feNarrativeParagraphs}
-                title="Current state of the college"
-                subtitle="A snapshot from DfE ILR participation and GIAS figures -- no trend data, no history."
-              />
+              <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
+                <CurrentStateNarrative
+                  paragraphs={feNarrativeParagraphs}
+                  title="Current state of the college"
+                  subtitle="A snapshot from DfE ILR participation and GIAS figures -- no trend data, no history."
+                />
+                {!roll &&
+                  consortiumGroups.map((g) => (
+                    <ConsortiumCrossLinkNote key={g.urn} groupName={g.current_name} groupUrn={g.urn} />
+                  ))}
+              </div>
               <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
                 <FeCollegeLocalContextCard
                   collegeName={school.current_name}
