@@ -307,18 +307,36 @@ export function phaseSizeLabel(tag: PhaseTag): string {
 // ratios (narrative-lookup.ts does the DB work; this is pure formatting). Per-phase
 // clauses when phases disagree on size band, one blanket clause when every phase
 // (excluding early years, which is never quantitatively compared -- spec §6) agrees.
+//
+// 2026-10-01, item 4 fix (docs/reports/2026-09-30-nearest-schools-special-through-
+// schools.md, Option B): overallBand is now nullable -- narrative-lookup.ts passes
+// null for through-schools, since comparing a through-school's combined roll against
+// a peer average dominated by single-phase schools produced a real, confirmed-live
+// contradiction against the per-phase clauses ("large" overall, every individual
+// phase medium/small -- Steiner Academy Hereford, the real example). When null, the
+// blanket "The school is X —" opener is dropped entirely and the (already correct)
+// per-phase content leads the sentence instead, capitalised. Single-phase schools
+// always pass a real SizeBand here (narrative-lookup.ts only nulls it out for
+// effectiveTags.length > 1), so their own output is byte-identical to before this
+// change.
 export function formatSizeSentence(
-  overallBand: SizeBand,
+  overallBand: SizeBand | null,
   clauses: PhaseSizeClause[],
   hasEarlyYears: boolean,
   laName: string,
 ): string | null {
   if (clauses.length === 0) {
-    return hasEarlyYears ? `The school is ${overallBand} — it has early-years provision.` : null;
+    if (overallBand !== null) {
+      return hasEarlyYears ? `The school is ${overallBand} — it has early-years provision.` : null;
+    }
+    // Through-school with no usable per-phase data either -- nothing coherent left to
+    // claim about size once the blanket "overall" claim is dropped.
+    return hasEarlyYears ? "The school has early-years provision." : null;
   }
 
   const bands = new Set(clauses.map((c) => c.band));
   const earlyYearsClause = hasEarlyYears ? "it has early-years provision, and " : "";
+  const earlyYearsLeadSentence = hasEarlyYears ? "The school has early-years provision. " : "";
 
   if (bands.size === 1 && clauses.length > 1) {
     const comparisonWord = clauses[0].band === "large" ? "larger than" : clauses[0].band === "small" ? "smaller than" : "about the same as";
@@ -337,8 +355,20 @@ export function formatSizeSentence(
       // phase and sixth form...". Only strips the word from `youngest`; "sixth
       // form" (the usual `oldest` here) was never suffixed with it anyway.
       const youngestBare = youngest.replace(/ phase$/, "");
+      if (overallBand === null) {
+        return (
+          `${earlyYearsLeadSentence}Both phases, ${youngestBare} and ${oldest}, are ` +
+          `${comparisonWord} the ${laName} average.`
+        );
+      }
       return (
         `The school is ${overallBand} — ${earlyYearsClause}both phases, ${youngestBare} and ${oldest}, are ` +
+        `${comparisonWord} the ${laName} average.`
+      );
+    }
+    if (overallBand === null) {
+      return (
+        `${earlyYearsLeadSentence}Each phase from ${youngest} to ${oldest} is ` +
         `${comparisonWord} the ${laName} average.`
       );
     }
@@ -365,6 +395,13 @@ export function formatSizeSentence(
   // configuration and does NOT get this -- nobody expects a sixth form there.
   const noSixthFormCaveat =
     clauses.length === 1 && clauses[0].phaseTag === "Senior" ? " The school does not have a sixth form." : "";
+
+  if (overallBand === null) {
+    // Capitalise -- this now opens the sentence itself, no "The school is X —" prefix
+    // precedes it.
+    const capitalizedPerPhase = perPhase.charAt(0).toUpperCase() + perPhase.slice(1);
+    return `${earlyYearsLeadSentence}${capitalizedPerPhase}.${noSixthFormCaveat}`;
+  }
 
   return `The school is ${overallBand} — ${earlyYearsClause}${perPhase}.${noSixthFormCaveat}`;
 }

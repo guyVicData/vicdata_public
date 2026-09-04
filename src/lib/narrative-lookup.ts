@@ -31,6 +31,7 @@ import {
   phaseSizeLabel,
   formatSizeSentence,
   type PhaseSizeClause,
+  type SizeBand,
 } from "./narrative";
 import { EARLY_YEARS_PROXY_AGE_THRESHOLD } from "./narrative-config";
 import { cleanLaNameForDisplay } from "./la-name-display";
@@ -162,6 +163,18 @@ export async function computeTopic3SizeSentence(
   const effectiveTags = effectivePhaseTags(schoolLowAge, schoolHighAge, ageGenderCounts);
   if (effectiveTags.length === 0) return null;
   const hasEarlyYears = hasEarlyYearsProvision(schoolLowAge);
+  // 2026-10-01, item 4 fix (docs/reports/2026-09-30-nearest-schools-special-through-
+  // schools.md, Option B, decided): a through-school's combined "overall" roll
+  // compared against a peer average dominated by single-phase schools produced a
+  // real, confirmed-live contradiction against the per-phase clauses below (e.g.
+  // Steiner Academy Hereford: "large" overall, every individual phase medium/small).
+  // Reuses effectiveTags -- already computed here, enrollment-aware -- rather than
+  // re-deriving the nominal phaseTags() check item 3's own sector-relaxation fix
+  // uses in a different module; this function already treats effectiveTags as the
+  // authoritative "how many real phases does this school have" signal for the
+  // per-phase clauses right below, so the through-school test stays consistent with
+  // that, not a second, less accurate one.
+  const isThroughSchool = effectiveTags.length > 1;
 
   const supabase = createServerAnonSupabaseClient();
   const { data: peerRows } = await supabase
@@ -199,20 +212,30 @@ export async function computeTopic3SizeSentence(
     peerCounts.get(row.urn)!.set(row.age, { male: row.male_total, female: row.female_total });
   }
 
-  // Overall whole-roll comparison, all same-sector LA peers regardless of phase tag.
-  let peerRollSum = 0;
-  let peerRollCount = 0;
-  for (const p of peers) {
-    const counts = peerCounts.get(p.urn);
-    if (!counts || counts.size === 0) continue;
-    const roll = reliableWholeRoll(counts);
-    if (roll === 0) continue;
-    peerRollSum += roll;
-    peerRollCount++;
-  }
+  // Overall whole-roll comparison, all same-sector LA peers regardless of phase tag --
+  // skipped entirely for through-schools (see isThroughSchool's own comment above).
+  // targetRoll === 0 still gates the whole sentence either way -- a school with no
+  // real whole roll at all has nothing genuine to compare in ANY form, through-school
+  // or not. peerRollCount === 0 only gates when the overall claim is actually being
+  // made (non-through-schools) -- a through-school no longer needs usable all-phase
+  // peer data to say anything, since it never renders that claim.
   const targetRoll = reliableWholeRoll(ageGenderCounts);
-  if (peerRollCount === 0 || targetRoll === 0) return null;
-  const overallBand = sizeWordFromRatio(targetRoll, peerRollSum / peerRollCount);
+  if (targetRoll === 0) return null;
+  let overallBand: SizeBand | null = null;
+  if (!isThroughSchool) {
+    let peerRollSum = 0;
+    let peerRollCount = 0;
+    for (const p of peers) {
+      const counts = peerCounts.get(p.urn);
+      if (!counts || counts.size === 0) continue;
+      const roll = reliableWholeRoll(counts);
+      if (roll === 0) continue;
+      peerRollSum += roll;
+      peerRollCount++;
+    }
+    if (peerRollCount === 0) return null;
+    overallBand = sizeWordFromRatio(targetRoll, peerRollSum / peerRollCount);
+  }
 
   // Round 10: Junior+Prep is one combined phase (see reliableJuniorPrepHeadcount's
   // own comment) -- collapsed to a single "Junior" clause covering the school's
