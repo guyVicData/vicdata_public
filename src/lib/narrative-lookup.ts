@@ -33,6 +33,7 @@ import {
   type PhaseSizeClause,
 } from "./narrative";
 import { EARLY_YEARS_PROXY_AGE_THRESHOLD } from "./narrative-config";
+import { cleanLaNameForDisplay } from "./la-name-display";
 
 // Reliable-range headcount for one phase tag: sums real per-age counts within the
 // tag's own nominal age range, floored at EARLY_YEARS_PROXY_AGE_THRESHOLD regardless
@@ -317,5 +318,8 @@ export async function computeTopic3SizeSentence(
     });
   }
 
-  return formatSizeSentence(overallBand, clauses, hasEarlyYears, laName);
+  // 2026-09-29: cleaned for DISPLAY only here, at formatSizeSentence's own prose call
+  // -- every real DB lookup above (line ~169's .eq("la_name", laName)) already ran
+  // against the real, raw laName; cleaning happens strictly after that, never before.
+  return formatSizeSentence(overallBand, clauses, hasEarlyYears, cleanLaNameForDisplay(laName));
 }

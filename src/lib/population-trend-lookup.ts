@@ -6,6 +6,7 @@ import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupReferenceData } from "./vicdata-reference";
 import { computePopulationTrend, ageProfileSeries, computeBirthsTrend, type PopulationTrend, type AgeProfileSeries, type BirthsTrend } from "./population-trend";
 import { SHIRE_COUNTY_DISTRICT_GSS_CODES } from "./shire-county-districts";
+import { cleanLaNameForDisplay } from "./la-name-display";
 
 export type PopulationTrendResult = {
   laName: string;
@@ -52,7 +53,12 @@ export async function lookupPopulationTrend(
     : undefined;
 
   return {
-    laName,
+    // 2026-09-29: cleaned for DISPLAY only -- both real lookups above (region
+    // resolution and the age_profile_aggregates .in("scope_key", ...) query) already
+    // ran against the raw laName; PopulationTrendSection's own consumers (the
+    // possessive header, BirthsColumn's "Births in {laName}") only ever interpolate
+    // this into prose.
+    laName: cleanLaNameForDisplay(laName),
     laTrend: laRow ? computePopulationTrend(laRow.by_age) : null,
     laSeries: laRow ? ageProfileSeries(laRow.by_age) : null,
     region,

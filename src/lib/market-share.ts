@@ -4,6 +4,7 @@
 import { lookupReferenceData } from "./vicdata-reference";
 import { estimateIntake, type EntryPoint, type IntakeEstimate } from "./intake-estimate";
 import { createServerAnonSupabaseClient } from "./supabase";
+import { cleanLaNameForDisplay } from "./la-name-display";
 
 // Same age-to-entry-point convention as intake-estimate.ts. A birth cohort's age-11
 // (or age-16) census count is approximated as born entry_age years before the census
@@ -71,8 +72,12 @@ export async function estimateMarketShare(
   });
   const laBirths = birthFacts.find((f) => f.breakdown === "total")?.value_numeric ?? null;
 
+  // 2026-09-29: cleaned for DISPLAY only (PaidTrendsSection's own "an estimated X% of
+  // {laName} births" prose) -- the real ons_births lookup just above already ran
+  // against crosswalk.gss_code, never crosswalk.la_name; nothing downstream of this
+  // return value queries by name again.
   if (!laBirths || laBirths === 0) {
-    return { ...empty, laName: crosswalk.la_name, birthYear };
+    return { ...empty, laName: cleanLaNameForDisplay(crosswalk.la_name), birthYear };
   }
 
   return {
@@ -80,7 +85,7 @@ export async function estimateMarketShare(
     intake,
     birthYear,
     laBirths,
-    laName: crosswalk.la_name,
+    laName: cleanLaNameForDisplay(crosswalk.la_name),
     shareLow: (intake.rangeLow / laBirths) * 100,
     shareHigh: (intake.rangeHigh / laBirths) * 100,
   };

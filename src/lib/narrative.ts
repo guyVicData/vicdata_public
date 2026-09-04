@@ -510,6 +510,47 @@ export function paragraphFeCollegeLocalShare(
 // comment explains why.
 // ---------------------------------------------------------------------------
 
+// New leading paragraph (2026-09-29): phase/age-range/gender opening, mirroring the
+// mainstream branch's own paragraph1PhaseGender -- the FE-template branch never had
+// one at all (feParagraphParticipation used to open this paragraph list, but it
+// returns null whenever neither crosswalk-scoped snapshot is real, which is Hereford's
+// whole shape). Phase word is a fixed literal "16+ college" for this entire branch,
+// not the mainstream phaseWord()/census-derived tags -- there's no DfE census age-band
+// roll data on this branch at all to derive a real phase tag from. Age range reuses
+// yearGroupSingleLabel (same age->year-group conversion paragraph1PhaseGender already
+// uses) over school.statutory_low_age/high_age -- the real GIAS fields, not census-
+// derived. Gender composition reuses classifyGenderComposition/the same single-sex-
+// vs-co-ed branching paragraph1PhaseGender already has -- female/male are passed in
+// already resolved (page.tsx's own job: this branch has three possible real sources --
+// the aggregate ilrSnapshot, or the two crosswalk-scoped snapshots summed, or
+// whichever one alone exists -- and picking between them is a data-source decision,
+// not a rendering one, same "page.tsx computes, narrative.ts renders" split every
+// other paragraph in this file already follows).
+export function feParagraphPhaseGender(
+  collegeName: string,
+  lowAge: number | null,
+  highAge: number | null,
+  female: number,
+  male: number,
+): string | null {
+  if (lowAge === null || highAge === null) return null;
+  const ageRangeClause = `with pupils from ${yearGroupSingleLabel(lowAge)} to ${yearGroupSingleLabel(highAge)}`;
+  const comp = classifyGenderComposition(female, male);
+  if (!comp) return null;
+
+  if (comp.kind === "single_sex") {
+    return `${collegeName} is a 16+ college, ${ageRangeClause}. It is single-sex (${comp.dominantGender}).`;
+  }
+
+  const inHedgeZone = comp.kind === "mostly" && comp.dominantSharePct < BALANCED_BAND_HIGH * 100 + GENDER_LABEL_HEDGE_WIDTH_PP * 100;
+  const qualifier = comp.kind === "balanced" ? ", roughly balanced" : inHedgeZone ? "" : `, mostly ${comp.dominantGender}`;
+
+  return (
+    `${collegeName} is a 16+ college, ${ageRangeClause}. It is co-educational${qualifier}, ` +
+    `with ${comp.dominantGender} making up ${comp.dominantSharePct.toFixed(0)}% of all students. ${GENDER_ALWAYS_ON_HEDGE}`
+  );
+}
+
 // Paragraph 1: this college's own participation figures (under-19 + adult, kept as
 // two clauses -- never summed into one number, same discipline as the cards
 // themselves).

@@ -32,6 +32,7 @@ import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupReferenceData } from "./vicdata-reference";
 import { sectorTag, type SectorTag, FE_PARTICIPATION_ESTABLISHMENT_TYPES } from "./typology";
 import { under19Totals, UNDER_19_TOTAL_BREAKDOWN } from "./fe-participation-roll";
+import { cleanLaNameForDisplay } from "./la-name-display";
 
 // This donut's own deliberate scope -- three sectors, unaffected by the map's 2026-09-03
 // Special Schools addition (typology.ts's sectorTag() now returns a real fourth value
@@ -145,7 +146,11 @@ export async function computeLaSectorComposition(
       : null;
 
   return {
-    laName,
+    // 2026-09-29: cleaned for DISPLAY only -- the real query above (.eq("la_name",
+    // laName)) already ran against the raw value; every consumer of this returned
+    // laName (RollCard, narrative.ts's paragraph2SectorSize/FE-college sentences) only
+    // ever interpolates it into prose, never queries with it again.
+    laName: cleanLaNameForDisplay(laName),
     bySector,
     totalPupils,
     thisSchoolSector: trackedThisSchoolSector,

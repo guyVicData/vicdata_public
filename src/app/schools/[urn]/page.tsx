@@ -26,6 +26,7 @@ import {
   lookupAllRegionsSixthFormSectorTotals,
 } from "@/lib/sixth-form-sector-aggregates";
 import { lookupPopulationTrend, lookupBirthsTrend } from "@/lib/population-trend-lookup";
+import { cleanLaNameForDisplay } from "@/lib/la-name-display";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
 import TypologyTags from "@/components/TypologyTags";
 import SchoolMap from "@/components/SchoolMap";
@@ -43,7 +44,7 @@ import {
 import { buildSurroundingSummary } from "@/lib/surrounding-summary";
 import {
   paragraph1PhaseGender, paragraph2SectorSize, paragraph3Shape, paragraph4LocalContext,
-  feParagraphParticipation, feParagraphNationalStanding, feParagraphLocalContext, feParagraphRegionalStanding,
+  feParagraphPhaseGender, feParagraphParticipation, feParagraphNationalStanding, feParagraphLocalContext, feParagraphRegionalStanding,
   topic4bGenderVariation, renderTopic4b,
   observedSpanForPhase, primaryPhaseTag, hasEarlyYearsProvision,
   renderNumericShapeDefinition,
@@ -239,7 +240,7 @@ export default async function SchoolPage({
       return (
         <ConsortiumGroupPage
           groupName={school.current_name}
-          laName={school.la_name}
+          laName={cleanLaNameForDisplay(school.la_name)}
           members={members}
           mapMembers={mapMembers}
           syncedAt={memberLinks[0]?.syncedAt ?? null}
@@ -607,7 +608,9 @@ export default async function SchoolPage({
         typology.boarding,
         roll.boarding,
         populationTrend?.laTrend ?? null,
-        school.la_name,
+        // 2026-09-29: cleaned for display -- this is a pure prose consumer
+        // (narrative.ts's own paragraph4LocalContext does no lookup with it).
+        cleanLaNameForDisplay(school.la_name),
         populationTrend?.region ?? null,
         populationTrend?.regionTrend ?? null,
         shape?.label ?? null,
@@ -615,16 +618,47 @@ export default async function SchoolPage({
     ];
   }
 
+  // 2026-09-29: which real female/male figures open this branch's narrative
+  // (feParagraphPhaseGender) and feed GenderSplitCard's own fallback below -- three
+  // possible real sources on this branch, must never be double-counted. Priority: the
+  // aggregate ilrSnapshot first (already whole-institution, Hereford's own only real
+  // source); else BOTH crosswalk-scoped snapshots summed (two genuinely distinct
+  // populations -- under-19 and adult -- safe to add); else whichever single one
+  // exists alone. Verified against real data across institutions of each shape before
+  // shipping (see this round's own report).
+  const under19GenderReal = feUnder19Snapshot !== null && feUnder19Snapshot.female !== null && feUnder19Snapshot.male !== null;
+  const adultGenderReal = feAdultSnapshot !== null && feAdultSnapshot.female !== null && feAdultSnapshot.male !== null;
+  let feGenderFemale = 0;
+  let feGenderMale = 0;
+  if (ilrSnapshot && ilrSnapshot.female !== null && ilrSnapshot.male !== null) {
+    feGenderFemale = ilrSnapshot.female;
+    feGenderMale = ilrSnapshot.male;
+  } else if (under19GenderReal && adultGenderReal) {
+    feGenderFemale = feUnder19Snapshot!.female! + feAdultSnapshot!.female!;
+    feGenderMale = feUnder19Snapshot!.male! + feAdultSnapshot!.male!;
+  } else if (under19GenderReal) {
+    feGenderFemale = feUnder19Snapshot!.female!;
+    feGenderMale = feUnder19Snapshot!.male!;
+  } else if (adultGenderReal) {
+    feGenderFemale = feAdultSnapshot!.female!;
+    feGenderMale = feAdultSnapshot!.male!;
+  }
+
   // Item 7 (never built until now): "current state of the college" narrative,
   // FE-template branch only. Same compute-then-render discipline as the mainstream
-  // block above -- four independently-nullable paragraphs from the four real data
-  // groups already computed for this branch (participation snapshots, national
-  // distributions, local/LA context, regional standing). Paragraphs 3/4 reuse the
+  // block above -- five independently-nullable paragraphs from the real data groups
+  // already computed for this branch (phase/gender, participation snapshots, national
+  // distributions, local/LA context, regional standing). Paragraphs 4/5 reuse the
   // exact sentences FeCollegeLocalContextCard/RegionalSixthFormCard already render --
   // not a second, possibly-diverging description of the same real numbers. 2026-09-26:
-  // re-gated on showFeTemplate.
+  // re-gated on showFeTemplate. 2026-09-29: new leading feParagraphPhaseGender --
+  // this branch never had a phase/age/gender opening sentence before (unlike the
+  // mainstream branch's paragraph1PhaseGender); feParagraphParticipation alone
+  // returns null whenever neither crosswalk-scoped snapshot is real, which is every
+  // aggregate-only institution's whole shape (Hereford, Rochdale, Solihull, ...).
   const feNarrativeParagraphs: (string | null)[] = showFeTemplate
     ? [
+        feParagraphPhaseGender(school.current_name, school.statutory_low_age, school.statutory_high_age, feGenderFemale, feGenderMale),
         feParagraphParticipation(school.current_name, feUnder19Snapshot, feAdultSnapshot),
         feParagraphNationalStanding(
           school.current_name,
@@ -824,10 +858,24 @@ export default async function SchoolPage({
                   adultSnapshot={feAdultSnapshot}
                   aggregateSnapshot={ilrSnapshot}
                 />
-                {feUnder19Snapshot && feUnder19Snapshot.female !== null && feUnder19Snapshot.male !== null && (
+                {/* 2026-09-29: falls back to the aggregate ilrSnapshot when
+                    feUnder19Snapshot itself isn't real (Hereford's shape) -- the
+                    information was already on the page (FeCollegeLocalContextCard's
+                    own "Participation (ILR)" stat), just not feeding this card.
+                    Priority here is under19-if-real, else aggregate-if-real -- the
+                    OPPOSITE order from feParagraphPhaseGender's own female/male
+                    resolution above, deliberately: this card's peer comparison
+                    (feGenderPeers, left untouched, still gated on feUnder19Snapshot
+                    alone) is inherently under-19-specific, so the under-19 figure is
+                    the right one to prefer whenever it's real; the aggregate is a
+                    last-resort self-data-only fallback, not a peer-comparable one --
+                    hence its own honest, un-under-19-claiming subtitle below, and
+                    feGenderPeers.peer being null in that case (correctly rendering no
+                    peer donut, GenderSplitCard's own existing behaviour). */}
+                {(under19GenderReal || (ilrSnapshot && ilrSnapshot.female !== null && ilrSnapshot.male !== null)) && (
                   <GenderSplitCard
-                    girls={feUnder19Snapshot.female}
-                    boys={feUnder19Snapshot.male}
+                    girls={under19GenderReal ? feUnder19Snapshot!.female! : ilrSnapshot!.female!}
+                    boys={under19GenderReal ? feUnder19Snapshot!.male! : ilrSnapshot!.male!}
                     peer={feGenderPeers.peer}
                     peerLabel={
                       feGenderPeers.found > 0
@@ -837,7 +885,11 @@ export default async function SchoolPage({
                     }
                     subjectLabel="This college"
                     sexLabels={{ female: "female", male: "male" }}
-                    subtitle="U19 participants. Shown as a share, so it's comparable with the peer average."
+                    subtitle={
+                      under19GenderReal
+                        ? "U19 participants. Shown as a share, so it's comparable with the peer average."
+                        : "ILR participants, whole institution -- not under-19-specific. Shown as a share."
+                    }
                   />
                 )}
               </div>
@@ -870,7 +922,7 @@ export default async function SchoolPage({
             <>
               {bandDistributions && (
                 <PhaseBreakdownCard
-                  laName={school.la_name}
+                  laName={cleanLaNameForDisplay(school.la_name)}
                   bands={AGE_BANDS.map((b) => ({
                     key: b.key,
                     label: b.label,
@@ -934,7 +986,7 @@ export default async function SchoolPage({
                 <LaBoardersCard
                   boarders={roll.boarding!.boarders}
                   laBoardersTotal={laBoardersTotal}
-                  laName={school.la_name}
+                  laName={cleanLaNameForDisplay(school.la_name)}
                 />
               )}
             </>
