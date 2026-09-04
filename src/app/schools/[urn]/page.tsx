@@ -332,21 +332,20 @@ export default async function SchoolPage({
   // case the ILR card above exists for.
   let viewedRollSource: "census" | "ilr" | null = roll ? "census" : null;
   let viewedIlrTotal: number | null = null;
-  // 2026-09-12, FE-sector build: genuine FE-sector schools (Further education/Sixth
-  // form centres/Special post 16 institution -- FE_PARTICIPATION_ESTABLISHMENT_TYPES,
-  // the real ILR crosswalk scope) structurally never have census roll data, so almost
-  // everything on the page was blank for them. These two snapshots feed the new
-  // participation cards below (step 2 of the FE-college build) -- fetched once here
-  // (full facts, not breakdown-filtered) and reused for both the cards and the map-dot
-  // total (viewedIlrTotal), rather than a second round-trip for the same two sources.
-  // Prompt A: shared by items 1-4 below (laComposition's own FE-sector widening,
-  // the gender-peer search, the size-distribution lookup, and every new FE-sector
-  // card's own render gate) -- computed once, not re-derived at each call site.
-  const isGenuineFeSector = FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(school.establishment_type ?? "");
+  // 2026-09-12, FE-sector build: genuine FE-corporation-typed schools (Further
+  // education/Sixth form centres/Special post 16 institution --
+  // FE_PARTICIPATION_ESTABLISHMENT_TYPES, the real dfe_fe_participation/_adult ingest
+  // crosswalk scope) structurally never have census roll data. isFeParticipationCrosswalkScope
+  // is scoped to exactly that -- it decides only whether it's worth querying those two
+  // sources at all (a real efficiency thing, not a display decision: no other
+  // establishment_type is ever in that crosswalk, so querying for one would always
+  // return nothing). It is NOT the FE-template display switch any more -- see
+  // showFeTemplate below, computed from the real data these fetches return.
+  const isFeParticipationCrosswalkScope = FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(school.establishment_type ?? "");
   let feUnder19Snapshot: IlrParticipationSnapshot | null = null;
   let feAdultSnapshot: IlrParticipationSnapshot | null = null;
   if (!roll) {
-    if (isGenuineFeSector) {
+    if (isFeParticipationCrosswalkScope) {
       const feFacts = await lookupReferenceData({ sourceId: "dfe_fe_participation", entityIds: [urn] });
       feUnder19Snapshot = buildIlrParticipationSnapshot(feFacts, "under_19");
       if (feUnder19Snapshot) viewedIlrTotal = feUnder19Snapshot.total;
@@ -366,6 +365,24 @@ export default async function SchoolPage({
     }
     if (viewedIlrTotal !== null) viewedRollSource = "ilr";
   }
+  // 2026-09-26: the real FE-template switch, DATA-driven rather than establishment_type-
+  // driven -- confirmed real case that motivated this: URN 143929, Hereford Sixth Form
+  // College, establishment_type "Academy 16-19 converter" (outside
+  // FE_PARTICIPATION_ESTABLISHMENT_TYPES, so isFeParticipationCrosswalkScope is false
+  // for it), but with real, current dfe_fe_participation_academy data (~2,190 students)
+  // that the old isGenuineFeSector-driven gate never surfaced -- Hereford got the bare
+  // IlrParticipationCard bolted onto an otherwise-empty mainstream template instead of
+  // the real FE page design. The rule (confirmed with Guy): if real census data exists,
+  // use it (unchanged, everything below stays gated on `roll`); if not, and real ILR
+  // data exists from ANY source -- the crosswalk-scoped under-19/adult snapshots above,
+  // OR the universally-fetched dfe_fe_participation_academy ilrSnapshot -- use the FE
+  // page design. Genuinely data-driven: a crosswalk-scoped institution with real data
+  // gets it (Trafford and Stockport, unchanged), a crosswalk-scoped institution with
+  // NOTHING gets the distinct FeNoParticipationDataCard message instead (Harrow
+  // Collegiate, unchanged -- see that card's own render gate below), and a
+  // non-crosswalk institution with real ILR data (Hereford, and others like it) now
+  // gets the real template it was always missing.
+  const showFeTemplate = !roll && (feUnder19Snapshot !== null || feAdultSnapshot !== null || ilrSnapshot !== null);
   const viewedTotalRoll = roll?.totalRoll ?? viewedIlrTotal;
   // Bug fix (Task 3 review): this used to be gated on the target school having its
   // own roll data, backwards -- a standalone 6th-form/FE college (Worcester Sixth
@@ -470,24 +487,28 @@ export default async function SchoolPage({
   // Dashboard rebuild (2026-08-28) additions -- gated behind `roll` existing, same as
   // every other census-derived card below, since none of these mean anything without
   // a real roll to attach them to. laComposition is the one exception (2026-09-15,
-  // Prompt A item 1): a genuine FE-sector school never has `roll` but still needs
-  // laComposition.bySector.FE for its own local-context card -- thisSchoolNumberOfPupils
-  // stays school.number_of_pupils (always null for FE, confirmed last round; the FE
-  // card computes its own share from feUnder19Snapshot instead, not this function's
-  // own thisSchoolPupilShareOfSector).
-  const laComposition = roll || isGenuineFeSector
+  // Prompt A item 1; 2026-09-26: re-gated on showFeTemplate, not
+  // isFeParticipationCrosswalkScope -- a school getting the FE template still needs
+  // laComposition.bySector.FE for its own local-context card regardless of which real
+  // ILR source its data came from) -- thisSchoolNumberOfPupils stays
+  // school.number_of_pupils (always null for FE, confirmed last round; the FE card
+  // computes its own share from feUnder19Snapshot instead, not this function's own
+  // thisSchoolPupilShareOfSector).
+  const laComposition = roll || showFeTemplate
     ? await computeLaSectorComposition(school.la_name ?? "", typology.sector, school.number_of_pupils)
     : null;
   const bandDistributions = roll ? await lookupAgeBandDistributions(school.la_name, roll.period) : null;
   const populationTrend = roll ? await lookupPopulationTrend(school.la_name, school.la_code, roll.period) : null;
   // Prompt A item 3: national-only, no LA/regional cut -- most LAs have 0-1 real FE
-  // colleges, too thin for a meaningful per-LA distribution.
-  const feDistributions = isGenuineFeSector
+  // colleges, too thin for a meaningful per-LA distribution. 2026-09-26: re-gated on
+  // showFeTemplate (display decision), not isFeParticipationCrosswalkScope (fetch-
+  // scoping decision) -- see showFeTemplate's own comment above.
+  const feDistributions = showFeTemplate
     ? await lookupFeParticipationDistributions(CURRENT_CENSUS_PERIOD)
     : { under19: null, adult: null };
   // Prompt A item 2: only worth the (small, ~370-candidate) search when this school
   // is a genuine FE college with a real under-19 gender split of its own to pair a
-  // peer average against -- feUnder19Snapshot itself gates this, not isGenuineFeSector
+  // peer average against -- feUnder19Snapshot itself gates this, not showFeTemplate
   // alone (City Lit, a real FE-sector college, has no under-19 data at all).
   const feGenderPeers = feUnder19Snapshot
     ? await findFeCollegeGenderPeers(urn)
@@ -495,15 +516,15 @@ export default async function SchoolPage({
   // Item 1's full local pie: state/independent sixth-form (16-18) totals for this
   // college's own LA, from the new sixth_form_sector_aggregates table -- paired with
   // laComposition.bySector.FE (already computed above, read live) inside
-  // FeCollegeLocalContextCard itself.
-  const sixthFormLa = isGenuineFeSector
+  // FeCollegeLocalContextCard itself. 2026-09-26: re-gated on showFeTemplate.
+  const sixthFormLa = showFeTemplate
     ? await lookupLaSixthFormSectorTotals(school.la_name ?? "", CURRENT_CENSUS_PERIOD)
     : { state: null, independent: null };
-  // Item 6: regional stacked bar + two pie charts, FE-sector branch only (same scope
-  // as item 1's local card -- this whole build is FE-sector-page parity work, not a
-  // mainstream-page feature).
-  const ownRegion = isGenuineFeSector ? await getRegionForLaCode(school.la_code) : null;
-  const [ownRegionTotals, nationalSixthFormTotals, allRegionsSixthFormTotals] = isGenuineFeSector
+  // Item 6: regional stacked bar + two pie charts, FE-template branch only (same scope
+  // as item 1's local card -- this whole build is FE-page parity work, not a
+  // mainstream-page feature). 2026-09-26: re-gated on showFeTemplate.
+  const ownRegion = showFeTemplate ? await getRegionForLaCode(school.la_code) : null;
+  const [ownRegionTotals, nationalSixthFormTotals, allRegionsSixthFormTotals] = showFeTemplate
     ? await Promise.all([
         ownRegion ? lookupRegionSixthFormSectorTotals(ownRegion, CURRENT_CENSUS_PERIOD) : Promise.resolve(null),
         lookupNationalSixthFormSectorTotals(CURRENT_CENSUS_PERIOD),
@@ -574,13 +595,14 @@ export default async function SchoolPage({
   }
 
   // Item 7 (never built until now): "current state of the college" narrative,
-  // FE-sector branch only. Same compute-then-render discipline as the mainstream
+  // FE-template branch only. Same compute-then-render discipline as the mainstream
   // block above -- four independently-nullable paragraphs from the four real data
   // groups already computed for this branch (participation snapshots, national
   // distributions, local/LA context, regional standing). Paragraphs 3/4 reuse the
   // exact sentences FeCollegeLocalContextCard/RegionalSixthFormCard already render --
-  // not a second, possibly-diverging description of the same real numbers.
-  const feNarrativeParagraphs: (string | null)[] = isGenuineFeSector
+  // not a second, possibly-diverging description of the same real numbers. 2026-09-26:
+  // re-gated on showFeTemplate.
+  const feNarrativeParagraphs: (string | null)[] = showFeTemplate
     ? [
         feParagraphParticipation(school.current_name, feUnder19Snapshot, feAdultSnapshot),
         feParagraphNationalStanding(
@@ -707,16 +729,21 @@ export default async function SchoolPage({
             </>
           )}
 
-          {/* 2026-09-17: gated off isGenuineFeSector -- NoCensusDataCard's own
-              wording ("expected for standalone 6th-form/FE-corporation institutions")
-              was true but redundant on the FE branch, which already explains the same
-              structural gap via the real cards next to it. FeNoParticipationDataCard
-              below covers the one case that would otherwise go genuinely silent: a
-              real FE-sector institution with neither census NOR any ILR data of its
-              own (Harrow Collegiate, confirmed real -- reports under a parent URN). */}
-          {!roll && !isGenuineFeSector && <NoCensusDataCard />}
+          {/* 2026-09-26: both no-data cards are now genuinely data-driven (showFeTemplate),
+              not establishment_type-driven (isFeParticipationCrosswalkScope) -- but kept
+              distinguishable from each other by which population each really describes:
+              FeNoParticipationDataCard's more specific "reports under a parent URN"
+              wording only fires for an institution GIAS itself types as a genuine
+              FE-corporation (Harrow Collegiate, confirmed real -- crosswalk-scoped, no
+              real data anywhere), while NoCensusDataCard covers everyone else with
+              nothing -- mainstream schools with no census (a recently-opened school), AND
+              non-crosswalk institutions (Academy 16-19 converter/Free schools 16 to 19)
+              with neither census nor dfe_fe_participation_academy data. Both stay
+              !showFeTemplate (no real data anywhere to build the FE template from) --
+              isFeParticipationCrosswalkScope is what splits the wording between them. */}
+          {!roll && !showFeTemplate && !isFeParticipationCrosswalkScope && <NoCensusDataCard />}
 
-          {isGenuineFeSector && !feUnder19Snapshot && !feAdultSnapshot && <FeNoParticipationDataCard />}
+          {!roll && !showFeTemplate && isFeParticipationCrosswalkScope && <FeNoParticipationDataCard />}
 
           {showIlrCard && ilrSnapshot && (
             <IlrParticipationCard
@@ -753,7 +780,7 @@ export default async function SchoolPage({
               RollCard does for mainstream: a prominent stat up top, "where this sits
               locally" below), so the stack is now a genuine two-item stack matching
               RollCard+GenderSplitCard's own shape exactly. */}
-          {isGenuineFeSector && (
+          {showFeTemplate && (
             <>
               <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
                 <CurrentStateNarrative
@@ -795,7 +822,7 @@ export default async function SchoolPage({
             </>
           )}
 
-          {isGenuineFeSector && (
+          {showFeTemplate && (
             <FeParticipationSizeCard
               under19Total={feUnder19Snapshot?.total ?? null}
               adultTotal={feAdultSnapshot?.total ?? null}
@@ -804,11 +831,11 @@ export default async function SchoolPage({
             />
           )}
 
-          {isGenuineFeSector && (
+          {showFeTemplate && (
             <FeParticipationSplitCard under19Total={feUnder19Snapshot?.total ?? null} adultTotal={feAdultSnapshot?.total ?? null} />
           )}
 
-          {isGenuineFeSector && (
+          {showFeTemplate && (
             <RegionalSixthFormCard
               ownRegion={ownRegion}
               ownRegionTotals={ownRegionTotals}
@@ -879,12 +906,13 @@ export default async function SchoolPage({
               into the slot SurroundingSchoolsCard used to hold, now that its own
               content has moved into ShapeCard's right-hand side above -- a pure
               relocation, no change to RegionalNationalCard itself.
-              2026-09-17: gated off isGenuineFeSector -- context.regional is
-              roll_aggregates' LA-level MAINSTREAM figure (Academies/LA-maintained/
+              2026-09-17: gated off showFeTemplate (renamed 2026-09-26, was
+              isGenuineFeSector -- see that flag's own comment for why) -- context.regional
+              is roll_aggregates' LA-level MAINSTREAM figure (Academies/LA-maintained/
               Independent/Free Schools only), which was showing on FE college pages
               regardless, now redundant and misleading there next to
               RegionalSixthFormCard's own real FE-sector regional/national context. */}
-          {(context.national || context.regional) && !isGenuineFeSector && (
+          {(context.national || context.regional) && !showFeTemplate && (
             <RegionalNationalCard
               laName={school.la_name}
               regional={
