@@ -1,16 +1,15 @@
 import { Card, CardHeading, CardSubheading, Caption } from "./Card";
 import { ShapeIcon, SHAPE_LABELS } from "./ShapeIcon";
-import { PopulationTrendSection } from "./PopulationTrendSection";
 import type { ShapeLabel, ShapeMetrics } from "@/lib/shape-classifier";
 import type { AgeGenderCounts } from "@/lib/roll-data";
-import type { PopulationTrend, AgeProfileSeries } from "@/lib/population-trend";
 import ShapeChart from "@/components/ShapeChart";
 
-// Full width -- the key section (design reference). "Population trend in the area"
-// (real DfE census school-enrolment, ages 5-15, Growing/Stable/Decline/Steep
-// Decline/Severe Decline) was investigated and built 2026-08-28 -- full trail
-// (why school census not ONS, the LA->region crosswalk, the metric/band derivation
-// across several rounds of real-data checks) logged in docs/OPEN_QUESTIONS.md.
+// Full width -- the key section (design reference). "Population trend(s) in the area"
+// used to render at the bottom of THIS card -- extracted 2026-09-27 into its own
+// PopulationTrendSection panel (page.tsx, rendered directly after this one), Guy's
+// own call to give it equal visual weight rather than reading as a footnote to
+// Shape. See that component's own module comment for the metric/band derivation
+// trail (docs/OPEN_QUESTIONS.md, 2026-08-28).
 //
 // 2026-09-09, round 15: the icon+label moved OUT of the left column entirely -- it's
 // now the lead visual of the RIGHT column, paired with the numeric shape definition
@@ -35,6 +34,24 @@ import ShapeChart from "@/components/ShapeChart";
 // slot). Its own pooled-age-profile data (aggregateAgeCounts) is still computed by
 // aggregateSurroundingStat() in surrounding-schools.ts; this card just no longer takes
 // it as a prop, since nothing here renders it any more.
+//
+// 2026-09-27, shape icon column: the six real shapes ShapeIcon/classifyShape() can
+// actually return, in the same order SHAPE_LABELS/shape-classifier.ts already lists
+// them -- "irregular" deliberately excluded, confirmed (not assumed) still genuinely
+// dead: shape-classifier.ts's own type comment says "never returned by classifyShape
+// any more," and a direct grep of that file found no `return "irregular"` anywhere in
+// the real classification logic, only that comment. If classifyShape is ever changed
+// to return it again, this list needs updating by hand -- not derived from
+// SHAPE_LABELS' own keys, which still includes it for ShapeIcon's own exhaustive
+// switch.
+const LIVE_SHAPES: ShapeLabel[] = ["tube", "pyramid", "top_step", "funnel", "mushroom", "wineglass"];
+// Muted opacity for the five non-active icons -- ShapeIcon's own gold-circle theming
+// (CircleTheme, that component's own file) is reused as-is for the active icon
+// (full-strength, exactly as every other call site already renders it); the other
+// five are dimmed via a plain wrapper opacity rather than a second colour system, so
+// there's only ever one "shape icon" visual language on this page, just muted or not.
+const MUTED_ICON_OPACITY = 0.3;
+
 export function ShapeCard({
   ageGenderCounts,
   shape,
@@ -43,7 +60,6 @@ export function ShapeCard({
   shapeDefinition,
   phaseSplitSentence,
   shapeQualifierAddenda,
-  populationTrend,
 }: {
   ageGenderCounts: AgeGenderCounts | null;
   shape: ShapeLabel | null;
@@ -68,14 +84,6 @@ export function ShapeCard({
   // are the shape's own trajectory qualifiers, this is a different, independent fact).
   phaseSplitSentence: string | null;
   shapeQualifierAddenda: string | null;
-  populationTrend: {
-    laName: string;
-    laTrend: PopulationTrend | null;
-    laSeries: AgeProfileSeries | null;
-    region: string | null;
-    regionTrend: PopulationTrend | null;
-    regionSeries: AgeProfileSeries | null;
-  } | null;
 }) {
   return (
     <Card size="full">
@@ -97,7 +105,21 @@ export function ShapeCard({
         <div className="min-w-0 flex-1">
           {shape ? (
             <div className="mb-5 flex items-start gap-4">
-              <ShapeIcon shape={shape} size={48} />
+              {/* 2026-09-27: single icon replaced with a column of all six live
+                  shapes, this school's own one highlighted -- same idea as
+                  PhaseBreakdownCard's XS-XL badges (every category shown, current one
+                  distinguished from the muted rest), applied to the shape taxonomy.
+                  "For now" placement (Guy's own framing) -- still directly left of
+                  the name/definition text block, not a final decision on where this
+                  belongs on the page. */}
+              <div className="flex shrink-0 flex-col gap-2">
+                {LIVE_SHAPES.map((s) => (
+                  <div key={s} className="flex items-center gap-2" style={{ opacity: s === shape ? 1 : MUTED_ICON_OPACITY }}>
+                    <ShapeIcon shape={s} size={72} />
+                    <span className="text-[11.5px] font-medium text-stone-700 dark:text-stone-300">{SHAPE_LABELS[s]}</span>
+                  </div>
+                ))}
+              </div>
               <div className="min-w-0 pt-0.5">
                 <h3 className="font-[family-name:var(--font-newsreader)] text-[24px] font-semibold leading-tight text-stone-900 dark:text-stone-100">
                   {SHAPE_LABELS[shape]}
@@ -120,16 +142,6 @@ export function ShapeCard({
           )}
         </div>
       </div>
-      {populationTrend && (
-        <PopulationTrendSection
-          laName={populationTrend.laName}
-          laTrend={populationTrend.laTrend}
-          laSeries={populationTrend.laSeries}
-          region={populationTrend.region}
-          regionTrend={populationTrend.regionTrend}
-          regionSeries={populationTrend.regionSeries}
-        />
-      )}
     </Card>
   );
 }

@@ -75,3 +75,45 @@ export function ageProfileSeries(byAge: Record<string, number>): AgeProfileSerie
   for (let age = 15; age >= 5; age--) series.push({ age, total: byAge[String(age)] ?? 0 });
   return series;
 }
+
+// Births trend (population-trends-panel build, 2026-09-27) -- real ONS births
+// (canonical_facts_current, source_id "ons_births"), last 5 real years
+// (2021-2025, confirmed live: every real LA in this database has all 5 -- see
+// population-trend-lookup.ts's own lookupBirthsTrend). Same metric SHAPE as the
+// age5-vs-age15 one above (older/larger baseline vs newer/smaller), fed into the
+// SAME classifyPopulationTrend() bands -- a deliberate choice, not an oversight:
+// checked the real distribution first (153 real LAs, 2021->2025) and found these
+// bands put 114 of 153 (75%) into a single "Decline" tier, a real and true
+// reflection of UK birth rates over this specific window, not a band-fit failure --
+// confirmed with Guy directly rather than inventing separate birth-specific cut
+// points, so "Decline" means the same numeric thing everywhere on this page.
+//
+// Reliability floor: RELIABILITY_FLOOR_BIRTHS = 100, checked against the real
+// distribution's smallest LAs (Isles of Scilly=23, City of London=60, then a clean
+// jump to Rutland=274) -- 100 falls in that real gap, excluding only the two
+// genuinely extreme outliers while keeping every other real, small-but-genuine LA
+// (Rutland included) in, same "protect against noise, don't hide real areas"
+// philosophy as RELIABILITY_FLOOR_AGE5 above (a different number because these are
+// different quantities -- raw annual births vs enrolled-pupil census counts -- not
+// because the two floors disagree in spirit).
+const RELIABILITY_FLOOR_BIRTHS = 100;
+
+export type BirthsTrend = {
+  tier: PopulationTrendTier;
+  pct: number; // (earliestBirths - latestBirths) / earliestBirths * 100 -- same sign convention as PopulationTrend.pct above (negative = growing)
+  earliestYear: number;
+  latestYear: number;
+  earliestBirths: number;
+  latestBirths: number;
+};
+
+export function computeBirthsTrend(
+  earliestYear: number,
+  latestYear: number,
+  earliestBirths: number,
+  latestBirths: number,
+): BirthsTrend | null {
+  if (earliestBirths < RELIABILITY_FLOOR_BIRTHS || latestBirths <= 0) return null;
+  const pct = ((earliestBirths - latestBirths) / earliestBirths) * 100;
+  return { tier: classifyPopulationTrend(pct), pct, earliestYear, latestYear, earliestBirths, latestBirths };
+}

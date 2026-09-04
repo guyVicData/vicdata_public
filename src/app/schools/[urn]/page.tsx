@@ -25,7 +25,7 @@ import {
   lookupNationalSixthFormSectorTotals,
   lookupAllRegionsSixthFormSectorTotals,
 } from "@/lib/sixth-form-sector-aggregates";
-import { lookupPopulationTrend } from "@/lib/population-trend-lookup";
+import { lookupPopulationTrend, lookupBirthsTrend } from "@/lib/population-trend-lookup";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
 import TypologyTags from "@/components/TypologyTags";
 import SchoolMap from "@/components/SchoolMap";
@@ -64,10 +64,10 @@ import { PhaseBreakdownCard } from "@/components/dashboard/PhaseBreakdownCard";
 import { ShapeCard } from "@/components/dashboard/ShapeCard";
 import { NearestMatchedSchoolsCard } from "@/components/dashboard/NearestMatchedSchoolsCard";
 import { GenderSplitCard } from "@/components/dashboard/GenderSplitCard";
+import { PopulationTrendSection } from "@/components/dashboard/PopulationTrendSection";
 import {
   BoardingCard,
   LaBoardersCard,
-  RegionalNationalCard,
   IlrParticipationCard,
   NoCensusDataCard,
   ComingSoonCard,
@@ -144,21 +144,21 @@ type RollAggregate = {
   boarders_total: number | null;
 };
 
+// 2026-09-27: national no longer fetched -- it was only ever read by
+// RegionalNationalCard (removed, population-trends-panel round), and context.regional
+// (LA-level, still real content elsewhere: LaBoardersCard's denominator, RollCard's
+// own LA figures) is untouched.
 async function getContextAggregates(laName: string | null): Promise<{
-  national: RollAggregate | null;
   regional: RollAggregate | null;
 }> {
   const supabase = createServerAnonSupabaseClient();
-  const scopeKeys = laName ? ["", laName] : [""];
+  if (!laName) return { regional: null };
   const { data } = await supabase
     .from("roll_aggregates")
     .select("scope_key, total_roll, school_count, shape_label, period, boarders_total")
-    .in("scope_key", scopeKeys);
-  const rows = (data as RollAggregate[]) ?? [];
-  return {
-    national: rows.find((r) => r.scope_key === "") ?? null,
-    regional: laName ? rows.find((r) => r.scope_key === laName) ?? null : null,
-  };
+    .eq("scope_key", laName)
+    .maybeSingle();
+  return { regional: (data as RollAggregate | null) ?? null };
 }
 
 export default async function SchoolPage({
@@ -499,6 +499,12 @@ export default async function SchoolPage({
     : null;
   const bandDistributions = roll ? await lookupAgeBandDistributions(school.la_name, roll.period) : null;
   const populationTrend = roll ? await lookupPopulationTrend(school.la_name, school.la_code, roll.period) : null;
+  // Births chart (population-trends-panel build, 2026-09-27): real ONS births, LA-only.
+  // Gated on `roll` same as populationTrend -- both feed PopulationTrendSection, which
+  // only ever renders inside the `roll &&` block below. See population-trend-lookup.ts's
+  // own lookupBirthsTrend for the real source_id/shire-crosswalk investigation behind
+  // this.
+  const birthsTrend = roll ? await lookupBirthsTrend(school.la_code) : { laBirthsTrend: null, laBirthsSeries: null };
   // Prompt A item 3: national-only, no LA/regional cut -- most LAs have 0-1 real FE
   // colleges, too thin for a meaningful per-LA distribution. 2026-09-26: re-gated on
   // showFeTemplate (display decision), not isFeParticipationCrosswalkScope (fetch-
@@ -883,8 +889,24 @@ export default async function SchoolPage({
                 shapeDefinition={shapeDefinition}
                 phaseSplitSentence={phaseSplitSentence}
                 shapeQualifierAddenda={shapeQualifierAddenda}
-                populationTrend={populationTrend}
               />
+
+              {/* 2026-09-27: own full-width panel now, directly after Shape --
+                  extracted out of ShapeCard itself (see that component's own comment).
+                  populationTrend is still fetched unconditionally above (inside this
+                  same `roll &&` block), unchanged. */}
+              {populationTrend && (
+                <PopulationTrendSection
+                  laName={populationTrend.laName}
+                  laTrend={populationTrend.laTrend}
+                  laSeries={populationTrend.laSeries}
+                  region={populationTrend.region}
+                  regionTrend={populationTrend.regionTrend}
+                  regionSeries={populationTrend.regionSeries}
+                  laBirthsTrend={birthsTrend.laBirthsTrend}
+                  laBirthsSeries={birthsTrend.laBirthsSeries}
+                />
+              )}
 
               {/* Layout/graphs spec v1 §7, round 3: LA-boarders stat -- only when this
                   school itself has real boarders (hidden entirely for day-only schools,
@@ -900,40 +922,6 @@ export default async function SchoolPage({
                 />
               )}
             </>
-          )}
-
-          {/* Layout/graphs spec v1 §13, round 5: Regional & national context moves up
-              into the slot SurroundingSchoolsCard used to hold, now that its own
-              content has moved into ShapeCard's right-hand side above -- a pure
-              relocation, no change to RegionalNationalCard itself.
-              2026-09-17: gated off showFeTemplate (renamed 2026-09-26, was
-              isGenuineFeSector -- see that flag's own comment for why) -- context.regional
-              is roll_aggregates' LA-level MAINSTREAM figure (Academies/LA-maintained/
-              Independent/Free Schools only), which was showing on FE college pages
-              regardless, now redundant and misleading there next to
-              RegionalSixthFormCard's own real FE-sector regional/national context. */}
-          {(context.national || context.regional) && !showFeTemplate && (
-            <RegionalNationalCard
-              laName={school.la_name}
-              regional={
-                context.regional
-                  ? {
-                      schoolCount: context.regional.school_count,
-                      totalRoll: context.regional.total_roll,
-                      shape: context.regional.shape_label,
-                    }
-                  : null
-              }
-              national={
-                context.national
-                  ? {
-                      schoolCount: context.national.school_count,
-                      totalRoll: context.national.total_roll,
-                      shape: context.national.shape_label,
-                    }
-                  : null
-              }
-            />
           )}
 
           <ComingSoonCard title="Academic snapshot" />
