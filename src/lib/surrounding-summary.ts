@@ -62,6 +62,35 @@ export function buildSurroundingSummary(
   const phase = effectiveTags.length > 1 ? "through" : phaseWord(effectiveTags);
   const gender = genderWord(typology.gender);
 
+  // 2026-09-28: "Special Schools" is a plural NOUN (typology.ts's own SectorTag), not
+  // an adjective the way "independent"/"state"/"FE" are -- folding it into the generic
+  // [size, sector, boarding, gender, phase] adjective chain below, and into poolLabel's
+  // "${sector} ${gender} ${phase} schools", both read wrong for a plural noun (a real
+  // bug found live: "...is a small special schools day senior school", "...for the 8
+  // nearest special schools senior schools"). Special-cased with its own sentence
+  // structure instead, matching Guy's real worked example (Cambridge School):
+  // "Cambridge School is a senior special school. It is a small day school -- 80%
+  // below the average roll of 721 for the 8 nearest senior phase special schools."
+  // Same found===0/averageRoll===null guard as the generic path above (already
+  // returned before this point); null phase is handled the same "just omit it" way
+  // the generic path's own [..].filter(Boolean) already does, not a separate message.
+  if (typology.sector === "Special Schools") {
+    const poolPhase = phase ? `${phase} phase ` : "";
+    if (totalRoll === null) {
+      return `Among the ${found} nearest ${poolPhase}special schools, the average roll is ${Math.round(averageRoll).toLocaleString()}.`;
+    }
+    const pctDiff = ((totalRoll - averageRoll) / averageRoll) * 100;
+    const direction = pctDiff >= 0 ? "above" : "below";
+    const pctAbs = Math.round(Math.abs(pctDiff));
+    const opening = `${schoolName} is a${phase ? ` ${phase}` : ""} special school.`;
+    const descriptors = [size, boarding, gender].filter(Boolean).join(" ");
+    const descriptorClause = descriptors ? `a ${descriptors} school` : "a school";
+    return (
+      `${opening} It is ${descriptorClause} — ${pctAbs}% ${direction} the average roll of ` +
+      `${Math.round(averageRoll).toLocaleString()} for the ${found} nearest ${poolPhase}special schools.`
+    );
+  }
+
   const descriptors = [size, sector, boarding, gender, phase].filter(Boolean).join(" ");
   const opening = descriptors
     ? `${schoolName} is a ${descriptors} school`

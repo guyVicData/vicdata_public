@@ -283,7 +283,14 @@ export default async function SchoolPage({
     entityIds: [urn],
   });
   const ilrSnapshot = buildIlrParticipationSnapshot(ilrFacts);
-  const showIlrCard = ilrSnapshot !== null && (!roll || roll.period < CURRENT_CENSUS_PERIOD);
+  // 2026-09-28: the `!roll` disjunct here used to be the pre-showFeTemplate fallback
+  // for a school with no census at all but real dfe_fe_participation_academy data --
+  // now fully superseded, since showFeTemplate already covers every real !roll-with-
+  // ilrSnapshot case (one of its own three OR conditions) and gives it the real FE
+  // template treatment (FeCollegeLocalContextCard's own aggregate-stat branch) instead
+  // of this standalone card. Narrowed to the one case this card is still genuinely for:
+  // real census present, but stale.
+  const showIlrCard = ilrSnapshot !== null && roll !== null && roll.period < CURRENT_CENSUS_PERIOD;
   const shape = ageGenderCounts ? classifyShape(shapeClassifierInput(ageGenderCounts)) : null;
   // 2026-09-09, qualifier build round 15: first live wiring of shape-qualifiers.ts --
   // needs both classifyShape's own result AND the raw per-age/sex counts (the gender-
@@ -582,7 +589,15 @@ export default async function SchoolPage({
     const p4bResult = topic4bGenderVariation(shape?.dominantTransition ?? null, ageGenderCounts, clampedFemale, clampedMale);
 
     narrativeParagraphs = [
-      paragraph1PhaseGender(school.current_name, effectiveTags, hasEarlyYears, observedSpan, roll.gender.female, roll.gender.male),
+      paragraph1PhaseGender(
+        school.current_name,
+        effectiveTags,
+        hasEarlyYears,
+        observedSpan,
+        roll.gender.female,
+        roll.gender.male,
+        typology.sector === "Special Schools",
+      ),
       paragraph2SectorSize(school.current_name, laComposition, sizeSentence),
       paragraph3Shape(school.current_name, shape?.label ?? null, realMoveCount, shape?.metrics ?? null, shape?.dominantTransition ?? null),
       renderTopic4b(p4bResult),
@@ -751,17 +766,17 @@ export default async function SchoolPage({
 
           {!roll && !showFeTemplate && isFeParticipationCrosswalkScope && <FeNoParticipationDataCard />}
 
+          {/* 2026-09-28: `roll` is guaranteed non-null here -- showIlrCard's own
+              condition (above) now requires it. The old `!roll` branch's copy ("this
+              school has no DfE census roll data") is dead: that case is showFeTemplate's
+              now, handled by FeCollegeLocalContextCard's aggregate-stat branch instead. */}
           {showIlrCard && ilrSnapshot && (
             <IlrParticipationCard
               total={ilrSnapshot.total}
               period={ilrSnapshot.period}
               girls={ilrSnapshot.female}
               boys={ilrSnapshot.male}
-              reason={
-                roll
-                  ? `this school's own census data hasn't been updated since ${roll.period}/${String(roll.period + 1).slice(2)}`
-                  : "this school has no DfE census roll data"
-              }
+              reason={`this school's own census data hasn't been updated since ${roll!.period}/${String(roll!.period + 1).slice(2)}`}
             />
           )}
 
@@ -807,6 +822,7 @@ export default async function SchoolPage({
                   sixthFormLa={sixthFormLa}
                   under19Snapshot={feUnder19Snapshot}
                   adultSnapshot={feAdultSnapshot}
+                  aggregateSnapshot={ilrSnapshot}
                 />
                 {feUnder19Snapshot && feUnder19Snapshot.female !== null && feUnder19Snapshot.male !== null && (
                   <GenderSplitCard

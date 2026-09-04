@@ -106,6 +106,7 @@ export function FeCollegeLocalContextCard({
   sixthFormLa,
   under19Snapshot,
   adultSnapshot,
+  aggregateSnapshot,
 }: {
   collegeName: string;
   laComposition: LaSectorComposition | null;
@@ -121,6 +122,14 @@ export function FeCollegeLocalContextCard({
   // IlrParticipationCard cards.
   under19Snapshot: IlrParticipationSnapshot | null;
   adultSnapshot: IlrParticipationSnapshot | null;
+  // 2026-09-28: the real dfe_fe_participation_academy figure (page.tsx's own
+  // `ilrSnapshot`) -- the headline stat for a showFeTemplate institution that isn't
+  // crosswalk-scoped (Hereford, Rochdale, Solihull and others like them: under19Snapshot/
+  // adultSnapshot are both null for these, since they never go through the
+  // dfe_fe_participation/_adult fetch at all). Rendered as a fallback ONLY when neither
+  // of those two exist -- a crosswalk-scoped college's real under-19/adult split always
+  // takes priority, unchanged.
+  aggregateSnapshot: IlrParticipationSnapshot | null;
 }) {
   const feSchools = laComposition?.bySector.FE.schools ?? 0;
   const fePupils = laComposition?.bySector.FE.pupils ?? 0;
@@ -138,7 +147,7 @@ export function FeCollegeLocalContextCard({
   // under19/adult are real shouldn't happen in practice (a genuine open FE college
   // always counts within its own LA's laComposition.bySector.FE tally), but this
   // stays robust to it rather than silently dropping real participation data.
-  if (!provisionSentence && !under19Snapshot && !adultSnapshot) return null;
+  if (!provisionSentence && !under19Snapshot && !adultSnapshot && !aggregateSnapshot) return null;
 
   const shareSentence = paragraphFeCollegeLocalShare(collegeName, laComposition, ownUnder19Total);
   const pieTotal = statePupils + independentPupils + fePupils;
@@ -169,7 +178,28 @@ export function FeCollegeLocalContextCard({
           )}
         </div>
       )}
-      {(under19Snapshot || adultSnapshot) && provisionSentence && <CardDivider />}
+      {/* 2026-09-28: headline stat for the non-crosswalk showFeTemplate case (Hereford
+          and others like it) -- the real dfe_fe_participation_academy total, the only
+          figure that source has. Deliberately NOT labelled "Under-19": this source's
+          own age split isn't known the way the crosswalk-scoped under19Snapshot/
+          adultSnapshot sources' is, so "Participation (ILR)" is the honest, neutral
+          eyebrow -- checked against the old standalone IlrParticipationCard's own
+          default ("FE participation data (ILR)") for consistency, shortened to match
+          this card's terser "Under-19 (ILR)"/"Adult 19+ (ILR)" style. Only renders when
+          neither of the two real crosswalk-scoped stats above exist -- never both. */}
+      {!under19Snapshot && !adultSnapshot && aggregateSnapshot && (
+        <div className="flex gap-6">
+          <CompactIlrStat
+            eyebrow="Participation (ILR)"
+            total={aggregateSnapshot.total}
+            period={aggregateSnapshot.period}
+            female={aggregateSnapshot.female}
+            male={aggregateSnapshot.male}
+            sexLabels={{ female: "girls", male: "boys" }}
+          />
+        </div>
+      )}
+      {(under19Snapshot || adultSnapshot || aggregateSnapshot) && provisionSentence && <CardDivider />}
       {provisionSentence && (
         <div>
           <h3 className="mb-2 font-[family-name:var(--font-newsreader)] text-[15px] font-medium text-stone-900 dark:text-stone-100">

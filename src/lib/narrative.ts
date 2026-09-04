@@ -187,6 +187,14 @@ export function paragraph1PhaseGender(
   observedSpan: { minAge: number; maxAge: number } | null,
   female: number,
   male: number,
+  // 2026-09-28: typology.sector === "Special Schools" from the page.tsx call site --
+  // this function had no sector awareness at all before (the generic "school" word
+  // was correct for every other sector, since "independent"/"state"/"FE" already show
+  // up elsewhere in the same paragraph via paragraph2SectorSize, never folded into
+  // this opening sentence). "Special Schools" needed a real fix here too, not just in
+  // surrounding-summary.ts's own comparator sentence -- same plural-noun-as-adjective
+  // bug, different sentence.
+  isSpecialSchool: boolean,
 ): string | null {
   if (!observedSpan) return null;
   // Round 10 fix: "Junior" is the only tag covering infant-only, junior-only, and
@@ -215,6 +223,7 @@ export function paragraph1PhaseGender(
   const youngLabel = hasEarlyYears ? "Early Years" : yearGroupSingleLabel(observedSpan.minAge);
   const oldLabel = yearGroupSingleLabel(observedSpan.maxAge);
   const ageRangeClause = `with pupils from ${youngLabel} to ${oldLabel}`;
+  const schoolWord = isSpecialSchool ? "special school" : "school";
 
   if (comp.kind === "single_sex") {
     // 2026-09-07 fix (round 13, found via live-page review): GENDER_ALWAYS_ON_HEDGE
@@ -222,7 +231,7 @@ export function paragraph1PhaseGender(
     // -- wrong for a school at >=98% one gender (classifyGenderComposition's own
     // SINGLE_SEX_SUPPRESSION_BAND), where there IS no balance to vary. The hedge stays
     // on the balanced/mostly branches below, where it's actually true.
-    return `${schoolName} is ${article} ${phase} school, ${ageRangeClause}. It is single-sex (${comp.dominantGender}).`;
+    return `${schoolName} is ${article} ${phase} ${schoolWord}, ${ageRangeClause}. It is single-sex (${comp.dominantGender}).`;
   }
 
   // Hedge zone (spec §7 item 8, unresolved -- see narrative-config.ts's own comment):
@@ -234,7 +243,7 @@ export function paragraph1PhaseGender(
   const qualifier = comp.kind === "balanced" ? ", roughly balanced" : inHedgeZone ? "" : `, mostly ${comp.dominantGender}`;
 
   return (
-    `${schoolName} is ${article} ${phase} school, ${ageRangeClause}. It is co-educational${qualifier}, ` +
+    `${schoolName} is ${article} ${phase} ${schoolWord}, ${ageRangeClause}. It is co-educational${qualifier}, ` +
     `with ${comp.dominantGender} making up ${comp.dominantSharePct.toFixed(0)}% of all pupils. ${GENDER_ALWAYS_ON_HEDGE}`
   );
 }
