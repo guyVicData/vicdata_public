@@ -5,12 +5,13 @@
 // Mainstream schools' own cards are untouched.
 
 import Link from "next/link";
-import { Card, CardDivider, CardHeading, Caption, Eyebrow } from "./Card";
+import { Card, CardDivider, CardHeading, Caption, Eyebrow, StatNumber } from "./Card";
 import type { LaSectorComposition } from "@/lib/la-sector-composition";
 import { paragraphFeCollegeLocalShare, renderLocalSixthFormProvisionSentence } from "@/lib/narrative";
 import { sizeBadgeForValue, type SizeBadge } from "@/lib/age-band-distributions";
 import type { FeParticipationDistribution } from "@/lib/fe-participation-distributions";
 import type { SectorTotal } from "@/lib/sixth-form-sector-aggregates";
+import type { IlrParticipationSnapshot } from "@/lib/ilr-participation-data";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 
 // Same State/Independent/FE hex values RollCard's own LA pie-chart already uses --
@@ -43,18 +44,68 @@ export function threeWayDonutGradient(state: number, independent: number, fe: nu
   return `conic-gradient(${stops.join(", ")})`;
 }
 
-// 2026-09-15/16: "where this college sits locally in 16+ provision" -- built in two
-// passes. Prompt A's item 1 shipped the FE-only half (laComposition.bySector.FE, the
-// same real ILR figures already feeding RollCard's own FE sentence and this LA's
-// pie-chart FE slice -- no new query for that half, still true). This pass adds the
-// paired State+Independent sixth-form half and the three-way pie, both needing the
-// new sixth_form_sector_aggregates table (characterized separately before being
-// built -- see that table's own migration comment).
+// 2026-09-20: compact under-19/adult stat, side by side at the top of
+// FeCollegeLocalContextCard (folded in from what used to be two standalone
+// IlrParticipationCard renders -- see that card's own file for the full-size
+// version, still used by the academy-fallback call site). Carries the same real
+// content those cards showed, just laid out to fit two side by side: the total, the
+// male/female breakdown when both are real, and the DfE-rounding disclosure note
+// when the two don't sum to the total (same ~22-29%-of-institutions finding
+// IlrParticipationCard's own comment documents) -- none of that is decoration, all
+// of it survives the move.
+function CompactIlrStat({
+  eyebrow,
+  total,
+  period,
+  female,
+  male,
+  sexLabels,
+}: {
+  eyebrow: string;
+  total: number;
+  period: number;
+  female: number | null;
+  male: number | null;
+  sexLabels: { female: string; male: string };
+}) {
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">{eyebrow}</div>
+      <StatNumber size="md">{total.toLocaleString()}</StatNumber>
+      <p className="mt-0.5 text-[12px] text-stone-500 dark:text-stone-400">
+        learners, {period}/{String(period + 1).slice(2)}
+      </p>
+      {female !== null && male !== null && (
+        <p className="mt-1 text-[12px] text-stone-700 dark:text-stone-300">
+          {female.toLocaleString()} {sexLabels.female}, {male.toLocaleString()} {sexLabels.male}
+        </p>
+      )}
+      {female !== null && male !== null && female + male !== total && (
+        <p className="mt-1 text-[10.5px] leading-snug text-stone-400 dark:text-stone-600">
+          DfE rounds each figure to the nearest 10 independently, so this split may not sum exactly to the total.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// 2026-09-15/16/20: "where this college sits locally in 16+ provision" -- built
+// across several passes. Prompt A's item 1 shipped the FE-only half
+// (laComposition.bySector.FE, the same real ILR figures already feeding RollCard's
+// own FE sentence and this LA's pie-chart FE slice -- no new query for that half,
+// still true). A later pass added the paired State+Independent sixth-form half and
+// the three-way pie (sixth_form_sector_aggregates). This pass folds this college's
+// own under-19/adult ILR totals into the top of the card (previously two standalone
+// IlrParticipationCard renders in the right-column stack) -- Guy wanted one card
+// reading like RollCard does for mainstream (a prominent stat up top, then "where
+// this sits locally" below), with two stats instead of one.
 export function FeCollegeLocalContextCard({
   collegeName,
   laComposition,
   ownUnder19Total,
   sixthFormLa,
+  under19Snapshot,
+  adultSnapshot,
 }: {
   collegeName: string;
   laComposition: LaSectorComposition | null;
@@ -65,6 +116,11 @@ export function FeCollegeLocalContextCard({
   // duplicated into that table (see sync-fe-participation-region-national.ts's own
   // comment on why LA scope is out of its job).
   sixthFormLa: { state: SectorTotal | null; independent: SectorTotal | null };
+  // This college's own participation snapshots -- the same feUnder19Snapshot/
+  // feAdultSnapshot page.tsx already fetches, previously rendered as two standalone
+  // IlrParticipationCard cards.
+  under19Snapshot: IlrParticipationSnapshot | null;
+  adultSnapshot: IlrParticipationSnapshot | null;
 }) {
   const feSchools = laComposition?.bySector.FE.schools ?? 0;
   const fePupils = laComposition?.bySector.FE.pupils ?? 0;
@@ -76,22 +132,52 @@ export function FeCollegeLocalContextCard({
   const provisionSentence = laComposition
     ? renderLocalSixthFormProvisionSentence(laComposition.laName, sixthFormSchoolCount, sixthFormPupilTotal, feSchools, fePupils)
     : null;
-  // Neither half has real data -- nothing meaningful to show at all, so the whole
-  // card renders nothing, not an empty shell. A real case, not hypothetical: only
-  // 152/183 LAs have any mainstream sixth-form data, and most LAs have 0 FE colleges.
-  if (!provisionSentence) return null;
+  // Neither the local-context sentence NOR this college's own participation totals
+  // have anything real to show -- nothing meaningful at all, so the whole card
+  // renders nothing, not an empty shell. provisionSentence alone going null while
+  // under19/adult are real shouldn't happen in practice (a genuine open FE college
+  // always counts within its own LA's laComposition.bySector.FE tally), but this
+  // stays robust to it rather than silently dropping real participation data.
+  if (!provisionSentence && !under19Snapshot && !adultSnapshot) return null;
 
   const shareSentence = paragraphFeCollegeLocalShare(collegeName, laComposition, ownUnder19Total);
   const pieTotal = statePupils + independentPupils + fePupils;
 
   return (
     <Card size="medium" className="flex flex-col gap-3">
-      <div>
-        <h3 className="mb-2 font-[family-name:var(--font-newsreader)] text-[15px] font-medium text-stone-900 dark:text-stone-100">
-          Where this college sits locally in 16+ provision
-        </h3>
-        <p className="text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">{provisionSentence}</p>
-      </div>
+      {(under19Snapshot || adultSnapshot) && (
+        <div className="flex gap-6">
+          {under19Snapshot && (
+            <CompactIlrStat
+              eyebrow="Under-19 (ILR)"
+              total={under19Snapshot.total}
+              period={under19Snapshot.period}
+              female={under19Snapshot.female}
+              male={under19Snapshot.male}
+              sexLabels={{ female: "girls", male: "boys" }}
+            />
+          )}
+          {adultSnapshot && (
+            <CompactIlrStat
+              eyebrow="Adult 19+ (ILR)"
+              total={adultSnapshot.total}
+              period={adultSnapshot.period}
+              female={adultSnapshot.female}
+              male={adultSnapshot.male}
+              sexLabels={{ female: "female", male: "male" }}
+            />
+          )}
+        </div>
+      )}
+      {(under19Snapshot || adultSnapshot) && provisionSentence && <CardDivider />}
+      {provisionSentence && (
+        <div>
+          <h3 className="mb-2 font-[family-name:var(--font-newsreader)] text-[15px] font-medium text-stone-900 dark:text-stone-100">
+            Where this college sits locally in 16+ provision
+          </h3>
+          <p className="text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">{provisionSentence}</p>
+        </div>
+      )}
       {pieTotal > 0 && (
         <div className="flex items-center gap-5">
           <div

@@ -11,7 +11,17 @@ import { TAG_COLOURS } from "@/lib/tag-colours";
 const GIRLS_COLOUR = { light: TAG_COLOURS.Girls.light[1], dark: TAG_COLOURS.Girls.dark[1] };
 const BOYS_COLOUR = { light: TAG_COLOURS.Boys.light[1], dark: TAG_COLOURS.Boys.dark[1] };
 
-function Donut({ girls, boys, label }: { girls: number; boys: number; label: string }) {
+function Donut({
+  girls,
+  boys,
+  label,
+  sexLabels,
+}: {
+  girls: number;
+  boys: number;
+  label: string;
+  sexLabels: { female: string; male: string };
+}) {
   const total = girls + boys;
   const girlsPct = total > 0 ? (girls / total) * 100 : 0;
   const boysPct = total > 0 ? 100 - girlsPct : 0;
@@ -25,7 +35,7 @@ function Donut({ girls, boys, label }: { girls: number; boys: number; label: str
         {label}
         <br />
         <strong className="text-stone-900 dark:text-stone-100">
-          {girlsPct.toFixed(0)}% girls · {boysPct.toFixed(0)}% boys
+          {girlsPct.toFixed(0)}% {sexLabels.female} · {boysPct.toFixed(0)}% {sexLabels.male}
         </strong>
       </div>
     </div>
@@ -37,11 +47,23 @@ export function GenderSplitCard({
   boys,
   peer,
   peerLabel,
+  // 2026-09-20: parametrized for the FE-sector branch's own under-19 use --
+  // "This school"/girls/boys and the mainstream-specific subtitle were all
+  // hardcoded, and the subtitle in particular is already wrong on FE pages (no
+  // Shape chart there to reference). Defaults preserve the mainstream page's exact
+  // previous text/wording, same pattern IlrParticipationCard's own sexLabels prop
+  // already established.
+  subjectLabel = "This school",
+  sexLabels = { female: "girls", male: "boys" },
+  subtitle = "Full roll, all ages — a different age range from the Shape chart above. Shown as a share, so it's comparable with the peer average.",
 }: {
   girls: number;
   boys: number;
   peer: { girls: number; boys: number } | null;
   peerLabel: string;
+  subjectLabel?: string;
+  sexLabels?: { female: string; male: string };
+  subtitle?: string;
 }) {
   return (
     <Card size="medium" className="flex flex-col gap-4">
@@ -61,13 +83,10 @@ export function GenderSplitCard({
           --boys: ${BOYS_COLOUR.dark};
         }
       `}</style>
-      <CardHeading
-        title="Gender split"
-        subtitle="Full roll, all ages — a different age range from the Shape chart above. Shown as a share, so it's comparable with the peer average."
-      />
+      <CardHeading title="Gender split" subtitle={subtitle} />
       <div className="flex gap-6">
-        <Donut girls={girls} boys={boys} label="This school" />
-        {peer && <Donut girls={peer.girls} boys={peer.boys} label="Peer average" />}
+        <Donut girls={girls} boys={boys} label={subjectLabel} sexLabels={sexLabels} />
+        {peer && <Donut girls={peer.girls} boys={peer.boys} label="Peer average" sexLabels={sexLabels} />}
       </div>
       {peer && <Caption>{peerLabel}</Caption>}
     </Card>

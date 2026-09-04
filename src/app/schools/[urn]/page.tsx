@@ -634,7 +634,13 @@ export default async function SchoolPage({
               asked for in this round, and no real overlap/redundancy with the new
               narrative surfaced (it narrates the same real numbers those cards
               already visualise, the same "prose beside the card that shows it"
-              pattern the mainstream page already uses throughout). */}
+              pattern the mainstream page already uses throughout).
+              2026-09-20: the two standalone IlrParticipationCard renders that used
+              to open this stack are gone -- folded into the top of
+              FeCollegeLocalContextCard itself (Guy wanted one card reading like
+              RollCard does for mainstream: a prominent stat up top, "where this sits
+              locally" below), so the stack is now a genuine two-item stack matching
+              RollCard+GenderSplitCard's own shape exactly. */}
           {isGenuineFeSector && (
             <>
               <CurrentStateNarrative
@@ -643,30 +649,13 @@ export default async function SchoolPage({
                 subtitle="A snapshot from DfE ILR participation and GIAS figures -- no trend data, no history."
               />
               <div className="col-span-12 flex flex-col gap-5 lg:col-span-6">
-                {feUnder19Snapshot && (
-                  <IlrParticipationCard
-                    eyebrow="Under-19 FE participation (ILR)"
-                    total={feUnder19Snapshot.total}
-                    period={feUnder19Snapshot.period}
-                    girls={feUnder19Snapshot.female}
-                    boys={feUnder19Snapshot.male}
-                  />
-                )}
-                {feAdultSnapshot && (
-                  <IlrParticipationCard
-                    eyebrow="Adult (19+) FE participation (ILR)"
-                    total={feAdultSnapshot.total}
-                    period={feAdultSnapshot.period}
-                    girls={feAdultSnapshot.female}
-                    boys={feAdultSnapshot.male}
-                    sexLabels={{ female: "female", male: "male" }}
-                  />
-                )}
                 <FeCollegeLocalContextCard
                   collegeName={school.current_name}
                   laComposition={laComposition}
                   ownUnder19Total={feUnder19Snapshot?.total ?? null}
                   sixthFormLa={sixthFormLa}
+                  under19Snapshot={feUnder19Snapshot}
+                  adultSnapshot={feAdultSnapshot}
                 />
                 {feUnder19Snapshot && feUnder19Snapshot.female !== null && feUnder19Snapshot.male !== null && (
                   <GenderSplitCard
@@ -679,6 +668,9 @@ export default async function SchoolPage({
                           (feGenderPeers.maxDistanceKm !== null ? `, up to ${Math.round(feGenderPeers.maxDistanceKm)}km away` : "")
                         : ""
                     }
+                    subjectLabel="This college"
+                    sexLabels={{ female: "female", male: "male" }}
+                    subtitle="U19 participants. Shown as a share, so it's comparable with the peer average."
                   />
                 )}
               </div>
