@@ -62,18 +62,36 @@ export async function findSurroundingSchools(urn: string, targetPeriod: number):
 
   const { data: targetRows } = await supabase
     .from("schools")
-    .select("gender, statutory_low_age, statutory_high_age")
+    .select("gender, statutory_low_age, statutory_high_age, establishment_type_group")
     .eq("urn", urn)
     .maybeSingle();
   const target = targetRows as
-    | { gender: string | null; statutory_low_age: number | null; statutory_high_age: number | null }
+    | {
+        gender: string | null;
+        statutory_low_age: number | null;
+        statutory_high_age: number | null;
+        establishment_type_group: string | null;
+      }
     | null;
   const targetGender = genderTag(target?.gender ?? null);
   const targetPhase = phaseTags(target?.statutory_low_age ?? null, target?.statutory_high_age ?? null);
 
+  // 2026-09-30: state through-schools (rare -- Steiner Academy Hereford is the real
+  // example) are stuck matching only other state schools under nearest_schools' own
+  // sector-equality gate, a genuinely thin same-sector pool at LA/regional level.
+  // Independent through-schools are common enough that their own same-sector pool is
+  // already fine -- this only widens for the rare state case. Passed to the RPC as
+  // p_relax_sector; the through-school-only narrowing still comes from the phase-tag-
+  // count symmetry check below (targetPhase.length > 1 requiring candidatePhase.length
+  // > 1 too), unchanged and already sector-agnostic -- relaxing the RPC's own sector
+  // gate doesn't loosen that.
+  const relaxSectorForThroughSchool =
+    targetPhase.length > 1 && target?.establishment_type_group !== "Independent schools";
+
   const { data: candidates, error } = await supabase.rpc("nearest_schools", {
     p_urn: urn,
     p_limit: CANDIDATE_BUFFER,
+    p_relax_sector: relaxSectorForThroughSchool,
   });
 
   if (error || !candidates || candidates.length === 0) return [];
