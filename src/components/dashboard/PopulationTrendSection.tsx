@@ -69,6 +69,13 @@ function TrendReadout({ tier, pct, captionSuffix }: { tier: PopulationTrendTier;
   );
 }
 
+// Plain possessive -- always "'s" (no special-cased trailing-s style like "St
+// Helens'"), matching modern usage and simplest to get right for the full real range
+// of LA/region names on this page.
+function possessive(name: string): string {
+  return `${name}’s`;
+}
+
 function MiniAgeChart({ series, colour }: { series: AgeProfileSeries; colour: string }) {
   const max = Math.max(1, ...series.map((r) => r.total));
   return (
@@ -86,33 +93,27 @@ function MiniAgeChart({ series, colour }: { series: AgeProfileSeries; colour: st
   );
 }
 
-// 2026-09-27: header is now a fixed, generic label ("Local Authority school
-// population" / "Region school population"), not the specific area name -- Guy's own
-// call, matching how e.g. RollCard's own section headers describe the KIND of figure,
-// not the place. The actual area name (Herefordshire, West Midlands, etc.) stays real
-// and visible, just demoted to a subline under the header -- a reader still needs to
-// know which LA/region this is, just not as the primary label.
+// 2026-09-27: header used to be a fixed generic label ("Local Authority school
+// population") with the real area name demoted to a subline underneath. 2026-09-28,
+// Guy's own live layout call: fold the real name back into the header itself as a
+// possessive ("Ealing's school population") and drop the subline entirely -- one
+// line, not two, still names the real place.
 function TrendColumn({
   header,
-  areaName,
   ageLabel,
   trend,
   series,
 }: {
   header: string;
-  areaName: string;
   ageLabel: string;
   trend: PopulationTrend | null;
   series: AgeProfileSeries | null;
 }) {
   return (
     <div className="min-w-0">
-      <div className="mb-2">
-        <div className="flex items-baseline justify-between">
-          <span className="text-[13px] font-semibold text-stone-900 dark:text-stone-100">{header}</span>
-          <span className="text-[11px] text-stone-400">{ageLabel}</span>
-        </div>
-        <div className="text-[11.5px] text-stone-500 dark:text-stone-400">{areaName}</div>
+      <div className="mb-2 flex items-baseline justify-between">
+        <span className="text-[13px] font-semibold text-stone-900 dark:text-stone-100">{header}</span>
+        <span className="text-[11px] text-stone-400">{ageLabel}</span>
       </div>
       {series ? (
         <MiniAgeChart series={series} colour={trend ? TIER_COLOUR[trend.tier] : "#a3a3a3"} />
@@ -136,22 +137,19 @@ function TrendColumn({
 // profile above, a deliberate choice (see population-trend.ts's own comment on
 // computeBirthsTrend for the real-distribution check behind it).
 function BirthsColumn({
-  areaName,
+  laName,
   trend,
   series,
 }: {
-  areaName: string;
+  laName: string;
   trend: BirthsTrend | null;
   series: { year: number; count: number }[] | null;
 }) {
   return (
     <div className="min-w-0">
-      <div className="mb-2">
-        <div className="flex items-baseline justify-between">
-          <span className="text-[13px] font-semibold text-stone-900 dark:text-stone-100">Births in the Local Authority</span>
-          <span className="text-[11px] text-stone-400">last 5 years</span>
-        </div>
-        <div className="text-[11.5px] text-stone-500 dark:text-stone-400">{areaName}</div>
+      <div className="mb-2 flex items-baseline justify-between">
+        <span className="text-[13px] font-semibold text-stone-900 dark:text-stone-100">Births in {laName}</span>
+        <span className="text-[11px] text-stone-400">last 5 years</span>
       </div>
       {series ? <BirthsChart series={series} /> : <Caption>No data.</Caption>}
       {trend ? (
@@ -204,12 +202,12 @@ export function PopulationTrendSection({
       />
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {laSeries && (
-          <TrendColumn header="Local Authority school population" areaName={laName} ageLabel="ages 5-15" trend={laTrend} series={laSeries} />
+          <TrendColumn header={`${possessive(laName)} school population`} ageLabel="ages 5-15" trend={laTrend} series={laSeries} />
         )}
         {region && regionSeries && (
-          <TrendColumn header="Region school population" areaName={region} ageLabel="ages 5-15" trend={regionTrend} series={regionSeries} />
+          <TrendColumn header={`${possessive(region)} school population`} ageLabel="ages 5-15" trend={regionTrend} series={regionSeries} />
         )}
-        {laBirthsSeries && <BirthsColumn areaName={laName} trend={laBirthsTrend} series={laBirthsSeries} />}
+        {laBirthsSeries && <BirthsColumn laName={laName} trend={laBirthsTrend} series={laBirthsSeries} />}
       </div>
     </Card>
   );
