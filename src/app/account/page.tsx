@@ -58,12 +58,22 @@ export default function AccountPage() {
       setLoading(false);
       return;
     }
-    const { data } = await supabase
+    // school_accounts is qualified by its FK constraint name (2026-10-02) --
+    // school_accounts_and_memberships.sql's account_holder_membership_id FK plus
+    // account_holder_handoff.sql's later pending_account_holder_membership_id FK mean
+    // three relationship paths now exist between these two tables (the two "account
+    // references a membership" FKs, plus this row's own ordinary school_account_id
+    // membership-belongs-to-account FK), so an unqualified school_accounts(...) embed
+    // is genuinely ambiguous to PostgREST -- confirmed live, this was failing outright
+    // (PGRST201) for every real member, not just an edge case, silently rendering as
+    // "No memberships yet" because the error below used to be discarded.
+    const { data, error } = await supabase
       .from("school_memberships")
       .select(
-        "id, status, role, is_admin, individual_tier_active, school_account_id, school_accounts(id, school_urn, tier, account_holder_membership_id, pending_account_holder_membership_id, schools(current_name))",
+        "id, status, role, is_admin, individual_tier_active, school_account_id, school_accounts!school_memberships_school_account_id_fkey(id, school_urn, tier, account_holder_membership_id, pending_account_holder_membership_id, schools(current_name))",
       )
       .eq("profile_id", uid);
+    if (error) console.error("Failed to load school memberships:", error);
     setMemberships((data as unknown as Membership[]) ?? []);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps

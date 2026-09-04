@@ -25,11 +25,17 @@ export default function SetsHomePage() {
         setMemberships([]);
         return;
       }
-      const { data } = await supabase
+      // school_accounts qualified by FK constraint name -- same ambiguous-embed fix
+      // as account/page.tsx's own load() (see that file's comment for the full
+      // reasoning); the identical unqualified embed here failed the same way
+      // (PGRST201), silently rendering every approved member's own /sets page as "no
+      // schools" since account_holder_handoff.sql landed.
+      const { data, error } = await supabase
         .from("school_memberships")
-        .select("id, status, school_account_id, school_accounts(school_urn, schools(current_name))")
+        .select("id, status, school_account_id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
         .eq("profile_id", userData.user.id)
         .eq("status", "approved");
+      if (error) console.error("Failed to load school memberships:", error);
       const rows = (data as unknown as Membership[]) ?? [];
 
       const withSets = await Promise.all(
