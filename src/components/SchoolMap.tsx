@@ -19,6 +19,7 @@ import {
 } from "@/lib/map-tag-groups";
 import MapFilterPanel from "./MapFilterPanel";
 import MapColourKey, { type ColourSwatch } from "./MapColourKey";
+import MapBoxCollapseToggle from "./MapBoxCollapseToggle";
 
 // Map component (map spec, "Public View rebuild"; redesigned 2026-08-23 -- see
 // docs/OPEN_QUESTIONS.md in the vicdata ingest repo for the full precedent
@@ -180,7 +181,27 @@ const SCHOOL_MARKER_RING_RADIUS = MAX_RADIUS + 4;
 // that reason, not a design preference. If a wider Independent ring is wanted later,
 // the real fix is raising HARD_CAP in schools-in-bounds/route.ts (a considered
 // decision, not a default to bump quietly) or not fitting the WHOLE ring on load.
-const DISTANCE_RING_KM_STATE = 5;
+//
+// 2026-10-02: State reduced from 5km to 2km, for the same "showing an empty viewport
+// on load" reason as Independent's own 15km->10km cut above -- confirmed live (real
+// headless-browser measurement, not assumed) that at the OLD 5km value, the real
+// initial viewport for a real dense state-school area (Acland Burghley, Camden, a
+// 1280x560 container) came out to 24.3km x 11.1km -- nearly 2.5x wider than the
+// nominal 5km ring's own diameter, driven by the fit box's own aspect-ratio stretch
+// (halfWidthM = ringM * aspect, in the init effect below), not by the fitBounds
+// maxZoom cap (confirmed separately: at this container size the ring's own natural
+// zoom for 5km never got anywhere near the MIN_INITIAL_ZOOM=14 ceiling -- the ceiling
+// only starts to bind around a 1km ring, well below where this needed to land). That
+// real 24.3km x 11.1km box held 696 real state schools, comfortably tripping
+// STATE_CAP even at its new, raised 250 (see schools-in-bounds/route.ts) --
+// confirmed as the real, live cause of "state schools don't show on load" in a dense
+// area, not a guess. 2km verified to bring that same real Acland Burghley viewport
+// down to 118 real state schools (comfortably under 250) while still showing a
+// real, non-empty view in a genuine rural case (John Kyrle High School,
+// Herefordshire: 6 real state schools at the same 2km setting) -- not so tight it
+// goes blank where schools are sparse. MIN_INITIAL_ZOOM itself is untouched -- not
+// the binding constraint at this ring size, so raising it wasn't needed for this fix.
+const DISTANCE_RING_KM_STATE = 2;
 const DISTANCE_RING_KM_INDEPENDENT = 10;
 
 // fitBounds has a maxZoom option (caps zooming IN too far for a tight cluster) but no
@@ -337,25 +358,47 @@ function escapeHtml(s: string): string {
 // Deliberately its own row, not folded into the roll line itself -- matches the
 // profile page's own separate labelled ILR card, same "flag the different
 // measurement basis explicitly, don't just report a number" discipline.
+// 2026-10-02, item 5: the same chevron glyph MapBoxCollapseToggle uses for the three
+// overlay boxes -- kept as a literal SVG string (not the React component) since this
+// whole card is a raw Leaflet tooltip HTML string, not React-rendered. Rotation is
+// driven by a CSS class on the tooltip's own root element (.vd-focus-collapsed
+// below), not by re-rendering this markup, so the two collapse mechanisms stay
+// visually identical without sharing actual code.
+const FOCUS_COLLAPSE_CHEVRON =
+  '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="vd-focus-collapse-icon"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg>';
+
+// collapsible (2026-10-02, item 5): only the persistent viewed-school focus card
+// passes true -- ordinary neighbour hover popups (transient, gone the moment the
+// pointer leaves) keep their exact pre-existing HTML shape, no button, unchanged.
+// When true, the name sits in its own header row next to a collapse toggle button,
+// and everything else (roll/caveat/member-detail rows) is wrapped in a
+// .vd-popup-detail div the collapsed-state CSS below can hide as a whole, rather
+// than hiding each row individually.
 function buildPopupHtml(
   name: string,
   totalRoll: number | null,
   memberDetail: MemberDetail | null,
   caveat: string | null = null,
+  collapsible = false,
 ): string {
   const rollText = totalRoll !== null ? totalRoll.toLocaleString() : "—";
-  let html = `<div class="vd-popup-name">${escapeHtml(name)}</div>`;
-  html += `<div>Total roll: <strong>${rollText}</strong></div>`;
+  const nameHtml = `<div class="vd-popup-name">${escapeHtml(name)}</div>`;
+  let detail = `<div>Total roll: <strong>${rollText}</strong></div>`;
   if (caveat) {
-    html += `<div class="vd-popup-caveat">${escapeHtml(caveat)}</div>`;
+    detail += `<div class="vd-popup-caveat">${escapeHtml(caveat)}</div>`;
   }
   if (memberDetail) {
     const { band1, band2, band3 } = memberDetail.ageBands;
     const { girls, boys } = memberDetail.genderSplit;
-    html += `<div class="vd-popup-row">Ages &le;11: <strong>${band1.toLocaleString()}</strong>&nbsp;&nbsp; 12&ndash;16: <strong>${band2.toLocaleString()}</strong>&nbsp;&nbsp; 17&ndash;18: <strong>${band3.toLocaleString()}</strong></div>`;
-    html += `<div class="vd-popup-row">Girls: <strong>${girls.toLocaleString()}</strong>&nbsp;&nbsp; Boys: <strong>${boys.toLocaleString()}</strong></div>`;
+    detail += `<div class="vd-popup-row">Ages &le;11: <strong>${band1.toLocaleString()}</strong>&nbsp;&nbsp; 12&ndash;16: <strong>${band2.toLocaleString()}</strong>&nbsp;&nbsp; 17&ndash;18: <strong>${band3.toLocaleString()}</strong></div>`;
+    detail += `<div class="vd-popup-row">Girls: <strong>${girls.toLocaleString()}</strong>&nbsp;&nbsp; Boys: <strong>${boys.toLocaleString()}</strong></div>`;
   }
-  return html;
+  if (!collapsible) return nameHtml + detail;
+  return (
+    `<div class="vd-focus-header">${nameHtml}` +
+    `<button type="button" class="vd-focus-collapse-btn" aria-label="Collapse ${escapeHtml(name)}" aria-expanded="true">${FOCUS_COLLAPSE_CHEVRON}</button></div>` +
+    `<div class="vd-popup-detail">${detail}</div>`
+  );
 }
 
 // 2026-08-28: a dot's roll-data STATE, not just its number -- three genuinely
@@ -490,6 +533,18 @@ export default function SchoolMap({
   const [mapReady, setMapReady] = useState(false);
   const [colourMode, setColourMode] = useState<string>("sector");
   const [filters, setFilters] = useState<FilterState>(emptyFilterState());
+  // 2026-10-02, item 4: the inline "Size" box's own collapse state -- local, non-
+  // persisted, independent of MapFilterPanel/MapColourKey's own state (each of the
+  // three boxes collapses independently).
+  const [sizeBoxCollapsed, setSizeBoxCollapsed] = useState(false);
+  // 2026-10-02, item 5: the persistent focus-card tooltip's own collapse state -- a
+  // ref, not useState, since the card is raw Leaflet tooltip HTML rebuilt from
+  // scratch on every draw() (colourMode/filters/pan-triggered redraws included, see
+  // this effect's own dependency array below) -- a ref survives across those redraws
+  // within the same page load (so collapsing it doesn't visibly "pop back open" on
+  // the next pan), while still resetting on an actual page reload, matching every
+  // other collapse state on this page.
+  const focusCardCollapsedRef = useRef(false);
   // Fullscreen toggle (2026-08-28): the wrapper that already holds the map + colour-key
   // + size-legend (rendered below) is what actually goes fullscreen -- the filter panel
   // column sits outside it, deliberately (fullscreen means "more map," not "more of
@@ -947,7 +1002,7 @@ export default function SchoolMap({
         memberDetailIncluded && school.ageBands && school.genderSplit
           ? { ageBands: school.ageBands, genderSplit: school.genderSplit }
           : null;
-      L.circleMarker([schoolLat, schoolLng], {
+      const viewedMarker = L.circleMarker([schoolLat, schoolLng], {
         radius: viewedRadius, color: viewedColour, fillColor: viewedColour,
         ...viewedStyleOverrides,
       })
@@ -957,12 +1012,44 @@ export default function SchoolMap({
             school.totalRoll,
             viewedMemberDetail,
             caveatFor(viewedState, school.establishmentType),
+            true,
           ),
           {
-            permanent: true, direction: "right", offset: [SCHOOL_MARKER_RING_RADIUS + 2, 0], className: "vd-focus-card",
+            // interactive: true (2026-10-02, item 5) -- Leaflet tooltips default to
+            // pointer-events:none (leaflet.css's own .leaflet-tooltip rule; only
+            // .leaflet-tooltip.leaflet-interactive flips it to auto), since a plain
+            // info tooltip isn't meant to be clickable. Confirmed live via a real
+            // Playwright click attempt before this was added: the collapse button
+            // existed, was visible, but was genuinely unclickable, the map underneath
+            // it intercepted every pointer event. This is the one tooltip on the
+            // page that now needs its own click target, so it opts in explicitly --
+            // ordinary neighbour hover popups stay non-interactive, unchanged.
+            permanent: true, interactive: true, direction: "right", offset: [SCHOOL_MARKER_RING_RADIUS + 2, 0], className: "vd-focus-card",
           },
         )
         .addTo(group);
+
+      // 2026-10-02, item 5: wire the collapse button's real click handler onto the
+      // tooltip's own DOM (permanent:true means Leaflet already created + opened it
+      // synchronously above, via addTo -- getElement() is non-null here). Toggles a
+      // class on the tooltip's OWN root element (.vd-focus-collapsed below hides
+      // .vd-popup-detail and rotates the chevron via CSS) rather than rebuilding the
+      // HTML string, and stopPropagation so the click can't bubble to the map/marker
+      // underneath. Collapsed-name-only text (per Guy's own spec) is already exactly
+      // what nameHtml alone renders -- no separate truncated-name markup needed.
+      const tooltipEl = viewedMarker.getTooltip()?.getElement();
+      if (tooltipEl) {
+        if (focusCardCollapsedRef.current) tooltipEl.classList.add("vd-focus-collapsed");
+        const btn = tooltipEl.querySelector<HTMLButtonElement>(".vd-focus-collapse-btn");
+        btn?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const collapsed = tooltipEl.classList.toggle("vd-focus-collapsed");
+          focusCardCollapsedRef.current = collapsed;
+          const label = collapsed ? `Expand ${school.name}` : `Collapse ${school.name}`;
+          btn.setAttribute("aria-label", label);
+          btn.setAttribute("aria-expanded", String(!collapsed));
+        });
+      }
     }
 
     draw();
@@ -1085,6 +1172,23 @@ export default function SchoolMap({
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
         .vd-focus-card::before { display: none; }
+        /* 2026-10-02, item 5: collapse toggle -- same chevron glyph/behaviour as
+           MapBoxCollapseToggle (the three overlay boxes), reimplemented as plain
+           CSS/DOM here since this card is a raw Leaflet tooltip HTML string, not
+           React. Header row only appears on the collapsible (focus-card) variant of
+           buildPopupHtml -- ordinary neighbour hover popups never get a
+           .vd-focus-header at all, so this rule never applies to them. */
+        .vd-focus-header { display: flex; align-items: center; gap: 6px; }
+        .vd-focus-header .vd-popup-name { margin-bottom: 0; }
+        .vd-focus-collapse-btn {
+          display: inline-flex; align-items: center; justify-content: center;
+          margin: -2px; padding: 2px; border: none; background: transparent;
+          color: #737373; cursor: pointer; flex-shrink: 0;
+        }
+        .vd-focus-collapse-btn:hover { color: #404040; }
+        .vd-focus-collapse-icon { transition: transform 0.15s; }
+        .vd-focus-collapsed .vd-focus-collapse-icon { transform: rotate(-90deg); }
+        .vd-focus-collapsed .vd-popup-detail { display: none; }
         .vd-ring-label {
           font-size: 10px; font-weight: 600; color: var(--distance-ring);
           text-align: center; white-space: nowrap; background: transparent;
@@ -1233,21 +1337,32 @@ export default function SchoolMap({
           />
 
           <div className="w-full rounded-md border border-neutral-200 bg-white p-3 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Size</h3>
-            {legendMinRoll !== null && legendMaxRoll !== null ? (
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-                <LegendDot radius={MIN_RADIUS} />
-                <span>{legendMinRoll.toLocaleString()}</span>
-                <LegendDot radius={MAX_RADIUS} />
-                <span>{legendMaxRoll.toLocaleString()} pupils</span>
-              </div>
-            ) : (
-              <p className="text-neutral-500 dark:text-neutral-400">Dot size reflects roll where available.</p>
-            )}
-            {colourMode === "phase" && (
-              <p className="mt-1.5 text-xs text-neutral-400">
-                Through-schools are sized to pupils in the matched phase only, not their whole roll.
-              </p>
+            <div className={`flex items-center justify-between gap-2 ${sizeBoxCollapsed ? "" : "mb-2"}`}>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Size</h3>
+              <MapBoxCollapseToggle
+                collapsed={sizeBoxCollapsed}
+                onToggle={() => setSizeBoxCollapsed((c) => !c)}
+                label="Size"
+              />
+            </div>
+            {!sizeBoxCollapsed && (
+              <>
+                {legendMinRoll !== null && legendMaxRoll !== null ? (
+                  <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                    <LegendDot radius={MIN_RADIUS} />
+                    <span>{legendMinRoll.toLocaleString()}</span>
+                    <LegendDot radius={MAX_RADIUS} />
+                    <span>{legendMaxRoll.toLocaleString()} pupils</span>
+                  </div>
+                ) : (
+                  <p className="text-neutral-500 dark:text-neutral-400">Dot size reflects roll where available.</p>
+                )}
+                {colourMode === "phase" && (
+                  <p className="mt-1.5 text-xs text-neutral-400">
+                    Through-schools are sized to pupils in the matched phase only, not their whole roll.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

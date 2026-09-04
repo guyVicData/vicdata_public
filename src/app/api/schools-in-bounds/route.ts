@@ -42,6 +42,27 @@ async function checkMembership(viewedUrn: string | null, authHeader: string | nu
   return !!data;
 }
 
+// 2026-10-02, item 3: the viewed school's OWN real easting/northing, resolved
+// server-side from viewedUrn -- never trust a client-supplied coordinate for a
+// security/correctness-bearing filter (this anchors the independent/FE 10km hard
+// cutoff below). Anonymous-safe (no auth required, same as the rest of this route's
+// core query) -- deliberately a separate anon-client lookup rather than folding into
+// checkMembership's own query, since that one is gated on a valid auth header and
+// membership status, neither of which this needs.
+async function lookupViewedSchoolCoords(
+  supabase: ReturnType<typeof createServerAnonSupabaseClient>,
+  viewedUrn: string | null,
+): Promise<{ easting: number; northing: number } | null> {
+  if (!viewedUrn) return null;
+  const { data } = await supabase
+    .from("schools")
+    .select("easting, northing")
+    .eq("urn", viewedUrn)
+    .maybeSingle();
+  if (!data || data.easting == null || data.northing == null) return null;
+  return { easting: data.easting, northing: data.northing };
+}
+
 // The three age bands for the member-tier popup breakdown (2026-08-27) -- reuses the
 // SAME 11/16 boundaries phaseTags()/phaseTagAgeRange() already encode, deliberately,
 // rather than the slightly different 4-10/11-15/16-18 bands mentioned verbally --
@@ -131,10 +152,21 @@ function genderSplitFor(counts: AgeGenderCounts): { girls: number; boys: number 
 // total) tripped the WHOLE thing over cap and showed nothing, even though the 80
 // independent schools were perfectly fine on their own. Two separate caps mean that
 // same viewport now shows all 80 independents (well under 250) while only state
-// schools wait on a "zoom in" prompt (well over 150) -- no viewport can ever go fully
-// blank for a sector that isn't actually over-represented. Combined worst case
-// (150+250=400) is also strictly lower than the old shared 500, not just fairer.
-const STATE_CAP = 150;
+// schools wait on a "zoom in" prompt -- no viewport can ever go fully blank for a
+// sector that isn't actually over-represented.
+//
+// 2026-10-02: raised 150 -> 250 alongside SchoolMap.tsx's own DISTANCE_RING_KM_STATE
+// cut (5km -> 2km, see that constant's own comment) -- confirmed live that the real
+// initial viewport for a dense area (Acland Burghley, Camden) held 696 real state
+// schools at the OLD 5km ring, tripping even this raised 250 comfortably; the real
+// fix for THAT was tightening the ring, not raising this cap alone (a cap bump alone
+// would have needed to go well past 696 to matter, which isn't "defensive," it's
+// giving up on the cap doing anything). This raise is a smaller, separate real
+// margin on top of the ring fix -- verified the tightened 2km ring's own real
+// viewport (118 real state schools at Acland Burghley) leaves comfortable headroom
+// under 250, not right at the edge of 150. Combined worst case (250+250=500) matches
+// the old pre-split shared cap exactly, not a new high-water mark.
+const STATE_CAP = 250;
 const INDEPENDENT_CAP = 250;
 // 2026-08-28: third bucket for the previously entirely-excluded FE/sixth-form/
 // special-post-16/HE/Welsh population (typology.ts's FE_INSTITUTION_TYPES) -- see
@@ -168,9 +200,11 @@ export async function GET(request: NextRequest) {
     );
   }
   const viewedUrn = sp.get("urn");
-  const includeMemberDetail = await checkMembership(viewedUrn, request.headers.get("authorization"));
-
   const supabase = createServerAnonSupabaseClient();
+  const [includeMemberDetail, viewedCoords] = await Promise.all([
+    checkMembership(viewedUrn, request.headers.get("authorization")),
+    lookupViewedSchoolCoords(supabase, viewedUrn),
+  ]);
 
   type Row = {
     urn: string;
@@ -214,9 +248,57 @@ export async function GET(request: NextRequest) {
       .lte("northing", maxNorthing)
       .abortSignal(request.signal);
 
+  // 2026-10-02, item 3: independent/FE candidates get a genuine hard cutoff -- no
+  // candidate beyond 10km of the VIEWED school's own position, ever, regardless of
+  // viewport (a fixed circle anchored to viewedCoords, not the current pan/zoom
+  // center -- panning the viewport onto a school 11km away still never surfaces it).
+  // Unlike nearest_schools' own sqrt(dx^2+dy^2) filter, PostgREST's fluent query
+  // builder can't express that computed expression directly in a WHERE clause without
+  // a dedicated RPC, so the real distance check happens in JS below on rows that were
+  // ALREADY narrowed at the SQL level to the square (viewedCoords +/- 10km on each
+  // axis) intersected with the actual viewport -- the circle is inscribed inside that
+  // square, so every real within-10km candidate is guaranteed to survive the SQL
+  // narrowing, and only square-corner rows beyond the real circle get discarded next.
+  // That fixed square is at most 20km x 20km (400km^2) regardless of how wide the
+  // viewport itself is panned/zoomed -- a real, small, fixed area nationally (FE has
+  // only ~382 real institutions in the whole country; independent schools, even 2-5x
+  // denser than that per km^2, don't come close to filling 400km^2 densely enough to
+  // hit PostgREST's own 1000-row default response cap) -- so neither query below
+  // carries an explicit .limit(): the over-cap check runs on the POST-circle-refine
+  // count, and truncating at the SQL level first (before the refine discards
+  // corner rows) would risk under-counting real over-cap sectors. Falls back to the
+  // plain viewport-only query (old behaviour, INDEPENDENT_CAP+1/FE_CAP+1 limit) when
+  // viewedCoords couldn't be resolved (malformed/missing urn) rather than silently
+  // returning nothing.
+  const INDEPENDENT_FE_DISTANCE_CAP_M = 10_000;
+  const distanceBoundedQuery = () => {
+    const coords = viewedCoords!;
+    const veMin = Math.max(minEasting, coords.easting - INDEPENDENT_FE_DISTANCE_CAP_M);
+    const veMax = Math.min(maxEasting, coords.easting + INDEPENDENT_FE_DISTANCE_CAP_M);
+    const vnMin = Math.max(minNorthing, coords.northing - INDEPENDENT_FE_DISTANCE_CAP_M);
+    const vnMax = Math.min(maxNorthing, coords.northing + INDEPENDENT_FE_DISTANCE_CAP_M);
+    return supabase
+      .from("schools")
+      .select("urn, current_name, establishment_type_group, establishment_type, statutory_low_age, statutory_high_age, gender, easting, northing")
+      .neq("status", "closed")
+      .gte("easting", veMin)
+      .lte("easting", veMax)
+      .gte("northing", vnMin)
+      .lte("northing", vnMax)
+      .abortSignal(request.signal);
+  };
+  const withinDistanceCapM = (row: Row): boolean => {
+    if (!viewedCoords) return true;
+    const dx = row.easting - viewedCoords.easting;
+    const dy = row.northing - viewedCoords.northing;
+    return Math.sqrt(dx * dx + dy * dy) <= INDEPENDENT_FE_DISTANCE_CAP_M;
+  };
+
   const [stateResult, independentResult, feResult, specialResult] = await Promise.all([
     baseQuery().in("establishment_type_group", STATE_ESTABLISHMENT_GROUPS).limit(STATE_CAP + 1),
-    baseQuery().eq("establishment_type_group", "Independent schools").limit(INDEPENDENT_CAP + 1),
+    viewedCoords
+      ? distanceBoundedQuery().eq("establishment_type_group", "Independent schools")
+      : baseQuery().eq("establishment_type_group", "Independent schools").limit(INDEPENDENT_CAP + 1),
     // 2026-08-28: third bucket, establishment_type (not group) -- see FE_CAP's own
     // comment and typology.ts's FE_INSTITUTION_TYPES for why.
     // 2026-09-22: CONSORTIUM_SIXTH_FORM_CENTRE_TYPE excluded specifically -- confirmed
@@ -225,10 +307,14 @@ export async function GET(request: NextRequest) {
     // secondary schools instead), so a map pin for one currently leads nowhere real.
     // The other five FE_ESTABLISHMENT_TYPES values are untouched -- real FE colleges
     // still belong on the map.
-    baseQuery()
-      .in("establishment_type", FE_INSTITUTION_TYPES)
-      .neq("establishment_type", CONSORTIUM_SIXTH_FORM_CENTRE_TYPE)
-      .limit(FE_CAP + 1),
+    viewedCoords
+      ? distanceBoundedQuery()
+          .in("establishment_type", FE_INSTITUTION_TYPES)
+          .neq("establishment_type", CONSORTIUM_SIXTH_FORM_CENTRE_TYPE)
+      : baseQuery()
+          .in("establishment_type", FE_INSTITUTION_TYPES)
+          .neq("establishment_type", CONSORTIUM_SIXTH_FORM_CENTRE_TYPE)
+          .limit(FE_CAP + 1),
     // 2026-09-03: fourth bucket, establishment_type_group this time -- see SPECIAL_CAP's
     // own comment and typology.ts's SPECIAL_SCHOOLS_ESTABLISHMENT_GROUP for why the
     // group itself, unlike FE, is already the right boundary.
@@ -246,8 +332,13 @@ export async function GET(request: NextRequest) {
   }
 
   const stateRows = (stateResult.data as Row[]) ?? [];
-  const independentRows = (independentResult.data as Row[]) ?? [];
-  const feRows = (feResult.data as Row[]) ?? [];
+  // 2026-10-02, item 3: the SQL layer only narrowed these two to the (viewport ∩
+  // 20km square) bound -- this is the real circular 10km refine, discarding the
+  // square's own corner rows. A no-op filter (withinDistanceCapM returns true
+  // unconditionally) when viewedCoords couldn't be resolved, since those two queries
+  // already fell back to the plain viewport-only baseQuery() above in that case.
+  const independentRows = ((independentResult.data as Row[]) ?? []).filter(withinDistanceCapM);
+  const feRows = ((feResult.data as Row[]) ?? []).filter(withinDistanceCapM);
   const specialRows = (specialResult.data as Row[]) ?? [];
   const stateOverCap = stateRows.length > STATE_CAP;
   const independentOverCap = independentRows.length > INDEPENDENT_CAP;

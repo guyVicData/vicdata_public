@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { TAG_GROUPS, emptyFilterState, type FilterState } from "@/lib/map-tag-groups";
 import { TAG_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
+import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
 
 // Filter panel for the State of the School page map (2026-08-25 design/polish round
 // -- rebuilt from a checkbox list to toggleable pill/chip buttons per Guy's live
@@ -33,6 +35,10 @@ export default function MapFilterPanel({
   onFiltersChange: (filters: FilterState) => void;
 }) {
   const activeCount = Object.values(filters).reduce((sum, set) => sum + set.size, 0);
+  // 2026-10-02, item 4: local, non-persisted collapse state -- doesn't need to
+  // survive a reload, so plain useState rather than anything wired to the URL/
+  // localStorage.
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="w-full rounded-md border border-neutral-200 bg-white p-4 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
@@ -58,20 +64,23 @@ export default function MapFilterPanel({
         }
       `}</style>
 
-      <div className="mb-1 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Filters</h3>
-        {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={() => onFiltersChange(emptyFilterState())}
-            className="text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-700 dark:hover:text-neutral-300"
-          >
-            Clear ({activeCount})
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {activeCount > 0 && (
+            <button
+              type="button"
+              onClick={() => onFiltersChange(emptyFilterState())}
+              className="text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-700 dark:hover:text-neutral-300"
+            >
+              Clear ({activeCount})
+            </button>
+          )}
+          <MapBoxCollapseToggle collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} label="Filters" />
+        </div>
       </div>
 
-      {TAG_GROUPS.map((group) => (
+      {!collapsed && TAG_GROUPS.map((group) => (
         <div key={group.key} className="mt-3">
           <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
             {group.title}

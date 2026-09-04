@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
+
 // Colour box for the State of the School page map (2026-08-25 design/polish round --
 // new, split out per Guy's live review: "Colour by" previously had no working
 // selector under it, and the colour key lived in an easy-to-miss overlay on the map
@@ -32,40 +35,50 @@ export default function MapColourKey({
   onModeChange: (mode: string) => void;
   swatches: ColourSwatch[];
 }) {
+  // 2026-10-02, item 4: same local, non-persisted collapse state as MapFilterPanel.
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <div className="w-full rounded-md border border-neutral-200 bg-white p-4 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Colour by</h3>
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {modes.map((m) => (
-          <button
-            key={m.key}
-            type="button"
-            aria-pressed={mode === m.key}
-            onClick={() => onModeChange(m.key)}
-            className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
-              mode === m.key
-                ? "border-neutral-900 bg-neutral-900 text-neutral-50 dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
-                : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
+      <div className={`flex items-center justify-between gap-2 ${collapsed ? "" : "mb-2"}`}>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Colour by</h3>
+        <MapBoxCollapseToggle collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} label="Colour by" />
       </div>
-      <div className="flex flex-col gap-1.5">
-        {swatches.map((sw) => (
-          <span
-            key={sw.label}
-            className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400"
-          >
-            <span
-              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: `var(${sw.colourVar})`, opacity: 0.85 }}
-            />
-            {sw.label}
-          </span>
-        ))}
-      </div>
+      {!collapsed && (
+        <>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {modes.map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                aria-pressed={mode === m.key}
+                onClick={() => onModeChange(m.key)}
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                  mode === m.key
+                    ? "border-neutral-900 bg-neutral-900 text-neutral-50 dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
+                    : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {swatches.map((sw) => (
+              <span
+                key={sw.label}
+                className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400"
+              >
+                <span
+                  className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: `var(${sw.colourVar})`, opacity: 0.85 }}
+                />
+                {sw.label}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
