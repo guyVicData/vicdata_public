@@ -487,7 +487,13 @@ export default async function SchoolPage({
   const feNarrativeParagraphs: (string | null)[] = isGenuineFeSector
     ? [
         feParagraphParticipation(school.current_name, feUnder19Snapshot, feAdultSnapshot),
-        feParagraphNationalStanding(school.current_name, feUnder19Snapshot?.total ?? null, feDistributions.under19),
+        feParagraphNationalStanding(
+          school.current_name,
+          feUnder19Snapshot?.total ?? null,
+          feDistributions.under19,
+          feAdultSnapshot?.total ?? null,
+          feDistributions.adult,
+        ),
         feParagraphLocalContext(school.current_name, laComposition, sixthFormLa, feUnder19Snapshot?.total ?? null),
         feParagraphRegionalStanding(ownRegion, ownRegionTotals, nationalSixthFormTotals),
       ]

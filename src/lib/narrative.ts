@@ -485,18 +485,20 @@ export function paragraphFeCollegeLocalShare(
 }
 
 // ---------------------------------------------------------------------------
-// "Current state of the college" narrative -- item 7 from the original spec, never
-// built until now. Same discipline as paragraph1PhaseGender/paragraph2SectorSize/
+// "Current state of the college" narrative -- item 7 from the original spec, built,
+// then revised 2026-09-19 from Guy's own before/after review of Truro and Penwith
+// College (urn 130629). Same discipline as paragraph1PhaseGender/paragraph2SectorSize/
 // paragraph4LocalContext above: deterministic sentences from real computed values,
 // each paragraph independently nullable (a college with no adult data, or no
-// resolvable region, simply omits that paragraph), no fabrication. Draft 1 -- four
-// paragraphs from the four real data groups already computed in page.tsx for this
-// branch, not forced into paragraph-for-paragraph parity with the mainstream page's
-// own four-paragraph structure (the underlying data genuinely doesn't support the
-// same shape -- no shape/gender-variation/boarding topics exist for an FE college).
-// Paragraphs 3/4 deliberately call the SAME functions FeCollegeLocalContextCard
-// already uses (renderLocalSixthFormProvisionSentence/paragraphFeCollegeLocalShare)
-// rather than re-deriving the same sentences a second way.
+// resolvable region, simply omits that paragraph), no fabrication. Four paragraphs
+// from the four real data groups already computed in page.tsx for this branch, not
+// forced into paragraph-for-paragraph parity with the mainstream page's own
+// four-paragraph structure (the underlying data genuinely doesn't support the same
+// shape -- no shape/gender-variation/boarding topics exist for an FE college).
+// Paragraph 3 deliberately DIVERGES from FeCollegeLocalContextCard's own two
+// sentences (renderLocalSixthFormProvisionSentence/paragraphFeCollegeLocalShare,
+// both untouched, still exactly as they were) rather than reusing them -- its own
+// comment explains why.
 // ---------------------------------------------------------------------------
 
 // Paragraph 1: this college's own participation figures (under-19 + adult, kept as
@@ -518,54 +520,141 @@ export function feParagraphParticipation(
     clauses.push(`${sentence}.`);
   }
   if (adult) {
-    clauses.push(
-      `Alongside this, ${adult.total.toLocaleString()} adult (19+) learners are recorded separately — a different population, not combined into the figure above.`,
-    );
+    // 2026-09-19 trim (Guy's own before/after review, Truro and Penwith College):
+    // dropped the trailing "-- a different population, not combined into the figure
+    // above" clause -- the "never blend under-19 and adult" discipline still holds
+    // (this stays its own sentence, never summed with the under-19 figure above), it
+    // just doesn't need restating in every paragraph that already keeps them apart.
+    clauses.push(`Alongside this, ${adult.total.toLocaleString()} adult (19+) learners are recorded separately.`);
   }
   return clauses.join(" ");
 }
 
+// Shared by feParagraphNationalStanding's two clauses -- same threshold ratios
+// FeParticipationSizeCard's own nationalComparisonCaption uses, not a new comparison
+// rule invented for this paragraph.
+function feSizeDirectionWord(value: number, mean: number): string {
+  return value > mean * 1.1 ? "larger than" : value < mean * 0.9 ? "smaller than" : "about the same size as";
+}
+
 // Paragraph 2: national size standing, same badge/comparison logic
 // FeParticipationSizeCard already renders (its own nationalComparisonCaption), just
-// in prose form here rather than a badge row.
+// in prose form here rather than a badge row. 2026-09-19: extended with the adult
+// clause (was under-19 only) -- same badge/direction logic, second independent half,
+// each half can fire alone (a college with only adult data, e.g. City Lit, still gets
+// a real sentence). "the average real FE college" -> "the average FE college" per
+// Guy's own edit -- "real" read as implying the comparison population might otherwise
+// be fake, not the intended meaning (a genuine national average, not a padded one).
 export function feParagraphNationalStanding(
   collegeName: string,
   under19Total: number | null,
   under19Distribution: FeParticipationDistribution | null,
+  adultTotal: number | null,
+  adultDistribution: FeParticipationDistribution | null,
 ): string | null {
-  if (under19Total === null || !under19Distribution) return null;
-  const badge = sizeBadgeForValue(under19Total, under19Distribution.quintiles);
-  const mean = Math.round(under19Distribution.meanTotal);
-  const direction =
-    under19Total > under19Distribution.meanTotal * 1.1
-      ? "larger than"
-      : under19Total < under19Distribution.meanTotal * 0.9
-        ? "smaller than"
-        : "about the same size as";
-  return (
-    `Nationally, this places ${collegeName} in the ${badge} size band for under-19 FE participation — ` +
-    `${direction} the average real FE college (${mean.toLocaleString()} students).`
-  );
+  const clauses: string[] = [];
+  if (under19Total !== null && under19Distribution) {
+    const badge = sizeBadgeForValue(under19Total, under19Distribution.quintiles);
+    const mean = Math.round(under19Distribution.meanTotal);
+    const direction = feSizeDirectionWord(under19Total, under19Distribution.meanTotal);
+    clauses.push(`in the ${badge} size band for under-19 FE participation — ${direction} the average FE college (${mean.toLocaleString()} students)`);
+  }
+  if (adultTotal !== null && adultDistribution) {
+    const badge = sizeBadgeForValue(adultTotal, adultDistribution.quintiles);
+    const mean = Math.round(adultDistribution.meanTotal);
+    const direction = feSizeDirectionWord(adultTotal, adultDistribution.meanTotal);
+    clauses.push(
+      `in the ${badge} size band for adult participation — ${direction} the national FE college average of ${mean.toLocaleString()} adult students`,
+    );
+  }
+  if (clauses.length === 0) return null;
+  return `Nationally, this places ${collegeName} ${clauses.join(", and ")}.`;
 }
 
-// Paragraph 3: local context -- reuses the exact sentences FeCollegeLocalContextCard
-// already renders (renderLocalSixthFormProvisionSentence + paragraphFeCollegeLocalShare),
-// not a second, possibly-diverging description of the same facts.
+// Local counts sentence for paragraph 3 -- deliberately NOT
+// renderLocalSixthFormProvisionSentence (FeCollegeLocalContextCard's own sentence,
+// untouched -- see feParagraphLocalContext's own comment for why this paragraph
+// needs its own composition instead of reusing it). Same "return null when there's
+// nothing real to say" discipline that function already has, reimplemented here for
+// this paragraph's own different wording (bare school/college counts, no pupil
+// totals inline -- those move to their own sentence in feParagraphLocalContext).
+function feLocalCountsSentence(laName: string, sixthFormSchoolCount: number, feSchools: number): string | null {
+  const hasSchools = sixthFormSchoolCount > 0;
+  const hasFe = feSchools > 0;
+  if (!hasSchools && !hasFe) return null;
+
+  const schoolsPhrase =
+    sixthFormSchoolCount === 1 ? "1 school with a sixth form" : `${sixthFormSchoolCount.toLocaleString()} schools with sixth forms`;
+  const fePhrase = feSchools === 1 ? "1 FE college" : `${feSchools.toLocaleString()} FE colleges`;
+
+  if (hasSchools && hasFe) {
+    const verb = sixthFormSchoolCount === 1 ? "is" : "are";
+    return `There ${verb} ${schoolsPhrase} in ${laName} and ${fePhrase}.`;
+  }
+  if (hasSchools) {
+    const verb = sixthFormSchoolCount === 1 ? "is" : "are";
+    return `There ${verb} ${schoolsPhrase} in ${laName}.`;
+  }
+  const verb = feSchools === 1 ? "is" : "are";
+  return `There ${verb} ${fePhrase} in ${laName}.`;
+}
+
+// Paragraph 3: local context. 2026-09-19 restructure (Guy's own before/after review,
+// Truro and Penwith College) -- deliberately DIVERGES from
+// renderLocalSixthFormProvisionSentence/paragraphFeCollegeLocalShare
+// (FeCollegeLocalContextCard's own two sentences, both untouched, still exactly as
+// they were): the narrative now states a combined "total 16+ population"
+// (sixth-form pupils + FE under-19 students, a figure the card deliberately never
+// blends into one number) and this college's own share of BOTH the FE-only total and
+// that combined total -- a real, deliberate choice for this paragraph specifically,
+// not a precedent for the card to follow too.
 export function feParagraphLocalContext(
   collegeName: string,
   laComposition: LaSectorComposition | null,
   sixthFormLa: { state: { total: number; schoolCount: number } | null; independent: { total: number; schoolCount: number } | null },
   ownUnder19Total: number | null,
 ): string | null {
+  const laName = laComposition?.laName ?? null;
+  if (!laName) return null;
+
   const feSchools = laComposition?.bySector.FE.schools ?? 0;
   const fePupils = laComposition?.bySector.FE.pupils ?? 0;
   const sixthFormSchoolCount = (sixthFormLa.state?.schoolCount ?? 0) + (sixthFormLa.independent?.schoolCount ?? 0);
   const sixthFormPupilTotal = (sixthFormLa.state?.total ?? 0) + (sixthFormLa.independent?.total ?? 0);
-  const provisionSentence = laComposition
-    ? renderLocalSixthFormProvisionSentence(laComposition.laName, sixthFormSchoolCount, sixthFormPupilTotal, feSchools, fePupils)
-    : null;
-  const shareSentence = paragraphFeCollegeLocalShare(collegeName, laComposition, ownUnder19Total);
-  return [provisionSentence, shareSentence].filter((s): s is string => s !== null).join(" ") || null;
+  const combinedTotal = sixthFormPupilTotal + fePupils;
+
+  const countsSentence = feLocalCountsSentence(laName, sixthFormSchoolCount, feSchools);
+  if (!countsSentence) return null; // nothing real to say at all -- same discipline as the card's own degrade
+
+  const sentences = [countsSentence];
+  if (combinedTotal > 0) sentences.push(`The total 16+ population is ${combinedTotal.toLocaleString()}.`);
+
+  if (ownUnder19Total !== null && fePupils > 0 && combinedTotal > 0) {
+    const feSharePct = (ownUnder19Total / fePupils) * 100;
+    const combinedSharePct = (ownUnder19Total / combinedTotal) * 100;
+    sentences.push(
+      `${collegeName} students make up ${feSharePct.toFixed(1)}% of the FE college students, and ` +
+        `${combinedSharePct.toFixed(1)}% of all 16+ students in ${laName}.`,
+    );
+  }
+
+  return sentences.join(" ");
+}
+
+// 2026-09-19: England's 9 GOR regions take "the" except London (a real English-usage
+// rule, not a stylistic choice) -- "Across the South West"/"Across the North East",
+// but "Across London". Yorkshire and The Humber is a special case: it doesn't take a
+// LEADING "the" (no "the Yorkshire and the Humber"), but the DB's own stored
+// capitalisation ("...The Humber") needs lowercasing to read correctly mid-sentence
+// ("Yorkshire and the Humber"). A short lookup, not a blanket prepend -- a blanket
+// "the {region}" would produce "the London", which is wrong.
+const REGION_WITH_ARTICLE: Record<string, string> = {
+  London: "London",
+  "Yorkshire and The Humber": "Yorkshire and the Humber",
+};
+
+function regionWithArticle(region: string): string {
+  return REGION_WITH_ARTICLE[region] ?? `the ${region}`;
 }
 
 // Paragraph 4: regional standing -- this college's own region's FE-college share of
@@ -580,7 +669,7 @@ export function feParagraphRegionalStanding(
   const nationalFe = nationalTotals.fe?.total ?? 0;
   if (regionFe <= 0 || nationalFe <= 0) return null;
   const pct = (regionFe / nationalFe) * 100;
-  return `Across ${ownRegion}, FE colleges report ${regionFe.toLocaleString()} under-19 students between them — ${pct.toFixed(1)}% of England's total.`;
+  return `Across ${regionWithArticle(ownRegion)}, FE colleges report ${regionFe.toLocaleString()} under-19 students between them — ${pct.toFixed(1)}% of England's total.`;
 }
 
 // ---------------------------------------------------------------------------
