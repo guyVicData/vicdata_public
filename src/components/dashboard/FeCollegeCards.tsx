@@ -7,34 +7,82 @@
 import Link from "next/link";
 import { Card, CardDivider, CardHeading, Caption, Eyebrow } from "./Card";
 import type { LaSectorComposition } from "@/lib/la-sector-composition";
-import { renderFeCollegeCountSentence, paragraphFeCollegeLocalShare } from "@/lib/narrative";
+import { paragraphFeCollegeLocalShare, renderLocalSixthFormProvisionSentence } from "@/lib/narrative";
 import { sizeBadgeForValue, type SizeBadge } from "@/lib/age-band-distributions";
 import type { FeParticipationDistribution } from "@/lib/fe-participation-distributions";
+import type { SectorTotal } from "@/lib/sixth-form-sector-aggregates";
+import { TAG_COLOURS } from "@/lib/tag-colours";
 
-// 2026-09-15: Prompt A item 1 -- "where this college sits locally in 16+ provision",
-// FE-only half. The paired State+Independent sixth-form half and the three-way pie
-// both need a new sector-split, sixth-form-age aggregate that doesn't exist yet
-// (deliberately not built this round, no placeholder fabricated). Reuses
-// laComposition.bySector.FE.schools/.pupils -- the same real, under-19-only ILR
-// figures already feeding the mainstream RollCard's own FE sentence and this LA's
-// pie-chart FE slice, no new query.
+// Same State/Independent/FE hex values RollCard's own LA pie-chart already uses --
+// one shared visual vocabulary for "sector" across the whole page, not a second,
+// possibly-drifting copy.
+// Exported for RegionalSixthFormCard.tsx (item 6's own pies reuse this exact
+// vocabulary/gradient rather than a second copy).
+export const SECTOR_COLOUR: Record<"State" | "Independent" | "FE", string> = {
+  State: TAG_COLOURS.State.light[1],
+  Independent: TAG_COLOURS.Independent.light[1],
+  FE: TAG_COLOURS.FE.light[1],
+};
+
+export function threeWayDonutGradient(state: number, independent: number, fe: number): string {
+  const total = state + independent + fe;
+  if (total <= 0) return "conic-gradient(#e7e2d9 0% 100%)";
+  let acc = 0;
+  const stops: string[] = [];
+  for (const [label, value] of [
+    ["State", state],
+    ["Independent", independent],
+    ["FE", fe],
+  ] as const) {
+    if (value <= 0) continue;
+    const start = (acc / total) * 100;
+    acc += value;
+    const end = (acc / total) * 100;
+    stops.push(`${SECTOR_COLOUR[label]} ${start.toFixed(1)}% ${end.toFixed(1)}%`);
+  }
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
+// 2026-09-15/16: "where this college sits locally in 16+ provision" -- built in two
+// passes. Prompt A's item 1 shipped the FE-only half (laComposition.bySector.FE, the
+// same real ILR figures already feeding RollCard's own FE sentence and this LA's
+// pie-chart FE slice -- no new query for that half, still true). This pass adds the
+// paired State+Independent sixth-form half and the three-way pie, both needing the
+// new sixth_form_sector_aggregates table (characterized separately before being
+// built -- see that table's own migration comment).
 export function FeCollegeLocalContextCard({
   collegeName,
   laComposition,
   ownUnder19Total,
+  sixthFormLa,
 }: {
   collegeName: string;
   laComposition: LaSectorComposition | null;
   ownUnder19Total: number | null;
+  // State/independent sixth-form (16-18) totals for this college's own LA, from the
+  // new sixth_form_sector_aggregates table -- `fe` is deliberately absent from this
+  // type: FE's own LA-level figure stays laComposition.bySector.FE, read live, never
+  // duplicated into that table (see sync-fe-participation-region-national.ts's own
+  // comment on why LA scope is out of its job).
+  sixthFormLa: { state: SectorTotal | null; independent: SectorTotal | null };
 }) {
-  const countSentence = laComposition
-    ? renderFeCollegeCountSentence(laComposition.bySector.FE.schools, laComposition.bySector.FE.pupils)
+  const feSchools = laComposition?.bySector.FE.schools ?? 0;
+  const fePupils = laComposition?.bySector.FE.pupils ?? 0;
+  const statePupils = sixthFormLa.state?.total ?? 0;
+  const independentPupils = sixthFormLa.independent?.total ?? 0;
+  const sixthFormSchoolCount = (sixthFormLa.state?.schoolCount ?? 0) + (sixthFormLa.independent?.schoolCount ?? 0);
+  const sixthFormPupilTotal = statePupils + independentPupils;
+
+  const provisionSentence = laComposition
+    ? renderLocalSixthFormProvisionSentence(laComposition.laName, sixthFormSchoolCount, sixthFormPupilTotal, feSchools, fePupils)
     : null;
-  // FE.schools === 0 -- nothing meaningful to show at all (no count, no possible
-  // share), so the whole card renders nothing, not an empty shell.
-  if (!countSentence) return null;
+  // Neither half has real data -- nothing meaningful to show at all, so the whole
+  // card renders nothing, not an empty shell. A real case, not hypothetical: only
+  // 152/183 LAs have any mainstream sixth-form data, and most LAs have 0 FE colleges.
+  if (!provisionSentence) return null;
 
   const shareSentence = paragraphFeCollegeLocalShare(collegeName, laComposition, ownUnder19Total);
+  const pieTotal = statePupils + independentPupils + fePupils;
 
   return (
     <Card size="medium" className="flex flex-col gap-3">
@@ -42,25 +90,43 @@ export function FeCollegeLocalContextCard({
         <h3 className="mb-2 font-[family-name:var(--font-newsreader)] text-[15px] font-medium text-stone-900 dark:text-stone-100">
           Where this college sits locally in 16+ provision
         </h3>
-        <p className="text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">{countSentence}</p>
+        <p className="text-[13px] leading-relaxed text-stone-700 dark:text-stone-300">{provisionSentence}</p>
       </div>
+      {pieTotal > 0 && (
+        <div className="flex items-center gap-5">
+          <div
+            className="h-20 w-20 shrink-0 rounded-full"
+            style={{ background: threeWayDonutGradient(statePupils, independentPupils, fePupils) }}
+          />
+          <div className="flex flex-col gap-1.5">
+            {([
+              ["State", statePupils, "State sixth forms (16-18)"],
+              ["Independent", independentPupils, "Independent sixth forms (16-18)"],
+              ["FE", fePupils, "FE colleges (under-19)"],
+            ] as const)
+              .filter(([, value]) => value > 0)
+              .map(([sector, value, label]) => (
+                <div key={sector} className="flex items-center gap-2 text-[13px] text-stone-700 dark:text-stone-300">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: SECTOR_COLOUR[sector] }} />
+                  {label} — {((value / pieTotal) * 100).toFixed(0)}%
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
       {shareSentence && (
         <>
           <CardDivider />
           <Caption>{shareSentence}</Caption>
         </>
       )}
-      {/* Deliberately names ILR, not GIAS -- unlike RollCard's own caption, every
-          figure in THIS card (both sentences) comes from the ILR fallback, not
-          GIAS's number_of_pupils (structurally always null for FE, confirmed last
-          round). */}
       <Caption className="italic">
-        Source:{" "}
+        Sixth-form (16-18) figures are DfE school census data; FE colleges&rsquo; figure is{" "}
         <Link href="/sources" className="underline hover:text-stone-700 dark:hover:text-stone-300">
           DfE ILR
         </Link>{" "}
-        (Individualised Learner Record) participation data — a different measurement from GIAS&rsquo;s own school
-        register, kept separate.
+        under-19 participation — a slightly broader age net than 16-18, not directly equivalent, shown alongside
+        rather than blended into one number.
       </Caption>
     </Card>
   );

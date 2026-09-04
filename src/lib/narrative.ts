@@ -388,13 +388,13 @@ export function paragraph2SectorSize(
 }
 
 // ---------------------------------------------------------------------------
-// FE-college local-context sentences (Prompt A, item 1) -- the FE half of "where
-// this college sits locally in 16+ provision" (the paired State+Independent
-// sixth-form half and the three-way pie both need a new sector-split, sixth-form-age
-// aggregate that doesn't exist yet, deliberately not built this round). Both
-// functions read laComposition.bySector.FE, the same real, under-19-only ILR figures
-// already feeding the mainstream RollCard's own FE sentence and this LA's pie-chart
-// FE slice -- no new query, no new source.
+// FE-college local-context sentences. Started as FE-only (Prompt A, item 1's first
+// pass, laComposition.bySector.FE -- the same real, under-19-only ILR figures already
+// feeding the mainstream RollCard's own FE sentence and this LA's pie-chart FE
+// slice); the paired State+Independent sixth-form half below needed the new
+// sixth_form_sector_aggregates table (a genuinely new precomputed aggregate,
+// characterized separately before being built) -- no new query needed for the FE
+// side even now, only the sixth-form side is new.
 // ---------------------------------------------------------------------------
 
 // Shared with RollCard.tsx's own "There are N schools..." FE half-sentence -- same
@@ -404,6 +404,53 @@ export function renderFeCollegeCountSentence(feSchools: number, fePupils: number
   if (feSchools === 0) return null;
   if (feSchools === 1) return `There is 1 FE college, with ${fePupils.toLocaleString()} under-19 students.`;
   return `There are ${feSchools.toLocaleString()} FE colleges, with ${fePupils.toLocaleString()} under-19 students between them.`;
+}
+
+// Combined local-provision sentence (this build): the mainstream sixth-form-school
+// half (a NEW figure, sixth_form_sector_aggregates' state+independent totals SUMMED
+// together for this one sentence -- the pie chart alongside it carries the 3-way
+// sector split visually, this sentence doesn't need to) alongside the existing FE
+// half. Either half can be absent (a real, not hypothetical, case -- only 152/183 real
+// LAs have any mainstream sixth-form data at all) and the sentence degrades to
+// whichever half is real, never a fabricated "0 schools" clause; both absent renders
+// nothing. The LA name is stated once, in whichever clause leads.
+export function renderLocalSixthFormProvisionSentence(
+  laName: string,
+  sixthFormSchoolCount: number,
+  sixthFormPupilTotal: number,
+  feCollegeCount: number,
+  feUnder19Total: number,
+): string | null {
+  const hasSchools = sixthFormSchoolCount > 0;
+  const hasFe = feCollegeCount > 0;
+  if (!hasSchools && !hasFe) return null;
+
+  const schoolsClause = (leading: boolean) => {
+    const n = sixthFormSchoolCount.toLocaleString();
+    if (sixthFormSchoolCount === 1) {
+      return leading
+        ? `There is 1 school with a sixth form in ${laName}, with ${sixthFormPupilTotal.toLocaleString()} pupils`
+        : `1 school with a sixth form, with ${sixthFormPupilTotal.toLocaleString()} pupils`;
+    }
+    return leading
+      ? `There are ${n} schools with sixth forms in ${laName}, with ${sixthFormPupilTotal.toLocaleString()} pupils between them`
+      : `${n} schools with sixth forms, with ${sixthFormPupilTotal.toLocaleString()} pupils between them`;
+  };
+  const feClause = (leading: boolean) => {
+    const n = feCollegeCount.toLocaleString();
+    if (feCollegeCount === 1) {
+      return leading
+        ? `There is 1 FE college in ${laName}, with ${feUnder19Total.toLocaleString()} under-19 students`
+        : `1 FE college, with ${feUnder19Total.toLocaleString()} under-19 students`;
+    }
+    return leading
+      ? `There are ${n} FE colleges in ${laName}, with ${feUnder19Total.toLocaleString()} under-19 students between them`
+      : `${n} FE colleges, with ${feUnder19Total.toLocaleString()} under-19 students between them`;
+  };
+
+  if (hasSchools && hasFe) return `${schoolsClause(true)}, and ${feClause(false)}.`;
+  if (hasSchools) return `${schoolsClause(true)}.`;
+  return `${feClause(true)}.`;
 }
 
 // This college's own share of the LA's FE-college under-19 population -- same

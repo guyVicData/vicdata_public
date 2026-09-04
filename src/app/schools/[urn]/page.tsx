@@ -19,6 +19,12 @@ import { computeLaSectorComposition } from "@/lib/la-sector-composition";
 import { lookupAgeBandDistributions } from "@/lib/age-band-distributions";
 import { lookupFeParticipationDistributions } from "@/lib/fe-participation-distributions";
 import { findFeCollegeGenderPeers } from "@/lib/surrounding-fe-colleges";
+import {
+  lookupLaSixthFormSectorTotals,
+  lookupRegionSixthFormSectorTotals,
+  lookupNationalSixthFormSectorTotals,
+  lookupAllRegionsSixthFormSectorTotals,
+} from "@/lib/sixth-form-sector-aggregates";
 import { lookupPopulationTrend } from "@/lib/population-trend-lookup";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
 import TypologyTags from "@/components/TypologyTags";
@@ -59,6 +65,7 @@ import {
   FeParticipationSizeCard,
   FeParticipationSplitCard,
 } from "@/components/dashboard/FeCollegeCards";
+import { RegionalSixthFormCard } from "@/components/dashboard/RegionalSixthFormCard";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
 
@@ -100,6 +107,19 @@ async function getSchool(urn: string): Promise<School | null> {
     .maybeSingle();
   if (error || !data) return null;
   return data as School;
+}
+
+// Same la_gss_crosswalk lookup population-trend-lookup.ts already does internally
+// (dfe_code = la_code) -- duplicated here, not reused, because that function's own
+// region derivation is gated behind `roll` (it's only ever called inside the `roll &&`
+// block), and item 6's regional card needs a region for genuine FE-sector pages too,
+// which never have `roll`. Confirmed this is the real, only path to region (Prompt
+// B/C's characterization): schools/school_entities carries no region field of its own.
+async function getRegionForLaCode(laCode: string | null): Promise<string | null> {
+  if (!laCode) return null;
+  const supabase = createServerAnonSupabaseClient();
+  const { data } = await supabase.from("la_gss_crosswalk").select("region").eq("dfe_code", laCode).maybeSingle();
+  return data?.region ?? null;
 }
 
 type RollAggregate = {
@@ -374,6 +394,24 @@ export default async function SchoolPage({
   const feGenderPeers = feUnder19Snapshot
     ? await findFeCollegeGenderPeers(urn)
     : { found: 0, maxDistanceKm: null, peer: null };
+  // Item 1's full local pie: state/independent sixth-form (16-18) totals for this
+  // college's own LA, from the new sixth_form_sector_aggregates table -- paired with
+  // laComposition.bySector.FE (already computed above, read live) inside
+  // FeCollegeLocalContextCard itself.
+  const sixthFormLa = isGenuineFeSector
+    ? await lookupLaSixthFormSectorTotals(school.la_name ?? "", CURRENT_CENSUS_PERIOD)
+    : { state: null, independent: null };
+  // Item 6: regional stacked bar + two pie charts, FE-sector branch only (same scope
+  // as item 1's local card -- this whole build is FE-sector-page parity work, not a
+  // mainstream-page feature).
+  const ownRegion = isGenuineFeSector ? await getRegionForLaCode(school.la_code) : null;
+  const [ownRegionTotals, nationalSixthFormTotals, allRegionsSixthFormTotals] = isGenuineFeSector
+    ? await Promise.all([
+        ownRegion ? lookupRegionSixthFormSectorTotals(ownRegion, CURRENT_CENSUS_PERIOD) : Promise.resolve(null),
+        lookupNationalSixthFormSectorTotals(CURRENT_CENSUS_PERIOD),
+        lookupAllRegionsSixthFormSectorTotals(CURRENT_CENSUS_PERIOD),
+      ])
+    : [null, null, new Map()];
   const peerGenderSplit = aggregatePeerGenderSplit(matchedSurrounding);
   // "Peer average across the N nearest {descriptors} schools" -- reuses the exact
   // same descriptor words buildSurroundingSummary already computes for the free-tier
@@ -582,15 +620,16 @@ export default async function SchoolPage({
             />
           )}
 
-          {/* Prompt A, 2026-09-15: the start of developing the FE-sector page toward
-              parity with the mainstream page -- items 1/2/3/4, staying honestly
-              different where the data genuinely is (no phase breakdown, no LA/regional
-              size distribution, no paired State+Independent sixth-form half yet). */}
+          {/* Prompt A, then this build: developing the FE-sector page toward parity
+              with the mainstream page, staying honestly different where the data
+              genuinely is (no phase breakdown, no paired LA/national totals blended
+              into one number without a caveat). */}
           {isGenuineFeSector && (
             <FeCollegeLocalContextCard
               collegeName={school.current_name}
               laComposition={laComposition}
               ownUnder19Total={feUnder19Snapshot?.total ?? null}
+              sixthFormLa={sixthFormLa}
             />
           )}
 
@@ -619,6 +658,15 @@ export default async function SchoolPage({
 
           {isGenuineFeSector && (
             <FeParticipationSplitCard under19Total={feUnder19Snapshot?.total ?? null} adultTotal={feAdultSnapshot?.total ?? null} />
+          )}
+
+          {isGenuineFeSector && (
+            <RegionalSixthFormCard
+              ownRegion={ownRegion}
+              ownRegionTotals={ownRegionTotals}
+              nationalTotals={nationalSixthFormTotals}
+              allRegions={allRegionsSixthFormTotals}
+            />
           )}
 
           {roll && (
