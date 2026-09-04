@@ -29,7 +29,17 @@ import { lookupPopulationTrend } from "@/lib/population-trend-lookup";
 import PaidTrendsSection from "@/components/PaidTrendsSection";
 import TypologyTags from "@/components/TypologyTags";
 import SchoolMap from "@/components/SchoolMap";
-import { computeTypology, phaseTagAgeRange, effectivePhaseTags, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type PhaseTag } from "@/lib/typology";
+import ConsortiumGroupPage from "@/components/ConsortiumGroupPage";
+import ConsortiumCrossLinkNote from "@/components/ConsortiumCrossLinkNote";
+import { lookupConsortiumMembers, lookupConsortiumGroupsFor } from "@/lib/consortium-members";
+import {
+  computeTypology,
+  phaseTagAgeRange,
+  effectivePhaseTags,
+  FE_PARTICIPATION_ESTABLISHMENT_TYPES,
+  CONSORTIUM_SIXTH_FORM_CENTRE_TYPE,
+  type PhaseTag,
+} from "@/lib/typology";
 import { buildSurroundingSummary } from "@/lib/surrounding-summary";
 import {
   paragraph1PhaseGender, paragraph2SectorSize, paragraph3Shape, paragraph4LocalContext,
@@ -158,6 +168,100 @@ export default async function SchoolPage({
   const { urn } = await params;
   const school = await getSchool(urn);
   if (!school) notFound();
+
+  // Sixth-form consortium group page (2026-09-25 build): a "Sixth form centres" URN
+  // with at least one real row in consortium_members gets a wholly different,
+  // dedicated layout instead of everything below -- these institutions hold no
+  // census/ILR data of their own by design (their real activity lives on the
+  // constituent schools this fetches), so none of the FE-college machinery below
+  // applies to them. Gated on "has real members," not just the establishment_type
+  // check, so a URN of this type with zero real links (checked live: none of the 14
+  // known groups is currently in that position) still falls through to today's
+  // existing FE-college/no-data treatment further down, unchanged.
+  if (school.establishment_type === CONSORTIUM_SIXTH_FORM_CENTRE_TYPE) {
+    const memberLinks = await lookupConsortiumMembers(urn);
+    if (memberLinks.length > 0) {
+      const memberUrns = memberLinks.map((m) => m.memberUrn);
+      const supabaseForMembers = createServerAnonSupabaseClient();
+      const { data: memberRows } = await supabaseForMembers
+        .from("schools")
+        .select(
+          "urn, current_name, town, postcode, establishment_type_group, establishment_type, boarders_name, statutory_low_age, statutory_high_age, gender, easting, northing",
+        )
+        .in("urn", memberUrns);
+      // One batched fetch for every member's census facts (entityIds takes the whole
+      // list) -- not N separate round trips, same discipline lookupReferenceData's
+      // own callers use elsewhere on this page. buildRollSnapshot itself does NOT
+      // filter by entity_id (confirmed by reading it -- every other call site on
+      // this page always already passes single-URN-scoped facts, so that was never
+      // needed before); a real bug caught live here, first pass silently pooled
+      // every member's facts into one snapshot and gave all of them the same total
+      // roll. Filtered to each member's own entity_id before calling it below.
+      const memberFacts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: memberUrns });
+      const factsByMemberUrn = new Map<string, typeof memberFacts>();
+      for (const f of memberFacts) {
+        const bucket = factsByMemberUrn.get(f.entity_id);
+        if (bucket) bucket.push(f);
+        else factsByMemberUrn.set(f.entity_id, [f]);
+      }
+      const members = ((memberRows ?? []) as {
+        urn: string;
+        current_name: string;
+        town: string | null;
+        postcode: string | null;
+        establishment_type_group: string | null;
+        establishment_type: string | null;
+        boarders_name: string | null;
+        statutory_low_age: number | null;
+        statutory_high_age: number | null;
+        gender: string | null;
+        easting: number | null;
+        northing: number | null;
+      }[]).map((m) => {
+        const memberRoll = buildRollSnapshot(factsByMemberUrn.get(m.urn) ?? [], m.urn);
+        return {
+          urn: m.urn,
+          currentName: m.current_name,
+          town: m.town,
+          postcode: m.postcode,
+          totalRoll: memberRoll?.totalRoll ?? null,
+          typology: computeTypology(m, memberRoll?.boarding ?? null),
+          easting: m.easting,
+          northing: m.northing,
+        };
+      });
+      members.sort((a, b) => a.currentName.localeCompare(b.currentName));
+      const mapMembers = members
+        .filter((m): m is typeof m & { easting: number; northing: number } => m.easting !== null && m.northing !== null)
+        .map((m) => ({ urn: m.urn, name: m.currentName, easting: m.easting, northing: m.northing, roll: m.totalRoll }));
+
+      return (
+        <ConsortiumGroupPage
+          groupName={school.current_name}
+          laName={school.la_name}
+          members={members}
+          mapMembers={mapMembers}
+          syncedAt={memberLinks[0]?.syncedAt ?? null}
+        />
+      );
+    }
+  }
+
+  // Constituent-school cross-link (item 3): any URN that's a real member of a
+  // consortium group gets a small note pointing to it, regardless of which branch
+  // (mainstream/roll or FE-sector) the rest of this page takes below. Fetched for
+  // every URN, not just ones known in advance to be members -- cheap (one indexed
+  // lookup) and correct if a new group/member is synced in later.
+  const consortiumGroupUrns = await lookupConsortiumGroupsFor(urn);
+  const consortiumGroups =
+    consortiumGroupUrns.length > 0
+      ? ((
+          await createServerAnonSupabaseClient()
+            .from("schools")
+            .select("urn, current_name")
+            .in("urn", consortiumGroupUrns)
+        ).data as { urn: string; current_name: string }[] | null) ?? []
+      : [];
 
   const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: [urn] });
   const roll = buildRollSnapshot(facts, urn);
@@ -594,6 +698,10 @@ export default async function SchoolPage({
               </div>
             </>
           )}
+
+          {consortiumGroups.map((g) => (
+            <ConsortiumCrossLinkNote key={g.urn} groupName={g.current_name} groupUrn={g.urn} />
+          ))}
 
           {/* 2026-09-17: gated off isGenuineFeSector -- NoCensusDataCard's own
               wording ("expected for standalone 6th-form/FE-corporation institutions")
