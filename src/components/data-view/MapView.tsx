@@ -126,41 +126,53 @@ export default function MapView({
     const bounds: [number, number][] = [];
 
     for (const s of withProfile) {
-      const [lat, lng] = bngToLatLng(s.easting, s.northing);
-      bounds.push([lat, lng]);
-      const isTarget = s.urn === target.urn;
-      const ticked = isTarget || tickedUrns.has(s.urn);
+      // 2026-09-05, defence in depth after a real live crash (see data-view-
+      // serialize.ts's own comment for the root cause that actually caused this):
+      // one school's malformed/unexpected profile shape should never take down the
+      // WHOLE map -- skip that one marker, log it, keep drawing the rest. The root
+      // cause is fixed at its source now, but this loop has no business trusting
+      // every profile is perfectly well-formed just because TypeScript says so (the
+      // exact lesson that bug taught: a JSON round-trip can produce a shape the
+      // static types don't actually guarantee at runtime).
+      try {
+        const [lat, lng] = bngToLatLng(s.easting, s.northing);
+        bounds.push([lat, lng]);
+        const isTarget = s.urn === target.urn;
+        const ticked = isTarget || tickedUrns.has(s.urn);
 
-      const current = filteredCount(profileToFilterableData(s.profile), filters).total;
-      const anchor2019 = s.profile.anchor2019 ? filteredCount(profileToFilterableData2019(s.profile), filters).total : null;
-      const pctChange = anchor2019 && anchor2019 > 0 ? ((current - anchor2019) / anchor2019) * 100 : 0;
+        const current = filteredCount(profileToFilterableData(s.profile), filters).total;
+        const anchor2019 = s.profile.anchor2019 ? filteredCount(profileToFilterableData2019(s.profile), filters).total : null;
+        const pctChange = anchor2019 && anchor2019 > 0 ? ((current - anchor2019) / anchor2019) * 100 : 0;
 
-      const colour = colourMode === "trend" ? trendColour(pctChange) : s.profile.sector ? tagColour(s.profile.sector) : "#9ca3af";
-      const radius = radiusFor(current, minV, maxV);
+        const colour = colourMode === "trend" ? trendColour(pctChange) : s.profile.sector ? tagColour(s.profile.sector) : "#9ca3af";
+        const radius = radiusFor(current, minV, maxV);
 
-      const marker = L.circleMarker([lat, lng], {
-        radius,
-        color: colour,
-        fillColor: colour,
-        weight: 1.5,
-        fillOpacity: ticked ? 0.75 : 0.25,
-        opacity: ticked ? 1 : 0.4,
-      });
-      marker.bindTooltip(
-        `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${current.toLocaleString()}${
-          anchor2019 !== null ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since 2019)` : ""
-        }${!ticked ? "<br/><em>click to add to comparison</em>" : ""}</div>`,
-        { direction: "top", offset: [0, -4] },
-      );
-      marker.on("click", () => {
-        if (isTarget) router.push(`/schools/${s.urn}`);
-        else onToggleTick(s.urn);
-      });
-      (marker.getElement?.() as SVGElement | undefined)?.style.setProperty("cursor", "pointer");
-      marker.addTo(group);
+        const marker = L.circleMarker([lat, lng], {
+          radius,
+          color: colour,
+          fillColor: colour,
+          weight: 1.5,
+          fillOpacity: ticked ? 0.75 : 0.25,
+          opacity: ticked ? 1 : 0.4,
+        });
+        marker.bindTooltip(
+          `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${current.toLocaleString()}${
+            anchor2019 !== null ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since 2019)` : ""
+          }${!ticked ? "<br/><em>click to add to comparison</em>" : ""}</div>`,
+          { direction: "top", offset: [0, -4] },
+        );
+        marker.on("click", () => {
+          if (isTarget) router.push(`/schools/${s.urn}`);
+          else onToggleTick(s.urn);
+        });
+        (marker.getElement?.() as SVGElement | undefined)?.style.setProperty("cursor", "pointer");
+        marker.addTo(group);
 
-      if (isTarget) {
-        L.circleMarker([lat, lng], { radius: TARGET_RING_RADIUS, color: "#dc2626", weight: 2.5, fill: false }).addTo(group);
+        if (isTarget) {
+          L.circleMarker([lat, lng], { radius: TARGET_RING_RADIUS, color: "#dc2626", weight: 2.5, fill: false }).addTo(group);
+        }
+      } catch (e) {
+        console.error(`[MapView] failed to draw marker for ${s.urn} (${s.name}):`, e);
       }
     }
 

@@ -23,6 +23,7 @@ import DashboardView from "./DashboardView";
 import RankingsView from "./RankingsView";
 import MapView from "./MapView";
 import PdfExportButton from "./PdfExportButton";
+import DataViewErrorBoundary from "./DataViewErrorBoundary";
 
 const INITIAL_TICKED_COUNT = 10;
 
@@ -64,6 +65,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
   const [tickedUrns, setTickedUrns] = useState<Set<string>>(new Set());
   const [profilesByUrn, setProfilesByUrn] = useState<Map<string, DataViewSchoolProfile>>(new Map());
   const [profilesLoading, setProfilesLoading] = useState(false);
+  const [profilesError, setProfilesError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<DataViewFilterState>(emptyDataViewFilterState());
   const [activeView, setActiveView] = useState<ViewKey>("map");
@@ -229,6 +231,18 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // Step 3: fetch rich per-school profiles for target + every school currently in
   // the active set (not just ticked ones -- toggling a tick shouldn't need a new
   // fetch; Map/Dashboard/Rankings filter down to ticked members themselves).
+  //
+  // 2026-09-05 fix, real bug reported live (Safari, Map view stuck on "Loading school
+  // data…" forever, Acland Burghley's own Nearest-10 set): this effect had the exact
+  // same missing-try/catch gap as Step 1/2 already had fixed -- if fetch()/res.json()
+  // ever threw, the promise rejected uncaught and profilesLoading never cleared.
+  // Reproduced directly this time (not just inferred): the REAL root cause here was a
+  // separate bug in data-view-serialize.ts (ageGenderCounts2019 never round-tripped
+  // through JSON correctly, silently becoming a non-iterable `{}`), which threw
+  // *inside MapView's own render effect*, downstream of this fetch succeeding --
+  // fixed at that source too (see data-view-serialize.ts's own comment), but this
+  // effect's own missing error handling was real and independent of it, and is fixed
+  // here on the same principle as Steps 1/2: every path reaches a definite state.
   useEffect(() => {
     if (!authToken || !activeSet || !target) return;
     const urns = Array.from(new Set([target.urn, ...activeSet.schools.map((s) => s.urn)]));
@@ -236,20 +250,29 @@ export default function DataViewShell({ urn }: { urn: string }) {
     if (alreadyFetched) return;
     (async () => {
       setProfilesLoading(true);
-      const res = await fetch(`/api/data-view/schools?anchorUrn=${target.urn}&urns=${urns.join(",")}`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      if (!res.ok) {
+      setProfilesError(null);
+      try {
+        const res = await fetch(`/api/data-view/schools?anchorUrn=${target.urn}&urns=${urns.join(",")}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (!res.ok) {
+          console.error("[DataViewShell] profile fetch failed:", res.status, await res.text().catch(() => ""));
+          setProfilesError("Could not load school data for this comparator set.");
+          setProfilesLoading(false);
+          return;
+        }
+        const body = (await res.json()) as { profiles: WireDataViewSchoolProfile[] };
+        setProfilesByUrn((prev) => {
+          const next = new Map(prev);
+          for (const p of body.profiles) next.set(p.urn, deserializeProfile(p));
+          return next;
+        });
         setProfilesLoading(false);
-        return;
+      } catch (e) {
+        console.error("[DataViewShell] unexpected error fetching profiles:", e);
+        setProfilesError("Something went wrong loading school data. Try reloading.");
+        setProfilesLoading(false);
       }
-      const body = (await res.json()) as { profiles: WireDataViewSchoolProfile[] };
-      setProfilesByUrn((prev) => {
-        const next = new Map(prev);
-        for (const p of body.profiles) next.set(p.urn, deserializeProfile(p));
-        return next;
-      });
-      setProfilesLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authToken, activeSet, target]);
@@ -392,25 +415,42 @@ export default function DataViewShell({ urn }: { urn: string }) {
             </div>
           )}
 
-          {profilesLoading && profilesByUrn.size === 0 ? (
+          {profilesError ? (
+            <div className="py-12 text-center text-sm text-neutral-500">
+              <p>{profilesError}</p>
+              <p className="mt-3">
+                <button type="button" className="underline" onClick={() => window.location.reload()}>
+                  Reload
+                </button>
+              </p>
+            </div>
+          ) : profilesLoading && profilesByUrn.size === 0 ? (
             <p className="py-12 text-center text-sm text-neutral-500">Loading school data…</p>
           ) : !targetProfile ? (
             <p className="py-12 text-center text-sm text-neutral-500">No real data available for this school yet.</p>
-          ) : activeView === "map" ? (
-            <MapView
-              target={target}
-              targetProfile={targetProfile}
-              members={activeSet?.schools ?? []}
-              tickedUrns={tickedUrns}
-              onToggleTick={toggleTick}
-              profilesByUrn={profilesByUrn}
-              filters={filters}
-              onFiltersChange={setFilters}
-            />
-          ) : activeView === "dashboard" ? (
-            <DashboardView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} filterSummary={filterSummary} />
           ) : (
-            <RankingsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} />
+            // key={activeView}: remounts the boundary (clearing any caught error) on
+            // every view switch, rather than a stale error from one view lingering
+            // over the next -- see DataViewErrorBoundary's own comment for why this
+            // exists at all.
+            <DataViewErrorBoundary key={activeView}>
+              {activeView === "map" ? (
+                <MapView
+                  target={target}
+                  targetProfile={targetProfile}
+                  members={activeSet?.schools ?? []}
+                  tickedUrns={tickedUrns}
+                  onToggleTick={toggleTick}
+                  profilesByUrn={profilesByUrn}
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                />
+              ) : activeView === "dashboard" ? (
+                <DashboardView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} filterSummary={filterSummary} />
+              ) : (
+                <RankingsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} />
+              )}
+            </DataViewErrorBoundary>
           )}
         </div>
       </div>

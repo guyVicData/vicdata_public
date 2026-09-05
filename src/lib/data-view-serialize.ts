@@ -4,25 +4,50 @@
 // this one small conversion can be safely shared by both the API route (server) and
 // the Data View's own client components.
 //
-// The only field that needs real conversion is ageGenderCounts (AgeGenderCounts is a
-// Map, and Map doesn't survive JSON.stringify/NextResponse.json at all -- it
-// serialises to "{}") -- everything else on DataViewSchoolProfile is already plain
-// JSON-safe (RollSnapshot, arrays, primitives).
-
+// The fields that need real conversion are ageGenderCounts AND ageGenderCounts2019
+// (AgeGenderCounts is a Map, and Map doesn't survive JSON.stringify/NextResponse.json
+// at all -- it serialises to "{}", silently, with no error) -- everything else on
+// DataViewSchoolProfile is already plain JSON-safe (RollSnapshot, arrays, primitives).
+//
+// 2026-09-05, real live bug found and fixed: ageGenderCounts2019 was added to
+// DataViewSchoolProfile (for filtered "since 2019" trend badges) AFTER this file was
+// first written, and never wired into either function below -- it silently round-
+// tripped as "{}" on every real profile. Confirmed live: `for (const [age,c] of
+// counts)` in data-view-filters.ts's sumAgeGender() throws "counts is not iterable"
+// the moment ANY view calls profileToFilterableData2019 on a school with real 2019
+// data (i.e. almost every real school) -- MapView.tsx's marker-drawing effect hits
+// this immediately since Map is the default landing view, throwing partway through
+// building markers and leaving the map stuck. TypeScript couldn't catch this: both
+// functions were fully type-correct, the bug was purely "this Map serialises to an
+// empty object and nothing here re-converts it back" -- a runtime-shape bug, not a
+// type error. No test suite exists in this repo to have caught it either (see
+// docs/vicdata_data_view_open_questions.md's own note on that gap) -- reproduced
+// directly against a real API response this time, not just inferred.
 import type { AgeGenderCounts } from "./roll-data";
 import type { DataViewSchoolProfile } from "./data-view-profiles";
 import type { FilterableSchoolData } from "./data-view-filters";
 
-export type WireDataViewSchoolProfile = Omit<DataViewSchoolProfile, "ageGenderCounts"> & {
-  ageGenderCounts: [number, { male: number; female: number }][];
+type WireAgeGenderCounts = [number, { male: number; female: number }][];
+
+export type WireDataViewSchoolProfile = Omit<DataViewSchoolProfile, "ageGenderCounts" | "ageGenderCounts2019"> & {
+  ageGenderCounts: WireAgeGenderCounts;
+  ageGenderCounts2019: WireAgeGenderCounts;
 };
 
 export function serializeProfile(p: DataViewSchoolProfile): WireDataViewSchoolProfile {
-  return { ...p, ageGenderCounts: Array.from(p.ageGenderCounts.entries()) };
+  return {
+    ...p,
+    ageGenderCounts: Array.from(p.ageGenderCounts.entries()),
+    ageGenderCounts2019: Array.from(p.ageGenderCounts2019.entries()),
+  };
 }
 
 export function deserializeProfile(p: WireDataViewSchoolProfile): DataViewSchoolProfile {
-  return { ...p, ageGenderCounts: new Map(p.ageGenderCounts) as AgeGenderCounts };
+  return {
+    ...p,
+    ageGenderCounts: new Map(p.ageGenderCounts) as AgeGenderCounts,
+    ageGenderCounts2019: new Map(p.ageGenderCounts2019) as AgeGenderCounts,
+  };
 }
 
 // 2026-09-05 fix: moved here from data-view-profiles.ts (a server-only module --

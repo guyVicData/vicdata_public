@@ -104,10 +104,22 @@ function sumAgeGender(
 ): { total: number; female: number; male: number } {
   let female = 0;
   let male = 0;
-  for (const [age, c] of counts) {
-    if (age < lo || age > hi) continue;
-    female += c.female;
-    male += c.male;
+  // Defensive guard, added 2026-09-05 after a real live crash: a Map that round-trips
+  // through JSON.stringify (e.g. a WireDataViewSchoolProfile field a future change
+  // forgets to convert back, the exact mistake data-view-serialize.ts's own history
+  // comment documents) silently becomes a plain, non-iterable object at runtime --
+  // TypeScript's static types can't catch this, since the object is still typed as
+  // AgeGenderCounts. `for...of` on a non-iterable throws "counts is not iterable",
+  // which took down MapView's entire marker-drawing effect for every real school with
+  // real 2019 data. Degrading to "no real data for this slice" is honest and correct
+  // here regardless of cause -- never worth crashing a whole view over one school's
+  // malformed figure.
+  if (counts instanceof Map) {
+    for (const [age, c] of counts) {
+      if (age < lo || age > hi) continue;
+      female += c.female;
+      male += c.male;
+    }
   }
   // Gender filter slices the SAME already-narrowed age range down to one sex's real
   // count -- "Girls" -> female only, "Boys" -> male only, both/neither -> combined.
