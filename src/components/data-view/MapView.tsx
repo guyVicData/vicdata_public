@@ -25,10 +25,9 @@
 // shared: BNG conversion (src/lib/bng.ts, extracted for this), the tile URL/
 // attribution constants (duplicated as literals here rather than importing from
 // SchoolMap.tsx, which doesn't export them -- three lines, not worth a shared-export
-// refactor of a component this different), TAG_COLOURS for Sector mode, and
-// MapBoxCollapseToggle for the legend box's own collapse chrome.
+// refactor of a component this different), and TAG_COLOURS for Sector mode.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Map as LeafletMap, LayerGroup } from "leaflet";
 import { bngToLatLng } from "@/lib/bng";
@@ -38,7 +37,9 @@ import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { profileToFilterableData, profileToFilterableData2019 } from "@/lib/data-view-serialize";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
-import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
+import type { ViewKey } from "@/lib/data-view-types";
+import ViewSwitcher from "./ViewSwitcher";
+import PdfExportButton from "./PdfExportButton";
 
 const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
   ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
@@ -66,6 +67,8 @@ export default function MapView({
   onToggleTick,
   profilesByUrn,
   filters,
+  activeView,
+  onChangeView,
 }: {
   target: { urn: string; name: string; easting: number | null; northing: number | null };
   targetProfile: DataViewSchoolProfile;
@@ -74,6 +77,8 @@ export default function MapView({
   onToggleTick: (urn: string) => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
   filters: DataViewFilterState;
+  activeView: ViewKey;
+  onChangeView: (v: ViewKey) => void;
 }) {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -83,11 +88,11 @@ export default function MapView({
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [colourMode, setColourMode] = useState<ColourMode>("trend");
-  const [legendCollapsed, setLegendCollapsed] = useState(false);
 
   useEffect(() => {
     if (!mapElRef.current || mapRef.current || target.easting === null || target.northing === null) return;
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
     import("leaflet").then((L) => {
       if (cancelled || !mapElRef.current) return;
       leafletRef.current = L;
@@ -98,9 +103,20 @@ export default function MapView({
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       setMapReady(true);
+
+      // 2026-09-05: now that the map's container is sized by the flex layout
+      // (full-bleed v1) rather than a fixed height class, its real on-screen size
+      // can settle AFTER Leaflet's own initial measurement at creation time --
+      // Leaflet doesn't re-measure on its own, so without this a map mounted into
+      // a container that grows/shrinks post-mount renders with stale internal
+      // tile dimensions (blank/cut-off tiles). Found live at a narrow viewport
+      // width during this exact change, not a hypothetical.
+      resizeObserver = new ResizeObserver(() => map.invalidateSize());
+      resizeObserver.observe(mapElRef.current);
     });
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -108,6 +124,27 @@ export default function MapView({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target.urn]);
+
+  // Lifted out of the marker-drawing effect below (it used to be computed there
+  // and thrown away every run) so the size-legend overlay can render the SAME
+  // min/max range the markers themselves are scaled against, rather than a second,
+  // possibly-divergent calculation.
+  const withProfile = useMemo(() => {
+    const allUrns = [target.urn, ...members.map((m) => m.urn)];
+    const allNames = new Map([[target.urn, target.name], ...members.map((m): [string, string] => [m.urn, m.name])]);
+    return allUrns
+      .map((urn) => ({ urn, name: allNames.get(urn) ?? urn, profile: profilesByUrn.get(urn) ?? null }))
+      .filter((s): s is { urn: string; name: string; profile: DataViewSchoolProfile } => s.profile !== null)
+      .map((s) => ({ ...s, easting: s.profile.easting, northing: s.profile.northing }))
+      .filter((s): s is typeof s & { easting: number; northing: number } => s.easting !== null && s.northing !== null);
+  }, [target.urn, target.name, members, profilesByUrn]);
+
+  const values = useMemo(
+    () => withProfile.map((s) => filteredCount(profileToFilterableData(s.profile), filters).total),
+    [withProfile, filters],
+  );
+  const minV = values.length ? Math.min(...values) : 0;
+  const maxV = values.length ? Math.max(...values) : 0;
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || !leafletRef.current || !layerGroupRef.current || !rootRef.current) return;
@@ -117,18 +154,6 @@ export default function MapView({
     const tagColour = (tag: string) => cs.getPropertyValue(cssVarNameForTag(tag)).trim() || "#9ca3af";
 
     group.clearLayers();
-
-    const allUrns = [target.urn, ...members.map((m) => m.urn)];
-    const allNames = new Map([[target.urn, target.name], ...members.map((m): [string, string] => [m.urn, m.name])]);
-    const withProfile = allUrns
-      .map((urn) => ({ urn, name: allNames.get(urn) ?? urn, profile: profilesByUrn.get(urn) ?? null }))
-      .filter((s): s is { urn: string; name: string; profile: DataViewSchoolProfile } => s.profile !== null)
-      .map((s) => ({ ...s, easting: s.profile.easting, northing: s.profile.northing }))
-      .filter((s): s is typeof s & { easting: number; northing: number } => s.easting !== null && s.northing !== null);
-
-    const values = withProfile.map((s) => filteredCount(profileToFilterableData(s.profile), filters).total);
-    const minV = values.length ? Math.min(...values) : 0;
-    const maxV = values.length ? Math.max(...values) : 0;
 
     const bounds: [number, number][] = [];
 
@@ -187,14 +212,28 @@ export default function MapView({
       mapRef.current!.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, members, tickedUrns, profilesByUrn, filters, colourMode, target]);
+  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, filters, colourMode, target]);
 
   const sectorsPresent = Array.from(
     new Set([targetProfile.sector, ...members.map((m) => profilesByUrn.get(m.urn)?.sector ?? null)].filter((s): s is NonNullable<typeof s> => !!s)),
   );
 
+  // 2026-09-05, v1 of the "map as full canvas, controls as floating overlays"
+  // layout (per direct request -- explicitly a first pass to be iterated on from
+  // here, not a final design). The map fills its whole box edge to edge; every
+  // control that used to be in-flow (view switcher, export button) or its own
+  // in-flow-adjacent box (colour-by, the two legends, the dot caption) is now an
+  // absolutely-positioned overlay layered on top of the Leaflet canvas.
+  // absolute inset-0, not `relative h-full w-full`: the immediate parent
+  // (DataViewShell's map-content wrapper) gets its own box height from
+  // `min-height` + flex-grow, not a literal `height` -- and a percentage-height
+  // child (`h-full`) doesn't reliably resolve against a min-height-only
+  // containing block (a real, observed Chromium behaviour, not a hypothetical:
+  // computed height came back 0px against a parent measuring 560px). Absolute
+  // positioning sidesteps that resolution rule entirely, the same way this
+  // element's own children already do.
   return (
-    <div ref={rootRef} className="relative w-full">
+    <div ref={rootRef} className="absolute inset-0">
       <style>{`
         .vd-dataview-map { --dot: #9ca3af; ${Object.entries(TAG_COLOURS)
           .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.light[1]};`)
@@ -208,68 +247,130 @@ export default function MapView({
           .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.dark[1]};`)
           .join(" ")} }
       `}</style>
-      <div className="vd-dataview-map relative">
-        <div ref={mapElRef} className="h-[480px] w-full rounded-lg sm:h-[560px]" />
+      <div className="vd-dataview-map absolute inset-0">
+        <div ref={mapElRef} className="absolute inset-0" />
 
-        <div className="absolute right-3 top-3 z-[1000] w-56">
-          <div className="rounded-md border border-neutral-200 bg-white p-3 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-            <div className={`flex items-center justify-between gap-2 ${legendCollapsed ? "" : "mb-2"}`}>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Colour by</h3>
-              <MapBoxCollapseToggle collapsed={legendCollapsed} onToggle={() => setLegendCollapsed((c) => !c)} label="Colour by" />
+        {/* Top-left: view switcher. Moved here from DataViewShell's shared subheader
+            row, which is now skipped entirely for Map -- see DataViewShell's own
+            comment on this. Dashboard/Rankings keep rendering it in-flow, untouched. */}
+        <div className="absolute left-3 top-3 z-[1000] rounded-md bg-white shadow-sm dark:bg-neutral-950">
+          <ViewSwitcher active={activeView} onChange={onChangeView} />
+        </div>
+
+        {/* Top-right, stacked: export button above the colour-by mode toggle. */}
+        <div className="absolute right-3 top-3 z-[1000] flex flex-col items-end gap-2">
+          <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
+            <PdfExportButton />
+          </div>
+          <div className="rounded-md border border-neutral-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setColourMode("trend")}
+                className={colourMode === "trend" ? "rounded bg-neutral-900 px-2 py-1 text-xs text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"}
+              >
+                Trends
+              </button>
+              <button
+                type="button"
+                onClick={() => setColourMode("sector")}
+                className={colourMode === "sector" ? "rounded bg-neutral-900 px-2 py-1 text-xs text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"}
+              >
+                Sector
+              </button>
             </div>
-            {!legendCollapsed && (
-              <>
-                <div className="mb-2 flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setColourMode("trend")}
-                    className={colourMode === "trend" ? "rounded bg-neutral-900 px-2 py-1 text-xs text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"}
-                  >
-                    Trends
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setColourMode("sector")}
-                    className={colourMode === "sector" ? "rounded bg-neutral-900 px-2 py-1 text-xs text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"}
-                  >
-                    Sector
-                  </button>
-                </div>
-                {colourMode === "trend" ? (
-                  <div>
-                    <div className="flex h-2 w-full overflow-hidden rounded" style={{ background: `linear-gradient(to right, ${TREND_LEGEND_STOPS.map((s) => s.hex).join(",")})` }} />
-                    <div className="mt-1 flex justify-between text-xs text-neutral-400">
-                      <span>declining</span>
-                      <span>growing</span>
-                    </div>
-                    <p className="mt-1 text-xs text-neutral-400">Since 2019, in whatever&rsquo;s currently filtered.</p>
-                  </div>
-                ) : (
-                  <ul className="space-y-1">
-                    {sectorsPresent.map((s) => (
-                      <li key={s} className="flex items-center gap-1.5 text-xs">
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: `var(${cssVarNameForTag(s)})` }} />
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="mt-3 border-t border-neutral-100 pt-2 dark:border-neutral-800">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Size</p>
-                  <div className="flex items-center gap-2 text-neutral-500">
-                    <span className="inline-block h-2 w-2 rounded-full bg-neutral-400" />
-                    <span className="inline-block h-4 w-4 rounded-full bg-neutral-400" />
-                    <span className="text-xs">current filtered count</span>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         </div>
+
+        {/* Right side, above the zoom control: whatever the active colour-by mode
+            means. Trend mode gets the requested narrow vertical graduated bar,
+            width-matched to Leaflet's own zoom control (26px, confirmed from
+            leaflet.css's own .leaflet-bar a rule rather than guessed) and
+            positioned directly above it. Sector mode's swatch list has no such
+            width constraint in the request, so it keeps a normal legend-box width
+            in the same general slot -- logged as a judgement call, not literally
+            specified, in docs/vicdata_data_view_open_questions.md. */}
+        {colourMode === "trend" ? <TrendColourKey /> : <SectorColourKey sectors={sectorsPresent} />}
+
+        {/* Bottom-left: size legend, now its own box (previously folded into the
+            colour-by box) with a real scale -- three representative dot sizes at
+            the min/mid/max of the CURRENT filtered range, rendered at their real
+            on-map radii. */}
+        <SizeLegend minV={minV} maxV={maxV} />
+
+        {/* Bottom-centre: the dot-legend caption, floated over the map. No exact
+            spot specified -- bottom seemed reasonable and this keeps clear of both
+            bottom-corner boxes; easy to move once seen live. */}
+        <div className="absolute bottom-3 left-1/2 z-[1000] -translate-x-1/2 rounded-md bg-white/90 px-3 py-1.5 text-xs text-neutral-500 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-400">
+          Faded dots aren&rsquo;t ticked for comparison — click a dot to add or remove it. Red ring: this school.
+        </div>
       </div>
-      <p className="mt-1 text-xs text-neutral-400">
-        Faded dots aren&rsquo;t ticked for comparison — click a dot to add or remove it. Red ring: this school.
-      </p>
+    </div>
+  );
+}
+
+function TrendColourKey() {
+  const stops = TREND_LEGEND_STOPS; // ascending by pct: -30 (red) ... +30 (blue)
+  const min = stops[0].pct;
+  const max = stops[stops.length - 1].pct;
+  // Top of the bar = growing (matches "up is positive"); gradient runs top-to-
+  // bottom from the highest stop to the lowest, so reverse the ascending list.
+  const gradient = [...stops].reverse().map((s) => s.hex).join(",");
+  return (
+    <div className="absolute bottom-[70px] right-[10px] z-[1000] flex flex-col items-center">
+      <span className="mb-1 text-[9px] font-medium text-neutral-500">growing</span>
+      <div className="relative h-32 w-[26px] rounded-sm shadow-sm" style={{ background: `linear-gradient(to bottom, ${gradient})` }}>
+        {stops.map((s) => {
+          const t = (max - s.pct) / (max - min);
+          return (
+            <div key={s.pct} className="absolute inset-x-0" style={{ top: `${t * 100}%` }}>
+              <div className="h-px w-full bg-white/80" />
+              <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
+                {s.pct > 0 ? `+${s.pct}%` : `${s.pct}%`}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <span className="mt-1 text-[9px] font-medium text-neutral-500">declining</span>
+    </div>
+  );
+}
+
+function SectorColourKey({ sectors }: { sectors: string[] }) {
+  if (sectors.length === 0) return null;
+  return (
+    <div className="absolute bottom-[70px] right-3 z-[1000] w-44 rounded-md border border-neutral-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Sector</h3>
+      <ul className="space-y-1">
+        {sectors.map((s) => (
+          <li key={s} className="flex items-center gap-1.5 text-xs">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: `var(${cssVarNameForTag(s)})` }} />
+            {s}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SizeLegend({ minV, maxV }: { minV: number; maxV: number }) {
+  const hasRange = maxV > minV;
+  const steps = hasRange
+    ? [minV, Math.round((minV + maxV) / 2), maxV].map((v) => ({ v, r: radiusFor(v, minV, maxV) }))
+    : [{ v: maxV, r: (MIN_RADIUS + MAX_RADIUS) / 2 }];
+  return (
+    <div className="absolute bottom-3 left-3 z-[1000] rounded-md border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Dot size</h3>
+      <div className="flex items-end gap-3">
+        {steps.map((s) => (
+          <div key={s.v} className="flex flex-col items-center gap-1">
+            <span className="rounded-full bg-neutral-400" style={{ width: s.r * 2, height: s.r * 2 }} />
+            <span className="text-xs text-neutral-500">{s.v.toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-neutral-400">Current filtered count</p>
     </div>
   );
 }

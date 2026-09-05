@@ -396,8 +396,20 @@ export default function DataViewShell({ urn }: { urn: string }) {
   //    collapsible overlay" instruction is satisfied in spirit, not literally, by the
   //    shared collapse toggle below (every view can reclaim the same vertical space);
   //    logged as a deliberate trade-off in docs/vicdata_data_view_open_questions.md.
+  // flex-1 min-h-0, not a bare block: `body` (src/app/layout.tsx) is already a
+  // flex column with a real baseline height (`min-h-full`, resolving against
+  // `html`'s own `h-full` -- i.e. the viewport), the classic minimal "sticky
+  // footer" recipe -- but this route's own root was never marked as the item
+  // that should grow into the leftover space, so `flex-1`/`min-h-0` on the
+  // sidebar+main row further down had nothing real to grow against. Harmless for
+  // Dashboard/Rankings (their content was already taller than one viewport, so
+  // flex-grow had no spare space to distribute either way) but left Map -- whose
+  // controls are now floated OUT of the in-flow layout, leaving very little
+  // in-flow content -- with no real "container height" to fill edge-to-edge.
+  // `flex-1` here (a flex item of `body`) fixes that without touching the root
+  // layout or adding any height on top of it.
   return (
-    <div className="flex w-full flex-col">
+    <div className="flex min-h-0 w-full flex-1 flex-col">
       <TopicTabs />
 
       <div className="border-b border-neutral-200 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-800">
@@ -452,12 +464,24 @@ export default function DataViewShell({ urn }: { urn: string }) {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center justify-end gap-2 border-b border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
-            <ViewSwitcher active={activeView} onChange={setActiveView} />
-            <PdfExportButton />
-          </div>
+          {/* 2026-09-05: Map view v1 (per direct request) treats the map as a full
+              canvas with the view-switcher and export button floated as overlays
+              INSIDE it, rather than this in-flow subheader row -- so the row is
+              skipped entirely for Map (MapView renders its own copies). Dashboard
+              and Rankings are untouched. */}
+          {activeView !== "map" && (
+            <div className="flex items-center justify-end gap-2 border-b border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
+              <ViewSwitcher active={activeView} onChange={setActiveView} />
+              <PdfExportButton />
+            </div>
+          )}
 
-          <div className="flex-1 p-4 sm:p-6">
+          {/* min-h-[480px]/[560px]: a real floor, not just flex-1 -- below the `lg`
+              breakpoint the sidebar sits ABOVE the map (shrink-0, in-flow), and a
+              long comparator list can push the map's flex-1 share of the
+              remaining height to ~0. Matches the old fixed heights this replaced,
+              now as a minimum rather than the only size. */}
+          <div className={activeView === "map" ? "relative min-h-[480px] flex-1 sm:min-h-[560px]" : "flex-1 p-4 sm:p-6"}>
             {profilesError ? (
               <div className="py-12 text-center text-sm text-neutral-500">
                 <p>{profilesError}</p>
@@ -486,6 +510,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     onToggleTick={toggleTick}
                     profilesByUrn={profilesByUrn}
                     filters={filters}
+                    activeView={activeView}
+                    onChangeView={setActiveView}
                   />
                 ) : activeView === "dashboard" ? (
                   <DashboardView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} filterSummary={filterSummary} />
