@@ -187,6 +187,17 @@ export function phaseTags(lowAge: number | null, highAge: number | null): PhaseT
   if (lowAge === null || highAge === null) return [];
 
   if (lowAge <= 10) {
+    // 2026-09-04, real bug caught building the state-primaries comparator recipe:
+    // a nursery-only school (no real KS1/KS2 provision, highAge caps at 5) satisfied
+    // the same lowAge<=10/highAge<=11 condition as a genuine primary and collided on
+    // the same "Junior" tag -- pulled nursery schools and other under-5-only settings
+    // into primary-phase comparator/map/narrative logic nationally. Confirmed against
+    // real data before narrowing: 382 open schools nationally have lowAge<=10 and
+    // highAge<=5, 375 of them "Local authority nursery school" -- genuinely no Junior-
+    // age (KS1/KS2) offering, not an edge case. highAge<=5 is a safe cutoff: real
+    // infant/primary provision always extends through at least Year 1/2 (age 6-7),
+    // well above this line, so no genuine primary loses its tag here.
+    if (highAge <= 5) return [];
     if (highAge <= 11) return ["Junior"];
     if (highAge >= 12 && highAge <= 14) return ["Junior", "Prep"];
     if (highAge >= 15 && highAge <= 19) return ["Junior", "Senior"];

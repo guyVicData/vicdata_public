@@ -66,11 +66,6 @@ export const BOARDING_CAUSAL_FRAMING = false;
 // an independent toggle.
 export const REGION_COMPARISON_EXCLUDED_BRANCH = "majority_boarding" as const;
 
-// Resolved round 3 (§7, "no longer open"): "The gender balance varies from year to
-// year" is a new, always-on hedge, separate from and additional to 4b's conditional
-// clause. Survived round 3's edits unedited -- confirmed, not just assumed.
-export const GENDER_ALWAYS_ON_HEDGE = "The gender balance varies from year to year.";
-
 // §7 item 4 (round 4 numbering) -- STILL OPEN. Malvern has a real post-17 cohort
 // invisible to the [5,17] shape clamp; dropping the "(ages 5 to 17)" scope note here
 // risks the exact confusion v1's own §0 was built to prevent. No round-3/4 Priority

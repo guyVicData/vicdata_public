@@ -21,7 +21,6 @@ import {
   EARLY_YEARS_PROXY_AGE_THRESHOLD,
   TOPIC3_SIZE_BAND_THRESHOLD,
   TOPIC5_FOLD_INTO_SHAPE_SENTENCE,
-  GENDER_ALWAYS_ON_HEDGE,
   SHAPE_SENTENCE_INCLUDE_SCOPE_NOTE,
   GENDER_LABEL_HEDGE_WIDTH_PP,
   YEAR_GROUP_MAX,
@@ -226,12 +225,25 @@ export function paragraph1PhaseGender(
   const schoolWord = isSpecialSchool ? "special school" : "school";
 
   if (comp.kind === "single_sex") {
-    // 2026-09-07 fix (round 13, found via live-page review): GENDER_ALWAYS_ON_HEDGE
-    // ("The gender balance varies from year to year") was firing here unconditionally
-    // -- wrong for a school at >=98% one gender (classifyGenderComposition's own
-    // SINGLE_SEX_SUPPRESSION_BAND), where there IS no balance to vary. The hedge stays
-    // on the balanced/mostly branches below, where it's actually true.
-    return `${schoolName} is ${article} ${phase} ${schoolWord}, ${ageRangeClause}. It is single-sex (${comp.dominantGender}).`;
+    // 2026-10-01, per Guy's direct correction: >=98% one gender is a real, meaningful
+    // "single-sex" signal for a school (a small non-dominant count is very likely
+    // dual-registration, an EHCP placement, or a trans pupil recorded under their
+    // affirmed gender within a genuinely single-sex admissions policy -- not real mixed
+    // enrollment), so the categorical claim stays, unlike the FE branch (which has no
+    // admissions-policy fact to back it at all). But asserting it with no caveat
+    // implies literal 100%, which isn't always true -- confirmed against real national
+    // data: of 807 real GIAS-declared single-sex schools, 64 (Hampton School, Reading
+    // School, Torquay Boys' Grammar School, Enfield Grammar School among them) carry a
+    // small non-dominant count, not zero. Be upfront about that real minority; the 582
+    // exactly-100% schools keep the plain sentence unchanged.
+    const total = female + male;
+    const minorityCount = Math.min(female, male);
+    const minorityWord = comp.dominantGender === "girls" ? "boys" : "girls";
+    const minorityClause =
+      minorityCount > 0
+        ? `; a small number of pupils (${minorityCount.toLocaleString()} of ${total.toLocaleString()}) are recorded as ${minorityWord}`
+        : "";
+    return `${schoolName} is ${article} ${phase} ${schoolWord}, ${ageRangeClause}. It is single-sex (${comp.dominantGender})${minorityClause}.`;
   }
 
   // Hedge zone (spec §7 item 8, unresolved -- see narrative-config.ts's own comment):
@@ -242,9 +254,14 @@ export function paragraph1PhaseGender(
   const inHedgeZone = comp.kind === "mostly" && comp.dominantSharePct < BALANCED_BAND_HIGH * 100 + GENDER_LABEL_HEDGE_WIDTH_PP * 100;
   const qualifier = comp.kind === "balanced" ? ", roughly balanced" : inHedgeZone ? "" : `, mostly ${comp.dominantGender}`;
 
+  // 2026-10-01, per Guy's direct correction: GENDER_ALWAYS_ON_HEDGE ("The gender
+  // balance varies from year to year") isn't a real, evidenced claim -- no
+  // year-over-year trend is computed anywhere in this codebase. Unlike the FE branch,
+  // a mainstream school has one single census population, not an under-19/adult split,
+  // so there's no bracket-level detail to substitute in its place -- simply dropped.
   return (
     `${schoolName} is ${article} ${phase} ${schoolWord}, ${ageRangeClause}. It is co-educational${qualifier}, ` +
-    `with ${comp.dominantGender} making up ${comp.dominantSharePct.toFixed(0)}% of all pupils. ${GENDER_ALWAYS_ON_HEDGE}`
+    `with ${comp.dominantGender} making up ${comp.dominantSharePct.toFixed(0)}% of all pupils.`
   );
 }
 
@@ -553,39 +570,198 @@ export function paragraphFeCollegeLocalShare(
 // returns null whenever neither crosswalk-scoped snapshot is real, which is Hereford's
 // whole shape). Phase word is a fixed literal "16+ college" for this entire branch,
 // not the mainstream phaseWord()/census-derived tags -- there's no DfE census age-band
-// roll data on this branch at all to derive a real phase tag from. Age range reuses
-// yearGroupSingleLabel (same age->year-group conversion paragraph1PhaseGender already
-// uses) over school.statutory_low_age/high_age -- the real GIAS fields, not census-
-// derived. Gender composition reuses classifyGenderComposition/the same single-sex-
-// vs-co-ed branching paragraph1PhaseGender already has -- female/male are passed in
-// already resolved (page.tsx's own job: this branch has three possible real sources --
-// the aggregate ilrSnapshot, or the two crosswalk-scoped snapshots summed, or
-// whichever one alone exists -- and picking between them is a data-source decision,
-// not a rendering one, same "page.tsx computes, narrative.ts renders" split every
-// other paragraph in this file already follows).
+// roll data on this branch at all to derive a real phase tag from. Gender composition
+// reuses classifyGenderComposition/the same single-sex-vs-co-ed branching
+// paragraph1PhaseGender already has -- female/male are passed in already resolved
+// (page.tsx's own job: this branch has three possible real sources -- the aggregate
+// ilrSnapshot, or the two crosswalk-scoped snapshots summed, or whichever one alone
+// exists -- and picking between them is a data-source decision, not a rendering one,
+// same "page.tsx computes, narrative.ts renders" split every other paragraph in this
+// file already follows).
+//
+// "girls"/"boys" (classifyGenderComposition's shared vocabulary, correct for actual
+// child pupils on the mainstream branch) reads wrong for this branch's genuinely
+// mixed 16-19/adult population -- translated locally to adult-appropriate nouns/
+// adjectives here only, rather than widening the shared function's vocabulary for
+// every caller.
+const FE_GENDER_WORDS: Record<"girls" | "boys", { adjective: "female" | "male"; noun: "women" | "men" }> = {
+  girls: { adjective: "female", noun: "women" },
+  boys: { adjective: "male", noun: "men" },
+};
+
+// 2026-10-01, per Guy's own before/after review of Herefordshire, Ludlow and North
+// Shropshire College: the age-range clause ("with pupils from Year 12 to Year 13")
+// is dropped -- misleading on this branch, since a 16+ college's real population
+// includes adults well past Year 13, not just two school year-groups. The generic
+// GENDER_ALWAYS_ON_HEDGE ("varies from year to year") is replaced, where the real
+// data supports it, with the actual U19-vs-adult breakdown -- both segments are
+// already computed separately upstream (page.tsx's feUnder19Snapshot/feAdultSnapshot,
+// the same real ILR source feParagraphParticipation/feParagraphNationalStanding
+// already use), this just wires the gender half of each through to this sentence too.
+//
+// Real cases, deliberately kept distinct rather than collapsed -- "be upfront when we
+// don't know" (Guy's own instruction) means a missing gender breakdown must read as a
+// stated gap, never silently dropped or papered over with a generic hedge when a more
+// specific (if partial) statement is actually available. Also per Guy's direct
+// correction: the "and across all age groups is predominantly X, with N% of all
+// students" framing in the OPENING sentence only holds up when both brackets are
+// genuinely real -- otherwise it's a claim about "all age groups" resting on data for
+// only one of them (or none), so it's better left out of the opening entirely, with
+// every percentage/composition detail moved into the bracket-aware sentence(s) that
+// follow instead:
+//   1. Both brackets have real gender data -> opening states the overall composition
+//      ("across all age groups"), a second sentence gives the U19-vs-adult breakdown.
+//   2. Only one bracket has any real population at all (the other's snapshot doesn't
+//      exist, not just its gender split) -> opening stays bare ("co-educational."/
+//      "single sex."), the population/percentage detail is stated separately, scoped
+//      honestly to "the students, who are all under 19/adults".
+//   3. Both brackets have a real population but only one has real gender data ->
+//      opening stays bare, state the one real figure, then say plainly the other
+//      bracket's gender split isn't known -- never silently omitted.
+//   4. Neither bracket's gender split is real (aggregate-only figure, e.g. a single
+//      combined ilrSnapshot with no separate under-19/adult source) -> opening stays
+//      bare, tail states plainly that no bracket-level detail exists (never the old
+//      "varies from year to year" hedge -- not a real, evidenced claim; no
+//      year-over-year trend is computed anywhere).
 export function feParagraphPhaseGender(
   collegeName: string,
-  lowAge: number | null,
-  highAge: number | null,
   female: number,
   male: number,
+  under19: { total: number; female: number | null; male: number | null } | null,
+  adult: { total: number; female: number | null; male: number | null } | null,
 ): string | null {
-  if (lowAge === null || highAge === null) return null;
-  const ageRangeClause = `with pupils from ${yearGroupSingleLabel(lowAge)} to ${yearGroupSingleLabel(highAge)}`;
   const comp = classifyGenderComposition(female, male);
   if (!comp) return null;
+  const words = FE_GENDER_WORDS[comp.dominantGender];
 
-  if (comp.kind === "single_sex") {
-    return `${collegeName} is a 16+ college, ${ageRangeClause}. It is single-sex (${comp.dominantGender}).`;
+  const under19Comp = feBracketComposition(under19);
+  const adultComp = feBracketComposition(adult);
+  const bothReal = under19Comp !== null && adultComp !== null;
+
+  // Three real narrative categories, not two -- per Guy's own working-through of this
+  // (2026-10-01): classifyGenderComposition's single_sex `kind` (dominant share >=98%)
+  // is a real, meaningful signal here -- FE colleges that report a tiny non-dominant
+  // share are very likely reporting trans students' affirmed gender within an
+  // otherwise genuinely single-sex institution, not real mixed enrollment -- so it's
+  // right to treat as single-sex internally. But the TEXT can only assert "is single
+  // sex" when the share is literally 100%; a reader takes "single sex" to mean
+  // exactly that, so a 99% case asserting it would overclaim. Calling that same 99%
+  // case "co-educational" is equally wrong the other way (it isn't genuinely mixed
+  // either). Resolution: no categorical claim AT ALL for that middle band -- the
+  // opening just states the college exists, and the population sentence's real
+  // percentage does the work instead ("are 99% female"), never a word softer or
+  // stronger than what the number itself supports.
+  const isExactly100 = comp.kind === "single_sex" && comp.dominantSharePct >= 100;
+  const isMiddleBand = comp.kind === "single_sex" && !isExactly100;
+
+  // Opening: a category claim only when the evidence actually supports one.
+  let opening: string;
+  if (isExactly100) {
+    opening = `${collegeName} is a 16+ college. It is single sex.`;
+  } else if (isMiddleBand) {
+    opening = `${collegeName} is a 16+ college.`;
+  } else {
+    const inHedgeZone = comp.kind === "mostly" && comp.dominantSharePct < BALANCED_BAND_HIGH * 100 + GENDER_LABEL_HEDGE_WIDTH_PP * 100;
+    // The "and across all age groups is X, with N%..." framing only holds up with
+    // real data for BOTH brackets (Guy's own correction) -- otherwise it's a claim
+    // about "all age groups" resting on partial or no bracket evidence, so it's
+    // dropped here and every percentage moves into the tail sentence(s) below instead.
+    const qualifier = !bothReal
+      ? ""
+      : comp.kind === "balanced"
+        ? ", and across all age groups is roughly balanced"
+        : inHedgeZone
+          ? ""
+          : `, and across all age groups is predominantly ${words.adjective}`;
+    const populationClause = bothReal ? `, with ${words.noun} making up ${comp.dominantSharePct.toFixed(0)}% of all students` : "";
+    opening = `${collegeName} is a 16+ college. It is co-educational${qualifier}${populationClause}.`;
   }
 
-  const inHedgeZone = comp.kind === "mostly" && comp.dominantSharePct < BALANCED_BAND_HIGH * 100 + GENDER_LABEL_HEDGE_WIDTH_PP * 100;
-  const qualifier = comp.kind === "balanced" ? ", roughly balanced" : inHedgeZone ? "" : `, mostly ${comp.dominantGender}`;
+  // Tail: bracket-availability detail -- independent of which opening fired above.
+  if (bothReal) {
+    return `${opening} ${feBothBracketsSentence(under19Comp!, adultComp!)}`;
+  }
+  const clauseFor = isExactly100 || isMiddleBand ? feSingleSexClause : feCompositionClause;
+  if (under19Comp && !adult) {
+    return `${opening} The students are all under 19 and ${clauseFor(under19Comp)}.`;
+  }
+  if (adultComp && !under19) {
+    return `${opening} The students are all adults (19+) and ${clauseFor(adultComp)}.`;
+  }
+  if (under19Comp && adult) {
+    return `${opening} ${fePartialBracketSentence("under19", under19Comp)}`;
+  }
+  if (adultComp && under19) {
+    return `${opening} ${fePartialBracketSentence("adult", adultComp)}`;
+  }
+  return `${opening} No data is available on how the gender balance varies by age bracket.`;
+}
 
+// Shared by the "one bracket only" case when that bracket's composition is (or is
+// close enough to be treated as) single-sex -- "all X (100%)" only when the share is
+// LITERALLY 100%, never rounded up to it; anything just under states the real %,
+// same discipline as the opening's isExactly100/isMiddleBand split above.
+function feSingleSexClause(comp: GenderComposition): string {
+  const words = FE_GENDER_WORDS[comp.dominantGender];
+  if (comp.dominantSharePct >= 100) {
+    return `are all ${words.adjective} (100%)`;
+  }
+  return `are ${comp.dominantSharePct.toFixed(0)}% ${words.adjective}`;
+}
+
+// One real bracket's own dominant-gender/share, in the same adult-appropriate
+// vocabulary as feParagraphPhaseGender's opening sentence -- null when this bracket
+// has no real gender split to report (caller decides what that means: no population
+// at all, vs. a population with an unknown split).
+function feBracketComposition(gender: { female: number | null; male: number | null } | null): GenderComposition | null {
+  if (!gender || gender.female === null || gender.male === null) return null;
+  return classifyGenderComposition(gender.female, gender.male);
+}
+
+// Case 1: both brackets have a real gender split -- state both, "varies across
+// brackets" framing (honest here because there genuinely are two points to compare).
+function feBothBracketsSentence(under19Comp: GenderComposition, adultComp: GenderComposition): string {
+  const u19Words = FE_GENDER_WORDS[under19Comp.dominantGender];
+  const adultWords = FE_GENDER_WORDS[adultComp.dominantGender];
   return (
-    `${collegeName} is a 16+ college, ${ageRangeClause}. It is co-educational${qualifier}, ` +
-    `with ${comp.dominantGender} making up ${comp.dominantSharePct.toFixed(0)}% of all students. ${GENDER_ALWAYS_ON_HEDGE}`
+    `The gender balance varies across the age brackets, with U19 students ` +
+    `${under19Comp.dominantSharePct.toFixed(0)}% ${u19Words.adjective}, and adults (19+) ` +
+    `${adultComp.dominantSharePct.toFixed(0)}% ${adultWords.adjective}.`
   );
+}
+
+// Case 3: both brackets have a real population, but only one has real gender data --
+// state the one real figure, then say plainly the other bracket's split isn't known.
+// Be upfront when we don't know, rather than silently dropping the missing bracket.
+function fePartialBracketSentence(which: "under19" | "adult", comp: GenderComposition): string {
+  const words = FE_GENDER_WORDS[comp.dominantGender];
+  if (which === "under19") {
+    return (
+      `Among under-19 students, ${comp.dominantSharePct.toFixed(0)}% are ${words.adjective}. ` +
+      `No data is available on the gender split for adult (19+) learners.`
+    );
+  }
+  return (
+    `Among adult (19+) learners, ${comp.dominantSharePct.toFixed(0)}% are ${words.adjective}. ` +
+    `No data is available on the gender split for under-19 students.`
+  );
+}
+
+// Shared by feGenderBracketSentence's two "only one bracket exists" cases -- same
+// balanced/mostly/hedge vocabulary as the opening sentence, just phrased as a clause
+// ("are evenly split, with N% male") rather than a full standalone sentence.
+function feCompositionClause(comp: GenderComposition): string {
+  const words = FE_GENDER_WORDS[comp.dominantGender];
+  if (comp.kind === "balanced") {
+    return `are evenly split, with ${comp.dominantSharePct.toFixed(0)}% ${words.adjective}`;
+  }
+  const inHedgeZone = comp.kind === "mostly" && comp.dominantSharePct < BALANCED_BAND_HIGH * 100 + GENDER_LABEL_HEDGE_WIDTH_PP * 100;
+  if (inHedgeZone) {
+    return `are ${comp.dominantSharePct.toFixed(0)}% ${words.adjective}`;
+  }
+  // Real bug caught in testing: stating the adjective twice ("predominantly female,
+  // with 70% female") reads as a stutter -- parenthesised percentage instead.
+  return `are predominantly ${words.adjective} (${comp.dominantSharePct.toFixed(0)}%)`;
 }
 
 // Paragraph 1: this college's own participation figures (under-19 + adult, kept as

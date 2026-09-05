@@ -658,7 +658,7 @@ export default async function SchoolPage({
   // aggregate-only institution's whole shape (Hereford, Rochdale, Solihull, ...).
   const feNarrativeParagraphs: (string | null)[] = showFeTemplate
     ? [
-        feParagraphPhaseGender(school.current_name, school.statutory_low_age, school.statutory_high_age, feGenderFemale, feGenderMale),
+        feParagraphPhaseGender(school.current_name, feGenderFemale, feGenderMale, feUnder19Snapshot, feAdultSnapshot),
         feParagraphParticipation(school.current_name, feUnder19Snapshot, feAdultSnapshot),
         feParagraphNationalStanding(
           school.current_name,
