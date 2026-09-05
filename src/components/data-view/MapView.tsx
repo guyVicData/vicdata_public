@@ -86,8 +86,10 @@ export default function MapView({
   const mapRef = useRef<LeafletMap | null>(null);
   const layerGroupRef = useRef<LayerGroup | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
+  const topRightStackRef = useRef<HTMLDivElement | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [colourMode, setColourMode] = useState<ColourMode>("trend");
+  const [trendKeyBox, setTrendKeyBox] = useState<{ top: number; height: number } | null>(null);
 
   useEffect(() => {
     if (!mapElRef.current || mapRef.current || target.easting === null || target.northing === null) return;
@@ -124,6 +126,41 @@ export default function MapView({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target.urn]);
+
+  // 2026-09-05, per direct feedback: the trend colour key was sitting too close
+  // to the zoom control (a fixed `bottom-[70px]` guess). Now measured for real --
+  // centred in the actual vertical gap between the top-right control stack
+  // (export + colour-by) and Leaflet's own zoom control, occupying 70% of that
+  // gap's height, rather than a hand-tuned constant that only happened to look
+  // right at one box's content height.
+  useEffect(() => {
+    if (!mapReady || !mapElRef.current) return;
+    const containerEl = mapElRef.current;
+
+    function measure() {
+      const zoomEl = containerEl.querySelector<HTMLElement>(".leaflet-control-zoom");
+      const stackEl = topRightStackRef.current;
+      if (!zoomEl || !stackEl) return;
+      const containerRect = containerEl.getBoundingClientRect();
+      const stackRect = stackEl.getBoundingClientRect();
+      const zoomRect = zoomEl.getBoundingClientRect();
+      const availableTop = stackRect.bottom - containerRect.top;
+      const availableBottom = zoomRect.top - containerRect.top;
+      const availableHeight = availableBottom - availableTop;
+      if (availableHeight <= 0) {
+        setTrendKeyBox(null);
+        return;
+      }
+      const height = availableHeight * 0.7;
+      setTrendKeyBox({ top: availableTop + (availableHeight - height) / 2, height });
+    }
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(containerEl);
+    if (topRightStackRef.current) ro.observe(topRightStackRef.current);
+    return () => ro.disconnect();
+  }, [mapReady, colourMode]);
 
   // Lifted out of the marker-drawing effect below (it used to be computed there
   // and thrown away every run) so the size-legend overlay can render the SAME
@@ -258,7 +295,7 @@ export default function MapView({
         </div>
 
         {/* Top-right, stacked: export button above the colour-by mode toggle. */}
-        <div className="absolute right-3 top-3 z-[1000] flex flex-col items-end gap-2">
+        <div ref={topRightStackRef} className="absolute right-3 top-3 z-[1000] flex flex-col items-end gap-2">
           <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
             <PdfExportButton />
           </div>
@@ -282,15 +319,17 @@ export default function MapView({
           </div>
         </div>
 
-        {/* Right side, above the zoom control: whatever the active colour-by mode
-            means. Trend mode gets the requested narrow vertical graduated bar,
-            width-matched to Leaflet's own zoom control (26px, confirmed from
-            leaflet.css's own .leaflet-bar a rule rather than guessed) and
-            positioned directly above it. Sector mode's swatch list has no such
-            width constraint in the request, so it keeps a normal legend-box width
-            in the same general slot -- logged as a judgement call, not literally
-            specified, in docs/vicdata_data_view_open_questions.md. */}
-        {colourMode === "trend" ? <TrendColourKey /> : <SectorColourKey sectors={sectorsPresent} />}
+        {/* Right side, between the top-right control stack and the zoom control:
+            whatever the active colour-by mode means. Trend mode gets the
+            requested narrow vertical graduated bar, width-matched to Leaflet's
+            own zoom control (26px, confirmed from leaflet.css's own .leaflet-bar
+            a rule rather than guessed), centred in the real measured gap between
+            the two (see the measurement effect above). Sector mode's swatch list
+            has no such width/position constraint in the request, so it keeps a
+            normal legend-box width in the same general slot -- logged as a
+            judgement call, not literally specified, in
+            docs/vicdata_data_view_open_questions.md. */}
+        {colourMode === "trend" ? <TrendColourKey box={trendKeyBox} /> : <SectorColourKey sectors={sectorsPresent} />}
 
         {/* Bottom-left: size legend, now its own box (previously folded into the
             colour-by box) with a real scale -- three representative dot sizes at
@@ -309,7 +348,11 @@ export default function MapView({
   );
 }
 
-function TrendColourKey() {
+function TrendColourKey({ box }: { box: { top: number; height: number } | null }) {
+  // Nothing rendered until the real gap is measured (see MapView's own
+  // measurement effect) -- rendering at some guessed fallback position first and
+  // then jumping to the real one would be worse than a one-frame delay.
+  if (!box) return null;
   const stops = TREND_LEGEND_STOPS; // ascending by pct: -30 (red) ... +30 (blue)
   const min = stops[0].pct;
   const max = stops[stops.length - 1].pct;
@@ -317,22 +360,21 @@ function TrendColourKey() {
   // bottom from the highest stop to the lowest, so reverse the ascending list.
   const gradient = [...stops].reverse().map((s) => s.hex).join(",");
   return (
-    <div className="absolute bottom-[70px] right-[10px] z-[1000] flex flex-col items-center">
-      <span className="mb-1 text-[9px] font-medium text-neutral-500">growing</span>
-      <div className="relative h-32 w-[26px] rounded-sm shadow-sm" style={{ background: `linear-gradient(to bottom, ${gradient})` }}>
-        {stops.map((s) => {
-          const t = (max - s.pct) / (max - min);
-          return (
-            <div key={s.pct} className="absolute inset-x-0" style={{ top: `${t * 100}%` }}>
-              <div className="h-px w-full bg-white/80" />
-              <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
-                {s.pct > 0 ? `+${s.pct}%` : `${s.pct}%`}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <span className="mt-1 text-[9px] font-medium text-neutral-500">declining</span>
+    <div
+      className="absolute right-[10px] z-[1000] w-[26px] rounded-sm shadow-sm"
+      style={{ top: box.top, height: box.height, background: `linear-gradient(to bottom, ${gradient})` }}
+    >
+      {stops.map((s) => {
+        const t = (max - s.pct) / (max - min);
+        return (
+          <div key={s.pct} className="absolute inset-x-0" style={{ top: `${t * 100}%` }}>
+            <div className="h-px w-full bg-white/80" />
+            <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
+              {s.pct > 0 ? `+${s.pct}%` : `${s.pct}%`}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
