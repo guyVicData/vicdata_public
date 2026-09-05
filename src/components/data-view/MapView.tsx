@@ -24,7 +24,7 @@ import { bngToLatLng } from "@/lib/bng";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
 import { trendColour, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import { profileToFilterableData, profileToFilterableData2019 } from "@/lib/data-view-profiles";
+import { profileToFilterableData, profileToFilterableData2019 } from "@/lib/data-view-serialize";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";

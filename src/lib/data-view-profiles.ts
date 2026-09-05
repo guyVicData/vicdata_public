@@ -28,7 +28,6 @@ import {
   type GenderTag,
   type PhaseTag,
 } from "./typology";
-import type { FilterableSchoolData } from "./data-view-filters";
 
 // Real, already-diagnosed limit (brief §6.1): a live, unbatched lookupReferenceData
 // call against ~264 entity IDs hits a genuine Postgres statement timeout -- confirmed
@@ -120,32 +119,19 @@ export type DataViewSchoolProfile = {
   ilrFallbackRoll: { total: number; period: number; basis: "under_19" | "adult" } | null;
 };
 
-export function profileToFilterableData(p: DataViewSchoolProfile): FilterableSchoolData {
-  return {
-    statutoryLowAge: p.statutoryLowAge,
-    statutoryHighAge: p.statutoryHighAge,
-    ageGenderCounts: p.ageGenderCounts,
-    boarding: p.current?.boarding ?? null,
-    boardersGenderSplit: p.boardersGenderSplit,
-  };
-}
-
-// Same slice, at the 2019 trend anchor -- see ageGenderCounts2019's own comment for
-// why a filtered trend badge needs this rather than comparing a filtered current
-// value against an unfiltered historical one. Boarding gender split at 2019 isn't
-// separately tracked (a real, minor simplification, logged in
-// docs/vicdata_data_view_open_questions.md) -- a boarding+gender filter combination
-// at the 2019 anchor specifically falls back to the whole-boarding-population figure
-// rather than a gendered slice, still correct for every other filter combination.
-export function profileToFilterableData2019(p: DataViewSchoolProfile): FilterableSchoolData {
-  return {
-    statutoryLowAge: p.statutoryLowAge,
-    statutoryHighAge: p.statutoryHighAge,
-    ageGenderCounts: p.ageGenderCounts2019,
-    boarding: p.anchor2019?.boarding ?? null,
-    boardersGenderSplit: null,
-  };
-}
+// profileToFilterableData/profileToFilterableData2019 moved to data-view-serialize.ts
+// (2026-09-05 fix): every Data View client component needs these two pure functions,
+// but this module imports createServerAnonSupabaseClient (supabase.ts's own docstring:
+// "Never import the service-role client below into client components" -- the same
+// discipline applies to this anon-but-still-server-only client) -- three client
+// components (Dashboard/Rankings/MapView) were importing them as real VALUE imports,
+// not `import type`, which pulls this whole server-only module's runtime code into
+// the client bundle. Not a functional crash (createServerAnonSupabaseClient only
+// touches NEXT_PUBLIC_ env vars, and nothing here runs at module-load time), but a
+// real violation of this repo's own established server/client boundary, and needless
+// client-bundle weight -- fixed by moving these two functions to the file already
+// designed to be safe for both sides (data-view-serialize.ts, which holds
+// serializeProfile/deserializeProfile for exactly this reason).
 
 type SchoolRow = {
   urn: string;

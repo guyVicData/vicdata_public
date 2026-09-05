@@ -40,6 +40,14 @@ export default function DataViewShell({ urn }: { urn: string }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [loadState, setLoadState] = useState<LoadState>("checking");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Defence-in-depth for the "This page couldn't load" report (2026-09-05): even with
+  // every promise above now caught (see Step 1/2's own comments), a request that
+  // genuinely hangs rather than rejecting -- a stalled TCP connection, a cold-start
+  // timeout with no response at all -- would still leave loadState stuck at
+  // "checking"/"loading" forever with no way out for the user. This flips a visible
+  // "taking a while" affordance after a real timeout, giving a definite escape hatch
+  // (reload) instead of a spinner with no ceiling.
+  const [slowLoad, setSlowLoad] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [target, setTarget] = useState<TargetSchool | null>(null);
 
@@ -64,26 +72,62 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // paid API route in this build already enforces server-side -- this is the CLIENT's
   // own early check so the page can show a clear message immediately, not a
   // replacement for those routes' own checks.
+  //
+  // 2026-09-05 fix, real bug reported live (Safari, "This page couldn't load" on
+  // https://vicdata.co.uk/schools/100053/data for a genuinely logged-in member):
+  // this whole async body had no try/catch and the membership query's own `error`
+  // was silently discarded -- the exact same class of mistake account.tsx's and
+  // sets.tsx's own history comments already warn about ("silently rendering as 'No
+  // memberships yet' because the error below used to be discarded"). If
+  // getSession() or the membership query ever throws or the query itself returns a
+  // real PostgREST error (a transient network blip, a cold-start timeout hitting the
+  // remote Supabase project, anything) the effect's promise rejected with nothing
+  // catching it -- loadState stayed stuck at "checking" forever, an indefinite
+  // "Loading…" a real user has no way to distinguish from a hung/broken page.
+  // Reloading re-runs the same effect and can hit the same transient failure again,
+  // which matches "flashes to another screen [the fresh Loading… state] before
+  // landing back on the same error [hangs again]" -- logged as the most likely real
+  // cause in docs/vicdata_data_view_open_questions.md, though it couldn't be
+  // reproduced directly in this session (no browser access here -- see that entry).
+  // Every path through this effect now reaches a definite terminal state.
   useEffect(() => {
     (async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token ?? null;
-      setAuthToken(token);
-      if (!token) {
-        setLoadState("not_a_member");
-        return;
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("[DataViewShell] getSession failed:", sessionError);
+          setErrorMessage("Could not check your login. Try reloading, or log in again.");
+          setLoadState("error");
+          return;
+        }
+        const token = sessionData.session?.access_token ?? null;
+        setAuthToken(token);
+        if (!token) {
+          setLoadState("not_a_member");
+          return;
+        }
+        const { data, error: membershipError } = await supabase
+          .from("school_memberships")
+          .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
+          .eq("status", "approved")
+          .eq("school_accounts.school_urn", urn)
+          .maybeSingle();
+        if (membershipError) {
+          console.error("[DataViewShell] membership check failed:", membershipError);
+          setErrorMessage("Could not check your membership at this school. Try reloading.");
+          setLoadState("error");
+          return;
+        }
+        if (!data) {
+          setLoadState("not_a_member");
+          return;
+        }
+        setLoadState("loading");
+      } catch (e) {
+        console.error("[DataViewShell] unexpected error during auth check:", e);
+        setErrorMessage("Something went wrong checking your login. Try reloading.");
+        setLoadState("error");
       }
-      const { data } = await supabase
-        .from("school_memberships")
-        .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
-        .eq("status", "approved")
-        .eq("school_accounts.school_urn", urn)
-        .maybeSingle();
-      if (!data) {
-        setLoadState("not_a_member");
-        return;
-      }
-      setLoadState("loading");
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urn]);
@@ -155,7 +199,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
           setTickedUrns(new Set(list1.schools.slice(0, INITIAL_TICKED_COUNT).map((s) => s.urn)));
         }
         setLoadState("ready");
-      } catch {
+      } catch (e) {
+        console.error("[DataViewShell] failed loading school/default lists:", e);
         setErrorMessage("Something went wrong loading the Data View.");
         setLoadState("error");
       }
@@ -209,6 +254,16 @@ export default function DataViewShell({ urn }: { urn: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authToken, activeSet, target]);
 
+  useEffect(() => {
+    // Only ever read while loadState is "checking"/"loading" (see that render branch
+    // below) -- no need to explicitly reset it back to false once loading finishes,
+    // that branch simply stops rendering it. Avoids a synchronous setState call in
+    // the effect body itself (react-hooks/set-state-in-effect).
+    if (loadState !== "checking" && loadState !== "loading") return;
+    const timer = setTimeout(() => setSlowLoad(true), 12000);
+    return () => clearTimeout(timer);
+  }, [loadState]);
+
   function selectSet(option: SetOption) {
     setActiveSet(option);
     setTickedUrns(new Set(option.schools.slice(0, INITIAL_TICKED_COUNT).map((s) => s.urn)));
@@ -224,7 +279,24 @@ export default function DataViewShell({ urn }: { urn: string }) {
   }
 
   if (loadState === "checking" || loadState === "loading") {
-    return <main className="px-6 py-24 text-center text-sm text-neutral-500">Loading…</main>;
+    return (
+      <main className="px-6 py-24 text-center text-sm text-neutral-500">
+        <p>Loading…</p>
+        {slowLoad && (
+          <p className="mt-3">
+            This is taking longer than expected.{" "}
+            <button type="button" className="underline" onClick={() => window.location.reload()}>
+              Reload
+            </button>
+            , or head back to{" "}
+            <Link href="/member" className="underline">
+              your home page
+            </Link>
+            .
+          </p>
+        )}
+      </main>
+    );
   }
   if (loadState === "not_a_member") {
     return (
@@ -238,7 +310,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
     );
   }
   if (loadState === "error" || !target) {
-    return <main className="px-6 py-24 text-center text-sm text-neutral-500">{errorMessage ?? "Something went wrong."}</main>;
+    return (
+      <main className="mx-auto max-w-lg px-6 py-24 text-center text-sm text-neutral-500">
+        <p>{errorMessage ?? "Something went wrong."}</p>
+        <p className="mt-3">
+          <button type="button" className="underline" onClick={() => window.location.reload()}>
+            Reload
+          </button>{" "}
+          or head back to{" "}
+          <Link href="/member" className="underline">
+            your home page
+          </Link>
+          .
+        </p>
+      </main>
+    );
   }
 
   const targetProfile = profilesByUrn.get(target.urn) ?? null;

@@ -27,9 +27,17 @@ export default function NavBar() {
           Sets
         </Link>
         {loggedIn ? (
-          <Link href="/account" className="hover:text-neutral-900 dark:hover:text-neutral-100">
-            Account
-          </Link>
+          <>
+            {/* 2026-09-05: added alongside the new /member fallback landing page --
+                there was no link back to it anywhere once you'd navigated away. Not
+                /home -- that name is reserved for the public "/" home page. */}
+            <Link href="/member" className="hover:text-neutral-900 dark:hover:text-neutral-100">
+              Home
+            </Link>
+            <Link href="/account" className="hover:text-neutral-900 dark:hover:text-neutral-100">
+              Account
+            </Link>
+          </>
         ) : (
           <>
             <Link href="/join" className="hover:text-neutral-900 dark:hover:text-neutral-100">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -105,7 +106,13 @@ export default function AccountPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="mb-8 text-xl font-semibold">Your account</h1>
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Your account</h1>
+        {/* 2026-09-05, per Guy's direct request: there was no logout button anywhere
+            in the app -- added here for now, the one page every logged-in member is
+            guaranteed to be able to reach (via NavBar's own "Account" link). */}
+        <LogoutButton />
+      </div>
       {memberships.length === 0 && (
         <p className="text-sm text-neutral-500">
           No memberships yet.{" "}
@@ -119,6 +126,29 @@ export default function AccountPage() {
         <MembershipCard key={m.id} membership={m} userId={userId} onChange={load} />
       ))}
     </main>
+  );
+}
+
+function LogoutButton() {
+  const supabase = createBrowserSupabaseClient();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    await supabase.auth.signOut();
+    router.push("/");
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleLogout}
+      disabled={loggingOut}
+      className="text-sm text-neutral-500 underline hover:text-neutral-900 disabled:opacity-50 dark:hover:text-neutral-100"
+    >
+      {loggingOut ? "Logging out…" : "Log out"}
+    </button>
   );
 }
 

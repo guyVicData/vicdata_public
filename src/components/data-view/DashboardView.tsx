@@ -9,7 +9,7 @@
 // number means).
 
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import { profileToFilterableData, profileToFilterableData2019 } from "@/lib/data-view-profiles";
+import { profileToFilterableData, profileToFilterableData2019 } from "@/lib/data-view-serialize";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import { trendBadge, spreadData, memberSetMarketShare, shapeInlineFact, sizeBand, type TrendBadge } from "@/lib/data-view-cards";
 import SpreadStrip from "./SpreadStrip";

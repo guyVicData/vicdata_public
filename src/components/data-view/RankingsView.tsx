@@ -7,7 +7,7 @@
 // headline to percentile and show a neighbour window rather than the whole list.
 
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import { profileToFilterableData } from "@/lib/data-view-profiles";
+import { profileToFilterableData } from "@/lib/data-view-serialize";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import { rankDescendingWithTies, percentile, memberSetMarketShare, LARGE_SET_THRESHOLD, NEIGHBOUR_WINDOW } from "@/lib/data-view-cards";
 
