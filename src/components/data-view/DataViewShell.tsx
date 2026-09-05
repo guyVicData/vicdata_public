@@ -69,6 +69,10 @@ export default function DataViewShell({ urn }: { urn: string }) {
 
   const [filters, setFilters] = useState<DataViewFilterState>(emptyDataViewFilterState());
   const [activeView, setActiveView] = useState<ViewKey>("map");
+  // One shared collapse toggle for the one shared filter bar (see the render's own
+  // 2026-09-05 comment) -- applies identically regardless of which view is active,
+  // rather than a per-view floating overlay only Map used to have.
+  const [filterBarCollapsed, setFilterBarCollapsed] = useState(false);
 
   // Step 1: auth + membership gate, exactly the same approved-membership check every
   // paid API route in this build already enforces server-side -- this is the CLIENT's
@@ -363,12 +367,70 @@ export default function DataViewShell({ urn }: { urn: string }) {
     ...savedSets,
   ];
 
+  // 2026-09-05, layout fix (real bug reported live, both items below):
+  //
+  // 1. Full-bleed. The whole shell used to sit inside `mx-auto max-w-6xl px-4 sm:px-6`
+  //    -- a centred, width-capped container that produced large left/right margins on
+  //    any screen wider than 1152px, unlike the wireframe's own `.shell{width:100%}`
+  //    (confirmed by reading the wireframe's actual source directly, not just eyeballing
+  //    a screenshot -- the published canvas artifact embeds each board's real HTML/CSS).
+  //    Removed entirely: the shell now fills the viewport edge to edge, the sidebar
+  //    sits flush against the left edge (its own internal padding aside), and the main
+  //    panel fills every remaining pixel out to the right edge.
+  //
+  // 2. One filter bar, one position, for all three views. The wireframe itself is
+  //    genuinely inconsistent between boards here (Map's own filter bar is scoped to
+  //    `.main`'s width, floating as an overlay INSIDE the map canvas; Dashboard's and
+  //    Rankings' filter bars instead span the FULL page width, sitting ABOVE the
+  //    sidebar+main split, with the view-switcher in its own separate row scoped to
+  //    `.main`) -- confirmed directly from the wireframe's own source, not assumed.
+  //    Resolved in favour of the Dashboard/Rankings treatment (2 of the 3 boards agree
+  //    on it, and it's what "full width... same screen coordinates" in the bug report
+  //    actually describes): the filter bar is now rendered ONCE, unconditionally,
+  //    directly under the topic tabs and above the sidebar+main row -- never
+  //    conditionally shown per view, never floated over the map -- so its position
+  //    literally cannot drift between views; there is only one of it in the DOM. The
+  //    view-switcher moved into its own row at the top of the main panel (matching
+  //    Dashboard/Rankings' own `.main-subheader`), which MapView.tsx no longer renders
+  //    a competing copy of. The brief's original "Map's filter bar floats as a
+  //    collapsible overlay" instruction is satisfied in spirit, not literally, by the
+  //    shared collapse toggle below (every view can reclaim the same vertical space);
+  //    logged as a deliberate trade-off in docs/vicdata_data_view_open_questions.md.
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+    <div className="flex w-full flex-col">
       <TopicTabs />
 
-      <div className="mt-4 flex flex-col gap-4 lg:flex-row">
-        <aside className="lg:w-72 lg:shrink-0">
+      <div className="border-b border-neutral-200 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-800">
+        {!filterBarCollapsed && (
+          <div className="mb-2">
+            <FilterBar filters={filters} onChange={setFilters} target={targetProfile} />
+          </div>
+        )}
+        <button
+          type="button"
+          className="text-xs text-neutral-400 underline"
+          onClick={() => setFilterBarCollapsed((c) => !c)}
+        >
+          {filterBarCollapsed ? "Show filters" : "Collapse filters"}
+        </button>
+      </div>
+
+      {/* Print-only summary line (brief §9): "show your assumptions" -- an exported
+          view states which comparator set and filters produced the numbers on the
+          page, not just the numbers themselves. Hidden on screen, the one thing this
+          page ADDS for print rather than hides. */}
+      <div className="hidden px-4 sm:px-6 print:block print:py-2 print:text-xs">
+        <p>
+          {target.name} — {activeView} view — comparator set: {activeSet?.label ?? "none"}
+          {filterSummary ? ` — filtered: ${filterSummary}` : ""} — generated {new Date().toLocaleDateString("en-GB")}
+        </p>
+        <p>
+          Compared against: {tickedProfiles.length > 0 ? tickedProfiles.map((p) => p.name).join(", ") : "no schools ticked"}
+        </p>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <aside className="shrink-0 border-b border-neutral-200 p-4 lg:w-64 lg:border-b-0 lg:border-r dark:border-neutral-800">
           <ComparatorSidebar
             targetName={target.name}
             options={setOptions}
@@ -389,69 +451,50 @@ export default function DataViewShell({ urn }: { urn: string }) {
           />
         </aside>
 
-        <div className="min-w-0 flex-1">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 print:hidden">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex items-center justify-end gap-2 border-b border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
             <ViewSwitcher active={activeView} onChange={setActiveView} />
             <PdfExportButton />
           </div>
 
-          {/* Print-only summary line (brief §9): "show your assumptions" -- an
-              exported view states which comparator set and filters produced the
-              numbers on the page, not just the numbers themselves. Hidden on screen,
-              the one thing this page ADDS for print rather than hides. */}
-          <div className="hidden print:block print:mb-4 print:text-xs">
-            <p>
-              {target.name} — {activeView} view — comparator set: {activeSet?.label ?? "none"}
-              {filterSummary ? ` — filtered: ${filterSummary}` : ""} — generated {new Date().toLocaleDateString("en-GB")}
-            </p>
-            <p>
-              Compared against: {tickedProfiles.length > 0 ? tickedProfiles.map((p) => p.name).join(", ") : "no schools ticked"}
-            </p>
+          <div className="flex-1 p-4 sm:p-6">
+            {profilesError ? (
+              <div className="py-12 text-center text-sm text-neutral-500">
+                <p>{profilesError}</p>
+                <p className="mt-3">
+                  <button type="button" className="underline" onClick={() => window.location.reload()}>
+                    Reload
+                  </button>
+                </p>
+              </div>
+            ) : profilesLoading && profilesByUrn.size === 0 ? (
+              <p className="py-12 text-center text-sm text-neutral-500">Loading school data…</p>
+            ) : !targetProfile ? (
+              <p className="py-12 text-center text-sm text-neutral-500">No real data available for this school yet.</p>
+            ) : (
+              // key={activeView}: remounts the boundary (clearing any caught error) on
+              // every view switch, rather than a stale error from one view lingering
+              // over the next -- see DataViewErrorBoundary's own comment for why this
+              // exists at all.
+              <DataViewErrorBoundary key={activeView}>
+                {activeView === "map" ? (
+                  <MapView
+                    target={target}
+                    targetProfile={targetProfile}
+                    members={activeSet?.schools ?? []}
+                    tickedUrns={tickedUrns}
+                    onToggleTick={toggleTick}
+                    profilesByUrn={profilesByUrn}
+                    filters={filters}
+                  />
+                ) : activeView === "dashboard" ? (
+                  <DashboardView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} filterSummary={filterSummary} />
+                ) : (
+                  <RankingsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} />
+                )}
+              </DataViewErrorBoundary>
+            )}
           </div>
-
-          {activeView !== "map" && (
-            <div className="mb-4 print:hidden">
-              <FilterBar filters={filters} onChange={setFilters} target={targetProfile} />
-            </div>
-          )}
-
-          {profilesError ? (
-            <div className="py-12 text-center text-sm text-neutral-500">
-              <p>{profilesError}</p>
-              <p className="mt-3">
-                <button type="button" className="underline" onClick={() => window.location.reload()}>
-                  Reload
-                </button>
-              </p>
-            </div>
-          ) : profilesLoading && profilesByUrn.size === 0 ? (
-            <p className="py-12 text-center text-sm text-neutral-500">Loading school data…</p>
-          ) : !targetProfile ? (
-            <p className="py-12 text-center text-sm text-neutral-500">No real data available for this school yet.</p>
-          ) : (
-            // key={activeView}: remounts the boundary (clearing any caught error) on
-            // every view switch, rather than a stale error from one view lingering
-            // over the next -- see DataViewErrorBoundary's own comment for why this
-            // exists at all.
-            <DataViewErrorBoundary key={activeView}>
-              {activeView === "map" ? (
-                <MapView
-                  target={target}
-                  targetProfile={targetProfile}
-                  members={activeSet?.schools ?? []}
-                  tickedUrns={tickedUrns}
-                  onToggleTick={toggleTick}
-                  profilesByUrn={profilesByUrn}
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                />
-              ) : activeView === "dashboard" ? (
-                <DashboardView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} filterSummary={filterSummary} />
-              ) : (
-                <RankingsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} />
-              )}
-            </DataViewErrorBoundary>
-          )}
         </div>
       </div>
     </div>

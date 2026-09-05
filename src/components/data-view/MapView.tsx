@@ -5,7 +5,18 @@
 // national scale); marker COLOUR is the trend (2019->present) in that same filtered
 // count. Two colour-by modes (Trends, default; Sector) -- no third "shape as icon"
 // mode, per the brief's explicit de-emphasis of shape. Two required legends. Target
-// gets a ring independent of fill colour. Filter bar floats over the map, collapsible.
+// gets a ring independent of fill colour.
+//
+// 2026-09-05 layout fix (real bug reported live): the phase/gender/boarding filter
+// bar used to float inside this component as its own small top-left overlay box,
+// independent of how Dashboard/Rankings positioned theirs -- its position visibly
+// shifted every time a member switched views, which read as "does the filter still
+// apply here?" when it's meant to be the opposite signal (one filter, applied
+// globally). Filtering now lives ONE place, in DataViewShell's own shared bar above
+// the sidebar+main split, identical for all three views -- this component only ever
+// RECEIVES `filters`, it doesn't render or collapse a copy of the control itself.
+// The colour-by mode selector and the two legends stay here (they're Map-specific,
+// not shared with Dashboard/Rankings, so DataViewShell has no business owning them).
 //
 // Deliberately a NEW component, not a variant of SchoolMap.tsx -- that component's
 // whole architecture is a live moveend-triggered viewport query against a national
@@ -15,7 +26,7 @@
 // attribution constants (duplicated as literals here rather than importing from
 // SchoolMap.tsx, which doesn't export them -- three lines, not worth a shared-export
 // refactor of a component this different), TAG_COLOURS for Sector mode, and
-// MapBoxCollapseToggle for the floating box chrome.
+// MapBoxCollapseToggle for the legend box's own collapse chrome.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -28,7 +39,6 @@ import { profileToFilterableData, profileToFilterableData2019 } from "@/lib/data
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
-import FilterBar from "./FilterBar";
 
 const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
   ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
@@ -56,7 +66,6 @@ export default function MapView({
   onToggleTick,
   profilesByUrn,
   filters,
-  onFiltersChange,
 }: {
   target: { urn: string; name: string; easting: number | null; northing: number | null };
   targetProfile: DataViewSchoolProfile;
@@ -65,7 +74,6 @@ export default function MapView({
   onToggleTick: (urn: string) => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
   filters: DataViewFilterState;
-  onFiltersChange: (f: DataViewFilterState) => void;
 }) {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -75,7 +83,6 @@ export default function MapView({
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [colourMode, setColourMode] = useState<ColourMode>("trend");
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const [legendCollapsed, setLegendCollapsed] = useState(false);
 
   useEffect(() => {
@@ -203,19 +210,6 @@ export default function MapView({
       `}</style>
       <div className="vd-dataview-map relative">
         <div ref={mapElRef} className="h-[480px] w-full rounded-lg sm:h-[560px]" />
-
-        {/* Floating, collapsible filter bar (brief §8/§4) -- Map is the one view with
-            the vertical-space constraint the brief calls out; Dashboard/Rankings show
-            FilterBar in-flow instead (DataViewShell). */}
-        <div className="absolute left-3 top-3 z-[1000] w-64">
-          <div className="rounded-md border border-neutral-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-            <div className={`flex items-center justify-between gap-2 ${filtersCollapsed ? "" : "mb-2"}`}>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Filters</h3>
-              <MapBoxCollapseToggle collapsed={filtersCollapsed} onToggle={() => setFiltersCollapsed((c) => !c)} label="Filters" />
-            </div>
-            {!filtersCollapsed && <FilterBar filters={filters} onChange={onFiltersChange} target={targetProfile} />}
-          </div>
-        </div>
 
         <div className="absolute right-3 top-3 z-[1000] w-56">
           <div className="rounded-md border border-neutral-200 bg-white p-3 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
