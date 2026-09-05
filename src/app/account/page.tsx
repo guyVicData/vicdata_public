@@ -154,6 +154,14 @@ function MembershipCard({
         {isAccountHolder && " · Account holder"}
       </p>
 
+      {membership.status === "approved" && (
+        <p className="mt-2 text-sm">
+          <Link href={`/schools/${account.school_urn}/data`} className="underline">
+            Open Data View
+          </Link>
+        </p>
+      )}
+
       {isPendingRecipient && (
         <div className="mt-3 rounded-md border border-neutral-300 p-3 text-sm dark:border-neutral-700">
           You&rsquo;ve been nominated as the new account holder.{" "}

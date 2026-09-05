@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import proj4 from "proj4";
 import type { Map as LeafletMap, LayerGroup, LatLng, Point } from "leaflet";
+import { bngToLatLng, latLngToBng } from "@/lib/bng";
 import type { SectorTag, PhaseTag, GenderTag } from "@/lib/typology";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
@@ -81,15 +81,12 @@ import MapBoxCollapseToggle from "./MapBoxCollapseToggle";
 // "all schools" fetch (debounced on moveend), and school easting/northing -> WGS84
 // via proj4's real Helmert+ellipsoid transform (not an approximated affine).
 
-// EPSG:27700 (OSGB36 / British National Grid), the standard published definition.
-const BNG_PROJ = "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +datum=OSGB36 +units=m +no_defs";
-const WGS84_PROJ = "+proj=longlat +datum=WGS84 +no_defs";
-
-function bngToLatLng(easting: number, northing: number): [number, number] {
-  const [lng, lat] = proj4(BNG_PROJ, WGS84_PROJ, [easting, northing]);
-  return [lat, lng];
-}
-
+// 2026-10-03, Member Data View build: bngToLatLng extracted to src/lib/bng.ts (a new
+// map needed the exact same conversion) -- reused here rather than kept as two copies.
+// boundsToBng stays local: it's specific to this component's own live-viewport
+// bounds-fetch mechanism, which the new map doesn't have (it renders a fixed,
+// pre-fetched school list, not a moveend-triggered query).
+//
 // Inverse of bngToLatLng, applied to a lat/lng viewport's four corners to get an
 // enclosing British National Grid box (see schools-in-bounds/route.ts's own comment
 // for why the query wants easting/northing, not lat/lng). Transverse Mercator warps a
@@ -108,7 +105,7 @@ function boundsToBng(map: LeafletMap): { minEasting: number; maxEasting: number;
   const eastings: number[] = [];
   const northings: number[] = [];
   for (const [lat, lng] of corners) {
-    const [e, n] = proj4(WGS84_PROJ, BNG_PROJ, [lng, lat]);
+    const [e, n] = latLngToBng(lat, lng);
     eastings.push(e);
     northings.push(n);
   }

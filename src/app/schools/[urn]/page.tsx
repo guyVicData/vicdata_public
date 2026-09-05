@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Newsreader, IBM_Plex_Sans } from "next/font/google";
 import { createServerAnonSupabaseClient } from "@/lib/supabase";
 import { lookupReferenceData } from "@/lib/vicdata-reference";
@@ -481,7 +482,7 @@ export default async function SchoolPage({
   // nominal typology.phase only when there's no real census data to derive effective
   // tags from at all.
   const effectiveTags = ageGenderCounts
-    ? effectivePhaseTags(school.statutory_low_age, school.statutory_high_age, ageGenderCounts)
+    ? effectivePhaseTags(school.statutory_low_age, school.statutory_high_age, school.establishment_type, ageGenderCounts)
     : typology.phase;
   const surroundingSummary = buildSurroundingSummary(
     school.current_name,
@@ -581,6 +582,7 @@ export default async function SchoolPage({
       urn,
       school.statutory_low_age,
       school.statutory_high_age,
+      school.establishment_type,
       ageGenderCounts,
       school.establishment_type_group,
       school.la_name,
@@ -728,6 +730,18 @@ export default async function SchoolPage({
           <div className="mt-3">
             <TypologyTags typology={typology} />
           </div>
+          {/* 2026-10-03, Member Data View build: plain, matter-of-fact link, no
+              upsell copy -- the membership onboarding spec's own "no-alarm paywall
+              prompt" discipline (state the fact, don't manufacture a hook) applies
+              here too, even though this isn't a parent-safety case specifically. The
+              route itself gates on real approved membership (DataViewShell) --
+              this link is just discoverability, not the access control. */}
+          <p className="mt-2 text-[13px] text-stone-500 dark:text-stone-400">
+            <Link href={`/schools/${urn}/data`} className="underline">
+              Data View
+            </Link>{" "}
+            — comparator sets, rankings and map, for verified school staff.
+          </p>
         </header>
 
         <DashboardGrid>

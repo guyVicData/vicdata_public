@@ -154,13 +154,14 @@ export async function computeTopic3SizeSentence(
   schoolUrn: string,
   schoolLowAge: number | null,
   schoolHighAge: number | null,
+  schoolEstablishmentType: string | null,
   ageGenderCounts: AgeGenderCounts,
   sectorGroup: string | null, // raw establishment_type_group, e.g. "Independent schools"
   laName: string | null,
   targetPeriod: number,
 ): Promise<string | null> {
   if (!sectorGroup || !laName) return null;
-  const effectiveTags = effectivePhaseTags(schoolLowAge, schoolHighAge, ageGenderCounts);
+  const effectiveTags = effectivePhaseTags(schoolLowAge, schoolHighAge, schoolEstablishmentType, ageGenderCounts);
   if (effectiveTags.length === 0) return null;
   const hasEarlyYears = hasEarlyYearsProvision(schoolLowAge);
   // 2026-10-01, item 4 fix (docs/reports/2026-09-30-nearest-schools-special-through-
@@ -177,16 +178,26 @@ export async function computeTopic3SizeSentence(
   const isThroughSchool = effectiveTags.length > 1;
 
   const supabase = createServerAnonSupabaseClient();
+  // establishment_type (2026-10-03, brief §2 item 3) now selected alongside the age
+  // fields so a PRU or nursery school sharing this LA/sector never gets silently
+  // averaged in as a "peer" -- effectivePhaseTags() below returns [] for one of these,
+  // which naturally excludes it from every per-phase loop's `peerTags.includes(tag)`
+  // check without needing a separate SQL-level exclusion here.
   const { data: peerRows } = await supabase
     .from("schools")
-    .select("urn, statutory_low_age, statutory_high_age")
+    .select("urn, statutory_low_age, statutory_high_age, establishment_type")
     .eq("la_name", laName)
     .eq("establishment_type_group", sectorGroup)
     .neq("status", "closed")
     .neq("urn", schoolUrn)
     .range(0, 1999); // an LA-sized pool, same defensive cap as la-sector-composition.ts
 
-  const peers = (peerRows ?? []) as { urn: string; statutory_low_age: number | null; statutory_high_age: number | null }[];
+  const peers = (peerRows ?? []) as {
+    urn: string;
+    statutory_low_age: number | null;
+    statutory_high_age: number | null;
+    establishment_type: string | null;
+  }[];
   if (peers.length === 0) return null;
 
   // Round 10 performance fix: reads the precomputed census_age_gender_cache table
@@ -259,7 +270,7 @@ export async function computeTopic3SizeSentence(
       for (const p of peers) {
         const counts = peerCounts.get(p.urn);
         if (!counts || p.statutory_low_age === null || p.statutory_high_age === null) continue;
-        const peerTags = effectivePhaseTags(p.statutory_low_age, p.statutory_high_age, counts);
+        const peerTags = effectivePhaseTags(p.statutory_low_age, p.statutory_high_age, p.establishment_type, counts);
         if (!(peerTags.includes("Junior") && peerTags.includes("Prep"))) continue;
         const v = reliableJuniorPrepHeadcount(p.statutory_low_age, p.statutory_high_age, counts);
         if (v === null || v.total === 0) continue;
@@ -290,7 +301,7 @@ export async function computeTopic3SizeSentence(
           for (const p of peers) {
             const counts = peerCounts.get(p.urn);
             if (!counts || p.statutory_low_age === null || p.statutory_high_age === null) continue;
-            const peerTags = effectivePhaseTags(p.statutory_low_age, p.statutory_high_age, counts);
+            const peerTags = effectivePhaseTags(p.statutory_low_age, p.statutory_high_age, p.establishment_type, counts);
             if (!peerTags.includes("Senior")) continue;
             const peerSplit = reliableSeniorHeadcounts(p.statutory_low_age, p.statutory_high_age, peerTags, counts);
             const v = label === "secondary phase" ? peerSplit.secondary : peerSplit.sixthForm;
@@ -322,7 +333,7 @@ export async function computeTopic3SizeSentence(
     for (const p of peers) {
       const counts = peerCounts.get(p.urn);
       if (!counts) continue;
-      const peerTags = effectivePhaseTags(p.statutory_low_age, p.statutory_high_age, counts);
+      const peerTags = effectivePhaseTags(p.statutory_low_age, p.statutory_high_age, p.establishment_type, counts);
       const v = reliablePhaseHeadcount(tag, p.statutory_low_age, p.statutory_high_age, counts, peerTags);
       if (v === null || v.total === 0) continue;
       sum += v.total;

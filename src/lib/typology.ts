@@ -60,10 +60,40 @@ const FE_ESTABLISHMENT_TYPES = new Set([
 // reassigned here.
 const SPECIAL_SCHOOLS_GROUP = "Special schools";
 
+// Member Data View build (2026-10-03), brief §2 item 3: nursery schools and PRUs both
+// sit under establishment_type_group "Local authority maintained schools" -- the SAME
+// group ordinary community primaries/secondaries use -- so neither sectorTag() (which
+// would otherwise call them "State") nor phaseTags() (which would otherwise nominal-tag
+// a PRU spanning ages 5-11 as "Junior", colliding with genuine primaries) had any
+// establishment_type-level signal to exclude them by, unlike FE/Special Schools above
+// which both have their own clean establishment_type/-group boundary. Exact GIAS
+// establishment_type strings confirmed against real data (2026-10-03 investigation,
+// see docs/vicdata_data_view_open_questions.md): 'Local authority nursery school' and
+// 'Pupil referral unit' are the only two values matching (case-insensitive) "nursery"
+// and "referral" respectively across the live schools table -- no near-miss variants to
+// also catch. PRUs are ALREADY excluded from nearest_schools' own RPC-level candidate
+// pool (a pre-existing `establishment_type not ilike '%referral%'` filter, confirmed
+// live) and nurseries are already excluded from phaseTags() by the highAge<=5 age cutoff
+// below (a prior-round fix) -- but neither of those covers every consumer: schools-in-
+// bounds/route.ts (the public map) has NO equivalent exclusion in its own bounding-box
+// query (a real, previously-flagged-but-undecided gap -- see that route's own comment)
+// and narrative-lookup.ts's LA-peer-average computation has no exclusion at all, so a
+// PRU or nursery in the same LA/sector as a genuine target school was silently being
+// averaged in as a "peer." Fixing both functions at the source, per the brief's own
+// "fix at source, not per-recipe" instinct (already the precedent set by the through-
+// school candidate-pool fix), closes all of these at once rather than patching each
+// consumer separately.
+const NURSERY_AND_PRU_ESTABLISHMENT_TYPES = new Set(["Local authority nursery school", "Pupil referral unit"]);
+
+function isNurseryOrPru(establishmentType: string | null): boolean {
+  return establishmentType !== null && NURSERY_AND_PRU_ESTABLISHMENT_TYPES.has(establishmentType);
+}
+
 export function sectorTag(
   establishmentTypeGroup: string | null,
   establishmentType: string | null,
 ): SectorTag | null {
+  if (isNurseryOrPru(establishmentType)) return null;
   if (establishmentType && FE_ESTABLISHMENT_TYPES.has(establishmentType)) return "FE";
   if (establishmentTypeGroup === "Independent schools") return "Independent";
   if (establishmentTypeGroup && STATE_GROUPS.has(establishmentTypeGroup)) return "State";
@@ -140,6 +170,34 @@ export const STATE_ESTABLISHMENT_GROUPS = [...STATE_GROUPS];
 const BOARDING_HIGH_THRESHOLD = 0.8;
 const BOARDING_LOW_THRESHOLD = 0.05;
 
+// Member Data View build (2026-10-03), brief §2 item 4: a boarders headcount
+// exceeding the whole-school roll is impossible, but was reported live for two named
+// schools (Downe House 104%, Benenden 111%) at the time the brief was written.
+// Investigated directly against the current live database (docs/vicdata_data_view_
+// open_questions.md has the full trail): current-period (2025) data for both schools,
+// and a full re-scan of the real ≈403-school independent-boarding candidate pool the
+// brief's §6.1 recipe uses, found ZERO schools with ratio > 100% today (Downe House
+// 85.8%, Benenden 88.3%) -- strongly suggesting a stale/since-corrected census
+// snapshot at the time of that observation, not a live, reproducible bug. Applied as a
+// cheap, permanent interim safeguard regardless (per the brief's own explicit
+// fallback instruction), since §6's List 3 boarding-quintile logic now depends on this
+// ratio being sane and a future data refresh could reintroduce the same class of
+// inconsistency for a different school. Shared by boardingTag() below and the Data
+// View's own boarding-quintile list generation -- one choke point, not two copies of
+// the same cap.
+export function boardingRatio(boarding: { boarders: number; total: number }): number {
+  if (boarding.total <= 0) return 0;
+  const ratio = boarding.boarders / boarding.total;
+  if (ratio > 1) {
+    console.warn(
+      `[typology] boarders (${boarding.boarders}) exceed total roll (${boarding.total}) -- ` +
+        `impossible ratio ${(ratio * 100).toFixed(0)}%, capping at 100%. Flag for manual review.`,
+    );
+    return 1;
+  }
+  return ratio;
+}
+
 export function boardingTag(
   boardersName: string | null,
   boarding: { boarders: number; day: number; total: number } | null,
@@ -147,7 +205,7 @@ export function boardingTag(
   if (!boardersName) return null;
   if (boardersName === "No boarders") return "Day";
   if (!boarding || boarding.total === 0) return "Boarding"; // GIAS flag only, no ratio to refine
-  const ratio = boarding.boarders / boarding.total;
+  const ratio = boardingRatio(boarding);
   if (ratio >= BOARDING_HIGH_THRESHOLD) return "Boarding";
   if (ratio <= BOARDING_LOW_THRESHOLD) return "Day";
   return "Boarding & day";
@@ -183,7 +241,12 @@ export function boardingTag(
 // that combination (phaseTagAgeRange, surrounding-summary.ts's phaseWord) were
 // checked and don't need special-casing for it, since Senior's own upper bound now
 // always just extends to the school's real highAge.
-export function phaseTags(lowAge: number | null, highAge: number | null): PhaseTag[] {
+export function phaseTags(lowAge: number | null, highAge: number | null, establishmentType: string | null): PhaseTag[] {
+  // Member Data View build (2026-10-03), brief §2 item 3 -- see sectorTag()'s own
+  // comment above (isNurseryOrPru) for the full reasoning. Checked before the age
+  // branches below: a PRU spanning ordinary primary ages (New River College Primary,
+  // 5-11) would otherwise nominal-tag identically to a genuine primary.
+  if (isNurseryOrPru(establishmentType)) return [];
   if (lowAge === null || highAge === null) return [];
 
   if (lowAge <= 10) {
@@ -262,9 +325,10 @@ export function genderTag(giasGender: string | null): GenderTag | null {
 export function effectivePhaseTags(
   lowAge: number | null,
   highAge: number | null,
+  establishmentType: string | null,
   ageGenderCounts: Map<number, { male: number; female: number }>,
 ): PhaseTag[] {
-  const tags = phaseTags(lowAge, highAge);
+  const tags = phaseTags(lowAge, highAge, establishmentType);
   if (tags.length <= 1 || lowAge === null || highAge === null) return tags;
   const filtered = tags.filter((tag) => {
     const [lo, hi] = phaseTagAgeRange(tag, lowAge, highAge);
@@ -295,7 +359,7 @@ export function computeTypology(school: {
   return {
     sector: sectorTag(school.establishment_type_group, school.establishment_type),
     boarding: boardingTag(school.boarders_name, boarding),
-    phase: phaseTags(school.statutory_low_age, school.statutory_high_age),
+    phase: phaseTags(school.statutory_low_age, school.statutory_high_age, school.establishment_type),
     gender: genderTag(school.gender),
   };
 }

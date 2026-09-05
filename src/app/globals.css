@@ -24,3 +24,22 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Member Data View PDF export (build brief v1, §9) -- window.print() + this
+   stylesheet, no PDF-generation dependency, nothing rendered server-side. The site
+   nav means nothing on a printed page; everything else that should hide (sidebar
+   controls, the export button itself, view-switcher buttons) uses Tailwind's own
+   generated `print:hidden` utility per-element, not a second copy of the same rule
+   here. The print-only summary line (DataViewShell's own PrintSummary, `hidden
+   print:block`) is the one thing this ADDS rather than hides -- carrying forward the
+   "show your assumptions" lesson: an exported view must say which comparator set and
+   filters produced the numbers, not just show the numbers. */
+@media print {
+  nav {
+    display: none !important;
+  }
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+}

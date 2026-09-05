@@ -30,7 +30,7 @@ import {
   type AgeGenderCounts,
 } from "./roll-data";
 import { classifyShape, type ShapeLabel, type ShapeMetrics, type DominantTransition } from "./shape-classifier";
-import { genderTag, phaseTags, type GenderTag } from "./typology";
+import { genderTag, phaseTags, effectivePhaseTags, type GenderTag } from "./typology";
 
 const TARGET_COUNT = 10; // reduced from 20, chart palette doc's "Public View rebuild"
 const CANDIDATE_BUFFER = 40; // skip-and-backfill past both no-roll-data AND gender-mismatched candidates
@@ -57,12 +57,35 @@ export type MatchedSchool = {
 // skip-and-backfill -> first TARGET_COUNT. Both the free-tier aggregate and the
 // member-tier named list are built from this same list, so they can never disagree
 // about which schools are "the 10."
-export async function findSurroundingSchools(urn: string, targetPeriod: number): Promise<MatchedSchool[]> {
+// Member Data View build (2026-10-03), brief §6: the default-comparator-list
+// generation (default-comparator-lists.ts) reuses this same matching pipeline
+// end-to-end ("Every school gets defaults built on findSurroundingSchools()"), but
+// with a genuinely different gender rule -- "coed accepts any gender; single-sex
+// accepts its own sex plus coed, never the opposite single-sex" -- not this
+// function's own free-tier EXACT match (Boys<->Boys, Girls<->Girls, Co-ed<->Co-ed
+// only). New optional parameter, default "exact", so every existing caller (the free
+// public surrounding-schools stat/list) is completely unaffected unless it opts in --
+// the same "extend via an optional, default-preserving parameter" pattern
+// nearest_schools' own p_relax_sector already established.
+export type GenderMatchMode = "exact" | "relaxed";
+
+function genderMatches(target: GenderTag, candidate: GenderTag | null, mode: GenderMatchMode): boolean {
+  if (mode === "exact") return candidate === target;
+  if (target === "Co-ed") return true;
+  return candidate === target || candidate === "Co-ed";
+}
+
+export async function findSurroundingSchools(
+  urn: string,
+  targetPeriod: number,
+  options: { genderMode?: GenderMatchMode } = {},
+): Promise<MatchedSchool[]> {
+  const genderMode = options.genderMode ?? "exact";
   const supabase = createServerAnonSupabaseClient();
 
   const { data: targetRows } = await supabase
     .from("schools")
-    .select("gender, statutory_low_age, statutory_high_age, establishment_type_group")
+    .select("gender, statutory_low_age, statutory_high_age, establishment_type_group, establishment_type")
     .eq("urn", urn)
     .maybeSingle();
   const target = targetRows as
@@ -71,10 +94,36 @@ export async function findSurroundingSchools(urn: string, targetPeriod: number):
         statutory_low_age: number | null;
         statutory_high_age: number | null;
         establishment_type_group: string | null;
+        establishment_type: string | null;
       }
     | null;
   const targetGender = genderTag(target?.gender ?? null);
-  const targetPhase = phaseTags(target?.statutory_low_age ?? null, target?.statutory_high_age ?? null);
+
+  // Member Data View build (2026-10-03), brief §2 item 1: the TARGET's own phase must
+  // be enrollment-aware (effectivePhaseTags), not the nominal phaseTags() the rest of
+  // this module still deliberately uses for candidates (see the phase-tag-intersection
+  // filter's own comment below for why that half stays raw). Woldingham (statutory low
+  // age 10, but zero real pupils below 11) was nominal-tagging as ["Junior","Senior"]
+  // here, which incorrectly required every candidate to ALSO carry 2+ phase tags (the
+  // through-school symmetry check just below) -- wrongly excluding genuine single-tag
+  // Senior peers from what should read as an ordinary Senior school's own nearest-10.
+  // Needs the target's own real census facts to do this, which this module didn't
+  // otherwise fetch for itself (only ever for candidates, later in this function) --
+  // one small extra lookup, scoped to a single entity, not the expensive batched
+  // candidate fetch below.
+  const targetFacts = await lookupReferenceData({
+    sourceId: "dfe_school_census",
+    entityIds: [urn],
+    periodMin: targetPeriod,
+    periodMax: targetPeriod,
+  });
+  const targetAgeGenderCounts = singleAgeGenderCountsForPeriod(targetFacts, targetPeriod);
+  const targetPhase = effectivePhaseTags(
+    target?.statutory_low_age ?? null,
+    target?.statutory_high_age ?? null,
+    target?.establishment_type ?? null,
+    targetAgeGenderCounts,
+  );
 
   // 2026-09-30: state through-schools (rare -- Steiner Academy Hereford is the real
   // example) are stuck matching only other state schools under nearest_schools' own
@@ -102,6 +151,7 @@ export async function findSurroundingSchools(urn: string, targetPeriod: number):
     town: string | null;
     postcode: string | null;
     establishment_type_group: string | null;
+    establishment_type: string | null;
     statutory_low_age: number | null;
     statutory_high_age: number | null;
   };
@@ -122,11 +172,19 @@ export async function findSurroundingSchools(urn: string, targetPeriod: number):
   // A genuine consequence: the peer pool for through-schools can legitimately shrink
   // below TARGET_COUNT where few through-school peers exist nearby -- an honest
   // reflection of a thin pool, not a bug to work around.
+  //
+  // Confirmed still correct after the 2026-10-03 target-side effectivePhaseTags fix
+  // above (brief §2 items 1+2, carried forward as a decision, not re-litigated): a
+  // through-school target like Stockport Grammar still resolves to real 2+ effective
+  // tags (it genuinely has junior-age pupils), so this symmetry check still applies to
+  // it correctly; a nominal-only through-school like Woldingham now resolves to a
+  // single effective tag (Senior), so this check no longer wrongly narrows its pool to
+  // through-school-only candidates -- the two fixes compose correctly together.
   const phaseFiltered =
     targetPhase.length === 0
       ? candidateList
       : candidateList.filter((c) => {
-          const candidatePhase = phaseTags(c.statutory_low_age, c.statutory_high_age);
+          const candidatePhase = phaseTags(c.statutory_low_age, c.statutory_high_age, c.establishment_type);
           const sharesTag = candidatePhase.some((p) => targetPhase.includes(p));
           if (!sharesTag) return false;
           if (targetPhase.length > 1) return candidatePhase.length > 1;
@@ -159,7 +217,7 @@ export async function findSurroundingSchools(urn: string, targetPeriod: number):
   }
 
   const genderFiltered = targetGender
-    ? phaseFiltered.filter((c) => genderByUrn.get(c.urn) === targetGender)
+    ? phaseFiltered.filter((c) => genderMatches(targetGender, genderByUrn.get(c.urn) ?? null, genderMode))
     : phaseFiltered;
 
   if (genderFiltered.length === 0) return [];

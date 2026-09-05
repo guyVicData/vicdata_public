@@ -29,7 +29,7 @@
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupReferenceData } from "./vicdata-reference";
-import { FE_PARTICIPATION_ESTABLISHMENT_TYPES } from "./typology";
+import { FE_PARTICIPATION_ESTABLISHMENT_TYPES, sectorTag, phaseTags } from "./typology";
 
 const TARGET_COUNT = 10;
 const UNDER_19_MALE_BREAKDOWN = "education_and_training_under_19_male";
@@ -111,4 +111,121 @@ export async function findFeCollegeGenderPeers(urn: string): Promise<FeCollegeGe
 
   if (found === 0) return { found: 0, maxDistanceKm: null, peer: null };
   return { found, maxDistanceKm, peer: { girls: girlsSum, boys: boysSum } };
+}
+
+// Member Data View build (2026-10-03), brief §6: FE college List 1 ("FE only,
+// nearest 10, crosses LA") -- the named-list counterpart to
+// findFeCollegeGenderPeers' own aggregated version above. Deliberately NOT built by
+// generalising that function to optionally return names -- it already does real work
+// (ILR gender-peer aggregation) this list doesn't need, and this list needs to keep
+// candidates even when they have no real ILR gender split (a named comparator-set
+// member is still worth showing on the tick-list without one; the aggregated peer
+// figure is a different, stricter use). Same candidate pool/distance mechanism,
+// genuinely duplicated rather than shared, per this project's own "three similar
+// lines beats a premature abstraction" discipline -- the two functions' filtering
+// requirements are real, not the same, from here on.
+export type NamedFeCollege = { urn: string; name: string; distanceKm: number };
+
+export async function findNearestFeColleges(urn: string, targetCount = 10): Promise<NamedFeCollege[]> {
+  const supabase = createServerAnonSupabaseClient();
+
+  const { data: targetRow } = await supabase
+    .from("schools")
+    .select("easting, northing")
+    .eq("urn", urn)
+    .maybeSingle();
+  const target = targetRow as { easting: number | null; northing: number | null } | null;
+  if (!target?.easting || !target?.northing) return [];
+
+  const { data: candidateRows } = await supabase
+    .from("schools")
+    .select("urn, current_name, easting, northing")
+    .in("establishment_type", FE_PARTICIPATION_ESTABLISHMENT_TYPES)
+    .neq("status", "closed")
+    .neq("urn", urn)
+    .not("easting", "is", null)
+    .not("northing", "is", null);
+  const candidates = (candidateRows ?? []) as { urn: string; current_name: string; easting: number; northing: number }[];
+  if (candidates.length === 0) return [];
+
+  return candidates
+    .map((c) => ({
+      urn: c.urn,
+      name: c.current_name,
+      distanceKm: Math.sqrt((c.easting - target.easting!) ** 2 + (c.northing - target.northing!) ** 2) / 1000,
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, targetCount);
+}
+
+// Member Data View build (2026-10-03), brief §6: FE List 2 ("all 16+ provision in the
+// borough, not all sectors") -- a school/college counts as real 16+ provision if
+// it's an FE-sector institution, OR a mainstream Senior/through school with a real
+// sixth form (hasRealSixthForm's own reasoning: statutory high age 17-19 AND real
+// current roll -- reused via the same age-range test rather than re-derived), OR a
+// standalone Post-16 institution (typology.ts's own "Post 16" phase tag). No phase/
+// gender matching -- unlike every other List 2 row, this one's whole point is
+// crossing sector boundaries within the LA, per the brief's own explicit carve-out.
+export type Local16PlusProvision = { urn: string; name: string; sector: string; distanceKm: number };
+
+export async function findLocal16PlusProvision(
+  targetUrn: string,
+  laName: string,
+): Promise<Local16PlusProvision[]> {
+  const supabase = createServerAnonSupabaseClient();
+
+  const { data: targetRow } = await supabase
+    .from("schools")
+    .select("easting, northing")
+    .eq("urn", targetUrn)
+    .maybeSingle();
+  const target = targetRow as { easting: number | null; northing: number | null } | null;
+
+  const { data: rows } = await supabase
+    .from("schools")
+    .select(
+      "urn, current_name, easting, northing, establishment_type_group, establishment_type, statutory_low_age, statutory_high_age",
+    )
+    .eq("la_name", laName)
+    .neq("status", "closed")
+    .neq("urn", targetUrn);
+  type Row = {
+    urn: string;
+    current_name: string;
+    easting: number | null;
+    northing: number | null;
+    establishment_type_group: string | null;
+    establishment_type: string | null;
+    statutory_low_age: number | null;
+    statutory_high_age: number | null;
+  };
+  const candidates = (rows ?? []) as Row[];
+  if (candidates.length === 0) return [];
+
+  const results: Local16PlusProvision[] = [];
+  for (const c of candidates) {
+    const sector = sectorTag(c.establishment_type_group, c.establishment_type);
+    // Real 16+ provision, three ways: a genuine FE-sector institution; a standalone
+    // Post-16 phase tag; or an ordinary Senior/through school whose own stated
+    // leaving age (17-19) means it genuinely runs a sixth form -- age alone, not
+    // gated on real roll data existing, since this is a membership question ("does
+    // this institution offer 16+ at all"), not a sizing one.
+    const phase = phaseTags(c.statutory_low_age, c.statutory_high_age, c.establishment_type);
+    const isFe = sector === "FE";
+    const isPost16 = phase.includes("Post 16");
+    const hasSixthForm =
+      phase.includes("Senior") &&
+      c.statutory_high_age !== null &&
+      c.statutory_high_age >= 17 &&
+      c.statutory_high_age <= 19;
+    if (!isFe && !isPost16 && !hasSixthForm) continue;
+    if (c.easting === null || c.northing === null || target?.easting == null || target?.northing == null) continue;
+    results.push({
+      urn: c.urn,
+      name: c.current_name,
+      sector: isFe ? "FE" : sector ?? "State",
+      distanceKm: Math.sqrt((c.easting - target.easting) ** 2 + (c.northing - target.northing) ** 2) / 1000,
+    });
+  }
+  return results.sort((a, b) => a.distanceKm - b.distanceKm);
 }

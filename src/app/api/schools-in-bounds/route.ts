@@ -427,7 +427,7 @@ export async function GET(request: NextRequest) {
         rollSourceByUrn.set(r.urn, "census");
       }
 
-      const phase = phaseTags(r.statutory_low_age, r.statutory_high_age);
+      const phase = phaseTags(r.statutory_low_age, r.statutory_high_age, r.establishment_type);
       if (phase.length > 1 && r.statutory_low_age !== null && r.statutory_high_age !== null) {
         const byPhase: Partial<Record<PhaseTag, number>> = {};
         for (const tag of phase) {
@@ -538,7 +538,7 @@ export async function GET(request: NextRequest) {
     // phase TAG stays plain "Senior" (phaseTags() narrowed 2026-08-28). Not used for
     // any filtering/matching server-side -- purely passed through for the client.
     statutoryHighAge: r.statutory_high_age,
-    phase: phaseTags(r.statutory_low_age, r.statutory_high_age),
+    phase: phaseTags(r.statutory_low_age, r.statutory_high_age, r.establishment_type),
     gender: genderTag(r.gender),
     totalRoll: rollByUrn.get(r.urn) ?? null,
     // 2026-08-28: null for every pre-existing row (unchanged, always census -- the
