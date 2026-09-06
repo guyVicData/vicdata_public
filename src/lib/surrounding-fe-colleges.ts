@@ -29,7 +29,7 @@
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupReferenceData } from "./vicdata-reference";
-import { FE_PARTICIPATION_ESTABLISHMENT_TYPES, sectorTag, phaseTags } from "./typology";
+import { FE_PARTICIPATION_ESTABLISHMENT_TYPES, CONSORTIUM_SIXTH_FORM_CENTRE_TYPE, sectorTag, phaseTags } from "./typology";
 import { AGE_SEGMENT_BREAKDOWNS, buildIlrParticipationSnapshot } from "./ilr-participation-data";
 
 const TARGET_COUNT = 10;
@@ -79,7 +79,15 @@ export async function findFeCollegeGenderPeers(urn: string): Promise<FeCollegeGe
     .neq("urn", urn)
     .not("easting", "is", null)
     .not("northing", "is", null);
-  const candidates = (candidateRows ?? []) as { urn: string; easting: number; northing: number }[];
+  // 2026-09-08: some FE-type rows carry the literal sentinel (0, 0) rather than a
+  // real null for "no usable coordinate" (LaSWAP Sixth Form, confirmed live) --
+  // `.not(..., "is", null)` above doesn't catch this, and it would otherwise compute
+  // a bogus real-looking distance from the British National Grid's own origin point
+  // instead of being excluded for lacking a usable location (findLocal16PlusProvision
+  // below has the full writeup of this same bug class).
+  const candidates = ((candidateRows ?? []) as { urn: string; easting: number; northing: number }[]).filter(
+    (c) => !(c.easting === 0 && c.northing === 0),
+  );
   if (candidates.length === 0) return { found: 0, maxDistanceKm: null, peer: null };
 
   const byDistance = candidates
@@ -131,10 +139,15 @@ export type NamedFeCollege = { urn: string; name: string; distanceKm: number };
 // one unambiguous rule Guy stated was "exclude any college with no U19 students at
 // all (e.g. City Lit) from lists meant to be U19/school-comparable" -- this list IS
 // that list (its whole point is a same-basis size comparison, and City-Lit-shaped
-// adult-only colleges have nothing real to compare on that basis). Applied here, not
-// to findLocal16PlusProvision below -- that list answers a MEMBERSHIP question ("does
-// this LA have 16+ provision at all"), a genuinely different question a real adult-
-// only college still honestly answers "yes" to, per that function's own comment.
+// adult-only colleges have nothing real to compare on that basis). 2026-09-08
+// correction: this comment originally said the rule was deliberately NOT applied to
+// findLocal16PlusProvision below, on the reasoning that that list answers a
+// membership question ("does this LA have 16+ provision at all") rather than a
+// sizing one. That reasoning stopped holding the moment findLocal16PlusProvision
+// started feeding a real member-facing roll-comparator list (default-comparator-
+// lists.ts's local_16plus/fe_local_16plus recipes) -- City Lit and Mary Ward Centre
+// showing up there as real bugs is exactly this gap. The same exclusion is now
+// applied in both functions -- see findLocal16PlusProvision's own comment below.
 // Fetches the small national population's real under-19 totals in one batched call
 // (confirmed ~372 real candidates nationally, this module's own header comment) and
 // drops anything without a genuine non-zero figure BEFORE distance-ranking, so a
@@ -159,7 +172,11 @@ export async function findNearestFeColleges(urn: string, targetCount = 10): Prom
     .neq("urn", urn)
     .not("easting", "is", null)
     .not("northing", "is", null);
-  const candidates = (candidateRows ?? []) as { urn: string; current_name: string; easting: number; northing: number }[];
+  // 2026-09-08: same (0, 0)-sentinel guard as findFeCollegeGenderPeers above --
+  // see findLocal16PlusProvision below for the full writeup of this bug class.
+  const candidates = ((candidateRows ?? []) as { urn: string; current_name: string; easting: number; northing: number }[]).filter(
+    (c) => !(c.easting === 0 && c.northing === 0),
+  );
   if (candidates.length === 0) return [];
 
   const under19Facts = await lookupReferenceData({
@@ -206,6 +223,11 @@ export async function findLocal16PlusProvision(
     .eq("urn", targetUrn)
     .maybeSingle();
   const target = targetRow as { easting: number | null; northing: number | null } | null;
+  // No usable location for the target itself -- nothing downstream can be honestly
+  // distanced from it, so there's no real list to return.
+  if (!target || target.easting === null || target.northing === null || (target.easting === 0 && target.northing === 0)) {
+    return [];
+  }
 
   const { data: rows } = await supabase
     .from("schools")
@@ -228,8 +250,76 @@ export async function findLocal16PlusProvision(
   const candidates = (rows ?? []) as Row[];
   if (candidates.length === 0) return [];
 
+  // 2026-09-08, real bug fix (Camden Post-16 list pulling in HE institutions/an
+  // adult-education centre/a consortium sixth-form/NHS Choices College, plus two
+  // absurd distances): `sector === "FE"` (sectorTag(), backed by the BROAD
+  // FE_ESTABLISHMENT_TYPES/FE_INSTITUTION_TYPES set) wrongly counted Higher
+  // education institutions as FE -- confirmed live, Royal Veterinary College, SOAS,
+  // Birkbeck, LSHTM and University of London all carry the real
+  // `establishment_type: "Higher education institutions"`, one of the six values
+  // that broad set exists to catch for the PUBLIC MAP's own "one bucket for every
+  // non-mainstream type" job (typology.ts's own header comment on FE_INSTITUTION_
+  // TYPES) -- not a fit for a same-basis school/college roll-comparator list. The
+  // narrow, correct basis for "is this a real FE college" is
+  // FE_PARTICIPATION_ESTABLISHMENT_TYPES, the same one this file's own sibling
+  // findNearestFeColleges already uses -- further excluding
+  // CONSORTIUM_SIXTH_FORM_CENTRE_TYPE ("Sixth form centres"), since confirmed live 0
+  // of 14 open institutions of that type have any real roll/participation data
+  // under their own URN (typology.ts's own comment) -- exactly why LaSWAP Sixth
+  // Form was appearing.
+  const isFeType = (t: string | null): boolean =>
+    t !== null && FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(t) && t !== CONSORTIUM_SIXTH_FORM_CENTRE_TYPE;
+
+  // 2026-09-08, real bug fix: the "exclude any college with no real U19 students at
+  // all" rule (findNearestFeColleges' own comment above, City Lit its own named
+  // example) is now applied here too -- see the comment on that earlier exclusion
+  // note for why this list's own real-world job changed since it was first written.
+  // Only checked for FE-typed candidates (mainstream Senior/Post-16 schools reaching
+  // this list via a real sixth form already have real census roll data, no ILR gate
+  // needed) -- batches the small real candidate set's under-19 totals in one call,
+  // same precedent as findNearestFeColleges.
+  const feCandidateUrns = candidates.filter((c) => isFeType(c.establishment_type)).map((c) => c.urn);
+  const under19Facts = feCandidateUrns.length
+    ? await lookupReferenceData({
+        sourceId: "dfe_fe_participation",
+        entityIds: feCandidateUrns,
+        breakdowns: AGE_SEGMENT_BREAKDOWNS.under_19,
+      })
+    : [];
+  const hasRealU19 = new Set(
+    feCandidateUrns.filter(
+      (u) => buildIlrParticipationSnapshot(under19Facts.filter((f) => f.entity_id === u), "under_19") !== null,
+    ),
+  );
+
+  // 2026-09-08, real bug fix: LaSWAP Sixth Form has the literal sentinel (0, 0) for
+  // easting/northing, not a real null -- confirmed live. The old `=== null` check
+  // let it through and computed a bogus distance from the British National Grid's
+  // own origin point, reproducing the reported 560.7km artifact exactly. (Excluded
+  // from this list anyway by the consortium check above, but a real, general gap
+  // worth closing on its own -- any other FE-type record with the same (0,0)
+  // sentinel would have hit the identical bug.)
+  //
+  // NHS Choices College is a different, narrower problem: a real, non-null,
+  // non-zero easting/northing that's simply wrong upstream in GIAS (~400km from
+  // London, matching the reported 396.7km artifact), despite the row's own
+  // `la_name` genuinely being "Camden" -- neither the type filter nor the U19 filter
+  // nor a coordinate-null check catches a coordinate that's merely wrong, not
+  // missing. Since every candidate here already shares the target's own la_name (the
+  // query above filters on it), a real match can never legitimately be more than a
+  // few tens of km away -- London boroughs are a few km across, and even the
+  // largest, most rural English LAs top out well under this. Anything past this cap
+  // is a same-LA-tagged data error, not a genuine local result, and is dropped
+  // rather than shown as a "local" comparator hundreds of km away. Flags this as a
+  // real, broader pattern worth knowing about (not just these two rows) in
+  // docs/vicdata_data_view_open_questions.md.
+  const MAX_PLAUSIBLE_SAME_LA_DISTANCE_KM = 50;
+
   const results: Local16PlusProvision[] = [];
   for (const c of candidates) {
+    const isFe = isFeType(c.establishment_type);
+    if (isFe && !hasRealU19.has(c.urn)) continue;
+
     const sector = sectorTag(c.establishment_type_group, c.establishment_type);
     // Real 16+ provision, three ways: a genuine FE-sector institution; a standalone
     // Post-16 phase tag; or an ordinary Senior/through school whose own stated
@@ -237,7 +327,6 @@ export async function findLocal16PlusProvision(
     // gated on real roll data existing, since this is a membership question ("does
     // this institution offer 16+ at all"), not a sizing one.
     const phase = phaseTags(c.statutory_low_age, c.statutory_high_age, c.establishment_type);
-    const isFe = sector === "FE";
     const isPost16 = phase.includes("Post 16");
     const hasSixthForm =
       phase.includes("Senior") &&
@@ -245,12 +334,16 @@ export async function findLocal16PlusProvision(
       c.statutory_high_age >= 17 &&
       c.statutory_high_age <= 19;
     if (!isFe && !isPost16 && !hasSixthForm) continue;
-    if (c.easting === null || c.northing === null || target?.easting == null || target?.northing == null) continue;
+
+    if (c.easting === null || c.northing === null || (c.easting === 0 && c.northing === 0)) continue;
+    const distanceKm = Math.sqrt((c.easting - target.easting) ** 2 + (c.northing - target.northing) ** 2) / 1000;
+    if (distanceKm > MAX_PLAUSIBLE_SAME_LA_DISTANCE_KM) continue;
+
     results.push({
       urn: c.urn,
       name: c.current_name,
       sector: isFe ? "FE" : sector ?? "State",
-      distanceKm: Math.sqrt((c.easting - target.easting) ** 2 + (c.northing - target.northing) ** 2) / 1000,
+      distanceKm,
     });
   }
   return results.sort((a, b) => a.distanceKm - b.distanceKm);
