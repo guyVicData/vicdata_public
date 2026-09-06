@@ -75,6 +75,11 @@ export default function DataViewShell({ urn }: { urn: string }) {
     schoolTypeCategory: SchoolTypeCategory | null;
     list1: SetOption | null;
     list2: SetOption | null;
+    // 2026-09-08, bug fix: a real candidate list letting a mainstream Post-16
+    // target's own comparator picker include FE colleges (default-comparator-
+    // lists.ts's own comment explains why this never existed for a mainstream
+    // target before, only an FE-college one).
+    local16Plus: SetOption | null;
   } | null>(null);
   const [savedSets, setSavedSets] = useState<SetOption[]>([]);
   const [boardingQuintileOption, setBoardingQuintileOption] = useState<SetOption | null>(null);
@@ -199,10 +204,14 @@ export default function DataViewShell({ urn }: { urn: string }) {
           schoolTypeCategory: SchoolTypeCategory | null;
           list1: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
           list2: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
+          local16Plus: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
         };
         const list1: SetOption | null = body.list1 ? { kind: "recipe", key: body.list1.key, label: body.list1.label, schools: body.list1.schools, note: body.list1.note } : null;
         const list2: SetOption | null = body.list2 ? { kind: "recipe", key: body.list2.key, label: body.list2.label, schools: body.list2.schools, note: body.list2.note } : null;
-        setRecipeLists({ schoolTypeCategory: body.schoolTypeCategory, list1, list2 });
+        const local16Plus: SetOption | null = body.local16Plus
+          ? { kind: "recipe", key: body.local16Plus.key, label: body.local16Plus.label, schools: body.local16Plus.schools, note: body.local16Plus.note }
+          : null;
+        setRecipeLists({ schoolTypeCategory: body.schoolTypeCategory, list1, list2, local16Plus });
 
         if (
           body.schoolTypeCategory === "independent_boarding_senior" ||
@@ -529,6 +538,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
   const setOptions: SetOption[] = [
     ...(recipeLists?.list1 ? [recipeLists.list1] : []),
     ...(recipeLists?.list2 ? [recipeLists.list2] : []),
+    ...(recipeLists?.local16Plus ? [recipeLists.local16Plus] : []),
     ...(boardingQuintileOption ? [boardingQuintileOption] : []),
     ...savedSets,
   ];

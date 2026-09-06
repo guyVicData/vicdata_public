@@ -36,6 +36,22 @@ export type DefaultComparatorLists = {
   list1: DefaultList | null;
   list2: DefaultList | null;
   list3: DefaultList | null;
+  // 2026-09-08, bug fix: "FE colleges aren't appearing anywhere when starting
+  // from a mainstream school and looking at Post-16." Root cause, confirmed by
+  // reading this module directly rather than guessing: findLocal16PlusProvision
+  // (surrounding-fe-colleges.ts) already does exactly the right real-data query
+  // (FE colleges + genuine sixth-form schools in the target's own LA) and was
+  // already wired up -- but only ever CALLED for an `fe_college` target (as that
+  // branch's own list2, "16+ provision in {LA}"). A mainstream target with a real
+  // sixth form (Acland Burghley, 11-18) had no candidate list offering FE
+  // colleges AT ALL -- the Post-16 summary sentence's own "compared with schools
+  // and FE colleges in..." could only ever become true if a member manually
+  // searched for and added an FE college themselves, never from a real recipe.
+  // Added here as its own field (not folded into list1/list2, which mainstream
+  // targets already use for their existing Nearest-10/In-LA recipes) so it's
+  // purely additive -- null for an fe_college target (that branch's own list2
+  // already covers this) and for any target with no real Post-16 provision.
+  local16Plus: DefaultList | null;
 };
 
 type TargetRow = {
@@ -417,7 +433,7 @@ export async function buildBoardingQuintileList(urn: string): Promise<DefaultLis
 
 export async function buildDefaultComparatorLists(urn: string): Promise<DefaultComparatorLists> {
   const resolved = await resolveSchoolTypeCategory(urn);
-  if (!resolved) return { schoolTypeCategory: null, list1: null, list2: null, list3: null };
+  if (!resolved) return { schoolTypeCategory: null, list1: null, list2: null, list3: null, local16Plus: null };
   const { schoolTypeCategory, target, targetPhase } = resolved;
 
   if (schoolTypeCategory === "fe_college") {
@@ -437,14 +453,21 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
           schools: local16Plus.map((c) => ({ urn: c.urn, name: c.name, distanceKm: c.distanceKm })),
         }
       : null;
-    return { schoolTypeCategory: "fe_college", list1, list2, list3: null };
+    return { schoolTypeCategory: "fe_college", list1, list2, list3: null, local16Plus: null };
   }
 
   const targetGender = genderTag(target.gender);
+  // Bug fix (2026-09-08): same real Post-16 relevance test relevantAgeBandsFor()
+  // (data-view-filters.ts) already uses for the filter pill itself -- a mainstream
+  // school's own real statutoryHighAge reaching 16, not the categorical phase tag
+  // (which, per typology.ts's own phaseTags() history, never separately says
+  // "Post 16" for an ordinary through-school).
+  const hasPost16Provision = target.statutory_high_age !== null && target.statutory_high_age >= 16;
 
-  const [matched, list2] = await Promise.all([
+  const [matched, list2, local16PlusCandidates] = await Promise.all([
     findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed" }),
     target.la_name ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
+    target.la_name && hasPost16Provision ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
   ]);
   const list1: DefaultList = {
     key: "nearest_10",
@@ -454,6 +477,14 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
         ? matched.map((m) => toEntry(m, { easting: target.easting!, northing: target.northing! }))
         : matched.map((m) => ({ urn: m.urn, name: m.currentName, distanceKm: null })),
   };
+  const local16Plus: DefaultList | null =
+    target.la_name && hasPost16Provision
+      ? {
+          key: "local_16plus",
+          label: `Schools and FE colleges, 16+, in ${target.la_name}`,
+          schools: local16PlusCandidates.map((c) => ({ urn: c.urn, name: c.name, distanceKm: c.distanceKm })),
+        }
+      : null;
 
   // List 3 (boarding quintile) is deliberately NOT computed here -- see
   // buildBoardingQuintileList's own comment above (~41s even after parallelising the
@@ -462,5 +493,5 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
   // (independent_boarding_senior/independent_boarding_prep/state_boarding); the
   // sidebar calls buildBoardingQuintileList itself, lazily, only once a member
   // actually selects it.
-  return { schoolTypeCategory, list1, list2, list3: null };
+  return { schoolTypeCategory, list1, list2, list3: null, local16Plus };
 }

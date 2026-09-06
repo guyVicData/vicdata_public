@@ -69,6 +69,15 @@ export default function ComparatorSidebar({
 }) {
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [addedUrns, setAddedUrns] = useState<{ urn: string; name: string }[]>([]);
+  // 2026-09-08, bug fix: last round's "Hide/Show compared schools" was a real
+  // misreading of the request -- it hides schools' DATA from Map/Dashboard/
+  // Rankings (comparedHidden, still below), when what was actually meant was
+  // collapsing this SCHOOLS LIST specifically, since a long one was pushing the
+  // sidebar's own height too tall and (since the sidebar and the map share one
+  // row) dragging the map's height down with it. Purely a local display/layout
+  // concern, same footing as `overflowOpen` above -- no reason for DataViewShell
+  // to know about it.
+  const [schoolsListCollapsed, setSchoolsListCollapsed] = useState(false);
 
   const [laInfo, setLaInfo] = useState<AdjacentLasResponse | null>(null);
   const [checkedLas, setCheckedLas] = useState<Set<string>>(new Set());
@@ -287,49 +296,75 @@ export default function ComparatorSidebar({
       </div>
       )}
 
-      {hasDistance && <p className="mb-2 text-xs text-neutral-400">Sorted by distance (km)</p>}
-
-      <p className="mb-2 text-xs text-neutral-500">
-        {targetName} <span className="text-neutral-400">(this school)</span>
-      </p>
-
-      {/* 2026-09-07, UX refinements round 2, P3 items 8+9: "Select all"/"Unselect
-          all" genuinely change which schools are ticked (tickedUrns membership);
-          "Hide/Show compared schools" deliberately does NOT (comparedHidden --
-          DataViewShell's own comment on that state explains why these two are
-          kept clearly separate rather than one control doing both). */}
-      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
-        <button type="button" className="underline" onClick={() => onSelectAllTicked(schools.map((s) => s.urn))}>
-          Select all
-        </button>
-        <button type="button" className="underline" onClick={onUnselectAllTicked}>
-          Unselect all
-        </button>
-        <span className="text-neutral-300 dark:text-neutral-700">|</span>
-        <button type="button" className="underline" onClick={onToggleComparedHidden}>
-          {comparedHidden ? "Show compared schools" : "Hide compared schools"}
-        </button>
+      {/* 2026-09-08, bug fix: accordion collapse for the schools list itself --
+          the actual fix for "long lists push the sidebar's height too tall and
+          drag the map's height down with it" (the sidebar and map share one
+          row). Reuses MapBoxCollapseToggle, the same arrow FilterBar.tsx's
+          collapse control and the Local Authorities panel both already use, per
+          the standing "one consistent arrow style" rule. Collapsed state shows
+          just the real count, always -- even collapsed, per direct instruction. */}
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Schools ({schools.length})
+        </h3>
+        <MapBoxCollapseToggle collapsed={schoolsListCollapsed} onToggle={() => setSchoolsListCollapsed((c) => !c)} label="schools list" />
       </div>
 
-      <ul className="space-y-1">
-        {visible.map((s) => (
-          <SchoolRow key={s.urn} school={s} ticked={tickedUrns.has(s.urn)} onToggle={() => onToggleTick(s.urn)} />
-        ))}
-      </ul>
+      {!schoolsListCollapsed && (
+        <>
+          {hasDistance && <p className="mb-2 text-xs text-neutral-400">Sorted by distance (km)</p>}
 
-      {overflow.length > 0 && (
-        <div className="mt-2">
-          <button type="button" className="text-xs underline" onClick={() => setOverflowOpen((o) => !o)}>
-            {overflowOpen ? "Hide" : `${overflow.length} more in this set`}
-          </button>
-          {overflowOpen && (
-            <ul className="mt-1 space-y-1">
-              {overflow.map((s) => (
-                <SchoolRow key={s.urn} school={s} ticked={tickedUrns.has(s.urn)} onToggle={() => onToggleTick(s.urn)} />
-              ))}
-            </ul>
+          <p className="mb-2 text-xs text-neutral-500">
+            {targetName} <span className="text-neutral-400">(this school)</span>
+          </p>
+
+          {/* 2026-09-07, UX refinements round 2, P3 items 8+9: "Select all"/
+              "Unselect all" genuinely change which schools are ticked
+              (tickedUrns membership); "Hide/Show comparison data" deliberately
+              does NOT (comparedHidden -- DataViewShell's own comment on that
+              state explains why these two are kept clearly separate rather than
+              one control doing both).
+              2026-09-08: relabelled from "Hide/Show compared schools" -- that
+              exact wording is now also, confusingly, what the accordion header
+              above it could describe. Kept as a real, separate, legitimate
+              feature (Guy's own call: cheap to leave in, hides DATA from Map/
+              Dashboard/Rankings without touching set membership, genuinely not
+              the same thing as this list's own collapse) but renamed so the two
+              controls can't be mistaken for each other. */}
+          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+            <button type="button" className="underline" onClick={() => onSelectAllTicked(schools.map((s) => s.urn))}>
+              Select all
+            </button>
+            <button type="button" className="underline" onClick={onUnselectAllTicked}>
+              Unselect all
+            </button>
+            <span className="text-neutral-300 dark:text-neutral-700">|</span>
+            <button type="button" className="underline" onClick={onToggleComparedHidden}>
+              {comparedHidden ? "Show comparison data" : "Hide comparison data"}
+            </button>
+          </div>
+
+          <ul className="space-y-1">
+            {visible.map((s) => (
+              <SchoolRow key={s.urn} school={s} ticked={tickedUrns.has(s.urn)} onToggle={() => onToggleTick(s.urn)} />
+            ))}
+          </ul>
+
+          {overflow.length > 0 && (
+            <div className="mt-2">
+              <button type="button" className="text-xs underline" onClick={() => setOverflowOpen((o) => !o)}>
+                {overflowOpen ? "Hide" : `${overflow.length} more in this set`}
+              </button>
+              {overflowOpen && (
+                <ul className="mt-1 space-y-1">
+                  {overflow.map((s) => (
+                    <SchoolRow key={s.urn} school={s} ticked={tickedUrns.has(s.urn)} onToggle={() => onToggleTick(s.urn)} />
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
 
       <div className="mt-3 border-t border-neutral-100 pt-3 dark:border-neutral-800">

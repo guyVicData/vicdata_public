@@ -117,6 +117,18 @@ function comparedWithPhrase(activeSet: SetOption | null, target: DataViewSchoolP
     const las = laNamesFromLabel(activeSet.label);
     return las ? `16+ provision in ${las}` : "16+ provision in this area";
   }
+  // 2026-09-08, bug fix (B1): the new mainstream-target "schools and FE colleges"
+  // recipe (default-comparator-lists.ts's own local16Plus field) -- this is the
+  // one real recipe this build can produce that genuinely reproduces the brief's
+  // own example 3 verbatim ("...compared with schools and FE colleges in Camden,
+  // Islington and Haringey"), now that it actually exists as a real candidate
+  // list rather than only being reachable by manually searching for an FE
+  // college. Parses the LA name back out of the label's own "...in {LA}" suffix
+  // (own format, not the "In X (all sectors)" shape laNamesFromLabel expects).
+  if (activeSet.key === "local_16plus") {
+    const match = /in (.+)$/.exec(activeSet.label);
+    return match ? `schools and FE colleges in ${match[1]}` : "schools and FE colleges in this area";
+  }
   // Honest fallback for a recipe/shape this function doesn't have a specific
   // template for yet -- the set's own real label, not a fabricated description.
   return activeSet.label;
