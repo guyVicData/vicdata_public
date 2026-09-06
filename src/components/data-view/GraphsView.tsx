@@ -67,6 +67,24 @@ function TrendPill({ badge, startPeriod }: { badge: TrendBadge; startPeriod: num
   );
 }
 
+// 2026-09-08, per direct request: a short prose trend statement for the Combined
+// Roll chart ("growing/declining/broadly stable"), reusing trendBadge()'s own
+// direction/threshold classification and TrendPill's own colour convention above --
+// not new wording or a new threshold, just a worded rendering of the same
+// up/down/flat call instead of an arrow+bare-percent badge.
+function TrendStatement({ badge, startPeriod }: { badge: TrendBadge; startPeriod: number }) {
+  if (!badge) return null;
+  const word = badge.direction === "up" ? "Growing" : badge.direction === "down" ? "Declining" : "Broadly stable";
+  const colour =
+    badge.direction === "up" ? "text-blue-600 dark:text-blue-400" : badge.direction === "down" ? "text-red-600 dark:text-red-400" : "text-neutral-500";
+  return (
+    <p className={`mt-2 text-xs font-medium ${colour}`}>
+      {word} ({badge.pctChange >= 0 ? "+" : ""}
+      {badge.pctChange.toFixed(0)}% since {academicYearLabel(startPeriod)})
+    </p>
+  );
+}
+
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
@@ -103,23 +121,43 @@ export default function GraphsView({
   // in the domain, not excluded from it").
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
 
+  // 2026-09-08, per direct request, applies everywhere in Graphs (Roll Trends,
+  // Current Roll, the Combined Roll chart, Growth/decline, and both Market-share
+  // charts): a school with zero real pupils in the currently active age/phase
+  // bracket is excluded entirely, not shown as a flat-zero line or an empty bar.
+  // Evaluated once, from each school's CURRENT filtered total (the same "is this
+  // school currently in scope" question every other current-period figure on this
+  // page already asks) -- a school that qualifies stays in scope across every
+  // period on a chart (its own real history, including any period where it happens
+  // to be genuinely zero, isn't erased), only a school that's out of scope RIGHT NOW
+  // is dropped. The focus school is the one exception, per this codebase's
+  // established "the viewed school is always a real reference point, never
+  // excluded" rule (SchoolMap.tsx's own comment) -- shown even at a genuine zero,
+  // same as its own stat tile already honestly would. Deliberately NOT applied to
+  // Section 03's gender split, which Guy's own list of affected charts didn't
+  // include -- that chart already excludes a zero-total school on its own (spreadData
+  // filters out null values, and a zero-total school's female/total ratio is already
+  // computed as null), so no separate rule was needed there anyway.
+  const currentFilteredTotal = new Map(group.map((p) => [p.urn, filteredCount(toFilterable(p), filters).total] as const));
+  const groupInScope = group.filter((p) => p.urn === targetProfile.urn || (currentFilteredTotal.get(p.urn) ?? 0) > 0);
+
   const anchorSnapshot = (p: DataViewSchoolProfile) => p.trend.find((t) => t.period === filters.startPeriod) ?? null;
 
-  const currentPoints = group.map((p) => ({
+  const currentPoints = groupInScope.map((p) => ({
     urn: p.urn,
     name: p.name,
-    value: filteredCount(toFilterable(p), filters).total,
+    value: currentFilteredTotal.get(p.urn) ?? 0,
     isTarget: p.urn === targetProfile.urn,
   }));
-  const anchorPoints = group.map((p) => ({
+  const anchorPoints = groupInScope.map((p) => ({
     urn: p.urn,
     value: anchorSnapshot(p) ? filteredCount(toFilterableForPeriod(p, filters.startPeriod), filters).total : null,
   }));
   const targetCurrent = currentPoints.find((p) => p.isTarget)?.value ?? null;
-  const targetAnchor = anchorPoints.find((p, i) => group[i].urn === targetProfile.urn)?.value ?? null;
+  const targetAnchor = anchorPoints.find((p) => p.urn === targetProfile.urn)?.value ?? null;
   const rollTrendBadge = trendBadge(targetCurrent, targetAnchor);
 
-  const growthPoints = group.map((p, i) => ({
+  const growthPoints = groupInScope.map((p, i) => ({
     urn: p.urn,
     name: p.name,
     isTarget: p.urn === targetProfile.urn,
@@ -133,10 +171,12 @@ export default function GraphsView({
   // rendered as separate lines. ageGenderCountsByPeriod.has(p) guards the same
   // "genuinely no data for this school this period" gap RollTrendsChart's own
   // seriesFor guards -- absence means no data, not a real zero.
-  const periods = Array.from(new Set(group.flatMap((s) => s.trend.map((t) => t.period))))
+  const periods = Array.from(new Set(groupInScope.flatMap((s) => s.trend.map((t) => t.period))))
     .filter((p) => p >= filters.startPeriod)
     .sort((a, b) => a - b);
-  const perSchoolFilteredSeries = group.map((s) => ({
+  const latestIdx = periods.length - 1;
+  const earliestIdx = 0;
+  const perSchoolFilteredSeries = groupInScope.map((s) => ({
     urn: s.urn,
     name: s.name,
     isTarget: s.urn === targetProfile.urn,
@@ -146,6 +186,7 @@ export default function GraphsView({
     const vals = perSchoolFilteredSeries.map((s) => s.values[i]).filter((v): v is number => v !== null);
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) : null;
   });
+  const combinedRollBadge = trendBadge(combinedByPeriod[latestIdx] ?? null, combinedByPeriod[earliestIdx] ?? null);
 
   const targetFilteredSeries = perSchoolFilteredSeries.find((s) => s.isTarget)!.values;
   const marketShareByPeriod = periods.map((_, i) => {
@@ -154,8 +195,6 @@ export default function GraphsView({
     return combined && combined > 0 && t !== null ? (t / combined) * 100 : null;
   });
 
-  const latestIdx = periods.length - 1;
-  const earliestIdx = 0;
   const shareAt = (values: (number | null)[], idx: number) => {
     const combined = combinedByPeriod[idx];
     const v = values[idx];
@@ -198,8 +237,8 @@ export default function GraphsView({
 
   let sizeBandLine: string | null = null;
   if (filters.phaseBands.size > 0 && targetProfile.phase.length > 1) {
-    const wholeValues = group.map((p) => filteredCount(toFilterable(p), { ...filters, phaseBands: new Set(), ages: new Set() }).total);
-    const wholeTarget = wholeValues[group.findIndex((p) => p.urn === targetProfile.urn)];
+    const wholeValues = groupInScope.map((p) => filteredCount(toFilterable(p), { ...filters, phaseBands: new Set(), ages: new Set() }).total);
+    const wholeTarget = wholeValues[groupInScope.findIndex((p) => p.urn === targetProfile.urn)];
     const wholeBand = sizeBand(wholeTarget, Math.min(...wholeValues), Math.max(...wholeValues));
     const filteredValues = currentPoints.map((p) => p.value);
     const filteredBand = sizeBand(targetCurrent ?? 0, Math.min(...filteredValues), Math.max(...filteredValues));
@@ -211,7 +250,10 @@ export default function GraphsView({
 
   const titlePrefix = graphTitlePrefix(filters, targetProfile);
   const rollTrendsTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Roll Trends since ${academicYearLabel(filters.startPeriod)}`;
-  const combinedRollTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Combined Roll since ${academicYearLabel(filters.startPeriod)}`;
+  // 2026-09-08, per direct request: explicitly names "selected schools" since this
+  // is the sum across the whole comparator set, not the focus school's own figure --
+  // easy to misread as a second "Current Roll" otherwise.
+  const combinedRollTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Combined roll of selected schools since ${academicYearLabel(filters.startPeriod)}`;
   const marketShareTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Market Share since ${academicYearLabel(filters.startPeriod)}`;
 
   return (
@@ -223,10 +265,11 @@ export default function GraphsView({
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="flex flex-col gap-4 lg:col-span-2">
             <Card title={rollTrendsTitle}>
-              <RollTrendsChart target={targetProfile} group={group} filters={filters} showAverage={showAverage} onToggleAverage={() => setShowAverage((v) => !v)} />
+              <RollTrendsChart target={targetProfile} group={groupInScope} filters={filters} showAverage={showAverage} onToggleAverage={() => setShowAverage((v) => !v)} />
             </Card>
             <Card title={combinedRollTitle}>
               <CombinedRollChart periods={periods} values={combinedByPeriod} />
+              <TrendStatement badge={combinedRollBadge} startPeriod={filters.startPeriod} />
             </Card>
           </div>
           <div className="flex flex-col gap-4">
@@ -247,7 +290,10 @@ export default function GraphsView({
       </section>
 
       <section>
-        <SectionHeading number="02" title="Market share" />
+        {/* 2026-09-08, per direct request: names the focus school specifically
+            ("Acland Burghley School's market share"), dynamic per school -- not a
+            static "Market share" label. */}
+        <SectionHeading number="02" title={`${targetProfile.name}'s market share`} />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <Card title={marketShareTitle}>

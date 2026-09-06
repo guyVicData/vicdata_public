@@ -18,27 +18,54 @@
 const PALETTE_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"];
 const PALETTE_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9"];
 
+// 2026-09-08, per direct request: "keep trying for a distinct colour per school,
+// but where the palette runs thin, add line-type as a secondary encoding" --
+// standard composite encoding (colour x dash pattern), not extra low-distinctness
+// hues. The colour index cycles through the 7-hue palette first; only once every
+// hue has been used once does the dash index advance, so the first 7 schools stay
+// solid/all-different-hues (unchanged from before), the next 7 reuse the same 7
+// hues dashed, and so on -- two schools only ever share BOTH a hue and a dash
+// pattern once there are more than 21 non-focus schools on screen at once, well
+// past any realistic comparator-set size.
+const DASH_PATTERNS: { name: string; array: string | undefined }[] = [
+  { name: "solid", array: undefined },
+  { name: "dashed", array: "7 4" },
+  { name: "dotted", array: "1.5 3" },
+];
+
 export const FOCUS_SCHOOL_COLOUR = "#dc2626";
 
-export type SeriesColourMap = Map<string, { light: string; dark: string }>;
+export type SeriesColourMap = Map<string, { light: string; dark: string; dashArray: string | undefined; dashName: string }>;
 
 // Pure step function: given the previous assignment map and the URNs currently in
 // view, returns an updated map with any newly-seen URN assigned the next unused
-// palette slot. Existing URNs keep their colour even if they later drop out of the
-// set and return. Callers persist the returned map across renders (a useRef), not
-// this module -- it has no state of its own.
+// palette slot. Existing URNs keep their colour AND dash pattern even if they later
+// drop out of the set and return. Callers persist the returned map across renders
+// (a useRef), not this module -- it has no state of its own.
 export function assignSeriesColours(existing: SeriesColourMap, urns: string[], focusUrn: string): SeriesColourMap {
   const next = new Map(existing);
   for (const urn of urns) {
     if (urn === focusUrn || next.has(urn)) continue;
-    const idx = next.size % PALETTE_LIGHT.length;
-    next.set(urn, { light: PALETTE_LIGHT[idx], dark: PALETTE_DARK[idx] });
+    const slot = next.size;
+    const colourIdx = slot % PALETTE_LIGHT.length;
+    const dash = DASH_PATTERNS[Math.floor(slot / PALETTE_LIGHT.length) % DASH_PATTERNS.length];
+    next.set(urn, { light: PALETTE_LIGHT[colourIdx], dark: PALETTE_DARK[colourIdx], dashArray: dash.array, dashName: dash.name });
   }
   return next;
 }
 
 export function seriesColourVar(urn: string, focusUrn: string): string {
   return urn === focusUrn ? "var(--series-focus)" : `var(--series-${urn})`;
+}
+
+// The focus school is always a solid line -- its identity is carried by colour
+// alone (the established #dc2626 red), it never needs the dash encoding.
+export function seriesDashArray(map: SeriesColourMap, urn: string, focusUrn: string): string | undefined {
+  return urn === focusUrn ? undefined : map.get(urn)?.dashArray;
+}
+
+export function seriesDashName(map: SeriesColourMap, urn: string, focusUrn: string): string {
+  return urn === focusUrn ? "solid" : (map.get(urn)?.dashName ?? "solid");
 }
 
 // CSS custom-property declarations for every assigned URN plus the focus school, for

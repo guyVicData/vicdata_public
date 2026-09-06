@@ -28,12 +28,30 @@
 //
 // Replaces DashboardView.tsx's old inline RollTrendChart, which had no y-axis labels
 // or gridlines at all -- the exact gap this brief calls out.
+//
+// 2026-09-08: once more than 7 non-focus schools are on screen, the 7-hue palette
+// wraps and line-type (solid/dashed/dotted) becomes a secondary encoding for colour
+// (school-series-colours.ts's own assignSeriesColours) -- standard composite
+// encoding, per Guy's explicit request, rather than generating extra
+// low-distinctness hues. The legend's LineSwatch reflects both.
 
 import { useState } from "react";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import { profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
-import { assignSeriesColours, seriesColourVar, seriesColourCssVars, type SeriesColourMap } from "@/lib/school-series-colours";
+import { assignSeriesColours, seriesColourVar, seriesColourCssVars, seriesDashArray, type SeriesColourMap } from "@/lib/school-series-colours";
+
+// A small coloured (and, where the palette's run out, dashed/dotted) line swatch --
+// used both for the chart's own legend and, implicitly, matches each series' own
+// <path> styling exactly, so the legend is never a simplified stand-in for what's
+// actually drawn.
+function LineSwatch({ colour, dashArray, opacity = 1 }: { colour: string; dashArray?: string; opacity?: number }) {
+  return (
+    <svg width={16} height={8} className="shrink-0">
+      <line x1={0} y1={4} x2={16} y2={4} stroke={colour} strokeOpacity={opacity} strokeWidth={2} strokeDasharray={dashArray} strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function academicYearLabel(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;
@@ -161,6 +179,7 @@ export default function RollTrendsChart({
                 fill="none"
                 stroke={seriesColourVar(s.urn, target.urn)}
                 strokeWidth={s.isTarget ? 3 : 1.75}
+                strokeDasharray={seriesDashArray(nextColours, s.urn, target.urn)}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -182,19 +201,19 @@ export default function RollTrendsChart({
           {showAverage ? (
             <>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: seriesColourVar(target.urn, target.urn) }} />
+                <LineSwatch colour={seriesColourVar(target.urn, target.urn)} />
                 {target.name}
                 <span className="text-neutral-400">(this school)</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-3 rounded-full border-t-2 border-dashed border-current opacity-60" />
+                <LineSwatch colour="currentColor" dashArray="4 3" opacity={0.4} />
                 Average of all other schools
               </span>
             </>
           ) : (
             allSeries.map((s) => (
               <span key={s.urn} className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: seriesColourVar(s.urn, target.urn) }} />
+                <LineSwatch colour={seriesColourVar(s.urn, target.urn)} dashArray={seriesDashArray(nextColours, s.urn, target.urn)} />
                 {s.name}
                 {s.isTarget && <span className="text-neutral-400">(this school)</span>}
               </span>
