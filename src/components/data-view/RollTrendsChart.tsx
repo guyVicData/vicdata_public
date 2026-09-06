@@ -7,6 +7,11 @@
 // toggle for a computed "average of all other schools" line, every year on the
 // x-axis with a gridline each, real y-axis value labels.
 //
+// 2026-09-08: the average toggle is a MODE SWITCH, not an overlay -- selecting it
+// hides every individual school's line (and legend entry) entirely, showing just the
+// average line on its own, per Guy's explicit request. Toggling back off restores all
+// individual lines.
+//
 // Whole-school roll only, same simplification the previous RollTrendChart (the old
 // DashboardView.tsx) made and logged: the line always plots each school's unfiltered
 // total, not the currently-filtered phase slice.
@@ -70,8 +75,12 @@ export default function RollTrendsChart({
     return others.length > 0 ? others.reduce((a, b) => a + b, 0) / others.length : null;
   });
 
-  const allValues = allSeries.flatMap((s) => s.values).filter((v): v is number => v !== null);
-  if (showAverage) allValues.push(...averageSeries.filter((v): v is number => v !== null));
+  // Selecting the average is a mode switch, not an overlay: it replaces every
+  // individual school's line (2026-09-08, per Guy's explicit request) rather than
+  // adding to them, so the axis scale should reflect only what's actually drawn.
+  const allValues = showAverage
+    ? averageSeries.filter((v): v is number => v !== null)
+    : allSeries.flatMap((s) => s.values).filter((v): v is number => v !== null);
   const maxY = Math.max(...allValues) * 1.05;
   const minY = 0;
   const innerW = WIDTH - PAD.left - PAD.right;
@@ -125,38 +134,46 @@ export default function RollTrendsChart({
           <path d={pathFor(averageSeries)} fill="none" stroke="currentColor" strokeOpacity={0.4} strokeDasharray="4 3" strokeWidth={1.5} />
         )}
 
-        {allSeries.map((s) => (
-          <g key={s.urn}>
-            <path
-              d={pathFor(s.values)}
-              fill="none"
-              stroke={seriesColourVar(s.urn, target.urn)}
-              strokeWidth={s.isTarget ? 3 : 1.75}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {s.values.map((v, i) =>
-              v === null ? null : (
-                <circle key={i} cx={x(i)} cy={y(v)} r={s.isTarget ? 2.5 : 1.75} fill={seriesColourVar(s.urn, target.urn)}>
-                  <title>
-                    {s.name}: {v.toLocaleString()} ({academicYearLabel(periods[i])})
-                  </title>
-                </circle>
-              ),
-            )}
-          </g>
-        ))}
+        {!showAverage &&
+          allSeries.map((s) => (
+            <g key={s.urn}>
+              <path
+                d={pathFor(s.values)}
+                fill="none"
+                stroke={seriesColourVar(s.urn, target.urn)}
+                strokeWidth={s.isTarget ? 3 : 1.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {s.values.map((v, i) =>
+                v === null ? null : (
+                  <circle key={i} cx={x(i)} cy={y(v)} r={s.isTarget ? 2.5 : 1.75} fill={seriesColourVar(s.urn, target.urn)}>
+                    <title>
+                      {s.name}: {v.toLocaleString()} ({academicYearLabel(periods[i])})
+                    </title>
+                  </circle>
+                ),
+              )}
+            </g>
+          ))}
       </svg>
 
       <div className="mt-2 flex items-center justify-between gap-2">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600 dark:text-neutral-400">
-          {allSeries.map((s) => (
-            <span key={s.urn} className="flex items-center gap-1.5">
-              <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: seriesColourVar(s.urn, target.urn) }} />
-              {s.name}
-              {s.isTarget && <span className="text-neutral-400">(this school)</span>}
+          {showAverage ? (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2 w-3 rounded-full border-t-2 border-dashed border-current opacity-60" />
+              Average of all other schools
             </span>
-          ))}
+          ) : (
+            allSeries.map((s) => (
+              <span key={s.urn} className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: seriesColourVar(s.urn, target.urn) }} />
+                {s.name}
+                {s.isTarget && <span className="text-neutral-400">(this school)</span>}
+              </span>
+            ))
+          )}
         </div>
         <button
           type="button"
