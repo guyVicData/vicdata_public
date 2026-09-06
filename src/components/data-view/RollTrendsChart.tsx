@@ -8,20 +8,31 @@
 // x-axis with a gridline each, real y-axis value labels.
 //
 // 2026-09-08: the average toggle is a MODE SWITCH, not an overlay -- selecting it
-// hides every individual school's line (and legend entry) entirely, showing just the
-// average line on its own, per Guy's explicit request. Toggling back off restores all
-// individual lines.
+// hides every OTHER individual school's line (and legend entry), keeping only the
+// focus school's own line against the average, per Guy's explicit request ("so we can
+// see clearly how it is doing in relation to average local trends"). Toggling back
+// off restores every individual line.
 //
-// Whole-school roll only, same simplification the previous RollTrendChart (the old
-// DashboardView.tsx) made and logged: the line always plots each school's unfiltered
-// total, not the currently-filtered phase slice.
+// 2026-09-08: plots each school's FILTERED per-period total (phase/age/gender/
+// boarding, whichever is active), not the flat whole-school totalRoll -- per Guy's
+// report that the age filter (and, by the same gap, every other filter) visibly
+// changed Current Roll/Growth-Decline but silently did nothing to this chart. Uses
+// the same filteredCount(profileToFilterableDataForPeriod(...)) pairing GraphsView
+// already applies to a single anchor period (data-view-cards.ts's own established
+// pattern), just repeated across every period on the x-axis rather than one point --
+// ageGenderCountsByPeriod (data-view-profiles.ts) already holds a real breakdown for
+// every trend period, so this is no new data dependency, only reusing more of what
+// was already fetched. This also replaces the OLD DashboardView.tsx RollTrendChart's
+// logged "whole-school roll only" simplification, which is now a real gap fixed
+// rather than a standing decision.
 //
 // Replaces DashboardView.tsx's old inline RollTrendChart, which had no y-axis labels
 // or gridlines at all -- the exact gap this brief calls out.
 
 import { useState } from "react";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import type { DataViewFilterState } from "@/lib/data-view-filters";
+import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
+import { profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
 import { assignSeriesColours, seriesColourVar, seriesColourCssVars, type SeriesColourMap } from "@/lib/school-series-colours";
 
 function academicYearLabel(period: number): string {
@@ -67,7 +78,13 @@ export default function RollTrendsChart({
     return <p className="text-sm text-neutral-500">Not enough real history to plot a trend from {academicYearLabel(filters.startPeriod)}.</p>;
   }
 
-  const seriesFor = (s: DataViewSchoolProfile) => periods.map((p) => s.trend.find((t) => t.period === p)?.totalRoll ?? null);
+  // Guards the same "no real data for this school at this period" gap the old
+  // ?? null fallback preserved -- ageGenderCountsByPeriod is built from this exact
+  // school's own trend array (data-view-profiles.ts), so absence here means genuinely
+  // no data, not zero; profileToFilterableDataForPeriod's own empty-Map fallback
+  // would otherwise silently read as a real 0 via filteredCount.
+  const seriesFor = (s: DataViewSchoolProfile) =>
+    periods.map((p) => (s.ageGenderCountsByPeriod.has(p) ? filteredCount(profileToFilterableDataForPeriod(s, p), filters).total : null));
   const allSeries = group.map((s) => ({ urn: s.urn, name: s.name, isTarget: s.urn === target.urn, values: seriesFor(s) }));
 
   const averageSeries = periods.map((_, i) => {
@@ -75,11 +92,14 @@ export default function RollTrendsChart({
     return others.length > 0 ? others.reduce((a, b) => a + b, 0) / others.length : null;
   });
 
-  // Selecting the average is a mode switch, not an overlay: it replaces every
-  // individual school's line (2026-09-08, per Guy's explicit request) rather than
-  // adding to them, so the axis scale should reflect only what's actually drawn.
+  const targetSeries = allSeries.find((s) => s.isTarget)!;
+
+  // Selecting the average is a mode switch, not an overlay: it replaces every OTHER
+  // school's line with the average (2026-09-08, per Guy's explicit request) while
+  // keeping the focus school's own line, so the axis scale should reflect only what's
+  // actually drawn.
   const allValues = showAverage
-    ? averageSeries.filter((v): v is number => v !== null)
+    ? [...averageSeries, ...targetSeries.values].filter((v): v is number => v !== null)
     : allSeries.flatMap((s) => s.values).filter((v): v is number => v !== null);
   const maxY = Math.max(...allValues) * 1.05;
   const minY = 0;
@@ -134,8 +154,7 @@ export default function RollTrendsChart({
           <path d={pathFor(averageSeries)} fill="none" stroke="currentColor" strokeOpacity={0.4} strokeDasharray="4 3" strokeWidth={1.5} />
         )}
 
-        {!showAverage &&
-          allSeries.map((s) => (
+        {(showAverage ? [targetSeries] : allSeries).map((s) => (
             <g key={s.urn}>
               <path
                 d={pathFor(s.values)}
@@ -161,10 +180,17 @@ export default function RollTrendsChart({
       <div className="mt-2 flex items-center justify-between gap-2">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600 dark:text-neutral-400">
           {showAverage ? (
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-2 w-3 rounded-full border-t-2 border-dashed border-current opacity-60" />
-              Average of all other schools
-            </span>
+            <>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: seriesColourVar(target.urn, target.urn) }} />
+                {target.name}
+                <span className="text-neutral-400">(this school)</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-3 rounded-full border-t-2 border-dashed border-current opacity-60" />
+                Average of all other schools
+              </span>
+            </>
           ) : (
             allSeries.map((s) => (
               <span key={s.urn} className="flex items-center gap-1.5">
