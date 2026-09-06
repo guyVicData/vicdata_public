@@ -35,7 +35,7 @@ import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
 import { trendColour, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { profileToFilterableData, profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
-import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
+import { filteredCount, matchesSectorFilter, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { ViewKey } from "@/lib/data-view-types";
 import ViewSwitcher from "./ViewSwitcher";
@@ -77,6 +77,7 @@ export default function MapView({
   targetProfile,
   members,
   tickedUrns,
+  comparedHidden,
   onToggleTick,
   profilesByUrn,
   filters,
@@ -87,6 +88,9 @@ export default function MapView({
   targetProfile: DataViewSchoolProfile;
   members: DefaultListEntry[];
   tickedUrns: Set<string>;
+  // 2026-09-07, UX refinements round 2, P3 item 8: temporary display-only hide,
+  // never touches tickedUrns itself (DataViewShell's own comment on the state).
+  comparedHidden: boolean;
   onToggleTick: (urn: string) => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
   filters: DataViewFilterState;
@@ -108,11 +112,34 @@ export default function MapView({
     if (!mapElRef.current || mapRef.current || target.easting === null || target.northing === null) return;
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
-    import("leaflet").then((L) => {
+    import("leaflet").then(async (L) => {
       if (cancelled || !mapElRef.current) return;
       leafletRef.current = L;
+      // 2026-09-07, UX refinements round 2, P2 item 6: leaflet-gesture-handling is
+      // an old-style Leaflet plugin (L.Map.addInitHook against a bare global `L`,
+      // confirmed by reading its own source -- it never imports/requires leaflet
+      // itself, "deps: none" per its own package metadata) -- it needs `window.L`
+      // to already be the SAME Leaflet module this component uses before its own
+      // side-effect import runs, which a bundler's scoped ES module import doesn't
+      // provide for free. Set once here, harmless afterward (nothing else in this
+      // app reads a global L).
+      (window as unknown as { L: typeof L }).L = L;
+      await import("leaflet-gesture-handling");
+      if (cancelled || !mapElRef.current) return;
       const [lat, lng] = bngToLatLng(target.easting!, target.northing!);
-      const map = L.map(mapElRef.current, { center: [lat, lng], zoom: 11, zoomControl: false });
+      // gestureHandling: Guy's own explicit request -- "too easy to accidentally
+      // zoom/pan while scrolling the page... use Cmd/Ctrl+scroll-to-zoom... same
+      // pattern Google Maps embeds use, including the brief 'use Ctrl+scroll to
+      // zoom' hint on a bare scroll attempt." Not in Leaflet's own MapOptions
+      // type (a third-party plugin option, picked up via its own addInitHook
+      // rather than a typed API) -- cast rather than widening the whole options
+      // object's type.
+      const map = L.map(mapElRef.current, {
+        center: [lat, lng],
+        zoom: 11,
+        zoomControl: false,
+        gestureHandling: true,
+      } as L.MapOptions & { gestureHandling: boolean });
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
       layerGroupRef.current = L.layerGroup().addTo(map);
@@ -229,15 +256,32 @@ export default function MapView({
       // static types don't actually guarantee at runtime).
       try {
         const [lat, lng] = bngToLatLng(s.easting, s.northing);
-        // Bounds stay inclusive of every real position regardless of tick/filter
-        // state -- hiding a dot shouldn't also make the viewport jump around.
-        bounds.push([lat, lng]);
         const isTarget = s.urn === target.urn;
-        const ticked = isTarget || tickedUrns.has(s.urn);
+        // comparedHidden (P3 item 8): every ticked school reverts to the bare,
+        // no-data dot treatment without actually leaving tickedUrns -- the
+        // target is still always shown with real data, same "always a real
+        // reference point" exception as everywhere else.
+        const ticked = isTarget || (!comparedHidden && tickedUrns.has(s.urn));
+
+        // 2026-09-07, UX refinements round 2, P3 item 7: sector is a real
+        // membership filter (matchesSectorFilter's own comment), not a slice --
+        // a non-matching school is excluded from the map entirely, same as it is
+        // from Dashboard/Rankings (DataViewShell's own tickedProfiles derivation),
+        // not just dimmed.
+        if (!isTarget && !matchesSectorFilter(s.profile.sector, filters.sector)) continue;
 
         const current = filteredCount(profileToFilterableData(s.profile), filters).total;
 
         if (!isTarget && filterActive && current === 0) continue;
+
+        // 2026-09-07, UX refinements round 2, P2 item 6: "auto-fit the map's
+        // pan+zoom to the bounding box of whichever schools are currently
+        // ticked, recalculated on every set change." Previously included every
+        // real position regardless of tick state (a holdover from before
+        // per-school hide/show existed) -- narrowed to just what's actually
+        // ticked (+ the target, always) so the fit genuinely reflects "what am I
+        // comparing right now," not the full candidate pool.
+        if (ticked) bounds.push([lat, lng]);
 
         // 2026-09-06, UX refinements round 1, B4: "schools render as small dots,
         // name shown only on hover, and NO DATA AT ALL until added to the set --
@@ -291,7 +335,7 @@ export default function MapView({
       mapRef.current!.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, filters, colourMode, target]);
+  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target]);
 
   const sectorsPresent = Array.from(
     new Set([targetProfile.sector, ...members.map((m) => profilesByUrn.get(m.urn)?.sector ?? null)].filter((s): s is NonNullable<typeof s> => !!s)),

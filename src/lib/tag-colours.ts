@@ -94,6 +94,45 @@ export const TAG_COLOURS: Record<string, { light: [string, string]; dark: [strin
   // same gold hue for contrast against a dark background, ready for whenever this
   // chart's own dark-mode branching gets built.
   Focus: { light: ["#fdf6e3", "#a97a1f"], dark: ["#4a3712", "#e0b23d"] },
+  // 2026-09-07, UX refinements round 2, P1 item 3/A2 follow-on: "Early Years" and
+  // "Adult" are real, separately-filterable age slices (data-view-filters.ts's own
+  // PhaseBandKey) that never had a colour at all before this round's colour-
+  // convention pass (P2 item 5) needed one for every filter pill, not just the
+  // ones that happened to already exist as school-typology tags. Yellow for Early
+  // Years -- the one saturated hue family nothing else in this palette uses is
+  // scarce at this point (15 entries deep), but yellow reads as distinctly
+  // different from Junior's lime, Senior's amber and Post 16's orange when the
+  // four sit in the same Phase pill row, which is the one place this actually
+  // needs to work. Slate for Adult -- deliberately desaturated/neutral rather than
+  // another saturated hue (none were left that didn't already sit close to an
+  // existing warm tag); reads correctly as "the generic/non-specific option" next
+  // to U19's own orange (Post 16's colour, reused verbatim for the U19 relabelling
+  // -- see relevantAgeBandsFor's own comment for why that's the same underlying
+  // filter value, just renamed for an FE audience).
+  "Early Years": { light: ["#fefce8", "#a16207"], dark: ["#4a3c0a", "#fde047"] },
+  Adult: { light: ["#f8fafc", "#334155"], dark: ["#1e293b", "#cbd5e1"] },
+};
+
+// 2026-09-07, UX refinements round 2, P2 item 4: fixed identity colours for the
+// Data View's four topic tabs (Rolls/Academic/Destinations/Context), used
+// everywhere a topic appears -- the tab itself, and PDF export headers -- per
+// direct instruction. Kept in a SEPARATE map from TAG_COLOURS above rather than
+// merged into it: these aren't school-typology tags at all (a topic is a section
+// of the app, not an attribute a school has), and merging them would make
+// TAG_COLOURS' own "every entry is a real school attribute" invariant false.
+// Genuinely hard to find four hues with real daylight between them AND every one
+// of the 15 tag colours above -- checked directly, this palette is already deep
+// enough that some proximity to an existing tag is unavoidable (logged in
+// docs/vicdata_data_view_open_questions.md, not silently glossed over). Optimised
+// instead for the requirement that actually matters here: the four TOPIC colours
+// read as clearly distinct FROM EACH OTHER when shown side by side as tabs, which
+// is the only place they appear together. Blue/purple/stone/maroon -- a spread
+// across cool, neutral and warm rather than four hues from the same family.
+export const TOPIC_COLOURS: Record<string, { light: [string, string]; dark: [string, string] }> = {
+  Rolls: { light: ["#eff6ff", "#1d4ed8"], dark: ["#1e3a5f", "#93c5fd"] }, // blue
+  Academic: { light: ["#faf5ff", "#7e22ce"], dark: ["#3b1a54", "#d8b4fe"] }, // purple
+  Destinations: { light: ["#fafaf9", "#57534e"], dark: ["#292524", "#d6d3d1"] }, // stone (deliberately desaturated/neutral -- the one non-saturated entry in either colour map, chosen precisely because it stands apart from everything else)
+  Context: { light: ["#fff1f2", "#9f1239"], dark: ["#4a1625", "#fda4af"] }, // maroon
 };
 
 // 2026-08-25: filter buttons now fill with the tag's own colour when selected

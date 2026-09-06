@@ -9,6 +9,16 @@ import "./globals.css";
 // real global import, not scoped to the component -- Next's App Router only reliably
 // applies global (non-module) CSS imported from the root layout.
 import "leaflet/dist/leaflet.css";
+// 2026-09-07, UX refinements round 2, P2 item 6: "too easy to accidentally zoom/
+// pan while scrolling the page" -- leaflet-gesture-handling (MIT, zero deps, the
+// exact "Prompt desktop users to use Ctrl+Mouse Wheel to zoom... Google Maps
+// gesture handling" plugin Guy's own request named) adds the hint overlay this
+// stylesheet renders. Global import for the same reason leaflet.css itself is --
+// harmless on any map that doesn't opt into the `gestureHandling: true` map
+// option (MapView.tsx does; SchoolMap.tsx, the public map, deliberately doesn't --
+// this round's request was scoped to the Data View, not a site-wide behaviour
+// change to a page members already know how to use).
+import "leaflet-gesture-handling/dist/leaflet-gesture-handling.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

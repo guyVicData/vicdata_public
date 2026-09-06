@@ -25,11 +25,12 @@
 //   place (never resetting the member's own existing ticks the way selecting a whole
 //   new set does -- see onExpandActiveSet's own comment in DataViewShell.tsx).
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import SchoolSearch, { type SchoolSearchResult } from "@/components/SchoolSearch";
 import type { SetOption } from "@/lib/data-view-types";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
+import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
 
 type AdjacentLasResponse = { ownLaName: string | null; adjacent: { name: string }[] };
 
@@ -44,6 +45,10 @@ export default function ComparatorSidebar({
   boardingQuintileLoading,
   tickedUrns,
   onToggleTick,
+  onSelectAllTicked,
+  onUnselectAllTicked,
+  comparedHidden,
+  onToggleComparedHidden,
   initialTickedCount,
 }: {
   targetName: string;
@@ -56,6 +61,10 @@ export default function ComparatorSidebar({
   boardingQuintileLoading: boolean;
   tickedUrns: Set<string>;
   onToggleTick: (urn: string) => void;
+  onSelectAllTicked: (urns: string[]) => void;
+  onUnselectAllTicked: () => void;
+  comparedHidden: boolean;
+  onToggleComparedHidden: () => void;
   initialTickedCount: number;
 }) {
   const [overflowOpen, setOverflowOpen] = useState(false);
@@ -66,6 +75,22 @@ export default function ComparatorSidebar({
   const [laLoading, setLaLoading] = useState(false);
   const [laOpen, setLaOpen] = useState(false);
   const [expanding, setExpanding] = useState(false);
+  // 2026-09-07, UX refinements round 2, P1 items 1+2 -- root cause, confirmed by
+  // reproducing live (dots genuinely updated 11->7 for a real Camden-only
+  // selection, but the dropdown's own label stayed frozen on "Nearest 10 (any
+  // LA)"): applyLaSelection tagged its result `key: "multi_la"`, a key that never
+  // exists in the `options` array the dropdown renders from (that array only ever
+  // holds the server's fixed recipe/saved sets) -- so the <select>'s `value` never
+  // matched any real <option>, and the browser silently fell back to showing
+  // whichever option happened to be first. `laRequestSeq` is a second, related fix
+  // found while fixing the first: applyLaSelection had no guard against
+  // out-of-order responses at all, so two overlapping LA toggles (a real
+  // possibility -- nothing stopped a member clicking a second checkbox before the
+  // first fetch resolved) could let a slower, staler response overwrite a newer
+  // one -- "dots don't appear consistently for Camden" is exactly what that race
+  // looks like from the outside. Every call now carries its own sequence number;
+  // a response is only applied if it's still the most recent request in flight.
+  const laRequestSeq = useRef(0);
 
   useEffect(() => {
     if (!authToken) return;
@@ -85,16 +110,20 @@ export default function ComparatorSidebar({
   async function applyLaSelection(next: Set<string>) {
     setCheckedLas(next);
     if (!authToken || next.size === 0) return;
+    const mySeq = ++laRequestSeq.current;
     setLaLoading(true);
     try {
       const res = await fetch(`/api/data-view/la-set?urn=${targetUrn}&las=${Array.from(next).map(encodeURIComponent).join(",")}`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
+      // A newer LA toggle fired while this one was in flight -- its own response
+      // (or one still to come) is the one that should win, not this stale one.
+      if (mySeq !== laRequestSeq.current) return;
       if (!res.ok) return;
       const body = (await res.json()) as { set: { key: string; label: string; schools: DefaultListEntry[] } | null };
       if (body.set) onSelectSet({ kind: "recipe", key: "multi_la", label: body.set.label, schools: body.set.schools });
     } finally {
-      setLaLoading(false);
+      if (mySeq === laRequestSeq.current) setLaLoading(false);
     }
   }
 
@@ -112,6 +141,28 @@ export default function ComparatorSidebar({
   }
 
   const isExpandableNearest = activeSet?.kind === "recipe" && (activeSet.key === "nearest_10" || activeSet.key === "fe_nearest_10");
+
+  // 2026-09-07, UX refinements round 2, P1 items 1+2: the LA checklist is a
+  // refinement panel for an LA-SCOPED active set, not a standing control -- it
+  // only makes sense (and only renders at all) once the active set actually IS
+  // one ("In {LA} (all sectors)", key "in_la" from the server default, or
+  // "multi_la" once the member has ticked/unticked LAs here). Reached the first
+  // time via the ORDINARY dropdown's own "In {LA} (all sectors)" entry (list2,
+  // already in `options`) -- not circular, since that entry already exists
+  // independently of this panel. "Nearest 10 (any LA)" and every other recipe
+  // correctly show nothing here now.
+  const isLaScoped = activeSet?.kind === "recipe" && (activeSet.key === "in_la" || activeSet.key === "multi_la");
+
+  // The dropdown's own `options` prop only ever holds the server's fixed recipe/
+  // saved sets -- a "multi_la" selection built here has no matching entry there at
+  // all, which is the exact reason its label used to freeze on whatever the
+  // previous real option was. Injecting the CURRENT active set as a synthetic
+  // extra option (only when it genuinely isn't already one of the real ones)
+  // keeps the <select>'s displayed text always honestly in sync with whatever is
+  // actually active, multi-LA included.
+  const activeSetValue = activeSet ? (activeSet.kind === "recipe" ? `recipe:${activeSet.key}` : `saved:${activeSet.id}`) : "";
+  const activeSetIsListed = options.some((o) => (o.kind === "recipe" ? `recipe:${o.key}` : `saved:${o.id}`) === activeSetValue);
+  const dropdownOptions = activeSet && !activeSetIsListed ? [activeSet, ...options] : options;
 
   async function expandNearest() {
     if (!authToken || !isExpandableNearest || !activeSet) return;
@@ -146,14 +197,14 @@ export default function ComparatorSidebar({
 
       <select
         className="mb-2 w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-        value={activeSet ? (activeSet.kind === "recipe" ? `recipe:${activeSet.key}` : `saved:${activeSet.id}`) : ""}
+        value={activeSetValue}
         onChange={(e) => {
           const [kind, id] = e.target.value.split(":");
-          const found = options.find((o) => (kind === "recipe" ? o.kind === "recipe" && o.key === id : o.kind === "saved" && o.id === id));
+          const found = dropdownOptions.find((o) => (kind === "recipe" ? o.kind === "recipe" && o.key === id : o.kind === "saved" && o.id === id));
           if (found) onSelectSet(found);
         }}
       >
-        {options.map((o) => (
+        {dropdownOptions.map((o) => (
           <option key={o.kind === "recipe" ? `recipe:${o.key}` : `saved:${o.id}`} value={o.kind === "recipe" ? `recipe:${o.key}` : `saved:${o.id}`}>
             {o.label}
             {o.kind === "recipe" && o.lazy && o.schools.length === 0 ? " (click to load)" : ""}
@@ -169,11 +220,22 @@ export default function ComparatorSidebar({
         </button>
       )}
 
+      {isLaScoped && (
       <div className="mb-2 border-t border-neutral-100 pt-2 dark:border-neutral-800">
-        <button type="button" className="mb-1 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wide text-neutral-500" onClick={() => setLaOpen((o) => !o)}>
-          Local Authorities
-          <span className="text-neutral-400">{laOpen ? "▾" : "▸"}</span>
-        </button>
+        {/* 2026-09-07, UX refinements round 2, P4: was a bare unicode ▾/▸ glyph,
+            roughly half the visual size of every other open/close arrow in the
+            shell -- swapped for MapBoxCollapseToggle, the exact same chevron
+            FilterBar.tsx's own collapse arrow uses, so there's one consistent
+            arrow style rather than several ad hoc ones. Rendered as a sibling of
+            the label (not nested inside one <button>, which the text label also
+            still is, for a bigger click target) since MapBoxCollapseToggle
+            renders its own <button> and two interactive elements can't nest. */}
+        <div className="mb-1 flex w-full items-center justify-between">
+          <button type="button" className="text-xs font-semibold uppercase tracking-wide text-neutral-500" onClick={() => setLaOpen((o) => !o)}>
+            Local Authorities
+          </button>
+          <MapBoxCollapseToggle collapsed={!laOpen} onToggle={() => setLaOpen((o) => !o)} label="Local Authorities" />
+        </div>
         {laOpen && (
           <div className="space-y-1 text-xs">
             {!laInfo ? (
@@ -223,12 +285,31 @@ export default function ComparatorSidebar({
           </div>
         )}
       </div>
+      )}
 
       {hasDistance && <p className="mb-2 text-xs text-neutral-400">Sorted by distance (km)</p>}
 
       <p className="mb-2 text-xs text-neutral-500">
         {targetName} <span className="text-neutral-400">(this school)</span>
       </p>
+
+      {/* 2026-09-07, UX refinements round 2, P3 items 8+9: "Select all"/"Unselect
+          all" genuinely change which schools are ticked (tickedUrns membership);
+          "Hide/Show compared schools" deliberately does NOT (comparedHidden --
+          DataViewShell's own comment on that state explains why these two are
+          kept clearly separate rather than one control doing both). */}
+      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+        <button type="button" className="underline" onClick={() => onSelectAllTicked(schools.map((s) => s.urn))}>
+          Select all
+        </button>
+        <button type="button" className="underline" onClick={onUnselectAllTicked}>
+          Unselect all
+        </button>
+        <span className="text-neutral-300 dark:text-neutral-700">|</span>
+        <button type="button" className="underline" onClick={onToggleComparedHidden}>
+          {comparedHidden ? "Show compared schools" : "Hide compared schools"}
+        </button>
+      </div>
 
       <ul className="space-y-1">
         {visible.map((s) => (

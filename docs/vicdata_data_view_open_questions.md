@@ -307,3 +307,73 @@ Built as a genuine template system (`data-view-summary.ts`, no server-only impor
 **"Turning off a filter/selector must hide the corresponding dots... confirm this isn't already silently broken" -- checked directly, and it was**: a school with a genuinely zero real count for the active phase/gender/boarding filter (an all-boys school under a "Girls" filter, say) still rendered a same-shaped dot as every other school, which reads as "this school has some of what's being filtered for" when it honestly has none. Fixed: any school (ticked or not) with a real filtered count of exactly 0, while at least one narrowing filter is active, is now skipped entirely rather than drawn -- the target is the one exception, never hidden, matching the "the viewed school is always a real reference point" rule already applied everywhere else in this build. Map bounds/fit stay inclusive of every real position regardless of this hide, so the viewport doesn't jump around as filters change.
 
 **Not yet verified live in the browser** -- confirmed the logic and constants directly by reading the rewritten marker loop; a real Playwright pass (toggling a filter that zeroes out a real school, ticking/unticking a bare dot, confirming the tooltip content genuinely differs before/after) is next, alongside the rest of this round's live verification.
+
+---
+
+## UX refinements round 2 (2026-09-07): P1 -- Local Authorities picker bugs
+
+**Root cause, confirmed live before fixing (reproduced first, not guessed)**: the LA picker's `applyLaSelection` tagged every result `key: "multi_la"` -- a key that never exists in the sidebar dropdown's own `options` array (that array only ever holds the server's fixed recipe/saved sets, e.g. `"in_la"` for the original single-LA default). So the `<select>`'s `value` never matched any real `<option>`, and the browser silently fell back to displaying whichever option happened to be listed first -- reproduced directly: toggling Camden's own checkbox genuinely updated the map (dots went 11→7 for a real Camden-only result, confirmed via a direct API call and DOM inspection) while the dropdown's own label stayed frozen on "Nearest 10 (any LA)". Fixed by having the dropdown inject the CURRENTLY ACTIVE set as a synthetic extra `<option>` whenever it isn't already one of the real ones, so the displayed label is always honestly in sync with whatever's actually active.
+
+**A second, related bug found while fixing the first**: `applyLaSelection` had no guard at all against out-of-order responses -- two overlapping LA toggles (nothing stopped a member clicking a second checkbox before the first fetch resolved) could let a slower, staler response overwrite a newer one. This is what "dots don't appear consistently for Camden" looks like from the outside. Fixed with a simple request-sequence counter -- a response is only applied if it's still the most recent request in flight.
+
+**Item 2 (LA selector shown for non-LA-scoped sets)**: the whole "Local Authorities" panel (checklist + Region/Nation/group placeholders, all nested inside it) is now shown only when the active set genuinely IS LA-scoped (`key === "in_la"` or `"multi_la"`) -- verified live: hidden under "Nearest 10 (any LA)", appears the moment "In Camden (all sectors)" (the pre-existing dropdown entry) is selected. Reached the first time via that ordinary dropdown entry, not circular -- Region/Nation/group become visible only in that same LA-scoped context now, a minor side effect of gating the whole panel as one unit rather than splitting it, logged here since it wasn't itself named as a problem in the request.
+
+**Item 3 (Boarding filter shown despite zero boarders)**: extracted the exact check `DashboardView.tsx`'s own `targetIsDaySchool` already used inline (`hasRealBoardingProvision`, `data-view-filters.ts`) and used it to gate the Boarding pill group in `FilterBar.tsx` too -- Acland Burghley (a real day school) no longer shows a Boarding filter that could only ever produce the same whole-school number either way it's clicked. Both call sites now share the one real check, so they can't drift apart on what "doesn't board" means.
+
+All three verified live with Playwright against real data (Acland Burghley) before moving on.
+
+---
+
+## UX refinements round 2 (2026-09-07): P2 item 4 -- topic tabs redesign
+
+School name (bold, larger, dark) now shares one line with the topic tabs, to their left. Tabs are flat pills, no chevrons (navigation between four independent topics, not a sequence). Each topic has a fixed identity colour (`TOPIC_COLOURS`, `tag-colours.ts`) applied everywhere it appears -- including PDF export headers, which this row already reaches for free since it isn't `print:hidden` (window.print() captures the live page; there's no separate PDF template in this codebase to duplicate the colour into).
+
+**Logged, not silently smoothed over**: finding four colours genuinely distinguishable from every one of the 15 existing school-typology tag colours AND from each other turned out not to be achievable -- this palette is already deep enough (checked directly) that no four fresh, legible hues remained fully clear of every existing entry. Optimised instead for the requirement that actually matters: the four TOPIC colours are clearly distinct from EACH OTHER, since tabs are the only place they appear together (blue/Rolls, purple/Academic, stone/Destinations, maroon/Context -- a deliberate spread across cool, neutral and warm rather than four hues from one family). Some proximity to existing tags is real (Rolls' blue near "Through School"'s blue; Context's maroon near "Special Schools"' red) but those tags and these topic colours are never the thing being compared side by side, so it shouldn't cause real confusion in practice -- flagged here in case it reads differently once seen live.
+
+**Per the request's own explicit instruction**, the active topic tab is ALWAYS shown filled (this is navigation, not filtering -- there's no "default tab" to narrow away from) -- deliberately NOT the same "colour only when narrowing from all" rule P2 item 5 applies to actual filter pills, kept as two visually similar but conceptually separate conventions (separate CSS class names, `topic-tab-active` vs `filter-pill-active`) so the two systems can't accidentally merge into one and blur the distinction later.
+
+---
+
+## UX refinements round 2 (2026-09-07): P2 item 5 -- filter colour convention
+
+Confirmed directly by reading `MapFilterPanel.tsx` (the public map's own filter panel) before building anything: its established convention is inactive = plain neutral border/text, active = fills with the VALUE's own real `TAG_COLOURS` colour (the same palette `TypologyTags.tsx`/`SchoolMap.tsx` already use for these exact tags) -- not a generic dark fill. Reused verbatim, including its exact dark-mode technique (a `--pill-bg-dark`/`--pill-fg-dark` custom-property pair plus a shared `.filter-pill-active` class with `!important` overrides, since an inline style can't react to a `prefers-color-scheme`/`data-theme` change on its own).
+
+Applied to every real filter pill this round: Phase/age bands, Gender, Boarding (mapped to TAG_COLOURS' "Boarding"/"Day" keys, since the filter's own labels "Boarders"/"Day pupils" read better as UI text but don't match those keys literally), and the new Sector filter. The per-age drill-down buttons ("Ages: 16 17 18...") were deliberately left with their existing plain black/white active style -- there's no real per-age colour anywhere in this app's palette to reuse, and inventing one for individual integers didn't seem like what "same convention as the rest" was asking for; flagged here in case that reading's wrong.
+
+Two new palette entries were needed and didn't exist before this round: "Early Years" (yellow) and "Adult" (slate, deliberately desaturated -- reads as "the generic option" next to U19's own orange, which is Post 16's colour reused verbatim since U19 is the same underlying filter value, just relabelled for an FE audience).
+
+---
+
+## UX refinements round 2 (2026-09-07): P2 item 6 -- map auto-fit and scroll-to-zoom
+
+**Auto-fit to ticked schools**: the map's own `fitBounds` call already existed and already recalculated on every relevant state change (it was already a real, working mechanism) -- what was wrong was WHICH schools it included: every real position in the active set regardless of tick state, a holdover from before per-school hide/show existed. Narrowed to only the schools actually ticked (+ the target, always) -- verified live by watching the real bounds array shrink (10 → 9 → 8 → ... → 2) as schools were unticked one at a time, each one correctly triggering a fresh `fitBounds` call with the smaller set.
+
+**Cmd/Ctrl+scroll-to-zoom**: built with `leaflet-gesture-handling` (MIT, zero dependencies, exactly the "Prompt desktop users to use Ctrl+Mouse Wheel to zoom... Google Maps gesture handling" plugin the request itself named) rather than a hand-rolled equivalent. One real integration wrinkle: it's an old-style Leaflet plugin that expects a bare global `L` (confirmed by reading its own source -- no `require`/import of Leaflet at all, "deps: none" per its own package metadata), which a bundler's scoped ES module import doesn't provide for free -- worked around by setting `window.L` to the same Leaflet module instance immediately after loading it, before the plugin's own side-effect import runs. Scoped to the Data View's own map only (`gestureHandling: true` on `MapView.tsx`'s map instance) -- the public map (`SchoolMap.tsx`) was deliberately left untouched, since this request was about the Data View specifically, not a site-wide behaviour change to a page members already know how to use. Verified live: a bare scroll over the map correctly triggers the plugin's own warning-hint class without changing zoom.
+
+**Incidental fix, not app-related**: installing this package via `npm install` pruned an existing, undeclared local Playwright install (never in package.json -- npm's default `install <pkg>` behaviour reconciles the whole node_modules tree against the lockfile, not just adds the new package). Restored with `npm install --no-save playwright` afterward, confirmed via `git diff` that neither package.json nor package-lock.json carry any trace of it -- flagging this here only for transparency about a real, if fully-reverted, side effect during this round's own work, not because it affects the shipped app in any way.
+
+---
+
+## UX refinements round 2 (2026-09-07): P3 item 7 -- Sector filter
+
+A genuine membership filter, not a slice -- logged directly in `data-view-filters.ts`'s own updated module comment, since this is a real, deliberate exception to the "filters slice the number, they never change set membership" rule every other filter in this build has followed since round 1. A school's sector is a whole-school category, not a per-pupil number with a piece to narrow, so the only honest behaviour an active sector filter can have is excluding non-matching schools entirely from Map/Dashboard/Rankings -- deliberately reusing the PUBLIC map's own established sector-filter convention (hide/show) rather than inventing a different mechanism for this one field.
+
+Relevance gate: only shown (and only pills for sectors actually present, not all four unconditionally) when the active set genuinely spans more than one real sector -- computed across the whole active set (ticked or not), target included. Verified live: absent under "Nearest 10 (any LA)" (single-sector by construction, per `nearest_schools`' own sector-equality gate), appears with real Independent/State/Special Schools pills under "In Camden (all sectors)", and activating "Independent" correctly fills the pill with the real ISC orange and removes every non-Independent dot from the map while leaving the target (State) visibly unaffected.
+
+---
+
+## UX refinements round 2 (2026-09-07): P3 item 8 -- hide all compared schools
+
+**Flagged by Guy himself as needing confirmation rather than an assumption** -- built to his own stated reading exactly as given: a single toggle ("Hide compared schools" / "Show compared schools", sidebar) that temporarily suppresses every ticked school's data from Map/Dashboard/Rankings WITHOUT touching `tickedUrns` (set membership) at all -- distinct from item 9's Select all/Unselect all, which does change membership. Verified live: toggling hide collapses the Dashboard's spread strips to just the target (market share reads 100%) while every sidebar checkbox stays checked; toggling show restores the exact same 9-school comparison with no re-selection needed. **Logging this as the operating interpretation per his own instruction** -- if "hide all" was meant to mean something else (e.g. a per-school hide distinct from unticking, or something scoped only to the Map rather than all three views), please say so and it'll be adjusted; the reading above is what's shipped.
+
+---
+
+## UX refinements round 2 (2026-09-07): P3 item 9 -- Select all / Unselect all
+
+Added next to the sidebar's schools list, operating on `tickedUrns` (real membership, unlike item 8 above) -- "Select all" ticks every school currently in the active set's full list (visible + overflow together), "Unselect all" clears every tick. Verified live: both work correctly and independently of the "Hide compared schools" toggle.
+
+---
+
+## UX refinements round 2 (2026-09-07): P4 -- Local Authorities arrow size
+
+Was a bare unicode ▾/▸ glyph, visibly smaller than every other open/close control in the shell. Replaced with `MapBoxCollapseToggle` -- the exact same chevron component `FilterBar.tsx`'s own collapse arrow already uses -- so there's one consistent arrow style across the shell rather than several ad hoc ones. Rendered as a sibling of the "Local Authorities" text label (not nested inside one button with it, since `MapBoxCollapseToggle` renders its own button and two interactive elements can't nest) -- both still toggle the same state, so the click target is, if anything, larger than before.

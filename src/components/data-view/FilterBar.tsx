@@ -1,8 +1,8 @@
 "use client";
 
 // Member Data View shared filter bar (brief §4): phase/age (with an age drill-down
-// nested under a selected phase band), gender, boarding-status, and (round 1 UX
-// refinements, A2) a start-date control and an inline collapse arrow -- one state,
+// nested under a selected phase band), gender, boarding-status, sector, and (round 1
+// UX refinements, A2) a start-date control and an inline collapse arrow -- one state,
 // fed to whichever view is active, never reset when switching views (the state
 // itself lives in DataViewShell, this component is a pure controlled input over it).
 //
@@ -35,21 +35,47 @@
 //   used for the Map's own overlay boxes) rather than a separate text link
 //   underneath -- always rendered, regardless of collapsed state, so there's always
 //   something in this row to click to get back.
+//
+// 2026-09-07, UX refinements round 2:
+// - P1 item 3: Boarding pills also gated on the target genuinely having real
+//   boarding provision (hasRealBoardingProvision, data-view-filters.ts), not just
+//   "not an FE college" -- Acland Burghley (a real day school) was showing a
+//   Boarding filter that could only ever produce the same whole-school number
+//   either way it was clicked.
+// - P2 item 5: every pill now follows the SAME colour convention the public map's
+//   own filter panel already established (MapFilterPanel.tsx, confirmed by reading
+//   it directly) -- inactive = plain neutral border/text, active = fills with the
+//   VALUE's own real TAG_COLOURS colour (the same palette TypologyTags.tsx/
+//   SchoolMap.tsx already use for these exact tags), not a generic black fill.
+//   Colour signals "this is actively narrowing away from all," never decoration.
+// - P3 item 7: new Sector pills (Independent/State/FE/Special Schools), a real
+//   MEMBERSHIP filter (data-view-filters.ts's own module comment explains why
+//   sector can't be a slice the way phase/gender/boarding are) -- shown only when
+//   the active set genuinely contains more than one real sector (memberSectors),
+//   and only pills for sectors ACTUALLY present in it, not all four unconditionally.
 
 import { CURRENT_CENSUS_PERIOD } from "@/lib/roll-data";
 import {
   ageRangeForBand,
   relevantAgeBandsFor,
+  hasRealBoardingProvision,
   type DataViewFilterState,
   type PhaseBandKey,
   type BoardingFilterValue,
 } from "@/lib/data-view-filters";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import type { GenderTag } from "@/lib/typology";
+import type { GenderTag, SectorTag } from "@/lib/typology";
+import { TAG_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
 
 const GENDER_OPTIONS: GenderTag[] = ["Girls", "Boys"];
 const BOARDING_OPTIONS: BoardingFilterValue[] = ["Boarders", "Day pupils"];
+// TAG_COLOURS keys are "Boarding"/"Day" (the school-typology tag names) -- the
+// filter's own values ("Boarders"/"Day pupils") read better as filter labels but
+// don't match those keys literally, so this maps one to the other rather than
+// renaming either.
+const BOARDING_TAG_KEY: Record<BoardingFilterValue, string> = { Boarders: "Boarding", "Day pupils": "Day" };
+const SECTOR_OPTIONS: SectorTag[] = ["Independent", "State", "FE", "Special Schools"];
 
 function toggle<T>(set: Set<T>, value: T): Set<T> {
   const next = new Set(set);
@@ -66,15 +92,37 @@ function academicYearLabel(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;
 }
 
-function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+// 2026-09-07, UX refinements round 2, P2 item 5: reuses MapFilterPanel.tsx's own
+// active-fill technique verbatim (confirmed by reading that component directly
+// before building this) -- an inline light-mode fill (always correct, no cascade
+// ambiguity) plus a `--pill-bg-dark`/`--pill-fg-dark` custom-property pair the
+// shared `.filter-pill-active` class (declared once, in FilterBar's own render)
+// applies with `!important` for the dark-mode/data-theme cases an inline style
+// can't react to on its own.
+function Pill({ active, tagKey, onClick, children }: { active: boolean; tagKey: string; onClick: () => void; children: React.ReactNode }) {
+  const tagColours = TAG_COLOURS[tagKey];
+  const fillLight = tagColours?.light[1] ?? "#171717";
+  const fillDark = tagColours?.dark[1] ?? "#ededed";
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={
         active
-          ? "rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+          ? "filter-pill-active rounded-full border px-3 py-1 text-xs font-medium"
           : "rounded-full border border-neutral-300 px-3 py-1 text-xs text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+      }
+      style={
+        active
+          ? ({
+              "--pill-bg-dark": fillDark,
+              "--pill-fg-dark": contrastingTextColour(fillDark),
+              backgroundColor: fillLight,
+              borderColor: fillLight,
+              color: contrastingTextColour(fillLight),
+            } as React.CSSProperties)
+          : undefined
       }
     >
       {children}
@@ -86,6 +134,7 @@ export default function FilterBar({
   filters,
   onChange,
   target,
+  memberSectors,
   collapsed,
   onToggleCollapse,
   extra,
@@ -93,14 +142,25 @@ export default function FilterBar({
   filters: DataViewFilterState;
   onChange: (next: DataViewFilterState) => void;
   target: DataViewSchoolProfile | null;
+  memberSectors: SectorTag[];
   collapsed: boolean;
   onToggleCollapse: () => void;
   extra?: React.ReactNode;
 }) {
   const isFeParticipation = !!target?.feParticipation;
+  // 2026-09-07, UX refinements round 2, P1 item 3: same "show only relevant
+  // filters" discipline as ageBands below, extended to Boarding -- a day school
+  // (no real boarding figure at all, or a real one that's genuinely zero) has
+  // nothing for this filter to narrow, so it doesn't show at all rather than
+  // offering a control that always produces the same whole-school number either
+  // way it's clicked.
+  const showBoarding = !isFeParticipation && !!target && hasRealBoardingProvision(target.current?.boarding ?? null);
   const ageBands = target
     ? relevantAgeBandsFor({ phase: target.phase, statutoryLowAge: target.statutoryLowAge, statutoryHighAge: target.statutoryHighAge, feParticipation: target.feParticipation })
     : [];
+  // P3 item 7: only pills for sectors genuinely present in the active set, and
+  // only at all when there's real variation to narrow (more than one).
+  const sectorOptions = memberSectors.length > 1 ? SECTOR_OPTIONS.filter((s) => memberSectors.includes(s)) : [];
 
   const singleBand = filters.phaseBands.size === 1 ? ([...filters.phaseBands][0] as PhaseBandKey) : null;
   const ageOptions =
@@ -121,6 +181,20 @@ export default function FilterBar({
 
   return (
     <div className="text-sm">
+      <style>{`
+        @media (prefers-color-scheme: dark) {
+          :root:where(:not([data-theme="light"])) .filter-pill-active {
+            background-color: var(--pill-bg-dark) !important;
+            border-color: var(--pill-bg-dark) !important;
+            color: var(--pill-fg-dark) !important;
+          }
+        }
+        :root[data-theme="dark"] .filter-pill-active {
+          background-color: var(--pill-bg-dark) !important;
+          border-color: var(--pill-bg-dark) !important;
+          color: var(--pill-fg-dark) !important;
+        }
+      `}</style>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         {!collapsed && (
           <>
@@ -132,6 +206,7 @@ export default function FilterBar({
                 {ageBands.map(({ key, label }) => (
                   <Pill
                     key={key}
+                    tagKey={key}
                     active={filters.phaseBands.has(key)}
                     onClick={() => onChange({ ...filters, phaseBands: toggle(filters.phaseBands, key), ages: new Set() })}
                   >
@@ -144,18 +219,29 @@ export default function FilterBar({
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Gender</span>
               {GENDER_OPTIONS.map((g) => (
-                <Pill key={g} active={filters.gender.has(g)} onClick={() => onChange({ ...filters, gender: toggle(filters.gender, g) })}>
+                <Pill key={g} tagKey={g} active={filters.gender.has(g)} onClick={() => onChange({ ...filters, gender: toggle(filters.gender, g) })}>
                   {g}
                 </Pill>
               ))}
             </div>
 
-            {!isFeParticipation && (
+            {showBoarding && (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Boarding</span>
                 {BOARDING_OPTIONS.map((b) => (
-                  <Pill key={b} active={filters.boarding.has(b)} onClick={() => onChange({ ...filters, boarding: toggle(filters.boarding, b) })}>
+                  <Pill key={b} tagKey={BOARDING_TAG_KEY[b]} active={filters.boarding.has(b)} onClick={() => onChange({ ...filters, boarding: toggle(filters.boarding, b) })}>
                     {b}
+                  </Pill>
+                ))}
+              </div>
+            )}
+
+            {sectorOptions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Sector</span>
+                {sectorOptions.map((s) => (
+                  <Pill key={s} tagKey={s} active={filters.sector.has(s)} onClick={() => onChange({ ...filters, sector: toggle(filters.sector, s) })}>
+                    {s}
                   </Pill>
                 ))}
               </div>

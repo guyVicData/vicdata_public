@@ -2,11 +2,20 @@
 // status filter state that sits above Map/Dashboard/Rankings, one state consumed by
 // all three -- never reset or diverged when switching views. Distinct from
 // map-tag-groups.ts's FilterState (the PUBLIC map's sector/phase/gender MEMBERSHIP
-// filter, which hides/shows dots) -- these filters never change which schools are in
-// the ticked comparator set (the tick-list is the only comparison mechanism, brief
-// §4); they change what NUMBER is being compared for the schools already ticked, the
-// same "through-school collapses to its relevant department" mechanic the brief's §5
-// describes for phase, generalised to all three axes here.
+// filter, which hides/shows dots) -- most of these filters never change which
+// schools are in the ticked comparator set (the tick-list is the only comparison
+// mechanism, brief §4); they change what NUMBER is being compared for the schools
+// already ticked, the same "through-school collapses to its relevant department"
+// mechanic the brief's §5 describes for phase, generalised to all three axes here.
+//
+// 2026-09-07, UX refinements round 2, P3 item 7: `sector` is the one deliberate
+// exception to that rule, added this round -- a school's own sector isn't a
+// per-pupil number with a slice to narrow (unlike phase/gender), it's a whole-
+// school category, so the only honest thing an active sector filter can do is
+// MEMBERSHIP filtering, same as the public map's own sector filter already does
+// (hide/exclude non-matching schools entirely from Map/Dashboard/Rankings) --
+// deliberately reusing that established convention rather than inventing a
+// different one for this one field. See matchesSectorFilter's own comment below.
 //
 // Real data constraint, decided deliberately rather than glossed over: DfE census
 // boarding facts (boarders_total/boarders_male/boarders_female) are whole-school
@@ -23,7 +32,7 @@
 // in the consuming UI says so explicitly rather than silently showing a number that
 // looks phase-scoped but isn't.
 
-import type { GenderTag } from "./typology";
+import type { GenderTag, SectorTag } from "./typology";
 import { phaseTagAgeRange, type PhaseTag } from "./typology";
 import type { AgeGenderCounts } from "./roll-data";
 import { EARLY_YEARS_PROXY_AGE_THRESHOLD } from "./narrative-config";
@@ -78,6 +87,10 @@ export type DataViewFilterState = {
   // this same shared state rather than a separate piece of state since it's still
   // "one state, fed to whichever view is active" exactly like every other field here.
   startPeriod: number;
+  // 2026-09-07, UX refinements round 2, P3 item 7: membership filter, not a slice
+  // -- see this module's own header comment for why sector can't work the way
+  // phase/gender/boarding do. Empty = no restriction (every sector passes).
+  sector: Set<SectorTag>;
 };
 
 // TREND_ANCHOR_PERIOD (data-view-profiles.ts) duplicated as a literal default here
@@ -87,7 +100,17 @@ export type DataViewFilterState = {
 const DEFAULT_START_PERIOD = 2019;
 
 export function emptyDataViewFilterState(): DataViewFilterState {
-  return { phaseBands: new Set(), ages: new Set(), gender: new Set(), boarding: new Set(), startPeriod: DEFAULT_START_PERIOD };
+  return { phaseBands: new Set(), ages: new Set(), gender: new Set(), boarding: new Set(), startPeriod: DEFAULT_START_PERIOD, sector: new Set() };
+}
+
+// 2026-09-07, UX refinements round 2, P3 item 7: the one real predicate every
+// membership-filtering call site (MapView's marker loop, DataViewShell's own
+// tickedProfiles derivation feeding Dashboard/Rankings) shares, so "does this
+// school pass the active sector filter" can't drift between the three views the
+// way a hand-copied check in each would risk.
+export function matchesSectorFilter(sector: SectorTag | null, filterSet: Set<SectorTag>): boolean {
+  if (filterSet.size === 0) return true;
+  return sector !== null && filterSet.has(sector);
 }
 
 // Wire-safe (de)serialisation for saving/recalling a filter combination alongside a
@@ -102,6 +125,7 @@ export type WireDataViewFilterState = {
   gender: GenderTag[];
   boarding: BoardingFilterValue[];
   startPeriod: number;
+  sector: SectorTag[];
 };
 
 export function serializeFilterState(f: DataViewFilterState): WireDataViewFilterState {
@@ -111,6 +135,7 @@ export function serializeFilterState(f: DataViewFilterState): WireDataViewFilter
     gender: [...f.gender],
     boarding: [...f.boarding],
     startPeriod: f.startPeriod,
+    sector: [...f.sector],
   };
 }
 
@@ -121,6 +146,7 @@ export function deserializeFilterState(w: WireDataViewFilterState): DataViewFilt
     gender: new Set(w.gender ?? []),
     boarding: new Set(w.boarding ?? []),
     startPeriod: w.startPeriod ?? DEFAULT_START_PERIOD,
+    sector: new Set(w.sector ?? []),
   };
 }
 
@@ -187,6 +213,17 @@ export function relevantAgeBandsFor(school: {
     bands.push({ key: "Post 16", label: "Post 16" });
   }
   return bands;
+}
+
+// 2026-09-07, UX refinements round 2, P1 item 3: "Acland Burghley shows a
+// 'Boarding' filter despite having zero boarders -- the 'show only relevant
+// filters' logic covered Phase/Post-16 but missed Boarding." Same real check
+// DashboardView.tsx's own targetIsDaySchool already used inline (a day school has
+// either no real boarding figure at all, or a real one that's genuinely zero) --
+// extracted here so FilterBar.tsx's relevance gate and Dashboard's own card can't
+// silently drift apart on what "this school doesn't board" means.
+export function hasRealBoardingProvision(boarding: { boarders: number; day: number; total: number } | null): boolean {
+  return boarding !== null && boarding.boarders > 0;
 }
 
 // One school's full real per-age/per-sex breakdown for the currently-relevant period,

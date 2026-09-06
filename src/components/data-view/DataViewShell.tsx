@@ -18,12 +18,14 @@ import {
   describeFilters,
   serializeFilterState,
   deserializeFilterState,
+  matchesSectorFilter,
   type DataViewFilterState,
   type WireDataViewFilterState,
 } from "@/lib/data-view-filters";
 import type { SetOption, ViewKey } from "@/lib/data-view-types";
 import type { SchoolTypeCategory } from "@/lib/default-comparator-lists";
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
+import { TOPIC_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import ComparatorSidebar from "./ComparatorSidebar";
 import SavedSetsControl from "./SavedSetsControl";
 import FilterBar from "./FilterBar";
@@ -80,6 +82,15 @@ export default function DataViewShell({ urn }: { urn: string }) {
 
   const [activeSet, setActiveSet] = useState<SetOption | null>(null);
   const [tickedUrns, setTickedUrns] = useState<Set<string>>(new Set());
+  // 2026-09-07, UX refinements round 2, P3 item 8: "ability to hide all schools in
+  // the 'Compared with' list at once" -- built to Guy's own stated reading (a
+  // temporary display toggle, membership-preserving, distinct from item 9's
+  // select-all/unselect-all which DOES change membership), logged as the
+  // operating interpretation in docs/vicdata_data_view_open_questions.md per his
+  // own explicit "log it rather than guess silently" instruction. Deliberately
+  // NOT touching tickedUrns -- un-hiding must restore exactly what was ticked
+  // before, with no re-selection needed.
+  const [comparedHidden, setComparedHidden] = useState(false);
   const [profilesByUrn, setProfilesByUrn] = useState<Map<string, DataViewSchoolProfile>>(new Map());
   const [profilesLoading, setProfilesLoading] = useState(false);
   const [profilesError, setProfilesError] = useState<string | null>(null);
@@ -419,6 +430,20 @@ export default function DataViewShell({ urn }: { urn: string }) {
     });
   }
 
+  // 2026-09-07, UX refinements round 2, P3 item 9: "Select all" / "Unselect all"
+  // on the sidebar's own schools list -- genuinely changes tickedUrns (set
+  // MEMBERSHIP), unlike item 8's comparedHidden above, which deliberately never
+  // touches it. Selects every real school CURRENTLY in the list (the caller
+  // passes the full list, visible + overflow together, not just what's on
+  // screen) -- never the target, which isn't part of tickedUrns' own vocabulary.
+  function selectAllTicked(urns: string[]) {
+    setTickedUrns(new Set(urns));
+  }
+
+  function unselectAllTicked() {
+    setTickedUrns(new Set());
+  }
+
   if (loadState === "checking" || loadState === "loading") {
     return (
       <main className="px-6 py-24 text-center text-sm text-neutral-500">
@@ -469,10 +494,37 @@ export default function DataViewShell({ urn }: { urn: string }) {
   }
 
   const targetProfile = profilesByUrn.get(target.urn) ?? null;
-  const tickedProfiles = activeSet
-    ? activeSet.schools.filter((s) => tickedUrns.has(s.urn)).map((s) => profilesByUrn.get(s.urn)).filter((p): p is DataViewSchoolProfile => !!p)
-    : [];
+  // 2026-09-07, UX refinements round 2, P3 item 7: the sector filter is a
+  // membership exclusion (matchesSectorFilter's own comment explains why it can't
+  // be a slice the way phase/gender/boarding are) applied once, here, so
+  // Dashboard/Rankings/Map can never disagree about which ticked schools the
+  // active sector filter has excluded.
+  const tickedProfiles =
+    activeSet && !comparedHidden
+      ? activeSet.schools
+          .filter((s) => tickedUrns.has(s.urn))
+          .map((s) => profilesByUrn.get(s.urn))
+          .filter((p): p is DataViewSchoolProfile => !!p)
+          .filter((p) => matchesSectorFilter(p.sector, filters.sector))
+      : [];
   const filterSummary = describeFilters(filters);
+
+  // 2026-09-07, UX refinements round 2, P3 item 7: "same 'only show if relevant'
+  // ... conventions" -- the Sector filter only makes sense (and only shows any
+  // pills at all) when the active set genuinely contains more than one real
+  // sector; a Nearest-10 set that's entirely state schools has nothing for it to
+  // narrow. Computed from every real sector actually present -- target included,
+  // same "the viewed school is a real reference point" rule applied everywhere
+  // else -- across the WHOLE active set (not just the currently-ticked schools),
+  // since an untocked-but-present school is still a real reason the filter is
+  // relevant.
+  const memberSectors = Array.from(
+    new Set(
+      [targetProfile?.sector, ...(activeSet?.schools.map((s) => profilesByUrn.get(s.urn)?.sector) ?? [])].filter(
+        (s): s is NonNullable<typeof s> => !!s,
+      ),
+    ),
+  );
 
   const setOptions: SetOption[] = [
     ...(recipeLists?.list1 ? [recipeLists.list1] : []),
@@ -531,6 +583,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
           filters={filters}
           onChange={setFilters}
           target={targetProfile}
+          memberSectors={memberSectors}
           collapsed={filterBarCollapsed}
           onToggleCollapse={() => setFilterBarCollapsed((c) => !c)}
           extra={
@@ -591,6 +644,10 @@ export default function DataViewShell({ urn }: { urn: string }) {
             boardingQuintileLoading={boardingQuintileLoading}
             tickedUrns={tickedUrns}
             onToggleTick={toggleTick}
+            onSelectAllTicked={selectAllTicked}
+            onUnselectAllTicked={unselectAllTicked}
+            comparedHidden={comparedHidden}
+            onToggleComparedHidden={() => setComparedHidden((h) => !h)}
             initialTickedCount={INITIAL_TICKED_COUNT}
           />
         </aside>
@@ -639,6 +696,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     targetProfile={targetProfile}
                     members={activeSet?.schools ?? []}
                     tickedUrns={tickedUrns}
+                    comparedHidden={comparedHidden}
                     onToggleTick={toggleTick}
                     profilesByUrn={profilesByUrn}
                     filters={filters}
@@ -667,44 +725,86 @@ export default function DataViewShell({ urn }: { urn: string }) {
 // strip. Built fresh here to match the brief's own described SHAPE (a topic tab
 // row) rather than a pattern that doesn't actually exist yet to copy.
 //
-// 2026-09-06, UX refinements round 1, A1: the school/college name is now its own
-// line directly above the tab row, left-aligned with "VicData" in NavBar.tsx (px-6)
-// above it and "Phase" in FilterBar.tsx (inside this shell's own px-4 sm:px-6 filter
-// row) below it -- given px-4 sm:px-6 rather than px-6 unconditionally, matching the
-// filter row's own responsive padding since the two sit directly adjacent and would
-// otherwise visibly drift apart below the sm breakpoint. The tab row itself gains
-// the same px-4 sm:px-6 (it previously had none at all, sitting flush at the very
-// left edge rather than aligned with anything else on the page -- a real, if minor,
-// pre-existing misalignment this also happens to fix).
+// 2026-09-06, UX refinements round 1, A1: the school/college name sat on its own
+// line above the tab row, left-aligned with "VicData" in NavBar.tsx (px-6) above
+// it and "Phase" in FilterBar.tsx (this shell's own px-4 sm:px-6 filter row)
+// below it. px-4 sm:px-6 kept here too (not px-6 unconditionally) for the same
+// reason -- this row and the filter row sit directly adjacent and would
+// otherwise visibly drift apart below the sm breakpoint.
+//
+// 2026-09-07, UX refinements round 2, P2 item 4: redesigned per direct
+// instruction -- school name now shares ONE line with the tabs (bold/larger/
+// dark, reading as identity, to the left) instead of its own line above them;
+// tabs are flat pills (no chevrons -- those imply a sequence/step-flow, and
+// these four topics are independent, not a step flow) with a FIXED identity
+// colour each (TOPIC_COLOURS, tag-colours.ts -- picked to be distinguishable
+// from each other, the one requirement that actually matters since they're the
+// only place these four colours appear together; see that constant's own
+// comment for why some proximity to the school-typology tag palette elsewhere
+// in the app was unavoidable). The active tab (only "Rolls" is real content this
+// round) always shows its fill -- per the request's own explicit instruction,
+// this is NAVIGATION, not filtering, so it doesn't follow the "colour only when
+// narrowing from all" convention P2 item 5 applies to actual filter pills (there
+// is no "default tab" to narrow away from). print-color-adjust ensures this
+// fill actually survives a PDF export (window.print()) rather than silently
+// being stripped to plain text the way browsers default background colours to
+// on the print path -- this row isn't `print:hidden`, so it's the "PDF export
+// header" the request names.
+const TOPIC_TABS: { label: string; active: boolean }[] = [
+  { label: "Rolls", active: true },
+  { label: "Academic", active: false },
+  { label: "Destinations", active: false },
+  { label: "Context", active: false },
+];
+
 function TopicTabs({ schoolName }: { schoolName: string }) {
-  const tabs = [
-    { label: "Rolls", active: true },
-    { label: "Academic", active: false },
-    { label: "Destinations", active: false },
-    { label: "Context", active: false },
-  ];
   return (
-    <div className="px-4 sm:px-6">
-      <p className="pt-3 pb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">{schoolName}</p>
-      <nav className="flex gap-1 border-b border-neutral-200 text-sm dark:border-neutral-800">
-      {tabs.map((t) => (
-        <span
-          key={t.label}
-          className={
-            t.active
-              ? "border-b-2 border-neutral-900 px-3 py-2 font-medium text-neutral-900 dark:border-neutral-100 dark:text-neutral-100"
-              : "flex cursor-not-allowed items-center gap-1 px-3 py-2 text-neutral-400 dark:text-neutral-600"
-          }
-        >
-          {t.label}
-          {!t.active && (
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4">
-              <path d="M3 2l3 3-3 3" />
-            </svg>
-          )}
-        </span>
-      ))}
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-neutral-200 px-4 py-3 sm:px-6 dark:border-neutral-800">
+      <p className="text-base font-bold text-neutral-900 dark:text-neutral-100">{schoolName}</p>
+      <nav className="flex flex-wrap gap-1.5">
+        {TOPIC_TABS.map((t) => {
+          const tagColours = TOPIC_COLOURS[t.label];
+          const fillLight = tagColours?.light[1] ?? "#171717";
+          const fillDark = tagColours?.dark[1] ?? "#ededed";
+          return (
+            <span
+              key={t.label}
+              aria-current={t.active ? "page" : undefined}
+              className={
+                t.active
+                  ? "topic-tab-active rounded-full px-3 py-1 text-xs font-medium"
+                  : "cursor-not-allowed rounded-full px-3 py-1 text-xs text-neutral-400 dark:text-neutral-600"
+              }
+              style={
+                t.active
+                  ? ({
+                      "--pill-bg-dark": fillDark,
+                      "--pill-fg-dark": contrastingTextColour(fillDark),
+                      backgroundColor: fillLight,
+                      color: contrastingTextColour(fillLight),
+                      WebkitPrintColorAdjust: "exact",
+                      printColorAdjust: "exact",
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              {t.label}
+            </span>
+          );
+        })}
       </nav>
+      <style>{`
+        @media (prefers-color-scheme: dark) {
+          :root:where(:not([data-theme="light"])) .topic-tab-active {
+            background-color: var(--pill-bg-dark) !important;
+            color: var(--pill-fg-dark) !important;
+          }
+        }
+        :root[data-theme="dark"] .topic-tab-active {
+          background-color: var(--pill-bg-dark) !important;
+          color: var(--pill-fg-dark) !important;
+        }
+      `}</style>
     </div>
   );
 }

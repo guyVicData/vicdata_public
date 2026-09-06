@@ -10,7 +10,7 @@
 
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { profileToFilterableData, profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
-import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
+import { filteredCount, hasRealBoardingProvision, type DataViewFilterState } from "@/lib/data-view-filters";
 import { trendBadge, spreadData, memberSetMarketShare, shapeInlineFact, sizeBand, type TrendBadge } from "@/lib/data-view-cards";
 import { shapeClassifierInput } from "@/lib/roll-data";
 import { classifyShape } from "@/lib/shape-classifier";
@@ -111,7 +111,7 @@ export default function DashboardView({
   const targetBoardingAnchor = targetBoardingAnchorB && targetBoardingAnchorB.total > 0 ? (targetBoardingAnchorB.boarders / targetBoardingAnchorB.total) * 100 : null;
   const boardingTrendBadge = trendBadge(targetBoardingCurrent, targetBoardingAnchor);
   const boardingSpread = spreadData(boardingPoints);
-  const targetIsDaySchool = targetProfile.current?.boarding === null || targetProfile.current?.boarding?.boarders === 0;
+  const targetIsDaySchool = !hasRealBoardingProvision(targetProfile.current?.boarding ?? null);
 
   const groupTotal = currentPoints.reduce((sum, p) => sum + (p.value ?? 0), 0);
   const marketShare = targetCurrent !== null ? memberSetMarketShare(targetCurrent, groupTotal) : null;
