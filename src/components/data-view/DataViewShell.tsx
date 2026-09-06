@@ -13,10 +13,19 @@ import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { deserializeProfile, type WireDataViewSchoolProfile } from "@/lib/data-view-serialize";
-import { emptyDataViewFilterState, describeFilters, type DataViewFilterState } from "@/lib/data-view-filters";
+import {
+  emptyDataViewFilterState,
+  describeFilters,
+  serializeFilterState,
+  deserializeFilterState,
+  type DataViewFilterState,
+  type WireDataViewFilterState,
+} from "@/lib/data-view-filters";
 import type { SetOption, ViewKey } from "@/lib/data-view-types";
 import type { SchoolTypeCategory } from "@/lib/default-comparator-lists";
+import { describeActiveViewSentence } from "@/lib/data-view-summary";
 import ComparatorSidebar from "./ComparatorSidebar";
+import SavedSetsControl from "./SavedSetsControl";
 import FilterBar from "./FilterBar";
 import ViewSwitcher from "./ViewSwitcher";
 import DashboardView from "./DashboardView";
@@ -51,6 +60,14 @@ export default function DataViewShell({ urn }: { urn: string }) {
   const [slowLoad, setSlowLoad] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [target, setTarget] = useState<TargetSchool | null>(null);
+  // 2026-09-06, UX refinements round 1, A2: captured here (Step 1 already looks this
+  // membership row up to gate the page; it just used to discard the row's own id
+  // once the existence check passed) so the new Save Set flow can write a real
+  // owner_membership_id/school_account_id -- the same two fields
+  // /sets/comparator/new/page.tsx's own save already requires, reused rather than
+  // re-derived a second way.
+  const [membershipId, setMembershipId] = useState<string | null>(null);
+  const [schoolAccountId, setSchoolAccountId] = useState<string | null>(null);
 
   const [recipeLists, setRecipeLists] = useState<{
     schoolTypeCategory: SchoolTypeCategory | null;
@@ -114,7 +131,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
         }
         const { data, error: membershipError } = await supabase
           .from("school_memberships")
-          .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
+          .select("id, school_account_id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
           .eq("status", "approved")
           .eq("school_accounts.school_urn", urn)
           .maybeSingle();
@@ -128,6 +145,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
           setLoadState("not_a_member");
           return;
         }
+        setMembershipId(data.id);
+        setSchoolAccountId(data.school_account_id);
         setLoadState("loading");
       } catch (e) {
         console.error("[DataViewShell] unexpected error during auth check:", e);
@@ -149,7 +168,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
           fetch(`/api/data-view/default-lists?urn=${urn}`, { headers: { Authorization: `Bearer ${authToken}` } }),
           supabase
             .from("saved_sets")
-            .select("id, name, saved_set_members(school_urn, member_status, schools(current_name))")
+            .select("id, name, config, saved_set_members(school_urn, member_status, schools(current_name))")
             .eq("set_type", "comparator"),
         ]);
 
@@ -185,6 +204,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
         type SavedSetRow = {
           id: string;
           name: string;
+          config: { filters?: WireDataViewFilterState } | null;
           saved_set_members: { school_urn: string; member_status: string; schools: { current_name: string } | null }[];
         };
         const saved = ((savedSetsRows.data as unknown as SavedSetRow[]) ?? []).map(
@@ -195,6 +215,12 @@ export default function DataViewShell({ urn }: { urn: string }) {
             schools: s.saved_set_members
               .filter((m) => m.member_status === "confirmed")
               .map((m) => ({ urn: m.school_urn, name: m.schools?.current_name ?? m.school_urn, distanceKm: null })),
+            // Older rows (every one saved via /sets/comparator/new/page.tsx, and
+            // every row saved before this round) have no real `config.filters` at
+            // all -- `config` defaults to `{}` at the schema level, so this is
+            // `undefined`, not a malformed value; SetOption's own `filters` field is
+            // optional for exactly this reason.
+            filters: s.config?.filters,
           }),
         );
         setSavedSets(saved);
@@ -261,7 +287,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
         });
         if (!res.ok) {
           console.error("[DataViewShell] profile fetch failed:", res.status, await res.text().catch(() => ""));
-          setProfilesError("Could not load school data for this comparator set.");
+          setProfilesError("Could not load school data for this Compared with set.");
           setProfilesLoading(false);
           return;
         }
@@ -293,7 +319,95 @@ export default function DataViewShell({ urn }: { urn: string }) {
 
   function selectSet(option: SetOption) {
     setActiveSet(option);
-    setTickedUrns(new Set(option.schools.slice(0, INITIAL_TICKED_COUNT).map((s) => s.urn)));
+    // A saved set is a deliberately curated tick-list (that's what got saved) --
+    // restore it exactly, not just its first INITIAL_TICKED_COUNT. A recipe list
+    // (Nearest 10, In-LA, etc.) keeps the existing "first 10 pre-ticked" default.
+    setTickedUrns(
+      option.kind === "saved"
+        ? new Set(option.schools.map((s) => s.urn))
+        : new Set(option.schools.slice(0, INITIAL_TICKED_COUNT).map((s) => s.urn)),
+    );
+    // 2026-09-06, UX refinements round 1, A2/B3: recalling a saved set restores the
+    // filter state it was saved with too, when one was actually saved (see
+    // SetOption's own comment for why this is optional) -- "share one underlying
+    // save mechanism" means recall is symmetric with save, not just the school list.
+    if (option.kind === "saved" && option.filters) {
+      setFilters(deserializeFilterState(option.filters));
+    }
+  }
+
+  // 2026-09-06, UX refinements round 1, B3: "+5 more" grows the ACTIVE set's own
+  // school list in place, deliberately not routed through selectSet -- selectSet's
+  // own "first INITIAL_TICKED_COUNT pre-ticked" default would silently discard
+  // whatever the member had already manually ticked/unticked within the original 10
+  // the moment they asked for 5 more. Only the newly-appeared URNs (present in the
+  // new list, absent from the old one) get auto-ticked; every existing URN's ticked
+  // state is left exactly as the member set it.
+  function expandActiveSet(newSchools: SetOption["schools"]) {
+    setActiveSet((prev) => (prev ? { ...prev, schools: newSchools } : prev));
+    setTickedUrns((prev) => {
+      const oldUrns = new Set(activeSet?.schools.map((s) => s.urn) ?? []);
+      const next = new Set(prev);
+      for (const s of newSchools) {
+        if (!oldUrns.has(s.urn)) next.add(s.urn);
+      }
+      return next;
+    });
+  }
+
+  // 2026-09-06, UX refinements round 1, A2/B3: the one save mechanism shared by the
+  // filter row's own Saved Sets control and (once built) B3's richer "Compared with"
+  // rework -- the exact same saved_sets/saved_set_members tables and RLS policies
+  // /sets/comparator/new/page.tsx's own save flow already uses, with one real
+  // addition: `config.filters`, a wire-safe snapshot of the current filter state, so
+  // recall restores both halves of "what was I looking at," not just the schools.
+  // Saves the CURRENTLY TICKED schools specifically (the tick-list is this whole
+  // build's one real comparison mechanism, ComparatorSidebar.tsx's own module
+  // comment) -- not every school in whatever recipe/saved list happens to be active,
+  // which could be a much longer list the member never meant to bookmark whole.
+  async function saveCurrentSet(name: string): Promise<{ ok: boolean; error?: string }> {
+    if (!schoolAccountId || !membershipId) return { ok: false, error: "Could not verify your membership." };
+    const urnsToSave = Array.from(tickedUrns).filter((u) => u !== target?.urn);
+    if (urnsToSave.length === 0) return { ok: false, error: "Tick at least one school to save a set." };
+
+    const { data: set, error: insertError } = await supabase
+      .from("saved_sets")
+      .insert({
+        school_account_id: schoolAccountId,
+        set_type: "comparator",
+        name,
+        owner_membership_id: membershipId,
+        config: { filters: serializeFilterState(filters) },
+      })
+      .select("id")
+      .single();
+    if (insertError || !set) {
+      // The personal-set cap (3, enforced by the DB trigger -- saved_sets.sql's own
+      // enforce_personal_comparator_cap) surfaces here as a real Postgres exception
+      // message, same as /sets/comparator/new/page.tsx's own save already surfaces
+      // it -- not re-worded, so the two save paths give the member the same answer.
+      return { ok: false, error: insertError?.message ?? "Could not save this set." };
+    }
+
+    const { error: membersError } = await supabase.from("saved_set_members").insert(
+      urnsToSave.map((urn) => ({ saved_set_id: set.id, school_urn: urn, member_status: "confirmed" as const })),
+    );
+    if (membersError) {
+      return { ok: false, error: membersError.message };
+    }
+
+    const names = new Map(profilesByUrn);
+    setSavedSets((prev) => [
+      ...prev,
+      {
+        kind: "saved",
+        id: set.id,
+        label: name,
+        schools: urnsToSave.map((u) => ({ urn: u, name: names.get(u)?.name ?? u, distanceKm: null })),
+        filters: serializeFilterState(filters),
+      },
+    ]);
+    return { ok: true };
   }
 
   function toggleTick(urn: string) {
@@ -410,22 +524,37 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // layout or adding any height on top of it.
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
-      <TopicTabs />
+      <TopicTabs schoolName={target.name} />
 
       <div className="border-b border-neutral-200 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-800">
-        {!filterBarCollapsed && (
-          <div className="mb-2">
-            <FilterBar filters={filters} onChange={setFilters} target={targetProfile} />
-          </div>
-        )}
-        <button
-          type="button"
-          className="text-xs text-neutral-400 underline"
-          onClick={() => setFilterBarCollapsed((c) => !c)}
-        >
-          {filterBarCollapsed ? "Show filters" : "Collapse filters"}
-        </button>
+        <FilterBar
+          filters={filters}
+          onChange={setFilters}
+          target={targetProfile}
+          collapsed={filterBarCollapsed}
+          onToggleCollapse={() => setFilterBarCollapsed((c) => !c)}
+          extra={
+            <SavedSetsControl
+              savedSets={savedSets}
+              onSelect={selectSet}
+              onSave={saveCurrentSet}
+              canSave={Array.from(tickedUrns).some((u) => u !== target?.urn)}
+            />
+          }
+        />
       </div>
+
+      {/* 2026-09-06, UX refinements round 1, A3: "a text line below the filter row,
+          stating in plain language what the current filter/comparator combination
+          means... updates live as filters change." Recomputed fresh every render
+          from the actual live filters/activeSet/target (data-view-summary.ts's own
+          module comment) -- never a snapshot that could drift from what Map/
+          Dashboard/Rankings are actually showing. */}
+      {targetProfile && (
+        <div className="border-b border-neutral-200 px-4 py-1.5 text-xs text-neutral-500 print:hidden dark:border-neutral-800 dark:text-neutral-400 sm:px-6">
+          {describeActiveViewSentence(filters, activeSet, targetProfile)}
+        </div>
+      )}
 
       {/* Print-only summary line (brief §9): "show your assumptions" -- an exported
           view states which comparator set and filters produced the numbers on the
@@ -433,7 +562,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
           page ADDS for print rather than hides. */}
       <div className="hidden px-4 sm:px-6 print:block print:py-2 print:text-xs">
         <p>
-          {target.name} — {activeView} view — comparator set: {activeSet?.label ?? "none"}
+          {target.name} — {activeView} view — compared with: {activeSet?.label ?? "none"}
           {filterSummary ? ` — filtered: ${filterSummary}` : ""} — generated {new Date().toLocaleDateString("en-GB")}
         </p>
         <p>
@@ -445,6 +574,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
         <aside className="shrink-0 border-b border-neutral-200 p-4 lg:w-64 lg:border-b-0 lg:border-r dark:border-neutral-800">
           <ComparatorSidebar
             targetName={target.name}
+            targetUrn={target.urn}
+            authToken={authToken}
             options={setOptions}
             activeSet={activeSet}
             onSelectSet={(opt) => {
@@ -456,6 +587,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
               }
               selectSet(opt);
             }}
+            onExpandActiveSet={expandActiveSet}
             boardingQuintileLoading={boardingQuintileLoading}
             tickedUrns={tickedUrns}
             onToggleTick={toggleTick}
@@ -534,7 +666,17 @@ export default function DataViewShell({ urn }: { urn: string }) {
 // is inline ComingSoonCard placeholders further down the same scroll, not a tab
 // strip. Built fresh here to match the brief's own described SHAPE (a topic tab
 // row) rather than a pattern that doesn't actually exist yet to copy.
-function TopicTabs() {
+//
+// 2026-09-06, UX refinements round 1, A1: the school/college name is now its own
+// line directly above the tab row, left-aligned with "VicData" in NavBar.tsx (px-6)
+// above it and "Phase" in FilterBar.tsx (inside this shell's own px-4 sm:px-6 filter
+// row) below it -- given px-4 sm:px-6 rather than px-6 unconditionally, matching the
+// filter row's own responsive padding since the two sit directly adjacent and would
+// otherwise visibly drift apart below the sm breakpoint. The tab row itself gains
+// the same px-4 sm:px-6 (it previously had none at all, sitting flush at the very
+// left edge rather than aligned with anything else on the page -- a real, if minor,
+// pre-existing misalignment this also happens to fix).
+function TopicTabs({ schoolName }: { schoolName: string }) {
   const tabs = [
     { label: "Rolls", active: true },
     { label: "Academic", active: false },
@@ -542,7 +684,9 @@ function TopicTabs() {
     { label: "Context", active: false },
   ];
   return (
-    <nav className="flex gap-1 border-b border-neutral-200 text-sm dark:border-neutral-800">
+    <div className="px-4 sm:px-6">
+      <p className="pt-3 pb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">{schoolName}</p>
+      <nav className="flex gap-1 border-b border-neutral-200 text-sm dark:border-neutral-800">
       {tabs.map((t) => (
         <span
           key={t.label}
@@ -560,6 +704,7 @@ function TopicTabs() {
           )}
         </span>
       ))}
-    </nav>
+      </nav>
+    </div>
   );
 }

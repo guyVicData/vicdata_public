@@ -50,6 +50,12 @@ export type MatchedSchool = {
   ageGenderCounts: AgeGenderCounts;
   easting: number | null;
   northing: number | null;
+  // 2026-09-06, UX refinements round 1, B3: added for the new "adjacent LA" picker
+  // (la-comparator-sets.ts) -- derives its candidate LA list from the REAL LAs the
+  // target's own nearest schools actually sit in, rather than a fabricated geographic
+  // adjacency table this repo has no real data source for. Pulled from the same
+  // already-running `attrRows` query below (one extra column), not a new round-trip.
+  laName: string | null;
 };
 
 // The shared matching pipeline: nearest_schools RPC (distance + sector + broad age
@@ -78,9 +84,17 @@ function genderMatches(target: GenderTag, candidate: GenderTag | null, mode: Gen
 export async function findSurroundingSchools(
   urn: string,
   targetPeriod: number,
-  options: { genderMode?: GenderMatchMode } = {},
+  options: { genderMode?: GenderMatchMode; targetCount?: number } = {},
 ): Promise<MatchedSchool[]> {
   const genderMode = options.genderMode ?? "exact";
+  // 2026-09-06, UX refinements round 1, B3: "for the Nearest 10 default set, add a
+  // button to expand it by 5 more schools at a time." Optional, default-preserving
+  // (TARGET_COUNT unchanged for every existing caller) -- the RPC's own candidate
+  // buffer (CANDIDATE_BUFFER, below) is widened proportionally too, since asking for
+  // more real matches needs a bigger raw pool to filter/skip-and-backfill through,
+  // not just a higher cutoff on the same-sized buffer.
+  const targetCount = options.targetCount ?? TARGET_COUNT;
+  const candidateBuffer = Math.max(CANDIDATE_BUFFER, targetCount * 4);
   const supabase = createServerAnonSupabaseClient();
 
   const { data: targetRows } = await supabase
@@ -139,7 +153,7 @@ export async function findSurroundingSchools(
 
   const { data: candidates, error } = await supabase.rpc("nearest_schools", {
     p_urn: urn,
-    p_limit: CANDIDATE_BUFFER,
+    p_limit: candidateBuffer,
     p_relax_sector: relaxSectorForThroughSchool,
   });
 
@@ -199,9 +213,10 @@ export async function findSurroundingSchools(
   const rawGenderByUrn = new Map<string, string | null>();
   const boardersNameByUrn = new Map<string, string | null>();
   const positionByUrn = new Map<string, { easting: number | null; northing: number | null }>();
+  const laNameByUrn = new Map<string, string | null>();
   const { data: attrRows } = await supabase
     .from("schools")
-    .select("urn, gender, boarders_name, easting, northing")
+    .select("urn, gender, boarders_name, easting, northing, la_name")
     .in("urn", phaseFilteredUrns);
   for (const r of (attrRows as {
     urn: string;
@@ -209,11 +224,13 @@ export async function findSurroundingSchools(
     boarders_name: string | null;
     easting: number | null;
     northing: number | null;
+    la_name: string | null;
   }[]) ?? []) {
     genderByUrn.set(r.urn, genderTag(r.gender));
     rawGenderByUrn.set(r.urn, r.gender);
     boardersNameByUrn.set(r.urn, r.boarders_name);
     positionByUrn.set(r.urn, { easting: r.easting, northing: r.northing });
+    laNameByUrn.set(r.urn, r.la_name);
   }
 
   const genderFiltered = targetGender
@@ -238,7 +255,7 @@ export async function findSurroundingSchools(
   // other gap) rather than erroring or silently misrepresenting. If the buffer runs
   // out before 10 are found, callers honestly report fewer than 10.
   for (const c of genderFiltered) {
-    if (results.length >= TARGET_COUNT) break;
+    if (results.length >= targetCount) break;
     const candidateFacts = facts.filter((f) => f.entity_id === c.urn);
     const counts = singleAgeGenderCountsForPeriod(candidateFacts, targetPeriod);
     if (counts.size === 0) continue;
@@ -269,6 +286,7 @@ export async function findSurroundingSchools(
       ageGenderCounts: counts,
       easting: positionByUrn.get(c.urn)?.easting ?? null,
       northing: positionByUrn.get(c.urn)?.northing ?? null,
+      laName: laNameByUrn.get(c.urn) ?? null,
     });
   }
 

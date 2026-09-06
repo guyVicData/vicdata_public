@@ -39,9 +39,17 @@ import { EARLY_YEARS_PROXY_AGE_THRESHOLD } from "./narrative-config";
 // taxonomy, not a new one; kept as "Post 16" here so this module stays in the one
 // real vocabulary typology.ts already defines, per the brief's own "reuses the
 // existing phase mechanism" instruction.
-export type PhaseBandKey = "Early Years" | "Junior" | "Prep" | "Senior" | "Post 16";
+// 2026-09-06, UX refinements round 1, A2/B1: "Adult" added as a sixth band -- the FE
+// participation source's 19+ bucket has no school-side analogue at all (unlike
+// "Post 16", which already means the real ages-16-18 range for a school AND doubles
+// as the "U19" label an FE college's under-19 ILR figure slots into -- see
+// relevantAgeBandsFor's own comment for why that's a relabelling, not a new band).
+// Always legal to select for consistency (this Set has no per-target legality
+// enforcement, only per-target UI relevance -- see relevantAgeBandsFor), but only
+// ever produces a non-zero figure for an institution with real FE participation data.
+export type PhaseBandKey = "Early Years" | "Junior" | "Prep" | "Senior" | "Post 16" | "Adult";
 
-export const PHASE_BANDS: PhaseBandKey[] = ["Early Years", "Junior", "Prep", "Senior", "Post 16"];
+export const PHASE_BANDS: PhaseBandKey[] = ["Early Years", "Junior", "Prep", "Senior", "Post 16", "Adult"];
 
 // Boarding-status filter options -- the two REAL numbers DfE census actually reports
 // (boarders_total, and day = totalRoll - boarders_total), not typology.ts's 3-way
@@ -60,10 +68,125 @@ export type DataViewFilterState = {
   ages: Set<number>;
   gender: Set<GenderTag>;
   boarding: Set<BoardingFilterValue>;
+  // 2026-09-06, UX refinements round 1, A2: "change the date range examined... end
+  // date fixed at the latest available year, start date selectable." The END date is
+  // deliberately NOT a field here -- it's always CURRENT_CENSUS_PERIOD (roll-data.ts),
+  // never stored/selectable, matching the brief's own "can't be changed." This is the
+  // one field on this type that ISN'T itself a UI-facing "narrow the count" filter --
+  // it instead picks WHICH historical period every "since X" trend/anchor comparison
+  // (trend badges, the Roll Trend chart, A3's summary sentence) measures from. Kept on
+  // this same shared state rather than a separate piece of state since it's still
+  // "one state, fed to whichever view is active" exactly like every other field here.
+  startPeriod: number;
 };
 
+// TREND_ANCHOR_PERIOD (data-view-profiles.ts) duplicated as a literal default here
+// rather than imported -- that module is server-only (createServerAnonSupabaseClient),
+// and this one deliberately has no server-only imports so client components can use
+// it directly (same discipline data-view-serialize.ts's own header comment documents).
+const DEFAULT_START_PERIOD = 2019;
+
 export function emptyDataViewFilterState(): DataViewFilterState {
-  return { phaseBands: new Set(), ages: new Set(), gender: new Set(), boarding: new Set() };
+  return { phaseBands: new Set(), ages: new Set(), gender: new Set(), boarding: new Set(), startPeriod: DEFAULT_START_PERIOD };
+}
+
+// Wire-safe (de)serialisation for saving/recalling a filter combination alongside a
+// comparator set (UX refinements round 1, A2 + B3: "share one underlying save
+// mechanism," never two). Every field here is a Set, which -- same lesson as
+// data-view-serialize.ts's own AgeGenderCounts history -- doesn't survive
+// JSON.stringify/a jsonb column at all; converted to/from plain arrays explicitly
+// rather than assumed safe.
+export type WireDataViewFilterState = {
+  phaseBands: PhaseBandKey[];
+  ages: number[];
+  gender: GenderTag[];
+  boarding: BoardingFilterValue[];
+  startPeriod: number;
+};
+
+export function serializeFilterState(f: DataViewFilterState): WireDataViewFilterState {
+  return {
+    phaseBands: [...f.phaseBands],
+    ages: [...f.ages],
+    gender: [...f.gender],
+    boarding: [...f.boarding],
+    startPeriod: f.startPeriod,
+  };
+}
+
+export function deserializeFilterState(w: WireDataViewFilterState): DataViewFilterState {
+  return {
+    phaseBands: new Set(w.phaseBands ?? []),
+    ages: new Set(w.ages ?? []),
+    gender: new Set(w.gender ?? []),
+    boarding: new Set(w.boarding ?? []),
+    startPeriod: w.startPeriod ?? DEFAULT_START_PERIOD,
+  };
+}
+
+export type AgeBandOption = { key: PhaseBandKey; label: string };
+
+// 2026-09-06, UX refinements round 1, A2: "show only the filters relevant to the
+// school/college being viewed... e.g. for Acland Burghley: Phase (Senior/Post-16),
+// Gender, not every possible filter for every phase/sector." Two real cases:
+//
+// 1. An ordinary school/through-school: the phase bands it actually, really spans --
+//    reusing the TARGET's own effective phase tags (DataViewSchoolProfile's `phase`,
+//    already enrollment-aware via effectivePhaseTags) for Junior/Prep/Senior, PLUS
+//    "Post 16" whenever the school's real statutoryHighAge reaches 16, checked
+//    SEPARATELY from `phase` rather than folded into that same loop.
+//
+//    This split is deliberate, caught by checking Acland Burghley's own real data
+//    (11-18, phase = ["Senior"] only) against the request's own example, which
+//    explicitly expects BOTH Senior and Post-16 to show for it: typology.ts's
+//    phaseTags() deliberately never puts "Senior" and "Post 16" in the same tag set
+//    for one school (a considered, real-data-verified decision, not an oversight --
+//    ages 16-18 are folded INTO "Senior" for an ordinary through-school, its own
+//    history comment explains why) -- but the underlying age SLICE `[16, highAge]`
+//    (phaseTagAgeRange's own "Post 16" branch) is still just as real and still worth
+//    isolating for a member who wants "sixth form roll" specifically, exactly as A3's
+//    own example sentences assume. Gating strictly on `phase.includes("Post 16")`
+//    would mean this pill could never appear for any ordinary through-school at
+//    all -- only for a standalone Post-16-only institution, which isn't what the
+//    request's own example describes.
+//
+//    Early Years is its own proxy check (hasEarlyYearsProvision's exact threshold
+//    test, narrative.ts -- re-implemented as one line here rather than importing
+//    that module, which pulls in heavier narrative-generation dependencies this
+//    file has no other reason to depend on).
+// 2. An FE-participation institution (feParticipation non-null on the PROFILE, i.e.
+//    genuinely has no real census phase data at all): Junior/Prep/Senior/Early Years
+//    are hidden outright (real zeros with no meaningful "this doesn't apply" story),
+//    and "Post 16" is relabelled "U19" in this one context -- the underlying filter
+//    value is unchanged (still literally "Post 16" in DataViewFilterState, see that
+//    band's own module comment for why), only the LABEL shown to the member differs,
+//    since "Post 16" reads as nonsensical terminology for an institution that has no
+//    other phases to be "post" relative to. "Adult" is always offered for such a
+//    target (whether or not it has real adult data this round -- e.g. a genuinely
+//    under-19-only college would still legitimately offer it, honestly returning 0).
+export function relevantAgeBandsFor(school: {
+  phase: PhaseTag[];
+  statutoryLowAge: number | null;
+  statutoryHighAge: number | null;
+  feParticipation: unknown;
+}): AgeBandOption[] {
+  if (school.feParticipation) {
+    return [
+      { key: "Post 16", label: "U19" },
+      { key: "Adult", label: "Adult" },
+    ];
+  }
+  const bands: AgeBandOption[] = [];
+  if (school.statutoryLowAge !== null && school.statutoryLowAge < EARLY_YEARS_PROXY_AGE_THRESHOLD) {
+    bands.push({ key: "Early Years", label: "Early Years" });
+  }
+  for (const tag of ["Junior", "Prep", "Senior"] as const) {
+    if (school.phase.includes(tag)) bands.push({ key: tag, label: tag });
+  }
+  if (school.statutoryHighAge !== null && school.statutoryHighAge >= 16) {
+    bands.push({ key: "Post 16", label: "Post 16" });
+  }
+  return bands;
 }
 
 // One school's full real per-age/per-sex breakdown for the currently-relevant period,
@@ -81,6 +204,16 @@ export type FilterableSchoolData = {
   // roll-data.ts's own finishSnapshot already tolerates for the school's whole-roll
   // boarding figure).
   boardersGenderSplit: { female: number; male: number } | null;
+  // 2026-09-06, UX refinements round 1, B1: an FE-participation institution's ONLY
+  // real figures -- always null for a school with real census ageGenderCounts (never
+  // blended, same discipline data-view-profiles.ts's own feParticipation field
+  // documents). Present here, not bolted on as a special case elsewhere, so
+  // filteredCount stays the one function every view calls regardless of which kind
+  // of institution it's asking about.
+  feParticipation: {
+    under19: { total: number; male: number | null; female: number | null } | null;
+    adult: { total: number; male: number | null; female: number | null } | null;
+  } | null;
 };
 
 // The real [lo,hi] age range a phase band covers for THIS school -- Early Years is a
@@ -93,6 +226,12 @@ export function ageRangeForBand(
   highAge: number,
 ): [number, number] {
   if (band === "Early Years") return [Math.min(lowAge, 0), EARLY_YEARS_PROXY_AGE_THRESHOLD - 1];
+  // "Adult" has no real census-age analogue for a mainstream school -- an empty range
+  // (rather than e.g. [19, highAge]) so sumAgeGender honestly returns 0 for every
+  // ordinary school rather than picking up a same-shaped but wrong "19+ pupils"
+  // figure that doesn't actually exist in this source. Real Adult figures only ever
+  // come from feParticipation (see filteredCount's own branch), never this path.
+  if (band === "Adult") return [Infinity, -Infinity];
   return phaseTagAgeRange(band as PhaseTag, lowAge, highAge);
 }
 
@@ -143,7 +282,7 @@ export type FilteredCount = {
   total: number;
   female: number | null; // null when boarding-mode makes a gender split unavailable
   male: number | null;
-  basis: "whole_school" | "phase_slice" | "boarding_whole_school" | "boarding_with_gender";
+  basis: "whole_school" | "phase_slice" | "boarding_whole_school" | "boarding_with_gender" | "fe_participation";
 };
 
 export function filteredCount(school: FilterableSchoolData, filters: DataViewFilterState): FilteredCount {
@@ -180,6 +319,49 @@ export function filteredCount(school: FilterableSchoolData, filters: DataViewFil
       male: wantGirls ? 0 : genderedCount,
       basis: "boarding_with_gender",
     };
+  }
+
+  // 2026-09-06, UX refinements round 1, B1: the real fix -- an FE-participation
+  // institution (feParticipation set, meaning it has real ILR data because its
+  // ageGenderCounts is genuinely empty -- see data-view-profiles.ts's own field
+  // comment) is counted from THIS branch, never from sumAgeGender against an empty
+  // Map (which is what every view was silently doing before, always landing on 0).
+  // "Post 16" doubles as the U19 label for an FE college (see relevantAgeBandsFor's
+  // own comment in FilterBar.tsx for the UI-label side of this); "Adult" is the 19+
+  // segment. Selecting BOTH sums them -- a deliberate, explicit union, the same
+  // "multiple selected bands add together" rule the ordinary phase-slice branch
+  // below already applies, not the silent "whichever happens to be non-zero" the old
+  // ilrFallbackRoll logic did. Selecting neither (a Junior/Senior/Early Years band,
+  // or no phase filter at all -- see the true default case below) with no real
+  // FE-participation analogue honestly returns 0, not a guessed fallback.
+  if (school.feParticipation) {
+    const wantU19 = filters.phaseBands.has("Post 16");
+    const wantAdult = filters.phaseBands.has("Adult");
+    // No phase filter at all: default to the under-19 figure as the closest FE
+    // analogue to "current roll" (matching the old ilrFallbackRoll field's original
+    // intent), never an unrequested sum of two genuinely different populations.
+    const useU19 = wantU19 || (!wantAdult && filters.phaseBands.size === 0);
+    if (!useU19 && !wantAdult) {
+      return { total: 0, female: 0, male: 0, basis: "fe_participation" };
+    }
+    let total = 0;
+    let female = 0;
+    let male = 0;
+    if (useU19 && school.feParticipation.under19) {
+      total += school.feParticipation.under19.total;
+      female += school.feParticipation.under19.female ?? 0;
+      male += school.feParticipation.under19.male ?? 0;
+    }
+    if (wantAdult && school.feParticipation.adult) {
+      total += school.feParticipation.adult.total;
+      female += school.feParticipation.adult.female ?? 0;
+      male += school.feParticipation.adult.male ?? 0;
+    }
+    const wantGirls = filters.gender.has("Girls");
+    const wantBoys = filters.gender.has("Boys");
+    if (wantGirls && !wantBoys) return { total: female, female, male: 0, basis: "fe_participation" };
+    if (wantBoys && !wantGirls) return { total: male, female: 0, male: 0, basis: "fe_participation" };
+    return { total, female, male, basis: "fe_participation" };
   }
 
   if (filters.phaseBands.size === 0 || school.statutoryLowAge === null || school.statutoryHighAge === null) {

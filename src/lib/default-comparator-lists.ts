@@ -17,7 +17,7 @@ import { findSurroundingSchools, type MatchedSchool } from "./surrounding-school
 import { findNearestFeColleges, findLocal16PlusProvision, type NamedFeCollege, type Local16PlusProvision } from "./surrounding-fe-colleges";
 import { fetchCensusFactsBatched } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, CURRENT_CENSUS_PERIOD } from "./roll-data";
-import { effectivePhaseTags, phaseTags, genderTag, boardingRatio, type GenderTag, type PhaseTag } from "./typology";
+import { effectivePhaseTags, phaseTags, genderTag, boardingRatio, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type GenderTag, type PhaseTag } from "./typology";
 
 export type SchoolTypeCategory =
   | "state"
@@ -70,12 +70,15 @@ function toEntry(m: MatchedSchool, target: { easting: number; northing: number }
 // discipline typology.ts's boardingTag() already applies, reused via boardingRatio()
 // rather than re-deriving a second boarding-detection rule).
 //
-// Special Schools has no row in the brief's own §6 table at all -- logged as a
-// decision (docs/vicdata_data_view_open_questions.md): falls back to the same shape
-// as "State" (List 1 + List 2, same phase, no List 3) since nearest_schools' own RPC
-// already has real special-school-aware matching (target.is_special, 2026-09-30) that
-// findSurroundingSchools already benefits from unmodified -- the safest, most
-// consistent default absent explicit brief guidance, not a new mechanism.
+// Special Schools has no row in the brief's own §6 table at all -- closed out
+// properly (UX refinements round 1, B2) rather than left as an implicit fallback: a
+// Special School target gets List 1 (nearest_schools' own RPC already has real
+// special-school-aware matching, target.is_special, 2026-09-30, that
+// findSurroundingSchools benefits from unmodified) + List 2 (in-LA all sectors,
+// which now genuinely includes special schools as real candidates -- see
+// buildLaComparatorSet's own comment), no List 3 offer (no boarding-quintile recipe
+// exists for this sector, same as independent_day/state). Matches the public map's
+// own treatment of Special Schools as a real fourth sector, not a State clone.
 export function classifySchoolTypeCategory(
   sector: "Independent" | "State" | "FE" | "Special Schools" | null,
   phase: PhaseTag[],
@@ -116,27 +119,51 @@ function genderMatchesRelaxed(target: GenderTag | null, candidate: GenderTag | n
   return candidate === target || candidate === "Co-ed";
 }
 
-// List 2 for a mainstream target: in-LA, ALL SECTORS (state+independent, not FE/
-// Special), same effective phase, relaxed gender. nearest_schools' own RPC can't do
-// this -- it's a national distance search with an exact-sector equality gate, the
-// opposite of what "all sectors, LA-bounded" needs -- so this queries `schools`
-// directly instead. No explicit count given in the brief for this list (only List 1
-// says "nearest 10") -- capped at 30 as a reasonable tick-list size, logged as a
-// decision rather than left as an unstated assumption.
+// List 2 for a mainstream target: in-LA, ALL SECTORS (state+independent+special, not
+// FE -- FE has its own genuinely different List 1/List 2 shape below), same
+// effective phase, relaxed gender. nearest_schools' own RPC can't do this -- it's a
+// national distance search with an exact-sector equality gate, the opposite of what
+// "all sectors, LA-bounded" needs -- so this queries `schools` directly instead. No
+// explicit count given in the brief for this list (only List 1 says "nearest 10") --
+// capped at 30 as a reasonable tick-list size, logged as a decision rather than left
+// as an unstated assumption.
+//
+// 2026-09-06, UX refinements round 1, B2: "Special schools" added to the allow-list
+// -- previously excluded here even though the public map (schools-in-bounds/
+// route.ts) already treats Special Schools as a genuine fourth sector, fetched and
+// shown alongside State/Independent/FE by default, not hidden. This module's own
+// classifySchoolTypeCategory has recognised "special" as its own SchoolTypeCategory
+// since it was written, but nothing downstream ever actually included special
+// schools as real candidates -- the "falls back to the same shape as State" comment
+// that used to sit on classifySchoolTypeCategory was true only in the sense that
+// NEITHER got a special-cased list-building branch, not because special schools were
+// genuinely being treated the same as state ones; they were being silently dropped
+// from this specific list's candidate pool entirely. Closed out properly now: a
+// Special School target's own List 2 can include other special schools (and vice
+// versa -- a mainstream target's List 2 can now include a nearby special school),
+// matching the public map's own non-discriminating behaviour instead of leaving this
+// as an implicit, undocumented gap.
 const LIST2_CAP = 30;
 
-async function inLaAllSectorsList(
-  target: TargetRow,
+// 2026-09-06, UX refinements round 1, B3: generalised from a single `target.la_name`
+// to an array so the same real filtering logic (phase/gender/roll-data-exists) backs
+// both the original single-LA default List 2 AND the new "Compared with" multi-LA
+// picker ("allow adding additional/adjacent Local Authorities as choices") -- one
+// real implementation, not two. Exported for the new /api/data-view/la-set route.
+export async function buildLaComparatorSet(
+  target: { urn: string; easting: number | null; northing: number | null },
+  laNames: string[],
   targetPhase: PhaseTag[],
   targetGender: GenderTag | null,
 ): Promise<DefaultList | null> {
-  if (!target.la_name || target.easting === null || target.northing === null) return null;
+  if (laNames.length === 0 || target.easting === null || target.northing === null) return null;
+  const label = laNames.length === 1 ? `In ${laNames[0]} (all sectors)` : `In ${laNames.join(", ")} (all sectors)`;
   const supabase = createServerAnonSupabaseClient();
   const { data } = await supabase
     .from("schools")
     .select("urn, current_name, easting, northing, establishment_type_group, establishment_type, statutory_low_age, statutory_high_age, gender")
-    .eq("la_name", target.la_name)
-    .in("establishment_type_group", ["Academies", "Local authority maintained schools", "Independent schools", "Free Schools"])
+    .in("la_name", laNames)
+    .in("establishment_type_group", ["Academies", "Local authority maintained schools", "Independent schools", "Free Schools", "Special schools"])
     .neq("status", "closed")
     .neq("urn", target.urn);
   type Row = {
@@ -151,7 +178,7 @@ async function inLaAllSectorsList(
     gender: string | null;
   };
   const rows = (data ?? []) as Row[];
-  if (rows.length === 0) return { key: "in_la", label: `In ${target.la_name} (all sectors)`, schools: [] };
+  if (rows.length === 0) return { key: "in_la", label, schools: [] };
 
   const phaseFiltered = rows.filter((r) => {
     if (targetPhase.length === 0) return true;
@@ -162,7 +189,7 @@ async function inLaAllSectorsList(
     return true;
   });
   const genderFiltered = phaseFiltered.filter((r) => genderMatchesRelaxed(targetGender, genderTag(r.gender)));
-  if (genderFiltered.length === 0) return { key: "in_la", label: `In ${target.la_name} (all sectors)`, schools: [] };
+  if (genderFiltered.length === 0) return { key: "in_la", label, schools: [] };
 
   const byDistance = genderFiltered
     .filter((r) => r.easting !== null && r.northing !== null)
@@ -182,7 +209,7 @@ async function inLaAllSectorsList(
     if (total === 0) continue;
     schools.push({ urn: r.urn, name: r.current_name, distanceKm: r.distanceKm });
   }
-  return { key: "in_la", label: `In ${target.la_name} (all sectors)`, schools };
+  return { key: "in_la", label, schools };
 }
 
 // §6.1 -- the Charterhouse-tested boarding-population-quintile recipe, reused exactly
@@ -329,10 +356,26 @@ export type SchoolTypeResolution = {
   targetPhase: PhaseTag[];
 };
 
-async function resolveSchoolTypeCategory(urn: string): Promise<SchoolTypeResolution | null> {
+// Exported (2026-09-06, UX refinements round 1, B3) so the new multi-LA/nearest-N-
+// expansion API routes can reuse the exact same target+phase resolution this
+// module's own default-list building already does, rather than a second, possibly-
+// diverging copy of "what phase/gender does this target school match on."
+export async function resolveSchoolTypeCategory(urn: string): Promise<SchoolTypeResolution | null> {
   const target = await fetchTarget(urn);
   if (!target) return null;
-  if (target.establishment_type && ["Further education", "Sixth form centres", "Special post 16 institution", "Miscellaneous", "Higher education institutions", "Welsh establishment"].includes(target.establishment_type)) {
+  // 2026-09-06, UX refinements round 1, B1's flagged-but-unclear exclusion note: this
+  // used to be a wider, ad-hoc inline list that also caught "Miscellaneous",
+  // "Higher education institutions" and "Welsh establishment" -- a real inconsistency
+  // with typology.ts's own canonical FE_PARTICIPATION_ESTABLISHMENT_TYPES (which
+  // deliberately EXCLUDES exactly those three, "never in that crosswalk... an ILR
+  // lookup for them would always return nothing"). Classifying one of them as
+  // "fe_college" promised a real FE-participation-backed default list that could
+  // never actually materialise -- every list-building call for such a target would
+  // silently come back empty, a plausible match for the "HE etc." fragment of Guy's
+  // own note. Aligned to the one real, already-verified establishment-type list
+  // rather than guessing further at what else the note meant -- logged here rather
+  // than silently narrowed.
+  if (target.establishment_type && FE_PARTICIPATION_ESTABLISHMENT_TYPES.includes(target.establishment_type)) {
     return { schoolTypeCategory: "fe_college", target, targetPhase: [] };
   }
   const targetFacts = await fetchCensusFactsBatched([urn]);
@@ -401,7 +444,7 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
 
   const [matched, list2] = await Promise.all([
     findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed" }),
-    inLaAllSectorsList(target, targetPhase, targetGender),
+    target.la_name ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
   ]);
   const list1: DefaultList = {
     key: "nearest_10",

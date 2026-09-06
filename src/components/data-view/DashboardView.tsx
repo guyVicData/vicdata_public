@@ -9,19 +9,33 @@
 // number means).
 
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import { profileToFilterableData, profileToFilterableData2019 } from "@/lib/data-view-serialize";
+import { profileToFilterableData, profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import { trendBadge, spreadData, memberSetMarketShare, shapeInlineFact, sizeBand, type TrendBadge } from "@/lib/data-view-cards";
+import { shapeClassifierInput } from "@/lib/roll-data";
+import { classifyShape } from "@/lib/shape-classifier";
 import SpreadStrip from "./SpreadStrip";
 
-function TrendPill({ badge }: { badge: TrendBadge }) {
-  if (!badge) return <span className="text-xs text-neutral-400">no 2019 comparison</span>;
+// "2025/26" -- same academic-year-label convention as FilterBar.tsx's own
+// academicYearLabel (RollCard.tsx/FeCollegeCards.tsx/SmallCards.tsx's established
+// shape), duplicated here rather than shared since it's a single one-line pure
+// function and this file has no other reason to import from a component file.
+function academicYearLabel(period: number): string {
+  return `${period}/${String(period + 1).slice(2)}`;
+}
+
+// 2026-09-06, UX refinements round 1, A2: "since 2019" is now "since [whichever
+// start year the date-range control has selected]" -- every trend badge on this page
+// shares the one filters.startPeriod value, so they can never disagree about which
+// year they're comparing against.
+function TrendPill({ badge, startPeriod }: { badge: TrendBadge; startPeriod: number }) {
+  if (!badge) return <span className="text-xs text-neutral-400">no {academicYearLabel(startPeriod)} comparison</span>;
   const arrow = badge.direction === "up" ? "▲" : badge.direction === "down" ? "▼" : "▬";
   const colour =
     badge.direction === "up" ? "text-blue-600 dark:text-blue-400" : badge.direction === "down" ? "text-red-600 dark:text-red-400" : "text-neutral-500";
   return (
     <span className={`text-xs font-medium ${colour}`}>
-      {arrow} {Math.abs(badge.pctChange).toFixed(0)}% since 2019
+      {arrow} {Math.abs(badge.pctChange).toFixed(0)}% since {academicYearLabel(startPeriod)}
     </span>
   );
 }
@@ -51,6 +65,13 @@ export default function DashboardView({
   // viewed school's roll is a real data point in the domain, not excluded from it").
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
 
+  // 2026-09-06, UX refinements round 1, A2: anchorSnapshot/anchor-at-startPeriod
+  // replace the fixed anchor2019/profileToFilterableData2019 pair everywhere on this
+  // page -- every trend badge and the size-band comparison now measure from
+  // filters.startPeriod (defaults to 2019, so this is a no-op until a member
+  // actually changes the date range).
+  const anchorSnapshot = (p: DataViewSchoolProfile) => p.trend.find((t) => t.period === filters.startPeriod) ?? null;
+
   const currentPoints = group.map((p) => ({
     urn: p.urn,
     name: p.name,
@@ -59,7 +80,7 @@ export default function DashboardView({
   }));
   const anchorPoints = group.map((p) => ({
     urn: p.urn,
-    value: p.anchor2019 ? filteredCount(profileToFilterableData2019(p), filters).total : null,
+    value: anchorSnapshot(p) ? filteredCount(profileToFilterableDataForPeriod(p, filters.startPeriod), filters).total : null,
   }));
   const targetCurrent = currentPoints.find((p) => p.isTarget)?.value ?? null;
   const targetAnchor = anchorPoints.find((p, i) => group[i].urn === targetProfile.urn)?.value ?? null;
@@ -72,7 +93,7 @@ export default function DashboardView({
     return { urn: p.urn, name: p.name, value: pct, isTarget: p.urn === targetProfile.urn };
   });
   const targetGenderCurrent = genderPoints.find((p) => p.isTarget)?.value ?? null;
-  const targetGenderAnchorCount = targetProfile.anchor2019 ? filteredCount(profileToFilterableData2019(targetProfile), filters) : null;
+  const targetGenderAnchorCount = anchorSnapshot(targetProfile) ? filteredCount(profileToFilterableDataForPeriod(targetProfile, filters.startPeriod), filters) : null;
   const targetGenderAnchor =
     targetGenderAnchorCount && targetGenderAnchorCount.female !== null && targetGenderAnchorCount.total > 0
       ? (targetGenderAnchorCount.female / targetGenderAnchorCount.total) * 100
@@ -86,7 +107,7 @@ export default function DashboardView({
     return { urn: p.urn, name: p.name, value: pct, isTarget: p.urn === targetProfile.urn };
   });
   const targetBoardingCurrent = boardingPoints.find((p) => p.isTarget)?.value ?? null;
-  const targetBoardingAnchorB = targetProfile.anchor2019?.boarding;
+  const targetBoardingAnchorB = anchorSnapshot(targetProfile)?.boarding;
   const targetBoardingAnchor = targetBoardingAnchorB && targetBoardingAnchorB.total > 0 ? (targetBoardingAnchorB.boarders / targetBoardingAnchorB.total) * 100 : null;
   const boardingTrendBadge = trendBadge(targetBoardingCurrent, targetBoardingAnchor);
   const boardingSpread = spreadData(boardingPoints);
@@ -95,7 +116,13 @@ export default function DashboardView({
   const groupTotal = currentPoints.reduce((sum, p) => sum + (p.value ?? 0), 0);
   const marketShare = targetCurrent !== null ? memberSetMarketShare(targetCurrent, groupTotal) : null;
 
-  const shapeFact = shapeInlineFact(targetProfile.shape2019, targetProfile.shapeCurrent);
+  // Anchor shape at filters.startPeriod -- computed on the fly from
+  // ageGenderCountsByPeriod (same pure classifier data-view-profiles.ts already uses
+  // for the fixed shape2019 field) rather than adding yet another
+  // shapeAtEveryPeriod-shaped field to the profile just for this one card.
+  const anchorAgeGenderCounts = targetProfile.ageGenderCountsByPeriod.get(filters.startPeriod) ?? targetProfile.ageGenderCounts2019;
+  const anchorShape = classifyShape(shapeClassifierInput(anchorAgeGenderCounts))?.label ?? null;
+  const shapeFact = shapeInlineFact(anchorShape, targetProfile.shapeCurrent, academicYearLabel(filters.startPeriod));
 
   // Through-school size-band discrepancy line (brief §5): whole-school size band vs.
   // the currently-filtered phase's own size band, within this same ticked group --
@@ -121,21 +148,21 @@ export default function DashboardView({
         <Card title="Current roll">
           <div className="mb-1 flex items-baseline gap-2">
             <span className="text-2xl font-semibold">{targetCurrent?.toLocaleString() ?? "—"}</span>
-            <TrendPill badge={rollTrendBadge} />
+            <TrendPill badge={rollTrendBadge} startPeriod={filters.startPeriod} />
           </div>
           {shapeFact && <p className="mb-2 text-xs text-neutral-500">{shapeFact}</p>}
           {sizeBandLine && <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{sizeBandLine}</p>}
           {rollSpread && <SpreadStrip min={rollSpread.min} max={rollSpread.max} points={rollSpread.points} formatValue={(v) => v.toLocaleString()} />}
         </Card>
 
-        <Card title="Roll trend, since 2019">
+        <Card title={`Roll trend, since ${academicYearLabel(filters.startPeriod)}`}>
           <RollTrendChart target={targetProfile} group={group} filters={filters} />
         </Card>
 
         <Card title="Gender split">
           <div className="mb-2 flex items-baseline gap-2">
             <span className="text-2xl font-semibold">{targetGenderCurrent !== null ? `${targetGenderCurrent.toFixed(0)}% girls` : "—"}</span>
-            <TrendPill badge={genderTrendBadge} />
+            <TrendPill badge={genderTrendBadge} startPeriod={filters.startPeriod} />
           </div>
           {genderSpread && <SpreadStrip min={genderSpread.min} max={genderSpread.max} points={genderSpread.points} formatValue={(v) => `${v.toFixed(0)}%`} />}
         </Card>
@@ -147,7 +174,7 @@ export default function DashboardView({
             <>
               <div className="mb-2 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold">{targetBoardingCurrent !== null ? `${targetBoardingCurrent.toFixed(0)}% boarding` : "—"}</span>
-                <TrendPill badge={boardingTrendBadge} />
+                <TrendPill badge={boardingTrendBadge} startPeriod={filters.startPeriod} />
               </div>
               {boardingSpread && <SpreadStrip min={boardingSpread.min} max={boardingSpread.max} points={boardingSpread.points} formatValue={(v) => `${v.toFixed(0)}%`} />}
             </>
@@ -192,15 +219,23 @@ function RollTrendChart({
   group: DataViewSchoolProfile[];
   filters: DataViewFilterState;
 }) {
-  // Real per-period roll for a school, filtered the same way the Current Roll card
-  // is -- only whole-school ("no filter") is exact for periods before the current
-  // one at present, since ageGenderCounts per historical period isn't threaded
-  // through DataViewSchoolProfile beyond the current/2019 anchors (a real, scoped
-  // simplification: the LINE always plots whole-school roll regardless of the active
-  // phase/gender/boarding filter, while every other card on this page does respect
-  // it). Logged as a decision, not a silent gap.
-  const periods = Array.from(new Set(target.trend.map((t) => t.period))).sort((a, b) => a - b);
-  if (periods.length < 2) return <p className="text-sm text-neutral-500">Not enough real history to plot a trend.</p>;
+  // Whole-school roll only -- the LINE always plots the unfiltered total regardless
+  // of the active phase/gender/boarding filter, while every other card on this page
+  // does respect it. A real, scoped simplification, logged as a decision rather than
+  // a silent gap: ageGenderCountsByPeriod (added for A2's date-range control) COULD
+  // now support a fully filtered per-period line too, but that's a genuinely separate
+  // enhancement from "make the start year selectable," not bundled into this round.
+  //
+  // 2026-09-06, UX refinements round 1, A2: the plotted window now starts at
+  // filters.startPeriod (still every real period up to the present, just not
+  // necessarily from the school's own earliest year) rather than always showing the
+  // full history -- the date-range control is meant to change what's examined, and a
+  // trend chart that silently ignored it while every number elsewhere on the page
+  // responded would read as a real inconsistency.
+  const periods = Array.from(new Set(target.trend.map((t) => t.period)))
+    .filter((p) => p >= filters.startPeriod)
+    .sort((a, b) => a - b);
+  if (periods.length < 2) return <p className="text-sm text-neutral-500">Not enough real history to plot a trend from {academicYearLabel(filters.startPeriod)}.</p>;
 
   const targetSeries = periods.map((p) => target.trend.find((t) => t.period === p)?.totalRoll ?? null);
   const groupAverageSeries = periods.map((p) => {

@@ -42,6 +42,16 @@ const AGE_SEGMENT_RE: Record<"under_19" | "19_plus", RegExp> = {
   "19_plus": /^education_and_training_19_plus_(total|male|female)$/,
 };
 
+// Exported so a batched caller (data-view-profiles.ts's FE fallback -- many URNs in
+// one lookupReferenceData call) can request exactly the breakdowns it needs rather
+// than fetching every breakdown this source has (apprenticeships/tailored_learning/
+// community_learning are real but unused here, same "only education_and_training is
+// ever meaningfully populated for this institution population" reasoning as above).
+export const AGE_SEGMENT_BREAKDOWNS: Record<"under_19" | "19_plus", string[]> = {
+  under_19: ["education_and_training_under_19_total", "education_and_training_under_19_male", "education_and_training_under_19_female"],
+  "19_plus": ["education_and_training_19_plus_total", "education_and_training_19_plus_male", "education_and_training_19_plus_female"],
+};
+
 export type IlrParticipationSnapshot = {
   period: number;
   total: number;

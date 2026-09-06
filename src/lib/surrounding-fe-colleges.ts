@@ -30,6 +30,7 @@
 import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupReferenceData } from "./vicdata-reference";
 import { FE_PARTICIPATION_ESTABLISHMENT_TYPES, sectorTag, phaseTags } from "./typology";
+import { AGE_SEGMENT_BREAKDOWNS, buildIlrParticipationSnapshot } from "./ilr-participation-data";
 
 const TARGET_COUNT = 10;
 const UNDER_19_MALE_BREAKDOWN = "education_and_training_under_19_male";
@@ -126,6 +127,19 @@ export async function findFeCollegeGenderPeers(urn: string): Promise<FeCollegeGe
 // requirements are real, not the same, from here on.
 export type NamedFeCollege = { urn: string; name: string; distanceKm: number };
 
+// 2026-09-06, UX refinements round 1, B1's flagged-but-unclear exclusion note: the
+// one unambiguous rule Guy stated was "exclude any college with no U19 students at
+// all (e.g. City Lit) from lists meant to be U19/school-comparable" -- this list IS
+// that list (its whole point is a same-basis size comparison, and City-Lit-shaped
+// adult-only colleges have nothing real to compare on that basis). Applied here, not
+// to findLocal16PlusProvision below -- that list answers a MEMBERSHIP question ("does
+// this LA have 16+ provision at all"), a genuinely different question a real adult-
+// only college still honestly answers "yes" to, per that function's own comment.
+// Fetches the small national population's real under-19 totals in one batched call
+// (confirmed ~372 real candidates nationally, this module's own header comment) and
+// drops anything without a genuine non-zero figure BEFORE distance-ranking, so a
+// nearby but U19-less college doesn't silently occupy one of the target's 10 (or
+// more, once B3's "+5" expansion is used) slots.
 export async function findNearestFeColleges(urn: string, targetCount = 10): Promise<NamedFeCollege[]> {
   const supabase = createServerAnonSupabaseClient();
 
@@ -148,7 +162,19 @@ export async function findNearestFeColleges(urn: string, targetCount = 10): Prom
   const candidates = (candidateRows ?? []) as { urn: string; current_name: string; easting: number; northing: number }[];
   if (candidates.length === 0) return [];
 
+  const under19Facts = await lookupReferenceData({
+    sourceId: "dfe_fe_participation",
+    entityIds: candidates.map((c) => c.urn),
+    breakdowns: AGE_SEGMENT_BREAKDOWNS.under_19,
+  });
+  const hasRealU19 = new Set(
+    candidates
+      .filter((c) => buildIlrParticipationSnapshot(under19Facts.filter((f) => f.entity_id === c.urn), "under_19") !== null)
+      .map((c) => c.urn),
+  );
+
   return candidates
+    .filter((c) => hasRealU19.has(c.urn))
     .map((c) => ({
       urn: c.urn,
       name: c.current_name,

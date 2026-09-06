@@ -28,10 +28,14 @@ import type { DataViewSchoolProfile } from "./data-view-profiles";
 import type { FilterableSchoolData } from "./data-view-filters";
 
 type WireAgeGenderCounts = [number, { male: number; female: number }][];
+// 2026-09-06, UX refinements round 1, A2: ageGenderCountsByPeriod is a Map OF Maps --
+// same non-JSON-safe problem one level deeper. Wire form is [period, WireAgeGenderCounts][].
+type WireAgeGenderCountsByPeriod = [number, WireAgeGenderCounts][];
 
-export type WireDataViewSchoolProfile = Omit<DataViewSchoolProfile, "ageGenderCounts" | "ageGenderCounts2019"> & {
+export type WireDataViewSchoolProfile = Omit<DataViewSchoolProfile, "ageGenderCounts" | "ageGenderCounts2019" | "ageGenderCountsByPeriod"> & {
   ageGenderCounts: WireAgeGenderCounts;
   ageGenderCounts2019: WireAgeGenderCounts;
+  ageGenderCountsByPeriod: WireAgeGenderCountsByPeriod;
 };
 
 export function serializeProfile(p: DataViewSchoolProfile): WireDataViewSchoolProfile {
@@ -39,6 +43,7 @@ export function serializeProfile(p: DataViewSchoolProfile): WireDataViewSchoolPr
     ...p,
     ageGenderCounts: Array.from(p.ageGenderCounts.entries()),
     ageGenderCounts2019: Array.from(p.ageGenderCounts2019.entries()),
+    ageGenderCountsByPeriod: Array.from(p.ageGenderCountsByPeriod.entries()).map(([period, counts]) => [period, Array.from(counts.entries())]),
   };
 }
 
@@ -47,6 +52,7 @@ export function deserializeProfile(p: WireDataViewSchoolProfile): DataViewSchool
     ...p,
     ageGenderCounts: new Map(p.ageGenderCounts) as AgeGenderCounts,
     ageGenderCounts2019: new Map(p.ageGenderCounts2019) as AgeGenderCounts,
+    ageGenderCountsByPeriod: new Map(p.ageGenderCountsByPeriod.map(([period, counts]) => [period, new Map(counts) as AgeGenderCounts])),
   };
 }
 
@@ -61,6 +67,7 @@ export function profileToFilterableData(p: DataViewSchoolProfile): FilterableSch
     ageGenderCounts: p.ageGenderCounts,
     boarding: p.current?.boarding ?? null,
     boardersGenderSplit: p.boardersGenderSplit,
+    feParticipation: p.feParticipation,
   };
 }
 
@@ -79,5 +86,36 @@ export function profileToFilterableData2019(p: DataViewSchoolProfile): Filterabl
     ageGenderCounts: p.ageGenderCounts2019,
     boarding: p.anchor2019?.boarding ?? null,
     boardersGenderSplit: null,
+    // No historical FE-participation trend is fetched this round (single latest-
+    // period snapshot only, data-view-profiles.ts's own comment) -- honestly null
+    // rather than reusing the current snapshot as a fake "2019 figure," which would
+    // silently show a 0% trend badge for every FE college instead of "no comparison
+    // available."
+    feParticipation: null,
+  };
+}
+
+// TREND_ANCHOR_PERIOD (data-view-profiles.ts) duplicated as a literal here rather
+// than imported -- same reasoning as data-view-filters.ts's own DEFAULT_START_PERIOD:
+// that module is server-only, and this one deliberately has no server-only imports.
+const TREND_ANCHOR_PERIOD_FALLBACK = 2019;
+
+// 2026-09-06, UX refinements round 1, A2: the general form of the function above --
+// same slice, at WHICHEVER real period the date-range control's selectable start
+// year currently points at, not just the fixed 2019 anchor. Falls back to
+// ageGenderCounts2019 (the historical, still-real default) when the requested
+// period has no entry in ageGenderCountsByPeriod at all (a school with no real data
+// that far back, or the still-common default-period case) -- same map, so this is
+// never a behavioural change for the existing 2019-anchor call sites, only additive.
+export function profileToFilterableDataForPeriod(p: DataViewSchoolProfile, period: number): FilterableSchoolData {
+  const counts = p.ageGenderCountsByPeriod.get(period) ?? (period === TREND_ANCHOR_PERIOD_FALLBACK ? p.ageGenderCounts2019 : new Map());
+  const snapshot = p.trend.find((t) => t.period === period) ?? null;
+  return {
+    statutoryLowAge: p.statutoryLowAge,
+    statutoryHighAge: p.statutoryHighAge,
+    ageGenderCounts: counts,
+    boarding: snapshot?.boarding ?? null,
+    boardersGenderSplit: null,
+    feParticipation: null,
   };
 }

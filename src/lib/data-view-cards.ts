@@ -107,12 +107,17 @@ const SHAPE_LABELS: Record<ShapeLabel, string> = {
   irregular: "Irregular",
 };
 
-export function shapeInlineFact(shape2019: ShapeLabel | null, shapeCurrent: ShapeLabel | null): string | null {
+// 2026-09-06, UX refinements round 1, A2: `startYearLabel` replaces the hardcoded
+// "2019" text -- the caller passes whatever the date-range control's own academic-
+// year label for filters.startPeriod is, so this stays correct however the anchor
+// shape (whether it's still the true 2019 one or a different real period) was
+// actually computed.
+export function shapeInlineFact(anchorShape: ShapeLabel | null, shapeCurrent: ShapeLabel | null, startYearLabel: string): string | null {
   if (!shapeCurrent) return null;
-  if (!shape2019 || shape2019 === shapeCurrent) {
-    return `${SHAPE_LABELS[shapeCurrent]}-shaped (unchanged since 2019)`;
+  if (!anchorShape || anchorShape === shapeCurrent) {
+    return `${SHAPE_LABELS[shapeCurrent]}-shaped (unchanged since ${startYearLabel})`;
   }
-  return `${SHAPE_LABELS[shape2019]} → ${SHAPE_LABELS[shapeCurrent]} since 2019`;
+  return `${SHAPE_LABELS[anchorShape]} → ${SHAPE_LABELS[shapeCurrent]} since ${startYearLabel}`;
 }
 
 // Through-school size-band label (brief §5: "Large overall · Medium as a Senior

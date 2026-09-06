@@ -34,7 +34,7 @@ import { bngToLatLng } from "@/lib/bng";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
 import { trendColour, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import { profileToFilterableData, profileToFilterableData2019 } from "@/lib/data-view-serialize";
+import { profileToFilterableData, profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { ViewKey } from "@/lib/data-view-types";
@@ -50,11 +50,24 @@ const TILE_ATTRIBUTION =
 const MIN_RADIUS = 5;
 const MAX_RADIUS = 20;
 const TARGET_RING_RADIUS = MAX_RADIUS + 4;
+// 2026-09-06, UX refinements round 1, B4: a school not yet added to the "Compared
+// with" set gets a small, flat, neutral dot -- deliberately smaller than MIN_RADIUS
+// (the smallest a real DATA-driven dot can be) so it reads as "not sized by real
+// data at all," not just "the smallest real value happens to be here."
+const UNTICKED_RADIUS = 3.5;
+const UNTICKED_COLOUR = "#9ca3af";
 
 function radiusFor(value: number, min: number, max: number): number {
   if (!(max > min)) return (MIN_RADIUS + MAX_RADIUS) / 2;
   const t = (Math.sqrt(value) - Math.sqrt(min)) / (Math.sqrt(max) - Math.sqrt(min));
   return MIN_RADIUS + (MAX_RADIUS - MIN_RADIUS) * t;
+}
+
+// Same academic-year-label convention as FilterBar.tsx's own academicYearLabel
+// (RollCard.tsx/FeCollegeCards.tsx/SmallCards.tsx's established shape) -- duplicated
+// rather than shared since it's a single one-line pure function.
+function academicYearLabel(period: number): string {
+  return `${period}/${String(period + 1).slice(2)}`;
 }
 
 type ColourMode = "trend" | "sector";
@@ -193,6 +206,17 @@ export default function MapView({
     group.clearLayers();
 
     const bounds: [number, number][] = [];
+    // 2026-09-06, UX refinements round 1, B4: "turning off a filter/selector must
+    // hide the corresponding dots... confirm this isn't already silently broken."
+    // Checked directly: it was -- a school with genuinely zero real pupils in the
+    // active phase/gender/boarding slice (an all-boys school under a "Girls"
+    // filter, say) still rendered a same-shaped dot as everyone else, which reads
+    // as "this school has some of what I'm filtering for" when it honestly has
+    // none. Any real narrowing filter now hides that school's dot outright rather
+    // than drawing a misleading not-quite-zero-looking circle -- the target is the
+    // one exception (never hidden, same "the viewed school is always a real
+    // reference point" rule this build applies everywhere else).
+    const filterActive = filters.phaseBands.size > 0 || filters.gender.size > 0 || filters.boarding.size > 0;
 
     for (const s of withProfile) {
       // 2026-09-05, defence in depth after a real live crash (see data-view-
@@ -205,31 +229,49 @@ export default function MapView({
       // static types don't actually guarantee at runtime).
       try {
         const [lat, lng] = bngToLatLng(s.easting, s.northing);
+        // Bounds stay inclusive of every real position regardless of tick/filter
+        // state -- hiding a dot shouldn't also make the viewport jump around.
         bounds.push([lat, lng]);
         const isTarget = s.urn === target.urn;
         const ticked = isTarget || tickedUrns.has(s.urn);
 
         const current = filteredCount(profileToFilterableData(s.profile), filters).total;
-        const anchor2019 = s.profile.anchor2019 ? filteredCount(profileToFilterableData2019(s.profile), filters).total : null;
-        const pctChange = anchor2019 && anchor2019 > 0 ? ((current - anchor2019) / anchor2019) * 100 : 0;
 
-        const colour = colourMode === "trend" ? trendColour(pctChange) : s.profile.sector ? tagColour(s.profile.sector) : "#9ca3af";
-        const radius = radiusFor(current, minV, maxV);
+        if (!isTarget && filterActive && current === 0) continue;
+
+        // 2026-09-06, UX refinements round 1, B4: "schools render as small dots,
+        // name shown only on hover, and NO DATA AT ALL until added to the set --
+        // remove the current 'faded but partially visible' state." A school not yet
+        // ticked no longer shows its real size/colour/trend at all (that WAS real
+        // data, just dimmed -- exactly the state being removed) -- it's a small,
+        // flat, neutral dot until the member actually adds it, at which point it
+        // gets the full real-data treatment identically to an always-shown ticked
+        // school. Only the tooltip content and marker radius/colour depend on
+        // `ticked` now; the fillOpacity/opacity dimming this replaced is gone.
+        let colour = UNTICKED_COLOUR;
+        let radius = UNTICKED_RADIUS;
+        let tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/><em>click to add to comparison</em></div>`;
+
+        if (ticked) {
+          const hasAnchor = s.profile.ageGenderCountsByPeriod.has(filters.startPeriod) || s.profile.trend.some((t) => t.period === filters.startPeriod);
+          const anchor = hasAnchor ? filteredCount(profileToFilterableDataForPeriod(s.profile, filters.startPeriod), filters).total : null;
+          const pctChange = anchor && anchor > 0 ? ((current - anchor) / anchor) * 100 : 0;
+          colour = colourMode === "trend" ? trendColour(pctChange) : s.profile.sector ? tagColour(s.profile.sector) : "#9ca3af";
+          radius = radiusFor(current, minV, maxV);
+          tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${current.toLocaleString()}${
+            anchor !== null ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since ${academicYearLabel(filters.startPeriod)})` : ""
+          }</div>`;
+        }
 
         const marker = L.circleMarker([lat, lng], {
           radius,
           color: colour,
           fillColor: colour,
           weight: 1.5,
-          fillOpacity: ticked ? 0.75 : 0.25,
-          opacity: ticked ? 1 : 0.4,
+          fillOpacity: ticked ? 0.75 : 0.6,
+          opacity: 1,
         });
-        marker.bindTooltip(
-          `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${current.toLocaleString()}${
-            anchor2019 !== null ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since 2019)` : ""
-          }${!ticked ? "<br/><em>click to add to comparison</em>" : ""}</div>`,
-          { direction: "top", offset: [0, -4] },
-        );
+        marker.bindTooltip(tooltipHtml, { direction: "top", offset: [0, -4] });
         marker.on("click", () => {
           if (isTarget) router.push(`/schools/${s.urn}`);
           else onToggleTick(s.urn);
@@ -270,7 +312,7 @@ export default function MapView({
   // positioning sidesteps that resolution rule entirely, the same way this
   // element's own children already do.
   return (
-    <div ref={rootRef} className="absolute inset-0">
+    <div className="absolute inset-0">
       <style>{`
         .vd-dataview-map { --dot: #9ca3af; ${Object.entries(TAG_COLOURS)
           .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.light[1]};`)
@@ -284,7 +326,15 @@ export default function MapView({
           .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.dark[1]};`)
           .join(" ")} }
       `}</style>
-      <div className="vd-dataview-map absolute inset-0">
+      {/* 2026-09-06, UX refinements round 1, B2: rootRef moved onto THIS element
+          (the one that actually carries the --tag-* custom properties via
+          .vd-dataview-map) rather than its parent -- getComputedStyle on the old
+          parent ref could never see a descendant's own custom properties (CSS
+          variables cascade down, not up), so tagColour() always silently fell back
+          to grey. A real, pre-existing bug (predates this task, not introduced by
+          it), found while confirming Special Schools render with a real distinct
+          colour on this map the way they already do on the public one. */}
+      <div ref={rootRef} className="vd-dataview-map absolute inset-0">
         <div ref={mapElRef} className="absolute inset-0" />
 
         {/* Top-left: view switcher. Moved here from DataViewShell's shared subheader
@@ -341,7 +391,7 @@ export default function MapView({
             spot specified -- bottom seemed reasonable and this keeps clear of both
             bottom-corner boxes; easy to move once seen live. */}
         <div className="absolute bottom-3 left-1/2 z-[1000] -translate-x-1/2 rounded-md bg-white/90 px-3 py-1.5 text-xs text-neutral-500 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-400">
-          Faded dots aren&rsquo;t ticked for comparison — click a dot to add or remove it. Red ring: this school.
+          Small grey dots aren&rsquo;t added to &ldquo;Compared with&rdquo; yet — click a dot to add or remove it. Red ring: this school.
         </div>
       </div>
     </div>
