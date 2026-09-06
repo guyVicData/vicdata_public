@@ -35,6 +35,7 @@ import RankingsView from "./RankingsView";
 import MapView from "./MapView";
 import PdfExportButton from "./PdfExportButton";
 import DataViewErrorBoundary from "./DataViewErrorBoundary";
+import LoadingSpinnerCard from "./LoadingSpinnerCard";
 
 const INITIAL_TICKED_COUNT = 10;
 
@@ -695,7 +696,16 @@ export default function DataViewShell({ urn }: { urn: string }) {
                 </p>
               </div>
             ) : profilesLoading && profilesByUrn.size === 0 ? (
-              <p className="py-12 text-center text-sm text-neutral-500">Loading school data…</p>
+              // 2026-09-08, per direct request: the Map's own loading state now matches
+              // the public school page's map-loading indicator exactly (same spinner
+              // component, LoadingSpinnerCard.tsx) rather than plain text -- scoped to
+              // Map specifically since that's the view this was asked for; Graphs/
+              // Rankings keep the existing plain-text loading state, unchanged.
+              activeView === "map" ? (
+                <LoadingSpinnerCard label="Loading schools…" />
+              ) : (
+                <p className="py-12 text-center text-sm text-neutral-500">Loading school data…</p>
+              )
             ) : !targetProfile ? (
               <p className="py-12 text-center text-sm text-neutral-500">No real data available for this school yet.</p>
             ) : (

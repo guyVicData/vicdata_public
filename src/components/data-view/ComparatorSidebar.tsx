@@ -130,7 +130,18 @@ export default function ComparatorSidebar({
       if (mySeq !== laRequestSeq.current) return;
       if (!res.ok) return;
       const body = (await res.json()) as { set: { key: string; label: string; schools: DefaultListEntry[] } | null };
-      if (body.set) onSelectSet({ kind: "recipe", key: "multi_la", label: body.set.label, schools: body.set.schools });
+      if (body.set) {
+        onSelectSet({ kind: "recipe", key: "multi_la", label: body.set.label, schools: body.set.schools });
+        // 2026-09-08, per direct request: picking an ADDITIONAL LA is a deliberate
+        // "widen the comparison" move -- assume the member wants every school in the
+        // now-broader area, not just the usual first-INITIAL_TICKED_COUNT default
+        // onSelectSet's own recipe branch would otherwise leave ticked. Runs as a
+        // second setTickedUrns call right after onSelectSet's own (same tick, so this
+        // one simply wins) rather than changing onSelectSet's general default, which
+        // every OTHER recipe selection (Nearest 10, the dropdown's own single-LA
+        // option, etc.) still relies on.
+        onSelectAllTicked(body.set.schools.map((s) => s.urn));
+      }
     } finally {
       if (mySeq === laRequestSeq.current) setLaLoading(false);
     }

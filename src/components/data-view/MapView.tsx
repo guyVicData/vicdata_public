@@ -57,6 +57,16 @@ const TARGET_RING_RADIUS = MAX_RADIUS + 4;
 const UNTICKED_RADIUS = 3.5;
 const UNTICKED_COLOUR = "#9ca3af";
 
+// 2026-09-08, per direct request: "add a dotted circle with the same diameter as
+// the public map" -- same fixed, sector-aware radii as the public site's own
+// distance ring (SchoolMap.tsx's own DISTANCE_RING_KM_STATE/INDEPENDENT, duplicated
+// here rather than imported since that module isn't shared/exported for this).
+// Genuinely fixed, not computed from pupil data -- see that module's own comment for
+// why (independent schools draw from a much wider area; both values were tuned down
+// from larger figures purely to keep an initial viewport's school count reasonable).
+const DISTANCE_RING_KM_STATE = 2;
+const DISTANCE_RING_KM_INDEPENDENT = 10;
+
 function radiusFor(value: number, min: number, max: number): number {
   if (!(max > min)) return (MIN_RADIUS + MAX_RADIUS) / 2;
   const t = (Math.sqrt(value) - Math.sqrt(min)) / (Math.sqrt(max) - Math.sqrt(min));
@@ -232,6 +242,33 @@ export default function MapView({
 
     group.clearLayers();
 
+    // Distance ring -- fixed radius, sector-aware, drawn first so every school
+    // marker sits on top of it (same ordering/reasoning as the public site's own
+    // ring, SchoolMap.tsx).
+    if (target.easting !== null && target.northing !== null) {
+      const [targetLat, targetLng] = bngToLatLng(target.easting, target.northing);
+      const ringKm = targetProfile.sector === "Independent" ? DISTANCE_RING_KM_INDEPENDENT : DISTANCE_RING_KM_STATE;
+      const ringColour = cs.getPropertyValue("--distance-ring").trim() || "#9ca3af";
+      L.circle([targetLat, targetLng], {
+        radius: ringKm * 1000,
+        color: ringColour,
+        weight: 1.25,
+        dashArray: "4 5",
+        fill: false,
+        interactive: false,
+      }).addTo(group);
+      const [ringLabelLat, ringLabelLng] = bngToLatLng(target.easting, target.northing + ringKm * 1000);
+      L.marker([ringLabelLat, ringLabelLng], {
+        icon: L.divIcon({
+          className: "vd-ring-label",
+          html: `${ringKm} km`,
+          iconSize: [40, 16],
+          iconAnchor: [20, 8],
+        }),
+        interactive: false,
+      }).addTo(group);
+    }
+
     const bounds: [number, number][] = [];
     // 2026-09-06, UX refinements round 1, B4: "turning off a filter/selector must
     // hide the corresponding dots... confirm this isn't already silently broken."
@@ -358,17 +395,21 @@ export default function MapView({
   return (
     <div className="absolute inset-0">
       <style>{`
-        .vd-dataview-map { --dot: #9ca3af; ${Object.entries(TAG_COLOURS)
+        .vd-dataview-map { --dot: #9ca3af; --distance-ring: #9ca3af; ${Object.entries(TAG_COLOURS)
           .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.light[1]};`)
           .join(" ")} }
         @media (prefers-color-scheme: dark) {
-          :root:where(:not([data-theme="light"])) .vd-dataview-map { ${Object.entries(TAG_COLOURS)
+          :root:where(:not([data-theme="light"])) .vd-dataview-map { --distance-ring: #6b7280; ${Object.entries(TAG_COLOURS)
             .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.dark[1]};`)
             .join(" ")} }
         }
-        :root[data-theme="dark"] .vd-dataview-map { ${Object.entries(TAG_COLOURS)
+        :root[data-theme="dark"] .vd-dataview-map { --distance-ring: #6b7280; ${Object.entries(TAG_COLOURS)
           .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.dark[1]};`)
           .join(" ")} }
+        .vd-ring-label {
+          font-size: 10px; font-weight: 600; color: var(--distance-ring);
+          text-align: center; white-space: nowrap; background: transparent;
+        }
       `}</style>
       {/* 2026-09-06, UX refinements round 1, B2: rootRef moved onto THIS element
           (the one that actually carries the --tag-* custom properties via
