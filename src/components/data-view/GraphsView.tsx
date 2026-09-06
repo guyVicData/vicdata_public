@@ -22,6 +22,17 @@
 //   - Focus-school red (main graph) vs. the growth/decline chart's blue/red
 //     direction encoding is a real, acknowledged collision -- kept as specified
 //     (Guy's own explicit instruction), logged as provisional.
+//
+// 2026-09-08, redesign doc updated with two additions -- see
+// docs/vicdata_data_view_open_questions.md for the full reasoning on both:
+//   - Section 01 gained a new "Combined Roll" lollipop-plus-trend-line chart
+//     directly under Current Roll (CombinedRollChart.tsx).
+//   - Section 02 (Market share) got its full spec: a single-series share-over-time
+//     chart plus two secondary tiles reusing the SAME bar-chart/diverging-chart
+//     components Section 01 already established (CurrentRollBarChart and
+//     GrowthDeclineChart generalised into SortedBarChart/DivergingBarChart so both
+//     sections share one implementation each, per the doc's own "same pattern as
+//     Section 01" wording).
 
 import { useState } from "react";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
@@ -33,8 +44,10 @@ import { classifyShape } from "@/lib/shape-classifier";
 import { graphTitlePrefix } from "@/lib/data-view-summary";
 import SpreadStrip from "./SpreadStrip";
 import RollTrendsChart from "./RollTrendsChart";
-import CurrentRollBarChart from "./CurrentRollBarChart";
-import GrowthDeclineChart from "./GrowthDeclineChart";
+import SortedBarChart from "./SortedBarChart";
+import DivergingBarChart from "./DivergingBarChart";
+import CombinedRollChart from "./CombinedRollChart";
+import MarketShareTrendChart from "./MarketShareTrendChart";
 
 function academicYearLabel(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;
@@ -111,6 +124,53 @@ export default function GraphsView({
     pctChange: trendBadge(currentPoints[i].value, anchorPoints[i].value)?.pctChange ?? null,
   }));
 
+  // Shared timeline + per-school filtered series for the new Combined Roll chart
+  // (Section 01) and the whole of Market share (Section 02) -- same
+  // filteredCount(profileToFilterableDataForPeriod(...)) pairing RollTrendsChart
+  // already applies per school, summed/ratioed across the group here instead of
+  // rendered as separate lines. ageGenderCountsByPeriod.has(p) guards the same
+  // "genuinely no data for this school this period" gap RollTrendsChart's own
+  // seriesFor guards -- absence means no data, not a real zero.
+  const periods = Array.from(new Set(group.flatMap((s) => s.trend.map((t) => t.period))))
+    .filter((p) => p >= filters.startPeriod)
+    .sort((a, b) => a - b);
+  const perSchoolFilteredSeries = group.map((s) => ({
+    urn: s.urn,
+    name: s.name,
+    isTarget: s.urn === targetProfile.urn,
+    values: periods.map((p) => (s.ageGenderCountsByPeriod.has(p) ? filteredCount(toFilterableForPeriod(s, p), filters).total : null)),
+  }));
+  const combinedByPeriod = periods.map((_, i) => {
+    const vals = perSchoolFilteredSeries.map((s) => s.values[i]).filter((v): v is number => v !== null);
+    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) : null;
+  });
+
+  const targetFilteredSeries = perSchoolFilteredSeries.find((s) => s.isTarget)!.values;
+  const marketShareByPeriod = periods.map((_, i) => {
+    const combined = combinedByPeriod[i];
+    const t = targetFilteredSeries[i];
+    return combined && combined > 0 && t !== null ? (t / combined) * 100 : null;
+  });
+
+  const latestIdx = periods.length - 1;
+  const earliestIdx = 0;
+  const shareAt = (values: (number | null)[], idx: number) => {
+    const combined = combinedByPeriod[idx];
+    const v = values[idx];
+    return combined && combined > 0 && v !== null ? (v / combined) * 100 : null;
+  };
+  const marketShareBarPoints = perSchoolFilteredSeries.map((s) => ({
+    urn: s.urn,
+    name: s.name,
+    isTarget: s.isTarget,
+    value: shareAt(s.values, latestIdx) ?? 0,
+  }));
+  const marketShareGrowthPoints = perSchoolFilteredSeries.map((s) => {
+    const early = shareAt(s.values, earliestIdx);
+    const late = shareAt(s.values, latestIdx);
+    return { urn: s.urn, name: s.name, isTarget: s.isTarget, pctChange: early !== null && late !== null ? late - early : null };
+  });
+
   const genderPoints = group.map((p) => {
     const c = filteredCount(toFilterable(p), filters);
     const pct = c.female !== null && c.total > 0 ? (c.female / c.total) * 100 : null;
@@ -149,6 +209,8 @@ export default function GraphsView({
 
   const titlePrefix = graphTitlePrefix(filters, targetProfile);
   const rollTrendsTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Roll Trends since ${academicYearLabel(filters.startPeriod)}`;
+  const combinedRollTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Combined Roll since ${academicYearLabel(filters.startPeriod)}`;
+  const marketShareTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Market Share since ${academicYearLabel(filters.startPeriod)}`;
 
   return (
     <div className="space-y-8">
@@ -170,10 +232,13 @@ export default function GraphsView({
               </div>
               {shapeFact && <p className="mb-2 text-xs text-neutral-500">{shapeFact}</p>}
               {sizeBandLine && <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{sizeBandLine}</p>}
-              <CurrentRollBarChart points={currentPoints} />
+              <SortedBarChart points={currentPoints} />
+            </Card>
+            <Card title={combinedRollTitle}>
+              <CombinedRollChart periods={periods} values={combinedByPeriod} />
             </Card>
             <Card title={`Growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
-              <GrowthDeclineChart points={growthPoints} />
+              <DivergingBarChart points={growthPoints} />
             </Card>
           </div>
         </div>
@@ -181,7 +246,21 @@ export default function GraphsView({
 
       <section>
         <SectionHeading number="02" title="Market share" />
-        <p className="text-sm text-neutral-500">Coming soon.</p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card title={marketShareTitle}>
+              <MarketShareTrendChart periods={periods} values={marketShareByPeriod} />
+            </Card>
+          </div>
+          <div className="flex flex-col gap-4">
+            <Card title={`Market share, ${academicYearLabel(periods[latestIdx] ?? filters.startPeriod)}`}>
+              <SortedBarChart points={marketShareBarPoints} formatValue={(v) => `${v.toFixed(0)}%`} />
+            </Card>
+            <Card title={`Market-share growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
+              <DivergingBarChart points={marketShareGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}pp`} />
+            </Card>
+          </div>
+        </div>
       </section>
 
       {!isSingleSex && (

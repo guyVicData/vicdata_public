@@ -1,24 +1,34 @@
 "use client";
 
-// Graphs redesign v1: new growth/decline-rate chart, one diverging bar per school
-// (left of the centre-line = decline, right = growth), reusing the Map's own already-
-// validated blue/red diverging scale (trend-colours.ts's trendColour -- brief's
-// explicit "reuse the Map's validated pair, don't invent a third scheme"). The focus
-// school is identified by a ring/outline, not a forced fill colour, since this
-// chart's colour job is direction, not identity -- its bar still gets trendColour's
-// real value like every other school's.
+// Graphs redesign v1: diverging bar chart (left of the centre-line = decline, right =
+// growth), reusing the Map's own already-validated blue/red diverging scale
+// (trend-colours.ts's trendColour -- brief's explicit "reuse the Map's validated
+// pair, don't invent a third scheme"). The focus school is identified by a
+// ring/outline, not a forced fill colour, since this chart's colour job is
+// direction, not identity -- its bar still gets trendColour's real value like every
+// other school's.
 //
 // Sorted largest-growth-to-largest-decline; not specified in the brief, a reasonable
 // default for a diverging chart (same "chosen, not discovered, easy to revisit"
 // discipline as this codebase's other unspecified defaults, e.g. data-view-cards.ts's
 // sizeBand tertiles).
+//
+// 2026-09-08: generalised from GrowthDeclineChart -- Section 02's own market-share
+// growth/decline tile is "same blue/red diverging convention as Section 01's
+// growth/decline chart" per the redesign doc, just a different value (percentage-
+// POINT change in share, not % change in roll) with its own label suffix, so this is
+// the one shared component behind both. formatValue defaults to Section 01's own
+// "+N%" roll-growth format; Market Share passes a "+N.Npp" formatter (percentage
+// points, since the underlying value is already itself a percentage).
 
 import { trendColour } from "@/lib/trend-colours";
 
-export default function GrowthDeclineChart({
+export default function DivergingBarChart({
   points,
+  formatValue = (v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`,
 }: {
   points: { urn: string; name: string; pctChange: number | null; isTarget: boolean }[];
+  formatValue?: (v: number) => string;
 }) {
   const withData = points.filter((p): p is { urn: string; name: string; pctChange: number; isTarget: boolean } => p.pctChange !== null);
   if (withData.length === 0) {
@@ -31,9 +41,8 @@ export default function GrowthDeclineChart({
     <div className="space-y-1.5">
       {sorted.map((p) => {
         const widthPct = (Math.abs(p.pctChange) / maxAbs) * 50;
-        const sign = p.pctChange > 0 ? "+" : "";
         return (
-          <div key={p.urn} className="flex items-center gap-2" title={`${p.name}: ${sign}${p.pctChange.toFixed(0)}%`}>
+          <div key={p.urn} className="flex items-center gap-2" title={`${p.name}: ${formatValue(p.pctChange)}`}>
             <span
               className={`w-20 shrink-0 truncate text-xs ${p.isTarget ? "font-medium text-neutral-900 dark:text-neutral-100" : "text-neutral-600 dark:text-neutral-400"}`}
             >
@@ -50,10 +59,7 @@ export default function GrowthDeclineChart({
                 }}
               />
             </div>
-            <span className="w-10 shrink-0 text-right text-xs tabular-nums text-neutral-500">
-              {sign}
-              {p.pctChange.toFixed(0)}%
-            </span>
+            <span className="w-12 shrink-0 text-right text-xs tabular-nums text-neutral-500">{formatValue(p.pctChange)}</span>
           </div>
         );
       })}
