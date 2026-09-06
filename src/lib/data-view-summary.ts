@@ -134,6 +134,24 @@ function comparedWithPhrase(activeSet: SetOption | null, target: DataViewSchoolP
   return activeSet.label;
 }
 
+// 2026-09-08, Graphs redesign v1: short filter-reactive chart titles ("Post 16 Roll
+// Trends since 2019/20"), reusing the SAME filter-state fields A3's own
+// describeActiveViewSentence reads -- but a terser template, not metricPhrase's full
+// prose. Deliberately literal/pill-style ("Post 16," not metricPhrase's "sixth form")
+// per the brief's own worked example, so this is a fresh small function rather than a
+// text transform of metricPhrase's output.
+function graphTitlePrefixWord(band: PhaseBandKey, target: DataViewSchoolProfile): string {
+  return band === "Post 16" && target.feParticipation ? "U19" : band;
+}
+
+export function graphTitlePrefix(filters: DataViewFilterState, target: DataViewSchoolProfile): string {
+  if (filters.boarding.size === 1) return filters.boarding.has("Boarders") ? "Boarding" : "Day";
+  if (filters.phaseBands.size === 1 && filters.ages.size === 1) return `${[...filters.ages][0]} year old`;
+  const bands = filters.phaseBands.size > 0 ? [...filters.phaseBands].map((b) => graphTitlePrefixWord(b, target)).join("/") : "";
+  const gender = filters.gender.size === 1 ? [...filters.gender][0] : "";
+  return [gender, bands].filter(Boolean).join(" ");
+}
+
 // The one function DataViewShell calls to render A3's summary line. Recomputed
 // fresh from the actual live filters/activeSet/target every render -- never cached
 // or memoised against stale state, so it can never drift from what Map/Dashboard/

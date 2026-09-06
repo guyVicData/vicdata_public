@@ -30,7 +30,7 @@ import ComparatorSidebar from "./ComparatorSidebar";
 import SavedSetsControl from "./SavedSetsControl";
 import FilterBar from "./FilterBar";
 import ViewSwitcher from "./ViewSwitcher";
-import DashboardView from "./DashboardView";
+import GraphsView from "./GraphsView";
 import RankingsView from "./RankingsView";
 import MapView from "./MapView";
 import PdfExportButton from "./PdfExportButton";
@@ -713,8 +713,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     activeView={activeView}
                     onChangeView={setActiveView}
                   />
-                ) : activeView === "dashboard" ? (
-                  <DashboardView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} filterSummary={filterSummary} />
+                ) : activeView === "graphs" ? (
+                  <GraphsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} filterSummary={filterSummary} />
                 ) : (
                   <RankingsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} />
                 )}

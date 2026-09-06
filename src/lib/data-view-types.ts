@@ -23,4 +23,4 @@ export type SetOption =
   | { kind: "recipe"; key: string; label: string; schools: DefaultListEntry[]; note?: string; lazy?: boolean }
   | { kind: "saved"; id: string; label: string; schools: DefaultListEntry[]; filters?: WireDataViewFilterState };
 
-export type ViewKey = "map" | "dashboard" | "rankings";
+export type ViewKey = "map" | "graphs" | "rankings";

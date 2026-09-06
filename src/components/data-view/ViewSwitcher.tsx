@@ -1,14 +1,17 @@
 "use client";
 
-// Member Data View (brief §4): Map | Dashboard | Rankings | +Custom (visible,
+// Member Data View (brief §4): Map | Graphs | Rankings | +Custom (visible,
 // dashed/reserved, disabled -- a real menu slot, not hidden, per brief §3's explicit
 // "Custom view... not built, not hidden, not clickable").
+//
+// 2026-09-08, Graphs redesign v1: "Dashboard" renamed to "Graphs" everywhere
+// user-facing (see docs/vicdata_phase3_member_data_view_graphs_redesign_v1.md).
 
 import type { ViewKey } from "@/lib/data-view-types";
 
 const VIEWS: { key: ViewKey; label: string }[] = [
   { key: "map", label: "Map" },
-  { key: "dashboard", label: "Dashboard" },
+  { key: "graphs", label: "Graphs" },
   { key: "rankings", label: "Rankings" },
 ];
 
