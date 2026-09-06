@@ -667,9 +667,13 @@ export default function DataViewShell({ urn }: { urn: string }) {
               canvas with the view-switcher and export button floated as overlays
               INSIDE it, rather than this in-flow subheader row -- so the row is
               skipped entirely for Map (MapView renders its own copies). Dashboard
-              and Rankings are untouched. */}
+              and Rankings are untouched.
+              2026-09-08: switcher moved to the left (justify-between, not justify-end)
+              to exactly match the Map overlay's own left/right split -- switcher at
+              the left edge, export button at the right -- per Guy's explicit request,
+              rather than both bunched together on the right as before. */}
           {activeView !== "map" && (
-            <div className="flex items-center justify-end gap-2 border-b border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
+            <div className="flex items-center justify-between gap-2 border-b border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
               <ViewSwitcher active={activeView} onChange={setActiveView} />
               <PdfExportButton />
             </div>
