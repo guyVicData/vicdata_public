@@ -26,7 +26,9 @@
 // 2026-09-08, redesign doc updated with two additions -- see
 // docs/vicdata_data_view_open_questions.md for the full reasoning on both:
 //   - Section 01 gained a new "Combined Roll" lollipop-plus-trend-line chart
-//     directly under Current Roll (CombinedRollChart.tsx).
+//     directly under Roll Trends, in the main column, as a large chart -- moved
+//     there from the right-hand tile column per Guy's own follow-up refinement
+//     (CombinedRollChart.tsx).
 //   - Section 02 (Market share) got its full spec: a single-series share-over-time
 //     chart plus two secondary tiles reusing the SAME bar-chart/diverging-chart
 //     components Section 01 already established (CurrentRollBarChart and
@@ -219,9 +221,12 @@ export default function GraphsView({
       <section>
         <SectionHeading number="01" title="Overview" />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+          <div className="flex flex-col gap-4 lg:col-span-2">
             <Card title={rollTrendsTitle}>
               <RollTrendsChart target={targetProfile} group={group} filters={filters} showAverage={showAverage} onToggleAverage={() => setShowAverage((v) => !v)} />
+            </Card>
+            <Card title={combinedRollTitle}>
+              <CombinedRollChart periods={periods} values={combinedByPeriod} />
             </Card>
           </div>
           <div className="flex flex-col gap-4">
@@ -233,9 +238,6 @@ export default function GraphsView({
               {shapeFact && <p className="mb-2 text-xs text-neutral-500">{shapeFact}</p>}
               {sizeBandLine && <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{sizeBandLine}</p>}
               <SortedBarChart points={currentPoints} />
-            </Card>
-            <Card title={combinedRollTitle}>
-              <CombinedRollChart periods={periods} values={combinedByPeriod} />
             </Card>
             <Card title={`Growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
               <DivergingBarChart points={growthPoints} />
