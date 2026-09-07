@@ -40,6 +40,7 @@ import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { ViewKey } from "@/lib/data-view-types";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
+import LoadingSpinnerCard from "./LoadingSpinnerCard";
 
 const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
   ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
@@ -90,6 +91,7 @@ export default function MapView({
   comparedHidden,
   onToggleTick,
   profilesByUrn,
+  profilesLoading,
   filters,
   activeView,
   onChangeView,
@@ -98,6 +100,15 @@ export default function MapView({
   targetProfile: DataViewSchoolProfile;
   members: DefaultListEntry[];
   tickedUrns: Set<string>;
+  // 2026-09-08, per direct request: the loading spinner needs to show whenever
+  // schools are being added to the map (a new/widened comparator set means new
+  // profiles are being fetched for the map to draw), not just on the very first
+  // paint -- DataViewShell's own outer gate only covers that first paint (nothing
+  // to show at all yet), so this map keeps rendering its current dots underneath
+  // and layers the SAME spinner (LoadingSpinnerCard) on top while more load in,
+  // matching the public map's own established "spinner overlays the still-visible
+  // map" pattern (SchoolMap.tsx's boundsLoading) rather than blanking the whole view.
+  profilesLoading: boolean;
   // 2026-09-07, UX refinements round 2, P3 item 8: temporary display-only hide,
   // never touches tickedUrns itself (DataViewShell's own comment on the state).
   comparedHidden: boolean;
@@ -421,6 +432,8 @@ export default function MapView({
           colour on this map the way they already do on the public one. */}
       <div ref={rootRef} className="vd-dataview-map absolute inset-0">
         <div ref={mapElRef} className="absolute inset-0" />
+
+        {profilesLoading && <LoadingSpinnerCard label="Loading schools…" />}
 
         {/* Top-left: view switcher. Moved here from DataViewShell's shared subheader
             row, which is now skipped entirely for Map -- see DataViewShell's own

@@ -1,23 +1,25 @@
 "use client";
 
-// Member Data View "Compared with" panel (2026-09-08 full rework, per direct
-// request -- docs/vicdata_phase3_member_data_view_compared_with_panel_redesign_v1.md
-// did not actually exist on disk when this was built; see the logged decisions in
-// docs/vicdata_data_view_open_questions.md for how that was handled and every real
-// judgement call made below).
+// Member Data View "Compared with" panel (2026-09-08 full rework, round 2 tweaks
+// applied on top -- see docs/vicdata_data_view_open_questions.md for every logged
+// decision, including why the redesign doc referenced for the original rework never
+// actually existed on disk).
 //
-// Replaces the dropdown-based Sets picker AND the always-visible/accordion-collapsed
-// schools list with: a row of named-set buttons (one click ticks the WHOLE set, no
-// partial pre-tick), a "My sets" row of the member's own saved sets, and a single
-// "Add/subtract schools" action that opens a real modal window (AddSubtractSchoolsWindow.tsx)
-// holding the actual granular list -- the always-visible surface is just buttons, never
-// something that grows with list length (the whole point, per direct instruction).
-//
-// Supersedes last round's Bug 2 accordion-collapse fix entirely (schoolsListCollapsed/
-// the in-place <ul>/overflow pagination are gone, replaced by the window) and the
-// old "+5 more" nearest-N expansion (superseded by the window's own "Add a school"
-// search -- see the logged decision for why that was dropped rather than kept
-// alongside the new window).
+// Round 2 wording/behaviour tweaks, per direct request:
+// - "Nearest 10 (any LA)" -> "Nearest 10 comparable schools"; gained a "+" control
+//   (same one Local Authorities uses) to add/subtract five more at a time, reviving
+//   the old "+5 more" mechanic that round 1 of this rework had dropped.
+// - "In {LA} (all sectors)" -> "{LA} schools"; gained the same "+" control, which now
+//   opens the Local Authorities picker as a real popup window (LocalAuthoritiesWindow.tsx,
+//   "like the schools list") instead of an inline expanding panel, and the button's
+//   own label grows a "+N" suffix once more than the home LA is checked (e.g. "Camden
+//   schools +1") -- no separate standalone "Local Authorities" button anymore.
+// - The "Schools and FE colleges, 16+, in {LA}" recipe lost its own standalone
+//   button entirely -- now triggered by the Post-16 phase filter itself
+//   (DataViewShell.tsx's own effect watches for Post-16 turning on), not a button
+//   here at all.
+// - "Region"/"Nation" placeholders relabelled "London Schools"/"England Schools".
+// - Every button now stacks one per line (a vertical list), not a wrapped row.
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -25,10 +27,11 @@ import type { SchoolSearchResult } from "@/components/SchoolSearch";
 import type { SetOption } from "@/lib/data-view-types";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
 import AddSubtractSchoolsWindow from "./AddSubtractSchoolsWindow";
+import LocalAuthoritiesWindow, { type AdjacentLasResponse } from "./LocalAuthoritiesWindow";
 
-type AdjacentLasResponse = { ownLaName: string | null; adjacent: { name: string }[] };
+const NEAREST_STEP = 5;
+const NEAREST_MIN = 10;
 
 // A named-set button is "selected" purely by comparing what's actually ticked
 // against the option's own real school list -- not by tracking "which button was
@@ -44,6 +47,15 @@ function tickedMatchesSet(tickedUrns: Set<string>, schools: DefaultListEntry[]):
   if (schools.length === 0) return false;
   if (tickedUrns.size !== schools.length) return false;
   return schools.every((s) => tickedUrns.has(s.urn));
+}
+
+// "In Camden (all sectors)" -> "Camden"; "16+ provision in Camden" (the FE-college-
+// target equivalent of the home-LA slot) -> "Camden" too -- same short-name
+// treatment either way. Falls back to the option's own raw label if neither known
+// shape matches, rather than guessing at a new one.
+function homeLaShortName(rawLabel: string): string | null {
+  const m = /^In (.+) \(all sectors\)$/.exec(rawLabel) ?? /^16\+ provision in (.+)$/.exec(rawLabel);
+  return m ? m[1] : null;
 }
 
 function SetButton({
@@ -79,13 +91,28 @@ function SetButton({
   );
 }
 
+// The small round "+" trigger shared by Nearest 10 (opens a quick +/-5 stepper) and
+// the home-LA button (opens the Local Authorities window) -- one consistent
+// "add/subtract more" affordance, per direct request to reuse it for both.
+function PlusButton({ title, onClick }: { title: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-sm leading-none text-neutral-500 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+    >
+      +
+    </button>
+  );
+}
+
 export default function ComparatorSidebar({
   targetName,
   targetUrn,
   authToken,
   nearestOption,
   homeLaOption,
-  local16PlusOption,
   boardingOption,
   savedSets,
   activeSet,
@@ -104,7 +131,6 @@ export default function ComparatorSidebar({
   authToken: string | null;
   nearestOption: SetOption | null;
   homeLaOption: SetOption | null;
-  local16PlusOption: SetOption | null;
   boardingOption: SetOption | null;
   savedSets: SetOption[];
   activeSet: SetOption | null;
@@ -120,18 +146,17 @@ export default function ComparatorSidebar({
 }) {
   const [addedUrns, setAddedUrns] = useState<{ urn: string; name: string }[]>([]);
   const [windowOpen, setWindowOpen] = useState(false);
+  const [nearestPopupOpen, setNearestPopupOpen] = useState(false);
+  const [nearestExpanding, setNearestExpanding] = useState(false);
 
   const [laInfo, setLaInfo] = useState<AdjacentLasResponse | null>(null);
   const [checkedLas, setCheckedLas] = useState<Set<string>>(new Set());
   const [laLoading, setLaLoading] = useState(false);
-  const [laOpen, setLaOpen] = useState(false);
+  const [laWindowOpen, setLaWindowOpen] = useState(false);
   // 2026-09-07, UX refinements round 2, P1 items 1+2 -- root cause, confirmed by
-  // reproducing live (dots genuinely updated 11->7 for a real Camden-only
-  // selection, but the dropdown's own label stayed frozen on "Nearest 10 (any
-  // LA)"): applyLaSelection tagged its result `key: "multi_la"`, a key that never
-  // exists in the `options` array the dropdown renders from. That dropdown is gone
-  // now (this whole file's own rework), but the underlying out-of-order-response
-  // race this also fixed is still real -- laRequestSeq is kept unchanged.
+  // reproducing live: applyLaSelection had no guard against out-of-order responses,
+  // so two overlapping LA toggles could let a slower, staler response overwrite a
+  // newer one. Every call still carries its own sequence number.
   const laRequestSeq = useRef(0);
 
   useEffect(() => {
@@ -185,16 +210,48 @@ export default function ComparatorSidebar({
 
   // Local Authorities has no single fixed backing list of its own (it's a live,
   // adjustable multi-select) -- "is the active set LA-scoped at all" on its own
-  // isn't enough, though: per direct instruction, ANY named-set button (this one
-  // included) must stop reading as selected the moment a manual edit makes the
-  // ticked set no longer match. So this still requires the active set to genuinely
-  // be LA-scoped, AND for tickedUrns to still match that set's own real list --
-  // exactly the same tickedMatchesSet check every other button uses, just against
-  // activeSet.schools directly since there's no separate fixed option object here.
+  // isn't enough: per direct instruction, ANY named-set button must stop reading as
+  // selected the moment a manual edit makes the ticked set no longer match. So this
+  // still requires tickedUrns to genuinely match activeSet's own real list too.
   const isLaScoped =
     activeSet?.kind === "recipe" &&
     (activeSet.key === "in_la" || activeSet.key === "multi_la" || activeSet.key === "fe_local_16plus") &&
     tickedMatchesSet(tickedUrns, activeSet.schools);
+  const extraLaCount = Math.max(0, checkedLas.size - 1);
+  const homeLaLabel = homeLaOption ? (homeLaShortName(homeLaOption.label) ?? homeLaOption.label) : null;
+  const homeLaButtonLabel = homeLaLabel ? `${homeLaLabel} schools${extraLaCount > 0 ? ` +${extraLaCount}` : ""}` : "";
+
+  // Nearest 10's own "+"/"-" stepper reuses onSelectSet directly rather than a
+  // separate expand/contract code path: building a modified copy of the recipe with
+  // a longer or shorter `.schools` array and selecting IT ticks the whole new list
+  // in one step, the same way clicking any other named-set button already does
+  // (selectSet's own "tick everything" rule, round 1 of this rework). The CURRENT
+  // effective count comes from activeSet itself when it's genuinely the nearest-N
+  // set (so a prior +5 is remembered), falling back to the base recipe's own 10
+  // otherwise.
+  const nearestIsActive = activeSet?.kind === "recipe" && (activeSet.key === "nearest_10" || activeSet.key === "fe_nearest_10");
+  const currentNearestSchools = nearestIsActive ? activeSet.schools : (nearestOption?.schools ?? []);
+
+  async function expandNearestBy(delta: number) {
+    if (!nearestOption) return;
+    const nextCount = Math.max(NEAREST_MIN, currentNearestSchools.length + delta);
+    if (delta > 0) {
+      if (!authToken) return;
+      setNearestExpanding(true);
+      try {
+        const res = await fetch(`/api/data-view/expand-nearest?urn=${targetUrn}&count=${nextCount}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as { list: { schools: DefaultListEntry[] } };
+        onSelectSet({ ...nearestOption, schools: body.list.schools });
+      } finally {
+        setNearestExpanding(false);
+      }
+    } else {
+      onSelectSet({ ...nearestOption, schools: currentNearestSchools.slice(0, nextCount) });
+    }
+  }
 
   const schools = activeSet ? [...activeSet.schools, ...addedUrns.map((a) => ({ urn: a.urn, name: a.name, distanceKm: null }))] : [];
 
@@ -208,23 +265,57 @@ export default function ComparatorSidebar({
     <div className="rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800">
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Compared with</h2>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col items-start gap-2">
         {nearestOption && (
-          <SetButton label={nearestOption.label} selected={tickedMatchesSet(tickedUrns, nearestOption.schools)} onClick={() => onSelectSet(nearestOption)} />
+          <div className="relative flex items-center gap-1.5">
+            <SetButton
+              label="Nearest 10 comparable schools"
+              selected={tickedMatchesSet(tickedUrns, nearestOption.schools) || (nearestIsActive && tickedMatchesSet(tickedUrns, currentNearestSchools))}
+              onClick={() => onSelectSet(nearestOption)}
+            />
+            <PlusButton title="Add or subtract five more" onClick={() => setNearestPopupOpen((o) => !o)} />
+            {nearestPopupOpen && (
+              // 2026-09-08, real bug fix found during live verification: this popup
+              // stayed open after +5/-5, sitting directly over the next button-row
+              // down (the vertical one-button-per-line layout stacks rows tightly)
+              // and silently intercepting its clicks. Closes itself the moment a
+              // step is actually applied, not just on an outside click.
+              <div className="absolute left-0 top-full z-20 mt-1 flex items-center gap-2 rounded-md border border-neutral-200 bg-white p-2 text-xs shadow-md dark:border-neutral-800 dark:bg-neutral-950">
+                <span className="text-neutral-500">{currentNearestSchools.length} schools</span>
+                <button
+                  type="button"
+                  disabled={nearestExpanding}
+                  className="underline disabled:opacity-50"
+                  onClick={() => {
+                    expandNearestBy(NEAREST_STEP);
+                    setNearestPopupOpen(false);
+                  }}
+                >
+                  {nearestExpanding ? "Loading…" : `+${NEAREST_STEP} more`}
+                </button>
+                <button
+                  type="button"
+                  disabled={currentNearestSchools.length <= NEAREST_MIN}
+                  className="underline disabled:opacity-50"
+                  onClick={() => {
+                    expandNearestBy(-NEAREST_STEP);
+                    setNearestPopupOpen(false);
+                  }}
+                >
+                  -{NEAREST_STEP} fewer
+                </button>
+              </div>
+            )}
+          </div>
         )}
+
         {homeLaOption && (
-          <SetButton label={homeLaOption.label} selected={tickedMatchesSet(tickedUrns, homeLaOption.schools)} onClick={() => onSelectSet(homeLaOption)} />
+          <div className="flex items-center gap-1.5">
+            <SetButton label={homeLaButtonLabel} selected={isLaScoped} onClick={() => applyLaSelection(checkedLas)} />
+            <PlusButton title="Add or subtract local authorities" onClick={() => setLaWindowOpen(true)} />
+          </div>
         )}
-        {local16PlusOption && (
-          <SetButton
-            label={local16PlusOption.label}
-            selected={tickedMatchesSet(tickedUrns, local16PlusOption.schools)}
-            onClick={() => onSelectSet(local16PlusOption)}
-          />
-        )}
-        <SetButton label="Local Authorities" selected={isLaScoped} onClick={() => setLaOpen((o) => !o)} />
-        <SetButton label="Region" disabled title="Not available yet -- the regional/national aggregation this needs hasn't been built." />
-        <SetButton label="Nation" disabled title="Not available yet -- the regional/national aggregation this needs hasn't been built." />
+
         {boardingOption && (
           <SetButton
             label="Boarding schools"
@@ -232,6 +323,8 @@ export default function ComparatorSidebar({
             onClick={() => onSelectSet(boardingOption)}
           />
         )}
+        <SetButton label="London Schools" disabled title="Not available yet -- the regional aggregation this needs hasn't been built." />
+        <SetButton label="England Schools" disabled title="Not available yet -- the national aggregation this needs hasn't been built." />
         <SetButton
           label="Same academy/school group"
           disabled
@@ -239,47 +332,12 @@ export default function ComparatorSidebar({
         />
       </div>
 
-      {laOpen && (
-        <div className="mt-2 rounded-md border border-neutral-200 p-2 dark:border-neutral-800">
-          <div className="mb-1 flex w-full items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Local Authorities</span>
-            <MapBoxCollapseToggle collapsed={!laOpen} onToggle={() => setLaOpen((o) => !o)} label="Local Authorities" />
-          </div>
-          <div className="space-y-1 text-xs">
-            {!laInfo ? (
-              <p className="text-neutral-400">Loading…</p>
-            ) : !laInfo.ownLaName ? (
-              <p className="text-neutral-400">No real LA on record for this school.</p>
-            ) : (
-              <>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={checkedLas.has(laInfo.ownLaName)} onChange={() => toggleLa(laInfo.ownLaName!)} />
-                  {laInfo.ownLaName} <span className="text-neutral-400">(this school&rsquo;s own LA)</span>
-                </label>
-                {laInfo.adjacent.map((la) => (
-                  <label key={la.name} className="flex items-center gap-2">
-                    <input type="checkbox" checked={checkedLas.has(la.name)} onChange={() => toggleLa(la.name)} />
-                    {la.name}
-                  </label>
-                ))}
-                {laInfo.adjacent.length > 0 && (
-                  <button type="button" onClick={selectAllLas} className="mt-1 text-neutral-500 underline">
-                    Select all
-                  </button>
-                )}
-                {laLoading && <p className="text-neutral-400">Updating…</p>}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
       {boardingQuintileLoading && <p className="mt-2 text-xs text-neutral-400">Computing national boarding quintile — this can take a little while…</p>}
       {activeSet?.kind === "recipe" && activeSet.note && <p className="mt-2 text-xs text-neutral-400">{activeSet.note}</p>}
 
       <div className="mt-3 border-t border-neutral-100 pt-3 dark:border-neutral-800">
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">My sets</h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col items-start gap-2">
           {savedSets.map((s) => (
             <SetButton
               key={s.kind === "saved" ? s.id : s.key}
@@ -329,6 +387,17 @@ export default function ComparatorSidebar({
           onAddSchool={addSchool}
           profilesByUrn={profilesByUrn}
           onClose={() => setWindowOpen(false)}
+        />
+      )}
+
+      {laWindowOpen && (
+        <LocalAuthoritiesWindow
+          laInfo={laInfo}
+          checkedLas={checkedLas}
+          laLoading={laLoading}
+          onToggleLa={toggleLa}
+          onSelectAllLas={selectAllLas}
+          onClose={() => setLaWindowOpen(false)}
         />
       )}
     </div>

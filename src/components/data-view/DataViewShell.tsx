@@ -8,7 +8,7 @@
 // (/account, /sets, /sets/[id]) -- there's no server-side session/middleware in this
 // codebase to gate on instead.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
@@ -361,6 +361,23 @@ export default function DataViewShell({ urn }: { urn: string }) {
     }
   }
 
+  // 2026-09-08, "Compared with" panel round 2, per direct request: the "Schools and
+  // FE colleges, 16+, in {LA}" recipe lost its own standalone button -- "this set
+  // should be triggered by the post16 search button above" (FilterBar's own Post-16
+  // phase pill) instead. Fires only on the OFF->ON transition (a ref, not a plain
+  // effect dependency check), so turning Post-16 on picks this recipe once, but a
+  // member who then manually picks a different set isn't fought with every
+  // subsequent render while Post-16 stays active -- only a fresh OFF->ON edge
+  // re-triggers it.
+  const wasPost16Ref = useRef(false);
+  useEffect(() => {
+    const isPost16Now = filters.phaseBands.has("Post 16");
+    if (isPost16Now && !wasPost16Ref.current && recipeLists?.local16Plus) {
+      selectSet(recipeLists.local16Plus);
+    }
+    wasPost16Ref.current = isPost16Now;
+  }, [filters.phaseBands, recipeLists?.local16Plus]);
+
   // 2026-09-06, UX refinements round 1, A2/B3: the one save mechanism shared by the
   // filter row's own Saved Sets control and (once built) B3's richer "Compared with"
   // rework -- the exact same saved_sets/saved_set_members tables and RLS policies
@@ -619,7 +636,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
             authToken={authToken}
             nearestOption={recipeLists?.list1 ?? null}
             homeLaOption={recipeLists?.list2 ?? null}
-            local16PlusOption={recipeLists?.local16Plus ?? null}
             boardingOption={boardingQuintileOption}
             savedSets={savedSets}
             activeSet={activeSet}
@@ -703,6 +719,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     comparedHidden={comparedHidden}
                     onToggleTick={toggleTick}
                     profilesByUrn={profilesByUrn}
+                    profilesLoading={profilesLoading}
                     filters={filters}
                     activeView={activeView}
                     onChangeView={setActiveView}
