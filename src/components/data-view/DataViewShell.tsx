@@ -37,8 +37,6 @@ import PdfExportButton from "./PdfExportButton";
 import DataViewErrorBoundary from "./DataViewErrorBoundary";
 import LoadingSpinnerCard from "./LoadingSpinnerCard";
 
-const INITIAL_TICKED_COUNT = 10;
-
 type TargetSchool = {
   urn: string;
   name: string;
@@ -247,9 +245,13 @@ export default function DataViewShell({ urn }: { urn: string }) {
         setSavedSets(saved);
 
         // Default landing state (brief §4): Map view, Nearest 10 (any LA) pre-selected.
+        // 2026-09-08: ticks the WHOLE list now (list1 is already capped at 10 server-
+        // side, so this was never actually a behaviour change in practice) -- kept
+        // consistent with selectSet's own "every named set ticks its whole list" rule
+        // rather than a separate slice here.
         if (list1) {
           setActiveSet(list1);
-          setTickedUrns(new Set(list1.schools.slice(0, INITIAL_TICKED_COUNT).map((s) => s.urn)));
+          setTickedUrns(new Set(list1.schools.map((s) => s.urn)));
         }
         setLoadState("ready");
       } catch (e) {
@@ -338,16 +340,18 @@ export default function DataViewShell({ urn }: { urn: string }) {
     return () => clearTimeout(timer);
   }, [loadState]);
 
+  // 2026-09-08, "Compared with" panel rework, per direct instruction: "every
+  // [named-set] button... instantly ticks its whole set... one click, no further
+  // confirmation." Every recipe now ticks EVERY school in its list, not just the
+  // first INITIAL_TICKED_COUNT -- the old partial-pre-tick default existed for the
+  // dropdown era's own "you'll thin it out yourself in the list below" model, which
+  // this rework replaces entirely (manual thinning now happens in the
+  // Add/subtract-schools window instead, a genuinely separate action from picking a
+  // named set). A saved set already ticked everything it held; this just makes
+  // recipes consistent with that, not a new special case.
   function selectSet(option: SetOption) {
     setActiveSet(option);
-    // A saved set is a deliberately curated tick-list (that's what got saved) --
-    // restore it exactly, not just its first INITIAL_TICKED_COUNT. A recipe list
-    // (Nearest 10, In-LA, etc.) keeps the existing "first 10 pre-ticked" default.
-    setTickedUrns(
-      option.kind === "saved"
-        ? new Set(option.schools.map((s) => s.urn))
-        : new Set(option.schools.slice(0, INITIAL_TICKED_COUNT).map((s) => s.urn)),
-    );
+    setTickedUrns(new Set(option.schools.map((s) => s.urn)));
     // 2026-09-06, UX refinements round 1, A2/B3: recalling a saved set restores the
     // filter state it was saved with too, when one was actually saved (see
     // SetOption's own comment for why this is optional) -- "share one underlying
@@ -355,25 +359,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
     if (option.kind === "saved" && option.filters) {
       setFilters(deserializeFilterState(option.filters));
     }
-  }
-
-  // 2026-09-06, UX refinements round 1, B3: "+5 more" grows the ACTIVE set's own
-  // school list in place, deliberately not routed through selectSet -- selectSet's
-  // own "first INITIAL_TICKED_COUNT pre-ticked" default would silently discard
-  // whatever the member had already manually ticked/unticked within the original 10
-  // the moment they asked for 5 more. Only the newly-appeared URNs (present in the
-  // new list, absent from the old one) get auto-ticked; every existing URN's ticked
-  // state is left exactly as the member set it.
-  function expandActiveSet(newSchools: SetOption["schools"]) {
-    setActiveSet((prev) => (prev ? { ...prev, schools: newSchools } : prev));
-    setTickedUrns((prev) => {
-      const oldUrns = new Set(activeSet?.schools.map((s) => s.urn) ?? []);
-      const next = new Set(prev);
-      for (const s of newSchools) {
-        if (!oldUrns.has(s.urn)) next.add(s.urn);
-      }
-      return next;
-    });
   }
 
   // 2026-09-06, UX refinements round 1, A2/B3: the one save mechanism shared by the
@@ -536,14 +521,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
     ),
   );
 
-  const setOptions: SetOption[] = [
-    ...(recipeLists?.list1 ? [recipeLists.list1] : []),
-    ...(recipeLists?.list2 ? [recipeLists.list2] : []),
-    ...(recipeLists?.local16Plus ? [recipeLists.local16Plus] : []),
-    ...(boardingQuintileOption ? [boardingQuintileOption] : []),
-    ...savedSets,
-  ];
-
   // 2026-09-05, layout fix (real bug reported live, both items below):
   //
   // 1. Full-bleed. The whole shell used to sit inside `mx-auto max-w-6xl px-4 sm:px-6`
@@ -640,7 +617,11 @@ export default function DataViewShell({ urn }: { urn: string }) {
             targetName={target.name}
             targetUrn={target.urn}
             authToken={authToken}
-            options={setOptions}
+            nearestOption={recipeLists?.list1 ?? null}
+            homeLaOption={recipeLists?.list2 ?? null}
+            local16PlusOption={recipeLists?.local16Plus ?? null}
+            boardingOption={boardingQuintileOption}
+            savedSets={savedSets}
             activeSet={activeSet}
             onSelectSet={(opt) => {
               if (opt.kind === "recipe" && opt.lazy && opt.schools.length === 0) {
@@ -651,7 +632,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
               }
               selectSet(opt);
             }}
-            onExpandActiveSet={expandActiveSet}
             boardingQuintileLoading={boardingQuintileLoading}
             tickedUrns={tickedUrns}
             onToggleTick={toggleTick}
@@ -659,7 +639,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
             onUnselectAllTicked={unselectAllTicked}
             comparedHidden={comparedHidden}
             onToggleComparedHidden={() => setComparedHidden((h) => !h)}
-            initialTickedCount={INITIAL_TICKED_COUNT}
+            profilesByUrn={profilesByUrn}
           />
         </aside>
 

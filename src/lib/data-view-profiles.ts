@@ -78,6 +78,15 @@ export type DataViewSchoolProfile = {
   urn: string;
   name: string;
   town: string | null;
+  // 2026-09-08, Compared-with panel redesign: the new "Add/subtract schools" window's
+  // own "group by LA" option needs a real LA name per candidate -- already a real
+  // column on `schools` (used server-side throughout default-comparator-lists.ts to
+  // BUILD LA-scoped recipes), just never previously plumbed through to the client
+  // profile every candidate already gets fetched (see this file's own
+  // fetchDataViewProfiles, which fetches every school in the active set, not just
+  // ticked ones -- Map already needed this for its own dots). Reusing that same
+  // fetch rather than adding a new one.
+  laName: string | null;
   easting: number | null;
   northing: number | null;
   sector: SectorTag | null;
@@ -150,6 +159,7 @@ type SchoolRow = {
   urn: string;
   current_name: string;
   town: string | null;
+  la_name: string | null;
   easting: number | null;
   northing: number | null;
   establishment_type_group: string | null;
@@ -181,7 +191,7 @@ export async function fetchDataViewProfiles(urns: string[]): Promise<DataViewSch
     supabase
       .from("schools")
       .select(
-        "urn, current_name, town, easting, northing, establishment_type_group, establishment_type, boarders_name, statutory_low_age, statutory_high_age, gender",
+        "urn, current_name, town, la_name, easting, northing, establishment_type_group, establishment_type, boarders_name, statutory_low_age, statutory_high_age, gender",
       )
       .in("urn", urns),
     fetchCensusFactsBatched(urns),
@@ -275,6 +285,7 @@ export async function fetchDataViewProfiles(urns: string[]): Promise<DataViewSch
       urn,
       name: row.current_name,
       town: row.town,
+      laName: row.la_name,
       easting: row.easting,
       northing: row.northing,
       sector: sectorTag(row.establishment_type_group, row.establishment_type),
