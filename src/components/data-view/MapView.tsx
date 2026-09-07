@@ -37,6 +37,8 @@ import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { profileToFilterableData, profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
 import { filteredCount, matchesSectorFilter, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
+import type { RegionNationPoint } from "@/lib/region-nation-comparator";
+import { sectorTag } from "@/lib/typology";
 import type { ViewKey } from "@/lib/data-view-types";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
@@ -81,10 +83,89 @@ const DISTANCE_RING_KM_INDEPENDENT = 10;
 // the exact threshold... and log it."
 const CLUSTER_THRESHOLD = 200;
 
+// Real bug found live (2026-10-09): a single wrongly-geocoded school (NHS Choices
+// College, URN 144813 -- already a known, documented bad GIAS coordinate from an
+// earlier round, ~400km north of where its own la_name says it should be; that fix
+// was scoped narrowly to one LA-adjacency function, never to map auto-fit) dragged
+// the WHOLE map's fitBounds out to include it, zooming a London-region view out to
+// show most of England. This isn't really specific to that one row -- ANY real-world
+// dataset this size can have an occasional wrongly-geocoded outlier, and a single bad
+// point should never be able to single-handedly wreck the auto-fit zoom for
+// thousands of correctly-placed schools around it. Trims the most extreme ~2% of
+// points on each axis (a light percentile trim, not a hardcoded per-school exclusion)
+// before computing the fit -- generous enough that Nation's own genuine
+// England-spanning extent (Cornwall to Newcastle) still fits correctly, since that's
+// a real, gradually-distributed spread, not a handful of isolated outliers. The
+// excluded points still render as real markers on the map (this only affects the
+// auto-fit CAMERA, never which schools are shown) -- "nothing silently capped or
+// sampled" still holds.
+const BOUNDS_TRIM_PERCENTILE = 0.02;
+
+function trimmedBoundsFor(points: [number, number][]): [number, number][] {
+  if (points.length < 50) return points; // too few for a percentile trim to mean anything
+  const lats = points.map((p) => p[0]).sort((a, b) => a - b);
+  const lngs = points.map((p) => p[1]).sort((a, b) => a - b);
+  const cut = Math.floor(points.length * BOUNDS_TRIM_PERCENTILE);
+  const [latLo, latHi] = [lats[cut], lats[lats.length - 1 - cut]];
+  const [lngLo, lngHi] = [lngs[cut], lngs[lngs.length - 1 - cut]];
+  const trimmed = points.filter(([lat, lng]) => lat >= latLo && lat <= latHi && lng >= lngLo && lng <= lngHi);
+  return trimmed.length > 1 ? trimmed : points;
+}
+
 function radiusFor(value: number, min: number, max: number): number {
   if (!(max > min)) return (MIN_RADIUS + MAX_RADIUS) / 2;
   const t = (Math.sqrt(value) - Math.sqrt(min)) / (Math.sqrt(max) - Math.sqrt(min));
   return MIN_RADIUS + (MAX_RADIUS - MIN_RADIUS) * t;
+}
+
+// 2026-10-09, real bug found live ("London/England schools don't load"): a Region/
+// Nation-scale comparator set deliberately never gets a full multi-year
+// DataViewSchoolProfile per school (DataViewShell's own LARGE_SET_PROFILE_THRESHOLD
+// guard -- fetching one per school at that scale is the exact fetch-and-compute-at-
+// scale failure this whole performance-architecture round exists to remove), but
+// every marker this component draws comes from `withProfile`, which used to require
+// one. Synthesises a minimal, honestly-empty profile from the lightweight
+// geometry+sector DataViewShell already has for these schools (region-nation-set's
+// own RPC) -- real position and real sector, so a real, correctly-placed,
+// sector-coloured marker still draws; every roll/age/gender/trend field is left null
+// or empty (never fabricated), which the existing drawing logic already handles
+// correctly on its own: `filteredCount` over an empty profile is honestly 0, so these
+// markers render as small flat dots when no phase/gender/boarding filter is active
+// (matching the deliberate "no data at all until real data exists" treatment already
+// established for un-ticked schools) and correctly disappear if a real filter IS
+// active (same "hides rather than draws a misleading dot" rule real-but-zero schools
+// already get) -- no new branching needed in the drawing loop itself.
+function buildLightweightProfile(urn: string, name: string, point: RegionNationPoint | undefined): DataViewSchoolProfile | null {
+  // (0, 0) BNG sentinel values are excluded at withProfile's own shared filter below
+  // (protects every consumer, not just this lightweight path) -- this function only
+  // needs its own null check.
+  if (!point || point.easting === null || point.northing === null) return null;
+  return {
+    urn,
+    name,
+    town: null,
+    laName: null,
+    easting: point.easting,
+    northing: point.northing,
+    sector: sectorTag(point.establishmentTypeGroup, point.establishmentType),
+    boarding: null,
+    gender: null,
+    phase: [],
+    establishmentType: point.establishmentType,
+    establishmentTypeGroup: point.establishmentTypeGroup,
+    statutoryLowAge: null,
+    statutoryHighAge: null,
+    current: null,
+    anchor2019: null,
+    trend: [],
+    ageGenderCounts: new Map(),
+    ageGenderCounts2019: new Map(),
+    ageGenderCountsByPeriod: new Map(),
+    boardersGenderSplit: null,
+    shapeCurrent: null,
+    shape2019: null,
+    feParticipation: null,
+  };
 }
 
 // Same academic-year-label convention as FilterBar.tsx's own academicYearLabel
@@ -104,6 +185,7 @@ export default function MapView({
   comparedHidden,
   onToggleTick,
   profilesByUrn,
+  largeSetPoints,
   loading,
   loadingLabel,
   filters,
@@ -133,6 +215,12 @@ export default function MapView({
   comparedHidden: boolean;
   onToggleTick: (urn: string) => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
+  // 2026-10-09, real bug found live ("London/England schools don't load"): a
+  // Region/Nation-scale comparator set deliberately never gets a full profile per
+  // school (DataViewShell's own LARGE_SET_PROFILE_THRESHOLD guard), but this map's
+  // whole drawing pipeline only ever plotted a school WITH one -- see
+  // buildLightweightProfile below for how these fill that gap.
+  largeSetPoints: Map<string, RegionNationPoint>;
   filters: DataViewFilterState;
   activeView: ViewKey;
   onChangeView: (v: ViewKey) => void;
@@ -297,11 +385,21 @@ export default function MapView({
     const allUrns = [target.urn, ...members.map((m) => m.urn)];
     const allNames = new Map([[target.urn, target.name], ...members.map((m): [string, string] => [m.urn, m.name])]);
     return allUrns
-      .map((urn) => ({ urn, name: allNames.get(urn) ?? urn, profile: profilesByUrn.get(urn) ?? null }))
+      .map((urn) => ({ urn, name: allNames.get(urn) ?? urn, profile: profilesByUrn.get(urn) ?? buildLightweightProfile(urn, allNames.get(urn) ?? urn, largeSetPoints.get(urn)) }))
       .filter((s): s is { urn: string; name: string; profile: DataViewSchoolProfile } => s.profile !== null)
       .map((s) => ({ ...s, easting: s.profile.easting, northing: s.profile.northing }))
-      .filter((s): s is typeof s & { easting: number; northing: number } => s.easting !== null && s.northing !== null);
-  }, [target.urn, target.name, members, profilesByUrn]);
+      // Real bug found live (2026-10-09): a genuine (0, 0) BNG sentinel (Hugh
+      // Myddelton Infant School, URN 100410 -- same bad-data class already found and
+      // fixed elsewhere in this codebase for a different school) isn't caught by a
+      // plain null check and previously wasn't excluded here EITHER, for any
+      // comparator set, not just Region/Nation -- it just took a set genuinely large
+      // enough to include it, and a working map to actually draw it, to surface: the
+      // BNG grid's own origin point converts to a real-looking but wrong lat/lng,
+      // which dragged the whole map's fitBounds out to sea. Excluded at this shared
+      // filter point so every consumer of `withProfile` is protected, not just the
+      // new lightweight-profile path.
+      .filter((s): s is typeof s & { easting: number; northing: number } => s.easting !== null && s.northing !== null && !(s.easting === 0 && s.northing === 0));
+  }, [target.urn, target.name, members, profilesByUrn, largeSetPoints]);
 
   const values = useMemo(
     () => withProfile.map((s) => filteredCount(profileToFilterableData(s.profile), filters).total),
@@ -475,7 +573,7 @@ export default function MapView({
     }
 
     if (bounds.length > 1) {
-      mapRef.current!.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target]);

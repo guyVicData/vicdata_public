@@ -25,6 +25,7 @@ import {
 import type { SetOption, ViewKey } from "@/lib/data-view-types";
 import type { SchoolTypeCategory } from "@/lib/default-comparator-lists";
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
+import type { RegionNationPoint } from "@/lib/region-nation-comparator";
 import { TOPIC_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import ComparatorSidebar from "./ComparatorSidebar";
 import SavedSetsControl from "./SavedSetsControl";
@@ -96,6 +97,14 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // (potentially tens of thousands of schools) is only fetched once clicked.
   const [regionOption, setRegionOption] = useState<SetOption | null>(null);
   const [nationOption, setNationOption] = useState<SetOption | null>(null);
+  // Real bug found live (2026-10-09): lightweight (no full profile) geometry+sector
+  // for Region/Nation-scale schools -- see loadRegionOrNationSet's own comment for why
+  // this exists (MapView drew nothing for these sets without it) and MapView.tsx's
+  // buildLightweightProfile for how it's used. Never merged into profilesByUrn itself
+  // -- that map stays real-data-only, since Graphs/Rankings/stat cards also read it
+  // and a stub zero-roll profile for tens of thousands of schools would silently
+  // corrupt their aggregates.
+  const [largeSetPoints, setLargeSetPoints] = useState<Map<string, RegionNationPoint>>(new Map());
   // Which of Region/Nation (if either) is currently mid-fetch -- NOT a plain boolean,
   // since a shared true/false flag would make BOTH buttons read as optimistically
   // "selected" the instant either one is clicked (the same class of bug already found
@@ -333,9 +342,25 @@ export default function DataViewShell({ urn }: { urn: string }) {
       try {
         const res = await fetch(`/api/data-view/region-nation-set?urn=${urn}&scope=${scope}`, { headers: { Authorization: `Bearer ${authToken}` } });
         if (!res.ok) return null;
-        const body = (await res.json()) as { set: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null };
+        const body = (await res.json()) as {
+          set: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
+          points?: RegionNationPoint[];
+        };
         if (!body.set) return null;
         const option: SetOption = { kind: "recipe", key: body.set.key, label: body.set.label, schools: body.set.schools, note: body.set.note };
+        // Real bug found live (2026-10-09): "London/England schools don't load" -- the
+        // set itself selected fine, but MapView's own drawing pipeline only plots a
+        // school with a full profile in profilesByUrn, which LARGE_SET_PROFILE_THRESHOLD
+        // deliberately never fetches for a set this size. These lightweight points
+        // (real geometry + sector, no multi-year roll data) let MapView plot a real
+        // marker for every school anyway -- see MapView.tsx's own buildLightweightProfile.
+        if (body.points) {
+          setLargeSetPoints((prev) => {
+            const next = new Map(prev);
+            for (const p of body.points!) next.set(p.urn, p);
+            return next;
+          });
+        }
         if (scope === "region") setRegionOption(option);
         else setNationOption(option);
         return option;
@@ -845,6 +870,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     comparedHidden={comparedHidden}
                     onToggleTick={toggleTick}
                     profilesByUrn={profilesByUrn}
+                    largeSetPoints={largeSetPoints}
                     loading={mapLoading}
                     loadingLabel={mapLoadingLabel}
                     filters={filters}

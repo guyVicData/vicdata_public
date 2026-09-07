@@ -56,11 +56,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ set: null });
   }
 
-  const set = await buildRegionOrNationComparatorSet(
+  const { list, points } = await buildRegionOrNationComparatorSet(
     { urn, easting: resolved.target.easting, northing: resolved.target.northing },
     scopeParam === "region" && targetRegionNation.regionCode && targetRegionNation.regionName
       ? { kind: "region", regionCode: targetRegionNation.regionCode, regionName: targetRegionNation.regionName }
       : { kind: "nation", nation: targetRegionNation.nation },
   );
-  return NextResponse.json({ set });
+  return NextResponse.json({ set: list, points });
 }
