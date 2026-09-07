@@ -121,10 +121,13 @@ export default function ComparatorSidebar({
   nearestOption,
   homeLaOption,
   boardingOption,
+  regionOption,
+  nationOption,
   savedSets,
   activeSet,
   onSelectSet,
   boardingQuintileLoading,
+  regionNationLoadingScope,
   onLoadingChange,
   tickedUrns,
   onToggleTick,
@@ -140,10 +143,13 @@ export default function ComparatorSidebar({
   nearestOption: SetOption | null;
   homeLaOption: SetOption | null;
   boardingOption: SetOption | null;
+  regionOption: SetOption | null;
+  nationOption: SetOption | null;
   savedSets: SetOption[];
   activeSet: SetOption | null;
   onSelectSet: (option: SetOption) => void;
   boardingQuintileLoading: boolean;
+  regionNationLoadingScope: "region" | "nation" | null;
   // 2026-09-08, shared map-based loading indicator (live-testing fix round 3): every
   // async set-changing operation this component owns (LA toggles, Nearest/Boarding
   // "+5 more") reports its combined loading state up so DataViewShell/MapView can
@@ -457,8 +463,24 @@ export default function ComparatorSidebar({
             )}
           </div>
         )}
-        <SetButton label="London Schools" disabled title="Not available yet -- the regional aggregation this needs hasn't been built." />
-        <SetButton label="England Schools" disabled title="Not available yet -- the national aggregation this needs hasn't been built." />
+        {/* Member Data View performance architecture v1 (2026-10-08): Region/Nation are
+            real now, backed by the precomputed school_region_nation table -- same
+            optimistic-pending pattern as Boarding (selected reads true the instant the
+            click starts the lazy fetch, not only once the real list arrives). */}
+        {regionOption && (
+          <SetButton
+            label={regionOption.label}
+            selected={(activeSet?.kind === "recipe" && activeSet.key === "ons_region" && tickedMatchesSet(tickedUrns, activeSet.schools)) || regionNationLoadingScope === "region"}
+            onClick={() => selectNamed(regionOption)}
+          />
+        )}
+        {nationOption && (
+          <SetButton
+            label={nationOption.label}
+            selected={(activeSet?.kind === "recipe" && activeSet.key === "nation" && tickedMatchesSet(tickedUrns, activeSet.schools)) || regionNationLoadingScope === "nation"}
+            onClick={() => selectNamed(nationOption)}
+          />
+        )}
         <SetButton
           label="Same academy/school group"
           disabled

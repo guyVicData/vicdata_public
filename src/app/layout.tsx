@@ -19,6 +19,15 @@ import "leaflet/dist/leaflet.css";
 // this round's request was scoped to the Data View, not a site-wide behaviour
 // change to a page members already know how to use).
 import "leaflet-gesture-handling/dist/leaflet-gesture-handling.css";
+// Member Data View performance architecture (2026-09-08): Region/Nation comparator
+// sets can run to several hundred or (at full data build) tens of thousands of
+// schools -- leaflet.markercluster is the standard vanilla-Leaflet clustering plugin
+// (this app renders raw Leaflet directly, not react-leaflet, so a React-specific
+// cluster wrapper doesn't fit; this one attaches to a plain Leaflet Map/LayerGroup
+// the same way the rest of MapView.tsx already works). Global CSS import for the
+// same reason leaflet.css/leaflet-gesture-handling.css above are.
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

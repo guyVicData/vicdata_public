@@ -29,7 +29,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Map as LeafletMap, LayerGroup } from "leaflet";
+import type { Map as LeafletMap, LayerGroup, MarkerClusterGroup } from "leaflet";
 import { bngToLatLng } from "@/lib/bng";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
 import { trendColour, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
@@ -67,6 +67,19 @@ const UNTICKED_COLOUR = "#9ca3af";
 // from larger figures purely to keep an initial viewport's school count reasonable).
 const DISTANCE_RING_KM_STATE = 2;
 const DISTANCE_RING_KM_INDEPENDENT = 10;
+
+// Member Data View performance architecture (2026-09-08): Region/Nation comparator
+// sets can run to several hundred or (at full data build) tens of thousands of
+// schools -- past a certain count, individual circleMarkers on one flat LayerGroup
+// stop being readable (an undifferentiated blob) and stop being fast (thousands of
+// live SVG elements). 200 is chosen as comfortably below Region's realistic minimum
+// size (a member's home region is very unlikely to have under ~200 schools) so
+// Region/Nation always cluster without needing to special-case them by identity,
+// while staying comfortably above every existing small set (Nearest-10 even fully
+// expanded, LA-only, Boarding even fully expanded) so none of those regress into
+// clustering by accident. Logged per the session brief's own "use your judgement on
+// the exact threshold... and log it."
+const CLUSTER_THRESHOLD = 200;
 
 function radiusFor(value: number, min: number, max: number): number {
   if (!(max > min)) return (MIN_RADIUS + MAX_RADIUS) / 2;
@@ -128,7 +141,16 @@ export default function MapView({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+  // Holds the distance ring + label only -- always on the map, never clustered.
   const layerGroupRef = useRef<LayerGroup | null>(null);
+  // Holds every school marker when the active comparator set is small (<=
+  // CLUSTER_THRESHOLD) -- unclustered, exactly as before this change.
+  const schoolsGroupRef = useRef<LayerGroup | null>(null);
+  // Holds the SAME school markers instead, clustered, once the set is large. Two
+  // separate groups (rather than one group whose clustering is toggled) because
+  // MarkerClusterGroup's own clustering behaviour is fixed at construction -- only
+  // one of the two is ever added to the map at a time, see the drawing effect below.
+  const schoolsClusterGroupRef = useRef<MarkerClusterGroup | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const topRightStackRef = useRef<HTMLDivElement | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -139,8 +161,22 @@ export default function MapView({
     if (!mapElRef.current || mapRef.current || target.easting === null || target.northing === null) return;
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
-    import("leaflet").then(async (L) => {
+    import("leaflet").then(async (mod) => {
       if (cancelled || !mapElRef.current) return;
+      // Real bug found live (2026-10-08): a bare `import("leaflet")` module namespace
+      // object is a JS spec-mandated non-extensible exotic object -- fine for every
+      // OTHER call in this file (L.map(...), L.tileLayer(...), reading existing
+      // properties never needed extensibility), but leaflet.markercluster's own
+      // side-effect script does `L.MarkerClusterGroup = ...`, ADDING a brand new
+      // top-level property, which throws "Cannot add property MarkerClusterGroup,
+      // object is not extensible" against the frozen namespace -- reproduced live,
+      // the map failed to initialise at all. Next.js/webpack's CJS-interop namespace
+      // carries the ORIGINAL, genuinely mutable CJS `module.exports` object under its
+      // own `.default` key; unwrapping to that (falling back to the namespace itself
+      // if a future build ever ships a true native-ESM Leaflet with no `.default`)
+      // gives every subsequent call in this effect -- including leaflet.markercluster's
+      // own attach -- the SAME mutable object to read from and write to.
+      const L = (mod as unknown as { default?: typeof mod }).default ?? mod;
       leafletRef.current = L;
       // 2026-09-07, UX refinements round 2, P2 item 6: leaflet-gesture-handling is
       // an old-style Leaflet plugin (L.Map.addInitHook against a bare global `L`,
@@ -152,6 +188,10 @@ export default function MapView({
       // app reads a global L).
       (window as unknown as { L: typeof L }).L = L;
       await import("leaflet-gesture-handling");
+      // leaflet.markercluster is the same vintage of plugin as leaflet-gesture-
+      // handling above (attaches L.MarkerClusterGroup to the bare global L rather
+      // than importing leaflet itself) -- needs window.L set first, same reason.
+      await import("leaflet.markercluster");
       if (cancelled || !mapElRef.current) return;
       const [lat, lng] = bngToLatLng(target.easting!, target.northing!);
       // gestureHandling: Guy's own explicit request -- "too easy to accidentally
@@ -170,6 +210,26 @@ export default function MapView({
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
       layerGroupRef.current = L.layerGroup().addTo(map);
+      schoolsGroupRef.current = L.layerGroup().addTo(map);
+      // Not added to the map yet -- only attached once a comparator set actually
+      // crosses CLUSTER_THRESHOLD (drawing effect below). Cluster bubbles styled as
+      // a plain neutral-dark circle with a count, matching this app's existing
+      // monochrome "selected" button treatment rather than the plugin's default
+      // green/yellow/orange scheme, which would clash with the map's own trend/
+      // sector colour encoding.
+      schoolsClusterGroupRef.current = L.markerClusterGroup({
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        iconCreateFunction: (cluster) => {
+          const count = cluster.getChildCount();
+          const size = count >= 1000 ? 44 : count >= 100 ? 38 : 32;
+          return L.divIcon({
+            html: `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:9999px;background:#1f2937;color:#fff;font-size:12px;font-weight:600;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3)">${count.toLocaleString()}</div>`,
+            className: "vd-cluster-icon",
+            iconSize: [size, size],
+          });
+        },
+      });
       mapRef.current = map;
       setMapReady(true);
 
@@ -251,13 +311,39 @@ export default function MapView({
   const maxV = values.length ? Math.max(...values) : 0;
 
   useEffect(() => {
-    if (!mapReady || !mapRef.current || !leafletRef.current || !layerGroupRef.current || !rootRef.current) return;
+    if (
+      !mapReady ||
+      !mapRef.current ||
+      !leafletRef.current ||
+      !layerGroupRef.current ||
+      !schoolsGroupRef.current ||
+      !schoolsClusterGroupRef.current ||
+      !rootRef.current
+    )
+      return;
     const L = leafletRef.current;
+    const map = mapRef.current;
     const group = layerGroupRef.current;
+    const schoolsGroup = schoolsGroupRef.current;
+    const clusterGroup = schoolsClusterGroupRef.current;
     const cs = getComputedStyle(rootRef.current);
     const tagColour = (tag: string) => cs.getPropertyValue(cssVarNameForTag(tag)).trim() || "#9ca3af";
 
     group.clearLayers();
+    schoolsGroup.clearLayers();
+    clusterGroup.clearLayers();
+
+    // Region/Nation-scale sets cluster; everything else renders as plain individual
+    // markers exactly as before this change (CLUSTER_THRESHOLD's own comment).
+    const useCluster = withProfile.length > CLUSTER_THRESHOLD;
+    const schoolsTarget = useCluster ? clusterGroup : schoolsGroup;
+    if (useCluster) {
+      if (map.hasLayer(schoolsGroup)) map.removeLayer(schoolsGroup);
+      if (!map.hasLayer(clusterGroup)) map.addLayer(clusterGroup);
+    } else {
+      if (map.hasLayer(clusterGroup)) map.removeLayer(clusterGroup);
+      if (!map.hasLayer(schoolsGroup)) map.addLayer(schoolsGroup);
+    }
 
     // Distance ring -- fixed radius, sector-aware, drawn first so every school
     // marker sits on top of it (same ordering/reasoning as the public site's own
@@ -375,7 +461,10 @@ export default function MapView({
           else onToggleTick(s.urn);
         });
         (marker.getElement?.() as SVGElement | undefined)?.style.setProperty("cursor", "pointer");
-        marker.addTo(group);
+        // The target school is always a real, individually-visible reference point
+        // (same principle the filter logic above already applies) -- never swept
+        // into a cluster bubble even when the rest of a large set is clustered.
+        marker.addTo(isTarget ? group : schoolsTarget);
 
         if (isTarget) {
           L.circleMarker([lat, lng], { radius: TARGET_RING_RADIUS, color: "#dc2626", weight: 2.5, fill: false }).addTo(group);

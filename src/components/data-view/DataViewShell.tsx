@@ -47,6 +47,12 @@ type TargetSchool = {
 
 type LoadState = "checking" | "not_a_member" | "loading" | "ready" | "error";
 
+// Member Data View performance architecture v1 (2026-10-08): same figure as
+// MapView.tsx's own CLUSTER_THRESHOLD -- one shared definition of "this comparator
+// set is large enough to need different handling" rather than two separately-tuned
+// numbers that could drift apart.
+const LARGE_SET_PROFILE_THRESHOLD = 200;
+
 export default function DataViewShell({ urn }: { urn: string }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [loadState, setLoadState] = useState<LoadState>("checking");
@@ -83,6 +89,19 @@ export default function DataViewShell({ urn }: { urn: string }) {
   const [savedSets, setSavedSets] = useState<SetOption[]>([]);
   const [boardingQuintileOption, setBoardingQuintileOption] = useState<SetOption | null>(null);
   const [boardingQuintileLoading, setBoardingQuintileLoading] = useState(false);
+  // Member Data View performance architecture v1 (2026-10-08): Region/Nation follow
+  // the exact same lazy-placeholder pattern boarding_quintile already established --
+  // a real, correctly-labelled button from the first render (regionName/nation come
+  // back with the initial default-lists fetch below), but the actual member list
+  // (potentially tens of thousands of schools) is only fetched once clicked.
+  const [regionOption, setRegionOption] = useState<SetOption | null>(null);
+  const [nationOption, setNationOption] = useState<SetOption | null>(null);
+  // Which of Region/Nation (if either) is currently mid-fetch -- NOT a plain boolean,
+  // since a shared true/false flag would make BOTH buttons read as optimistically
+  // "selected" the instant either one is clicked (the same class of bug already found
+  // and fixed once this round for the Camden/Nearest-10 race -- caught here before
+  // shipping, not after a live report this time).
+  const [regionNationLoadingScope, setRegionNationLoadingScope] = useState<"region" | "nation" | null>(null);
 
   const [activeSet, setActiveSet] = useState<SetOption | null>(null);
   // 2026-09-08, live-testing fix round 3: a shared "a named set is being selected"
@@ -216,6 +235,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
           list1: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
           list2: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
           local16Plus: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
+          regionName: string | null;
+          nation: "england" | "wales" | null;
         };
         const list1: SetOption | null = body.list1 ? { kind: "recipe", key: body.list1.key, label: body.list1.label, schools: body.list1.schools, note: body.list1.note } : null;
         const list2: SetOption | null = body.list2 ? { kind: "recipe", key: body.list2.key, label: body.list2.label, schools: body.list2.schools, note: body.list2.note } : null;
@@ -230,6 +251,18 @@ export default function DataViewShell({ urn }: { urn: string }) {
           body.schoolTypeCategory === "state_boarding"
         ) {
           setBoardingQuintileOption({ kind: "recipe", key: "boarding_quintile", label: "National boarding quintile", schools: [], lazy: true });
+        }
+
+        // Region only offered when the target genuinely has a sub-national region (not
+        // every Welsh school does, and a handful of GIAS sentinel LAs resolve to
+        // neither -- see region-crosswalk.ts) -- Nation is offered whenever nation
+        // membership resolved at all, England or Wales alike.
+        if (body.regionName) {
+          setRegionOption({ kind: "recipe", key: "ons_region", label: `${body.regionName} Schools`, schools: [], lazy: true });
+        }
+        if (body.nation) {
+          const nationLabel = body.nation === "england" ? "England Schools" : "Wales Schools";
+          setNationOption({ kind: "recipe", key: "nation", label: nationLabel, schools: [], lazy: true });
         }
 
         type SavedSetRow = {
@@ -293,6 +326,26 @@ export default function DataViewShell({ urn }: { urn: string }) {
     return null;
   }, [authToken, urn, boardingQuintileLoading]);
 
+  const loadRegionOrNationSet = useCallback(
+    async (scope: "region" | "nation") => {
+      if (!authToken || regionNationLoadingScope) return null;
+      setRegionNationLoadingScope(scope);
+      try {
+        const res = await fetch(`/api/data-view/region-nation-set?urn=${urn}&scope=${scope}`, { headers: { Authorization: `Bearer ${authToken}` } });
+        if (!res.ok) return null;
+        const body = (await res.json()) as { set: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null };
+        if (!body.set) return null;
+        const option: SetOption = { kind: "recipe", key: body.set.key, label: body.set.label, schools: body.set.schools, note: body.set.note };
+        if (scope === "region") setRegionOption(option);
+        else setNationOption(option);
+        return option;
+      } finally {
+        setRegionNationLoadingScope(null);
+      }
+    },
+    [authToken, urn, regionNationLoadingScope],
+  );
+
   // Step 3: fetch rich per-school profiles for target + every school currently in
   // the active set (not just ticked ones -- toggling a tick shouldn't need a new
   // fetch; Map/Dashboard/Rankings filter down to ticked members themselves).
@@ -310,7 +363,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // here on the same principle as Steps 1/2: every path reaches a definite state.
   useEffect(() => {
     if (!authToken || !activeSet || !target) return;
-    const urns = Array.from(new Set([target.urn, ...activeSet.schools.map((s) => s.urn)]));
+    // Member Data View performance architecture v1 (2026-10-08): Region/Nation sets
+    // can legitimately run to tens of thousands of schools (region-nation-comparator.ts
+    // returns every real member, per the map's own "nothing silently capped or
+    // sampled" principle) -- fetching a FULL rich profile (multi-year roll, age/gender
+    // breakdown) per school for a set that large is exactly the fetch-and-compute-at-
+    // scale failure mode this whole architecture round exists to remove, just moved
+    // from set-SELECTION to set-SELECTED. Past LARGE_SET_PROFILE_THRESHOLD (same
+    // figure MapView's own clustering threshold uses, for one consistent "this is a
+    // big set" definition rather than two), only the target's own profile is fetched
+    // -- Map still renders every real school (via activeSet.schools directly, not
+    // profilesByUrn), but Graphs/Rankings' per-school-profile charts don't have real
+    // data for the comparator side at this scale yet; a follow-up, not attempted this
+    // round (see docs/vicdata_data_view_open_questions.md).
+    const isLargeSet = activeSet.schools.length > LARGE_SET_PROFILE_THRESHOLD;
+    const urns = isLargeSet ? [target.urn] : Array.from(new Set([target.urn, ...activeSet.schools.map((s) => s.urn)]));
     const alreadyFetched = urns.every((u) => profilesByUrn.has(u));
     if (alreadyFetched) return;
     (async () => {
@@ -548,10 +615,12 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // ONE signal the Map actually renders. Boarding's own already-good loading copy
   // takes priority when it's genuinely what's happening; everything else shares a
   // plain default rather than each control inventing its own wording.
-  const mapLoading = profilesLoading || boardingQuintileLoading || selectingSet;
+  const mapLoading = profilesLoading || boardingQuintileLoading || regionNationLoadingScope !== null || selectingSet;
   const mapLoadingLabel = boardingQuintileLoading
     ? "Computing national boarding quintile — this can take a little while…"
-    : (selectingSetLabel ?? "Loading schools…");
+    : regionNationLoadingScope !== null
+      ? "Loading schools across this scope…"
+      : (selectingSetLabel ?? "Loading schools…");
   // 2026-09-07, UX refinements round 2, P3 item 7: the sector filter is a
   // membership exclusion (matchesSectorFilter's own comment explains why it can't
   // be a slice the way phase/gender/boarding are) applied once, here, so
@@ -683,15 +752,20 @@ export default function DataViewShell({ urn }: { urn: string }) {
             nearestOption={recipeLists?.list1 ?? null}
             homeLaOption={recipeLists?.list2 ?? null}
             boardingOption={boardingQuintileOption}
+            regionOption={regionOption}
+            nationOption={nationOption}
             savedSets={savedSets}
             activeSet={activeSet}
             onSelectSet={(opt) => {
+              // Every lazy placeholder (boarding_quintile, ons_region, nation) shares
+              // this same "snapshot activeSetSeq before the async load, only apply if
+              // still current" guard -- see activeSetSeq's own comment above for the
+              // real bug this protects against, now generalised past boarding alone
+              // since Region/Nation's own fetch is a second async selectSet path.
               if (opt.kind === "recipe" && opt.lazy && opt.schools.length === 0) {
-                // Snapshot BEFORE the ~41s-ish lazy load starts -- only applied if
-                // nothing else has selected a set in the meantime (see
-                // activeSetSeq's own comment above for the real bug this guards).
                 const mySeq = activeSetSeq.current;
-                loadBoardingQuintileList().then((loaded) => {
+                const loader = opt.key === "ons_region" ? () => loadRegionOrNationSet("region") : opt.key === "nation" ? () => loadRegionOrNationSet("nation") : loadBoardingQuintileList;
+                loader().then((loaded) => {
                   if (loaded && mySeq === activeSetSeq.current) selectSet(loaded);
                 });
                 return;
@@ -699,6 +773,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
               selectSet(opt);
             }}
             boardingQuintileLoading={boardingQuintileLoading}
+            regionNationLoadingScope={regionNationLoadingScope}
             onLoadingChange={handleLoadingChange}
             tickedUrns={tickedUrns}
             onToggleTick={toggleTick}

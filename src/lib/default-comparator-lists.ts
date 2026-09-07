@@ -18,6 +18,7 @@ import { findNearestFeColleges, findLocal16PlusProvision, type NamedFeCollege, t
 import { fetchCensusFactsBatched } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, CURRENT_CENSUS_PERIOD } from "./roll-data";
 import { effectivePhaseTags, phaseTags, genderTag, boardingRatio, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type GenderTag, type PhaseTag } from "./typology";
+import { resolveTargetRegionNation } from "./region-nation-comparator";
 
 export type SchoolTypeCategory =
   | "state"
@@ -52,6 +53,16 @@ export type DefaultComparatorLists = {
   // purely additive -- null for an fe_college target (that branch's own list2
   // already covers this) and for any target with no real Post-16 provision.
   local16Plus: DefaultList | null;
+  // Member Data View performance architecture v1 (2026-10-08): the target's own
+  // region/nation membership (school_region_nation), fetched once here alongside
+  // everything else this initial load already computes, rather than a separate
+  // client round-trip -- lets the sidebar render real "{regionName} Schools" button
+  // text from the start (matching the "{LA} schools" convention every other named-set
+  // button already uses), with the actual member list itself still fetched lazily,
+  // only once clicked (region-nation-set/route.ts), the same "don't pay for it until
+  // asked" principle the boarding-quintile recipe already established.
+  regionName: string | null;
+  nation: "england" | "wales" | null;
 };
 
 type TargetRow = {
@@ -379,6 +390,95 @@ async function boardingQuintileList(
   };
 }
 
+// Member Data View performance architecture v1 (2026-10-08): the fast path for List
+// 3, reading the precomputed boarding_quintiles + school_nearest_neighbours('boarding')
+// tables instead of the ~41-71s live computation above. Returns null (not an empty
+// list) whenever either table hasn't been precomputed yet for this school -- the
+// caller (buildBoardingQuintileList) falls back to the slow-but-correct
+// boardingQuintileList() above in that case, so a school genuinely isn't left with no
+// List 3 at all just because a recompute hasn't run yet.
+//
+// Mirrors boardingQuintileList()'s own Step 6 branch logic exactly: top-2 quintiles
+// (index 3-4) -- every OTHER school already precomputed into the SAME quintile for
+// this boarding_school_type, distance-sorted, no gender filter, no cap on the pool
+// itself (only the final slice(0, targetCount) caps what's shown, same as the live
+// function). Bottom-3 (index 0-2) -- the precomputed national 'boarding' nearest-
+// neighbour ranking for this school, gender-filtered (relaxed rule) at read time
+// since gender isn't baked into that table, walked in rank order and capped at
+// targetCount, same skip-and-take shape as every other default list in this module.
+async function boardingQuintileListFast(
+  target: TargetRow,
+  boardingSchoolType: "independent_boarding_senior" | "independent_boarding_prep" | "state_boarding",
+  quintileBasis: "headcount" | "ratio",
+  targetCount: number,
+): Promise<DefaultList | null> {
+  if (target.easting === null || target.northing === null) return null;
+  const supabase = createServerAnonSupabaseClient();
+
+  const { data: targetQuintileRow } = await supabase
+    .from("boarding_quintiles")
+    .select("quintile")
+    .eq("urn", target.urn)
+    .maybeSingle();
+  if (!targetQuintileRow) return null;
+
+  const isTopTwo = targetQuintileRow.quintile >= 3;
+  const basisLabel = quintileBasis === "headcount" ? "boarding population" : "% boarders";
+
+  if (isTopTwo) {
+    const { data: sameQuintileRows } = await supabase
+      .from("boarding_quintiles")
+      .select("urn")
+      .eq("boarding_school_type", boardingSchoolType)
+      .eq("quintile", targetQuintileRow.quintile)
+      .neq("urn", target.urn);
+    const urns = (sameQuintileRows ?? []).map((r) => r.urn as string);
+    const note = "Top 2 quintiles by real boarding population -- unbounded catchment.";
+    const label = `National boarding quintile (by ${basisLabel})`;
+    if (urns.length === 0) return { key: "boarding_quintile", label, schools: [], note };
+
+    const { data: schoolRows } = await supabase.from("schools").select("urn, current_name, easting, northing").in("urn", urns);
+    const schools = ((schoolRows ?? []) as { urn: string; current_name: string; easting: number | null; northing: number | null }[])
+      .filter((s) => s.easting !== null && s.northing !== null)
+      .map((s) => ({
+        urn: s.urn,
+        name: s.current_name,
+        distanceKm: distanceKm({ easting: target.easting!, northing: target.northing! }, { easting: s.easting!, northing: s.northing! }),
+      }))
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, targetCount);
+    return { key: "boarding_quintile", label, schools, note };
+  }
+
+  const { data: neighbourRows } = await supabase
+    .from("school_nearest_neighbours")
+    .select("neighbour_urn, distance_km, rank")
+    .eq("urn", target.urn)
+    .eq("pool", "boarding")
+    .order("rank", { ascending: true });
+  if (!neighbourRows || neighbourRows.length === 0) return null;
+
+  const targetGenderTag = genderTag(target.gender);
+  const neighbourUrns = neighbourRows.map((r) => r.neighbour_urn as string);
+  const { data: infoRows } = await supabase.from("schools").select("urn, current_name, gender").in("urn", neighbourUrns);
+  const infoByUrn = new Map(((infoRows ?? []) as { urn: string; current_name: string; gender: string | null }[]).map((r) => [r.urn, r]));
+
+  const schools: DefaultListEntry[] = [];
+  for (const n of neighbourRows as { neighbour_urn: string; distance_km: number }[]) {
+    if (schools.length >= targetCount) break;
+    const info = infoByUrn.get(n.neighbour_urn);
+    if (!info) continue;
+    if (targetGenderTag && !genderMatches(targetGenderTag, genderTag(info.gender), "relaxed")) continue;
+    schools.push({ urn: n.neighbour_urn, name: info.current_name, distanceKm: n.distance_km });
+  }
+  return {
+    key: "boarding_quintile",
+    label: "Nearest boarding schools (by age/gender)",
+    schools,
+    note: "Bottom 3 quintiles are too thin to match by quintile alone -- matched by nearest real boarding schools (age/gender) instead, nationally. A nearby top-quintile school can legitimately appear here.",
+  };
+}
+
 // Real, measured performance finding (docs/vicdata_data_view_open_questions.md):
 // List 3's boarding-quintile recipe takes ~41s even after parallelising the batched
 // census fetch (71.6s sequential) -- the ≈264-403-candidate national scan is
@@ -446,26 +546,42 @@ export async function resolveSchoolTypeCategory(urn: string): Promise<SchoolType
 // building a separate caching layer for this one control -- the shared map loading
 // indicator (Compared-with panel round 3) is what makes that wait legible now,
 // rather than a silent, confusing pause.
+const BOARDING_CATEGORY_CONFIG = {
+  independent_boarding_senior: { sectorGroups: ["Independent schools"], requirePhase: "Senior" as const, quintileBasis: "headcount" as const },
+  independent_boarding_prep: { sectorGroups: ["Independent schools"], requirePhase: "Prep" as const, quintileBasis: "ratio" as const },
+  state_boarding: { sectorGroups: ["Academies", "Local authority maintained schools", "Free Schools"], requirePhase: "Senior" as const, quintileBasis: "headcount" as const },
+} as const;
+
 export async function buildBoardingQuintileList(urn: string, targetCount = 10): Promise<DefaultList | null> {
   const resolved = await resolveSchoolTypeCategory(urn);
   if (!resolved) return null;
   const { schoolTypeCategory, target } = resolved;
-  if (schoolTypeCategory === "independent_boarding_senior") {
-    return boardingQuintileList(target, ["Independent schools"], "Senior", "headcount", targetCount);
+  if (schoolTypeCategory !== "independent_boarding_senior" && schoolTypeCategory !== "independent_boarding_prep" && schoolTypeCategory !== "state_boarding") {
+    return null;
   }
-  if (schoolTypeCategory === "independent_boarding_prep") {
-    return boardingQuintileList(target, ["Independent schools"], "Prep", "ratio", targetCount);
-  }
-  if (schoolTypeCategory === "state_boarding") {
-    return boardingQuintileList(target, ["Academies", "Local authority maintained schools", "Free Schools"], "Senior", "headcount", targetCount);
-  }
-  return null;
+  const config = BOARDING_CATEGORY_CONFIG[schoolTypeCategory];
+
+  // Member Data View performance architecture v1 (2026-10-08): try the precomputed
+  // fast path first (boarding_quintiles + school_nearest_neighbours, ~1s), falling
+  // back to the original ~41-71s live computation only when those tables haven't been
+  // precomputed yet for this school (a genuine gap -- a brand-new boarding school
+  // before the next census-affecting recompute, or before the recompute has ever been
+  // run at all) -- never a silent "no List 3 offered," and never a regression versus
+  // today's behaviour, just slower until the precompute catches up.
+  const fast = await boardingQuintileListFast(target, schoolTypeCategory, config.quintileBasis, targetCount);
+  if (fast) return fast;
+
+  console.warn(`[default-comparator-lists] boarding_quintiles not precomputed for ${urn} -- falling back to live computation`);
+  return boardingQuintileList(target, [...config.sectorGroups], config.requirePhase, config.quintileBasis, targetCount);
 }
 
 export async function buildDefaultComparatorLists(urn: string): Promise<DefaultComparatorLists> {
   const resolved = await resolveSchoolTypeCategory(urn);
-  if (!resolved) return { schoolTypeCategory: null, list1: null, list2: null, list3: null, local16Plus: null };
+  if (!resolved) return { schoolTypeCategory: null, list1: null, list2: null, list3: null, local16Plus: null, regionName: null, nation: null };
   const { schoolTypeCategory, target, targetPhase } = resolved;
+  const regionNation = await resolveTargetRegionNation(urn);
+  const regionName = regionNation?.regionName ?? null;
+  const nation = regionNation?.nation ?? null;
 
   if (schoolTypeCategory === "fe_college") {
     const [nearestFe, local16Plus] = await Promise.all([
@@ -484,7 +600,7 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
           schools: local16Plus.map((c) => ({ urn: c.urn, name: c.name, distanceKm: c.distanceKm })),
         }
       : null;
-    return { schoolTypeCategory: "fe_college", list1, list2, list3: null, local16Plus: null };
+    return { schoolTypeCategory: "fe_college", list1, list2, list3: null, local16Plus: null, regionName, nation };
   }
 
   const targetGender = genderTag(target.gender);
@@ -524,5 +640,5 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
   // (independent_boarding_senior/independent_boarding_prep/state_boarding); the
   // sidebar calls buildBoardingQuintileList itself, lazily, only once a member
   // actually selects it.
-  return { schoolTypeCategory, list1, list2, list3: null, local16Plus };
+  return { schoolTypeCategory, list1, list2, list3: null, local16Plus, regionName, nation };
 }

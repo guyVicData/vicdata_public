@@ -124,6 +124,18 @@ function comparedWithPhrase(activeSet: SetOption | null, target: DataViewSchoolP
       ? `nearest ${count} boarding schools by age and gender`
       : `nearest ${count} similar-sized boarding schools`;
   }
+  // Member Data View performance architecture v1 (2026-10-08): Region/Nation's own
+  // set-fetch (region-nation-comparator.ts) already returns one real row per school in
+  // scope -- the same rows the map needs anyway -- so `count` above is already an
+  // honest, free number, not something requiring its own comparator_aggregates lookup
+  // the way the plan anticipated. Templated the same way as every other recipe here
+  // rather than falling through to the generic activeSet.label fallback, so the
+  // sentence states a real count ("1,847 schools across London") instead of just
+  // repeating the button's own label.
+  if (activeSet.key === "ons_region" || activeSet.key === "nation") {
+    const place = activeSet.label.replace(/ schools$/, "");
+    return `${count.toLocaleString()} schools across ${place}`;
+  }
   if (activeSet.key === "fe_local_16plus") {
     const las = laNamesFromLabel(activeSet.label);
     return las ? `16+ provision in ${las}` : "16+ provision in this area";

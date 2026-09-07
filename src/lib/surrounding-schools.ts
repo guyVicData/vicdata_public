@@ -155,14 +155,6 @@ export async function findSurroundingSchools(
   const relaxSectorForThroughSchool =
     targetPhase.length > 1 && target?.establishment_type_group !== "Independent schools";
 
-  const { data: candidates, error } = await supabase.rpc("nearest_schools", {
-    p_urn: urn,
-    p_limit: candidateBuffer,
-    p_relax_sector: relaxSectorForThroughSchool,
-  });
-
-  if (error || !candidates || candidates.length === 0) return [];
-
   type Candidate = {
     urn: string;
     current_name: string;
@@ -173,7 +165,66 @@ export async function findSurroundingSchools(
     statutory_low_age: number | null;
     statutory_high_age: number | null;
   };
-  const candidateList = candidates as Candidate[];
+
+  // Member Data View performance architecture v1 (2026-10-08): read the precomputed
+  // school_nearest_neighbours 'general' pool (shared with the member Data View's
+  // Nearest-10/LA-any/bottom-3-quintile-boarding recipes) instead of calling the
+  // nearest_schools RPC live -- that RPC was never itself the slow part (it's a fast,
+  // already-indexed live query), but removing it here means this shared function's
+  // ONE candidate-generation step benefits both callers, matching the direct
+  // instruction to migrate this page's own findSurroundingSchools() call onto the same
+  // precomputed table the member side uses, not build a second copy.
+  //
+  // The precomputed pool was built with p_relax_sector ALWAYS true (the widest
+  // reasonable candidate set: AP/PRU excluded, special-school symmetry already
+  // applied, age-range overlap already applied -- see that table's own migration
+  // comment) specifically so THIS function's own per-target, ENROLLMENT-aware
+  // relaxSectorForThroughSchool decision (which needs live census data and can't be
+  // precomputed) can still be applied faithfully, as a cheap local filter over the
+  // ~100 precomputed rows, rather than losing that nuance. nearest_schools' own
+  // sector-equality gate (verified directly from its real SQL, not assumed) is really
+  // just one boolean check -- "is this school Independent?" must match between target
+  // and candidate -- for a non-special target when NOT relaxed; a special target's
+  // candidates are already fully special-symmetric in the precomputed pool regardless
+  // (that branch of nearest_schools has no relax-sector condition at all), so no
+  // further local filtering is needed for it.
+  const specialLeakTypes = ["Academy special converter", "Academy special sponsor led", "Free schools special"];
+  const targetIsSpecial =
+    target?.establishment_type_group === "Special schools" || specialLeakTypes.includes(target?.establishment_type ?? "");
+  const isIndependent = (group: string | null) => group === "Independent schools";
+
+  const { data: precomputed } = await supabase
+    .from("school_nearest_neighbours")
+    .select("neighbour_urn, rank")
+    .eq("urn", urn)
+    .eq("pool", "general")
+    .order("rank", { ascending: true })
+    .limit(candidateBuffer);
+
+  let candidateList: Candidate[];
+  if (precomputed && precomputed.length > 0) {
+    const neighbourUrns = precomputed.map((p) => p.neighbour_urn);
+    const rankByUrn = new Map(precomputed.map((p) => [p.neighbour_urn, p.rank as number]));
+    const { data: attrs } = await supabase
+      .from("schools")
+      .select("urn, current_name, town, postcode, establishment_type_group, establishment_type, statutory_low_age, statutory_high_age")
+      .in("urn", neighbourUrns);
+    candidateList = ((attrs ?? []) as Candidate[])
+      .filter((a) => targetIsSpecial || relaxSectorForThroughSchool || isIndependent(a.establishment_type_group) === isIndependent(target?.establishment_type_group ?? null))
+      .sort((a, b) => (rankByUrn.get(a.urn) ?? 0) - (rankByUrn.get(b.urn) ?? 0));
+  } else {
+    // Fallback: the precomputed table hasn't been populated for this school yet (e.g.
+    // a brand-new school before the next GIAS-affecting recompute) -- fall back to the
+    // live RPC rather than returning nothing.
+    const { data: candidates, error } = await supabase.rpc("nearest_schools", {
+      p_urn: urn,
+      p_limit: candidateBuffer,
+      p_relax_sector: relaxSectorForThroughSchool,
+    });
+    if (error || !candidates || candidates.length === 0) return [];
+    candidateList = candidates as Candidate[];
+  }
+  if (candidateList.length === 0) return [];
 
   // Phase match: does the candidate's stacked phase-tag set share at least one tag
   // with the target's? If the target itself falls through every phase-tag branch
