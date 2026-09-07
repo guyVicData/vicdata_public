@@ -18,12 +18,22 @@ export async function GET(request: NextRequest) {
     { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
   );
 
-  const { data: approvedMembership } = await supabase
+  const { data: approvedMembership, error: membershipError } = await supabase
     .from("school_memberships")
     .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
     .eq("status", "approved")
     .eq("school_accounts.school_urn", urn)
     .maybeSingle();
+
+  // A discarded query error here previously looked identical to "not a member" --
+  // same bug class already fixed in DataViewShell.tsx's own membership check
+  // (2026-09-05 comment there), found live while verifying the Compared-with panel
+  // round 4-6 work: a transient PostgREST error under load surfaced to the user as
+  // "The Data View is available to verified school staff" for a genuine member.
+  if (membershipError) {
+    console.error("[data-view/default-lists] membership check failed:", membershipError);
+    return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
+  }
 
   if (!approvedMembership) {
     return NextResponse.json(

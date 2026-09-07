@@ -75,7 +75,11 @@ export type MatchedSchool = {
 // nearest_schools' own p_relax_sector already established.
 export type GenderMatchMode = "exact" | "relaxed";
 
-function genderMatches(target: GenderTag, candidate: GenderTag | null, mode: GenderMatchMode): boolean {
+// 2026-09-08, exported for default-comparator-lists.ts's own boarding-quintile
+// recipe (Compared-with panel round 4): the bottom-3-quintile boarding match now
+// reuses this exact relaxed rule rather than a re-derived copy -- one source of
+// truth for "what counts as a gender match when relaxed" across every default list.
+export function genderMatches(target: GenderTag, candidate: GenderTag | null, mode: GenderMatchMode): boolean {
   if (mode === "exact") return candidate === target;
   if (target === "Co-ed") return true;
   return candidate === target || candidate === "Co-ed";

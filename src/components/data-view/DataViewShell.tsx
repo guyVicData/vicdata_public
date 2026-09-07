@@ -85,6 +85,18 @@ export default function DataViewShell({ urn }: { urn: string }) {
   const [boardingQuintileLoading, setBoardingQuintileLoading] = useState(false);
 
   const [activeSet, setActiveSet] = useState<SetOption | null>(null);
+  // 2026-09-08, live-testing fix round 3: a shared "a named set is being selected"
+  // signal, reported up by ComparatorSidebar (its own onLoadingChange prop) for
+  // every async control it owns (Local Authorities, Nearest/Boarding "+5 more") --
+  // combined below with profilesLoading/boardingQuintileLoading into the ONE
+  // indicator the Map actually shows, so three separate "is this button working"
+  // complaints get one shared fix instead of three ad hoc ones.
+  const [selectingSet, setSelectingSet] = useState(false);
+  const [selectingSetLabel, setSelectingSetLabel] = useState<string | undefined>(undefined);
+  const handleLoadingChange = useCallback((loading: boolean, label?: string) => {
+    setSelectingSet(loading);
+    setSelectingSetLabel(label);
+  }, []);
   const [tickedUrns, setTickedUrns] = useState<Set<string>>(new Set());
   // 2026-09-07, UX refinements round 2, P3 item 8: "ability to hide all schools in
   // the 'Compared with' list at once" -- built to Guy's own stated reading (a
@@ -340,6 +352,28 @@ export default function DataViewShell({ urn }: { urn: string }) {
     return () => clearTimeout(timer);
   }, [loadState]);
 
+  // 2026-09-08, live-testing fix round 3 (investigating "I think I crashed the
+  // selector -- had to refresh the page"): the ONE place every real set-selection
+  // ultimately lands, regardless of which control triggered it -- so it's also the
+  // one correct place to guard against a genuinely real, previously-unguarded race.
+  // The boarding-quintile lazy load (below) can take ~41s; if a member clicks
+  // Boarding schools, then clicks something else before that resolves, the OLD code
+  // called selectSet(loaded) unconditionally once it finally finished -- silently
+  // discarding whatever the member had since chosen and replacing it with the stale
+  // boarding set, with no error, no crash message, just a UI that suddenly looks
+  // wrong for no visible reason. That matches the reported symptom closely enough
+  // (a confusing, "broken-feeling" state right after a slow LA/boarding
+  // interaction) that this is treated as the real, or at least the most likely,
+  // root cause -- logged in docs/vicdata_data_view_open_questions.md alongside the
+  // honest caveat that a literal reproduction (a thrown exception, a white screen)
+  // was not achieved. Every selectSet call bumps this counter; the boarding
+  // lazy-load path snapshots it before starting and only applies its result if
+  // nothing else has selected a set in the meantime. ComparatorSidebar.tsx's own
+  // ComparatorSidebar-local ~setRequestSeq guard is a complementary, narrower
+  // version of this same idea for the controls entirely local to that component
+  // (Local Authorities, Nearest/Boarding "+5 more").
+  const activeSetSeq = useRef(0);
+
   // 2026-09-08, "Compared with" panel rework, per direct instruction: "every
   // [named-set] button... instantly ticks its whole set... one click, no further
   // confirmation." Every recipe now ticks EVERY school in its list, not just the
@@ -350,6 +384,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // named set). A saved set already ticked everything it held; this just makes
   // recipes consistent with that, not a new special case.
   function selectSet(option: SetOption) {
+    activeSetSeq.current++;
     setActiveSet(option);
     setTickedUrns(new Set(option.schools.map((s) => s.urn)));
     // 2026-09-06, UX refinements round 1, A2/B3: recalling a saved set restores the
@@ -506,6 +541,17 @@ export default function DataViewShell({ urn }: { urn: string }) {
   }
 
   const targetProfile = profilesByUrn.get(target.urn) ?? null;
+  // 2026-09-08, shared map-based loading indicator (live-testing fix round 3):
+  // combines every real source of "the comparator set is still being worked out" --
+  // the profile fetch itself, the boarding-quintile lazy load, and every async
+  // control ComparatorSidebar owns (surfaced via handleLoadingChange) -- into the
+  // ONE signal the Map actually renders. Boarding's own already-good loading copy
+  // takes priority when it's genuinely what's happening; everything else shares a
+  // plain default rather than each control inventing its own wording.
+  const mapLoading = profilesLoading || boardingQuintileLoading || selectingSet;
+  const mapLoadingLabel = boardingQuintileLoading
+    ? "Computing national boarding quintile — this can take a little while…"
+    : (selectingSetLabel ?? "Loading schools…");
   // 2026-09-07, UX refinements round 2, P3 item 7: the sector filter is a
   // membership exclusion (matchesSectorFilter's own comment explains why it can't
   // be a slice the way phase/gender/boarding are) applied once, here, so
@@ -641,14 +687,19 @@ export default function DataViewShell({ urn }: { urn: string }) {
             activeSet={activeSet}
             onSelectSet={(opt) => {
               if (opt.kind === "recipe" && opt.lazy && opt.schools.length === 0) {
+                // Snapshot BEFORE the ~41s-ish lazy load starts -- only applied if
+                // nothing else has selected a set in the meantime (see
+                // activeSetSeq's own comment above for the real bug this guards).
+                const mySeq = activeSetSeq.current;
                 loadBoardingQuintileList().then((loaded) => {
-                  if (loaded) selectSet(loaded);
+                  if (loaded && mySeq === activeSetSeq.current) selectSet(loaded);
                 });
                 return;
               }
               selectSet(opt);
             }}
             boardingQuintileLoading={boardingQuintileLoading}
+            onLoadingChange={handleLoadingChange}
             tickedUrns={tickedUrns}
             onToggleTick={toggleTick}
             onSelectAllTicked={selectAllTicked}
@@ -719,7 +770,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     comparedHidden={comparedHidden}
                     onToggleTick={toggleTick}
                     profilesByUrn={profilesByUrn}
-                    profilesLoading={profilesLoading}
+                    loading={mapLoading}
+                    loadingLabel={mapLoadingLabel}
                     filters={filters}
                     activeView={activeView}
                     onChangeView={setActiveView}

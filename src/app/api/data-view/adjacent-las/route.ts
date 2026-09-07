@@ -21,12 +21,19 @@ export async function GET(request: NextRequest) {
     { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
   );
 
-  const { data: approvedMembership } = await supabase
+  const { data: approvedMembership, error: membershipError } = await supabase
     .from("school_memberships")
     .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
     .eq("status", "approved")
     .eq("school_accounts.school_urn", urn)
     .maybeSingle();
+
+  // See default-lists/route.ts -- same discarded-query-error bug class, fixed the
+  // same way across every Data View route as part of this fix.
+  if (membershipError) {
+    console.error("[data-view/adjacent-las] membership check failed:", membershipError);
+    return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
+  }
 
   if (!approvedMembership) {
     return NextResponse.json(

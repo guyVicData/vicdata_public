@@ -13,7 +13,7 @@
 // doesn't need a schema change).
 
 import { createServerAnonSupabaseClient } from "./supabase";
-import { findSurroundingSchools, type MatchedSchool } from "./surrounding-schools";
+import { findSurroundingSchools, genderMatches, type MatchedSchool } from "./surrounding-schools";
 import { findNearestFeColleges, findLocal16PlusProvision, type NamedFeCollege, type Local16PlusProvision } from "./surrounding-fe-colleges";
 import { fetchCensusFactsBatched } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, CURRENT_CENSUS_PERIOD } from "./roll-data";
@@ -234,19 +234,38 @@ export async function buildLaComparatorSet(
 // docs/vicdata_data_view_open_questions.md) and quintile basis (real boarding
 // headcount for Senior, real % boarders ratio for Prep -- "prep-scale boarding
 // numbers are too small for absolute quintiling to differentiate").
+// 2026-09-08, Compared-with panel round 4 (real behaviour change): bottom-3-quintile
+// schools no longer match by quintile membership at all. Confirmed against the code
+// (not assumed) which end is "bottom": quintileOf() indexes 0-4 ascending by the sort
+// key (sortKey(a) - sortKey(b), smallest first), so index 0 is the SMALLEST real
+// boarding population/ratio and index 4 the LARGEST -- "top 2" (already this
+// function's own pre-existing label) is index 3-4, "bottom 3" is index 0-2. That
+// bottom-3 pool was already flagged thin in the original brief (§6.1: "a genuinely
+// thinner population at this scale"), and combining it into one national pool +
+// 30km cap didn't fix that -- it just moved the sparseness into a different shape.
+// Per direct instruction, bottom-3 schools now get the 10 NEAREST real boarding
+// schools nationally (gender-matched via the same relaxed rule
+// findSurroundingSchools/default-comparator-lists' own "Nearest 10" already uses),
+// dropping the quintile-membership restriction and the 30km cap entirely -- a
+// nearby top-quintile school legitimately shows up here now, which is expected, not
+// a bug. Top 2 quintiles are genuinely unaffected: same-quintile, unbounded
+// catchment, unchanged.
 async function boardingQuintileList(
   target: TargetRow,
   sectorGroups: string[],
   requirePhase: "Senior" | "Prep",
   quintileBasis: "headcount" | "ratio",
+  targetCount = 10,
 ): Promise<DefaultList | null> {
   if (target.easting === null || target.northing === null) return null;
   const supabase = createServerAnonSupabaseClient();
 
   // Step 1: candidate pool -- real boarding establishments in the target sector(s).
+  // gender added (2026-09-08) so the new bottom-3 nearest-based match can apply the
+  // same relaxed gender rule every other default list uses.
   const { data } = await supabase
     .from("schools")
-    .select("urn, current_name, easting, northing, establishment_type, statutory_low_age, statutory_high_age, boarders_name")
+    .select("urn, current_name, easting, northing, establishment_type, statutory_low_age, statutory_high_age, boarders_name, gender")
     .in("establishment_type_group", sectorGroups)
     .neq("status", "closed")
     .not("boarders_name", "is", null)
@@ -261,6 +280,7 @@ async function boardingQuintileList(
     statutory_low_age: number | null;
     statutory_high_age: number | null;
     boarders_name: string | null;
+    gender: string | null;
   };
   const candidatePool = (data ?? []) as Row[];
   if (candidatePool.length === 0) return null;
@@ -279,7 +299,7 @@ async function boardingQuintileList(
 
   // Step 4: genuinely phase-specific (effective tags) with a real non-zero boarding
   // population.
-  type QuintileCandidate = { urn: string; name: string; easting: number; northing: number; boardersTotal: number; ratio: number };
+  type QuintileCandidate = { urn: string; name: string; easting: number; northing: number; boardersTotal: number; ratio: number; gender: GenderTag | null };
   const withBoarding: QuintileCandidate[] = [];
   for (const c of nominalFiltered) {
     if (c.easting === null || c.northing === null) continue;
@@ -300,6 +320,7 @@ async function boardingQuintileList(
       northing: c.northing,
       boardersTotal,
       ratio: boardingRatio({ boarders: boardersTotal, total }),
+      gender: genderTag(c.gender),
     });
   }
   if (withBoarding.length === 0) return null;
@@ -333,26 +354,28 @@ async function boardingQuintileList(
     }
   }
 
-  // Step 6: within the target's own quintile, sort by real distance; top 2 quintiles
-  // (index 3-4, biggest boarding populations) get an unbounded catchment, bottom 3
-  // (index 0-2) combine into one group capped at 30km.
-  const inQuintile = sorted.filter((c) => quintileOf(c) === targetQuintile);
-  const pool = targetQuintile >= 3 ? inQuintile : sorted.filter((c) => quintileOf(c) <= 2);
-  const withDistance = pool
+  const isTopTwo = targetQuintile >= 3;
+  const targetGenderTag = genderTag(target.gender);
+
+  // Step 6: top 2 quintiles (index 3-4, biggest boarding populations) -- unaffected,
+  // same-quintile matching, unbounded catchment. Bottom 3 (index 0-2) -- nearest
+  // targetCount real boarding schools NATIONALLY (no quintile restriction, no
+  // distance cap), gender-matched via the same relaxed rule as Nearest 10.
+  const pool = isTopTwo ? sorted.filter((c) => quintileOf(c) === targetQuintile) : sorted;
+  const genderFiltered = isTopTwo || !targetGenderTag ? pool : pool.filter((c) => genderMatches(targetGenderTag, c.gender, "relaxed"));
+  const withDistance = genderFiltered
     .map((c) => ({ ...c, distanceKm: distanceKm({ easting: target.easting!, northing: target.northing! }, { easting: c.easting, northing: c.northing }) }))
-    .filter((c) => targetQuintile >= 3 || c.distanceKm <= 30)
     .sort((a, b) => a.distanceKm - b.distanceKm)
-    .slice(0, 10);
+    .slice(0, targetCount);
 
   const basisLabel = quintileBasis === "headcount" ? "boarding population" : "% boarders";
   return {
     key: "boarding_quintile",
-    label: `National boarding quintile (by ${basisLabel})`,
+    label: isTopTwo ? `National boarding quintile (by ${basisLabel})` : "Nearest boarding schools (by age/gender)",
     schools: withDistance.map((c) => ({ urn: c.urn, name: c.name, distanceKm: c.distanceKm })),
-    note:
-      targetQuintile >= 3
-        ? "Top 2 quintiles by real boarding population -- unbounded catchment."
-        : "Bottom 3 quintiles combined, capped at 30km -- a genuinely thinner population at this scale.",
+    note: isTopTwo
+      ? "Top 2 quintiles by real boarding population -- unbounded catchment."
+      : "Bottom 3 quintiles are too thin to match by quintile alone -- matched by nearest real boarding schools (age/gender) instead, nationally. A nearby top-quintile school can legitimately appear here.",
   };
 }
 
@@ -415,18 +438,26 @@ export async function resolveSchoolTypeCategory(urn: string): Promise<SchoolType
 }
 
 // The slow List 3 recipe, callable independently and lazily (see comment above).
-export async function buildBoardingQuintileList(urn: string): Promise<DefaultList | null> {
+// targetCount (2026-09-08, Compared-with panel round 4): the Boarding schools
+// button's own "+5 more" control re-runs this with a larger count -- genuinely a
+// real, ~41s-ish re-fetch each time (this recipe's own known cost, per the comment
+// above), not a cheap client-side slice, since the expensive census fetch depends on
+// nothing this function caches between calls. Deliberately accepted rather than
+// building a separate caching layer for this one control -- the shared map loading
+// indicator (Compared-with panel round 3) is what makes that wait legible now,
+// rather than a silent, confusing pause.
+export async function buildBoardingQuintileList(urn: string, targetCount = 10): Promise<DefaultList | null> {
   const resolved = await resolveSchoolTypeCategory(urn);
   if (!resolved) return null;
   const { schoolTypeCategory, target } = resolved;
   if (schoolTypeCategory === "independent_boarding_senior") {
-    return boardingQuintileList(target, ["Independent schools"], "Senior", "headcount");
+    return boardingQuintileList(target, ["Independent schools"], "Senior", "headcount", targetCount);
   }
   if (schoolTypeCategory === "independent_boarding_prep") {
-    return boardingQuintileList(target, ["Independent schools"], "Prep", "ratio");
+    return boardingQuintileList(target, ["Independent schools"], "Prep", "ratio", targetCount);
   }
   if (schoolTypeCategory === "state_boarding") {
-    return boardingQuintileList(target, ["Academies", "Local authority maintained schools", "Free Schools"], "Senior", "headcount");
+    return boardingQuintileList(target, ["Academies", "Local authority maintained schools", "Free Schools"], "Senior", "headcount", targetCount);
   }
   return null;
 }

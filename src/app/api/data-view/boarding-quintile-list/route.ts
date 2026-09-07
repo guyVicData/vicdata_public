@@ -13,6 +13,11 @@ export async function GET(request: NextRequest) {
   if (!urn || !authHeader) {
     return NextResponse.json({ error: "urn and Authorization are required" }, { status: 400 });
   }
+  // 2026-09-08, Compared-with panel round 4: optional ?count, for the Boarding
+  // schools button's own "+5 more" control -- defaults to the original 10 when
+  // absent, so every existing caller is unaffected.
+  const countParam = request.nextUrl.searchParams.get("count");
+  const count = countParam ? Math.max(10, parseInt(countParam, 10) || 10) : 10;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,12 +25,19 @@ export async function GET(request: NextRequest) {
     { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
   );
 
-  const { data: approvedMembership } = await supabase
+  const { data: approvedMembership, error: membershipError } = await supabase
     .from("school_memberships")
     .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
     .eq("status", "approved")
     .eq("school_accounts.school_urn", urn)
     .maybeSingle();
+
+  // See default-lists/route.ts -- same discarded-query-error bug class, fixed the
+  // same way across every Data View route as part of this fix.
+  if (membershipError) {
+    console.error("[data-view/boarding-quintile-list] membership check failed:", membershipError);
+    return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
+  }
 
   if (!approvedMembership) {
     return NextResponse.json(
@@ -34,6 +46,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const list3 = await buildBoardingQuintileList(urn);
+  const list3 = await buildBoardingQuintileList(urn, count);
   return NextResponse.json({ list3 });
 }

@@ -91,7 +91,8 @@ export default function MapView({
   comparedHidden,
   onToggleTick,
   profilesByUrn,
-  profilesLoading,
+  loading,
+  loadingLabel,
   filters,
   activeView,
   onChangeView,
@@ -100,15 +101,20 @@ export default function MapView({
   targetProfile: DataViewSchoolProfile;
   members: DefaultListEntry[];
   tickedUrns: Set<string>;
-  // 2026-09-08, per direct request: the loading spinner needs to show whenever
-  // schools are being added to the map (a new/widened comparator set means new
-  // profiles are being fetched for the map to draw), not just on the very first
-  // paint -- DataViewShell's own outer gate only covers that first paint (nothing
-  // to show at all yet), so this map keeps rendering its current dots underneath
-  // and layers the SAME spinner (LoadingSpinnerCard) on top while more load in,
-  // matching the public map's own established "spinner overlays the still-visible
-  // map" pattern (SchoolMap.tsx's boundsLoading) rather than blanking the whole view.
-  profilesLoading: boolean;
+  // 2026-09-08: the loading spinner needs to show whenever schools are being added
+  // to the map (a new/widened comparator set means new profiles are being fetched
+  // for the map to draw) or whenever ANY named-set control is still working out
+  // what the new set even is (Local Authorities, Nearest/Boarding "+5 more", the
+  // Boarding lazy load) -- not just the very first paint (DataViewShell's own outer
+  // gate only covers that; nothing to show at all yet there). This map keeps
+  // rendering its current dots underneath and layers the SAME spinner
+  // (LoadingSpinnerCard) on top while more load in, matching the public map's own
+  // established "spinner overlays the still-visible map" pattern (SchoolMap.tsx's
+  // boundsLoading) rather than blanking the whole view. `loading`/`loadingLabel` are
+  // DataViewShell's own combined signal (see its mapLoading/mapLoadingLabel comment)
+  // -- this component doesn't need to know WHICH source is currently active.
+  loading: boolean;
+  loadingLabel: string;
   // 2026-09-07, UX refinements round 2, P3 item 8: temporary display-only hide,
   // never touches tickedUrns itself (DataViewShell's own comment on the state).
   comparedHidden: boolean;
@@ -433,7 +439,7 @@ export default function MapView({
       <div ref={rootRef} className="vd-dataview-map absolute inset-0">
         <div ref={mapElRef} className="absolute inset-0" />
 
-        {profilesLoading && <LoadingSpinnerCard label="Loading schools…" />}
+        {loading && <LoadingSpinnerCard label={loadingLabel} />}
 
         {/* Top-left: view switcher. Moved here from DataViewShell's shared subheader
             row, which is now skipped entirely for Map -- see DataViewShell's own

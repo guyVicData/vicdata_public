@@ -110,8 +110,19 @@ function comparedWithPhrase(activeSet: SetOption | null, target: DataViewSchoolP
     const phase = target.phase.length === 1 ? `${PHASE_BAND_PROSE[target.phase[0] as PhaseBandKey] ?? target.phase[0].toLowerCase()} ` : "";
     return `all ${phase}schools in ${las}`;
   }
+  // 2026-09-08, Compared-with panel round 4: bottom-3-quintile boarding schools no
+  // longer match by quintile (default-comparator-lists.ts's own boardingQuintileList
+  // comment has the full reasoning) -- "similar-sized" stopped being true for that
+  // case, since the set is now nearest-by-distance and can legitimately include a
+  // much bigger or smaller top-quintile school. Detected off the recipe's own label
+  // text (set at the source, same "parse structured info back out of the label"
+  // pattern laNamesFromLabel already uses above) rather than adding a new field this
+  // sentence-builder would be the only reader of. Top 2 quintiles are unaffected --
+  // same wording as before.
   if (activeSet.key === "boarding_quintile") {
-    return `nearest ${count} similar-sized boarding schools`;
+    return activeSet.label.startsWith("Nearest boarding schools")
+      ? `nearest ${count} boarding schools by age and gender`
+      : `nearest ${count} similar-sized boarding schools`;
   }
   if (activeSet.key === "fe_local_16plus") {
     const las = laNamesFromLabel(activeSet.label);

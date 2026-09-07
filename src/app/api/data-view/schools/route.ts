@@ -27,12 +27,26 @@ export async function GET(request: NextRequest) {
 
   // Same ambiguous-embed fix as /api/paid-trends -- school_memberships<->
   // school_accounts has three FK relationships, PostgREST needs the explicit hint.
-  const { data: approvedMembership } = await supabase
+  const { data: approvedMembership, error: membershipError } = await supabase
     .from("school_memberships")
     .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
     .eq("status", "approved")
     .eq("school_accounts.school_urn", anchorUrn)
     .maybeSingle();
+
+  // Real bug found live while verifying the Compared-with panel round 4-6 boarding
+  // recipe: a discarded query error here looked identical to "not a member" (the
+  // exact bug class DataViewShell.tsx's own membership check was already fixed for,
+  // 2026-09-05 comment there). Reproduced live -- after a slow ~36s boarding-quintile
+  // load plus concurrent adjacent-las calls, this exact route 403'd for a genuinely
+  // approved member on the very next request, for the same anchorUrn a moment-earlier
+  // request had already succeeded for. Fixed the same way across every Data View
+  // route (this file, default-lists, la-set, expand-nearest, boarding-quintile-list,
+  // adjacent-las).
+  if (membershipError) {
+    console.error("[data-view/schools] membership check failed:", membershipError);
+    return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
+  }
 
   if (!approvedMembership) {
     return NextResponse.json(
