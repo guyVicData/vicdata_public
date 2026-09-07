@@ -37,7 +37,13 @@ import { phaseTags, effectivePhaseTags, boardingRatio } from "../src/lib/typolog
 import { resolveRegionNation } from "../src/lib/region-crosswalk";
 import { classifyShape } from "../src/lib/shape-classifier";
 
-const TREND_START_PERIOD = 2019;
+// ROLL_AGGREGATES_START_PERIOD (opt-in, defaults to the real 2019 trend anchor):
+// resume the multi-year roll_aggregates loop from a specific year rather than
+// redoing every year from scratch -- useful after a partial run (each period's own
+// fetch/accumulate/upsert is independent and already-written years are unaffected by
+// re-running, but skipping them outright saves real time given how long the shared
+// reference_data_lookup endpoint's own retries can take per year).
+const TREND_START_PERIOD = process.env.ROLL_AGGREGATES_START_PERIOD ? parseInt(process.env.ROLL_AGGREGATES_START_PERIOD, 10) : 2019;
 
 // ---------------------------------------------------------------------------
 // Part 1: boarding_quintiles
@@ -184,19 +190,38 @@ async function fetchPage(entityIds: string[], period: number, offset: number): P
   const apiUrl = process.env.VICDATA_API_URL!;
   const anonKey = process.env.VICDATA_ANON_KEY!;
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(`${apiUrl}/rest/v1/rpc/reference_data_lookup`, {
-      method: "POST",
-      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        p_source_id: "dfe_school_census",
-        p_entity_ids: entityIds,
-        p_period_min: period,
-        p_period_max: period,
-        p_limit: PAGE_SIZE,
-        p_offset: offset,
-        p_breakdowns: null,
-      }),
-    });
+    // Real crash found running this for real (2026-10-09): a bare `await fetch(...)`
+    // doesn't just resolve with a non-ok Response on failure -- it can also REJECT
+    // outright (a mid-request socket reset, `TypeError: fetch failed` / SocketError),
+    // which this loop's own retry logic never caught, crashing the whole script
+    // uncaught at period 2025 (the very last period) after 2019-2024 had already
+    // completed successfully. Wrapped the fetch itself in try/catch so a network-level
+    // failure gets the exact same retry treatment as an HTTP-level one, instead of two
+    // different resilience levels for what's really the same class of transient
+    // problem (the shared reference_data_lookup endpoint's own well-documented
+    // flakiness under load elsewhere in this codebase's sync-*.ts scripts).
+    let res: Response;
+    try {
+      res = await fetch(`${apiUrl}/rest/v1/rpc/reference_data_lookup`, {
+        method: "POST",
+        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          p_source_id: "dfe_school_census",
+          p_entity_ids: entityIds,
+          p_period_min: period,
+          p_period_max: period,
+          p_limit: PAGE_SIZE,
+          p_offset: offset,
+          p_breakdowns: null,
+        }),
+      });
+    } catch (e) {
+      if (attempt >= MAX_RETRIES) throw new Error(`reference_data_lookup failed after ${MAX_RETRIES} retries: ${(e as Error).message}`);
+      const delayMs = 2000 * 2 ** attempt;
+      console.log(`  retry ${attempt + 1}/${MAX_RETRIES} after network error (${(e as Error).message}) (period ${period}, offset ${offset}), waiting ${delayMs}ms...`);
+      await new Promise((r) => setTimeout(r, delayMs));
+      continue;
+    }
     if (res.ok) return res.json();
     const body = await res.text();
     if (attempt >= MAX_RETRIES) throw new Error(`reference_data_lookup failed after ${MAX_RETRIES} retries: HTTP ${res.status} ${body}`);

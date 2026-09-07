@@ -1,0 +1,12 @@
+-- Follow-up to the spatial-index fix, found running the real backfill: query cost for
+-- nearest_schools() varies a lot more by TARGET than expected -- a dense-urban target
+-- (Camden, Surrey) resolves in well under a second even at batch size 100, while
+-- targets in some other URN ranges cost ~200ms EACH even in isolation, timing out a
+-- batch of 100 outright. Plausible real cause (KNN-with-filter is inherently
+-- geography/sector-dependent -- a sparse area or a narrow sector/age filter forces the
+-- index scan to walk much further to fill LIMIT candidates), but a brand-new index and
+-- a brand-new generated column also have no ANALYZE-derived planner statistics yet,
+-- which can independently produce worse plans for some queries until autovacuum
+-- catches up on its own schedule. Forcing that now rather than waiting removes one
+-- variable while diagnosing/tuning the actual backfill batch sizes.
+analyze public.schools;

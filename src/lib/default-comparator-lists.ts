@@ -411,6 +411,7 @@ async function boardingQuintileListFast(
   boardingSchoolType: "independent_boarding_senior" | "independent_boarding_prep" | "state_boarding",
   quintileBasis: "headcount" | "ratio",
   targetCount: number,
+  sectorGroups: readonly string[],
 ): Promise<DefaultList | null> {
   if (target.easting === null || target.northing === null) return null;
   const supabase = createServerAnonSupabaseClient();
@@ -460,14 +461,32 @@ async function boardingQuintileListFast(
 
   const targetGenderTag = genderTag(target.gender);
   const neighbourUrns = neighbourRows.map((r) => r.neighbour_urn as string);
-  const { data: infoRows } = await supabase.from("schools").select("urn, current_name, gender").in("urn", neighbourUrns);
-  const infoByUrn = new Map(((infoRows ?? []) as { urn: string; current_name: string; gender: string | null }[]).map((r) => [r.urn, r]));
+  // Real bug found running the actual backfill (2026-10-09): the precomputed
+  // 'boarding' pool in school_nearest_neighbours is genuinely NATIONAL and
+  // cross-sector by design (every boarding-tagged school, ~2,344 of them --
+  // Independent/State/Special/FE alike; the "~403" figure in this table's own
+  // original migration comment turned out to be the Independent-Senior-ONLY
+  // candidate-pool size for ONE quintile category, not the true cross-sector
+  // total -- a real miscalculation in the original design, confirmed once the
+  // backfill actually ran). The LIVE boardingQuintileList()'s own bottom-3 branch,
+  // by contrast, only ever searches WITHIN the same sectorGroups as the quintile
+  // category itself (withBoarding/sorted are built from a candidatePool already
+  // filtered to `establishment_type_group in sectorGroups`) -- so reading the
+  // precomputed pool unfiltered here would surface cross-sector matches (e.g. a
+  // state boarding school for an independent-senior target) the live path never
+  // would. Filtered here, at read time, to match -- same principle as the general
+  // pool's own read-time relax-sector filter just above in this file.
+  const { data: schoolRows } = await supabase.from("schools").select("urn, current_name, gender, establishment_type_group").in("urn", neighbourUrns);
+  const infoByUrn = new Map(
+    ((schoolRows ?? []) as { urn: string; current_name: string; gender: string | null; establishment_type_group: string | null }[]).map((r) => [r.urn, r]),
+  );
 
   const schools: DefaultListEntry[] = [];
   for (const n of neighbourRows as { neighbour_urn: string; distance_km: number }[]) {
     if (schools.length >= targetCount) break;
     const info = infoByUrn.get(n.neighbour_urn);
     if (!info) continue;
+    if (!sectorGroups.includes(info.establishment_type_group ?? "")) continue;
     if (targetGenderTag && !genderMatches(targetGenderTag, genderTag(info.gender), "relaxed")) continue;
     schools.push({ urn: n.neighbour_urn, name: info.current_name, distanceKm: n.distance_km });
   }
@@ -568,7 +587,7 @@ export async function buildBoardingQuintileList(urn: string, targetCount = 10): 
   // before the next census-affecting recompute, or before the recompute has ever been
   // run at all) -- never a silent "no List 3 offered," and never a regression versus
   // today's behaviour, just slower until the precompute catches up.
-  const fast = await boardingQuintileListFast(target, schoolTypeCategory, config.quintileBasis, targetCount);
+  const fast = await boardingQuintileListFast(target, schoolTypeCategory, config.quintileBasis, targetCount, config.sectorGroups);
   if (fast) return fast;
 
   console.warn(`[default-comparator-lists] boarding_quintiles not precomputed for ${urn} -- falling back to live computation`);
