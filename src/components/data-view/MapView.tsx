@@ -83,6 +83,19 @@ const DISTANCE_RING_KM_INDEPENDENT = 10;
 // the exact threshold... and log it."
 const CLUSTER_THRESHOLD = 200;
 
+// 2026-10-09, per direct request: clustering should give way to real individual
+// markers once a member zooms in far enough that they clearly want to see actual
+// schools, not a region-level overview -- leaflet.markercluster's own default
+// behaviour already progressively splits clusters as you zoom (fewer, smaller
+// clusters at each step), but never guarantees a clean "every marker is now
+// individual" state at any particular zoom without this option. Zoom 14 is roughly
+// "a single town/neighbourhood" scale on this map's own tile set -- the same rough
+// scale the initial single-school view already opens at (zoom 11) plus a few zoom-in
+// steps, chosen as the point where "which exact schools are here" becomes the natural
+// question over "how many schools are in this area." Logged per the same "use your
+// judgement and log it" convention CLUSTER_THRESHOLD above was set under.
+const CLUSTER_DISABLE_ZOOM = 14;
+
 // Real bug found live (2026-10-09): a single wrongly-geocoded school (NHS Choices
 // College, URN 144813 -- already a known, documented bad GIAS coordinate from an
 // earlier round, ~400km north of where its own la_name says it should be; that fix
@@ -308,6 +321,7 @@ export default function MapView({
       schoolsClusterGroupRef.current = L.markerClusterGroup({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
+        disableClusteringAtZoom: CLUSTER_DISABLE_ZOOM,
         iconCreateFunction: (cluster) => {
           const count = cluster.getChildCount();
           const size = count >= 1000 ? 44 : count >= 100 ? 38 : 32;
