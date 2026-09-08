@@ -19,13 +19,16 @@ import {
   serializeFilterState,
   deserializeFilterState,
   matchesSectorFilter,
+  boardingModeForFilters,
+  singleGenderFilter,
   type DataViewFilterState,
   type WireDataViewFilterState,
 } from "@/lib/data-view-filters";
 import type { SetOption, ViewKey } from "@/lib/data-view-types";
 import type { SchoolTypeCategory } from "@/lib/default-comparator-lists";
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
-import type { RegionNationPoint } from "@/lib/region-nation-comparator";
+import type { RegionNationPoint, RegionNationRankResult } from "@/lib/region-nation-comparator";
+import type { AggregateTrends } from "@/lib/aggregate-trends";
 import { TOPIC_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import ComparatorSidebar from "./ComparatorSidebar";
 import SavedSetsControl from "./SavedSetsControl";
@@ -53,6 +56,28 @@ type LoadState = "checking" | "not_a_member" | "loading" | "ready" | "error";
 // set is large enough to need different handling" rather than two separately-tuned
 // numbers that could drift apart.
 const LARGE_SET_PROFILE_THRESHOLD = 200;
+
+// Large-set design v1, items 3/5: pure key-derivation helpers, module-scope so they're
+// usable identically both inside the fetch effects (to know what to store a result
+// under) and during render (to know whether a stored result is still valid for the
+// CURRENT scope/set/filters) -- see the ranking effect's own comment for why this
+// keyed-cache shape replaces a simpler "clear state in the effect's bail-out branch"
+// approach.
+function largeSetRankScopeKey(activeSet: SetOption | null): "region" | "nation" | null {
+  if (!activeSet || activeSet.kind !== "recipe" || activeSet.schools.length <= LARGE_SET_PROFILE_THRESHOLD) return null;
+  if (activeSet.key === "ons_region") return "region";
+  if (activeSet.key === "nation") return "nation";
+  return null;
+}
+
+function largeSetRankRequestKey(targetUrn: string, scopeKey: "region" | "nation", filters: DataViewFilterState): string {
+  const sectors = Array.from(filters.sector).sort().join(",");
+  return `${targetUrn}|${scopeKey}|${sectors}|${boardingModeForFilters(filters) ?? ""}|${singleGenderFilter(filters) ?? ""}`;
+}
+
+function aggregateTrendsRequestKey(targetUrn: string, startPeriod: number): string {
+  return `${targetUrn}|${startPeriod}`;
+}
 
 export default function DataViewShell({ urn }: { urn: string }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
@@ -138,6 +163,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
   const [profilesByUrn, setProfilesByUrn] = useState<Map<string, DataViewSchoolProfile>>(new Map());
   const [profilesLoading, setProfilesLoading] = useState(false);
   const [profilesError, setProfilesError] = useState<string | null>(null);
+  // Large-set design v1, item 3: Region/Nation-scale ranking, computed server-side
+  // (region_nation_rank()) since tickedProfiles structurally can never hold a
+  // 49,000-school set -- see RankingsView.tsx's own large-set display branch for how
+  // this gets rendered. null whenever the active set isn't large-scale (small/medium
+  // sets keep ranking entirely client-side, unchanged) or the fetch hasn't resolved
+  // yet.
+  const [largeSetRank, setLargeSetRank] = useState<{ key: string; data: RegionNationRankResult } | null>(null);
+  const [largeSetRankLoading, setLargeSetRankLoading] = useState(false);
+  // Large-set design v1, item 5: Graphs' aggregate-lines chart data (national/region/
+  // sector roll_aggregates rows) -- fetched whenever the active set is large-scale,
+  // independent of which view is currently active (a small, cheap fetch -- a handful
+  // of rows per scope, nothing like region_nation_set()'s own per-school payload), so
+  // switching into Graphs after arriving via Map/Rankings doesn't show an extra
+  // loading flash.
+  const [aggregateTrends, setAggregateTrends] = useState<{ key: string; data: AggregateTrends } | null>(null);
 
   const [filters, setFilters] = useState<DataViewFilterState>(emptyDataViewFilterState());
   const [activeView, setActiveView] = useState<ViewKey>("map");
@@ -396,13 +436,27 @@ export default function DataViewShell({ urn }: { urn: string }) {
     // scale failure mode this whole architecture round exists to remove, just moved
     // from set-SELECTION to set-SELECTED. Past LARGE_SET_PROFILE_THRESHOLD (same
     // figure MapView's own clustering threshold uses, for one consistent "this is a
-    // big set" definition rather than two), only the target's own profile is fetched
-    // -- Map still renders every real school (via activeSet.schools directly, not
-    // profilesByUrn), but Graphs/Rankings' per-school-profile charts don't have real
-    // data for the comparator side at this scale yet; a follow-up, not attempted this
-    // round (see docs/vicdata_data_view_open_questions.md).
+    // big set" definition rather than two), only the target's own profile PLUS
+    // whatever's actually ticked is fetched -- Map still renders every real school
+    // (via activeSet.schools/largeSetPoints, not profilesByUrn), Rankings/Graphs read
+    // from school_current_snapshot/roll_aggregates at this scale instead (large-set
+    // design v1), and Graphs' small/medium per-school charts still work correctly over
+    // whatever handful of schools a member has actually ticked.
+    //
+    // Large-set design v1, item 6: this is also the WHOLE mechanism behind "click a
+    // marker in a large set to see its real numbers" -- MapView's own marker-click
+    // handler already calls onToggleTick(urn) unconditionally (its tooltip already
+    // said "click to add to comparison" before this round), so ticking a school here
+    // is what triggers this effect to fetch ITS real profile too, via the exact same
+    // /api/data-view/schools endpoint every other comparator set already uses -- no
+    // new fetch machinery, no new click handler, just no longer skipping tickedUrns
+    // when the active set is large. A member isn't going to individually click
+    // hundreds of markers by hand, so this stays a small, bounded fetch in practice.
     const isLargeSet = activeSet.schools.length > LARGE_SET_PROFILE_THRESHOLD;
-    const urns = isLargeSet ? [target.urn] : Array.from(new Set([target.urn, ...activeSet.schools.map((s) => s.urn)]));
+    const activeSetUrns = new Set(activeSet.schools.map((s) => s.urn));
+    const urns = isLargeSet
+      ? Array.from(new Set([target.urn, ...Array.from(tickedUrns).filter((u) => activeSetUrns.has(u))]))
+      : Array.from(new Set([target.urn, ...activeSet.schools.map((s) => s.urn)]));
     const alreadyFetched = urns.every((u) => profilesByUrn.has(u));
     if (alreadyFetched) return;
     (async () => {
@@ -432,7 +486,98 @@ export default function DataViewShell({ urn }: { urn: string }) {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authToken, activeSet, target]);
+  }, [authToken, activeSet, target, tickedUrns]);
+
+  // Large-set design v1, item 3: fetches region_nation_rank() whenever the active set
+  // is BOTH large (past LARGE_SET_PROFILE_THRESHOLD) AND actually one of the
+  // ons_region/nation recipes (the only sets this RPC's own scope resolution can
+  // answer for -- a member-curated saved set has no real region/nation membership as
+  // a SET, only individual member schools might). boardingModeForFilters/
+  // singleGenderFilter (data-view-filters.ts) translate the shared filter state into
+  // the same reading region_nation_rank()'s own SQL uses, so this can't silently pick
+  // a different boarding-mode/gender interpretation than the RPC itself does.
+  //
+  // Stores the result keyed by exactly what it was fetched FOR (largeSetRankRequestKey
+  // below), rather than clearing state synchronously in the effect body when the
+  // gating conditions stop holding (react-hooks/set-state-in-effect -- same discipline
+  // the slowLoad effect above already documents: avoid a synchronous setState in an
+  // effect's bail-out branch, let render-time comparison decide whether stored state
+  // is still valid instead). This also fixes a real correctness gap a plain
+  // "clear on bail-out" reset wouldn't: switching directly between two DIFFERENT
+  // large sets (e.g. Region -> Nation) without an intermediate small-set state would
+  // otherwise flash the PREVIOUS scope's stale ranking while the new one is in
+  // flight, since neither transition ever hits the "not large" bail-out branch.
+  useEffect(() => {
+    const scopeKey = target ? largeSetRankScopeKey(activeSet) : null;
+    if (!authToken || !target || !scopeKey) return;
+    const requestKey = largeSetRankRequestKey(target.urn, scopeKey, filters);
+    let cancelled = false;
+    (async () => {
+      setLargeSetRankLoading(true);
+      try {
+        const params = new URLSearchParams({ urn: target.urn, scope: scopeKey });
+        const sectors = Array.from(filters.sector).join(",");
+        const boardingMode = boardingModeForFilters(filters);
+        const gender = singleGenderFilter(filters);
+        if (sectors) params.set("sectors", sectors);
+        if (boardingMode) params.set("boardingMode", boardingMode);
+        if (gender) params.set("gender", gender);
+        const res = await fetch(`/api/data-view/region-nation-rank?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error("[DataViewShell] region-nation-rank fetch failed:", res.status, await res.text().catch(() => ""));
+          return;
+        }
+        const body = (await res.json()) as { rank: RegionNationRankResult | null };
+        if (cancelled || !body.rank) return;
+        setLargeSetRank({ key: requestKey, data: body.rank });
+      } catch (e) {
+        if (!cancelled) console.error("[DataViewShell] unexpected error fetching region/nation ranking:", e);
+      } finally {
+        if (!cancelled) setLargeSetRankLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, target, activeSet, filters]);
+
+  // Large-set design v1, item 5: fetches national/region/sector aggregate trend lines
+  // whenever the active set is large-scale (same LARGE_SET_PROFILE_THRESHOLD gate as
+  // the ranking fetch above) -- unlike ranking, this doesn't depend on which specific
+  // recipe is active (region_nation_rank() needs a real region/nation SCOPE to rank
+  // against; aggregate-trends only needs the TARGET's own region/nation/sector
+  // membership, which is real regardless of what the member happens to have
+  // selected), so it's gated on set size alone. Same keyed-cache discipline as the
+  // ranking effect above, for the same react-hooks/set-state-in-effect reason.
+  useEffect(() => {
+    const isLargeSet = !!activeSet && activeSet.schools.length > LARGE_SET_PROFILE_THRESHOLD;
+    if (!authToken || !target || !isLargeSet) return;
+    const requestKey = aggregateTrendsRequestKey(target.urn, filters.startPeriod);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/data-view/aggregate-trends?urn=${target.urn}&startPeriod=${filters.startPeriod}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error("[DataViewShell] aggregate-trends fetch failed:", res.status, await res.text().catch(() => ""));
+          return;
+        }
+        const body = (await res.json()) as { trends: AggregateTrends };
+        if (cancelled) return;
+        setAggregateTrends({ key: requestKey, data: body.trends });
+      } catch (e) {
+        if (!cancelled) console.error("[DataViewShell] unexpected error fetching aggregate trends:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, target, activeSet, filters.startPeriod]);
 
   useEffect(() => {
     // Only ever read while loadState is "checking"/"loading" (see that render branch
@@ -661,6 +806,20 @@ export default function DataViewShell({ urn }: { urn: string }) {
       : [];
   const filterSummary = describeFilters(filters);
 
+  // Large-set design v1, items 3/5: resolve the keyed-cache state (see those effects'
+  // own comments) against what the CURRENT render actually wants -- a stored result
+  // whose key doesn't match the live scope/set/filters is stale (superseded by a
+  // switch to a different set, or simply not fetched yet) and is treated as absent
+  // rather than shown.
+  const isLargeSet = !!activeSet && activeSet.schools.length > LARGE_SET_PROFILE_THRESHOLD;
+  const currentLargeSetRankScopeKey = largeSetRankScopeKey(activeSet);
+  const resolvedLargeSetRank =
+    target && currentLargeSetRankScopeKey && largeSetRank?.key === largeSetRankRequestKey(target.urn, currentLargeSetRankScopeKey, filters)
+      ? largeSetRank.data
+      : null;
+  const resolvedAggregateTrends =
+    target && isLargeSet && aggregateTrends?.key === aggregateTrendsRequestKey(target.urn, filters.startPeriod) ? aggregateTrends.data : null;
+
   // 2026-09-07, UX refinements round 2, P3 item 7: "same 'only show if relevant'
   // ... conventions" -- the Sector filter only makes sense (and only shows any
   // pills at all) when the active set genuinely contains more than one real
@@ -878,9 +1037,23 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     onChangeView={setActiveView}
                   />
                 ) : activeView === "graphs" ? (
-                  <GraphsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} filterSummary={filterSummary} />
+                  <GraphsView
+                    targetProfile={targetProfile}
+                    tickedProfiles={tickedProfiles}
+                    filters={filters}
+                    filterSummary={filterSummary}
+                    isLargeSet={isLargeSet}
+                    aggregateTrends={resolvedAggregateTrends}
+                  />
                 ) : (
-                  <RankingsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} filters={filters} />
+                  <RankingsView
+                    targetProfile={targetProfile}
+                    tickedProfiles={tickedProfiles}
+                    filters={filters}
+                    largeSetRank={resolvedLargeSetRank}
+                    largeSetRankLoading={largeSetRankLoading}
+                    largeSetLabel={activeSet?.label ?? null}
+                  />
                 )}
               </DataViewErrorBoundary>
             )}
