@@ -1,11 +1,13 @@
 #!/usr/bin/env -S npx tsx
-// Member Data View performance architecture v1, §3/§4. Recomputes the two derived
-// tables that depend on CENSUS data -- boarding_quintiles, and the new 'ons_region'
-// (+ multi-year 'national') rows in roll_aggregates -- so the Boarding, Region, and
-// Nation comparator buttons never make a live cross-Supabase-project census fetch on
-// a member's click. Run this on every census-affecting ingest promote (the DfE school
-// census re-syncs); see docs/vicdata_data_view_open_questions.md for the promote-hook
-// wiring and reasoning.
+// Member Data View performance architecture v1, §3/§4 (Parts 1-2) + large-set design
+// v1 (docs/vicdata_phase3_member_data_view_large_set_design_v1.md, Part 3).
+// Recomputes the derived tables that depend on CENSUS data -- boarding_quintiles, the
+// 'ons_region' (+ multi-year 'national') rows in roll_aggregates, and the new
+// school_current_snapshot -- so the Boarding/Region/Nation comparator buttons and
+// Region/Nation-scale Map/Rankings/Graphs never make a live cross-Supabase-project
+// census fetch on a member's click. Run this on every census-affecting ingest promote
+// (the DfE school census re-syncs); see docs/vicdata_data_view_open_questions.md for
+// the promote-hook wiring and reasoning.
 //
 // Usage: npx tsx --env-file=.env scripts/recompute-census-derived.ts
 //
@@ -29,11 +31,20 @@
 // own TREND_ANCHOR_PERIOD) so the Region/Nation A3 summary sentence has real
 // "since 2019/20"-style trend data to read, the same basis Round 6's boarding fix
 // established for that sentence.
+//
+// school_current_snapshot (large-set design v1, Part 3): one row per open school with
+// real current-period census data, holding exactly what data-view-filters.ts's
+// filteredCount() reads off a profile (current age/gender breakdown + boarding) plus
+// one anchor-period age/gender breakdown -- see that table's own migration comment for
+// the full reasoning. Deliberately a SEPARATE fetch from Part 2's roll_aggregates loop
+// (which only ever fetches MAINSTREAM_GROUPS schools) -- this one covers every open
+// school regardless of sector, since a Region/Nation comparator set can include
+// Special Schools too, and the whole point is per-school data, not an aggregate.
 
 import { createServiceRoleSupabaseClient } from "../src/lib/supabase";
-import { fetchCensusFactsBatched } from "../src/lib/data-view-profiles";
+import { fetchCensusFactsBatched, TREND_ANCHOR_PERIOD } from "../src/lib/data-view-profiles";
 import { singleAgeGenderCountsForPeriod, CURRENT_CENSUS_PERIOD, AGE_BANDS, type AgeBandKey, SHAPE_CLASSIFICATION_MIN_AGE, SHAPE_CLASSIFICATION_MAX_AGE } from "../src/lib/roll-data";
-import { phaseTags, effectivePhaseTags, boardingRatio } from "../src/lib/typology";
+import { phaseTags, effectivePhaseTags, boardingRatio, sectorTag } from "../src/lib/typology";
 import { resolveRegionNation } from "../src/lib/region-crosswalk";
 import { classifyShape } from "../src/lib/shape-classifier";
 
@@ -343,6 +354,185 @@ async function recomputeRollAggregates(schools: SchoolRow[]) {
 }
 
 // ---------------------------------------------------------------------------
+// Part 3: school_current_snapshot (large-set design v1)
+// ---------------------------------------------------------------------------
+
+type SnapshotAgeAcc = Map<number, { male: number; female: number }>;
+type SnapshotAccumulator = {
+  byAge: SnapshotAgeAcc;
+  boardersTotal: number | null;
+  boardersMale: number | null;
+  boardersFemale: number | null;
+};
+
+function newSnapshotAccumulator(): SnapshotAccumulator {
+  return { byAge: new Map(), boardersTotal: null, boardersMale: null, boardersFemale: null };
+}
+
+// Reuses the SAME fetchPage()/entity-batching machinery Part 2's roll_aggregates loop
+// already proved out (ENTITY_BATCH_SIZE=100, BATCH_SIZE=10 concurrent groups) --
+// generalised here to build a PER-SCHOOL breakdown for one period across an arbitrary
+// URN list, rather than one combined national/regional/sector accumulator. Every open
+// school regardless of sector (not just MAINSTREAM_GROUPS) -- a Region/Nation set can
+// include Special Schools, and this table's whole purpose is per-school data.
+async function fetchSnapshotFactsForPeriod(urns: string[], period: number): Promise<Map<string, SnapshotAccumulator>> {
+  const byUrn = new Map<string, SnapshotAccumulator>();
+  function get(urn: string): SnapshotAccumulator {
+    let acc = byUrn.get(urn);
+    if (!acc) {
+      acc = newSnapshotAccumulator();
+      byUrn.set(urn, acc);
+    }
+    return acc;
+  }
+  function accumulate(urn: string, breakdown: string, value: number) {
+    const match = AGE_BREAKDOWN_RE.exec(breakdown);
+    if (match) {
+      const [, , sex, ageStr] = match;
+      const age = Number(ageStr);
+      const acc = get(urn);
+      const entry = acc.byAge.get(age) ?? { male: 0, female: 0 };
+      if (sex === "male") entry.male += value;
+      else entry.female += value;
+      acc.byAge.set(age, entry);
+      return;
+    }
+    if (breakdown === "boarders_total") {
+      get(urn).boardersTotal = value;
+      return;
+    }
+    if (breakdown === "boarders_male") {
+      get(urn).boardersMale = value;
+      return;
+    }
+    if (breakdown === "boarders_female") {
+      get(urn).boardersFemale = value;
+      return;
+    }
+  }
+
+  const entityBatches: string[][] = [];
+  for (let i = 0; i < urns.length; i += ENTITY_BATCH_SIZE) entityBatches.push(urns.slice(i, i + ENTITY_BATCH_SIZE));
+
+  async function fetchBatch(batch: string[]): Promise<number> {
+    let offset = 0;
+    let rowCount = 0;
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const rows = await fetchPage(batch, period, offset);
+      for (const row of rows) if (row.value_numeric !== null) accumulate(row.entity_id, row.breakdown, row.value_numeric);
+      rowCount += rows.length;
+      if (rows.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    }
+    return rowCount;
+  }
+
+  let totalRows = 0;
+  for (let i = 0; i < entityBatches.length; i += BATCH_SIZE) {
+    const group = entityBatches.slice(i, i + BATCH_SIZE);
+    const counts = await Promise.all(group.map(fetchBatch));
+    totalRows += counts.reduce((a, b) => a + b, 0);
+  }
+  console.log(`  period ${period}: ${totalRows} rows, ${byUrn.size} schools with real data`);
+  return byUrn;
+}
+
+// Large-set design v1, item 2, real regression fix (2026-10-10): writes the ALREADY-
+// COMPACT array-of-triples shape (`[[age, male, female], ...]`) region_nation_set()
+// itself returns to the client -- NOT an object keyed by age (the original shape,
+// changed after a real Nation-scale statement timeout: a LATERAL jsonb_each() unnest
+// per row across ~49,000 rows was too slow; a straight column read of an
+// already-compact array isn't). See supabase/migrations/
+// 20261010098000_school_current_snapshot_compact_storage.sql for the one-time bulk
+// transform of rows already written before this change.
+function ageGenderCountsToCompact(byAge: SnapshotAgeAcc): [number, number, number][] {
+  return Array.from(byAge.entries()).map(([age, c]) => [age, c.male, c.female]);
+}
+
+function totalOf(acc: SnapshotAccumulator | undefined): number {
+  if (!acc) return 0;
+  let total = 0;
+  for (const c of acc.byAge.values()) total += c.male + c.female;
+  return total;
+}
+
+async function recomputeSchoolCurrentSnapshot(schools: SchoolRow[]) {
+  const supabase = createServiceRoleSupabaseClient();
+  const openSchools = schools.filter((s) => s.status !== "closed");
+  const openUrns = openSchools.map((s) => s.urn);
+  const sectorByUrn = new Map(openSchools.map((s) => [s.urn, sectorTag(s.establishment_type_group, s.establishment_type)]));
+
+  console.log(`school_current_snapshot: fetching current period (${CURRENT_CENSUS_PERIOD}) for ${openUrns.length} open schools...`);
+  const current = await fetchSnapshotFactsForPeriod(openUrns, CURRENT_CENSUS_PERIOD);
+
+  // FE colleges (and any other institution type with genuinely zero DfE census
+  // coverage -- data-view-profiles.ts's own established "502 FE-corporation
+  // institutions have zero census facts, a real and permanent gap" finding) never have
+  // real current-period data -- narrowing the anchor-period fetch to only schools that
+  // DO have real current data avoids paying for a whole second full-population fetch
+  // for URNs guaranteed to come back empty either way.
+  const withCurrentData = openUrns.filter((urn) => totalOf(current.get(urn)) > 0);
+  console.log(`school_current_snapshot: ${withCurrentData.length} of ${openUrns.length} open schools have real current-period (${CURRENT_CENSUS_PERIOD}) data`);
+
+  console.log(`school_current_snapshot: fetching anchor period (${TREND_ANCHOR_PERIOD}) for those ${withCurrentData.length} schools...`);
+  const anchor = await fetchSnapshotFactsForPeriod(withCurrentData, TREND_ANCHOR_PERIOD);
+
+  const rows: {
+    urn: string;
+    current_period: number;
+    total_roll: number;
+    female_total: number;
+    age_gender_counts: [number, number, number][];
+    boarding: { boarders: number; day: number; total: number } | null;
+    boarders_gender_split: { male: number; female: number } | null;
+    anchor_period: number | null;
+    anchor_age_gender_counts: [number, number, number][] | null;
+    sector: string | null;
+    computed_at: string;
+  }[] = [];
+
+  for (const urn of withCurrentData) {
+    const acc = current.get(urn)!;
+    let totalRoll = 0;
+    let femaleTotal = 0;
+    for (const c of acc.byAge.values()) {
+      totalRoll += c.male + c.female;
+      femaleTotal += c.female;
+    }
+
+    const boarding =
+      acc.boardersTotal !== null ? { boarders: acc.boardersTotal, day: Math.max(totalRoll - acc.boardersTotal, 0), total: totalRoll } : null;
+    const boardersGenderSplit =
+      acc.boardersMale !== null && acc.boardersFemale !== null ? { male: acc.boardersMale, female: acc.boardersFemale } : null;
+
+    const anchorAcc = anchor.get(urn);
+    const anchorTotal = totalOf(anchorAcc);
+
+    rows.push({
+      urn,
+      current_period: CURRENT_CENSUS_PERIOD,
+      total_roll: totalRoll,
+      female_total: femaleTotal,
+      age_gender_counts: ageGenderCountsToCompact(acc.byAge),
+      boarding,
+      boarders_gender_split: boardersGenderSplit,
+      anchor_period: anchorAcc && anchorTotal > 0 ? TREND_ANCHOR_PERIOD : null,
+      anchor_age_gender_counts: anchorAcc && anchorTotal > 0 ? ageGenderCountsToCompact(anchorAcc.byAge) : null,
+      sector: sectorByUrn.get(urn) ?? null,
+      computed_at: new Date().toISOString(),
+    });
+  }
+
+  console.log(`school_current_snapshot: writing ${rows.length} rows...`);
+  const UPSERT_CHUNK = 1000;
+  for (let i = 0; i < rows.length; i += UPSERT_CHUNK) {
+    const { error } = await supabase.from("school_current_snapshot").upsert(rows.slice(i, i + UPSERT_CHUNK), { onConflict: "urn" });
+    if (error) throw error;
+  }
+  console.log(`school_current_snapshot: done, ${rows.length} rows written.`);
+}
+
+// ---------------------------------------------------------------------------
 
 async function main() {
   console.log("loading schools...");
@@ -351,6 +541,7 @@ async function main() {
 
   await recomputeBoardingQuintiles(schools);
   await recomputeRollAggregates(schools);
+  await recomputeSchoolCurrentSnapshot(schools);
 
   console.log("done.");
 }
