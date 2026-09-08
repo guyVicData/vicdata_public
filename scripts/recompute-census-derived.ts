@@ -1,8 +1,8 @@
 #!/usr/bin/env -S npx tsx
 // Member Data View performance architecture v1, §3/§4 (Parts 1-2) + large-set design
-// v1 (docs/vicdata_phase3_member_data_view_large_set_design_v1.md, Part 3).
+// v1 (docs/vicdata_phase3_member_data_view_large_set_design_v1.md, Parts 3-4).
 // Recomputes the derived tables that depend on CENSUS data -- boarding_quintiles, the
-// 'ons_region' (+ multi-year 'national') rows in roll_aggregates, and the new
+// 'ons_region'/'sector' (+ multi-year 'national') rows in roll_aggregates, and the new
 // school_current_snapshot -- so the Boarding/Region/Nation comparator buttons and
 // Region/Nation-scale Map/Rankings/Graphs never make a live cross-Supabase-project
 // census fetch on a member's click. Run this on every census-affecting ingest promote
@@ -30,7 +30,13 @@
 // and a multi-year loop (2019 - CURRENT_CENSUS_PERIOD, matching data-view-profiles.ts's
 // own TREND_ANCHOR_PERIOD) so the Region/Nation A3 summary sentence has real
 // "since 2019/20"-style trend data to read, the same basis Round 6's boarding fix
-// established for that sentence.
+// established for that sentence. Large-set design v1 adds a fourth dimension,
+// 'sector' -- scope_key = the school's own establishment_type_group (the design doc's
+// own literal instruction, "extend recompute-census-derived.ts to also group by
+// establishment_type_group" -- NOT the coarser SectorTag taxonomy MapView's Sector
+// colour-by mode uses, which would need broadening the mainstream-only entity fetch
+// below to include Special Schools/FE at all; logged as a decision in
+// docs/vicdata_data_view_open_questions.md).
 //
 // school_current_snapshot (large-set design v1, Part 3): one row per open school with
 // real current-period census data, holding exactly what data-view-filters.ts's
@@ -242,16 +248,23 @@ async function fetchPage(entityIds: string[], period: number, offset: number): P
   }
 }
 
-async function recomputeRollAggregatesForPeriod(period: number, regionByUrn: Map<string, string | null>, mainstreamUrns: string[]) {
+async function recomputeRollAggregatesForPeriod(
+  period: number,
+  regionByUrn: Map<string, string | null>,
+  sectorByUrn: Map<string, string | null>,
+  mainstreamUrns: string[],
+) {
   const supabase = createServiceRoleSupabaseClient();
   const national = newAccumulator();
   const byRegion = new Map<string, Accumulator>();
+  const bySector = new Map<string, Accumulator>();
 
   function accumulate(urn: string, breakdown: string, value: number) {
     const match = AGE_BREAKDOWN_RE.exec(breakdown);
     const isBoarding = breakdown === "boarders_total";
     if (!match && !isBoarding) return;
     const regionCode = regionByUrn.get(urn);
+    const sectorKey = sectorByUrn.get(urn);
 
     const target = (acc: Accumulator) => {
       acc.schoolUrns.add(urn);
@@ -272,6 +285,10 @@ async function recomputeRollAggregatesForPeriod(period: number, regionByUrn: Map
     if (regionCode) {
       if (!byRegion.has(regionCode)) byRegion.set(regionCode, newAccumulator());
       target(byRegion.get(regionCode)!);
+    }
+    if (sectorKey) {
+      if (!bySector.has(sectorKey)) bySector.set(sectorKey, newAccumulator());
+      target(bySector.get(sectorKey)!);
     }
   }
 
@@ -297,14 +314,14 @@ async function recomputeRollAggregatesForPeriod(period: number, regionByUrn: Map
     const counts = await Promise.all(group.map(fetchBatch));
     totalRows += counts.reduce((a, b) => a + b, 0);
   }
-  console.log(`  period ${period}: ${totalRows} rows, ${byRegion.size} regions`);
+  console.log(`  period ${period}: ${totalRows} rows, ${byRegion.size} regions, ${bySector.size} sectors`);
 
   if (national.schoolUrns.size === 0) {
     console.log(`  period ${period}: no data at all, skipping (school probably has no census data this year)`);
     return;
   }
 
-  function toRow(scope: "national" | "ons_region", scopeKey: string, acc: Accumulator) {
+  function toRow(scope: "national" | "ons_region" | "sector", scopeKey: string, acc: Accumulator) {
     const bandTotals = AGE_BANDS.map((b) => ({ key: b.key, total: acc.byBand.get(b.key) ?? 0 }));
     const totalRoll = acc.male + acc.female;
     const nonZeroAgesInClamp = Array.from(acc.byShapeAge.entries()).filter(
@@ -332,24 +349,36 @@ async function recomputeRollAggregatesForPeriod(period: number, regionByUrn: Map
     };
   }
 
-  const rows = [toRow("national", "", national), ...Array.from(byRegion.entries()).map(([code, acc]) => toRow("ons_region", code, acc))];
+  const rows = [
+    toRow("national", "", national),
+    ...Array.from(byRegion.entries()).map(([code, acc]) => toRow("ons_region", code, acc)),
+    ...Array.from(bySector.entries()).map(([key, acc]) => toRow("sector", key, acc)),
+  ];
   const { error } = await supabase.from("roll_aggregates").upsert(rows, { onConflict: "scope,scope_key,period" });
   if (error) throw error;
 }
 
 async function recomputeRollAggregates(schools: SchoolRow[]) {
   const regionByUrn = new Map<string, string | null>();
+  const sectorByUrn = new Map<string, string | null>();
   const mainstreamUrns: string[] = [];
   for (const s of schools) {
     if (!MAINSTREAM_GROUPS.includes(s.establishment_type_group ?? "")) continue;
     mainstreamUrns.push(s.urn);
     regionByUrn.set(s.urn, resolveRegionNation(s.la_name).regionCode);
+    // Large-set design v1, item 4: scope_key = the school's own establishment_type_group
+    // verbatim (the design doc's own literal instruction) -- fetch scope here is still
+    // MAINSTREAM_GROUPS only (Academies/LA-maintained/Independent/Free Schools), so
+    // Special Schools/FE never get a real 'sector' roll_aggregates row this round; a
+    // GraphsView sector-comparison line for those two sectors would need broadening
+    // this fetch, logged as a follow-up in docs/vicdata_data_view_open_questions.md.
+    sectorByUrn.set(s.urn, s.establishment_type_group);
   }
   console.log(`roll_aggregates: ${mainstreamUrns.length} mainstream schools, periods ${TREND_START_PERIOD}-${CURRENT_CENSUS_PERIOD}`);
 
   for (let period = TREND_START_PERIOD; period <= CURRENT_CENSUS_PERIOD; period++) {
     console.log(`roll_aggregates: fetching period ${period}...`);
-    await recomputeRollAggregatesForPeriod(period, regionByUrn, mainstreamUrns);
+    await recomputeRollAggregatesForPeriod(period, regionByUrn, sectorByUrn, mainstreamUrns);
   }
 }
 

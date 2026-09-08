@@ -44,12 +44,20 @@ import { trendBadge, spreadData, shapeInlineFact, sizeBand, type TrendBadge } fr
 import { shapeClassifierInput } from "@/lib/roll-data";
 import { classifyShape } from "@/lib/shape-classifier";
 import { graphTitlePrefix } from "@/lib/data-view-summary";
+import type { AggregateTrends } from "@/lib/aggregate-trends";
 import SpreadStrip from "./SpreadStrip";
 import RollTrendsChart from "./RollTrendsChart";
 import SortedBarChart from "./SortedBarChart";
 import DivergingBarChart from "./DivergingBarChart";
 import CombinedRollChart from "./CombinedRollChart";
 import MarketShareTrendChart from "./MarketShareTrendChart";
+import AggregateTrendChart, {
+  AGGREGATE_TARGET_COLOUR,
+  AGGREGATE_REGION_COLOUR,
+  AGGREGATE_NATION_COLOUR,
+  AGGREGATE_SECTOR_COLOUR,
+  type AggregateChartSeries,
+} from "./AggregateTrendChart";
 
 function academicYearLabel(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;
@@ -108,11 +116,21 @@ export default function GraphsView({
   tickedProfiles,
   filters,
   filterSummary,
+  isLargeSet,
+  aggregateTrends,
 }: {
   targetProfile: DataViewSchoolProfile;
   tickedProfiles: DataViewSchoolProfile[];
   filters: DataViewFilterState;
   filterSummary: string | null;
+  // Large-set design v1, item 5: true whenever the active comparator set is
+  // Region/Nation-scale (DataViewShell's own LARGE_SET_PROFILE_THRESHOLD) -- swaps
+  // Section 01/02's per-school-mark charts (which only ever have real data for
+  // whatever's individually ticked at this scale, large-set design v1 item 6) for the
+  // new aggregate-lines chart. Section 03 (Gender split) is unaffected -- not in the
+  // design doc's own list of charts that need replacing at scale.
+  isLargeSet?: boolean;
+  aggregateTrends?: AggregateTrends | null;
 }) {
   const [showAverage, setShowAverage] = useState(false);
 
@@ -256,60 +274,131 @@ export default function GraphsView({
   const combinedRollTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Combined roll of selected schools since ${academicYearLabel(filters.startPeriod)}`;
   const marketShareTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Market Share since ${academicYearLabel(filters.startPeriod)}`;
 
+  // Large-set design v1, item 5: the target's own real, WHOLE-SCHOOL roll trend
+  // (not filtered by the active phase/gender/boarding filter -- roll_aggregates'
+  // own region/nation/sector lines are whole-school totals too, at a fixed 5-band
+  // granularity that can't honour the same phase/age slicing filteredCount() does;
+  // see AggregateTrendChart.tsx's own header comment). Only built/rendered when
+  // isLargeSet -- cheap either way (targetProfile.trend already exists), but no
+  // reason to compute it for a small/medium set that will never render this chart.
+  const aggregateSeries: AggregateChartSeries[] = isLargeSet
+    ? [
+        {
+          key: "target",
+          label: targetProfile.name,
+          colourLight: AGGREGATE_TARGET_COLOUR.light,
+          colourDark: AGGREGATE_TARGET_COLOUR.dark,
+          points: targetProfile.trend.filter((t) => t.period >= filters.startPeriod).map((t) => ({ period: t.period, value: t.totalRoll })),
+        },
+        ...(aggregateTrends?.region
+          ? [
+              {
+                key: "region",
+                label: aggregateTrends.region.label,
+                colourLight: AGGREGATE_REGION_COLOUR.light,
+                colourDark: AGGREGATE_REGION_COLOUR.dark,
+                points: aggregateTrends.region.points.map((p) => ({ period: p.period, value: p.totalRoll })),
+              },
+            ]
+          : []),
+        ...(aggregateTrends?.national
+          ? [
+              {
+                key: "nation",
+                label: aggregateTrends.national.label,
+                colourLight: AGGREGATE_NATION_COLOUR.light,
+                colourDark: AGGREGATE_NATION_COLOUR.dark,
+                points: aggregateTrends.national.points.map((p) => ({ period: p.period, value: p.totalRoll })),
+              },
+            ]
+          : []),
+        ...(aggregateTrends?.sector
+          ? [
+              {
+                key: "sector",
+                label: `${aggregateTrends.sector.label} nationally`,
+                colourLight: AGGREGATE_SECTOR_COLOUR.light,
+                colourDark: AGGREGATE_SECTOR_COLOUR.dark,
+                points: aggregateTrends.sector.points.map((p) => ({ period: p.period, value: p.totalRoll })),
+              },
+            ]
+          : []),
+      ]
+    : [];
+
   return (
     <div className="space-y-8">
       {filterSummary && <p className="text-xs text-neutral-400">Filtered: {filterSummary}</p>}
 
-      <section>
-        <SectionHeading number="01" title="Overview" />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="flex flex-col gap-4 lg:col-span-2">
-            <Card title={rollTrendsTitle}>
-              <RollTrendsChart target={targetProfile} group={groupInScope} filters={filters} showAverage={showAverage} onToggleAverage={() => setShowAverage((v) => !v)} />
-            </Card>
-            <Card title={combinedRollTitle}>
-              <CombinedRollChart periods={periods} values={combinedByPeriod} />
-              <TrendStatement badge={combinedRollBadge} startPeriod={filters.startPeriod} />
-            </Card>
-          </div>
-          <div className="flex flex-col gap-4">
-            <Card title="Current roll">
-              <div className="mb-1 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold">{targetCurrent?.toLocaleString() ?? "—"}</span>
-                <TrendPill badge={rollTrendBadge} startPeriod={filters.startPeriod} />
+      {isLargeSet ? (
+        <section>
+          <SectionHeading number="01" title="Overview" />
+          <Card title={`${targetProfile.name} vs region, nation and sector since ${academicYearLabel(filters.startPeriod)}`}>
+            {aggregateTrends === undefined || aggregateTrends === null ? (
+              <p className="text-sm text-neutral-500">Loading region/nation/sector comparison…</p>
+            ) : (
+              <AggregateTrendChart series={aggregateSeries} />
+            )}
+          </Card>
+          <p className="mt-2 text-xs text-neutral-400">
+            At this scale, Graphs compares whole-school roll trends only -- phase/age-band filters aren&rsquo;t reflected in this chart (gender and
+            boarding filters don&rsquo;t apply to a trend chart either way).
+          </p>
+        </section>
+      ) : (
+        <>
+          <section>
+            <SectionHeading number="01" title="Overview" />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="flex flex-col gap-4 lg:col-span-2">
+                <Card title={rollTrendsTitle}>
+                  <RollTrendsChart target={targetProfile} group={groupInScope} filters={filters} showAverage={showAverage} onToggleAverage={() => setShowAverage((v) => !v)} />
+                </Card>
+                <Card title={combinedRollTitle}>
+                  <CombinedRollChart periods={periods} values={combinedByPeriod} />
+                  <TrendStatement badge={combinedRollBadge} startPeriod={filters.startPeriod} />
+                </Card>
               </div>
-              {shapeFact && <p className="mb-2 text-xs text-neutral-500">{shapeFact}</p>}
-              {sizeBandLine && <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{sizeBandLine}</p>}
-              <SortedBarChart points={currentPoints} />
-            </Card>
-            <Card title={`Growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
-              <DivergingBarChart points={growthPoints} />
-            </Card>
-          </div>
-        </div>
-      </section>
+              <div className="flex flex-col gap-4">
+                <Card title="Current roll">
+                  <div className="mb-1 flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold">{targetCurrent?.toLocaleString() ?? "—"}</span>
+                    <TrendPill badge={rollTrendBadge} startPeriod={filters.startPeriod} />
+                  </div>
+                  {shapeFact && <p className="mb-2 text-xs text-neutral-500">{shapeFact}</p>}
+                  {sizeBandLine && <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{sizeBandLine}</p>}
+                  <SortedBarChart points={currentPoints} />
+                </Card>
+                <Card title={`Growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
+                  <DivergingBarChart points={growthPoints} />
+                </Card>
+              </div>
+            </div>
+          </section>
 
-      <section>
-        {/* 2026-09-08, per direct request: names the focus school specifically
-            ("Acland Burghley School's market share"), dynamic per school -- not a
-            static "Market share" label. */}
-        <SectionHeading number="02" title={`${targetProfile.name}'s market share`} />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <Card title={marketShareTitle}>
-              <MarketShareTrendChart periods={periods} values={marketShareByPeriod} />
-            </Card>
-          </div>
-          <div className="flex flex-col gap-4">
-            <Card title={`Market share, ${academicYearLabel(periods[latestIdx] ?? filters.startPeriod)}`}>
-              <SortedBarChart points={marketShareBarPoints} formatValue={(v) => `${v.toFixed(0)}%`} />
-            </Card>
-            <Card title={`Market-share growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
-              <DivergingBarChart points={marketShareGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}pp`} />
-            </Card>
-          </div>
-        </div>
-      </section>
+          <section>
+            {/* 2026-09-08, per direct request: names the focus school specifically
+                ("Acland Burghley School's market share"), dynamic per school -- not a
+                static "Market share" label. */}
+            <SectionHeading number="02" title={`${targetProfile.name}'s market share`} />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <Card title={marketShareTitle}>
+                  <MarketShareTrendChart periods={periods} values={marketShareByPeriod} />
+                </Card>
+              </div>
+              <div className="flex flex-col gap-4">
+                <Card title={`Market share, ${academicYearLabel(periods[latestIdx] ?? filters.startPeriod)}`}>
+                  <SortedBarChart points={marketShareBarPoints} formatValue={(v) => `${v.toFixed(0)}%`} />
+                </Card>
+                <Card title={`Market-share growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
+                  <DivergingBarChart points={marketShareGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}pp`} />
+                </Card>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       {!isSingleSex && (
         <section>
