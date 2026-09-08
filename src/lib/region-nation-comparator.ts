@@ -20,6 +20,7 @@
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import type { DefaultList, DefaultListEntry } from "./default-comparator-lists";
+import type { AgeGenderCountsCompact } from "./data-view-serialize";
 
 export type RegionNationScope = { kind: "region"; regionCode: string; regionName: string } | { kind: "nation"; nation: "england" | "wales" };
 
@@ -33,12 +34,32 @@ export type RegionNationScope = { kind: "region"; regionCode: string; regionName
 // plain urn/name here specifically so MapView can plot a real, positioned,
 // sector-coloured marker for every school even without a full multi-year profile --
 // see MapView.tsx's own buildLightweightProfile for how this gets used.
+//
+// Large-set design v1, item 2: extended with real current-period filterable data
+// (statutoryLowAge/High, currentPeriod/totalRoll/femaleTotal/ageGenderCounts/
+// boarding/boardersGenderSplit, anchorPeriod/anchorAgeGenderCounts) -- everything
+// data-view-filters.ts's filteredCount() needs, sourced from the new
+// school_current_snapshot table via region_nation_set()'s own extended join. Every
+// one of these is null for a school with no real school_current_snapshot row (no
+// real current-period census data at all, or the recompute hasn't run yet) -- honest
+// absence, same convention buildLightweightProfile already established for the
+// pre-this-round all-null stub case.
 export type RegionNationPoint = {
   urn: string;
   easting: number | null;
   northing: number | null;
   establishmentTypeGroup: string | null;
   establishmentType: string | null;
+  statutoryLowAge: number | null;
+  statutoryHighAge: number | null;
+  currentPeriod: number | null;
+  totalRoll: number | null;
+  femaleTotal: number | null;
+  ageGenderCounts: AgeGenderCountsCompact | null;
+  boarding: { boarders: number; day: number; total: number } | null;
+  boardersGenderSplit: { male: number; female: number } | null;
+  anchorPeriod: number | null;
+  anchorAgeGenderCounts: AgeGenderCountsCompact | null;
 };
 
 // The target's own region/nation membership -- looked up once per Data View load
@@ -72,15 +93,89 @@ export async function buildRegionOrNationComparatorSet(
   // thousands of rows client-side buys nothing the map needs -- MapView clusters by
   // real lat/lng, not by a precomputed distance figure. Left null rather than
   // computed-but-unused.
-  type Row = { urn: string; name: string; easting: number | null; northing: number | null; establishmentTypeGroup: string | null; establishmentType: string | null };
+  //
+  // Large-set design v1, item 2, real regression fix (2026-10-10): region_nation_set()
+  // returns a POSITIONAL array per school, not a keyed object -- a live-network
+  // measurement found the keyed-object shape cost ~221 bytes of pure per-school
+  // overhead (repeated JSON key names) even with every new field null, on top of
+  // whatever real data the fields carry. This fixed field order is the ONLY contract
+  // between this function and that migration's own SQL -- keep them in sync by hand;
+  // Postgres has no way to enforce a TS tuple type at the SQL end.
+  type Row = [
+    urn: string,
+    name: string,
+    easting: number | null,
+    northing: number | null,
+    establishmentTypeGroup: string | null,
+    establishmentType: string | null,
+    statutoryLowAge: number | null,
+    statutoryHighAge: number | null,
+    currentPeriod: number | null,
+    totalRoll: number | null,
+    femaleTotal: number | null,
+    ageGenderCounts: AgeGenderCountsCompact | null,
+    boarding: [boarders: number, day: number, total: number] | null,
+    boardersGenderSplit: [male: number, female: number] | null,
+    anchorPeriod: number | null,
+    anchorAgeGenderCounts: AgeGenderCountsCompact | null,
+  ];
   const rows = (data ?? []) as Row[];
-  const schools: DefaultListEntry[] = rows.map((r) => ({ urn: r.urn, name: r.name, distanceKm: null }));
+  const schools: DefaultListEntry[] = rows.map((r) => ({ urn: r[0], name: r[1], distanceKm: null }));
   const points: RegionNationPoint[] = rows.map((r) => ({
-    urn: r.urn,
-    easting: r.easting,
-    northing: r.northing,
-    establishmentTypeGroup: r.establishmentTypeGroup,
-    establishmentType: r.establishmentType,
+    urn: r[0],
+    easting: r[2],
+    northing: r[3],
+    establishmentTypeGroup: r[4],
+    establishmentType: r[5],
+    statutoryLowAge: r[6],
+    statutoryHighAge: r[7],
+    currentPeriod: r[8],
+    totalRoll: r[9],
+    femaleTotal: r[10],
+    ageGenderCounts: r[11],
+    boarding: r[12] ? { boarders: r[12][0], day: r[12][1], total: r[12][2] } : null,
+    boardersGenderSplit: r[13] ? { male: r[13][0], female: r[13][1] } : null,
+    anchorPeriod: r[14],
+    anchorAgeGenderCounts: r[15],
   }));
   return { list: { key, label, schools }, points };
+}
+
+// Member Data View large-set design v1, item 3: Rankings at Region/Nation scale.
+// One RPC call (region_nation_rank(), same "one round trip regardless of scale"
+// principle region_nation_set() already established) computes all three of
+// RankingsView.tsx's METRICS (roll/girls_pct/boarding_pct) at once -- target's real
+// rank/percentile, the top 15, and a neighbour window either side of the target --
+// over school_current_snapshot joined to the requested scope. See that migration's
+// own comment for the deliberate, logged scope limit (whole-school totals, no
+// phase/age-band slicing).
+export type RegionNationRankEntry = { urn: string; name: string; value: number; rank: number };
+export type RegionNationRankMetric = { total: number; targetRank: number | null; top15: RegionNationRankEntry[]; neighbours: RegionNationRankEntry[] };
+export type RegionNationRankResult = { roll: RegionNationRankMetric; girlsPct: RegionNationRankMetric; boardingPct: RegionNationRankMetric };
+
+const EMPTY_RANK_METRIC: RegionNationRankMetric = { total: 0, targetRank: null, top15: [], neighbours: [] };
+
+export async function fetchRegionNationRank(
+  targetUrn: string,
+  scope: RegionNationScope,
+  sectors: string[] | null,
+  boardingMode: "boarders" | "day" | "whole" | null,
+  gender: "Girls" | "Boys" | null,
+): Promise<RegionNationRankResult> {
+  const supabase = createServerAnonSupabaseClient();
+  const { data, error } = await supabase.rpc("region_nation_rank", {
+    p_region_code: scope.kind === "region" ? scope.regionCode : null,
+    p_nation: scope.kind === "region" ? null : scope.nation,
+    p_target_urn: targetUrn,
+    p_sectors: sectors && sectors.length > 0 ? sectors : null,
+    p_boarding_mode: boardingMode,
+    p_gender: gender,
+  });
+  if (error) throw error;
+  const result = (data ?? {}) as Partial<RegionNationRankResult>;
+  return {
+    roll: result.roll ?? EMPTY_RANK_METRIC,
+    girlsPct: result.girlsPct ?? EMPTY_RANK_METRIC,
+    boardingPct: result.boardingPct ?? EMPTY_RANK_METRIC,
+  };
 }

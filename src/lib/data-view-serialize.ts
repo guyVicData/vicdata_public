@@ -56,6 +56,29 @@ export function deserializeProfile(p: WireDataViewSchoolProfile): DataViewSchool
   };
 }
 
+// Member Data View large-set design v1, item 2: school_current_snapshot stores
+// age_gender_counts (and its anchor-period counterpart) as a jsonb OBJECT keyed by
+// age (jsonb's only key type -- "11": {male,female}) -- good for a future SQL
+// consumer summing via jsonb_each(). region_nation_set() does NOT return that shape
+// verbatim, though: a real live-network regression (2026-10-10, this round's own
+// verification pass -- see that migration's own comment) found the object-per-age
+// shape, repeated across ~49,000 schools, is genuinely expensive payload -- the
+// repeated "male"/"female" key strings dominate. The RPC instead returns a COMPACT
+// array-of-triples wire format, `[[age, male, female], ...]` -- no repeated key
+// strings -- which this decodes back into the same AgeGenderCounts Map shape every
+// other consumer already expects. Kept here (not region-nation-comparator.ts, which
+// is server-only -- imports createServerAnonSupabaseClient) so MapView.tsx and any
+// other client component can call this as a real value import without pulling
+// server-only runtime into the client bundle -- the exact class of mistake this
+// file's own header comment already documents once for
+// profileToFilterableData/profileToFilterableData2019.
+export type AgeGenderCountsCompact = [age: number, male: number, female: number][];
+
+export function ageGenderCountsFromCompact(compact: AgeGenderCountsCompact | null | undefined): AgeGenderCounts {
+  if (!compact) return new Map();
+  return new Map(compact.map(([age, male, female]) => [age, { male, female }] as const));
+}
+
 // 2026-09-05 fix: moved here from data-view-profiles.ts (a server-only module --
 // imports createServerAnonSupabaseClient) so client components can import these two
 // pure functions as real values without pulling server-only runtime code into the

@@ -34,7 +34,8 @@ import { bngToLatLng } from "@/lib/bng";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
 import { trendColour, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import { profileToFilterableData, profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
+import type { RollSnapshot, AgeGenderCounts } from "@/lib/roll-data";
+import { profileToFilterableData, profileToFilterableDataForPeriod, ageGenderCountsFromCompact } from "@/lib/data-view-serialize";
 import { filteredCount, matchesSectorFilter, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { RegionNationPoint } from "@/lib/region-nation-comparator";
@@ -131,28 +132,69 @@ function radiusFor(value: number, min: number, max: number): number {
   return MIN_RADIUS + (MAX_RADIUS - MIN_RADIUS) * t;
 }
 
+// Large-set design v1's own anchor period, duplicated as a literal (same discipline
+// data-view-filters.ts's DEFAULT_START_PERIOD/data-view-serialize.ts's
+// TREND_ANCHOR_PERIOD_FALLBACK already apply) rather than a value-imported from
+// data-view-profiles.ts -- that module is server-only (createServerAnonSupabaseClient)
+// and this is a client component.
+const LARGE_SET_ANCHOR_PERIOD = 2019;
+
 // 2026-10-09, real bug found live ("London/England schools don't load"): a Region/
 // Nation-scale comparator set deliberately never gets a full multi-year
 // DataViewSchoolProfile per school (DataViewShell's own LARGE_SET_PROFILE_THRESHOLD
 // guard -- fetching one per school at that scale is the exact fetch-and-compute-at-
 // scale failure this whole performance-architecture round exists to remove), but
 // every marker this component draws comes from `withProfile`, which used to require
-// one. Synthesises a minimal, honestly-empty profile from the lightweight
-// geometry+sector DataViewShell already has for these schools (region-nation-set's
-// own RPC) -- real position and real sector, so a real, correctly-placed,
-// sector-coloured marker still draws; every roll/age/gender/trend field is left null
-// or empty (never fabricated), which the existing drawing logic already handles
-// correctly on its own: `filteredCount` over an empty profile is honestly 0, so these
-// markers render as small flat dots when no phase/gender/boarding filter is active
-// (matching the deliberate "no data at all until real data exists" treatment already
-// established for un-ticked schools) and correctly disappear if a real filter IS
-// active (same "hides rather than draws a misleading dot" rule real-but-zero schools
-// already get) -- no new branching needed in the drawing loop itself.
+// one.
+//
+// Large-set design v1, item 2: now builds a REAL (not honestly-empty) profile
+// whenever region_nation_set()'s extended join found a school_current_snapshot row --
+// real position, real sector, AND real current-period age/gender/boarding data, so
+// `filteredCount` (data-view-filters.ts) returns a real filtered value under an active
+// phase/gender/boarding filter instead of always computing 0 -- this is the actual fix
+// for the "filter blanks the map" bug the design doc confirmed live (`filterActive &&
+// current === 0` in the drawing loop below skips a marker whose filtered value is
+// genuinely zero; a stub profile made that ALWAYS true under any active filter,
+// regardless of the school's real data). Only ONE anchor period is available (not the
+// full multi-year ageGenderCountsByPeriod a full profile carries) -- trend/"since X"
+// figures are only real when filters.startPeriod is exactly LARGE_SET_ANCHOR_PERIOD
+// (2019, the default); a member who picks a different custom start year gets an
+// honest "no comparison" for these schools rather than a fabricated one, same as a
+// school that's simply too new to have real data that far back already gets elsewhere
+// in this codebase.
+//
+// A school with NO real school_current_snapshot row (no real current-period census
+// data at all, or the recompute simply hasn't run yet) still falls back to the
+// original all-null stub -- real position/sector, small flat dot, hidden under an
+// active filter -- exactly the pre-this-round behaviour, never a fabricated figure.
 function buildLightweightProfile(urn: string, name: string, point: RegionNationPoint | undefined): DataViewSchoolProfile | null {
   // (0, 0) BNG sentinel values are excluded at withProfile's own shared filter below
   // (protects every consumer, not just this lightweight path) -- this function only
   // needs its own null check.
   if (!point || point.easting === null || point.northing === null) return null;
+
+  const ageGenderCounts = ageGenderCountsFromCompact(point.ageGenderCounts);
+  const anchorAgeGenderCounts = ageGenderCountsFromCompact(point.anchorAgeGenderCounts);
+  const ageGenderCountsByPeriod = new Map<number, AgeGenderCounts>();
+  if (point.currentPeriod !== null) ageGenderCountsByPeriod.set(point.currentPeriod, ageGenderCounts);
+  if (point.anchorPeriod !== null) ageGenderCountsByPeriod.set(point.anchorPeriod, anchorAgeGenderCounts);
+
+  const snapshotFor = (period: number | null, totalRoll: number | null, femaleTotal: number | null): RollSnapshot | null =>
+    period !== null && totalRoll !== null
+      ? {
+          period,
+          totalRoll,
+          byAgeBand: [],
+          gender: { male: totalRoll - (femaleTotal ?? 0), female: femaleTotal ?? 0, total: totalRoll, sumMatchesTotal: true },
+          boarding: point.boarding,
+        }
+      : null;
+  const current = snapshotFor(point.currentPeriod, point.totalRoll, point.femaleTotal);
+  const anchor2019 = point.anchorPeriod === LARGE_SET_ANCHOR_PERIOD ? snapshotFor(point.anchorPeriod, null, null) : null;
+  const trend = [current, point.anchorPeriod !== null ? snapshotFor(point.anchorPeriod, null, null) : null].filter(
+    (t): t is RollSnapshot => t !== null,
+  );
+
   return {
     urn,
     name,
@@ -166,15 +208,15 @@ function buildLightweightProfile(urn: string, name: string, point: RegionNationP
     phase: [],
     establishmentType: point.establishmentType,
     establishmentTypeGroup: point.establishmentTypeGroup,
-    statutoryLowAge: null,
-    statutoryHighAge: null,
-    current: null,
-    anchor2019: null,
-    trend: [],
-    ageGenderCounts: new Map(),
-    ageGenderCounts2019: new Map(),
-    ageGenderCountsByPeriod: new Map(),
-    boardersGenderSplit: null,
+    statutoryLowAge: point.statutoryLowAge,
+    statutoryHighAge: point.statutoryHighAge,
+    current,
+    anchor2019,
+    trend,
+    ageGenderCounts,
+    ageGenderCounts2019: point.anchorPeriod === LARGE_SET_ANCHOR_PERIOD ? anchorAgeGenderCounts : new Map(),
+    ageGenderCountsByPeriod,
+    boardersGenderSplit: point.boardersGenderSplit,
     shapeCurrent: null,
     shape2019: null,
     feParticipation: null,

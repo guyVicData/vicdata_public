@@ -424,6 +424,27 @@ export function filteredCount(school: FilterableSchoolData, filters: DataViewFil
   return { total: r.total, female: r.female, male: r.male, basis: "phase_slice" };
 }
 
+// Member Data View large-set design v1, item 3: region_nation_rank() (the new SQL
+// ranking RPC) replicates filteredCount()'s own boarding-mode/single-gender readings
+// of the active filter state, at whole-school scale, server-side -- these two small
+// derivations are pulled out and shared so the two implementations can't quietly pick
+// different readings of the same DataViewFilterState. Mirrors filteredCount()'s own
+// inline logic exactly ("both options ticked reads as whole school," "wantGirls &&
+// !wantBoys" etc.) rather than re-deriving it a different way.
+export function boardingModeForFilters(filters: DataViewFilterState): "boarders" | "day" | "whole" | null {
+  if (filters.boarding.size === 0) return null;
+  if (filters.boarding.size === 2) return "whole";
+  return filters.boarding.has("Boarders") ? "boarders" : "day";
+}
+
+export function singleGenderFilter(filters: DataViewFilterState): "Girls" | "Boys" | null {
+  const wantGirls = filters.gender.has("Girls");
+  const wantBoys = filters.gender.has("Boys");
+  if (wantGirls && !wantBoys) return "Girls";
+  if (wantBoys && !wantGirls) return "Boys";
+  return null;
+}
+
 // A compact human-readable label for the CURRENTLY active filter combination --
 // consumed by the sidebar's own "sorted by / filtered by" summary line and the PDF
 // export's "what produced this" print line (brief §9).
