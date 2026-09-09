@@ -53,14 +53,20 @@ export async function GET(request: NextRequest) {
     // Precomputed row missing (recompute hasn't run yet) or a genuine non-standard LA
     // (BFPO/overseas -- see region-crosswalk.ts) -- either way, there's no real
     // region/nation membership to build a set from.
-    return NextResponse.json({ set: null });
+    return NextResponse.json({ rows: null });
   }
 
-  const { list, points } = await buildRegionOrNationComparatorSet(
+  // Payload-cleanup round (2026-09-09): returns the raw positional rows straight
+  // through, no server-side re-keying into a DefaultList + RegionNationPoint[] pair --
+  // see buildRegionOrNationComparatorSet's own comment for the real payload
+  // regression this fixes (26.96MB re-keyed vs. 11.98MB raw, Nation scope). The
+  // client (DataViewShell.tsx) unpacks these tuples itself into whatever shapes
+  // MapView/SetOption actually need.
+  const { key, label, rows } = await buildRegionOrNationComparatorSet(
     { urn, easting: resolved.target.easting, northing: resolved.target.northing },
     scopeParam === "region" && targetRegionNation.regionCode && targetRegionNation.regionName
       ? { kind: "region", regionCode: targetRegionNation.regionCode, regionName: targetRegionNation.regionName }
       : { kind: "nation", nation: targetRegionNation.nation },
   );
-  return NextResponse.json({ set: list, points });
+  return NextResponse.json({ key, label, rows });
 }

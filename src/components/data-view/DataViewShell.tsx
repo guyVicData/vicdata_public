@@ -25,9 +25,9 @@ import {
   type WireDataViewFilterState,
 } from "@/lib/data-view-filters";
 import type { SetOption, ViewKey } from "@/lib/data-view-types";
-import type { SchoolTypeCategory } from "@/lib/default-comparator-lists";
+import type { DefaultListEntry, SchoolTypeCategory } from "@/lib/default-comparator-lists";
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
-import type { RegionNationPoint, RegionNationRankResult } from "@/lib/region-nation-comparator";
+import type { RegionNationPoint, RegionNationRankResult, RegionNationRow } from "@/lib/region-nation-comparator";
 import type { AggregateTrends } from "@/lib/aggregate-trends";
 import { TOPIC_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import ComparatorSidebar from "./ComparatorSidebar";
@@ -77,6 +77,38 @@ function largeSetRankRequestKey(targetUrn: string, scopeKey: "region" | "nation"
 
 function aggregateTrendsRequestKey(targetUrn: string, startPeriod: number): string {
   return `${targetUrn}|${startPeriod}`;
+}
+
+// Payload-cleanup round (2026-09-09): region-nation-set's own API response now sends
+// the raw positional rows straight through (see region-nation-comparator.ts's own
+// comment for the real payload regression this fixes -- re-keying server-side and
+// AGAIN duplicating urn/name into a separate list cost 26.96MB vs. the raw RPC's
+// 11.98MB, Nation scope). This unpacks one row into the two shapes the rest of this
+// component actually needs -- the same shapes buildRegionOrNationComparatorSet used
+// to build server-side -- client-side instead. Fixed field order is the same
+// positional contract RegionNationRow documents; keep in sync with that migration's
+// SQL by hand, same as before this round.
+function unpackRegionNationRow(r: RegionNationRow): { entry: DefaultListEntry; point: RegionNationPoint } {
+  return {
+    entry: { urn: r[0], name: r[1], distanceKm: null },
+    point: {
+      urn: r[0],
+      easting: r[2],
+      northing: r[3],
+      establishmentTypeGroup: r[4],
+      establishmentType: r[5],
+      statutoryLowAge: r[6],
+      statutoryHighAge: r[7],
+      currentPeriod: r[8],
+      totalRoll: r[9],
+      femaleTotal: r[10],
+      ageGenderCounts: r[11],
+      boarding: r[12] ? { boarders: r[12][0], day: r[12][1], total: r[12][2] } : null,
+      boardersGenderSplit: r[13] ? { male: r[13][0], female: r[13][1] } : null,
+      anchorPeriod: r[14],
+      anchorAgeGenderCounts: r[15],
+    },
+  };
 }
 
 export default function DataViewShell({ urn }: { urn: string }) {
@@ -382,25 +414,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
       try {
         const res = await fetch(`/api/data-view/region-nation-set?urn=${urn}&scope=${scope}`, { headers: { Authorization: `Bearer ${authToken}` } });
         if (!res.ok) return null;
-        const body = (await res.json()) as {
-          set: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
-          points?: RegionNationPoint[];
-        };
-        if (!body.set) return null;
-        const option: SetOption = { kind: "recipe", key: body.set.key, label: body.set.label, schools: body.set.schools, note: body.set.note };
+        const body = (await res.json()) as { key?: string; label?: string; rows: RegionNationRow[] | null };
+        if (!body.rows || !body.key || !body.label) return null;
+        const unpacked = body.rows.map(unpackRegionNationRow);
+        const option: SetOption = { kind: "recipe", key: body.key, label: body.label, schools: unpacked.map((u) => u.entry) };
         // Real bug found live (2026-10-09): "London/England schools don't load" -- the
         // set itself selected fine, but MapView's own drawing pipeline only plots a
         // school with a full profile in profilesByUrn, which LARGE_SET_PROFILE_THRESHOLD
         // deliberately never fetches for a set this size. These lightweight points
         // (real geometry + sector, no multi-year roll data) let MapView plot a real
         // marker for every school anyway -- see MapView.tsx's own buildLightweightProfile.
-        if (body.points) {
-          setLargeSetPoints((prev) => {
-            const next = new Map(prev);
-            for (const p of body.points!) next.set(p.urn, p);
-            return next;
-          });
-        }
+        setLargeSetPoints((prev) => {
+          const next = new Map(prev);
+          for (const u of unpacked) next.set(u.point.urn, u.point);
+          return next;
+        });
         if (scope === "region") setRegionOption(option);
         else setNationOption(option);
         return option;

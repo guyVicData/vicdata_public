@@ -19,7 +19,6 @@
 // from ~7.6s to comfortably under a second.
 
 import { createServerAnonSupabaseClient } from "./supabase";
-import type { DefaultList, DefaultListEntry } from "./default-comparator-lists";
 import type { AgeGenderCountsCompact } from "./data-view-serialize";
 
 export type RegionNationScope = { kind: "region"; regionCode: string; regionName: string } | { kind: "nation"; nation: "england" | "wales" };
@@ -73,10 +72,53 @@ export async function resolveTargetRegionNation(urn: string): Promise<{ regionCo
   return { regionCode: data.region_code, regionName: data.region_name, nation: data.nation as "england" | "wales" | null };
 }
 
+// Member Data View at scale: distance-from-target isn't a meaningful ordering for a
+// whole region/nation (unlike Nearest-10/LA-any), so there's no distanceKm field here
+// at all (unlike DefaultListEntry) -- the client synthesises a null one when it needs
+// the DefaultListEntry shape (see DataViewShell.tsx's own row-unpacker).
+//
+// Large-set design v1, item 2, real regression fix (2026-10-10): region_nation_set()
+// returns a POSITIONAL array per school, not a keyed object -- a live-network
+// measurement found the keyed-object shape cost ~221 bytes of pure per-school
+// overhead (repeated JSON key names) even with every new field null, on top of
+// whatever real data the fields carry. This fixed field order is the ONLY contract
+// between this function and that migration's own SQL -- keep them in sync by hand;
+// Postgres has no way to enforce a TS tuple type at the SQL end.
+//
+// Payload-cleanup round (2026-09-09), real regression found live: this function used
+// to unpack every one of these tuples into a fully-keyed RegionNationPoint (plus a
+// SEPARATE keyed DefaultListEntry array duplicating urn/name) before returning to
+// route.ts, which then JSON-serialised the keyed result straight to the browser --
+// reintroducing almost exactly the per-school key-name overhead the positional-array
+// migration above was written to eliminate, one hop further down the pipe (measured:
+// 11.98MB raw RPC rows vs. 26.96MB of re-keyed response actually sent). Fixed by
+// returning the raw rows themselves -- route.ts and DataViewShell.tsx are now BOTH
+// part of this same positional-tuple contract; the unpacker that used to live here
+// moved to DataViewShell.tsx (see its own row-unpacker for the RegionNationPoint/
+// DefaultListEntry shapes this produces client-side instead).
+export type RegionNationRow = [
+  urn: string,
+  name: string,
+  easting: number | null,
+  northing: number | null,
+  establishmentTypeGroup: string | null,
+  establishmentType: string | null,
+  statutoryLowAge: number | null,
+  statutoryHighAge: number | null,
+  currentPeriod: number | null,
+  totalRoll: number | null,
+  femaleTotal: number | null,
+  ageGenderCounts: AgeGenderCountsCompact | null,
+  boarding: [boarders: number, day: number, total: number] | null,
+  boardersGenderSplit: [male: number, female: number] | null,
+  anchorPeriod: number | null,
+  anchorAgeGenderCounts: AgeGenderCountsCompact | null,
+];
+
 export async function buildRegionOrNationComparatorSet(
   target: { urn: string; easting: number | null; northing: number | null },
   scope: RegionNationScope,
-): Promise<{ list: DefaultList; points: RegionNationPoint[] }> {
+): Promise<{ key: string; label: string; rows: RegionNationRow[] }> {
   const supabase = createServerAnonSupabaseClient();
   const label = scope.kind === "region" ? `${scope.regionName} schools` : scope.nation === "england" ? "England schools" : "Wales schools";
   const key = scope.kind === "region" ? "ons_region" : "nation";
@@ -88,57 +130,7 @@ export async function buildRegionOrNationComparatorSet(
   });
   if (error) throw error;
 
-  // Member Data View at scale: distance-from-target isn't a meaningful ordering for a
-  // whole region/nation (unlike Nearest-10/LA-any), and computing it for tens of
-  // thousands of rows client-side buys nothing the map needs -- MapView clusters by
-  // real lat/lng, not by a precomputed distance figure. Left null rather than
-  // computed-but-unused.
-  //
-  // Large-set design v1, item 2, real regression fix (2026-10-10): region_nation_set()
-  // returns a POSITIONAL array per school, not a keyed object -- a live-network
-  // measurement found the keyed-object shape cost ~221 bytes of pure per-school
-  // overhead (repeated JSON key names) even with every new field null, on top of
-  // whatever real data the fields carry. This fixed field order is the ONLY contract
-  // between this function and that migration's own SQL -- keep them in sync by hand;
-  // Postgres has no way to enforce a TS tuple type at the SQL end.
-  type Row = [
-    urn: string,
-    name: string,
-    easting: number | null,
-    northing: number | null,
-    establishmentTypeGroup: string | null,
-    establishmentType: string | null,
-    statutoryLowAge: number | null,
-    statutoryHighAge: number | null,
-    currentPeriod: number | null,
-    totalRoll: number | null,
-    femaleTotal: number | null,
-    ageGenderCounts: AgeGenderCountsCompact | null,
-    boarding: [boarders: number, day: number, total: number] | null,
-    boardersGenderSplit: [male: number, female: number] | null,
-    anchorPeriod: number | null,
-    anchorAgeGenderCounts: AgeGenderCountsCompact | null,
-  ];
-  const rows = (data ?? []) as Row[];
-  const schools: DefaultListEntry[] = rows.map((r) => ({ urn: r[0], name: r[1], distanceKm: null }));
-  const points: RegionNationPoint[] = rows.map((r) => ({
-    urn: r[0],
-    easting: r[2],
-    northing: r[3],
-    establishmentTypeGroup: r[4],
-    establishmentType: r[5],
-    statutoryLowAge: r[6],
-    statutoryHighAge: r[7],
-    currentPeriod: r[8],
-    totalRoll: r[9],
-    femaleTotal: r[10],
-    ageGenderCounts: r[11],
-    boarding: r[12] ? { boarders: r[12][0], day: r[12][1], total: r[12][2] } : null,
-    boardersGenderSplit: r[13] ? { male: r[13][0], female: r[13][1] } : null,
-    anchorPeriod: r[14],
-    anchorAgeGenderCounts: r[15],
-  }));
-  return { list: { key, label, schools }, points };
+  return { key, label, rows: (data ?? []) as RegionNationRow[] };
 }
 
 // Member Data View large-set design v1, item 3: Rankings at Region/Nation scale.
