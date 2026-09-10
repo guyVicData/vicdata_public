@@ -193,15 +193,196 @@ export async function findSurroundingSchools(
     target?.establishment_type_group === "Special schools" || specialLeakTypes.includes(target?.establishment_type ?? "");
   const isIndependent = (group: string | null) => group === "Independent schools";
 
+  // Item 1 fix (Compared-with panel round, 2026-09-10), real bug confirmed against
+  // production: the precomputed 'general' pool only ever stores the top 100 nearest
+  // eligible schools NATIONALLY, sector-blind (recompute_nearest_neighbours_general_
+  // batch, nearest_schools(urn, 100, true)) -- sector/phase/gender are then applied as
+  // local filters on top of that fixed buffer, with no retry if too few survive.
+  // Independent schools are under 8% of all English schools, so for an independent
+  // target the 100 geographically-nearest schools (any sector) contain relatively few
+  // real independent peers -- easily exhausted by sector+phase+gender filtering
+  // before reaching targetCount, especially outside London/the home counties.
+  //
+  // Guy's own call: Nearest 10 must always return target+10 (subject only to a
+  // genuine national exhaustion of eligible schools, which should be rare-to-never
+  // for mainstream independent/state schools) -- geographic distance is not a
+  // constraint on its own. Fixed with two changes, both below: (1) the precomputed
+  // read now always requests the FULL available cached depth (currently 100), not
+  // just this call's own candidateBuffer -- candidateBuffer defaults to 40 for a
+  // plain targetCount=10 request, which was leaving up to 60 already-cached, already-
+  // paid-for rows unread before ever falling back further; (2) a genuine live
+  // escalation (see below the two candidate-sourcing branches) when even the full
+  // cached pool comes up short after filtering, rather than silently stopping there.
+  // Deliberately NOT widening the precomputed table's own stored depth past 100 in
+  // this round -- that would need a full ~52,500-school recompute (each call
+  // proportionally slower too, since a deeper KNN scan has to walk further), a much
+  // bigger and slower change than this bug needs when a live per-request escalation
+  // already gives a complete guarantee on its own, and stays cheap because it only
+  // ever fires for the genuinely-thin-pool case it exists to fix.
   const { data: precomputed } = await supabase
     .from("school_nearest_neighbours")
     .select("neighbour_urn, rank")
     .eq("urn", urn)
     .eq("pool", "general")
     .order("rank", { ascending: true })
-    .limit(candidateBuffer);
+    .limit(Math.max(candidateBuffer, 100));
 
-  let candidateList: Candidate[];
+  // Phase/gender/roll-data matching, factored out so it can run twice against two
+  // different candidate sources without duplicating the pipeline: once against the
+  // fast precomputed-or-live buffer (the common case), and again against a much
+  // larger live candidate set ONLY if that first pass comes up short (see below).
+  // `applyLocalSectorFilter` is true only for candidates sourced from the precomputed
+  // pool, which was always built with p_relax_sector=true (the widest reasonable
+  // candidate set, see that table's own migration comment) -- a live nearest_schools()
+  // call already enforces the correct sector rule in SQL via its own p_relax_sector
+  // argument, so re-filtering it locally here would be redundant, not incorrect.
+  async function matchAgainst(rawCandidates: Candidate[], applyLocalSectorFilter: boolean): Promise<MatchedSchool[]> {
+    const candidateList = applyLocalSectorFilter
+      ? rawCandidates.filter(
+          (a) => targetIsSpecial || relaxSectorForThroughSchool || isIndependent(a.establishment_type_group) === isIndependent(target?.establishment_type_group ?? null),
+        )
+      : rawCandidates;
+    if (candidateList.length === 0) return [];
+
+    // Phase match: does the candidate's stacked phase-tag set share at least one tag
+    // with the target's? If the target itself falls through every phase-tag branch
+    // (e.g. Woldingham, low 10/high 19), there's nothing to intersect against, so no
+    // phase filter is applied -- same "can't match on the unknown" handling as gender.
+    //
+    // 2026-09-11, round 19, item 5 bug B: a shared-tag-only test lets a single-tag
+    // Senior-only school into a genuine through-school's peer pool purely because they
+    // both carry "Senior" -- real-data check (Stockport Grammar, Junior/Prep + Senior)
+    // confirmed this was happening. When the target itself has more than one phase tag,
+    // also require the candidate to have more than one -- keeps this on the same raw,
+    // nominal phaseTags() the rest of this module already uses (not effectivePhaseTags,
+    // which would need a per-candidate census fetch this module doesn't otherwise do).
+    // A genuine consequence: the peer pool for through-schools can legitimately shrink
+    // below targetCount where few through-school peers exist nearby -- an honest
+    // reflection of a thin pool, not a bug to work around.
+    //
+    // Confirmed still correct after the 2026-10-03 target-side effectivePhaseTags fix
+    // above (brief §2 items 1+2, carried forward as a decision, not re-litigated): a
+    // through-school target like Stockport Grammar still resolves to real 2+ effective
+    // tags (it genuinely has junior-age pupils), so this symmetry check still applies to
+    // it correctly; a nominal-only through-school like Woldingham now resolves to a
+    // single effective tag (Senior), so this check no longer wrongly narrows its pool to
+    // through-school-only candidates -- the two fixes compose correctly together.
+    const phaseFiltered =
+      targetPhase.length === 0
+        ? candidateList
+        : candidateList.filter((c) => {
+            const candidatePhase = phaseTags(c.statutory_low_age, c.statutory_high_age, c.establishment_type);
+            const sharesTag = candidatePhase.some((p) => targetPhase.includes(p));
+            if (!sharesTag) return false;
+            if (targetPhase.length > 1) return candidatePhase.length > 1;
+            return true;
+          });
+
+    if (phaseFiltered.length === 0) return [];
+
+    const phaseFilteredUrns = phaseFiltered.map((c) => c.urn);
+
+    const genderByUrn = new Map<string, GenderTag | null>();
+    const rawGenderByUrn = new Map<string, string | null>();
+    const boardersNameByUrn = new Map<string, string | null>();
+    const positionByUrn = new Map<string, { easting: number | null; northing: number | null }>();
+    const laNameByUrn = new Map<string, string | null>();
+    const { data: attrRows } = await supabase
+      .from("schools")
+      .select("urn, gender, boarders_name, easting, northing, la_name")
+      .in("urn", phaseFilteredUrns);
+    for (const r of (attrRows as {
+      urn: string;
+      gender: string | null;
+      boarders_name: string | null;
+      easting: number | null;
+      northing: number | null;
+      la_name: string | null;
+    }[]) ?? []) {
+      genderByUrn.set(r.urn, genderTag(r.gender));
+      rawGenderByUrn.set(r.urn, r.gender);
+      boardersNameByUrn.set(r.urn, r.boarders_name);
+      positionByUrn.set(r.urn, { easting: r.easting, northing: r.northing });
+      laNameByUrn.set(r.urn, r.la_name);
+    }
+
+    const genderFiltered = targetGender
+      ? phaseFiltered.filter((c) => genderMatches(targetGender, genderByUrn.get(c.urn) ?? null, genderMode))
+      : phaseFiltered;
+
+    if (genderFiltered.length === 0) return [];
+
+    // Item 1 fix, real bug found live-testing the escalation above: this used to
+    // fetch census facts for the WHOLE genderFiltered list in one request. Harmless
+    // at the old fixed candidateBuffer size (≤100), but the escalation above can
+    // legitimately hand this thousands of candidates for a genuinely sparse target --
+    // requesting facts for that many entity IDs in a single reference_data_lookup
+    // call hit a real statement timeout on the live reference-data API (confirmed:
+    // Truro High School, a real single-sex rural target, 500'd here before this fix).
+    // Fetched in the SAME CENSUS_FETCH_CHUNK size data-view-profiles.ts's own
+    // fetchCensusFactsBatched already uses (40), walked in nearest-first order one
+    // chunk at a time, stopping as soon as targetCount real matches are found --
+    // bounds real work to what's actually needed (the ordinary case is still exactly
+    // one request, same as before this fix) rather than over-fetching facts for
+    // candidates that were never going to be looked at once enough real matches
+    // exist. Sequential, not concurrent, so "keep the first targetCount that have
+    // real roll data, in nearest-first order" (the skip-and-backfill rule below)
+    // stays correct -- a concurrent later chunk could otherwise resolve before an
+    // earlier one and be added out of order.
+    const FACTS_CHUNK = 40;
+    const matched: MatchedSchool[] = [];
+    for (let i = 0; i < genderFiltered.length && matched.length < targetCount; i += FACTS_CHUNK) {
+      const chunk = genderFiltered.slice(i, i + FACTS_CHUNK);
+      const facts = await lookupReferenceData({
+        sourceId: "dfe_school_census",
+        entityIds: chunk.map((c) => c.urn),
+        periodMin: targetPeriod,
+        periodMax: targetPeriod,
+      });
+      // Skip-and-backfill (rolls spec §4, resolved here): candidates are already
+      // ordered nearest-first; walk them in order and keep the first targetCount
+      // that actually have DfE census roll data, skipping standalone 6th-form/FE
+      // colleges (and any other gap) rather than erroring or silently misrepresenting.
+      for (const c of chunk) {
+        if (matched.length >= targetCount) break;
+        const candidateFacts = facts.filter((f) => f.entity_id === c.urn);
+        const counts = singleAgeGenderCountsForPeriod(candidateFacts, targetPeriod);
+        if (counts.size === 0) continue;
+        let total = 0;
+        for (const v of counts.values()) total += v.male + v.female;
+        if (total === 0) continue;
+
+        // Same boarders_total/boarders_male/boarders_female breakdown roll-data.ts's
+        // finishSnapshot reads for the target's own boarding figure -- pulled from the
+        // same already-fetched census facts, so the member-list boarding tag gets the
+        // same ratio-based Boarding/Day/Boarding & day refinement the viewed school's own
+        // header does, not just the raw GIAS flag.
+        const boardersTotal = candidateFacts.find((f) => f.breakdown === "boarders_total")?.value_numeric ?? null;
+        const boarding = boardersTotal !== null ? { boarders: boardersTotal, day: Math.max(total - boardersTotal, 0), total } : null;
+
+        matched.push({
+          urn: c.urn,
+          currentName: c.current_name,
+          town: c.town,
+          postcode: c.postcode,
+          establishmentTypeGroup: c.establishment_type_group,
+          statutoryLowAge: c.statutory_low_age,
+          statutoryHighAge: c.statutory_high_age,
+          gender: rawGenderByUrn.get(c.urn) ?? null,
+          boardersName: boardersNameByUrn.get(c.urn) ?? null,
+          boarding,
+          totalRoll: total,
+          ageGenderCounts: counts,
+          easting: positionByUrn.get(c.urn)?.easting ?? null,
+          northing: positionByUrn.get(c.urn)?.northing ?? null,
+          laName: laNameByUrn.get(c.urn) ?? null,
+        });
+      }
+    }
+    return matched;
+  }
+
+  let results: MatchedSchool[];
   if (precomputed && precomputed.length > 0) {
     const neighbourUrns = precomputed.map((p) => p.neighbour_urn);
     const rankByUrn = new Map(precomputed.map((p) => [p.neighbour_urn, p.rank as number]));
@@ -209,9 +390,8 @@ export async function findSurroundingSchools(
       .from("schools")
       .select("urn, current_name, town, postcode, establishment_type_group, establishment_type, statutory_low_age, statutory_high_age")
       .in("urn", neighbourUrns);
-    candidateList = ((attrs ?? []) as Candidate[])
-      .filter((a) => targetIsSpecial || relaxSectorForThroughSchool || isIndependent(a.establishment_type_group) === isIndependent(target?.establishment_type_group ?? null))
-      .sort((a, b) => (rankByUrn.get(a.urn) ?? 0) - (rankByUrn.get(b.urn) ?? 0));
+    const ordered = ((attrs ?? []) as Candidate[]).sort((a, b) => (rankByUrn.get(a.urn) ?? 0) - (rankByUrn.get(b.urn) ?? 0));
+    results = await matchAgainst(ordered, true);
   } else {
     // Fallback: the precomputed table hasn't been populated for this school yet (e.g.
     // a brand-new school before the next GIAS-affecting recompute) -- fall back to the
@@ -221,128 +401,32 @@ export async function findSurroundingSchools(
       p_limit: candidateBuffer,
       p_relax_sector: relaxSectorForThroughSchool,
     });
-    if (error || !candidates || candidates.length === 0) return [];
-    candidateList = candidates as Candidate[];
-  }
-  if (candidateList.length === 0) return [];
-
-  // Phase match: does the candidate's stacked phase-tag set share at least one tag
-  // with the target's? If the target itself falls through every phase-tag branch
-  // (e.g. Woldingham, low 10/high 19), there's nothing to intersect against, so no
-  // phase filter is applied -- same "can't match on the unknown" handling as gender.
-  //
-  // 2026-09-11, round 19, item 5 bug B: a shared-tag-only test lets a single-tag
-  // Senior-only school into a genuine through-school's peer pool purely because they
-  // both carry "Senior" -- real-data check (Stockport Grammar, Junior/Prep + Senior)
-  // confirmed this was happening. When the target itself has more than one phase tag,
-  // also require the candidate to have more than one -- keeps this on the same raw,
-  // nominal phaseTags() the rest of this module already uses (not effectivePhaseTags,
-  // which would need a per-candidate census fetch this module doesn't otherwise do).
-  // A genuine consequence: the peer pool for through-schools can legitimately shrink
-  // below TARGET_COUNT where few through-school peers exist nearby -- an honest
-  // reflection of a thin pool, not a bug to work around.
-  //
-  // Confirmed still correct after the 2026-10-03 target-side effectivePhaseTags fix
-  // above (brief §2 items 1+2, carried forward as a decision, not re-litigated): a
-  // through-school target like Stockport Grammar still resolves to real 2+ effective
-  // tags (it genuinely has junior-age pupils), so this symmetry check still applies to
-  // it correctly; a nominal-only through-school like Woldingham now resolves to a
-  // single effective tag (Senior), so this check no longer wrongly narrows its pool to
-  // through-school-only candidates -- the two fixes compose correctly together.
-  const phaseFiltered =
-    targetPhase.length === 0
-      ? candidateList
-      : candidateList.filter((c) => {
-          const candidatePhase = phaseTags(c.statutory_low_age, c.statutory_high_age, c.establishment_type);
-          const sharesTag = candidatePhase.some((p) => targetPhase.includes(p));
-          if (!sharesTag) return false;
-          if (targetPhase.length > 1) return candidatePhase.length > 1;
-          return true;
-        });
-
-  if (phaseFiltered.length === 0) return [];
-
-  const phaseFilteredUrns = phaseFiltered.map((c) => c.urn);
-
-  const genderByUrn = new Map<string, GenderTag | null>();
-  const rawGenderByUrn = new Map<string, string | null>();
-  const boardersNameByUrn = new Map<string, string | null>();
-  const positionByUrn = new Map<string, { easting: number | null; northing: number | null }>();
-  const laNameByUrn = new Map<string, string | null>();
-  const { data: attrRows } = await supabase
-    .from("schools")
-    .select("urn, gender, boarders_name, easting, northing, la_name")
-    .in("urn", phaseFilteredUrns);
-  for (const r of (attrRows as {
-    urn: string;
-    gender: string | null;
-    boarders_name: string | null;
-    easting: number | null;
-    northing: number | null;
-    la_name: string | null;
-  }[]) ?? []) {
-    genderByUrn.set(r.urn, genderTag(r.gender));
-    rawGenderByUrn.set(r.urn, r.gender);
-    boardersNameByUrn.set(r.urn, r.boarders_name);
-    positionByUrn.set(r.urn, { easting: r.easting, northing: r.northing });
-    laNameByUrn.set(r.urn, r.la_name);
+    results = error || !candidates ? [] : await matchAgainst(candidates as Candidate[], false);
   }
 
-  const genderFiltered = targetGender
-    ? phaseFiltered.filter((c) => genderMatches(targetGender, genderByUrn.get(c.urn) ?? null, genderMode))
-    : phaseFiltered;
-
-  if (genderFiltered.length === 0) return [];
-
-  const genderFilteredUrns = genderFiltered.map((c) => c.urn);
-
-  const facts = await lookupReferenceData({
-    sourceId: "dfe_school_census",
-    entityIds: genderFilteredUrns,
-    periodMin: targetPeriod,
-    periodMax: targetPeriod,
-  });
-
-  const results: MatchedSchool[] = [];
-  // Skip-and-backfill (rolls spec §4, resolved here): candidates are already ordered
-  // nearest-first by the RPC; walk them in order and keep the first 10 that actually
-  // have DfE census roll data, skipping standalone 6th-form/FE colleges (and any
-  // other gap) rather than erroring or silently misrepresenting. If the buffer runs
-  // out before 10 are found, callers honestly report fewer than 10.
-  for (const c of genderFiltered) {
-    if (results.length >= targetCount) break;
-    const candidateFacts = facts.filter((f) => f.entity_id === c.urn);
-    const counts = singleAgeGenderCountsForPeriod(candidateFacts, targetPeriod);
-    if (counts.size === 0) continue;
-    let total = 0;
-    for (const v of counts.values()) total += v.male + v.female;
-    if (total === 0) continue;
-
-    // Same boarders_total/boarders_male/boarders_female breakdown roll-data.ts's
-    // finishSnapshot reads for the target's own boarding figure -- pulled from the
-    // same already-fetched census facts, so the member-list boarding tag gets the
-    // same ratio-based Boarding/Day/Boarding & day refinement the viewed school's own
-    // header does, not just the raw GIAS flag.
-    const boardersTotal = candidateFacts.find((f) => f.breakdown === "boarders_total")?.value_numeric ?? null;
-    const boarding = boardersTotal !== null ? { boarders: boardersTotal, day: Math.max(total - boardersTotal, 0), total } : null;
-
-    results.push({
-      urn: c.urn,
-      currentName: c.current_name,
-      town: c.town,
-      postcode: c.postcode,
-      establishmentTypeGroup: c.establishment_type_group,
-      statutoryLowAge: c.statutory_low_age,
-      statutoryHighAge: c.statutory_high_age,
-      gender: rawGenderByUrn.get(c.urn) ?? null,
-      boardersName: boardersNameByUrn.get(c.urn) ?? null,
-      boarding,
-      totalRoll: total,
-      ageGenderCounts: counts,
-      easting: positionByUrn.get(c.urn)?.easting ?? null,
-      northing: positionByUrn.get(c.urn)?.northing ?? null,
-      laName: laNameByUrn.get(c.urn) ?? null,
+  // The actual guarantee: escalate to ONE live nearest_schools() call at a much
+  // larger depth if the fast path (precomputed pool, or a brand-new school's own
+  // candidateBuffer-sized live call above) came up short. ESCALATED_LIMIT is chosen
+  // comfortably larger than the entire national population of any real sector this
+  // project matches on (independent schools are ~4,200 of ~52,500 nationally; special
+  // schools a few thousand) -- for a relaxed-sector through-school search (drawing
+  // from the full mainstream pool), a shortfall even at this depth would be a
+  // genuine, very rare exhaustion, not a bug to chase further, matching Guy's own
+  // "rare-to-never" framing. nearest_schools() is GiST-indexed (KNN-ordered index
+  // scan + limit, see 20261009090000_nearest_schools_spatial_index.sql), so this
+  // stays one fast, targeted query, not a full table scan -- and it only ever runs
+  // for the genuinely-thin-pool case it exists to fix, not on every request.
+  if (results.length < targetCount) {
+    const ESCALATED_LIMIT = 6000;
+    const { data: escalated, error } = await supabase.rpc("nearest_schools", {
+      p_urn: urn,
+      p_limit: ESCALATED_LIMIT,
+      p_relax_sector: relaxSectorForThroughSchool,
     });
+    if (!error && escalated && escalated.length > 0) {
+      const escalatedResults = await matchAgainst(escalated as Candidate[], false);
+      if (escalatedResults.length > results.length) results = escalatedResults;
+    }
   }
 
   return results;
