@@ -23,4 +23,12 @@ export type SetOption =
   | { kind: "recipe"; key: string; label: string; schools: DefaultListEntry[]; note?: string; lazy?: boolean }
   | { kind: "saved"; id: string; label: string; schools: DefaultListEntry[]; filters?: WireDataViewFilterState };
 
+// Compared-with panel round (2026-09-10), item 2: every VicData-recipe default list
+// (Nearest 10, its boarding-quintile recipe, Home LA, Region/Nation) is always this
+// variant, never "saved" -- narrowed out for call sites (DataViewShell's own
+// resolveNearestOption, ComparatorSidebar's Nearest-10 stepper) that read `.key` on
+// a value that's structurally guaranteed to be a recipe, so they don't need a
+// redundant `.kind === "recipe"` guard at every access.
+export type RecipeOption = Extract<SetOption, { kind: "recipe" }>;
+
 export type ViewKey = "map" | "graphs" | "rankings";

@@ -29,16 +29,16 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { SchoolSearchResult } from "@/components/SchoolSearch";
-import type { SetOption } from "@/lib/data-view-types";
+import type { SetOption, RecipeOption } from "@/lib/data-view-types";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
+import type { FilteredCount } from "@/lib/data-view-filters";
+import { TAG_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import AddSubtractSchoolsWindow from "./AddSubtractSchoolsWindow";
 import LocalAuthoritiesWindow, { type AdjacentLasResponse } from "./LocalAuthoritiesWindow";
 
 const NEAREST_STEP = 5;
 const NEAREST_MIN = 10;
-const BOARDING_STEP = 5;
-const BOARDING_MIN = 10;
 
 // A named-set button is "selected" purely by comparing what's actually ticked
 // against the option's own real school list -- not by tracking "which button was
@@ -65,19 +65,36 @@ function homeLaShortName(rawLabel: string): string | null {
   return m ? m[1] : null;
 }
 
+// Compared-with panel round (2026-09-10), item 4: brings this button's active state
+// in line with FilterBar.tsx's own Pill convention (confirmed by reading it directly)
+// -- active fills with the VALUE's own real TAG_COLOURS colour, not a generic black
+// fill, using the exact same inline-light/CSS-custom-property-dark technique so both
+// components stay pixel-consistent in both themes. Most of these buttons (Nearest 10
+// outside its boarding-quintile recipe, Home LA, Region, Nation, a saved set) have no
+// single natural tag the way a boarding-quintile recipe genuinely does ("Boarding") --
+// `tagKey` is optional for exactly that reason, falling back to TAG_COLOURS.Focus (the
+// existing "this is the one that matters" accent already used elsewhere in this
+// codebase) rather than inventing a new colour with no established meaning. A
+// provisional choice, same status as every other colour in tag-colours.ts -- logged
+// for Guy to react to live, not locked in.
 function SetButton({
   label,
   selected,
   disabled,
   title,
   onClick,
+  tagKey,
 }: {
   label: string;
   selected?: boolean;
   disabled?: boolean;
   title?: string;
   onClick?: () => void;
+  tagKey?: string;
 }) {
+  const tagColours = (tagKey && TAG_COLOURS[tagKey]) || TAG_COLOURS.Focus;
+  const fillLight = tagColours.light[1];
+  const fillDark = tagColours.dark[1];
   return (
     <button
       type="button"
@@ -89,8 +106,19 @@ function SetButton({
         disabled
           ? "cursor-not-allowed rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-300 dark:border-neutral-800 dark:text-neutral-700"
           : selected
-            ? "rounded-full border border-neutral-900 bg-neutral-900 px-3 py-1 text-xs font-medium text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
+            ? "set-button-active rounded-full border px-3 py-1 text-xs font-medium"
             : "rounded-full border border-neutral-300 px-3 py-1 text-xs text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+      }
+      style={
+        selected
+          ? ({
+              "--set-button-bg-dark": fillDark,
+              "--set-button-fg-dark": contrastingTextColour(fillDark),
+              backgroundColor: fillLight,
+              borderColor: fillLight,
+              color: contrastingTextColour(fillLight),
+            } as React.CSSProperties)
+          : undefined
       }
     >
       {label}
@@ -120,13 +148,11 @@ export default function ComparatorSidebar({
   authToken,
   nearestOption,
   homeLaOption,
-  boardingOption,
   regionOption,
   nationOption,
   savedSets,
   activeSet,
   onSelectSet,
-  boardingQuintileLoading,
   regionNationLoadingScope,
   onLoadingChange,
   tickedUrns,
@@ -136,25 +162,32 @@ export default function ComparatorSidebar({
   comparedHidden,
   onToggleComparedHidden,
   profilesByUrn,
+  compareNumbers,
+  compareSentence,
 }: {
   targetName: string;
   targetUrn: string;
   authToken: string | null;
-  nearestOption: SetOption | null;
+  // Compared-with panel round (2026-09-10), item 2: there is no longer a separate
+  // Boarding schools option -- for a genuine boarding target, DataViewShell resolves
+  // this to WHICHEVER recipe "Nearest 10" currently means (the ordinary nearest-10
+  // match, or the boarding-quintile recipe, depending on the target's own quintile
+  // band and the live boarding filter -- see DataViewShell's own resolveNearestOption
+  // for the gate). This component only ever renders the ONE resulting button/stepper,
+  // keyed off whichever `.key` comes back, never two.
+  nearestOption: RecipeOption | null;
   homeLaOption: SetOption | null;
-  boardingOption: SetOption | null;
   regionOption: SetOption | null;
   nationOption: SetOption | null;
   savedSets: SetOption[];
   activeSet: SetOption | null;
   onSelectSet: (option: SetOption) => void;
-  boardingQuintileLoading: boolean;
   regionNationLoadingScope: "region" | "nation" | null;
   // 2026-09-08, shared map-based loading indicator (live-testing fix round 3): every
-  // async set-changing operation this component owns (LA toggles, Nearest/Boarding
-  // "+5 more") reports its combined loading state up so DataViewShell/MapView can
-  // show ONE spinner on the map, rather than three separate in-panel treatments.
-  // Optional label lets the Boarding-specific copy survive the move onto the map.
+  // async set-changing operation this component owns (LA toggles, Nearest "+5 more")
+  // reports its combined loading state up so DataViewShell/MapView can show ONE
+  // spinner on the map, rather than several separate in-panel treatments. Optional
+  // label lets the boarding-quintile-specific copy survive the move onto the map.
   onLoadingChange: (loading: boolean, label?: string) => void;
   tickedUrns: Set<string>;
   onToggleTick: (urn: string) => void;
@@ -163,13 +196,22 @@ export default function ComparatorSidebar({
   comparedHidden: boolean;
   onToggleComparedHidden: () => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
+  // Compared-with panel round (2026-09-10), item 3: the target's own currently-
+  // filtered roll figure (filteredCount(), computed in DataViewShell since it needs
+  // the full DataViewSchoolProfile this component doesn't otherwise receive) and the
+  // relocated A3 explanatory sentence -- both null only before the target profile has
+  // loaded at all.
+  compareNumbers: FilteredCount | null;
+  compareSentence: string | null;
 }) {
   const [addedUrns, setAddedUrns] = useState<{ urn: string; name: string }[]>([]);
   const [windowOpen, setWindowOpen] = useState(false);
   const [nearestPopupOpen, setNearestPopupOpen] = useState(false);
+  // Compared-with panel round (2026-09-10), item 2: one stepper now, shared by
+  // whichever recipe `nearestOption` currently resolves to (ordinary nearest-10 or
+  // the boarding-quintile recipe) -- see expandNearestBy's own comment for how it
+  // picks the right endpoint per recipe.
   const [nearestExpanding, setNearestExpanding] = useState(false);
-  const [boardingPopupOpen, setBoardingPopupOpen] = useState(false);
-  const [boardingExpanding, setBoardingExpanding] = useState(false);
 
   const [laInfo, setLaInfo] = useState<AdjacentLasResponse | null>(null);
   const [checkedLas, setCheckedLas] = useState<Set<string>>(new Set());
@@ -202,14 +244,18 @@ export default function ComparatorSidebar({
   }, [targetUrn, authToken]);
 
   // Every loading flag this component owns, combined into the one shared signal
-  // DataViewShell/MapView actually render. Boarding's own copy takes priority when
-  // it's genuinely what's happening (it's the one with real, useful "this is slow"
-  // context; the others share a generic "Loading schools…" default at the map layer).
+  // DataViewShell/MapView actually render. The boarding-quintile-specific copy takes
+  // priority when it's genuinely what's happening (nearestExpanding while the
+  // CURRENT nearestOption is the boarding-quintile recipe -- its own "+5 more" can
+  // still fall back to the real, measured-slow live computation when the precomputed
+  // tables haven't caught up yet, same as before this round, just reached via the
+  // one merged stepper now); everything else shares a generic "Loading schools…"
+  // default at the map layer.
   useEffect(() => {
-    const loading = laLoading || nearestExpanding || boardingExpanding;
-    onLoadingChange(loading, boardingExpanding ? "Computing national boarding quintile — this can take a little while…" : undefined);
+    const loading = laLoading || nearestExpanding;
+    onLoadingChange(loading, nearestExpanding && nearestOption?.key === "boarding_quintile" ? "Computing national boarding quintile — this can take a little while…" : undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [laLoading, nearestExpanding, boardingExpanding]);
+  }, [laLoading, nearestExpanding, nearestOption?.key]);
 
   async function applyLaSelection(next: Set<string>) {
     setCheckedLas(next);
@@ -281,14 +327,28 @@ export default function ComparatorSidebar({
   // a longer or shorter `.schools` array and selecting IT ticks the whole new list
   // in one step, the same way clicking any other named-set button already does
   // (selectSet's own "tick everything" rule). The CURRENT effective count comes
-  // from activeSet itself when it's genuinely the nearest-N set (so a prior +5 is
-  // remembered), falling back to the base recipe's own 10 otherwise. The button's
-  // own label carries the same running-total "+N" suffix the home-LA button uses,
-  // not a flat "+5" repeated on every click.
-  const nearestIsActive = activeSet?.kind === "recipe" && (activeSet.key === "nearest_10" || activeSet.key === "fe_nearest_10");
+  // from activeSet itself when it's genuinely the nearest-N-family set (so a prior
+  // +5 is remembered), falling back to the base recipe's own 10 otherwise. The
+  // button's own label carries the same running-total "+N" suffix the home-LA
+  // button uses, not a flat "+5" repeated on every click.
+  //
+  // Compared-with panel round (2026-09-10), item 2: `nearestOption` can now resolve
+  // to EITHER the ordinary ~10-nearest recipe OR the boarding-quintile recipe
+  // (DataViewShell's own resolveNearestOption) -- there is no longer a second,
+  // separate button/stepper for the latter, just this one, keyed off whichever
+  // `.key` is currently active. The button's own base label reflects which recipe is
+  // showing: the boarding-quintile recipe's real label (its own two possible
+  // readings, "National boarding quintile..." or "Nearest boarding schools...", are
+  // genuinely different framings worth showing verbatim, not a generic "Nearest 10"
+  // that would misdescribe an unbounded-catchment quintile match as distance-sorted)
+  // or the existing plain "Nearest 10 schools" otherwise.
+  const nearestIsActive =
+    activeSet?.kind === "recipe" && (activeSet.key === "nearest_10" || activeSet.key === "fe_nearest_10" || activeSet.key === "boarding_quintile");
   const currentNearestSchools = nearestIsActive ? activeSet.schools : (nearestOption?.schools ?? []);
   const nearestExtra = nearestOption ? Math.max(0, currentNearestSchools.length - nearestOption.schools.length) : 0;
-  const nearestButtonLabel = `Nearest 10 schools${nearestExtra > 0 ? ` +${nearestExtra}` : ""}`;
+  const nearestIsBoardingQuintile = nearestOption?.key === "boarding_quintile";
+  const nearestBaseLabel = nearestIsBoardingQuintile && nearestOption ? nearestOption.label : "Nearest 10 schools";
+  const nearestButtonLabel = `${nearestBaseLabel}${nearestExtra > 0 ? ` +${nearestExtra}` : ""}`;
 
   async function expandNearestBy(delta: number) {
     if (!nearestOption) return;
@@ -298,13 +358,25 @@ export default function ComparatorSidebar({
       const mySeq = ++setRequestSeq.current;
       setNearestExpanding(true);
       try {
-        const res = await fetch(`/api/data-view/expand-nearest?urn=${targetUrn}&count=${nextCount}`, {
-          headers: { Authorization: `Bearer ${authToken}` },
-        });
+        // Same server round-trip either way, just a different endpoint per recipe --
+        // the boarding-quintile one tries its own precomputed fast path first
+        // (default-comparator-lists.ts's own buildBoardingQuintileList), falling
+        // back to a real, measured-slow (~41s) live computation only when that
+        // hasn't caught up yet for this school; the shared map loading indicator
+        // (with its own boarding-quintile-specific copy, see the effect above) is
+        // what makes that rare wait legible rather than a silent pause.
+        const res = nearestIsBoardingQuintile
+          ? await fetch(`/api/data-view/boarding-quintile-list?urn=${targetUrn}&count=${nextCount}`, { headers: { Authorization: `Bearer ${authToken}` } })
+          : await fetch(`/api/data-view/expand-nearest?urn=${targetUrn}&count=${nextCount}`, { headers: { Authorization: `Bearer ${authToken}` } });
         if (mySeq !== setRequestSeq.current) return;
         if (!res.ok) return;
-        const body = (await res.json()) as { list: { schools: DefaultListEntry[] } };
-        onSelectSet({ ...nearestOption, schools: body.list.schools });
+        if (nearestIsBoardingQuintile) {
+          const body = (await res.json()) as { list3: { key: string; label: string; schools: DefaultListEntry[]; note?: string } | null };
+          if (body.list3) onSelectSet({ kind: "recipe", key: body.list3.key, label: body.list3.label, schools: body.list3.schools, note: body.list3.note });
+        } else {
+          const body = (await res.json()) as { list: { schools: DefaultListEntry[] } };
+          onSelectSet({ ...nearestOption, schools: body.list.schools });
+        }
       } finally {
         // Always clears, regardless of sequence -- see applyLaSelection's own
         // comment for why a sequence-gated clear here would leave this button
@@ -314,43 +386,6 @@ export default function ComparatorSidebar({
     } else {
       setRequestSeq.current++;
       onSelectSet({ ...nearestOption, schools: currentNearestSchools.slice(0, nextCount) });
-    }
-  }
-
-  // Same pattern as Nearest 10, scoped to the Boarding schools recipe -- see
-  // default-comparator-lists.ts's own buildBoardingQuintileList comment for why
-  // this is a real, ~41s-ish server round-trip each time rather than a cheap
-  // client-side slice: the underlying national census scan isn't cached between
-  // calls, and building a cache for one control felt like more than this round
-  // asked for. The shared map loading indicator (with Boarding's own specific
-  // copy) is what makes that wait legible now instead of a silent pause.
-  const boardingIsActive = activeSet?.kind === "recipe" && activeSet.key === "boarding_quintile";
-  const currentBoardingSchools = boardingIsActive ? activeSet.schools : (boardingOption?.schools ?? []);
-  const boardingExtra = boardingOption ? Math.max(0, currentBoardingSchools.length - boardingOption.schools.length) : 0;
-  const boardingButtonLabel = `Boarding schools${boardingExtra > 0 ? ` +${boardingExtra}` : ""}`;
-
-  async function expandBoardingBy(delta: number) {
-    if (!boardingOption) return;
-    const nextCount = Math.max(BOARDING_MIN, currentBoardingSchools.length + delta);
-    if (delta > 0) {
-      if (!authToken) return;
-      const mySeq = ++setRequestSeq.current;
-      setBoardingExpanding(true);
-      try {
-        const res = await fetch(`/api/data-view/boarding-quintile-list?urn=${targetUrn}&count=${nextCount}`, {
-          headers: { Authorization: `Bearer ${authToken}` },
-        });
-        if (mySeq !== setRequestSeq.current) return;
-        if (!res.ok) return;
-        const body = (await res.json()) as { list3: { key: string; label: string; schools: DefaultListEntry[]; note?: string } | null };
-        if (body.list3) onSelectSet({ kind: "recipe", key: body.list3.key, label: body.list3.label, schools: body.list3.schools, note: body.list3.note });
-      } finally {
-        // Always clears -- see applyLaSelection's own comment for why.
-        setBoardingExpanding(false);
-      }
-    } else {
-      setRequestSeq.current++;
-      onSelectSet({ ...boardingOption, schools: currentBoardingSchools.slice(0, nextCount) });
     }
   }
 
@@ -370,7 +405,52 @@ export default function ComparatorSidebar({
 
   return (
     <div className="rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800">
+      {/* Item 4: same dark-mode custom-property technique FilterBar.tsx's own
+          .filter-pill-active uses (an inline style can set the light-mode fill
+          directly, but dark mode needs a real CSS rule to react to prefers-color-
+          scheme/data-theme) -- a differently-named class so the two components'
+          rules stay independently readable, even though both resolve the same way. */}
+      <style>{`
+        @media (prefers-color-scheme: dark) {
+          :root:where(:not([data-theme="light"])) .set-button-active {
+            background-color: var(--set-button-bg-dark) !important;
+            border-color: var(--set-button-bg-dark) !important;
+            color: var(--set-button-fg-dark) !important;
+          }
+        }
+        :root[data-theme="dark"] .set-button-active {
+          background-color: var(--set-button-bg-dark) !important;
+          border-color: var(--set-button-bg-dark) !important;
+          color: var(--set-button-fg-dark) !important;
+        }
+      `}</style>
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Compared with</h2>
+
+      {/* Compared-with panel round (2026-09-10), item 3: pupils in the target's own
+          CURRENTLY-FILTERED figure (filteredCount(), computed in DataViewShell so
+          this reacts live to every filter change exactly like Map/Rankings do -- see
+          that function's own boarding-mode branch for why the Boarders-only filter
+          already yields the boarders-only figure here, total roll otherwise, with no
+          separate display rule needed), the school count in the active set, and the
+          A3 explanatory sentence underneath -- relocated here from a full-width row
+          below the filter bar (DataViewShell.tsx), which this replaces. */}
+      {compareNumbers && (
+        <div className="mb-3 rounded-md border border-neutral-100 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900/40">
+          <div className="flex items-baseline justify-between gap-3">
+            <div>
+              <p className="text-2xl leading-none font-semibold text-neutral-900 dark:text-neutral-50">{compareNumbers.total.toLocaleString()}</p>
+              <p className="mt-1 text-[11px] tracking-wide text-neutral-500 uppercase">Pupils</p>
+            </div>
+            <p className="text-xs whitespace-nowrap text-neutral-500">{schools.length.toLocaleString()} schools in this set</p>
+          </div>
+          {compareNumbers.female !== null && compareNumbers.male !== null && (
+            <p className="mt-1 text-xs text-neutral-500">
+              {compareNumbers.female.toLocaleString()} girls · {compareNumbers.male.toLocaleString()} boys
+            </p>
+          )}
+          {compareSentence && <p className="mt-2 text-xs text-neutral-500">{compareSentence}</p>}
+        </div>
+      )}
 
       <div className="flex flex-col items-start gap-2">
         {nearestOption && (
@@ -379,6 +459,7 @@ export default function ComparatorSidebar({
               label={nearestButtonLabel}
               selected={tickedMatchesSet(tickedUrns, currentNearestSchools)}
               onClick={() => selectNamed(nearestOption)}
+              tagKey={nearestIsBoardingQuintile ? "Boarding" : undefined}
             />
             <PlusButton title="Add or subtract five more" onClick={() => setNearestPopupOpen((o) => !o)} />
             {nearestPopupOpen && (
@@ -426,47 +507,11 @@ export default function ComparatorSidebar({
           </div>
         )}
 
-        {boardingOption && (
-          <div className="relative flex items-center gap-1.5">
-            <SetButton
-              label={boardingButtonLabel}
-              selected={tickedMatchesSet(tickedUrns, currentBoardingSchools) || boardingQuintileLoading}
-              onClick={() => selectNamed(boardingOption)}
-            />
-            <PlusButton title="Add or subtract five more" onClick={() => setBoardingPopupOpen((o) => !o)} />
-            {boardingPopupOpen && (
-              <div className="absolute left-0 top-full z-20 mt-1 flex items-center gap-2 rounded-md border border-neutral-200 bg-white p-2 text-xs shadow-md dark:border-neutral-800 dark:bg-neutral-950">
-                <span className="text-neutral-500">{currentBoardingSchools.length} schools</span>
-                <button
-                  type="button"
-                  disabled={boardingExpanding}
-                  className="underline disabled:opacity-50"
-                  onClick={() => {
-                    expandBoardingBy(BOARDING_STEP);
-                    setBoardingPopupOpen(false);
-                  }}
-                >
-                  {boardingExpanding ? "Loading…" : `+${BOARDING_STEP} more`}
-                </button>
-                <button
-                  type="button"
-                  disabled={currentBoardingSchools.length <= BOARDING_MIN}
-                  className="underline disabled:opacity-50"
-                  onClick={() => {
-                    expandBoardingBy(-BOARDING_STEP);
-                    setBoardingPopupOpen(false);
-                  }}
-                >
-                  -{BOARDING_STEP} fewer
-                </button>
-              </div>
-            )}
-          </div>
-        )}
         {/* Member Data View performance architecture v1 (2026-10-08): Region/Nation are
             real now, backed by the precomputed school_region_nation table -- same
-            optimistic-pending pattern as Boarding (selected reads true the instant the
-            click starts the lazy fetch, not only once the real list arrives). */}
+            optimistic-pending pattern as Nearest 10's own boarding-quintile recipe
+            (selected reads true the instant the click starts the lazy fetch, not only
+            once the real list arrives). */}
         {regionOption && (
           <SetButton
             label={regionOption.label}

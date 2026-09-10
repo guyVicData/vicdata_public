@@ -32,11 +32,44 @@ export type SchoolTypeCategory =
 export type DefaultListEntry = { urn: string; name: string; distanceKm: number | null };
 export type DefaultList = { key: string; label: string; schools: DefaultListEntry[]; note?: string };
 
+// Compared-with panel round (2026-09-10), item 2: which quintile band a genuine
+// boarding target falls in -- "top_two" (index 3-4, the biggest real boarding
+// populations, unbounded same-quintile catchment) or "bottom_three" (index 0-2, too
+// thin to match by quintile alone, matched by nearest real boarding schools instead).
+// Exposed here so the client can resolve which recipe "Nearest 10" currently means
+// (see list1/boardingRecipe's own comment below) without re-deriving quintile logic
+// client-side.
+export type BoardingQuintileBand = "top_two" | "bottom_three";
+
 export type DefaultComparatorLists = {
   schoolTypeCategory: SchoolTypeCategory | null;
+  // Compared-with panel round (2026-09-10), item 2, real behaviour change: there is
+  // no longer a separate "Boarding schools" button -- a genuinely boarding target's
+  // own Nearest-10-equivalent set should already reflect its boarding gates, driven
+  // by the shared boarding filter rather than a second selection mechanism. `list1`
+  // stays the ORDINARY nearest-10-independents-same-phase-gender recipe (unchanged
+  // computation), always present; `boardingBand`/`boardingRecipe` (below) are the
+  // additional pieces the client needs to resolve which of the two is the CURRENT
+  // default, and which to switch to when the boarding filter is set:
+  //   - boardingBand "top_two": default is boardingRecipe (same-quintile match); the
+  //     client switches to list1 when the shared filter is set to Day pupils.
+  //   - boardingBand "bottom_three": default is list1; the client switches to
+  //     boardingRecipe (nearest real boarding schools, age/gender) when the shared
+  //     filter is set to Boarders.
+  //   - boardingBand null (not a genuine boarding school): list1 always, unaffected.
   list1: DefaultList | null;
   list2: DefaultList | null;
-  list3: DefaultList | null;
+  boardingBand: BoardingQuintileBand | null;
+  // The fast-path boarding-quintile recipe (boardingQuintileListFast) -- null both
+  // for a non-boarding target (boardingBand null) AND, rarely, for a genuine boarding
+  // target whose precomputed boarding_quintiles/school_nearest_neighbours('boarding')
+  // rows haven't been (re)computed yet (a brand-new boarding school before the next
+  // GIAS-affecting recompute). No slow (~41s) live fallback is attempted here -- that
+  // would block this initial, otherwise-fast load; the client honestly falls back to
+  // showing list1 as "Nearest 10" until the precompute catches up, the same "no
+  // regression, just slower until the precompute catches up" degrade this module
+  // already applies elsewhere (see buildBoardingQuintileList's own comment).
+  boardingRecipe: DefaultList | null;
   // 2026-09-08, bug fix: "FE colleges aren't appearing anywhere when starting
   // from a mainstream school and looking at Post-16." Root cause, confirmed by
   // reading this module directly rather than guessing: findLocal16PlusProvision
@@ -571,6 +604,20 @@ const BOARDING_CATEGORY_CONFIG = {
   state_boarding: { sectorGroups: ["Academies", "Local authority maintained schools", "Free Schools"], requirePhase: "Senior" as const, quintileBasis: "headcount" as const },
 } as const;
 
+// Compared-with panel round (2026-09-10), item 2: a cheap, fast standalone lookup of
+// which quintile band a genuine boarding target falls in -- the same real check
+// boardingQuintileListFast's own `targetQuintileRow.quintile >= 3` branch already
+// makes, factored out so buildDefaultComparatorLists can know the band WITHOUT
+// needing to also unpack a full DefaultList from that function just to read one
+// field off it. A single-row indexed lookup (boarding_quintiles.urn is the PK), not
+// the expensive part of this module.
+async function resolveBoardingQuintileBand(urn: string): Promise<BoardingQuintileBand | null> {
+  const supabase = createServerAnonSupabaseClient();
+  const { data } = await supabase.from("boarding_quintiles").select("quintile").eq("urn", urn).maybeSingle();
+  if (!data) return null;
+  return data.quintile >= 3 ? "top_two" : "bottom_three";
+}
+
 export async function buildBoardingQuintileList(urn: string, targetCount = 10): Promise<DefaultList | null> {
   const resolved = await resolveSchoolTypeCategory(urn);
   if (!resolved) return null;
@@ -596,7 +643,9 @@ export async function buildBoardingQuintileList(urn: string, targetCount = 10): 
 
 export async function buildDefaultComparatorLists(urn: string): Promise<DefaultComparatorLists> {
   const resolved = await resolveSchoolTypeCategory(urn);
-  if (!resolved) return { schoolTypeCategory: null, list1: null, list2: null, list3: null, local16Plus: null, regionName: null, nation: null };
+  if (!resolved) {
+    return { schoolTypeCategory: null, list1: null, list2: null, boardingBand: null, boardingRecipe: null, local16Plus: null, regionName: null, nation: null };
+  }
   const { schoolTypeCategory, target, targetPhase } = resolved;
   const regionNation = await resolveTargetRegionNation(urn);
   const regionName = regionNation?.regionName ?? null;
@@ -619,7 +668,7 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
           schools: local16Plus.map((c) => ({ urn: c.urn, name: c.name, distanceKm: c.distanceKm })),
         }
       : null;
-    return { schoolTypeCategory: "fe_college", list1, list2, list3: null, local16Plus: null, regionName, nation };
+    return { schoolTypeCategory: "fe_college", list1, list2, boardingBand: null, boardingRecipe: null, local16Plus: null, regionName, nation };
   }
 
   const targetGender = genderTag(target.gender);
@@ -630,10 +679,23 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
   // "Post 16" for an ordinary through-school).
   const hasPost16Provision = target.statutory_high_age !== null && target.statutory_high_age >= 16;
 
-  const [matched, list2, local16PlusCandidates] = await Promise.all([
+  // Compared-with panel round (2026-09-10), item 2: genuine boarding categories also
+  // resolve their quintile band + the FAST-path boarding-quintile recipe here,
+  // alongside everything else this load already computes in parallel -- both are
+  // cheap now (a single indexed row lookup, and boardingQuintileListFast's own ~1s
+  // precomputed-table read), unlike the ~41s SLOW fallback this module still keeps
+  // for boardingQuintileList (never attempted here, see boardingRecipe's own type
+  // comment on DefaultComparatorLists for why). A non-boarding category skips both
+  // lookups entirely (same cost as before this round).
+  const isBoardingCategory = schoolTypeCategory === "independent_boarding_senior" || schoolTypeCategory === "independent_boarding_prep" || schoolTypeCategory === "state_boarding";
+  const boardingConfig = isBoardingCategory ? BOARDING_CATEGORY_CONFIG[schoolTypeCategory as keyof typeof BOARDING_CATEGORY_CONFIG] : null;
+
+  const [matched, list2, local16PlusCandidates, boardingBand, boardingRecipe] = await Promise.all([
     findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed" }),
     target.la_name ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
     target.la_name && hasPost16Provision ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
+    isBoardingCategory ? resolveBoardingQuintileBand(urn) : Promise.resolve<BoardingQuintileBand | null>(null),
+    boardingConfig ? boardingQuintileListFast(target, schoolTypeCategory as "independent_boarding_senior" | "independent_boarding_prep" | "state_boarding", boardingConfig.quintileBasis, 10, boardingConfig.sectorGroups) : Promise.resolve<DefaultList | null>(null),
   ]);
   const list1: DefaultList = {
     key: "nearest_10",
@@ -652,12 +714,5 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
         }
       : null;
 
-  // List 3 (boarding quintile) is deliberately NOT computed here -- see
-  // buildBoardingQuintileList's own comment above (~41s even after parallelising the
-  // batched fetch, real and measured, not something this initial load should block
-  // on). `schoolTypeCategory` alone tells the UI whether to OFFER that option at all
-  // (independent_boarding_senior/independent_boarding_prep/state_boarding); the
-  // sidebar calls buildBoardingQuintileList itself, lazily, only once a member
-  // actually selects it.
-  return { schoolTypeCategory, list1, list2, list3: null, local16Plus, regionName, nation };
+  return { schoolTypeCategory, list1, list2, boardingBand, boardingRecipe, local16Plus, regionName, nation };
 }

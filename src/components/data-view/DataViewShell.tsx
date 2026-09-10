@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import { deserializeProfile, type WireDataViewSchoolProfile } from "@/lib/data-view-serialize";
+import { deserializeProfile, profileToFilterableData, type WireDataViewSchoolProfile } from "@/lib/data-view-serialize";
 import {
   emptyDataViewFilterState,
   describeFilters,
@@ -21,11 +21,12 @@ import {
   matchesSectorFilter,
   boardingModeForFilters,
   singleGenderFilter,
+  filteredCount,
   type DataViewFilterState,
   type WireDataViewFilterState,
 } from "@/lib/data-view-filters";
-import type { SetOption, ViewKey } from "@/lib/data-view-types";
-import type { DefaultListEntry, SchoolTypeCategory } from "@/lib/default-comparator-lists";
+import type { SetOption, RecipeOption, ViewKey } from "@/lib/data-view-types";
+import type { DefaultListEntry, SchoolTypeCategory, BoardingQuintileBand } from "@/lib/default-comparator-lists";
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
 import type { RegionNationPoint, RegionNationRankResult, RegionNationRow } from "@/lib/region-nation-comparator";
 import type { AggregateTrends } from "@/lib/aggregate-trends";
@@ -111,6 +112,40 @@ function unpackRegionNationRow(r: RegionNationRow): { entry: DefaultListEntry; p
   };
 }
 
+// Compared-with panel round (2026-09-10), item 2: which SetOption "Nearest 10"
+// currently resolves to, for a genuine boarding target -- there is no longer a
+// separate Boarding schools button, so this single ordinary-vs-quintile choice is
+// what the one Nearest-10 button (and its +5/-5 stepper, ComparatorSidebar's own
+// concern) actually shows. Pure function of the already-fetched recipe data plus the
+// LIVE boarding filter mode, so it can be called identically both for the initial
+// landing selection (boardingMode null, filters start empty) and on every later
+// render as the member toggles the shared boarding filter (see the resolvedNearestOption
+// memo + switch-effect below, in the component body).
+//   - boardingBand "top_two": default is boardingRecipe (same-quintile match,
+//     unbounded catchment) -- switches to the ordinary list1 recipe when the member
+//     ticks Day pupils specifically (a day-pupil framing makes more sense than a
+//     boarding-population quintile for that reading).
+//   - boardingBand "bottom_three": default is the ordinary list1 recipe -- switches
+//     to boardingRecipe (nearest real boarding schools nationally, age/gender) when
+//     the member ticks Boarders specifically.
+//   - boardingBand null (not a genuine boarding school, or the fast-path recipe
+//     isn't precomputed yet for a top-two target -- see DefaultComparatorLists'
+//     own comment for why no slow fallback is attempted here): list1 always.
+function resolveNearestOption(
+  list1: RecipeOption | null,
+  boardingBand: BoardingQuintileBand | null,
+  boardingRecipe: RecipeOption | null,
+  boardingMode: "boarders" | "day" | "whole" | null,
+): RecipeOption | null {
+  if (boardingBand === "top_two") {
+    return boardingMode === "day" ? list1 : (boardingRecipe ?? list1);
+  }
+  if (boardingBand === "bottom_three") {
+    return boardingMode === "boarders" ? (boardingRecipe ?? list1) : list1;
+  }
+  return list1;
+}
+
 export default function DataViewShell({ urn }: { urn: string }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [loadState, setLoadState] = useState<LoadState>("checking");
@@ -136,8 +171,16 @@ export default function DataViewShell({ urn }: { urn: string }) {
 
   const [recipeLists, setRecipeLists] = useState<{
     schoolTypeCategory: SchoolTypeCategory | null;
-    list1: SetOption | null;
+    list1: RecipeOption | null;
     list2: SetOption | null;
+    // Compared-with panel round (2026-09-10), item 2: which quintile band a genuine
+    // boarding target falls in, plus the boarding-quintile recipe itself (fast-path
+    // only) -- together with `list1`, everything resolveNearestOption (below) needs
+    // to decide which recipe "Nearest 10" currently means. Both null for a
+    // non-boarding target. See default-comparator-lists.ts's own DefaultComparatorLists
+    // comment for the full gate description.
+    boardingBand: BoardingQuintileBand | null;
+    boardingRecipe: RecipeOption | null;
     // 2026-09-08, bug fix: a real candidate list letting a mainstream Post-16
     // target's own comparator picker include FE colleges (default-comparator-
     // lists.ts's own comment explains why this never existed for a mainstream
@@ -145,8 +188,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
     local16Plus: SetOption | null;
   } | null>(null);
   const [savedSets, setSavedSets] = useState<SetOption[]>([]);
-  const [boardingQuintileOption, setBoardingQuintileOption] = useState<SetOption | null>(null);
-  const [boardingQuintileLoading, setBoardingQuintileLoading] = useState(false);
   // Member Data View performance architecture v1 (2026-10-08): Region/Nation follow
   // the exact same lazy-placeholder pattern boarding_quintile already established --
   // a real, correctly-labelled button from the first render (regionName/nation come
@@ -315,24 +356,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
           schoolTypeCategory: SchoolTypeCategory | null;
           list1: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
           list2: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
+          boardingBand: BoardingQuintileBand | null;
+          boardingRecipe: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
           local16Plus: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null;
           regionName: string | null;
           nation: "england" | "wales" | null;
         };
-        const list1: SetOption | null = body.list1 ? { kind: "recipe", key: body.list1.key, label: body.list1.label, schools: body.list1.schools, note: body.list1.note } : null;
+        const list1: RecipeOption | null = body.list1 ? { kind: "recipe", key: body.list1.key, label: body.list1.label, schools: body.list1.schools, note: body.list1.note } : null;
         const list2: SetOption | null = body.list2 ? { kind: "recipe", key: body.list2.key, label: body.list2.label, schools: body.list2.schools, note: body.list2.note } : null;
+        const boardingRecipe: RecipeOption | null = body.boardingRecipe
+          ? { kind: "recipe", key: body.boardingRecipe.key, label: body.boardingRecipe.label, schools: body.boardingRecipe.schools, note: body.boardingRecipe.note }
+          : null;
         const local16Plus: SetOption | null = body.local16Plus
           ? { kind: "recipe", key: body.local16Plus.key, label: body.local16Plus.label, schools: body.local16Plus.schools, note: body.local16Plus.note }
           : null;
-        setRecipeLists({ schoolTypeCategory: body.schoolTypeCategory, list1, list2, local16Plus });
-
-        if (
-          body.schoolTypeCategory === "independent_boarding_senior" ||
-          body.schoolTypeCategory === "independent_boarding_prep" ||
-          body.schoolTypeCategory === "state_boarding"
-        ) {
-          setBoardingQuintileOption({ kind: "recipe", key: "boarding_quintile", label: "National boarding quintile", schools: [], lazy: true });
-        }
+        setRecipeLists({ schoolTypeCategory: body.schoolTypeCategory, list1, list2, boardingBand: body.boardingBand, boardingRecipe, local16Plus });
 
         // Region only offered when the target genuinely has a sub-national region (not
         // every Welsh school does, and a handful of GIAS sentinel LAs resolve to
@@ -370,14 +408,19 @@ export default function DataViewShell({ urn }: { urn: string }) {
         );
         setSavedSets(saved);
 
-        // Default landing state (brief §4): Map view, Nearest 10 (any LA) pre-selected.
+        // Default landing state (brief §4): Map view, Nearest 10 (any LA) pre-selected
+        // -- or, for a genuine top-two-quintile boarding target, its own quintile
+        // recipe (resolveNearestOption's own comment) -- filters are still empty at
+        // this point (emptyDataViewFilterState's own boarding Set), so this is exactly
+        // the same resolution the live memo below applies on every subsequent render.
         // 2026-09-08: ticks the WHOLE list now (list1 is already capped at 10 server-
         // side, so this was never actually a behaviour change in practice) -- kept
         // consistent with selectSet's own "every named set ticks its whole list" rule
         // rather than a separate slice here.
-        if (list1) {
-          setActiveSet(list1);
-          setTickedUrns(new Set(list1.schools.map((s) => s.urn)));
+        const initialNearest = resolveNearestOption(list1, body.boardingBand, boardingRecipe, null);
+        if (initialNearest) {
+          setActiveSet(initialNearest);
+          setTickedUrns(new Set(initialNearest.schools.map((s) => s.urn)));
         }
         setLoadState("ready");
       } catch (e) {
@@ -388,24 +431,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadState, authToken, urn]);
-
-  const loadBoardingQuintileList = useCallback(async () => {
-    if (!authToken || boardingQuintileLoading) return;
-    setBoardingQuintileLoading(true);
-    try {
-      const res = await fetch(`/api/data-view/boarding-quintile-list?urn=${urn}`, { headers: { Authorization: `Bearer ${authToken}` } });
-      if (!res.ok) return;
-      const body = (await res.json()) as { list3: { key: string; label: string; schools: { urn: string; name: string; distanceKm: number | null }[]; note?: string } | null };
-      if (body.list3) {
-        const option: SetOption = { kind: "recipe", key: body.list3.key, label: body.list3.label, schools: body.list3.schools, note: body.list3.note };
-        setBoardingQuintileOption(option);
-        return option;
-      }
-    } finally {
-      setBoardingQuintileLoading(false);
-    }
-    return null;
-  }, [authToken, urn, boardingQuintileLoading]);
 
   const loadRegionOrNationSet = useCallback(
     async (scope: "region" | "nation") => {
@@ -661,6 +686,30 @@ export default function DataViewShell({ urn }: { urn: string }) {
     }
   }
 
+  // Compared-with panel round (2026-09-10), item 2: switches the active Nearest-10
+  // recipe (ordinary <-> boarding-quintile) the moment the shared boarding filter
+  // changes, while "Nearest 10" (whichever underlying recipe) is what's currently
+  // active -- see resolveNearestOption's own module-scope comment for the gate.
+  // Deliberately done HERE, synchronously inside the filter-change handler itself
+  // (the one real user action that can trigger a switch), rather than in a useEffect
+  // watching filters/activeSet -- an effect that reads activeSet and conditionally
+  // calls setActiveSet again is exactly the self-referential "derived state via
+  // effect" shape react-hooks/set-state-in-effect (and, via a ref workaround,
+  // react-hooks/immutability) both flag; a plain synchronous check inside the same
+  // handler that already calls setFilters has no such shape, and is arguably more
+  // correct anyway -- this is a direct consequence of the member's own click, not a
+  // background reaction to state changing on its own.
+  function handleFilterChange(next: DataViewFilterState) {
+    setFilters(next);
+    if (!recipeLists || !(activeSet?.kind === "recipe" && (activeSet.key === "nearest_10" || activeSet.key === "boarding_quintile" || activeSet.key === "fe_nearest_10"))) {
+      return;
+    }
+    const nextResolved = resolveNearestOption(recipeLists.list1, recipeLists.boardingBand, recipeLists.boardingRecipe, boardingModeForFilters(next));
+    if (nextResolved && nextResolved.key !== activeSet.key) {
+      selectSet(nextResolved);
+    }
+  }
+
   // 2026-09-08, "Compared with" panel round 2, per direct request: the "Schools and
   // FE colleges, 16+, in {LA}" recipe lost its own standalone button -- "this set
   // should be triggered by the post16 search button above" (FilterBar's own Post-16
@@ -677,6 +726,24 @@ export default function DataViewShell({ urn }: { urn: string }) {
     }
     wasPost16Ref.current = isPost16Now;
   }, [filters.phaseBands, recipeLists?.local16Plus]);
+
+  // Compared-with panel round (2026-09-10), item 2: which recipe "Nearest 10"
+  // currently means, for a genuine boarding target, given the LIVE boarding filter
+  // -- see resolveNearestOption's own module-scope comment for the gate itself. Pure
+  // derived state (recomputed every render from recipeLists + the current boarding
+  // mode), not a fetch -- both candidate recipes were already fetched up front
+  // alongside list1/list2, so switching between them needs no round trip.
+  const boardingMode = boardingModeForFilters(filters);
+  const resolvedNearestOption = recipeLists
+    ? resolveNearestOption(recipeLists.list1, recipeLists.boardingBand, recipeLists.boardingRecipe, boardingMode)
+    : null;
+
+  // The actual switch-on-filter-change behaviour lives in handleFilterChange above
+  // (a plain synchronous check inside the same handler that calls setFilters, not an
+  // effect -- see that function's own comment for why). This value is what gets
+  // passed to ComparatorSidebar as `nearestOption` either way: the live-resolved
+  // recipe for whichever button/stepper it renders, kept in sync with activeSet by
+  // handleFilterChange whenever the member is genuinely looking at "Nearest 10."
 
   // 2026-09-06, UX refinements round 1, A2/B3: the one save mechanism shared by the
   // filter row's own Saved Sets control and (once built) B3's richer "Compared with"
@@ -810,15 +877,14 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // combines every real source of "the comparator set is still being worked out" --
   // the profile fetch itself, the boarding-quintile lazy load, and every async
   // control ComparatorSidebar owns (surfaced via handleLoadingChange) -- into the
-  // ONE signal the Map actually renders. Boarding's own already-good loading copy
-  // takes priority when it's genuinely what's happening; everything else shares a
-  // plain default rather than each control inventing its own wording.
-  const mapLoading = profilesLoading || boardingQuintileLoading || regionNationLoadingScope !== null || selectingSet;
-  const mapLoadingLabel = boardingQuintileLoading
-    ? "Computing national boarding quintile — this can take a little while…"
-    : regionNationLoadingScope !== null
-      ? "Loading schools across this scope…"
-      : (selectingSetLabel ?? "Loading schools…");
+  // ONE signal the Map actually renders. Compared-with panel round (2026-09-10),
+  // item 2: the boarding-quintile recipe is no longer a separate lazy load (it's
+  // computed up front alongside list1/list2, see default-comparator-lists.ts), so
+  // its own loading copy is gone from this chain too -- Region/Nation's real lazy
+  // fetch is the only one left with scope-specific wording.
+  const mapLoading = profilesLoading || regionNationLoadingScope !== null || selectingSet;
+  const mapLoadingLabel =
+    regionNationLoadingScope !== null ? "Loading schools across this scope…" : (selectingSetLabel ?? "Loading schools…");
   // 2026-09-07, UX refinements round 2, P3 item 7: the sector filter is a
   // membership exclusion (matchesSectorFilter's own comment explains why it can't
   // be a slice the way phase/gender/boarding are) applied once, here, so
@@ -833,6 +899,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
           .filter((p) => matchesSectorFilter(p.sector, filters.sector))
       : [];
   const filterSummary = describeFilters(filters);
+
+  // Compared-with panel round (2026-09-10), item 3: the new numbers block inside
+  // ComparatorSidebar reads the target's own CURRENTLY-FILTERED roll figure --
+  // filteredCount() is the same function Map/Rankings already call, so this reacts
+  // live to every filter change (phase/gender/boarding/date range) exactly like
+  // they do, and already applies the boarding-filter roll-display rule (item 2's own
+  // "boarders-only when the shared filter is set to Boarders" -- filteredCount's
+  // boarding branch already returns the boarders-only figure for that mode, real
+  // total roll otherwise, no separate rule needed here). The explanatory sentence
+  // moves into the same panel (see ComparatorSidebar's own render) -- computed here,
+  // not there, since describeActiveViewSentence needs the full DataViewSchoolProfile
+  // this component already has, not a prop ComparatorSidebar would otherwise need to
+  // start threading through.
+  const compareNumbers = targetProfile ? filteredCount(profileToFilterableData(targetProfile), filters) : null;
+  const compareSentence = targetProfile ? describeActiveViewSentence(filters, activeSet, targetProfile) : null;
 
   // Large-set design v1, items 3/5: resolve the keyed-cache state (see those effects'
   // own comments) against what the CURRENT render actually wants -- a stored result
@@ -913,7 +994,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
       <div className="border-b border-neutral-200 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-800">
         <FilterBar
           filters={filters}
-          onChange={setFilters}
+          onChange={handleFilterChange}
           target={targetProfile}
           memberSectors={memberSectors}
           collapsed={filterBarCollapsed}
@@ -928,18 +1009,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
           }
         />
       </div>
-
-      {/* 2026-09-06, UX refinements round 1, A3: "a text line below the filter row,
-          stating in plain language what the current filter/comparator combination
-          means... updates live as filters change." Recomputed fresh every render
-          from the actual live filters/activeSet/target (data-view-summary.ts's own
-          module comment) -- never a snapshot that could drift from what Map/
-          Dashboard/Rankings are actually showing. */}
-      {targetProfile && (
-        <div className="border-b border-neutral-200 px-4 py-1.5 text-xs text-neutral-500 print:hidden dark:border-neutral-800 dark:text-neutral-400 sm:px-6">
-          {describeActiveViewSentence(filters, activeSet, targetProfile)}
-        </div>
-      )}
 
       {/* Print-only summary line (brief §9): "show your assumptions" -- an exported
           view states which comparator set and filters produced the numbers on the
@@ -961,22 +1030,23 @@ export default function DataViewShell({ urn }: { urn: string }) {
             targetName={target.name}
             targetUrn={target.urn}
             authToken={authToken}
-            nearestOption={recipeLists?.list1 ?? null}
+            nearestOption={resolvedNearestOption}
             homeLaOption={recipeLists?.list2 ?? null}
-            boardingOption={boardingQuintileOption}
             regionOption={regionOption}
             nationOption={nationOption}
             savedSets={savedSets}
             activeSet={activeSet}
             onSelectSet={(opt) => {
-              // Every lazy placeholder (boarding_quintile, ons_region, nation) shares
-              // this same "snapshot activeSetSeq before the async load, only apply if
-              // still current" guard -- see activeSetSeq's own comment above for the
-              // real bug this protects against, now generalised past boarding alone
-              // since Region/Nation's own fetch is a second async selectSet path.
+              // Compared-with panel round (2026-09-10), item 2: the boarding-quintile
+              // recipe is no longer a separate lazy placeholder (it's resolved
+              // eagerly into resolvedNearestOption above, never lazy/empty) -- only
+              // Region/Nation still genuinely fetch lazily on first click. Same
+              // "snapshot activeSetSeq before the async load, only apply if still
+              // current" guard as before, just narrowed to the one real remaining
+              // async path.
               if (opt.kind === "recipe" && opt.lazy && opt.schools.length === 0) {
                 const mySeq = activeSetSeq.current;
-                const loader = opt.key === "ons_region" ? () => loadRegionOrNationSet("region") : opt.key === "nation" ? () => loadRegionOrNationSet("nation") : loadBoardingQuintileList;
+                const loader = opt.key === "ons_region" ? () => loadRegionOrNationSet("region") : () => loadRegionOrNationSet("nation");
                 loader().then((loaded) => {
                   if (loaded && mySeq === activeSetSeq.current) selectSet(loaded);
                 });
@@ -984,7 +1054,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
               }
               selectSet(opt);
             }}
-            boardingQuintileLoading={boardingQuintileLoading}
             regionNationLoadingScope={regionNationLoadingScope}
             onLoadingChange={handleLoadingChange}
             tickedUrns={tickedUrns}
@@ -993,6 +1062,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
             onUnselectAllTicked={unselectAllTicked}
             comparedHidden={comparedHidden}
             onToggleComparedHidden={() => setComparedHidden((h) => !h)}
+            compareNumbers={compareNumbers}
+            compareSentence={compareSentence}
             profilesByUrn={profilesByUrn}
           />
         </aside>
