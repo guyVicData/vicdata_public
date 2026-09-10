@@ -163,7 +163,11 @@ export default function ComparatorSidebar({
   onToggleComparedHidden,
   profilesByUrn,
   compareNumbers,
+  compareSchoolCount,
+  compareSchoolsNotLoaded,
   compareSentence,
+  addedUrns,
+  onAddSchool,
 }: {
   targetName: string;
   targetUrn: string;
@@ -196,15 +200,35 @@ export default function ComparatorSidebar({
   comparedHidden: boolean;
   onToggleComparedHidden: () => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
-  // Compared-with panel round (2026-09-10), item 3: the target's own currently-
-  // filtered roll figure (filteredCount(), computed in DataViewShell since it needs
-  // the full DataViewSchoolProfile this component doesn't otherwise receive) and the
-  // relocated A3 explanatory sentence -- both null only before the target profile has
-  // loaded at all.
+  // Compared-with panel round (2026-09-10), item 3: the CURRENTLY-COMPARED figure
+  // (target + every ticked, profile-loaded school -- computed in DataViewShell since
+  // it needs the full tickedProfiles array this component doesn't otherwise receive)
+  // and the relocated A3 explanatory sentence -- both null only before the target
+  // profile has loaded at all.
+  //
+  // Real bug fix (2026-09-11): compareNumbers used to be JUST the target's own
+  // figure, with no reference to the compared set at all -- ticking/unticking never
+  // moved it. compareSchoolCount is the real schools-in-set count (ticked +
+  // profile-loaded, +1 for the target -- same totalWithFocus convention `schools`
+  // below already uses); compareSchoolsNotLoaded is normally 0, non-zero only for a
+  // Region/Nation-scale set where more schools are ticked than have a full profile
+  // fetched yet (see DataViewShell's own comment) -- shown as an honest note rather
+  // than silently under-counting with no indication why.
   compareNumbers: FilteredCount | null;
+  compareSchoolCount: number;
+  compareSchoolsNotLoaded: number;
   compareSentence: string | null;
+  // Real bug fix (2026-09-11): used to be local state here, invisible to
+  // DataViewShell -- a school added via the search-add path below was ticked
+  // (onToggleTick reached the lifted tickedUrns correctly) but never actually part
+  // of anything Map/Dashboard/Rankings/this panel's own numbers block read. Lifted
+  // to DataViewShell (see its own addedUrns/addSchool comments) so the roster this
+  // component still assembles below (`schools`) and the real compared set
+  // DataViewShell computes from it (activeSetSchools/tickedProfiles) can never
+  // silently disagree again.
+  addedUrns: { urn: string; name: string }[];
+  onAddSchool: (result: SchoolSearchResult) => void;
 }) {
-  const [addedUrns, setAddedUrns] = useState<{ urn: string; name: string }[]>([]);
   const [windowOpen, setWindowOpen] = useState(false);
   const [nearestPopupOpen, setNearestPopupOpen] = useState(false);
   // Compared-with panel round (2026-09-10), item 2: one stepper now, shared by
@@ -393,15 +417,12 @@ export default function ComparatorSidebar({
   // instruction: "read as 11 (10 comparators + focus school), not 10") -- schools
   // never includes the target (every candidate query excludes it, matching this
   // codebase's own convention everywhere else), so +1 is always safe, never a
-  // double-count.
+  // double-count. `addedUrns` is now a lifted prop (DataViewShell's own comment
+  // explains why -- this used to be local-only state here, invisible to every
+  // downstream consumer of "the real compared set") -- same merge shape as before,
+  // just sourced from the parent.
   const schools = activeSet ? [...activeSet.schools, ...addedUrns.map((a) => ({ urn: a.urn, name: a.name, distanceKm: null }))] : [];
   const totalWithFocus = schools.length + 1;
-
-  function addSchool(result: SchoolSearchResult) {
-    if (schools.some((s) => s.urn === result.urn)) return;
-    setAddedUrns((prev) => [...prev, { urn: result.urn, name: result.current_name }]);
-    onToggleTick(result.urn);
-  }
 
   return (
     <div className="rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800">
@@ -426,14 +447,14 @@ export default function ComparatorSidebar({
       `}</style>
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Compared with</h2>
 
-      {/* Compared-with panel round (2026-09-10), item 3: pupils in the target's own
-          CURRENTLY-FILTERED figure (filteredCount(), computed in DataViewShell so
-          this reacts live to every filter change exactly like Map/Rankings do -- see
-          that function's own boarding-mode branch for why the Boarders-only filter
-          already yields the boarders-only figure here, total roll otherwise, with no
-          separate display rule needed), the school count in the active set, and the
-          A3 explanatory sentence underneath -- relocated here from a full-width row
-          below the filter bar (DataViewShell.tsx), which this replaces. */}
+      {/* Compared-with panel round (2026-09-10), item 3: pupils SUMMED across the
+          target + every ticked, profile-loaded school (compareNumbers, computed in
+          DataViewShell over tickedProfiles -- real bug fixed 2026-09-11: this used
+          to be just the target's own figure, so ticking/unticking never moved it --
+          see DataViewShell's own comment), the real schools-in-set count
+          (compareSchoolCount, same fix), and the A3 explanatory sentence underneath
+          -- relocated here from a full-width row below the filter bar
+          (DataViewShell.tsx), which this replaces. */}
       {compareNumbers && (
         <div className="mb-3 rounded-md border border-neutral-100 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900/40">
           <div className="flex items-baseline justify-between gap-3">
@@ -441,8 +462,17 @@ export default function ComparatorSidebar({
               <p className="text-2xl leading-none font-semibold text-neutral-900 dark:text-neutral-50">{compareNumbers.total.toLocaleString()}</p>
               <p className="mt-1 text-[11px] tracking-wide text-neutral-500 uppercase">Pupils</p>
             </div>
-            <p className="text-xs whitespace-nowrap text-neutral-500">{schools.length.toLocaleString()} schools in this set</p>
+            <p className="text-xs whitespace-nowrap text-neutral-500">{compareSchoolCount.toLocaleString()} schools in this set</p>
           </div>
+          {/* Only a Region/Nation-scale set can have more ticked than profile-loaded
+              (DataViewShell's own LARGE_SET_PROFILE_THRESHOLD gate) -- noted
+              honestly rather than silently showing a smaller number with no
+              indication why. */}
+          {compareSchoolsNotLoaded > 0 && (
+            <p className="mt-1 text-xs text-neutral-400">
+              +{compareSchoolsNotLoaded.toLocaleString()} more ticked, not yet loaded
+            </p>
+          )}
           {compareNumbers.female !== null && compareNumbers.male !== null && (
             <p className="mt-1 text-xs text-neutral-500">
               {compareNumbers.female.toLocaleString()} girls · {compareNumbers.male.toLocaleString()} boys
@@ -588,7 +618,7 @@ export default function ComparatorSidebar({
           onToggleTick={onToggleTick}
           onSelectAllTicked={() => onSelectAllTicked(schools.map((s) => s.urn))}
           onUnselectAllTicked={onUnselectAllTicked}
-          onAddSchool={addSchool}
+          onAddSchool={onAddSchool}
           profilesByUrn={profilesByUrn}
           onClose={() => setWindowOpen(false)}
         />

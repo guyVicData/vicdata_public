@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import type { SchoolSearchResult } from "@/components/SchoolSearch";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { deserializeProfile, profileToFilterableData, type WireDataViewSchoolProfile } from "@/lib/data-view-serialize";
 import {
@@ -224,6 +225,22 @@ export default function DataViewShell({ urn }: { urn: string }) {
     setSelectingSetLabel(label);
   }, []);
   const [tickedUrns, setTickedUrns] = useState<Set<string>>(new Set());
+  // Real bug found live-testing the numbers block (2026-09-11): this used to live
+  // entirely inside ComparatorSidebar.tsx as local state, invisible to this
+  // component -- a school added via the Add/Subtract window's search-add path
+  // (addSchool) called onToggleTick(urn) correctly (tickedUrns did include it), but
+  // the school itself was never added to anything DataViewShell reads, so every
+  // downstream consumer of "the active set's real schools" (tickedProfiles below,
+  // the profile-fetch effect, Map/Dashboard/Rankings via tickedProfiles) silently
+  // never saw it -- a manually searched-and-added-then-ticked school was ticked in
+  // the sidebar's own tick-list but functionally invisible everywhere else. Lifted
+  // here, alongside tickedUrns (which has always lived here), so activeSetSchools
+  // below can merge it into the one real roster every downstream consumer reads.
+  // Deliberately NOT reset when activeSet changes (picking a different named set) --
+  // same "manual thinning is a genuinely separate action from picking a named set"
+  // convention ComparatorSidebar's own module comment already establishes for why
+  // this exists as a persistent overlay, not reset elsewhere.
+  const [addedUrns, setAddedUrns] = useState<{ urn: string; name: string }[]>([]);
   // 2026-09-07, UX refinements round 2, P3 item 8: "ability to hide all schools in
   // the 'Compared with' list at once" -- built to Guy's own stated reading (a
   // temporary display toggle, membership-preserving, distinct from item 9's
@@ -479,6 +496,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // fixed at that source too (see data-view-serialize.ts's own comment), but this
   // effect's own missing error handling was real and independent of it, and is fixed
   // here on the same principle as Steps 1/2: every path reaches a definite state.
+  // Real bug fix (2026-09-11): activeSet.schools alone never includes a school
+  // manually added via the Add/Subtract window's search-add path (addSchool above)
+  // -- merged here, ONCE, so every downstream consumer (this effect's own urns
+  // computation just below, tickedProfiles further down, ComparatorSidebar's own
+  // roster-count button) reads the SAME real list, rather than two that used to
+  // silently disagree (addedUrns used to live only inside ComparatorSidebar's own
+  // local state, invisible here). An added entry that happens to already be part of
+  // activeSet.schools (a school someone searches for that's already in the active
+  // recipe) is skipped, not duplicated -- activeSet's own entry (which may carry a
+  // real distanceKm) wins.
+  const activeSetSchoolUrns = new Set(activeSet?.schools.map((s) => s.urn) ?? []);
+  const activeSetSchools: DefaultListEntry[] = activeSet
+    ? [...activeSet.schools, ...addedUrns.filter((a) => !activeSetSchoolUrns.has(a.urn)).map((a) => ({ urn: a.urn, name: a.name, distanceKm: null }))]
+    : [];
+
   useEffect(() => {
     if (!authToken || !activeSet || !target) return;
     // Member Data View performance architecture v1 (2026-10-08): Region/Nation sets
@@ -506,10 +538,10 @@ export default function DataViewShell({ urn }: { urn: string }) {
     // when the active set is large. A member isn't going to individually click
     // hundreds of markers by hand, so this stays a small, bounded fetch in practice.
     const isLargeSet = activeSet.schools.length > LARGE_SET_PROFILE_THRESHOLD;
-    const activeSetUrns = new Set(activeSet.schools.map((s) => s.urn));
+    const activeSetSchoolUrnSet = new Set(activeSetSchools.map((s) => s.urn));
     const urns = isLargeSet
-      ? Array.from(new Set([target.urn, ...Array.from(tickedUrns).filter((u) => activeSetUrns.has(u))]))
-      : Array.from(new Set([target.urn, ...activeSet.schools.map((s) => s.urn)]));
+      ? Array.from(new Set([target.urn, ...Array.from(tickedUrns).filter((u) => activeSetSchoolUrnSet.has(u))]))
+      : Array.from(new Set([target.urn, ...activeSetSchools.map((s) => s.urn)]));
     const alreadyFetched = urns.every((u) => profilesByUrn.has(u));
     if (alreadyFetched) return;
     (async () => {
@@ -809,6 +841,17 @@ export default function DataViewShell({ urn }: { urn: string }) {
     });
   }
 
+  // Moved here from ComparatorSidebar.tsx (see addedUrns' own comment above for why)
+  // -- same dedup guard against the real roster (activeSetSchools, defined below;
+  // safe to reference here since this function only runs on a later event, well
+  // after activeSetSchools has been assigned for the render that defined it), just
+  // sourced from lifted state now instead of a local-only copy.
+  function addSchool(result: SchoolSearchResult) {
+    if (activeSetSchools.some((s) => s.urn === result.urn)) return;
+    setAddedUrns((prev) => [...prev, { urn: result.urn, name: result.current_name }]);
+    toggleTick(result.urn);
+  }
+
   // 2026-09-07, UX refinements round 2, P3 item 9: "Select all" / "Unselect all"
   // on the sidebar's own schools list -- genuinely changes tickedUrns (set
   // MEMBERSHIP), unlike item 8's comparedHidden above, which deliberately never
@@ -890,9 +933,16 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // be a slice the way phase/gender/boarding are) applied once, here, so
   // Dashboard/Rankings/Map can never disagree about which ticked schools the
   // active sector filter has excluded.
+  // Real bug fix (2026-09-11): reads activeSetSchools (defined above, alongside the
+  // profile-fetch effect that needs it too) instead of activeSet.schools directly --
+  // a manually added-and-ticked school (addSchool above) was previously invisible
+  // here, meaning it never appeared on Map/Dashboard/Rankings despite being ticked in
+  // the sidebar's own tick-list. This was the one place every one of those views
+  // reads "what's actually being compared," so the fix here fixes all of them at
+  // once, not just the numbers block that surfaced it.
   const tickedProfiles =
     activeSet && !comparedHidden
-      ? activeSet.schools
+      ? activeSetSchools
           .filter((s) => tickedUrns.has(s.urn))
           .map((s) => profilesByUrn.get(s.urn))
           .filter((p): p is DataViewSchoolProfile => !!p)
@@ -900,19 +950,44 @@ export default function DataViewShell({ urn }: { urn: string }) {
       : [];
   const filterSummary = describeFilters(filters);
 
-  // Compared-with panel round (2026-09-10), item 3: the new numbers block inside
-  // ComparatorSidebar reads the target's own CURRENTLY-FILTERED roll figure --
-  // filteredCount() is the same function Map/Rankings already call, so this reacts
-  // live to every filter change (phase/gender/boarding/date range) exactly like
-  // they do, and already applies the boarding-filter roll-display rule (item 2's own
-  // "boarders-only when the shared filter is set to Boarders" -- filteredCount's
-  // boarding branch already returns the boarders-only figure for that mode, real
-  // total roll otherwise, no separate rule needed here). The explanatory sentence
-  // moves into the same panel (see ComparatorSidebar's own render) -- computed here,
-  // not there, since describeActiveViewSentence needs the full DataViewSchoolProfile
-  // this component already has, not a prop ComparatorSidebar would otherwise need to
-  // start threading through.
-  const compareNumbers = targetProfile ? filteredCount(profileToFilterableData(targetProfile), filters) : null;
+  // Compared-with panel round (2026-09-10), item 3, REAL BUG FOUND live-testing
+  // (2026-09-11): this used to be JUST the target's own filteredCount(), with no
+  // reference to the compared set (tickedUrns/activeSet/schools) at all -- neither
+  // the "+5 more" stepper nor the Add/Subtract window's tick/untick ever moved this
+  // number, because nothing about set membership was ever read. Fixed to sum the
+  // target's own figure with every ticked, profile-loaded school's own
+  // filteredCount() (over tickedProfiles, the same array Map/Rankings already treat
+  // as "what's actually being compared," now itself fixed above) -- reacts live to
+  // BOTH tickedUrns changes (any control that ticks/unticks) and filter changes.
+  // female/male stay summed only while every contributing school has a real split
+  // (filteredCount's own null-means-no-split convention); one school without a
+  // split makes the combined split honestly null too, rather than silently
+  // undercounting.
+  const targetFilteredCount = targetProfile ? filteredCount(profileToFilterableData(targetProfile), filters) : null;
+  const compareNumbers = targetFilteredCount
+    ? tickedProfiles.reduce<typeof targetFilteredCount>(
+        (sum, p) => {
+          const c = filteredCount(profileToFilterableData(p), filters);
+          return {
+            total: sum.total + c.total,
+            female: sum.female !== null && c.female !== null ? sum.female + c.female : null,
+            male: sum.male !== null && c.male !== null ? sum.male + c.male : null,
+            basis: sum.basis,
+          };
+        },
+        targetFilteredCount,
+      )
+    : null;
+  // Schools in set: real, PROFILE-LOADED ticked schools (tickedProfiles, complete now
+  // that activeSetSchools includes manually-added ones) plus the target itself --
+  // same totalWithFocus convention this file/ComparatorSidebar already uses
+  // elsewhere. A Region/Nation-scale set can have more schools ticked than have a
+  // full profile loaded yet (LARGE_SET_PROFILE_THRESHOLD's own gate, the profile-
+  // fetch effect above) -- tracked separately so the sidebar can note the gap
+  // honestly rather than silently showing a smaller number with no indication why.
+  const compareSchoolCount = tickedProfiles.length + 1;
+  const compareSchoolsNotLoaded =
+    activeSet && !comparedHidden ? Array.from(tickedUrns).filter((u) => !profilesByUrn.has(u)).length : 0;
   const compareSentence = targetProfile ? describeActiveViewSentence(filters, activeSet, targetProfile) : null;
 
   // Large-set design v1, items 3/5: resolve the keyed-cache state (see those effects'
@@ -940,9 +1015,10 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // relevant.
   const memberSectors = Array.from(
     new Set(
-      [targetProfile?.sector, ...(activeSet?.schools.map((s) => profilesByUrn.get(s.urn)?.sector) ?? [])].filter(
-        (s): s is NonNullable<typeof s> => !!s,
-      ),
+      // Real bug fix (2026-09-11): activeSetSchools (not activeSet.schools) so a
+      // manually added school's own sector makes its filter pill available too --
+      // consistent with this comment's own "whole active set" intent above.
+      [targetProfile?.sector, ...activeSetSchools.map((s) => profilesByUrn.get(s.urn)?.sector)].filter((s): s is NonNullable<typeof s> => !!s),
     ),
   );
 
@@ -1063,8 +1139,12 @@ export default function DataViewShell({ urn }: { urn: string }) {
             comparedHidden={comparedHidden}
             onToggleComparedHidden={() => setComparedHidden((h) => !h)}
             compareNumbers={compareNumbers}
+            compareSchoolCount={compareSchoolCount}
+            compareSchoolsNotLoaded={compareSchoolsNotLoaded}
             compareSentence={compareSentence}
             profilesByUrn={profilesByUrn}
+            addedUrns={addedUrns}
+            onAddSchool={addSchool}
           />
         </aside>
 
@@ -1123,7 +1203,13 @@ export default function DataViewShell({ urn }: { urn: string }) {
                   <MapView
                     target={target}
                     targetProfile={targetProfile}
-                    members={activeSet?.schools ?? []}
+                    // Real bug fix (2026-09-11): this used to read activeSet.schools
+                    // directly, which never included a school added via the
+                    // Add/Subtract window's search-add path -- see activeSetSchools'
+                    // own comment above for why. Using the merged list here means a
+                    // manually added-and-ticked school actually draws on the map now,
+                    // not just tick-listed in the sidebar.
+                    members={activeSetSchools}
                     tickedUrns={tickedUrns}
                     comparedHidden={comparedHidden}
                     onToggleTick={toggleTick}
