@@ -104,11 +104,18 @@ function academicYearLabel(period: number): string {
 // light neutral border/muted text (border-neutral-300/text-neutral-600) -- didn't
 // read as "darkened," just outlined. Now a genuinely filled dark-neutral pill in
 // both themes (bg-neutral-800 in light mode -- clearly darker than the page around
-// it -- bg-neutral-950 in dark mode, darker than this app's own usual dark-mode
-// card backgrounds so it still reads as recessed/muted against them), not just a
-// border tweak. `hasCaret` adds a small "opens a menu" glyph -- phase/age pills
-// only (the ones that gain a nested "Ages:" drill-down when selected alone);
-// Gender/Boarding/Sector pills don't get one, they have no nested menu.
+// it), not just a border tweak. `hasCaret` adds a small "opens a menu" glyph --
+// phase/age pills only (the ones that gain a nested "Ages:" drill-down when
+// selected alone); Gender/Boarding/Sector pills don't get one, they have no
+// nested menu.
+//
+// Real bug fix, confirmed against a live screenshot (2026-09-16): the dark-mode
+// inactive fill was bg-neutral-950, the EXACT same hex as --background in dark
+// mode (globals.css) -- zero contrast against the page, every pill rendered as a
+// flat, undifferentiated row. Moved one step lighter than the page (bg-neutral-800/
+// border-neutral-700/text-neutral-400), mirroring the light-mode version's own
+// "clearly darker than the page around it" intent rather than accidentally
+// matching the page exactly.
 function Pill({
   active,
   tagKey,
@@ -133,7 +140,7 @@ function Pill({
       className={
         active
           ? "filter-pill-active inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium"
-          : "inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-500 dark:hover:bg-neutral-900"
+          : "inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
       }
       style={
         active
