@@ -40,17 +40,43 @@ const CENSUS_FETCH_CHUNK = 40;
 
 // Chunks fetched with bounded concurrency, not strictly sequentially -- measured live
 // against the real §6.1 Senior-boarding recipe (≈264 candidates, 7 chunks of 40):
-// sequential chunking took 71.6s end to end, dominated by per-chunk network
-// round-trip latency to the remote vicdata reference API, not database load (the
-// brief's own concern was a single OVERSIZED request timing out server-side, not
-// concurrent moderate-sized ones contending with each other) -- genuinely too slow
-// for an interactive "open this default list" click. A small concurrency cap (4)
-// keeps every individual request at the exact proven-safe chunk size while letting
-// several round-trips overlap, without firing all 7 at once against a remote API
-// this repo doesn't own the capacity planning for.
+// sequential chunking took 71.6s end to end. Originally attributed to "per-chunk
+// network round-trip latency to the remote vicdata reference API" -- latency round
+// (2026-09-15) found the real mechanism is almost certainly the SAME unscoped-
+// pagination cost fetchCensusFactsBatched's own comment above now documents (this
+// call site, boardingQuintileList's live path, never passed periodMin/periodMax
+// either), not genuine per-request remote latency -- logged here as a correction,
+// not silently rewritten (docs/vicdata_data_view_la_comparator_latency_diagnosis_v1.
+// md). Concurrency 4 is still a real, working mitigation regardless (fewer chunks'
+// own internal page loops running at once) -- left as-is, not re-tuned this round.
 const CENSUS_FETCH_CONCURRENCY = 4;
 
-export async function fetchCensusFactsBatched(entityIds: string[]): Promise<ReferenceFact[]> {
+// Latency round (2026-09-15), real root cause found by reconciling a direct
+// contradiction (Guy's own standalone timing of the remote RPC came back fast,
+// mine -- timing the lookupReferenceData() WRAPPER's total, not one round trip --
+// came back at ~10s/chunk): with no periodMin/periodMax given, lookupReferenceData
+// asks for EVERY year and EVERY breakdown dfe_school_census has ever recorded for
+// each entity, not just what the caller actually reads. For a real 40-school chunk
+// that's ~994 rows/school (every year, ~129 breakdowns/school/year) -- comfortably
+// past PostgREST's 1000-row page cap, forcing lookupReferenceData's own SEQUENTIAL
+// pagination loop (vicdata-reference.ts) through up to 40 real round trips per
+// chunk, each individually fast (~150-330ms) but summing to the real ~10s.
+// Verified directly: the identical real chunk, scoped to just the current period,
+// dropped from 10,073ms/39,748 facts to 498ms/5,160 facts -- a ~20x difference from
+// passing parameters lookupReferenceData already accepted, not new plumbing to that
+// function itself. Full mechanism in
+// docs/vicdata_data_view_la_comparator_latency_diagnosis_v1.md.
+//
+// periodMin/periodMax are optional and default to undefined (today's unscoped
+// behaviour) specifically so fetchDataViewProfiles's own call below -- which
+// genuinely needs every period on record, for DataViewSchoolProfile's real
+// multi-year trend/ageGenderCountsByPeriod fields -- is completely unaffected.
+// Only a caller that provably reads one period (buildLaComparatorSet,
+// default-comparator-lists.ts) should ever pass these.
+export async function fetchCensusFactsBatched(
+  entityIds: string[],
+  options?: { periodMin?: number; periodMax?: number },
+): Promise<ReferenceFact[]> {
   const chunks: string[][] = [];
   for (let i = 0; i < entityIds.length; i += CENSUS_FETCH_CHUNK) {
     chunks.push(entityIds.slice(i, i + CENSUS_FETCH_CHUNK));
@@ -59,7 +85,14 @@ export async function fetchCensusFactsBatched(entityIds: string[]): Promise<Refe
   for (let i = 0; i < chunks.length; i += CENSUS_FETCH_CONCURRENCY) {
     const batch = chunks.slice(i, i + CENSUS_FETCH_CONCURRENCY);
     const results = await Promise.all(
-      batch.map((chunk) => lookupReferenceData({ sourceId: "dfe_school_census", entityIds: chunk })),
+      batch.map((chunk) =>
+        lookupReferenceData({
+          sourceId: "dfe_school_census",
+          entityIds: chunk,
+          periodMin: options?.periodMin,
+          periodMax: options?.periodMax,
+        }),
+      ),
     );
     for (const facts of results) all.push(...facts);
   }

@@ -259,7 +259,20 @@ export async function buildLaComparatorSet(
   // Skip-and-backfill past real roll-data gaps, same discipline as List 1 -- batched
   // (chunks of 40) even though an LA-bounded pool is rarely anywhere near that size,
   // for the same defensive reason data-view-profiles.ts's fetch is always batched.
-  const facts = await fetchCensusFactsBatched(byDistance.map((r) => r.urn));
+  //
+  // Latency round (2026-09-15): scoped to CURRENT_CENSUS_PERIOD -- the only period
+  // singleAgeGenderCountsForPeriod below ever reads (it discards every other period
+  // itself, per-row, after the fact). Unscoped, this call was fetching every year
+  // dfe_school_census has ever recorded per candidate, forcing fetchCensusFactsBatched's
+  // own internal pagination through dozens of sequential remote round trips per
+  // chunk -- confirmed live at ~10s/chunk unscoped vs ~0.5s/chunk scoped, the real
+  // root cause of the reported 12-14s (up to ~15s for a large LA) default-lists
+  // latency (docs/vicdata_data_view_la_comparator_latency_diagnosis_v1.md). This is
+  // the one real caller of fetchCensusFactsBatched that provably only ever needs one
+  // period -- fetchDataViewProfiles's own call stays unscoped (genuinely needs full
+  // multi-year trend data), so this parameter is opt-in, not a default-behaviour
+  // change for every caller.
+  const facts = await fetchCensusFactsBatched(byDistance.map((r) => r.urn), { periodMin: CURRENT_CENSUS_PERIOD, periodMax: CURRENT_CENSUS_PERIOD });
   const schools: DefaultListEntry[] = [];
   for (const r of byDistance) {
     if (schools.length >= LIST2_CAP) break;
