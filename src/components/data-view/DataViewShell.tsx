@@ -1199,6 +1199,22 @@ export default function DataViewShell({ urn }: { urn: string }) {
     setTickedUrns(new Set());
   }
 
+  // Add/subtract window round (2026-09-14), Part 4: bulk select/deselect for ONE
+  // group (an LA, a sector, or a phase band) within the Add/subtract window --
+  // ADDS/REMOVES just that group's own URNs to/from whatever's already ticked,
+  // unlike selectAllTicked/unselectAllTicked above (which replace the WHOLE ticked
+  // set) -- a per-group action must never silently clear ticks outside that group.
+  function setGroupTicked(urns: string[], ticked: boolean) {
+    setTickedUrns((prev) => {
+      const next = new Set(prev);
+      for (const u of urns) {
+        if (ticked) next.add(u);
+        else next.delete(u);
+      }
+      return next;
+    });
+  }
+
   if (loadState === "checking" || loadState === "loading") {
     return (
       <main className="px-6 py-24 text-center text-sm text-neutral-500">
@@ -1547,6 +1563,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
             onToggleTick={toggleTick}
             onSelectAllTicked={selectAllTicked}
             onUnselectAllTicked={unselectAllTicked}
+            onGroupTicked={setGroupTicked}
             comparedHidden={comparedHidden}
             onToggleComparedHidden={() => setComparedHidden((h) => !h)}
             compareNumbers={compareNumbers}

@@ -159,6 +159,7 @@ export default function ComparatorSidebar({
   onToggleTick,
   onSelectAllTicked,
   onUnselectAllTicked,
+  onGroupTicked,
   comparedHidden,
   onToggleComparedHidden,
   profilesByUrn,
@@ -197,6 +198,11 @@ export default function ComparatorSidebar({
   onToggleTick: (urn: string) => void;
   onSelectAllTicked: (urns: string[]) => void;
   onUnselectAllTicked: () => void;
+  // Add/subtract window round (2026-09-14), Part 4: bulk select/deselect for ONE
+  // group (LA/sector/phase) within the Add/subtract window -- adds/removes just
+  // that group's URNs, unlike onSelectAllTicked/onUnselectAllTicked above (which
+  // replace the WHOLE ticked set).
+  onGroupTicked: (urns: string[], ticked: boolean) => void;
   comparedHidden: boolean;
   onToggleComparedHidden: () => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
@@ -621,6 +627,7 @@ export default function ComparatorSidebar({
           onToggleTick={onToggleTick}
           onSelectAllTicked={() => onSelectAllTicked(schools.map((s) => s.urn))}
           onUnselectAllTicked={onUnselectAllTicked}
+          onGroupTicked={onGroupTicked}
           onAddSchool={onAddSchool}
           profilesByUrn={profilesByUrn}
           onClose={() => setWindowOpen(false)}

@@ -17,9 +17,27 @@ import { useMemo, useState } from "react";
 import SchoolSearch, { type SchoolSearchResult } from "@/components/SchoolSearch";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
+import { relevantAgeBandsFor, type PhaseBandKey } from "@/lib/data-view-filters";
+import type { SectorTag } from "@/lib/typology";
 
 type Row = { urn: string; name: string; distanceKm: number | null };
 type SortMode = "distance" | "name";
+// Add/subtract window round (2026-09-14), Part 4: "Group by" generalised from a
+// single LA checkbox into a real choice, per direct instruction -- "select/
+// deselect all schools of a given kind at once... generalise the existing
+// grouping mechanism rather than adding a separate new control."
+type GroupByMode = "none" | "la" | "sector" | "phase";
+
+// Same four real sector buckets MapView's own SectorColourKey legend uses
+// (typology.ts's SectorTag), same real order.
+const ALL_SECTORS: SectorTag[] = ["Independent", "State", "FE", "Special Schools"];
+const UNKNOWN_SECTOR_LABEL = "Unknown sector";
+// Same real PhaseBandKey taxonomy used everywhere else in this build
+// (data-view-filters.ts's own PHASE_BANDS), same real order.
+const PHASE_GROUP_ORDER: PhaseBandKey[] = ["Early Years", "Junior", "Prep", "Senior", "Post 16", "Adult"];
+const UNKNOWN_PHASE_LABEL = "Unknown phase";
+
+type SchoolGroup = { key: string; label: string | null; rows: Row[] };
 
 export default function AddSubtractSchoolsWindow({
   targetName,
@@ -28,6 +46,7 @@ export default function AddSubtractSchoolsWindow({
   onToggleTick,
   onSelectAllTicked,
   onUnselectAllTicked,
+  onGroupTicked,
   onAddSchool,
   profilesByUrn,
   onClose,
@@ -38,13 +57,14 @@ export default function AddSubtractSchoolsWindow({
   onToggleTick: (urn: string) => void;
   onSelectAllTicked: () => void;
   onUnselectAllTicked: () => void;
+  onGroupTicked: (urns: string[], ticked: boolean) => void;
   onAddSchool: (result: SchoolSearchResult) => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
   onClose: () => void;
 }) {
   const hasDistance = schools.some((s) => s.distanceKm !== null);
   const [sortMode, setSortMode] = useState<SortMode>(hasDistance ? "distance" : "name");
-  const [groupByLa, setGroupByLa] = useState(false);
+  const [groupBy, setGroupBy] = useState<GroupByMode>("none");
 
   function sortRows(rows: Row[]): Row[] {
     return [...rows].sort((a, b) =>
@@ -52,19 +72,61 @@ export default function AddSubtractSchoolsWindow({
     );
   }
 
-  const groups = useMemo(() => {
-    if (!groupByLa) return [{ laName: null as string | null, rows: sortRows(schools) }];
-    const byLa = new Map<string, Row[]>();
-    for (const s of schools) {
-      const la = profilesByUrn.get(s.urn)?.laName ?? "Unknown LA";
-      if (!byLa.has(la)) byLa.set(la, []);
-      byLa.get(la)!.push(s);
+  // Add/subtract window round (2026-09-14), Part 4: a school can genuinely belong
+  // to more than one phase band (a through-school -- e.g. real Junior+Senior+
+  // Post-16 pupils under one URN). Decided plainly, not left ambiguous: it appears
+  // in EVERY matching group, not just one "primary" band -- reusing
+  // relevantAgeBandsFor's own established multi-band return shape verbatim (the
+  // same real enrollment-aware phase-relevance function FilterBar's own pill
+  // display already uses elsewhere in this build) rather than inventing a new
+  // "pick just one" reduction this codebase has no other precedent for.
+  const groups = useMemo((): SchoolGroup[] => {
+    if (groupBy === "none") return [{ key: "all", label: null, rows: sortRows(schools) }];
+
+    if (groupBy === "la") {
+      const byLa = new Map<string, Row[]>();
+      for (const s of schools) {
+        const la = profilesByUrn.get(s.urn)?.laName ?? "Unknown LA";
+        if (!byLa.has(la)) byLa.set(la, []);
+        byLa.get(la)!.push(s);
+      }
+      return Array.from(byLa.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([laName, rows]) => ({ key: laName, label: laName, rows: sortRows(rows) }));
     }
-    return Array.from(byLa.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([laName, rows]) => ({ laName, rows: sortRows(rows) }));
+
+    if (groupBy === "sector") {
+      const bySector = new Map<string, Row[]>();
+      for (const s of schools) {
+        const sector = profilesByUrn.get(s.urn)?.sector ?? UNKNOWN_SECTOR_LABEL;
+        if (!bySector.has(sector)) bySector.set(sector, []);
+        bySector.get(sector)!.push(s);
+      }
+      return [...ALL_SECTORS, UNKNOWN_SECTOR_LABEL]
+        .filter((k) => bySector.has(k))
+        .map((k) => ({ key: k, label: k, rows: sortRows(bySector.get(k)!) }));
+    }
+
+    // phase
+    const byPhase = new Map<string, Row[]>();
+    for (const s of schools) {
+      const profile = profilesByUrn.get(s.urn);
+      const bands = profile ? relevantAgeBandsFor(profile) : [];
+      if (bands.length === 0) {
+        if (!byPhase.has(UNKNOWN_PHASE_LABEL)) byPhase.set(UNKNOWN_PHASE_LABEL, []);
+        byPhase.get(UNKNOWN_PHASE_LABEL)!.push(s);
+      } else {
+        for (const b of bands) {
+          if (!byPhase.has(b.key)) byPhase.set(b.key, []);
+          byPhase.get(b.key)!.push(s);
+        }
+      }
+    }
+    return [...PHASE_GROUP_ORDER, UNKNOWN_PHASE_LABEL]
+      .filter((k) => byPhase.has(k))
+      .map((k) => ({ key: k, label: k, rows: sortRows(byPhase.get(k)!) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schools, groupByLa, sortMode, profilesByUrn]);
+  }, [schools, groupBy, sortMode, profilesByUrn]);
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 p-4">
@@ -128,8 +190,17 @@ export default function AddSubtractSchoolsWindow({
               </label>
             )}
             <label className="flex items-center gap-1.5">
-              <input type="checkbox" checked={groupByLa} onChange={(e) => setGroupByLa(e.target.checked)} />
-              Group by LA
+              Group by:
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value as GroupByMode)}
+                className="rounded border border-neutral-300 bg-white px-1.5 py-0.5 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              >
+                <option value="none">None</option>
+                <option value="la">LA</option>
+                <option value="sector">Sector</option>
+                <option value="phase">Phase</option>
+              </select>
             </label>
           </div>
         </div>
@@ -139,11 +210,29 @@ export default function AddSubtractSchoolsWindow({
             {targetName} <span className="text-neutral-400">(this school)</span>
           </p>
           {groups.map((g) => (
-            <div key={g.laName ?? "all"} className="mb-3">
-              {g.laName && <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">{g.laName}</h3>}
+            <div key={g.key} className="mb-3">
+              {g.label && (
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">{g.label}</h3>
+                  {/* Add/subtract window round (2026-09-14), Part 4: a working
+                      select-all/deselect-all pair on EVERY group's own header row,
+                      not just the whole-list controls above -- LA groups get this
+                      for free too, same mechanism (onGroupTicked, additive/
+                      subtractive over just this group's own URNs, never touching
+                      ticks outside it). */}
+                  <div className="flex shrink-0 items-center gap-2 text-[11px] text-neutral-400">
+                    <button type="button" className="underline" onClick={() => onGroupTicked(g.rows.map((r) => r.urn), true)}>
+                      Select all
+                    </button>
+                    <button type="button" className="underline" onClick={() => onGroupTicked(g.rows.map((r) => r.urn), false)}>
+                      Deselect all
+                    </button>
+                  </div>
+                </div>
+              )}
               <ul className="space-y-1">
                 {g.rows.map((s) => (
-                  <SchoolRow key={s.urn} school={s} ticked={tickedUrns.has(s.urn)} sector={profilesByUrn.get(s.urn)?.sector ?? null} onToggle={() => onToggleTick(s.urn)} />
+                  <SchoolRow key={`${g.key}:${s.urn}`} school={s} ticked={tickedUrns.has(s.urn)} sector={profilesByUrn.get(s.urn)?.sector ?? null} onToggle={() => onToggleTick(s.urn)} />
                 ))}
               </ul>
             </div>
