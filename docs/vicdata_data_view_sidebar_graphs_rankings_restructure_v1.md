@@ -616,3 +616,90 @@ elements.
 - `src/components/data-view/DataViewShell.tsx` (item 8, reverted)
 
 Commit: `adf8d19`.
+
+## Second follow-up round (DONE, commit `f740cff`)
+
+Four more changes on top of the first follow-up round.
+
+**1. Section 02 side by side** — Roll Trends and Growth/decline now sit in
+a `grid grid-cols-1 gap-4 lg:grid-cols-2` (was `flex flex-col`, fully
+stacked). Same stack-on-mobile pattern Section 03/04 already use, two
+columns instead of three.
+
+**2. Graph 1 (`TargetRollBarChart.tsx`): Y-scale, caption, colour** — three
+related fixes:
+- **Y-scale**: was deliberately zero-based; reused `CombinedRollChart`'s
+  real zoomed-axis math verbatim (`pad = span > 0 ? span * 0.15 :
+  Math.max(rawMax * 0.05, 1)`, `minY = Math.max(0, rawMin - pad)`, `maxY =
+  rawMax + pad`) so bars still visually sit on a real baseline (`minY`, not
+  floating) but the actual year-to-year movement is no longer compressed
+  into the top sliver of the chart.
+- **Trend-line caption**: the dashed trend line had no label anywhere.
+  `GraphsView.tsx` now renders a `TrendStatement` underneath the chart, fed
+  the same `rollTrendBadge` already computed there (freed up once item 3
+  removed its other consumer, the Current Roll card's `TrendPill`).
+- **Visual distinctness**: the trend line used to be styled almost
+  identically to Section 02's grey dashed "average roll of this set" line
+  (`currentColor`, ~0.4–0.5 opacity, dashed `4 3`). Since this chart's bars
+  are already in `FOCUS_SCHOOL_COLOUR`, the trend line now ties to that
+  same colour identity — solid, `strokeOpacity={0.85}`, `strokeWidth={2}`,
+  no dash — rather than the muted grey-dashed convention.
+
+**3. "Current roll" card stripped to just the comparison chart** — removed
+the big `{targetCurrent}` number + `TrendPill` ("already in the left hand
+column" — Part A's sidebar panel) and the `shapeFact` line ("makes no sense
+there"). `SortedBarChart` (the real cross-set comparison, the card's actual
+job) plus `sizeBandLine` (not flagged, kept) are now the card's whole
+content. Removed the now-dead `anchorAgeGenderCounts`/`anchorShape`/
+`shapeFact` computation and the `shapeInlineFact`/`shapeClassifierInput`/
+`classifyShape` imports that only fed it, plus the now-unused default
+`TrendPill` import (its named export `academicYearLabel` is still used
+throughout the file).
+
+**4. Real bug from the item-8 fix: sector-fallback "Market share" showed
+roll counts, not %** — caught immediately after landing the previous
+round's item 8. `sectorFallbackRollPoints`/`sectorFallbackGrowthPoints`
+correctly summed the real member schools instead of national totals (item
+8's own fix), but the resulting numbers were never converted into a share
+of the group's combined roll — Graph 5 showed raw pupil counts under a
+"Market share" title, and Graph 6's growth/decline used
+`trendBadge(...).pctChange` (a roll-count growth *ratio*) where the
+non-fallback view computes a genuine percentage-*point* difference between
+two share percentages. Fixed with a new `shareOfCombined(value, idx)`
+helper — the same `combinedByPeriod[idx]` denominator
+`marketShareBarPoints`/`marketShareGrowthPoints` already use — applied to
+both the target's own figure and each sector's summed figure, and switched
+Graph 6's fallback formatter from `%` to `pp` to match the non-fallback
+branch.
+
+### Verification
+
+Real login, real testing-school switch (urn 100053), 24 real comparator
+schools, live local server.
+
+- **Item 2**: for this school's real 2019–2025 roll history
+  (`[1072, 1135, 1168, 1163, 1166, 1218, 1252]`), the old zero-based axis
+  had the real data occupying only 13.1% of the chart's vertical range; the
+  new zoomed axis (`minY=1045, maxY=1279`) takes that to 76.9% — a
+  dramatic, genuinely visible improvement, not just a theoretical one.
+- **Item 4**: the same 23-school real in-scope group (crossing the
+  20-school threshold) now produces market-share bars that sum to a clean
+  100.0% (target 15.4% + Independent schools 68.4% + LA-maintained 16.2%)
+  instead of raw pupil counts, and growth/decline bars on a real
+  single-digit pp scale (target +3.1pp, Independent +3.6pp, LA-maintained
+  −5.2pp) — the same kind and scale of number the non-fallback view already
+  shows, not an unrelated roll-growth-rate figure.
+- `tsc`/`lint`/`build` all clean; lint at the same 7-problem pre-existing
+  baseline.
+
+**Not independently verified**: item 1's side-by-side layout is a pure CSS
+grid change with no real-data component a script can check — the Chrome
+extension was unreachable again this session (checked before this round),
+so confirmed by code review only.
+
+### Files changed
+
+- `src/components/data-view/GraphsView.tsx` (items 1, 2, 3, 4)
+- `src/components/data-view/TargetRollBarChart.tsx` (item 2)
+
+Commit: `f740cff`.
