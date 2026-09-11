@@ -86,6 +86,54 @@ export function rankDescendingWithTies(
 export const LARGE_SET_THRESHOLD = 40;
 export const NEIGHBOUR_WINDOW = 5; // schools shown either side of the target's own rank, large-set mode
 
+// Sidebar/Graphs/Rankings restructure (2026-09-16), Part C2/C3/C4: a genuinely
+// separate, smaller threshold for the new "top 10 / around this school / bottom 3"
+// display shape -- direct instruction was to keep this distinct from
+// LARGE_SET_THRESHOLD/NEIGHBOUR_WINDOW above (that pair stays exactly as-is, still
+// governing the % girls/% boarding/market-share tables' own neighbour-window-only
+// behaviour), not to rename or reuse it, since the two shapes solve different
+// problems at different scales.
+export const RANK_TABLE_LARGE_THRESHOLD = 20;
+export const RANK_TABLE_TOP_N = 10;
+export const RANK_TABLE_BOTTOM_N = 3;
+export const RANK_TABLE_NEIGHBOUR_SPAN = 2; // schools shown either side of the target's own rank
+
+export type RankChunk = { label: string | null; rows: RankedEntry[] };
+
+// Sidebar/Graphs/Rankings restructure (2026-09-16), Part C2/C3/C4: "top 10, target's
+// own row (real rank, wherever it falls), 2 above + 2 below target, bottom 3, with
+// subheadings between chunks" -- shared by the Current Roll table (C2), the
+// per-year comparison table (C3) and the new Growth/decline ranking (C4), so all
+// three tables' large-set behaviour comes from one real implementation. At or below
+// RANK_TABLE_LARGE_THRESHOLD schools, returns the full list as a single unlabelled
+// chunk (no subheadings) -- callers render a subheading only when there's more than
+// one chunk.
+export function chunkedRankingDisplay(ranked: RankedEntry[], targetRank: number | null): RankChunk[] {
+  if (ranked.length <= RANK_TABLE_LARGE_THRESHOLD) return [{ label: null, rows: ranked }];
+
+  const shown = new Set<string>();
+  const top = ranked.filter((r) => r.rank <= RANK_TABLE_TOP_N);
+  top.forEach((r) => shown.add(r.urn));
+  // Bottom 3 by rank (not by array position -- shared ranks near the tail could
+  // otherwise put more or fewer than 3 rows in the "last 3 array entries" naively).
+  const maxRank = ranked[ranked.length - 1]?.rank ?? 0;
+  const bottom = ranked.filter((r) => r.rank > maxRank - RANK_TABLE_BOTTOM_N && !shown.has(r.urn));
+  bottom.forEach((r) => shown.add(r.urn));
+  // Around the target's own rank, excluding anything already shown in top/bottom --
+  // same dedup principle LargeSetMetricRanking's own top15/neighbours split already
+  // established (avoid showing the same row twice when the target sits close to a
+  // chunk boundary).
+  const around =
+    targetRank !== null
+      ? ranked.filter((r) => r.rank >= targetRank - RANK_TABLE_NEIGHBOUR_SPAN && r.rank <= targetRank + RANK_TABLE_NEIGHBOUR_SPAN && !shown.has(r.urn))
+      : [];
+
+  const chunks: RankChunk[] = [{ label: "Top 10", rows: top }];
+  if (around.length > 0) chunks.push({ label: "Around this school", rows: around });
+  if (bottom.length > 0) chunks.push({ label: "Bottom 3", rows: bottom });
+  return chunks;
+}
+
 export function percentile(rank: number, total: number): number {
   if (total <= 1) return 100;
   return Math.round(((total - rank) / (total - 1)) * 100);
