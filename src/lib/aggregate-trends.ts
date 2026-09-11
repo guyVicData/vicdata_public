@@ -19,27 +19,16 @@
 import { createServerAnonSupabaseClient } from "./supabase";
 import { resolveTargetRegionNation } from "./region-nation-comparator";
 
-// Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10: a
-// genuinely separate, much smaller threshold than LARGE_SET_PROFILE_THRESHOLD
-// (200, DataViewShell.tsx -- gates the Region/Nation-scale large-set redesign
-// entirely) -- per direct instruction not to conflate the two. Shared between
-// DataViewShell.tsx (decides whether to fetch sector aggregates at all) and
-// GraphsView.tsx (decides whether to render the fallback), one source of truth.
+// Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10: the
+// threshold above which those graphs switch from per-school bars to a
+// sector-bucketed view (GraphsView.tsx's own sumFilteredBySector/sumGenderBySector
+// -- a real-comparator-set sum, not a fetch off this file, see the follow-up
+// round's item 8 fix) -- kept here, a genuinely separate, much smaller number than
+// LARGE_SET_PROFILE_THRESHOLD (200, DataViewShell.tsx, gates the Region/Nation-scale
+// large-set redesign entirely), per direct instruction not to conflate the two.
 export const GRAPH_SECTOR_FALLBACK_THRESHOLD = 20;
 
-export type AggregateTrendPoint = {
-  period: number;
-  totalRoll: number;
-  schoolCount: number;
-  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graph 10: the SAME
-  // roll_aggregates row already carries real gender_male/gender_female totals
-  // (20260807112000_roll_aggregates.sql), written by the same aggregation loop as
-  // total_roll (scripts/recompute-census-derived.ts) -- added here rather than a
-  // second query, so the sector-aggregate fallback used by Graphs 5/6 (roll only)
-  // and Graph 10 (gender split) shares one fetch, not two near-duplicate ones.
-  genderMale: number;
-  genderFemale: number;
-};
+export type AggregateTrendPoint = { period: number; totalRoll: number; schoolCount: number };
 export type AggregateTrendSeries = { label: string; points: AggregateTrendPoint[] };
 export type AggregateTrends = {
   national: AggregateTrendSeries | null;
@@ -47,13 +36,13 @@ export type AggregateTrends = {
   sector: AggregateTrendSeries | null;
 };
 
-type RollAggregateRow = { period: number; total_roll: number; school_count: number; gender_male: number; gender_female: number };
+type RollAggregateRow = { period: number; total_roll: number; school_count: number };
 
 async function fetchScopeSeries(scope: "national" | "ons_region" | "sector", scopeKey: string, startPeriod: number): Promise<AggregateTrendPoint[]> {
   const supabase = createServerAnonSupabaseClient();
   const { data, error } = await supabase
     .from("roll_aggregates")
-    .select("period, total_roll, school_count, gender_male, gender_female")
+    .select("period, total_roll, school_count")
     .eq("scope", scope)
     .eq("scope_key", scopeKey)
     .gte("period", startPeriod)
@@ -62,34 +51,7 @@ async function fetchScopeSeries(scope: "national" | "ons_region" | "sector", sco
     console.error(`[aggregate-trends] fetch failed for scope=${scope} scope_key=${scopeKey}:`, error);
     return [];
   }
-  return ((data ?? []) as RollAggregateRow[]).map((r) => ({
-    period: r.period,
-    totalRoll: r.total_roll,
-    schoolCount: r.school_count,
-    genderMale: r.gender_male,
-    genderFemale: r.gender_female,
-  }));
-}
-
-// Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10: "Need the
-// SAME underlying table queried for EVERY distinct sector present in the visible
-// set" (direct instruction) -- reuses fetchScopeSeries per sector, in parallel, at
-// the exact same scope_key granularity (the real establishment_type_group string)
-// the existing single-target-sector fetchAggregateTrends already reads, not a new
-// coarser bucketing. A sector with no real roll_aggregates row (Special Schools/FE
-// aren't populated yet -- see 20261010091000_roll_aggregates_sector_scope.sql's own
-// comment) is simply omitted, not shown as a fabricated zero -- "only ones with real
-// representation" per direct instruction.
-export async function fetchSectorAggregatesForMany(sectors: string[], startPeriod: number): Promise<Record<string, AggregateTrendSeries>> {
-  const unique = Array.from(new Set(sectors.filter(Boolean)));
-  const results = await Promise.all(
-    unique.map(async (sector) => [sector, await fetchScopeSeries("sector", sector, startPeriod)] as const),
-  );
-  const out: Record<string, AggregateTrendSeries> = {};
-  for (const [sector, points] of results) {
-    if (points.length > 0) out[sector] = { label: sector, points };
-  }
-  return out;
+  return ((data ?? []) as RollAggregateRow[]).map((r) => ({ period: r.period, totalRoll: r.total_roll, schoolCount: r.school_count }));
 }
 
 export async function fetchAggregateTrends(targetUrn: string, establishmentTypeGroup: string | null, startPeriod: number): Promise<AggregateTrends> {

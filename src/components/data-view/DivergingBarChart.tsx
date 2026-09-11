@@ -46,8 +46,16 @@ export default function DivergingBarChart({
         const widthPct = (Math.abs(p.pctChange) / maxAbs) * 50;
         return (
           <div key={p.urn} className="flex items-center gap-2" title={`${p.name}: ${formatValue(p.pctChange)}`}>
+            {/* Follow-up round (2026-09-16), item 1: a real school name (e.g. "La
+                Sainte Union Catholic Secondary School") was getting cut off at the
+                old fixed w-20 (80px) -- widened here, in the one shared component
+                behind Section 02's Growth/decline chart, Section 03's market-share
+                growth/decline tile, and the sector-fallback growth chart, so the
+                fix applies everywhere this renders rather than one caller. Narrower
+                on small screens (w-28, 112px) than large (sm:w-44, 176px) so the
+                bar area itself doesn't get squeezed out on a narrow viewport. */}
             <span
-              className={`w-20 shrink-0 truncate text-xs ${p.isTarget ? "font-medium text-neutral-900 dark:text-neutral-100" : "text-neutral-600 dark:text-neutral-400"}`}
+              className={`w-28 shrink-0 truncate text-xs sm:w-44 ${p.isTarget ? "font-medium text-neutral-900 dark:text-neutral-100" : "text-neutral-600 dark:text-neutral-400"}`}
             >
               {p.name}
             </span>

@@ -3,40 +3,42 @@
 // Member Data View Rankings (brief §7): same cards as Dashboard, re-rendered as
 // ranked lists -- shape excluded entirely. Target's row highlighted in place, plus a
 // one-line "ranks #N of M" summary. Shared-rank ties (two schools both #3, next is
-// #5). Large sets (brief's own defensive threshold, LARGE_SET_THRESHOLD) switch the
-// headline to percentile and show a neighbour window rather than the whole list.
+// #5).
+//
+// Follow-up round (2026-09-16), item 5: only Current Roll is ranked now -- % girls,
+// % boarding and Market share of this set were all removed, per direct instruction
+// (C1-C4 are all built on Current Roll; nothing else needed the old MetricRanking
+// component this file used to have, so it's gone too).
 //
 // Large-set design v1, item 3: a Region/Nation-scale set (DataViewShell's own
 // LARGE_SET_PROFILE_THRESHOLD) can never be ranked from `tickedProfiles` -- that
 // array structurally only ever holds whatever the member has individually ticked
 // (large-set design v1, item 6), never the whole 49,000-school set. When
 // `largeSetRank` is present (DataViewShell's own region_nation_rank() fetch),
-// LargeSetMetricRanking renders the SAME percentile headline this file's own
-// small/medium LARGE_SET_THRESHOLD branch already established, PLUS the design doc's
-// own "top 15" requirement, computed server-side over the real full set. Market
-// share is intentionally not offered at this scale (region_nation_rank()'s own
-// migration comment: "% of this set" is meaningless for a 49,000-school region).
+// LargeSetMetricRanking renders the SAME percentile headline, PLUS the design doc's
+// own "top 15" requirement, computed server-side over the real full set. Girls/
+// boarding were dropped from this path too (item 5, confirmed with Guy); market
+// share was never offered here to begin with (region_nation_rank()'s own migration
+// comment: "% of this set" is meaningless for a 49,000-school region).
 
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { profileToFilterableData, profileToFilterableDataForPeriod } from "@/lib/data-view-serialize";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
-import {
-  rankDescendingWithTies,
-  percentile,
-  memberSetMarketShare,
-  trendBadge,
-  chunkedRankingDisplay,
-  LARGE_SET_THRESHOLD,
-  NEIGHBOUR_WINDOW,
-  type RankedEntry,
-} from "@/lib/data-view-cards";
+import { rankDescendingWithTies, percentile, trendBadge, chunkedRankingDisplay, type RankedEntry } from "@/lib/data-view-cards";
 import type { RegionNationRankResult, RegionNationRankMetric } from "@/lib/region-nation-comparator";
 import { academicYearLabel } from "./TrendPill";
 import Sparkline from "./Sparkline";
 import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
+import { TAG_COLOURS } from "@/lib/tag-colours";
 
-type Metric = { key: string; label: string; getValue: (p: DataViewSchoolProfile, filters: DataViewFilterState, groupTotal: number) => number | null; format: (v: number) => string };
+type Metric = { key: string; label: string; getValue: (p: DataViewSchoolProfile, filters: DataViewFilterState) => number | null; format: (v: number) => string };
 
+// Follow-up round (2026-09-16), item 5: % girls, % boarding and Market share of
+// this set tables removed entirely, per direct instruction -- Current Roll stays,
+// unchanged, since C1-C4 are all built on it. METRICS kept as a single-entry array
+// (rather than collapsed into a bare const) so rollMetric.label/format/getValue
+// below stay the exact same shape they already were, minimal disruption to the
+// rest of this file.
 const METRICS: Metric[] = [
   {
     key: "roll",
@@ -44,45 +46,23 @@ const METRICS: Metric[] = [
     getValue: (p, filters) => filteredCount(profileToFilterableData(p), filters).total,
     format: (v) => v.toLocaleString(),
   },
-  {
-    key: "girls_pct",
-    label: "% girls",
-    getValue: (p, filters) => {
-      const c = filteredCount(profileToFilterableData(p), filters);
-      return c.female !== null && c.total > 0 ? (c.female / c.total) * 100 : null;
-    },
-    format: (v) => `${v.toFixed(0)}%`,
-  },
-  {
-    key: "boarding_pct",
-    label: "% boarding",
-    getValue: (p) => {
-      const b = p.current?.boarding;
-      return b && b.total > 0 ? (b.boarders / b.total) * 100 : b ? 0 : null;
-    },
-    format: (v) => `${v.toFixed(0)}%`,
-  },
-  {
-    key: "market_share",
-    label: "Market share of this set",
-    getValue: (p, filters, groupTotal) => {
-      const v = filteredCount(profileToFilterableData(p), filters).total;
-      return memberSetMarketShare(v, groupTotal);
-    },
-    format: (v) => `${v.toFixed(0)}%`,
-  },
 ];
 
-// The three metrics region_nation_rank() computes, in the same order/labels/format
-// functions as their METRICS counterparts above (roll/girls_pct/boarding_pct) --
-// deliberately reusing the SAME label/format strings rather than a second, possibly-
-// drifting copy, even though the underlying value has to come from the server-side
-// result object instead of a client-side getValue call.
+// Follow-up round (2026-09-16), item 5: confirmed with Guy this applies to the
+// server-side Region/Nation large-set path too -- girlsPct/boardingPct dropped,
+// leaving only roll. Market share was never offered here to begin with
+// (region_nation_rank()'s own migration comment: "% of this set" is meaningless at
+// this scale), so nothing to remove there.
 const LARGE_SET_METRICS: { key: keyof RegionNationRankResult; label: string; format: (v: number) => string }[] = [
   { key: "roll", label: "Current roll", format: (v) => v.toLocaleString() },
-  { key: "girlsPct", label: "% girls", format: (v) => `${v.toFixed(0)}%` },
-  { key: "boardingPct", label: "% boarding", format: (v) => `${v.toFixed(0)}%` },
 ];
+
+// Follow-up round (2026-09-16), item 7: the vicdata gold brand accent
+// (TAG_COLOURS.Focus, same token ShapeIcon.tsx/SurroundingRollBarChart.tsx already
+// pull light[1]/dark[1] out of) -- used below for the "Top 10"/"Bottom 3" chunk
+// headings specifically, not "Around this school" (Guy only named the top/bottom
+// two).
+const GOLD_COLOUR = { light: TAG_COLOURS.Focus.light[1], dark: TAG_COLOURS.Focus.dark[1] };
 
 export default function RankingsView({
   targetProfile,
@@ -120,7 +100,18 @@ export default function RankingsView({
   }
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
-  const groupTotal = group.reduce((sum, p) => sum + filteredCount(profileToFilterableData(p), filters).total, 0);
+
+  // Follow-up round (2026-09-16), item 6: real bug fix -- GraphsView.tsx already
+  // excludes a school with zero real pupils under the currently active filter
+  // (e.g. Post-16 for an 11-16 school) entirely, keeping only the target
+  // unconditionally; this file never got the equivalent, so a zero-pupil school
+  // used to rank dead last at a real 0 instead of being excluded (rollMetric's own
+  // getValue returns a real 0, not null, for such a school, and
+  // rankDescendingWithTies only drops null values). Same exact pattern as
+  // GraphsView's own groupInScope, applied here and used everywhere `group` used
+  // to feed the roll-based ranking below.
+  const currentFilteredTotal = new Map(group.map((p) => [p.urn, filteredCount(profileToFilterableData(p), filters).total] as const));
+  const groupInScope = group.filter((p) => p.urn === targetProfile.urn || (currentFilteredTotal.get(p.urn) ?? 0) > 0);
 
   // Sidebar/Graphs/Rankings restructure (2026-09-16), Part C1/C2: "Current Roll"
   // here is deliberately the SAME value METRICS' own "roll" getValue has always
@@ -130,12 +121,12 @@ export default function RankingsView({
   // separate computations there too), so C1's "This school's position" tile and
   // C2's table stay byte-identical to what the rest of this page already calls
   // "Current Roll," not a subtly different number.
-  const rollMetric = METRICS.find((m) => m.key === "roll")!;
-  const rollEntries = group.map((p) => ({
+  const rollMetric = METRICS[0];
+  const rollEntries = groupInScope.map((p) => ({
     urn: p.urn,
     name: p.name,
     isTarget: p.urn === targetProfile.urn,
-    value: rollMetric.getValue(p, filters, groupTotal),
+    value: rollMetric.getValue(p, filters),
   }));
   const { ranked: rollRanked, targetRank: rollTargetRank, total: rollTotal } = rankDescendingWithTies(rollEntries);
   const targetCurrentValue = rollEntries.find((e) => e.isTarget)?.value ?? null;
@@ -146,10 +137,10 @@ export default function RankingsView({
   // GraphsView's own `periods`), feeding the one shared rankAcrossPeriods()
   // function -- built once, used by both C1's "Position over time" tile and C3's
   // per-year comparison table, not computed separately for each.
-  const periods = Array.from(new Set(group.flatMap((s) => s.trend.map((t) => t.period))))
+  const periods = Array.from(new Set(groupInScope.flatMap((s) => s.trend.map((t) => t.period))))
     .filter((p) => p >= filters.startPeriod)
     .sort((a, b) => a - b);
-  const { ranksByUrn } = rankAcrossPeriods(group, periods, filters);
+  const { ranksByUrn } = rankAcrossPeriods(groupInScope, periods, filters);
   const targetRankSeries = ranksByUrn.get(targetProfile.urn) ?? [];
 
   // Sidebar/Graphs/Rankings restructure (2026-09-16), Part C4: the EXACT same
@@ -161,19 +152,12 @@ export default function RankingsView({
   // period) -- so this ranking reflects the identical growth % Graphs already
   // shows, not an approximation of it.
   const growthAnchorSnapshot = (p: DataViewSchoolProfile) => p.trend.find((t) => t.period === filters.startPeriod) ?? null;
-  const growthEntries = group.map((p) => {
+  const growthEntries = groupInScope.map((p) => {
     const current = rollEntries.find((e) => e.urn === p.urn)?.value ?? null;
     const anchor = growthAnchorSnapshot(p) ? filteredCount(profileToFilterableDataForPeriod(p, filters.startPeriod), filters).total : null;
     return { urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: trendBadge(current, anchor)?.pctChange ?? null };
   });
   const { ranked: growthRanked, targetRank: growthTargetRank, total: growthTotal } = rankDescendingWithTies(growthEntries);
-
-  // C2's strengthened highlight/top-10-neighbours-bottom-3 shape is new and
-  // specific to Current Roll, the per-year comparison table, and the new
-  // Growth/decline ranking (direct instruction) -- the three remaining pre-existing
-  // metrics (% girls, % boarding, market share) keep MetricRanking exactly as it
-  // was, still gated on the original LARGE_SET_THRESHOLD/NEIGHBOUR_WINDOW.
-  const otherMetrics = METRICS.filter((m) => m.key !== "roll");
 
   return (
     <div className="space-y-6">
@@ -195,9 +179,6 @@ export default function RankingsView({
           ranksByUrn={ranksByUrn}
         />
       )}
-      {otherMetrics.map((metric) => (
-        <MetricRanking key={metric.key} metric={metric} group={group} targetUrn={targetProfile.urn} filters={filters} groupTotal={groupTotal} />
-      ))}
       <RankTable
         title={`Growth / decline ranking since ${academicYearLabel(filters.startPeriod)}`}
         ranked={growthRanked}
@@ -322,14 +303,41 @@ function OverviewTiles({
   );
 }
 
+// Follow-up round (2026-09-16), item 7: "Top 10"/"Bottom 3" chunk headings render
+// in the vicdata gold brand accent; "Around this school" stays the plain neutral
+// grey (Guy only named the top/bottom two). Shared by RankTable (C2/C4) and
+// ComparisonOverTimeTable (C3) -- the two places chunkedRankingDisplay's chunks get
+// rendered -- so the gold treatment can't drift between them. Uses the same scoped
+// <style> + CSS-custom-property pattern ShapeChart.tsx/GenderSplitCard's Donut
+// already establish for a theme-aware TAG_COLOURS value (light/@media-dark/explicit
+// data-theme="dark" blocks), not a hand-rolled hex constant or a Tailwind arbitrary-
+// value class (Tailwind can't pick up a class name built from a runtime-interpolated
+// hex anyway).
+function ChunkHeading({ label }: { label: string }) {
+  const isGold = label === "Top 10" || label === "Bottom 3";
+  if (!isGold) {
+    return <p className="mb-1 text-xs text-neutral-400">{label}</p>;
+  }
+  return (
+    <p className="rank-chunk-gold mb-1 text-xs font-medium">
+      <style>{`
+        .rank-chunk-gold { color: ${GOLD_COLOUR.light}; }
+        @media (prefers-color-scheme: dark) {
+          :root:where(:not([data-theme="light"])) .rank-chunk-gold { color: ${GOLD_COLOUR.dark}; }
+        }
+        :root[data-theme="dark"] .rank-chunk-gold { color: ${GOLD_COLOUR.dark}; }
+      `}</style>
+      {label}
+    </p>
+  );
+}
+
 // Sidebar/Graphs/Rankings restructure (2026-09-16), Part C2/C4: shared table for
 // Current Roll (C2) and the new Growth/decline ranking (C4) -- both single-period
 // metrics wanting the new strengthened highlight + top-10/neighbours/bottom-3
 // shape above RANK_TABLE_LARGE_THRESHOLD schools (chunkedRankingDisplay). The
-// target row now gets a coloured left border + a deeper background than
-// MetricRanking's own bg-red-50/950-30 (direct feedback: "current is too subtle") --
-// scoped to this new component only, MetricRanking itself (still used for % girls/
-// % boarding/market share below) is untouched.
+// target row now gets a coloured left border + a deeper background than the
+// original bg-red-50/950-30 tint (direct feedback: "current is too subtle").
 function RankTable({
   title,
   ranked,
@@ -364,7 +372,7 @@ function RankTable({
       )}
       {chunks.map((chunk, i) => (
         <div key={chunk.label ?? "all"} className={i > 0 ? "mt-3" : undefined}>
-          {chunk.label && chunks.length > 1 && <p className="mb-1 text-xs text-neutral-400">{chunk.label}</p>}
+          {chunk.label && chunks.length > 1 && <ChunkHeading label={chunk.label} />}
           <table className="w-full text-sm">
             <tbody>
               {chunk.rows.map((r) => (
@@ -439,7 +447,7 @@ function ComparisonOverTimeTable({
         <div className="flex-1 overflow-x-auto">
           {chunks.map((chunk, i) => (
             <div key={chunk.label ?? "all"} className={i > 0 ? "mt-3" : undefined}>
-              {chunk.label && chunks.length > 1 && <p className="mb-1 text-xs text-neutral-400">{chunk.label}</p>}
+              {chunk.label && chunks.length > 1 && <ChunkHeading label={chunk.label} />}
               <table className="w-full min-w-max text-sm">
                 <thead>
                   <tr className="text-xs text-neutral-400">
@@ -496,87 +504,13 @@ function ComparisonOverTimeTable({
   );
 }
 
-function MetricRanking({
-  metric,
-  group,
-  targetUrn,
-  filters,
-  groupTotal,
-}: {
-  metric: Metric;
-  group: DataViewSchoolProfile[];
-  targetUrn: string;
-  filters: DataViewFilterState;
-  groupTotal: number;
-}) {
-  const entries = group.map((p) => ({
-    urn: p.urn,
-    name: p.name,
-    value: metric.getValue(p, filters, groupTotal),
-    isTarget: p.urn === targetUrn,
-  }));
-  const { ranked, targetRank, total } = rankDescendingWithTies(entries);
-  if (total === 0) {
-    return (
-      <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{metric.label}</h3>
-        <p className="text-sm text-neutral-500">No real data available for this metric in the current set.</p>
-      </section>
-    );
-  }
-
-  const isLarge = total > LARGE_SET_THRESHOLD;
-  const targetIdx = ranked.findIndex((r) => r.isTarget);
-  const visible = isLarge && targetIdx >= 0 ? ranked.slice(Math.max(0, targetIdx - NEIGHBOUR_WINDOW), targetIdx + NEIGHBOUR_WINDOW + 1) : ranked;
-
-  return (
-    <section>
-      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{metric.label}</h3>
-      {targetRank !== null && (
-        <p className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
-          {isLarge ? (
-            <>
-              Top <strong>{100 - percentile(targetRank, total)}%</strong> of this set ({total} schools)
-            </>
-          ) : (
-            <>
-              Ranks <strong>#{targetRank}</strong> of {total}
-            </>
-          )}
-        </p>
-      )}
-      <table className="w-full text-sm">
-        <tbody>
-          {visible.map((r) => (
-            <tr
-              key={r.urn}
-              className={
-                r.isTarget
-                  ? "border-t border-neutral-100 bg-red-50 dark:border-neutral-800 dark:bg-red-950/30"
-                  : "border-t border-neutral-100 dark:border-neutral-800"
-              }
-            >
-              <td className="w-10 py-1.5 text-neutral-500">#{r.rank}</td>
-              <td className="py-1.5">
-                {r.name}
-                {r.isTarget && " (this school)"}
-              </td>
-              <td className="py-1.5 text-right font-medium">{metric.format(r.value)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
-  );
-}
-
 const LARGE_SET_TOP_N = 15;
 
 // Large-set design v1, item 3: the design doc's own "target rank/percentile plus the
 // top 15 plus a neighbour window" -- a genuinely different display shape from
-// MetricRanking's own isLarge branch above (which shows ONLY a neighbour window, no
-// top-N), since at Region/Nation scale a member plausibly wants to see who's actually
-// #1 as well as where their own school sits.
+// RankTable's own chunkedRankingDisplay above (which never shows a fixed top-N,
+// only top 10/around/bottom 3), since at Region/Nation scale a member plausibly
+// wants to see who's actually #1 as well as where their own school sits.
 function LargeSetMetricRanking({
   metricLabel,
   format,
