@@ -121,3 +121,35 @@ This is a much smaller, lower-risk change than building a new precomputed table 
 *Original recommendation, written before §2a's correction, kept for the record rather than deleted:*
 
 > Same proven fix pattern already used for Boarding/Region/Nation: push this into a precomputed table or a real SQL aggregate rather than fetching-and-computing in application code on every request. Given `school_current_snapshot` (the large-set design v1's own precomputed per-school current/anchor breakdown, already keyed by `urn`, already kept fresh by `scripts/recompute-census-derived.ts`) already exists and already backs the Region/Nation choropleth's own per-school figures, the likely quickest real fix is reading LA-comparator candidates' current-period rolls from that table directly instead of `fetchCensusFactsBatched` against the remote reference API. Worth confirming `school_current_snapshot` actually covers the fields List 2's own roll-total-and-nonzero check needs before committing to this as the whole answer, not assumed.
+
+---
+
+## 8. Fix built, verified, deployed (2026-09-15, same day)
+
+Built exactly to §7's revised scope: `fetchCensusFactsBatched` (`data-view-profiles.ts`) gained optional `periodMin`/`periodMax` params threaded straight through to `lookupReferenceData`'s own already-existing ones (default `undefined`/`undefined`, so every other caller is unaffected); `buildLaComparatorSet`'s own call site (`default-comparator-lists.ts:262`) now passes `periodMin: CURRENT_CENSUS_PERIOD, periodMax: CURRENT_CENSUS_PERIOD`. `fetchDataViewProfiles` (backing `/api/data-view/schools`) deliberately left unscoped, exactly as before. Breakdown scoping and `boardingQuintileList`'s own identical-shape (but no longer hot-path) call both left alone, per direct instruction.
+
+**Local verification, real unmodified functions, before pushing**:
+
+| School | `buildLaComparatorSet` before | after | speedup |
+|---|---|---|---|
+| 147505 (Norfolk) | 12,189ms | 891ms | 13.7x |
+| 100053 (Camden) | 3,572ms | 614ms | 5.8x |
+| 116437 (Hampshire) | 13,843ms | 1,496ms | 9.3x |
+
+Output confirmed byte-identical pre/post fix for all three (school list including order, label, key — `JSON.stringify` equality, not eyeballed).
+
+**Live production verification, after deploy** (`https://vicdata.co.uk`, real login, same three schools):
+
+| School | `default-lists` before | after | `schools` (41 urns) before | after | sequential total before | after |
+|---|---|---|---|---|---|---|
+| 147505 (Norfolk) | 11,987ms | **1,102ms** | 6,261ms | 6,866ms | 18,248ms | **7,968ms** |
+| 100053 (Camden) | 4,002ms | **770ms** | 4,679ms | 4,922ms | 8,681ms | **5,692ms** |
+| 116437 (Hampshire) | 14,268ms | **1,085ms** | 6,614ms | 7,008ms | 20,882ms | **8,093ms** |
+
+`/api/data-view/schools` is essentially unchanged, as expected — it was never in scope, and genuinely needs the full multi-year fetch it still does. It's now the dominant remaining cost in the sequential critical path, and (per §2a/§7) very likely has its own, separate breakdown-scoping opportunity — not investigated or touched this round.
+
+**Output correctness confirmed against live production, not just the local test**: fetched the real, live, post-fix `/api/data-view/default-lists` response for all three schools and diffed `list2.schools`/`list2.label` against the local pre-fix baseline captured before any code change — byte-identical for all three, live label strings ("In Norfolk (all sectors)" etc.) unchanged.
+
+`npx tsc --noEmit`, `npm run build`, `npm run lint` all clean (same 7 pre-existing, unrelated baseline problems). Committed as `f5d60fd`, pushed to `origin/main`.
+
+**Net result**: the sequential critical path this investigation set out to explain drops from ~18-21s to ~6-8s for these three real schools — roughly 2.3-2.6x faster end to end, entirely from the one scoped call site. The remaining ~6-8s residual is now `/api/data-view/schools`'s own genuine, unscoped, multi-year fetch — a real, separate, honestly-flagged follow-up, not fixed in this pass.
