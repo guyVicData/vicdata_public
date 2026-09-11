@@ -148,9 +148,126 @@ could still break at some width.
 
 Commit: `275f60f`.
 
-## Part C — Rankings restructure (NOT YET STARTED)
+## Part C — Rankings restructure (DONE, commit `5353d03`)
+
+### Scope
+
+Four additions to `RankingsView.tsx`'s non-large-set path (the server-side
+Region/Nation large-set branch, `LargeSetMetricRanking`, is untouched — not in
+scope). The three pre-existing metrics not named below (% girls, % boarding,
+market share) keep their original `MetricRanking` rendering and thresholds
+(`LARGE_SET_THRESHOLD=40`/`NEIGHBOUR_WINDOW=5`) completely unchanged.
+
+**C1 — overview tiles**, a new row above the existing tables:
+- *"This school's position"* — `#N of M schools` (Current Roll basis) plus a
+  sub-line comparing the target's own pupils against the group average
+  (`"1,252 pupils — 191% above the average of 430"`, real numbers from
+  verification below).
+- *"Position over time"* — `Average rank #N, {first year}–{last year}` (mean
+  of the target's real per-period ranks across the Start-Year-to-now range),
+  plus a concrete sub-line (`"Risen from #9 (2019/20) to #6 (2025/26)"`) rather
+  than a bare arrow — falls back to `"Ranked #N ({year})"` when there's only
+  one real period, and to a "not enough data" message when there's none.
+
+**C2 — Current Roll table**: target row highlight strengthened (a 4px coloured
+left border plus a deeper `bg-red-50`/`dark:bg-red-950/40` background,
+replacing the old single subtle tint) and a new display shape once the group
+exceeds 20 schools: Top 10, "Around this school" (target ± 2, deduplicated
+against Top 10/Bottom 3), Bottom 3, each its own subheading. Deliberately a
+new, separate threshold/window (`RANK_TABLE_LARGE_THRESHOLD=20`,
+`RANK_TABLE_TOP_N=10`, `RANK_TABLE_BOTTOM_N=3`, `RANK_TABLE_NEIGHBOUR_SPAN=2`
+in `data-view-cards.ts`) from the pre-existing `LARGE_SET_THRESHOLD=40`/
+`NEIGHBOUR_WINDOW=5` pair, per direct instruction not to conflate them.
+
+**C3 — comparison-over-time table**: same chunking/highlight as C2, one
+column per real academic year from Start Year through now, but each cell
+shows the school's Current Roll **rank** for that year (not the raw pupil
+figure — Graphs already shows those; this table's reason to exist is the rank
+trajectory). Row set/order is driven by the same ranking C2 uses, so both
+tables agree on who's "top 10." A new "Avg rank" summary column (mean of each
+row's real per-period ranks) sits at the end, and a small sparkline of the
+target's own rank-over-time sits to the right — the same `Sparkline`
+component Part A built, fed rank values. Values are inverted (`-rank`) before
+being handed to `Sparkline`, since that component always draws "bigger number
+= higher on the chart" (correct for a roll trend, backwards for rank, where
+smaller is better) — this sign convention wasn't specified in the handoff;
+logged as our own call, not an assumed one.
+
+**C4 — Growth/decline ranking**: a new table ranking schools by roll growth/
+decline % since Start Year, using the *exact* current/anchor pairing
+`GraphsView.tsx`'s own Growth/decline chart (Graph 4, `DivergingBarChart`)
+already computes — current is each school's own current-snapshot value
+(`profileToFilterableData`), anchor is the real snapshot at
+`filters.startPeriod` specifically (not the nearest available real period,
+mirroring `GraphsView`'s own `anchorSnapshot`/`anchorPoints`). Same C2 large-
+set treatment.
+
+### New shared plumbing
+
+- **`rankAcrossPeriods()`** (`RankingsView.tsx`, local) — per-school,
+  per-period rank on Current Roll, computed once and shared by C1's "Position
+  over time" tile and C3's table, per direct instruction ("build once...
+  not separately for C1/C3"). Deliberately uses
+  `profileToFilterableDataForPeriod` per real period rather than the profile's
+  "current" snapshot — there's no meaningful per-*past*-period equivalent of
+  "current," mirroring the same targetCurrent-vs-trend-series distinction
+  `GraphsView.tsx` already keeps.
+- **`chunkedRankingDisplay()`** (`data-view-cards.ts`, exported) — the
+  Top-10/Around-this-school/Bottom-3 chunker, shared by C2, C3 and C4's
+  `RankTable`/`ComparisonOverTimeTable` components. Below the 20-school
+  threshold it returns the full list as one unlabelled chunk (no subheadings).
+
+A genuine design decision worth flagging: "Current Roll" throughout C1/C2 is
+kept as the profile's own current-snapshot value (`METRICS[0].getValue`, i.e.
+`profileToFilterableData`) — the same figure the rest of this page has always
+called "Current Roll" — rather than the periods-array "latest" value
+`rankAcrossPeriods` produces for C3. These are usually identical for an
+open school whose current snapshot is the group's own latest real period
+(confirmed on real data below), but are computed via genuinely different
+paths and could in principle diverge for an edge-case school; keeping them
+separate avoids a subtle definition drift from what "Current Roll" already
+means everywhere else on this page.
+
+### Verification
+
+All against real, unmodified data — a throwaway script (deleted after use)
+logged into the shared test membership, switched the testing account to urn
+100053 (Acland Burghley School) via the existing testing-only school
+switcher, and fetched 13 real profiles (the target plus 12 real nearby
+schools) from the live local server running this round's code.
+
+- **Ranking correctness**: the Current Roll ranking (`#1` University College
+  School 1,297 pupils ... `#2` Acland Burghley 1,252 ... down to `#13` St
+  Richard of Chichester School, 0 pupils, real ties handled correctly at
+  ranks 7 and 11) matched an independently computed manual sort exactly.
+- **Cross-path consistency**: the per-period rank series' latest entry
+  (`rankAcrossPeriods`, via `profileToFilterableDataForPeriod`) matched the
+  separately-computed "current" rank (`METRICS[0]`, via
+  `profileToFilterableData`) for every real period this school had data —
+  target ranked `#2` in all 7 real years (2019–2025), consistent with both
+  computations agreeing at the latest period.
+- **Filter reactivity**: a Senior+Girls filter reordered the ranking for
+  real (La Sainte Union Catholic Secondary School jumped from unfiltered
+  `#4` to filtered `#1`), and the target's own filtered figure (450 pupils)
+  matched exactly the same figure Part A's own filter-reactivity check found
+  for this school under the same filter — a real, independent cross-check
+  between the two rounds' work.
+- **Chunking dedup**: `chunkedRankingDisplay` was exercised on a synthetic
+  25-school list with the target placed (a) comfortably in the middle,
+  (b) at rank 11 (touching the Top-10 boundary), and (c) at rank 22 (touching
+  the Bottom-3 boundary) — every case produced the correct chunk labels with
+  zero duplicate rows across chunks.
+- **Build health**: `npx tsc --noEmit`, `npm run lint`, `npm run build` all
+  clean. Lint at the same 7-problem baseline that predates this work.
+
+### Files changed
+
+- `src/lib/data-view-cards.ts` (new constants + `chunkedRankingDisplay()`)
+- `src/components/data-view/RankingsView.tsx` (C1–C4)
+
+Commit: `5353d03`.
 
 ## Part B — Graphs restructure (NOT YET STARTED)
 
-Full specs for both captured in the originating handoff; not reproduced here
-until built, per the "build and report in stages" instruction.
+Full spec captured in the originating handoff; not reproduced here until
+built, per the "build and report in stages" instruction.
