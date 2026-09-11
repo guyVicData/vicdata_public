@@ -291,3 +291,30 @@ chart next time the extension is reachable.
 
 Files changed: `src/components/data-view/TargetRollBarChart.tsx`. Commit:
 `09c4726`.
+
+## Follow-on fix — FilterBar's inactive pills invisible in dark mode
+
+Reported against a real live screenshot (Acland Burghley, Rolls tab, commit
+`aec6dbe`): item 4's own dark-mode inactive fill, `bg-neutral-950`
+(`#0a0a0a`), turned out to be the *exact same hex* as `--background` in dark
+mode (`globals.css`'s own `@media (prefers-color-scheme: dark)` block) —
+independently confirmed by reading that file directly. Every Phase/Gender/
+Boarding/Sector pill had zero contrast against the page, a flat
+undifferentiated row — isolated to this one shade choice (the Rolls nav tab
+in the same screenshot showed correct contrast, ruling out a broader dark-
+mode/Tailwind issue).
+
+Fixed by moving inactive one step lighter than the page in dark mode
+(`border-neutral-700`/`bg-neutral-800`/`text-neutral-400`/
+`hover:bg-neutral-700`), mirroring the light-mode version's own "clearly
+darker than the page around it" intent rather than accidentally matching the
+page exactly. Light-mode classes untouched.
+
+**Not visually verified** — the Chrome extension was unreachable again this
+session, so neither the requested before/after screenshot nor a check of the
+active (coloured) pill state (never exercised by the reported screenshot
+either) could be done. Root cause independently confirmed at the code level
+(the hex match against `globals.css`), but per direct instruction this isn't
+closed until someone actually sees differentiated pills render in dark mode.
+
+Files changed: `src/components/data-view/FilterBar.tsx`. Commit: `aec6dbe`.
