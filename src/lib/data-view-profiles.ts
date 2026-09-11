@@ -11,6 +11,7 @@ import {
   buildRollTrend,
   singleAgeGenderCountsForPeriod,
   shapeClassifierInput,
+  AGE_BANDS,
   type RollSnapshot,
   type AgeGenderCounts,
 } from "./roll-data";
@@ -73,9 +74,44 @@ const CENSUS_FETCH_CONCURRENCY = 4;
 // multi-year trend/ageGenderCountsByPeriod fields -- is completely unaffected.
 // Only a caller that provably reads one period (buildLaComparatorSet,
 // default-comparator-lists.ts) should ever pass these.
+//
+// Latency round follow-up (2026-09-15): breakdowns is the same idea, one axis over.
+// fetchDataViewProfiles can't be period-scoped (needs every year), but real live data
+// (a 60-mainstream + 20-post-16/FE-adjacent sample, dfe_school_census) showed a
+// SEPARATE, PARALLEL breakdown category this codebase has never read from this
+// source at all -- year-group/early-years/nursery/reception breakdowns
+// (full_time_female_year_group_11, full_time_male_early_1, etc., ~163 distinct
+// strings total against the real sample), none of which match AGE_BREAKDOWN_RE
+// (roll-data.ts) and so are silently discarded by every current consumer, today,
+// already -- confirmed by reading every function in the real data-flow path from
+// this function's own output to DataViewSchoolProfile (buildRollSnapshot,
+// buildRollTrend, singleAgeGenderCountsForPeriod, boardersGenderSplitFromFacts),
+// not just grepped. Real measured split: of 5,968 facts across that sample, 3,008
+// (50.4%) match the age/boarders shape this codebase actually reads; the rest is
+// fetched, paginated for, and thrown away by every caller today. Real age range
+// confirmed directly, not assumed from AGE_BANDS' own 0-19 display span: every
+// school in that same sample (including genuine 16-99 FE-adjacent institutions)
+// only ever records ages 0-19 -- matches AGE_BANDS exactly, so the programmatic
+// list below is built from AGE_BANDS' own real min/max, not a separately-guessed
+// range.
+export const CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS: string[] = (() => {
+  const minAge = Math.min(...AGE_BANDS.map((b) => b.minAge));
+  const maxAge = Math.max(...AGE_BANDS.map((b) => b.maxAge));
+  const breakdowns: string[] = [];
+  for (let age = minAge; age <= maxAge; age++) {
+    for (const attendance of ["full_time", "part_time"] as const) {
+      for (const sex of ["female", "male"] as const) {
+        breakdowns.push(`${attendance}_${sex}_aged_${age}`);
+      }
+    }
+  }
+  breakdowns.push("boarders_male", "boarders_female", "boarders_total");
+  return breakdowns;
+})();
+
 export async function fetchCensusFactsBatched(
   entityIds: string[],
-  options?: { periodMin?: number; periodMax?: number },
+  options?: { periodMin?: number; periodMax?: number; breakdowns?: string[] },
 ): Promise<ReferenceFact[]> {
   const chunks: string[][] = [];
   for (let i = 0; i < entityIds.length; i += CENSUS_FETCH_CHUNK) {
@@ -91,6 +127,7 @@ export async function fetchCensusFactsBatched(
           entityIds: chunk,
           periodMin: options?.periodMin,
           periodMax: options?.periodMax,
+          breakdowns: options?.breakdowns,
         }),
       ),
     );
@@ -227,7 +264,12 @@ export async function fetchDataViewProfiles(urns: string[]): Promise<DataViewSch
         "urn, current_name, town, la_name, easting, northing, establishment_type_group, establishment_type, boarders_name, statutory_low_age, statutory_high_age, gender",
       )
       .in("urn", urns),
-    fetchCensusFactsBatched(urns),
+    // Latency round follow-up (2026-09-15): breakdowns scoped to
+    // CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS (this file's own comment above has the
+    // full real-data verification) -- deliberately NOT periodMin/periodMax, this
+    // function genuinely needs every period on record for DataViewSchoolProfile's
+    // own trend/ageGenderCountsByPeriod fields, unlike buildLaComparatorSet.
+    fetchCensusFactsBatched(urns, { breakdowns: CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS }),
   ]);
 
   const schoolRows = (rows ?? []) as SchoolRow[];
