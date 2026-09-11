@@ -789,7 +789,7 @@ function TrendColourKey({ box }: { box: { top: number; height: number } | null }
   // measurement effect) -- rendering at some guessed fallback position first and
   // then jumping to the real one would be worse than a one-frame delay.
   if (!box) return null;
-  const stops = TREND_LEGEND_STOPS; // ascending by pct: -30 (red) ... +30 (blue)
+  const stops = TREND_LEGEND_STOPS; // ascending by pct: -30 (red) ... 0 (amber) ... +30 (green)
   const min = stops[0].pct;
   const max = stops[stops.length - 1].pct;
   // Top of the bar = growing (matches "up is positive"); gradient runs top-to-

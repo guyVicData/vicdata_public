@@ -1,9 +1,8 @@
 // Member Data View build (2026-10-03), brief §8: the Map's "Trends" colour-by mode
-// (default) needs a colourblind-safe blue<->red diverging scale (blue = growing, grey
-// neutral midpoint), wired into project-level colour tokens rather than hardcoded per-
-// component -- so a later design pass can retune it, matching this repo's existing
-// tag-colours.ts pattern (TAG_COLOURS/cssVarNameForTag) rather than inventing a new
-// per-component palette.
+// (default) needs a diverging scale, wired into project-level colour tokens rather
+// than hardcoded per-component -- so a later design pass can retune it, matching this
+// repo's existing tag-colours.ts pattern (TAG_COLOURS/cssVarNameForTag) rather than
+// inventing a new per-component palette.
 //
 // Genuinely a NEW palette, not an extension of TAG_COLOURS -- that file's own values
 // are categorical (a fixed set of named tags, each with a light/dark pair); a trend
@@ -12,25 +11,33 @@
 // at all. Kept in its own file for that reason, same way narrative-config.ts's
 // provisional constants live apart from narrative.ts's logic.
 //
-// Status: provisional, same discipline as every other first-pass colour choice in
-// this codebase (tag-colours.ts's own header comment) -- not yet run through the
-// colourblind-safety validator the historical trend charts were checked against
-// (chart-palette doc's own standing precedent). Flagged in
-// docs/vicdata_data_view_open_questions.md as a decision to revisit, not silently
-// treated as final.
+// 2026-09-11, per direct instruction: swapped from the original colourblind-safe
+// reversed-RdBu ramp (red/grey/blue, a real ColorBrewer diverging scale, pending a
+// validator check that never happened) to red/orange/amber/green -- a CONSCIOUS
+// trade-off, not an oversight or a lapsed TODO. Guy's own call: this reads as more
+// visually arresting and the five stops are more distinct from each other than the
+// old grey/blue pairing was, and that's worth more here than the diverging-scale
+// colourblind convention the original ramp was chosen for. The real red-green
+// colourblind trade-off this accepts is logged, not silently re-litigated, in
+// docs/vicdata_data_view_open_questions.md.
+//
+// Status: still provisional, same discipline as every other first-pass colour choice
+// in this codebase (tag-colours.ts's own header comment) -- these exact hex values
+// are a starting proposal, not locked in; expect a live-review pass to retune
+// contrast/legibility the same way every other colour judgement call in this build
+// has gone.
 
-// Five stops, symmetric around a genuine grey neutral midpoint (0% change) -- blue
-// for growth, red for decline, per the brief's explicit "blue = growing" instruction.
-// Endpoints are real, named CSS colours from a standard diverging ColorBrewer-style
-// ramp (RdBu, reversed so blue reads as the positive end) -- not invented hex values,
-// since a real, well-known diverging ramp is more likely to already be reasonably
-// colourblind-tolerant than a hand-picked one, pending the real validator check.
+// Five stops, symmetric around a genuine amber/gold neutral midpoint (0% change) --
+// red for decline, green for growth. Hand-picked (not a named ColorBrewer ramp this
+// time -- see the header comment above for why that trade-off was made consciously).
+// +30/strong-growth reuses tag-colours.ts's own State green (#15803d) for one shared
+// green reference point across the app, rather than a second, subtly-different green.
 const TREND_STOPS: { pct: number; hex: string }[] = [
-  { pct: -30, hex: "#b2182b" }, // strong decline -- red
-  { pct: -10, hex: "#ef8a62" }, // moderate decline
-  { pct: 0, hex: "#9ca3af" }, // neutral -- same grey as tag-colours.ts's own --dot fallback
-  { pct: 10, hex: "#67a9cf" }, // moderate growth
-  { pct: 30, hex: "#2166ac" }, // strong growth -- blue
+  { pct: -30, hex: "#c0392b" }, // strong decline -- red
+  { pct: -10, hex: "#e67e22" }, // moderate decline -- orange
+  { pct: 0, hex: "#f1c40f" }, // neutral -- amber/gold, deliberately not grey
+  { pct: 10, hex: "#7cb342" }, // moderate growth -- mid green
+  { pct: 30, hex: "#15803d" }, // strong growth -- green (tag-colours.ts's own State green)
 ];
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -66,5 +73,3 @@ export function trendColour(pctChange: number): string {
 // the same real range the continuous scale above interpolates across, not a separate
 // set of numbers.
 export const TREND_LEGEND_STOPS = TREND_STOPS.map((s) => ({ pct: s.pct, hex: s.hex }));
-
-export const TREND_NEUTRAL_GREY = TREND_STOPS[2].hex;

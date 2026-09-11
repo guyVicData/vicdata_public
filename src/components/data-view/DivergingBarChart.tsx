@@ -1,10 +1,13 @@
 "use client";
 
 // Graphs redesign v1: diverging bar chart (left of the centre-line = decline, right =
-// growth), reusing the Map's own already-validated blue/red diverging scale
-// (trend-colours.ts's trendColour -- brief's explicit "reuse the Map's validated
-// pair, don't invent a third scheme"). The focus school is identified by a
-// ring/outline, not a forced fill colour, since this chart's colour job is
+// growth), reusing the Map's own diverging scale (trend-colours.ts's trendColour --
+// brief's explicit "reuse the Map's validated pair, don't invent a third scheme";
+// 2026-09-11: that scale itself moved from red/grey/blue to red/orange/amber/green,
+// see trend-colours.ts's own header for why -- this component still just calls
+// trendColour() and gets whatever the shared scale currently is, so it picked up the
+// new palette automatically, no change needed here). The focus school is identified
+// by a ring/outline, not a forced fill colour, since this chart's colour job is
 // direction, not identity -- its bar still gets trendColour's real value like every
 // other school's.
 //
