@@ -59,9 +59,23 @@ export default function TargetRollBarChart({ periods, values, colour }: { period
   const minY = Math.min(Math.max(0, rawMin - pad), maxY / 2);
   const innerW = WIDTH - PAD.left - PAD.right;
   const innerH = HEIGHT - PAD.top - PAD.bottom;
-  const x = (i: number) => PAD.left + (periods.length <= 1 ? innerW / 2 : (i / (periods.length - 1)) * innerW);
   const y = (v: number) => PAD.top + innerH - ((v - minY) / (maxY - minY || 1)) * innerH;
+  // Real bug, confirmed against a live screenshot: bars paint AFTER (on top of) the
+  // Y-axis gridlines/tick text in SVG paint order, and the old x-scale centred the
+  // first bar exactly at PAD.left with no inset -- with barWidth up to 36px, that
+  // put the bar's left edge 18px inside the margin reserved for axis labels, and
+  // since every bar reaches down to the chart floor (minY), any tick label whose
+  // height fell within a bar's vertical reach got painted over (ate the "0" off
+  // "960," left "96"). The previous PAD-widening round enlarged the margin itself
+  // but never stopped bars overhanging into it -- a real "math looked fine but
+  // paint order broke it" bug, not caught by the earlier bounded-values check.
+  // Fixed with a band inset of half the bar width, so no bar edge can ever cross
+  // PAD.left/WIDTH-PAD.right regardless of data -- barWidth must be computed
+  // before x now, since x's own plottable width depends on it.
   const barWidth = Math.min(36, (innerW / periods.length) * 0.6);
+  const bandInset = barWidth / 2;
+  const plottableW = innerW - bandInset * 2;
+  const x = (i: number) => PAD.left + bandInset + (periods.length <= 1 ? plottableW / 2 : (i / (periods.length - 1)) * plottableW);
 
   // Same least-squares linear regression as CombinedRollChart.tsx, reused
   // verbatim (real points only, so a genuine gap year doesn't skew the fit).
