@@ -40,6 +40,7 @@ const UNKNOWN_PHASE_LABEL = "Unknown phase";
 type SchoolGroup = { key: string; label: string | null; rows: Row[] };
 
 export default function AddSubtractSchoolsWindow({
+  title = "Add/subtract schools",
   targetName,
   schools,
   tickedUrns,
@@ -51,6 +52,11 @@ export default function AddSubtractSchoolsWindow({
   profilesByUrn,
   onClose,
 }: {
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graph 3's own
+  // "Add/subtract schools to this graph" reuse: a distinct title for that call
+  // site's window, defaulting to the sidebar's original text so its own call site
+  // is unaffected.
+  title?: string;
   targetName: string;
   schools: Row[];
   tickedUrns: Set<string>;
@@ -58,7 +64,14 @@ export default function AddSubtractSchoolsWindow({
   onSelectAllTicked: () => void;
   onUnselectAllTicked: () => void;
   onGroupTicked: (urns: string[], ticked: boolean) => void;
-  onAddSchool: (result: SchoolSearchResult) => void;
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graph 3: optional now
+  // -- the graph-scoped reuse's own candidates are deliberately limited to schools
+  // already in the ticked/filtered comparator set ("not the wider nearby-schools
+  // pool," per direct instruction), so that call site omits this entirely and the
+  // open-search-to-add-ANY-school section below doesn't render, rather than
+  // offering an affordance that contradicts its own candidate restriction. The
+  // sidebar's own original call site is unaffected (still always passes this).
+  onAddSchool?: (result: SchoolSearchResult) => void;
   profilesByUrn: Map<string, DataViewSchoolProfile>;
   onClose: () => void;
 }) {
@@ -151,7 +164,7 @@ export default function AddSubtractSchoolsWindow({
         className="vd-compared-window flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-xl dark:bg-neutral-950"
       >
         <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold">Add/subtract schools</h2>
+          <h2 className="text-sm font-semibold">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -161,10 +174,12 @@ export default function AddSubtractSchoolsWindow({
           </button>
         </div>
 
-        <div className="border-b border-neutral-100 px-4 py-3 dark:border-neutral-900">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Add a school</p>
-          <SchoolSearch onSelect={onAddSchool} placeholder="Search to add…" />
-        </div>
+        {onAddSchool && (
+          <div className="border-b border-neutral-100 px-4 py-3 dark:border-neutral-900">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Add a school</p>
+            <SchoolSearch onSelect={onAddSchool} placeholder="Search to add…" />
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-4 py-2 text-xs dark:border-neutral-900">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-neutral-500">

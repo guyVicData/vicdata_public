@@ -11,7 +11,16 @@ import { TAG_COLOURS } from "@/lib/tag-colours";
 const GIRLS_COLOUR = { light: TAG_COLOURS.Girls.light[1], dark: TAG_COLOURS.Girls.dark[1] };
 const BOYS_COLOUR = { light: TAG_COLOURS.Boys.light[1], dark: TAG_COLOURS.Boys.dark[1] };
 
-function Donut({
+// Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graph 9: exported so
+// Graphs' new Section 04 can reuse this exact donut directly ("already working,
+// theme-aware... not a new build") rather than a second copy. The theme-aware
+// <style> block (--girls/--boys custom properties) used to be rendered once by
+// the parent GenderSplitCard below; moved INTO Donut itself so a caller that
+// renders Donut without ever rendering GenderSplitCard (Graphs' own usage) still
+// gets working theme-aware colours, not undefined CSS variables. Harmless if two
+// Donuts (or a Donut and a GenderSplitCard) end up on the same page -- it's a
+// handful of identical custom-property declarations, not a real cost.
+export function Donut({
   girls,
   boys,
   label,
@@ -27,6 +36,22 @@ function Donut({
   const boysPct = total > 0 ? 100 - girlsPct : 0;
   return (
     <div className="gender-donut-root flex flex-col items-center gap-2">
+      <style>{`
+        .gender-donut-root {
+          --girls: ${GIRLS_COLOUR.light};
+          --boys: ${BOYS_COLOUR.light};
+        }
+        @media (prefers-color-scheme: dark) {
+          :root:where(:not([data-theme="light"])) .gender-donut-root {
+            --girls: ${GIRLS_COLOUR.dark};
+            --boys: ${BOYS_COLOUR.dark};
+          }
+        }
+        :root[data-theme="dark"] .gender-donut-root {
+          --girls: ${GIRLS_COLOUR.dark};
+          --boys: ${BOYS_COLOUR.dark};
+        }
+      `}</style>
       <div
         className="h-20 w-20 rounded-full"
         style={{ background: `conic-gradient(var(--girls) 0% ${girlsPct}%, var(--boys) ${girlsPct}% 100%)` }}
@@ -75,22 +100,6 @@ export function GenderSplitCard({
 }) {
   return (
     <Card size={size} className="flex flex-col gap-4">
-      <style>{`
-        .gender-donut-root {
-          --girls: ${GIRLS_COLOUR.light};
-          --boys: ${BOYS_COLOUR.light};
-        }
-        @media (prefers-color-scheme: dark) {
-          :root:where(:not([data-theme="light"])) .gender-donut-root {
-            --girls: ${GIRLS_COLOUR.dark};
-            --boys: ${BOYS_COLOUR.dark};
-          }
-        }
-        :root[data-theme="dark"] .gender-donut-root {
-          --girls: ${GIRLS_COLOUR.dark};
-          --boys: ${BOYS_COLOUR.dark};
-        }
-      `}</style>
       <CardHeading title="Gender split" subtitle={subtitle} />
       <div className="flex gap-6">
         <Donut girls={girls} boys={boys} label={subjectLabel} sexLabels={sexLabels} />

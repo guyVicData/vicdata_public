@@ -34,6 +34,29 @@
 // (school-series-colours.ts's own assignSeriesColours) -- standard composite
 // encoding, per Guy's explicit request, rather than generating extra
 // low-distinctness hues. The legend's LineSwatch reflects both.
+//
+// Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graph 3: four additions,
+// per direct instruction --
+//   (a) at <=LARGE_GROUP_THRESHOLD schools, every legend entry (except the target,
+//       which the codebase's established "focus school never excluded" rule keeps
+//       always visible) now gets an on/off checkbox, hiding just that one line
+//       without leaving "show all" mode.
+//   (b) the average-toggle button's text is reworded ("average of all other
+//       schools" -> "average roll of this set of schools"); its mode-switch
+//       behaviour is otherwise unchanged.
+//   (c) above LARGE_GROUP_THRESHOLD schools, the chart now DEFAULTS to average-only
+//       (target + average), with a reduced legend (no per-school checkboxes) and,
+//       per our own reading, the (b) toggle button doesn't apply at this size (no
+//       way back to "show every line" via that control) -- flagged as our reading,
+//       not confirmed against the handoff.
+//   (d) a new "Add/subtract schools to this graph" affordance (only offered at
+//       LARGE_GROUP_THRESHOLD+, since below that every school is already shown):
+//       schools added this way get their own coloured legend entry/line drawn on
+//       top of the average line, via the SAME assignSeriesColours mechanism as
+//       every other line here -- not a second, ad-hoc colour picker. State
+//       (extraProfiles/hiddenUrns/the add-schools window) lives one level up in
+//       GraphsView.tsx, which owns "which schools does this ONE chart show," not
+//       this component or DataViewShell.
 
 import { useState } from "react";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
@@ -60,6 +83,7 @@ function academicYearLabel(period: number): string {
 const WIDTH = 640;
 const HEIGHT = 280;
 const PAD = { top: 16, right: 16, bottom: 28, left: 48 };
+const LARGE_GROUP_THRESHOLD = 10;
 
 export default function RollTrendsChart({
   target,
@@ -67,12 +91,20 @@ export default function RollTrendsChart({
   filters,
   showAverage,
   onToggleAverage,
+  extraProfiles,
+  hiddenUrns,
+  onToggleHidden,
+  onOpenAddSchools,
 }: {
   target: DataViewSchoolProfile;
   group: DataViewSchoolProfile[];
   filters: DataViewFilterState;
   showAverage: boolean;
   onToggleAverage: () => void;
+  extraProfiles: DataViewSchoolProfile[];
+  hiddenUrns: Set<string>;
+  onToggleHidden: (urn: string) => void;
+  onOpenAddSchools: () => void;
 }) {
   // Persisted across renders -- the whole point of "stable colour" is that it
   // survives the comparator set changing shape, not just re-renders of this one.
@@ -82,7 +114,11 @@ export default function RollTrendsChart({
   // from-previous-renders) -- a ref write during render is what the new
   // react-hooks/refs rule actually forbids, not this.
   const [colours, setColours] = useState<SeriesColourMap>(() => new Map());
-  const urns = group.map((s) => s.urn);
+  const isLargeGroup = group.length > LARGE_GROUP_THRESHOLD;
+  // extraProfiles' urns feed the SAME colour-assignment mechanism as every other
+  // line, so an added-to-graph school gets a real, stable, never-repainted colour
+  // too -- not a second colour source.
+  const urns = [...group.map((s) => s.urn), ...extraProfiles.map((s) => s.urn)];
   const nextColours = assignSeriesColours(colours, urns, target.urn);
   if (nextColours.size !== colours.size) {
     setColours(nextColours);
@@ -104,6 +140,7 @@ export default function RollTrendsChart({
   const seriesFor = (s: DataViewSchoolProfile) =>
     periods.map((p) => (s.ageGenderCountsByPeriod.has(p) ? filteredCount(profileToFilterableDataForPeriod(s, p), filters).total : null));
   const allSeries = group.map((s) => ({ urn: s.urn, name: s.name, isTarget: s.urn === target.urn, values: seriesFor(s) }));
+  const extraSeries = extraProfiles.map((s) => ({ urn: s.urn, name: s.name, isTarget: false, values: seriesFor(s) }));
 
   const averageSeries = periods.map((_, i) => {
     const others = group.filter((s) => s.urn !== target.urn).map((s) => allSeries.find((a) => a.urn === s.urn)!.values[i]).filter((v): v is number => v !== null);
@@ -112,13 +149,24 @@ export default function RollTrendsChart({
 
   const targetSeries = allSeries.find((s) => s.isTarget)!;
 
-  // Selecting the average is a mode switch, not an overlay: it replaces every OTHER
-  // school's line with the average (2026-09-08, per Guy's explicit request) while
-  // keeping the focus school's own line, so the axis scale should reflect only what's
-  // actually drawn.
-  const allValues = showAverage
-    ? [...averageSeries, ...targetSeries.values].filter((v): v is number => v !== null)
-    : allSeries.flatMap((s) => s.values).filter((v): v is number => v !== null);
+  // Above LARGE_GROUP_THRESHOLD schools, average-only is the default AND the only
+  // mode -- the passed-in showAverage/onToggleAverage (the (b) toggle) doesn't
+  // apply at this size, per direct instruction ((c)'s own wording), so this
+  // component decides its own effective mode rather than trusting the prop
+  // unconditionally.
+  const effectiveShowAverage = isLargeGroup || showAverage;
+
+  // At <=LARGE_GROUP_THRESHOLD schools in "show all" mode, a hidden (unticked)
+  // line is dropped from what's drawn AND from the axis's own value range (so
+  // hiding a school actually rescales the chart, not just visually removes one
+  // line from an unchanged scale) -- the target itself is never hideable, per this
+  // codebase's established "focus school never excluded" rule.
+  const visibleSeries = effectiveShowAverage ? [targetSeries] : allSeries.filter((s) => s.isTarget || !hiddenUrns.has(s.urn));
+  const drawnSeries = effectiveShowAverage ? [...visibleSeries, ...extraSeries] : visibleSeries;
+
+  const allValues = effectiveShowAverage
+    ? [...averageSeries, ...drawnSeries.flatMap((s) => s.values)].filter((v): v is number => v !== null)
+    : drawnSeries.flatMap((s) => s.values).filter((v): v is number => v !== null);
   const maxY = Math.max(...allValues) * 1.05;
   const minY = 0;
   const innerW = WIDTH - PAD.left - PAD.right;
@@ -168,11 +216,11 @@ export default function RollTrendsChart({
           </g>
         ))}
 
-        {showAverage && (
+        {effectiveShowAverage && (
           <path d={pathFor(averageSeries)} fill="none" stroke="currentColor" strokeOpacity={0.4} strokeDasharray="4 3" strokeWidth={1.5} />
         )}
 
-        {(showAverage ? [targetSeries] : allSeries).map((s) => (
+        {drawnSeries.map((s) => (
             <g key={s.urn}>
               <path
                 d={pathFor(s.values)}
@@ -196,9 +244,9 @@ export default function RollTrendsChart({
           ))}
       </svg>
 
-      <div className="mt-2 flex items-center justify-between gap-2">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600 dark:text-neutral-400">
-          {showAverage ? (
+          {effectiveShowAverage ? (
             <>
               <span className="flex items-center gap-1.5">
                 <LineSwatch colour={seriesColourVar(target.urn, target.urn)} />
@@ -207,30 +255,58 @@ export default function RollTrendsChart({
               </span>
               <span className="flex items-center gap-1.5">
                 <LineSwatch colour="currentColor" dashArray="4 3" opacity={0.4} />
-                Average of all other schools
+                Average of this set of schools
               </span>
+              {extraSeries.map((s) => (
+                <span key={s.urn} className="flex items-center gap-1.5">
+                  <LineSwatch colour={seriesColourVar(s.urn, target.urn)} dashArray={seriesDashArray(nextColours, s.urn, target.urn)} />
+                  {s.name}
+                </span>
+              ))}
             </>
           ) : (
             allSeries.map((s) => (
               <span key={s.urn} className="flex items-center gap-1.5">
-                <LineSwatch colour={seriesColourVar(s.urn, target.urn)} dashArray={seriesDashArray(nextColours, s.urn, target.urn)} />
+                {!s.isTarget && (
+                  <input
+                    type="checkbox"
+                    checked={!hiddenUrns.has(s.urn)}
+                    onChange={() => onToggleHidden(s.urn)}
+                    className="h-3 w-3"
+                    aria-label={`Show ${s.name}`}
+                  />
+                )}
+                <LineSwatch colour={seriesColourVar(s.urn, target.urn)} dashArray={seriesDashArray(nextColours, s.urn, target.urn)} opacity={s.isTarget || !hiddenUrns.has(s.urn) ? 1 : 0.3} />
                 {s.name}
                 {s.isTarget && <span className="text-neutral-400">(this school)</span>}
               </span>
             ))
           )}
         </div>
-        <button
-          type="button"
-          onClick={onToggleAverage}
-          className={
-            showAverage
-              ? "shrink-0 rounded border border-neutral-400 px-2 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-500 dark:text-neutral-300"
-              : "shrink-0 rounded border border-neutral-200 px-2 py-1 text-xs text-neutral-500 hover:border-neutral-400 dark:border-neutral-800 dark:text-neutral-400"
-          }
-        >
-          {showAverage ? "Hide" : "Show"} average of all other schools
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {!isLargeGroup && (
+            <button
+              type="button"
+              onClick={onToggleAverage}
+              className={
+                showAverage
+                  ? "rounded border border-neutral-400 px-2 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-500 dark:text-neutral-300"
+                  : "rounded border border-neutral-200 px-2 py-1 text-xs text-neutral-500 hover:border-neutral-400 dark:border-neutral-800 dark:text-neutral-400"
+              }
+            >
+              {showAverage ? "Hide" : "Show"} average roll of this set of schools
+            </button>
+          )}
+          {isLargeGroup && (
+            <button
+              type="button"
+              onClick={onOpenAddSchools}
+              className="rounded border border-neutral-200 px-2 py-1 text-xs text-neutral-500 hover:border-neutral-400 dark:border-neutral-800 dark:text-neutral-400"
+            >
+              Add/subtract schools to this graph
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ import type { SetOption, RecipeOption, ViewKey } from "@/lib/data-view-types";
 import type { DefaultListEntry, SchoolTypeCategory, BoardingQuintileBand } from "@/lib/default-comparator-lists";
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
 import type { RegionNationPoint, RegionNationRankResult, RegionNationRow } from "@/lib/region-nation-comparator";
-import type { AggregateTrends } from "@/lib/aggregate-trends";
+import { GRAPH_SECTOR_FALLBACK_THRESHOLD, type AggregateTrends, type AggregateTrendSeries } from "@/lib/aggregate-trends";
 import type { LaChoroplethEntry } from "@/lib/la-choropleth";
 import { TOPIC_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import ComparatorSidebar from "./ComparatorSidebar";
@@ -323,6 +323,13 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // switching into Graphs after arriving via Map/Rankings doesn't show an extra
   // loading flash.
   const [aggregateTrends, setAggregateTrends] = useState<{ key: string; data: AggregateTrends } | null>(null);
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10: sector-
+  // level roll_aggregates data for EVERY distinct sector represented in the current
+  // ticked set (not just the target's own, unlike aggregateTrends above) -- fetched
+  // only once the set exceeds GRAPH_SECTOR_FALLBACK_THRESHOLD, independent of
+  // isLargeSet (a member can tick past 20 schools well below Region/Nation scale).
+  // Same keyed-cache discipline as aggregateTrends/largeSetRank.
+  const [sectorAggregates, setSectorAggregates] = useState<{ key: string; data: Record<string, AggregateTrendSeries> } | null>(null);
   // Map round (2026-09-12), Part 2 Stage A: LA choropleth data, fetched only when the
   // active set is genuinely Region scope (activeSet.key === "ons_region") -- Nation
   // stays dot-cluster until Stage B, and every other recipe (Nearest-10/LA-scoped/
@@ -774,6 +781,71 @@ export default function DataViewShell({ urn }: { urn: string }) {
       cancelled = true;
     };
   }, [authToken, target, activeSet, filters.startPeriod]);
+
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10: fetches
+  // real roll_aggregates data for every distinct sector represented among the
+  // current ticked-and-profile-loaded schools, once that set exceeds
+  // GRAPH_SECTOR_FALLBACK_THRESHOLD -- deliberately independent of isLargeSet (a
+  // member's own self-curated set can cross this much smaller threshold long before
+  // Region/Nation scale). Rules of Hooks means this effect has to live up here with
+  // every other fetch effect, before this component's own early returns further
+  // down (loadState checking/loading/not_a_member/error) -- the REAL
+  // targetProfile/tickedProfiles consts aren't computed until after those returns,
+  // so this re-derives the identical "which schools are actually being compared"
+  // formula from the same pre-return primitives (profilesByUrn/activeSetSchools/
+  // tickedUrns/comparedHidden/matchesSectorFilter) tickedProfiles itself uses --
+  // same real bug-fix logic (2026-09-11, tickedProfiles' own comment) duplicated
+  // once here rather than moved, since moving that already-carefully-commented
+  // computation risked disturbing code between the two positions for no real gain.
+  useEffect(() => {
+    if (!authToken || !target) return;
+    const targetProfileForSectors = profilesByUrn.get(target.urn) ?? null;
+    if (!targetProfileForSectors) return;
+    // Reads tickedUrns/profilesByUrn directly rather than activeSetSchools (the
+    // real tickedProfiles' own intermediate step) -- activeSetSchools is a fresh
+    // array every render (react-hooks/exhaustive-deps flagged it as a dependency
+    // that would never stabilise), and isn't actually needed here: a ticked urn
+    // with no real profile yet is already dropped by the !!p filter below, the
+    // same end result activeSetSchools' own filter/map/filter chain produces for
+    // every urn that's actually reached profilesByUrn.
+    const tickedProfilesForSectors =
+      activeSet && !comparedHidden
+        ? Array.from(tickedUrns)
+            .map((u) => profilesByUrn.get(u))
+            .filter((p): p is DataViewSchoolProfile => !!p)
+            .filter((p) => matchesSectorFilter(p.sector, filters.sector))
+        : [];
+    const sectorGroup = tickedProfilesForSectors.some((p) => p.urn === targetProfileForSectors.urn)
+      ? tickedProfilesForSectors
+      : [targetProfileForSectors, ...tickedProfilesForSectors];
+    if (sectorGroup.length <= GRAPH_SECTOR_FALLBACK_THRESHOLD) return;
+    const sectors = Array.from(new Set(sectorGroup.map((p) => p.establishmentTypeGroup).filter((s): s is string => !!s))).sort();
+    if (sectors.length === 0) return;
+    const requestKey = `${target.urn}|${filters.startPeriod}|${sectors.join(",")}`;
+    if (sectorAggregates?.key === requestKey) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/data-view/aggregate-trends?urn=${target.urn}&startPeriod=${filters.startPeriod}&sectors=${encodeURIComponent(sectors.join(","))}`,
+          { headers: { Authorization: `Bearer ${authToken}` } },
+        );
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error("[DataViewShell] sector-aggregates fetch failed:", res.status, await res.text().catch(() => ""));
+          return;
+        }
+        const body = (await res.json()) as { sectorAggregates?: Record<string, AggregateTrendSeries> };
+        if (cancelled) return;
+        setSectorAggregates({ key: requestKey, data: body.sectorAggregates ?? {} });
+      } catch (e) {
+        if (!cancelled) console.error("[DataViewShell] unexpected error fetching sector aggregates:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, target, profilesByUrn, activeSet, comparedHidden, tickedUrns, filters.sector, filters.startPeriod, sectorAggregates]);
 
   // Map round (2026-09-12), Part 2 Stage A: real LA-level choropleth data, fetched
   // whenever the active set is genuinely Region scope -- gated on activeSet.key
@@ -1443,6 +1515,16 @@ export default function DataViewShell({ urn }: { urn: string }) {
       : null;
   const resolvedAggregateTrends =
     target && isLargeSet && aggregateTrends?.key === aggregateTrendsRequestKey(target.urn, filters.startPeriod) ? aggregateTrends.data : null;
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10: no
+  // isLargeSet gate here (unlike resolvedAggregateTrends above) -- the fetch effect
+  // itself already only ever populates this once the ticked set crosses
+  // GRAPH_SECTOR_FALLBACK_THRESHOLD, a genuinely separate, smaller condition. Still
+  // checks the key's own urn|startPeriod prefix against the CURRENT target/filter
+  // (same stale-data guard resolvedAggregateTrends applies above) so switching
+  // target school or start year never briefly shows a previous school's sector
+  // bars mislabelled as the new one's.
+  const resolvedSectorAggregates =
+    target && sectorAggregates?.key.startsWith(`${target.urn}|${filters.startPeriod}|`) ? sectorAggregates.data : null;
 
   // 2026-09-07, UX refinements round 2, P3 item 7: "same 'only show if relevant'
   // ... conventions" -- the Sector filter only makes sense (and only shows any
@@ -1726,6 +1808,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     filterSummary={filterSummary}
                     isLargeSet={isLargeSet}
                     aggregateTrends={resolvedAggregateTrends}
+                    sectorAggregates={resolvedSectorAggregates}
                   />
                 ) : (
                   <RankingsView

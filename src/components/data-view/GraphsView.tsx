@@ -26,15 +26,43 @@
 // 2026-09-08, redesign doc updated with two additions -- see
 // docs/vicdata_data_view_open_questions.md for the full reasoning on both:
 //   - Section 01 gained a new "Combined Roll" lollipop-plus-trend-line chart
-//     directly under Roll Trends, in the main column, as a large chart -- moved
-//     there from the right-hand tile column per Guy's own follow-up refinement
-//     (CombinedRollChart.tsx).
+//     directly under Roll Trends -- moved out again below, see the Part B comment.
 //   - Section 02 (Market share) got its full spec: a single-series share-over-time
 //     chart plus two secondary tiles reusing the SAME bar-chart/diverging-chart
 //     components Section 01 already established (CurrentRollBarChart and
 //     GrowthDeclineChart generalised into SortedBarChart/DivergingBarChart so both
 //     sections share one implementation each, per the doc's own "same pattern as
 //     Section 01" wording).
+//
+// Sidebar/Graphs/Rankings restructure (2026-09-16), Part B: restructured from three
+// sections into FOUR, independently collapsible, all open by default (no adaptive
+// show/hide -- "training wheels" principle, every section always reachable):
+//   - Section 01 (Overview) is now deliberately LIGHT: a new single-series bar+
+//     trend-line chart of the target's own roll (Graph 1, TargetRollBarChart.tsx)
+//     plus the unchanged Current Roll card (Graph 2). CombinedRollChart and the
+//     Growth/decline chart both moved OUT of this section.
+//   - Section 02 (new) is the new home for the main RollTrendsChart (Graph 3, itself
+//     enhanced -- see RollTrendsChart.tsx's own header comment for the four
+//     additions) and the Growth/decline chart (Graph 4, moved here from Section 01).
+//   - Section 03 (renumbered from the old Section 02) keeps its two market-share
+//     charts (Graphs 5/6) and gains CombinedRollChart (Graph 7, moved here from
+//     Section 01) -- Graphs 5/6 also gain a new >20-school sector-aggregate
+//     fallback, replacing per-school bars with target-vs-real-sector bars once the
+//     set is too large for individual bars to mean much (GRAPH_SECTOR_FALLBACK_
+//     THRESHOLD, aggregate-trends.ts -- deliberately separate from
+//     LARGE_SET_PROFILE_THRESHOLD, which is Region/Nation scale, ~10x larger).
+//   - Section 04 (renumbered from the old Section 03) keeps its existing gender-
+//     split stat + SpreadStrip and gains three items: Graph 8 (ShapeChart.tsx, the
+//     real public-site population-pyramid, reused directly), Graph 9 (the Donut
+//     component from GenderSplitCard.tsx, reused directly, now exported), and
+//     Graph 10 (NEW: a stacked-bar chart, one 100%-stacked bar per school, with the
+//     SAME sector-aggregate fallback as Graphs 5/6 above the same threshold). The
+//     handoff's own section summary says "gains two charts" but its itemised list
+//     names three (8/9/10) -- resolved by treating Graph 9 as an upgrade of the
+//     EXISTING stat line (same targetGenderCurrent figure, just as a donut instead
+//     of bare text) rather than a fourth thing bolted on top of a now-redundant
+//     third; nothing existing was removed, logged here rather than silently
+//     resolved.
 
 import { useState } from "react";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
@@ -44,7 +72,8 @@ import { trendBadge, spreadData, shapeInlineFact, sizeBand, type TrendBadge } fr
 import { shapeClassifierInput } from "@/lib/roll-data";
 import { classifyShape } from "@/lib/shape-classifier";
 import { graphTitlePrefix } from "@/lib/data-view-summary";
-import type { AggregateTrends } from "@/lib/aggregate-trends";
+import { GRAPH_SECTOR_FALLBACK_THRESHOLD, type AggregateTrends, type AggregateTrendSeries } from "@/lib/aggregate-trends";
+import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
 import SpreadStrip from "./SpreadStrip";
 import TrendPill, { academicYearLabel } from "./TrendPill";
 import RollTrendsChart from "./RollTrendsChart";
@@ -52,6 +81,11 @@ import SortedBarChart from "./SortedBarChart";
 import DivergingBarChart from "./DivergingBarChart";
 import CombinedRollChart from "./CombinedRollChart";
 import MarketShareTrendChart from "./MarketShareTrendChart";
+import TargetRollBarChart from "./TargetRollBarChart";
+import GenderSplitBarChart, { type GenderSplitBarRow } from "./GenderSplitBarChart";
+import AddSubtractSchoolsWindow from "./AddSubtractSchoolsWindow";
+import ShapeChart from "@/components/ShapeChart";
+import { Donut } from "@/components/dashboard/GenderSplitCard";
 import AggregateTrendChart, {
   AGGREGATE_TARGET_COLOUR,
   AGGREGATE_REGION_COLOUR,
@@ -87,12 +121,38 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function SectionHeading({ number, title }: { number: string; title: string }) {
+// Sidebar/Graphs/Rankings restructure (2026-09-16), Part B: SectionHeading is now a
+// real toggle button, not static text -- "each independently collapsible... all
+// four open by default." A plain <details>/<summary> pair would have been simpler,
+// but this codebase's other collapsible-ish controls (the FilterBar pills, the
+// large-set popup) are all plain button+state, and a chevron-plus-heading button
+// keeps the exact same visual weight/placement SectionHeading always had.
+function SectionHeading({ number, title, isOpen, onToggle }: { number: string; title: string; isOpen: boolean; onToggle: () => void }) {
   return (
-    <h2 className="mb-3 flex items-baseline gap-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="mb-3 flex w-full items-center gap-2 text-left text-sm font-semibold uppercase tracking-wide text-neutral-500"
+      aria-expanded={isOpen}
+    >
       <span className="text-neutral-300 dark:text-neutral-700">{number}</span>
-      {title}
-    </h2>
+      <span className="flex-1">{title}</span>
+      <span className="text-neutral-400">{isOpen ? "▾" : "▸"}</span>
+    </button>
+  );
+}
+
+// Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10's shared
+// sector-aggregate fallback caption -- same "state the real basis explicitly"
+// discipline Section 01's own isLargeSet caption already established, adapted for
+// this narrower, more-common case.
+function SectorFallbackNote() {
+  return (
+    <p className="mt-2 text-xs text-neutral-400">
+      This set is large enough that individual school bars aren&rsquo;t shown -- compared against real national sector averages instead. These are
+      whole-school figures (roll_aggregates doesn&rsquo;t carry the phase/age-band breakdown filteredCount() does), so phase/age filters aren&rsquo;t
+      reflected here.
+    </p>
   );
 }
 
@@ -103,6 +163,7 @@ export default function GraphsView({
   filterSummary,
   isLargeSet,
   aggregateTrends,
+  sectorAggregates,
 }: {
   targetProfile: DataViewSchoolProfile;
   tickedProfiles: DataViewSchoolProfile[];
@@ -116,8 +177,50 @@ export default function GraphsView({
   // design doc's own list of charts that need replacing at scale.
   isLargeSet?: boolean;
   aggregateTrends?: AggregateTrends | null;
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10: real
+  // roll_aggregates data for every distinct sector represented in the current
+  // group, fetched by DataViewShell once GRAPH_SECTOR_FALLBACK_THRESHOLD is
+  // crossed -- null/undefined below that threshold (nothing needed it yet).
+  sectorAggregates?: Record<string, AggregateTrendSeries> | null;
 }) {
   const [showAverage, setShowAverage] = useState(false);
+
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B: accordion open/closed
+  // state, all four sections start open (empty closed-set) -- collapsing doesn't
+  // need to persist across reload (direct instruction: "doesn't need to persist...
+  // unless trivial," and a plain in-memory Set is the trivial version, so no
+  // localStorage/URL-state wiring was added for it).
+  const [closedSections, setClosedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (id: string) =>
+    setClosedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graph 3(d): state for
+  // the graph-scoped "Add/subtract schools to this graph" window -- deliberately
+  // local to GraphsView (per direct instruction: "own state... threaded through
+  // GraphsView"), not lifted to DataViewShell, since it affects only this one
+  // chart's own display, not the real filter/comparator set every other view reads.
+  const [graphAddedUrns, setGraphAddedUrns] = useState<Set<string>>(new Set());
+  const [hiddenLineUrns, setHiddenLineUrns] = useState<Set<string>>(new Set());
+  const [graphAddWindowOpen, setGraphAddWindowOpen] = useState(false);
+  const toggleGraphAdded = (urn: string) =>
+    setGraphAddedUrns((prev) => {
+      const next = new Set(prev);
+      if (next.has(urn)) next.delete(urn);
+      else next.add(urn);
+      return next;
+    });
+  const toggleHiddenLine = (urn: string) =>
+    setHiddenLineUrns((prev) => {
+      const next = new Set(prev);
+      if (next.has(urn)) next.delete(urn);
+      else next.add(urn);
+      return next;
+    });
 
   // The ticked group always includes the target itself as a real reference point
   // (SchoolMap.tsx's own established "the viewed school's roll is a real data point
@@ -137,7 +240,7 @@ export default function GraphsView({
   // established "the viewed school is always a real reference point, never
   // excluded" rule (SchoolMap.tsx's own comment) -- shown even at a genuine zero,
   // same as its own stat tile already honestly would. Deliberately NOT applied to
-  // Section 03's gender split, which Guy's own list of affected charts didn't
+  // Section 04's gender split, which Guy's own list of affected charts didn't
   // include -- that chart already excludes a zero-total school on its own (spreadData
   // filters out null values, and a zero-total school's female/total ratio is already
   // computed as null), so no separate rule was needed there anyway.
@@ -167,13 +270,14 @@ export default function GraphsView({
     pctChange: trendBadge(currentPoints[i].value, anchorPoints[i].value)?.pctChange ?? null,
   }));
 
-  // Shared timeline + per-school filtered series for the new Combined Roll chart
-  // (Section 01) and the whole of Market share (Section 02) -- same
+  // Shared timeline + per-school filtered series for the Combined Roll chart
+  // (Section 03) and the whole of Market share (Section 03) -- same
   // filteredCount(profileToFilterableDataForPeriod(...)) pairing RollTrendsChart
   // already applies per school, summed/ratioed across the group here instead of
   // rendered as separate lines. ageGenderCountsByPeriod.has(p) guards the same
   // "genuinely no data for this school this period" gap RollTrendsChart's own
-  // seriesFor guards -- absence means no data, not a real zero.
+  // seriesFor guards -- absence means no data, not a real zero. Also feeds
+  // Section 01's new Graph 1 (the target's own series is just one row of this).
   const periods = Array.from(new Set(groupInScope.flatMap((s) => s.trend.map((t) => t.period))))
     .filter((p) => p >= filters.startPeriod)
     .sort((a, b) => a - b);
@@ -215,6 +319,57 @@ export default function GraphsView({
     return { urn: s.urn, name: s.name, isTarget: s.isTarget, pctChange: early !== null && late !== null ? late - early : null };
   });
 
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graphs 5/6/10: above
+  // GRAPH_SECTOR_FALLBACK_THRESHOLD schools, per-school bars for market share and
+  // gender split stop meaning much (too many, too thin to read) -- built ONCE here
+  // and reused by all three graphs, per direct instruction. Real sectors only:
+  // establishmentTypeGroup is null for a school with no real value, filtered out
+  // rather than grouped under a fake "Unknown" bucket sector aggregates don't exist
+  // for anyway.
+  const isSectorFallback = groupInScope.length > GRAPH_SECTOR_FALLBACK_THRESHOLD;
+  const distinctSectorsPresent = Array.from(new Set(groupInScope.map((p) => p.establishmentTypeGroup).filter((s): s is string => !!s))).sort();
+
+  // Graphs 5/6's fallback rows: whole-school figures (roll_aggregates has no
+  // phase/age breakdown to filter), same basis Section 01's own isLargeSet chart
+  // already uses for the same reason -- the target's own bar/point is the real
+  // current/anchor totalRoll (targetProfile.trend/.current), not the filtered
+  // figure used everywhere else on this page, so it's a fair like-for-like
+  // comparison against the equally whole-school sector aggregate.
+  const targetWholeSchoolCurrent = targetProfile.current?.totalRoll ?? null;
+  const targetWholeSchoolAnchor = targetProfile.trend.find((t) => t.period === filters.startPeriod)?.totalRoll ?? null;
+  const sectorFallbackRollPoints =
+    isSectorFallback && sectorAggregates
+      ? [
+          { urn: targetProfile.urn, name: targetProfile.name, isTarget: true, value: targetWholeSchoolCurrent ?? 0 },
+          ...distinctSectorsPresent
+            .map((sector) => {
+              const points = sectorAggregates[sector]?.points ?? [];
+              const latest = points[points.length - 1];
+              return latest ? { urn: `sector:${sector}`, name: sector, isTarget: false, value: latest.totalRoll } : null;
+            })
+            .filter((p): p is { urn: string; name: string; isTarget: boolean; value: number } => p !== null),
+        ]
+      : null;
+  const sectorFallbackGrowthPoints =
+    isSectorFallback && sectorAggregates
+      ? [
+          {
+            urn: targetProfile.urn,
+            name: targetProfile.name,
+            isTarget: true,
+            pctChange: trendBadge(targetWholeSchoolCurrent, targetWholeSchoolAnchor)?.pctChange ?? null,
+          },
+          ...distinctSectorsPresent
+            .map((sector) => {
+              const points = sectorAggregates[sector]?.points ?? [];
+              if (points.length < 2) return null;
+              const pctChange = trendBadge(points[points.length - 1].totalRoll, points[0].totalRoll)?.pctChange ?? null;
+              return { urn: `sector:${sector}`, name: sector, isTarget: false, pctChange };
+            })
+            .filter((p): p is { urn: string; name: string; isTarget: boolean; pctChange: number | null } => p !== null),
+        ]
+      : null;
+
   const genderPoints = group.map((p) => {
     const c = filteredCount(toFilterable(p), filters);
     const pct = c.female !== null && c.total > 0 ? (c.female / c.total) * 100 : null;
@@ -228,6 +383,33 @@ export default function GraphsView({
       : null;
   const genderTrendBadge = trendBadge(targetGenderCurrent, targetGenderAnchor);
   const genderSpread = spreadData(genderPoints);
+
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part B, Graph 10: individual
+  // rows use the same FILTERED girls/boys split as everything else on this page
+  // (unlike Graphs 5/6's whole-school fallback basis) -- GenderSplitBarChart itself
+  // drops any row with girls+boys===0 (no real data), same convention as
+  // genderPoints' own null-filtering just above.
+  const genderBarRows: GenderSplitBarRow[] = group.map((p) => {
+    const c = filteredCount(toFilterable(p), filters);
+    return { key: p.urn, label: p.name, girls: c.female ?? 0, boys: c.male ?? 0, isTarget: p.urn === targetProfile.urn };
+  });
+  const targetWholeSchoolGender = Array.from(targetProfile.ageGenderCounts.values()).reduce(
+    (acc, c) => ({ male: acc.male + c.male, female: acc.female + c.female }),
+    { male: 0, female: 0 },
+  );
+  const sectorFallbackGenderRows: GenderSplitBarRow[] | null =
+    isSectorFallback && sectorAggregates
+      ? [
+          { key: targetProfile.urn, label: targetProfile.name, girls: targetWholeSchoolGender.female, boys: targetWholeSchoolGender.male, isTarget: true },
+          ...distinctSectorsPresent
+            .map((sector) => {
+              const points = sectorAggregates[sector]?.points ?? [];
+              const latest = points[points.length - 1];
+              return latest ? { key: `sector:${sector}`, label: sector, girls: latest.genderFemale, boys: latest.genderMale } : null;
+            })
+            .filter((r): r is GenderSplitBarRow => r !== null),
+        ]
+      : null;
 
   // Brief's own rule: hide Gender split entirely for a confirmed single-sex school
   // (typology.ts's GenderTag -- only a real "Boys"/"Girls" value triggers this, never
@@ -252,6 +434,7 @@ export default function GraphsView({
   }
 
   const titlePrefix = graphTitlePrefix(filters, targetProfile);
+  const targetRollBarTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Roll since ${academicYearLabel(filters.startPeriod)}`;
   const rollTrendsTitle = `${titlePrefix ? `${titlePrefix} ` : ""}Roll Trends since ${academicYearLabel(filters.startPeriod)}`;
   // 2026-09-08, per direct request: explicitly names "selected schools" since this
   // is the sum across the whole comparator set, not the focus school's own figure --
@@ -311,40 +494,44 @@ export default function GraphsView({
       ]
     : [];
 
+  // Graph 3(d): candidates are schools already in the ticked/filtered comparator
+  // set (the same `group` this whole view already has profiles for), never the
+  // wider nearby-schools pool -- per direct instruction. profilesByUrn here is
+  // built from `group` alone for the same reason (AddSubtractSchoolsWindow's own
+  // sector colour-coding only needs profiles for its own candidate list).
+  const graphAddCandidates = group.filter((p) => p.urn !== targetProfile.urn).map((p) => ({ urn: p.urn, name: p.name, distanceKm: null }));
+  const graphAddProfilesByUrn = new Map(group.map((p) => [p.urn, p] as const));
+  const graphAddedProfiles = group.filter((p) => graphAddedUrns.has(p.urn));
+
   return (
     <div className="space-y-8">
       {filterSummary && <p className="text-xs text-neutral-400">Filtered: {filterSummary}</p>}
 
-      {isLargeSet ? (
-        <section>
-          <SectionHeading number="01" title="Overview" />
-          <Card title={`${targetProfile.name} vs region, nation and sector since ${academicYearLabel(filters.startPeriod)}`}>
-            {aggregateTrends === undefined || aggregateTrends === null ? (
-              <p className="text-sm text-neutral-500">Loading region/nation/sector comparison…</p>
-            ) : (
-              <AggregateTrendChart series={aggregateSeries} />
-            )}
-          </Card>
-          <p className="mt-2 text-xs text-neutral-400">
-            At this scale, Graphs compares whole-school roll trends only -- phase/age-band filters aren&rsquo;t reflected in this chart (gender and
-            boarding filters don&rsquo;t apply to a trend chart either way).
-          </p>
-        </section>
-      ) : (
-        <>
-          <section>
-            <SectionHeading number="01" title="Overview" />
+      <section>
+        <SectionHeading number="01" title={`${targetProfile.name} Overview`} isOpen={!closedSections.has("01")} onToggle={() => toggleSection("01")} />
+        {!closedSections.has("01") &&
+          (isLargeSet ? (
+            <>
+              <Card title={`${targetProfile.name} vs region, nation and sector since ${academicYearLabel(filters.startPeriod)}`}>
+                {aggregateTrends === undefined || aggregateTrends === null ? (
+                  <p className="text-sm text-neutral-500">Loading region/nation/sector comparison…</p>
+                ) : (
+                  <AggregateTrendChart series={aggregateSeries} />
+                )}
+              </Card>
+              <p className="mt-2 text-xs text-neutral-400">
+                At this scale, Graphs compares whole-school roll trends only -- phase/age-band filters aren&rsquo;t reflected in this chart (gender and
+                boarding filters don&rsquo;t apply to a trend chart either way).
+              </p>
+            </>
+          ) : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <div className="flex flex-col gap-4 lg:col-span-2">
-                <Card title={rollTrendsTitle}>
-                  <RollTrendsChart target={targetProfile} group={groupInScope} filters={filters} showAverage={showAverage} onToggleAverage={() => setShowAverage((v) => !v)} />
-                </Card>
-                <Card title={combinedRollTitle}>
-                  <CombinedRollChart periods={periods} values={combinedByPeriod} />
-                  <TrendStatement badge={combinedRollBadge} startPeriod={filters.startPeriod} />
+              <div className="lg:col-span-2">
+                <Card title={targetRollBarTitle}>
+                  <TargetRollBarChart periods={periods} values={targetFilteredSeries} colour={FOCUS_SCHOOL_COLOUR} />
                 </Card>
               </div>
-              <div className="flex flex-col gap-4">
+              <div>
                 <Card title="Current roll">
                   <div className="mb-1 flex items-baseline gap-2">
                     <span className="text-2xl font-semibold">{targetCurrent?.toLocaleString() ?? "—"}</span>
@@ -354,48 +541,150 @@ export default function GraphsView({
                   {sizeBandLine && <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{sizeBandLine}</p>}
                   <SortedBarChart points={currentPoints} />
                 </Card>
-                <Card title={`Growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
-                  <DivergingBarChart points={growthPoints} />
-                </Card>
               </div>
             </div>
-          </section>
+          ))}
+      </section>
 
-          <section>
-            {/* 2026-09-08, per direct request: names the focus school specifically
-                ("Acland Burghley School's market share"), dynamic per school -- not a
-                static "Market share" label. */}
-            <SectionHeading number="02" title={`${targetProfile.name}'s market share`} />
+      {!isLargeSet && (
+        <section>
+          <SectionHeading number="02" title="Roll trends compared" isOpen={!closedSections.has("02")} onToggle={() => toggleSection("02")} />
+          {!closedSections.has("02") && (
+            <div className="flex flex-col gap-4">
+              <Card title={rollTrendsTitle}>
+                <RollTrendsChart
+                  target={targetProfile}
+                  group={groupInScope}
+                  filters={filters}
+                  showAverage={showAverage}
+                  onToggleAverage={() => setShowAverage((v) => !v)}
+                  extraProfiles={graphAddedProfiles}
+                  hiddenUrns={hiddenLineUrns}
+                  onToggleHidden={toggleHiddenLine}
+                  onOpenAddSchools={() => setGraphAddWindowOpen(true)}
+                />
+              </Card>
+              <Card title={`Growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
+                <DivergingBarChart points={growthPoints} />
+              </Card>
+            </div>
+          )}
+        </section>
+      )}
+
+      {!isLargeSet && (
+        <section>
+          {/* 2026-09-08, per direct request: names the focus school specifically
+              ("Acland Burghley School's market share"), dynamic per school -- not a
+              static "Market share" label. */}
+          <SectionHeading
+            number="03"
+            title={`${targetProfile.name}'s market share`}
+            isOpen={!closedSections.has("03")}
+            onToggle={() => toggleSection("03")}
+          />
+          {!closedSections.has("03") && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-2">
+              <div className="flex flex-col gap-4 lg:col-span-2">
                 <Card title={marketShareTitle}>
                   <MarketShareTrendChart periods={periods} values={marketShareByPeriod} />
+                </Card>
+                <Card title={combinedRollTitle}>
+                  <CombinedRollChart periods={periods} values={combinedByPeriod} />
+                  <TrendStatement badge={combinedRollBadge} startPeriod={filters.startPeriod} />
                 </Card>
               </div>
               <div className="flex flex-col gap-4">
                 <Card title={`Market share, ${academicYearLabel(periods[latestIdx] ?? filters.startPeriod)}`}>
-                  <SortedBarChart points={marketShareBarPoints} formatValue={(v) => `${v.toFixed(0)}%`} />
+                  {isSectorFallback ? (
+                    sectorFallbackRollPoints === null ? (
+                      <p className="text-sm text-neutral-500">Loading sector comparison…</p>
+                    ) : (
+                      <>
+                        <SortedBarChart points={sectorFallbackRollPoints} />
+                        <SectorFallbackNote />
+                      </>
+                    )
+                  ) : (
+                    <SortedBarChart points={marketShareBarPoints} formatValue={(v) => `${v.toFixed(0)}%`} />
+                  )}
                 </Card>
                 <Card title={`Market-share growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
-                  <DivergingBarChart points={marketShareGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}pp`} />
+                  {isSectorFallback ? (
+                    sectorFallbackGrowthPoints === null ? (
+                      <p className="text-sm text-neutral-500">Loading sector comparison…</p>
+                    ) : (
+                      <>
+                        <DivergingBarChart points={sectorFallbackGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} />
+                        <SectorFallbackNote />
+                      </>
+                    )
+                  ) : (
+                    <DivergingBarChart points={marketShareGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}pp`} />
+                  )}
                 </Card>
               </div>
             </div>
-          </section>
-        </>
+          )}
+        </section>
       )}
 
       {!isSingleSex && (
         <section>
-          <SectionHeading number="03" title="Gender split" />
-          <Card title="Gender split">
-            <div className="mb-2 flex items-baseline gap-2">
-              <span className="text-2xl font-semibold">{targetGenderCurrent !== null ? `${targetGenderCurrent.toFixed(0)}% girls` : "—"}</span>
-              <TrendPill badge={genderTrendBadge} startPeriod={filters.startPeriod} />
+          <SectionHeading number="04" title="Gender split" isOpen={!closedSections.has("04")} onToggle={() => toggleSection("04")} />
+          {!closedSections.has("04") && (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Card title="Gender split">
+                <div className="mb-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold">{targetGenderCurrent !== null ? `${targetGenderCurrent.toFixed(0)}% girls` : "—"}</span>
+                  <TrendPill badge={genderTrendBadge} startPeriod={filters.startPeriod} />
+                </div>
+                {genderSpread && <SpreadStrip min={genderSpread.min} max={genderSpread.max} points={genderSpread.points} formatValue={(v) => `${v.toFixed(0)}%`} />}
+              </Card>
+              <Card title="Age/gender shape">
+                <ShapeChart ageGenderCounts={targetProfile.ageGenderCounts} />
+              </Card>
+              <Card title="This school's gender split">
+                <Donut girls={targetWholeSchoolGender.female} boys={targetWholeSchoolGender.male} label={targetProfile.name} sexLabels={{ female: "girls", male: "boys" }} />
+              </Card>
+              <Card title="Gender split across this set">
+                {isSectorFallback ? (
+                  sectorFallbackGenderRows === null ? (
+                    <p className="text-sm text-neutral-500">Loading sector comparison…</p>
+                  ) : (
+                    <>
+                      <GenderSplitBarChart rows={sectorFallbackGenderRows} />
+                      <SectorFallbackNote />
+                    </>
+                  )
+                ) : (
+                  <GenderSplitBarChart rows={genderBarRows} />
+                )}
+              </Card>
             </div>
-            {genderSpread && <SpreadStrip min={genderSpread.min} max={genderSpread.max} points={genderSpread.points} formatValue={(v) => `${v.toFixed(0)}%`} />}
-          </Card>
+          )}
         </section>
+      )}
+
+      {graphAddWindowOpen && (
+        <AddSubtractSchoolsWindow
+          title="Add/subtract schools to this graph"
+          targetName={targetProfile.name}
+          schools={graphAddCandidates}
+          tickedUrns={graphAddedUrns}
+          onToggleTick={toggleGraphAdded}
+          onSelectAllTicked={() => setGraphAddedUrns(new Set(graphAddCandidates.map((s) => s.urn)))}
+          onUnselectAllTicked={() => setGraphAddedUrns(new Set())}
+          onGroupTicked={(urns, ticked) =>
+            setGraphAddedUrns((prev) => {
+              const next = new Set(prev);
+              urns.forEach((u) => (ticked ? next.add(u) : next.delete(u)));
+              return next;
+            })
+          }
+          profilesByUrn={graphAddProfilesByUrn}
+          onClose={() => setGraphAddWindowOpen(false)}
+        />
       )}
     </div>
   );
