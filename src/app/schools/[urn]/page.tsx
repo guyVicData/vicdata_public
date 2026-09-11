@@ -425,7 +425,15 @@ export default async function SchoolPage({
   ) {
     const byPhase: Partial<Record<PhaseTag, number>> = {};
     for (const tag of typology.phase) {
-      const [lo, hi] = phaseTagAgeRange(tag, school.statutory_low_age, school.statutory_high_age);
+      // Global phase-band ages round (2026-09-16): same fix as schools-in-bounds/
+      // route.ts's own identical byPhase loop -- phaseTagAgeRange("Senior", ...) is
+      // now capped at 15, but phaseTags() never assigns "Post 16" alongside
+      // "Senior," so a real Junior+Senior through-school's genuine sixth-form
+      // pupils would otherwise vanish from this breakdown (and this page's own map
+      // centre-dot sizing) rather than being double-counted anywhere -- Senior's
+      // own upper bound stays the school's real highAge here.
+      const [lo, rawHi] = phaseTagAgeRange(tag, school.statutory_low_age, school.statutory_high_age);
+      const hi = tag === "Senior" ? school.statutory_high_age : rawHi;
       let sum = 0;
       for (const [age, c] of ageGenderCounts) {
         if (age >= lo && age <= hi) sum += c.male + c.female;

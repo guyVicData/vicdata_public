@@ -59,7 +59,22 @@ export default function DivergingBarChart({
             >
               {p.name}
             </span>
-            <div className="relative h-3 flex-1">
+            {/* Follow-up round (2026-09-16), item 7: couldn't reproduce/pin down the
+                reported decline-bar cropping from reading this file alone -- the
+                left/width percentage math directly below is bounded (widthPct can
+                never exceed 50, since maxAbs is a Math.max over the same real
+                values widthPct itself divides by), so it shouldn't clip in
+                isolation, and the Chrome extension was unreachable this session,
+                so this couldn't be confirmed live either -- NOT fixed blind, per
+                direct instruction. min-w-0 added defensively (a flex item's
+                default min-width is `auto`, which can prevent it shrinking below
+                its own content in a genuinely narrow container -- a real
+                possibility now that Section 02 is side-by-side, half its previous
+                width -- though this bar track's own content is two small
+                absolutely-positioned divs with no obvious large intrinsic width,
+                so this may not be the actual mechanism either). Worth a live check
+                next round with real decline data before considering this closed. */}
+            <div className="relative h-3 min-w-0 flex-1">
               <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-neutral-300 dark:bg-neutral-700" />
               <div
                 className={`absolute inset-y-0 rounded ${p.isTarget ? "ring-2 ring-neutral-900 dark:ring-neutral-100" : ""}`}
@@ -70,7 +85,14 @@ export default function DivergingBarChart({
                 }}
               />
             </div>
-            <span className="w-12 shrink-0 text-right text-xs tabular-nums text-neutral-500">{formatValue(p.pctChange)}</span>
+            {/* Item 7: the ONE concrete, measurable issue confirmed without a live
+                view -- a longer formatted value ("-45.2pp", 7 characters) is close
+                to or exceeds the old fixed w-12 (48px) at text-xs/tabular-nums;
+                "-100%" (5 chars) fit, "-45.2pp" didn't comfortably. Widened to w-16
+                -- a real, low-risk fix for THIS specific measurement, but flagged
+                as a plausible partial contributor to the reported cropping, not a
+                confirmed full explanation for it. */}
+            <span className="w-16 shrink-0 text-right text-xs tabular-nums text-neutral-500">{formatValue(p.pctChange)}</span>
           </div>
         );
       })}

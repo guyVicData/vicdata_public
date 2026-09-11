@@ -34,7 +34,10 @@ function academicYearLabel(period: number): string {
 
 const WIDTH = 640;
 const HEIGHT = 240;
-const PAD = { top: 16, right: 16, bottom: 28, left: 52 };
+// Follow-up round (2026-09-16), item 6: widened, same real-label-spilling-past-the-
+// edge fix as CombinedRollChart.tsx/RollTrendsChart.tsx/AggregateTrendChart.tsx --
+// see that file's own comment for the full reasoning.
+const PAD = { top: 16, right: 32, bottom: 28, left: 64 };
 
 export default function TargetRollBarChart({ periods, values, colour }: { periods: number[]; values: (number | null)[]; colour: string }) {
   const real = values.map((v, i) => (v === null ? null : { i, v })).filter((p): p is { i: number; v: number } => p !== null);
@@ -49,8 +52,11 @@ export default function TargetRollBarChart({ periods, values, colour }: { period
   const rawMax = Math.max(...real.map((p) => p.v));
   const span = rawMax - rawMin;
   const pad = span > 0 ? span * 0.15 : Math.max(rawMax * 0.05, 1);
-  const minY = Math.max(0, rawMin - pad);
   const maxY = rawMax + pad;
+  // Follow-up round (2026-09-16), item 5: same floor as CombinedRollChart.tsx --
+  // never zoom past showing half the total, even if the real span would allow a
+  // tighter fit. See that file's own comment for the full reasoning.
+  const minY = Math.min(Math.max(0, rawMin - pad), maxY / 2);
   const innerW = WIDTH - PAD.left - PAD.right;
   const innerH = HEIGHT - PAD.top - PAD.bottom;
   const x = (i: number) => PAD.left + (periods.length <= 1 ? innerW / 2 : (i / (periods.length - 1)) * innerW);

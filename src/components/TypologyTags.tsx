@@ -1,6 +1,11 @@
 import type { SchoolTypology } from "@/lib/typology";
+import { tagDisplayLabel } from "@/lib/typology";
 import { TAG_COLOURS } from "@/lib/tag-colours";
 
+// Global rename round (2026-09-16), item 2: `label` here is still the REAL tag
+// value ("Senior"/"Special Schools") -- used as the TAG_COLOURS lookup key, so it
+// can't change -- only the rendered text runs through tagDisplayLabel() now
+// ("Secondary"/"Special").
 function Tag({ label }: { label: string }) {
   const style = TAG_COLOURS[label];
   if (!style) return null;
@@ -20,7 +25,7 @@ function Tag({ label }: { label: string }) {
         } as React.CSSProperties
       }
     >
-      {label}
+      {tagDisplayLabel(label)}
     </span>
   );
 }

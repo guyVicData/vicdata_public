@@ -1,25 +1,30 @@
 "use client";
 
 // Member Data View (round 1 UX refinements, A2 + B3): "Add a Saved Sets dropdown
-// plus a Save set button to the filter row... this should share one underlying save
-// mechanism with the 'Compared with' rework, not be built as a second, separate
-// thing." The mechanism itself (the actual saved_sets/saved_set_members read+write)
-// lives in DataViewShell -- the exact same tables and RLS policies /sets/comparator/
-// new/page.tsx already uses, just with one real addition (a `config` jsonb snapshot
-// of the filter state alongside the school list, so recalling a saved set restores
-// BOTH what was ticked and what the filters were, not just the school list). This
-// component is deliberately just the two controls, kept out of FilterBar.tsx (which
-// stays a pure controlled input over filter state, no set-saving concerns of its
-// own) -- rendered as a sibling inside FilterBar's own row via its `extra` slot, so
-// visually it reads as part of "the filter row" without the two components' actual
-// responsibilities blurring together.
+// plus a Save set button... this should share one underlying save mechanism with
+// the 'Compared with' rework, not be built as a second, separate thing." The
+// mechanism itself (the actual saved_sets/saved_set_members read+write) lives in
+// DataViewShell -- the exact same tables and RLS policies /sets/comparator/new/
+// page.tsx already uses, just with one real addition (a `config` jsonb snapshot of
+// the filter state alongside the school list, so recalling a saved set restores
+// BOTH what was ticked and what the filters were, not just the school list).
 //
-// Deliberately separate from the sidebar's OWN existing set-picker (ComparatorSidebar
-// .tsx's <select>, which already lists recipe lists + saved sets together): that
-// control answers "which schools am I comparing against," unchanged by this round.
-// This one answers "recall a whole bookmarked combination (schools + filters) I saved
-// earlier" -- a genuinely different, complementary question once B3's own richer
-// LA/group set-construction UI exists, not a duplicate of the sidebar dropdown.
+// Global filter-row rework (2026-09-16), item 3: moved out of FilterBar.tsx's own
+// `extra` slot (the top filter row) into ComparatorSidebar's "My sets" section --
+// same component, unchanged, just relocated so Save/recall reads as part of "my
+// sets" rather than "the filter row." FilterBar.tsx no longer has an `extra` slot
+// at all. This component is still deliberately kept separate from FilterBar
+// itself (which stays a pure controlled input over filter state, no set-saving
+// concerns of its own).
+//
+// Deliberately separate from the sidebar's OWN existing set-picker (the per-saved-
+// set SetButton list directly above this component in ComparatorSidebar.tsx, which
+// already lists recipe lists + saved sets together): that answers "which schools am
+// I comparing against," unchanged by this round. This one answers "recall a whole
+// bookmarked combination (schools + filters) I saved earlier" -- a genuinely
+// different, complementary question -- now sitting right next to that other
+// recall mechanism as a second way to do a similar thing, left as-is rather than
+// rationalised (per direct instruction, "don't worry about functionality yet").
 
 import { useState } from "react";
 import type { SetOption } from "@/lib/data-view-types";

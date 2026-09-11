@@ -19,6 +19,7 @@ import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
 import { relevantAgeBandsFor, type PhaseBandKey } from "@/lib/data-view-filters";
 import type { SectorTag } from "@/lib/typology";
+import { tagDisplayLabel } from "@/lib/typology";
 
 type Row = { urn: string; name: string; distanceKm: number | null };
 type SortMode = "distance" | "name";
@@ -117,7 +118,7 @@ export default function AddSubtractSchoolsWindow({
       }
       return [...ALL_SECTORS, UNKNOWN_SECTOR_LABEL]
         .filter((k) => bySector.has(k))
-        .map((k) => ({ key: k, label: k, rows: sortRows(bySector.get(k)!) }));
+        .map((k) => ({ key: k, label: tagDisplayLabel(k), rows: sortRows(bySector.get(k)!) }));
     }
 
     // phase
@@ -137,7 +138,7 @@ export default function AddSubtractSchoolsWindow({
     }
     return [...PHASE_GROUP_ORDER, UNKNOWN_PHASE_LABEL]
       .filter((k) => byPhase.has(k))
-      .map((k) => ({ key: k, label: k, rows: sortRows(byPhase.get(k)!) }));
+      .map((k) => ({ key: k, label: tagDisplayLabel(k), rows: sortRows(byPhase.get(k)!) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schools, groupBy, sortMode, profilesByUrn]);
 
@@ -277,7 +278,7 @@ function SchoolRow({
           <span
             className="inline-block h-2 w-2 shrink-0 rounded-full"
             style={{ backgroundColor: `var(${cssVarNameForTag(sector)})` }}
-            title={sector}
+            title={tagDisplayLabel(sector)}
           />
         )}
         <span className="truncate">{school.name}</span>

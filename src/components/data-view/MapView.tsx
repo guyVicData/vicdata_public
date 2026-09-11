@@ -40,7 +40,7 @@ import { profileToFilterableData, profileToFilterableDataForPeriod, ageGenderCou
 import { filteredCount, matchesSectorFilter, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { RegionNationPoint } from "@/lib/region-nation-comparator";
-import { sectorTag, type SectorTag } from "@/lib/typology";
+import { sectorTag, tagDisplayLabel, type SectorTag } from "@/lib/typology";
 import type { ViewKey } from "@/lib/data-view-types";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
@@ -1410,7 +1410,7 @@ function SectorColourKey({ sectorsPresent, top }: { sectorsPresent: string[]; to
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={present ? { background: `var(${cssVarNameForTag(s)})` } : { background: "transparent", border: "1.5px solid currentColor" }}
               />
-              {s}
+              {tagDisplayLabel(s)}
             </li>
           );
         })}

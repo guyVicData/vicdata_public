@@ -431,7 +431,21 @@ export async function GET(request: NextRequest) {
       if (phase.length > 1 && r.statutory_low_age !== null && r.statutory_high_age !== null) {
         const byPhase: Partial<Record<PhaseTag, number>> = {};
         for (const tag of phase) {
-          const [lo, hi] = phaseTagAgeRange(tag, r.statutory_low_age, r.statutory_high_age);
+          // Global phase-band ages round (2026-09-16): phaseTagAgeRange("Senior", ...)'s
+          // own upper bound is now capped at 15 (the new Senior/Post-16 partition,
+          // needed so the Data View's independently-tickable Senior/Post-16 filter
+          // pills never double-count) -- but phaseTags() structurally never assigns
+          // BOTH "Senior" and "Post 16" to the same school (typology.ts's own
+          // documented decision), so a real Junior+Senior through-school's genuine
+          // sixth-form pupils (ages 16-highAge) would otherwise vanish from this
+          // byPhase breakdown entirely -- not double-counted anywhere else, just
+          // dropped. Caught while redefining phaseTagAgeRange (the same real
+          // regression fixed in narrative-lookup.ts's reliableSeniorHeadcounts):
+          // Senior's own upper bound here stays the school's real highAge, since
+          // this caller has no competing "Post 16" tag that could ever double-claim
+          // those same pupils.
+          const [lo, rawHi] = phaseTagAgeRange(tag, r.statutory_low_age, r.statutory_high_age);
+          const hi = tag === "Senior" ? r.statutory_high_age : rawHi;
           let sum = 0;
           for (const [age, c] of counts) {
             if (age >= lo && age <= hi) sum += c.male + c.female;

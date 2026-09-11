@@ -118,10 +118,22 @@ function reliableSeniorHeadcounts(
   effectiveTags: PhaseTag[],
   ageGenderCounts: AgeGenderCounts,
 ): { secondary: { total: number; minAge: number; maxAge: number } | null; sixthForm: { total: number; minAge: number; maxAge: number } | null } {
-  const range = effectiveTags.length > 1 ? phaseTagAgeRange("Senior", lowAge, highAge) : [lowAge, highAge];
-  const lo = Math.max(range[0], EARLY_YEARS_PROXY_AGE_THRESHOLD);
-  const secondary = lo < SIXTH_FORM_SPLIT_AGE ? reliableRangeHeadcount(lo, SIXTH_FORM_SPLIT_AGE - 1, ageGenderCounts) : null;
-  const sixthForm = range[1] >= SIXTH_FORM_SPLIT_AGE ? reliableRangeHeadcount(SIXTH_FORM_SPLIT_AGE, range[1], ageGenderCounts) : null;
+  // Global phase-band ages round (2026-09-16): phaseTagAgeRange("Senior", ...)'s own
+  // upper bound is now hard-capped at 15 (the new Senior/Post-16 partition, so an
+  // 11-18 school ticking both bands in the Data View never double-counts ages
+  // 16-18) -- but this function's OWN job for a real Junior+Senior through-school
+  // (Withington Girls', Malvern, etc.) is finding the real sixth-form population
+  // that still genuinely exists in the census data up to the school's real highAge,
+  // then splitting it from the secondary years at age 16. Using
+  // phaseTagAgeRange("Senior", ...)'s own (now narrower) upper bound here would
+  // silently stop finding any real sixth-form pupils at all for every such school --
+  // caught while redefining phaseTagAgeRange, fixed by searching up to the real
+  // highAge directly for the sixth-form half, same as before this round; only the
+  // LOWER bound (still 11, for a multi-tag school) comes from the shared function.
+  const lo = effectiveTags.length > 1 ? phaseTagAgeRange("Senior", lowAge, highAge)[0] : lowAge;
+  const flooredLo = Math.max(lo, EARLY_YEARS_PROXY_AGE_THRESHOLD);
+  const secondary = flooredLo < SIXTH_FORM_SPLIT_AGE ? reliableRangeHeadcount(flooredLo, SIXTH_FORM_SPLIT_AGE - 1, ageGenderCounts) : null;
+  const sixthForm = highAge >= SIXTH_FORM_SPLIT_AGE ? reliableRangeHeadcount(SIXTH_FORM_SPLIT_AGE, highAge, ageGenderCounts) : null;
   return { secondary, sixthForm };
 }
 

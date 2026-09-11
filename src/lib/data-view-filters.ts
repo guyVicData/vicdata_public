@@ -33,7 +33,7 @@
 // looks phase-scoped but isn't.
 
 import type { GenderTag, SectorTag } from "./typology";
-import { phaseTagAgeRange, type PhaseTag } from "./typology";
+import { phaseTagAgeRange, PHASE_BAND_EARLY_YEARS_CEILING_AGE, type PhaseTag } from "./typology";
 import type { AgeGenderCounts } from "./roll-data";
 import { EARLY_YEARS_PROXY_AGE_THRESHOLD } from "./narrative-config";
 
@@ -254,15 +254,25 @@ export type FilterableSchoolData = {
 };
 
 // The real [lo,hi] age range a phase band covers for THIS school -- Early Years is a
-// fixed age cap (below the reliable-census threshold), every other band reuses
-// typology.ts's own phaseTagAgeRange so this module never invents a second copy of
-// those boundaries.
+// fixed age cap, every other band reuses typology.ts's own phaseTagAgeRange so this
+// module never invents a second copy of those boundaries.
+//
+// Global phase-band ages round (2026-09-16): Early Years' own ceiling is now
+// PHASE_BAND_EARLY_YEARS_CEILING_AGE (typology.ts, age 3) -- a fixed, deliberately
+// SEPARATE constant from EARLY_YEARS_PROXY_AGE_THRESHOLD (narrative-config.ts, still
+// used elsewhere in this file for its own real, different purpose -- a data-
+// reliability proxy for "does this school have real early-years provision," not a
+// phase-band boundary). The two happened to differ by exactly one (4 vs 5) before
+// this round purely by coincidence of two unrelated decisions; keeping them
+// genuinely separate now that Junior's own floor (typology.ts's
+// PHASE_BAND_JUNIOR_FLOOR_AGE, age 4) is pinned to this same boundary, so Early
+// Years and Junior partition cleanly with no overlap.
 export function ageRangeForBand(
   band: PhaseBandKey,
   lowAge: number,
   highAge: number,
 ): [number, number] {
-  if (band === "Early Years") return [Math.min(lowAge, 0), EARLY_YEARS_PROXY_AGE_THRESHOLD - 1];
+  if (band === "Early Years") return [Math.min(lowAge, 0), PHASE_BAND_EARLY_YEARS_CEILING_AGE];
   // "Adult" has no real census-age analogue for a mainstream school -- an empty range
   // (rather than e.g. [19, highAge]) so sumAgeGender honestly returns 0 for every
   // ordinary school rather than picking up a same-shaped but wrong "19+ pupils"

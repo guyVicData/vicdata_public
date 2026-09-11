@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TAG_GROUPS, emptyFilterState, type FilterState } from "@/lib/map-tag-groups";
 import { TAG_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
+import { tagDisplayLabel } from "@/lib/typology";
 import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
 
 // Filter panel for the State of the School page map (2026-08-25 design/polish round
@@ -114,7 +115,7 @@ export default function MapFilterPanel({
                       : undefined
                   }
                 >
-                  {opt}
+                  {tagDisplayLabel(opt)}
                 </button>
               );
             })}

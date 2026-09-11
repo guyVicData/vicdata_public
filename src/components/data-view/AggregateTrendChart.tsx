@@ -32,7 +32,11 @@ function academicYearLabel(period: number): string {
 
 const WIDTH = 640;
 const HEIGHT = 280;
-const PAD = { top: 16, right: 16, bottom: 28, left: 44 };
+// Follow-up round (2026-09-16), item 6: widened -- same real-label-spilling-past-
+// the-edge fix as CombinedRollChart.tsx/TargetRollBarChart.tsx/
+// RollTrendsChart.tsx. See CombinedRollChart.tsx's own comment for the full
+// reasoning.
+const PAD = { top: 16, right: 32, bottom: 28, left: 64 };
 
 function LineSwatch({ colour }: { colour: string }) {
   return (

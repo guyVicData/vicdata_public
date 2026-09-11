@@ -33,7 +33,14 @@ function academicYearLabel(period: number): string {
 
 const WIDTH = 640;
 const HEIGHT = 280;
-const PAD = { top: 16, right: 16, bottom: 28, left: 52 };
+// Follow-up round (2026-09-16), item 6: widened from {right:16, left:52} -- a real
+// wide Y-tick label (a 5-digit roll like "12,345") or the full centre-anchored
+// width of an X-axis label at the very right edge ("2025/26") was spilling past
+// the SVG's own boundary and getting clipped by its default overflow:hidden.
+// Checked against both, not just a short example, in all four axis-based charts
+// this same root cause affects (this file, TargetRollBarChart.tsx,
+// RollTrendsChart.tsx, AggregateTrendChart.tsx).
+const PAD = { top: 16, right: 32, bottom: 28, left: 64 };
 const ACCENT = "#0d9488"; // teal-600 -- a metric accent distinct from focus-red, the market-share-blue accent, and the diverging blue/red pair
 
 export default function CombinedRollChart({ periods, values }: { periods: number[]; values: (number | null)[] }) {
@@ -49,8 +56,14 @@ export default function CombinedRollChart({ periods, values }: { periods: number
   // shape); a near-flat series (span ~0) falls back to a modest 5%-of-value pad so
   // it doesn't divide by ~zero and blow the axis up.
   const pad = span > 0 ? span * 0.15 : Math.max(rawMax * 0.05, 1);
-  const minY = Math.max(0, rawMin - pad);
   const maxY = rawMax + pad;
+  // Follow-up round (2026-09-16), item 5: floored so the zoom can never go past
+  // showing half the real total, even when the real min/max span would allow a
+  // tighter fit -- a large aggregate number moving by a genuinely modest few
+  // percent was zooming so tight the chart read as a near-collapse rather than a
+  // modest move. A genuinely dramatic real swing (span already over half of maxY)
+  // is unaffected by this floor and still zooms to show its real shape.
+  const minY = Math.min(Math.max(0, rawMin - pad), maxY / 2);
   const innerW = WIDTH - PAD.left - PAD.right;
   const innerH = HEIGHT - PAD.top - PAD.bottom;
   const x = (i: number) => PAD.left + (periods.length <= 1 ? innerW / 2 : (i / (periods.length - 1)) * innerW);

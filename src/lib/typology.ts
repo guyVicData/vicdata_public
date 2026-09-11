@@ -290,14 +290,63 @@ export function phaseTags(lowAge: number | null, highAge: number | null, establi
 // narrowed to never co-occur on the same school (phaseTags()'s own comment): Senior's
 // upper bound no longer needs to check for Post 16's presence, it always extends to
 // the school's real highAge.
+// Global phase-band age boundaries (2026-09-16 round): redefined so every band
+// partitions cleanly -- no real age counted under two bands at once when a
+// through-school has more than one ticked. Two changes from before:
+//   - Junior's floor is now a fixed age (PHASE_BAND_JUNIOR_FLOOR_AGE, 4 --
+//     reception), not the school's own raw lowAge. The school's own lowAge can be
+//     below 4 (nursery provision folded into a through-school's registration),
+//     which used to make Junior's range overlap the Data View's separate "Early
+//     Years" band (data-view-filters.ts's ageRangeForBand, ages 0 to
+//     PHASE_BAND_EARLY_YEARS_CEILING_AGE) at the shared boundary. The two new
+//     constants here (this file, not narrative-config.ts's
+//     EARLY_YEARS_PROXY_AGE_THRESHOLD -- a genuinely different, unrelated concept,
+//     a data-reliability proxy that happens to equal 5 by coincidence, not a
+//     phase-band boundary; left completely untouched) exist only to give these two
+//     bands a clean, non-overlapping split.
+//   - Senior's upper bound is now capped at 15, not the school's own highAge --
+//     deliberately NOT applied to Post 16 (16 to the school's own real highAge,
+//     unchanged, no hard cap at 18 -- a real, documented population of schools has
+//     statutory high age 19, and capping at 18 would leave their 19-year-olds with
+//     no band at all). Without this cap, an 11-18 through-school ticking both
+//     Senior and Post 16 double-counted every pupil aged 16-18 (Senior's old range
+//     ran all the way to highAge, overlapping Post 16's own [16, highAge]).
+export const PHASE_BAND_JUNIOR_FLOOR_AGE = 4;
+export const PHASE_BAND_EARLY_YEARS_CEILING_AGE = 3;
+
+// Display-label overrides (2026-09-16 round): "Senior" (a PhaseTag/PhaseBandKey
+// value) and "Special Schools" (a SectorTag value) render as "Secondary"/"Special"
+// on screen, but stay EXACTLY the same underlying string everywhere they're used
+// as data -- colour lookups (TAG_COLOURS), sector-matching comparisons, saved
+// filter state, GIAS-derived tag assignment. Only what's RENDERED changes. Same
+// shape as data-view-summary.ts's own PHASE_BAND_PROSE (internal key -> plain-
+// language string) and relevantAgeBandsFor's own {key: "Post 16", label: "U19"}
+// pattern -- a label lookup, not a second copy of the type. One shared function
+// (not duplicated per call site) since this file is the one place both PhaseTag's
+// "Senior" and SectorTag's "Special Schools" are defined, and the Data View's own
+// PhaseBandKey "Senior" is a literal string match to the PhaseTag value, so this
+// single lookup covers every rendering site (pill labels, chart titles, map
+// legend, card headings) regardless of which type the caller actually has.
+// typology.ts's own SPECIAL_SCHOOLS_GROUP ("Special schools", lowercase -- the
+// real GIAS establishment_type_group database value) is a completely different
+// string and is NOT touched by this lookup.
+const TAG_DISPLAY_LABEL_OVERRIDES: Record<string, string> = {
+  Senior: "Secondary",
+  "Special Schools": "Special",
+};
+
+export function tagDisplayLabel(tag: string): string {
+  return TAG_DISPLAY_LABEL_OVERRIDES[tag] ?? tag;
+}
+
 export function phaseTagAgeRange(
   tag: PhaseTag,
   lowAge: number,
   highAge: number,
 ): [number, number] {
-  if (tag === "Junior") return [lowAge, Math.min(10, highAge)];
+  if (tag === "Junior") return [Math.max(lowAge, PHASE_BAND_JUNIOR_FLOOR_AGE), Math.min(10, highAge)];
   if (tag === "Prep") return [11, highAge];
-  if (tag === "Senior") return [Math.max(lowAge, 11), highAge];
+  if (tag === "Senior") return [Math.max(lowAge, 11), Math.min(15, highAge)];
   return [16, highAge]; // Post 16
 }
 

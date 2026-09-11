@@ -40,7 +40,6 @@ import type { AggregateTrends } from "@/lib/aggregate-trends";
 import type { LaChoroplethEntry } from "@/lib/la-choropleth";
 import { TOPIC_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import ComparatorSidebar from "./ComparatorSidebar";
-import SavedSetsControl from "./SavedSetsControl";
 import FilterBar from "./FilterBar";
 import ViewSwitcher from "./ViewSwitcher";
 import GraphsView from "./GraphsView";
@@ -378,6 +377,16 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // 2026-09-05 comment) -- applies identically regardless of which view is active,
   // rather than a per-view floating overlay only Map used to have.
   const [filterBarCollapsed, setFilterBarCollapsed] = useState(false);
+  // Follow-up round (2026-09-16), item 8: the main "Add/subtract schools" window's
+  // open/closed state, lifted out of ComparatorSidebar.tsx's own local state --
+  // GraphsView.tsx's new fullscreen chart view needs to be able to open the SAME
+  // window (so a presenter can change the comparator set without leaving
+  // fullscreen), and it's a sibling of ComparatorSidebar under this component, not
+  // a descendant of it. AddSubtractSchoolsWindow.tsx itself still renders from
+  // inside ComparatorSidebar, unmoved -- it's already a fixed inset-0 overlay
+  // (z-[2000]), so it layers correctly on top of GraphsView's own fullscreen
+  // modal (z-[1500]) regardless of where in the tree it's actually rendered from.
+  const [mainAddSubtractOpen, setMainAddSubtractOpen] = useState(false);
   // Filter-independence round (2026-09-14): dismissal for the set-suggestion banner
   // (setSuggestions below) -- keyed per real suggestion (which swap it's offering),
   // not a single boolean, so dismissing the boarding suggestion doesn't also hide an
@@ -1444,24 +1453,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
   const resolvedAggregateTrends =
     target && isLargeSet && aggregateTrends?.key === aggregateTrendsRequestKey(target.urn, filters.startPeriod) ? aggregateTrends.data : null;
 
-  // 2026-09-07, UX refinements round 2, P3 item 7: "same 'only show if relevant'
-  // ... conventions" -- the Sector filter only makes sense (and only shows any
-  // pills at all) when the active set genuinely contains more than one real
-  // sector; a Nearest-10 set that's entirely state schools has nothing for it to
-  // narrow. Computed from every real sector actually present -- target included,
-  // same "the viewed school is a real reference point" rule applied everywhere
-  // else -- across the WHOLE active set (not just the currently-ticked schools),
-  // since an untocked-but-present school is still a real reason the filter is
-  // relevant.
-  const memberSectors = Array.from(
-    new Set(
-      // Real bug fix (2026-09-11): activeSetSchools (not activeSet.schools) so a
-      // manually added school's own sector makes its filter pill available too --
-      // consistent with this comment's own "whole active set" intent above.
-      [targetProfile?.sector, ...activeSetSchools.map((s) => profilesByUrn.get(s.urn)?.sector)].filter((s): s is NonNullable<typeof s> => !!s),
-    ),
-  );
-
   // 2026-09-05, layout fix (real bug reported live, both items below):
   //
   // 1. Full-bleed. The whole shell used to sit inside `mx-auto max-w-6xl px-4 sm:px-6`
@@ -1508,21 +1499,15 @@ export default function DataViewShell({ urn }: { urn: string }) {
       <TopicTabs schoolName={target.name} />
 
       <div className="border-b border-neutral-200 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-800">
+        {/* Global filter-row rework (2026-09-16), item 3: SavedSetsControl moved out
+            of this row entirely, into ComparatorSidebar's own "My sets" section --
+            see that component's own comment for where. */}
         <FilterBar
           filters={filters}
           onChange={handleFilterChange}
           target={targetProfile}
-          memberSectors={memberSectors}
           collapsed={filterBarCollapsed}
           onToggleCollapse={() => setFilterBarCollapsed((c) => !c)}
-          extra={
-            <SavedSetsControl
-              savedSets={savedSets}
-              onSelect={selectSet}
-              onSave={saveCurrentSet}
-              canSave={Array.from(tickedUrns).some((u) => u !== target?.urn)}
-            />
-          }
         />
       </div>
 
@@ -1623,6 +1608,11 @@ export default function DataViewShell({ urn }: { urn: string }) {
             profilesByUrn={profilesByUrn}
             addedUrns={addedUrns}
             onAddSchool={addSchool}
+            onSaveSet={saveCurrentSet}
+            canSaveSet={Array.from(tickedUrns).some((u) => u !== target?.urn)}
+            windowOpen={mainAddSubtractOpen}
+            onOpenWindow={() => setMainAddSubtractOpen(true)}
+            onCloseWindow={() => setMainAddSubtractOpen(false)}
           />
         </aside>
 
@@ -1726,6 +1716,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     filterSummary={filterSummary}
                     isLargeSet={isLargeSet}
                     aggregateTrends={resolvedAggregateTrends}
+                    onOpenMainAddSubtract={() => setMainAddSubtractOpen(true)}
                   />
                 ) : (
                   <RankingsView

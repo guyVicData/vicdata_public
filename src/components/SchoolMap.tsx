@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Map as LeafletMap, LayerGroup, LatLng, Point } from "leaflet";
 import { bngToLatLng, latLngToBng } from "@/lib/bng";
 import type { SectorTag, PhaseTag, GenderTag } from "@/lib/typology";
+import { tagDisplayLabel } from "@/lib/typology";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
 import {
@@ -1075,8 +1076,11 @@ export default function SchoolMap({
     label: g.title,
   }));
   const activeGroup = TAG_GROUPS.find((g) => g.key === colourMode);
+  // Global rename round (2026-09-16), item 2: colourVar stays keyed by the real tag
+  // value (cssVarNameForTag(opt), same CSS custom property the map dots themselves
+  // read) -- only the rendered legend label runs through tagDisplayLabel.
   const colourSwatches: ColourSwatch[] = activeGroup
-    ? activeGroup.options.map((opt) => ({ label: opt, colourVar: cssVarNameForTag(opt) }))
+    ? activeGroup.options.map((opt) => ({ label: tagDisplayLabel(opt), colourVar: cssVarNameForTag(opt) }))
     : [];
 
   // 2026-08-28: which sector(s) actually matter for the over-cap banner depends on the

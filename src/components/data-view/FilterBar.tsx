@@ -57,14 +57,14 @@
 import { CURRENT_CENSUS_PERIOD } from "@/lib/roll-data";
 import {
   ageRangeForBand,
-  relevantAgeBandsFor,
-  hasRealBoardingProvision,
+  PHASE_BANDS,
   type DataViewFilterState,
   type PhaseBandKey,
   type BoardingFilterValue,
 } from "@/lib/data-view-filters";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import type { GenderTag, SectorTag } from "@/lib/typology";
+import { tagDisplayLabel } from "@/lib/typology";
 import { TAG_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import MapBoxCollapseToggle from "@/components/MapBoxCollapseToggle";
 
@@ -99,7 +99,29 @@ function academicYearLabel(period: number): string {
 // shared `.filter-pill-active` class (declared once, in FilterBar's own render)
 // applies with `!important` for the dark-mode/data-theme cases an inline style
 // can't react to on its own.
-function Pill({ active, tagKey, onClick, children }: { active: boolean; tagKey: string; onClick: () => void; children: React.ReactNode }) {
+//
+// Global filter-row rework (2026-09-16), item 4: the INACTIVE style used to be a
+// light neutral border/muted text (border-neutral-300/text-neutral-600) -- didn't
+// read as "darkened," just outlined. Now a genuinely filled dark-neutral pill in
+// both themes (bg-neutral-800 in light mode -- clearly darker than the page around
+// it -- bg-neutral-950 in dark mode, darker than this app's own usual dark-mode
+// card backgrounds so it still reads as recessed/muted against them), not just a
+// border tweak. `hasCaret` adds a small "opens a menu" glyph -- phase/age pills
+// only (the ones that gain a nested "Ages:" drill-down when selected alone);
+// Gender/Boarding/Sector pills don't get one, they have no nested menu.
+function Pill({
+  active,
+  tagKey,
+  onClick,
+  hasCaret,
+  children,
+}: {
+  active: boolean;
+  tagKey: string;
+  onClick: () => void;
+  hasCaret?: boolean;
+  children: React.ReactNode;
+}) {
   const tagColours = TAG_COLOURS[tagKey];
   const fillLight = tagColours?.light[1] ?? "#171717";
   const fillDark = tagColours?.dark[1] ?? "#ededed";
@@ -110,8 +132,8 @@ function Pill({ active, tagKey, onClick, children }: { active: boolean; tagKey: 
       onClick={onClick}
       className={
         active
-          ? "filter-pill-active rounded-full border px-3 py-1 text-xs font-medium"
-          : "rounded-full border border-neutral-300 px-3 py-1 text-xs text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+          ? "filter-pill-active inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium"
+          : "inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-500 dark:hover:bg-neutral-900"
       }
       style={
         active
@@ -126,41 +148,40 @@ function Pill({ active, tagKey, onClick, children }: { active: boolean; tagKey: 
       }
     >
       {children}
+      {hasCaret && (
+        <span aria-hidden="true" className="text-[10px] opacity-70">
+          ▾
+        </span>
+      )}
     </button>
   );
 }
 
+// Global filter-row rework (2026-09-16), item 4: reverses the "only show filters
+// relevant to this school" behaviour from two earlier rounds (relevantAgeBandsFor's
+// gating here, the showBoarding/sectorOptions.length>1 gates) -- an explicit
+// experiment, Guy's own words, not a settled decision. The full Phase/Gender/
+// Boarding/Sector vocabulary now always renders regardless of whether it applies
+// to the current target; an inapplicable pill still narrows the number to a real,
+// honest zero when ticked (same "many schools will show a real, honest zero" note
+// as the global phase-band ages change), it just isn't hidden pre-emptively
+// anymore. relevantAgeBandsFor/hasRealBoardingProvision themselves are untouched
+// (still real, still used elsewhere -- e.g. AddSubtractSchoolsWindow.tsx's own
+// "Group by phase" grouping) -- only THIS component's own gating of them is gone.
 export default function FilterBar({
   filters,
   onChange,
   target,
-  memberSectors,
   collapsed,
   onToggleCollapse,
-  extra,
 }: {
   filters: DataViewFilterState;
   onChange: (next: DataViewFilterState) => void;
   target: DataViewSchoolProfile | null;
-  memberSectors: SectorTag[];
   collapsed: boolean;
   onToggleCollapse: () => void;
-  extra?: React.ReactNode;
 }) {
   const isFeParticipation = !!target?.feParticipation;
-  // 2026-09-07, UX refinements round 2, P1 item 3: same "show only relevant
-  // filters" discipline as ageBands below, extended to Boarding -- a day school
-  // (no real boarding figure at all, or a real one that's genuinely zero) has
-  // nothing for this filter to narrow, so it doesn't show at all rather than
-  // offering a control that always produces the same whole-school number either
-  // way it's clicked.
-  const showBoarding = !isFeParticipation && !!target && hasRealBoardingProvision(target.current?.boarding ?? null);
-  const ageBands = target
-    ? relevantAgeBandsFor({ phase: target.phase, statutoryLowAge: target.statutoryLowAge, statutoryHighAge: target.statutoryHighAge, feParticipation: target.feParticipation })
-    : [];
-  // P3 item 7: only pills for sectors genuinely present in the active set, and
-  // only at all when there's real variation to narrow (more than one).
-  const sectorOptions = memberSectors.length > 1 ? SECTOR_OPTIONS.filter((s) => memberSectors.includes(s)) : [];
 
   const singleBand = filters.phaseBands.size === 1 ? ([...filters.phaseBands][0] as PhaseBandKey) : null;
   const ageOptions =
@@ -198,23 +219,22 @@ export default function FilterBar({
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         {!collapsed && (
           <>
-            {ageBands.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  {isFeParticipation ? "Age" : "Phase"}
-                </span>
-                {ageBands.map(({ key, label }) => (
-                  <Pill
-                    key={key}
-                    tagKey={key}
-                    active={filters.phaseBands.has(key)}
-                    onClick={() => onChange({ ...filters, phaseBands: toggle(filters.phaseBands, key), ages: new Set() })}
-                  >
-                    {label}
-                  </Pill>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                {isFeParticipation ? "Age" : "Phase"}
+              </span>
+              {PHASE_BANDS.map((band) => (
+                <Pill
+                  key={band}
+                  tagKey={band}
+                  hasCaret
+                  active={filters.phaseBands.has(band)}
+                  onClick={() => onChange({ ...filters, phaseBands: toggle(filters.phaseBands, band), ages: new Set() })}
+                >
+                  {tagDisplayLabel(band)}
+                </Pill>
+              ))}
+            </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Gender</span>
@@ -225,27 +245,23 @@ export default function FilterBar({
               ))}
             </div>
 
-            {showBoarding && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Boarding</span>
-                {BOARDING_OPTIONS.map((b) => (
-                  <Pill key={b} tagKey={BOARDING_TAG_KEY[b]} active={filters.boarding.has(b)} onClick={() => onChange({ ...filters, boarding: toggle(filters.boarding, b) })}>
-                    {b}
-                  </Pill>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Boarding</span>
+              {BOARDING_OPTIONS.map((b) => (
+                <Pill key={b} tagKey={BOARDING_TAG_KEY[b]} active={filters.boarding.has(b)} onClick={() => onChange({ ...filters, boarding: toggle(filters.boarding, b) })}>
+                  {b}
+                </Pill>
+              ))}
+            </div>
 
-            {sectorOptions.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Sector</span>
-                {sectorOptions.map((s) => (
-                  <Pill key={s} tagKey={s} active={filters.sector.has(s)} onClick={() => onChange({ ...filters, sector: toggle(filters.sector, s) })}>
-                    {s}
-                  </Pill>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Sector</span>
+              {SECTOR_OPTIONS.map((s) => (
+                <Pill key={s} tagKey={s} active={filters.sector.has(s)} onClick={() => onChange({ ...filters, sector: toggle(filters.sector, s) })}>
+                  {tagDisplayLabel(s)}
+                </Pill>
+              ))}
+            </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Since</span>
@@ -262,8 +278,6 @@ export default function FilterBar({
               </select>
               <span className="text-xs text-neutral-400">to {academicYearLabel(CURRENT_CENSUS_PERIOD)} (latest)</span>
             </div>
-
-            {extra}
           </>
         )}
 

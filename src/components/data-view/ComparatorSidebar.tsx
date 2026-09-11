@@ -38,6 +38,7 @@ import { TAG_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
 import AddSubtractSchoolsWindow from "./AddSubtractSchoolsWindow";
 import LocalAuthoritiesWindow, { type AdjacentLasResponse } from "./LocalAuthoritiesWindow";
+import SavedSetsControl from "./SavedSetsControl";
 import TrendPill, { academicYearLabel } from "./TrendPill";
 import Sparkline from "./Sparkline";
 
@@ -178,6 +179,11 @@ export default function ComparatorSidebar({
   startPeriod,
   addedUrns,
   onAddSchool,
+  onSaveSet,
+  canSaveSet,
+  windowOpen,
+  onOpenWindow,
+  onCloseWindow,
 }: {
   targetName: string;
   targetUrn: string;
@@ -256,8 +262,21 @@ export default function ComparatorSidebar({
   // silently disagree again.
   addedUrns: { urn: string; name: string }[];
   onAddSchool: (result: SchoolSearchResult) => void;
+  // Global filter-row rework (2026-09-16), item 3: SavedSetsControl's own save half
+  // moved in alongside it -- same shape as that component's own onSave/canSave
+  // props (SavedSetsControl.tsx), threaded through from DataViewShell (the actual
+  // saved_sets read+write mechanism lives there, unchanged) since this component
+  // previously only ever had a RECALL mechanism (onSelectSet/savedSets above), no
+  // save one of its own.
+  onSaveSet: (name: string) => Promise<{ ok: boolean; error?: string }>;
+  canSaveSet: boolean;
+  // Follow-up round (2026-09-16), item 8: lifted to DataViewShell (was local state
+  // here) so GraphsView.tsx's own fullscreen chart view can open this same window
+  // -- see DataViewShell's own mainAddSubtractOpen comment.
+  windowOpen: boolean;
+  onOpenWindow: () => void;
+  onCloseWindow: () => void;
 }) {
-  const [windowOpen, setWindowOpen] = useState(false);
   const [nearestPopupOpen, setNearestPopupOpen] = useState(false);
   // Compared-with panel round (2026-09-10), item 2: one stepper now, shared by
   // whichever recipe `nearestOption` currently resolves to (ordinary nearest-10 or
@@ -648,12 +667,22 @@ export default function ComparatorSidebar({
             + Add a list
           </Link>
         </div>
+        {/* Global filter-row rework (2026-09-16), item 3: moved in from the top
+            filter row (FilterBar's own `extra` slot, now removed) -- same
+            component, unchanged, just relocated so it reads as part of "My sets"
+            rather than "the filter row." This section already has its own
+            recall-by-click per saved set above; the dropdown here is now a SECOND
+            way to do the same recall -- left exactly as-is, not rationalised, per
+            direct instruction ("don't worry about functionality yet"). */}
+        <div className="mt-2">
+          <SavedSetsControl savedSets={savedSets} onSelect={selectNamed} onSave={onSaveSet} canSave={canSaveSet} />
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-neutral-100 pt-3 text-xs dark:border-neutral-800">
         <button
           type="button"
-          onClick={() => setWindowOpen(true)}
+          onClick={onOpenWindow}
           className="rounded-md border border-neutral-300 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
         >
           Add/subtract schools ({totalWithFocus})
@@ -682,7 +711,7 @@ export default function ComparatorSidebar({
           onGroupTicked={onGroupTicked}
           onAddSchool={onAddSchool}
           profilesByUrn={profilesByUrn}
-          onClose={() => setWindowOpen(false)}
+          onClose={onCloseWindow}
         />
       )}
 

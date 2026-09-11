@@ -108,12 +108,98 @@ function TrendStatement({ badge, startPeriod }: { badge: TrendBadge; startPeriod
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+// Follow-up round (2026-09-16), item 8: every chart card gets a fullscreen expand
+// icon, top-right. `children` is rendered TWICE -- once normally, once again
+// inside FullscreenChartModal when active -- rather than trying to extract "just
+// the chart" separately: every chart component that has its own legend
+// (RollTrendsChart/AggregateTrendChart) already renders it as part of its own
+// output, so re-rendering the exact same children automatically brings the legend
+// along, "don't leave them behind" satisfied by construction, not a separate
+// mechanism. onOpenAddSubtract is threaded through from GraphsView's own
+// onOpenMainAddSubtract prop (not a new mechanism -- the SAME window
+// ComparatorSidebar's own "Add/subtract schools" button already opens) so a
+// presenter can change the comparator set without leaving fullscreen.
+function Card({
+  title,
+  onOpenAddSubtract,
+  children,
+}: {
+  title: string;
+  onOpenAddSubtract: () => void;
+  children: React.ReactNode;
+}) {
+  const [fullscreen, setFullscreen] = useState(false);
   return (
     <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">{title}</h3>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{title}</h3>
+        <button
+          type="button"
+          onClick={() => setFullscreen(true)}
+          aria-label={`Expand "${title}" fullscreen`}
+          title="Fullscreen"
+          className="shrink-0 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-900 dark:hover:text-neutral-300"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m10 0h3a2 2 0 0 0 2-2v-3" />
+          </svg>
+        </button>
+      </div>
       {children}
+      {fullscreen && (
+        <FullscreenChartModal title={title} onClose={() => setFullscreen(false)} onOpenAddSubtract={onOpenAddSubtract}>
+          {children}
+        </FullscreenChartModal>
+      )}
     </section>
+  );
+}
+
+// Follow-up round (2026-09-16), item 8: a plain fixed-overlay modal (no new
+// dependency, no dedicated route -- "implementation is your call") -- deliberately
+// a LOWER z-index (1500) than AddSubtractSchoolsWindow's own fixed overlay
+// (z-[2000], AddSubtractSchoolsWindow.tsx) so opening that window from the
+// "Add/subtract schools" button below correctly layers on top of this one, not
+// underneath it.
+function FullscreenChartModal({
+  title,
+  onClose,
+  onOpenAddSubtract,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  onOpenAddSubtract: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[1500] flex flex-col bg-white p-6 dark:bg-neutral-950"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${title}, fullscreen`}
+    >
+      <div className="mb-4 flex shrink-0 items-center justify-between gap-4">
+        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{title}</h2>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenAddSubtract}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          >
+            Add/subtract schools
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+    </div>
   );
 }
 
@@ -165,6 +251,7 @@ export default function GraphsView({
   filterSummary,
   isLargeSet,
   aggregateTrends,
+  onOpenMainAddSubtract,
 }: {
   targetProfile: DataViewSchoolProfile;
   tickedProfiles: DataViewSchoolProfile[];
@@ -178,6 +265,11 @@ export default function GraphsView({
   // design doc's own list of charts that need replacing at scale.
   isLargeSet?: boolean;
   aggregateTrends?: AggregateTrends | null;
+  // Follow-up round (2026-09-16), item 8: opens the SAME main "Add/subtract
+  // schools" window ComparatorSidebar's own button opens (DataViewShell.tsx's
+  // lifted mainAddSubtractOpen state) -- passed down to every Card's fullscreen
+  // modal so a presenter can change the comparator set without leaving fullscreen.
+  onOpenMainAddSubtract: () => void;
 }) {
   const [showAverage, setShowAverage] = useState(false);
 
@@ -572,7 +664,7 @@ export default function GraphsView({
         {!closedSections.has("01") &&
           (isLargeSet ? (
             <>
-              <Card title={`${targetProfile.name} vs region, nation and sector since ${academicYearLabel(filters.startPeriod)}`}>
+              <Card title={`${targetProfile.name} vs region, nation and sector since ${academicYearLabel(filters.startPeriod)}`} onOpenAddSubtract={onOpenMainAddSubtract}>
                 {aggregateTrends === undefined || aggregateTrends === null ? (
                   <p className="text-sm text-neutral-500">Loading region/nation/sector comparison…</p>
                 ) : (
@@ -587,7 +679,7 @@ export default function GraphsView({
           ) : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <div className="lg:col-span-2">
-                <Card title={targetRollBarTitle}>
+                <Card title={targetRollBarTitle} onOpenAddSubtract={onOpenMainAddSubtract}>
                   <TargetRollBarChart periods={periods} values={targetFilteredSeries} colour={FOCUS_SCHOOL_COLOUR} />
                   {/* Follow-up round (2026-09-16), item 2: the trend line overlaid
                       on this chart previously had no caption anywhere -- same
@@ -606,7 +698,7 @@ export default function GraphsView({
                     (direct feedback). SortedBarChart (the real cross-set
                     comparison) is now this card's whole content, alongside
                     sizeBandLine, which wasn't flagged and stays. */}
-                <Card title="Current roll">
+                <Card title="Current roll" onOpenAddSubtract={onOpenMainAddSubtract}>
                   {sizeBandLine && <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{sizeBandLine}</p>}
                   <SortedBarChart points={currentPoints} />
                 </Card>
@@ -623,7 +715,7 @@ export default function GraphsView({
               just two columns instead of three. */}
           {!closedSections.has("02") && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Card title={rollTrendsTitle}>
+              <Card title={rollTrendsTitle} onOpenAddSubtract={onOpenMainAddSubtract}>
                 <RollTrendsChart
                   target={targetProfile}
                   group={groupInScope}
@@ -636,7 +728,7 @@ export default function GraphsView({
                   onOpenAddSchools={() => setGraphAddWindowOpen(true)}
                 />
               </Card>
-              <Card title={`Growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
+              <Card title={`Growth / decline since ${academicYearLabel(filters.startPeriod)}`} onOpenAddSubtract={onOpenMainAddSubtract}>
                 <DivergingBarChart points={growthPoints} />
               </Card>
             </div>
@@ -665,7 +757,7 @@ export default function GraphsView({
               combined roll of the set. */}
           {!closedSections.has("03") && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <Card title={`Market share, ${academicYearLabel(periods[latestIdx] ?? filters.startPeriod)}`}>
+              <Card title={`Market share, ${academicYearLabel(periods[latestIdx] ?? filters.startPeriod)}`} onOpenAddSubtract={onOpenMainAddSubtract}>
                 {isSectorFallback && sectorFallbackRollPoints ? (
                   <>
                     <SortedBarChart points={sectorFallbackRollPoints} formatValue={(v) => `${v.toFixed(0)}%`} />
@@ -675,7 +767,7 @@ export default function GraphsView({
                   <SortedBarChart points={marketShareBarPoints} formatValue={(v) => `${v.toFixed(0)}%`} />
                 )}
               </Card>
-              <Card title={`Market-share growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
+              <Card title={`Market-share growth / decline since ${academicYearLabel(filters.startPeriod)}`} onOpenAddSubtract={onOpenMainAddSubtract}>
                 {isSectorFallback && sectorFallbackGrowthPoints ? (
                   <>
                     <DivergingBarChart points={sectorFallbackGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}pp`} />
@@ -685,7 +777,7 @@ export default function GraphsView({
                   <DivergingBarChart points={marketShareGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}pp`} />
                 )}
               </Card>
-              <Card title={combinedRollTitle}>
+              <Card title={combinedRollTitle} onOpenAddSubtract={onOpenMainAddSubtract}>
                 <CombinedRollChart periods={periods} values={combinedByPeriod} />
                 <TrendStatement badge={combinedRollBadge} startPeriod={filters.startPeriod} />
               </Card>
@@ -705,13 +797,13 @@ export default function GraphsView({
               rather than the leftover-2-then-1 wrap a 2-column grid would produce. */}
           {!closedSections.has("04") && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <Card title="This school's age/gender shape">
+              <Card title="This school's age/gender shape" onOpenAddSubtract={onOpenMainAddSubtract}>
                 <ShapeChart ageGenderCounts={targetProfile.ageGenderCounts} />
               </Card>
-              <Card title="This school's gender split">
+              <Card title="This school's gender split" onOpenAddSubtract={onOpenMainAddSubtract}>
                 <Donut girls={targetWholeSchoolGender.female} boys={targetWholeSchoolGender.male} label={targetProfile.name} sexLabels={{ female: "girls", male: "boys" }} />
               </Card>
-              <Card title="Gender split across this set">
+              <Card title="Gender split across this set" onOpenAddSubtract={onOpenMainAddSubtract}>
                 {isSectorFallback && sectorFallbackGenderRows ? (
                   <>
                     <GenderSplitBarChart rows={sectorFallbackGenderRows} />
