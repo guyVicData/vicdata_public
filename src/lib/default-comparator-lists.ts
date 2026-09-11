@@ -422,11 +422,11 @@ async function boardingQuintileList(
   const basisLabel = quintileBasis === "headcount" ? "boarding population" : "% boarders";
   return {
     key: "boarding_quintile",
-    label: isTopTwo ? `National boarding quintile (by ${basisLabel})` : "Nearest boarding schools (by age/gender)",
+    label: isTopTwo ? `Boarding schools nationally (by ${basisLabel})` : "Nearest boarding schools (by age/gender)",
     schools: withDistance.map((c) => ({ urn: c.urn, name: c.name, distanceKm: c.distanceKm })),
     note: isTopTwo
-      ? "Top 2 quintiles by real boarding population -- unbounded catchment."
-      : "Bottom 3 quintiles are too thin to match by quintile alone -- matched by nearest real boarding schools (age/gender) instead, nationally. A nearby top-quintile school can legitimately appear here.",
+      ? "Matched nationally by real boarding population — not limited to nearby schools."
+      : "Matched by nearest real boarding schools (age/gender) instead, nationally. A school with a much larger boarding population can legitimately appear here.",
   };
 }
 
@@ -475,8 +475,8 @@ async function boardingQuintileListFast(
       .eq("quintile", targetQuintileRow.quintile)
       .neq("urn", target.urn);
     const urns = (sameQuintileRows ?? []).map((r) => r.urn as string);
-    const note = "Top 2 quintiles by real boarding population -- unbounded catchment.";
-    const label = `National boarding quintile (by ${basisLabel})`;
+    const note = "Matched nationally by real boarding population — not limited to nearby schools.";
+    const label = `Boarding schools nationally (by ${basisLabel})`;
     if (urns.length === 0) return { key: "boarding_quintile", label, schools: [], note };
 
     // Compared-with panel round (2026-09-11), item 1: real bug, confirmed live
@@ -543,7 +543,7 @@ async function boardingQuintileListFast(
     key: "boarding_quintile",
     label: "Nearest boarding schools (by age/gender)",
     schools,
-    note: "Bottom 3 quintiles are too thin to match by quintile alone -- matched by nearest real boarding schools (age/gender) instead, nationally. A nearby top-quintile school can legitimately appear here.",
+    note: "Matched by nearest real boarding schools (age/gender) instead, nationally. A school with a much larger boarding population can legitimately appear here.",
   };
 }
 

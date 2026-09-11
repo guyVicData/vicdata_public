@@ -372,6 +372,13 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // 2026-09-05 comment) -- applies identically regardless of which view is active,
   // rather than a per-view floating overlay only Map used to have.
   const [filterBarCollapsed, setFilterBarCollapsed] = useState(false);
+  // Filter-independence round (2026-09-14): dismissal for the set-suggestion banner
+  // (setSuggestions below) -- keyed per real suggestion (which swap it's offering),
+  // not a single boolean, so dismissing the boarding suggestion doesn't also hide an
+  // unrelated Post-16 one, and re-appears naturally once the underlying condition
+  // genuinely changes (a different key). No persistence, per direct instruction --
+  // this doesn't need to survive a reload or remember a "don't show again" choice.
+  const [dismissedSetSuggestionKeys, setDismissedSetSuggestionKeys] = useState<Set<string>>(new Set());
 
   // Step 1: auth + membership gate, exactly the same approved-membership check every
   // paid API route in this build already enforces server-side -- this is the CLIENT's
@@ -1072,46 +1079,18 @@ export default function DataViewShell({ urn }: { urn: string }) {
     setNationZoomedRegionCode(regionCode);
   }, []);
 
-  // Compared-with panel round (2026-09-10), item 2: switches the active Nearest-10
-  // recipe (ordinary <-> boarding-quintile) the moment the shared boarding filter
-  // changes, while "Nearest 10" (whichever underlying recipe) is what's currently
-  // active -- see resolveNearestOption's own module-scope comment for the gate.
-  // Deliberately done HERE, synchronously inside the filter-change handler itself
-  // (the one real user action that can trigger a switch), rather than in a useEffect
-  // watching filters/activeSet -- an effect that reads activeSet and conditionally
-  // calls setActiveSet again is exactly the self-referential "derived state via
-  // effect" shape react-hooks/set-state-in-effect (and, via a ref workaround,
-  // react-hooks/immutability) both flag; a plain synchronous check inside the same
-  // handler that already calls setFilters has no such shape, and is arguably more
-  // correct anyway -- this is a direct consequence of the member's own click, not a
-  // background reaction to state changing on its own.
+  // Filter-independence round (2026-09-14), real principle stated directly: the
+  // schools in a comparator set stay FIXED regardless of filter selections --
+  // filters only reslice what's shown/computed for that fixed set, never widen or
+  // narrow set membership. This used to silently swap the active set (ordinary
+  // Nearest-10 <-> boarding-quintile) the moment the shared boarding filter
+  // changed -- a real violation of that principle, removed here. handleFilterChange
+  // now ONLY ever sets filters; it never calls selectSet. See setSuggestions below
+  // (a derived, render-time value) for the replacement: a visible, dismissible,
+  // explicit suggestion the member can act on, rather than a silent swap under them.
   function handleFilterChange(next: DataViewFilterState) {
     setFilters(next);
-    if (!recipeLists || !(activeSet?.kind === "recipe" && (activeSet.key === "nearest_10" || activeSet.key === "boarding_quintile" || activeSet.key === "fe_nearest_10"))) {
-      return;
-    }
-    const nextResolved = resolveNearestOption(recipeLists.list1, recipeLists.boardingBand, recipeLists.boardingRecipe, boardingModeForFilters(next));
-    if (nextResolved && nextResolved.key !== activeSet.key) {
-      selectSet(nextResolved);
-    }
   }
-
-  // 2026-09-08, "Compared with" panel round 2, per direct request: the "Schools and
-  // FE colleges, 16+, in {LA}" recipe lost its own standalone button -- "this set
-  // should be triggered by the post16 search button above" (FilterBar's own Post-16
-  // phase pill) instead. Fires only on the OFF->ON transition (a ref, not a plain
-  // effect dependency check), so turning Post-16 on picks this recipe once, but a
-  // member who then manually picks a different set isn't fought with every
-  // subsequent render while Post-16 stays active -- only a fresh OFF->ON edge
-  // re-triggers it.
-  const wasPost16Ref = useRef(false);
-  useEffect(() => {
-    const isPost16Now = filters.phaseBands.has("Post 16");
-    if (isPost16Now && !wasPost16Ref.current && recipeLists?.local16Plus) {
-      selectSet(recipeLists.local16Plus);
-    }
-    wasPost16Ref.current = isPost16Now;
-  }, [filters.phaseBands, recipeLists?.local16Plus]);
 
   // Compared-with panel round (2026-09-10), item 2: which recipe "Nearest 10"
   // currently means, for a genuine boarding target, given the LIVE boarding filter
@@ -1315,6 +1294,41 @@ export default function DataViewShell({ urn }: { urn: string }) {
       : [];
   const filterSummary = describeFilters(filters);
 
+  // Filter-independence round (2026-09-14): the explicit, visible replacement for
+  // the two silent set-swaps removed above (handleFilterChange's own boarding
+  // swap, and the wasPost16Ref effect) -- same real conditions that used to
+  // trigger each swap, now surfaced as a dismissible suggestion with a real button
+  // that calls the exact same selectSet(...) the old auto-swap used to call
+  // implicitly, rather than the set changing under the member with no visible
+  // cause. Pure derived state (recomputed every render), not stored/effect-driven,
+  // so it can't itself violate the "filters never change set membership on their
+  // own" principle it exists to enforce.
+  const setSuggestions: { key: string; message: string; buttonLabel: string; applyOption: SetOption }[] = [];
+  if (recipeLists && activeSet?.kind === "recipe" && (activeSet.key === "nearest_10" || activeSet.key === "boarding_quintile" || activeSet.key === "fe_nearest_10") && boardingMode !== null) {
+    const nextResolved = resolveNearestOption(recipeLists.list1, recipeLists.boardingBand, recipeLists.boardingRecipe, boardingMode);
+    if (nextResolved && nextResolved.key !== activeSet.key) {
+      const matching = tickedProfiles.filter((p) => filteredCount(profileToFilterableData(p), filters).total > 0).length;
+      const filterLabel = Array.from(filters.boarding).join(" & ");
+      setSuggestions.push({
+        key: `boarding:${activeSet.key}->${nextResolved.key}`,
+        message: `Only ${matching} of ${tickedProfiles.length} schools match ${filterLabel}. Try ${nextResolved.label.toLowerCase()} instead?`,
+        buttonLabel: `Switch to ${nextResolved.label}`,
+        applyOption: nextResolved,
+      });
+    }
+  }
+  const activeSetKey = activeSet?.kind === "recipe" ? activeSet.key : null;
+  if (recipeLists?.local16Plus && filters.phaseBands.has("Post 16") && activeSetKey !== "local_16plus") {
+    const local16Plus = recipeLists.local16Plus;
+    setSuggestions.push({
+      key: `post16:${activeSetKey ?? "none"}`,
+      message: `Looking at Post-16? Try "${local16Plus.label}" instead of the current set.`,
+      buttonLabel: `Switch to ${local16Plus.label}`,
+      applyOption: local16Plus,
+    });
+  }
+  const visibleSetSuggestions = setSuggestions.filter((s) => !dismissedSetSuggestionKeys.has(s.key));
+
   // Compared-with panel round (2026-09-10), item 3, REAL BUG FOUND live-testing
   // (2026-09-11): this used to be JUST the target's own filteredCount(), with no
   // reference to the compared set (tickedUrns/activeSet/schools) at all -- neither
@@ -1450,6 +1464,38 @@ export default function DataViewShell({ urn }: { urn: string }) {
           }
         />
       </div>
+
+      {/* Filter-independence round (2026-09-14): explicit, visible replacement for
+          the two silent set-swaps removed from handleFilterChange/the old
+          wasPost16Ref effect -- a real button the member chooses to click, not the
+          set changing under them. print:hidden since this is a live-interaction
+          affordance, not part of the "what produced this" record a printed page
+          should show. */}
+      {visibleSetSuggestions.length > 0 && (
+        <div className="flex flex-col gap-1.5 border-b border-neutral-200 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-800">
+          {visibleSetSuggestions.map((s) => (
+            <div key={s.key} className="flex items-center justify-between gap-3 rounded-md bg-amber-50 px-3 py-1.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              <span>{s.message}</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded bg-amber-900 px-2 py-1 text-[11px] font-medium text-white dark:bg-amber-200 dark:text-amber-950"
+                  onClick={() => selectSet(s.applyOption)}
+                >
+                  {s.buttonLabel}
+                </button>
+                <button
+                  type="button"
+                  className="text-[11px] text-amber-700 underline dark:text-amber-300"
+                  onClick={() => setDismissedSetSuggestionKeys((prev) => new Set(prev).add(s.key))}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Print-only summary line (brief §9): "show your assumptions" -- an exported
           view states which comparator set and filters produced the numbers on the

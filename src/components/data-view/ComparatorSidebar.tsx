@@ -277,7 +277,7 @@ export default function ComparatorSidebar({
   // default at the map layer.
   useEffect(() => {
     const loading = laLoading || nearestExpanding;
-    onLoadingChange(loading, nearestExpanding && nearestOption?.key === "boarding_quintile" ? "Computing national boarding quintile — this can take a little while…" : undefined);
+    onLoadingChange(loading, nearestExpanding && nearestOption?.key === "boarding_quintile" ? "Finding boarding schools nationally — this can take a little while…" : undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [laLoading, nearestExpanding, nearestOption?.key]);
 
