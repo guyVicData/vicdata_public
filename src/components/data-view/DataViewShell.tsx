@@ -31,6 +31,7 @@ import type { DefaultListEntry, SchoolTypeCategory, BoardingQuintileBand } from 
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
 import type { RegionNationPoint, RegionNationRankResult, RegionNationRow } from "@/lib/region-nation-comparator";
 import type { AggregateTrends } from "@/lib/aggregate-trends";
+import type { LaChoroplethEntry } from "@/lib/la-choropleth";
 import { TOPIC_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
 import ComparatorSidebar from "./ComparatorSidebar";
 import SavedSetsControl from "./SavedSetsControl";
@@ -79,6 +80,22 @@ function largeSetRankRequestKey(targetUrn: string, scopeKey: "region" | "nation"
 
 function aggregateTrendsRequestKey(targetUrn: string, startPeriod: number): string {
   return `${targetUrn}|${startPeriod}`;
+}
+
+// Map round (2026-09-12), Part 2 Stage A: region_nation_la_rollup() applies phase/
+// age-range too (deliberately not replicated by region_nation_rank() above -- see
+// that RPC's own migration comment), so this key includes phaseBands, unlike
+// largeSetRankRequestKey's own sectors/boarding/gender-only key.
+// Same "recipe" narrowing largeSetRankScopeKey's own guard uses (SetOption is a
+// union -- only the "recipe" variant carries a `key` at all, a "saved" set has none).
+function isRegionScope(activeSet: SetOption | null): boolean {
+  return !!activeSet && activeSet.kind === "recipe" && activeSet.key === "ons_region";
+}
+
+function laChoroplethRequestKey(targetUrn: string, filters: DataViewFilterState): string {
+  const sectors = Array.from(filters.sector).sort().join(",");
+  const phaseBands = Array.from(filters.phaseBands).sort().join(",");
+  return `${targetUrn}|${sectors}|${phaseBands}|${boardingModeForFilters(filters) ?? ""}|${singleGenderFilter(filters) ?? ""}`;
 }
 
 // Payload-cleanup round (2026-09-09): region-nation-set's own API response now sends
@@ -268,6 +285,13 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // switching into Graphs after arriving via Map/Rankings doesn't show an extra
   // loading flash.
   const [aggregateTrends, setAggregateTrends] = useState<{ key: string; data: AggregateTrends } | null>(null);
+  // Map round (2026-09-12), Part 2 Stage A: LA choropleth data, fetched only when the
+  // active set is genuinely Region scope (activeSet.key === "ons_region") -- Nation
+  // stays dot-cluster until Stage B, and every other recipe (Nearest-10/LA-scoped/
+  // boarding) keeps its existing dot map completely unchanged, per direct instruction.
+  // Same keyed-cache discipline as largeSetRank/aggregateTrends above.
+  const [laChoropleth, setLaChoropleth] = useState<{ key: string; data: LaChoroplethEntry[] } | null>(null);
+  const [laChoroplethLoading, setLaChoroplethLoading] = useState(false);
 
   const [filters, setFilters] = useState<DataViewFilterState>(emptyDataViewFilterState());
   const [activeView, setActiveView] = useState<ViewKey>("map");
@@ -664,6 +688,51 @@ export default function DataViewShell({ urn }: { urn: string }) {
     };
   }, [authToken, target, activeSet, filters.startPeriod]);
 
+  // Map round (2026-09-12), Part 2 Stage A: real LA-level choropleth data, fetched
+  // whenever the active set is genuinely Region scope -- gated on activeSet.key
+  // exactly the way largeSetRankScopeKey gates on "ons_region"/"nation" above, but
+  // Region only (Nation stays dot-cluster this round). Refetches whenever the shared
+  // filter state changes (sector/phase/gender/boarding all reshape the LA totals,
+  // same live-filters principle the dot map's own filteredCount already follows).
+  useEffect(() => {
+    if (!authToken || !target || !isRegionScope(activeSet)) return;
+    const requestKey = laChoroplethRequestKey(target.urn, filters);
+    if (laChoropleth?.key === requestKey) return;
+    let cancelled = false;
+    (async () => {
+      setLaChoroplethLoading(true);
+      try {
+        const params = new URLSearchParams({ urn: target.urn });
+        const sectors = Array.from(filters.sector).join(",");
+        const phaseBands = Array.from(filters.phaseBands).join(",");
+        const boardingMode = boardingModeForFilters(filters);
+        const gender = singleGenderFilter(filters);
+        if (sectors) params.set("sectors", sectors);
+        if (phaseBands) params.set("phaseBands", phaseBands);
+        if (boardingMode) params.set("boardingMode", boardingMode);
+        if (gender) params.set("gender", gender);
+        const res = await fetch(`/api/data-view/region-la-choropleth?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error("[DataViewShell] region-la-choropleth fetch failed:", res.status, await res.text().catch(() => ""));
+          return;
+        }
+        const body = (await res.json()) as { entries: LaChoroplethEntry[] };
+        if (cancelled) return;
+        setLaChoropleth({ key: requestKey, data: body.entries });
+      } catch (e) {
+        if (!cancelled) console.error("[DataViewShell] unexpected error fetching LA choropleth:", e);
+      } finally {
+        if (!cancelled) setLaChoroplethLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, target, activeSet, filters, laChoropleth]);
+
   useEffect(() => {
     // Only ever read while loadState is "checking"/"loading" (see that render branch
     // below) -- no need to explicitly reset it back to false once loading finishes,
@@ -717,6 +786,32 @@ export default function DataViewShell({ urn }: { urn: string }) {
       setFilters(deserializeFilterState(option.filters));
     }
   }
+
+  // Map round (2026-09-12), Part 2 Stage A: clicking an LA polygon on the Region
+  // choropleth re-scopes the comparator set exactly the way the existing "Local
+  // Authorities" picker already does -- same /api/data-view/la-set endpoint,
+  // buildLaComparatorSet machinery, and "multi_la" recipe key ComparatorSidebar's own
+  // selectLa (that component's local equivalent of this) already uses, then the same
+  // selectSet() every other named-set control in this file goes through. No new
+  // scoping mechanism, per direct instruction.
+  const handleLaPolygonClick = useCallback(
+    async (laName: string) => {
+      if (!authToken || !target) return;
+      try {
+        const res = await fetch(`/api/data-view/la-set?urn=${target.urn}&las=${encodeURIComponent(laName)}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as { set: { key: string; label: string; schools: DefaultListEntry[] } | null };
+        if (body.set) {
+          selectSet({ kind: "recipe", key: "multi_la", label: body.set.label, schools: body.set.schools });
+        }
+      } catch (e) {
+        console.error("[DataViewShell] unexpected error re-scoping to LA:", e);
+      }
+    },
+    [authToken, target],
+  );
 
   // Compared-with panel round (2026-09-10), item 2: switches the active Nearest-10
   // recipe (ordinary <-> boarding-quintile) the moment the shared boarding filter
@@ -925,7 +1020,12 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // computed up front alongside list1/list2, see default-comparator-lists.ts), so
   // its own loading copy is gone from this chain too -- Region/Nation's real lazy
   // fetch is the only one left with scope-specific wording.
-  const mapLoading = profilesLoading || regionNationLoadingScope !== null || selectingSet;
+  // Map round (2026-09-12), Part 2 Stage A: the choropleth's own loading state folds
+  // into the same shared spinner, scoped to when Region is genuinely the active set
+  // (a filter-driven refetch shows the spinner over the still-visible previous
+  // polygons, same "spinner overlays the still-visible map" convention this signal
+  // already establishes for every other source above).
+  const mapLoading = profilesLoading || regionNationLoadingScope !== null || selectingSet || (isRegionScope(activeSet) && laChoroplethLoading);
   const mapLoadingLabel =
     regionNationLoadingScope !== null ? "Loading schools across this scope…" : (selectingSetLabel ?? "Loading schools…");
   // 2026-09-07, UX refinements round 2, P3 item 7: the sector filter is a
@@ -1217,6 +1317,12 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     largeSetPoints={largeSetPoints}
                     loading={mapLoading}
                     loadingLabel={mapLoadingLabel}
+                    // Map round (2026-09-12), Part 2 Stage A: only a genuinely
+                    // Region-scope active set gets real choropleth data -- every other
+                    // recipe (including Nation, Stage B) gets null here and MapView's
+                    // existing dot-cluster rendering stays completely unchanged.
+                    laChoropleth={isRegionScope(activeSet) ? (laChoropleth?.data ?? null) : null}
+                    onLaPolygonClick={handleLaPolygonClick}
                     filters={filters}
                     activeView={activeView}
                     onChangeView={setActiveView}

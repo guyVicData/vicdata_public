@@ -33,6 +33,8 @@ import type { Map as LeafletMap, LayerGroup, MarkerClusterGroup } from "leaflet"
 import { bngToLatLng } from "@/lib/bng";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
 import { trendColour, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
+import { currentRollsColour, CURRENT_ROLLS_LEGEND_ENDPOINTS } from "@/lib/current-rolls-colours";
+import type { LaChoroplethEntry } from "@/lib/la-choropleth";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import type { RollSnapshot, AgeGenderCounts } from "@/lib/roll-data";
 import { profileToFilterableData, profileToFilterableDataForPeriod, ageGenderCountsFromCompact } from "@/lib/data-view-serialize";
@@ -243,6 +245,8 @@ export default function MapView({
   largeSetPoints,
   loading,
   loadingLabel,
+  laChoropleth,
+  onLaPolygonClick,
   filters,
   activeView,
   onChangeView,
@@ -276,6 +280,13 @@ export default function MapView({
   // whole drawing pipeline only ever plotted a school WITH one -- see
   // buildLightweightProfile below for how these fill that gap.
   largeSetPoints: Map<string, RegionNationPoint>;
+  // Map round (2026-09-12), Part 2 Stage A: real per-LA choropleth data, non-null
+  // only when the active comparator set is genuinely Region scope (DataViewShell's
+  // own gate on activeSet.key === "ons_region") -- null for every other recipe
+  // (including Nation, Stage B), which keeps this component's existing dot-cluster
+  // rendering completely unchanged for them.
+  laChoropleth: LaChoroplethEntry[] | null;
+  onLaPolygonClick: (laName: string) => void;
   filters: DataViewFilterState;
   activeView: ViewKey;
   onChangeView: (v: ViewKey) => void;
@@ -294,6 +305,12 @@ export default function MapView({
   // MarkerClusterGroup's own clustering behaviour is fixed at construction -- only
   // one of the two is ever added to the map at a time, see the drawing effect below.
   const schoolsClusterGroupRef = useRef<MarkerClusterGroup | null>(null);
+  // Map round (2026-09-12), Part 2 Stage A: holds the LA choropleth polygons when
+  // laChoropleth is non-null -- a separate group from schoolsGroup/schoolsClusterGroup
+  // (never both on the map at once, same "swap which group is attached" pattern the
+  // cluster/non-cluster split above already establishes) rather than drawing polygons
+  // into an existing group whose clearLayers() cadence is tuned for markers.
+  const choroplethGroupRef = useRef<LayerGroup | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const topRightStackRef = useRef<HTMLDivElement | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -374,6 +391,8 @@ export default function MapView({
           });
         },
       });
+      choroplethGroupRef.current = L.layerGroup();
+
       mapRef.current = map;
       setMapReady(true);
 
@@ -496,6 +515,16 @@ export default function MapView({
   const minV = values.length ? Math.min(...values) : 0;
   const maxV = values.length ? Math.max(...values) : 0;
 
+  // Map round (2026-09-12), Part 2 Stage A: the Current Rolls legend needs the SAME
+  // min/max the drawing effect's own polygon colouring normalises against -- computed
+  // once here (render time), not duplicated inside the effect, so the legend and the
+  // actual polygon fills can never silently disagree.
+  const laChoroplethRollRange = useMemo(() => {
+    if (!laChoropleth) return { min: 0, max: 0 };
+    const vals = laChoropleth.filter((e) => e.schoolCount > 0).map((e) => e.currentTotal);
+    return { min: vals.length ? Math.min(...vals) : 0, max: vals.length ? Math.max(...vals) : 0 };
+  }, [laChoropleth]);
+
   useEffect(() => {
     if (
       !mapReady ||
@@ -504,6 +533,7 @@ export default function MapView({
       !layerGroupRef.current ||
       !schoolsGroupRef.current ||
       !schoolsClusterGroupRef.current ||
+      !choroplethGroupRef.current ||
       !rootRef.current
     )
       return;
@@ -512,8 +542,109 @@ export default function MapView({
     const group = layerGroupRef.current;
     const schoolsGroup = schoolsGroupRef.current;
     const clusterGroup = schoolsClusterGroupRef.current;
+    const choroplethGroup = choroplethGroupRef.current;
     const cs = getComputedStyle(rootRef.current);
     const tagColour = (tag: string) => cs.getPropertyValue(cssVarNameForTag(tag)).trim() || "#9ca3af";
+
+    // Map round (2026-09-12), Part 2 Stage A: a Region-scope active set renders LA
+    // polygons instead of school markers, entirely -- "never gets to the individual
+    // school level," per direct instruction, so this branch skips the distance ring,
+    // target ring/badge and every per-school marker below, not just the school dots.
+    // Every other recipe (including Nation, Stage B) never enters this branch at all
+    // (laChoropleth is null for them), so their existing rendering is untouched.
+    if (laChoropleth !== null) {
+      group.clearLayers();
+      schoolsGroup.clearLayers();
+      clusterGroup.clearLayers();
+      choroplethGroup.clearLayers();
+      if (map.hasLayer(schoolsGroup)) map.removeLayer(schoolsGroup);
+      if (map.hasLayer(clusterGroup)) map.removeLayer(clusterGroup);
+      if (!map.hasLayer(choroplethGroup)) map.addLayer(choroplethGroup);
+
+      // "Current Rolls" mode normalises against the min/max of LAs that actually have
+      // real matching data in THIS view -- same min-max-of-the-current-set convention
+      // the dot map's own radiusFor/values already applies, not a fixed national scale.
+      // Computed once at render time (laChoroplethRollRange, above) and reused here so
+      // the legend and the actual polygon fills can never silently disagree.
+      const { min: rollMin, max: rollMax } = laChoroplethRollRange;
+
+      const polyBoundPoints: [number, number][] = [];
+
+      for (const entry of laChoropleth) {
+        // A gss_code the rollup returned but with no stored boundary at all (the 7
+        // known legacy Pre-LGR crosswalk codes -- la_boundaries's own migration
+        // comment) genuinely has no shape to draw -- skipped, not an error, same
+        // honest-absence discipline as every other real gap in this feature.
+        if (!entry.geometry) continue;
+
+        // schoolCount === 0: genuinely no schools match the active filter combination
+        // in this LA -- rendered hollow (no fill, dashed grey outline), NEVER a
+        // misleading zero-value polygon at the colour scale's low end, per the
+        // handoff's own explicit honesty requirement.
+        const hasData = entry.schoolCount > 0;
+        let fillColour = "#9ca3af";
+        let fillOpacity = 0;
+        let pctChange: number | null = null;
+        if (hasData) {
+          if (colourMode === "trend") {
+            pctChange =
+              entry.anchorTotal !== null && entry.anchorTotal > 0
+                ? ((entry.currentTotal - entry.anchorTotal) / entry.anchorTotal) * 100
+                : null;
+            // No real anchor-period comparison available (boarding mode active, or
+            // this LA's schools are too new to have 2019 data) -- honest neutral
+            // colour, same "genuinely no comparison" convention the dot map's own
+            // hasAnchor check already applies, not a fabricated 0% green/amber.
+            fillColour = pctChange !== null ? trendColour(pctChange) : "#9ca3af";
+            fillOpacity = pctChange !== null ? 0.75 : 0.35;
+          } else {
+            const t = rollMax > rollMin ? (entry.currentTotal - rollMin) / (rollMax - rollMin) : 0.5;
+            fillColour = currentRollsColour(t);
+            fillOpacity = 0.8;
+          }
+        }
+
+        const layer = L.geoJSON(entry.geometry, {
+          style: {
+            color: hasData ? "#ffffff" : "#9ca3af",
+            weight: 1,
+            fillColor: fillColour,
+            fillOpacity,
+            dashArray: hasData ? undefined : "3 3",
+          },
+        });
+        const statLabel = !hasData
+          ? "No matching schools"
+          : colourMode === "trend"
+            ? `${entry.currentTotal.toLocaleString()}${
+                pctChange !== null && entry.anchorPeriod !== null
+                  ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since ${academicYearLabel(entry.anchorPeriod)})`
+                  : ""
+              }`
+            : `${entry.currentTotal.toLocaleString()} pupils`;
+        layer.bindTooltip(
+          `<div style="font-size:12px"><strong>${escapeHtml(entry.laName)}</strong><br/>${statLabel}<br/><em>click to compare with ${escapeHtml(entry.laName)}</em></div>`,
+          { sticky: true },
+        );
+        layer.on("click", () => onLaPolygonClick(entry.laName));
+        layer.eachLayer((l) => {
+          (l as unknown as { getElement?: () => SVGElement | null }).getElement?.()?.style.setProperty("cursor", "pointer");
+        });
+        layer.addTo(choroplethGroup);
+        const b = layer.getBounds();
+        if (b.isValid()) {
+          polyBoundPoints.push([b.getSouthWest().lat, b.getSouthWest().lng], [b.getNorthEast().lat, b.getNorthEast().lng]);
+        }
+      }
+
+      if (polyBoundPoints.length > 1) {
+        map.fitBounds(polyBoundPoints, { padding: [40, 40] });
+      }
+      return;
+    }
+
+    if (map.hasLayer(choroplethGroup)) map.removeLayer(choroplethGroup);
+    choroplethGroup.clearLayers();
 
     group.clearLayers();
     schoolsGroup.clearLayers();
@@ -704,7 +835,7 @@ export default function MapView({
       mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target, dynamicRingKm, targetProfile.sector]);
+  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target, dynamicRingKm, targetProfile.sector, laChoropleth, onLaPolygonClick, laChoroplethRollRange]);
 
   const sectorsPresent = Array.from(
     new Set([targetProfile.sector, ...members.map((m) => profilesByUrn.get(m.urn)?.sector ?? null)].filter((s): s is NonNullable<typeof s> => !!s)),
@@ -782,10 +913,27 @@ export default function MapView({
                 onClick={() => setColourMode("sector")}
                 className={colourMode === "sector" ? "rounded bg-neutral-900 px-2 py-1 text-xs text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"}
               >
-                Sector
+                {/* Map round (2026-09-12), Part 2 Stage A, design decision: for
+                    Region scope specifically, this second mode relabels from
+                    "Sector" to "Current Rolls" -- a per-school sector swatch list
+                    means nothing over an LA polygon (a whole LA blends every
+                    sector), so the second mode becomes "how big is this LA's roll"
+                    instead. The underlying colourMode state value is unchanged
+                    ("sector") -- only the label and what it renders below differ. */}
+                {laChoropleth !== null ? "Current Rolls" : "Sector"}
               </button>
             </div>
           </div>
+          {/* Map round (2026-09-12), Part 2 Stage A: honesty requirement, not
+              optional polish -- when the Sector filter is blended (empty), the LA
+              totals mix every sector together, which must say so rather than read
+              as one clean, apples-to-apples number. Only shown for the choropleth --
+              the dot map has no equivalent whole-LA aggregate to caption. */}
+          {laChoropleth !== null && (
+            <div className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] text-neutral-500 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
+              {filters.sector.size === 0 ? "All sectors blended" : `Sector: ${Array.from(filters.sector).join(" + ")}`}
+            </div>
+          )}
         </div>
 
         {/* Right side, between the top-right control stack and the zoom control:
@@ -797,9 +945,15 @@ export default function MapView({
             has no such width/position constraint in the request, so it keeps a
             normal legend-box width in the same general slot -- logged as a
             judgement call, not literally specified, in
-            docs/vicdata_data_view_open_questions.md. */}
+            docs/vicdata_data_view_open_questions.md.
+            Map round (2026-09-12), Part 2 Stage A: for Region scope, Trends still
+            gets the SAME growth-scale key (design decision: "Trends reuses the
+            existing red/orange/green scale unchanged"); the second mode gets a new
+            CurrentRollsColourKey instead of SectorColourKey. */}
         {colourMode === "trend" ? (
           <TrendColourKey box={trendKeyBox} />
+        ) : laChoropleth !== null ? (
+          <CurrentRollsColourKey box={trendKeyBox} min={laChoroplethRollRange.min} max={laChoroplethRollRange.max} />
         ) : (
           <SectorColourKey sectorsPresent={sectorsPresent} top={trendKeyBox?.top ?? null} />
         )}
@@ -807,8 +961,11 @@ export default function MapView({
         {/* Bottom-left: size legend, now its own box (previously folded into the
             colour-by box) with a real scale -- three representative dot sizes at
             the min/mid/max of the CURRENT filtered range, rendered at their real
-            on-map radii. */}
-        <SizeLegend minV={minV} maxV={maxV} />
+            on-map radii. Map round (2026-09-12), Part 2 Stage A: this is an
+            individual-school-level affordance (dot radius), so it's skipped
+            entirely for the Region choropleth, same as every other per-school
+            overlay in that branch. */}
+        {laChoropleth === null && <SizeLegend minV={minV} maxV={maxV} />}
       </div>
     </div>
   );
@@ -858,6 +1015,47 @@ function TrendColourKey({ box }: { box: { top: number; height: number } | null }
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// Map round (2026-09-12), Part 2 Stage A: the Region choropleth's "Current Rolls"
+// colour-by legend -- same measured box/shared layout as TrendColourKey (top-aligned,
+// same 52px width, same title-height carve-out), a light-to-dark sequential bar
+// instead of a diverging one, labelled with the REAL min/max of the current filtered
+// view (not fixed percentage stops -- a roll count has no natural fixed scale the way
+// a percentage change does).
+function CurrentRollsColourKey({ box, min, max }: { box: { top: number; height: number } | null; min: number; max: number }) {
+  if (!box) return null;
+  const barHeight = Math.max(0, box.height - TREND_KEY_TITLE_HEIGHT);
+  return (
+    <div className="absolute right-[10px] z-[1000] w-[52px]" style={{ top: box.top }}>
+      <p
+        className="mb-0.5 text-right text-[9px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400"
+        style={{ height: TREND_KEY_TITLE_HEIGHT }}
+      >
+        Rolls
+      </p>
+      <div
+        className="relative ml-auto w-[26px] rounded-sm shadow-sm"
+        style={{
+          height: barHeight,
+          background: `linear-gradient(to bottom, ${CURRENT_ROLLS_LEGEND_ENDPOINTS.high}, ${CURRENT_ROLLS_LEGEND_ENDPOINTS.low})`,
+        }}
+      >
+        <div className="absolute inset-x-0 top-0">
+          <div className="h-px w-full bg-white/80" />
+          <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
+            {max.toLocaleString()}
+          </span>
+        </div>
+        <div className="absolute inset-x-0 bottom-0">
+          <div className="h-px w-full bg-white/80" />
+          <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
+            {min.toLocaleString()}
+          </span>
+        </div>
       </div>
     </div>
   );
