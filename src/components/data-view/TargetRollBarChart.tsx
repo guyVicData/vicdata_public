@@ -8,10 +8,26 @@
 // chart plots the SET's combined total as a lollipop (stem + dot); this one plots
 // ONE school as real bars, in FOCUS_SCHOOL_COLOUR (the same red used everywhere
 // else in this app for the target/focus school's own line), per direct
-// instruction. Also zero-based (unlike CombinedRollChart's zoomed axis) -- a bar
-// chart's whole visual language depends on bars starting from a real zero,
-// unlike a line chart's shape-over-time framing.
-
+// instruction.
+//
+// Follow-up round (2026-09-16), item 2: three fixes --
+//   - Y-scale: was deliberately zero-based ("a bar chart's whole visual language
+//     depends on bars starting from a real zero"), but that compressed a real
+//     few-percent year-on-year move into the top sliver of the bar, making the
+//     actual trend hard to see. Reused CombinedRollChart's own zoomed-axis pattern
+//     verbatim (real min/max + 15% headroom each side, same "adjust vertical scale
+//     to show trends clearly" instruction that chart was already built from) --
+//     bars still visually start at minY (not floating), same look CombinedRollChart's
+//     own lollipop stems already have.
+//   - The trend line previously had no caption anywhere; GraphsView.tsx now renders
+//     a TrendStatement-style caption in the card around this chart (built from the
+//     same rollTrendBadge already computed there), not inside this component.
+//   - Made visually distinct from RollTrendsChart's own "average roll of this set"
+//     line (both used to be near-identical: currentColor, ~0.4-0.5 opacity, dashed
+//     "4 3", 1.5 width) -- Guy's own words, these two need to read as different
+//     things. This chart's bars are already in FOCUS_SCHOOL_COLOUR (this school's
+//     own colour identity, not a generic grey), so the trend line now ties to that
+//     same colour -- solid, not dashed, and full-strength rather than muted.
 function academicYearLabel(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;
 }
@@ -26,8 +42,15 @@ export default function TargetRollBarChart({ periods, values, colour }: { period
     return <p className="text-sm text-neutral-500">Not enough real history to plot a trend.</p>;
   }
 
-  const maxY = Math.max(...real.map((p) => p.v)) * 1.1;
-  const minY = 0;
+  // Same zoomed-axis pattern as CombinedRollChart.tsx: real spread gets 15%
+  // headroom each side; a near-flat series (span ~0) falls back to a modest
+  // 5%-of-value pad instead of dividing by ~zero.
+  const rawMin = Math.min(...real.map((p) => p.v));
+  const rawMax = Math.max(...real.map((p) => p.v));
+  const span = rawMax - rawMin;
+  const pad = span > 0 ? span * 0.15 : Math.max(rawMax * 0.05, 1);
+  const minY = Math.max(0, rawMin - pad);
+  const maxY = rawMax + pad;
   const innerW = WIDTH - PAD.left - PAD.right;
   const innerH = HEIGHT - PAD.top - PAD.bottom;
   const x = (i: number) => PAD.left + (periods.length <= 1 ? innerW / 2 : (i / (periods.length - 1)) * innerW);
@@ -46,7 +69,7 @@ export default function TargetRollBarChart({ periods, values, colour }: { period
   const intercept = (sumY - slope * sumX) / n;
   const trendAt = (i: number) => intercept + slope * i;
 
-  const yTicks = [0, maxY / 2, maxY].map((v) => Math.round(v / 10) * 10);
+  const yTicks = [minY, (minY + maxY) / 2, maxY].map((v) => Math.round(v / 10) * 10);
 
   return (
     <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full">
@@ -85,10 +108,10 @@ export default function TargetRollBarChart({ periods, values, colour }: { period
         y1={y(trendAt(real[0].i))}
         x2={x(real[real.length - 1].i)}
         y2={y(trendAt(real[real.length - 1].i))}
-        stroke="currentColor"
-        strokeOpacity={0.5}
-        strokeDasharray="4 3"
-        strokeWidth={1.5}
+        stroke={colour}
+        strokeOpacity={0.85}
+        strokeWidth={2}
+        strokeLinecap="round"
       />
     </svg>
   );

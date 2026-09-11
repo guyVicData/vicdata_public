@@ -68,13 +68,11 @@ import { useState } from "react";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import { profileToFilterableData as toFilterable, profileToFilterableDataForPeriod as toFilterableForPeriod } from "@/lib/data-view-serialize";
-import { trendBadge, shapeInlineFact, sizeBand, type TrendBadge } from "@/lib/data-view-cards";
-import { shapeClassifierInput } from "@/lib/roll-data";
-import { classifyShape } from "@/lib/shape-classifier";
+import { trendBadge, sizeBand, type TrendBadge } from "@/lib/data-view-cards";
 import { graphTitlePrefix } from "@/lib/data-view-summary";
 import { GRAPH_SECTOR_FALLBACK_THRESHOLD, type AggregateTrends } from "@/lib/aggregate-trends";
 import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
-import TrendPill, { academicYearLabel } from "./TrendPill";
+import { academicYearLabel } from "./TrendPill";
 import RollTrendsChart from "./RollTrendsChart";
 import SortedBarChart from "./SortedBarChart";
 import DivergingBarChart from "./DivergingBarChart";
@@ -299,6 +297,15 @@ export default function GraphsView({
     const v = values[idx];
     return combined && combined > 0 && v !== null ? (v / combined) * 100 : null;
   };
+  // Follow-up round (2026-09-16), item 4: same share-of-combined-total math as
+  // shareAt directly above, for a single already-known value (targetCurrent/
+  // targetAnchor, or one sector's own already-summed total) rather than indexing
+  // into a full per-period values array -- the sector-fallback fix below needs
+  // this shape, not shareAt's own.
+  const shareOfCombined = (value: number | null, idx: number) => {
+    const combined = combinedByPeriod[idx];
+    return combined && combined > 0 && value !== null ? (value / combined) * 100 : null;
+  };
   const marketShareBarPoints = perSchoolFilteredSeries.map((s) => ({
     urn: s.urn,
     name: s.name,
@@ -354,25 +361,52 @@ export default function GraphsView({
   // roll_aggregates' own whole-school-only shape, which this fallback no longer
   // reads from, so the active filter now genuinely affects the target's own bar
   // too, like-for-like against the equally-filtered sector sums.
+  //
+  // Follow-up round (2026-09-16), item 4: real bug from the item-8 fix -- these
+  // two cards are titled "Market share," but sectorFallbackRollPoints/
+  // sectorFallbackGrowthPoints were left as raw summed roll COUNTS (item 8's own
+  // fix corrected the SOURCE, real schools instead of national totals, but never
+  // converted the result into a share). Fixed by running every value/pctChange
+  // through shareOfCombined -- the SAME combinedByPeriod[latestIdx/earliestIdx]
+  // denominator marketShareBarPoints/marketShareGrowthPoints already use, so a
+  // fallback bar reads as the same kind of percentage (share of the group's real
+  // combined roll), not a different metric a member would have to notice the
+  // switch between when a set crosses the threshold. Growth specifically used to
+  // read trendBadge(...).pctChange (% CHANGE IN ROLL COUNT, a ratio) where the
+  // non-fallback branch's own pctChange is a POINT difference between two real
+  // share percentages -- fixed to the same late-minus-early share-point shape.
   const sectorFallbackRollPoints = isSectorFallback
     ? [
-        { urn: targetProfile.urn, name: targetProfile.name, isTarget: true, value: targetCurrent ?? 0 },
+        { urn: targetProfile.urn, name: targetProfile.name, isTarget: true, value: shareOfCombined(targetCurrent, latestIdx) ?? 0 },
         ...distinctSectorsPresent
           .filter((s) => sectorRollLatest.has(s))
-          .map((sector) => ({ urn: `sector:${sector}`, name: sector, isTarget: false, value: sectorRollLatest.get(sector)! })),
-      ]
-    : null;
-  const sectorFallbackGrowthPoints = isSectorFallback
-    ? [
-        { urn: targetProfile.urn, name: targetProfile.name, isTarget: true, pctChange: trendBadge(targetCurrent, targetAnchor)?.pctChange ?? null },
-        ...distinctSectorsPresent
-          .filter((s) => sectorRollLatest.has(s) && sectorRollEarliest.has(s))
           .map((sector) => ({
             urn: `sector:${sector}`,
             name: sector,
             isTarget: false,
-            pctChange: trendBadge(sectorRollLatest.get(sector)!, sectorRollEarliest.get(sector)!)?.pctChange ?? null,
+            value: shareOfCombined(sectorRollLatest.get(sector)!, latestIdx) ?? 0,
           })),
+      ]
+    : null;
+  const sectorFallbackGrowthPoints = isSectorFallback
+    ? [
+        {
+          urn: targetProfile.urn,
+          name: targetProfile.name,
+          isTarget: true,
+          pctChange: (() => {
+            const early = shareOfCombined(targetAnchor, earliestIdx);
+            const late = shareOfCombined(targetCurrent, latestIdx);
+            return early !== null && late !== null ? late - early : null;
+          })(),
+        },
+        ...distinctSectorsPresent
+          .filter((s) => sectorRollLatest.has(s) && sectorRollEarliest.has(s))
+          .map((sector) => {
+            const early = shareOfCombined(sectorRollEarliest.get(sector)!, earliestIdx);
+            const late = shareOfCombined(sectorRollLatest.get(sector)!, latestIdx);
+            return { urn: `sector:${sector}`, name: sector, isTarget: false, pctChange: early !== null && late !== null ? late - early : null };
+          }),
       ]
     : null;
 
@@ -440,10 +474,13 @@ export default function GraphsView({
   // "Co-ed" or an unknown/null tag).
   const isSingleSex = targetProfile.gender === "Boys" || targetProfile.gender === "Girls";
 
-  const anchorAgeGenderCounts = targetProfile.ageGenderCountsByPeriod.get(filters.startPeriod) ?? targetProfile.ageGenderCounts2019;
-  const anchorShape = classifyShape(shapeClassifierInput(anchorAgeGenderCounts))?.label ?? null;
-  const shapeFact = shapeInlineFact(anchorShape, targetProfile.shapeCurrent, academicYearLabel(filters.startPeriod));
-
+  // Follow-up round (2026-09-16), item 3: shapeFact (and its upstream
+  // anchorAgeGenderCounts/anchorShape) only ever fed the "Current roll" card's
+  // shape-arrow line ("Pyramid -> Top-step since ..."), which was removed --
+  // "makes no sense there," direct feedback. Checked directly: nothing else in
+  // this file reads any of the three, so they're gone too, along with the
+  // shapeInlineFact/shapeClassifierInput/classifyShape imports that only existed
+  // to compute them.
   let sizeBandLine: string | null = null;
   if (filters.phaseBands.size > 0 && targetProfile.phase.length > 1) {
     const wholeValues = groupInScope.map((p) => filteredCount(toFilterable(p), { ...filters, phaseBands: new Set(), ages: new Set() }).total);
@@ -552,15 +589,24 @@ export default function GraphsView({
               <div className="lg:col-span-2">
                 <Card title={targetRollBarTitle}>
                   <TargetRollBarChart periods={periods} values={targetFilteredSeries} colour={FOCUS_SCHOOL_COLOUR} />
+                  {/* Follow-up round (2026-09-16), item 2: the trend line overlaid
+                      on this chart previously had no caption anywhere -- same
+                      TrendStatement pattern CombinedRollChart's own card already
+                      uses, fed the same rollTrendBadge computed above (now free to
+                      reuse here since item 3 removed its other consumer, the
+                      Current Roll card's TrendPill). */}
+                  <TrendStatement badge={rollTrendBadge} startPeriod={filters.startPeriod} />
                 </Card>
               </div>
               <div>
+                {/* Follow-up round (2026-09-16), item 3: the big current-roll
+                    number + TrendPill and the shapeFact line were both removed --
+                    the number/trend is "already in the left hand column" (Part A's
+                    sidebar panel), and the shape-arrow text "makes no sense here"
+                    (direct feedback). SortedBarChart (the real cross-set
+                    comparison) is now this card's whole content, alongside
+                    sizeBandLine, which wasn't flagged and stays. */}
                 <Card title="Current roll">
-                  <div className="mb-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-semibold">{targetCurrent?.toLocaleString() ?? "—"}</span>
-                    <TrendPill badge={rollTrendBadge} startPeriod={filters.startPeriod} />
-                  </div>
-                  {shapeFact && <p className="mb-2 text-xs text-neutral-500">{shapeFact}</p>}
                   {sizeBandLine && <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{sizeBandLine}</p>}
                   <SortedBarChart points={currentPoints} />
                 </Card>
@@ -572,8 +618,11 @@ export default function GraphsView({
       {!isLargeSet && (
         <section>
           <SectionHeading number="02" title="Roll trends compared" isOpen={!closedSections.has("02")} onToggle={() => toggleSection("02")} />
+          {/* Follow-up round (2026-09-16), item 1: side by side (50/50) rather than
+              stacked -- same stack-on-mobile grid pattern Section 03/04 already use,
+              just two columns instead of three. */}
           {!closedSections.has("02") && (
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <Card title={rollTrendsTitle}>
                 <RollTrendsChart
                   target={targetProfile}
@@ -619,7 +668,7 @@ export default function GraphsView({
               <Card title={`Market share, ${academicYearLabel(periods[latestIdx] ?? filters.startPeriod)}`}>
                 {isSectorFallback && sectorFallbackRollPoints ? (
                   <>
-                    <SortedBarChart points={sectorFallbackRollPoints} />
+                    <SortedBarChart points={sectorFallbackRollPoints} formatValue={(v) => `${v.toFixed(0)}%`} />
                     <SectorFallbackNote />
                   </>
                 ) : (
@@ -629,7 +678,7 @@ export default function GraphsView({
               <Card title={`Market-share growth / decline since ${academicYearLabel(filters.startPeriod)}`}>
                 {isSectorFallback && sectorFallbackGrowthPoints ? (
                   <>
-                    <DivergingBarChart points={sectorFallbackGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} />
+                    <DivergingBarChart points={sectorFallbackGrowthPoints} formatValue={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}pp`} />
                     <SectorFallbackNote />
                   </>
                 ) : (
