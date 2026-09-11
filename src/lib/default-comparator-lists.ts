@@ -406,7 +406,14 @@ async function boardingQuintileList(
   // targetCount real boarding schools NATIONALLY (no quintile restriction, no
   // distance cap), gender-matched via the same relaxed rule as Nearest 10.
   const pool = isTopTwo ? sorted.filter((c) => quintileOf(c) === targetQuintile) : sorted;
-  const genderFiltered = isTopTwo || !targetGenderTag ? pool : pool.filter((c) => genderMatches(targetGenderTag, c.gender, "relaxed"));
+  // Compared-with panel round (2026-09-11), item 1: real bug, confirmed live against
+  // Harrow (Boys, top-two quintile) -- this used to short-circuit to the WHOLE
+  // same-quintile pool, unfiltered, for the top-two branch specifically (`isTopTwo ||
+  // ...`), showing girls' schools in a boys' school's own Nearest-10. Every candidate
+  // here already carries a real `gender` (set when `withBoarding` was built above),
+  // so the fix is just applying the SAME relaxed rule the bottom-three branch (and
+  // the ordinary Nearest-10 pipeline) already uses, unconditionally.
+  const genderFiltered = !targetGenderTag ? pool : pool.filter((c) => genderMatches(targetGenderTag, c.gender, "relaxed"));
   const withDistance = genderFiltered
     .map((c) => ({ ...c, distanceKm: distanceKm({ easting: target.easting!, northing: target.northing! }, { easting: c.easting, northing: c.northing }) }))
     .sort((a, b) => a.distanceKm - b.distanceKm)
@@ -458,6 +465,7 @@ async function boardingQuintileListFast(
 
   const isTopTwo = targetQuintileRow.quintile >= 3;
   const basisLabel = quintileBasis === "headcount" ? "boarding population" : "% boarders";
+  const targetGenderTag = genderTag(target.gender);
 
   if (isTopTwo) {
     const { data: sameQuintileRows } = await supabase
@@ -471,9 +479,18 @@ async function boardingQuintileListFast(
     const label = `National boarding quintile (by ${basisLabel})`;
     if (urns.length === 0) return { key: "boarding_quintile", label, schools: [], note };
 
-    const { data: schoolRows } = await supabase.from("schools").select("urn, current_name, easting, northing").in("urn", urns);
-    const schools = ((schoolRows ?? []) as { urn: string; current_name: string; easting: number | null; northing: number | null }[])
+    // Compared-with panel round (2026-09-11), item 1: real bug, confirmed live
+    // against Harrow (Boys, top-two quintile) -- this query never selected gender at
+    // all, so there was nothing to filter on; a boys' target's own Nearest-10 could
+    // (and did) show girls' schools. Now selects gender and applies the SAME relaxed
+    // rule boardingQuintileList()'s own top-two branch (and everywhere else in this
+    // module) uses.
+    const { data: schoolRows } = await supabase.from("schools").select("urn, current_name, easting, northing, gender").in("urn", urns);
+    const schools = (
+      (schoolRows ?? []) as { urn: string; current_name: string; easting: number | null; northing: number | null; gender: string | null }[]
+    )
       .filter((s) => s.easting !== null && s.northing !== null)
+      .filter((s) => !targetGenderTag || genderMatches(targetGenderTag, genderTag(s.gender), "relaxed"))
       .map((s) => ({
         urn: s.urn,
         name: s.current_name,
@@ -492,7 +509,6 @@ async function boardingQuintileListFast(
     .order("rank", { ascending: true });
   if (!neighbourRows || neighbourRows.length === 0) return null;
 
-  const targetGenderTag = genderTag(target.gender);
   const neighbourUrns = neighbourRows.map((r) => r.neighbour_urn as string);
   // Real bug found running the actual backfill (2026-10-09): the precomputed
   // 'boarding' pool in school_nearest_neighbours is genuinely NATIONAL and
