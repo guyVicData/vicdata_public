@@ -457,6 +457,38 @@ export default function MapView({
       .filter((s): s is typeof s & { easting: number; northing: number } => s.easting !== null && s.northing !== null && !(s.easting === 0 && s.northing === 0));
   }, [target.urn, target.name, members, profilesByUrn, largeSetPoints]);
 
+  // Compared-with panel round (2026-09-11), item 4: real bug -- the ring used to be a
+  // flat, sector-only-dependent radius (DISTANCE_RING_KM_STATE/INDEPENDENT),
+  // completely disconnected from which schools are actually in the comparator set
+  // (Harrow's own top-quintile matches, unbounded catchment, sit well outside its old
+  // fixed 10km ring). Computed live from the CURRENTLY TICKED members that carry a
+  // real per-school distanceKm (same "tick-list is the only comparison mechanism"
+  // convention the numbers block already uses) -- every recipe with real distance
+  // data (ordinary Nearest-10, both boarding-quintile recipes, LA-scoped sets, all
+  // populate this real field) as the smallest radius that encompasses at least 90% of
+  // them: sort ticked distances ascending, take the ceil(0.9*N)-th nearest -- with 10
+  // schools that's the 9th, dropping the single furthest as an outlier. Recomputes
+  // automatically whenever the ticked set changes (the stepper, Add/Subtract window,
+  // or a filter-driven recipe switch), since all of those already flow through
+  // tickedUrns/members, both real dependencies here.
+  //
+  // null (not a fallback value itself) whenever there's no real distance data to
+  // compute from at all -- Region/Nation sets never carry per-school distanceKm at
+  // this scale (last round's own payload-cleanup fix deliberately dropped it), so
+  // this naturally stays null for them without needing to special-case by recipe
+  // key; the drawing effect below falls back to the OLD fixed sector-aware radius
+  // only in that case, which is what keeps Region/Nation's own ring completely
+  // untouched, per direct instruction not to touch that code path at all.
+  const dynamicRingKm = useMemo(() => {
+    const distances = members
+      .filter((m) => tickedUrns.has(m.urn) && m.distanceKm !== null)
+      .map((m) => m.distanceKm as number)
+      .sort((a, b) => a - b);
+    if (distances.length === 0) return null;
+    const idx = Math.min(distances.length - 1, Math.ceil(distances.length * 0.9) - 1);
+    return distances[idx];
+  }, [members, tickedUrns]);
+
   const values = useMemo(
     () => withProfile.map((s) => filteredCount(profileToFilterableData(s.profile), filters).total),
     [withProfile, filters],
@@ -499,12 +531,19 @@ export default function MapView({
       if (!map.hasLayer(schoolsGroup)) map.addLayer(schoolsGroup);
     }
 
-    // Distance ring -- fixed radius, sector-aware, drawn first so every school
-    // marker sits on top of it (same ordering/reasoning as the public site's own
-    // ring, SchoolMap.tsx).
+    // Distance ring -- drawn first so every school marker sits on top of it (same
+    // ordering/reasoning as the public site's own ring, SchoolMap.tsx). Compared-with
+    // panel round (2026-09-11), item 4: real radius now, from dynamicRingKm (see its
+    // own comment above) whenever the active comparator set has real per-school
+    // distance to compute one from; the old flat, sector-only-dependent radius is
+    // now only a fallback for the genuine "no real distance data" case (Region/
+    // Nation, a saved set, or before the first tick) -- unchanged for those, per
+    // direct instruction not to touch that code path.
     if (target.easting !== null && target.northing !== null) {
       const [targetLat, targetLng] = bngToLatLng(target.easting, target.northing);
-      const ringKm = targetProfile.sector === "Independent" ? DISTANCE_RING_KM_INDEPENDENT : DISTANCE_RING_KM_STATE;
+      const isDynamicRing = dynamicRingKm !== null;
+      const ringKm = dynamicRingKm ?? (targetProfile.sector === "Independent" ? DISTANCE_RING_KM_INDEPENDENT : DISTANCE_RING_KM_STATE);
+      const ringLabel = isDynamicRing ? `${ringKm.toFixed(1)} km` : `${ringKm} km`;
       const ringColour = cs.getPropertyValue("--distance-ring").trim() || "#9ca3af";
       L.circle([targetLat, targetLng], {
         radius: ringKm * 1000,
@@ -518,7 +557,7 @@ export default function MapView({
       L.marker([ringLabelLat, ringLabelLng], {
         icon: L.divIcon({
           className: "vd-ring-label",
-          html: `${ringKm} km`,
+          html: ringLabel,
           iconSize: [40, 16],
           iconAnchor: [20, 8],
         }),
@@ -632,7 +671,7 @@ export default function MapView({
       mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target]);
+  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target, dynamicRingKm, targetProfile.sector]);
 
   const sectorsPresent = Array.from(
     new Set([targetProfile.sector, ...members.map((m) => profilesByUrn.get(m.urn)?.sector ?? null)].filter((s): s is NonNullable<typeof s> => !!s)),
