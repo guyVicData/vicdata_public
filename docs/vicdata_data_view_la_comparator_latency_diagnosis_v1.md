@@ -153,3 +153,45 @@ Output confirmed byte-identical pre/post fix for all three (school list includin
 `npx tsc --noEmit`, `npm run build`, `npm run lint` all clean (same 7 pre-existing, unrelated baseline problems). Committed as `f5d60fd`, pushed to `origin/main`.
 
 **Net result**: the sequential critical path this investigation set out to explain drops from ~18-21s to ~6-8s for these three real schools — roughly 2.3-2.6x faster end to end, entirely from the one scoped call site. The remaining ~6-8s residual is now `/api/data-view/schools`'s own genuine, unscoped, multi-year fetch — a real, separate, honestly-flagged follow-up, not fixed in this pass.
+
+---
+
+## 9. Follow-up fix: `/api/data-view/schools` breakdown-scoping (2026-09-15, same day)
+
+Built the follow-up flagged in §7/§8: `fetchDataViewProfiles` can't be period-scoped (genuinely needs every year for `DataViewSchoolProfile`'s own `trend`/`ageGenderCountsByPeriod` fields), but real live data confirmed it doesn't need every breakdown category `dfe_school_census` records either.
+
+**Verified before building, independently, not just trusting the prior grep**: read every function in the real data-flow path from `fetchCensusFactsBatched`'s output to the final `DataViewSchoolProfile` (`buildRollSnapshot`, `buildRollTrend`, `singleAgeGenderCountsForPeriod`, `boardersGenderSplitFromFacts` — all in `roll-data.ts`/`data-view-profiles.ts`) — confirmed the entire real breakdown surface ever read is `AGE_BREAKDOWN_RE`-matched age/gender facts plus `boarders_male`/`boarders_female`/`boarders_total`. Nothing else, anywhere in the real path (`shapeCurrent`/`shape2019` derive from already-parsed `AgeGenderCounts`, not raw facts; `feParticipation` comes from an entirely separate source, `dfe_fe_participation*`, unaffected by scoping `dfe_school_census`).
+
+**Real age range confirmed live**, not assumed from `AGE_BANDS`' own 0-19 display span: queried real `dfe_school_census` data across a 60-mainstream + 20-post-16/FE-adjacent sample (genuine 16-99/16-25/16-30 institutions included specifically to check for anything wider than the app's own model) — every real age observed is **0-19**, exactly matching `AGE_BANDS`. The breakdown list (`CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS`, `data-view-profiles.ts`) is built **programmatically** from `AGE_BANDS`' own real min/max, not hand-typed — 83 real strings (80 age × `{full_time,part_time}` × `{female,male}` + 3 `boarders_*`), confirmed to generate exactly that count.
+
+**Real magnitude, measured not projected, per direct instruction not to assume a repeat of the period-scoping win**: the same real sample showed 163 distinct breakdown strings total, with only 50.4% of facts (3,008 of 5,968) matching the age/boarders shape this codebase reads — the other half is a genuinely separate, parallel breakdown category (`full_time_female_year_group_11`, `full_time_male_early_1`, `part_time_female_reception`, etc.) that `AGE_BREAKDOWN_RE` has never matched and every current consumer already silently discards, today, unscoped. This is a real but meaningfully smaller win than period-scoping — roughly halving row volume, not eliminating multi-page pagination the way narrowing to one year did.
+
+**Fix**: `fetchCensusFactsBatched` gained an optional `breakdowns?: string[]` param, threaded straight through to `lookupReferenceData`'s own already-existing one (default `undefined`, every other caller unaffected). `fetchDataViewProfiles`'s own call site passes `CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS` but deliberately **not** `periodMin`/`periodMax` — still needs every year. `buildLaComparatorSet` left completely untouched, per direct instruction (already fast from §8's fix, not worth the extra risk here).
+
+**Local verification, real functions, real 41/34-URN payloads reused verbatim between pre/post runs** (same URN set both times, not re-derived, to keep the comparison apples-to-apples):
+
+| School | before | after | speedup |
+|---|---|---|---|
+| Camden (100053) | 5,794ms | 2,007ms | 2.89x |
+| Hampshire (116437) | 7,931ms | 2,355ms | 3.37x |
+| Norfolk (147505) | 7,332ms | 2,418ms | 3.03x |
+
+**Output correctness — whole-array `JSON.stringify` equality, every field, not just roll totals** (`trend`, `ageGenderCountsByPeriod`, `boardersGenderSplit`, `shapeCurrent`/`shape2019`, `feParticipation`, all of it): byte-identical pre/post fix for all three schools.
+
+**Both named edge cases confirmed directly, empirically, not just by code inspection**:
+- FE/ILR fallback: Worcester Sixth Form College, urn `144888` (a real academy-converted 16-19 institution with genuine non-null `feParticipation.under19` data — 1,780 real pupils, real male/female split, `current: null`) — byte-identical pre/post fix.
+- Zero-period-skip: Reigate College, urn `145005` (`roll-data.ts`'s own named example) — byte-identical pre/post fix. Both pre- and post-fix show `current: null, trend: []` currently — this school's own real data has apparently moved on from the specific quirk that comment describes (or the comment's own historical example no longer reproduces the same way); either way, confirmed unaffected by this change specifically, which is what mattered here.
+
+**Live production verification, after deploy** (`https://vicdata.co.uk`, real login, same three schools, fresh production "before" reading taken immediately before the deploy):
+
+| School | `default-lists` (unaffected, for reference) | `schools` (41/34 urns) before | after | speedup | sequential total after |
+|---|---|---|---|---|---|
+| Norfolk (147505) | 1,031ms | 6,271ms | **2,467ms** | 2.54x | **3,498ms** |
+| Camden (100053) | 623ms | 4,818ms | **2,076ms** | 2.32x | **2,699ms** |
+| Hampshire (116437) | 1,126ms | 6,352ms | **2,426ms** | 2.62x | **3,552ms** |
+
+Production `profiles.length` cross-checked against the local pre-fix baseline for all three schools — matches exactly (29/34/31).
+
+`npx tsc --noEmit`, `npm run build`, `npm run lint` all clean (same 7 pre-existing, unrelated baseline problems). Committed as `f195208`, pushed to `origin/main`, deployed and verified live.
+
+**Cumulative net result, both fixes together**: the real sequential critical path (`default-lists` → `schools`) this whole investigation set out to explain has gone from the original ~18-21s (§1/§5) to **~2.7-3.6s** for these three real schools — roughly 6-7x faster end to end. `/api/data-view/schools` is no longer the dominant cost; both endpoints are now comfortably sub-4s.
