@@ -28,7 +28,6 @@
 // refactor of a component this different), and TAG_COLOURS for Sector mode.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Map as LeafletMap, LayerGroup, MarkerClusterGroup } from "leaflet";
 import { bngToLatLng } from "@/lib/bng";
 import { TAG_COLOURS, cssVarNameForTag } from "@/lib/tag-colours";
@@ -113,6 +112,31 @@ const CLUSTER_DISABLE_ZOOM = 14;
 // direct instruction] at increasing zoom). A real judgement call, not a measured
 // screenshot -- flagged as such, not silently asserted as verified-by-eye.
 const NATION_REGION_TIER_ZOOM_THRESHOLD = 8;
+
+// UX round (2026-09-14), Part 2: choropleth polygon labels are only shown once the
+// polygon's own real on-screen box (recomputed on every zoom/pan, not a fixed zoom
+// number) exceeds this pixel size -- checked directly against how it actually looks,
+// not guessed: a dense area like inner London has LA polygons only a few km across,
+// genuinely tiny on screen until zoomed well in, while a large rural region/LA fills
+// the box at a much lower zoom -- a fixed per-zoom label set can't tell those apart,
+// a real per-polygon pixel check can. Width and height are checked separately (not
+// just area) so a long, thin polygon doesn't pass on width alone with no real room
+// for the label's own height.
+const MIN_LABEL_WIDTH_PX = 40;
+const MIN_LABEL_HEIGHT_PX = 22;
+
+function sweepChoroplethLabelVisibility(
+  map: LeafletMap,
+  labelLayers: { marker: import("leaflet").Marker; bounds: import("leaflet").LatLngBounds }[],
+) {
+  for (const { marker, bounds } of labelLayers) {
+    const nw = map.latLngToContainerPoint(bounds.getNorthWest());
+    const se = map.latLngToContainerPoint(bounds.getSouthEast());
+    const widthPx = Math.abs(se.x - nw.x);
+    const heightPx = Math.abs(se.y - nw.y);
+    marker.setOpacity(widthPx >= MIN_LABEL_WIDTH_PX && heightPx >= MIN_LABEL_HEIGHT_PX ? 1 : 0);
+  }
+}
 
 // Real bug found live (2026-10-09): a single wrongly-geocoded school (NHS Choices
 // College, URN 144813 -- already a known, documented bad GIAS coordinate from an
@@ -347,7 +371,6 @@ export default function MapView({
   activeView: ViewKey;
   onChangeView: (v: ViewKey) => void;
 }) {
-  const router = useRouter();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -375,6 +398,15 @@ export default function MapView({
   // geometry library.
   const nationRegionCentroidsRef = useRef<Map<string, { lat: number; lng: number }>>(new Map());
   const lastReportedZoomedRegionRef = useRef<string | null>(null);
+  // UX round (2026-09-14), Part 2: every choropleth polygon's own permanent name
+  // label (a separate divIcon marker, not the layer's own bound tooltip -- that
+  // stays the existing hover-only name+stat combo, unchanged) plus its real drawn
+  // bounds, populated whenever the choropleth is drawn -- read by the label-
+  // visibility effect below to show/hide each one by real on-screen pixel size at
+  // the current zoom, not a fixed zoom threshold (a name that would overlap its
+  // neighbours at one zoom might not at a slightly different one, depending on
+  // latitude and viewport size, so this is checked directly rather than guessed).
+  const choroplethLabelLayersRef = useRef<{ marker: import("leaflet").Marker; bounds: import("leaflet").LatLngBounds }[]>([]);
   // Fit-to-bounds happens once per Nation-scope choropleth "session" (entering Nation
   // scope, or a filter change that redraws it), never on every zoom-driven drill in/
   // out -- an auto-fit there would fight the member's own manual zoom gesture, the
@@ -658,6 +690,7 @@ export default function MapView({
       if (activeChoropleth.source !== "nation-region") {
         nationRegionCentroidsRef.current = new Map();
       }
+      choroplethLabelLayersRef.current = [];
 
       // "Current Rolls" mode normalises against the min/max of LAs/regions that
       // actually have real matching data in THIS view -- same min-max-of-the-
@@ -744,6 +777,25 @@ export default function MapView({
             const c = b.getCenter();
             nationRegionCentroidsRef.current.set(entry.gssCode, { lat: c.lat, lng: c.lng });
           }
+          // UX round (2026-09-14), Part 2: the polygon's own permanent name label --
+          // shown always, not hover-only, same principle as the target's own name
+          // label above ("one consistent 'name always visible, numbers on request'
+          // convention across every map mode, dot or polygon"). Starts hidden
+          // (opacity 0) -- the visibility-sweep effect below decides, on the very
+          // next paint, whether this polygon is genuinely big enough on-screen at
+          // the current zoom to show it, rather than flashing every label on then
+          // immediately hiding most of them over a dense area.
+          const labelMarker = L.marker(b.getCenter(), {
+            icon: L.divIcon({
+              className: "vd-choropleth-label-icon",
+              html: `<div class="vd-choropleth-label">${escapeHtml(entry.laName)}</div>`,
+              iconSize: [0, 0],
+            }),
+            interactive: false,
+            opacity: 0,
+          });
+          labelMarker.addTo(choroplethGroup);
+          choroplethLabelLayersRef.current.push({ marker: labelMarker, bounds: b });
         }
       }
 
@@ -762,11 +814,17 @@ export default function MapView({
       if (activeChoropleth.source !== "region-scope-la") {
         nationChoroplethEverFitRef.current = true;
       }
+      // Initial label visibility for this draw -- the persistent zoomend/moveend
+      // listener below re-runs the same sweep afterward (including once a fitBounds
+      // animation above actually finishes), so a brief initial mismatch during that
+      // animation self-corrects rather than needing to be synchronised here.
+      sweepChoroplethLabelVisibility(map, choroplethLabelLayersRef.current);
       return;
     }
 
     nationRegionCentroidsRef.current = new Map();
     nationChoroplethEverFitRef.current = false;
+    choroplethLabelLayersRef.current = [];
     if (map.hasLayer(choroplethGroup)) map.removeLayer(choroplethGroup);
     choroplethGroup.clearLayers();
 
@@ -901,22 +959,30 @@ export default function MapView({
         let radius = UNTICKED_RADIUS;
         let tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/><em>click to add to comparison</em></div>`;
 
+        // Bug fix / UX round (2026-09-14), Part 2: the target's popup content
+        // (built alongside tooltipHtml, below, since both need the same
+        // current/anchor/pctChange figures) -- null for a non-target school, which
+        // never gets a popup at all, only its existing hover tooltip.
+        let targetPopupHtml: string | null = null;
+
         if (ticked) {
           const hasAnchor = s.profile.ageGenderCountsByPeriod.has(filters.startPeriod) || s.profile.trend.some((t) => t.period === filters.startPeriod);
           const anchor = hasAnchor ? filteredCount(profileToFilterableDataForPeriod(s.profile, filters.startPeriod), filters).total : null;
           const pctChange = anchor && anchor > 0 ? ((current - anchor) / anchor) * 100 : 0;
           colour = colourMode === "trend" ? trendColour(pctChange) : s.profile.sector ? tagColour(s.profile.sector) : "#9ca3af";
           radius = radiusFor(current, minV, maxV);
-          tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${current.toLocaleString()}${
+          const statsLine = `${current.toLocaleString()}${
             anchor !== null ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since ${academicYearLabel(filters.startPeriod)})` : ""
-          }${
-            // Map round (2026-09-12), item 1b: the target's own marker already
-            // navigates to /schools/${urn} on click (the handler just below) --
-            // it just had no hint that it does, unlike every non-target dot's own
-            // "click to add to comparison." Real navigation unchanged, just made
-            // discoverable, here and on the expand badge added below.
-            isTarget ? `<br/><em>click to view full stats</em>` : ""
-          }</div>`;
+          }`;
+          tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${statsLine}</div>`;
+          // UX round (2026-09-14), Part 2, per direct instruction: the target's own
+          // marker/badge no longer navigate anywhere -- clicking toggles this stats
+          // panel instead, showing the SAME numbers every other ticked school
+          // already shows on hover. The target's permanent name label (bound below,
+          // outside this ticked-only block since it's always shown regardless of
+          // trend/anchor data) is the discoverable "this one's different" cue now,
+          // not the red ring alone.
+          if (isTarget) targetPopupHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${statsLine}</div>`;
         }
 
         const marker = L.circleMarker([lat, lng], {
@@ -927,10 +993,24 @@ export default function MapView({
           fillOpacity: ticked ? 0.75 : 0.6,
           opacity: 1,
         });
-        marker.bindTooltip(tooltipHtml, { direction: "top", offset: [0, -4] });
+        if (isTarget) {
+          // Permanent name label -- shown always, not hover-only like every other
+          // school's own tooltip, per direct instruction ("this IS the feature that
+          // distinguishes it, not the red ring alone").
+          marker.bindTooltip(escapeHtml(s.name), { permanent: true, direction: "right", offset: [10, 0], className: "vd-target-name-label" });
+          if (targetPopupHtml) marker.bindPopup(targetPopupHtml);
+        } else {
+          marker.bindTooltip(tooltipHtml, { direction: "top", offset: [0, -4] });
+        }
         marker.on("click", () => {
-          if (isTarget) router.push(`/schools/${s.urn}`);
-          else onToggleTick(s.urn);
+          if (isTarget) {
+            // Toggle, not just open -- bindPopup's own default click behaviour
+            // opens but never closes on a second click of the same marker.
+            if (marker.isPopupOpen()) marker.closePopup();
+            else marker.openPopup();
+          } else {
+            onToggleTick(s.urn);
+          }
         });
         (marker.getElement?.() as SVGElement | undefined)?.style.setProperty("cursor", "pointer");
         // The target school is always a real, individually-visible reference point
@@ -942,17 +1022,20 @@ export default function MapView({
           L.circleMarker([lat, lng], { radius: TARGET_RING_RADIUS, color: "#dc2626", weight: 2.5, fill: false }).addTo(group);
 
           // Map round (2026-09-12), item 1b: a small expand-arrow badge sitting at
-          // the ring's own edge, making the target's already-working navigation
-          // (the click handler above) discoverable -- previously an unexplained red
-          // circle with zero visual hint it does anything. Positioned via iconAnchor
-          // as a fixed PIXEL offset (not a geographic one -- the ring itself is a
-          // fixed-pixel-radius circleMarker, so a geographic offset would drift off
-          // the ring at different zoom levels) at ~45 degrees, top-right of the
-          // ring. Interactive with the SAME router.push handler, not a purely
-          // decorative overlay -- a badge sitting right at the ring's own edge could
-          // easily fall just outside the real target circleMarker's own clickable
-          // radius underneath it, which would be a real dead-click trap; wiring it
-          // up directly avoids depending on that geometry lining up exactly.
+          // the ring's own edge, making the target's own click affordance
+          // discoverable -- previously an unexplained red circle with zero visual
+          // hint it does anything. Positioned via iconAnchor as a fixed PIXEL
+          // offset (not a geographic one -- the ring itself is a fixed-pixel-radius
+          // circleMarker, so a geographic offset would drift off the ring at
+          // different zoom levels) at ~45 degrees, top-right of the ring.
+          // UX round (2026-09-14), Part 2, per direct instruction: repointed from
+          // router.push to toggling the SAME stats popup the target marker itself
+          // now opens -- no navigation anywhere in this path any more. Kept as its
+          // own interactive element (not a purely decorative overlay) since a badge
+          // sitting right at the ring's own edge could easily fall just outside the
+          // real target circleMarker's own clickable radius underneath it, which
+          // would be a real dead-click trap; wiring it up directly avoids depending
+          // on that geometry lining up exactly.
           const BADGE_SIZE = 18;
           const badgeOffset = TARGET_RING_RADIUS * Math.SQRT1_2; // ~45 degrees
           const badgeMarker = L.marker([lat, lng], {
@@ -964,7 +1047,10 @@ export default function MapView({
             }),
           });
           badgeMarker.bindTooltip("View full stats", { direction: "top", offset: [0, -4] });
-          badgeMarker.on("click", () => router.push(`/schools/${s.urn}`));
+          badgeMarker.on("click", () => {
+            if (marker.isPopupOpen()) marker.closePopup();
+            else marker.openPopup();
+          });
           badgeMarker.addTo(group);
         }
       } catch (e) {
@@ -1016,6 +1102,22 @@ export default function MapView({
     };
   }, [mapReady, onNationZoomedRegionChange]);
 
+  // UX round (2026-09-14), Part 2: re-sweeps choropleth label visibility on every
+  // zoom/pan -- registered once per map instance (not re-added on every render) and
+  // reads choroplethLabelLayersRef live, so it naturally no-ops (empty array) when no
+  // choropleth is currently drawn, same pattern as the zoom-detection effect above.
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    const map = mapRef.current;
+    function handleZoomOrMove() {
+      sweepChoroplethLabelVisibility(map, choroplethLabelLayersRef.current);
+    }
+    map.on("zoomend moveend", handleZoomOrMove);
+    return () => {
+      map.off("zoomend moveend", handleZoomOrMove);
+    };
+  }, [mapReady]);
+
   const sectorsPresent = Array.from(
     new Set([targetProfile.sector, ...members.map((m) => profilesByUrn.get(m.urn)?.sector ?? null)].filter((s): s is NonNullable<typeof s> => !!s)),
   );
@@ -1037,20 +1139,54 @@ export default function MapView({
   return (
     <div className="absolute inset-0">
       <style>{`
-        .vd-dataview-map { --dot: #9ca3af; --distance-ring: #9ca3af; ${Object.entries(TAG_COLOURS)
-          .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.light[1]};`)
-          .join(" ")} }
-        @media (prefers-color-scheme: dark) {
-          :root:where(:not([data-theme="light"])) .vd-dataview-map { --distance-ring: #6b7280; ${Object.entries(TAG_COLOURS)
-            .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.dark[1]};`)
-            .join(" ")} }
+        .vd-dataview-map {
+          --dot: #9ca3af; --distance-ring: #9ca3af;
+          --label-bg: #fff; --label-fg: #171717; --choropleth-label-bg: rgba(255,255,255,0.88);
+          ${Object.entries(TAG_COLOURS)
+            .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.light[1]};`)
+            .join(" ")}
         }
-        :root[data-theme="dark"] .vd-dataview-map { --distance-ring: #6b7280; ${Object.entries(TAG_COLOURS)
-          .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.dark[1]};`)
-          .join(" ")} }
+        @media (prefers-color-scheme: dark) {
+          :root:where(:not([data-theme="light"])) .vd-dataview-map {
+            --distance-ring: #6b7280; --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85);
+            ${Object.entries(TAG_COLOURS)
+              .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.dark[1]};`)
+              .join(" ")}
+          }
+        }
+        :root[data-theme="dark"] .vd-dataview-map {
+          --distance-ring: #6b7280; --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85);
+          ${Object.entries(TAG_COLOURS)
+            .map(([tag, c]) => `${cssVarNameForTag(tag)}: ${c.dark[1]};`)
+            .join(" ")}
+        }
         .vd-ring-label {
           font-size: 10px; font-weight: 600; color: var(--distance-ring);
           text-align: center; white-space: nowrap; background: transparent;
+        }
+        /* UX round (2026-09-14), Part 2: the target's own permanent name label --
+           a real, readable pill (not plain Leaflet tooltip chrome) since this is
+           always visible, not hover-triggered like every other tooltip on this
+           map. Leaflet's own permanent-tooltip arrow is suppressed (::before) in
+           favour of this pill styling. */
+        .vd-target-name-label {
+          font-size: 11px; font-weight: 700; color: var(--label-fg); background: var(--label-bg);
+          border: 1.5px solid #dc2626; border-radius: 4px; padding: 1px 6px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.25); white-space: nowrap;
+        }
+        .vd-target-name-label::before { display: none; }
+        /* UX round (2026-09-14), Part 2: choropleth polygon name labels -- same
+           "always visible, not hover-only" principle as the target's own name
+           label, one consistent convention across dot and polygon modes. Compact
+           and truncating (own fixed max-width + ellipsis) rather than wrapping --
+           legibility over a dense area (inner London) depends on labels staying
+           small and getting thinned by the visibility sweep below, not on this
+           CSS alone. */
+        .vd-choropleth-label {
+          font-size: 10px; font-weight: 600; color: var(--label-fg); background: var(--choropleth-label-bg);
+          border-radius: 3px; padding: 0px 4px; max-width: 90px; overflow: hidden;
+          text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+          transform: translate(-50%, -50%);
         }
       `}</style>
       {/* 2026-09-06, UX refinements round 1, B2: rootRef moved onto THIS element
