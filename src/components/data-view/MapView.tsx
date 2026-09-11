@@ -266,6 +266,7 @@ export default function MapView({
   nationDrilldownLaChoropleth,
   onNationZoomedRegionChange,
   onRegionPolygonClick,
+  isRegionOrNationScope,
   filters,
   activeView,
   onChangeView,
@@ -332,6 +333,16 @@ export default function MapView({
   // reuses the existing "Region" button's own region_nation_set machinery
   // (DataViewShell's own handleRegionPolygonClick), not a new scoping mechanism.
   onRegionPolygonClick: (regionCode: string, regionName: string) => void;
+  // Bug fix round (2026-09-14), real bug found live: activeChoropleth is null not
+  // only for recipes that never show a choropleth, but ALSO for Region/Nation scope
+  // during the genuine loading window before their own data has resolved -- without
+  // this flag, the dot/cluster branch ran in that window and drew stale markers from
+  // withProfile/largeSetPoints, which then got torn down once the real polygons
+  // arrived (a visible flash, contradicting "never gets to the individual school
+  // level" for these two scopes). Computed the same way DataViewShell computes
+  // isRegionScope/isNationScope (activeSet.key), passed down rather than
+  // re-derived here since MapView never receives activeSet itself.
+  isRegionOrNationScope: boolean;
   filters: DataViewFilterState;
   activeView: ViewKey;
   onChangeView: (v: ViewKey) => void;
@@ -759,6 +770,23 @@ export default function MapView({
     if (map.hasLayer(choroplethGroup)) map.removeLayer(choroplethGroup);
     choroplethGroup.clearLayers();
 
+    // Bug fix round (2026-09-14): activeChoropleth is also null during the genuine
+    // loading window before Region/Nation's own data has resolved (not just for
+    // recipes that never show a choropleth) -- rendering nothing here in that window,
+    // rather than falling through to stale dot/cluster markers, is what actually
+    // keeps this scope's "never gets to the individual school level" promise, not
+    // just when data happens to already be ready. mapLoading's spinner (its own
+    // stuck-flag bug fixed separately this round) is what communicates "still
+    // loading" instead.
+    if (isRegionOrNationScope) {
+      group.clearLayers();
+      schoolsGroup.clearLayers();
+      clusterGroup.clearLayers();
+      if (map.hasLayer(schoolsGroup)) map.removeLayer(schoolsGroup);
+      if (map.hasLayer(clusterGroup)) map.removeLayer(clusterGroup);
+      return;
+    }
+
     group.clearLayers();
     schoolsGroup.clearLayers();
     clusterGroup.clearLayers();
@@ -948,7 +976,7 @@ export default function MapView({
       mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target, dynamicRingKm, targetProfile.sector, activeChoropleth, activeChoroplethRollRange]);
+  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target, dynamicRingKm, targetProfile.sector, activeChoropleth, activeChoroplethRollRange, isRegionOrNationScope]);
 
   // Map round (2026-09-12), Part 2 Stage B: zoom-driven region-tier <-> LA-tier
   // switch for Nation scope. Registered once per map instance (not re-added on every

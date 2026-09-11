@@ -323,7 +323,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // boarding) keeps its existing dot map completely unchanged, per direct instruction.
   // Same keyed-cache discipline as largeSetRank/aggregateTrends above.
   const [laChoropleth, setLaChoropleth] = useState<{ key: string; data: LaChoroplethEntry[] } | null>(null);
-  const [laChoroplethLoading, setLaChoroplethLoading] = useState(false);
+  // Bug fix round (2026-09-14), real bug found live ("loading spinner stuck on
+  // permanently, survives switching schools/scopes"): this used to be a plain
+  // boolean, set true/false imperatively inside the effect -- when the effect's own
+  // guard clause started failing (scope/target no longer qualifies) while a
+  // previous run's fetch was still in flight, React's cleanup-then-rerun ordering
+  // meant NEITHER the orphaned promise's own `finally` (guarded by its now-true
+  // `cancelled`) NOR the new run (which bails before reaching any reset) ever set it
+  // back to false -- stuck true forever. Fixed by tracking the REQUEST KEY currently
+  // being fetched for instead (set only inside the async block, same place the old
+  // boolean was set/cleared) and deriving the exposed loading boolean at render time
+  // (see laChoroplethLoading below) -- same "let render-time comparison decide,
+  // don't reset state synchronously in an effect" discipline this file's own
+  // largeSetRank/aggregateTrends effects already document, applied here too so the
+  // loading signal can't desync from the real gating conditions ever again.
+  const [laChoroplethFetchingKey, setLaChoroplethFetchingKey] = useState<string | null>(null);
   // Map round (2026-09-12), Part 2 Stage B: the target's own real nation ("england" |
   // "wales" | null), captured once here (Step 2's own default-lists fetch already
   // resolves it, previously only baked into nationOption's own label string) -- needed
@@ -336,7 +350,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // as laChoropleth above, independent of zoom (cheap, ~9 rows, kept ready so zooming
   // back out never needs a refetch).
   const [nationRegionChoropleth, setNationRegionChoropleth] = useState<{ key: string; data: LaChoroplethEntry[] } | null>(null);
-  const [nationRegionChoroplethLoading, setNationRegionChoroplethLoading] = useState(false);
+  // Same fetching-key tracking as laChoroplethFetchingKey above, same bug/fix.
+  const [nationRegionChoroplethFetchingKey, setNationRegionChoroplethFetchingKey] = useState<string | null>(null);
   // Which region the map is currently "zoomed into" within Nation scope -- reported
   // by MapView's own zoom-detection (English targets) via onNationZoomedRegionChange,
   // or set once, permanently, to Wales's own whole-country pseudo-region code for a
@@ -348,7 +363,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // already calls, just with an explicit regionCode instead of letting it resolve the
   // target's own.
   const [nationDrilldownLaChoropleth, setNationDrilldownLaChoropleth] = useState<{ key: string; data: LaChoroplethEntry[] } | null>(null);
-  const [nationDrilldownLoading, setNationDrilldownLoading] = useState(false);
+  // Same fetching-key tracking as laChoroplethFetchingKey above, same bug/fix.
+  const [nationDrilldownFetchingKey, setNationDrilldownFetchingKey] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<DataViewFilterState>(emptyDataViewFilterState());
   const [activeView, setActiveView] = useState<ViewKey>("map");
@@ -758,7 +774,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
     if (laChoropleth?.key === requestKey) return;
     let cancelled = false;
     (async () => {
-      setLaChoroplethLoading(true);
+      setLaChoroplethFetchingKey(requestKey);
       try {
         const params = new URLSearchParams({ urn: target.urn });
         const sectors = Array.from(filters.sector).join(",");
@@ -783,13 +799,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
       } catch (e) {
         if (!cancelled) console.error("[DataViewShell] unexpected error fetching LA choropleth:", e);
       } finally {
-        if (!cancelled) setLaChoroplethLoading(false);
+        if (!cancelled) setLaChoroplethFetchingKey((k) => (k === requestKey ? null : k));
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [authToken, target, activeSet, filters, laChoropleth]);
+  // Bug fix round (2026-09-14): DERIVED at render time, not a stored boolean the
+  // effect above sets/resets imperatively -- see laChoroplethFetchingKey's own
+  // comment for the full bug this closes. True only when the gating conditions
+  // genuinely still call for this fetch AND a request matching them is actually in
+  // flight -- the moment either stops holding (scope changes, target switches, the
+  // request key changes), this is false on the very next render, with no reset step
+  // that could ever get skipped.
+  const laChoroplethLoading = !!target && isRegionScope(activeSet) && laChoroplethFetchingKey === laChoroplethRequestKey(target.urn, filters);
 
   // Map round (2026-09-12), Part 2 Stage B: Nation scope's own region-tier data,
   // English targets only (fetchNationRegionChoropleth's own comment explains why
@@ -802,7 +826,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
     if (nationRegionChoropleth?.key === requestKey) return;
     let cancelled = false;
     (async () => {
-      setNationRegionChoroplethLoading(true);
+      setNationRegionChoroplethFetchingKey(requestKey);
       try {
         const params = new URLSearchParams({ urn: target.urn });
         const sectors = Array.from(filters.sector).join(",");
@@ -827,13 +851,20 @@ export default function DataViewShell({ urn }: { urn: string }) {
       } catch (e) {
         if (!cancelled) console.error("[DataViewShell] unexpected error fetching Nation region tier:", e);
       } finally {
-        if (!cancelled) setNationRegionChoroplethLoading(false);
+        if (!cancelled) setNationRegionChoroplethFetchingKey((k) => (k === requestKey ? null : k));
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [authToken, target, activeSet, targetNation, filters, nationRegionChoropleth]);
+  // Bug fix round (2026-09-14): same derived-at-render-time discipline as
+  // laChoroplethLoading above -- see that constant's own comment.
+  const nationRegionChoroplethLoading =
+    !!target &&
+    isNationScope(activeSet) &&
+    targetNation === "england" &&
+    nationRegionChoroplethFetchingKey === nationRegionChoroplethRequestKey(target.urn, filters);
 
   // Map round (2026-09-12), Part 2 Stage B: the real region a Nation-scope target's
   // LA-tier drill-down should show, DERIVED at render time rather than synchronously
@@ -862,7 +893,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
     if (nationDrilldownLaChoropleth?.key === requestKey) return;
     let cancelled = false;
     (async () => {
-      setNationDrilldownLoading(true);
+      setNationDrilldownFetchingKey(requestKey);
       try {
         const params = new URLSearchParams({ urn: target.urn, regionCode: effectiveNationZoomedRegionCode });
         const sectors = Array.from(filters.sector).join(",");
@@ -887,13 +918,19 @@ export default function DataViewShell({ urn }: { urn: string }) {
       } catch (e) {
         if (!cancelled) console.error("[DataViewShell] unexpected error fetching Nation-scope LA drilldown:", e);
       } finally {
-        if (!cancelled) setNationDrilldownLoading(false);
+        if (!cancelled) setNationDrilldownFetchingKey((k) => (k === requestKey ? null : k));
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [authToken, target, effectiveNationZoomedRegionCode, filters, nationDrilldownLaChoropleth]);
+  // Bug fix round (2026-09-14): same derived-at-render-time discipline as
+  // laChoroplethLoading above -- see that constant's own comment.
+  const nationDrilldownLoading =
+    !!target &&
+    effectiveNationZoomedRegionCode !== null &&
+    nationDrilldownFetchingKey === nationDrilldownRequestKey(target.urn, effectiveNationZoomedRegionCode, filters);
 
   useEffect(() => {
     // Only ever read while loadState is "checking"/"loading" (see that render branch
@@ -939,7 +976,21 @@ export default function DataViewShell({ urn }: { urn: string }) {
   function selectSet(option: SetOption) {
     activeSetSeq.current++;
     setActiveSet(option);
-    setTickedUrns(new Set(option.schools.map((s) => s.urn)));
+    // Bug fix round (2026-09-14), real bug found live ("Could not load school data
+    // for this Compared with set" on selecting Nation scope): ticking EVERY school
+    // unconditionally breaks down for a genuinely large-scale recipe (Region/Nation,
+    // tens of thousands of schools) -- the profile-fetch effect's own
+    // LARGE_SET_PROFILE_THRESHOLD protection is built on "only a handful get ticked
+    // in practice" (a member clicking individual markers -- that effect's own
+    // comment), which auto-ticking the whole list here defeated by construction,
+    // producing a urns= query string with every URN in the country and a
+    // guaranteed-to-fail request. A genuinely large set now starts with nothing
+    // ticked instead -- ComparatorSidebar's own "Select all ticked" affordance in
+    // the Add/subtract window still lets a member deliberately tick a chunk
+    // afterwards, and MapView's own marker-click-to-tick path (onToggleTick) is
+    // completely unaffected either way (both already just call the same
+    // setTickedUrns machinery this function also uses, untouched here).
+    setTickedUrns(option.schools.length > LARGE_SET_PROFILE_THRESHOLD ? new Set() : new Set(option.schools.map((s) => s.urn)));
     // 2026-09-06, UX refinements round 1, A2/B3: recalling a saved set restores the
     // filter state it was saved with too, when one was actually saved (see
     // SetOption's own comment for why this is optional) -- "share one underlying
@@ -1549,6 +1600,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     nationDrilldownLaChoropleth={effectiveNationZoomedRegionCode !== null ? (nationDrilldownLaChoropleth?.data ?? null) : null}
                     onNationZoomedRegionChange={handleNationZoomedRegionChange}
                     onRegionPolygonClick={handleRegionPolygonClick}
+                    isRegionOrNationScope={isRegionScope(activeSet) || isNationScope(activeSet)}
                     filters={filters}
                     activeView={activeView}
                     onChangeView={setActiveView}
