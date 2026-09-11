@@ -13,7 +13,12 @@ import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { SchoolSearchResult } from "@/components/SchoolSearch";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
-import { deserializeProfile, profileToFilterableData, type WireDataViewSchoolProfile } from "@/lib/data-view-serialize";
+import {
+  deserializeProfile,
+  profileToFilterableData,
+  profileToFilterableDataForPeriod,
+  type WireDataViewSchoolProfile,
+} from "@/lib/data-view-serialize";
 import {
   emptyDataViewFilterState,
   describeFilters,
@@ -26,6 +31,7 @@ import {
   type DataViewFilterState,
   type WireDataViewFilterState,
 } from "@/lib/data-view-filters";
+import { trendBadge } from "@/lib/data-view-cards";
 import type { SetOption, RecipeOption, ViewKey } from "@/lib/data-view-types";
 import type { DefaultListEntry, SchoolTypeCategory, BoardingQuintileBand } from "@/lib/default-comparator-lists";
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
@@ -1385,6 +1391,45 @@ export default function DataViewShell({ urn }: { urn: string }) {
     activeSet && !comparedHidden ? Array.from(tickedUrns).filter((u) => !profilesByUrn.has(u)).length : 0;
   const compareSentence = targetProfile ? describeActiveViewSentence(filters, activeSet, targetProfile) : null;
 
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part A: the target's own
+  // filtered roll trend, one line, for the new "Compared with" panel's sparkline --
+  // "the school in context... school should be central," per direct instruction, so
+  // the panel now leads with the target's own numbers instead of the set's summed
+  // ones. Same real per-period pairing RollTrendsChart's own seriesFor/GraphsView's
+  // own perSchoolFilteredSeries already use (filteredCount over
+  // profileToFilterableDataForPeriod, guarded by ageGenderCountsByPeriod.has(p) so a
+  // genuinely-missing period reads as a real gap, not a fabricated zero) -- verified
+  // live to match RollTrendsChart's own target line exactly for the same school/
+  // filters (see docs). Periods computed from the TARGET's own real trend history
+  // alone (targetProfile.trend), not the wider ticked group's union of periods
+  // (RollTrendsChart/GraphsView's own `periods` both derive from the GROUP, which
+  // this single-school sparkline has no reason to depend on) -- the target's own
+  // period range is never affected by which other schools happen to be ticked.
+  const targetSparklinePeriods = targetProfile
+    ? Array.from(new Set(targetProfile.trend.map((t) => t.period)))
+        .filter((p) => p >= filters.startPeriod)
+        .sort((a, b) => a - b)
+    : [];
+  const targetSparklineValues = targetProfile
+    ? targetSparklinePeriods.map((p) =>
+        targetProfile.ageGenderCountsByPeriod.has(p) ? filteredCount(profileToFilterableDataForPeriod(targetProfile, p), filters).total : null,
+      )
+    : [];
+  // Same anchor-period figure GraphsView's own rollTrendBadge already reads
+  // (filteredCount at filters.startPeriod, null when the school genuinely has no
+  // data that far back) -- reused via the same trendBadge() function, not a new
+  // threshold/colour convention.
+  const targetAnchorSnapshot = targetProfile ? (targetProfile.trend.find((t) => t.period === filters.startPeriod) ?? null) : null;
+  const targetRollTrendBadge =
+    targetProfile && targetAnchorSnapshot
+      ? trendBadge(targetFilteredCount?.total ?? null, filteredCount(profileToFilterableDataForPeriod(targetProfile, filters.startPeriod), filters).total)
+      : null;
+  // "Latest academic year" for the panel's own header line -- the same real period
+  // targetFilteredCount's own figure (ageGenderCounts, the current snapshot) already
+  // reflects, not a hardcoded CURRENT_CENSUS_PERIOD that could read one year stale
+  // for a school whose own latest real data lags the global census year.
+  const targetLatestPeriod = targetProfile?.current?.period ?? null;
+
   // Large-set design v1, items 3/5: resolve the keyed-cache state (see those effects'
   // own comments) against what the CURRENT render actually wants -- a stored result
   // whose key doesn't match the live scope/set/filters is stale (superseded by a
@@ -1570,6 +1615,11 @@ export default function DataViewShell({ urn }: { urn: string }) {
             compareSchoolCount={compareSchoolCount}
             compareSchoolsNotLoaded={compareSchoolsNotLoaded}
             compareSentence={compareSentence}
+            targetCurrentRoll={targetFilteredCount?.total ?? null}
+            targetLatestPeriod={targetLatestPeriod}
+            targetSparklineValues={targetSparklineValues}
+            targetRollTrendBadge={targetRollTrendBadge}
+            startPeriod={filters.startPeriod}
             profilesByUrn={profilesByUrn}
             addedUrns={addedUrns}
             onAddSchool={addSchool}

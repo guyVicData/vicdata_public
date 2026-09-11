@@ -33,9 +33,13 @@ import type { SetOption, RecipeOption } from "@/lib/data-view-types";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import type { FilteredCount } from "@/lib/data-view-filters";
+import type { TrendBadge } from "@/lib/data-view-cards";
 import { TAG_COLOURS, contrastingTextColour } from "@/lib/tag-colours";
+import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
 import AddSubtractSchoolsWindow from "./AddSubtractSchoolsWindow";
 import LocalAuthoritiesWindow, { type AdjacentLasResponse } from "./LocalAuthoritiesWindow";
+import TrendPill, { academicYearLabel } from "./TrendPill";
+import Sparkline from "./Sparkline";
 
 const NEAREST_STEP = 5;
 const NEAREST_MIN = 10;
@@ -167,6 +171,11 @@ export default function ComparatorSidebar({
   compareSchoolCount,
   compareSchoolsNotLoaded,
   compareSentence,
+  targetCurrentRoll,
+  targetLatestPeriod,
+  targetSparklineValues,
+  targetRollTrendBadge,
+  startPeriod,
   addedUrns,
   onAddSchool,
 }: {
@@ -224,6 +233,19 @@ export default function ComparatorSidebar({
   compareSchoolCount: number;
   compareSchoolsNotLoaded: number;
   compareSentence: string | null;
+  // Sidebar/Graphs/Rankings restructure (2026-09-16), Part A: the target's OWN
+  // figures, computed in DataViewShell the same real way GraphsView's own
+  // targetCurrent/rollTrendBadge/perSchoolFilteredSeries already are (filteredCount
+  // over profileToFilterableDataForPeriod, trendBadge()) -- passed down as finished
+  // values, not the raw profile+filters, so this component doesn't need its own
+  // copy of that computation. "The school in context... should be central," per
+  // direct instruction -- the panel now leads with these, not the set's summed
+  // compareNumbers above.
+  targetCurrentRoll: number | null;
+  targetLatestPeriod: number | null;
+  targetSparklineValues: (number | null)[];
+  targetRollTrendBadge: TrendBadge;
+  startPeriod: number;
   // Real bug fix (2026-09-11): used to be local state here, invisible to
   // DataViewShell -- a school added via the search-add path below was ticked
   // (onToggleTick reached the lifted tickedUrns correctly) but never actually part
@@ -454,25 +476,60 @@ export default function ComparatorSidebar({
           color: var(--set-button-fg-dark) !important;
         }
       `}</style>
+      {/* Sidebar/Graphs/Rankings restructure (2026-09-16), Part A rebuild. Per direct
+          instruction: the panel used to lead with the SET's aggregate numbers (a big
+          summed pupil count, "N schools" right-aligned) when "the school being
+          viewed should be the primary thing shown... school should be central."
+          This new block leads with the TARGET's own figures instead -- real bug
+          fixed at the same time, not just a relayout: the old right-aligned "N
+          schools in this set" text (whitespace-nowrap, in a justify-between row
+          against a large adjacent number) genuinely overflowed the card frame at
+          narrow widths (worst on single-column iPad/iPhone portrait, where the
+          sidebar itself is the full device width but still narrow enough that a big
+          number + a long nowrap string in one flex row doesn't reliably fit) -- this
+          rebuild never puts a large number and a right-aligned nowrap string in the
+          same row, so that specific squeeze can't recur, not just patched with a
+          narrower font/smaller text.
+          Every figure here is already real and filtered (targetCurrentRoll/
+          targetSparklineValues/targetRollTrendBadge, computed in DataViewShell the
+          same way GraphsView's own targetCurrent/perSchoolFilteredSeries/
+          rollTrendBadge already are) -- confirmed nothing here reads an unfiltered
+          value, per direct instruction to check rather than assume. */}
+      {targetCurrentRoll !== null && (
+        <div className="mb-3 rounded-md border border-neutral-100 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900/40">
+          <p className="leading-snug">
+            <span className="font-semibold text-neutral-900 dark:text-neutral-50">{targetName}</span>{" "}
+            <span className="text-[11px] tracking-wide text-neutral-500 uppercase">
+              {targetLatestPeriod !== null ? `${academicYearLabel(targetLatestPeriod)} ` : ""}Roll
+            </span>
+          </p>
+          <p className="mt-1 text-3xl leading-none font-semibold text-neutral-900 dark:text-neutral-50">{targetCurrentRoll.toLocaleString()}</p>
+          {targetSparklineValues.length >= 2 && (
+            <div className="mt-2">
+              <Sparkline values={targetSparklineValues} colour={FOCUS_SCHOOL_COLOUR} />
+            </div>
+          )}
+          <div className="mt-1.5">
+            <TrendPill badge={targetRollTrendBadge} startPeriod={startPeriod} />
+          </div>
+        </div>
+      )}
+
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Compared with</h2>
 
-      {/* Compared-with panel round (2026-09-10), item 3: pupils SUMMED across the
-          target + every ticked, profile-loaded school (compareNumbers, computed in
-          DataViewShell over tickedProfiles -- real bug fixed 2026-09-11: this used
-          to be just the target's own figure, so ticking/unticking never moved it --
-          see DataViewShell's own comment), the real schools-in-set count
-          (compareSchoolCount, same fix), and the A3 explanatory sentence underneath
-          -- relocated here from a full-width row below the filter bar
-          (DataViewShell.tsx), which this replaces. */}
+      {/* Compared-with panel round (2026-09-10), item 3, demoted (2026-09-16): the
+          schools-in-set count and the A3 explanatory sentence, now a smaller
+          supporting line under the target's own headline above -- the set's own
+          SUMMED pupil total (compareNumbers.total) and girls/boys split are no
+          longer shown here at all (not part of the A3 mockup this rebuild follows,
+          and not shown anywhere else that wasn't already the case -- confirmed
+          before dropping them, not just assumed unused). compareNumbers itself is
+          still the real gate on this block existing (null only before the target
+          profile has loaded), even though its own .total/.female/.male fields are
+          no longer read here. */}
       {compareNumbers && (
         <div className="mb-3 rounded-md border border-neutral-100 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900/40">
-          <div className="flex items-baseline justify-between gap-3">
-            <div>
-              <p className="text-2xl leading-none font-semibold text-neutral-900 dark:text-neutral-50">{compareNumbers.total.toLocaleString()}</p>
-              <p className="mt-1 text-[11px] tracking-wide text-neutral-500 uppercase">Pupils</p>
-            </div>
-            <p className="text-xs whitespace-nowrap text-neutral-500">{compareSchoolCount.toLocaleString()} schools in this set</p>
-          </div>
+          <p className="text-xs text-neutral-500">{compareSchoolCount.toLocaleString()} schools in this set</p>
           {/* Only a Region/Nation-scale set can have more ticked than profile-loaded
               (DataViewShell's own LARGE_SET_PROFILE_THRESHOLD gate) -- noted
               honestly rather than silently showing a smaller number with no
@@ -480,11 +537,6 @@ export default function ComparatorSidebar({
           {compareSchoolsNotLoaded > 0 && (
             <p className="mt-1 text-xs text-neutral-400">
               +{compareSchoolsNotLoaded.toLocaleString()} more ticked, not yet loaded
-            </p>
-          )}
-          {compareNumbers.female !== null && compareNumbers.male !== null && (
-            <p className="mt-1 text-xs text-neutral-500">
-              {compareNumbers.female.toLocaleString()} girls · {compareNumbers.male.toLocaleString()} boys
             </p>
           )}
           {compareSentence && <p className="mt-2 text-xs text-neutral-500">{compareSentence}</p>}

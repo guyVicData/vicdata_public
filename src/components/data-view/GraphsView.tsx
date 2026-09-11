@@ -46,6 +46,7 @@ import { classifyShape } from "@/lib/shape-classifier";
 import { graphTitlePrefix } from "@/lib/data-view-summary";
 import type { AggregateTrends } from "@/lib/aggregate-trends";
 import SpreadStrip from "./SpreadStrip";
+import TrendPill, { academicYearLabel } from "./TrendPill";
 import RollTrendsChart from "./RollTrendsChart";
 import SortedBarChart from "./SortedBarChart";
 import DivergingBarChart from "./DivergingBarChart";
@@ -58,22 +59,6 @@ import AggregateTrendChart, {
   AGGREGATE_SECTOR_COLOUR,
   type AggregateChartSeries,
 } from "./AggregateTrendChart";
-
-function academicYearLabel(period: number): string {
-  return `${period}/${String(period + 1).slice(2)}`;
-}
-
-function TrendPill({ badge, startPeriod }: { badge: TrendBadge; startPeriod: number }) {
-  if (!badge) return <span className="text-xs text-neutral-400">no {academicYearLabel(startPeriod)} comparison</span>;
-  const arrow = badge.direction === "up" ? "▲" : badge.direction === "down" ? "▼" : "▬";
-  const colour =
-    badge.direction === "up" ? "text-blue-600 dark:text-blue-400" : badge.direction === "down" ? "text-red-600 dark:text-red-400" : "text-neutral-500";
-  return (
-    <span className={`text-xs font-medium ${colour}`}>
-      {arrow} {Math.abs(badge.pctChange).toFixed(0)}% since {academicYearLabel(startPeriod)}
-    </span>
-  );
-}
 
 // 2026-09-08, per direct request: a short prose trend statement for the Combined
 // Roll chart ("growing/declining/broadly stable"), reusing trendBadge()'s own
