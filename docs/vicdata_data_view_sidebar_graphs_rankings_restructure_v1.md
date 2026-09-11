@@ -451,3 +451,168 @@ next time the extension is reachable, before treating Part B as fully done.
 - `src/components/data-view/DataViewShell.tsx` (sector-aggregate fetch + prop)
 
 Commit: `188bb59`.
+
+## Follow-up round (DONE, commit `adf8d19`)
+
+Eight targeted changes on top of Parts A/B/C, requested after live review.
+
+**1. Growth/decline name column widened** — `DivergingBarChart.tsx`'s school-
+name column was a fixed `w-20` (80px), truncating a normal-length real name
+(e.g. "La Sainte Union Catholic Secondary School"). Widened to `w-28
+sm:w-44`, narrower on small screens so the bar area isn't squeezed out. Fixed
+in the one shared component, so it applies to Section 02's Growth/decline
+chart, Section 03's market-share growth/decline tile, and the sector
+fallback alike.
+
+**2. Market share section: dropped the trend-over-time chart, 3-column row**
+— removed `MarketShareTrendChart` (the "Market Share since 2019/20" line
+chart) and its `marketShareByPeriod` computation entirely (confirmed
+`combinedRollTitle`/`CombinedRollChart` used a separate array,
+`combinedByPeriod`, so nothing else broke). The three remaining charts
+(market share this year, market-share growth/decline, combined roll) now
+render in a genuine `lg:grid-cols-3` row instead of the old 2-column
+(trend+combined-roll / two-bars) split, matching the ordering in Guy's own
+original design note ("Graph 5 market share, Graph 6 market share growth,
+Graph 7 combined roll").
+
+**3. Gender split section: removed the stat card, retitled the shape chart**
+— corrected after an initial pass identified the wrong card; confirmed
+directly which one. Removed the "Gender split" card (the bare `59% girls`
+figure + `TrendPill` + the `SpreadStrip` dot-strip — "a very hard one to
+understand"). The Donut (Graph 9) was NOT touched. Retitled the ShapeChart
+card from "Age/gender shape" to "This school's age/gender shape". Section 04
+is now 3 cards in a `lg:grid-cols-3` row (was heading toward an awkward
+2-then-1 wrap at 4 cards in a 2-column grid).
+
+**4. Accordions: only Section 01 open by default** — `closedSections`'
+initial value changed from an empty `Set()` to `new Set(["02", "03", "04"])`
+— "user opens up and explores." No other accordion behaviour changed.
+
+**5. Rankings: removed % girls / % boarding / market share tables** — in
+both ranking paths. The normal (small/medium set) path: `METRICS` trimmed to
+a single `roll` entry, the `otherMetrics` render loop and the whole
+`MetricRanking` component deleted. The server-side Region/Nation large-set
+path: `LARGE_SET_METRICS` trimmed to `roll` only (market share was never
+offered there — `region_nation_rank()`'s own migration comment already
+explains why). Confirmed with Guy this applied to both paths before
+building. Cleaned up now-dead imports (`memberSetMarketShare`,
+`LARGE_SET_THRESHOLD`, `NEIGHBOUR_WINDOW`) and the `groupTotal`
+computation/parameter, which only ever existed to feed market share's
+`getValue`.
+
+**6. Real bug fixed: Rankings never applied the zero-pupil exclusion rule**
+— `GraphsView.tsx` has always excluded a school with zero real pupils under
+the active filter (target kept unconditionally); `RankingsView.tsx` had no
+equivalent, so such a school ranked dead last at a real `0` instead of being
+excluded (`rollMetric.getValue` returns a real `0`, not `null`, and
+`rankDescendingWithTies` only drops nulls). Added the identical
+`groupInScope` computation, threaded through `rollEntries`, `growthEntries`,
+`rankAcrossPeriods`, and `OverviewTiles`. Predates this round — not a
+regression from Parts A–C, just a gap Rankings never got.
+
+**7. Style: "Top 10"/"Bottom 3" in the vicdata gold** — new shared
+`ChunkHeading` component (`RankingsView.tsx`), used by both `RankTable`
+(C2/C4) and `ComparisonOverTimeTable` (C3), the two places
+`chunkedRankingDisplay`'s chunks render. Pulls `TAG_COLOURS.Focus.light[1]`/
+`.dark[1]` — the same gold `ShapeIcon.tsx`/`SurroundingRollBarChart.tsx`
+already use — into a scoped `<style>` + CSS-custom-property block, the same
+theme-aware pattern `ShapeChart.tsx`/`GenderSplitCard`'s `Donut` already
+establish, rather than a hand-rolled hex or a Tailwind arbitrary-value class
+(which can't pick up a runtime-interpolated hex anyway). "Around this
+school" stays plain neutral grey, per direct instruction — only the
+top/bottom two get the accent.
+
+**8. Real design-miss fixed: the >20-school sector fallback summed the
+wrong thing entirely** — flagged explicitly as a design miss, not a build
+defect: the code did exactly what it was built to do in Part B, and Part
+B's own verification confirmed it did — both the build and the report
+agreed on the same wrong reading of the original design note. The bug:
+`fetchSectorAggregatesForMany()` queried `roll_aggregates` at
+`scope="sector"` — the *same table* the public site's real Regional/
+National cards read, i.e. genuine national totals for that sector (all
+Independent schools in England), nothing to do with the member's own
+comparator set. Viewing a real Camden-area set above 20 schools showed what
+looked like whole-country numbers under "Market share, 2025/26", and the
+active phase/gender/boarding filter was silently ignored throughout (
+`roll_aggregates` only carries a fixed 5-band breakdown) — the old
+`SectorFallbackNote` caption even stated this as an accepted trade-off, when
+it was really a symptom of the wrong data source.
+
+Fixed to sum the real schools actually in the member's own `groupInScope`,
+bucketed by `establishmentTypeGroup`, using the exact same filtered figures
+(`perSchoolFilteredSeries` for roll, the same `filteredCount()` pairing for
+gender) every other chart on this page already computes — no fetch needed,
+since every school in this size range (20 < N < 200) already has a real,
+loaded profile. The target's own fallback figure switched from a deliberate
+whole-school basis (which only existed to match `roll_aggregates`' own
+whole-school-only shape) to the same filtered `targetCurrent`/`targetAnchor`
+every other figure on this page already reads, so the active filter now
+genuinely moves the target's own bar too, like-for-like against the equally
+filtered sector sums. `SectorFallbackNote`'s caption was rewritten to match
+(no longer claims filters are ignored). The now-dead server round trip was
+removed entirely: `fetchSectorAggregatesForMany()` and the
+`genderMale`/`genderFemale` fields it needed on `AggregateTrendPoint`
+(`aggregate-trends.ts`), the `sectors` query param
+(`aggregate-trends/route.ts` — the route's other job, the existing single-
+sector/region/national `trends` payload `isLargeSet`'s own chart uses, is
+untouched), and `DataViewShell.tsx`'s corresponding fetch effect, state, and
+prop (including the Rules-of-Hooks positioning that effect needed — moot
+now that the effect is gone entirely). `GRAPH_SECTOR_FALLBACK_THRESHOLD`
+itself stays, still needed to decide when to switch views, just no longer
+drives a fetch.
+
+### Verification
+
+Real login, real testing-school switch (urn 100053), 24 real comparator
+schools, live local server.
+
+- **Item 6**: a real Post-16 filter produced 18 genuine zero-pupil schools
+  in the group (real data — schools like Sarum Hall, St Christopher's, The
+  Hall School genuinely have no Post-16 provision). `groupInScope` correctly
+  excluded all 18 (7 of 25 remained), while the target stayed included
+  unconditionally. The resulting ranking showed only the 7 real schools with
+  Post-16 data. A synthetic 25-row padding of this real ranked list (to
+  force `chunkedRankingDisplay`'s >20 branch) confirmed "Bottom 3" contained
+  only real, non-zero schools (150/26/17 pupils) — none of the excluded
+  zero-pupil schools leaked in.
+- **Item 8**: the same 23-school real in-scope group crossed the 20-school
+  threshold. Real per-sector sums came back as genuinely modest numbers —
+  Independent schools: 5,897 across 19 real schools; LA-maintained: 1,321
+  across 2; Special schools: 138 across 1 — not the hundreds-of-thousands
+  national totals the old version produced for the identical group. A
+  Senior+Girls filter changed every sector's sum (Independent
+  5,897→995, LA-maintained 1,321→619, Special 138→44) and the target's own
+  figure (1,252→450, the same real filtered figure independently confirmed
+  in Parts A/B/C for this school).
+- `tsc`/`lint`/`build` all clean; lint at the same 7-problem pre-existing
+  baseline.
+
+**Not independently verified this round**: items 1–4 and 7 are layout/CSS/
+default-state changes with no real-data component a script can check — the
+Chrome extension was unreachable again this session (checked at the start of
+this round), so these are confirmed by code review only, not a live
+screenshot. Worth a visual pass next time the extension is reachable.
+
+### A note on item 2's "which real element" reading
+
+Item 2's own instruction named the exact chart to remove by its rendered
+title ("MARKET SHARE SINCE 2019/20"), which maps unambiguously to
+`MarketShareTrendChart` under `marketShareTitle` in the code — no
+alternative reading was available. The residual judgement call was mapping
+Guy's own original design-note wording ("Graph 5/6/7") onto the code's
+already-established Graph numbering from Part B's own comments
+(`marketShareBarPoints` → Graph 5, `marketShareGrowthPoints` → Graph 6,
+`CombinedRollChart` → Graph 7) — confident in this mapping since Part B's
+own code comments already used exactly these numbers for exactly these
+elements.
+
+### Files changed
+
+- `src/components/data-view/DivergingBarChart.tsx` (item 1)
+- `src/components/data-view/GraphsView.tsx` (items 2, 3, 4, 8)
+- `src/components/data-view/RankingsView.tsx` (items 5, 6, 7)
+- `src/lib/aggregate-trends.ts` (item 8, reverted)
+- `src/app/api/data-view/aggregate-trends/route.ts` (item 8, reverted)
+- `src/components/data-view/DataViewShell.tsx` (item 8, reverted)
+
+Commit: `adf8d19`.
