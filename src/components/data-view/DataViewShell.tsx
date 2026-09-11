@@ -92,10 +92,42 @@ function isRegionScope(activeSet: SetOption | null): boolean {
   return !!activeSet && activeSet.kind === "recipe" && activeSet.key === "ons_region";
 }
 
+// Map round (2026-09-12), Part 2 Stage B: same "recipe" narrowing, "nation" is the
+// key buildRegionOrNationComparatorSet gives the Nation scope recipe.
+function isNationScope(activeSet: SetOption | null): boolean {
+  return !!activeSet && activeSet.kind === "recipe" && activeSet.key === "nation";
+}
+
+// school_region_nation's own whole-country pseudo-"region" code for Wales (confirmed
+// live earlier this round) -- there is no real ONS sub-national region for Wales, so
+// this is the one real region_code value every Welsh school's own region membership
+// already resolves to, reused here as the permanent "region" a Welsh Nation-scope
+// target's LA-tier drill-down fetches, no zoom detection needed.
+const WALES_PSEUDO_REGION_CODE = "W92000004";
+
 function laChoroplethRequestKey(targetUrn: string, filters: DataViewFilterState): string {
   const sectors = Array.from(filters.sector).sort().join(",");
   const phaseBands = Array.from(filters.phaseBands).sort().join(",");
   return `${targetUrn}|${sectors}|${phaseBands}|${boardingModeForFilters(filters) ?? ""}|${singleGenderFilter(filters) ?? ""}`;
+}
+
+// Map round (2026-09-12), Part 2 Stage B: same shape as laChoroplethRequestKey, no
+// regionCode component -- the region tier IS "every region," there's nothing to
+// scope to.
+function nationRegionChoroplethRequestKey(targetUrn: string, filters: DataViewFilterState): string {
+  const sectors = Array.from(filters.sector).sort().join(",");
+  const phaseBands = Array.from(filters.phaseBands).sort().join(",");
+  return `${targetUrn}|${sectors}|${phaseBands}|${boardingModeForFilters(filters) ?? ""}|${singleGenderFilter(filters) ?? ""}`;
+}
+
+// Map round (2026-09-12), Part 2 Stage B: the LA-tier drill-down within Nation scope
+// is keyed by regionCode too (unlike laChoroplethRequestKey, which only ever fetches
+// the TARGET's own single region and never needs one) -- refetches whenever the
+// member zooms into a DIFFERENT region, not just when filters change.
+function nationDrilldownRequestKey(targetUrn: string, regionCode: string, filters: DataViewFilterState): string {
+  const sectors = Array.from(filters.sector).sort().join(",");
+  const phaseBands = Array.from(filters.phaseBands).sort().join(",");
+  return `${targetUrn}|${regionCode}|${sectors}|${phaseBands}|${boardingModeForFilters(filters) ?? ""}|${singleGenderFilter(filters) ?? ""}`;
 }
 
 // Payload-cleanup round (2026-09-09): region-nation-set's own API response now sends
@@ -292,6 +324,31 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // Same keyed-cache discipline as largeSetRank/aggregateTrends above.
   const [laChoropleth, setLaChoropleth] = useState<{ key: string; data: LaChoroplethEntry[] } | null>(null);
   const [laChoroplethLoading, setLaChoroplethLoading] = useState(false);
+  // Map round (2026-09-12), Part 2 Stage B: the target's own real nation ("england" |
+  // "wales" | null), captured once here (Step 2's own default-lists fetch already
+  // resolves it, previously only baked into nationOption's own label string) -- needed
+  // as a real value, not string-parsed, to decide which of Nation scope's two modes
+  // applies (English targets get the region tier + zoom-drill; Wales has no ONS region
+  // subdivision at all, so a Welsh target's Nation scope goes straight to the LA tier
+  // -- see nationDrilldownLaChoropleth's own fetch effect).
+  const [targetNation, setTargetNation] = useState<"england" | "wales" | null>(null);
+  // Nation scope's region tier (English targets only) -- same keyed-cache discipline
+  // as laChoropleth above, independent of zoom (cheap, ~9 rows, kept ready so zooming
+  // back out never needs a refetch).
+  const [nationRegionChoropleth, setNationRegionChoropleth] = useState<{ key: string; data: LaChoroplethEntry[] } | null>(null);
+  const [nationRegionChoroplethLoading, setNationRegionChoroplethLoading] = useState(false);
+  // Which region the map is currently "zoomed into" within Nation scope -- reported
+  // by MapView's own zoom-detection (English targets) via onNationZoomedRegionChange,
+  // or set once, permanently, to Wales's own whole-country pseudo-region code for a
+  // Welsh target (see the effect below). null means "region tier, zoomed out" (English
+  // targets only -- a Welsh target is never null once resolved).
+  const [nationZoomedRegionCode, setNationZoomedRegionCode] = useState<string | null>(null);
+  // The LA tier for whichever region nationZoomedRegionCode names -- reuses the exact
+  // SAME /api/data-view/region-la-choropleth endpoint laChoropleth (Region scope)
+  // already calls, just with an explicit regionCode instead of letting it resolve the
+  // target's own.
+  const [nationDrilldownLaChoropleth, setNationDrilldownLaChoropleth] = useState<{ key: string; data: LaChoroplethEntry[] } | null>(null);
+  const [nationDrilldownLoading, setNationDrilldownLoading] = useState(false);
 
   const [filters, setFilters] = useState<DataViewFilterState>(emptyDataViewFilterState());
   const [activeView, setActiveView] = useState<ViewKey>("map");
@@ -424,6 +481,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
           const nationLabel = body.nation === "england" ? "England Schools" : "Wales Schools";
           setNationOption({ kind: "recipe", key: "nation", label: nationLabel, schools: [], lazy: true });
         }
+        setTargetNation(body.nation);
 
         type SavedSetRow = {
           id: string;
@@ -733,6 +791,110 @@ export default function DataViewShell({ urn }: { urn: string }) {
     };
   }, [authToken, target, activeSet, filters, laChoropleth]);
 
+  // Map round (2026-09-12), Part 2 Stage B: Nation scope's own region-tier data,
+  // English targets only (fetchNationRegionChoropleth's own comment explains why
+  // Wales has no equivalent). Independent of zoom -- fetched once per filter
+  // combination and kept ready, so zooming back out from the LA-tier drill-down never
+  // needs a refetch.
+  useEffect(() => {
+    if (!authToken || !target || !isNationScope(activeSet) || targetNation !== "england") return;
+    const requestKey = nationRegionChoroplethRequestKey(target.urn, filters);
+    if (nationRegionChoropleth?.key === requestKey) return;
+    let cancelled = false;
+    (async () => {
+      setNationRegionChoroplethLoading(true);
+      try {
+        const params = new URLSearchParams({ urn: target.urn });
+        const sectors = Array.from(filters.sector).join(",");
+        const phaseBands = Array.from(filters.phaseBands).join(",");
+        const boardingMode = boardingModeForFilters(filters);
+        const gender = singleGenderFilter(filters);
+        if (sectors) params.set("sectors", sectors);
+        if (phaseBands) params.set("phaseBands", phaseBands);
+        if (boardingMode) params.set("boardingMode", boardingMode);
+        if (gender) params.set("gender", gender);
+        const res = await fetch(`/api/data-view/nation-region-choropleth?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error("[DataViewShell] nation-region-choropleth fetch failed:", res.status, await res.text().catch(() => ""));
+          return;
+        }
+        const body = (await res.json()) as { entries: LaChoroplethEntry[] };
+        if (cancelled) return;
+        setNationRegionChoropleth({ key: requestKey, data: body.entries });
+      } catch (e) {
+        if (!cancelled) console.error("[DataViewShell] unexpected error fetching Nation region tier:", e);
+      } finally {
+        if (!cancelled) setNationRegionChoroplethLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, target, activeSet, targetNation, filters, nationRegionChoropleth]);
+
+  // Map round (2026-09-12), Part 2 Stage B: the real region a Nation-scope target's
+  // LA-tier drill-down should show, DERIVED at render time rather than synchronously
+  // reset in an effect (same discipline the large-set ranking effect's own comment
+  // documents -- "rather than clearing state synchronously in the effect body...
+  // let render-time comparison decide instead"). nationZoomedRegionCode itself (raw
+  // state) is ONLY ever written by MapView's own zoom-detection callback (English
+  // targets) -- Wales and "not Nation scope" are both handled here, by DERIVING null
+  // or the Wales pseudo-region rather than mutating state for them.
+  const effectiveNationZoomedRegionCode = !isNationScope(activeSet)
+    ? null
+    : targetNation === "wales"
+      ? WALES_PSEUDO_REGION_CODE
+      : nationZoomedRegionCode;
+
+  // Map round (2026-09-12), Part 2 Stage B: the LA tier for whichever region
+  // effectiveNationZoomedRegionCode currently names -- reuses the exact same
+  // /api/data-view/region-la-choropleth endpoint Region scope's own laChoropleth
+  // fetch above calls, just with an explicit regionCode (Stage A's own version
+  // always lets it resolve the target's own region instead). Works identically for
+  // an English target zoomed into some region, or a Welsh target (permanently
+  // resolving to its own W92000004 pseudo-region above) -- one fetch effect, not two.
+  useEffect(() => {
+    if (!authToken || !target || effectiveNationZoomedRegionCode === null) return;
+    const requestKey = nationDrilldownRequestKey(target.urn, effectiveNationZoomedRegionCode, filters);
+    if (nationDrilldownLaChoropleth?.key === requestKey) return;
+    let cancelled = false;
+    (async () => {
+      setNationDrilldownLoading(true);
+      try {
+        const params = new URLSearchParams({ urn: target.urn, regionCode: effectiveNationZoomedRegionCode });
+        const sectors = Array.from(filters.sector).join(",");
+        const phaseBands = Array.from(filters.phaseBands).join(",");
+        const boardingMode = boardingModeForFilters(filters);
+        const gender = singleGenderFilter(filters);
+        if (sectors) params.set("sectors", sectors);
+        if (phaseBands) params.set("phaseBands", phaseBands);
+        if (boardingMode) params.set("boardingMode", boardingMode);
+        if (gender) params.set("gender", gender);
+        const res = await fetch(`/api/data-view/region-la-choropleth?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error("[DataViewShell] nation-scope LA drilldown fetch failed:", res.status, await res.text().catch(() => ""));
+          return;
+        }
+        const body = (await res.json()) as { entries: LaChoroplethEntry[] };
+        if (cancelled) return;
+        setNationDrilldownLaChoropleth({ key: requestKey, data: body.entries });
+      } catch (e) {
+        if (!cancelled) console.error("[DataViewShell] unexpected error fetching Nation-scope LA drilldown:", e);
+      } finally {
+        if (!cancelled) setNationDrilldownLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, target, effectiveNationZoomedRegionCode, filters, nationDrilldownLaChoropleth]);
+
   useEffect(() => {
     // Only ever read while loadState is "checking"/"loading" (see that render branch
     // below) -- no need to explicitly reset it back to false once loading finishes,
@@ -812,6 +974,52 @@ export default function DataViewShell({ urn }: { urn: string }) {
     },
     [authToken, target],
   );
+
+  // Map round (2026-09-12), Part 2 Stage B: clicking a REGION polygon on Nation
+  // scope's own region tier re-scopes the comparator set the same way the existing
+  // "Region" button already does -- same region_nation_set()/
+  // buildRegionOrNationComparatorSet() machinery (region-nation-set/route.ts's own
+  // new optional regionCode/regionName params), just supplying the CLICKED region
+  // rather than the target's own resolved home region. Deliberately does NOT touch
+  // regionOption -- that state is the target's own "[Home region] Schools" button,
+  // which a click on some OTHER region shouldn't silently repoint. Landing on
+  // activeSet.key "ons_region" is what then makes isRegionScope(activeSet) true,
+  // which is also what hands the LA-tier choropleth fetch (below) the clicked
+  // region's own code -- the click-through and the render layer converge on Stage
+  // A's exact existing LA-tier view for free, no new rendering path needed for this
+  // case specifically (only the zoom-driven drill-in needed new rendering).
+  const handleRegionPolygonClick = useCallback(
+    async (regionCode: string, regionName: string) => {
+      if (!authToken || !target) return;
+      try {
+        const params = new URLSearchParams({ urn: target.urn, scope: "region", regionCode, regionName });
+        const res = await fetch(`/api/data-view/region-nation-set?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as { key?: string; label?: string; rows: RegionNationRow[] | null };
+        if (!body.rows || !body.key || !body.label) return;
+        const unpacked = body.rows.map(unpackRegionNationRow);
+        setLargeSetPoints((prev) => {
+          const next = new Map(prev);
+          for (const u of unpacked) next.set(u.point.urn, u.point);
+          return next;
+        });
+        selectSet({ kind: "recipe", key: body.key, label: body.label, schools: unpacked.map((u) => u.entry) });
+      } catch (e) {
+        console.error("[DataViewShell] unexpected error re-scoping to region:", e);
+      }
+    },
+    [authToken, target],
+  );
+
+  // Map round (2026-09-12), Part 2 Stage B: MapView's own zoom-driven region-tier
+  // detection reports up through this stable callback -- a plain state setter, no
+  // extra logic needed here (the LA-drilldown fetch effect reacts to the state
+  // change via effectiveNationZoomedRegionCode).
+  const handleNationZoomedRegionChange = useCallback((regionCode: string | null) => {
+    setNationZoomedRegionCode(regionCode);
+  }, []);
 
   // Compared-with panel round (2026-09-10), item 2: switches the active Nearest-10
   // recipe (ordinary <-> boarding-quintile) the moment the shared boarding filter
@@ -1025,7 +1233,13 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // (a filter-driven refetch shows the spinner over the still-visible previous
   // polygons, same "spinner overlays the still-visible map" convention this signal
   // already establishes for every other source above).
-  const mapLoading = profilesLoading || regionNationLoadingScope !== null || selectingSet || (isRegionScope(activeSet) && laChoroplethLoading);
+  const mapLoading =
+    profilesLoading ||
+    regionNationLoadingScope !== null ||
+    selectingSet ||
+    (isRegionScope(activeSet) && laChoroplethLoading) ||
+    (isNationScope(activeSet) && (nationRegionChoroplethLoading || nationDrilldownLoading));
+
   const mapLoadingLabel =
     regionNationLoadingScope !== null ? "Loading schools across this scope…" : (selectingSetLabel ?? "Loading schools…");
   // 2026-09-07, UX refinements round 2, P3 item 7: the sector filter is a
@@ -1319,10 +1533,22 @@ export default function DataViewShell({ urn }: { urn: string }) {
                     loadingLabel={mapLoadingLabel}
                     // Map round (2026-09-12), Part 2 Stage A: only a genuinely
                     // Region-scope active set gets real choropleth data -- every other
-                    // recipe (including Nation, Stage B) gets null here and MapView's
-                    // existing dot-cluster rendering stays completely unchanged.
+                    // recipe gets null here and MapView's existing dot-cluster
+                    // rendering stays completely unchanged.
                     laChoropleth={isRegionScope(activeSet) ? (laChoropleth?.data ?? null) : null}
                     onLaPolygonClick={handleLaPolygonClick}
+                    // Map round (2026-09-12), Part 2 Stage B: only Nation scope for an
+                    // English target ever gets real region-tier data -- a Welsh target
+                    // goes straight to nationDrilldownLaChoropleth below instead
+                    // (that fetch effect's own comment explains why).
+                    nationRegionChoropleth={isNationScope(activeSet) && targetNation === "england" ? (nationRegionChoropleth?.data ?? null) : null}
+                    // Gated on effectiveNationZoomedRegionCode !== null (not just
+                    // isNationScope) -- zooming back out to null must immediately
+                    // revert to the region-tier view above, not keep showing a
+                    // previously-zoomed region's stale LA data.
+                    nationDrilldownLaChoropleth={effectiveNationZoomedRegionCode !== null ? (nationDrilldownLaChoropleth?.data ?? null) : null}
+                    onNationZoomedRegionChange={handleNationZoomedRegionChange}
+                    onRegionPolygonClick={handleRegionPolygonClick}
                     filters={filters}
                     activeView={activeView}
                     onChangeView={setActiveView}

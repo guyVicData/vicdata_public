@@ -99,6 +99,21 @@ const CLUSTER_THRESHOLD = 200;
 // judgement and log it" convention CLUSTER_THRESHOLD above was set under.
 const CLUSTER_DISABLE_ZOOM = 14;
 
+// Map round (2026-09-12), Part 2 Stage B: the zoom level at which Nation scope
+// switches from the region tier to the LA tier for whichever region the map is
+// centred on. Grounded in real geometry rather than picked blind (no browser access
+// to eyeball it live this round -- see docs/vicdata_data_view_open_questions.md for
+// the full working): using Leaflet's own fitBounds formula against this session's
+// real stored polygon bounding boxes, a typical viewport fits the whole of England at
+// zoom ~6, a single region (South East and North East both computed the same) at zoom
+// ~8, and a single LA (Surrey) at zoom ~10. 8 is picked as the point a member has
+// genuinely zoomed past "looking at the whole country" into "looking at one area" --
+// comfortably below CLUSTER_DISABLE_ZOOM/the single-school opening zoom (11), keeping
+// this ordering consistent (region tier -> LA tier -> [never individual schools, per
+// direct instruction] at increasing zoom). A real judgement call, not a measured
+// screenshot -- flagged as such, not silently asserted as verified-by-eye.
+const NATION_REGION_TIER_ZOOM_THRESHOLD = 8;
+
 // Real bug found live (2026-10-09): a single wrongly-geocoded school (NHS Choices
 // College, URN 144813 -- already a known, documented bad GIAS coordinate from an
 // earlier round, ~400km north of where its own la_name says it should be; that fix
@@ -247,6 +262,10 @@ export default function MapView({
   loadingLabel,
   laChoropleth,
   onLaPolygonClick,
+  nationRegionChoropleth,
+  nationDrilldownLaChoropleth,
+  onNationZoomedRegionChange,
+  onRegionPolygonClick,
   filters,
   activeView,
   onChangeView,
@@ -282,11 +301,37 @@ export default function MapView({
   largeSetPoints: Map<string, RegionNationPoint>;
   // Map round (2026-09-12), Part 2 Stage A: real per-LA choropleth data, non-null
   // only when the active comparator set is genuinely Region scope (DataViewShell's
-  // own gate on activeSet.key === "ons_region") -- null for every other recipe
-  // (including Nation, Stage B), which keeps this component's existing dot-cluster
-  // rendering completely unchanged for them.
+  // own gate on activeSet.key === "ons_region") -- null for every other recipe,
+  // which keeps this component's existing dot-cluster rendering completely
+  // unchanged for them. Also reused directly by Stage B for the LA-tier drill-down
+  // within Nation scope (see onLaPolygonClick/nationDrilldownLaChoropleth below) --
+  // same click-through, same rendering conventions, one geometry tier up.
   laChoropleth: LaChoroplethEntry[] | null;
   onLaPolygonClick: (laName: string) => void;
+  // Map round (2026-09-12), Part 2 Stage B: Nation scope's region tier (English
+  // regions only -- see fetchNationRegionChoropleth's own comment for Wales). Non-null
+  // only when the active set is genuinely Nation scope AND the target's own nation is
+  // England (DataViewShell's own gate) -- a Welsh Nation-scope target goes straight to
+  // the LA tier instead (nationDrilldownLaChoropleth, permanently set rather than
+  // zoom-driven -- see DataViewShell's own comment on why).
+  nationRegionChoropleth: LaChoroplethEntry[] | null;
+  // The LA tier for whichever region is currently "in view" within Nation scope --
+  // zoom-driven for an English target (this component's own onNationZoomedRegionChange
+  // reports which region, DataViewShell fetches its LA rollup and returns it here),
+  // permanently set to Wales's own LA tier for a Welsh target. null means "show the
+  // region tier instead" (England, zoomed out) or "not applicable" (every other scope).
+  nationDrilldownLaChoropleth: LaChoroplethEntry[] | null;
+  // This component's own zoom-driven region-tier-vs-LA-tier detection (nearest region
+  // centroid to the map's current centre, once zoomed in past a real, geometry-
+  // grounded threshold -- see NATION_REGION_TIER_ZOOM_THRESHOLD's own comment) reported
+  // up so DataViewShell can fetch that region's LA-tier detail on demand, not all nine
+  // up front. Never called for a Welsh target (nationRegionChoropleth stays null for
+  // Wales, so the zoom-detection effect below never activates for it either).
+  onNationZoomedRegionChange: (regionCode: string | null) => void;
+  // Region-tier click-through -- same principle as onLaPolygonClick, one tier up:
+  // reuses the existing "Region" button's own region_nation_set machinery
+  // (DataViewShell's own handleRegionPolygonClick), not a new scoping mechanism.
+  onRegionPolygonClick: (regionCode: string, regionName: string) => void;
   filters: DataViewFilterState;
   activeView: ViewKey;
   onChangeView: (v: ViewKey) => void;
@@ -311,6 +356,21 @@ export default function MapView({
   // cluster/non-cluster split above already establishes) rather than drawing polygons
   // into an existing group whose clearLayers() cadence is tuned for markers.
   const choroplethGroupRef = useRef<LayerGroup | null>(null);
+  // Map round (2026-09-12), Part 2 Stage B: each region polygon's own centre (from its
+  // real drawn bounds, cheap and good enough for a tier-selection heuristic -- not a
+  // precise point-in-polygon test), populated whenever the region tier is drawn,
+  // cleared whenever it isn't -- read by the separate zoom-detection effect below to
+  // find "whichever region the map is currently centred nearest to" without a second
+  // geometry library.
+  const nationRegionCentroidsRef = useRef<Map<string, { lat: number; lng: number }>>(new Map());
+  const lastReportedZoomedRegionRef = useRef<string | null>(null);
+  // Fit-to-bounds happens once per Nation-scope choropleth "session" (entering Nation
+  // scope, or a filter change that redraws it), never on every zoom-driven drill in/
+  // out -- an auto-fit there would fight the member's own manual zoom gesture, the
+  // exact thing the zoom-driven tier switch is supposed to feel responsive to, not
+  // fight. Reset to false whenever neither Nation tier is active (see the drawing
+  // effect's own top).
+  const nationChoroplethEverFitRef = useRef(false);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const topRightStackRef = useRef<HTMLDivElement | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -515,15 +575,37 @@ export default function MapView({
   const minV = values.length ? Math.min(...values) : 0;
   const maxV = values.length ? Math.max(...values) : 0;
 
-  // Map round (2026-09-12), Part 2 Stage A: the Current Rolls legend needs the SAME
-  // min/max the drawing effect's own polygon colouring normalises against -- computed
-  // once here (render time), not duplicated inside the effect, so the legend and the
-  // actual polygon fills can never silently disagree.
-  const laChoroplethRollRange = useMemo(() => {
-    if (!laChoropleth) return { min: 0, max: 0 };
-    const vals = laChoropleth.filter((e) => e.schoolCount > 0).map((e) => e.currentTotal);
+  // Map round (2026-09-12), Part 2 Stage A + B: the ONE real "what does this map show
+  // right now" choropleth decision, computed once here (render time) and reused by
+  // both the drawing effect and the legend/caption JSX below, so they can never
+  // silently disagree about which tier/entries/click-handler is actually active.
+  // Priority order: Region scope's own LA tier (Stage A, unconditional) -> Nation
+  // scope's LA-tier drill-down (Stage B, once zoomed into a region, or permanently for
+  // a Welsh target) -> Nation scope's region tier (Stage B, zoomed out) -> null (every
+  // other recipe, existing dot rendering untouched).
+  const activeChoropleth = useMemo(():
+    | { entries: LaChoroplethEntry[]; onEntryClick: (entry: LaChoroplethEntry) => void; source: "region-scope-la" | "nation-drilldown-la" | "nation-region" }
+    | null => {
+    if (laChoropleth !== null) {
+      return { entries: laChoropleth, onEntryClick: (e) => onLaPolygonClick(e.laName), source: "region-scope-la" };
+    }
+    if (nationDrilldownLaChoropleth !== null) {
+      return { entries: nationDrilldownLaChoropleth, onEntryClick: (e) => onLaPolygonClick(e.laName), source: "nation-drilldown-la" };
+    }
+    if (nationRegionChoropleth !== null) {
+      return { entries: nationRegionChoropleth, onEntryClick: (e) => onRegionPolygonClick(e.gssCode, e.laName), source: "nation-region" };
+    }
+    return null;
+  }, [laChoropleth, nationRegionChoropleth, nationDrilldownLaChoropleth, onLaPolygonClick, onRegionPolygonClick]);
+
+  // Same min-max-of-the-current-view convention as the dot map's own values/minV/maxV
+  // above -- computed once here so the drawing effect's polygon colouring and the
+  // Current Rolls legend can never silently disagree.
+  const activeChoroplethRollRange = useMemo(() => {
+    if (!activeChoropleth) return { min: 0, max: 0 };
+    const vals = activeChoropleth.entries.filter((e) => e.schoolCount > 0).map((e) => e.currentTotal);
     return { min: vals.length ? Math.min(...vals) : 0, max: vals.length ? Math.max(...vals) : 0 };
-  }, [laChoropleth]);
+  }, [activeChoropleth]);
 
   useEffect(() => {
     if (
@@ -546,13 +628,14 @@ export default function MapView({
     const cs = getComputedStyle(rootRef.current);
     const tagColour = (tag: string) => cs.getPropertyValue(cssVarNameForTag(tag)).trim() || "#9ca3af";
 
-    // Map round (2026-09-12), Part 2 Stage A: a Region-scope active set renders LA
+    // Map round (2026-09-12), Part 2 Stage A + B: an active choropleth tier (Region
+    // scope's LA tier, or Nation scope's region/LA-drilldown tiers) renders real
     // polygons instead of school markers, entirely -- "never gets to the individual
     // school level," per direct instruction, so this branch skips the distance ring,
     // target ring/badge and every per-school marker below, not just the school dots.
-    // Every other recipe (including Nation, Stage B) never enters this branch at all
-    // (laChoropleth is null for them), so their existing rendering is untouched.
-    if (laChoropleth !== null) {
+    // Every other recipe never enters this branch at all (activeChoropleth is null
+    // for them), so their existing rendering is untouched.
+    if (activeChoropleth !== null) {
       group.clearLayers();
       schoolsGroup.clearLayers();
       clusterGroup.clearLayers();
@@ -561,26 +644,32 @@ export default function MapView({
       if (map.hasLayer(clusterGroup)) map.removeLayer(clusterGroup);
       if (!map.hasLayer(choroplethGroup)) map.addLayer(choroplethGroup);
 
-      // "Current Rolls" mode normalises against the min/max of LAs that actually have
-      // real matching data in THIS view -- same min-max-of-the-current-set convention
-      // the dot map's own radiusFor/values already applies, not a fixed national scale.
-      // Computed once at render time (laChoroplethRollRange, above) and reused here so
-      // the legend and the actual polygon fills can never silently disagree.
-      const { min: rollMin, max: rollMax } = laChoroplethRollRange;
+      if (activeChoropleth.source !== "nation-region") {
+        nationRegionCentroidsRef.current = new Map();
+      }
+
+      // "Current Rolls" mode normalises against the min/max of LAs/regions that
+      // actually have real matching data in THIS view -- same min-max-of-the-
+      // current-set convention the dot map's own radiusFor/values already applies,
+      // not a fixed national scale. Computed once at render time
+      // (activeChoroplethRollRange, above) and reused here so the legend and the
+      // actual polygon fills can never silently disagree.
+      const { min: rollMin, max: rollMax } = activeChoroplethRollRange;
 
       const polyBoundPoints: [number, number][] = [];
 
-      for (const entry of laChoropleth) {
-        // A gss_code the rollup returned but with no stored boundary at all (the 7
-        // known legacy Pre-LGR crosswalk codes -- la_boundaries's own migration
-        // comment) genuinely has no shape to draw -- skipped, not an error, same
-        // honest-absence discipline as every other real gap in this feature.
+      for (const entry of activeChoropleth.entries) {
+        // A gss_code the rollup returned but with no stored boundary at all (LA
+        // tier: the 7 known legacy Pre-LGR crosswalk codes; region tier: none
+        // expected, all 9 real English regions are stored) genuinely has no shape
+        // to draw -- skipped, not an error, same honest-absence discipline as every
+        // other real gap in this feature.
         if (!entry.geometry) continue;
 
         // schoolCount === 0: genuinely no schools match the active filter combination
-        // in this LA -- rendered hollow (no fill, dashed grey outline), NEVER a
-        // misleading zero-value polygon at the colour scale's low end, per the
-        // handoff's own explicit honesty requirement.
+        // in this LA/region -- rendered hollow (no fill, dashed grey outline), NEVER
+        // a misleading zero-value polygon at the colour scale's low end, per the
+        // handoff's own explicit honesty requirement -- identical at both tiers.
         const hasData = entry.schoolCount > 0;
         let fillColour = "#9ca3af";
         let fillOpacity = 0;
@@ -592,9 +681,10 @@ export default function MapView({
                 ? ((entry.currentTotal - entry.anchorTotal) / entry.anchorTotal) * 100
                 : null;
             // No real anchor-period comparison available (boarding mode active, or
-            // this LA's schools are too new to have 2019 data) -- honest neutral
-            // colour, same "genuinely no comparison" convention the dot map's own
-            // hasAnchor check already applies, not a fabricated 0% green/amber.
+            // this LA/region's schools are too new to have 2019 data) -- honest
+            // neutral colour, same "genuinely no comparison" convention the dot
+            // map's own hasAnchor check already applies, not a fabricated 0% green/
+            // amber -- identical at both tiers.
             fillColour = pctChange !== null ? trendColour(pctChange) : "#9ca3af";
             fillOpacity = pctChange !== null ? 0.75 : 0.35;
           } else {
@@ -622,11 +712,12 @@ export default function MapView({
                   : ""
               }`
             : `${entry.currentTotal.toLocaleString()} pupils`;
+        const clickHint = activeChoropleth.source === "nation-region" ? "zoom or click to drill into" : "click to compare with";
         layer.bindTooltip(
-          `<div style="font-size:12px"><strong>${escapeHtml(entry.laName)}</strong><br/>${statLabel}<br/><em>click to compare with ${escapeHtml(entry.laName)}</em></div>`,
+          `<div style="font-size:12px"><strong>${escapeHtml(entry.laName)}</strong><br/>${statLabel}<br/><em>${clickHint} ${escapeHtml(entry.laName)}</em></div>`,
           { sticky: true },
         );
-        layer.on("click", () => onLaPolygonClick(entry.laName));
+        layer.on("click", () => activeChoropleth.onEntryClick(entry));
         layer.eachLayer((l) => {
           (l as unknown as { getElement?: () => SVGElement | null }).getElement?.()?.style.setProperty("cursor", "pointer");
         });
@@ -634,15 +725,37 @@ export default function MapView({
         const b = layer.getBounds();
         if (b.isValid()) {
           polyBoundPoints.push([b.getSouthWest().lat, b.getSouthWest().lng], [b.getNorthEast().lat, b.getNorthEast().lng]);
+          // Region tier only: its own centre, for the zoom-detection effect below to
+          // find "whichever region the map is centred nearest to" -- a cheap bounds
+          // centre, not a precise polygon centroid, same deliberate simplification
+          // this component's own header comment on the constant below explains.
+          if (activeChoropleth.source === "nation-region") {
+            const c = b.getCenter();
+            nationRegionCentroidsRef.current.set(entry.gssCode, { lat: c.lat, lng: c.lng });
+          }
         }
       }
 
-      if (polyBoundPoints.length > 1) {
+      // Fit-to-bounds: always for Region scope's own LA tier (Stage A's proven
+      // behaviour, including every LA/region click-through re-scope, which lands
+      // here too) -- a member just took an explicit action, a fit is the expected
+      // response. For Nation scope's two tiers, only once per "session" (see
+      // nationChoroplethEverFitRef's own comment) -- never on a zoom-driven drill,
+      // which would fight the very gesture that triggered it.
+      const shouldFit =
+        activeChoropleth.source === "region-scope-la" ||
+        (activeChoropleth.source === "nation-region" && !nationChoroplethEverFitRef.current);
+      if (shouldFit && polyBoundPoints.length > 1) {
         map.fitBounds(polyBoundPoints, { padding: [40, 40] });
+      }
+      if (activeChoropleth.source !== "region-scope-la") {
+        nationChoroplethEverFitRef.current = true;
       }
       return;
     }
 
+    nationRegionCentroidsRef.current = new Map();
+    nationChoroplethEverFitRef.current = false;
     if (map.hasLayer(choroplethGroup)) map.removeLayer(choroplethGroup);
     choroplethGroup.clearLayers();
 
@@ -835,7 +948,45 @@ export default function MapView({
       mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target, dynamicRingKm, targetProfile.sector, laChoropleth, onLaPolygonClick, laChoroplethRollRange]);
+  }, [mapReady, withProfile, values, minV, maxV, tickedUrns, comparedHidden, filters, colourMode, target, dynamicRingKm, targetProfile.sector, activeChoropleth, activeChoroplethRollRange]);
+
+  // Map round (2026-09-12), Part 2 Stage B: zoom-driven region-tier <-> LA-tier
+  // switch for Nation scope. Registered once per map instance (not re-added on every
+  // render) and reads nationRegionCentroidsRef live on each zoom/pan, rather than
+  // depending on activeChoropleth directly -- that ref is only ever populated while
+  // the region tier is actually drawn (the effect above), so this handler naturally
+  // no-ops whenever it isn't (Region scope, a small set, or Nation-scope's own
+  // LA-tier-drilldown state, where the ref was deliberately cleared).
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    const map = mapRef.current;
+    function handleZoomOrMove() {
+      if (nationRegionCentroidsRef.current.size === 0) return;
+      const zoom = map.getZoom();
+      let next: string | null = null;
+      if (zoom >= NATION_REGION_TIER_ZOOM_THRESHOLD) {
+        const center = map.getCenter();
+        let bestCode: string | null = null;
+        let bestDist = Infinity;
+        for (const [code, c] of nationRegionCentroidsRef.current) {
+          const d = Math.hypot(c.lat - center.lat, c.lng - center.lng);
+          if (d < bestDist) {
+            bestDist = d;
+            bestCode = code;
+          }
+        }
+        next = bestCode;
+      }
+      if (next !== lastReportedZoomedRegionRef.current) {
+        lastReportedZoomedRegionRef.current = next;
+        onNationZoomedRegionChange(next);
+      }
+    }
+    map.on("zoomend moveend", handleZoomOrMove);
+    return () => {
+      map.off("zoomend moveend", handleZoomOrMove);
+    };
+  }, [mapReady, onNationZoomedRegionChange]);
 
   const sectorsPresent = Array.from(
     new Set([targetProfile.sector, ...members.map((m) => profilesByUrn.get(m.urn)?.sector ?? null)].filter((s): s is NonNullable<typeof s> => !!s)),
@@ -913,23 +1064,25 @@ export default function MapView({
                 onClick={() => setColourMode("sector")}
                 className={colourMode === "sector" ? "rounded bg-neutral-900 px-2 py-1 text-xs text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"}
               >
-                {/* Map round (2026-09-12), Part 2 Stage A, design decision: for
-                    Region scope specifically, this second mode relabels from
+                {/* Map round (2026-09-12), Part 2 Stage A/B, design decision: for any
+                    active choropleth tier (Region scope's LA tier, or Nation scope's
+                    region/LA-drilldown tiers), this second mode relabels from
                     "Sector" to "Current Rolls" -- a per-school sector swatch list
-                    means nothing over an LA polygon (a whole LA blends every
-                    sector), so the second mode becomes "how big is this LA's roll"
+                    means nothing over an LA/region polygon (a whole one blends every
+                    sector), so the second mode becomes "how big is this area's roll"
                     instead. The underlying colourMode state value is unchanged
                     ("sector") -- only the label and what it renders below differ. */}
-                {laChoropleth !== null ? "Current Rolls" : "Sector"}
+                {activeChoropleth !== null ? "Current Rolls" : "Sector"}
               </button>
             </div>
           </div>
-          {/* Map round (2026-09-12), Part 2 Stage A: honesty requirement, not
-              optional polish -- when the Sector filter is blended (empty), the LA
-              totals mix every sector together, which must say so rather than read
-              as one clean, apples-to-apples number. Only shown for the choropleth --
-              the dot map has no equivalent whole-LA aggregate to caption. */}
-          {laChoropleth !== null && (
+          {/* Map round (2026-09-12), Part 2 Stage A/B: honesty requirement, not
+              optional polish -- when the Sector filter is blended (empty), the LA/
+              region totals mix every sector together, which must say so rather than
+              read as one clean, apples-to-apples number. Only shown for an active
+              choropleth tier -- the dot map has no equivalent whole-area aggregate
+              to caption. */}
+          {activeChoropleth !== null && (
             <div className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] text-neutral-500 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
               {filters.sector.size === 0 ? "All sectors blended" : `Sector: ${Array.from(filters.sector).join(" + ")}`}
             </div>
@@ -946,14 +1099,15 @@ export default function MapView({
             normal legend-box width in the same general slot -- logged as a
             judgement call, not literally specified, in
             docs/vicdata_data_view_open_questions.md.
-            Map round (2026-09-12), Part 2 Stage A: for Region scope, Trends still
-            gets the SAME growth-scale key (design decision: "Trends reuses the
-            existing red/orange/green scale unchanged"); the second mode gets a new
-            CurrentRollsColourKey instead of SectorColourKey. */}
+            Map round (2026-09-12), Part 2 Stage A/B: for any active choropleth tier,
+            Trends still gets the SAME growth-scale key (design decision: "Trends
+            reuses the existing red/orange/green scale unchanged"); the second mode
+            gets the new CurrentRollsColourKey instead of SectorColourKey, real
+            min/max of whichever tier is actually showing. */}
         {colourMode === "trend" ? (
           <TrendColourKey box={trendKeyBox} />
-        ) : laChoropleth !== null ? (
-          <CurrentRollsColourKey box={trendKeyBox} min={laChoroplethRollRange.min} max={laChoroplethRollRange.max} />
+        ) : activeChoropleth !== null ? (
+          <CurrentRollsColourKey box={trendKeyBox} min={activeChoroplethRollRange.min} max={activeChoroplethRollRange.max} />
         ) : (
           <SectorColourKey sectorsPresent={sectorsPresent} top={trendKeyBox?.top ?? null} />
         )}
@@ -961,11 +1115,11 @@ export default function MapView({
         {/* Bottom-left: size legend, now its own box (previously folded into the
             colour-by box) with a real scale -- three representative dot sizes at
             the min/mid/max of the CURRENT filtered range, rendered at their real
-            on-map radii. Map round (2026-09-12), Part 2 Stage A: this is an
+            on-map radii. Map round (2026-09-12), Part 2 Stage A/B: this is an
             individual-school-level affordance (dot radius), so it's skipped
-            entirely for the Region choropleth, same as every other per-school
+            entirely for any active choropleth tier, same as every other per-school
             overlay in that branch. */}
-        {laChoropleth === null && <SizeLegend minV={minV} maxV={maxV} />}
+        {activeChoropleth === null && <SizeLegend minV={minV} maxV={maxV} />}
       </div>
     </div>
   );

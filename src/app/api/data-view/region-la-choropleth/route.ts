@@ -9,8 +9,22 @@ import { fetchLaChoropleth } from "@/lib/la-choropleth";
 // region-nation-rank/route.ts (sectors/boardingMode/gender), plus phaseBands (new
 // here -- region_nation_rank() deliberately never replicated phase/age slicing in
 // SQL, this function does, see region_nation_la_rollup()'s own migration comment).
+//
+// Stage B addition: an optional `regionCode` param. Region scope's own call still
+// omits it (falls back to the target's own resolved region, unchanged from Stage A).
+// Nation scope's zoom-drill needs LA-tier detail for WHICHEVER region the member has
+// zoomed into on the map, not necessarily the target's own home region -- a real,
+// legitimate case Stage A's own "never a client-supplied region code" reasoning
+// didn't anticipate (that reasoning was specifically about there being no legitimate
+// reason to ask for a region the target isn't in; Nation scope's own "browse all of
+// England" premise means every region is legitimately in scope). Not validated
+// against a fixed allowlist -- a bogus code simply matches no real schools
+// (region_nation_la_rollup's own real join), the same harmless-empty-result outcome
+// every other loosely-typed filter param in this codebase already tolerates, and this
+// route is membership-gated regardless.
 export async function GET(request: NextRequest) {
   const urn = request.nextUrl.searchParams.get("urn");
+  const explicitRegionCode = request.nextUrl.searchParams.get("regionCode");
   const sectorsParam = request.nextUrl.searchParams.get("sectors"); // comma-separated SectorTag values, optional
   const phaseBandsParam = request.nextUrl.searchParams.get("phaseBands"); // comma-separated PhaseBandKey values, optional
   const boardingModeParam = request.nextUrl.searchParams.get("boardingMode"); // "boarders" | "day" | "whole", optional
@@ -47,17 +61,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "The Data View is available to verified school staff." }, { status: 403 });
   }
 
-  // Region-scope only, per Stage A's own explicit scope -- the target's own real
-  // region membership, resolved server-side exactly like region-nation-set/rank
-  // already do, never a client-supplied region code (a member has no legitimate
-  // reason to ask for a choropleth over a region their own target school isn't in).
-  const targetRegionNation = await resolveTargetRegionNation(urn);
-  if (!targetRegionNation || !targetRegionNation.regionCode) {
-    return NextResponse.json({ entries: [] });
+  let regionCode = explicitRegionCode;
+  if (!regionCode) {
+    // Region scope's own unchanged path: the target's own real region membership,
+    // resolved server-side exactly like region-nation-set/rank already do.
+    const targetRegionNation = await resolveTargetRegionNation(urn);
+    if (!targetRegionNation || !targetRegionNation.regionCode) {
+      return NextResponse.json({ entries: [] });
+    }
+    regionCode = targetRegionNation.regionCode;
   }
 
   const sectors = sectorsParam ? sectorsParam.split(",").filter(Boolean) : null;
   const phaseBands = phaseBandsParam ? phaseBandsParam.split(",").filter(Boolean) : null;
-  const entries = await fetchLaChoropleth(targetRegionNation.regionCode, sectors, phaseBands, genderParam, boardingModeParam);
+  const entries = await fetchLaChoropleth(regionCode, sectors, phaseBands, genderParam, boardingModeParam);
   return NextResponse.json({ entries });
 }

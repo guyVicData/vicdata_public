@@ -8,9 +8,21 @@ import { resolveTargetRegionNation, buildRegionOrNationComparatorSet } from "@/l
 // backed entirely by the precomputed school_region_nation table (indexed
 // region_code/nation lookups) -- no live cross-school computation, matching every
 // other Data View route's membership-gate pattern exactly.
+//
+// Map round (2026-09-12), Part 2 Stage B addition: optional explicit
+// regionCode/regionName params, used ONLY when scope=region. The existing "Region"
+// button never supplies these (falls back to the target's own resolved region,
+// completely unchanged) -- they exist for the Nation-scope region-tier polygon
+// click-through, which needs to re-scope to WHICHEVER region was clicked, not
+// necessarily the target's own home region (a real, legitimate difference from
+// Stage A's own LA-tier click-through, which always re-scopes to an LA the target
+// is genuinely near). Same region_nation_set()/buildRegionOrNationComparatorSet()
+// machinery either way -- "not a new mechanism," per direct instruction.
 export async function GET(request: NextRequest) {
   const urn = request.nextUrl.searchParams.get("urn");
   const scopeParam = request.nextUrl.searchParams.get("scope"); // "region" | "nation"
+  const explicitRegionCode = request.nextUrl.searchParams.get("regionCode");
+  const explicitRegionName = request.nextUrl.searchParams.get("regionName");
   const authHeader = request.headers.get("authorization");
   if (!urn || !scopeParam || !authHeader) {
     return NextResponse.json({ error: "urn, scope and Authorization are required" }, { status: 400 });
@@ -48,12 +60,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Could not load this school." }, { status: 404 });
   }
 
-  const targetRegionNation = await resolveTargetRegionNation(urn);
-  if (!targetRegionNation || !targetRegionNation.nation) {
-    // Precomputed row missing (recompute hasn't run yet) or a genuine non-standard LA
-    // (BFPO/overseas -- see region-crosswalk.ts) -- either way, there's no real
-    // region/nation membership to build a set from.
-    return NextResponse.json({ rows: null });
+  // Stage B: an explicit region (both code and name given) skips resolving the
+  // TARGET's own region membership entirely -- the region-tier polygon click-through
+  // supplies whichever region was actually clicked, which the target's own school
+  // may not even be in (a real, legitimate Nation-scope case, unlike Stage A's own
+  // LA-tier click-through).
+  const explicitScope = scopeParam === "region" && explicitRegionCode && explicitRegionName ? { kind: "region" as const, regionCode: explicitRegionCode, regionName: explicitRegionName } : null;
+
+  let scope: { kind: "region"; regionCode: string; regionName: string } | { kind: "nation"; nation: "england" | "wales" };
+  if (explicitScope) {
+    scope = explicitScope;
+  } else {
+    const targetRegionNation = await resolveTargetRegionNation(urn);
+    if (!targetRegionNation || !targetRegionNation.nation) {
+      // Precomputed row missing (recompute hasn't run yet) or a genuine non-standard
+      // LA (BFPO/overseas -- see region-crosswalk.ts) -- either way, there's no real
+      // region/nation membership to build a set from.
+      return NextResponse.json({ rows: null });
+    }
+    scope =
+      scopeParam === "region" && targetRegionNation.regionCode && targetRegionNation.regionName
+        ? { kind: "region", regionCode: targetRegionNation.regionCode, regionName: targetRegionNation.regionName }
+        : { kind: "nation", nation: targetRegionNation.nation };
   }
 
   // Payload-cleanup round (2026-09-09): returns the raw positional rows straight
@@ -64,9 +92,7 @@ export async function GET(request: NextRequest) {
   // MapView/SetOption actually need.
   const { key, label, rows } = await buildRegionOrNationComparatorSet(
     { urn, easting: resolved.target.easting, northing: resolved.target.northing },
-    scopeParam === "region" && targetRegionNation.regionCode && targetRegionNation.regionName
-      ? { kind: "region", regionCode: targetRegionNation.regionCode, regionName: targetRegionNation.regionName }
-      : { kind: "nation", nation: targetRegionNation.nation },
+    scope,
   );
   return NextResponse.json({ key, label, rows });
 }
