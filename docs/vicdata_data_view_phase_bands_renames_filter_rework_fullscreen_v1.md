@@ -255,3 +255,39 @@ threading, the shared-children legend mechanism), not a live click-through.
 - `src/components/data-view/GraphsView.tsx` (item 8)
 
 Commit: `4ec370f`.
+
+## Follow-on fix — TargetRollBarChart's first/last bar overlapped the axis margins
+
+Reported against a real live screenshot of "ROLL SINCE 2019/20" on
+vicdata.co.uk (commit `09c4726`): item 6's `PAD` widening enlarged the margin
+reserved for axis labels but never stopped bars overhanging into it. Root
+cause was paint order, not the bounded-values check item 6's own report
+already did — bars paint *after* the Y-axis gridlines/tick text, and the old
+x-scale centred the first bar exactly at `PAD.left` with no inset, so with
+`barWidth` up to 36px the bar's left edge sat 18px inside the label margin;
+every bar reaches the chart floor, so any tick label whose height fell within
+a bar's reach got painted over (ate the "0" off "960," left "96").
+
+Fixed with a band inset of half the bar width
+(`bandInset = barWidth / 2`, `plottableW = innerW - bandInset * 2`), so no
+bar edge can cross `PAD.left`/`WIDTH - PAD.right` regardless of data.
+`barWidth` now computed before `x` (its own plottable width depends on it).
+
+**Verified numerically**, not visually — the Chrome extension was
+unreachable again this session. Using the chart's real constants and a real
+dataset (Acland Burghley School, 7 real periods 2019–2025): the old x-scale
+put the first bar's left edge at `x=46`, 10px into the Y-tick label's own
+text area (which ends at `x=56`) — reproducing the exact reported mechanism.
+The new x-scale puts it at `x=64`, flush with the margin, 8px clear of the
+label. The same computation also caught an identical, previously-unreported
+18px overhang on the *last* bar's right edge past `WIDTH - PAD.right`, now
+also resolved. This is a stronger check than item 6's own "values are
+bounded" verification, which is exactly the class of check that missed this
+bug the first time — computing actual resulting pixel coordinates, not just
+confirming a formula can't exceed a range.
+
+**Still not visually confirmed** — recommend a real screenshot of this exact
+chart next time the extension is reachable.
+
+Files changed: `src/components/data-view/TargetRollBarChart.tsx`. Commit:
+`09c4726`.
