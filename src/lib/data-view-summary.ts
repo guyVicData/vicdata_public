@@ -16,6 +16,7 @@
 import type { DataViewFilterState, PhaseBandKey } from "./data-view-filters";
 import type { DataViewSchoolProfile } from "./data-view-profiles";
 import type { SetOption } from "./data-view-types";
+import type { GenderTag } from "./typology";
 
 const CURRENT_CENSUS_PERIOD_LABEL_YEAR = 2025; // roll-data.ts's own CURRENT_CENSUS_PERIOD, duplicated as a literal -- see data-view-filters.ts's own DEFAULT_START_PERIOD comment for why this file avoids importing that server-only-adjacent module by value.
 
@@ -87,42 +88,79 @@ function laNamesFromLabel(label: string): string | null {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
+// Compared-with panel round (2026-09-11), item 3: a parenthetical gender clause,
+// added ONLY when the recipe genuinely restricted by gender -- confirmed against
+// each recipe's own real matching code (genderMatches()/genderMatchesRelaxed(),
+// surrounding-schools.ts and default-comparator-lists.ts), not assumed. The relaxed
+// rule every one of these recipes actually applies is asymmetric: a single-sex
+// target accepts its own gender PLUS co-ed candidates (never the opposite single-sex
+// -- that's the real restriction worth stating), while a co-ed target has no real
+// gender restriction at all (genderMatchesRelaxed/genderMatches both return true for
+// every candidate when the target itself is Co-ed) -- stating a parenthetical for a
+// co-ed target would invent a restriction that doesn't exist, so it stays silent.
+function genderClause(gender: GenderTag | null): string {
+  if (gender === "Girls") return " (girls' and co-ed)";
+  if (gender === "Boys") return " (boys' and co-ed)";
+  return "";
+}
+
 function comparedWithPhrase(activeSet: SetOption | null, target: DataViewSchoolProfile): string {
   if (!activeSet) return "no comparator set selected";
   if (activeSet.kind === "saved") return `your saved set "${activeSet.label}"`;
 
   const count = activeSet.schools.length;
   const sector = sectorProse(target.sector);
+  const gender = genderClause(target.gender);
   // Genuinely reproduces example 1 verbatim for a real state senior school's own
   // Nearest-10 set: nearest_schools' own RPC (surrounding-schools.ts's header
   // comment) restricts candidates to the target's own sector AND phase by
   // construction, so "N nearest {sector} {phase} schools" is always literally
-  // true of this recipe's real membership, not a guess.
+  // true of this recipe's real membership, not a guess. Gender clause added
+  // (2026-09-11): findSurroundingSchools' own relaxed gender rule (genderMatches,
+  // "exact" replaced with "relaxed" for every default-list caller) is real and
+  // worth stating too, same asymmetric rule genderClause's own comment explains.
   if (activeSet.key === "nearest_10") {
     const phase = target.phase.length === 1 ? PHASE_BAND_PROSE[target.phase[0] as PhaseBandKey] ?? target.phase[0].toLowerCase() : "";
-    return `${count} nearest ${[sector, phase].filter(Boolean).join(" ")} schools`.replace(/\s+/g, " ").trim();
+    return `${count} nearest ${[sector, phase].filter(Boolean).join(" ")} schools${gender}`.replace(/ {2,}/g, " ").trim();
   }
   if (activeSet.key === "fe_nearest_10") {
     return `${count} nearest FE colleges`;
   }
+  // Compared-with panel round (2026-09-11), item 3: confirmed directly against
+  // buildLaComparatorSet's own real query (default-comparator-lists.ts) before
+  // wiring this, rather than assumed -- it does NOT gate on sector at all (its own
+  // establishment_type_group filter is an INCLUSION list covering every mainstream
+  // + special sector, matching its own "(all sectors)" label), only phase + the
+  // same relaxed gender rule every other recipe uses. So this sentence states phase
+  // and gender, but deliberately no sector word -- adding one would claim a
+  // restriction this recipe doesn't actually apply.
   if (activeSet.key === "in_la" || activeSet.key === "multi_la") {
     const las = laNamesFromLabel(activeSet.label) ?? "this area";
     const phase = target.phase.length === 1 ? `${PHASE_BAND_PROSE[target.phase[0] as PhaseBandKey] ?? target.phase[0].toLowerCase()} ` : "";
-    return `all ${phase}schools in ${las}`;
+    return `all ${phase}schools in ${las}${gender}`;
   }
   // 2026-09-08, Compared-with panel round 4: bottom-3-quintile boarding schools no
   // longer match by quintile (default-comparator-lists.ts's own boardingQuintileList
-  // comment has the full reasoning) -- "similar-sized" stopped being true for that
+  // comment has the full reasoning) -- "similarly-sized" stopped being true for that
   // case, since the set is now nearest-by-distance and can legitimately include a
   // much bigger or smaller top-quintile school. Detected off the recipe's own label
   // text (set at the source, same "parse structured info back out of the label"
   // pattern laNamesFromLabel already uses above) rather than adding a new field this
-  // sentence-builder would be the only reader of. Top 2 quintiles are unaffected --
-  // same wording as before.
+  // sentence-builder would be the only reader of.
+  //
+  // Compared-with panel round (2026-09-11), items 1+3: the gender bug (item 1) is
+  // fixed at the source now, so both branches genuinely are gender-restricted the
+  // same relaxed way as everywhere else -- stated here. Sector is fixed by the
+  // BOARDING CATEGORY itself (BOARDING_CATEGORY_CONFIG's own sectorGroups --
+  // independent_boarding_senior/prep are Independent-schools-only, state_boarding is
+  // the maintained-sector groups), not the target's general sector tag as such --
+  // but since a boarding_quintile target can only ever BE Independent or State
+  // (classifySchoolTypeCategory's own gate), target.sector already reads correctly
+  // either way, with no extra plumbing needed.
   if (activeSet.key === "boarding_quintile") {
     return activeSet.label.startsWith("Nearest boarding schools")
-      ? `nearest ${count} boarding schools by age and gender`
-      : `nearest ${count} similar-sized boarding schools`;
+      ? `nearest ${count} ${sector} boarding schools, matched by age and gender${gender}`.replace(/\s+/g, " ")
+      : `nearest ${count} similarly-sized ${sector} boarding schools nationally${gender}`.replace(/\s+/g, " ");
   }
   // Member Data View performance architecture v1 (2026-10-08): Region/Nation's own
   // set-fetch (region-nation-comparator.ts) already returns one real row per school in

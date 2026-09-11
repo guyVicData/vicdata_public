@@ -360,18 +360,21 @@ export default function ComparatorSidebar({
   // to EITHER the ordinary ~10-nearest recipe OR the boarding-quintile recipe
   // (DataViewShell's own resolveNearestOption) -- there is no longer a second,
   // separate button/stepper for the latter, just this one, keyed off whichever
-  // `.key` is currently active. The button's own base label reflects which recipe is
-  // showing: the boarding-quintile recipe's real label (its own two possible
-  // readings, "National boarding quintile..." or "Nearest boarding schools...", are
-  // genuinely different framings worth showing verbatim, not a generic "Nearest 10"
-  // that would misdescribe an unbounded-catchment quintile match as distance-sorted)
-  // or the existing plain "Nearest 10 schools" otherwise.
+  // `.key` is currently active.
+  //
+  // Compared-with panel round (2026-09-11), item 2, per direct instruction: the
+  // button's own label no longer shows the boarding-quintile recipe's own verbatim
+  // text ("National boarding quintile..."/"Nearest boarding schools...") -- it
+  // always reads the plain "Nearest 10 schools" (plus the same "+N" suffix),
+  // whichever recipe is actually driving it. The recipe's real explanation now lives
+  // in the comparator sentence instead (data-view-summary.ts's own
+  // comparedWithPhrase), not duplicated here.
   const nearestIsActive =
     activeSet?.kind === "recipe" && (activeSet.key === "nearest_10" || activeSet.key === "fe_nearest_10" || activeSet.key === "boarding_quintile");
   const currentNearestSchools = nearestIsActive ? activeSet.schools : (nearestOption?.schools ?? []);
   const nearestExtra = nearestOption ? Math.max(0, currentNearestSchools.length - nearestOption.schools.length) : 0;
   const nearestIsBoardingQuintile = nearestOption?.key === "boarding_quintile";
-  const nearestBaseLabel = nearestIsBoardingQuintile && nearestOption ? nearestOption.label : "Nearest 10 schools";
+  const nearestBaseLabel = "Nearest 10 schools";
   const nearestButtonLabel = `${nearestBaseLabel}${nearestExtra > 0 ? ` +${nearestExtra}` : ""}`;
 
   async function expandNearestBy(delta: number) {
