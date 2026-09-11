@@ -32,10 +32,11 @@
 // in the consuming UI says so explicitly rather than silently showing a number that
 // looks phase-scoped but isn't.
 
-import type { GenderTag, SectorTag } from "./typology";
+import type { GenderTag, SectorTag, BoardingTag } from "./typology";
 import { phaseTagAgeRange, PHASE_BAND_EARLY_YEARS_CEILING_AGE, type PhaseTag } from "./typology";
 import type { AgeGenderCounts } from "./roll-data";
 import { EARLY_YEARS_PROXY_AGE_THRESHOLD } from "./narrative-config";
+import type { IlrParticipationSnapshot } from "./ilr-participation-data";
 
 // Member Data View build (2026-10-03), brief §4: "Early Years" is named explicitly
 // alongside the real PhaseTag taxonomy (Junior/Senior/16+) as one of the four phase
@@ -101,6 +102,87 @@ const DEFAULT_START_PERIOD = 2019;
 
 export function emptyDataViewFilterState(): DataViewFilterState {
   return { phaseBands: new Set(), ages: new Set(), gender: new Set(), boarding: new Set(), startPeriod: DEFAULT_START_PERIOD, sector: new Set() };
+}
+
+// PARKED (2026-09-16) -- NOT called anywhere in the app (confirmed by grep across
+// src/ before every commit that touches this area; DataViewShell.tsx's own filter
+// state still initialises from emptyDataViewFilterState() alone, unchanged). Built
+// for "default-tick the filter row from the school's own real profile instead of
+// starting blank," then paused before wiring it in once real-data verification
+// found three genuine bugs, none of which can reach a live member while this stays
+// unreferenced:
+//   1. Seeding `boarding` alongside `phaseBands` silently triggers filteredCount's
+//      own pre-existing "boarding, when active, overrides phase/age narrowing
+//      entirely" rule for any day school (the majority) -- phase pills would show
+//      lit but be computationally inert until "Day pupils" is manually unticked.
+//   2. The phase-seeding loop below only copies school.phase (typology.ts's
+//      PhaseTag[]) 1:1 -- it does NOT mirror relevantAgeBandsFor's own separate
+//      "always offer Post 16 whenever statutoryHighAge >= 16" logic, so Post 16
+//      never gets ticked for an ordinary Senior-tagged school with a real sixth
+//      form (confirmed: Acland Burghley has 329 real Post-16 pupils, invisible by
+//      default).
+//   3. Gender seeding from the school's own NOMINAL typology gender tag (not real
+//      headcount composition) undercounts a nominally single-sex school with a
+//      real mixed cohort -- confirmed: William Ellis School (tagged "Boys") has
+//      118 real female pupils a Boys-only default would silently exclude, the same
+//      class of nominal-tag-vs-real-data gap already documented elsewhere in this
+//      codebase (Camden School for Girls, typology.ts).
+// See docs/vicdata_data_view_default_filters_paused_v1.md for the full
+// verification numbers. Resolving these is real design work (should boarding not
+// be defaulted when phase would also be seeded? should Post 16 mirror
+// relevantAgeBandsFor? should gender seed from real headcount instead of nominal
+// tag?), not something to guess at unilaterally -- left here, unwired, until that
+// direction is given.
+//
+// Original design intent, unchanged: every pill that's genuinely TRUE about the
+// school itself starts lit, instead of blank. For a clean mainstream school this
+// should reproduce the exact same whole-school total as no filter at all (every
+// real pupil falls into at least one ticked band per category, and bands within a
+// category union together, per filteredCount's own established rule) -- this
+// would BE the real active filter state, not a cosmetic overlay, so the member
+// could narrow further from here exactly as if they'd clicked from blank (untick
+// Post 16 to see Secondary-only, tick a single band to drill into ages) -- once
+// items 1-3 above are actually resolved.
+export function defaultDataViewFilterState(school: {
+  phase: PhaseTag[];
+  gender: GenderTag | null;
+  boarding: BoardingTag | null;
+  sector: SectorTag | null;
+  statutoryLowAge: number | null;
+  statutoryHighAge: number | null;
+  ageGenderCounts: AgeGenderCounts;
+  feParticipation: { under19: IlrParticipationSnapshot | null; adult: IlrParticipationSnapshot | null } | null;
+}): DataViewFilterState {
+  const phaseBands = new Set<PhaseBandKey>();
+
+  if (school.feParticipation) {
+    // No real census phase data at all for these -- Post 16 ("U19" in this
+    // context) and Adult are each real whenever their own real ILR total is > 0.
+    if ((school.feParticipation.under19?.total ?? 0) > 0) phaseBands.add("Post 16");
+    if ((school.feParticipation.adult?.total ?? 0) > 0) phaseBands.add("Adult");
+  } else {
+    for (const tag of school.phase) phaseBands.add(tag as PhaseBandKey); // raw values match 1:1, only display labels were renamed
+    // Early Years: real roll data, not the EARLY_YEARS_PROXY_AGE_THRESHOLD proxy
+    // used elsewhere (a different, deliberately separate concept -- see this
+    // file's own ageRangeForBand comment) -- does this school genuinely have real
+    // pupils aged 0-3 right now, using the exact range ageRangeForBand already
+    // defines for this band.
+    const [eyLo, eyHi] = ageRangeForBand("Early Years", school.statutoryLowAge ?? 0, school.statutoryHighAge ?? 0);
+    if (sumAgeGender(school.ageGenderCounts, eyLo, eyHi, new Set()).total > 0) phaseBands.add("Early Years");
+  }
+
+  const gender = new Set<GenderTag>();
+  if (school.gender === "Girls" || school.gender === "Co-ed") gender.add("Girls");
+  if (school.gender === "Boys" || school.gender === "Co-ed") gender.add("Boys");
+
+  const boarding = new Set<BoardingFilterValue>();
+  if (school.boarding === "Boarding" || school.boarding === "Boarding & day") boarding.add("Boarders");
+  if (school.boarding === "Day" || school.boarding === "Boarding & day") boarding.add("Day pupils");
+
+  const sector = new Set<SectorTag>();
+  if (school.sector) sector.add(school.sector);
+
+  return { phaseBands, ages: new Set(), gender, boarding, startPeriod: DEFAULT_START_PERIOD, sector };
 }
 
 // 2026-09-07, UX refinements round 2, P3 item 7: the one real predicate every
@@ -282,7 +364,7 @@ export function ageRangeForBand(
   return phaseTagAgeRange(band as PhaseTag, lowAge, highAge);
 }
 
-function sumAgeGender(
+export function sumAgeGender(
   counts: AgeGenderCounts,
   lo: number,
   hi: number,
