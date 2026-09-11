@@ -267,7 +267,187 @@ schools) from the live local server running this round's code.
 
 Commit: `5353d03`.
 
-## Part B — Graphs restructure (NOT YET STARTED)
+## Part B — Graphs restructure (DONE, commit `188bb59`)
 
-Full spec captured in the originating handoff; not reproduced here until
-built, per the "build and report in stages" instruction.
+The largest of the three parts. `GraphsView.tsx` moves from three sections to
+four, each an independent accordion (`SectionHeading` is now a real toggle
+button; `closedSections` state, all four open by default, no adaptive
+show/hide — matches the "training wheels" principle already established
+elsewhere in this app).
+
+### Section 01 — Overview (deliberately lightened)
+
+- **Graph 1** (new): `TargetRollBarChart.tsx` — a column/bar chart of the
+  target's own filtered roll, one bar per real academic year, in
+  `FOCUS_SCHOOL_COLOUR`, with a fitted (least-squares) trend line overlaid.
+  Reuses `CombinedRollChart.tsx`'s own regression math verbatim, but as real
+  bars for one school rather than a lollipop of the set's combined total —
+  no existing component did this combination.
+- **Graph 2**: the existing "Current roll" card, byte-for-byte unchanged.
+- `CombinedRollChart` and the Growth/decline chart both moved OUT to
+  Sections 03/02 respectively, per the spec.
+
+### Section 02 — Roll trends compared (new)
+
+Home for the main `RollTrendsChart` (Graph 3) and Growth/decline (Graph 4,
+moved here). `RollTrendsChart.tsx` itself gained four things:
+
+- **(a)** At ≤10 schools, every legend entry except the target now has an
+  on/off checkbox, hiding that one line without leaving "show all" mode.
+- **(b)** The average-toggle button's text changed from "average of all
+  other schools" to "average roll of this set of schools" — same
+  mode-switch behaviour, just reworded.
+- **(c)** Above 10 schools, the chart now *defaults* to average-only (target
+  + average line), with a reduced legend (no checkboxes). Per our own
+  reading, the (b) toggle button doesn't apply at this size — there's no way
+  back to "show every line" via that control once above the threshold
+  (schools can still be pulled back in individually via (d)). This is our
+  interpretation of an ambiguous line in the handoff ("flag if wrong"),
+  logged here rather than silently assumed.
+- **(d)** A new "Add/subtract schools to this graph" button (shown only
+  above 10 schools, since below that every school is already on screen),
+  reusing `AddSubtractSchoolsWindow` — now with an `onAddSchool` prop made
+  optional and its "Add a school" search section rendered only when that
+  prop is passed, so this scoped reuse can't add a school outside the
+  already-ticked/filtered set (the sidebar's own original call site is
+  unaffected — it still always passes `onAddSchool`). State
+  (`graphAddedUrns`/`hiddenLineUrns`/the window's open flag) lives entirely
+  in `GraphsView.tsx`, not lifted to `DataViewShell.tsx`, per the handoff's
+  own "threaded through GraphsView" wording — it affects only this one
+  chart's display, not the real comparator set every other view reads.
+  Added schools get their own colour via the same `assignSeriesColours`
+  mechanism as every other line (not a second colour source), drawn on top
+  of the average line.
+
+### Section 03 — Market share (renumbered)
+
+Keeps the existing share-over-time chart and the two market-share bar/
+diverging tiles (Graphs 5/6), and gains `CombinedRollChart` (Graph 7, moved
+here from Section 01). Graphs 5, 6, and Section 04's Graph 10 share a new
+**sector-aggregate fallback** above `GRAPH_SECTOR_FALLBACK_THRESHOLD = 20`
+schools (`aggregate-trends.ts` — deliberately separate from
+`LARGE_SET_PROFILE_THRESHOLD = 200`, the unrelated Region/Nation-scale
+threshold):
+
+- `fetchSectorAggregatesForMany()` (new, `aggregate-trends.ts`) queries the
+  *same* `roll_aggregates` table the existing single-target-sector fetch
+  already reads, once per distinct `establishment_type_group` actually
+  present in the visible group — built once, shared by all three graphs, per
+  direct instruction. A sector with no real aggregate row (Special
+  Schools/FE aren't populated yet, a pre-existing, documented data-coverage
+  gap) is simply omitted, never shown as a fabricated zero.
+- The `/api/data-view/aggregate-trends` route gained an optional `sectors`
+  query param returning this data alongside its existing, unchanged
+  single-sector `trends` payload.
+- `AggregateTrendPoint` now also carries real `genderMale`/`genderFemale`
+  (the same `roll_aggregates` row already has these columns) — one shared
+  fetch feeds the roll bars (Graphs 5/6) and the new gender stacked-bar
+  (Graph 10), not two near-duplicate queries.
+- Because `roll_aggregates` only carries whole-school totals (no phase/age
+  breakdown), the fallback bars — including the target's own — use
+  whole-school figures (`targetProfile.current`/`.trend`), the same basis
+  Section 01's existing Region/Nation large-set chart already uses for the
+  identical reason. A caption states this explicitly on every fallback
+  chart (`SectorFallbackNote`), matching this app's "state the real basis,
+  don't silently compare filtered against unfiltered" discipline.
+- `DataViewShell.tsx` fetches this independently of `isLargeSet` (a
+  member's own self-curated set can cross 20 schools long before
+  Region/Nation scale) — the fetch effect ended up needing to sit with the
+  other top-level fetch effects rather than near where `tickedProfiles` is
+  computed, see the Rules-of-Hooks note below.
+
+### Section 04 — Gender split (renumbered)
+
+Keeps the existing stat line + `TrendPill` + `SpreadStrip` card and adds:
+
+- **Graph 8**: `ShapeChart.tsx` (the real public-site population-pyramid
+  chart), fed the target's own current `ageGenderCounts` directly — reused,
+  not rebuilt.
+- **Graph 9**: the `Donut` component from `GenderSplitCard.tsx`, now
+  exported (it was previously a local, unexported function) and made
+  self-contained — its theme-aware `--girls`/`--boys` CSS custom-property
+  `<style>` block used to be rendered once by its parent `GenderSplitCard`;
+  moved *into* `Donut` itself so a caller that renders `Donut` without ever
+  rendering `GenderSplitCard` (Graphs' own new usage) still gets working
+  colours instead of undefined CSS variables.
+- **Graph 10** (new): `GenderSplitBarChart.tsx` — one 100%-stacked
+  horizontal bar per school, girls%/boys%, using the exact
+  `TAG_COLOURS.Girls`/`.Boys` tokens `ShapeChart`/`Donut` already use. Same
+  sector-aggregate fallback as Graphs 5/6 above 20 schools.
+- The handoff's own section summary says "gains two charts" but its
+  itemised list names three (8/9/10) — resolved by reading Graph 9 as an
+  upgrade of the *existing* stat line (same `targetGenderCurrent` figure,
+  now a donut instead of bare text) rather than a fourth thing on top of a
+  redundant third. Nothing existing was removed; logged here rather than
+  silently resolved one way or the other.
+- Existing rule preserved unchanged: the whole section stays hidden for a
+  confirmed single-sex target (`isSingleSex`).
+
+### A structural fix along the way
+
+The new sector-aggregate fetch effect in `DataViewShell.tsx` initially
+depended on `targetProfile`/`tickedProfiles`, which are computed *after*
+this component's own early returns (`loadState` checking/loading/
+not_a_member/error, and `!target`) — a genuine `react-hooks/rules-of-hooks`
+violation, since a hook can never be called conditionally. Fixed by moving
+the effect up to sit with the other top-level fetch effects (before those
+early returns) and having it re-derive the same "which schools are actually
+being compared" logic directly from the earlier-available primitives
+(`profilesByUrn`, `tickedUrns`, `activeSet`, `comparedHidden`,
+`matchesSectorFilter`) rather than the later `tickedProfiles` const itself.
+A first attempt at this also produced a `react-hooks/exhaustive-deps`
+warning (a fresh `activeSetSchools` array on every render, as an effect
+dependency) — resolved by reading `tickedUrns`/`profilesByUrn` directly
+instead of going via `activeSetSchools`, which turned out not to be needed
+for this narrower purpose.
+
+### Verification
+
+Real login, real testing-school switch (urn 100053), and a real 25-school
+fetch from the live local server:
+
+- The 23 real in-scope schools correctly crossed the new 20-school
+  threshold, triggering the fallback path.
+- Real distinct `establishmentTypeGroup` values were correctly identified:
+  `Independent schools`, `Local authority maintained schools`, `Special
+  schools`.
+- The new `sectors` query param on `/api/data-view/aggregate-trends`
+  returned genuine national `roll_aggregates` rows: Independent schools
+  (528,278 pupils, +1.5% since 2019/20, gender split ~50/50) and LA-
+  maintained schools (2,876,996 pupils, −11.2% since 2019/20) — real,
+  plausible national demographic figures, not fabricated.
+- `Special schools` was correctly and honestly omitted from the returned
+  sector data (no real `roll_aggregates` row exists for it yet — a known,
+  pre-existing data-coverage gap documented in
+  `20261010091000_roll_aggregates_sector_scope.sql`'s own comment, not a
+  bug introduced this round).
+- Graph 1's input series (periods 2019–2025, values
+  `[1072, 1135, 1168, 1163, 1166, 1218, 1252]`) matches exactly the same
+  figures already independently verified in Parts A and C for this school.
+- `tsc`/`lint`/`build` all clean; lint at the same 7-problem pre-existing
+  baseline.
+
+**Not verified this round**: the accordion open/close behaviour, the legend
+checkboxes, the 10-school threshold's actual on-screen effect, and the new
+stacked-bar/donut/shape-chart layouts were all confirmed via code review and
+type-checking only — the Chrome browser extension was unreachable for the
+whole of this session, so no live visual/interaction check was possible for
+any of Part B's UI. This is a bigger honest gap than Parts A/C's narrow-width
+caveat, since several of Part B's changes (the checkbox interaction, the
+threshold-driven default-mode switch, the modal window) are genuinely
+interaction-dependent, not just layout. Recommend a real click-through pass
+next time the extension is reachable, before treating Part B as fully done.
+
+### Files changed
+
+- `src/lib/aggregate-trends.ts` (gender fields, `fetchSectorAggregatesForMany`, threshold)
+- `src/app/api/data-view/aggregate-trends/route.ts` (`sectors` param)
+- `src/components/data-view/TargetRollBarChart.tsx` (new)
+- `src/components/data-view/GenderSplitBarChart.tsx` (new)
+- `src/components/data-view/RollTrendsChart.tsx` (a/b/c/d)
+- `src/components/data-view/AddSubtractSchoolsWindow.tsx` (optional search-add)
+- `src/components/dashboard/GenderSplitCard.tsx` (exported, self-contained `Donut`)
+- `src/components/data-view/GraphsView.tsx` (full restructure)
+- `src/components/data-view/DataViewShell.tsx` (sector-aggregate fetch + prop)
+
+Commit: `188bb59`.
