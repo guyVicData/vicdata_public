@@ -39,7 +39,7 @@ import { profileToFilterableData, profileToFilterableDataForPeriod, ageGenderCou
 import { filteredCount, matchesSectorFilter, type DataViewFilterState } from "@/lib/data-view-filters";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import type { RegionNationPoint } from "@/lib/region-nation-comparator";
-import { sectorTag } from "@/lib/typology";
+import { sectorTag, type SectorTag } from "@/lib/typology";
 import type { ViewKey } from "@/lib/data-view-types";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
@@ -637,6 +637,13 @@ export default function MapView({
           radius = radiusFor(current, minV, maxV);
           tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(s.name)}</strong><br/>${current.toLocaleString()}${
             anchor !== null ? ` (${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(0)}% since ${academicYearLabel(filters.startPeriod)})` : ""
+          }${
+            // Map round (2026-09-12), item 1b: the target's own marker already
+            // navigates to /schools/${urn} on click (the handler just below) --
+            // it just had no hint that it does, unlike every non-target dot's own
+            // "click to add to comparison." Real navigation unchanged, just made
+            // discoverable, here and on the expand badge added below.
+            isTarget ? `<br/><em>click to view full stats</em>` : ""
           }</div>`;
         }
 
@@ -661,6 +668,32 @@ export default function MapView({
 
         if (isTarget) {
           L.circleMarker([lat, lng], { radius: TARGET_RING_RADIUS, color: "#dc2626", weight: 2.5, fill: false }).addTo(group);
+
+          // Map round (2026-09-12), item 1b: a small expand-arrow badge sitting at
+          // the ring's own edge, making the target's already-working navigation
+          // (the click handler above) discoverable -- previously an unexplained red
+          // circle with zero visual hint it does anything. Positioned via iconAnchor
+          // as a fixed PIXEL offset (not a geographic one -- the ring itself is a
+          // fixed-pixel-radius circleMarker, so a geographic offset would drift off
+          // the ring at different zoom levels) at ~45 degrees, top-right of the
+          // ring. Interactive with the SAME router.push handler, not a purely
+          // decorative overlay -- a badge sitting right at the ring's own edge could
+          // easily fall just outside the real target circleMarker's own clickable
+          // radius underneath it, which would be a real dead-click trap; wiring it
+          // up directly avoids depending on that geometry lining up exactly.
+          const BADGE_SIZE = 18;
+          const badgeOffset = TARGET_RING_RADIUS * Math.SQRT1_2; // ~45 degrees
+          const badgeMarker = L.marker([lat, lng], {
+            icon: L.divIcon({
+              className: "vd-target-expand-badge",
+              html: `<div style="display:flex;align-items:center;justify-content:center;width:${BADGE_SIZE}px;height:${BADGE_SIZE}px;border-radius:9999px;background:#dc2626;color:#fff;font-size:12px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.35);cursor:pointer;">&#8599;</div>`,
+              iconSize: [BADGE_SIZE, BADGE_SIZE],
+              iconAnchor: [BADGE_SIZE / 2 - badgeOffset, badgeOffset + BADGE_SIZE / 2],
+            }),
+          });
+          badgeMarker.bindTooltip("View full stats", { direction: "top", offset: [0, -4] });
+          badgeMarker.on("click", () => router.push(`/schools/${s.urn}`));
+          badgeMarker.addTo(group);
         }
       } catch (e) {
         console.error(`[MapView] failed to draw marker for ${s.urn} (${s.name}):`, e);
@@ -765,24 +798,30 @@ export default function MapView({
             normal legend-box width in the same general slot -- logged as a
             judgement call, not literally specified, in
             docs/vicdata_data_view_open_questions.md. */}
-        {colourMode === "trend" ? <TrendColourKey box={trendKeyBox} /> : <SectorColourKey sectors={sectorsPresent} />}
+        {colourMode === "trend" ? (
+          <TrendColourKey box={trendKeyBox} />
+        ) : (
+          <SectorColourKey sectorsPresent={sectorsPresent} top={trendKeyBox?.top ?? null} />
+        )}
 
         {/* Bottom-left: size legend, now its own box (previously folded into the
             colour-by box) with a real scale -- three representative dot sizes at
             the min/mid/max of the CURRENT filtered range, rendered at their real
             on-map radii. */}
         <SizeLegend minV={minV} maxV={maxV} />
-
-        {/* Bottom-centre: the dot-legend caption, floated over the map. No exact
-            spot specified -- bottom seemed reasonable and this keeps clear of both
-            bottom-corner boxes; easy to move once seen live. */}
-        <div className="absolute bottom-3 left-1/2 z-[1000] -translate-x-1/2 rounded-md bg-white/90 px-3 py-1.5 text-xs text-neutral-500 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-400">
-          Small grey dots aren&rsquo;t added to &ldquo;Compared with&rdquo; yet — click a dot to add or remove it. Red ring: this school.
-        </div>
       </div>
     </div>
   );
 }
+
+// Map round (2026-09-12), item 1c: a fixed pixel allowance for the title text sitting
+// above the gradient bar, carved out of the SAME measured box (MapView's own
+// trendKeyBox effect) rather than changing that effect's own geometry -- the box's
+// total top/height already fits exactly in the real gap between the top-right control
+// stack and Leaflet's own zoom control; splitting it into title+bar internally keeps
+// that same total footprint (title height + bar height === box.height), so this can't
+// newly overlap either neighbour regardless of screen size.
+const TREND_KEY_TITLE_HEIGHT = 16;
 
 function TrendColourKey({ box }: { box: { top: number; height: number } | null }) {
   // Nothing rendered until the real gap is measured (see MapView's own
@@ -795,38 +834,70 @@ function TrendColourKey({ box }: { box: { top: number; height: number } | null }
   // Top of the bar = growing (matches "up is positive"); gradient runs top-to-
   // bottom from the highest stop to the lowest, so reverse the ascending list.
   const gradient = [...stops].reverse().map((s) => s.hex).join(",");
+  const barHeight = Math.max(0, box.height - TREND_KEY_TITLE_HEIGHT);
   return (
-    <div
-      className="absolute right-[10px] z-[1000] w-[26px] rounded-sm shadow-sm"
-      style={{ top: box.top, height: box.height, background: `linear-gradient(to bottom, ${gradient})` }}
-    >
-      {stops.map((s) => {
-        const t = (max - s.pct) / (max - min);
-        return (
-          <div key={s.pct} className="absolute inset-x-0" style={{ top: `${t * 100}%` }}>
-            <div className="h-px w-full bg-white/80" />
-            <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
-              {s.pct > 0 ? `+${s.pct}%` : `${s.pct}%`}
-            </span>
-          </div>
-        );
-      })}
+    <div className="absolute right-[10px] z-[1000] w-[52px]" style={{ top: box.top }}>
+      <p
+        className="mb-0.5 text-right text-[9px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400"
+        style={{ height: TREND_KEY_TITLE_HEIGHT }}
+      >
+        Growth
+      </p>
+      <div
+        className="relative ml-auto w-[26px] rounded-sm shadow-sm"
+        style={{ height: barHeight, background: `linear-gradient(to bottom, ${gradient})` }}
+      >
+        {stops.map((s) => {
+          const t = (max - s.pct) / (max - min);
+          return (
+            <div key={s.pct} className="absolute inset-x-0" style={{ top: `${t * 100}%` }}>
+              <div className="h-px w-full bg-white/80" />
+              <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
+                {s.pct > 0 ? `+${s.pct}%` : `${s.pct}%`}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function SectorColourKey({ sectors }: { sectors: string[] }) {
-  if (sectors.length === 0) return null;
+// Map round (2026-09-12), item 1d: full canonical sector set now, always -- the
+// public map's own sector legend precedent, same four TAG_COLOURS entries every
+// other sector-coloured element in this app already uses (typology.ts's own
+// SectorTag), not the FilterBar.tsx-local SECTOR_OPTIONS array (that one gates on
+// "genuinely present in the active set," a different question -- copied verbatim
+// rather than imported since it's a plain 4-item literal, same "local per-file
+// copy" convention that file already established for it).
+const ALL_SECTORS: SectorTag[] = ["Independent", "State", "FE", "Special Schools"];
+
+function SectorColourKey({ sectorsPresent, top }: { sectorsPresent: string[]; top: number | null }) {
+  // Real bug fix: this used to sit at a hardcoded bottom-[70px], which visibly
+  // overlapped Leaflet's own zoom control at some screen sizes/content heights --
+  // TrendColourKey already avoided exactly this by using the real measured gap
+  // instead of a guessed constant; this key now shares that same measurement
+  // (top-aligned with the growth-scale key, not height-matched -- its own content is
+  // a different shape) rather than repeating the same class of bug a second way.
+  // Nothing rendered until the real gap is measured, same discipline as
+  // TrendColourKey's own early return.
+  if (top === null) return null;
   return (
-    <div className="absolute bottom-[70px] right-3 z-[1000] w-44 rounded-md border border-neutral-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+    <div className="absolute right-3 z-[1000] w-44 rounded-md border border-neutral-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-950" style={{ top }}>
       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Sector</h3>
       <ul className="space-y-1">
-        {sectors.map((s) => (
-          <li key={s} className="flex items-center gap-1.5 text-xs">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: `var(${cssVarNameForTag(s)})` }} />
-            {s}
-          </li>
-        ))}
+        {ALL_SECTORS.map((s) => {
+          const present = sectorsPresent.includes(s);
+          return (
+            <li key={s} className={`flex items-center gap-1.5 text-xs ${present ? "" : "text-neutral-400 dark:text-neutral-600"}`}>
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={present ? { background: `var(${cssVarNameForTag(s)})` } : { background: "transparent", border: "1.5px solid currentColor" }}
+              />
+              {s}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
