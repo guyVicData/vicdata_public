@@ -125,3 +125,135 @@ export async function lookupAgeGenderTotals(params: {
   }
   return rows;
 }
+
+// Academic Results RPC bridge (docs/vicdata_phase3_academic_results_rpc_bridge_brief_v1.md
+// Part B) -- same fetchPage/loop-until-short-page shape as lookupReferenceData/
+// lookupAgeGenderTotals above, nothing new invented. Three RPCs, three wrapper
+// functions -- one per genuinely different return shape (academic_headline_lookup,
+// academic_subject_family_lookup, academic_geography_lookup), matching the "separate
+// function per return shape" discipline those RPCs themselves follow.
+
+export type KsStage = "ks4" | "ks5";
+
+export type AcademicHeadlineRow = {
+  entity_id: string;
+  ks_stage: KsStage;
+  period: number;
+  measures: Record<string, number | string>;
+};
+
+export async function lookupAcademicHeadline(params: {
+  entityIds?: string[];
+  ksStage?: KsStage;
+  periodMin?: number;
+  periodMax?: number;
+  signal?: AbortSignal;
+}): Promise<AcademicHeadlineRow[]> {
+  const rows: AcademicHeadlineRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage(
+      "academic_headline_lookup",
+      {
+        p_entity_ids: params.entityIds ?? null,
+        p_ks_stage: params.ksStage ?? null,
+        p_period_min: params.periodMin ?? null,
+        p_period_max: params.periodMax ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+      },
+      params.signal,
+    )) as AcademicHeadlineRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
+export type AcademicSubjectFamilyRow = {
+  entity_id: string;
+  ks_stage: KsStage;
+  family_id: string;
+  family_label: string;
+  period: number;
+  entries_total: number;
+  entries_share_percent: number | null;
+  avg_point_score: number | null;
+  points_coverage_percent: number | null;
+};
+
+export async function lookupAcademicSubjectFamily(params: {
+  entityIds?: string[];
+  ksStage?: KsStage;
+  familyIds?: string[];
+  periodMin?: number;
+  periodMax?: number;
+  signal?: AbortSignal;
+}): Promise<AcademicSubjectFamilyRow[]> {
+  const rows: AcademicSubjectFamilyRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage(
+      "academic_subject_family_lookup",
+      {
+        p_entity_ids: params.entityIds ?? null,
+        p_ks_stage: params.ksStage ?? null,
+        p_family_ids: params.familyIds ?? null,
+        p_period_min: params.periodMin ?? null,
+        p_period_max: params.periodMax ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+      },
+      params.signal,
+    )) as AcademicSubjectFamilyRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
+export type AcademicGeographyRow = {
+  grouping_type: "la" | "region" | "national";
+  grouping_key: string;
+  ks_stage: KsStage;
+  family_id: string;
+  measure: string;
+  period: number;
+  avg_value: number | null;
+  entries_total: number | null;
+  school_count: number;
+};
+
+// p_ks_stage is required on this RPC (not optional like the other two) -- see that
+// migration's own comment: unfiltered, this table returns ~31,000 rows spanning every
+// measure/grouping/family at once, and no real call site wants that.
+export async function lookupAcademicGeography(params: {
+  ksStage: KsStage;
+  measure?: string;
+  groupingType?: "la" | "region" | "national";
+  groupingKeys?: string[];
+  familyId?: string;
+  periodMin?: number;
+  periodMax?: number;
+  signal?: AbortSignal;
+}): Promise<AcademicGeographyRow[]> {
+  const rows: AcademicGeographyRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage(
+      "academic_geography_lookup",
+      {
+        p_ks_stage: params.ksStage,
+        p_measure: params.measure ?? null,
+        p_grouping_type: params.groupingType ?? null,
+        p_grouping_keys: params.groupingKeys ?? null,
+        p_family_id: params.familyId ?? null,
+        p_period_min: params.periodMin ?? null,
+        p_period_max: params.periodMax ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+      },
+      params.signal,
+    )) as AcademicGeographyRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}

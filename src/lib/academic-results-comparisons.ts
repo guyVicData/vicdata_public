@@ -17,35 +17,29 @@
 // default-lists/route.ts already applies, exactly as buildDefaultComparatorLists()
 // itself has no membership check of its own and relies on its caller for that).
 //
-// Fetches real academic canonical_facts rows via the EXISTING, already-live
-// reference_data_lookup RPC (vicdata-reference.ts's own lookupReferenceData) -- no new
-// RPC was built for this round. This means it reads the four subject-level/headline
-// source_ids' own raw rows directly; it does NOT yet read this round's new
-// academic_headline_snapshot/academic_subject_family_rollup/academic_geography_
-// aggregate tables (vicdata repo), since no RPC exposing those exists yet -- flagged as
-// a real, explicit follow-up in the combined build report, not silently worked around
-// here.
+// Fetches real academic data via academic_headline_lookup (vicdata-reference.ts's own
+// lookupAcademicHeadline) -- the RPC bridge round
+// (docs/vicdata_phase3_academic_results_rpc_bridge_brief_v1.md) closed the gap this
+// header used to document here: this now reads vicdata's precomputed
+// academic_headline_snapshot table (one row per school/key-stage/year, canonicalized
+// across the modern/historic column-naming split) instead of raw dfe_ks4_headline/
+// dfe_ks5_headline fact rows via the generic reference_data_lookup RPC. The
+// academic_subject_family_rollup/academic_geography_aggregate tables also have RPCs now
+// (academic_subject_family_lookup, academic_geography_lookup) but no real call site in
+// this codebase needs subject-family or geography comparisons yet -- not wired in here
+// until one does.
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import { buildDefaultComparatorLists, type DefaultList } from "./default-comparator-lists";
-import { lookupReferenceData, type ReferenceFact } from "./vicdata-reference";
+import { lookupAcademicHeadline, type AcademicHeadlineRow, type KsStage } from "./vicdata-reference";
 
-export type KsStage = "ks4" | "ks5";
-
-// The real, live source_ids each key stage's headline data comes from (see
-// dfe_ks4_headline.py/dfe_ks5_headline.py's own docstrings) -- modern only; the
-// historic sources are a separate, older vintage this read-path doesn't need for a
-// "your context right now" comparison.
-const HEADLINE_SOURCE_ID: Record<KsStage, string> = {
-  ks4: "dfe_ks4_headline",
-  ks5: "dfe_ks5_headline",
-};
+export type { KsStage };
 
 export type SchoolAcademicComparison = {
   urn: string;
   name: string;
   distanceKm: number | null;
-  facts: ReferenceFact[];
+  facts: AcademicHeadlineRow[];
 };
 
 async function attachAcademicFacts(
@@ -53,17 +47,17 @@ async function attachAcademicFacts(
   ksStage: KsStage,
 ): Promise<SchoolAcademicComparison[]> {
   if (schools.length === 0) return [];
-  const facts = await lookupReferenceData({
-    sourceId: HEADLINE_SOURCE_ID[ksStage],
+  const rows = await lookupAcademicHeadline({
     entityIds: schools.map((s) => s.urn),
+    ksStage,
   });
-  const factsByUrn = new Map<string, ReferenceFact[]>();
-  for (const fact of facts) {
-    const existing = factsByUrn.get(fact.entity_id);
-    if (existing) existing.push(fact);
-    else factsByUrn.set(fact.entity_id, [fact]);
+  const rowsByUrn = new Map<string, AcademicHeadlineRow[]>();
+  for (const row of rows) {
+    const existing = rowsByUrn.get(row.entity_id);
+    if (existing) existing.push(row);
+    else rowsByUrn.set(row.entity_id, [row]);
   }
-  return schools.map((s) => ({ ...s, facts: factsByUrn.get(s.urn) ?? [] }));
+  return schools.map((s) => ({ ...s, facts: rowsByUrn.get(s.urn) ?? [] }));
 }
 
 // Free tier: the exact same real nearest-N (or FE-college-nearest, or LA-comparator)
