@@ -34,9 +34,13 @@ import {
   availableFamilies,
   deserializeAcademicProfile,
   igcseExclusionLikely,
+  dominantKs5Cohort,
+  ks5HasCohortEntries,
+  KS5_COHORT_OPTIONS,
   type AcademicSchoolProfile,
   type WireAcademicSchoolProfile,
   type KsStage,
+  type Ks5Cohort,
   type SubjectEntry,
   type SubjectValueAdded,
   STAGE_LABEL,
@@ -127,6 +131,38 @@ function CategoryFilter({
   );
 }
 
+// KS5 qualification-type-awareness round, Part 4: an explicit, user-changeable
+// qualification-type control for group-comparison views at KS5 (Rankings, Overview's
+// spread/growth/trend sections, Map) -- deliberately visually distinct from
+// CategoryFilter above (a different real concept: WHICH qualification type is being
+// compared, not which subject family) even though it reuses the same pill shape.
+// Defaults to the target school's own real dominant cohort on first load (so opening
+// Capital City College's Rankings shows its real Applied General ranking by default,
+// not a jarring near-empty A-level one) but is a real, changeable control from there.
+function Ks5CohortSwitcher({ active, onChange }: { active: Ks5Cohort; onChange: (c: Ks5Cohort) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Qualification type</span>
+      {KS5_COHORT_OPTIONS.map((opt) => (
+        <button
+          key={opt.cohort}
+          type="button"
+          aria-pressed={active === opt.cohort}
+          title={opt.description}
+          onClick={() => onChange(opt.cohort)}
+          className={
+            active === opt.cohort
+              ? "inline-flex items-center gap-1 rounded-full border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-medium text-white dark:border-blue-100 dark:bg-blue-100 dark:text-blue-900"
+              : "inline-flex items-center gap-1 rounded-full border border-blue-300 px-3 py-1 text-xs text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
+          }
+        >
+          {opt.pillLabel}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function AcademicDataView({
   urn,
   authToken,
@@ -160,9 +196,16 @@ export default function AcademicDataView({
   // same 8 families), but a family selected under one stage carrying silently over to
   // a stage switch reads as confusing state, not a helpful default.
   const [familyId, setFamilyId] = useState<string | null>(null);
+  // KS5 qualification-type-awareness round, Part 4: null means "not yet touched by
+  // the user this stage" -- effectiveKs5Cohort below fills in the real default
+  // (target's own dominant cohort). Reset on every stage change for the same reason
+  // familyId is: a cohort chosen under one stage carrying over to a KS2/GCSE view
+  // makes no sense (the selector only ever renders at KS5 anyway).
+  const [ks5Cohort, setKs5Cohort] = useState<Ks5Cohort | null>(null);
   function changeStage(next: KsStage) {
     setStage(next);
     setFamilyId(null);
+    setKs5Cohort(null);
   }
 
   useEffect(() => {
@@ -225,6 +268,22 @@ export default function AcademicDataView({
     }
   }
 
+  // KS5 qualification-type-awareness round, Part 4: the selector's real current
+  // value -- the user's own pick if they've touched it this stage, else the target
+  // school's real dominant cohort (Part 3's own auto-detect), else "A level" (the
+  // universal safe default for a target with no real KS5 entries-count data at all).
+  // Same computed-once-here-thread-down shape as ks4ExcludedUrns above.
+  const effectiveKs5Cohort: Ks5Cohort = ks5Cohort ?? (targetProfile ? (dominantKs5Cohort(targetProfile) ?? "A level") : "A level");
+  const ks5ExcludedUrns = new Set<string>();
+  if (effectiveStage === "ks5") {
+    const seen = new Set<string>();
+    for (const p of [targetProfile, ...tickedProfiles]) {
+      if (!p || seen.has(p.urn)) continue;
+      seen.add(p.urn);
+      if (!ks5HasCohortEntries(p, effectiveKs5Cohort)) ks5ExcludedUrns.add(p.urn);
+    }
+  }
+
   // Round 2, Part C: subject-level data for the TARGET school only (see this file's
   // own header comment for why), refetched whenever the stage changes (ks4/ks5 are
   // genuinely different sources) -- not gated on familyId, since AcademicGraphsView
@@ -278,6 +337,13 @@ export default function AcademicDataView({
               isn't a temporarily-unavailable control, it genuinely doesn't apply to
               this view. */}
           {activeView !== "rankings" && <CategoryFilter families={families} activeFamilyId={familyId} onChange={setFamilyId} />}
+          {/* KS5 qualification-type-awareness round, Part 4: unlike CategoryFilter,
+              this genuinely applies to every view at KS5 (Rankings included) -- it's
+              about which real cohort is being compared, not a subject-family drill-
+              down -- so it isn't hidden on Rankings. Deliberately its own row/colour
+              (blue vs. CategoryFilter's neutral pills) so it doesn't read as the same
+              control by a different name. */}
+          {effectiveStage === "ks5" && <Ks5CohortSwitcher active={effectiveKs5Cohort} onChange={setKs5Cohort} />}
         </div>
       )}
 
@@ -303,6 +369,8 @@ export default function AcademicDataView({
                 familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
                 activeSetLabel={activeSetLabel}
                 ks4ExcludedUrns={ks4ExcludedUrns}
+                ks5Cohort={effectiveKs5Cohort}
+                ks5ExcludedUrns={ks5ExcludedUrns}
               />
             ) : activeView === "graphs" ? (
               <AcademicGraphsView
@@ -315,6 +383,8 @@ export default function AcademicDataView({
                 familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
                 subjectData={subjectData}
                 ks4ExcludedUrns={ks4ExcludedUrns}
+                ks5Cohort={effectiveKs5Cohort}
+                ks5ExcludedUrns={ks5ExcludedUrns}
               />
             ) : (
               <AcademicRankingsView
@@ -324,6 +394,8 @@ export default function AcademicDataView({
                 startPeriod={startPeriod}
                 activeSetLabel={activeSetLabel}
                 ks4ExcludedUrns={ks4ExcludedUrns}
+                ks5Cohort={effectiveKs5Cohort}
+                ks5ExcludedUrns={ks5ExcludedUrns}
               />
             )}
           </DataViewErrorBoundary>

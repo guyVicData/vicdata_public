@@ -47,6 +47,11 @@ import {
   ks4ExclusionTargetSentence,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
+  dominantKs5Cohort,
+  ks5HeadlineMeasureKey,
+  ks5HeadlineLabel,
+  ks5CohortExclusionNote,
+  ks5CohortWholeGroupSentence,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -56,6 +61,7 @@ import {
   type AcademicSchoolProfile,
   type AcademicFamilyYear,
   type KsStage,
+  type Ks5Cohort,
   type SubjectEntry,
   type SubjectValueAdded,
 } from "@/lib/academic-data-view";
@@ -168,6 +174,8 @@ export default function AcademicGraphsView({
   familyLabel = null,
   subjectData = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
+  ks5Cohort = "A level",
+  ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -185,12 +193,23 @@ export default function AcademicGraphsView({
   // section, and entries/point-score are a different real metric class from
   // Attainment 8/EBacc, not necessarily affected by the same DfE exclusion).
   ks4ExcludedUrns?: Set<string>;
+  // KS5 qualification-type-awareness round, Part 4: the group-comparison sections
+  // below (spread/growth/trend) key their measure on this selected cohort -- the
+  // Overview headline NUMBER itself (Part 3) deliberately does NOT use this prop; it
+  // always shows the target's own real dominant cohort regardless of the selector,
+  // per the brief's own "the number itself, not its spread/growth/trend sub-sections"
+  // scoping. ks5ExcludedUrns is this round's analogue of ks4ExcludedUrns, empty
+  // whenever stage !== "ks5".
+  ks5Cohort?: Ks5Cohort;
+  ks5ExcludedUrns?: Set<string>;
 }) {
   // Local, not lifted -- this component already remounts (its parent's
   // DataViewErrorBoundary key) whenever stage/family changes, so this resets for free.
   const [subject, setSubject] = useState<string | null>(null);
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
-  const measureKey = HEADLINE_MEASURE[stage];
+  // KS5 qualification-type-awareness round, Part 4: group-comparison sections
+  // (spread/growth/trend/same-year bar) key their measure on the selected cohort.
+  const measureKey = stage === "ks5" ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
   const baseline = TREND_BASELINE_PERIOD[stage];
   const setLabel = activeSetLabel ?? "the ticked comparator set";
 
@@ -200,8 +219,20 @@ export default function AcademicGraphsView({
     return y ? headlineValueAt(years, y.period, measureKey) : null;
   };
 
-  const targetCurrent = valueFor(targetProfile);
-  const targetAnchor = valueFor(targetProfile, baseline);
+  // Part 3: the Overview headline NUMBER's own measure is the target's real dominant
+  // cohort, deliberately independent of the Part 4 selector above (see this file's
+  // own header comment on the ks5Cohort prop) -- so this does NOT reuse valueFor/
+  // measureKey. For ks4/ks2 this is identical to the old behaviour (HEADLINE_MEASURE).
+  const targetDominantKs5Cohort = stage === "ks5" ? (dominantKs5Cohort(targetProfile) ?? "A level") : null;
+  const targetHeadlineMeasureKey = stage === "ks5" ? ks5HeadlineMeasureKey(targetDominantKs5Cohort!) : HEADLINE_MEASURE[stage];
+  const targetHeadlineLabel = stage === "ks5" ? ks5HeadlineLabel(targetDominantKs5Cohort!, targetProfile.ks5QualTypes.ib) : HEADLINE_LABEL[stage];
+  // Part 4's own group-level label, for the Growth/decline and Context-over-time
+  // captions below -- always the SELECTED cohort (not the target's own dominant one).
+  const groupHeadlineLabel = stage === "ks5" ? ks5HeadlineLabel(ks5Cohort) : HEADLINE_LABEL[stage];
+  const targetHeadlineValueAt = (period: number) => headlineValueAt(stageYears(targetProfile, stage), period, targetHeadlineMeasureKey);
+  const targetLatestYear = latestYear(stageYears(targetProfile, stage));
+  const targetCurrent = targetLatestYear ? targetHeadlineValueAt(targetLatestYear.period) : null;
+  const targetAnchor = targetHeadlineValueAt(baseline);
   const targetTrendBadge = trendBadge(targetCurrent, targetAnchor);
 
   // GCSE exclusion round, Part 2 (supersedes stage-1's caveat-alongside-a-number Part
@@ -210,13 +241,35 @@ export default function AcademicGraphsView({
   // calculation below (spread/growth/trend/same-year bar) -- an excluded school (target
   // or ticked) simply isn't part of any of them, rather than showing with a caveat.
   const ks4TargetExcluded = ks4ExcludedUrns.has(targetProfile.urn);
-  const comparableGroup = group.filter((p) => !ks4ExcludedUrns.has(p.urn));
+  const comparableGroup = group.filter((p) => !ks4ExcludedUrns.has(p.urn) && !ks5ExcludedUrns.has(p.urn));
   const excludedTickedNames = group.filter((p) => ks4ExcludedUrns.has(p.urn) && p.urn !== targetProfile.urn).map((p) => p.name);
   // Only possible when the target is ALSO excluded (comparableGroup would otherwise
   // always contain at least the target) -- a real, distinct case from "some ticked
   // schools excluded": nothing at all is left to chart.
   const wholeGroupExcluded = stage === "ks4" && comparableGroup.length === 0;
   const ks4GroupNote = stage === "ks4" ? ks4ExclusionGroupNote(excludedTickedNames) : null;
+
+  // KS5 qualification-type-awareness round, Part 4: same real pattern, keyed on the
+  // selected cohort instead. `comparableGroup` above already reflects BOTH exclusion
+  // sets (ks4ExcludedUrns is empty whenever stage !== "ks4", and vice versa for
+  // ks5ExcludedUrns below, so only one ever actually filters anything for a given
+  // stage) -- recomputed here rather than folded into one shared variable name so
+  // each stage's own exclusion reason stays traceable to its own real cause.
+  const ks5TargetExcludedFromGroup = ks5ExcludedUrns.has(targetProfile.urn);
+  // Unlike the GCSE round's ks4 pattern, this names the TARGET too when it's the one
+  // excluded (rather than a separate dedicated sentence) -- Part 3 above already
+  // covers the target's own single-school headline number independently, so the only
+  // real gap left to explain here is "why is this school's own dot/bar/line missing
+  // from the group charts below," which naming it in the same note answers directly.
+  const excludedNamesKs5 = group.filter((p) => ks5ExcludedUrns.has(p.urn)).map((p) => p.name);
+  const ks5WholeGroupExcluded = stage === "ks5" && comparableGroup.length === 0;
+  const ks5GroupNote = stage === "ks5" ? ks5CohortExclusionNote(excludedNamesKs5, ks5Cohort) : null;
+  // Only one of the two is ever non-null/true for a given render (each gated to its
+  // own stage) -- combined once here so the JSX below doesn't need to repeat both
+  // stages' own conditionals in every affected section.
+  const anyWholeGroupExcluded = wholeGroupExcluded || ks5WholeGroupExcluded;
+  const anyGroupNote = ks4GroupNote ?? ks5GroupNote;
+  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort);
 
   const spreadPoints = comparableGroup.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: valueFor(p) }));
   const spread = spreadData(spreadPoints);
@@ -233,7 +286,7 @@ export default function AcademicGraphsView({
     .sort((a, b) => a - b);
   // Excluded from the group means excluded from its own trend line too -- the same
   // methodology issue applies to every one of its real years, not just the latest.
-  const targetSeries = ks4TargetExcluded ? allPeriods.map(() => null) : allPeriods.map((p) => valueFor(targetProfile, p));
+  const targetSeries = ks4TargetExcluded || ks5TargetExcludedFromGroup ? allPeriods.map(() => null) : allPeriods.map((p) => valueFor(targetProfile, p));
   const averageSeries = allPeriods.map((p) => {
     const vals = comparableGroup.map((s) => valueFor(s, p)).filter((v): v is number => v !== null);
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
@@ -283,7 +336,7 @@ export default function AcademicGraphsView({
   return (
     <div className="space-y-8">
       <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Overview — {HEADLINE_LABEL[stage]}</h3>
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Overview — {targetHeadlineLabel}</h3>
         {ks4TargetExcluded ? (
           <p className="text-sm text-neutral-700 dark:text-neutral-300">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
         ) : targetCurrent !== null ? (
@@ -298,9 +351,9 @@ export default function AcademicGraphsView({
         ) : (
           <p className="text-sm text-neutral-500">No real data available for this school under this key stage.</p>
         )}
-        {!ks4TargetExcluded && (ks4GroupNote || spread) && (
+        {!ks4TargetExcluded && (anyGroupNote || spread) && (
           <div className="mt-4">
-            {ks4GroupNote && <p className="mb-2 text-xs italic text-neutral-500">{ks4GroupNote}</p>}
+            {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
             {spread && (
               <>
                 <SpreadStrip min={spread.min} max={spread.max} points={spread.points} formatValue={(v) => formatHeadline(stage, v)} />
@@ -308,6 +361,12 @@ export default function AcademicGraphsView({
                   <p className="mt-1 text-xs text-neutral-500">
                     {Math.abs(((targetCurrent - groupAverage) / groupAverage) * 100).toFixed(0)}% {targetCurrent >= groupAverage ? "above" : "below"} the average of{" "}
                     {formatHeadline(stage, groupAverage)} for {setLabel}
+                    {/* KS5 qualification-type-awareness round: this spread strip is
+                        keyed on the SELECTED cohort (Part 4), which can genuinely
+                        differ from the big number above (the target's own auto-
+                        detected dominant cohort, Part 3) -- named explicitly here so
+                        the two never read as the same figure when they aren't. */}
+                    {stage === "ks5" && ` (${groupHeadlineLabel})`}
                   </p>
                 )}
               </>
@@ -318,12 +377,12 @@ export default function AcademicGraphsView({
 
       <section>
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Growth / decline since {academicYearLabel(baseline)}</h3>
-        {wholeGroupExcluded ? (
-          <p className="text-sm text-neutral-500">{ks4ExclusionWholeGroupSentence(setLabel)}</p>
+        {anyWholeGroupExcluded ? (
+          <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
         ) : (
           <>
-            {ks4GroupNote && <p className="mb-2 text-xs italic text-neutral-500">{ks4GroupNote}</p>}
-            <p className="mb-2 text-xs text-neutral-500">Change in {HEADLINE_LABEL[stage]}, across {setLabel}.</p>
+            {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
+            <p className="mb-2 text-xs text-neutral-500">Change in {groupHeadlineLabel}, across {setLabel}.</p>
             <DivergingBarChart points={growthPoints} />
           </>
         )}
@@ -331,19 +390,19 @@ export default function AcademicGraphsView({
 
       <section>
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Context over time</h3>
-        {wholeGroupExcluded ? (
-          <p className="text-sm text-neutral-500">{ks4ExclusionWholeGroupSentence(setLabel)}</p>
+        {anyWholeGroupExcluded ? (
+          <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
         ) : (
           <>
-            {ks4GroupNote && <p className="mb-2 text-xs italic text-neutral-500">{ks4GroupNote}</p>}
+            {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
             <p className="mb-2 text-xs text-neutral-500">
-              {targetProfile.name}&rsquo;s {HEADLINE_LABEL[stage]} compared with the average of {setLabel}, {allPeriods.length > 0 ? `${academicYearLabel(allPeriods[0])}–${academicYearLabel(allPeriods[allPeriods.length - 1])}` : ""}.
+              {targetProfile.name}&rsquo;s {groupHeadlineLabel} compared with the average of {setLabel}, {allPeriods.length > 0 ? `${academicYearLabel(allPeriods[0])}–${academicYearLabel(allPeriods[allPeriods.length - 1])}` : ""}.
             </p>
             <TargetVsAverageTrend periods={allPeriods} targetSeries={targetSeries} averageSeries={averageSeries} />
             {latestPeriod !== null && (
               <div className="mt-4">
                 <p className="mb-2 text-xs text-neutral-500">
-                  {HEADLINE_LABEL[stage]}, {academicYearLabel(latestPeriod)} — {targetProfile.name} compared with {setLabel}.
+                  {groupHeadlineLabel}, {academicYearLabel(latestPeriod)} — {targetProfile.name} compared with {setLabel}.
                 </p>
                 <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
               </div>

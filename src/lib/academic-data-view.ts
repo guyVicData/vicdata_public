@@ -12,11 +12,13 @@
 // shape as KS4/KS5.
 
 import { createServerAnonSupabaseClient } from "./supabase";
-import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
+import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicKs5QualificationFlags, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
 import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "./roll-data";
 
 export type KsStage = "ks2" | "ks4" | "ks5";
+
+export type Ks5QualTypes = { ib: boolean; preU: boolean };
 
 export type AcademicHeadlineYear = {
   period: number;
@@ -45,6 +47,13 @@ export type AcademicSchoolProfile = {
   // igcseExclusionLikely to restrict the exclusion gate to independent schools --
   // see that function's own comment for why.
   establishmentTypeGroup: string | null;
+  // KS5 qualification-type-awareness round: real, ground-truth flags from
+  // dfe_ks5_subject_results' own qualification_detailed field (see
+  // academic_ks5_qualification_flags_lookup's own migration comment for the exact
+  // real qualification names each flag matches). Defaults to {ib:false, preU:false}
+  // for a school with no real dfe_ks5_subject_results rows at all -- same "absence
+  // means false" convention the RPC itself uses.
+  ks5QualTypes: Ks5QualTypes;
   ks2: AcademicHeadlineYear[]; // ascending by period; degraded (raw facts, see module comment)
   ks4: AcademicHeadlineYear[];
   ks5: AcademicHeadlineYear[];
@@ -139,6 +148,98 @@ export const HEADLINE_LABEL: Record<KsStage, string> = {
 };
 
 export const HEADLINE_UNIT: Record<KsStage, "percent" | "points"> = { ks2: "percent", ks4: "points", ks5: "points" };
+
+// KS5 qualification-type-awareness round: the real exam_cohort names DfE publishes at
+// KS5 headline level, confirmed directly against dfe_ks5_headline.py's own docstring
+// and real ingested data -- deliberately excludes "E/M measures" (confirmed directly:
+// 0 real rows anywhere in this project's own local data ever carry a real
+// aps_per_entry_student_count for it -- it's a maths/English-progress pupil-
+// characteristic indicator, not a genuine qualification-type cohort with its own
+// entries, so it's never a real candidate for "which cohort has the most entries").
+export const KS5_COHORTS = ["Academic", "A level", "Applied general", "Tech level", "Technical certificate"] as const;
+export type Ks5Cohort = (typeof KS5_COHORTS)[number];
+
+// Display casing for each real DfE cohort string -- DfE's own raw values are
+// inconsistently cased ("Applied general", not "Applied General"); these match the
+// brief's own real examples ("Capital City College's Applied General students...").
+export const KS5_COHORT_DISPLAY_LABEL: Record<Ks5Cohort, string> = {
+  "Academic": "Academic",
+  "A level": "A-level",
+  "Applied general": "Applied General",
+  "Tech level": "Tech Level",
+  "Technical certificate": "Technical Certificate",
+};
+
+export function ks5HeadlineMeasureKey(cohort: Ks5Cohort): string {
+  return `${cohort}::aps_per_entry`;
+}
+
+// `hasIb` only matters for the "Academic" cohort -- every other cohort's real DfE
+// name is already honest and unambiguous on its own. Callers comparing a GROUP on
+// "Academic" (Part 4's selector) can always pass true: Part 2's real IB flag already
+// restricts that comparison to confirmed-IB schools only, so "Academic" selected as a
+// group measure is definitionally IB-style. Callers describing one TARGET school's
+// own real dominant cohort (Part 3) must pass that school's own real flag instead --
+// a school can genuinely have Academic as its dominant cohort without any confirmed
+// IB entries (Pre-U/EPQ/Core-Maths, or an Academic count that simply matches its own
+// A-level count).
+export function ks5HeadlineLabel(cohort: Ks5Cohort, hasIb: boolean = true): string {
+  if (cohort !== "Academic") return `average points per ${KS5_COHORT_DISPLAY_LABEL[cohort]} entry`;
+  return hasIb ? "average points per A-level and International Baccalaureate entry" : "average points per A-level and other academic entry";
+}
+
+// Part 3: for a SINGLE school with no group comparison involved (free card, paid
+// Overview's own headline number), auto-detect which real cohort actually has the
+// most entries for this school's latest KS5 year -- the real fix for the reported bug
+// (Capital City College showing only its A-level figure, 842 entries, when its real
+// dominant cohort by entries is Applied General at 1,083). Returns null if the school
+// has no real per-cohort entries-count data at all (pre-ingest gap years, or genuinely
+// no KS5 provision).
+export function dominantKs5Cohort(profile: AcademicSchoolProfile): Ks5Cohort | null {
+  const y = latestYear(profile.ks5);
+  if (!y) return null;
+  let best: Ks5Cohort | null = null;
+  let bestCount = -Infinity;
+  for (const cohort of KS5_COHORTS) {
+    const count = headlineValueAt(profile.ks5, y.period, `${cohort}::aps_per_entry_student_count`);
+    if (count !== null && count > bestCount) {
+      bestCount = count;
+      best = cohort;
+    }
+  }
+  return best;
+}
+
+// Part 4: does this school have real, usable data in the given cohort for a GROUP
+// comparison -- "Academic" specifically also requires Part 2's real, ground-truth IB
+// flag (the brief's own explicit restriction: a school whose Academic entries are
+// genuinely all Pre-U/EPQ/Core-Maths, or whose Academic count simply matches its own
+// A-level count, should not be silently included in an "IB-style" comparison as if it
+// were a real IB provider).
+export function ks5HasCohortEntries(profile: AcademicSchoolProfile, cohort: Ks5Cohort): boolean {
+  const y = latestYear(profile.ks5);
+  if (!y) return false;
+  if (cohort === "Academic" && !profile.ks5QualTypes.ib) return false;
+  return headlineValueAt(profile.ks5, y.period, ks5HeadlineMeasureKey(cohort)) !== null;
+}
+
+// The qualification-type selector's real options (Part 4) -- no separate Pre-U option
+// (only 4 real schools nationally, not a viable comparator population, per the
+// brief's own "what NOT to build" section). "Academic" here always means the
+// IB-restricted version -- the brief presents it as one single option for an
+// "IB-style" comparison, not a separate unrestricted "raw Academic" mode.
+export const KS5_COHORT_OPTIONS: { cohort: Ks5Cohort; pillLabel: string; description: string }[] = [
+  { cohort: "A level", pillLabel: "A-level", description: "The default view -- today's A-level-only comparison, unchanged." },
+  {
+    cohort: "Academic",
+    pillLabel: "Academic (IB)",
+    description:
+      "Academic — A-level plus International Baccalaureate (DfE's own combined reporting category; restricted here to schools with confirmed IB entries).",
+  },
+  { cohort: "Applied general", pillLabel: "Applied General", description: "BTEC-type qualifications, DfE's own \"Applied general\" cohort." },
+  { cohort: "Tech level", pillLabel: "Tech Level", description: "DfE's own \"Tech level\" cohort." },
+  { cohort: "Technical certificate", pillLabel: "Technical Certificate", description: "DfE's own \"Technical certificate\" cohort." },
+];
 
 // Grade-band ("higher bar") threshold field per stage, for the map's grade-band colour
 // mode (spec §3, §9). KS4 judgement call: two real baskets exist in the ingested data
@@ -254,6 +355,53 @@ export function ks4ExclusionWholeGroupSentence(setLabel: string): string {
   return `None of the schools in ${setLabel} have comparable GCSE figures to show here — try A-level, or a different comparator set.`;
 }
 
+// KS5 qualification-type-awareness round, Part 4 -- same real "leave incomparable
+// schools out, with a visible note" pattern as the GCSE exclusion round (§11's own
+// list-and-reason shape, generalised here to any selected cohort rather than
+// hardcoded to IGCSE/GCSE). The IB case gets its own real wording from summary-
+// wordings doc §13 (matches what the brief itself quotes verbatim); every other
+// cohort uses the generic "no real entries" phrasing -- also drafted for §13, since
+// the brief only gave exact text for the IB case and the whole-group-empty case.
+export function ks5CohortExclusionNote(excludedNames: string[], cohort: Ks5Cohort): string | null {
+  if (excludedNames.length === 0) return null;
+  const comparisonLabel = cohort === "Academic" ? "International Baccalaureate" : KS5_COHORT_DISPLAY_LABEL[cohort];
+  const entriesLabel = cohort === "Academic" ? "confirmed IB entries" : `real ${KS5_COHORT_DISPLAY_LABEL[cohort]} entries`;
+  if (excludedNames.length === 1) {
+    return `${excludedNames[0]} isn't shown in this ${comparisonLabel} comparison — it has no ${entriesLabel} recorded.`;
+  }
+  return `${excludedNames.length} schools aren't shown in this ${comparisonLabel} comparison — ${excludedNames.join(", ")}: none have ${entriesLabel} recorded.`;
+}
+
+export function ks5CohortWholeGroupSentence(setLabel: string, cohort: Ks5Cohort): string {
+  const comparisonLabel = cohort === "Academic" ? "International Baccalaureate" : KS5_COHORT_DISPLAY_LABEL[cohort];
+  return `None of the schools in ${setLabel} have entries in ${comparisonLabel} to show here — try a different qualification type.`;
+}
+
+// Part 3's single-school headline sentence -- cohort-aware, replacing the old
+// hardcoded "A-level students achieved..." for every school regardless of its real
+// dominant cohort. The Academic-dominant case needs real judgement, not mechanical
+// substitution (flagged directly in the brief): when Part 2's real IB flag confirms
+// genuine IB entries, name it specifically; when the dominant cohort is Academic but
+// the school has NO confirmed IB entries (its extra entries beyond A-level are real,
+// but are Pre-U/Extended Project/Core Maths, not IB, or its Academic/A-level counts
+// simply match), naming "International Baccalaureate" would be a real, false claim --
+// worded generically instead ("A-level and other academic students"), never claiming
+// a specific qualification the data doesn't confirm.
+export function ks5HeadlineSentence(schoolName: string, cohort: Ks5Cohort, hasIb: boolean, value: number, period: number): string {
+  const subject =
+    cohort !== "Academic"
+      ? `${KS5_COHORT_DISPLAY_LABEL[cohort]} students`
+      : hasIb
+        ? "A-level and International Baccalaureate students"
+        : "A-level and other academic students";
+  // Same "YYYY/YY" academic-year formatting every caller of this module's own
+  // headline sentences already uses (AcademicSnapshotCard's own academicYear, this
+  // repo's TrendPill.tsx academicYearLabel) -- a small, self-contained duplicate
+  // rather than importing a component-layer helper into this data-layer module.
+  const yearLabel = `${period}/${String(period + 1).slice(2)}`;
+  return `${schoolName}'s ${subject} achieved an average of ${value.toFixed(1)} points per entry in ${yearLabel}.`;
+}
+
 // dfe_ks2_attainment raw facts -> the same {period, measures} shape modern KS4/KS5
 // headline rows already have, so every downstream helper above works identically
 // across all three stages rather than branching on KS2 specifically everywhere it's
@@ -345,7 +493,7 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
   const includePopulation = options?.includePopulation ?? true;
   const supabase = createServerAnonSupabaseClient();
 
-  const [{ data: rows }, ks4Rows, ks5Rows, ks4FamilyRows, ks5FamilyRows, ks2Facts, censusFacts] = await Promise.all([
+  const [{ data: rows }, ks4Rows, ks5Rows, ks4FamilyRows, ks5FamilyRows, ks2Facts, censusFacts, ks5QualFlagRows] = await Promise.all([
     supabase.from("schools").select("urn, current_name, town, easting, northing, establishment_type_group").in("urn", urns),
     lookupAcademicHeadline({ entityIds: urns, ksStage: "ks4" as AcademicRpcKsStage }),
     lookupAcademicHeadline({ entityIds: urns, ksStage: "ks5" as AcademicRpcKsStage }),
@@ -353,7 +501,12 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
     lookupAcademicSubjectFamily({ entityIds: urns, ksStage: "ks5" as AcademicRpcKsStage }),
     lookupReferenceData({ sourceId: "dfe_ks2_attainment", entityIds: urns }),
     includePopulation ? fetchCensusFactsBatched(urns, { breakdowns: CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS }) : Promise.resolve([]),
+    lookupAcademicKs5QualificationFlags({ entityIds: urns }),
   ]);
+
+  const ks5QualTypesByUrn = new Map<string, Ks5QualTypes>(
+    ks5QualFlagRows.map((r) => [r.entity_id, { ib: r.has_ib, preU: r.has_pre_u }]),
+  );
 
   const censusFactsByUrn = new Map<string, typeof censusFacts>();
   for (const f of censusFacts) {
@@ -382,6 +535,7 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
     easting: row.easting,
     northing: row.northing,
     establishmentTypeGroup: row.establishment_type_group,
+    ks5QualTypes: ks5QualTypesByUrn.get(row.urn) ?? { ib: false, preU: false },
     ks2: ks2ByUrn.get(row.urn) ?? [],
     ks4: ks4ByUrn.get(row.urn) ?? [],
     ks5: ks5ByUrn.get(row.urn) ?? [],

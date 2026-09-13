@@ -22,11 +22,16 @@ import {
   ks4ExclusionTargetSentence,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
+  ks5HeadlineMeasureKey,
+  ks5HeadlineLabel,
+  ks5CohortExclusionNote,
+  ks5CohortWholeGroupSentence,
   headlineValueAt,
   latestYear,
   stageYears,
   type AcademicSchoolProfile,
   type KsStage,
+  type Ks5Cohort,
 } from "@/lib/academic-data-view";
 import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, type RankedEntry } from "@/lib/data-view-cards";
 import { academicYearLabel } from "./TrendPill";
@@ -41,8 +46,8 @@ function rankAcrossPeriods(
   group: AcademicSchoolProfile[],
   periods: number[],
   stage: KsStage,
+  measureKey: string,
 ): Map<string, (number | null)[]> {
-  const measureKey = HEADLINE_MEASURE[stage];
   const ranksByUrn = new Map<string, (number | null)[]>(group.map((p) => [p.urn, periods.map(() => null)]));
   periods.forEach((period, i) => {
     const entries = group.map((p) => ({
@@ -66,6 +71,8 @@ export default function AcademicRankingsView({
   startPeriod,
   activeSetLabel,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
+  ks5Cohort = "A level",
+  ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -75,16 +82,35 @@ export default function AcademicRankingsView({
   // GCSE exclusion round, Part 2 -- see AcademicGraphsView's own header comment for
   // the same prop.
   ks4ExcludedUrns?: Set<string>;
+  // KS5 qualification-type-awareness round, Part 4 -- see AcademicGraphsView's own
+  // header comment for the same props. Unlike Graphs, Rankings has no separate
+  // "single-school, no comparison" concept (a ranking is inherently a group
+  // comparison), so everything here -- not just spread/growth/trend -- keys on the
+  // selected cohort; there's no Part-3-style "always the target's own dominant
+  // cohort" number anywhere in this view.
+  ks5Cohort?: Ks5Cohort;
+  ks5ExcludedUrns?: Set<string>;
 }) {
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
-  const measureKey = HEADLINE_MEASURE[stage];
+  const measureKey = stage === "ks5" ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
+  const headlineLabel = stage === "ks5" ? ks5HeadlineLabel(ks5Cohort) : HEADLINE_LABEL[stage];
   const setLabel = activeSetLabel ?? "the ticked comparator set";
 
   const ks4TargetExcluded = ks4ExcludedUrns.has(targetProfile.urn);
-  const comparableGroup = group.filter((p) => !ks4ExcludedUrns.has(p.urn));
+  const comparableGroup = group.filter((p) => !ks4ExcludedUrns.has(p.urn) && !ks5ExcludedUrns.has(p.urn));
   const excludedTickedNames = group.filter((p) => ks4ExcludedUrns.has(p.urn) && p.urn !== targetProfile.urn).map((p) => p.name);
   const wholeGroupExcluded = stage === "ks4" && comparableGroup.length === 0;
   const ks4GroupNote = stage === "ks4" ? ks4ExclusionGroupNote(excludedTickedNames) : null;
+
+  // Same "name the target too" reasoning as AcademicGraphsView's own ks5 note --
+  // there's no dedicated target-excluded sentence for KS5 here (unlike ks4's), so the
+  // group note is the only place this gets explained.
+  const excludedNamesKs5 = group.filter((p) => ks5ExcludedUrns.has(p.urn)).map((p) => p.name);
+  const ks5WholeGroupExcluded = stage === "ks5" && comparableGroup.length === 0;
+  const ks5GroupNote = stage === "ks5" ? ks5CohortExclusionNote(excludedNamesKs5, ks5Cohort) : null;
+  const anyWholeGroupExcluded = wholeGroupExcluded || ks5WholeGroupExcluded;
+  const anyGroupNote = ks4GroupNote ?? ks5GroupNote;
+  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort);
 
   const currentEntries = comparableGroup.map((p) => {
     const years = stageYears(p, stage);
@@ -105,7 +131,7 @@ export default function AcademicRankingsView({
   const allPeriods = Array.from(new Set(groupInScope.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
     .filter((p) => p >= Math.max(startPeriod, baseline))
     .sort((a, b) => a - b);
-  const ranksByUrn = rankAcrossPeriods(groupInScope, allPeriods, stage);
+  const ranksByUrn = rankAcrossPeriods(groupInScope, allPeriods, stage, measureKey);
   const targetRankSeries = ranksByUrn.get(targetProfile.urn) ?? [];
   const realRanks = targetRankSeries.map((r, i) => (r !== null ? { rank: r, period: allPeriods[i] } : null)).filter((x): x is { rank: number; period: number } => x !== null);
   const avgRank = realRanks.length > 0 ? realRanks.reduce((s, r) => s + r.rank, 0) / realRanks.length : null;
@@ -136,7 +162,7 @@ export default function AcademicRankingsView({
               </p>
               {targetCurrentValue !== null && (
                 <p className="mt-1 text-xs text-neutral-500">
-                  {formatHeadline(stage, targetCurrentValue)} — {HEADLINE_LABEL[stage]}
+                  {formatHeadline(stage, targetCurrentValue)} — {headlineLabel}
                   {pctVsAverage !== null && averageCurrentValue !== null && (
                     <> ({Math.abs(pctVsAverage).toFixed(0)}% {pctVsAverage >= 0 ? "above" : "below"} the average of {formatHeadline(stage, averageCurrentValue)})</>
                   )}
@@ -168,13 +194,13 @@ export default function AcademicRankingsView({
         </div>
       </div>
 
-      {wholeGroupExcluded ? (
-        <p className="text-sm text-neutral-500">{ks4ExclusionWholeGroupSentence(setLabel)}</p>
+      {anyWholeGroupExcluded ? (
+        <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
       ) : (
         <>
-          {ks4GroupNote && <p className="text-xs italic text-neutral-500">{ks4GroupNote}</p>}
+          {anyGroupNote && <p className="text-xs italic text-neutral-500">{anyGroupNote}</p>}
 
-          <RankTable title={HEADLINE_LABEL[stage]} ranked={ranked} targetRank={targetRank} total={total} format={(v) => formatHeadline(stage, v)} />
+          <RankTable title={headlineLabel} ranked={ranked} targetRank={targetRank} total={total} format={(v) => formatHeadline(stage, v)} />
 
           {allPeriods.length > 0 && (
             <ComparisonOverTimeTable ranked={ranked} targetRank={targetRank} targetUrn={targetProfile.urn} periods={allPeriods} ranksByUrn={ranksByUrn} />

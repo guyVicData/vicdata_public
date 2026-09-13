@@ -7,9 +7,11 @@ import {
   headlineValueAt,
   igcseExclusionLikely,
   ks4ExclusionTargetSentence,
+  dominantKs5Cohort,
+  ks5HeadlineMeasureKey,
+  ks5HeadlineSentence,
   HEADLINE_MEASURE,
   type AcademicSchoolProfile,
-  type KsStage,
 } from "@/lib/academic-data-view";
 
 // Free State of School "Academic snapshot" card (frontend build brief §7, wording per
@@ -23,15 +25,25 @@ function academicYear(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;
 }
 
-function sentenceFor(schoolName: string, stage: KsStage, period: number, value: number): string | null {
-  switch (stage) {
-    case "ks4":
-      return `${schoolName}'s GCSE pupils achieved an average Attainment 8 score of ${value.toFixed(1)} in ${academicYear(period)}.`;
-    case "ks5":
-      return `${schoolName}'s A-level students achieved an average of ${value.toFixed(1)} UCAS points per entry in ${academicYear(period)}.`;
-    case "ks2":
-      return `${Math.round(value)}% of ${schoolName}'s Year 6 pupils met the expected standard in reading, writing and maths in ${academicYear(period)}.`;
-  }
+function sentenceFor(schoolName: string, stage: "ks4" | "ks2", period: number, value: number): string {
+  return stage === "ks4"
+    ? `${schoolName}'s GCSE pupils achieved an average Attainment 8 score of ${value.toFixed(1)} in ${academicYear(period)}.`
+    : `${Math.round(value)}% of ${schoolName}'s Year 6 pupils met the expected standard in reading, writing and maths in ${academicYear(period)}.`;
+}
+
+// KS5 qualification-type-awareness round, Part 3: replaces the old hardcoded
+// "A-level students achieved..." line (which showed a near-empty/misleading figure
+// for any school whose KS5 cohort isn't mostly A-level -- the reported bug) with the
+// school's own real dominant cohort, honestly labelled (summary-wordings doc §13,
+// supersedes §1's own ks5 sentence).
+function ks5SentenceFor(profile: AcademicSchoolProfile, schoolName: string): string | null {
+  const cohort = dominantKs5Cohort(profile);
+  if (!cohort) return null;
+  const year = latestYear(profile.ks5);
+  if (!year) return null;
+  const value = headlineValueAt(profile.ks5, year.period, ks5HeadlineMeasureKey(cohort));
+  if (value === null) return null;
+  return ks5HeadlineSentence(schoolName, cohort, profile.ks5QualTypes.ib, value, year.period);
 }
 
 export function AcademicSnapshotCard({ profile, schoolName, urn }: { profile: AcademicSchoolProfile; schoolName: string; urn: string }) {
@@ -46,6 +58,7 @@ export function AcademicSnapshotCard({ profile, schoolName, urn }: { profile: Ac
   const lines = stages
     .map((stage) => {
       if (stage === "ks4" && ks4Excluded) return ks4ExclusionTargetSentence(schoolName, stages.includes("ks5"));
+      if (stage === "ks5") return ks5SentenceFor(profile, schoolName);
       const years = stageYears(profile, stage);
       const year = latestYear(years);
       if (!year) return null;

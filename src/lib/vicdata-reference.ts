@@ -225,6 +225,32 @@ export type AcademicGeographyRow = {
 // p_ks_stage is required on this RPC (not optional like the other two) -- see that
 // migration's own comment: unfiltered, this table returns ~31,000 rows spanning every
 // measure/grouping/family at once, and no real call site wants that.
+// KS5 qualification-type-awareness round (docs/vicdata_phase3_academic_results_ks5_
+// cohort_brief_v1.md Part 2) -- ground-truth IB/Pre-U flag per URN, from a new small
+// RPC exposing dfe_ks5_subject_results' own qualification_detailed dimension (not
+// previously exposed via any RPC -- reference_data_lookup's own p_breakdowns filter is
+// exact-match against the FULL breakdown string, and subject/size/grade vary per row,
+// so it can't answer "does this school have any real IB row at all" on its own). A URN
+// absent from the result has neither flag -- same "absence means false" convention as
+// every other lookup here.
+export type Ks5QualificationFlagsRow = {
+  entity_id: string;
+  has_ib: boolean;
+  has_pre_u: boolean;
+};
+
+export async function lookupAcademicKs5QualificationFlags(params: {
+  entityIds: string[];
+  signal?: AbortSignal;
+}): Promise<Ks5QualificationFlagsRow[]> {
+  if (params.entityIds.length === 0) return [];
+  return (await fetchPage(
+    "academic_ks5_qualification_flags_lookup",
+    { p_entity_ids: params.entityIds },
+    params.signal,
+  )) as Ks5QualificationFlagsRow[];
+}
+
 export async function lookupAcademicGeography(params: {
   ksStage: KsStage;
   measure?: string;

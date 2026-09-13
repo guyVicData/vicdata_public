@@ -31,6 +31,10 @@ import {
   TREND_BASELINE_PERIOD,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
+  ks5HeadlineMeasureKey,
+  ks5HeadlineLabel,
+  ks5CohortExclusionNote,
+  ks5CohortWholeGroupSentence,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -39,6 +43,7 @@ import {
   latestFamilyYear,
   type AcademicSchoolProfile,
   type KsStage,
+  type Ks5Cohort,
 } from "@/lib/academic-data-view";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
@@ -81,6 +86,8 @@ export default function AcademicMapView({
   familyLabel = null,
   activeSetLabel = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
+  ks5Cohort = "A level",
+  ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -98,6 +105,12 @@ export default function AcademicMapView({
   // the same prop. An excluded school (target or ticked) gets no circle at all, KS4
   // only -- empty whenever stage !== "ks4".
   ks4ExcludedUrns?: Set<string>;
+  // KS5 qualification-type-awareness round, Part 4: which real cohort the map's
+  // headline-level colour/tooltip (and exclusion) is keyed on -- ignored entirely at
+  // family level (family colour is always avgPointScore trend, per Round 2 Part B
+  // above) and whenever stage !== "ks5".
+  ks5Cohort?: Ks5Cohort;
+  ks5ExcludedUrns?: Set<string>;
 }) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -106,7 +119,14 @@ export default function AcademicMapView({
   // Grade-band was never a real option at family level -- computed, not synced via an
   // effect, so selecting a family while "grade_band" was active from headline level
   // just silently reads as "trend" rather than needing a state-reset round-trip.
-  const effectiveColourMode: ColourMode = familyId ? "trend" : colourMode;
+  // KS5 qualification-type-awareness round: grade-band ("AAB or higher") is
+  // inherently an A-level grading concept -- DfE has no equivalent threshold field for
+  // Applied General/Tech Level/Technical Certificate, and "Academic" blends types too
+  // freely for one to mean anything -- so grade-band is only offered when the
+  // selector is on its "A level" default, same "not offered at all" treatment as
+  // family level rather than silently showing stale/wrong-cohort data.
+  const gradeBandAvailable = !familyId && (stage !== "ks5" || ks5Cohort === "A level");
+  const effectiveColourMode: ColourMode = gradeBandAvailable ? colourMode : "trend";
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   // The map has no separate "this school" callout the way Overview/Rankings do, so an
@@ -114,7 +134,15 @@ export default function AcademicMapView({
   // is -- both named together in the one legend note below.
   const excludedForMap = group.filter((p) => ks4ExcludedUrns.has(p.urn));
   const mapWholeGroupExcluded = stage === "ks4" && group.length > 0 && excludedForMap.length === group.length;
-  const withCoords = group.filter((p) => p.easting !== null && p.northing !== null && !ks4ExcludedUrns.has(p.urn));
+  // KS5 qualification-type-awareness round, Part 4: same real "leave incomparable
+  // schools out, with a visible note" pattern, keyed on the selected cohort instead
+  // of GCSE/IGCSE. Both exclusion sets are computed by the parent gated to their own
+  // stage, so only one is ever non-empty for a given render.
+  const ks5ExcludedForMap = group.filter((p) => ks5ExcludedUrns.has(p.urn));
+  const mapKs5WholeGroupExcluded = stage === "ks5" && group.length > 0 && ks5ExcludedForMap.length === group.length;
+  const withCoords = group.filter(
+    (p) => p.easting !== null && p.northing !== null && !ks4ExcludedUrns.has(p.urn) && !ks5ExcludedUrns.has(p.urn),
+  );
   const setLabel = activeSetLabel ?? "the ticked comparator set";
 
   useEffect(() => {
@@ -161,7 +189,9 @@ export default function AcademicMapView({
       const group2 = layerGroupRef.current!;
       group2.clearLayers();
 
-      const measureKey = HEADLINE_MEASURE[stage];
+      // KS5 qualification-type-awareness round: at KS5, the comparison metric follows
+      // the selected cohort, not the old hardcoded A-level-only measure.
+      const measureKey = stage === "ks5" ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
       const baseline = TREND_BASELINE_PERIOD[stage];
       const gradeKey = GRADE_BAND_MEASURE[stage];
       const age = HEADLINE_AGE[stage];
@@ -217,7 +247,11 @@ export default function AcademicMapView({
         // already uses.
         const sizeLabel = size !== null ? `${size.toLocaleString()} ${familyId ? "entries" : `${HEADLINE_AGE[stage]}-year-olds`}` : null;
         const avgLabel =
-          avgValue !== null ? (familyId ? `${avgValue.toFixed(1)} avg. point score` : `${formatHeadlineValue(stage, avgValue)} ${HEADLINE_LABEL[stage]}`) : null;
+          avgValue !== null
+            ? familyId
+              ? `${avgValue.toFixed(1)} avg. point score`
+              : `${formatHeadlineValue(stage, avgValue)} ${stage === "ks5" ? ks5HeadlineLabel(ks5Cohort) : HEADLINE_LABEL[stage]}`
+            : null;
         const statsLine = [sizeLabel, avgLabel].filter(Boolean).join(", ");
         const tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(p.name)}${isTarget ? " (this school)" : ""}</strong>${
           statsLine ? `<br/>${statsLine}` : ""
@@ -234,12 +268,12 @@ export default function AcademicMapView({
           .addTo(group2);
       }
     });
-  }, [withCoords, effectiveColourMode, familyId, stage, targetProfile.urn]);
+  }, [withCoords, effectiveColourMode, familyId, stage, targetProfile.urn, ks5Cohort]);
 
   return (
     <div className="relative h-full w-full">
       <div ref={mapElRef} className="h-full w-full" />
-      {!familyId && (
+      {gradeBandAvailable && (
         <div className="absolute left-2 top-2 z-[1000] flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
           <button
             type="button"
@@ -267,7 +301,7 @@ export default function AcademicMapView({
           {familyId
             ? `Colour shows change in average point score in ${familyLabel ?? "this category"} since ${TREND_BASELINE_PERIOD[stage]}.`
             : effectiveColourMode === "trend"
-              ? `Colour shows change in ${HEADLINE_LABEL[stage]} since ${TREND_BASELINE_PERIOD[stage]}.`
+              ? `Colour shows change in ${stage === "ks5" ? ks5HeadlineLabel(ks5Cohort) : HEADLINE_LABEL[stage]} since ${TREND_BASELINE_PERIOD[stage]}.`
               : `Colour shows ${GRADE_BAND_LABEL[stage]}, most recent year.`}
         </p>
         <div className="mt-1 flex gap-0.5">
@@ -279,6 +313,11 @@ export default function AcademicMapView({
           <p className="mt-1 text-amber-700 dark:text-amber-400">{ks4ExclusionWholeGroupSentence(setLabel)}</p>
         ) : excludedForMap.length > 0 ? (
           <p className="mt-1 text-amber-700 dark:text-amber-400">{ks4ExclusionGroupNote(excludedForMap.map((p) => p.name))}</p>
+        ) : null)}
+        {stage === "ks5" && (mapKs5WholeGroupExcluded ? (
+          <p className="mt-1 text-amber-700 dark:text-amber-400">{ks5CohortWholeGroupSentence(setLabel, ks5Cohort)}</p>
+        ) : ks5ExcludedForMap.length > 0 ? (
+          <p className="mt-1 text-amber-700 dark:text-amber-400">{ks5CohortExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Cohort)}</p>
         ) : null)}
       </div>
     </div>
