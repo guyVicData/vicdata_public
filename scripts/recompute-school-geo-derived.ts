@@ -54,9 +54,14 @@ const PAGE_SIZE = 1000;
 // for BOARDING_BATCH_SIZE, smaller still: 'boarding' has no LIMIT inside its own
 // lateral (needs the FULL national ranking, not just the nearest few -- see
 // school_nearest_neighbours' own migration comment), so its GiST index doesn't bound
-// its cost the same way, and its true candidate pool (~2,344 -- NOT ~403, see
-// docs/vicdata_data_view_open_questions.md for that real miscalculation, found and
-// fixed this same run) is itself larger than a typical general-pool age/sector filter.
+// its cost the same way. Its true candidate pool is ~602 real, currently-open
+// boarding-eligible schools nationally (confirmed directly, 2026-09-13 -- see
+// recomputeNearestNeighbours' own comment below for the real boarders_name breakdown
+// and why this is genuinely smaller than the raw category count across ALL statuses,
+// ~1,191, once closed/historical schools are excluded by this function's own
+// pre-existing status filter). A real bug had this figure at ~2,344, and before that
+// ~403, both wrong for the same underlying reason: the eligibility filter's own
+// definition of "boarding," not the batch-size math here.
 const GENERAL_BATCH_SIZE = 10;
 const BOARDING_BATCH_SIZE = 5;
 const RPC_CONCURRENCY = 5;
@@ -157,10 +162,37 @@ async function runBatchesWithConcurrency(batches: string[][], fn: string, label:
   }
 }
 
+// Real bug, found 2026-09-13 while investigating a wrong Wellington College (URN
+// 110125) boarding-neighbour count on hosted: the old filter (`boarders_name &&
+// boarders_name !== "No boarders"`) treated every non-"No boarders" value as
+// boarding-eligible, including `boarders_name = "Not applicable"` (2,811 real schools
+// nationally -- nurseries, PRUs, and similar institutions boarding status genuinely
+// doesn't apply to, not a real "yes/no" answer at all). That inflated the real pool
+// from ~1,191 to ~4,002.
+//
+// Confirmed directly, not assumed, before writing this fix: the full real distinct
+// `boarders_name` distribution in the local `schools` table (52,584 rows, a fresh
+// GIAS pull) is `No boarders` (46,935), `Not applicable` (2,811), null (1,647, already
+// excluded by the truthy check), `Boarding school` (827, 554 open/273 closed),
+// `Children's home (Boarding school)` (311, 1 open/310 closed), and `College / FE
+// residential accommodation` (53, 47 open/6 closed) -- exactly six real values, not
+// assumed to be only the two named in the bug report. The last three are all
+// genuinely boarding-eligible -- only `No boarders`/`Not applicable`/null need
+// excluding, an explicit denylist rather than a single `!==` check so a future new
+// GIAS value defaults to included (fails open toward "real school, worth comparing"),
+// not silently excluded the way a single hardcoded `!==` check would. Restricted to
+// this function's own pre-existing `status !== "closed"` filter (unchanged by this
+// fix), the real, currently-open boarding-eligible pool is 554 + 1 + 47 = 602 --
+// 400 independent (300 with a senior phase, statutory_high_age >= 16), 202
+// state-sector (191 senior, though a large share of that 191 -- 80 -- are Special
+// schools, not mainstream state boarding schools in the everyday sense; the
+// mainstream-state-senior figure Guy actually confirmed against is closer to ~60).
+const NON_BOARDING_VALUES = new Set(["No boarders", "Not applicable"]);
+
 async function recomputeNearestNeighbours(schools: { urn: string; boarders_name: string | null; status: string }[]) {
   const openUrns = schools.filter((s) => s.status !== "closed").map((s) => s.urn);
   const boardingUrns = schools
-    .filter((s) => s.status !== "closed" && s.boarders_name && s.boarders_name !== "No boarders")
+    .filter((s) => s.status !== "closed" && s.boarders_name && !NON_BOARDING_VALUES.has(s.boarders_name))
     .map((s) => s.urn);
 
   const resumeSkipDone = process.env.RESUME_SKIP_DONE === "1";
@@ -180,7 +212,7 @@ async function recomputeNearestNeighbours(schools: { urn: string; boarders_name:
     boardingTodo = boardingUrns.filter((u) => !doneBoarding.has(u));
     console.log(`  RESUME_SKIP_DONE=1: ${doneBoarding.size} already done, ${boardingTodo.length} remaining`);
   }
-  console.log(`recomputing 'boarding' nearest-neighbour pool for ${boardingTodo.length} boarding schools (true national boarding population -- see this file's own header comment for why this is ~2,344, not ~403)...`);
+  console.log(`recomputing 'boarding' nearest-neighbour pool for ${boardingTodo.length} boarding schools (true national open boarding population, ~602 -- see recomputeNearestNeighbours' own comment for the real boarders_name breakdown and the two prior wrong figures this corrects)...`);
   await runBatchesWithConcurrency(chunk(boardingTodo, BOARDING_BATCH_SIZE), "recompute_nearest_neighbours_boarding_batch", "boarding pool");
 }
 
