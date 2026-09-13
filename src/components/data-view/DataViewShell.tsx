@@ -48,6 +48,7 @@ import MapView from "./MapView";
 import PdfExportButton from "./PdfExportButton";
 import DataViewErrorBoundary from "./DataViewErrorBoundary";
 import LoadingSpinnerCard from "./LoadingSpinnerCard";
+import AcademicDataView from "./AcademicDataView";
 
 type TargetSchool = {
   urn: string;
@@ -373,6 +374,19 @@ export default function DataViewShell({ urn }: { urn: string }) {
 
   const [filters, setFilters] = useState<DataViewFilterState>(emptyDataViewFilterState());
   const [activeView, setActiveView] = useState<ViewKey>("map");
+  // Academic Results Data View round: which topic tab is showing. Rolls' own
+  // filters/Map/Graphs/Rankings below are entirely unchanged when this is "rolls" --
+  // switching to "academic" swaps ONLY the main content area (AcademicDataView, a new
+  // sibling component) and hides Rolls-specific chrome (FilterBar, set-suggestion
+  // banner) that doesn't apply to academic measures. The comparator-set SELECTION
+  // machinery (tickedUrns/activeSet/addedUrns/ComparatorSidebar) stays exactly the
+  // same regardless of topic -- confirmed genuinely topic-agnostic (URNs + a set
+  // label), per the frontend brief's own instruction to check this rather than assume
+  // it. Region/Nation are hidden from the sidebar while viewing Academic (regionOption/
+  // nationOption passed as null below) -- Part C's explicit scope boundary (no
+  // Region/Nation-scale Academic Rankings this round), enforced by never letting the
+  // sidebar offer those two SetOptions while this topic is active, not a separate flag.
+  const [activeTopic, setActiveTopic] = useState<DataViewTopic>("rolls");
   // One shared collapse toggle for the one shared filter bar (see the render's own
   // 2026-09-05 comment) -- applies identically regardless of which view is active,
   // rather than a per-view floating overlay only Map used to have.
@@ -1496,8 +1510,9 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // layout or adding any height on top of it.
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
-      <TopicTabs schoolName={target.name} />
+      <TopicTabs schoolName={target.name} activeTopic={activeTopic} onChange={setActiveTopic} />
 
+      {activeTopic === "rolls" && (
       <div className="border-b border-neutral-200 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-800">
         {/* Global filter-row rework (2026-09-16), item 3: SavedSetsControl moved out
             of this row entirely, into ComparatorSidebar's own "My sets" section --
@@ -1510,6 +1525,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
           onToggleCollapse={() => setFilterBarCollapsed((c) => !c)}
         />
       </div>
+      )}
 
       {/* Filter-independence round (2026-09-14): explicit, visible replacement for
           the two silent set-swaps removed from handleFilterChange/the old
@@ -1517,7 +1533,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
           set changing under them. print:hidden since this is a live-interaction
           affordance, not part of the "what produced this" record a printed page
           should show. */}
-      {visibleSetSuggestions.length > 0 && (
+      {activeTopic === "rolls" && visibleSetSuggestions.length > 0 && (
         <div className="flex flex-col gap-1.5 border-b border-neutral-200 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-800">
           {visibleSetSuggestions.map((s) => (
             <div key={s.key} className="flex items-center justify-between gap-3 rounded-md bg-amber-50 px-3 py-1.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
@@ -1547,6 +1563,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
           view states which comparator set and filters produced the numbers on the
           page, not just the numbers themselves. Hidden on screen, the one thing this
           page ADDS for print rather than hides. */}
+      {activeTopic === "rolls" && (
       <div className="hidden px-4 sm:px-6 print:block print:py-2 print:text-xs">
         <p>
           {target.name} — {activeView} view — compared with: {activeSet?.label ?? "none"}
@@ -1556,6 +1573,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
           Compared against: {tickedProfiles.length > 0 ? tickedProfiles.map((p) => p.name).join(", ") : "no schools ticked"}
         </p>
       </div>
+      )}
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <aside className="shrink-0 border-b border-neutral-200 p-4 lg:w-64 lg:border-b-0 lg:border-r dark:border-neutral-800">
@@ -1565,8 +1583,13 @@ export default function DataViewShell({ urn }: { urn: string }) {
             authToken={authToken}
             nearestOption={resolvedNearestOption}
             homeLaOption={recipeLists?.list2 ?? null}
-            regionOption={regionOption}
-            nationOption={nationOption}
+            // Part C's explicit scope boundary: no Region/Nation-scale Academic
+            // Rankings this round. Rather than a separate flag, Region/Nation are
+            // simply never OFFERED as selectable SetOptions while the Academic tab is
+            // active -- the sidebar itself is topic-agnostic (§ above), this is the
+            // one deliberate exception.
+            regionOption={activeTopic === "academic" ? null : regionOption}
+            nationOption={activeTopic === "academic" ? null : nationOption}
             savedSets={savedSets}
             activeSet={activeSet}
             onSelectSet={(opt) => {
@@ -1616,6 +1639,18 @@ export default function DataViewShell({ urn }: { urn: string }) {
           />
         </aside>
 
+        {activeTopic === "academic" ? (
+          <AcademicDataView
+            urn={target.urn}
+            authToken={authToken}
+            tickedUrns={tickedUrns}
+            addedUrns={addedUrns}
+            activeSetLabel={activeSet?.label ?? null}
+            startPeriod={filters.startPeriod}
+            activeView={activeView}
+            onChangeView={setActiveView}
+          />
+        ) : (
         <div className="flex min-w-0 flex-1 flex-col">
           {/* 2026-09-05: Map view v1 (per direct request) treats the map as a full
               canvas with the view-switcher and export button floated as overlays
@@ -1732,6 +1767,7 @@ export default function DataViewShell({ urn }: { urn: string }) {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );
@@ -1770,33 +1806,48 @@ export default function DataViewShell({ urn }: { urn: string }) {
 // being stripped to plain text the way browsers default background colours to
 // on the print path -- this row isn't `print:hidden`, so it's the "PDF export
 // header" the request names.
-const TOPIC_TABS: { label: string; active: boolean }[] = [
-  { label: "Rolls", active: true },
-  { label: "Academic", active: false },
-  { label: "Destinations", active: false },
-  { label: "Context", active: false },
+// Academic Results Data View round: Rolls/Academic are now real, clickable tabs --
+// Destinations/Context stay disabled placeholders (unbuilt). "buildable" replaces the
+// old bare `active` flag: which tab is CURRENT is now real state (DataViewTopic),
+// lifted to DataViewShell (below), not a hardcoded per-tab literal.
+export type DataViewTopic = "rolls" | "academic";
+const TOPIC_TABS: { label: string; topic: DataViewTopic | null }[] = [
+  { label: "Rolls", topic: "rolls" },
+  { label: "Academic", topic: "academic" },
+  { label: "Destinations", topic: null },
+  { label: "Context", topic: null },
 ];
 
-function TopicTabs({ schoolName }: { schoolName: string }) {
+function TopicTabs({ schoolName, activeTopic, onChange }: { schoolName: string; activeTopic: DataViewTopic; onChange: (topic: DataViewTopic) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-neutral-200 px-4 py-3 sm:px-6 dark:border-neutral-800">
       <p className="text-base font-bold text-neutral-900 dark:text-neutral-100">{schoolName}</p>
       <nav className="flex flex-wrap gap-1.5">
         {TOPIC_TABS.map((t) => {
+          const isActive = t.topic === activeTopic;
           const tagColours = TOPIC_COLOURS[t.label];
           const fillLight = tagColours?.light[1] ?? "#171717";
           const fillDark = tagColours?.dark[1] ?? "#ededed";
+          if (t.topic === null) {
+            return (
+              <span key={t.label} className="cursor-not-allowed rounded-full px-3 py-1 text-xs text-neutral-400 dark:text-neutral-600">
+                {t.label}
+              </span>
+            );
+          }
           return (
-            <span
+            <button
               key={t.label}
-              aria-current={t.active ? "page" : undefined}
+              type="button"
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => onChange(t.topic!)}
               className={
-                t.active
+                isActive
                   ? "topic-tab-active rounded-full px-3 py-1 text-xs font-medium"
-                  : "cursor-not-allowed rounded-full px-3 py-1 text-xs text-neutral-400 dark:text-neutral-600"
+                  : "rounded-full px-3 py-1 text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
               }
               style={
-                t.active
+                isActive
                   ? ({
                       "--pill-bg-dark": fillDark,
                       "--pill-fg-dark": contrastingTextColour(fillDark),
@@ -1809,7 +1860,7 @@ function TopicTabs({ schoolName }: { schoolName: string }) {
               }
             >
               {t.label}
-            </span>
+            </button>
           );
         })}
       </nav>

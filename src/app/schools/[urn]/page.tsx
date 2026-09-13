@@ -66,6 +66,8 @@ import { PhaseBreakdownCard } from "@/components/dashboard/PhaseBreakdownCard";
 import { ShapeCard } from "@/components/dashboard/ShapeCard";
 import { NearestMatchedSchoolsCard } from "@/components/dashboard/NearestMatchedSchoolsCard";
 import { GenderSplitCard } from "@/components/dashboard/GenderSplitCard";
+import { AcademicSnapshotCard } from "@/components/dashboard/AcademicSnapshotCard";
+import { fetchAcademicProfiles } from "@/lib/academic-data-view";
 import { PopulationTrendSection } from "@/components/dashboard/PopulationTrendSection";
 import {
   BoardingCard,
@@ -269,6 +271,13 @@ export default async function SchoolPage({
   const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: [urn] });
   const roll = buildRollSnapshot(facts, urn);
   const ageGenderCounts = roll ? singleAgeGenderCountsForPeriod(facts, roll.period) : null;
+
+  // Academic Results front end (frontend build brief, free "Academic snapshot" card):
+  // fetched for every URN, same "cheap and correct either way" reasoning as the
+  // consortium lookup above -- a school with no real academic data at all (a
+  // consortium hub itself, or one too new for any headline year) just gets an empty
+  // profile, and the card below renders nothing for it, same discipline as `roll`.
+  const academic = (await fetchAcademicProfiles([urn]))[0] ?? null;
 
   // FE-participation backfill card (2026-08-22, docs/OPEN_QUESTIONS.md in the vicdata
   // ingest repo -- built after confirming most Academy 16-19 converter/Free schools 16
@@ -1014,7 +1023,7 @@ export default async function SchoolPage({
             </>
           )}
 
-          <ComingSoonCard title="Academic snapshot" />
+          {academic && <AcademicSnapshotCard profile={academic} schoolName={school.current_name} urn={urn} />}
           <ComingSoonCard title="Social context" />
           <ComingSoonCard title="Destinations" />
         </DashboardGrid>
