@@ -32,6 +32,8 @@ import {
   latestYear,
   stageYears,
   populationAtAge,
+  familyYearsFor,
+  latestFamilyYear,
   type AcademicSchoolProfile,
   type KsStage,
 } from "@/lib/academic-data-view";
@@ -59,15 +61,29 @@ export default function AcademicMapView({
   targetProfile,
   tickedProfiles,
   stage,
+  familyId = null,
+  familyLabel = null,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
   stage: KsStage;
+  // Round 2, Part B: family-level depth (spec §3b) -- circle size becomes real
+  // entries_total for this family, colour becomes trend in avgPointScore since
+  // baseline. Grade-band colour mode stays headline-only (the original brief's own
+  // explicit deferral -- a real, separate aggregation this round doesn't add), so it's
+  // simply not offered at all once a family is selected, rather than silently
+  // rendering nothing useful.
+  familyId?: string | null;
+  familyLabel?: string | null;
 }) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const layerGroupRef = useRef<import("leaflet").LayerGroup | null>(null);
   const [colourMode, setColourMode] = useState<ColourMode>("trend");
+  // Grade-band was never a real option at family level -- computed, not synced via an
+  // effect, so selecting a family while "grade_band" was active from headline level
+  // just silently reads as "trend" rather than needing a state-reset round-trip.
+  const effectiveColourMode: ColourMode = familyId ? "trend" : colourMode;
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   const withCoords = group.filter((p) => p.easting !== null && p.northing !== null);
@@ -103,27 +119,41 @@ export default function AcademicMapView({
       const gradeKey = GRADE_BAND_MEASURE[stage];
       const age = HEADLINE_AGE[stage];
 
-      const populations = withCoords.map((p) => populationAtAge(p, age)).filter((v): v is number => v !== null && v > 0);
-      const minPop = populations.length > 0 ? Math.min(...populations) : 1;
-      const maxPop = populations.length > 0 ? Math.max(...populations) : 1;
+      // Round 2, Part B: family-level sizing is real entries_total for the selected
+      // family (not population) -- a genuinely different quantity, per spec §3b.
+      const sizeValue = (p: AcademicSchoolProfile): number | null =>
+        familyId ? (latestFamilyYear(p, stage, familyId)?.entriesTotal ?? null) : populationAtAge(p, age);
+
+      const sizeValues = withCoords.map(sizeValue).filter((v): v is number => v !== null && v > 0);
+      const minSize = sizeValues.length > 0 ? Math.min(...sizeValues) : 1;
+      const maxSize = sizeValues.length > 0 ? Math.max(...sizeValues) : 1;
 
       for (const p of withCoords) {
         const [lat, lng] = bngToLatLng(p.easting!, p.northing!);
         const isTarget = p.urn === targetProfile.urn;
-        const pop = populationAtAge(p, age);
-        const radius = pop !== null && pop > 0 ? radiusFor(pop, minPop, maxPop) : UNTICKED_RADIUS;
+        const size = sizeValue(p);
+        const radius = size !== null && size > 0 ? radiusFor(size, minSize, maxSize) : UNTICKED_RADIUS;
 
         let colour = UNTICKED_COLOUR;
-        const years = stageYears(p, stage);
-        if (colourMode === "trend") {
-          const current = headlineValueAt(years, latestYear(years)?.period ?? -1, measureKey);
-          const anchor = headlineValueAt(years, baseline, measureKey);
+        if (familyId) {
+          // Trend in avgPointScore since baseline, for this one family.
+          const years = familyYearsFor(p, stage, familyId);
+          const current = years.find((y) => y.period === (latestFamilyYear(p, stage, familyId)?.period ?? -1))?.avgPointScore ?? null;
+          const anchor = years.find((y) => y.period === baseline)?.avgPointScore ?? null;
           const badge = trendBadge(current, anchor);
           if (badge) colour = trendColour(badge.pctChange);
         } else {
-          const y = latestYear(years);
-          const gradeValue = y ? headlineValueAt(years, y.period, gradeKey) : null;
-          if (gradeValue !== null) colour = trendColour(gradeValue - 50); // reuses the same diverging scale, centred on 50%
+          const years = stageYears(p, stage);
+          if (effectiveColourMode === "trend") {
+            const current = headlineValueAt(years, latestYear(years)?.period ?? -1, measureKey);
+            const anchor = headlineValueAt(years, baseline, measureKey);
+            const badge = trendBadge(current, anchor);
+            if (badge) colour = trendColour(badge.pctChange);
+          } else {
+            const y = latestYear(years);
+            const gradeValue = y ? headlineValueAt(years, y.period, gradeKey) : null;
+            if (gradeValue !== null) colour = trendColour(gradeValue - 50); // reuses the same diverging scale, centred on 50%
+          }
         }
 
         L.circleMarker([lat, lng], {
@@ -137,33 +167,41 @@ export default function AcademicMapView({
           .addTo(group2);
       }
     });
-  }, [withCoords, colourMode, stage, targetProfile.urn]);
+  }, [withCoords, effectiveColourMode, familyId, stage, targetProfile.urn]);
 
   return (
     <div className="relative h-full w-full">
       <div ref={mapElRef} className="h-full w-full" />
-      <div className="absolute left-2 top-2 z-[1000] flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-        <button
-          type="button"
-          onClick={() => setColourMode("trend")}
-          className={colourMode === "trend" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
-        >
-          Trend
-        </button>
-        <button
-          type="button"
-          onClick={() => setColourMode("grade_band")}
-          className={colourMode === "grade_band" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
-        >
-          Grade band
-        </button>
-      </div>
+      {!familyId && (
+        <div className="absolute left-2 top-2 z-[1000] flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <button
+            type="button"
+            onClick={() => setColourMode("trend")}
+            className={colourMode === "trend" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
+          >
+            Trend
+          </button>
+          <button
+            type="button"
+            onClick={() => setColourMode("grade_band")}
+            className={colourMode === "grade_band" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
+          >
+            Grade band
+          </button>
+        </div>
+      )}
       <div className="absolute bottom-2 left-2 z-[1000] max-w-xs rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-neutral-600 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
-        <p>Circle size shows the number of {HEADLINE_AGE[stage]}-year-olds at each school, not the number who sat exams.</p>
+        <p>
+          {familyId
+            ? `Circle size shows the number of exam entries in ${familyLabel ?? "this category"}, not pupils — a pupil taking more than one subject in this group is counted once per entry.`
+            : `Circle size shows the number of ${HEADLINE_AGE[stage]}-year-olds at each school, not the number who sat exams.`}
+        </p>
         <p className="mt-1">
-          {colourMode === "trend"
-            ? `Colour shows change in ${HEADLINE_LABEL[stage]} since ${TREND_BASELINE_PERIOD[stage]}.`
-            : `Colour shows ${GRADE_BAND_LABEL[stage]}, most recent year.`}
+          {familyId
+            ? `Colour shows change in average point score in ${familyLabel ?? "this category"} since ${TREND_BASELINE_PERIOD[stage]}.`
+            : effectiveColourMode === "trend"
+              ? `Colour shows change in ${HEADLINE_LABEL[stage]} since ${TREND_BASELINE_PERIOD[stage]}.`
+              : `Colour shows ${GRADE_BAND_LABEL[stage]}, most recent year.`}
         </p>
         <div className="mt-1 flex gap-0.5">
           {TREND_LEGEND_STOPS.map((s) => (

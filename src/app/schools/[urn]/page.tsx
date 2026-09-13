@@ -277,7 +277,12 @@ export default async function SchoolPage({
   // consortium lookup above -- a school with no real academic data at all (a
   // consortium hub itself, or one too new for any headline year) just gets an empty
   // profile, and the card below renders nothing for it, same discipline as `roll`.
-  const academic = (await fetchAcademicProfiles([urn]))[0] ?? null;
+  // Round 2, Part A: this card never reads ageGenderCounts (it has no map, and this
+  // page's own separate `ageGenderCounts` variable above already covers Roll/Shape) --
+  // includePopulation: false skips the extra census round-trip academic-data-view.ts's
+  // own fetchAcademicProfiles would otherwise make for nothing on this, the highest-
+  // traffic page on the site.
+  const academic = (await fetchAcademicProfiles([urn], { includePopulation: false }))[0] ?? null;
 
   // FE-participation backfill card (2026-08-22, docs/OPEN_QUESTIONS.md in the vicdata
   // ingest repo -- built after confirming most Academy 16-19 converter/Free schools 16
