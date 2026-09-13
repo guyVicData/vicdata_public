@@ -22,10 +22,10 @@ import {
   ks4ExclusionTargetSentence,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
-  ks5HeadlineMeasureKey,
   ks5HeadlineLabel,
   ks5CohortExclusionNote,
   ks5CohortWholeGroupSentence,
+  ks5MeasureFor,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -46,7 +46,7 @@ function rankAcrossPeriods(
   group: AcademicSchoolProfile[],
   periods: number[],
   stage: KsStage,
-  measureKey: string,
+  measureKeyFor: (p: AcademicSchoolProfile) => string,
 ): Map<string, (number | null)[]> {
   const ranksByUrn = new Map<string, (number | null)[]>(group.map((p) => [p.urn, periods.map(() => null)]));
   periods.forEach((period, i) => {
@@ -54,7 +54,7 @@ function rankAcrossPeriods(
       urn: p.urn,
       name: p.name,
       isTarget: false,
-      value: headlineValueAt(stageYears(p, stage), period, measureKey),
+      value: headlineValueAt(stageYears(p, stage), period, measureKeyFor(p)),
     }));
     const { ranked } = rankDescendingWithTies(entries);
     ranked.forEach((r) => {
@@ -88,12 +88,36 @@ export default function AcademicRankingsView({
   // comparison), so everything here -- not just spread/growth/trend -- keys on the
   // selected cohort; there's no Part-3-style "always the target's own dominant
   // cohort" number anywhere in this view.
-  ks5Cohort?: Ks5Cohort;
+  // Item 10: null is the real default now -- every school in the group is then
+  // ranked on ITS OWN dominant cohort (ks5MeasureFor) rather than one shared measure
+  // forced across a mixed group (the original bug: Capital City College's real
+  // Applied General figures being silently replaced by its much smaller A-level
+  // count). Genuine, named tradeoff -- see this round's build report: the ranking
+  // then compares each school's own best real measure, which are not literally the
+  // same underlying scale (e.g. IB points vs. Applied General points), so per-row
+  // cohort labels are shown below whenever a specific cohort ISN'T selected, so this
+  // never reads as a same-metric ranking when it isn't one.
+  ks5Cohort?: Ks5Cohort | null;
   ks5ExcludedUrns?: Set<string>;
 }) {
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
-  const measureKey = stage === "ks5" ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
-  const headlineLabel = stage === "ks5" ? ks5HeadlineLabel(ks5Cohort) : HEADLINE_LABEL[stage];
+  const measureKeyFor = (p: AcademicSchoolProfile) => (stage === "ks5" ? ks5MeasureFor(p, ks5Cohort).measureKey : HEADLINE_MEASURE[stage]);
+  // Group-level title: the specific label when one cohort is explicitly selected
+  // (unchanged from before), a generic one in the default per-school state (no
+  // single real label covers a mixed group) -- per-row labels below fill the gap.
+  const headlineLabel = stage === "ks5" ? (ks5Cohort ? ks5HeadlineLabel(ks5Cohort) : "Headline measure (each school's own qualification type)") : HEADLINE_LABEL[stage];
+  // Target's own number ("This school's position") always names its OWN resolved
+  // cohort specifically, same "always the target's own real cohort" rule Graphs'
+  // Part 3 Overview number already follows -- there's no ambiguity for a single school.
+  const targetOwnLabel = stage === "ks5" ? ks5HeadlineLabel(ks5MeasureFor(targetProfile, ks5Cohort).cohort, targetProfile.ks5QualTypes.ib) : HEADLINE_LABEL[stage];
+  // Per-row cohort label (item 10's own explicit design ask: "Rankings' own table
+  // should probably show each row's qualification type alongside its figure") --
+  // only populated in the mixed/default state; redundant noise on every row when one
+  // cohort is already named in the section title above, so withheld there.
+  const cohortLabelByUrn: Map<string, string> | undefined =
+    stage === "ks5" && ks5Cohort === null
+      ? new Map(group.map((p) => [p.urn, ks5HeadlineLabel(ks5MeasureFor(p, ks5Cohort).cohort, p.ks5QualTypes.ib)]))
+      : undefined;
   const setLabel = activeSetLabel ?? "the ticked comparator set";
 
   const ks4TargetExcluded = ks4ExcludedUrns.has(targetProfile.urn);
@@ -107,10 +131,14 @@ export default function AcademicRankingsView({
   // group note is the only place this gets explained.
   const excludedNamesKs5 = group.filter((p) => ks5ExcludedUrns.has(p.urn)).map((p) => p.name);
   const ks5WholeGroupExcluded = stage === "ks5" && comparableGroup.length === 0;
-  const ks5GroupNote = stage === "ks5" ? ks5CohortExclusionNote(excludedNamesKs5, ks5Cohort) : null;
+  // ks5ExcludedUrns (and so excludedNamesKs5/ks5WholeGroupExcluded) is only ever
+  // non-empty when the parent has a specific ks5Cohort selected -- the default
+  // per-school state does no qualification-type matching at all (item 11) -- so the
+  // `?? "A level"` fallbacks below are type-safety-only, never a real path.
+  const ks5GroupNote = stage === "ks5" ? ks5CohortExclusionNote(excludedNamesKs5, ks5Cohort ?? "A level") : null;
   const anyWholeGroupExcluded = wholeGroupExcluded || ks5WholeGroupExcluded;
   const anyGroupNote = ks4GroupNote ?? ks5GroupNote;
-  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort);
+  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level");
 
   const currentEntries = comparableGroup.map((p) => {
     const years = stageYears(p, stage);
@@ -119,7 +147,7 @@ export default function AcademicRankingsView({
       urn: p.urn,
       name: p.name,
       isTarget: p.urn === targetProfile.urn,
-      value: y ? headlineValueAt(years, y.period, measureKey) : null,
+      value: y ? headlineValueAt(years, y.period, measureKeyFor(p)) : null,
     };
   });
   const groupInScope = currentEntries.filter((e) => e.value !== null || e.isTarget).map((e) => comparableGroup.find((p) => p.urn === e.urn)!);
@@ -131,7 +159,7 @@ export default function AcademicRankingsView({
   const allPeriods = Array.from(new Set(groupInScope.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
     .filter((p) => p >= Math.max(startPeriod, baseline))
     .sort((a, b) => a - b);
-  const ranksByUrn = rankAcrossPeriods(groupInScope, allPeriods, stage, measureKey);
+  const ranksByUrn = rankAcrossPeriods(groupInScope, allPeriods, stage, measureKeyFor);
   const targetRankSeries = ranksByUrn.get(targetProfile.urn) ?? [];
   const realRanks = targetRankSeries.map((r, i) => (r !== null ? { rank: r, period: allPeriods[i] } : null)).filter((x): x is { rank: number; period: number } => x !== null);
   const avgRank = realRanks.length > 0 ? realRanks.reduce((s, r) => s + r.rank, 0) / realRanks.length : null;
@@ -140,8 +168,9 @@ export default function AcademicRankingsView({
 
   const growthEntries = comparableGroup.map((p) => {
     const years = stageYears(p, stage);
-    const current = headlineValueAt(years, latestYear(years)?.period ?? -1, measureKey);
-    const anchor = headlineValueAt(years, baseline, measureKey);
+    const pMeasureKey = measureKeyFor(p);
+    const current = headlineValueAt(years, latestYear(years)?.period ?? -1, pMeasureKey);
+    const anchor = headlineValueAt(years, baseline, pMeasureKey);
     return { urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: trendBadge(current, anchor)?.pctChange ?? null };
   });
   const { ranked: growthRanked, targetRank: growthTargetRank, total: growthTotal } = rankDescendingWithTies(growthEntries);
@@ -162,7 +191,7 @@ export default function AcademicRankingsView({
               </p>
               {targetCurrentValue !== null && (
                 <p className="mt-1 text-xs text-neutral-500">
-                  {formatHeadline(stage, targetCurrentValue)} — {headlineLabel}
+                  {formatHeadline(stage, targetCurrentValue)} — {targetOwnLabel}
                   {pctVsAverage !== null && averageCurrentValue !== null && (
                     <> ({Math.abs(pctVsAverage).toFixed(0)}% {pctVsAverage >= 0 ? "above" : "below"} the average of {formatHeadline(stage, averageCurrentValue)})</>
                   )}
@@ -200,7 +229,7 @@ export default function AcademicRankingsView({
         <>
           {anyGroupNote && <p className="text-xs italic text-neutral-500">{anyGroupNote}</p>}
 
-          <RankTable title={headlineLabel} ranked={ranked} targetRank={targetRank} total={total} format={(v) => formatHeadline(stage, v)} />
+          <RankTable title={headlineLabel} ranked={ranked} targetRank={targetRank} total={total} format={(v) => formatHeadline(stage, v)} cohortLabelByUrn={cohortLabelByUrn} />
 
           {allPeriods.length > 0 && (
             <ComparisonOverTimeTable ranked={ranked} targetRank={targetRank} targetUrn={targetProfile.urn} periods={allPeriods} ranksByUrn={ranksByUrn} />
@@ -212,6 +241,7 @@ export default function AcademicRankingsView({
             targetRank={growthTargetRank}
             total={growthTotal}
             format={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
+            cohortLabelByUrn={cohortLabelByUrn}
           />
         </>
       )}
@@ -219,7 +249,24 @@ export default function AcademicRankingsView({
   );
 }
 
-function RankTable({ title, ranked, targetRank, total, format }: { title: string; ranked: RankedEntry[]; targetRank: number | null; total: number; format: (v: number) => string }) {
+function RankTable({
+  title,
+  ranked,
+  targetRank,
+  total,
+  format,
+  cohortLabelByUrn,
+}: {
+  title: string;
+  ranked: RankedEntry[];
+  targetRank: number | null;
+  total: number;
+  format: (v: number) => string;
+  // Item 10: only ever populated in the KS5 default (mixed) state -- each row then
+  // names the specific real qualification type its own figure is on, since the
+  // ranking itself no longer guarantees every row is on the same underlying measure.
+  cohortLabelByUrn?: Map<string, string>;
+}) {
   if (total === 0) {
     return (
       <section>
@@ -248,6 +295,9 @@ function RankTable({ title, ranked, targetRank, total, format }: { title: string
                   <td className="py-1.5">
                     {r.name}
                     {r.isTarget && " (this school)"}
+                    {cohortLabelByUrn?.has(r.urn) && (
+                      <span className="ml-1.5 text-xs font-normal text-neutral-400">({cohortLabelByUrn.get(r.urn)})</span>
+                    )}
                   </td>
                   <td className="py-1.5 text-right font-medium">{format(r.value)}</td>
                 </tr>

@@ -127,7 +127,12 @@ export const TREND_BASELINE_PERIOD: Record<KsStage, number> = { ks2: 2022, ks4: 
 // "circle size shows the number of N-year-olds" framing.
 export const HEADLINE_AGE: Record<KsStage, number> = { ks2: 10, ks4: 15, ks5: 17 };
 
-export const STAGE_LABEL: Record<KsStage, string> = { ks2: "KS2", ks4: "GCSE", ks5: "A-level" };
+// Stage 2 UX review, item 1: "A-level" is genuinely inaccurate now that this stage
+// covers Applied General/Tech Level/Technical Certificate/Academic(IB) too -- DfE's
+// own publication for this whole dataset is literally titled "A level and other 16 to
+// 18 results". One-line label change only; nothing downstream reads the string for
+// logic (confirmed directly before changing it).
+export const STAGE_LABEL: Record<KsStage, string> = { ks2: "KS2", ks4: "GCSE", ks5: "Post-16" };
 
 // Headline measure key per stage -- real, ingested field names (confirmed directly
 // against academic_headline_snapshot.measures / dfe_ks2_attainment breakdowns, not
@@ -221,6 +226,21 @@ export function ks5HasCohortEntries(profile: AcademicSchoolProfile, cohort: Ks5C
   if (!y) return false;
   if (cohort === "Academic" && !profile.ks5QualTypes.ib) return false;
   return headlineValueAt(profile.ks5, y.period, ks5HeadlineMeasureKey(cohort)) !== null;
+}
+
+// Stage 2 UX review, item 10: real bug found via Acland Burghley (dominant cohort
+// "Academic" at 111 entries vs A-level's 102, but has_ib false) -- auto-defaulting
+// the group-comparison selector to a target's own dominant cohort made the UI read
+// as "IB selected by default" for a school running no real IB at all (KS5_COHORT_
+// OPTIONS' "Academic" pill is unconditionally labelled "Academic (IB)"). Fix is
+// removing the forced default entirely, not a smarter label: with nothing
+// explicitly clicked (`selected === null`), every school in the comparator set is
+// measured on ITS OWN real dominant cohort rather than one shared axis -- this
+// helper is the single place that resolves "selected cohort, or this profile's own
+// real default" for every caller (Rankings/spread/growth/trend/Map all need it).
+export function ks5MeasureFor(profile: AcademicSchoolProfile, selected: Ks5Cohort | null): { cohort: Ks5Cohort; measureKey: string } {
+  const cohort = selected ?? dominantKs5Cohort(profile) ?? "A level";
+  return { cohort, measureKey: ks5HeadlineMeasureKey(cohort) };
 }
 
 // The qualification-type selector's real options (Part 4) -- no separate Pre-U option

@@ -52,6 +52,7 @@ import {
   ks5HeadlineLabel,
   ks5CohortExclusionNote,
   ks5CohortWholeGroupSentence,
+  ks5MeasureFor,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -174,7 +175,7 @@ export default function AcademicGraphsView({
   familyLabel = null,
   subjectData = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
-  ks5Cohort = "A level",
+  ks5Cohort = null,
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
 }: {
   targetProfile: AcademicSchoolProfile;
@@ -199,8 +200,10 @@ export default function AcademicGraphsView({
   // always shows the target's own real dominant cohort regardless of the selector,
   // per the brief's own "the number itself, not its spread/growth/trend sub-sections"
   // scoping. ks5ExcludedUrns is this round's analogue of ks4ExcludedUrns, empty
-  // whenever stage !== "ks5".
-  ks5Cohort?: Ks5Cohort;
+  // whenever stage !== "ks5". Item 10: null is the real default now -- every school
+  // in the group is then valued on ITS OWN dominant cohort (ks5MeasureFor) rather
+  // than one shared measure across a mixed group.
+  ks5Cohort?: Ks5Cohort | null;
   ks5ExcludedUrns?: Set<string>;
 }) {
   // Local, not lifted -- this component already remounts (its parent's
@@ -209,14 +212,18 @@ export default function AcademicGraphsView({
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   // KS5 qualification-type-awareness round, Part 4: group-comparison sections
   // (spread/growth/trend/same-year bar) key their measure on the selected cohort.
-  const measureKey = stage === "ks5" ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
+  // Item 10: with no cohort selected (ks5Cohort === null, the new default), there is
+  // no single shared measure -- valueFor resolves each school's OWN real dominant
+  // cohort via ks5MeasureFor instead of a shared measureKey.
   const baseline = TREND_BASELINE_PERIOD[stage];
   const setLabel = activeSetLabel ?? "the ticked comparator set";
 
   const valueFor = (p: AcademicSchoolProfile, period?: number) => {
     const years = stageYears(p, stage);
     const y = period !== undefined ? years.find((yy) => yy.period === period) : latestYear(years);
-    return y ? headlineValueAt(years, y.period, measureKey) : null;
+    if (!y) return null;
+    const measureKey = stage === "ks5" ? ks5MeasureFor(p, ks5Cohort).measureKey : HEADLINE_MEASURE[stage];
+    return headlineValueAt(years, y.period, measureKey);
   };
 
   // Part 3: the Overview headline NUMBER's own measure is the target's real dominant
@@ -228,7 +235,12 @@ export default function AcademicGraphsView({
   const targetHeadlineLabel = stage === "ks5" ? ks5HeadlineLabel(targetDominantKs5Cohort!, targetProfile.ks5QualTypes.ib) : HEADLINE_LABEL[stage];
   // Part 4's own group-level label, for the Growth/decline and Context-over-time
   // captions below -- always the SELECTED cohort (not the target's own dominant one).
-  const groupHeadlineLabel = stage === "ks5" ? ks5HeadlineLabel(ks5Cohort) : HEADLINE_LABEL[stage];
+  // Item 10 design call: with no cohort selected, there is no one real label that
+  // covers every school in a mixed group (each may be on a different real dominant
+  // cohort) -- rather than naming one arbitrarily, these sections use a generic
+  // caption instead (see the two JSX call sites below). This constant stays the
+  // specific label whenever an explicit cohort IS selected (unchanged behaviour).
+  const groupHeadlineLabel = stage === "ks5" ? (ks5Cohort ? ks5HeadlineLabel(ks5Cohort) : "each school's own qualification-type headline measure") : HEADLINE_LABEL[stage];
   const targetHeadlineValueAt = (period: number) => headlineValueAt(stageYears(targetProfile, stage), period, targetHeadlineMeasureKey);
   const targetLatestYear = latestYear(stageYears(targetProfile, stage));
   const targetCurrent = targetLatestYear ? targetHeadlineValueAt(targetLatestYear.period) : null;
@@ -263,13 +275,17 @@ export default function AcademicGraphsView({
   // from the group charts below," which naming it in the same note answers directly.
   const excludedNamesKs5 = group.filter((p) => ks5ExcludedUrns.has(p.urn)).map((p) => p.name);
   const ks5WholeGroupExcluded = stage === "ks5" && comparableGroup.length === 0;
-  const ks5GroupNote = stage === "ks5" ? ks5CohortExclusionNote(excludedNamesKs5, ks5Cohort) : null;
+  // ks5ExcludedUrns (and so excludedNamesKs5/ks5WholeGroupExcluded) is only ever
+  // non-empty when the parent has a specific ks5Cohort selected -- the default
+  // per-school state does no qualification-type matching at all (item 11) -- so the
+  // `?? "A level"` fallbacks below are type-safety-only, never a real path.
+  const ks5GroupNote = stage === "ks5" ? ks5CohortExclusionNote(excludedNamesKs5, ks5Cohort ?? "A level") : null;
   // Only one of the two is ever non-null/true for a given render (each gated to its
   // own stage) -- combined once here so the JSX below doesn't need to repeat both
   // stages' own conditionals in every affected section.
   const anyWholeGroupExcluded = wholeGroupExcluded || ks5WholeGroupExcluded;
   const anyGroupNote = ks4GroupNote ?? ks5GroupNote;
-  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort);
+  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level");
 
   const spreadPoints = comparableGroup.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: valueFor(p) }));
   const spread = spreadData(spreadPoints);

@@ -28,13 +28,13 @@
 // a ticked-set comparison, so there's no reason to pull it for every ticked school.
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ViewKey } from "@/lib/data-view-types";
 import {
   stagesPresent,
   availableFamilies,
   deserializeAcademicProfile,
   igcseExclusionLikely,
-  dominantKs5Cohort,
   ks5HasCohortEntries,
   KS5_COHORT_OPTIONS,
   type AcademicSchoolProfile,
@@ -139,7 +139,11 @@ function CategoryFilter({
 // Defaults to the target school's own real dominant cohort on first load (so opening
 // Capital City College's Rankings shows its real Applied General ranking by default,
 // not a jarring near-empty A-level one) but is a real, changeable control from there.
-function Ks5CohortSwitcher({ active, onChange }: { active: Ks5Cohort; onChange: (c: Ks5Cohort) => void }) {
+// Stage 2 UX review, item 10: `active` is now nullable -- null is the real default
+// state (nothing explicitly clicked, every school shown on its own real dominant
+// cohort), not "not yet resolved." No pill shows as active in that state, which is
+// deliberate: there IS no single shared measure to highlight yet.
+function Ks5CohortSwitcher({ active, onChange }: { active: Ks5Cohort | null; onChange: (c: Ks5Cohort) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Qualification type</span>
@@ -172,6 +176,9 @@ export default function AcademicDataView({
   startPeriod,
   activeView,
   onChangeView,
+  isActiveTopic,
+  stageSwitcherSlot,
+  onHasAnyData,
 }: {
   urn: string;
   authToken: string | null;
@@ -181,11 +188,28 @@ export default function AcademicDataView({
   startPeriod: number;
   activeView: ViewKey;
   onChangeView: (v: ViewKey) => void;
+  // Stage 2 UX review, items 2-3: this component is now always mounted (see
+  // DataViewShell's own comment on its render call) so it can fetch eagerly and
+  // report real facts up regardless of which topic is currently showing.
+  // isActiveTopic gates the HEAVY view tree (Map/Graphs/Rankings) so a hidden,
+  // inactive Academic tab never mounts a second live Leaflet instance alongside
+  // Rolls' own MapView -- the fetch/portal/tab-gating logic below stays active
+  // either way.
+  isActiveTopic: boolean;
+  stageSwitcherSlot: HTMLDivElement | null;
+  onHasAnyData: (has: boolean) => void;
 }) {
+  // Item 11: real schools/colleges found to widen the KS5 comparator set past
+  // whatever's ticked, when too few of them have real data for the current view
+  // (default: any real KS5 data; a cohort explicitly selected: real entries for
+  // THAT cohort). Folded into urnsKey below so the existing profile-fetch effect
+  // picks them up for free -- no second fetch mechanism needed.
+  const [ks5WidenedUrns, setKs5WidenedUrns] = useState<string[]>([]);
+
   const urnsKey = useMemo(() => {
-    const all = new Set<string>([urn, ...tickedUrns, ...addedUrns.map((a) => a.urn)]);
+    const all = new Set<string>([urn, ...tickedUrns, ...addedUrns.map((a) => a.urn), ...ks5WidenedUrns]);
     return Array.from(all).sort().join(",");
-  }, [urn, tickedUrns, addedUrns]);
+  }, [urn, tickedUrns, addedUrns, ks5WidenedUrns]);
 
   const [profilesByUrn, setProfilesByUrn] = useState<Map<string, AcademicSchoolProfile>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -196,15 +220,14 @@ export default function AcademicDataView({
   // same 8 families), but a family selected under one stage carrying silently over to
   // a stage switch reads as confusing state, not a helpful default.
   const [familyId, setFamilyId] = useState<string | null>(null);
-  // KS5 qualification-type-awareness round, Part 4: null means "not yet touched by
-  // the user this stage" -- effectiveKs5Cohort below fills in the real default
-  // (target's own dominant cohort). Reset on every stage change for the same reason
-  // familyId is: a cohort chosen under one stage carrying over to a KS2/GCSE view
-  // makes no sense (the selector only ever renders at KS5 anyway).
+  // Item 10: null is the real default (per-school own-cohort mode, no forced
+  // "target's dominant cohort" default any more) -- see Ks5CohortSwitcher's own
+  // comment. Reset on every stage change for the same reason familyId is.
   const [ks5Cohort, setKs5Cohort] = useState<Ks5Cohort | null>(null);
   function changeStage(next: KsStage) {
     setStage(next);
     setFamilyId(null);
+    setKs5WidenedUrns([]);
     setKs5Cohort(null);
   }
 
@@ -238,19 +261,50 @@ export default function AcademicDataView({
   }, [urn, urnsKey, authToken]);
 
   const targetProfile = profilesByUrn.get(urn) ?? null;
+  // Item 3: real stagesPresent, unfiltered -- reported up so TopicTabs can grey out
+  // the whole "Academic" tab for a target with no real data at all. Deliberately the
+  // RAW check (not the ks4-exclusion-filtered list below), a separate concern from
+  // item 4's own narrower "hide just the GCSE button" gate.
   const availableStages = targetProfile ? stagesPresent(targetProfile) : [];
-  // Default: prefer GCSE, then A-level, then KS2 -- matches the frontend spec's own
-  // framing ("most senior schools have two [GCSE+A-level], most primary have exactly
-  // one [KS2]"), not an arbitrary array-order default.
-  const effectiveStage: KsStage | null = stage && availableStages.includes(stage) ? stage : availableStages.includes("ks4") ? "ks4" : availableStages.includes("ks5") ? "ks5" : (availableStages[0] ?? null);
+  useEffect(() => {
+    if (!loading) onHasAnyData(availableStages.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, availableStages.length]);
+
+  // Item 4: a target for which igcseExclusionLikely is true gets no GCSE button at
+  // all (not the button-plus-caveat-sentence pattern this morning's GCSE exclusion
+  // round built for a ticked comparator school) -- that round's own caveat sentence,
+  // used on Rankings/Graphs/Map for a TICKED school, is unaffected; this is
+  // specifically about the TARGET's own top-level stage button.
+  const ks4Excluded = targetProfile ? igcseExclusionLikely(targetProfile) : false;
+  const filteredStages = availableStages.filter((s) => !(s === "ks4" && ks4Excluded));
+  // Item 5: oldest age group first (ks5 -> ks4 -> ks2) -- "not many schools actually
+  // have more than 2 of these," so this mostly matters for all-through schools with
+  // a genuine sixth form, which should now open on Post-16 rather than GCSE.
+  const effectiveStage: KsStage | null =
+    stage && filteredStages.includes(stage)
+      ? stage
+      : filteredStages.includes("ks5")
+        ? "ks5"
+        : filteredStages.includes("ks4")
+          ? "ks4"
+          : (filteredStages[0] ?? null);
 
   const tickedProfiles = Array.from(tickedUrns)
     .map((u) => profilesByUrn.get(u))
     .filter((p): p is AcademicSchoolProfile => !!p);
 
+  // Item 11: real schools found to widen the KS5 comparator set (see the effect
+  // below) -- appended to the ticked group passed down to Graphs/Rankings/Map,
+  // WITHOUT touching the shared tickedUrns state itself (so Rolls' own view, which
+  // reuses that same selection state, is never affected by an Academic-only
+  // widening decision). Empty outside ks5, since widening only ever runs there.
+  const ks5WidenedProfiles = ks5WidenedUrns.map((u) => profilesByUrn.get(u)).filter((p): p is AcademicSchoolProfile => !!p);
+  const academicGroupProfiles = [...tickedProfiles, ...ks5WidenedProfiles];
+
   // Union across target + ticked, per stage -- KS2 always yields [] (no family
   // taxonomy at all), so the Category row simply never renders for it.
-  const families = effectiveStage ? availableFamilies([targetProfile, ...tickedProfiles].filter((p): p is AcademicSchoolProfile => !!p), effectiveStage) : [];
+  const families = effectiveStage ? availableFamilies([targetProfile, ...academicGroupProfiles].filter((p): p is AcademicSchoolProfile => !!p), effectiveStage) : [];
 
   // GCSE exclusion round, Part 2: computed once here (this component already has
   // target + ticked together) and threaded down to Graphs/Rankings/Map alongside the
@@ -261,28 +315,84 @@ export default function AcademicDataView({
   const ks4ExcludedUrns = new Set<string>();
   if (effectiveStage === "ks4") {
     const seen = new Set<string>();
-    for (const p of [targetProfile, ...tickedProfiles]) {
+    for (const p of [targetProfile, ...academicGroupProfiles]) {
       if (!p || seen.has(p.urn)) continue;
       seen.add(p.urn);
       if (igcseExclusionLikely(p)) ks4ExcludedUrns.add(p.urn);
     }
   }
 
-  // KS5 qualification-type-awareness round, Part 4: the selector's real current
-  // value -- the user's own pick if they've touched it this stage, else the target
-  // school's real dominant cohort (Part 3's own auto-detect), else "A level" (the
-  // universal safe default for a target with no real KS5 entries-count data at all).
-  // Same computed-once-here-thread-down shape as ks4ExcludedUrns above.
-  const effectiveKs5Cohort: Ks5Cohort = ks5Cohort ?? (targetProfile ? (dominantKs5Cohort(targetProfile) ?? "A level") : "A level");
+  // Item 10: NO forced default any more -- ks5Cohort stays exactly what the user
+  // has (or hasn't) explicitly clicked. null means "every school on its own real
+  // dominant cohort," a genuinely different default from item 11's own scope
+  // below. Only a SPECIFIC selection produces an exclusion set at all: per item
+  // 11's own explicit instruction, the default (per-school) state does no
+  // qualification-type matching -- a mixed set is correct and expected there,
+  // since the comparator-widening effect below already guarantees ~10 real
+  // KS5-having schools regardless of which cohort each one is shown on.
   const ks5ExcludedUrns = new Set<string>();
-  if (effectiveStage === "ks5") {
+  if (effectiveStage === "ks5" && ks5Cohort !== null) {
     const seen = new Set<string>();
-    for (const p of [targetProfile, ...tickedProfiles]) {
+    for (const p of [targetProfile, ...academicGroupProfiles]) {
       if (!p || seen.has(p.urn)) continue;
       seen.add(p.urn);
-      if (!ks5HasCohortEntries(p, effectiveKs5Cohort)) ks5ExcludedUrns.add(p.urn);
+      if (!ks5HasCohortEntries(p, ks5Cohort)) ks5ExcludedUrns.add(p.urn);
     }
   }
+
+  // Item 11: "comparator set must always be 10 real schools" for the KS5 view --
+  // reuses surrounding-schools.ts's own findSurroundingSchools() engine via the new
+  // /api/data-view/academic-comparator-widen route (see that route's own comment),
+  // rather than inventing new selection logic. Default state (ks5Cohort === null):
+  // the extra filter is just "has any real KS5 data at all." A specific cohort
+  // selected: narrows to "has real entries for THIS cohort" -- e.g. selecting IB on
+  // Sevenoaks brings in the nearest 10 real IB schools nationally if fewer are
+  // geographically close, not just the nearest 10 by plain distance filtered down.
+  // Deliberately NOT extended to KS4's own IGCSE exclusion (a real, separate,
+  // unresolved design question for Guy -- see this round's own report).
+  useEffect(() => {
+    let cancelled = false;
+    // Real fix, react-hooks/set-state-in-effect: every setKs5WidenedUrns call below
+    // (including the two early "reset to empty" cases) lives inside this one async
+    // callback rather than directly in the effect body, matching React's own guidance
+    // to call setState from a callback rather than synchronously during the effect.
+    (async () => {
+      if (effectiveStage !== "ks5" || !targetProfile || !authToken) {
+        setKs5WidenedUrns((prev) => (prev.length === 0 ? prev : []));
+        return;
+      }
+      const baseGroup = [targetProfile, ...tickedProfiles];
+      const qualifying = baseGroup.filter((p) => (ks5Cohort ? ks5HasCohortEntries(p, ks5Cohort) : stagesPresent(p).includes("ks5"))).length;
+      const needed = 10 - qualifying;
+      if (needed <= 0) {
+        setKs5WidenedUrns((prev) => (prev.length === 0 ? prev : []));
+        return;
+      }
+      const excludeAll = new Set([urn, ...tickedUrns, ...addedUrns.map((a) => a.urn)]);
+      const params = new URLSearchParams({ anchorUrn: urn, count: String(needed), excludeUrns: Array.from(excludeAll).join(",") });
+      if (ks5Cohort) params.set("cohort", ks5Cohort);
+      try {
+        const res = await fetch(`/api/data-view/academic-comparator-widen?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled || !res.ok) return;
+        const body = (await res.json()) as { urns: string[] };
+        const sortedNew = [...body.urns].sort().join(",");
+        // No-op guard: `targetProfile`'s own object identity changes on every real
+        // fetch, which would otherwise re-fire this effect and re-request the same
+        // real result forever (a genuine, if bounded, re-render loop) -- only
+        // actually update state when the real content differs.
+        setKs5WidenedUrns((prev) => (prev.slice().sort().join(",") === sortedNew ? prev : body.urns));
+      } catch {
+        // Non-fatal -- the comparator set just stays as-is, same discipline as the
+        // subject-level fetch below.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveStage, targetProfile, tickedUrns, addedUrns, ks5Cohort, authToken, urn]);
 
   // Round 2, Part C: subject-level data for the TARGET school only (see this file's
   // own header comment for why), refetched whenever the stage changes (ks4/ks5 are
@@ -296,7 +406,10 @@ export default function AcademicDataView({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!authToken || !effectiveStage || effectiveStage === "ks2") {
+      // Stage 2 UX review, items 2-3: this component is now always mounted, so this
+      // heavier per-subject fetch is gated on isActiveTopic too -- no reason to pull
+      // subject-level data for a topic the member isn't even looking at yet.
+      if (!authToken || !effectiveStage || effectiveStage === "ks2" || !isActiveTopic) {
         if (!cancelled) setSubjectData(null);
         return;
       }
@@ -315,19 +428,32 @@ export default function AcademicDataView({
     return () => {
       cancelled = true;
     };
-  }, [urn, effectiveStage, authToken]);
+  }, [urn, effectiveStage, authToken, isActiveTopic]);
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
-      {effectiveStage && (
+    <div hidden={!isActiveTopic} className="flex min-w-0 flex-1 flex-col">
+      {/* Item 2: portalled into TopicTabs' own row (DataViewShell), not rendered
+          in-flow here -- see that component's own comment. Guarded on
+          effectiveStage !== null since KsStageSwitcher's own `active` prop isn't
+          nullable; an empty/1-stage filteredStages already makes it render null
+          internally either way. */}
+      {stageSwitcherSlot && effectiveStage && createPortal(<KsStageSwitcher stages={filteredStages} active={effectiveStage} onChange={changeStage} />, stageSwitcherSlot)}
+
+      {/* Item 6: the in-flow ViewSwitcher/PdfExportButton row is skipped for Map,
+          matching Rolls' own MapView.tsx pattern exactly -- AcademicMapView renders
+          its own overlay copies instead (see that component). Item 8: CategoryFilter
+          also moves out of this row for Map (rendered below the map div instead),
+          so this whole header row has nothing left to show for Map unless the
+          Ks5CohortSwitcher is also present -- gated to avoid a stray empty bordered
+          strip when neither applies. */}
+      {effectiveStage && (activeView !== "map" || effectiveStage === "ks5") && (
         <div className="flex flex-col gap-2 border-b border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <KsStageSwitcher stages={availableStages} active={effectiveStage} onChange={changeStage} />
+          {activeView !== "map" && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <ViewSwitcher active={activeView} onChange={onChangeView} />
+              <PdfExportButton />
             </div>
-            <PdfExportButton />
-          </div>
+          )}
           {/* Stage 1 review fix: Rankings never receives familyId/familyLabel at all
               (a deliberate round-2 scope cut -- see AcademicRankingsView.tsx's own
               header comment, "subject-family metrics do NOT get their own Rankings
@@ -335,15 +461,16 @@ export default function AcademicDataView({
               activeView -- a member on Rankings saw a fully clickable Category filter
               that silently did nothing. Hidden here rather than shown disabled: it
               isn't a temporarily-unavailable control, it genuinely doesn't apply to
-              this view. */}
-          {activeView !== "rankings" && <CategoryFilter families={families} activeFamilyId={familyId} onChange={setFamilyId} />}
+              this view. Item 8: also hidden for Map now -- that view gets its own
+              copy rendered below the map div instead (see the return's own bottom). */}
+          {activeView === "graphs" && <CategoryFilter families={families} activeFamilyId={familyId} onChange={setFamilyId} />}
           {/* KS5 qualification-type-awareness round, Part 4: unlike CategoryFilter,
               this genuinely applies to every view at KS5 (Rankings included) -- it's
               about which real cohort is being compared, not a subject-family drill-
               down -- so it isn't hidden on Rankings. Deliberately its own row/colour
               (blue vs. CategoryFilter's neutral pills) so it doesn't read as the same
               control by a different name. */}
-          {effectiveStage === "ks5" && <Ks5CohortSwitcher active={effectiveKs5Cohort} onChange={setKs5Cohort} />}
+          {effectiveStage === "ks5" && <Ks5CohortSwitcher active={ks5Cohort} onChange={setKs5Cohort} />}
         </div>
       )}
 
@@ -358,24 +485,26 @@ export default function AcademicDataView({
           <p className="py-12 text-center text-sm text-neutral-500">
             No real KS2/GCSE/A-level academic results are available for this school yet.
           </p>
-        ) : (
+        ) : !isActiveTopic ? null : ( // items 2-3: data/portal logic above stays live even while hidden; the heavy view tree itself does not.
           <DataViewErrorBoundary key={`${activeView}-${effectiveStage}-${familyId ?? "whole"}`}>
             {activeView === "map" ? (
               <AcademicMapView
                 targetProfile={targetProfile}
-                tickedProfiles={tickedProfiles}
+                tickedProfiles={academicGroupProfiles}
                 stage={effectiveStage}
                 familyId={familyId}
                 familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
                 activeSetLabel={activeSetLabel}
                 ks4ExcludedUrns={ks4ExcludedUrns}
-                ks5Cohort={effectiveKs5Cohort}
+                ks5Cohort={ks5Cohort}
                 ks5ExcludedUrns={ks5ExcludedUrns}
+                activeView={activeView}
+                onChangeView={onChangeView}
               />
             ) : activeView === "graphs" ? (
               <AcademicGraphsView
                 targetProfile={targetProfile}
-                tickedProfiles={tickedProfiles}
+                tickedProfiles={academicGroupProfiles}
                 stage={effectiveStage}
                 startPeriod={startPeriod}
                 activeSetLabel={activeSetLabel}
@@ -383,24 +512,33 @@ export default function AcademicDataView({
                 familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
                 subjectData={subjectData}
                 ks4ExcludedUrns={ks4ExcludedUrns}
-                ks5Cohort={effectiveKs5Cohort}
+                ks5Cohort={ks5Cohort}
                 ks5ExcludedUrns={ks5ExcludedUrns}
               />
             ) : (
               <AcademicRankingsView
                 targetProfile={targetProfile}
-                tickedProfiles={tickedProfiles}
+                tickedProfiles={academicGroupProfiles}
                 stage={effectiveStage}
                 startPeriod={startPeriod}
                 activeSetLabel={activeSetLabel}
                 ks4ExcludedUrns={ks4ExcludedUrns}
-                ks5Cohort={effectiveKs5Cohort}
+                ks5Cohort={ks5Cohort}
                 ks5ExcludedUrns={ks5ExcludedUrns}
               />
             )}
           </DataViewErrorBoundary>
         )}
       </div>
+      {/* Item 8: Category filter moves BELOW the map for Map specifically (Graphs/
+          Rankings keep it in the header row above, or hidden for Rankings). Only
+          rendered once the heavy tree itself is (isActiveTopic), same reasoning as
+          the map/graphs/rankings switch above. */}
+      {isActiveTopic && activeView === "map" && effectiveStage && (
+        <div className="border-t border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
+          <CategoryFilter families={families} activeFamilyId={familyId} onChange={setFamilyId} />
+        </div>
+      )}
     </div>
   );
 }

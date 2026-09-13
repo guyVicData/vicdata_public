@@ -21,6 +21,9 @@ import { useEffect, useRef, useState } from "react";
 import { bngToLatLng } from "@/lib/bng";
 import { trendColour, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
 import { trendBadge } from "@/lib/data-view-cards";
+import type { ViewKey } from "@/lib/data-view-types";
+import ViewSwitcher from "./ViewSwitcher";
+import PdfExportButton from "./PdfExportButton";
 import {
   HEADLINE_MEASURE,
   HEADLINE_LABEL,
@@ -35,6 +38,7 @@ import {
   ks5HeadlineLabel,
   ks5CohortExclusionNote,
   ks5CohortWholeGroupSentence,
+  ks5MeasureFor,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -76,6 +80,24 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// Stage 2 UX review, item 9: same real percentile-trim MapView.tsx's own
+// trimmedBoundsFor uses (a single wrongly-geocoded outlier shouldn't wreck the
+// auto-fit zoom), duplicated here rather than imported (module-private there,
+// same "small self-contained copy" discipline as escapeHtml above) -- a genuine
+// no-op at Academic's own comparator-set scale (well under 50 points), kept for
+// consistency and in case that scale grows (item 11 widens the comparator set).
+const BOUNDS_TRIM_PERCENTILE = 0.02;
+function trimmedBoundsFor(points: [number, number][]): [number, number][] {
+  if (points.length < 50) return points;
+  const lats = points.map((p) => p[0]).sort((a, b) => a - b);
+  const lngs = points.map((p) => p[1]).sort((a, b) => a - b);
+  const cut = Math.floor(points.length * BOUNDS_TRIM_PERCENTILE);
+  const [latLo, latHi] = [lats[cut], lats[lats.length - 1 - cut]];
+  const [lngLo, lngHi] = [lngs[cut], lngs[lngs.length - 1 - cut]];
+  const trimmed = points.filter(([lat, lng]) => lat >= latLo && lat <= latHi && lng >= lngLo && lng <= lngHi);
+  return trimmed.length > 1 ? trimmed : points;
+}
+
 type ColourMode = "trend" | "grade_band";
 
 export default function AcademicMapView({
@@ -86,8 +108,10 @@ export default function AcademicMapView({
   familyLabel = null,
   activeSetLabel = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
-  ks5Cohort = "A level",
+  ks5Cohort = null,
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
+  activeView,
+  onChangeView,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -108,9 +132,17 @@ export default function AcademicMapView({
   // KS5 qualification-type-awareness round, Part 4: which real cohort the map's
   // headline-level colour/tooltip (and exclusion) is keyed on -- ignored entirely at
   // family level (family colour is always avgPointScore trend, per Round 2 Part B
-  // above) and whenever stage !== "ks5".
-  ks5Cohort?: Ks5Cohort;
+  // above) and whenever stage !== "ks5". Item 10: null is the real default now --
+  // each circle then uses ITS OWN dominant real cohort (ks5MeasureFor), not one
+  // shared measure across a mixed group.
+  ks5Cohort?: Ks5Cohort | null;
   ks5ExcludedUrns?: Set<string>;
+  // Stage 2 UX review, item 6: this map now renders its own ViewSwitcher/
+  // PdfExportButton overlays (matching Rolls' MapView.tsx exactly), since
+  // AcademicDataView's own in-flow header row skips them for Map -- needs the same
+  // controlled active/onChange pair that row already threads through.
+  activeView: ViewKey;
+  onChangeView: (v: ViewKey) => void;
 }) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -190,8 +222,10 @@ export default function AcademicMapView({
       group2.clearLayers();
 
       // KS5 qualification-type-awareness round: at KS5, the comparison metric follows
-      // the selected cohort, not the old hardcoded A-level-only measure.
-      const measureKey = stage === "ks5" ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
+      // the selected cohort. Item 10: with no cohort selected (ks5Cohort === null, the
+      // new default), there IS no one shared measure -- each circle resolves its own
+      // real dominant cohort via ks5MeasureFor inside the loop below instead.
+      const measureKey = stage === "ks5" && ks5Cohort ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
       const baseline = TREND_BASELINE_PERIOD[stage];
       const gradeKey = GRADE_BAND_MEASURE[stage];
       const age = HEADLINE_AGE[stage];
@@ -205,11 +239,23 @@ export default function AcademicMapView({
       const minSize = sizeValues.length > 0 ? Math.min(...sizeValues) : 1;
       const maxSize = sizeValues.length > 0 ? Math.max(...sizeValues) : 1;
 
+      // Item 9: fitBounds to the current visible set, same real behaviour as
+      // Rolls' own MapView.tsx (re-run on every comparator-set/exclusion change,
+      // via this effect's own dependency array) -- this map used to open at a
+      // fixed zoom=11 centred on the target and never auto-fit at all.
+      const bounds: [number, number][] = [];
+
       for (const p of withCoords) {
         const [lat, lng] = bngToLatLng(p.easting!, p.northing!);
+        bounds.push([lat, lng]);
         const isTarget = p.urn === targetProfile.urn;
         const size = sizeValue(p);
         const radius = size !== null && size > 0 ? radiusFor(size, minSize, maxSize) : UNTICKED_RADIUS;
+        // Item 10: per-marker resolution -- in the default (null) state this is each
+        // school's own real dominant cohort, which can genuinely differ circle to
+        // circle within the same comparator set; with an explicit cohort selected it
+        // just resolves to that cohort for every circle, same as before.
+        const rowKs5 = stage === "ks5" ? ks5MeasureFor(p, ks5Cohort) : null;
 
         let colour = UNTICKED_COLOUR;
         // Real fix, stage 1 review: hoisted out of the colour-mode branches below so
@@ -226,9 +272,10 @@ export default function AcademicMapView({
           if (badge) colour = trendColour(badge.pctChange);
         } else {
           const years = stageYears(p, stage);
-          avgValue = headlineValueAt(years, latestYear(years)?.period ?? -1, measureKey);
+          const rowMeasureKey = rowKs5 ? rowKs5.measureKey : measureKey;
+          avgValue = headlineValueAt(years, latestYear(years)?.period ?? -1, rowMeasureKey);
           if (effectiveColourMode === "trend") {
-            const anchor = headlineValueAt(years, baseline, measureKey);
+            const anchor = headlineValueAt(years, baseline, rowMeasureKey);
             const badge = trendBadge(avgValue, anchor);
             if (badge) colour = trendColour(badge.pctChange);
           } else {
@@ -246,11 +293,15 @@ export default function AcademicMapView({
         // average), same multi-line HTML tooltip pattern MapView.tsx's own tooltip
         // already uses.
         const sizeLabel = size !== null ? `${size.toLocaleString()} ${familyId ? "entries" : `${HEADLINE_AGE[stage]}-year-olds`}` : null;
+        // Item 10: the tooltip shows the SPECIFIC cohort label this circle is actually
+        // using -- already per-marker, so a mixed default-state group just reads
+        // correctly per school with no extra plumbing (e.g. Acland Burghley's own
+        // circle reads "Academic", Sevenoaks' reads "IB" or "A level", side by side).
         const avgLabel =
           avgValue !== null
             ? familyId
               ? `${avgValue.toFixed(1)} avg. point score`
-              : `${formatHeadlineValue(stage, avgValue)} ${stage === "ks5" ? ks5HeadlineLabel(ks5Cohort) : HEADLINE_LABEL[stage]}`
+              : `${formatHeadlineValue(stage, avgValue)} ${rowKs5 ? ks5HeadlineLabel(rowKs5.cohort) : HEADLINE_LABEL[stage]}`
             : null;
         const statsLine = [sizeLabel, avgLabel].filter(Boolean).join(", ");
         const tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(p.name)}${isTarget ? " (this school)" : ""}</strong>${
@@ -267,31 +318,53 @@ export default function AcademicMapView({
           .bindTooltip(tooltipHtml, { direction: "top", offset: [0, -4] })
           .addTo(group2);
       }
+
+      if (bounds.length > 1) {
+        mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
+      }
     });
   }, [withCoords, effectiveColourMode, familyId, stage, targetProfile.urn, ks5Cohort]);
 
   return (
     <div className="relative h-full w-full">
       <div ref={mapElRef} className="h-full w-full" />
-      {gradeBandAvailable && (
-        <div className="absolute left-2 top-2 z-[1000] flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <button
-            type="button"
-            onClick={() => setColourMode("trend")}
-            className={colourMode === "trend" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
-          >
-            Trend
-          </button>
-          <button
-            type="button"
-            onClick={() => setColourMode("grade_band")}
-            className={colourMode === "grade_band" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
-          >
-            Grade band
-          </button>
+
+      {/* Item 6: same overlay-on-canvas treatment as Rolls' own MapView.tsx --
+          exact same positions/z-index (left-3/right-3 top-3, z-[1000]) and box
+          treatment (rounded-md bg-white shadow-sm dark:bg-neutral-950). This
+          in-flow header row is now skipped for Map (AcademicDataView's own gate). */}
+      <div className="absolute left-3 top-3 z-[1000] rounded-md bg-white shadow-sm dark:bg-neutral-950">
+        <ViewSwitcher active={activeView} onChange={onChangeView} />
+      </div>
+      <div className="absolute right-3 top-3 z-[1000] flex flex-col items-end gap-2">
+        <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
+          <PdfExportButton />
         </div>
-      )}
-      <div className="absolute bottom-2 left-2 z-[1000] max-w-xs rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-neutral-600 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
+        {gradeBandAvailable && (
+          <div className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <button
+              type="button"
+              onClick={() => setColourMode("trend")}
+              className={colourMode === "trend" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
+            >
+              Trend
+            </button>
+            <button
+              type="button"
+              onClick={() => setColourMode("grade_band")}
+              className={colourMode === "grade_band" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
+            >
+              Grade band
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Item 7: matches Rolls' own legend position (bottom-3 left-3) and general
+          box treatment (bg-white/dark:bg-neutral-950, p-3, shadow-sm) exactly --
+          this used to sit at bottom-2 left-2 as a smaller, differently-styled box,
+          with the gradient strip in-flow rather than inside this overlay. */}
+      <div className="absolute bottom-3 left-3 z-[1000] max-w-xs rounded-md border border-neutral-200 bg-white p-3 text-[11px] text-neutral-600 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
         <p>
           {familyId
             ? `Circle size shows the number of exam entries in ${familyLabel ?? "this category"}, not pupils — a pupil taking more than one subject in this group is counted once per entry.`
@@ -301,7 +374,15 @@ export default function AcademicMapView({
           {familyId
             ? `Colour shows change in average point score in ${familyLabel ?? "this category"} since ${TREND_BASELINE_PERIOD[stage]}.`
             : effectiveColourMode === "trend"
-              ? `Colour shows change in ${stage === "ks5" ? ks5HeadlineLabel(ks5Cohort) : HEADLINE_LABEL[stage]} since ${TREND_BASELINE_PERIOD[stage]}.`
+              ? stage === "ks5"
+                ? // Item 10: no single shared measure exists in the default (null) state --
+                  // a generic caption rather than naming one cohort that isn't really what
+                  // every circle is showing (each circle's own tooltip carries the specific
+                  // label instead, see rowKs5 above).
+                  ks5Cohort
+                  ? `Colour shows change in ${ks5HeadlineLabel(ks5Cohort)} since ${TREND_BASELINE_PERIOD[stage]}.`
+                  : `Colour shows change in each school's own qualification-type headline measure since ${TREND_BASELINE_PERIOD[stage]} (see each circle's tooltip).`
+                : `Colour shows change in ${HEADLINE_LABEL[stage]} since ${TREND_BASELINE_PERIOD[stage]}.`
               : `Colour shows ${GRADE_BAND_LABEL[stage]}, most recent year.`}
         </p>
         <div className="mt-1 flex gap-0.5">
@@ -314,10 +395,14 @@ export default function AcademicMapView({
         ) : excludedForMap.length > 0 ? (
           <p className="mt-1 text-amber-700 dark:text-amber-400">{ks4ExclusionGroupNote(excludedForMap.map((p) => p.name))}</p>
         ) : null)}
+        {/* ks5ExcludedUrns (and so this whole branch) is only ever non-empty when the
+            parent has a specific ks5Cohort selected -- the default per-school state
+            does no qualification-type matching at all (item 11) -- so the `?? "A
+            level"` fallback below is a type-safety-only no-op, never a real path. */}
         {stage === "ks5" && (mapKs5WholeGroupExcluded ? (
-          <p className="mt-1 text-amber-700 dark:text-amber-400">{ks5CohortWholeGroupSentence(setLabel, ks5Cohort)}</p>
+          <p className="mt-1 text-amber-700 dark:text-amber-400">{ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level")}</p>
         ) : ks5ExcludedForMap.length > 0 ? (
-          <p className="mt-1 text-amber-700 dark:text-amber-400">{ks5CohortExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Cohort)}</p>
+          <p className="mt-1 text-amber-700 dark:text-amber-400">{ks5CohortExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Cohort ?? "A level")}</p>
         ) : null)}
       </div>
     </div>

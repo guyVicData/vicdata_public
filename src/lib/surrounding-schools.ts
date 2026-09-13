@@ -88,9 +88,26 @@ export function genderMatches(target: GenderTag, candidate: GenderTag | null, mo
 export async function findSurroundingSchools(
   urn: string,
   targetPeriod: number,
-  options: { genderMode?: GenderMatchMode; targetCount?: number } = {},
+  options: {
+    genderMode?: GenderMatchMode;
+    targetCount?: number;
+    // Stage 2 UX review, item 11: Academic's own comparator-set-sizing reuses this
+    // ENGINE end to end (sector/phase/gender/roll-data, and the same widen-the-net
+    // escalation below) rather than inventing new selection logic, adding one more
+    // filter dimension on top -- "does this school qualify for the real Academic
+    // question I'm asking" (has any real KS5 data, or has real entries for a
+    // specific qualification type). Called once per FACTS_CHUNK batch (same
+    // chunking discipline as the roll-data lookup just below it, not once per URN)
+    // so a caller needing an Academic profile per candidate can fetch it batched,
+    // not with N individual round trips. Optional, default-preserving -- every
+    // existing caller (the free public page, Rolls' own default comparator lists)
+    // is unaffected unless it opts in, same pattern genderMode/targetCount already
+    // established.
+    extraFilterUrns?: (candidateUrns: string[]) => Promise<Set<string>>;
+  } = {},
 ): Promise<MatchedSchool[]> {
   const genderMode = options.genderMode ?? "exact";
+  const extraFilterUrns = options.extraFilterUrns;
   // 2026-09-06, UX refinements round 1, B3: "for the Nearest 10 default set, add a
   // button to expand it by 5 more schools at a time." Optional, default-preserving
   // (TARGET_COUNT unchanged for every existing caller) -- the RPC's own candidate
@@ -339,12 +356,16 @@ export async function findSurroundingSchools(
         periodMin: targetPeriod,
         periodMax: targetPeriod,
       });
+      // Item 11: one batched check per chunk (same FACTS_CHUNK size as the roll-data
+      // lookup just above), not one round trip per candidate.
+      const extraFilterSet = extraFilterUrns ? await extraFilterUrns(chunk.map((c) => c.urn)) : null;
       // Skip-and-backfill (rolls spec §4, resolved here): candidates are already
       // ordered nearest-first; walk them in order and keep the first targetCount
       // that actually have DfE census roll data, skipping standalone 6th-form/FE
       // colleges (and any other gap) rather than erroring or silently misrepresenting.
       for (const c of chunk) {
         if (matched.length >= targetCount) break;
+        if (extraFilterSet && !extraFilterSet.has(c.urn)) continue;
         const candidateFacts = facts.filter((f) => f.entity_id === c.urn);
         const counts = singleAgeGenderCountsForPeriod(candidateFacts, targetPeriod);
         if (counts.size === 0) continue;
