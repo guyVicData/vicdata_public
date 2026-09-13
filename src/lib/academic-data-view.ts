@@ -39,6 +39,12 @@ export type AcademicSchoolProfile = {
   town: string | null;
   easting: number | null;
   northing: number | null;
+  // GCSE exclusion round: real column already on `public.schools` (confirmed
+  // directly against its own migration and `search_schools`'s own return columns),
+  // one more column on the existing query, not a new fetch. Used by
+  // igcseExclusionLikely to restrict the exclusion gate to independent schools --
+  // see that function's own comment for why.
+  establishmentTypeGroup: string | null;
   ks2: AcademicHeadlineYear[]; // ascending by period; degraded (raw facts, see module comment)
   ks4: AcademicHeadlineYear[];
   ks5: AcademicHeadlineYear[];
@@ -188,6 +194,66 @@ export function latestYear(years: AcademicHeadlineYear[]): AcademicHeadlineYear 
   return years.length ? years[years.length - 1] : null;
 }
 
+// GCSE exclusion round -- simplified from the stage-1 review's own original trigger
+// after Guy asked directly whether "just Eng+Maths" would work as the gate. Checked
+// against real data for six real independent schools before answering: Crosfields
+// (URN 110155) has real, substantial engmath_94_percent (95.8-100%) and a normal
+// Attainment 8 (60-70) -- genuinely comparable GCSE data. Leighton Park, Wellington
+// College, Sevenoaks, Charterhouse, and King's College School Wimbledon all show
+// engmath_94_percent at exactly 0% every year. The ebacc_94_percent check from the
+// original trigger is dropped -- EBacc's own definition requires English+Maths among
+// its components, so ebacc_94_percent is 0 in every real case where engmath_94_percent
+// is 0 anyway; checking both was redundant. None of the six have Progress 8 published
+// at all (confirmed directly), so Progress 8 presence/absence isn't a usable signal
+// here either way.
+//
+// The establishment_type_group === "Independent schools" restriction was NOT in
+// Guy's own original framing -- flagged to him directly and confirmed, since a real
+// state comprehensive hitting exactly 0% on Eng+Maths in a given year would mean
+// genuinely disastrous results, not an IGCSE curriculum, and shouldn't silently
+// vanish from GCSE rankings as if its data weren't real.
+export function igcseExclusionLikely(profile: AcademicSchoolProfile): boolean {
+  if (profile.establishmentTypeGroup !== "Independent schools") return false;
+  const y = latestYear(profile.ks4);
+  if (!y) return false;
+  const engmath94 = headlineValueAt(profile.ks4, y.period, "engmath_94_percent");
+  const attainment8 = headlineValueAt(profile.ks4, y.period, "attainment8_average");
+  return engmath94 === 0 && attainment8 !== null && attainment8 > 5;
+}
+
+// GCSE exclusion round, Part 2 -- the three real note shapes from vicdata's own
+// summary-wordings doc §11, copied verbatim (not redrafted, per the brief's own
+// instruction). Kept as functions rather than flat constants since each shape takes a
+// real school name/list, not a placeholder.
+
+// The school being viewed is itself excluded -- free snapshot card's GCSE line, Data
+// View Overview (in place of the headline number), Rankings (in place of a rank).
+// `seeResultsBelow` is true only where an A-level line/section genuinely renders
+// further down the SAME view (the free card, when this school also has real KS5
+// data) -- everywhere else (Overview/Rankings, a stage tab switch rather than a
+// scroll) reads "instead", not "below".
+export function ks4ExclusionTargetSentence(schoolName: string, seeResultsBelow: boolean): string {
+  return `${schoolName}'s GCSE figures aren't comparable to other schools' — DfE's performance tables exclude IGCSEs, which many independent schools use instead of reformed GCSEs. See its A-level results ${seeResultsBelow ? "below" : "instead"}.`;
+}
+
+// One or more ticked (non-target) comparator-set schools are excluded -- singular vs.
+// plural wording exactly as drafted in §11. Returns null when nothing is excluded so
+// callers can render conditionally without a separate length check.
+export function ks4ExclusionGroupNote(excludedNames: string[]): string | null {
+  if (excludedNames.length === 0) return null;
+  if (excludedNames.length === 1) {
+    const name = excludedNames[0];
+    return `${name} isn't shown in this GCSE comparison — DfE's performance tables exclude IGCSEs, which ${name} uses instead of reformed GCSEs.`;
+  }
+  return `${excludedNames.length} schools aren't shown in this GCSE comparison — ${excludedNames.join(", ")}: DfE's performance tables exclude IGCSEs, which these schools use instead of reformed GCSEs.`;
+}
+
+// The whole comparator group ends up excluded (a set made up entirely of IGCSE-heavy
+// independents) -- avoids rendering an empty/broken group-comparison chart.
+export function ks4ExclusionWholeGroupSentence(setLabel: string): string {
+  return `None of the schools in ${setLabel} have comparable GCSE figures to show here — try A-level, or a different comparator set.`;
+}
+
 // dfe_ks2_attainment raw facts -> the same {period, measures} shape modern KS4/KS5
 // headline rows already have, so every downstream helper above works identically
 // across all three stages rather than branching on KS2 specifically everywhere it's
@@ -256,7 +322,7 @@ function groupFamilyRows(
   return byUrn;
 }
 
-type SchoolRow = { urn: string; current_name: string; town: string | null; easting: number | null; northing: number | null };
+type SchoolRow = { urn: string; current_name: string; town: string | null; easting: number | null; northing: number | null; establishment_type_group: string | null };
 
 // Builds one profile per URN, server-side only (calls vicdata's RPCs with the anon
 // key, plus a local `schools` lookup for name/coordinates) -- same shape as
@@ -280,7 +346,7 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
   const supabase = createServerAnonSupabaseClient();
 
   const [{ data: rows }, ks4Rows, ks5Rows, ks4FamilyRows, ks5FamilyRows, ks2Facts, censusFacts] = await Promise.all([
-    supabase.from("schools").select("urn, current_name, town, easting, northing").in("urn", urns),
+    supabase.from("schools").select("urn, current_name, town, easting, northing, establishment_type_group").in("urn", urns),
     lookupAcademicHeadline({ entityIds: urns, ksStage: "ks4" as AcademicRpcKsStage }),
     lookupAcademicHeadline({ entityIds: urns, ksStage: "ks5" as AcademicRpcKsStage }),
     lookupAcademicSubjectFamily({ entityIds: urns, ksStage: "ks4" as AcademicRpcKsStage }),
@@ -315,6 +381,7 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
     town: row.town,
     easting: row.easting,
     northing: row.northing,
+    establishmentTypeGroup: row.establishment_type_group,
     ks2: ks2ByUrn.get(row.urn) ?? [],
     ks4: ks4ByUrn.get(row.urn) ?? [],
     ks5: ks5ByUrn.get(row.urn) ?? [],

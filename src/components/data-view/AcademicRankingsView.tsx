@@ -19,6 +19,9 @@ import {
   HEADLINE_LABEL,
   HEADLINE_UNIT,
   TREND_BASELINE_PERIOD,
+  ks4ExclusionTargetSentence,
+  ks4ExclusionGroupNote,
+  ks4ExclusionWholeGroupSentence,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -27,6 +30,8 @@ import {
 } from "@/lib/academic-data-view";
 import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, type RankedEntry } from "@/lib/data-view-cards";
 import { academicYearLabel } from "./TrendPill";
+
+const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 
 function formatHeadline(stage: KsStage, value: number): string {
   return HEADLINE_UNIT[stage] === "percent" ? `${value.toFixed(1)}%` : value.toFixed(1);
@@ -59,16 +64,29 @@ export default function AcademicRankingsView({
   tickedProfiles,
   stage,
   startPeriod,
+  activeSetLabel,
+  ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
   stage: KsStage;
   startPeriod: number;
+  activeSetLabel?: string | null;
+  // GCSE exclusion round, Part 2 -- see AcademicGraphsView's own header comment for
+  // the same prop.
+  ks4ExcludedUrns?: Set<string>;
 }) {
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   const measureKey = HEADLINE_MEASURE[stage];
+  const setLabel = activeSetLabel ?? "the ticked comparator set";
 
-  const currentEntries = group.map((p) => {
+  const ks4TargetExcluded = ks4ExcludedUrns.has(targetProfile.urn);
+  const comparableGroup = group.filter((p) => !ks4ExcludedUrns.has(p.urn));
+  const excludedTickedNames = group.filter((p) => ks4ExcludedUrns.has(p.urn) && p.urn !== targetProfile.urn).map((p) => p.name);
+  const wholeGroupExcluded = stage === "ks4" && comparableGroup.length === 0;
+  const ks4GroupNote = stage === "ks4" ? ks4ExclusionGroupNote(excludedTickedNames) : null;
+
+  const currentEntries = comparableGroup.map((p) => {
     const years = stageYears(p, stage);
     const y = latestYear(years);
     return {
@@ -78,7 +96,7 @@ export default function AcademicRankingsView({
       value: y ? headlineValueAt(years, y.period, measureKey) : null,
     };
   });
-  const groupInScope = currentEntries.filter((e) => e.value !== null || e.isTarget).map((e) => group.find((p) => p.urn === e.urn)!);
+  const groupInScope = currentEntries.filter((e) => e.value !== null || e.isTarget).map((e) => comparableGroup.find((p) => p.urn === e.urn)!);
   const { ranked, targetRank, total } = rankDescendingWithTies(currentEntries);
   const targetCurrentValue = currentEntries.find((e) => e.isTarget)?.value ?? null;
   const averageCurrentValue = total > 0 ? ranked.reduce((sum, r) => sum + r.value, 0) / total : null;
@@ -94,7 +112,7 @@ export default function AcademicRankingsView({
   const first = realRanks[0] ?? null;
   const last = realRanks[realRanks.length - 1] ?? null;
 
-  const growthEntries = group.map((p) => {
+  const growthEntries = comparableGroup.map((p) => {
     const years = stageYears(p, stage);
     const current = headlineValueAt(years, latestYear(years)?.period ?? -1, measureKey);
     const anchor = headlineValueAt(years, baseline, measureKey);
@@ -109,7 +127,9 @@ export default function AcademicRankingsView({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">This school&rsquo;s position</h3>
-          {targetRank !== null ? (
+          {ks4TargetExcluded ? (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
+          ) : targetRank !== null ? (
             <>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
                 #{targetRank} of {total} schools
@@ -129,7 +149,9 @@ export default function AcademicRankingsView({
         </div>
         <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Position over time</h3>
-          {avgRank !== null && first && last ? (
+          {ks4TargetExcluded ? (
+            <p className="text-sm text-neutral-500">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
+          ) : avgRank !== null && first && last ? (
             <>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
                 Average rank #{avgRank.toFixed(1)}, {academicYearLabel(first.period)}–{academicYearLabel(last.period)}
@@ -146,19 +168,27 @@ export default function AcademicRankingsView({
         </div>
       </div>
 
-      <RankTable title={HEADLINE_LABEL[stage]} ranked={ranked} targetRank={targetRank} total={total} format={(v) => formatHeadline(stage, v)} />
+      {wholeGroupExcluded ? (
+        <p className="text-sm text-neutral-500">{ks4ExclusionWholeGroupSentence(setLabel)}</p>
+      ) : (
+        <>
+          {ks4GroupNote && <p className="text-xs italic text-neutral-500">{ks4GroupNote}</p>}
 
-      {allPeriods.length > 0 && (
-        <ComparisonOverTimeTable ranked={ranked} targetRank={targetRank} targetUrn={targetProfile.urn} periods={allPeriods} ranksByUrn={ranksByUrn} />
+          <RankTable title={HEADLINE_LABEL[stage]} ranked={ranked} targetRank={targetRank} total={total} format={(v) => formatHeadline(stage, v)} />
+
+          {allPeriods.length > 0 && (
+            <ComparisonOverTimeTable ranked={ranked} targetRank={targetRank} targetUrn={targetProfile.urn} periods={allPeriods} ranksByUrn={ranksByUrn} />
+          )}
+
+          <RankTable
+            title={`Growth / decline ranking since ${academicYearLabel(baseline)}`}
+            ranked={growthRanked}
+            targetRank={growthTargetRank}
+            total={growthTotal}
+            format={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
+          />
+        </>
       )}
-
-      <RankTable
-        title={`Growth / decline ranking since ${academicYearLabel(baseline)}`}
-        ranked={growthRanked}
-        targetRank={growthTargetRank}
-        total={growthTotal}
-        format={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
-      />
     </div>
   );
 }

@@ -25,9 +25,12 @@ import {
   HEADLINE_MEASURE,
   HEADLINE_LABEL,
   HEADLINE_AGE,
+  HEADLINE_UNIT,
   GRADE_BAND_MEASURE,
   GRADE_BAND_LABEL,
   TREND_BASELINE_PERIOD,
+  ks4ExclusionGroupNote,
+  ks4ExclusionWholeGroupSentence,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -37,6 +40,8 @@ import {
   type AcademicSchoolProfile,
   type KsStage,
 } from "@/lib/academic-data-view";
+
+const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 
 const MIN_RADIUS = 5;
 const MAX_RADIUS = 20;
@@ -55,6 +60,17 @@ function radiusFor(value: number, min: number, max: number): number {
   return MIN_RADIUS + (MAX_RADIUS - MIN_RADIUS) * t;
 }
 
+function formatHeadlineValue(stage: KsStage, value: number): string {
+  return HEADLINE_UNIT[stage] === "percent" ? `${value.toFixed(1)}%` : value.toFixed(1);
+}
+
+// Same small, self-contained escape MapView.tsx's own tooltip HTML already uses --
+// duplicated here rather than imported (module-private there), matching this file's
+// existing "small self-contained copy" discipline for shared visual patterns.
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 type ColourMode = "trend" | "grade_band";
 
 export default function AcademicMapView({
@@ -63,6 +79,8 @@ export default function AcademicMapView({
   stage,
   familyId = null,
   familyLabel = null,
+  activeSetLabel = null,
+  ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -75,6 +93,11 @@ export default function AcademicMapView({
   // rendering nothing useful.
   familyId?: string | null;
   familyLabel?: string | null;
+  activeSetLabel?: string | null;
+  // GCSE exclusion round, Part 2 -- see AcademicGraphsView's own header comment for
+  // the same prop. An excluded school (target or ticked) gets no circle at all, KS4
+  // only -- empty whenever stage !== "ks4".
+  ks4ExcludedUrns?: Set<string>;
 }) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -86,11 +109,18 @@ export default function AcademicMapView({
   const effectiveColourMode: ColourMode = familyId ? "trend" : colourMode;
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
-  const withCoords = group.filter((p) => p.easting !== null && p.northing !== null);
+  // The map has no separate "this school" callout the way Overview/Rankings do, so an
+  // excluded target's own circle is dropped the same way an excluded ticked school's
+  // is -- both named together in the one legend note below.
+  const excludedForMap = group.filter((p) => ks4ExcludedUrns.has(p.urn));
+  const mapWholeGroupExcluded = stage === "ks4" && group.length > 0 && excludedForMap.length === group.length;
+  const withCoords = group.filter((p) => p.easting !== null && p.northing !== null && !ks4ExcludedUrns.has(p.urn));
+  const setLabel = activeSetLabel ?? "the ticked comparator set";
 
   useEffect(() => {
     if (!mapElRef.current || mapRef.current || targetProfile.easting === null || targetProfile.northing === null) return;
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
     import("leaflet").then(async (mod) => {
       if (cancelled || !mapElRef.current) return;
       const L = (mod as unknown as { default?: typeof mod }).default ?? mod;
@@ -100,9 +130,26 @@ export default function AcademicMapView({
       L.control.zoom({ position: "bottomright" }).addTo(map);
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
+
+      // Real bug, stage 1 review: this component is fully unmounted and remounted
+      // every time DataViewErrorBoundary's own key changes (activeView/effectiveStage/
+      // familyId -- Map <-> Graphs/Rankings, or picking a Category), the same way
+      // Rolls' own MapView.tsx is keyed on activeView alone. Leaflet measures its
+      // container once at L.map() call time and never re-measures itself -- without
+      // this, a remount into a container whose real on-screen size hasn't fully
+      // settled yet renders with stale internal tile dimensions (blank/cut-off tiles).
+      // Same real fix as MapView.tsx's own 2026-09-05 comment, copied verbatim rather
+      // than re-derived.
+      resizeObserver = new ResizeObserver(() => map.invalidateSize());
+      resizeObserver.observe(mapElRef.current);
     });
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetProfile.urn]);
@@ -135,19 +182,24 @@ export default function AcademicMapView({
         const radius = size !== null && size > 0 ? radiusFor(size, minSize, maxSize) : UNTICKED_RADIUS;
 
         let colour = UNTICKED_COLOUR;
+        // Real fix, stage 1 review: hoisted out of the colour-mode branches below so
+        // the tooltip (built after) can show the same real average the circle's own
+        // colour is encoding, whichever mode/level is active -- not a second,
+        // possibly-diverging computation.
+        let avgValue: number | null = null;
         if (familyId) {
           // Trend in avgPointScore since baseline, for this one family.
           const years = familyYearsFor(p, stage, familyId);
-          const current = years.find((y) => y.period === (latestFamilyYear(p, stage, familyId)?.period ?? -1))?.avgPointScore ?? null;
+          avgValue = latestFamilyYear(p, stage, familyId)?.avgPointScore ?? null;
           const anchor = years.find((y) => y.period === baseline)?.avgPointScore ?? null;
-          const badge = trendBadge(current, anchor);
+          const badge = trendBadge(avgValue, anchor);
           if (badge) colour = trendColour(badge.pctChange);
         } else {
           const years = stageYears(p, stage);
+          avgValue = headlineValueAt(years, latestYear(years)?.period ?? -1, measureKey);
           if (effectiveColourMode === "trend") {
-            const current = headlineValueAt(years, latestYear(years)?.period ?? -1, measureKey);
             const anchor = headlineValueAt(years, baseline, measureKey);
-            const badge = trendBadge(current, anchor);
+            const badge = trendBadge(avgValue, anchor);
             if (badge) colour = trendColour(badge.pctChange);
           } else {
             const y = latestYear(years);
@@ -156,6 +208,21 @@ export default function AcademicMapView({
           }
         }
 
+        // Real fix, stage 1 review: the tooltip used to be just the school name --
+        // Guy's own example ("an A-level map -- label needs to say X 17 year olds, Y
+        // average points per A-level entry"). Same real data already driving the
+        // circle's own size/colour, not a new fetch -- matches whatever the circle is
+        // currently encoding (population vs family entries, headline vs family
+        // average), same multi-line HTML tooltip pattern MapView.tsx's own tooltip
+        // already uses.
+        const sizeLabel = size !== null ? `${size.toLocaleString()} ${familyId ? "entries" : `${HEADLINE_AGE[stage]}-year-olds`}` : null;
+        const avgLabel =
+          avgValue !== null ? (familyId ? `${avgValue.toFixed(1)} avg. point score` : `${formatHeadlineValue(stage, avgValue)} ${HEADLINE_LABEL[stage]}`) : null;
+        const statsLine = [sizeLabel, avgLabel].filter(Boolean).join(", ");
+        const tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(p.name)}${isTarget ? " (this school)" : ""}</strong>${
+          statsLine ? `<br/>${statsLine}` : ""
+        }</div>`;
+
         L.circleMarker([lat, lng], {
           radius,
           fillColor: colour,
@@ -163,7 +230,7 @@ export default function AcademicMapView({
           color: isTarget ? "#dc2626" : "#ffffff",
           weight: isTarget ? 2.5 : 1,
         })
-          .bindTooltip(`${p.name}${isTarget ? " (this school)" : ""}`)
+          .bindTooltip(tooltipHtml, { direction: "top", offset: [0, -4] })
           .addTo(group2);
       }
     });
@@ -208,6 +275,11 @@ export default function AcademicMapView({
             <span key={s.pct} className="h-2 flex-1" style={{ backgroundColor: s.hex }} />
           ))}
         </div>
+        {stage === "ks4" && (mapWholeGroupExcluded ? (
+          <p className="mt-1 text-amber-700 dark:text-amber-400">{ks4ExclusionWholeGroupSentence(setLabel)}</p>
+        ) : excludedForMap.length > 0 ? (
+          <p className="mt-1 text-amber-700 dark:text-amber-400">{ks4ExclusionGroupNote(excludedForMap.map((p) => p.name))}</p>
+        ) : null)}
       </div>
     </div>
   );

@@ -44,6 +44,9 @@ import {
   HEADLINE_UNIT,
   TREND_BASELINE_PERIOD,
   MINIMUM_SUBJECT_N,
+  ks4ExclusionTargetSentence,
+  ks4ExclusionGroupNote,
+  ks4ExclusionWholeGroupSentence,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -99,6 +102,8 @@ function EntriesShareDonut({ families, highlightFamilyId }: { families: Academic
     </div>
   );
 }
+
+const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 
 function formatHeadline(stage: KsStage, value: number): string {
   return HEADLINE_UNIT[stage] === "percent" ? `${value.toFixed(1)}%` : value.toFixed(1);
@@ -162,6 +167,7 @@ export default function AcademicGraphsView({
   familyId = null,
   familyLabel = null,
   subjectData = null,
+  ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -171,6 +177,14 @@ export default function AcademicGraphsView({
   familyId?: string | null;
   familyLabel?: string | null;
   subjectData?: { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[] } | null;
+  // GCSE exclusion round, Part 2: real URNs excluded from GCSE comparison this render
+  // (empty whenever stage !== "ks4", per AcademicDataView's own gating) -- affects
+  // Overview/Growth-decline/Context-over-time only; Section 4 (family/subject
+  // breakdown) is untouched, a deliberate scope call (see this round's own report --
+  // the brief's own Part 2 list names free card/Overview/Rankings/Map, not this
+  // section, and entries/point-score are a different real metric class from
+  // Attainment 8/EBacc, not necessarily affected by the same DfE exclusion).
+  ks4ExcludedUrns?: Set<string>;
 }) {
   // Local, not lifted -- this component already remounts (its parent's
   // DataViewErrorBoundary key) whenever stage/family changes, so this resets for free.
@@ -190,28 +204,44 @@ export default function AcademicGraphsView({
   const targetAnchor = valueFor(targetProfile, baseline);
   const targetTrendBadge = trendBadge(targetCurrent, targetAnchor);
 
-  const spreadPoints = group.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: valueFor(p) }));
+  // GCSE exclusion round, Part 2 (supersedes stage-1's caveat-alongside-a-number Part
+  // D): the excluded set is computed once in AcademicDataView and threaded down here
+  // (empty whenever stage !== "ks4"). `comparableGroup` feeds every group-comparison
+  // calculation below (spread/growth/trend/same-year bar) -- an excluded school (target
+  // or ticked) simply isn't part of any of them, rather than showing with a caveat.
+  const ks4TargetExcluded = ks4ExcludedUrns.has(targetProfile.urn);
+  const comparableGroup = group.filter((p) => !ks4ExcludedUrns.has(p.urn));
+  const excludedTickedNames = group.filter((p) => ks4ExcludedUrns.has(p.urn) && p.urn !== targetProfile.urn).map((p) => p.name);
+  // Only possible when the target is ALSO excluded (comparableGroup would otherwise
+  // always contain at least the target) -- a real, distinct case from "some ticked
+  // schools excluded": nothing at all is left to chart.
+  const wholeGroupExcluded = stage === "ks4" && comparableGroup.length === 0;
+  const ks4GroupNote = stage === "ks4" ? ks4ExclusionGroupNote(excludedTickedNames) : null;
+
+  const spreadPoints = comparableGroup.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: valueFor(p) }));
   const spread = spreadData(spreadPoints);
   const groupAverage = spread ? spread.points.reduce((s, p) => s + p.value, 0) / spread.points.length : null;
 
-  const growthPoints = group.map((p) => {
+  const growthPoints = comparableGroup.map((p) => {
     const current = valueFor(p);
     const anchor = valueFor(p, baseline);
     return { urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, pctChange: trendBadge(current, anchor)?.pctChange ?? null };
   });
 
-  const allPeriods = Array.from(new Set(group.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
+  const allPeriods = Array.from(new Set(comparableGroup.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
     .filter((p) => p >= Math.max(startPeriod, baseline))
     .sort((a, b) => a - b);
-  const targetSeries = allPeriods.map((p) => valueFor(targetProfile, p));
+  // Excluded from the group means excluded from its own trend line too -- the same
+  // methodology issue applies to every one of its real years, not just the latest.
+  const targetSeries = ks4TargetExcluded ? allPeriods.map(() => null) : allPeriods.map((p) => valueFor(targetProfile, p));
   const averageSeries = allPeriods.map((p) => {
-    const vals = group.map((s) => valueFor(s, p)).filter((v): v is number => v !== null);
+    const vals = comparableGroup.map((s) => valueFor(s, p)).filter((v): v is number => v !== null);
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
   });
 
   const latestPeriod = allPeriods[allPeriods.length - 1] ?? null;
   const sameYearBarPoints = latestPeriod !== null
-    ? group.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: valueFor(p, latestPeriod) ?? 0 }))
+    ? comparableGroup.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: valueFor(p, latestPeriod) ?? 0 }))
     : [];
 
   // Round 2, Part B: Section 4 data, only computed when a family is actually
@@ -254,7 +284,9 @@ export default function AcademicGraphsView({
     <div className="space-y-8">
       <section>
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Overview — {HEADLINE_LABEL[stage]}</h3>
-        {targetCurrent !== null ? (
+        {ks4TargetExcluded ? (
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
+        ) : targetCurrent !== null ? (
           <>
             <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">{formatHeadline(stage, targetCurrent)}</p>
             <p className="mt-1 text-sm text-neutral-500">
@@ -266,14 +298,19 @@ export default function AcademicGraphsView({
         ) : (
           <p className="text-sm text-neutral-500">No real data available for this school under this key stage.</p>
         )}
-        {spread && (
+        {!ks4TargetExcluded && (ks4GroupNote || spread) && (
           <div className="mt-4">
-            <SpreadStrip min={spread.min} max={spread.max} points={spread.points} formatValue={(v) => formatHeadline(stage, v)} />
-            {targetCurrent !== null && groupAverage !== null && groupAverage !== 0 && (
-              <p className="mt-1 text-xs text-neutral-500">
-                {Math.abs(((targetCurrent - groupAverage) / groupAverage) * 100).toFixed(0)}% {targetCurrent >= groupAverage ? "above" : "below"} the average of{" "}
-                {formatHeadline(stage, groupAverage)} for {setLabel}
-              </p>
+            {ks4GroupNote && <p className="mb-2 text-xs italic text-neutral-500">{ks4GroupNote}</p>}
+            {spread && (
+              <>
+                <SpreadStrip min={spread.min} max={spread.max} points={spread.points} formatValue={(v) => formatHeadline(stage, v)} />
+                {targetCurrent !== null && groupAverage !== null && groupAverage !== 0 && (
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {Math.abs(((targetCurrent - groupAverage) / groupAverage) * 100).toFixed(0)}% {targetCurrent >= groupAverage ? "above" : "below"} the average of{" "}
+                    {formatHeadline(stage, groupAverage)} for {setLabel}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
@@ -281,23 +318,37 @@ export default function AcademicGraphsView({
 
       <section>
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Growth / decline since {academicYearLabel(baseline)}</h3>
-        <p className="mb-2 text-xs text-neutral-500">Change in {HEADLINE_LABEL[stage]}, across {setLabel}.</p>
-        <DivergingBarChart points={growthPoints} />
+        {wholeGroupExcluded ? (
+          <p className="text-sm text-neutral-500">{ks4ExclusionWholeGroupSentence(setLabel)}</p>
+        ) : (
+          <>
+            {ks4GroupNote && <p className="mb-2 text-xs italic text-neutral-500">{ks4GroupNote}</p>}
+            <p className="mb-2 text-xs text-neutral-500">Change in {HEADLINE_LABEL[stage]}, across {setLabel}.</p>
+            <DivergingBarChart points={growthPoints} />
+          </>
+        )}
       </section>
 
       <section>
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Context over time</h3>
-        <p className="mb-2 text-xs text-neutral-500">
-          {targetProfile.name}&rsquo;s {HEADLINE_LABEL[stage]} compared with the average of {setLabel}, {allPeriods.length > 0 ? `${academicYearLabel(allPeriods[0])}–${academicYearLabel(allPeriods[allPeriods.length - 1])}` : ""}.
-        </p>
-        <TargetVsAverageTrend periods={allPeriods} targetSeries={targetSeries} averageSeries={averageSeries} />
-        {latestPeriod !== null && (
-          <div className="mt-4">
+        {wholeGroupExcluded ? (
+          <p className="text-sm text-neutral-500">{ks4ExclusionWholeGroupSentence(setLabel)}</p>
+        ) : (
+          <>
+            {ks4GroupNote && <p className="mb-2 text-xs italic text-neutral-500">{ks4GroupNote}</p>}
             <p className="mb-2 text-xs text-neutral-500">
-              {HEADLINE_LABEL[stage]}, {academicYearLabel(latestPeriod)} — {targetProfile.name} compared with {setLabel}.
+              {targetProfile.name}&rsquo;s {HEADLINE_LABEL[stage]} compared with the average of {setLabel}, {allPeriods.length > 0 ? `${academicYearLabel(allPeriods[0])}–${academicYearLabel(allPeriods[allPeriods.length - 1])}` : ""}.
             </p>
-            <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
-          </div>
+            <TargetVsAverageTrend periods={allPeriods} targetSeries={targetSeries} averageSeries={averageSeries} />
+            {latestPeriod !== null && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs text-neutral-500">
+                  {HEADLINE_LABEL[stage]}, {academicYearLabel(latestPeriod)} — {targetProfile.name} compared with {setLabel}.
+                </p>
+                <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
+              </div>
+            )}
+          </>
         )}
       </section>
 

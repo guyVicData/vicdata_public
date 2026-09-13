@@ -5,6 +5,8 @@ import {
   stagesPresent,
   latestYear,
   headlineValueAt,
+  igcseExclusionLikely,
+  ks4ExclusionTargetSentence,
   HEADLINE_MEASURE,
   type AcademicSchoolProfile,
   type KsStage,
@@ -34,8 +36,16 @@ function sentenceFor(schoolName: string, stage: KsStage, period: number, value: 
 
 export function AcademicSnapshotCard({ profile, schoolName, urn }: { profile: AcademicSchoolProfile; schoolName: string; urn: string }) {
   const stages = stagesPresent(profile);
+  // GCSE exclusion round (supersedes stage-1's caveat-alongside-a-number Part D): a
+  // real DfE methodology exclusion, not a data gap -- see academic-data-view.ts's own
+  // igcseExclusionLikely for the evidence/trigger. The GCSE line is left out entirely
+  // (not shown with a caveat underneath), replaced by §11's own sentence. "below" is
+  // literal here -- stagesPresent's own fixed ks2/ks4/ks5 order means a real KS5 line
+  // renders directly under this one on the same card whenever ks5 data exists.
+  const ks4Excluded = igcseExclusionLikely(profile);
   const lines = stages
     .map((stage) => {
+      if (stage === "ks4" && ks4Excluded) return ks4ExclusionTargetSentence(schoolName, stages.includes("ks5"));
       const years = stageYears(profile, stage);
       const year = latestYear(years);
       if (!year) return null;

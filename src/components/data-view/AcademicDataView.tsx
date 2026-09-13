@@ -33,6 +33,7 @@ import {
   stagesPresent,
   availableFamilies,
   deserializeAcademicProfile,
+  igcseExclusionLikely,
   type AcademicSchoolProfile,
   type WireAcademicSchoolProfile,
   type KsStage,
@@ -71,11 +72,20 @@ function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; acti
 }
 
 // Round 2, Part B: Category (subject family) drill-down -- same real pill/button
-// styling FilterBar.tsx's own Phase pills use (active fill, ▾ caret hinting at a
-// sub-level), a self-contained copy rather than importing FilterBar's own private
-// `Pill` (that component is styled for Rolls' TAG_COLOURS tag keys specifically; this
-// one just needs the same visual shape, not the same colour-lookup mechanism).
-function CategoryPill({ active, onClick, children, hasCaret }: { active: boolean; onClick: () => void; children: React.ReactNode; hasCaret?: boolean }) {
+// styling FilterBar.tsx's own Phase pills use (active fill), a self-contained copy
+// rather than importing FilterBar's own private `Pill` (that component is styled for
+// Rolls' TAG_COLOURS tag keys specifically; this one just needs the same visual shape,
+// not the same colour-lookup mechanism).
+//
+// Stage 1 review fix: this used to take a `hasCaret` prop and render a ▾ next to each
+// family pill, implying an expandable next level. Nothing actually expands from the
+// pill -- picking a family appends a "Subject/family breakdown" section further down
+// the page (Graphs only), with its own separate Subject <select>, not an inline
+// drill-down anywhere near the pill itself. Removed rather than kept as a decorative
+// truthful-affordance fix; whether the Subject picker should move closer to these
+// pills is a real, separate design question, flagged in this round's own report, not
+// solved here.
+function CategoryPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
@@ -88,11 +98,6 @@ function CategoryPill({ active, onClick, children, hasCaret }: { active: boolean
       }
     >
       {children}
-      {hasCaret && (
-        <span aria-hidden="true" className="text-[10px] opacity-70">
-          ▾
-        </span>
-      )}
     </button>
   );
 }
@@ -114,7 +119,7 @@ function CategoryFilter({
         Whole school
       </CategoryPill>
       {families.map((f) => (
-        <CategoryPill key={f.familyId} active={activeFamilyId === f.familyId} onClick={() => onChange(f.familyId)} hasCaret>
+        <CategoryPill key={f.familyId} active={activeFamilyId === f.familyId} onClick={() => onChange(f.familyId)}>
           {f.familyLabel}
         </CategoryPill>
       ))}
@@ -204,6 +209,22 @@ export default function AcademicDataView({
   // taxonomy at all), so the Category row simply never renders for it.
   const families = effectiveStage ? availableFamilies([targetProfile, ...tickedProfiles].filter((p): p is AcademicSchoolProfile => !!p), effectiveStage) : [];
 
+  // GCSE exclusion round, Part 2: computed once here (this component already has
+  // target + ticked together) and threaded down to Graphs/Rankings/Map alongside the
+  // props they already receive, rather than each view recomputing it separately.
+  // Only populated at KS4 -- igcseExclusionLikely itself reads ks4 data regardless of
+  // the active stage, so gating here (not inside the function) keeps KS2/KS5 views
+  // completely unaffected, per the brief's own "KS4-only exclusion" scope.
+  const ks4ExcludedUrns = new Set<string>();
+  if (effectiveStage === "ks4") {
+    const seen = new Set<string>();
+    for (const p of [targetProfile, ...tickedProfiles]) {
+      if (!p || seen.has(p.urn)) continue;
+      seen.add(p.urn);
+      if (igcseExclusionLikely(p)) ks4ExcludedUrns.add(p.urn);
+    }
+  }
+
   // Round 2, Part C: subject-level data for the TARGET school only (see this file's
   // own header comment for why), refetched whenever the stage changes (ks4/ks5 are
   // genuinely different sources) -- not gated on familyId, since AcademicGraphsView
@@ -248,7 +269,15 @@ export default function AcademicDataView({
             </div>
             <PdfExportButton />
           </div>
-          <CategoryFilter families={families} activeFamilyId={familyId} onChange={setFamilyId} />
+          {/* Stage 1 review fix: Rankings never receives familyId/familyLabel at all
+              (a deliberate round-2 scope cut -- see AcademicRankingsView.tsx's own
+              header comment, "subject-family metrics do NOT get their own Rankings
+              entry"), but this row used to render unconditionally regardless of
+              activeView -- a member on Rankings saw a fully clickable Category filter
+              that silently did nothing. Hidden here rather than shown disabled: it
+              isn't a temporarily-unavailable control, it genuinely doesn't apply to
+              this view. */}
+          {activeView !== "rankings" && <CategoryFilter families={families} activeFamilyId={familyId} onChange={setFamilyId} />}
         </div>
       )}
 
@@ -266,7 +295,15 @@ export default function AcademicDataView({
         ) : (
           <DataViewErrorBoundary key={`${activeView}-${effectiveStage}-${familyId ?? "whole"}`}>
             {activeView === "map" ? (
-              <AcademicMapView targetProfile={targetProfile} tickedProfiles={tickedProfiles} stage={effectiveStage} familyId={familyId} familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null} />
+              <AcademicMapView
+                targetProfile={targetProfile}
+                tickedProfiles={tickedProfiles}
+                stage={effectiveStage}
+                familyId={familyId}
+                familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
+                activeSetLabel={activeSetLabel}
+                ks4ExcludedUrns={ks4ExcludedUrns}
+              />
             ) : activeView === "graphs" ? (
               <AcademicGraphsView
                 targetProfile={targetProfile}
@@ -277,9 +314,17 @@ export default function AcademicDataView({
                 familyId={familyId}
                 familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
                 subjectData={subjectData}
+                ks4ExcludedUrns={ks4ExcludedUrns}
               />
             ) : (
-              <AcademicRankingsView targetProfile={targetProfile} tickedProfiles={tickedProfiles} stage={effectiveStage} startPeriod={startPeriod} />
+              <AcademicRankingsView
+                targetProfile={targetProfile}
+                tickedProfiles={tickedProfiles}
+                stage={effectiveStage}
+                startPeriod={startPeriod}
+                activeSetLabel={activeSetLabel}
+                ks4ExcludedUrns={ks4ExcludedUrns}
+              />
             )}
           </DataViewErrorBoundary>
         )}
