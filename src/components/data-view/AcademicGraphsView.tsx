@@ -45,11 +45,8 @@ import {
   HEADLINE_AGE,
   TREND_BASELINE_PERIOD,
   MINIMUM_SUBJECT_N,
-  ks4ExclusionTargetSentence,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
-  dominantKs5Cohort,
-  ks5HeadlineMeasureKey,
   ks5HeadlineLabel,
   ks5CohortExclusionNote,
   ks5CohortWholeGroupSentence,
@@ -61,6 +58,7 @@ import {
   familyYearsFor,
   latestFamilyYear,
   populationAtAge,
+  populationSeriesAtAge,
   entriesSeries,
   latestEntriesCount,
   type AcademicSchoolProfile,
@@ -71,15 +69,15 @@ import {
   type SubjectValueAdded,
 } from "@/lib/academic-data-view";
 import { CURRENT_CENSUS_PERIOD } from "@/lib/roll-data";
-import { spreadData, trendBadge } from "@/lib/data-view-cards";
+import { trendBadge } from "@/lib/data-view-cards";
 import { TREND_LABELS } from "@/lib/trend-labels";
 import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
 import { academicYearLabel } from "./TrendPill";
-import SpreadStrip from "./SpreadStrip";
 import DivergingBarChart from "./DivergingBarChart";
 import SortedBarChart from "./SortedBarChart";
 import TargetRollBarChart from "./TargetRollBarChart";
 import { Card, SectionHeading } from "./GraphsView";
+import CategoryFilter from "./CategoryFilter";
 
 // Round 2, Part B: a small, self-contained N-slice donut for the entries-share
 // breakdown (spec §4, "echoes the gender donut") -- GenderSplitCard.tsx's own Donut is
@@ -120,6 +118,7 @@ function EntriesShareDonut({ families, highlightFamilyId }: { families: Academic
 }
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
+const EMPTY_FAMILIES: { familyId: string; familyLabel: string }[] = [];
 
 function formatHeadline(stage: KsStage, value: number): string {
   return HEADLINE_UNIT[stage] === "percent" ? `${value.toFixed(1)}%` : value.toFixed(1);
@@ -182,6 +181,8 @@ export default function AcademicGraphsView({
   activeSetLabel,
   familyId = null,
   familyLabel = null,
+  families = EMPTY_FAMILIES,
+  onFamilyChange = () => {},
   subjectData = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
   ks5Cohort = null,
@@ -194,24 +195,31 @@ export default function AcademicGraphsView({
   activeSetLabel: string | null;
   familyId?: string | null;
   familyLabel?: string | null;
+  // Graphs edit 2, Section 3: the real picker itself (CategoryFilter, moved here
+  // from AcademicDataView.tsx's own header) needs the full real family list and a
+  // way to change the selection -- `familyId`/`familyLabel` above stay as the
+  // already-resolved CURRENT selection this component's other sections read, same
+  // as before; these two are new, only for rendering/driving the picker itself.
+  // `familyId`/`families` state stays owned by AcademicDataView.tsx regardless --
+  // this is a real relocation of the rendered control, not a new picker or a new
+  // state owner.
+  families?: { familyId: string; familyLabel: string }[];
+  onFamilyChange?: (familyId: string | null) => void;
   subjectData?: { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[] } | null;
   // GCSE exclusion round, Part 2: real URNs excluded from GCSE comparison this render
   // (empty whenever stage !== "ks4", per AcademicDataView's own gating) -- affects
-  // Overview/Growth-decline/Context-over-time only; Section 4 (family/subject
-  // breakdown) is untouched, a deliberate scope call (see this round's own report --
-  // the brief's own Part 2 list names free card/Overview/Rankings/Map, not this
-  // section, and entries/point-score are a different real metric class from
-  // Attainment 8/EBacc, not necessarily affected by the same DfE exclusion).
+  // Section 2 (Results) only; Section 3 (family/subject breakdown) is untouched, a
+  // deliberate scope call (see this round's own report -- the brief's own Part 2
+  // list names free card/Overview/Rankings/Map, not this section, and entries/
+  // point-score are a different real metric class from Attainment 8/EBacc, not
+  // necessarily affected by the same DfE exclusion).
   ks4ExcludedUrns?: Set<string>;
-  // KS5 qualification-type-awareness round, Part 4: the group-comparison sections
-  // below (spread/growth/trend) key their measure on this selected cohort -- the
-  // Overview headline NUMBER itself (Part 3) deliberately does NOT use this prop; it
-  // always shows the target's own real dominant cohort regardless of the selector,
-  // per the brief's own "the number itself, not its spread/growth/trend sub-sections"
-  // scoping. ks5ExcludedUrns is this round's analogue of ks4ExcludedUrns, empty
-  // whenever stage !== "ks5". Item 10: null is the real default now -- every school
-  // in the group is then valued on ITS OWN dominant cohort (ks5MeasureFor) rather
-  // than one shared measure across a mixed group.
+  // KS5 qualification-type-awareness round, Part 4: Section 2's own group-comparison
+  // charts (growth/same-year bar) key their measure on this selected cohort.
+  // ks5ExcludedUrns is this round's analogue of ks4ExcludedUrns, empty whenever
+  // stage !== "ks5". Item 10: null is the real default now -- every school in the
+  // group is then valued on ITS OWN dominant cohort (ks5MeasureFor) rather than one
+  // shared measure across a mixed group.
   ks5Cohort?: Ks5Cohort | null;
   ks5ExcludedUrns?: Set<string>;
 }) {
@@ -248,33 +256,20 @@ export default function AcademicGraphsView({
     return headlineValueAt(years, y.period, measureKey);
   };
 
-  // Part 3: the Overview headline NUMBER's own measure is the target's real dominant
-  // cohort, deliberately independent of the Part 4 selector above (see this file's
-  // own header comment on the ks5Cohort prop) -- so this does NOT reuse valueFor/
-  // measureKey. For ks4/ks2 this is identical to the old behaviour (HEADLINE_MEASURE).
-  const targetDominantKs5Cohort = stage === "ks5" ? (dominantKs5Cohort(targetProfile) ?? "A level") : null;
-  const targetHeadlineMeasureKey = stage === "ks5" ? ks5HeadlineMeasureKey(targetDominantKs5Cohort!) : HEADLINE_MEASURE[stage];
-  const targetHeadlineLabel = stage === "ks5" ? ks5HeadlineLabel(targetDominantKs5Cohort!, targetProfile.ks5QualTypes.ib) : HEADLINE_LABEL[stage];
-  // Part 4's own group-level label, for the Growth/decline and Context-over-time
-  // captions below -- always the SELECTED cohort (not the target's own dominant one).
-  // Item 10 design call: with no cohort selected, there is no one real label that
-  // covers every school in a mixed group (each may be on a different real dominant
+  // Part 4's own group-level label, for the Growth/decline and Results captions
+  // below -- always the SELECTED cohort (not the target's own dominant one). Item
+  // 10 design call: with no cohort selected, there is no one real label that covers
+  // every school in a mixed group (each may be on a different real dominant
   // cohort) -- rather than naming one arbitrarily, these sections use a generic
-  // caption instead (see the two JSX call sites below). This constant stays the
+  // caption instead (see the JSX call sites below). This constant stays the
   // specific label whenever an explicit cohort IS selected (unchanged behaviour).
   const groupHeadlineLabel = stage === "ks5" ? (ks5Cohort ? ks5HeadlineLabel(ks5Cohort) : "each school's own qualification-type headline measure") : HEADLINE_LABEL[stage];
-  const targetHeadlineValueAt = (period: number) => headlineValueAt(stageYears(targetProfile, stage), period, targetHeadlineMeasureKey);
-  const targetLatestYear = latestYear(stageYears(targetProfile, stage));
-  const targetCurrent = targetLatestYear ? targetHeadlineValueAt(targetLatestYear.period) : null;
-  const targetAnchor = targetHeadlineValueAt(baseline);
-  const targetTrendBadge = trendBadge(targetCurrent, targetAnchor);
 
   // GCSE exclusion round, Part 2 (supersedes stage-1's caveat-alongside-a-number Part
   // D): the excluded set is computed once in AcademicDataView and threaded down here
   // (empty whenever stage !== "ks4"). `comparableGroup` feeds every group-comparison
-  // calculation below (spread/growth/trend/same-year bar) -- an excluded school (target
-  // or ticked) simply isn't part of any of them, rather than showing with a caveat.
-  const ks4TargetExcluded = ks4ExcludedUrns.has(targetProfile.urn);
+  // calculation below (growth/same-year bar) -- an excluded school (target or
+  // ticked) simply isn't part of any of them, rather than showing with a caveat.
   const comparableGroup = group.filter((p) => !ks4ExcludedUrns.has(p.urn) && !ks5ExcludedUrns.has(p.urn));
   const excludedTickedNames = group.filter((p) => ks4ExcludedUrns.has(p.urn) && p.urn !== targetProfile.urn).map((p) => p.name);
   // Only possible when the target is ALSO excluded (comparableGroup would otherwise
@@ -289,12 +284,11 @@ export default function AcademicGraphsView({
   // ks5ExcludedUrns below, so only one ever actually filters anything for a given
   // stage) -- recomputed here rather than folded into one shared variable name so
   // each stage's own exclusion reason stays traceable to its own real cause.
-  const ks5TargetExcludedFromGroup = ks5ExcludedUrns.has(targetProfile.urn);
-  // Unlike the GCSE round's ks4 pattern, this names the TARGET too when it's the one
-  // excluded (rather than a separate dedicated sentence) -- Part 3 above already
-  // covers the target's own single-school headline number independently, so the only
-  // real gap left to explain here is "why is this school's own dot/bar/line missing
-  // from the group charts below," which naming it in the same note answers directly.
+  // Names the TARGET too when it's the one excluded (rather than a separate
+  // dedicated sentence, unlike the GCSE round's ks4 pattern) -- "why is this
+  // school's own bar/line missing from the group charts below" is the whole real
+  // gap left to explain here now that Section 2's own single-school headline number
+  // is gone (Graphs edit 2).
   const excludedNamesKs5 = group.filter((p) => ks5ExcludedUrns.has(p.urn)).map((p) => p.name);
   const ks5WholeGroupExcluded = stage === "ks5" && comparableGroup.length === 0;
   // ks5ExcludedUrns (and so excludedNamesKs5/ks5WholeGroupExcluded) is only ever
@@ -309,10 +303,6 @@ export default function AcademicGraphsView({
   const anyGroupNote = ks4GroupNote ?? ks5GroupNote;
   const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level");
 
-  const spreadPoints = comparableGroup.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: valueFor(p) }));
-  const spread = spreadData(spreadPoints);
-  const groupAverage = spread ? spread.points.reduce((s, p) => s + p.value, 0) / spread.points.length : null;
-
   const growthPoints = comparableGroup.map((p) => {
     const current = valueFor(p);
     const anchor = valueFor(p, baseline);
@@ -322,13 +312,6 @@ export default function AcademicGraphsView({
   const allPeriods = Array.from(new Set(comparableGroup.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
     .filter((p) => p >= Math.max(startPeriod, baseline))
     .sort((a, b) => a - b);
-  // Excluded from the group means excluded from its own trend line too -- the same
-  // methodology issue applies to every one of its real years, not just the latest.
-  const targetSeries = ks4TargetExcluded || ks5TargetExcludedFromGroup ? allPeriods.map(() => null) : allPeriods.map((p) => valueFor(targetProfile, p));
-  const averageSeries = allPeriods.map((p) => {
-    const vals = comparableGroup.map((s) => valueFor(s, p)).filter((v): v is number => v !== null);
-    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  });
 
   const latestPeriod = allPeriods[allPeriods.length - 1] ?? null;
   const sameYearBarPoints = latestPeriod !== null
@@ -373,15 +356,21 @@ export default function AcademicGraphsView({
 
   // Round 3, Part B, Section 1 (Entries): real per-school candidate/entries counts --
   // A1's own real GCSE/Post-16 entries figures (entriesSeries), roll population for
-  // KS2 (the SAME source the map now uses, not a second computation -- KS2 has no
-  // real multi-year population series on this profile shape at all, see
-  // entriesSeries' own comment, so its own "series" is a single real current point,
-  // which TargetRollBarChart already renders honestly as "not enough real history to
-  // plot a trend" rather than a fabricated line).
-  const targetEntriesSeries = stage === "ks2" ? [] : entriesSeries(targetProfile, stage, ks5Cohort);
-  const entriesPeriods = stage === "ks2" ? [CURRENT_CENSUS_PERIOD] : targetEntriesSeries.map((r) => r.period);
+  // KS2 (the SAME real per-period census source the map's own current-snapshot
+  // figure already uses -- Graphs edit 2, Section 1: extended to a genuine real
+  // MULTI-year series via populationSeriesAtAge/ageGenderCountsByPeriod, not a
+  // single current-year point any more; KS2 still has no real DfE entries/cohort-
+  // size figure at all, confirmed via that data set's own /meta response, so this
+  // stays population, just a real history of it now instead of one snapshot).
+  const targetEntriesSeries = stage === "ks2" ? populationSeriesAtAge(targetProfile, HEADLINE_AGE.ks2) : entriesSeries(targetProfile, stage, ks5Cohort);
+  // Fallback to a single current-snapshot point only for KS2, and only in the real
+  // edge case of a school with no per-period census history at all (e.g. brand new)
+  // -- GCSE/Post-16 correctly stay a genuinely empty series in their own equivalent
+  // case, which TargetRollBarChart already renders honestly as "not enough real
+  // history to plot a trend" rather than fabricating a point for them too.
+  const entriesPeriods = targetEntriesSeries.length > 0 ? targetEntriesSeries.map((r) => r.period) : stage === "ks2" ? [CURRENT_CENSUS_PERIOD] : [];
   const entriesValues: (number | null)[] =
-    stage === "ks2" ? [populationAtAge(targetProfile, HEADLINE_AGE.ks2)] : targetEntriesSeries.map((r) => r.value);
+    targetEntriesSeries.length > 0 ? targetEntriesSeries.map((r) => r.value) : stage === "ks2" ? [populationAtAge(targetProfile, HEADLINE_AGE.ks2)] : [];
   const entriesFirst = entriesValues.find((v): v is number => v !== null) ?? null;
   const entriesLast = [...entriesValues].reverse().find((v): v is number => v !== null) ?? null;
   const entriesTrendBadge = entriesFirst !== null && entriesLast !== null ? trendBadge(entriesLast, entriesFirst) : null;
@@ -428,175 +417,146 @@ export default function AcademicGraphsView({
       <section>
         <SectionHeading number="02" title="Results" isOpen={!closedSections.has("02")} onToggle={() => toggleSection("02")} />
         {!closedSections.has("02") && (
-          <>
-            {/* Round 3, Part B design call (not explicitly placed by the brief's own
-                3-section spec): the existing headline number/spread strip and the
-                two-line target-vs-average trend chart are real, useful content this
-                restructure doesn't ask to remove -- kept here as this section's own
-                "overall results summary" introduction, above the two new/relocated
-                charts the brief DOES explicitly place in this section. Named here
-                rather than silently dropped or silently left floating outside every
-                section. */}
-            <div className="mb-6">
-              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{targetHeadlineLabel}</h4>
-              {ks4TargetExcluded ? (
-                <p className="text-sm text-neutral-700 dark:text-neutral-300">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
-              ) : targetCurrent !== null ? (
+          // Graphs edit 2, Section 2: the preserved headline-number/SpreadStrip/
+          // TargetVsAverageTrend "introductory" block that used to sit here is
+          // gone -- a real, explicit Round 3 judgement call (see that round's own
+          // build report) reversed on direct instruction after Guy saw it live.
+          // Section 2 is now just the two Card components below, side by side,
+          // nothing above them -- Part B's own original 50:50 two-column ask: left,
+          // the overall results summary bar chart (school vs comparison set, latest
+          // real year); right, the growth/decline chart.
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card title={latestPeriod !== null ? `${groupHeadlineLabel}, ${academicYearLabel(latestPeriod)} — ${targetProfile.name} vs ${setLabel}` : "Results summary"}>
+              {anyWholeGroupExcluded ? (
+                <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
+              ) : latestPeriod !== null ? (
                 <>
-                  <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">{formatHeadline(stage, targetCurrent)}</p>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    {targetTrendBadge
-                      ? `${targetTrendBadge.direction === "up" ? "▲" : targetTrendBadge.direction === "down" ? "▼" : "▬"} ${Math.abs(targetTrendBadge.pctChange).toFixed(0)}% since ${academicYearLabel(baseline)}`
-                      : `no ${academicYearLabel(baseline)} comparison`}
-                  </p>
+                  {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
+                  <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
                 </>
               ) : (
-                <p className="text-sm text-neutral-500">No real data available for this school under this key stage.</p>
+                <p className="text-sm text-neutral-500">No real data available for this key stage.</p>
               )}
-              {!ks4TargetExcluded && (anyGroupNote || spread) && (
-                <div className="mt-4">
+            </Card>
+            <Card title={`Growth / decline since ${academicYearLabel(baseline)}`}>
+              {anyWholeGroupExcluded ? (
+                <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
+              ) : (
+                <>
                   {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
-                  {spread && (
-                    <>
-                      <SpreadStrip min={spread.min} max={spread.max} points={spread.points} formatValue={(v) => formatHeadline(stage, v)} />
-                      {targetCurrent !== null && groupAverage !== null && groupAverage !== 0 && (
-                        <p className="mt-1 text-xs text-neutral-500">
-                          {Math.abs(((targetCurrent - groupAverage) / groupAverage) * 100).toFixed(0)}% {targetCurrent >= groupAverage ? "above" : "below"} the average of{" "}
-                          {formatHeadline(stage, groupAverage)} for {setLabel}
-                          {stage === "ks5" && ` (${groupHeadlineLabel})`}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
+                  <p className="mb-2 text-xs text-neutral-500">Change in {groupHeadlineLabel}, across {setLabel}.</p>
+                  <DivergingBarChart points={growthPoints} />
+                </>
               )}
-              {!anyWholeGroupExcluded && allPeriods.length > 0 && (
-                <div className="mt-4">
-                  <p className="mb-2 text-xs text-neutral-500">
-                    {targetProfile.name}&rsquo;s {groupHeadlineLabel} compared with the average of {setLabel}, {academicYearLabel(allPeriods[0])}–{academicYearLabel(allPeriods[allPeriods.length - 1])}.
-                  </p>
-                  <TargetVsAverageTrend periods={allPeriods} targetSeries={targetSeries} averageSeries={averageSeries} />
-                </div>
-              )}
-            </div>
-
-            {/* Part B's own explicit 50:50 two-column ask: left, the overall results
-                summary bar chart (school vs comparison set, latest real year -- the
-                same real same-year bar chart the old "Context over time" section
-                already computed, promoted here); right, the growth/decline chart,
-                moved into this position unchanged. */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Card title={latestPeriod !== null ? `${groupHeadlineLabel}, ${academicYearLabel(latestPeriod)} — ${targetProfile.name} vs ${setLabel}` : "Results summary"}>
-                {anyWholeGroupExcluded ? (
-                  <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
-                ) : latestPeriod !== null ? (
-                  <>
-                    {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
-                    <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
-                  </>
-                ) : (
-                  <p className="text-sm text-neutral-500">No real data available for this key stage.</p>
-                )}
-              </Card>
-              <Card title={`Growth / decline since ${academicYearLabel(baseline)}`}>
-                {anyWholeGroupExcluded ? (
-                  <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
-                ) : (
-                  <>
-                    {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
-                    <p className="mb-2 text-xs text-neutral-500">Change in {groupHeadlineLabel}, across {setLabel}.</p>
-                    <DivergingBarChart points={growthPoints} />
-                  </>
-                )}
-              </Card>
-            </div>
-          </>
+            </Card>
+          </div>
         )}
       </section>
 
-      {familyId && familyLabel && (
-        <section>
-          <SectionHeading number="03" title="Subjects" isOpen={!closedSections.has("03")} onToggle={() => toggleSection("03")} />
-          {/* Part B's own explicit instruction for this section: relocate the
-              existing subject-family content as-is -- "for now, just make the
-              existing subject graphs visible here... then I will refine." Not
-              redesigned beyond moving it under its own collapsible section. */}
-          {!closedSections.has("03") && (
-            <div>
-              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{familyLabel}</h4>
+      <section>
+        <SectionHeading number="03" title="Subjects" isOpen={!closedSections.has("03")} onToggle={() => toggleSection("03")} />
+        {/* Graphs edit 2: the real picker itself, CategoryFilter, moved here from
+            AcademicDataView.tsx's own header row -- "this change was missed" (Guy's
+            own live question after round 3) was exactly this: round 3 moved the
+            CONTENT below into this section but left the control that sets familyId
+            sitting outside it. Section 3 now always renders (picker + a real empty
+            state before a family's picked), rather than staying invisible until a
+            family's already selected via a control that no longer exists anywhere
+            else -- there'd be no way to ever reach this section otherwise. */}
+        {!closedSections.has("03") && (
+          <div>
+            <div className="mb-4">
+              <CategoryFilter families={families} activeFamilyId={familyId} onChange={onFamilyChange} />
+            </div>
+            {familyId && familyLabel ? (
+              // Part B's own explicit instruction for this content: relocate the
+              // existing subject-family content as-is -- "for now, just make the
+              // existing subject graphs visible here... then I will refine." Not
+              // redesigned beyond moving it (this round moves the picker above it
+              // too, still not a redesign of the content itself).
+              <div>
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{familyLabel}</h4>
 
-              <div className="mb-4">
-                <p className="mb-2 text-xs text-neutral-500">
-                  {targetFamilyYear ? `${targetFamilyYear.entriesSharePercent ?? "—"}% of ${targetProfile.name}'s ${STAGE_ENTRY_NOUN[stage]} in ${academicYearLabel(targetFamilyYear.period)} were in ${familyLabel}.` : `No real entries data for ${familyLabel} at this school.`}
-                </p>
-                <EntriesShareDonut families={stageFamiliesLatest(targetProfile, stage)} highlightFamilyId={familyId} />
-              </div>
+                <div className="mb-4">
+                  <p className="mb-2 text-xs text-neutral-500">
+                    {targetFamilyYear ? `${targetFamilyYear.entriesSharePercent ?? "—"}% of ${targetProfile.name}'s ${STAGE_ENTRY_NOUN[stage]} in ${academicYearLabel(targetFamilyYear.period)} were in ${familyLabel}.` : `No real entries data for ${familyLabel} at this school.`}
+                  </p>
+                  <EntriesShareDonut families={stageFamiliesLatest(targetProfile, stage)} highlightFamilyId={familyId} />
+                </div>
 
-              {familyPointScoreAvailable ? (
-                <>
-                  <div className="mb-4">
-                    <p className="mb-2 text-xs text-neutral-500">
-                      Average point score per entry in {familyLabel}, {targetFamilyYear ? academicYearLabel(targetFamilyYear.period) : ""} — {targetProfile.name} compared with {setLabel}.
-                    </p>
-                    {familyBarPointsWithScore.length > 0 ? (
-                      <SortedBarChart points={familyBarPointsWithScore.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.isTarget, value: p.avgPointScore }))} formatValue={(v) => v.toFixed(1)} />
-                    ) : (
-                      <p className="text-sm text-neutral-500">No real point-score data for {familyLabel} across this set.</p>
+                {familyPointScoreAvailable ? (
+                  <>
+                    <div className="mb-4">
+                      <p className="mb-2 text-xs text-neutral-500">
+                        Average point score per entry in {familyLabel}, {targetFamilyYear ? academicYearLabel(targetFamilyYear.period) : ""} — {targetProfile.name} compared with {setLabel}.
+                      </p>
+                      {familyBarPointsWithScore.length > 0 ? (
+                        <SortedBarChart points={familyBarPointsWithScore.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.isTarget, value: p.avgPointScore }))} formatValue={(v) => v.toFixed(1)} />
+                      ) : (
+                        <p className="text-sm text-neutral-500">No real point-score data for {familyLabel} across this set.</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="mb-2 text-xs text-neutral-500">
+                        {familyFirstScore !== null && familyLastScore !== null
+                          ? `${targetProfile.name}'s average point score in ${familyLabel} has ${familyLastScore >= familyFirstScore ? "risen" : "fallen"} from ${familyFirstScore.toFixed(1)} to ${familyLastScore.toFixed(1)} since ${academicYearLabel(baseline)}.`
+                          : `Not enough real history to show a trend for ${familyLabel} yet.`}
+                      </p>
+                      <TargetVsAverageTrend periods={allPeriods} targetSeries={familyTargetSeries} averageSeries={allPeriods.map(() => null)} />
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-neutral-500">
+                    Not enough of {familyLabel}&rsquo;s qualifications currently convert to a comparable point score to show one here — this is a data gap we&rsquo;re working on, not a
+                    sign {targetProfile.name} has no entries in this area.
+                  </p>
+                )}
+
+                {subjectNames.length > 0 && (
+                  <div className="mt-6">
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                      Subject
+                      <select
+                        className="ml-2 rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal normal-case text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                        value={subject ?? ""}
+                        onChange={(e) => setSubject(e.target.value || null)}
+                      >
+                        <option value="">Choose a subject…</option>
+                        {subjectNames.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {/* Real, flagged approximation (this file's own header comment): not
+                        filtered to the family selected above -- every real subject for this
+                        stage is offered, regardless of category. */}
+                    <p className="mb-3 text-xs text-neutral-400">Not yet filtered to {familyLabel} specifically — every real subject for {STAGE_LABEL_SHORT[stage]} is listed.</p>
+
+                    {subject && (
+                      <SubjectTable
+                        subject={subject}
+                        schoolName={targetProfile.name}
+                        entryRow={subjectLatestEntry}
+                        valueAddedRows={subjectValueAddedRows}
+                        ksStage={stage}
+                      />
                     )}
                   </div>
-                  <div>
-                    <p className="mb-2 text-xs text-neutral-500">
-                      {familyFirstScore !== null && familyLastScore !== null
-                        ? `${targetProfile.name}'s average point score in ${familyLabel} has ${familyLastScore >= familyFirstScore ? "risen" : "fallen"} from ${familyFirstScore.toFixed(1)} to ${familyLastScore.toFixed(1)} since ${academicYearLabel(baseline)}.`
-                        : `Not enough real history to show a trend for ${familyLabel} yet.`}
-                    </p>
-                    <TargetVsAverageTrend periods={allPeriods} targetSeries={familyTargetSeries} averageSeries={allPeriods.map(() => null)} />
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-neutral-500">
-                  Not enough of {familyLabel}&rsquo;s qualifications currently convert to a comparable point score to show one here — this is a data gap we&rsquo;re working on, not a
-                  sign {targetProfile.name} has no entries in this area.
-                </p>
-              )}
-
-              {subjectNames.length > 0 && (
-                <div className="mt-6">
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                    Subject
-                    <select
-                      className="ml-2 rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal normal-case text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
-                      value={subject ?? ""}
-                      onChange={(e) => setSubject(e.target.value || null)}
-                    >
-                      <option value="">Choose a subject…</option>
-                      {subjectNames.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {/* Real, flagged approximation (this file's own header comment): not
-                      filtered to the family selected above -- every real subject for this
-                      stage is offered, regardless of category. */}
-                  <p className="mb-3 text-xs text-neutral-400">Not yet filtered to {familyLabel} specifically — every real subject for {STAGE_LABEL_SHORT[stage]} is listed.</p>
-
-                  {subject && (
-                    <SubjectTable
-                      subject={subject}
-                      schoolName={targetProfile.name}
-                      entryRow={subjectLatestEntry}
-                      valueAddedRows={subjectValueAddedRows}
-                      ksStage={stage}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-      )}
+                )}
+              </div>
+            ) : (
+              // Real empty state -- confirmed this reads right once the picker
+              // actually moved here (brief's own "confirm that reads right once
+              // it's moved, don't assume"): with CategoryFilter now living in this
+              // same section, "pick a category above" points at a control that's
+              // genuinely right there, not somewhere else on the page.
+              <p className="text-sm text-neutral-500">Pick a category above to see its own subject/family breakdown here.</p>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

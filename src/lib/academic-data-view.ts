@@ -69,6 +69,17 @@ export type AcademicSchoolProfile = {
   // DataViewShell's own Rolls-specific profilesByUrn -- keeps this module's own data
   // fetching self-contained rather than depending on another topic's fetch timing.
   ageGenderCounts: AgeGenderCounts;
+  // Graphs edit 2, Section 1: the SAME real per-period census data as
+  // `ageGenderCounts` above, just not collapsed down to the single latest period --
+  // mirrors data-view-profiles.ts's own real `ageGenderCountsByPeriod` computation
+  // (same source, same singleAgeGenderCountsForPeriod call, not re-derived
+  // differently), fetched here independently for the same self-contained-fetch
+  // reason `ageGenderCounts` itself already is. KS2 has no real DfE entries/
+  // cohort-size figure at all (confirmed via that data set's own /meta response,
+  // Round 3's own A1 decision) -- this is what lets Section 1's own "candidate
+  // numbers since [year]" trend line show KS2's real roll-population HISTORY
+  // instead of a single current-year point, without inventing a second source.
+  ageGenderCountsByPeriod: Map<number, AgeGenderCounts>;
 };
 
 export function populationAtAge(profile: AcademicSchoolProfile, age: number): number | null {
@@ -673,6 +684,16 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
     const latestPeriod = facts.reduce((max, f) => Math.max(max, f.period), -Infinity);
     return Number.isFinite(latestPeriod) ? singleAgeGenderCountsForPeriod(facts, latestPeriod) : new Map();
   }
+  // Graphs edit 2, Section 1: real per-period counts, from the SAME already-fetched
+  // census facts (no extra round-trip) -- mirrors data-view-profiles.ts's own
+  // ageGenderCountsByPeriod computation exactly (real distinct periods present in
+  // the facts, not a guessed/fixed range).
+  function ageGenderCountsByPeriodFor(urn: string): Map<number, AgeGenderCounts> {
+    if (!includePopulation) return new Map();
+    const facts = censusFactsByUrn.get(urn) ?? [];
+    const periods = Array.from(new Set(facts.map((f) => f.period)));
+    return new Map(periods.map((period) => [period, singleAgeGenderCountsForPeriod(facts, period)]));
+  }
 
   const schoolRows = (rows ?? []) as SchoolRow[];
   const ks4ByUrn = groupHeadlineRows(ks4Rows);
@@ -695,6 +716,7 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
     ks4Families: ks4FamilyByUrn.get(row.urn) ?? [],
     ks5Families: ks5FamilyByUrn.get(row.urn) ?? [],
     ageGenderCounts: currentAgeGenderCounts(row.urn),
+    ageGenderCountsByPeriod: ageGenderCountsByPeriodFor(row.urn),
   }));
 }
 
@@ -706,16 +728,39 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
 // data-view-serialize.ts already established for DataViewSchoolProfile's own Map
 // fields (ageGenderCountsByPeriod etc) -- convert to a plain array of tuples for the
 // wire, reconstruct the Map on the client.
-export type WireAcademicSchoolProfile = Omit<AcademicSchoolProfile, "ageGenderCounts"> & {
+export type WireAcademicSchoolProfile = Omit<AcademicSchoolProfile, "ageGenderCounts" | "ageGenderCountsByPeriod"> & {
   ageGenderCounts: [number, { male: number; female: number }][];
+  ageGenderCountsByPeriod: [number, [number, { male: number; female: number }][]][];
 };
 
 export function serializeAcademicProfile(profile: AcademicSchoolProfile): WireAcademicSchoolProfile {
-  return { ...profile, ageGenderCounts: Array.from(profile.ageGenderCounts.entries()) };
+  return {
+    ...profile,
+    ageGenderCounts: Array.from(profile.ageGenderCounts.entries()),
+    ageGenderCountsByPeriod: Array.from(profile.ageGenderCountsByPeriod.entries()).map(([period, counts]) => [period, Array.from(counts.entries())]),
+  };
 }
 
 export function deserializeAcademicProfile(wire: WireAcademicSchoolProfile): AcademicSchoolProfile {
-  return { ...wire, ageGenderCounts: new Map(wire.ageGenderCounts) };
+  return {
+    ...wire,
+    ageGenderCounts: new Map(wire.ageGenderCounts),
+    ageGenderCountsByPeriod: new Map(wire.ageGenderCountsByPeriod.map(([period, counts]) => [period, new Map(counts)])),
+  };
+}
+
+// Graphs edit 2, Section 1: real per-school, per-period population series at one
+// age, ascending by period -- the KS2 analogue of entriesSeries above (same shape,
+// {period,value}[]), sourced from ageGenderCountsByPeriod instead of a headline
+// measure since KS2 has no real entries figure at all.
+export function populationSeriesAtAge(profile: AcademicSchoolProfile, age: number): { period: number; value: number }[] {
+  return Array.from(profile.ageGenderCountsByPeriod.entries())
+    .map(([period, counts]) => {
+      const c = counts.get(age);
+      return c ? { period, value: c.male + c.female } : null;
+    })
+    .filter((r): r is { period: number; value: number } => r !== null)
+    .sort((a, b) => a.period - b.period);
 }
 
 // Round 2, Part C: subject-level depth, one school at a time (spec §6's own table is

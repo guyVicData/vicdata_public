@@ -52,6 +52,7 @@ import DataViewErrorBoundary from "./DataViewErrorBoundary";
 import AcademicMapView from "./AcademicMapView";
 import AcademicGraphsView from "./AcademicGraphsView";
 import AcademicRankingsView from "./AcademicRankingsView";
+import CategoryFilter from "./CategoryFilter";
 
 function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; active: KsStage; onChange: (s: KsStage) => void }) {
   if (stages.length <= 1) return null;
@@ -70,62 +71,6 @@ function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; acti
         >
           {STAGE_LABEL[s]}
         </button>
-      ))}
-    </div>
-  );
-}
-
-// Round 2, Part B: Category (subject family) drill-down -- same real pill/button
-// styling FilterBar.tsx's own Phase pills use (active fill), a self-contained copy
-// rather than importing FilterBar's own private `Pill` (that component is styled for
-// Rolls' TAG_COLOURS tag keys specifically; this one just needs the same visual shape,
-// not the same colour-lookup mechanism).
-//
-// Stage 1 review fix: this used to take a `hasCaret` prop and render a ▾ next to each
-// family pill, implying an expandable next level. Nothing actually expands from the
-// pill -- picking a family appends a "Subject/family breakdown" section further down
-// the page (Graphs only), with its own separate Subject <select>, not an inline
-// drill-down anywhere near the pill itself. Removed rather than kept as a decorative
-// truthful-affordance fix; whether the Subject picker should move closer to these
-// pills is a real, separate design question, flagged in this round's own report, not
-// solved here.
-function CategoryPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={
-        active
-          ? "inline-flex items-center gap-1 rounded-full border border-neutral-900 bg-neutral-900 px-3 py-1 text-xs font-medium text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
-          : "inline-flex items-center gap-1 rounded-full border border-neutral-300 px-3 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
-      }
-    >
-      {children}
-    </button>
-  );
-}
-
-function CategoryFilter({
-  families,
-  activeFamilyId,
-  onChange,
-}: {
-  families: { familyId: string; familyLabel: string }[];
-  activeFamilyId: string | null;
-  onChange: (familyId: string | null) => void;
-}) {
-  if (families.length === 0) return null;
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Category</span>
-      <CategoryPill active={activeFamilyId === null} onClick={() => onChange(null)}>
-        Whole school
-      </CategoryPill>
-      {families.map((f) => (
-        <CategoryPill key={f.familyId} active={activeFamilyId === f.familyId} onClick={() => onChange(f.familyId)}>
-          {f.familyLabel}
-        </CategoryPill>
       ))}
     </div>
   );
@@ -454,16 +399,18 @@ export default function AcademicDataView({
               <PdfExportButton />
             </div>
           )}
-          {/* Stage 1 review fix: Rankings never receives familyId/familyLabel at all
-              (a deliberate round-2 scope cut -- see AcademicRankingsView.tsx's own
-              header comment, "subject-family metrics do NOT get their own Rankings
-              entry"), but this row used to render unconditionally regardless of
-              activeView -- a member on Rankings saw a fully clickable Category filter
-              that silently did nothing. Hidden here rather than shown disabled: it
-              isn't a temporarily-unavailable control, it genuinely doesn't apply to
-              this view. Item 8: also hidden for Map now -- that view gets its own
-              copy rendered below the map div instead (see the return's own bottom). */}
-          {activeView === "graphs" && <CategoryFilter families={families} activeFamilyId={familyId} onChange={setFamilyId} />}
+          {/* Graphs edit 2: CategoryFilter no longer renders here for Graphs -- moved
+              into AcademicGraphsView.tsx's own Section 3, where the picker and the
+              content it drives are genuinely in the same place (Guy's own live
+              question, "this change was missed -- why?", after round 3's Graphs
+              restructure moved the CONTENT but never the picker that sets familyId).
+              Rankings never received it at all (a deliberate round-2 scope cut --
+              subject-family metrics don't get their own Rankings entry). Map keeps
+              its own copy, rendered below the map div instead (see the return's own
+              bottom, item 8). ViewSwitcher/PdfExportButton above still render for
+              Graphs/Rankings regardless, so this row is never actually empty for
+              them -- only Map's own version of this row can end up with nothing to
+              show (its own gate, above, already accounts for that). */}
           {/* KS5 qualification-type-awareness round, Part 4: unlike CategoryFilter,
               this genuinely applies to every view at KS5 (Rankings included) -- it's
               about which real cohort is being compared, not a subject-family drill-
@@ -510,6 +457,8 @@ export default function AcademicDataView({
                 activeSetLabel={activeSetLabel}
                 familyId={familyId}
                 familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
+                families={families}
+                onFamilyChange={setFamilyId}
                 subjectData={subjectData}
                 ks4ExcludedUrns={ks4ExcludedUrns}
                 ks5Cohort={ks5Cohort}
@@ -530,10 +479,11 @@ export default function AcademicDataView({
           </DataViewErrorBoundary>
         )}
       </div>
-      {/* Item 8: Category filter moves BELOW the map for Map specifically (Graphs/
-          Rankings keep it in the header row above, or hidden for Rankings). Only
-          rendered once the heavy tree itself is (isActiveTopic), same reasoning as
-          the map/graphs/rankings switch above. */}
+      {/* Item 8: Category filter moves BELOW the map for Map specifically. Graphs
+          now renders its own copy inside Section 3 (Graphs edit 2); Rankings never
+          gets one (deliberate round-2 scope cut). Only rendered once the heavy tree
+          itself is (isActiveTopic), same reasoning as the map/graphs/rankings
+          switch above. */}
       {isActiveTopic && activeView === "map" && effectiveStage && (
         <div className="border-t border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
           <CategoryFilter families={families} activeFamilyId={familyId} onChange={setFamilyId} />
