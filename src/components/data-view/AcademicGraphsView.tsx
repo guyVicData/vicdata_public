@@ -130,6 +130,70 @@ function EntriesShareDonut({ families, highlightFamilyId }: { families: Academic
   );
 }
 
+// Entries/Subjects comparison redesign (2026-09-14), Section 01's new bottom row:
+// the comparison-set's own AVERAGE entries-share distribution, one pie alongside the
+// school's own (EntriesShareDonut, unchanged, reused directly). Real, deliberate
+// arithmetic distinction from Section 03's Candidates market-share row below (per the
+// brief's own decision 1/§Section 01 note): this AVERAGES each comparator school's
+// own real entries_share_percent per category -- it does NOT pool every comparator's
+// raw entries into one combined total and take shares of that pool (a different,
+// total-based number, which is what market share means). Verified directly against
+// real hosted data before building this (four real Slough-area KS4 schools) that
+// entries_share_percent is always populated and each school's own real shares sum to
+// ~100% -- averaging across schools is a meaningful, real distribution, not an
+// artifact of sparse data.
+type FamilySharePoint = { familyId: string; familyLabel: string; percent: number };
+
+function averageEntriesShareByFamily(profiles: AcademicSchoolProfile[], stage: KsStage): FamilySharePoint[] {
+  const byFamily = new Map<string, { label: string; sum: number; n: number }>();
+  for (const p of profiles) {
+    for (const f of stageFamiliesLatest(p, stage)) {
+      if (f.entriesSharePercent === null) continue;
+      const entry = byFamily.get(f.familyId) ?? { label: f.familyLabel, sum: 0, n: 0 };
+      entry.sum += f.entriesSharePercent;
+      entry.n += 1;
+      byFamily.set(f.familyId, entry);
+    }
+  }
+  return Array.from(byFamily.entries()).map(([familyId, { label, sum, n }]) => ({ familyId, familyLabel: label, percent: sum / n }));
+}
+
+// Same visual shape as EntriesShareDonut (conic-gradient wedges + a coloured-dot
+// legend, same subject-family-colours.ts palette) but fed pre-computed percentages
+// rather than raw entriesTotal -- EntriesShareDonut's own totalling logic doesn't
+// apply here (there's no single real "total" to sum across a whole comparison set,
+// only an average per category). Wedge geometry is normalised against the slices'
+// own sum (so it always draws a full circle even if real per-school coverage gaps
+// mean the true averages don't sum to exactly 100) but each slice's LABEL shows its
+// real, un-renormalised average percentage -- the two only diverge when coverage is
+// genuinely incomplete across the set, which is honest to show as a label, not hide.
+function ComparisonShareDonut({ slices }: { slices: FamilySharePoint[] }) {
+  const totalForGeometry = slices.reduce((sum, s) => sum + s.percent, 0);
+  if (totalForGeometry <= 0) return <p className="text-sm text-neutral-500">No real entries-share data across the comparison set.</p>;
+  let acc = 0;
+  const stops: string[] = [];
+  const sorted = [...slices].sort((a, b) => b.percent - a.percent);
+  sorted.forEach((s) => {
+    const start = (acc / totalForGeometry) * 100;
+    acc += s.percent;
+    const end = (acc / totalForGeometry) * 100;
+    stops.push(`${familyColour(s.familyId)} ${start.toFixed(1)}% ${end.toFixed(1)}%`);
+  });
+  return (
+    <div className="flex items-center gap-5">
+      <div className="h-24 w-24 shrink-0 rounded-full" style={{ background: `conic-gradient(${stops.join(", ")})` }} />
+      <div className="flex flex-col gap-1.5">
+        {sorted.map((s) => (
+          <div key={s.familyId} className="flex items-center gap-2 text-[13px] text-neutral-600 dark:text-neutral-400">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: familyColour(s.familyId) }} />
+            {s.familyLabel} — {s.percent.toFixed(0)}%
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 const EMPTY_FAMILIES: { familyId: string; familyLabel: string }[] = [];
 
@@ -415,6 +479,16 @@ export default function AcademicGraphsView({
     value: (stage === "ks2" ? populationAtAge(p, HEADLINE_AGE.ks2) : latestEntriesCount(p, stage, ks5Cohort)?.value) ?? 0,
   }));
 
+  // Entries/Subjects comparison redesign (2026-09-14), Section 01's new bottom row:
+  // same comparableGroup every other "vs comparison set" figure on this page already
+  // uses (the target's own row is included in that average, same convention every
+  // other comparator figure here follows -- never target-excluded). KS2/family-level
+  // have no real subject-family taxonomy at all (stageFamilies already returns []
+  // for KS2, and this row is whole-school scope like Section 01's own existing
+  // content), so entriesShareComparisonAvailable gates on that, not a separate check.
+  const entriesShareComparisonAvailable = stage !== "ks2";
+  const entriesShareComparisonSlices = entriesShareComparisonAvailable ? averageEntriesShareByFamily(comparableGroup, stage) : [];
+
   // Region/Nation comparator round 2: real prior art reused directly (GraphsView.tsx's
   // own aggregateSeries), for Section 2 (Results) only -- a real finding checked
   // directly against real hosted data before building Section 1's own equivalent (not
@@ -489,6 +563,36 @@ export default function AcademicGraphsView({
               </Card>
             )}
           </div>
+        )}
+        {/* Entries/Subjects comparison redesign (2026-09-14): new bottom row, two
+            pie charts -- school's own entries-share breakdown (EntriesShareDonut,
+            unchanged, reused directly) next to the comparison set's own AVERAGE
+            distribution (ComparisonShareDonut, new -- see its own comment above for
+            why this is a genuinely different computation from Section 03's Candidates
+            market-share row below, not the same arithmetic under a different name).
+            KS2 has no real subject-family taxonomy at all -- this row simply doesn't
+            render there, same real constraint every other family-based chart on this
+            page already respects. Large-set scale follows the exact same withholding
+            precedent this section's own existing right-hand card already established
+            just above (comparableGroup is only ever the bounded ticked/widened group
+            at that scale, never the real multi-thousand-school set). */}
+        {!closedSections.has("01") && stage !== "ks2" && (
+          <Card title={`Entries by subject category — ${targetProfile.name} vs comparison set average`}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <p className="mb-2 text-xs text-neutral-500">{targetProfile.name}</p>
+                <EntriesShareDonut families={stageFamiliesLatest(targetProfile, stage)} highlightFamilyId="" />
+              </div>
+              <div>
+                <p className="mb-2 text-xs text-neutral-500">Average across {setLabel}</p>
+                {isLargeSet ? (
+                  <p className="text-sm text-neutral-500">A real comparison-set average isn&rsquo;t available for entries by category at this scale.</p>
+                ) : (
+                  <ComparisonShareDonut slices={entriesShareComparisonSlices} />
+                )}
+              </div>
+            </div>
+          </Card>
         )}
       </section>
 
