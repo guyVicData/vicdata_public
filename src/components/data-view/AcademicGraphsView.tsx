@@ -45,7 +45,6 @@ import {
   HEADLINE_UNIT,
   HEADLINE_AGE,
   TREND_BASELINE_PERIOD,
-  MINIMUM_SUBJECT_N,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
   ks5HeadlineLabel,
@@ -82,6 +81,9 @@ import TargetRollBarChart from "./TargetRollBarChart";
 import { Card, SectionHeading } from "./GraphsView";
 import CategoryFilter from "./CategoryFilter";
 import SubjectAreaSection from "./SubjectAreaSection";
+import TargetVsAverageTrend from "./TargetVsAverageTrend";
+import SubjectTable from "./SubjectTable";
+import SubjectDeepDiveDrawer, { type DeepDiveTarget } from "./SubjectDeepDiveDrawer";
 import AggregateTrendChart, { AGGREGATE_TARGET_COLOUR, AGGREGATE_REGION_COLOUR, AGGREGATE_NATION_COLOUR, type AggregateChartSeries } from "./AggregateTrendChart";
 import type { AcademicAggregateTrends } from "@/lib/academic-aggregate-trends";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
@@ -205,54 +207,10 @@ function formatHeadline(stage: KsStage, value: number): string {
   return HEADLINE_UNIT[stage] === "percent" ? `${value.toFixed(1)}%` : value.toFixed(1);
 }
 
-// Small, dumb two-line trend chart (target vs. ticked-group average) -- same
-// "plain inline SVG, no charting library" convention every other chart in this
-// directory follows (Sparkline/SpreadStrip's own module comments). Not a shared
-// component: this is the one place this codebase needs a two-series line (Rolls'
-// own RollTrendsChart draws one line per SCHOOL, not a target-vs-average pair), so a
-// small local implementation is clearer than forcing an unrelated existing chart to
-// take on a second real shape it wasn't built for.
-function TargetVsAverageTrend({ periods, targetSeries, averageSeries }: { periods: number[]; targetSeries: (number | null)[]; averageSeries: (number | null)[] }) {
-  const allReal = [...targetSeries, ...averageSeries].filter((v): v is number => v !== null);
-  if (allReal.length < 2 || periods.length < 2) return <p className="text-sm text-neutral-500">Not enough history to show a trend.</p>;
-  const min = Math.min(...allReal);
-  const max = Math.max(...allReal);
-  const span = max - min || 1;
-  const W = 320;
-  const H = 140;
-  const padX = 28;
-  const padY = 14;
-  const xFor = (i: number) => padX + (i / (periods.length - 1)) * (W - padX * 2);
-  const yFor = (v: number) => H - padY - ((v - min) / span) * (H - padY * 2);
-
-  function pathFor(series: (number | null)[]): string {
-    const segments: string[] = [];
-    let current: string[] = [];
-    series.forEach((v, i) => {
-      if (v === null) {
-        if (current.length > 1) segments.push(current.join(" "));
-        current = [];
-        return;
-      }
-      current.push(`${i === 0 || current.length === 0 ? "M" : "L"}${xFor(i)},${yFor(v)}`);
-    });
-    if (current.length > 1) segments.push(current.join(" "));
-    return segments.join(" ");
-  }
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxWidth: 480 }}>
-      <line x1={padX} x2={W - padX} y1={H - padY} y2={H - padY} stroke="currentColor" strokeOpacity={0.15} />
-      <path d={pathFor(averageSeries)} fill="none" stroke="#9ca3af" strokeWidth={2} />
-      <path d={pathFor(targetSeries)} fill="none" stroke="#dc2626" strokeWidth={2} />
-      {periods.map((p, i) => (
-        <text key={p} x={xFor(i)} y={H} fontSize={9} textAnchor="middle" fill="currentColor" opacity={0.5}>
-          {academicYearLabel(p)}
-        </text>
-      ))}
-    </svg>
-  );
-}
+// Subject deep-dive round: TargetVsAverageTrend extracted to its own file
+// (TargetVsAverageTrend.tsx) so SubjectDeepDiveDrawer.tsx can reuse the same real
+// trend chart for a subject's own multi-period line -- see that file's own header
+// comment for the full reasoning (unchanged from before this round otherwise).
 
 export default function AcademicGraphsView({
   targetProfile,
@@ -272,12 +230,19 @@ export default function AcademicGraphsView({
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
   isLargeSet = false,
   aggregateTrends = null,
+  authToken = null,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
   stage: KsStage;
   startPeriod: number;
   activeSetLabel: string | null;
+  // Subject deep-dive round, Part 3: the real bearer token SubjectDeepDiveDrawer's own
+  // fetch needs (same membership-gated pattern every other Academic fetch already
+  // uses). This component didn't previously do any fetching of its own -- the drawer
+  // is the first thing here that does, hence a genuinely new prop, not a repurposed
+  // existing one.
+  authToken?: string | null;
   // Region/Nation comparator round 2: same real shape as Rolls' own GraphsView.tsx
   // isLargeSet/aggregateTrends props -- true once the active comparator set is a real
   // Region/Nation-scale recipe past LARGE_SET_PROFILE_THRESHOLD. aggregateTrends stays
@@ -333,6 +298,12 @@ export default function AcademicGraphsView({
   // per this brief's own explicit "mirroring SectionHeading's own 'all open by
   // default' behaviour" instruction.
   const [closedSections, setClosedSections] = useState<Set<string>>(new Set());
+  // Subject deep-dive round, Part 3: the drawer's own open/breadcrumb state -- owned
+  // here (not inside SubjectAreaSection.tsx, and not inside the drawer itself) since
+  // AcademicGraphsView is the real natural boundary between the page (which must stay
+  // completely unaffected by opening/closing the drawer) and the click targets that
+  // open it (Section 03's own bars). null = closed.
+  const [deepDiveTarget, setDeepDiveTarget] = useState<DeepDiveTarget | null>(null);
   const toggleSection = (id: string) =>
     setClosedSections((prev) => {
       const next = new Set(prev);
@@ -701,6 +672,7 @@ export default function AcademicGraphsView({
                 comparatorSubjectByUrn={comparatorSubjectByUrn}
                 comparatorSubjectHeadlineByUrn={comparatorSubjectHeadlineByUrn}
                 setLabel={setLabel}
+                onSelectSubjectArea={setDeepDiveTarget}
               />
             </div>
             {familyId && familyLabel ? (
@@ -809,89 +781,30 @@ export default function AcademicGraphsView({
           </div>
         )}
       </section>
+
+      {/* Subject deep-dive round, Part 3: fixed-position overlay -- rendering it here
+          (inside this component's own root, rather than a portal) is fine since it's
+          position: fixed and covers the whole viewport regardless of where in the DOM
+          it sits; no layout effect on anything around it either way. */}
+      <SubjectDeepDiveDrawer
+        target={deepDiveTarget}
+        onNavigate={setDeepDiveTarget}
+        profile={targetProfile}
+        comparableGroup={comparableGroup}
+        stage={stage}
+        setLabel={setLabel}
+        urn={targetProfile.urn}
+        authToken={authToken}
+      />
     </div>
   );
 }
 
 const STAGE_LABEL_SHORT: Record<KsStage, string> = { ks2: "KS2", ks4: "GCSE", ks5: "A-level" };
 
-// Round 2, Part C: the subject-level table (spec §6), folded into Graphs' Overview via
-// the Subject picker above rather than a separate page/section, per the spec's own
-// instruction. Entries always shown when known; value-added shown per real
-// qualification/size-weight row (KS5 only, from dfe_ks5_subject_value_added's own
-// self-consistent entries_count -- see this file's header comment for why it's not
-// cross-referenced with the raw entries source), each with its real confidence
-// interval, framed the same honest way the summary-wordings doc's own Progress 8
-// sentence template is -- never a bare score. Small-cohort caveat applies per real row
-// (entries or value-added's own entries_count), using MINIMUM_SUBJECT_N (see that
-// constant's own comment for the real evidence behind the number).
-function SubjectTable({
-  subject,
-  schoolName,
-  entryRow,
-  valueAddedRows,
-  ksStage,
-}: {
-  subject: string;
-  schoolName: string;
-  entryRow: SubjectEntry | null;
-  valueAddedRows: SubjectValueAdded[];
-  ksStage: KsStage;
-}) {
-  const hasAnyData = entryRow !== null || valueAddedRows.length > 0;
-  if (!hasAnyData) {
-    return <p className="text-sm text-neutral-500">No real data for {subject} at {schoolName}.</p>;
-  }
-
-  return (
-    <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-neutral-200 text-xs text-neutral-400 dark:border-neutral-800">
-            <th className="px-3 py-2 text-left font-normal">Qualification</th>
-            <th className="px-3 py-2 text-right font-normal">Entries</th>
-            {ksStage === "ks5" && <th className="px-3 py-2 text-left font-normal">Value-added</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {entryRow && (
-            <tr className="border-b border-neutral-100 dark:border-neutral-900">
-              <td className="px-3 py-2">
-                {entryRow.qualificationType} — {academicYearLabel(entryRow.period)}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums">
-                {entryRow.entries}
-                {entryRow.entries < MINIMUM_SUBJECT_N && <span className="ml-1 text-amber-600 dark:text-amber-400">†</span>}
-              </td>
-              {ksStage === "ks5" && <td className="px-3 py-2 text-neutral-400">—</td>}
-            </tr>
-          )}
-          {valueAddedRows.map((v, i) => (
-            <tr key={i} className="border-b border-neutral-100 last:border-b-0 dark:border-neutral-900">
-              <td className="px-3 py-2">
-                {v.qualificationType} (size {v.sizeWeight}) — {academicYearLabel(v.period)}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums">
-                {v.entriesCount ?? "—"}
-                {v.entriesCount !== null && v.entriesCount < MINIMUM_SUBJECT_N && <span className="ml-1 text-amber-600 dark:text-amber-400">†</span>}
-              </td>
-              <td className="px-3 py-2">
-                {v.valueAdded !== null && v.valueAddedLowerCi !== null && v.valueAddedUpperCi !== null
-                  ? `${v.valueAdded > 0 ? "+" : ""}${v.valueAdded.toFixed(2)} (likely between ${v.valueAddedLowerCi > 0 ? "+" : ""}${v.valueAddedLowerCi.toFixed(2)} and ${v.valueAddedUpperCi > 0 ? "+" : ""}${v.valueAddedUpperCi.toFixed(2)} once normal year-to-year variation is accounted for)`
-                  : "No real value-added figure for this row."}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {((entryRow && entryRow.entries < MINIMUM_SUBJECT_N) || valueAddedRows.some((v) => v.entriesCount !== null && v.entriesCount < MINIMUM_SUBJECT_N)) && (
-        <p className="border-t border-neutral-200 px-3 py-2 text-xs text-amber-700 dark:border-neutral-800 dark:text-amber-400">
-          † Fewer than {MINIMUM_SUBJECT_N} pupils took this subject at {schoolName} — too few to show a meaningful grade breakdown.
-        </p>
-      )}
-    </div>
-  );
-}
+// Subject deep-dive round: SubjectTable extracted to its own file (SubjectTable.tsx)
+// so SubjectDeepDiveDrawer.tsx can reuse the exact same real value-added rendering --
+// unchanged otherwise.
 
 // Round 2, Part B: this school's own full family mix (every family, one row each) for
 // the donut -- the LATEST real period across all of this school's own family rows at

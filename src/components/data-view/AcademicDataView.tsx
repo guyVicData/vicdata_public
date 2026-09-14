@@ -645,6 +645,7 @@ export default function AcademicDataView({
                 ks5ExcludedUrns={ks5ExcludedUrns}
                 isLargeSet={isLargeSet}
                 aggregateTrends={resolvedAcademicAggregateTrends}
+                authToken={authToken}
               />
             ) : (
               <AcademicRankingsView

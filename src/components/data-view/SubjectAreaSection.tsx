@@ -180,6 +180,7 @@ export default function SubjectAreaSection({
   comparatorSubjectByUrn,
   comparatorSubjectHeadlineByUrn,
   setLabel,
+  onSelectSubjectArea,
 }: {
   profile: AcademicSchoolProfile;
   comparableGroup: AcademicSchoolProfile[];
@@ -192,6 +193,12 @@ export default function SubjectAreaSection({
   comparatorSubjectByUrn: Map<string, { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[] }>;
   comparatorSubjectHeadlineByUrn: Map<string, AcademicSubjectHeadlineEntry[]>;
   setLabel: string;
+  // Subject deep-dive round, Part 3: any bar across all four rows is a real click
+  // target opening the navigation drawer -- a category bar (category mode) opens it
+  // at category-with-subjects-listed; a subject bar (subject mode) opens straight to
+  // the single-subject deep dive. Optional so this component still renders (read-only
+  // bars) if a caller doesn't wire the drawer up.
+  onSelectSubjectArea?: (target: { familyId: string; familyLabel: string; subject?: string }) => void;
 }) {
   // Individual-school selector ("as we did for rolls"). Applies to rows C, D's right
   // column, and Row B's own %-change right column -- NOT Row B's own raw market-share
@@ -236,6 +243,15 @@ export default function SubjectAreaSection({
   const candidateItems = rows.filter((r) => r.candidates !== null).map((r) => ({ id: r.id, label: r.label, value: r.candidates as number }));
   const order = [...candidateItems].sort((a, b) => b.value - a.value).map((i) => i.id);
   const labelById = new Map(rows.map((r) => [r.id, r.label]));
+  const handleItemClick = onSelectSubjectArea
+    ? (id: string) => {
+        if (categoryMode) {
+          onSelectSubjectArea({ familyId: id, familyLabel: labelById.get(id) ?? id });
+        } else if (familyId) {
+          onSelectSubjectArea({ familyId, familyLabel: familyLabel ?? familyId, subject: id });
+        }
+      }
+    : undefined;
   const resultItems = rows.filter((r) => r.results !== null).map((r) => ({ id: r.id, label: r.label, value: r.results as number }));
   const candidatesTrendItems = rows.map((r) => ({ id: r.id, label: r.label, pctChange: r.candidatesPctChange }));
   const resultsTrendItems = rows.map((r) => ({ id: r.id, label: r.label, pctChange: r.resultsPctChange }));
@@ -374,11 +390,11 @@ export default function SubjectAreaSection({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-xs text-neutral-500">{profile.name}</p>
-            <SubjectAreaBarChart items={candidateItems} order={order} colourFor={colourFor} />
+            <SubjectAreaBarChart items={candidateItems} order={order} colourFor={colourFor} onItemClick={handleItemClick} />
           </div>
           <div>
             <p className="mb-2 text-xs text-neutral-500">Market share of {setLabel}</p>
-            <SubjectAreaBarChart items={marketShareItems} order={order} colourFor={colourFor} formatValue={(v) => `${v.toFixed(0)}%`} />
+            <SubjectAreaBarChart items={marketShareItems} order={order} colourFor={colourFor} formatValue={(v) => `${v.toFixed(0)}%`} onItemClick={handleItemClick} />
           </div>
         </div>
       </Card>
@@ -387,11 +403,11 @@ export default function SubjectAreaSection({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-xs text-neutral-500">{profile.name}</p>
-            <SubjectAreaDivergingBarChart items={candidatesTrendItems} order={order} />
+            <SubjectAreaDivergingBarChart items={candidatesTrendItems} order={order} onItemClick={handleItemClick} />
           </div>
           <div>
             <p className="mb-2 text-xs text-neutral-500">{selectedComparatorName ?? `Average across ${setLabel}`}</p>
-            <SubjectAreaDivergingBarChart items={candidatesTrendComparisonItems} order={order} />
+            <SubjectAreaDivergingBarChart items={candidatesTrendComparisonItems} order={order} onItemClick={handleItemClick} />
           </div>
         </div>
       </Card>
@@ -401,7 +417,7 @@ export default function SubjectAreaSection({
           <div>
             <p className="mb-2 text-xs text-neutral-500">{profile.name}</p>
             {hasAnyResults ? (
-              <SubjectAreaBarChart items={resultItems} order={order} colourFor={colourFor} formatValue={(v) => v.toFixed(1)} />
+              <SubjectAreaBarChart items={resultItems} order={order} colourFor={colourFor} formatValue={(v) => v.toFixed(1)} onItemClick={handleItemClick} />
             ) : (
               <p className="text-sm text-neutral-500">{resultsUnavailableNote}</p>
             )}
@@ -409,7 +425,7 @@ export default function SubjectAreaSection({
           <div>
             <p className="mb-2 text-xs text-neutral-500">{selectedComparatorName ?? `Average across ${setLabel}`}</p>
             {resultComparisonItems.length > 0 ? (
-              <SubjectAreaBarChart items={resultComparisonItems} order={order} colourFor={colourFor} formatValue={(v) => v.toFixed(1)} />
+              <SubjectAreaBarChart items={resultComparisonItems} order={order} colourFor={colourFor} formatValue={(v) => v.toFixed(1)} onItemClick={handleItemClick} />
             ) : (
               <p className="text-sm text-neutral-500">No real results figure for any category across {setLabel} yet.</p>
             )}
@@ -422,7 +438,7 @@ export default function SubjectAreaSection({
           <div>
             <p className="mb-2 text-xs text-neutral-500">{profile.name}</p>
             {resultsTrendItems.some((r) => r.pctChange !== null) ? (
-              <SubjectAreaDivergingBarChart items={resultsTrendItems} order={order} />
+              <SubjectAreaDivergingBarChart items={resultsTrendItems} order={order} onItemClick={handleItemClick} />
             ) : (
               <p className="text-sm text-neutral-500">
                 {familyId && stage === "ks5"
@@ -434,7 +450,7 @@ export default function SubjectAreaSection({
           <div>
             <p className="mb-2 text-xs text-neutral-500">{selectedComparatorName ?? `Average across ${setLabel}`}</p>
             {resultsTrendComparisonItems.some((r) => r.pctChange !== null) ? (
-              <SubjectAreaDivergingBarChart items={resultsTrendComparisonItems} order={order} />
+              <SubjectAreaDivergingBarChart items={resultsTrendComparisonItems} order={order} onItemClick={handleItemClick} />
             ) : (
               <p className="text-sm text-neutral-500">
                 {familyId && stage === "ks5"

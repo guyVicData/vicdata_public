@@ -16,16 +16,25 @@
 // `colourFor` lets the caller tint each bar by the category's own site-wide colour
 // (subject-family-colours.ts) -- an identity colour, not a direction/magnitude one
 // (that's SubjectAreaDivergingBarChart's job, for the Trends row below this).
+//
+// Subject deep-dive round, Part 3: `onItemClick` is the real click target the
+// navigation drawer hangs off of -- any bar across all four Section 03 rows opens the
+// drawer scoped to that real category/subject. Optional and additive: every existing
+// call site that doesn't pass it renders exactly as before (no cursor/hover change),
+// per the brief's own "reuse this exact machinery" instruction rather than a parallel
+// clickable variant.
 export default function SubjectAreaBarChart({
   items,
   order,
   colourFor,
   formatValue = (v) => v.toLocaleString(),
+  onItemClick,
 }: {
   items: { id: string; label: string; value: number }[];
   order?: string[];
   colourFor?: (id: string) => string;
   formatValue?: (v: number) => string;
+  onItemClick?: (id: string) => void;
 }) {
   const byId = new Map(items.map((i) => [i.id, i]));
   const ordered = order ? order.map((id) => byId.get(id)).filter((i): i is { id: string; label: string; value: number } => !!i) : [...items].sort((a, b) => b.value - a.value);
@@ -37,7 +46,14 @@ export default function SubjectAreaBarChart({
   return (
     <div className="space-y-1.5">
       {ordered.map((p) => (
-        <div key={p.id} className="flex items-center gap-2" title={`${p.label}: ${formatValue(p.value)}`}>
+        <div
+          key={p.id}
+          className={`flex items-center gap-2${onItemClick ? " cursor-pointer rounded hover:bg-neutral-50 dark:hover:bg-neutral-900" : ""}`}
+          title={`${p.label}: ${formatValue(p.value)}${onItemClick ? " — click for detail" : ""}`}
+          onClick={onItemClick ? () => onItemClick(p.id) : undefined}
+          role={onItemClick ? "button" : undefined}
+          tabIndex={onItemClick ? 0 : undefined}
+        >
           <span className="w-28 shrink-0 truncate text-xs text-neutral-600 dark:text-neutral-400">{p.label}</span>
           <div className="h-3 flex-1 overflow-hidden rounded bg-neutral-100 dark:bg-neutral-900">
             <div
