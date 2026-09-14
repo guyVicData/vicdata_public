@@ -1183,6 +1183,17 @@ export default function MapView({
            small and getting thinned by the visibility sweep below, not on this
            CSS alone. */
         .vd-choropleth-label {
+          /* Live bug fix (found live, "strange 1-character white-on-black label,
+             no function"): the icon container this label sits inside is deliberately
+             0x0 (so Leaflet anchors it exactly at the polygon's own centre point --
+             see the labelMarker comment above). Without display: inline-block, this
+             plain block div's own width resolves against that 0-width containing
+             block, not its own text content -- with overflow:hidden, that collapsed
+             every real name down to a sliver of the truncation ellipsis, which is
+             what actually rendered. inline-block makes width shrink-to-fit the real
+             text instead; max-width/ellipsis below still truncate a genuinely long
+             name exactly as before. */
+          display: inline-block;
           font-size: 10px; font-weight: 600; color: var(--label-fg); background: var(--choropleth-label-bg);
           border-radius: 3px; padding: 0px 4px; max-width: 90px; overflow: hidden;
           text-overflow: ellipsis; white-space: nowrap; pointer-events: none;

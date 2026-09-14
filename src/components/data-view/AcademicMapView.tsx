@@ -1069,6 +1069,13 @@ export default function AcademicMapView({
         }
         :root[data-theme="dark"] .vd-academic-map { --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85); }
         .vd-choropleth-label {
+          /* Live bug fix, same real root cause as MapView.tsx's own identical class
+             (found live, "strange 1-character white-on-black label, no function") --
+             see that file's own comment for the full explanation: without
+             display: inline-block, this block div's width collapsed to its 0x0
+             icon container's own width instead of its real text content.
+          */
+          display: inline-block;
           font-size: 10px; font-weight: 600; color: var(--label-fg); background: var(--choropleth-label-bg);
           border-radius: 3px; padding: 0px 4px; max-width: 90px; overflow: hidden;
           text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
