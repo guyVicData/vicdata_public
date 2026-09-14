@@ -60,5 +60,10 @@ export async function GET(request: NextRequest) {
       : ({ kind: "nation", nation: targetRegionNation.nation } as const);
 
   const rank = await fetchAcademicRegionNationRank(urn, ksStageParam as KsStage, scope);
-  return NextResponse.json({ rank });
+  // Real bug found live (Guy, 2026-09-14): the Map needs to know the target's own
+  // resolved region NAME too (to default the choropleth straight to that region's own
+  // LAs instead of the national overview) -- this route already resolves it above for
+  // the ranking's own scope object, so surfacing it costs nothing extra rather than a
+  // second resolveTargetRegionNation round-trip elsewhere. Null for Nation scope.
+  return NextResponse.json({ rank, regionName: scope.kind === "region" ? scope.regionName : null });
 }

@@ -44,8 +44,10 @@ import { trendColour, gradeBandColour, GRADE_BAND_LEGEND_STOPS, TREND_LEGEND_STO
 import { trendBadge, rankDescendingWithTies } from "@/lib/data-view-cards";
 import type { ViewKey } from "@/lib/data-view-types";
 import type { AcademicGeographyChoroplethEntry } from "@/lib/academic-geography-choropleth";
+import { resolveRegionNation } from "@/lib/region-crosswalk";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
+import LoadingSpinnerCard from "./LoadingSpinnerCard";
 import {
   HEADLINE_MEASURE,
   HEADLINE_UNIT,
@@ -322,6 +324,7 @@ export default function AcademicMapView({
   onChangeView,
   authToken = null,
   isRegionOrNationScope = false,
+  activeRegionName = null,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -370,6 +373,17 @@ export default function AcademicMapView({
   // side equivalent, not a literal copy of a UI element that doesn't exist on the other
   // side.
   isRegionOrNationScope?: boolean;
+  // Real bug found live (Guy, 2026-09-14): "region map should load at region level
+  // showing local authorities in that region only (currently opens at national view
+  // and needs to zoom in)". Region/Nation-scale sets are always anchored to the
+  // target school's own region (same real convention region-la-choropleth's own
+  // server-side resolveTargetRegionNation(urn) already establishes for Rolls) -- the
+  // exact real region NAME (academic_region_nation_rank's own resolved regionName,
+  // threaded down from AcademicDataView), null for Nation scope or when not yet
+  // resolved. Filters the LA tier to just this region's own LAs and defaults the
+  // initial choropleth view straight to that filtered LA tier, instead of the
+  // national 9-region overview a Region-scale member never actually wants first.
+  activeRegionName?: string | null;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -417,6 +431,16 @@ export default function AcademicMapView({
   // a real, structural constraint, not an arbitrary one).
   const viewByAreaAvailable = !familyId && stage !== "ks2";
   const [viewByArea, setViewByArea] = useState(false);
+  // See the force-on/auto-off effect pair below (Region/Nation comparator round 2
+  // follow-up fix) -- true only while viewByArea=true was set BY that effect, not by
+  // a manual click.
+  const forcedViewByAreaRef = useRef(false);
+  // Real bug found live (Guy, 2026-09-14): see activeRegionName's own comment above.
+  // Tracks whether this session has already defaulted the tier to "la" for a Region-
+  // scale set, so the zoom-driven tier switch (below) stays free to move the member
+  // between tiers afterward without this effect fighting it back to "la" on every
+  // render.
+  const tierDefaultedForSessionRef = useRef(false);
   // Zoom-driven, same real mechanism as Rolls' own Nation-scope region<->LA switch --
   // starts at the region tier (the real national overview), drills to LA detail once
   // the member zooms in near a specific region.
@@ -445,11 +469,37 @@ export default function AcademicMapView({
   // effect in source order but both react to the same real state changes independently
   // -- viewByAreaAvailable false (KS2/family level) always wins regardless of scope,
   // since a school-level view genuinely has nothing to show a choropleth for there.
+  //
+  // forcedViewByAreaRef tracks whether THIS effect is the one that turned the toggle
+  // on -- real bug found live (Guy, 2026-09-14): once a Region/Nation-scale set forced
+  // the choropleth on, there was no symmetric path back off when the member picked a
+  // different, small-scale set again (e.g. switching from "South East schools" to
+  // "Nearest 10 schools") -- viewByArea just stayed stuck true, with the manual toggle
+  // now visible again but still reading "Schools" from a stale forced-on state, and
+  // the only way back to the point map was leaving and re-entering the Map view
+  // entirely. The ref distinguishes "we forced this on" from "the member turned this
+  // on themselves for a small set" so the new auto-off effect below only ever reverts
+  // its OWN forced state, never a genuine manual choice.
   useEffect(() => {
     (async () => {
-      if (isRegionOrNationScope && viewByAreaAvailable && !viewByArea) setViewByArea(true);
+      if (isRegionOrNationScope && viewByAreaAvailable && !viewByArea) {
+        forcedViewByAreaRef.current = true;
+        setViewByArea(true);
+      }
     })();
   }, [isRegionOrNationScope, viewByAreaAvailable, viewByArea]);
+
+  // Symmetric auto-off, same bug fix as the comment above -- reverts viewByArea back
+  // to false the moment the active set stops being Region/Nation-scale, but ONLY when
+  // this component's own force-on effect is what set it, never a manual toggle.
+  useEffect(() => {
+    (async () => {
+      if (!isRegionOrNationScope && forcedViewByAreaRef.current && viewByArea) {
+        forcedViewByAreaRef.current = false;
+        setViewByArea(false);
+      }
+    })();
+  }, [isRegionOrNationScope, viewByArea]);
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   // The map has no separate "this school" callout the way Overview/Rankings do, so an
@@ -573,10 +623,12 @@ export default function AcademicMapView({
       if (!viewByArea || !viewByAreaAvailable || !authToken) {
         setChoroplethData(null);
         choroplethEverFitRef.current = false;
+        tierDefaultedForSessionRef.current = false;
         return;
       }
       setChoroplethLoading(true);
       choroplethEverFitRef.current = false;
+      tierDefaultedForSessionRef.current = false;
       try {
         const headers = { Authorization: `Bearer ${authToken}` };
         const [regionRes, laRes] = await Promise.all([
@@ -815,10 +867,19 @@ export default function AcademicMapView({
   // LA/Region choropleth: real min/max over the CURRENTLY SHOWN tier's own real
   // values -- same "computed once, shared" discipline as minGrade/maxGrade above,
   // recomputed whenever the tier or the underlying fetched data changes.
-  const choroplethEntries = useMemo(
-    () => (choroplethTier === "region" ? (choroplethData?.region ?? []) : (choroplethData?.la ?? [])),
-    [choroplethTier, choroplethData],
-  );
+  // Real bug found live (Guy, 2026-09-14): while a Region-scale set is active, the LA
+  // tier shows ONLY that region's own LAs -- filtered client-side (resolveRegionNation,
+  // already a real, proven, client-safe pure lookup -- confirmed no server-only
+  // imports before reusing it here) against the already-fetched national LA data,
+  // rather than a second, region-scoped server round-trip. Nation-scale sets
+  // (activeRegionName null) keep showing every real LA at this tier, unchanged.
+  const choroplethEntries = useMemo(() => {
+    const raw = choroplethTier === "region" ? (choroplethData?.region ?? []) : (choroplethData?.la ?? []);
+    if (choroplethTier === "la" && activeRegionName) {
+      return raw.filter((e) => resolveRegionNation(e.name).regionName === activeRegionName);
+    }
+    return raw;
+  }, [choroplethTier, choroplethData, activeRegionName]);
   const { choroplethMin, choroplethMax } = useMemo(() => {
     const values = choroplethEntries.map((e) => e.avgValue).filter((v): v is number => v !== null);
     return { choroplethMin: values.length > 0 ? Math.min(...values) : 0, choroplethMax: values.length > 0 ? Math.max(...values) : 0 };
@@ -840,6 +901,21 @@ export default function AcademicMapView({
       map.off("zoomend moveend", handleZoomOrMove);
     };
   }, [mapReady, viewByArea]);
+
+  // Real bug found live (Guy, 2026-09-14): defaults straight to the LA tier, once,
+  // the moment a Region-scale set's own region name resolves -- without this, the
+  // zoom-driven effect just above always starts a fresh "View by area" session at
+  // the region tier (the real national 9-region overview), which is the wrong
+  // starting point for "I've already picked South East, show me South East" -- the
+  // member had to manually zoom in every time. Guarded by tierDefaultedForSessionRef
+  // so it only fires once per session, leaving the zoom-driven switch free to move
+  // the member between tiers afterward.
+  useEffect(() => {
+    if (viewByArea && activeRegionName && !tierDefaultedForSessionRef.current) {
+      setChoroplethTier("la");
+      tierDefaultedForSessionRef.current = true;
+    }
+  }, [viewByArea, activeRegionName]);
 
   // LA/Region choropleth: re-sweeps real label visibility on every zoom/pan -- reads
   // choroplethLabelLayersRef live, same real mechanism as MapView.tsx's own
@@ -1046,6 +1122,18 @@ export default function AcademicMapView({
         <TrendColourKey box={trendKeyBox} title="Growth" />
       ) : (
         <GradeBandColourKey box={trendKeyBox} min={minGrade} max={maxGrade} stage={stage} />
+      )}
+
+      {/* Real bug found live (Guy, 2026-09-14): the choropleth's own fetch (region +
+          LA aggregates, plus every real polygon boundary) can genuinely take a
+          while, and the only loading affordance was a small, easy-to-miss corner
+          caption while the map underneath sat visibly blank -- felt broken/stuck
+          rather than "working on it." Same real full-cover spinner MapView.tsx/
+          DataViewShell.tsx already use for their own loading states (LoadingSpinnerCard),
+          reused directly rather than a third loading pattern. Speeding up the fetch
+          itself is a separate, later piece of work -- this only makes the wait legible. */}
+      {viewByArea && choroplethLoading && !choroplethData && (
+        <LoadingSpinnerCard label={`Loading real ${choroplethTier === "region" ? "region" : "local authority"} data…`} />
       )}
 
       {viewByArea ? (

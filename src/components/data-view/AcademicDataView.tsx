@@ -420,7 +420,9 @@ export default function AcademicDataView({
   // documents (react-hooks/set-state-in-effect: avoid a synchronous setState in an
   // effect's bail-out branch; a stored result whose key doesn't match the current
   // render is just treated as stale/absent at render time instead).
-  const [academicLargeSetRank, setAcademicLargeSetRank] = useState<{ key: string; data: AcademicRegionNationRankMetric } | null>(null);
+  const [academicLargeSetRank, setAcademicLargeSetRank] = useState<{ key: string; data: AcademicRegionNationRankMetric; regionName: string | null } | null>(
+    null,
+  );
   const [academicLargeSetRankLoading, setAcademicLargeSetRankLoading] = useState(false);
   const academicLargeSetRankRequestKey =
     regionNationScopeKey && effectiveStage && effectiveStage !== "ks2" ? `${urn}|${regionNationScopeKey}|${effectiveStage}` : null;
@@ -440,9 +442,13 @@ export default function AcademicDataView({
           console.error("[AcademicDataView] academic-region-nation-rank fetch failed:", res.status, await res.text().catch(() => ""));
           return;
         }
-        const body = (await res.json()) as { rank: AcademicRegionNationRankMetric | null };
+        const body = (await res.json()) as { rank: AcademicRegionNationRankMetric | null; regionName: string | null };
         if (cancelled || !body.rank) return;
-        setAcademicLargeSetRank({ key: requestKey, data: body.rank });
+        // Real bug found live (Guy, 2026-09-14): regionName rides along with the same
+        // fetch (the route already resolves it for the ranking's own scope object) --
+        // AcademicMapView needs it to default its choropleth straight to the active
+        // region's own LAs instead of the national overview.
+        setAcademicLargeSetRank({ key: requestKey, data: body.rank, regionName: body.regionName ?? null });
       } catch (e) {
         if (!cancelled) console.error("[AcademicDataView] unexpected error fetching academic region/nation ranking:", e);
       } finally {
@@ -454,6 +460,7 @@ export default function AcademicDataView({
     };
   }, [authToken, urn, regionNationScopeKey, effectiveStage, academicLargeSetRankRequestKey]);
   const resolvedAcademicLargeSetRank = academicLargeSetRank?.key === academicLargeSetRankRequestKey ? academicLargeSetRank.data : null;
+  const resolvedActiveRegionName = academicLargeSetRank?.key === academicLargeSetRankRequestKey ? academicLargeSetRank.regionName : null;
 
   // Region/Nation comparator round 2, Graphs: real prior art (aggregate-trends.ts)
   // reused directly -- see academic-aggregate-trends.ts's own header comment for the
@@ -566,6 +573,7 @@ export default function AcademicDataView({
                 onChangeView={onChangeView}
                 authToken={authToken}
                 isRegionOrNationScope={isRegionOrNationScope}
+                activeRegionName={resolvedActiveRegionName}
               />
             ) : activeView === "graphs" ? (
               <AcademicGraphsView
