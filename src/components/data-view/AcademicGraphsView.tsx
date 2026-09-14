@@ -677,7 +677,15 @@ export default function AcademicGraphsView({
                 (how this school's own category compares with OTHER schools, not
                 with its own other categories/subjects) and is untouched. */}
             <div className="mb-6">
-              <SubjectAreaSection profile={targetProfile} stage={stage} familyId={familyId} familyLabel={familyLabel} subjectData={subjectData} />
+              <SubjectAreaSection
+                profile={targetProfile}
+                comparableGroup={comparableGroup}
+                stage={stage}
+                familyId={familyId}
+                familyLabel={familyLabel}
+                subjectData={subjectData}
+                setLabel={setLabel}
+              />
             </div>
             {familyId && familyLabel ? (
               // Part B's own explicit instruction for this content: relocate the
