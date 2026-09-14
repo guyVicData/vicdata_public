@@ -441,18 +441,25 @@ export default function AcademicMapView({
   const gradeBandAvailable = true;
   const effectiveColourMode: ColourMode = colourMode;
 
-  // LA/Region choropleth: standalone, independent of ticked schools entirely. Only
-  // ever available whole-school (no familyId -- this round's own real scope, see
-  // this file's own header comment) and never at KS2 (academic_geography_aggregate
-  // has no real KS2 data at all, confirmed at that table's own creation -- the RPC
-  // wrapper's own KsStage type already only accepts ks4/ks5, so this UI gate matches
-  // a real, structural constraint, not an arbitrary one).
+  // LA/Region choropleth: independent of ticked schools entirely. Only ever available
+  // whole-school (no familyId -- this round's own real scope, see this file's own
+  // header comment) and never at KS2 (academic_geography_aggregate has no real KS2
+  // data at all, confirmed at that table's own creation -- the RPC wrapper's own
+  // KsStage type already only accepts ks4/ks5, so this gate matches a real,
+  // structural constraint, not an arbitrary one).
+  //
+  // Live feedback (Guy, 2026-09-14): "this should not need a button -- we only view
+  // choropleths for region and country maps which are triggered by the buttons in
+  // the left column." Round 1's own standalone manual toggle is removed -- it was
+  // always a deliberate stopgap for the one thing round 2 explicitly built afterward
+  // (that round's own brief: "Rolls' choropleth only ever appears because a
+  // Region/Nation-scale comparator SET is active -- that mechanism doesn't exist for
+  // Academic this round," i.e. round 1). Now that it does, viewByArea is a plain
+  // derived value, exactly mirroring Rolls' own MapView.tsx (no manual toggle there
+  // either, no separate state to keep in sync with the real trigger) -- no button, no
+  // state, no auto-on/auto-off effects to keep synchronised with each other.
   const viewByAreaAvailable = !familyId && stage !== "ks2";
-  const [viewByArea, setViewByArea] = useState(false);
-  // See the force-on/auto-off effect pair below (Region/Nation comparator round 2
-  // follow-up fix) -- true only while viewByArea=true was set BY that effect, not by
-  // a manual click.
-  const forcedViewByAreaRef = useRef(false);
+  const viewByArea = isRegionOrNationScope && viewByAreaAvailable;
   // Real bug found live (Guy, 2026-09-14): see activeRegionName's own comment above.
   // Tracks whether this session has already defaulted the tier to "la" for a Region-
   // scale set, so the zoom-driven tier switch (below) stays free to move the member
@@ -465,59 +472,6 @@ export default function AcademicMapView({
   const [choroplethTier, setChoroplethTier] = useState<"region" | "la">("region");
   const [choroplethData, setChoroplethData] = useState<{ region: AcademicGeographyChoroplethEntry[]; la: AcademicGeographyChoroplethEntry[] } | null>(null);
   const [choroplethLoading, setChoroplethLoading] = useState(false);
-
-  // Real, deliberate auto-off: a Category pick mid-choropleth would otherwise leave
-  // the toggle showing a stale whole-school view with no way to reach it (the button
-  // itself is hidden once familyId is set, per viewByAreaAvailable above) -- turning
-  // it off explicitly here keeps the map's own visible state consistent with what's
-  // actually selectable, rather than a control silently vanishing while still active.
-  useEffect(() => {
-    // react-hooks/set-state-in-effect: the setState call lives inside this async
-    // callback rather than directly in the effect body, same real fix round 3's own
-    // widening effect already established for this exact lint rule.
-    (async () => {
-      if (!viewByAreaAvailable && viewByArea) setViewByArea(false);
-    })();
-  }, [viewByAreaAvailable, viewByArea]);
-
-  // Region/Nation comparator round 2: the real auto-trigger the brief asks for,
-  // mirroring Rolls' own isRegionOrNationScope pattern -- forces "View by area" on the
-  // moment a real Region/Nation-scale set becomes active, same react-hooks/set-state-
-  // in-effect-safe async-IIFE shape as the auto-off effect just above. Runs after that
-  // effect in source order but both react to the same real state changes independently
-  // -- viewByAreaAvailable false (KS2/family level) always wins regardless of scope,
-  // since a school-level view genuinely has nothing to show a choropleth for there.
-  //
-  // forcedViewByAreaRef tracks whether THIS effect is the one that turned the toggle
-  // on -- real bug found live (Guy, 2026-09-14): once a Region/Nation-scale set forced
-  // the choropleth on, there was no symmetric path back off when the member picked a
-  // different, small-scale set again (e.g. switching from "South East schools" to
-  // "Nearest 10 schools") -- viewByArea just stayed stuck true, with the manual toggle
-  // now visible again but still reading "Schools" from a stale forced-on state, and
-  // the only way back to the point map was leaving and re-entering the Map view
-  // entirely. The ref distinguishes "we forced this on" from "the member turned this
-  // on themselves for a small set" so the new auto-off effect below only ever reverts
-  // its OWN forced state, never a genuine manual choice.
-  useEffect(() => {
-    (async () => {
-      if (isRegionOrNationScope && viewByAreaAvailable && !viewByArea) {
-        forcedViewByAreaRef.current = true;
-        setViewByArea(true);
-      }
-    })();
-  }, [isRegionOrNationScope, viewByAreaAvailable, viewByArea]);
-
-  // Symmetric auto-off, same bug fix as the comment above -- reverts viewByArea back
-  // to false the moment the active set stops being Region/Nation-scale, but ONLY when
-  // this component's own force-on effect is what set it, never a manual toggle.
-  useEffect(() => {
-    (async () => {
-      if (!isRegionOrNationScope && forcedViewByAreaRef.current && viewByArea) {
-        forcedViewByAreaRef.current = false;
-        setViewByArea(false);
-      }
-    })();
-  }, [isRegionOrNationScope, viewByArea]);
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   // The map has no separate "this school" callout the way Overview/Rankings do, so an
@@ -1098,26 +1052,11 @@ export default function AcademicMapView({
         <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
           <PdfExportButton />
         </div>
-        {/* LA/Region choropleth: the new standalone toggle, alongside the existing
-            Grade band/Trends buttons (same box family, own row) -- independent of
-            ticked schools entirely. Hidden for KS2/family level, per this file's own
-            header comment. */}
-        {/* Region/Nation comparator round 2: the manual toggle is hidden entirely
-            while isRegionOrNationScope forces it on -- there's no real "Schools" mode
-            to switch back to at this scale (same real absence of a manual escape
-            Rolls' own map already has at Region/Nation scope), so a button that only
-            ever does one thing would be confusing chrome, not a real control. */}
-        {viewByAreaAvailable && !isRegionOrNationScope && (
-          <div className="rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-            <button
-              type="button"
-              onClick={() => setViewByArea((v) => !v)}
-              className={viewByArea ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
-            >
-              {viewByArea ? "Schools" : "View by area"}
-            </button>
-          </div>
-        )}
+        {/* Live feedback (Guy, 2026-09-14): the standalone "View by area" toggle is
+            removed entirely -- the choropleth now only ever appears the same way
+            Rolls' own map's does, via a real Region/Nation-scale set picked from the
+            left-column comparator sidebar (isRegionOrNationScope, viewByArea's own
+            derivation above), never a manual button. */}
         {/* Grade band/Trends only means anything for individual school circles --
             hidden while the choropleth (always value-coloured, no separate trend
             concept fetched this round) has taken over the map. */}
