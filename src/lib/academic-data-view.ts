@@ -12,7 +12,7 @@
 // shape as KS4/KS5.
 
 import { createServerAnonSupabaseClient } from "./supabase";
-import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
+import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicSubjectHeadline, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
 import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "./roll-data";
 import { trendBadge } from "./data-view-cards";
@@ -784,16 +784,21 @@ export function populationSeriesAtAge(profile: AcademicSchoolProfile, age: numbe
 // ambiguous label set ("Total number entered" also appears there) not investigated
 // this round; see the round 2 report for why historic subject-level isn't built.
 //
-// NOT built here, a real and substantial gap, not an oversight: average grade/point
-// score per subject. These raw sources give per-GRADE entry counts (e.g. "Level 2
-// distinction": 14, "Merit": 9, "U": 2), not a pre-computed average -- turning that
-// into a single average point-score figure needs the same GCSE_POINTS/ALEVEL_POINTS
-// conversion tables and weighted-averaging logic vicdata's own
-// ingest/academic_aggregates.py already built for the FAMILY rollup, which lives only
-// in that repo's ingest pipeline, not exposed via any RPC this round's own brief asks
-// for. Porting or re-deriving that conversion table inside vicdata_public would be a
-// genuinely new piece of scoring logic with no real backend precedent to lean on here
-// -- flagged rather than improvised.
+// Subject deep-dive round: the average-point-score-per-subject gap this comment used
+// to flag as "not built here" is now closed, via a genuinely different real source,
+// not by improvising a conversion table in this repo -- vicdata's own new
+// academic_subject_rollup/academic_subject_headline (recompute_subject_rollup(),
+// ingest/academic_aggregates.py) already does the same real GCSE_POINTS/ALEVEL_POINTS
+// weighted-averaging vicdata's own family-level rollup uses, one grain finer, exposed
+// here via fetchSubjectHeadlineForSchools/lookupAcademicSubjectHeadline below. That
+// source is ALSO real, multi-period back to 2020/21 (the historic sources this
+// module's own raw-fact fetch below deliberately doesn't touch, see this comment's
+// own next paragraph) -- so it's the primary source for entries/results/trend at
+// subject grain now, not just a KS4-only patch. What it does NOT give: KS5's own real
+// value-added figure (no rollup equivalent exists for that metric) and a per-GRADE
+// breakdown (it's an aggregate, not raw per-grade counts) -- both still come from the
+// raw-fact functions below, which is why both paths coexist rather than one replacing
+// the other outright.
 const SUBJECT_TOTAL_LABELS = new Set(["Total exam entries", "Total"]);
 const ALL_SUBJECTS_PSEUDO_ROW = "All subjects";
 
@@ -801,6 +806,23 @@ export type SubjectEntry = {
   qualificationType: string;
   subject: string;
   period: number;
+  entries: number;
+};
+
+// Subject deep-dive round, Part 2: the real per-grade breakdown the entries Total row
+// above deliberately discards -- kept here as its own type/parser reading the SAME
+// already-fetched raw facts (no second fetch), since a grade distribution chart is
+// the one genuinely new piece of content a single-subject deep dive needs that the
+// existing entries/value-added parsing never captured. Real, honest limitation
+// carried over unchanged from parseSubjectEntries' own scope: modern sources only
+// (2023/24 on) -- the historic siblings' own grade-level labels weren't investigated
+// this round, so a grade distribution for an earlier year genuinely isn't available,
+// not silently guessed at.
+export type SubjectGradeCount = {
+  qualificationType: string;
+  subject: string;
+  period: number;
+  grade: string;
   entries: number;
 };
 
@@ -825,6 +847,22 @@ function parseSubjectEntries(facts: ReferenceFact[]): SubjectEntry[] {
     const [qualificationType, subject] = parts;
     if (subject === ALL_SUBJECTS_PSEUDO_ROW) continue;
     rows.push({ qualificationType, subject, period: f.period, entries: f.value_numeric });
+  }
+  return rows;
+}
+
+// The exact inverse filter of parseSubjectEntries above (real per-GRADE rows, not the
+// Total row), reading the SAME already-fetched facts -- no second fetch.
+function parseSubjectGradeDistribution(facts: ReferenceFact[]): SubjectGradeCount[] {
+  const rows: SubjectGradeCount[] = [];
+  for (const f of facts) {
+    if (f.value_numeric === null) continue;
+    const parts = f.breakdown.split("::");
+    const grade = parts[parts.length - 1];
+    if (SUBJECT_TOTAL_LABELS.has(grade)) continue;
+    const [qualificationType, subject] = parts;
+    if (subject === ALL_SUBJECTS_PSEUDO_ROW) continue;
+    rows.push({ qualificationType, subject, period: f.period, grade, entries: f.value_numeric });
   }
   return rows;
 }
@@ -874,4 +912,102 @@ export async function fetchSubjectLevelData(
   const subjectFamilyMap: Record<string, string> = {};
   for (const row of familyMapRows) subjectFamilyMap[row.raw_subject] = row.family_id;
   return { entries: parseSubjectEntries(rawFacts), valueAdded: parseSubjectValueAdded(vaFacts), subjectFamilyMap };
+}
+
+export type SubjectLevelSchoolData = { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; gradeDistribution: SubjectGradeCount[] };
+
+// Subject deep-dive round, Part 1: the batched comparator-set sibling of
+// fetchSubjectLevelData above -- same two real sources (raw entries via
+// lookupReferenceData, KS5 value-added), same subjectFamilyMap, but for every real
+// school in `urns` at once (lookupReferenceData already accepts a real entityIds
+// array), grouped by entity_id afterward -- ONE pair of real calls regardless of
+// comparator-set size, not one call per school. Also returns gradeDistribution per
+// school (parseSubjectGradeDistribution, reading the SAME already-fetched raw facts)
+// -- Part 2's own deep-dive view needs a real per-school grade profile for the
+// comparison side too, and this is the same real fetch either way, so it costs
+// nothing extra to include here rather than a third fetch later.
+export async function fetchSubjectLevelDataForSchools(
+  urns: string[],
+  stage: KsStage,
+): Promise<{ byUrn: Map<string, SubjectLevelSchoolData>; subjectFamilyMap: Record<string, string> }> {
+  const byUrn = new Map<string, SubjectLevelSchoolData>();
+  if (stage === "ks2" || urns.length === 0) return { byUrn, subjectFamilyMap: {} };
+  const sourceId = stage === "ks4" ? "dfe_ks4_subject_entries" : "dfe_ks5_subject_results";
+  const [rawFacts, vaFacts, familyMapRows] = await Promise.all([
+    lookupReferenceData({ sourceId, entityIds: urns }),
+    stage === "ks5" ? lookupReferenceData({ sourceId: "dfe_ks5_subject_value_added", entityIds: urns }) : Promise.resolve([]),
+    lookupAcademicSubjectFamilyMap({ ksStage: stage }),
+  ]);
+  const subjectFamilyMap: Record<string, string> = {};
+  for (const row of familyMapRows) subjectFamilyMap[row.raw_subject] = row.family_id;
+
+  const rawByUrn = new Map<string, ReferenceFact[]>();
+  for (const f of rawFacts) {
+    const list = rawByUrn.get(f.entity_id);
+    if (list) list.push(f);
+    else rawByUrn.set(f.entity_id, [f]);
+  }
+  const vaByUrn = new Map<string, ReferenceFact[]>();
+  for (const f of vaFacts) {
+    const list = vaByUrn.get(f.entity_id);
+    if (list) list.push(f);
+    else vaByUrn.set(f.entity_id, [f]);
+  }
+  for (const urn of urns) {
+    const ownRaw = rawByUrn.get(urn) ?? [];
+    byUrn.set(urn, {
+      entries: parseSubjectEntries(ownRaw),
+      gradeDistribution: parseSubjectGradeDistribution(ownRaw),
+      valueAdded: parseSubjectValueAdded(vaByUrn.get(urn) ?? []),
+    });
+  }
+  return { byUrn, subjectFamilyMap };
+}
+
+export type AcademicSubjectHeadlineEntry = {
+  subject: string;
+  familyId: string;
+  familyLabel: string;
+  period: number;
+  entriesTotal: number;
+  entriesShareOfSchoolPercent: number | null;
+  entriesShareOfFamilyPercent: number | null;
+  avgPointScore: number | null;
+  pointsCoveragePercent: number | null;
+};
+
+// Subject deep-dive round: the real, multi-period (2020/21 on) source for
+// entries/avg-point-score at subject grain -- vicdata's own new
+// academic_subject_headline, via academic_subject_headline_lookup (same real
+// lineage-fallback discipline as every other entity-scoped Academic RPC, resolved
+// server-side inside vicdata -- the returned entity_id already matches the REQUESTED
+// urn even when the real row came from a predecessor, so grouping by entity_id here
+// needs no extra fallback handling). One real batched call for the whole comparator
+// set (target + ticked/widened), not one per school.
+export async function fetchSubjectHeadlineForSchools(
+  urns: string[],
+  stage: KsStage,
+  familyId?: string,
+): Promise<Map<string, AcademicSubjectHeadlineEntry[]>> {
+  const byUrn = new Map<string, AcademicSubjectHeadlineEntry[]>();
+  if (stage === "ks2" || urns.length === 0) return byUrn;
+  for (const urn of urns) byUrn.set(urn, []);
+  const rows = await lookupAcademicSubjectHeadline({ entityIds: urns, ksStage: stage, familyId });
+  for (const r of rows) {
+    const entry: AcademicSubjectHeadlineEntry = {
+      subject: r.subject,
+      familyId: r.family_id,
+      familyLabel: r.family_label,
+      period: r.period,
+      entriesTotal: r.entries_total,
+      entriesShareOfSchoolPercent: r.entries_share_of_school_percent,
+      entriesShareOfFamilyPercent: r.entries_share_of_family_percent,
+      avgPointScore: r.avg_point_score,
+      pointsCoveragePercent: r.points_coverage_percent,
+    };
+    const list = byUrn.get(r.entity_id);
+    if (list) list.push(entry);
+    else byUrn.set(r.entity_id, [entry]);
+  }
+  return byUrn;
 }

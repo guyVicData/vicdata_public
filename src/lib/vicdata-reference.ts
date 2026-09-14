@@ -210,6 +210,59 @@ export async function lookupAcademicSubjectFamily(params: {
   return rows;
 }
 
+// Subject deep-dive round: subject-GRAIN sibling of lookupAcademicSubjectFamily above,
+// backed by vicdata's own new academic_subject_headline_lookup RPC
+// (vicdata/supabase/migrations/20260915110000_academic_subject_headline_lookup.sql --
+// read directly, same structural template as academic_subject_family_lookup, not
+// academic_subject_family_map_lookup, since this is entity-scoped). Real, multi-period
+// data (2020/21 on, once the companion backend round's historic promotion landed --
+// confirmed live before this round started) -- the only real source for a subject's
+// own trend that far back; the raw dfe_ks4_subject_entries/dfe_ks5_subject_results
+// facts fetchSubjectLevelData reads are modern-only (2023/24 on, see that function's
+// own header comment for why the historic siblings aren't used there).
+export type AcademicSubjectHeadlineRow = {
+  entity_id: string;
+  ks_stage: KsStage;
+  subject: string;
+  family_id: string;
+  family_label: string;
+  period: number;
+  entries_total: number;
+  entries_share_of_school_percent: number | null;
+  entries_share_of_family_percent: number | null;
+  avg_point_score: number | null;
+  points_coverage_percent: number | null;
+};
+
+export async function lookupAcademicSubjectHeadline(params: {
+  entityIds?: string[];
+  ksStage?: KsStage;
+  familyId?: string;
+  periodMin?: number;
+  periodMax?: number;
+  signal?: AbortSignal;
+}): Promise<AcademicSubjectHeadlineRow[]> {
+  const rows: AcademicSubjectHeadlineRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage(
+      "academic_subject_headline_lookup",
+      {
+        p_entity_ids: params.entityIds ?? null,
+        p_ks_stage: params.ksStage ?? null,
+        p_family_id: params.familyId ?? null,
+        p_period_min: params.periodMin ?? null,
+        p_period_max: params.periodMax ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+      },
+      params.signal,
+    )) as AcademicSubjectHeadlineRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
 // Subject area round, 2026-09-14: exposes subject_family_map itself (raw_subject ->
 // family_id, per ks_stage) -- a static reference table, not entity-scoped, so no
 // entityIds param at all (genuinely different shape from the two lookups above,

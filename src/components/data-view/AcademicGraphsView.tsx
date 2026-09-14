@@ -68,6 +68,8 @@ import {
   type Ks5Cohort,
   type SubjectEntry,
   type SubjectValueAdded,
+  type SubjectGradeCount,
+  type AcademicSubjectHeadlineEntry,
 } from "@/lib/academic-data-view";
 import { CURRENT_CENSUS_PERIOD } from "@/lib/roll-data";
 import { trendBadge } from "@/lib/data-view-cards";
@@ -196,6 +198,8 @@ function ComparisonShareDonut({ slices }: { slices: FamilySharePoint[] }) {
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 const EMPTY_FAMILIES: { familyId: string; familyLabel: string }[] = [];
+const EMPTY_COMPARATOR_SUBJECT_MAP: Map<string, { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; gradeDistribution: SubjectGradeCount[] }> = new Map();
+const EMPTY_COMPARATOR_HEADLINE_MAP: Map<string, AcademicSubjectHeadlineEntry[]> = new Map();
 
 function formatHeadline(stage: KsStage, value: number): string {
   return HEADLINE_UNIT[stage] === "percent" ? `${value.toFixed(1)}%` : value.toFixed(1);
@@ -261,6 +265,8 @@ export default function AcademicGraphsView({
   families = EMPTY_FAMILIES,
   onFamilyChange = () => {},
   subjectData = null,
+  comparatorSubjectByUrn = EMPTY_COMPARATOR_SUBJECT_MAP,
+  comparatorSubjectHeadlineByUrn = EMPTY_COMPARATOR_HEADLINE_MAP,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
   ks5Cohort = null,
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
@@ -293,6 +299,14 @@ export default function AcademicGraphsView({
   families?: { familyId: string; familyLabel: string }[];
   onFamilyChange?: (familyId: string | null) => void;
   subjectData?: { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; subjectFamilyMap: Record<string, string> } | null;
+  // Subject deep-dive round, Part 1: the batched comparator-set sibling of
+  // subjectData above -- one entry per real comparator URN (target included, same
+  // convention as comparableGroup below). Empty maps (not undefined/null) are the
+  // real "not fetched yet, or genuinely nothing" default -- SubjectAreaSection.tsx's
+  // own comparison-set rows already know how to render "no real data" from an empty
+  // map, no separate loading state needed here.
+  comparatorSubjectByUrn?: Map<string, { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; gradeDistribution: SubjectGradeCount[] }>;
+  comparatorSubjectHeadlineByUrn?: Map<string, AcademicSubjectHeadlineEntry[]>;
   // GCSE exclusion round, Part 2: real URNs excluded from GCSE comparison this render
   // (empty whenever stage !== "ks4", per AcademicDataView's own gating) -- affects
   // Section 2 (Results) only; Section 3 (family/subject breakdown) is untouched, a
@@ -684,6 +698,8 @@ export default function AcademicGraphsView({
                 familyId={familyId}
                 familyLabel={familyLabel}
                 subjectData={subjectData}
+                comparatorSubjectByUrn={comparatorSubjectByUrn}
+                comparatorSubjectHeadlineByUrn={comparatorSubjectHeadlineByUrn}
                 setLabel={setLabel}
               />
             </div>

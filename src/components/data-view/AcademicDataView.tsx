@@ -43,6 +43,8 @@ import {
   type Ks5Cohort,
   type SubjectEntry,
   type SubjectValueAdded,
+  type SubjectLevelSchoolData,
+  type AcademicSubjectHeadlineEntry,
   STAGE_LABEL,
 } from "@/lib/academic-data-view";
 // Region/Nation comparator round 2: type-only imports from server-only lib files --
@@ -412,6 +414,55 @@ export default function AcademicDataView({
     };
   }, [urn, effectiveStage, authToken, isActiveTopic]);
 
+  // Subject deep-dive round, Part 1: the batched comparator-set sibling of the
+  // single-school fetch above -- closes the flagged subject-mode comparison-set gap
+  // (docs/vicdata_phase3_academic_results_graphs_entries_subjects_comparison_redesign_
+  // build_report_v1.md's own "what's needed to close this gap" section). Gated on
+  // activeView === "graphs" (not just isActiveTopic, unlike subjectData above) --
+  // this batched fetch is heavier (every real subject, every real comparator school,
+  // every real period back to 2020/21) and Section 03 only ever renders on the Graphs
+  // view, so there's no reason to pull it while looking at Map/Rankings. Keyed on the
+  // same real comparator-group urns (target + ticked/widened) every other "vs
+  // comparison set" fetch on this page already uses, plus familyId (narrows the new
+  // RPC's own real subject-headline fetch to one category server-side, rather than
+  // fetching every category and filtering client-side).
+  const [comparatorSubjectByUrn, setComparatorSubjectByUrn] = useState<Map<string, SubjectLevelSchoolData>>(new Map());
+  const [comparatorSubjectHeadlineByUrn, setComparatorSubjectHeadlineByUrn] = useState<Map<string, AcademicSubjectHeadlineEntry[]>>(new Map());
+  // Not memoized -- academicGroupProfiles is itself a new array every render (not its
+  // own useMemo), so memoizing on it here would never actually preserve anything; the
+  // effect below already keys on the resulting STRING value, which is what actually
+  // matters for whether a re-fetch is needed.
+  const comparatorSubjectUrnsKey = Array.from(new Set<string>([urn, ...academicGroupProfiles.map((p) => p.urn)])).sort().join(",");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!authToken || !effectiveStage || effectiveStage === "ks2" || !isActiveTopic || activeView !== "graphs" || comparatorSubjectUrnsKey.length === 0) {
+        if (!cancelled) {
+          setComparatorSubjectByUrn(new Map());
+          setComparatorSubjectHeadlineByUrn(new Map());
+        }
+        return;
+      }
+      try {
+        const params = new URLSearchParams({ anchorUrn: urn, urns: comparatorSubjectUrnsKey, stage: effectiveStage });
+        if (familyId) params.set("familyId", familyId);
+        const res = await fetch(`/api/data-view/academic-subject-comparison?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled || !res.ok) return;
+        const body = (await res.json()) as { subjectByUrn: Record<string, SubjectLevelSchoolData>; headlineByUrn: Record<string, AcademicSubjectHeadlineEntry[]> };
+        setComparatorSubjectByUrn(new Map(Object.entries(body.subjectByUrn)));
+        setComparatorSubjectHeadlineByUrn(new Map(Object.entries(body.headlineByUrn)));
+      } catch {
+        // Non-fatal -- subject-mode comparison-set rows just fall back to their own
+        // "not available" note, same as before this round.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [urn, effectiveStage, authToken, isActiveTopic, activeView, comparatorSubjectUrnsKey, familyId]);
+
   // Region/Nation comparator round 2, Rankings: fetches academic_region_nation_rank()
   // whenever the active set is a real Region/Nation-scale recipe AND the current stage
   // has real geography data (ks4/ks5 only -- academic_headline_snapshot itself has no
@@ -587,6 +638,8 @@ export default function AcademicDataView({
                 families={families}
                 onFamilyChange={setFamilyId}
                 subjectData={subjectData}
+                comparatorSubjectByUrn={comparatorSubjectByUrn}
+                comparatorSubjectHeadlineByUrn={comparatorSubjectHeadlineByUrn}
                 ks4ExcludedUrns={ks4ExcludedUrns}
                 ks5Cohort={ks5Cohort}
                 ks5ExcludedUrns={ks5ExcludedUrns}
