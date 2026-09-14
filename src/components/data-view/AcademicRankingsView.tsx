@@ -19,6 +19,7 @@ import {
   HEADLINE_LABEL,
   HEADLINE_UNIT,
   TREND_BASELINE_PERIOD,
+  TREND_STAT_LABEL,
   ks4ExclusionTargetSentence,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
@@ -29,11 +30,13 @@ import {
   headlineValueAt,
   latestYear,
   stageYears,
+  trendMagnitudeFor,
   type AcademicSchoolProfile,
   type KsStage,
   type Ks5Cohort,
 } from "@/lib/academic-data-view";
 import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, type RankedEntry } from "@/lib/data-view-cards";
+import { TREND_LABELS } from "@/lib/trend-labels";
 import { academicYearLabel } from "./TrendPill";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
@@ -156,6 +159,15 @@ export default function AcademicRankingsView({
   const averageCurrentValue = total > 0 ? ranked.reduce((sum, r) => sum + r.value, 0) / total : null;
 
   const baseline = TREND_BASELINE_PERIOD[stage];
+
+  // Part C, "Trend" tile: the target's own real change since baseline, on its own
+  // resolved measure (measureKeyFor(targetProfile) -- same "always the target's own
+  // real cohort" rule the Map's popup and Graphs' Part 3 Overview number already
+  // follow). trendMagnitudeFor/TREND_STAT_LABEL are the SAME shared functions/labels
+  // A4's Map popup uses -- one real computation, not a second one here.
+  const targetAnchorValue = headlineValueAt(stageYears(targetProfile, stage), baseline, measureKeyFor(targetProfile));
+  const targetTrendBadge = trendBadge(targetCurrentValue, targetAnchorValue);
+  const targetTrendMagnitude = trendMagnitudeFor(stage, targetCurrentValue, targetAnchorValue);
   const allPeriods = Array.from(new Set(groupInScope.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
     .filter((p) => p >= Math.max(startPeriod, baseline))
     .sort((a, b) => a - b);
@@ -179,22 +191,58 @@ export default function AcademicRankingsView({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Part C: four real headline-number tiles, above the existing rank tables --
+          Latest results/Position are split out of what used to be one combined
+          "This school's position" tile; Trend is new (A4's shared noun-form wording);
+          Position over time already existed, wording aligned to "Up/Down/Static"
+          per this round's own worked example. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">This school&rsquo;s position</h3>
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Latest results</h3>
+          {ks4TargetExcluded ? (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
+          ) : targetCurrentValue !== null ? (
+            <>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">{formatHeadline(stage, targetCurrentValue)}</p>
+              <p className="mt-1 text-xs text-neutral-500">{targetOwnLabel}</p>
+            </>
+          ) : (
+            <p className="text-sm text-neutral-500">No real data available for this school under this key stage.</p>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Trend</h3>
+          {ks4TargetExcluded ? (
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
+          ) : targetTrendBadge && targetTrendMagnitude ? (
+            <>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+                {TREND_LABELS[targetTrendBadge.direction].noun} {targetTrendMagnitude.value > 0 ? "+" : ""}
+                {targetTrendMagnitude.value.toFixed(0)}
+                {targetTrendMagnitude.unit}
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">
+                in {TREND_STAT_LABEL[stage]} since {academicYearLabel(baseline)}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-neutral-500">No real {academicYearLabel(baseline)} comparison.</p>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Position</h3>
           {ks4TargetExcluded ? (
             <p className="text-sm text-neutral-600 dark:text-neutral-400">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
           ) : targetRank !== null ? (
             <>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
-                #{targetRank} of {total} schools
+                #{targetRank} of {total} compared schools
               </p>
-              {targetCurrentValue !== null && (
+              {pctVsAverage !== null && averageCurrentValue !== null && (
                 <p className="mt-1 text-xs text-neutral-500">
-                  {formatHeadline(stage, targetCurrentValue)} — {targetOwnLabel}
-                  {pctVsAverage !== null && averageCurrentValue !== null && (
-                    <> ({Math.abs(pctVsAverage).toFixed(0)}% {pctVsAverage >= 0 ? "above" : "below"} the average of {formatHeadline(stage, averageCurrentValue)})</>
-                  )}
+                  {Math.abs(pctVsAverage).toFixed(0)}% {pctVsAverage >= 0 ? "above" : "below"} the average of {formatHeadline(stage, averageCurrentValue)}
                 </p>
               )}
             </>
@@ -202,6 +250,7 @@ export default function AcademicRankingsView({
             <p className="text-sm text-neutral-500">No real data available for this school under this key stage.</p>
           )}
         </div>
+
         <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Position over time</h3>
           {ks4TargetExcluded ? (
@@ -209,11 +258,11 @@ export default function AcademicRankingsView({
           ) : avgRank !== null && first && last ? (
             <>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
-                Average rank #{avgRank.toFixed(1)}, {academicYearLabel(first.period)}–{academicYearLabel(last.period)}
+                {first.period === last.period ? "Static" : last.rank < first.rank ? "Up" : last.rank > first.rank ? "Down" : "Static"}
               </p>
               <p className="mt-1 text-xs text-neutral-500">
                 {first.period !== last.period
-                  ? `${last.rank < first.rank ? "Risen" : last.rank > first.rank ? "Fallen" : "Steady"} from #${first.rank} (${academicYearLabel(first.period)}) to #${last.rank} (${academicYearLabel(last.period)})`
+                  ? `from #${first.rank} (${academicYearLabel(first.period)}) to #${last.rank} (${academicYearLabel(last.period)})`
                   : `Ranked #${last.rank} (${academicYearLabel(last.period)})`}
               </p>
             </>

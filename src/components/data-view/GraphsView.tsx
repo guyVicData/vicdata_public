@@ -69,6 +69,7 @@ import type { DataViewSchoolProfile } from "@/lib/data-view-profiles";
 import { filteredCount, type DataViewFilterState } from "@/lib/data-view-filters";
 import { profileToFilterableData as toFilterable, profileToFilterableDataForPeriod as toFilterableForPeriod } from "@/lib/data-view-serialize";
 import { trendBadge, sizeBand, type TrendBadge } from "@/lib/data-view-cards";
+import { TREND_LABELS } from "@/lib/trend-labels";
 import { graphTitlePrefix } from "@/lib/data-view-summary";
 import { GRAPH_SECTOR_FALLBACK_THRESHOLD, type AggregateTrends } from "@/lib/aggregate-trends";
 import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
@@ -97,7 +98,10 @@ import AggregateTrendChart, {
 // up/down/flat call instead of an arrow+bare-percent badge.
 function TrendStatement({ badge, startPeriod }: { badge: TrendBadge; startPeriod: number }) {
   if (!badge) return null;
-  const word = badge.direction === "up" ? "Growing" : badge.direction === "down" ? "Declining" : "Broadly stable";
+  // Round 3, A4: reads the shared adjective form (src/lib/trend-labels.ts) rather than
+  // its own inline copy of the same three strings -- Academic's new popups/Rankings
+  // tiles read the noun form from the same module, so the two can never drift apart.
+  const word = TREND_LABELS[badge.direction].adjective;
   const colour =
     badge.direction === "up" ? "text-blue-600 dark:text-blue-400" : badge.direction === "down" ? "text-red-600 dark:text-red-400" : "text-neutral-500";
   return (
@@ -119,13 +123,23 @@ function TrendStatement({ badge, startPeriod }: { badge: TrendBadge; startPeriod
 // onOpenMainAddSubtract prop (not a new mechanism -- the SAME window
 // ComparatorSidebar's own "Add/subtract schools" button already opens) so a
 // presenter can change the comparator set without leaving fullscreen.
-function Card({
+// Round 3, Part B: exported so AcademicGraphsView.tsx can reuse this real component
+// directly (fullscreen expand via FullscreenChartModal below) -- "reuse them
+// directly, don't rebuild a similar version," same precedent GenderSplitCard.tsx's
+// own Donut was exported under. `onOpenAddSubtract` is now OPTIONAL -- Academic has
+// no equivalent global "Add/subtract schools" window this can open (its own
+// comparator set lives in AcademicDataView's ticked/added state, a genuinely
+// different mechanism), so rather than wiring a dead button or fabricating new
+// comparator UI just to satisfy this prop, the button itself is omitted when no
+// callback is given (see FullscreenChartModal below). Every existing Rolls call
+// site still always passes a real callback, so this is purely additive.
+export function Card({
   title,
   onOpenAddSubtract,
   children,
 }: {
   title: string;
-  onOpenAddSubtract: () => void;
+  onOpenAddSubtract?: () => void;
   children: React.ReactNode;
 }) {
   const [fullscreen, setFullscreen] = useState(false);
@@ -161,7 +175,10 @@ function Card({
 // (z-[2000], AddSubtractSchoolsWindow.tsx) so opening that window from the
 // "Add/subtract schools" button below correctly layers on top of this one, not
 // underneath it.
-function FullscreenChartModal({
+// Round 3, Part B: exported alongside Card above -- Card's own fullscreen state
+// renders this directly, and AcademicGraphsView.tsx's reused Card needs the same
+// module resolvable.
+export function FullscreenChartModal({
   title,
   onClose,
   onOpenAddSubtract,
@@ -169,7 +186,7 @@ function FullscreenChartModal({
 }: {
   title: string;
   onClose: () => void;
-  onOpenAddSubtract: () => void;
+  onOpenAddSubtract?: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -182,13 +199,15 @@ function FullscreenChartModal({
       <div className="mb-4 flex shrink-0 items-center justify-between gap-4">
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{title}</h2>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onOpenAddSubtract}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-          >
-            Add/subtract schools
-          </button>
+          {onOpenAddSubtract && (
+            <button
+              type="button"
+              onClick={onOpenAddSubtract}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+            >
+              Add/subtract schools
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -209,7 +228,9 @@ function FullscreenChartModal({
 // but this codebase's other collapsible-ish controls (the FilterBar pills, the
 // large-set popup) are all plain button+state, and a chevron-plus-heading button
 // keeps the exact same visual weight/placement SectionHeading always had.
-function SectionHeading({ number, title, isOpen, onToggle }: { number: string; title: string; isOpen: boolean; onToggle: () => void }) {
+// Round 3, Part B: exported so AcademicGraphsView.tsx's own three new sections reuse
+// this real collapsible-toggle component directly rather than a rebuilt lookalike.
+export function SectionHeading({ number, title, isOpen, onToggle }: { number: string; title: string; isOpen: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"

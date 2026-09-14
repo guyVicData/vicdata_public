@@ -154,6 +154,114 @@ export const HEADLINE_LABEL: Record<KsStage, string> = {
 
 export const HEADLINE_UNIT: Record<KsStage, "percent" | "points"> = { ks2: "percent", ks4: "points", ks5: "points" };
 
+// Round 3 (Academic Map edit 2), A1: real per-school candidate/entries figures,
+// decided directly with Guy -- GCSE and Post-16 now use real DfE entries counts for
+// the map's circle size and popup label (dfe_ks4_headline.py's own new pupil_count,
+// dfe_ks5_headline.py's own new end1618_student_count/aps_per_entry_student_count);
+// KS2 has no equivalent DfE figure at all (confirmed via that data set's own /meta
+// response -- no cohort-size/pupil-count indicator exists there), so it stays on
+// real roll population (populationAtAge), completely unchanged.
+const ENTRIES_MEASURE_KS4 = "pupil_count";
+// Whole-institution Post-16 figure -- identical across every real exam_cohort row for
+// a school/period, landed WITHOUT a cohort prefix in the ingest (see
+// dfe_ks5_headline.py's own _WHOLE_INSTITUTION_COLUMNS comment) -- the real value
+// used whenever no specific cohort is selected (the map's own round-2 default,
+// per-school-own-cohort state).
+const ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION = "end1618_student_count";
+
+// Real per-(school, period) entries/candidate count. `ks5Cohort`: null means the
+// whole-institution total (the default, no-cohort-selected state); a SPECIFIC cohort
+// means that cohort's own real entries count (aps_per_entry_student_count) instead of
+// the whole-institution total -- a cohort-specific view showing the whole-institution
+// figure would overstate that one cohort's own real size, per this round's own
+// explicit instruction. null for KS2 (no real DfE figure exists) or for a genuinely
+// missing/suppressed real value -- same honest-absence convention as every other
+// headlineValueAt call in this module, never a fabricated fallback.
+export function entriesCountAt(profile: AcademicSchoolProfile, stage: KsStage, period: number, ks5Cohort: Ks5Cohort | null): number | null {
+  if (stage === "ks4") return headlineValueAt(profile.ks4, period, ENTRIES_MEASURE_KS4);
+  if (stage === "ks5") {
+    const key = ks5Cohort ? `${ks5Cohort}::aps_per_entry_student_count` : ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION;
+    return headlineValueAt(profile.ks5, period, key);
+  }
+  return null;
+}
+
+// A4's own real requirement: "a real date on every quoted figure -- the latest real
+// ingest year... don't hardcode a global 'latest year'." Guy's own KS4 worked example
+// shows entries at 2025/6 but the headline figure at 2024/5 -- the two stats' own
+// real latest years genuinely differ (DfE's own real publishing cadence: a school's
+// entries/candidate count for the newest year can land before that year's full
+// results do), so "latest" must be resolved PER MEASURE, walking backward from the
+// most recent year row to the first one that actually has a real value for THAT
+// specific key -- not just `latestYear(years)`, which only finds the most recent row
+// at all, regardless of which measures within it are actually populated.
+export function latestMeasureAt(years: AcademicHeadlineYear[], key: string): { period: number; value: number } | null {
+  for (let i = years.length - 1; i >= 0; i--) {
+    const value = headlineValueAt(years, years[i].period, key);
+    if (value !== null) return { period: years[i].period, value };
+  }
+  return null;
+}
+
+// Convenience wrapper over latestMeasureAt for the entries/candidate count
+// specifically -- the map/popup's own "this school's own real latest entries figure,
+// with its own real year" (A4), not a second, independently-derived lookup.
+export function latestEntriesCount(profile: AcademicSchoolProfile, stage: KsStage, ks5Cohort: Ks5Cohort | null): { period: number; value: number } | null {
+  if (stage === "ks4") return latestMeasureAt(profile.ks4, ENTRIES_MEASURE_KS4);
+  if (stage === "ks5") {
+    const key = ks5Cohort ? `${ks5Cohort}::aps_per_entry_student_count` : ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION;
+    return latestMeasureAt(profile.ks5, key);
+  }
+  return null;
+}
+
+// Real per-school entries series, ascending by period -- Part B, Section 1's own
+// "candidate numbers since the start of the real series" trend line. GCSE/Post-16
+// only: KS2 has no equivalent multi-year series on this profile shape at all
+// (`ageGenderCounts` is a single CURRENT-period snapshot, not a per-year history --
+// see fetchAcademicProfiles' own comment) -- Section 1's own KS2 panel uses the
+// single real current populationAtAge figure instead, not a second, new multi-year
+// population fetch, per that section's own explicit "same source the map now uses,
+// not a second computation" instruction.
+export function entriesSeries(profile: AcademicSchoolProfile, stage: KsStage, ks5Cohort: Ks5Cohort | null): { period: number; value: number }[] {
+  if (stage === "ks2") return [];
+  return stageYears(profile, stage)
+    .map((y) => ({ period: y.period, value: entriesCountAt(profile, stage, y.period, ks5Cohort) }))
+    .filter((r): r is { period: number; value: number } => r.value !== null);
+}
+
+// A4/Part C's own shared SHORT trend descriptor, per stage -- both the Map's own
+// trend popup and Rankings' new Trend tile use this exact wording (A4's own KS2
+// worked example, "Decline -25pp in % pupils meeting expected KS2 since 2022/3", is
+// quoted verbatim as Part C's own Trend-tile example too), so it lives here once
+// rather than as a Map-only local copy Rankings would otherwise have to duplicate.
+// Deliberately SHORTER/more natural than the existing HEADLINE_LABEL/ks5HeadlineLabel
+// wording used elsewhere (Rankings' own "Latest results" tile and Graphs' captions
+// still use those, unchanged, per Part C's own "Latest results" example) -- this is
+// the trend-sentence's own real copy, not a global rename.
+export const TREND_STAT_LABEL: Record<KsStage, string> = {
+  ks2: "% pupils meeting expected KS2",
+  ks4: "Attainment 8",
+  ks5: "average UCAS points",
+};
+
+// A4/Part C's own shared "trend magnitude" rule, named explicitly: percent-UNIT
+// measures (KS2 only, HEADLINE_UNIT.ks2 === "percent") show a raw percentage-POINT
+// difference ("pp") -- current minus anchor, not a relative change, matching Guy's
+// own worked example ("Decline -25pp in % pupils meeting expected KS2 since 2022/3").
+// points-unit measures (GCSE Attainment 8, Post-16 UCAS points) show the EXISTING
+// relative percentage change trendBadge() already computes everywhere else in this
+// codebase ("Decline -15% change in Attainment 8 since 2021/2") -- a genuinely
+// different real quantity from a raw point difference, not the same number relabelled.
+// One shared function so the Map's popups (A4) and Rankings' Trend tile (Part C) can
+// never silently disagree about which of the two a given stage gets.
+export function trendMagnitudeFor(stage: KsStage, current: number | null, anchor: number | null): { value: number; unit: "pp" | "%" } | null {
+  if (current === null || anchor === null) return null;
+  if (HEADLINE_UNIT[stage] === "percent") return { value: current - anchor, unit: "pp" };
+  if (anchor === 0) return null;
+  return { value: ((current - anchor) / anchor) * 100, unit: "%" };
+}
+
 // KS5 qualification-type-awareness round: the real exam_cohort names DfE publishes at
 // KS5 headline level, confirmed directly against dfe_ks5_headline.py's own docstring
 // and real ingested data -- deliberately excludes "E/M measures" (confirmed directly:

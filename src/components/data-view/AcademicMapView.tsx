@@ -8,45 +8,48 @@
 // in the build report as a real, separate follow-up (they need a category/subject
 // drill-down filter and their own entries-based sizing, not built this round).
 //
-// Circle size: population at the stage's single relevant age (10/15/17), read from
-// the SAME real dfe_school_census source Rolls' own map uses (spec §3a's own explicit
-// reasoning -- the academic ingest has no cohort headcount field at all). Circle
-// colour: two modes, trend (change in the headline measure since the stage's trend
-// baseline) or grade-band (the stage's real ingested threshold field) -- both real,
-// ingested data, no LA/region/national aggregate needed for either (Part A's
-// academic_geography_lookup isn't consumed by anything in this round's own spec -- see
-// build report).
-//
 // Map round 2 (live feedback after Stage 2 UX shipped, commit a9b5ce3): items 2-6
-// bring this map's chrome into real parity with Rolls' own MapView.tsx -- the distance
-// ring, the colour legend's position/content, and a real dot-size scale box, all
-// copied from that component's own working code rather than re-derived. Item 1 fixed a
-// real intermittent "map blank until you toggle colour mode" bug -- see the mapReady
-// state below for the actual root cause.
+// brought this map's chrome into real parity with Rolls' own MapView.tsx -- the
+// distance ring, the colour legend's position/content, and a real dot-size scale box.
+// Item 1 fixed a real intermittent "map blank until you toggle colour mode" bug (the
+// mapReady state below).
+//
+// Round 3 (Map edit 2), live feedback on round 2: A1 switches GCSE/Post-16 circle
+// size + popup entries figure from roll population to real DfE entries counts (KS2
+// stays on population -- no equivalent DfE figure exists for it); A2 replaces grade
+// band's borrowed trend-scale colour with a real, separate, value-based sequential
+// scale, normalised to the CURRENT set's own real min-max range (not rank, not a
+// fixed universal scale); A3 reorders/repositions the colour-mode toggle; A4 rewrites
+// the popup copy (bold figures, one stat per line, real per-stat dates, a real rank);
+// A5 fixes Post-16's grade band being silently unavailable outside the "A level"
+// cohort -- see that section below for the real root cause found.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { bngToLatLng } from "@/lib/bng";
-import { trendColour, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
-import { trendBadge } from "@/lib/data-view-cards";
+import { trendColour, gradeBandColour, GRADE_BAND_LEGEND_STOPS, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
+import { trendBadge, rankDescendingWithTies } from "@/lib/data-view-cards";
+import { TREND_LABELS } from "@/lib/trend-labels";
 import type { ViewKey } from "@/lib/data-view-types";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
 import {
   HEADLINE_MEASURE,
-  HEADLINE_LABEL,
-  HEADLINE_AGE,
   HEADLINE_UNIT,
+  HEADLINE_AGE,
   GRADE_BAND_MEASURE,
   TREND_BASELINE_PERIOD,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
   ks5HeadlineMeasureKey,
-  ks5HeadlineLabel,
   ks5CohortExclusionNote,
   ks5CohortWholeGroupSentence,
   ks5MeasureFor,
   headlineValueAt,
   latestYear,
+  latestMeasureAt,
+  latestEntriesCount,
+  trendMagnitudeFor,
+  TREND_STAT_LABEL,
   stageYears,
   populationAtAge,
   familyYearsFor,
@@ -96,6 +99,15 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// Same academic-year-label convention MapView.tsx/GraphsView.tsx each already keep
+// their own local copy of -- A4's own worked examples ("2024/5") read as informal
+// shorthand in Guy's own note, not a deliberate third, different date format; using
+// the site's one existing convention here rather than inventing a second one, flagged
+// explicitly in the build report in case the shorter form was actually intended.
+function academicYearLabel(period: number): string {
+  return `${period}/${String(period + 1).slice(2)}`;
+}
+
 // Stage 2 UX review, item 9: same real percentile-trim MapView.tsx's own
 // trimmedBoundsFor uses (a single wrongly-geocoded outlier shouldn't wreck the
 // auto-fit zoom), duplicated here rather than imported (module-private there,
@@ -113,6 +125,27 @@ function trimmedBoundsFor(points: [number, number][]): [number, number][] {
   const trimmed = points.filter(([lat, lng]) => lat >= latLo && lat <= latHi && lng >= lngLo && lng <= lngHi);
   return trimmed.length > 1 ? trimmed : points;
 }
+
+// A4's own popup wording, per stage -- deliberately SHORT, natural-language
+// descriptors distinct from the existing, more verbose HEADLINE_LABEL/ks5HeadlineLabel
+// strings used elsewhere (Rankings' "Latest results" tile, Graphs captions) --
+// scoped to this popup specifically, matching Guy's own worked examples verbatim
+// ("pupils entered for KS2 tests", "met expected standard", "Attainment 8 average",
+// "average UCAS points"). Rankings' own "Latest results" tile deliberately reuses the
+// EXISTING (verbose) labels unchanged, per that tile's own worked example -- these
+// two are NOT a global rename, just this popup's own real copy. TREND_STAT_LABEL is
+// DIFFERENT: Part C's own Trend-tile example quotes A4's short wording verbatim, so
+// that one lives in academic-data-view.ts, shared by both this popup and Rankings.
+const ENTRIES_NOUN: Record<KsStage, string> = {
+  ks2: "pupils entered for KS2 tests",
+  ks4: "pupils entered for GCSEs",
+  ks5: "pupils entered for Post-16 exams",
+};
+const HEADLINE_STAT_LABEL: Record<KsStage, string> = {
+  ks2: "met expected standard",
+  ks4: "Attainment 8 average",
+  ks5: "average UCAS points",
+};
 
 // Map round 2, item 3: same measured-gap title-carve-out convention as MapView.tsx's
 // own TrendColourKey -- see this file's own trendKeyBox measurement effect for the box
@@ -148,35 +181,37 @@ function TrendColourKey({ box, title }: { box: { top: number; height: number } |
   );
 }
 
-// Map round 2, item 3: Grade-band mode's own real scale -- same trendColour()
-// diverging function the marker loop itself uses (`trendColour(gradeValue - 50)`), so
-// the key's own stops are the SAME TREND_LEGEND_STOPS pct values re-centred on 50 (a
-// real percentage-of-cohort figure, not a change-since-baseline one) rather than a
-// second, separately-invented scale.
-function GradeBandColourKey({ box }: { box: { top: number; height: number } | null }) {
+// A2: grade band's own real, separate, VALUE-based key -- real min/mid/max VALUES of
+// the CURRENT comparison set (not the old fixed 20/40/50/60/80% scale, which only
+// ever meant anything for a 0-100 percentage centred on 50). Uses the new sequential
+// blue palette (trend-colours.ts's gradeBandColour/GRADE_BAND_LEGEND_STOPS), a
+// genuinely different scale from Trend's diverging red-green one, not a relabelling
+// of it.
+function GradeBandColourKey({ box, min, max, stage }: { box: { top: number; height: number } | null; min: number; max: number; stage: KsStage }) {
   if (!box) return null;
-  const stops = TREND_LEGEND_STOPS;
-  const min = stops[0].pct;
-  const max = stops[stops.length - 1].pct;
+  const stops = GRADE_BAND_LEGEND_STOPS;
   const gradient = [...stops].reverse().map((s) => s.hex).join(",");
   const barHeight = Math.max(0, box.height - TREND_KEY_TITLE_HEIGHT);
+  const mid = min + (max - min) / 2;
+  const labelStops = [
+    { t: 0, value: max },
+    { t: 0.5, value: mid },
+    { t: 1, value: min },
+  ];
   return (
-    <div className="absolute right-[10px] z-[1000] w-[52px]" style={{ top: box.top }}>
+    <div className="absolute right-[10px] z-[1000] w-[56px]" style={{ top: box.top }}>
       <p className="mb-0.5 text-right text-[9px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400" style={{ height: TREND_KEY_TITLE_HEIGHT }}>
         Grade band
       </p>
       <div className="relative ml-auto w-[26px] rounded-sm shadow-sm" style={{ height: barHeight, background: `linear-gradient(to bottom, ${gradient})` }}>
-        {stops.map((s) => {
-          const t = (max - s.pct) / (max - min);
-          return (
-            <div key={s.pct} className="absolute inset-x-0" style={{ top: `${t * 100}%` }}>
-              <div className="h-px w-full bg-white/80" />
-              <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
-                {50 + s.pct}%
-              </span>
-            </div>
-          );
-        })}
+        {labelStops.map((s) => (
+          <div key={s.t} className="absolute inset-x-0" style={{ top: `${s.t * 100}%` }}>
+            <div className="h-px w-full bg-white/80" />
+            <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
+              {formatHeadlineValue(stage, s.value)}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -185,7 +220,7 @@ function GradeBandColourKey({ box }: { box: { top: number; height: number } | nu
 // Map round 2, item 4: same real three-representative-sizes scale box as MapView.tsx's
 // own SizeLegend, reusing radiusFor's own min/max (hoisted to render time below, shared
 // with the drawing effect, not recomputed separately).
-function SizeLegend({ minSize, maxSize, familyId, familyLabel, age }: { minSize: number; maxSize: number; familyId: string | null; familyLabel: string | null; age: number }) {
+function SizeLegend({ minSize, maxSize, familyId, familyLabel, sizeCaption }: { minSize: number; maxSize: number; familyId: string | null; familyLabel: string | null; sizeCaption: string }) {
   const hasRange = maxSize > minSize;
   const steps = hasRange
     ? [minSize, Math.round((minSize + maxSize) / 2), maxSize].map((v) => ({ v, r: radiusFor(v, minSize, maxSize) }))
@@ -201,12 +236,27 @@ function SizeLegend({ minSize, maxSize, familyId, familyLabel, age }: { minSize:
           </div>
         ))}
       </div>
-      <p className="mt-2 text-xs text-neutral-400">{familyId ? `Entries in ${familyLabel ?? "this category"}` : `${age}-year-olds`}</p>
+      <p className="mt-2 text-xs text-neutral-400">{familyId ? `Entries in ${familyLabel ?? "this category"}` : sizeCaption}</p>
     </div>
   );
 }
 
 type ColourMode = "trend" | "grade_band";
+
+// Real per-profile figures, computed ONCE per render (useMemo below) and shared by
+// the rank computation, the min-max normalisation (size AND grade band), the SizeLegend/
+// GradeBandColourKey, and the marker-drawing effect itself -- "computed once, shared,
+// not recomputed twice," same discipline round 2's own minSize/maxSize hoisting
+// established, now extended to every other per-marker figure this round adds.
+type RowData = {
+  avgValue: number | null;
+  avgPeriod: number | null;
+  anchorValue: number | null;
+  entriesValue: number | null;
+  entriesPeriod: number | null;
+  gradeValue: number | null;
+  size: number | null;
+};
 
 export default function AcademicMapView({
   targetProfile,
@@ -257,25 +307,25 @@ export default function AcademicMapView({
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const layerGroupRef = useRef<import("leaflet").LayerGroup | null>(null);
   const topRightStackRef = useRef<HTMLDivElement | null>(null);
-  // Map round 2, item 1: the actual root cause of "map blank in Trend mode until you
-  // toggle Grade band and back" -- see the mount effect below for the full story. Not
-  // just a ref: this MUST be real React state so setting it forces a guaranteed extra
-  // render/effect-run once the map finishes its own async init, exactly the mechanism
-  // Rolls' own MapView.tsx already uses for this (its own `mapReady` state, same name,
-  // same purpose) -- ported from there rather than invented fresh.
+  // Map round 2, item 1: real root cause of "map blank in Trend mode until you toggle
+  // Grade band and back" -- see the mount effect below. A real React state (not just a
+  // ref) so setting it forces a guaranteed extra render/effect-run once the map
+  // finishes its own async init, ported directly from Rolls' own MapView.tsx.
   const [mapReady, setMapReady] = useState(false);
   const [trendKeyBox, setTrendKeyBox] = useState<{ top: number; height: number } | null>(null);
+  // A3: default stays Grade band (round 2, item 6 already made this the default;
+  // unchanged this round). A5's own fix (below) means this default now genuinely
+  // WORKS for Post-16 too, not just KS2/GCSE.
   const [colourMode, setColourMode] = useState<ColourMode>("grade_band");
-  // Grade-band was never a real option at family level -- computed, not synced via an
-  // effect, so selecting a family while "grade_band" was active from headline level
-  // just silently reads as "trend" rather than needing a state-reset round-trip.
-  // KS5 qualification-type-awareness round: grade-band ("AAB or higher") is
-  // inherently an A-level grading concept -- DfE has no equivalent threshold field for
-  // Applied General/Tech Level/Technical Certificate, and "Academic" blends types too
-  // freely for one to mean anything -- so grade-band is only offered when the
-  // selector is on its "A level" default, same "not offered at all" treatment as
-  // family level rather than silently showing stale/wrong-cohort data.
-  const gradeBandAvailable = !familyId && (stage !== "ks5" || ks5Cohort === "A level");
+  // A5's real fix: grade band is available whenever there's a real headline/family
+  // series to colour by at all -- i.e. always, except at family level (which has its
+  // own separate, single, always-available trend-only colour concept, Round 2 Part B
+  // above -- a real, distinct scope decision, not touched this round). The OLD gate
+  // (`stage !== "ks5" || ks5Cohort === "A level"`) forced Post-16 into Trend-only
+  // for its own real default state (ks5Cohort === null) and every cohort except
+  // "A level" -- see this file's own header comment and the build report for the
+  // real root cause and why it's fixed this way, not by loosening the gate a little.
+  const gradeBandAvailable = !familyId;
   const effectiveColourMode: ColourMode = gradeBandAvailable ? colourMode : "trend";
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
@@ -295,17 +345,105 @@ export default function AcademicMapView({
   );
   const setLabel = activeSetLabel ?? "the ticked comparator set";
 
-  // Map round 2, item 4: hoisted out of the drawing effect (it used to be computed
-  // there and thrown away every run) so SizeLegend can render the SAME min/max range
-  // the markers themselves are scaled against, same "computed once, shared" discipline
-  // as MapView.tsx's own values/minV/maxV.
-  const { minSize, maxSize } = useMemo(() => {
+  // Round 3: every per-profile real figure this map needs, computed once per real
+  // profile -- shared by the rank computation (A4), the min-max normalisation for
+  // size AND grade band (A1/A2), the two legends, and the marker-drawing effect
+  // itself, rather than each recomputing its own copy.
+  const rowDataByUrn = useMemo(() => {
     const age = HEADLINE_AGE[stage];
-    const vals = withCoords
-      .map((p) => (familyId ? (latestFamilyYear(p, stage, familyId)?.entriesTotal ?? null) : populationAtAge(p, age)))
-      .filter((v): v is number => v !== null && v > 0);
-    return { minSize: vals.length > 0 ? Math.min(...vals) : 1, maxSize: vals.length > 0 ? Math.max(...vals) : 1 };
-  }, [withCoords, familyId, stage]);
+    const baseline = TREND_BASELINE_PERIOD[stage];
+    const measureKey = stage === "ks5" && ks5Cohort ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
+    const map = new Map<string, RowData>();
+    for (const p of withCoords) {
+      if (familyId) {
+        const fy = latestFamilyYear(p, stage, familyId);
+        const years = familyYearsFor(p, stage, familyId);
+        const anchor = years.find((y) => y.period === baseline)?.avgPointScore ?? null;
+        map.set(p.urn, {
+          avgValue: fy?.avgPointScore ?? null,
+          avgPeriod: fy?.period ?? null,
+          anchorValue: anchor,
+          entriesValue: fy?.entriesTotal ?? null,
+          entriesPeriod: fy?.period ?? null,
+          gradeValue: null,
+          size: fy?.entriesTotal ?? null,
+        });
+        continue;
+      }
+      const rowKs5 = stage === "ks5" ? ks5MeasureFor(p, ks5Cohort) : null;
+      const rowMeasureKey = rowKs5 ? rowKs5.measureKey : measureKey;
+      const years = stageYears(p, stage);
+      const headline = latestMeasureAt(years, rowMeasureKey);
+      const anchor = headlineValueAt(years, baseline, rowMeasureKey);
+      const entries = stage === "ks2" ? null : latestEntriesCount(p, stage, ks5Cohort);
+      const size = stage === "ks2" ? populationAtAge(p, age) : (entries?.value ?? null);
+
+      // A5's own real fix, applied here: aab_percent (GRADE_BAND_MEASURE.ks5) is
+      // genuinely only a real DfE field for the "A level" cohort -- confirmed
+      // directly, no equivalent threshold field exists for Academic/Applied general/
+      // Tech level/Technical certificate. When this row's own resolved cohort (an
+      // explicit selection, or this school's own real dominant cohort in the default
+      // state) IS "A level", grade band colours by the real aab_percent, at the SAME
+      // real period the headline figure itself was found at. Every other resolved
+      // cohort falls back to the real headline value already computed above -- still
+      // a real, min-max-normalised value-based colour, not a fabricated one, just not
+      // an AAB-specific one. ks2/ks4 are unaffected (no cohort dimension at all,
+      // always use their own single real GRADE_BAND_MEASURE).
+      let gradeValue: number | null;
+      if (stage === "ks5") {
+        const resolvedCohort = rowKs5?.cohort ?? null;
+        if (resolvedCohort === "A level" && headline) {
+          gradeValue = headlineValueAt(years, headline.period, GRADE_BAND_MEASURE.ks5);
+        } else {
+          gradeValue = headline?.value ?? null;
+        }
+      } else {
+        const y = latestYear(years);
+        gradeValue = y ? headlineValueAt(years, y.period, GRADE_BAND_MEASURE[stage]) : null;
+      }
+
+      map.set(p.urn, {
+        avgValue: headline?.value ?? null,
+        avgPeriod: headline?.period ?? null,
+        anchorValue: anchor,
+        entriesValue: entries?.value ?? null,
+        entriesPeriod: entries?.period ?? null,
+        gradeValue,
+        size,
+      });
+    }
+    return map;
+  }, [withCoords, familyId, stage, ks5Cohort]);
+
+  // Map round 2, item 4 / round 3 A2: hoisted so both legends and the drawing effect
+  // share the SAME real min/max, never recomputed twice.
+  const { minSize, maxSize, minGrade, maxGrade } = useMemo(() => {
+    const sizes: number[] = [];
+    const grades: number[] = [];
+    for (const d of rowDataByUrn.values()) {
+      if (d.size !== null && d.size > 0) sizes.push(d.size);
+      if (d.gradeValue !== null) grades.push(d.gradeValue);
+    }
+    return {
+      minSize: sizes.length > 0 ? Math.min(...sizes) : 1,
+      maxSize: sizes.length > 0 ? Math.max(...sizes) : 1,
+      minGrade: grades.length > 0 ? Math.min(...grades) : 0,
+      maxGrade: grades.length > 0 ? Math.max(...grades) : 0,
+    };
+  }, [rowDataByUrn]);
+
+  // A4: real rank, recomputed against whichever comparison set is currently active
+  // (same "recompute against the live set" discipline round 2's own comparator
+  // widening established) -- based on the same real headline value already driving
+  // the circle's own label, never a cached figure.
+  const { ranked: rankedRows, total: rankTotal } = useMemo(
+    () =>
+      rankDescendingWithTies(
+        withCoords.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: rowDataByUrn.get(p.urn)?.avgValue ?? null })),
+      ),
+    [withCoords, rowDataByUrn, targetProfile.urn],
+  );
+  const rankByUrn = useMemo(() => new Map(rankedRows.map((r) => [r.urn, r.rank])), [rankedRows]);
 
   useEffect(() => {
     if (!mapElRef.current || mapRef.current || targetProfile.easting === null || targetProfile.northing === null) return;
@@ -320,35 +458,20 @@ export default function AcademicMapView({
       L.control.zoom({ position: "bottomright" }).addTo(map);
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
-      // Map round 2, item 1's real fix: this is what's actually missing before this
+      // Map round 2, item 1's real fix: this is what's actually missing before that
       // round. Real bug, reproduced against Yerbury Primary School (URN 100429) --
-      // NOT a data-shape throw (checked directly: ran the exact Trend-mode branch's
-      // value/trendBadge/trendColour computation against Yerbury's real KS2 data AND
-      // its full real nearest-10 comparator group, headlessly, via a script that
-      // imports and calls the actual production functions -- every one of the 11
-      // schools computes cleanly, no throw, see this round's build report). The real
-      // mechanism: `L.map()`/the layer group are created asynchronously, inside this
-      // `import("leaflet").then()` callback -- before this fix, the ONLY readiness
-      // signal was `mapRef.current`/`layerGroupRef.current`, plain refs that don't
-      // trigger a re-render when set. The marker-drawing effect below guards on those
-      // same refs and returns early if they're still null -- if that effect's FIRST
-      // invocation (at mount) loses the race against this async init (a real,
-      // measurable gap on a cold "leaflet" chunk load, near-zero once the module is
-      // warm from an earlier visit this session -- which is exactly why this read as
-      // "intermittent" rather than "always broken"), NOTHING forces a retry once the
-      // refs finally become non-null, since mutating a ref doesn't cause React to
-      // re-run effects. The map then silently sits blank until some UNRELATED prop/
-      // state change happens to re-render this component anyway (any other data
-      // finishing loading) -- or until a user manually toggles Grade band/back,
-      // which IS a real state change (`setColourMode`) and therefore DOES force a
-      // fresh, by-then-definitely-ready run of the drawing effect below, which
-      // succeeds regardless of which colour mode it draws (there was never anything
-      // Trend-specific about the failure itself -- Trend simply happened to be
-      // whichever mode was active on the losing first pass). `mapReady` closes this
-      // gap exactly the way Rolls' own MapView.tsx already does: setting it here is
-      // itself a real state update, which is what actually guarantees the drawing
-      // effect gets at least one more genuine run once the map is truly ready, with
-      // no dependency on anything else happening to re-render this component.
+      // NOT a data-shape throw (checked directly against real data before this fix:
+      // every school in Yerbury's own real comparator group computed cleanly). The
+      // real mechanism: `L.map()`/the layer group are created asynchronously, inside
+      // this `import("leaflet").then()` callback -- before this fix, the ONLY
+      // readiness signal was `mapRef.current`/`layerGroupRef.current`, plain refs
+      // that don't trigger a re-render when set. The marker-drawing effect below
+      // guards on those same refs and returns early if they're still null -- if that
+      // effect's FIRST invocation (at mount) loses the race against this async init,
+      // NOTHING forced a retry once the refs finally became non-null. `mapReady`
+      // closes this gap exactly the way Rolls' own MapView.tsx already does: setting
+      // it here is itself a real state update, guaranteeing the drawing effect gets
+      // at least one more genuine run once the map is truly ready.
       setMapReady(true);
 
       // Real bug, stage 1 review: this component is fully unmounted and remounted
@@ -376,9 +499,10 @@ export default function AcademicMapView({
 
   // Map round 2, item 3: same real measured-gap technique as MapView.tsx's own
   // trendKeyBox effect -- centred in the actual vertical gap between the top-right
-  // control stack (now just PdfExportButton, item 6 moved the colour toggle out of
-  // here) and Leaflet's own zoom control, occupying 70% of that gap's height, rather
-  // than a hand-tuned constant.
+  // control stack and Leaflet's own zoom control, occupying 70% of that gap's height.
+  // A3: the control stack now includes the colour-mode toggle again (moved back under
+  // PdfExportButton), so its own height genuinely varies with gradeBandAvailable --
+  // re-measured on that too, not just effectiveColourMode.
   useEffect(() => {
     if (!mapReady || !mapElRef.current) return;
     const containerEl = mapElRef.current;
@@ -406,7 +530,7 @@ export default function AcademicMapView({
     ro.observe(containerEl);
     if (topRightStackRef.current) ro.observe(topRightStackRef.current);
     return () => ro.disconnect();
-  }, [mapReady, effectiveColourMode]);
+  }, [mapReady, effectiveColourMode, gradeBandAvailable]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || !layerGroupRef.current || !rootRef.current) return;
@@ -416,23 +540,8 @@ export default function AcademicMapView({
       group2.clearLayers();
       const cs = getComputedStyle(rootRef.current!);
 
-      // KS5 qualification-type-awareness round: at KS5, the comparison metric follows
-      // the selected cohort. Item 10: with no cohort selected (ks5Cohort === null, the
-      // new default), there IS no one shared measure -- each circle resolves its own
-      // real dominant cohort via ks5MeasureFor inside the loop below instead.
-      const measureKey = stage === "ks5" && ks5Cohort ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
-      const baseline = TREND_BASELINE_PERIOD[stage];
-      const gradeKey = GRADE_BAND_MEASURE[stage];
-      const age = HEADLINE_AGE[stage];
-
-      const sizeValue = (p: AcademicSchoolProfile): number | null =>
-        familyId ? (latestFamilyYear(p, stage, familyId)?.entriesTotal ?? null) : populationAtAge(p, age);
-
       // Map round 2, item 2: the same real dashed distance ring MapView.tsx draws
-      // around the target, in this same always-on layer group (never cleared away by
-      // a colour-mode toggle -- it's redrawn fresh on every pass here, same as
-      // MapView.tsx's own ring, which lives in that component's equivalent
-      // layerGroupRef rather than its clustered schoolsGroup). Drawn first so every
+      // around the target, in this same always-on layer group. Drawn first so every
       // school marker sits on top of it, same ordering as the reference.
       if (targetProfile.easting !== null && targetProfile.northing !== null) {
         const [targetLat, targetLng] = bngToLatLng(targetProfile.easting, targetProfile.northing);
@@ -458,73 +567,57 @@ export default function AcademicMapView({
         }).addTo(group2);
       }
 
-      // Item 9: fitBounds to the current visible set, same real behaviour as
-      // Rolls' own MapView.tsx (re-run on every comparator-set/exclusion change,
-      // via this effect's own dependency array) -- this map used to open at a
-      // fixed zoom=11 centred on the target and never auto-fit at all.
+      // Item 9: fitBounds to the current visible set, re-run on every comparator-set/
+      // exclusion change via this effect's own dependency array.
       const bounds: [number, number][] = [];
 
       for (const p of withCoords) {
+        const data = rowDataByUrn.get(p.urn);
+        if (!data) continue;
         const [lat, lng] = bngToLatLng(p.easting!, p.northing!);
         bounds.push([lat, lng]);
         const isTarget = p.urn === targetProfile.urn;
-        const size = sizeValue(p);
-        const radius = size !== null && size > 0 ? radiusFor(size, minSize, maxSize) : UNTICKED_RADIUS;
-        // Item 10: per-marker resolution -- in the default (null) state this is each
-        // school's own real dominant cohort, which can genuinely differ circle to
-        // circle within the same comparator set; with an explicit cohort selected it
-        // just resolves to that cohort for every circle, same as before.
-        const rowKs5 = stage === "ks5" ? ks5MeasureFor(p, ks5Cohort) : null;
+        const radius = data.size !== null && data.size > 0 ? radiusFor(data.size, minSize, maxSize) : UNTICKED_RADIUS;
 
         let colour = UNTICKED_COLOUR;
-        // Real fix, stage 1 review: hoisted out of the colour-mode branches below so
-        // the tooltip (built after) can show the same real average the circle's own
-        // colour is encoding, whichever mode/level is active -- not a second,
-        // possibly-diverging computation.
-        let avgValue: number | null = null;
-        if (familyId) {
-          // Trend in avgPointScore since baseline, for this one family.
-          const years = familyYearsFor(p, stage, familyId);
-          avgValue = latestFamilyYear(p, stage, familyId)?.avgPointScore ?? null;
-          const anchor = years.find((y) => y.period === baseline)?.avgPointScore ?? null;
-          const badge = trendBadge(avgValue, anchor);
+        if (effectiveColourMode === "trend") {
+          const badge = trendBadge(data.avgValue, data.anchorValue);
           if (badge) colour = trendColour(badge.pctChange);
-        } else {
-          const years = stageYears(p, stage);
-          const rowMeasureKey = rowKs5 ? rowKs5.measureKey : measureKey;
-          avgValue = headlineValueAt(years, latestYear(years)?.period ?? -1, rowMeasureKey);
-          if (effectiveColourMode === "trend") {
-            const anchor = headlineValueAt(years, baseline, rowMeasureKey);
-            const badge = trendBadge(avgValue, anchor);
-            if (badge) colour = trendColour(badge.pctChange);
-          } else {
-            const y = latestYear(years);
-            const gradeValue = y ? headlineValueAt(years, y.period, gradeKey) : null;
-            if (gradeValue !== null) colour = trendColour(gradeValue - 50); // reuses the same diverging scale, centred on 50%
-          }
+        } else if (data.gradeValue !== null) {
+          colour = gradeBandColour(data.gradeValue, minGrade, maxGrade);
         }
 
-        // Real fix, stage 1 review: the tooltip used to be just the school name --
-        // Guy's own example ("an A-level map -- label needs to say X 17 year olds, Y
-        // average points per A-level entry"). Same real data already driving the
-        // circle's own size/colour, not a new fetch -- matches whatever the circle is
-        // currently encoding (population vs family entries, headline vs family
-        // average), same multi-line HTML tooltip pattern MapView.tsx's own tooltip
-        // already uses.
-        const sizeLabel = size !== null ? `${size.toLocaleString()} ${familyId ? "entries" : `${HEADLINE_AGE[stage]}-year-olds`}` : null;
-        // Item 10: the tooltip shows the SPECIFIC cohort label this circle is actually
-        // using -- already per-marker, so a mixed default-state group just reads
-        // correctly per school with no extra plumbing (e.g. Acland Burghley's own
-        // circle reads "Academic", Sevenoaks' reads "IB" or "A level", side by side).
-        const avgLabel =
-          avgValue !== null
-            ? familyId
-              ? `${avgValue.toFixed(1)} avg. point score`
-              : `${formatHeadlineValue(stage, avgValue)} ${rowKs5 ? ks5HeadlineLabel(rowKs5.cohort) : HEADLINE_LABEL[stage]}`
-            : null;
-        const statsLine = [sizeLabel, avgLabel].filter(Boolean).join(", ");
+        // A4: real popup rewrite -- bold key numbers, one stat per line, a real date
+        // on every quoted figure (each stat's own real latest year, independently --
+        // see latestMeasureAt/latestEntriesCount's own comment for why these can
+        // genuinely differ), a real rank on the grade-band popup, and the shared
+        // noun-form growth/decline wording (trend-labels.ts) on the trend popup.
+        const lines: string[] = [];
+        if (familyId) {
+          if (data.entriesValue !== null) lines.push(`<strong>${data.entriesValue.toLocaleString()}</strong> entries in ${escapeHtml(familyLabel ?? "this category")}${data.entriesPeriod !== null ? ` (${academicYearLabel(data.entriesPeriod)})` : ""}`);
+          if (data.avgValue !== null) lines.push(`<strong>${data.avgValue.toFixed(1)}</strong> avg. point score${data.avgPeriod !== null ? ` (${academicYearLabel(data.avgPeriod)})` : ""}`);
+        } else if (effectiveColourMode === "grade_band") {
+          if (data.entriesValue !== null) {
+            lines.push(`<strong>${Math.round(data.entriesValue).toLocaleString()}</strong> ${ENTRIES_NOUN[stage]}${data.entriesPeriod !== null ? ` (${academicYearLabel(data.entriesPeriod)})` : ""}`);
+          }
+          if (data.avgValue !== null) {
+            const rank = rankByUrn.get(p.urn);
+            const rankText = rank !== undefined ? `, #${rank} of ${rankTotal} compared schools` : "";
+            lines.push(`<strong>${formatHeadlineValue(stage, data.avgValue)}</strong> ${HEADLINE_STAT_LABEL[stage]}${data.avgPeriod !== null ? ` (${academicYearLabel(data.avgPeriod)})` : ""}${rankText}`);
+          }
+        } else {
+          const badge = trendBadge(data.avgValue, data.anchorValue);
+          const magnitude = trendMagnitudeFor(stage, data.avgValue, data.anchorValue);
+          if (badge && magnitude) {
+            const noun = TREND_LABELS[badge.direction].noun;
+            const sign = magnitude.value > 0 ? "+" : "";
+            lines.push(`${noun} <strong>${sign}${magnitude.value.toFixed(0)}${magnitude.unit}</strong> in ${TREND_STAT_LABEL[stage]} since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`);
+          } else {
+            lines.push(`No real ${academicYearLabel(TREND_BASELINE_PERIOD[stage])} comparison`);
+          }
+        }
         const tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(p.name)}${isTarget ? " (this school)" : ""}</strong>${
-          statsLine ? `<br/>${statsLine}` : ""
+          lines.length > 0 ? `<br/>${lines.join("<br/>")}` : ""
         }</div>`;
 
         L.circleMarker([lat, lng], {
@@ -542,7 +635,9 @@ export default function AcademicMapView({
         mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
       }
     });
-  }, [mapReady, withCoords, minSize, maxSize, effectiveColourMode, familyId, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup, ks5Cohort]);
+  }, [mapReady, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, familyId, familyLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
+
+  const sizeCaption = stage === "ks2" ? `${HEADLINE_AGE.ks2}-year-olds` : stage === "ks4" ? "pupils entered for GCSEs" : ks5Cohort ? `${ks5Cohort} entries` : "pupils entered for Post-16 exams";
 
   return (
     <div ref={rootRef} className="vd-academic-map relative h-full w-full">
@@ -559,21 +654,22 @@ export default function AcademicMapView({
       `}</style>
       <div ref={mapElRef} className="h-full w-full" />
 
-      {/* Item 6: default colour-by mode is now Grade band, and the toggle itself moved
-          here, alongside ViewSwitcher, off the top-right stack. */}
-      <div className="absolute left-3 top-3 z-[1000] flex items-center gap-2">
+      {/* A3: colour-mode toggle moved back to the RIGHT overlay, under
+          PdfExportButton -- Rolls' own real Trend/Sector toggle position
+          (topRightStackRef, MapView.tsx). Round 2 had moved it to the left
+          overlay; that turned out not to match Rolls' actual layout once seen
+          live, so this supersedes it. Order reversed too: Grade band first,
+          then "Trends" (plural, matching the noun form used everywhere else). */}
+      <div className="absolute left-3 top-3 z-[1000] rounded-md bg-white shadow-sm dark:bg-neutral-950">
+        <ViewSwitcher active={activeView} onChange={onChangeView} />
+      </div>
+
+      <div ref={topRightStackRef} className="absolute right-3 top-3 z-[1000] flex flex-col items-end gap-2">
         <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
-          <ViewSwitcher active={activeView} onChange={onChangeView} />
+          <PdfExportButton />
         </div>
         {gradeBandAvailable && (
           <div className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-            <button
-              type="button"
-              onClick={() => setColourMode("trend")}
-              className={colourMode === "trend" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
-            >
-              Trend
-            </button>
             <button
               type="button"
               onClick={() => setColourMode("grade_band")}
@@ -581,30 +677,31 @@ export default function AcademicMapView({
             >
               Grade band
             </button>
+            <button
+              type="button"
+              onClick={() => setColourMode("trend")}
+              className={colourMode === "trend" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
+            >
+              Trends
+            </button>
           </div>
         )}
       </div>
 
-      <div ref={topRightStackRef} className="absolute right-3 top-3 z-[1000] flex flex-col items-end gap-2">
-        <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
-          <PdfExportButton />
-        </div>
-      </div>
-
-      {/* Item 3: colour legend moved to the same right-of-map, measured-gap position
-          Rolls' own map uses, with real scale labels -- no explanatory paragraph. */}
+      {/* Item 3 (round 2) / A2 (round 3): colour legend at the same right-of-map,
+          measured-gap position Rolls' own map uses, with real scale labels -- no
+          explanatory paragraph. */}
       {effectiveColourMode === "trend" ? (
         <TrendColourKey box={trendKeyBox} title="Growth" />
       ) : (
-        <GradeBandColourKey box={trendKeyBox} />
+        <GradeBandColourKey box={trendKeyBox} min={minGrade} max={maxGrade} stage={stage} />
       )}
 
-      {/* Item 4: real dot-size scale, bottom-left, same position/box treatment as
-          Rolls' own SizeLegend. The exclusion note (GCSE/KS5-cohort round) has no
-          Rolls precedent -- kept as its own stacked box directly below the size
-          scale, in the same corner, rather than folded back into a paragraph. */}
+      {/* Item 4 (round 2): real dot-size scale, bottom-left. The exclusion note
+          (GCSE/KS5-cohort round) has no Rolls precedent -- kept as its own stacked
+          box directly below the size scale, in the same corner. */}
       <div className="absolute bottom-3 left-3 z-[1000] flex max-w-xs flex-col gap-2">
-        <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} age={HEADLINE_AGE[stage]} />
+        <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} sizeCaption={sizeCaption} />
         {stage === "ks4" && (mapWholeGroupExcluded ? (
           <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
             {ks4ExclusionWholeGroupSentence(setLabel)}

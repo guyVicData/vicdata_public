@@ -42,6 +42,7 @@ import {
   HEADLINE_MEASURE,
   HEADLINE_LABEL,
   HEADLINE_UNIT,
+  HEADLINE_AGE,
   TREND_BASELINE_PERIOD,
   MINIMUM_SUBJECT_N,
   ks4ExclusionTargetSentence,
@@ -59,6 +60,9 @@ import {
   stageFamilies,
   familyYearsFor,
   latestFamilyYear,
+  populationAtAge,
+  entriesSeries,
+  latestEntriesCount,
   type AcademicSchoolProfile,
   type AcademicFamilyYear,
   type KsStage,
@@ -66,11 +70,16 @@ import {
   type SubjectEntry,
   type SubjectValueAdded,
 } from "@/lib/academic-data-view";
+import { CURRENT_CENSUS_PERIOD } from "@/lib/roll-data";
 import { spreadData, trendBadge } from "@/lib/data-view-cards";
+import { TREND_LABELS } from "@/lib/trend-labels";
+import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
 import { academicYearLabel } from "./TrendPill";
 import SpreadStrip from "./SpreadStrip";
 import DivergingBarChart from "./DivergingBarChart";
 import SortedBarChart from "./SortedBarChart";
+import TargetRollBarChart from "./TargetRollBarChart";
+import { Card, SectionHeading } from "./GraphsView";
 
 // Round 2, Part B: a small, self-contained N-slice donut for the entries-share
 // breakdown (spec §4, "echoes the gender donut") -- GenderSplitCard.tsx's own Donut is
@@ -209,6 +218,19 @@ export default function AcademicGraphsView({
   // Local, not lifted -- this component already remounts (its parent's
   // DataViewErrorBoundary key) whenever stage/family changes, so this resets for free.
   const [subject, setSubject] = useState<string | null>(null);
+  // Round 3, Part B: three independently-collapsible sections, all open by default
+  // (SectionHeading's own established convention, ported from Rolls' GraphsView.tsx)
+  // -- an EMPTY closed-set, unlike Rolls' own Section 01-open/02-04-closed default,
+  // per this brief's own explicit "mirroring SectionHeading's own 'all open by
+  // default' behaviour" instruction.
+  const [closedSections, setClosedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (id: string) =>
+    setClosedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   // KS5 qualification-type-awareness round, Part 4: group-comparison sections
   // (spread/growth/trend/same-year bar) key their measure on the selected cohort.
@@ -349,153 +371,227 @@ export default function AcademicGraphsView({
     ? subjectData.valueAdded.filter((v) => v.subject === subject && v.period === Math.max(...subjectData.valueAdded.filter((x) => x.subject === subject).map((x) => x.period), -Infinity))
     : [];
 
+  // Round 3, Part B, Section 1 (Entries): real per-school candidate/entries counts --
+  // A1's own real GCSE/Post-16 entries figures (entriesSeries), roll population for
+  // KS2 (the SAME source the map now uses, not a second computation -- KS2 has no
+  // real multi-year population series on this profile shape at all, see
+  // entriesSeries' own comment, so its own "series" is a single real current point,
+  // which TargetRollBarChart already renders honestly as "not enough real history to
+  // plot a trend" rather than a fabricated line).
+  const targetEntriesSeries = stage === "ks2" ? [] : entriesSeries(targetProfile, stage, ks5Cohort);
+  const entriesPeriods = stage === "ks2" ? [CURRENT_CENSUS_PERIOD] : targetEntriesSeries.map((r) => r.period);
+  const entriesValues: (number | null)[] =
+    stage === "ks2" ? [populationAtAge(targetProfile, HEADLINE_AGE.ks2)] : targetEntriesSeries.map((r) => r.value);
+  const entriesFirst = entriesValues.find((v): v is number => v !== null) ?? null;
+  const entriesLast = [...entriesValues].reverse().find((v): v is number => v !== null) ?? null;
+  const entriesTrendBadge = entriesFirst !== null && entriesLast !== null ? trendBadge(entriesLast, entriesFirst) : null;
+  const entriesNoun = stage === "ks2" ? `${HEADLINE_AGE.ks2}-year-olds` : stage === "ks4" ? "pupils entered for GCSEs" : "pupils entered for Post-16 exams";
+
+  // Right panel: the comparison set's own real candidate numbers, latest real year --
+  // same comparableGroup (GCSE-exclusion/KS5-cohort-exclusion aware) every other
+  // group chart on this page already uses.
+  const entriesBarPoints = comparableGroup.map((p) => ({
+    urn: p.urn,
+    name: p.name,
+    isTarget: p.urn === targetProfile.urn,
+    value: (stage === "ks2" ? populationAtAge(p, HEADLINE_AGE.ks2) : latestEntriesCount(p, stage, ks5Cohort)?.value) ?? 0,
+  }));
+
   return (
     <div className="space-y-8">
+      {/* Round 3, Part B: three independently-collapsible sections, reusing Rolls'
+          own real SectionHeading/Card/FullscreenChartModal directly (GraphsView.tsx)
+          rather than a rebuilt lookalike. */}
       <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Overview — {targetHeadlineLabel}</h3>
-        {ks4TargetExcluded ? (
-          <p className="text-sm text-neutral-700 dark:text-neutral-300">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
-        ) : targetCurrent !== null ? (
-          <>
-            <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">{formatHeadline(stage, targetCurrent)}</p>
-            <p className="mt-1 text-sm text-neutral-500">
-              {targetTrendBadge
-                ? `${targetTrendBadge.direction === "up" ? "▲" : targetTrendBadge.direction === "down" ? "▼" : "▬"} ${Math.abs(targetTrendBadge.pctChange).toFixed(0)}% since ${academicYearLabel(baseline)}`
-                : `no ${academicYearLabel(baseline)} comparison`}
-            </p>
-          </>
-        ) : (
-          <p className="text-sm text-neutral-500">No real data available for this school under this key stage.</p>
-        )}
-        {!ks4TargetExcluded && (anyGroupNote || spread) && (
-          <div className="mt-4">
-            {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
-            {spread && (
-              <>
-                <SpreadStrip min={spread.min} max={spread.max} points={spread.points} formatValue={(v) => formatHeadline(stage, v)} />
-                {targetCurrent !== null && groupAverage !== null && groupAverage !== 0 && (
-                  <p className="mt-1 text-xs text-neutral-500">
-                    {Math.abs(((targetCurrent - groupAverage) / groupAverage) * 100).toFixed(0)}% {targetCurrent >= groupAverage ? "above" : "below"} the average of{" "}
-                    {formatHeadline(stage, groupAverage)} for {setLabel}
-                    {/* KS5 qualification-type-awareness round: this spread strip is
-                        keyed on the SELECTED cohort (Part 4), which can genuinely
-                        differ from the big number above (the target's own auto-
-                        detected dominant cohort, Part 3) -- named explicitly here so
-                        the two never read as the same figure when they aren't. */}
-                    {stage === "ks5" && ` (${groupHeadlineLabel})`}
-                  </p>
-                )}
-              </>
-            )}
+        <SectionHeading number="01" title="Entries" isOpen={!closedSections.has("01")} onToggle={() => toggleSection("01")} />
+        {!closedSections.has("01") && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card title={`${targetProfile.name}'s candidate numbers since ${entriesPeriods.length > 0 ? academicYearLabel(entriesPeriods[0]) : "the start of the series"}`}>
+              <TargetRollBarChart periods={entriesPeriods} values={entriesValues} colour={FOCUS_SCHOOL_COLOUR} />
+              {/* Same real noun-form wording (trend-labels.ts, A4) as the Map's own
+                  trend popup -- one shared module, not a second inline copy. */}
+              {entriesTrendBadge && (
+                <p className="mt-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  {TREND_LABELS[entriesTrendBadge.direction].adjective} ({entriesTrendBadge.pctChange >= 0 ? "+" : ""}
+                  {entriesTrendBadge.pctChange.toFixed(0)}% since {academicYearLabel(entriesPeriods[0] ?? baseline)})
+                </p>
+              )}
+            </Card>
+            <Card title={`Candidate numbers${entriesPeriods.length > 0 ? `, ${academicYearLabel(entriesPeriods[entriesPeriods.length - 1])}` : ""} — ${targetProfile.name} vs ${setLabel}`}>
+              <SortedBarChart points={entriesBarPoints} />
+              <p className="mt-2 text-xs text-neutral-400">{entriesNoun}, real DfE entries counts (roll population for KS2, which DfE doesn&rsquo;t publish an entries figure for).</p>
+            </Card>
           </div>
         )}
       </section>
 
       <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Growth / decline since {academicYearLabel(baseline)}</h3>
-        {anyWholeGroupExcluded ? (
-          <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
-        ) : (
+        <SectionHeading number="02" title="Results" isOpen={!closedSections.has("02")} onToggle={() => toggleSection("02")} />
+        {!closedSections.has("02") && (
           <>
-            {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
-            <p className="mb-2 text-xs text-neutral-500">Change in {groupHeadlineLabel}, across {setLabel}.</p>
-            <DivergingBarChart points={growthPoints} />
-          </>
-        )}
-      </section>
+            {/* Round 3, Part B design call (not explicitly placed by the brief's own
+                3-section spec): the existing headline number/spread strip and the
+                two-line target-vs-average trend chart are real, useful content this
+                restructure doesn't ask to remove -- kept here as this section's own
+                "overall results summary" introduction, above the two new/relocated
+                charts the brief DOES explicitly place in this section. Named here
+                rather than silently dropped or silently left floating outside every
+                section. */}
+            <div className="mb-6">
+              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{targetHeadlineLabel}</h4>
+              {ks4TargetExcluded ? (
+                <p className="text-sm text-neutral-700 dark:text-neutral-300">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
+              ) : targetCurrent !== null ? (
+                <>
+                  <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">{formatHeadline(stage, targetCurrent)}</p>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    {targetTrendBadge
+                      ? `${targetTrendBadge.direction === "up" ? "▲" : targetTrendBadge.direction === "down" ? "▼" : "▬"} ${Math.abs(targetTrendBadge.pctChange).toFixed(0)}% since ${academicYearLabel(baseline)}`
+                      : `no ${academicYearLabel(baseline)} comparison`}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-neutral-500">No real data available for this school under this key stage.</p>
+              )}
+              {!ks4TargetExcluded && (anyGroupNote || spread) && (
+                <div className="mt-4">
+                  {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
+                  {spread && (
+                    <>
+                      <SpreadStrip min={spread.min} max={spread.max} points={spread.points} formatValue={(v) => formatHeadline(stage, v)} />
+                      {targetCurrent !== null && groupAverage !== null && groupAverage !== 0 && (
+                        <p className="mt-1 text-xs text-neutral-500">
+                          {Math.abs(((targetCurrent - groupAverage) / groupAverage) * 100).toFixed(0)}% {targetCurrent >= groupAverage ? "above" : "below"} the average of{" "}
+                          {formatHeadline(stage, groupAverage)} for {setLabel}
+                          {stage === "ks5" && ` (${groupHeadlineLabel})`}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+              {!anyWholeGroupExcluded && allPeriods.length > 0 && (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs text-neutral-500">
+                    {targetProfile.name}&rsquo;s {groupHeadlineLabel} compared with the average of {setLabel}, {academicYearLabel(allPeriods[0])}–{academicYearLabel(allPeriods[allPeriods.length - 1])}.
+                  </p>
+                  <TargetVsAverageTrend periods={allPeriods} targetSeries={targetSeries} averageSeries={averageSeries} />
+                </div>
+              )}
+            </div>
 
-      <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Context over time</h3>
-        {anyWholeGroupExcluded ? (
-          <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
-        ) : (
-          <>
-            {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
-            <p className="mb-2 text-xs text-neutral-500">
-              {targetProfile.name}&rsquo;s {groupHeadlineLabel} compared with the average of {setLabel}, {allPeriods.length > 0 ? `${academicYearLabel(allPeriods[0])}–${academicYearLabel(allPeriods[allPeriods.length - 1])}` : ""}.
-            </p>
-            <TargetVsAverageTrend periods={allPeriods} targetSeries={targetSeries} averageSeries={averageSeries} />
-            {latestPeriod !== null && (
-              <div className="mt-4">
-                <p className="mb-2 text-xs text-neutral-500">
-                  {groupHeadlineLabel}, {academicYearLabel(latestPeriod)} — {targetProfile.name} compared with {setLabel}.
-                </p>
-                <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
-              </div>
-            )}
+            {/* Part B's own explicit 50:50 two-column ask: left, the overall results
+                summary bar chart (school vs comparison set, latest real year -- the
+                same real same-year bar chart the old "Context over time" section
+                already computed, promoted here); right, the growth/decline chart,
+                moved into this position unchanged. */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Card title={latestPeriod !== null ? `${groupHeadlineLabel}, ${academicYearLabel(latestPeriod)} — ${targetProfile.name} vs ${setLabel}` : "Results summary"}>
+                {anyWholeGroupExcluded ? (
+                  <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
+                ) : latestPeriod !== null ? (
+                  <>
+                    {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
+                    <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
+                  </>
+                ) : (
+                  <p className="text-sm text-neutral-500">No real data available for this key stage.</p>
+                )}
+              </Card>
+              <Card title={`Growth / decline since ${academicYearLabel(baseline)}`}>
+                {anyWholeGroupExcluded ? (
+                  <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
+                ) : (
+                  <>
+                    {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
+                    <p className="mb-2 text-xs text-neutral-500">Change in {groupHeadlineLabel}, across {setLabel}.</p>
+                    <DivergingBarChart points={growthPoints} />
+                  </>
+                )}
+              </Card>
+            </div>
           </>
         )}
       </section>
 
       {familyId && familyLabel && (
         <section>
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Subject/family breakdown — {familyLabel}</h3>
+          <SectionHeading number="03" title="Subjects" isOpen={!closedSections.has("03")} onToggle={() => toggleSection("03")} />
+          {/* Part B's own explicit instruction for this section: relocate the
+              existing subject-family content as-is -- "for now, just make the
+              existing subject graphs visible here... then I will refine." Not
+              redesigned beyond moving it under its own collapsible section. */}
+          {!closedSections.has("03") && (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{familyLabel}</h4>
 
-          <div className="mb-4">
-            <p className="mb-2 text-xs text-neutral-500">
-              {targetFamilyYear ? `${targetFamilyYear.entriesSharePercent ?? "—"}% of ${targetProfile.name}'s ${STAGE_ENTRY_NOUN[stage]} in ${academicYearLabel(targetFamilyYear.period)} were in ${familyLabel}.` : `No real entries data for ${familyLabel} at this school.`}
-            </p>
-            <EntriesShareDonut families={stageFamiliesLatest(targetProfile, stage)} highlightFamilyId={familyId} />
-          </div>
-
-          {familyPointScoreAvailable ? (
-            <>
               <div className="mb-4">
                 <p className="mb-2 text-xs text-neutral-500">
-                  Average point score per entry in {familyLabel}, {targetFamilyYear ? academicYearLabel(targetFamilyYear.period) : ""} — {targetProfile.name} compared with {setLabel}.
+                  {targetFamilyYear ? `${targetFamilyYear.entriesSharePercent ?? "—"}% of ${targetProfile.name}'s ${STAGE_ENTRY_NOUN[stage]} in ${academicYearLabel(targetFamilyYear.period)} were in ${familyLabel}.` : `No real entries data for ${familyLabel} at this school.`}
                 </p>
-                {familyBarPointsWithScore.length > 0 ? (
-                  <SortedBarChart points={familyBarPointsWithScore.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.isTarget, value: p.avgPointScore }))} formatValue={(v) => v.toFixed(1)} />
-                ) : (
-                  <p className="text-sm text-neutral-500">No real point-score data for {familyLabel} across this set.</p>
-                )}
+                <EntriesShareDonut families={stageFamiliesLatest(targetProfile, stage)} highlightFamilyId={familyId} />
               </div>
-              <div>
-                <p className="mb-2 text-xs text-neutral-500">
-                  {familyFirstScore !== null && familyLastScore !== null
-                    ? `${targetProfile.name}'s average point score in ${familyLabel} has ${familyLastScore >= familyFirstScore ? "risen" : "fallen"} from ${familyFirstScore.toFixed(1)} to ${familyLastScore.toFixed(1)} since ${academicYearLabel(baseline)}.`
-                    : `Not enough real history to show a trend for ${familyLabel} yet.`}
+
+              {familyPointScoreAvailable ? (
+                <>
+                  <div className="mb-4">
+                    <p className="mb-2 text-xs text-neutral-500">
+                      Average point score per entry in {familyLabel}, {targetFamilyYear ? academicYearLabel(targetFamilyYear.period) : ""} — {targetProfile.name} compared with {setLabel}.
+                    </p>
+                    {familyBarPointsWithScore.length > 0 ? (
+                      <SortedBarChart points={familyBarPointsWithScore.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.isTarget, value: p.avgPointScore }))} formatValue={(v) => v.toFixed(1)} />
+                    ) : (
+                      <p className="text-sm text-neutral-500">No real point-score data for {familyLabel} across this set.</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs text-neutral-500">
+                      {familyFirstScore !== null && familyLastScore !== null
+                        ? `${targetProfile.name}'s average point score in ${familyLabel} has ${familyLastScore >= familyFirstScore ? "risen" : "fallen"} from ${familyFirstScore.toFixed(1)} to ${familyLastScore.toFixed(1)} since ${academicYearLabel(baseline)}.`
+                        : `Not enough real history to show a trend for ${familyLabel} yet.`}
+                    </p>
+                    <TargetVsAverageTrend periods={allPeriods} targetSeries={familyTargetSeries} averageSeries={allPeriods.map(() => null)} />
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-neutral-500">
+                  Not enough of {familyLabel}&rsquo;s qualifications currently convert to a comparable point score to show one here — this is a data gap we&rsquo;re working on, not a
+                  sign {targetProfile.name} has no entries in this area.
                 </p>
-                <TargetVsAverageTrend periods={allPeriods} targetSeries={familyTargetSeries} averageSeries={allPeriods.map(() => null)} />
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-neutral-500">
-              Not enough of {familyLabel}&rsquo;s qualifications currently convert to a comparable point score to show one here — this is a data gap we&rsquo;re working on, not a
-              sign {targetProfile.name} has no entries in this area.
-            </p>
-          )}
+              )}
 
-          {subjectNames.length > 0 && (
-            <div className="mt-6">
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                Subject
-                <select
-                  className="ml-2 rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal normal-case text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
-                  value={subject ?? ""}
-                  onChange={(e) => setSubject(e.target.value || null)}
-                >
-                  <option value="">Choose a subject…</option>
-                  {subjectNames.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {/* Real, flagged approximation (this file's own header comment): not
-                  filtered to the family selected above -- every real subject for this
-                  stage is offered, regardless of category. */}
-              <p className="mb-3 text-xs text-neutral-400">Not yet filtered to {familyLabel} specifically — every real subject for {STAGE_LABEL_SHORT[stage]} is listed.</p>
+              {subjectNames.length > 0 && (
+                <div className="mt-6">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Subject
+                    <select
+                      className="ml-2 rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal normal-case text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                      value={subject ?? ""}
+                      onChange={(e) => setSubject(e.target.value || null)}
+                    >
+                      <option value="">Choose a subject…</option>
+                      {subjectNames.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {/* Real, flagged approximation (this file's own header comment): not
+                      filtered to the family selected above -- every real subject for this
+                      stage is offered, regardless of category. */}
+                  <p className="mb-3 text-xs text-neutral-400">Not yet filtered to {familyLabel} specifically — every real subject for {STAGE_LABEL_SHORT[stage]} is listed.</p>
 
-              {subject && (
-                <SubjectTable
-                  subject={subject}
-                  schoolName={targetProfile.name}
-                  entryRow={subjectLatestEntry}
-                  valueAddedRows={subjectValueAddedRows}
-                  ksStage={stage}
-                />
+                  {subject && (
+                    <SubjectTable
+                      subject={subject}
+                      schoolName={targetProfile.name}
+                      entryRow={subjectLatestEntry}
+                      valueAddedRows={subjectValueAddedRows}
+                      ksStage={stage}
+                    />
+                  )}
+                </div>
               )}
             </div>
           )}
