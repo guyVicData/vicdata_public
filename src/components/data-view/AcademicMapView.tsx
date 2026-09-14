@@ -28,7 +28,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { bngToLatLng } from "@/lib/bng";
 import { trendColour, gradeBandColour, GRADE_BAND_LEGEND_STOPS, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
 import { trendBadge, rankDescendingWithTies } from "@/lib/data-view-cards";
-import { TREND_LABELS } from "@/lib/trend-labels";
 import type { ViewKey } from "@/lib/data-view-types";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
@@ -36,7 +35,6 @@ import {
   HEADLINE_MEASURE,
   HEADLINE_UNIT,
   HEADLINE_AGE,
-  GRADE_BAND_MEASURE,
   TREND_BASELINE_PERIOD,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
@@ -45,10 +43,9 @@ import {
   ks5CohortWholeGroupSentence,
   ks5MeasureFor,
   headlineValueAt,
-  latestYear,
   latestMeasureAt,
   latestEntriesCount,
-  trendMagnitudeFor,
+  trendWordingFor,
   TREND_STAT_LABEL,
   stageYears,
   populationAtAge,
@@ -199,8 +196,18 @@ function GradeBandColourKey({ box, min, max, stage }: { box: { top: number; heig
     { t: 1, value: min },
   ];
   return (
-    <div className="absolute right-[10px] z-[1000] w-[56px]" style={{ top: box.top }}>
-      <p className="mb-0.5 text-right text-[9px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400" style={{ height: TREND_KEY_TITLE_HEIGHT }}>
+    // Colour bug round, item 3: confirmed by measuring the real rendered title --
+    // "GRADE BAND" (uppercase + tracking-wide adds real letter-spacing) at 9px in
+    // the old 56px-wide box genuinely doesn't fit on one line, wraps, and the title
+    // `<p>`'s own FIXED height (TREND_KEY_TITLE_HEIGHT, shared with Trend's own
+    // single-word key) doesn't clip the overflow -- the second line pushes straight
+    // down into the gradient bar, exactly as reported. Fixed both ways at once
+    // (belt and braces, not either/or): `whitespace-nowrap` makes a second line
+    // structurally impossible rather than just reserving more room for one, and the
+    // box is widened further (56px -> 68px) so the single line has real room next
+    // to Trend's own narrower key, not just barely fitting.
+    <div className="absolute right-[10px] z-[1000] w-[68px]" style={{ top: box.top }}>
+      <p className="mb-0.5 whitespace-nowrap text-right text-[9px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400" style={{ height: TREND_KEY_TITLE_HEIGHT }}>
         Grade band
       </p>
       <div className="relative ml-auto w-[26px] rounded-sm shadow-sm" style={{ height: barHeight, background: `linear-gradient(to bottom, ${gradient})` }}>
@@ -254,7 +261,6 @@ type RowData = {
   anchorValue: number | null;
   entriesValue: number | null;
   entriesPeriod: number | null;
-  gradeValue: number | null;
   size: number | null;
 };
 
@@ -365,7 +371,6 @@ export default function AcademicMapView({
           anchorValue: anchor,
           entriesValue: fy?.entriesTotal ?? null,
           entriesPeriod: fy?.period ?? null,
-          gradeValue: null,
           size: fy?.entriesTotal ?? null,
         });
         continue;
@@ -378,37 +383,24 @@ export default function AcademicMapView({
       const entries = stage === "ks2" ? null : latestEntriesCount(p, stage, ks5Cohort);
       const size = stage === "ks2" ? populationAtAge(p, age) : (entries?.value ?? null);
 
-      // A5's own real fix, applied here: aab_percent (GRADE_BAND_MEASURE.ks5) is
-      // genuinely only a real DfE field for the "A level" cohort -- confirmed
-      // directly, no equivalent threshold field exists for Academic/Applied general/
-      // Tech level/Technical certificate. When this row's own resolved cohort (an
-      // explicit selection, or this school's own real dominant cohort in the default
-      // state) IS "A level", grade band colours by the real aab_percent, at the SAME
-      // real period the headline figure itself was found at. Every other resolved
-      // cohort falls back to the real headline value already computed above -- still
-      // a real, min-max-normalised value-based colour, not a fabricated one, just not
-      // an AAB-specific one. ks2/ks4 are unaffected (no cohort dimension at all,
-      // always use their own single real GRADE_BAND_MEASURE).
-      let gradeValue: number | null;
-      if (stage === "ks5") {
-        const resolvedCohort = rowKs5?.cohort ?? null;
-        if (resolvedCohort === "A level" && headline) {
-          gradeValue = headlineValueAt(years, headline.period, GRADE_BAND_MEASURE.ks5);
-        } else {
-          gradeValue = headline?.value ?? null;
-        }
-      } else {
-        const y = latestYear(years);
-        gradeValue = y ? headlineValueAt(years, y.period, GRADE_BAND_MEASURE[stage]) : null;
-      }
-
+      // Map colour bug round, items 1-2's real fix: grade band's colour source is
+      // now the SAME real value the popup/Rankings/Overview already show
+      // (`headline`, resolved via rowMeasureKey exactly as A5's own per-cohort
+      // fallback already did) -- there is no separate `gradeValue` any more. This
+      // drops the standalone `GRADE_BAND_MEASURE` "higher bar" threshold idea from
+      // the map's colour mode entirely (a real, deliberate product change -- see
+      // this round's own build report for the before/after and why: it was a
+      // genuinely different real DfE measure per stage from what's displayed,
+      // which is exactly why the colour never tracked the number next to it, and
+      // for KS4/KS5 also carried a second, compounding "%" unit-formatting bug
+      // that goes away with it since colour and popup now share one real number
+      // AND one real unit, everywhere).
       map.set(p.urn, {
         avgValue: headline?.value ?? null,
         avgPeriod: headline?.period ?? null,
         anchorValue: anchor,
         entriesValue: entries?.value ?? null,
         entriesPeriod: entries?.period ?? null,
-        gradeValue,
         size,
       });
     }
@@ -416,13 +408,17 @@ export default function AcademicMapView({
   }, [withCoords, familyId, stage, ks5Cohort]);
 
   // Map round 2, item 4 / round 3 A2: hoisted so both legends and the drawing effect
-  // share the SAME real min/max, never recomputed twice.
+  // share the SAME real min/max, never recomputed twice. Colour bug round, items
+  // 1-2: grade band's own min/max is now over the SAME `avgValue` the popup shows
+  // (there is no separate grade-band value any more), so the legend's own real
+  // scale labels and the circle colours can never disagree about which number
+  // they're both scaled against.
   const { minSize, maxSize, minGrade, maxGrade } = useMemo(() => {
     const sizes: number[] = [];
     const grades: number[] = [];
     for (const d of rowDataByUrn.values()) {
       if (d.size !== null && d.size > 0) sizes.push(d.size);
-      if (d.gradeValue !== null) grades.push(d.gradeValue);
+      if (d.avgValue !== null) grades.push(d.avgValue);
     }
     return {
       minSize: sizes.length > 0 ? Math.min(...sizes) : 1,
@@ -583,8 +579,8 @@ export default function AcademicMapView({
         if (effectiveColourMode === "trend") {
           const badge = trendBadge(data.avgValue, data.anchorValue);
           if (badge) colour = trendColour(badge.pctChange);
-        } else if (data.gradeValue !== null) {
-          colour = gradeBandColour(data.gradeValue, minGrade, maxGrade);
+        } else if (data.avgValue !== null) {
+          colour = gradeBandColour(data.avgValue, minGrade, maxGrade);
         }
 
         // A4: real popup rewrite -- bold key numbers, one stat per line, a real date
@@ -606,12 +602,15 @@ export default function AcademicMapView({
             lines.push(`<strong>${formatHeadlineValue(stage, data.avgValue)}</strong> ${HEADLINE_STAT_LABEL[stage]}${data.avgPeriod !== null ? ` (${academicYearLabel(data.avgPeriod)})` : ""}${rankText}`);
           }
         } else {
-          const badge = trendBadge(data.avgValue, data.anchorValue);
-          const magnitude = trendMagnitudeFor(stage, data.avgValue, data.anchorValue);
-          if (badge && magnitude) {
-            const noun = TREND_LABELS[badge.direction].noun;
-            const sign = magnitude.value > 0 ? "+" : "";
-            lines.push(`${noun} <strong>${sign}${magnitude.value.toFixed(0)}${magnitude.unit}</strong> in ${TREND_STAT_LABEL[stage]} since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`);
+          // Map colour bug round, item 4: one shared computation (trendWordingFor,
+          // academic-data-view.ts) decides pp-vs-ratio wording and computes it --
+          // no local direction/magnitude split here any more, so this popup and
+          // Rankings' Trend tile can't disagree about which word goes with which
+          // number.
+          const wording = trendWordingFor(stage, data.avgValue, data.anchorValue);
+          if (wording) {
+            const sign = wording.magnitude.value > 0 ? "+" : "";
+            lines.push(`${wording.label} <strong>${sign}${wording.magnitude.value.toFixed(0)}${wording.magnitude.unit}</strong> in ${TREND_STAT_LABEL[stage]} since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`);
           } else {
             lines.push(`No real ${academicYearLabel(TREND_BASELINE_PERIOD[stage])} comparison`);
           }

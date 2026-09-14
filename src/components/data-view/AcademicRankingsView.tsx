@@ -30,13 +30,12 @@ import {
   headlineValueAt,
   latestYear,
   stageYears,
-  trendMagnitudeFor,
+  trendWordingFor,
   type AcademicSchoolProfile,
   type KsStage,
   type Ks5Cohort,
 } from "@/lib/academic-data-view";
 import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, type RankedEntry } from "@/lib/data-view-cards";
-import { TREND_LABELS } from "@/lib/trend-labels";
 import { academicYearLabel } from "./TrendPill";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
@@ -163,11 +162,11 @@ export default function AcademicRankingsView({
   // Part C, "Trend" tile: the target's own real change since baseline, on its own
   // resolved measure (measureKeyFor(targetProfile) -- same "always the target's own
   // real cohort" rule the Map's popup and Graphs' Part 3 Overview number already
-  // follow). trendMagnitudeFor/TREND_STAT_LABEL are the SAME shared functions/labels
-  // A4's Map popup uses -- one real computation, not a second one here.
+  // follow). trendWordingFor is the SAME shared computation the Map's own trend
+  // popup uses (colour bug round, item 4) -- one real decision of which wording
+  // system (absolute pp tiers vs. ratio-based) applies, not a second one here.
   const targetAnchorValue = headlineValueAt(stageYears(targetProfile, stage), baseline, measureKeyFor(targetProfile));
-  const targetTrendBadge = trendBadge(targetCurrentValue, targetAnchorValue);
-  const targetTrendMagnitude = trendMagnitudeFor(stage, targetCurrentValue, targetAnchorValue);
+  const targetTrendWording = trendWordingFor(stage, targetCurrentValue, targetAnchorValue);
   const allPeriods = Array.from(new Set(groupInScope.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
     .filter((p) => p >= Math.max(startPeriod, baseline))
     .sort((a, b) => a - b);
@@ -215,12 +214,12 @@ export default function AcademicRankingsView({
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Trend</h3>
           {ks4TargetExcluded ? (
             <p className="text-sm text-neutral-600 dark:text-neutral-400">{ks4ExclusionTargetSentence(targetProfile.name, false)}</p>
-          ) : targetTrendBadge && targetTrendMagnitude ? (
+          ) : targetTrendWording ? (
             <>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
-                {TREND_LABELS[targetTrendBadge.direction].noun} {targetTrendMagnitude.value > 0 ? "+" : ""}
-                {targetTrendMagnitude.value.toFixed(0)}
-                {targetTrendMagnitude.unit}
+                {targetTrendWording.label} {targetTrendWording.magnitude.value > 0 ? "+" : ""}
+                {targetTrendWording.magnitude.value.toFixed(0)}
+                {targetTrendWording.magnitude.unit}
               </p>
               <p className="mt-1 text-xs text-neutral-500">
                 in {TREND_STAT_LABEL[stage]} since {academicYearLabel(baseline)}

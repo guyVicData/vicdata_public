@@ -15,6 +15,8 @@ import { createServerAnonSupabaseClient } from "./supabase";
 import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicKs5QualificationFlags, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
 import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "./roll-data";
+import { trendBadge } from "./data-view-cards";
+import { TREND_LABELS, PP_TREND_LABELS, classifyPpTrend } from "./trend-labels";
 
 export type KsStage = "ks2" | "ks4" | "ks5";
 
@@ -260,6 +262,29 @@ export function trendMagnitudeFor(stage: KsStage, current: number | null, anchor
   if (HEADLINE_UNIT[stage] === "percent") return { value: current - anchor, unit: "pp" };
   if (anchor === 0) return null;
   return { value: ((current - anchor) / anchor) * 100, unit: "%" };
+}
+
+// Map colour bug round, item 4: the ONE shared place that decides which wording
+// system applies AND computes it -- the Map's own trend popup and Rankings' Trend
+// tile both call this rather than each re-deciding pp-vs-ratio for itself, so they
+// can't drift. `trendMagnitudeFor`'s own unit is the real signal: "pp" (percent-unit
+// stages only, KS2's headline trend today) reads off the new absolute 7-tier scheme
+// (trend-labels.ts's classifyPpTrend/PP_TREND_LABELS) keyed on the SAME magnitude
+// value being displayed, so the word and the number can never disagree again; "%"
+// (points-unit stages, GCSE/Post-16) is untouched -- still trendBadge()'s own
+// ratio-based direction/TREND_LABELS noun, confirmed the right call for those (no
+// natural "point" unit exists for a points-scale measure the way there is for a
+// percent one). Returns null when there's no real comparison to make (either
+// function's own honest-absence rule), same as before.
+export function trendWordingFor(stage: KsStage, current: number | null, anchor: number | null): { label: string; magnitude: { value: number; unit: "pp" | "%" } } | null {
+  const magnitude = trendMagnitudeFor(stage, current, anchor);
+  if (!magnitude) return null;
+  if (magnitude.unit === "pp") {
+    return { label: PP_TREND_LABELS[classifyPpTrend(magnitude.value)], magnitude };
+  }
+  const badge = trendBadge(current, anchor);
+  if (!badge) return null;
+  return { label: TREND_LABELS[badge.direction].noun, magnitude };
 }
 
 // KS5 qualification-type-awareness round: the real exam_cohort names DfE publishes at
