@@ -1600,13 +1600,15 @@ export default function DataViewShell({ urn }: { urn: string }) {
             authToken={authToken}
             nearestOption={resolvedNearestOption}
             homeLaOption={recipeLists?.list2 ?? null}
-            // Part C's explicit scope boundary: no Region/Nation-scale Academic
-            // Rankings this round. Rather than a separate flag, Region/Nation are
-            // simply never OFFERED as selectable SetOptions while the Academic tab is
-            // active -- the sidebar itself is topic-agnostic (§ above), this is the
-            // one deliberate exception.
-            regionOption={activeTopic === "academic" ? null : regionOption}
-            nationOption={activeTopic === "academic" ? null : nationOption}
+            // Region/Nation comparator round 2: Region/Nation are now real, selectable
+            // SetOptions for Academic too -- the one deliberate exception that used to
+            // null these out while the Academic tab was active (`activeTopic ===
+            // "academic" ? null : ...`) is reversed now that academic_region_nation_
+            // rank() and all three Academic display surfaces (Map/Graphs/Rankings) are
+            // ready to receive a real large set. The sidebar itself is topic-agnostic
+            // and was always shared (§ above) -- this was the one place it wasn't.
+            regionOption={regionOption}
+            nationOption={nationOption}
             savedSets={savedSets}
             activeSet={activeSet}
             onSelectSet={(opt) => {
@@ -1682,6 +1684,18 @@ export default function DataViewShell({ urn }: { urn: string }) {
           isActiveTopic={activeTopic === "academic"}
           stageSwitcherSlot={stageSwitcherSlot}
           onHasAnyData={setAcademicHasData}
+          // Region/Nation comparator round 2: the SAME three values already computed
+          // above for Rolls' own large-set path -- isLargeSet/currentLargeSetRankScopeKey/
+          // isRegionOrNationScope are all derived from the shared `activeSet` alone
+          // (topic-agnostic), so Academic reuses them directly rather than re-deriving
+          // an Academic-specific copy. AcademicDataView does its own fetching from here
+          // (same established pattern as its academic-schools/academic-subject fetches),
+          // rather than DataViewShell orchestrating a parallel academicLargeSetRank
+          // effect the way it does for Rolls -- Academic already owns its own effectiveStage
+          // state, which the ranking fetch needs and DataViewShell never lifts.
+          isLargeSet={isLargeSet}
+          regionNationScopeKey={currentLargeSetRankScopeKey}
+          isRegionOrNationScope={isRegionScope(activeSet) || isNationScope(activeSet)}
         />
         <div hidden={activeTopic !== "rolls"} className="flex min-w-0 flex-1 flex-col">
           {/* 2026-09-05: Map view v1 (per direct request) treats the map as a full

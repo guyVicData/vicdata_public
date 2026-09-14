@@ -23,12 +23,27 @@
 // the popup copy (bold figures, one stat per line, real per-stat dates, a real rank);
 // A5 fixes Post-16's grade band being silently unavailable outside the "A level"
 // cohort -- see that section below for the real root cause found.
+//
+// LA/Region choropleth (new feature, round 1 of 2): a standalone "View by area"
+// toggle, independent of the ticked/comparator set entirely -- switches from
+// individual school circles to a real LA-level (zoomed in) or Region-level (zoomed
+// out) choropleth of the CURRENT stage's own real HEADLINE_MEASURE, connecting two
+// real, already-existing, previously-unconnected pieces (Rolls' own choropleth
+// geometry, Academic's own academic_geography_aggregate data -- see
+// academic-geography-choropleth.ts for the real join/data-layer detail). Reuses
+// gradeBandColour/GRADE_BAND_LEGEND_STOPS for the choropleth's own fill -- the SAME
+// real colour language the point map's own Grade band mode uses, not a third scale.
+// KS2 is not supported (academic_geography_aggregate has no real KS2 data at all,
+// confirmed at that table's own creation) -- the toggle is hidden for KS2 and
+// whenever a Category (familyId) is selected (this round's own real scope: whole-
+// school only, no family-level geography data wired in yet).
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { bngToLatLng } from "@/lib/bng";
 import { trendColour, gradeBandColour, GRADE_BAND_LEGEND_STOPS, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
 import { trendBadge, rankDescendingWithTies } from "@/lib/data-view-cards";
 import type { ViewKey } from "@/lib/data-view-types";
+import type { AcademicGeographyChoroplethEntry } from "@/lib/academic-geography-choropleth";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
 import {
@@ -121,6 +136,35 @@ function trimmedBoundsFor(points: [number, number][]): [number, number][] {
   const [lngLo, lngHi] = [lngs[cut], lngs[lngs.length - 1 - cut]];
   const trimmed = points.filter(([lat, lng]) => lat >= latLo && lat <= latHi && lng >= lngLo && lng <= lngHi);
   return trimmed.length > 1 ? trimmed : points;
+}
+
+// LA/Region choropleth: the SAME real, already-justified zoom threshold Rolls' own
+// MapView.tsx uses for its Nation-scope region<->LA drill (that component's own
+// NATION_REGION_TIER_ZOOM_THRESHOLD comment has the real geometry math this was
+// grounded in -- a typical viewport fits a single region at zoom ~8, a single LA at
+// zoom ~10) -- reused directly, not re-derived, since this map draws the exact same
+// real boundary geometry at the exact same real scale.
+const CHOROPLETH_REGION_LA_ZOOM_THRESHOLD = 8;
+
+// Same real label-visibility-by-actual-on-screen-pixel-size sweep as MapView.tsx's
+// own sweepChoroplethLabelVisibility -- duplicated here (module-private there), same
+// "small self-contained copy" discipline this file already applies to escapeHtml/
+// trimmedBoundsFor, same real MIN_LABEL_WIDTH_PX/MIN_LABEL_HEIGHT_PX values (not
+// re-derived, this map renders the identical real polygon geometry at the identical
+// real scale).
+const MIN_LABEL_WIDTH_PX = 40;
+const MIN_LABEL_HEIGHT_PX = 22;
+function sweepChoroplethLabelVisibility(
+  map: import("leaflet").Map,
+  labelLayers: { marker: import("leaflet").Marker; bounds: import("leaflet").LatLngBounds }[],
+) {
+  for (const { marker, bounds } of labelLayers) {
+    const nw = map.latLngToContainerPoint(bounds.getNorthWest());
+    const se = map.latLngToContainerPoint(bounds.getSouthEast());
+    const widthPx = Math.abs(se.x - nw.x);
+    const heightPx = Math.abs(se.y - nw.y);
+    marker.setOpacity(widthPx >= MIN_LABEL_WIDTH_PX && heightPx >= MIN_LABEL_HEIGHT_PX ? 1 : 0);
+  }
 }
 
 // A4's own popup wording, per stage -- deliberately SHORT, natural-language
@@ -276,6 +320,8 @@ export default function AcademicMapView({
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
   activeView,
   onChangeView,
+  authToken = null,
+  isRegionOrNationScope = false,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -307,12 +353,41 @@ export default function AcademicMapView({
   // controlled active/onChange pair that row already threads through.
   activeView: ViewKey;
   onChangeView: (v: ViewKey) => void;
+  // LA/Region choropleth: the real bearer token the new academic-region-choropleth/
+  // academic-la-choropleth routes need (same membership-gated pattern every other
+  // Academic fetch already uses) -- this component didn't previously do any fetching
+  // of its own at all (every other real figure arrives as already-fetched props), so
+  // this is a genuinely new requirement, not an existing prop repurposed.
+  authToken?: string | null;
+  // Region/Nation comparator round 2: mirrors Rolls' own MapView.tsx exactly (see that
+  // component's own isRegionOrNationScope prop) -- true once the active comparator set
+  // is a real Region/Nation-scale recipe AND past DataViewShell's own
+  // LARGE_SET_PROFILE_THRESHOLD. Forces "View by area" on (round 1's own manual toggle)
+  // and hides the toggle entirely while forced, the same real "no manual escape back to
+  // individual markers at this scale" behaviour Rolls' own map already has -- there was
+  // simply no toggle to hide there (Rolls' point map and choropleth are two branches of
+  // one component, not a user-facing control), so hiding it here is the real Academic-
+  // side equivalent, not a literal copy of a UI element that doesn't exist on the other
+  // side.
+  isRegionOrNationScope?: boolean;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const layerGroupRef = useRef<import("leaflet").LayerGroup | null>(null);
   const topRightStackRef = useRef<HTMLDivElement | null>(null);
+  // LA/Region choropleth: a SEPARATE layer group from the point map's own
+  // layerGroupRef (ring + circleMarkers) -- only one of the two is ever attached to
+  // the map at a time (swapped in the drawing effects below), same "separate group,
+  // swap which is attached" pattern Rolls' own MapView.tsx already established for
+  // its clustered-vs-unclustered schools groups.
+  const choroplethGroupRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const choroplethLabelLayersRef = useRef<{ marker: import("leaflet").Marker; bounds: import("leaflet").LatLngBounds }[]>([]);
+  // Fit-to-bounds happens once per "View by area" session (turning the toggle on, or
+  // a real stage change while it's on), never on every zoom/pan -- an auto-fit there
+  // would fight the member's own manual zoom gesture, same reasoning as Rolls' own
+  // nationChoroplethEverFitRef.
+  const choroplethEverFitRef = useRef(false);
   // Map round 2, item 1: real root cause of "map blank in Trend mode until you toggle
   // Grade band and back" -- see the mount effect below. A real React state (not just a
   // ref) so setting it forces a guaranteed extra render/effect-run once the map
@@ -333,6 +408,48 @@ export default function AcademicMapView({
   // real root cause and why it's fixed this way, not by loosening the gate a little.
   const gradeBandAvailable = !familyId;
   const effectiveColourMode: ColourMode = gradeBandAvailable ? colourMode : "trend";
+
+  // LA/Region choropleth: standalone, independent of ticked schools entirely. Only
+  // ever available whole-school (no familyId -- this round's own real scope, see
+  // this file's own header comment) and never at KS2 (academic_geography_aggregate
+  // has no real KS2 data at all, confirmed at that table's own creation -- the RPC
+  // wrapper's own KsStage type already only accepts ks4/ks5, so this UI gate matches
+  // a real, structural constraint, not an arbitrary one).
+  const viewByAreaAvailable = !familyId && stage !== "ks2";
+  const [viewByArea, setViewByArea] = useState(false);
+  // Zoom-driven, same real mechanism as Rolls' own Nation-scope region<->LA switch --
+  // starts at the region tier (the real national overview), drills to LA detail once
+  // the member zooms in near a specific region.
+  const [choroplethTier, setChoroplethTier] = useState<"region" | "la">("region");
+  const [choroplethData, setChoroplethData] = useState<{ region: AcademicGeographyChoroplethEntry[]; la: AcademicGeographyChoroplethEntry[] } | null>(null);
+  const [choroplethLoading, setChoroplethLoading] = useState(false);
+
+  // Real, deliberate auto-off: a Category pick mid-choropleth would otherwise leave
+  // the toggle showing a stale whole-school view with no way to reach it (the button
+  // itself is hidden once familyId is set, per viewByAreaAvailable above) -- turning
+  // it off explicitly here keeps the map's own visible state consistent with what's
+  // actually selectable, rather than a control silently vanishing while still active.
+  useEffect(() => {
+    // react-hooks/set-state-in-effect: the setState call lives inside this async
+    // callback rather than directly in the effect body, same real fix round 3's own
+    // widening effect already established for this exact lint rule.
+    (async () => {
+      if (!viewByAreaAvailable && viewByArea) setViewByArea(false);
+    })();
+  }, [viewByAreaAvailable, viewByArea]);
+
+  // Region/Nation comparator round 2: the real auto-trigger the brief asks for,
+  // mirroring Rolls' own isRegionOrNationScope pattern -- forces "View by area" on the
+  // moment a real Region/Nation-scale set becomes active, same react-hooks/set-state-
+  // in-effect-safe async-IIFE shape as the auto-off effect just above. Runs after that
+  // effect in source order but both react to the same real state changes independently
+  // -- viewByAreaAvailable false (KS2/family level) always wins regardless of scope,
+  // since a school-level view genuinely has nothing to show a choropleth for there.
+  useEffect(() => {
+    (async () => {
+      if (isRegionOrNationScope && viewByAreaAvailable && !viewByArea) setViewByArea(true);
+    })();
+  }, [isRegionOrNationScope, viewByAreaAvailable, viewByArea]);
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   // The map has no separate "this school" callout the way Overview/Rankings do, so an
@@ -441,6 +558,50 @@ export default function AcademicMapView({
   );
   const rankByUrn = useMemo(() => new Map(rankedRows.map((r) => [r.urn, r.rank])), [rankedRows]);
 
+  // LA/Region choropleth: real fetch, region + LA tiers together (both are cheap --
+  // 9 real region rows, ~153 real LA rows nationally -- so both are fetched once
+  // when the toggle turns on, or the stage changes while it's on, rather than
+  // re-fetching LA detail per region zoomed into the way Rolls' own live per-school
+  // rollup has to). The zoom-driven tier switch below is then a pure client-side
+  // redraw of already-fetched data, not a second round trip.
+  useEffect(() => {
+    let cancelled = false;
+    // react-hooks/set-state-in-effect: every setState call below (including the
+    // early "reset to null" branch) lives inside this one async callback, same real
+    // fix round 3's own widening effect already established for this exact rule.
+    (async () => {
+      if (!viewByArea || !viewByAreaAvailable || !authToken) {
+        setChoroplethData(null);
+        choroplethEverFitRef.current = false;
+        return;
+      }
+      setChoroplethLoading(true);
+      choroplethEverFitRef.current = false;
+      try {
+        const headers = { Authorization: `Bearer ${authToken}` };
+        const [regionRes, laRes] = await Promise.all([
+          fetch(`/api/data-view/academic-region-choropleth?urn=${targetProfile.urn}&ksStage=${stage}`, { headers }),
+          fetch(`/api/data-view/academic-la-choropleth?urn=${targetProfile.urn}&ksStage=${stage}`, { headers }),
+        ]);
+        if (cancelled || !regionRes.ok || !laRes.ok) return;
+        const [regionBody, laBody] = await Promise.all([
+          regionRes.json() as Promise<{ entries: AcademicGeographyChoroplethEntry[] }>,
+          laRes.json() as Promise<{ entries: AcademicGeographyChoroplethEntry[] }>,
+        ]);
+        if (cancelled) return;
+        setChoroplethData({ region: regionBody.entries, la: laBody.entries });
+      } catch {
+        // Non-fatal -- the choropleth just stays empty/loading, same discipline as
+        // every other real fetch in this codebase.
+      } finally {
+        if (!cancelled) setChoroplethLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewByArea, viewByAreaAvailable, authToken, targetProfile.urn, stage]);
+
   useEffect(() => {
     if (!mapElRef.current || mapRef.current || targetProfile.easting === null || targetProfile.northing === null) return;
     let cancelled = false;
@@ -453,6 +614,12 @@ export default function AcademicMapView({
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
       layerGroupRef.current = L.layerGroup().addTo(map);
+      // LA/Region choropleth: created but NOT added to the map yet -- only attached
+      // once "View by area" is actually on (the drawing effects below swap which of
+      // this and layerGroupRef is attached), same "two groups, only one ever on the
+      // map" pattern Rolls' own MapView.tsx already established for its own
+      // choropleth-vs-dots swap.
+      choroplethGroupRef.current = L.layerGroup();
       mapRef.current = map;
       // Map round 2, item 1's real fix: this is what's actually missing before that
       // round. Real bug, reproduced against Yerbury Primary School (URN 100429) --
@@ -530,6 +697,15 @@ export default function AcademicMapView({
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || !layerGroupRef.current || !rootRef.current) return;
+    // LA/Region choropleth: the point map (ring + circles) is completely skipped
+    // while "View by area" is on -- the choropleth's own drawing effect below owns
+    // the map at that point, same "never gets to the individual school level" swap
+    // Rolls' own MapView.tsx already applies for Region/Nation scope.
+    if (viewByArea) {
+      if (mapRef.current.hasLayer(layerGroupRef.current)) mapRef.current.removeLayer(layerGroupRef.current);
+      return;
+    }
+    if (!mapRef.current.hasLayer(layerGroupRef.current)) mapRef.current.addLayer(layerGroupRef.current);
     import("leaflet").then((mod) => {
       const L = (mod as unknown as { default?: typeof mod }).default ?? mod;
       const group2 = layerGroupRef.current!;
@@ -634,7 +810,141 @@ export default function AcademicMapView({
         mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
       }
     });
-  }, [mapReady, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, familyId, familyLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
+  }, [mapReady, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, familyId, familyLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
+
+  // LA/Region choropleth: real min/max over the CURRENTLY SHOWN tier's own real
+  // values -- same "computed once, shared" discipline as minGrade/maxGrade above,
+  // recomputed whenever the tier or the underlying fetched data changes.
+  const choroplethEntries = useMemo(
+    () => (choroplethTier === "region" ? (choroplethData?.region ?? []) : (choroplethData?.la ?? [])),
+    [choroplethTier, choroplethData],
+  );
+  const { choroplethMin, choroplethMax } = useMemo(() => {
+    const values = choroplethEntries.map((e) => e.avgValue).filter((v): v is number => v !== null);
+    return { choroplethMin: values.length > 0 ? Math.min(...values) : 0, choroplethMax: values.length > 0 ? Math.max(...values) : 0 };
+  }, [choroplethEntries]);
+
+  // LA/Region choropleth: zoom-driven tier switch, same real threshold/mechanism as
+  // Rolls' own Nation-scope region<->LA drill -- re-registered only when the toggle
+  // itself changes (rare), reads the live Leaflet map's own current zoom directly on
+  // every call, no stale-closure risk.
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !viewByArea) return;
+    const map = mapRef.current;
+    function handleZoomOrMove() {
+      setChoroplethTier(map.getZoom() >= CHOROPLETH_REGION_LA_ZOOM_THRESHOLD ? "la" : "region");
+    }
+    handleZoomOrMove();
+    map.on("zoomend moveend", handleZoomOrMove);
+    return () => {
+      map.off("zoomend moveend", handleZoomOrMove);
+    };
+  }, [mapReady, viewByArea]);
+
+  // LA/Region choropleth: re-sweeps real label visibility on every zoom/pan -- reads
+  // choroplethLabelLayersRef live, same real mechanism as MapView.tsx's own
+  // equivalent effect.
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !viewByArea) return;
+    const map = mapRef.current;
+    function handleZoomOrMove() {
+      sweepChoroplethLabelVisibility(map, choroplethLabelLayersRef.current);
+    }
+    map.on("zoomend moveend", handleZoomOrMove);
+    return () => {
+      map.off("zoomend moveend", handleZoomOrMove);
+    };
+  }, [mapReady, viewByArea]);
+
+  // LA/Region choropleth: the actual real drawing pass -- geoJSON polygons, coloured
+  // by gradeBandColour (SAME real colour language the point map's own Grade band
+  // mode uses, real min-max normalised to whichever tier is currently shown, not a
+  // third scale), with the SAME real permanent name-label convention
+  // (vd-choropleth-label) and label-visibility sweep MapView.tsx's own choropleth
+  // already established.
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !choroplethGroupRef.current || !rootRef.current) return;
+    const map = mapRef.current;
+    const group = choroplethGroupRef.current;
+    if (!viewByArea) {
+      if (map.hasLayer(group)) map.removeLayer(group);
+      group.clearLayers();
+      choroplethLabelLayersRef.current = [];
+      return;
+    }
+    if (!choroplethData) return; // still loading -- nothing real to draw yet
+
+    import("leaflet").then((mod) => {
+      const L = (mod as unknown as { default?: typeof mod }).default ?? mod;
+      group.clearLayers();
+      if (!map.hasLayer(group)) map.addLayer(group);
+      choroplethLabelLayersRef.current = [];
+
+      const boundPoints: [number, number][] = [];
+      for (const entry of choroplethEntries) {
+        if (!entry.geometry) continue;
+        const hasData = entry.avgValue !== null;
+        const fillColour = hasData ? gradeBandColour(entry.avgValue!, choroplethMin, choroplethMax) : "#9ca3af";
+
+        const statLabel = hasData
+          ? `${formatHeadlineValue(stage, entry.avgValue!)} ${HEADLINE_STAT_LABEL[stage]} — ${entry.schoolCount} real schools${entry.period !== null ? `, ${academicYearLabel(entry.period)}` : ""}`
+          : "No real data for this area yet";
+        const clickHint = choroplethTier === "region" ? "<br/><em>click to zoom in</em>" : "";
+        const tooltipHtml = `<div style="font-size:12px"><strong>${escapeHtml(entry.name)}</strong><br/>${statLabel}${clickHint}</div>`;
+
+        const layer = L.geoJSON(entry.geometry, {
+          style: {
+            color: hasData ? "#ffffff" : "#9ca3af",
+            weight: 1,
+            fillColor: fillColour,
+            fillOpacity: hasData ? 0.75 : 0.35,
+            dashArray: hasData ? undefined : "3 3",
+          },
+        });
+        layer.bindTooltip(tooltipHtml, { sticky: true });
+        if (choroplethTier === "region") {
+          // Region click zooms in on that region -- the natural way to reach LA
+          // detail for it, since this round has no per-region comparator SET to
+          // click-through to (that's round 2's own scope, not built here). Crossing
+          // CHOROPLETH_REGION_LA_ZOOM_THRESHOLD this way flips the tier automatically
+          // via the zoom-driven effect above, no special-casing needed here.
+          const b = layer.getBounds();
+          layer.on("click", () => {
+            if (b.isValid()) map.fitBounds(b, { padding: [40, 40] });
+          });
+          layer.eachLayer((l) => {
+            (l as unknown as { getElement?: () => SVGElement | null }).getElement?.()?.style.setProperty("cursor", "pointer");
+          });
+        }
+        layer.addTo(group);
+
+        const b = layer.getBounds();
+        if (b.isValid()) {
+          boundPoints.push([b.getSouthWest().lat, b.getSouthWest().lng], [b.getNorthEast().lat, b.getNorthEast().lng]);
+          const labelMarker = L.marker(b.getCenter(), {
+            icon: L.divIcon({
+              className: "vd-choropleth-label-icon",
+              html: `<div class="vd-choropleth-label">${escapeHtml(entry.name)}</div>`,
+              iconSize: [0, 0],
+            }),
+            interactive: false,
+            opacity: 0,
+          });
+          labelMarker.addTo(group);
+          choroplethLabelLayersRef.current.push({ marker: labelMarker, bounds: b });
+        }
+      }
+
+      // Fit once per real "View by area" session (turning the toggle on, or a real
+      // stage change while it's on -- reset by the fetch effect above), never on
+      // every zoom/tier-switch, which would fight the member's own zoom gesture.
+      if (!choroplethEverFitRef.current && boundPoints.length > 1) {
+        map.fitBounds(boundPoints, { padding: [40, 40] });
+        choroplethEverFitRef.current = true;
+      }
+      sweepChoroplethLabelVisibility(map, choroplethLabelLayersRef.current);
+    });
+  }, [mapReady, viewByArea, choroplethData, choroplethTier, choroplethEntries, choroplethMin, choroplethMax, stage]);
 
   const sizeCaption = stage === "ks2" ? `${HEADLINE_AGE.ks2}-year-olds` : stage === "ks4" ? "pupils entered for GCSEs" : ks5Cohort ? `${ks5Cohort} entries` : "pupils entered for Post-16 exams";
 
@@ -649,6 +959,21 @@ export default function AcademicMapView({
         .vd-academic-ring-label {
           font-size: 10px; font-weight: 600; color: var(--distance-ring);
           text-align: center; white-space: nowrap; background: transparent;
+        }
+        /* LA/Region choropleth: same real "always visible, not hover-only" polygon
+           name-label convention as MapView.tsx's own .vd-choropleth-label -- same
+           class name, deliberately, so this reads as the same real component family
+           rather than a lookalike with its own styling. */
+        .vd-academic-map { --label-bg: #fff; --label-fg: #171717; --choropleth-label-bg: rgba(255,255,255,0.88); }
+        @media (prefers-color-scheme: dark) {
+          :root:where(:not([data-theme="light"])) .vd-academic-map { --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85); }
+        }
+        :root[data-theme="dark"] .vd-academic-map { --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85); }
+        .vd-choropleth-label {
+          font-size: 10px; font-weight: 600; color: var(--label-fg); background: var(--choropleth-label-bg);
+          border-radius: 3px; padding: 0px 4px; max-width: 90px; overflow: hidden;
+          text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+          transform: translate(-50%, -50%);
         }
       `}</style>
       <div ref={mapElRef} className="h-full w-full" />
@@ -667,7 +992,30 @@ export default function AcademicMapView({
         <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
           <PdfExportButton />
         </div>
-        {gradeBandAvailable && (
+        {/* LA/Region choropleth: the new standalone toggle, alongside the existing
+            Grade band/Trends buttons (same box family, own row) -- independent of
+            ticked schools entirely. Hidden for KS2/family level, per this file's own
+            header comment. */}
+        {/* Region/Nation comparator round 2: the manual toggle is hidden entirely
+            while isRegionOrNationScope forces it on -- there's no real "Schools" mode
+            to switch back to at this scale (same real absence of a manual escape
+            Rolls' own map already has at Region/Nation scope), so a button that only
+            ever does one thing would be confusing chrome, not a real control. */}
+        {viewByAreaAvailable && !isRegionOrNationScope && (
+          <div className="rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <button
+              type="button"
+              onClick={() => setViewByArea((v) => !v)}
+              className={viewByArea ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
+            >
+              {viewByArea ? "Schools" : "View by area"}
+            </button>
+          </div>
+        )}
+        {/* Grade band/Trends only means anything for individual school circles --
+            hidden while the choropleth (always value-coloured, no separate trend
+            concept fetched this round) has taken over the map. */}
+        {!viewByArea && gradeBandAvailable && (
           <div className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
             <button
               type="button"
@@ -689,41 +1037,70 @@ export default function AcademicMapView({
 
       {/* Item 3 (round 2) / A2 (round 3): colour legend at the same right-of-map,
           measured-gap position Rolls' own map uses, with real scale labels -- no
-          explanatory paragraph. */}
-      {effectiveColourMode === "trend" ? (
+          explanatory paragraph. LA/Region choropleth: reuses the SAME GradeBandColourKey
+          component while active, just scaled to the current tier's own real min-max --
+          the same real colour language throughout, never a third scale. */}
+      {viewByArea ? (
+        <GradeBandColourKey box={trendKeyBox} min={choroplethMin} max={choroplethMax} stage={stage} />
+      ) : effectiveColourMode === "trend" ? (
         <TrendColourKey box={trendKeyBox} title="Growth" />
       ) : (
         <GradeBandColourKey box={trendKeyBox} min={minGrade} max={maxGrade} stage={stage} />
       )}
 
-      {/* Item 4 (round 2): real dot-size scale, bottom-left. The exclusion note
-          (GCSE/KS5-cohort round) has no Rolls precedent -- kept as its own stacked
-          box directly below the size scale, in the same corner. */}
-      <div className="absolute bottom-3 left-3 z-[1000] flex max-w-xs flex-col gap-2">
-        <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} sizeCaption={sizeCaption} />
-        {stage === "ks4" && (mapWholeGroupExcluded ? (
-          <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
-            {ks4ExclusionWholeGroupSentence(setLabel)}
-          </p>
-        ) : excludedForMap.length > 0 ? (
-          <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
-            {ks4ExclusionGroupNote(excludedForMap.map((p) => p.name))}
-          </p>
-        ) : null)}
-        {/* ks5ExcludedUrns (and so this whole branch) is only ever non-empty when the
-            parent has a specific ks5Cohort selected -- the default per-school state
-            does no qualification-type matching at all (item 11) -- so the `?? "A
-            level"` fallback below is a type-safety-only no-op, never a real path. */}
-        {stage === "ks5" && (mapKs5WholeGroupExcluded ? (
-          <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
-            {ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level")}
-          </p>
-        ) : ks5ExcludedForMap.length > 0 ? (
-          <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
-            {ks5CohortExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Cohort ?? "A level")}
-          </p>
-        ) : null)}
-      </div>
+      {viewByArea ? (
+        // LA/Region choropleth: a real caption instead of the point map's own
+        // Dot-size/exclusion-note stack (neither applies to polygons) -- which real
+        // tier is showing, how many real areas have data, and a real loading state
+        // rather than a silently-blank map while the fetch is in flight.
+        <div className="absolute bottom-3 left-3 z-[1000] max-w-xs rounded-md border border-neutral-200 bg-white p-3 text-[11px] text-neutral-600 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
+          {choroplethLoading && !choroplethData ? (
+            <p>Loading real {choroplethTier === "region" ? "region" : "LA"} data…</p>
+          ) : (
+            <>
+              <p className="font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                {choroplethTier === "region" ? "Region" : "Local authority"} view
+              </p>
+              <p className="mt-1">
+                {choroplethEntries.filter((e) => e.avgValue !== null).length} of {choroplethEntries.length} real{" "}
+                {choroplethTier === "region" ? "regions" : "local authorities"} have real {HEADLINE_STAT_LABEL[stage]} data.
+              </p>
+              {choroplethTier === "region" && <p className="mt-1 text-neutral-400">Zoom in, or click a region, for local authority detail.</p>}
+            </>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Item 4 (round 2): real dot-size scale, bottom-left. The exclusion note
+              (GCSE/KS5-cohort round) has no Rolls precedent -- kept as its own stacked
+              box directly below the size scale, in the same corner. */}
+          <div className="absolute bottom-3 left-3 z-[1000] flex max-w-xs flex-col gap-2">
+            <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} sizeCaption={sizeCaption} />
+            {stage === "ks4" && (mapWholeGroupExcluded ? (
+              <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
+                {ks4ExclusionWholeGroupSentence(setLabel)}
+              </p>
+            ) : excludedForMap.length > 0 ? (
+              <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
+                {ks4ExclusionGroupNote(excludedForMap.map((p) => p.name))}
+              </p>
+            ) : null)}
+            {/* ks5ExcludedUrns (and so this whole branch) is only ever non-empty when the
+                parent has a specific ks5Cohort selected -- the default per-school state
+                does no qualification-type matching at all (item 11) -- so the `?? "A
+                level"` fallback below is a type-safety-only no-op, never a real path. */}
+            {stage === "ks5" && (mapKs5WholeGroupExcluded ? (
+              <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
+                {ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level")}
+              </p>
+            ) : ks5ExcludedForMap.length > 0 ? (
+              <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
+                {ks5CohortExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Cohort ?? "A level")}
+              </p>
+            ) : null)}
+          </div>
+        </>
+      )}
     </div>
   );
 }

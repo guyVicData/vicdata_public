@@ -283,3 +283,52 @@ export async function lookupAcademicGeography(params: {
   }
   return rows;
 }
+
+// Academic Results round 2 (docs/vicdata_phase3_academic_results_region_nation_
+// comparator_brief_v1.md): academic_region_nation_rank() returns a single real jsonb
+// object (top15/neighbours/total/targetRank), not a `returns table` set -- unlike
+// every other wrapper in this file, this doesn't page via fetchPage's own
+// loop-until-short-page discipline (there's nothing to page; PostgREST returns a
+// scalar function's jsonb return value directly, not wrapped in an array), so this is
+// a small, direct POST rather than a call through fetchPage.
+export type AcademicRegionNationRankEntry = { urn: string; name: string; value: number; rank: number };
+export type AcademicRegionNationRankResult = { total: number; targetRank: number | null; top15: AcademicRegionNationRankEntry[]; neighbours: AcademicRegionNationRankEntry[] };
+
+export async function lookupAcademicRegionNationRank(params: {
+  ksStage: KsStage;
+  measure: string;
+  regionCode?: string | null;
+  nation?: string | null;
+  targetUrn: string;
+  signal?: AbortSignal;
+}): Promise<AcademicRegionNationRankResult> {
+  const apiUrl = requireEnv("VICDATA_API_URL");
+  const anonKey = requireEnv("VICDATA_ANON_KEY");
+  const res = await fetch(`${apiUrl}/rest/v1/rpc/academic_region_nation_rank`, {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      p_ks_stage: params.ksStage,
+      p_measure: params.measure,
+      p_region_code: params.regionCode ?? null,
+      p_nation: params.nation ?? null,
+      p_target_urn: params.targetUrn,
+    }),
+    cache: "no-store",
+    signal: params.signal,
+  });
+  if (!res.ok) {
+    throw new Error(`academic_region_nation_rank failed: HTTP ${res.status} ${await res.text()}`);
+  }
+  const data = (await res.json()) as Partial<AcademicRegionNationRankResult> | null;
+  return {
+    total: data?.total ?? 0,
+    targetRank: data?.targetRank ?? null,
+    top15: data?.top15 ?? [],
+    neighbours: data?.neighbours ?? [],
+  };
+}

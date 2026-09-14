@@ -45,6 +45,15 @@ import {
   type SubjectValueAdded,
   STAGE_LABEL,
 } from "@/lib/academic-data-view";
+// Region/Nation comparator round 2: type-only imports from server-only lib files --
+// erased at compile time, same safe pattern round 1's own AcademicGeographyChoroplethEntry
+// import already established for this component (see that round's build report). The
+// actual fetches below go through the usual /api/data-view/* routes, matching every
+// other fetch this component already does (academic-schools/academic-subject/
+// academic-comparator-widen) -- never a direct call into a server-only lib function
+// from client code.
+import type { AcademicRegionNationRankMetric } from "@/lib/academic-region-nation-rank";
+import type { AcademicAggregateTrends } from "@/lib/academic-aggregate-trends";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
 import LoadingSpinnerCard from "./LoadingSpinnerCard";
@@ -124,6 +133,9 @@ export default function AcademicDataView({
   isActiveTopic,
   stageSwitcherSlot,
   onHasAnyData,
+  isLargeSet,
+  regionNationScopeKey,
+  isRegionOrNationScope,
 }: {
   urn: string;
   authToken: string | null;
@@ -143,6 +155,18 @@ export default function AcademicDataView({
   isActiveTopic: boolean;
   stageSwitcherSlot: HTMLDivElement | null;
   onHasAnyData: (has: boolean) => void;
+  // Region/Nation comparator round 2: all three values below are computed ONCE in
+  // DataViewShell.tsx off the shared `activeSet` (topic-agnostic) and passed straight
+  // through, the same values Rolls' own MapView/GraphsView/RankingsView already
+  // receive -- not re-derived here. isLargeSet gates the per-ticked-URN profile fetch
+  // below (confirmed a real no-op change is needed there -- see this round's own
+  // build report); regionNationScopeKey ("region"|"nation"|null) drives the new
+  // academic-region-nation-rank fetch; isRegionOrNationScope is threaded straight
+  // through to AcademicMapView for the same auto-choropleth trigger Rolls' own
+  // MapView already has.
+  isLargeSet: boolean;
+  regionNationScopeKey: "region" | "nation" | null;
+  isRegionOrNationScope: boolean;
 }) {
   // Item 11: real schools/colleges found to widen the KS5 comparator set past
   // whatever's ticked, when too few of them have real data for the current view
@@ -151,6 +175,19 @@ export default function AcademicDataView({
   // picks them up for free -- no second fetch mechanism needed.
   const [ks5WidenedUrns, setKs5WidenedUrns] = useState<string[]>([]);
 
+  // Region/Nation comparator round 2, real design call confirmed rather than assumed:
+  // this per-ticked-URN profile fetch already needs NO large-set bypass of its own.
+  // Unlike Rolls' own profile-fetch effect in DataViewShell.tsx (which reads
+  // activeSet.schools -- the WHOLE active set, capped by LARGE_SET_PROFILE_THRESHOLD),
+  // this component was never given activeSet.schools at all (this file's own header
+  // comment: "Does NOT reuse profilesByUrn... those stay Rolls-shaped") -- urnsKey below
+  // is built only from urn/tickedUrns/addedUrns/ks5WidenedUrns, every one of which is
+  // already inherently bounded (tickedUrns is reset to empty whenever a large set is
+  // selected -- DataViewShell's own setTickedUrns call; addedUrns is a manual, one-at-
+  // a-time search-add; ks5WidenedUrns caps at `needed = 10 - qualifying`). So a 24,000-
+  // school Nation-scale set selected while viewing Academic can never inflate this
+  // fetch -- confirmed structurally, not just by inspection: there is no code path here
+  // that could read the full activeSet.schools list even if it wanted to.
   const urnsKey = useMemo(() => {
     const all = new Set<string>([urn, ...tickedUrns, ...addedUrns.map((a) => a.urn), ...ks5WidenedUrns]);
     return Array.from(all).sort().join(",");
@@ -375,6 +412,86 @@ export default function AcademicDataView({
     };
   }, [urn, effectiveStage, authToken, isActiveTopic]);
 
+  // Region/Nation comparator round 2, Rankings: fetches academic_region_nation_rank()
+  // whenever the active set is a real Region/Nation-scale recipe AND the current stage
+  // has real geography data (ks4/ks5 only -- academic_headline_snapshot itself has no
+  // KS2 rows, same real constraint round 1's choropleth already hit). Keyed-cache
+  // discipline, same real reason DataViewShell's own largeSetRank effect already
+  // documents (react-hooks/set-state-in-effect: avoid a synchronous setState in an
+  // effect's bail-out branch; a stored result whose key doesn't match the current
+  // render is just treated as stale/absent at render time instead).
+  const [academicLargeSetRank, setAcademicLargeSetRank] = useState<{ key: string; data: AcademicRegionNationRankMetric } | null>(null);
+  const [academicLargeSetRankLoading, setAcademicLargeSetRankLoading] = useState(false);
+  const academicLargeSetRankRequestKey =
+    regionNationScopeKey && effectiveStage && effectiveStage !== "ks2" ? `${urn}|${regionNationScopeKey}|${effectiveStage}` : null;
+  useEffect(() => {
+    if (!authToken || !academicLargeSetRankRequestKey || !effectiveStage || effectiveStage === "ks2" || !regionNationScopeKey) return;
+    const requestKey = academicLargeSetRankRequestKey;
+    let cancelled = false;
+    (async () => {
+      setAcademicLargeSetRankLoading(true);
+      try {
+        const params = new URLSearchParams({ urn, scope: regionNationScopeKey, ksStage: effectiveStage });
+        const res = await fetch(`/api/data-view/academic-region-nation-rank?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error("[AcademicDataView] academic-region-nation-rank fetch failed:", res.status, await res.text().catch(() => ""));
+          return;
+        }
+        const body = (await res.json()) as { rank: AcademicRegionNationRankMetric | null };
+        if (cancelled || !body.rank) return;
+        setAcademicLargeSetRank({ key: requestKey, data: body.rank });
+      } catch (e) {
+        if (!cancelled) console.error("[AcademicDataView] unexpected error fetching academic region/nation ranking:", e);
+      } finally {
+        if (!cancelled) setAcademicLargeSetRankLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, urn, regionNationScopeKey, effectiveStage, academicLargeSetRankRequestKey]);
+  const resolvedAcademicLargeSetRank = academicLargeSetRank?.key === academicLargeSetRankRequestKey ? academicLargeSetRank.data : null;
+
+  // Region/Nation comparator round 2, Graphs: real prior art (aggregate-trends.ts)
+  // reused directly -- see academic-aggregate-trends.ts's own header comment for the
+  // real source (academic_geography_aggregate, no new precompute). Gated on isLargeSet
+  // alone (not the ranking's own narrower regionNationScopeKey), same reasoning
+  // DataViewShell's own aggregateTrends effect already documents: this doesn't need a
+  // real region/nation SCOPE to compute against, only the target's own real region
+  // membership, which is real regardless of which recipe happens to be active.
+  const [academicAggregateTrends, setAcademicAggregateTrends] = useState<{ key: string; data: AcademicAggregateTrends } | null>(null);
+  const academicAggregateTrendsRequestKey = effectiveStage && effectiveStage !== "ks2" ? `${urn}|${effectiveStage}|${startPeriod}` : null;
+  useEffect(() => {
+    if (!authToken || !isLargeSet || !academicAggregateTrendsRequestKey || !effectiveStage || effectiveStage === "ks2") return;
+    const requestKey = academicAggregateTrendsRequestKey;
+    let cancelled = false;
+    (async () => {
+      try {
+        const params = new URLSearchParams({ urn, ksStage: effectiveStage, startPeriod: String(startPeriod) });
+        const res = await fetch(`/api/data-view/academic-aggregate-trends?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error("[AcademicDataView] academic-aggregate-trends fetch failed:", res.status, await res.text().catch(() => ""));
+          return;
+        }
+        const body = (await res.json()) as { trends: AcademicAggregateTrends };
+        if (cancelled) return;
+        setAcademicAggregateTrends({ key: requestKey, data: body.trends });
+      } catch (e) {
+        if (!cancelled) console.error("[AcademicDataView] unexpected error fetching academic aggregate trends:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, isLargeSet, urn, effectiveStage, startPeriod, academicAggregateTrendsRequestKey]);
+  const resolvedAcademicAggregateTrends = academicAggregateTrends?.key === academicAggregateTrendsRequestKey ? academicAggregateTrends.data : null;
+
   return (
     <div hidden={!isActiveTopic} className="flex min-w-0 flex-1 flex-col">
       {/* Item 2: portalled into TopicTabs' own row (DataViewShell), not rendered
@@ -447,6 +564,8 @@ export default function AcademicDataView({
                 ks5ExcludedUrns={ks5ExcludedUrns}
                 activeView={activeView}
                 onChangeView={onChangeView}
+                authToken={authToken}
+                isRegionOrNationScope={isRegionOrNationScope}
               />
             ) : activeView === "graphs" ? (
               <AcademicGraphsView
@@ -463,6 +582,8 @@ export default function AcademicDataView({
                 ks4ExcludedUrns={ks4ExcludedUrns}
                 ks5Cohort={ks5Cohort}
                 ks5ExcludedUrns={ks5ExcludedUrns}
+                isLargeSet={isLargeSet}
+                aggregateTrends={resolvedAcademicAggregateTrends}
               />
             ) : (
               <AcademicRankingsView
@@ -474,6 +595,9 @@ export default function AcademicDataView({
                 ks4ExcludedUrns={ks4ExcludedUrns}
                 ks5Cohort={ks5Cohort}
                 ks5ExcludedUrns={ks5ExcludedUrns}
+                largeSetRank={resolvedAcademicLargeSetRank}
+                largeSetRankLoading={academicLargeSetRankLoading}
+                largeSetLabel={activeSetLabel}
               />
             )}
           </DataViewErrorBoundary>

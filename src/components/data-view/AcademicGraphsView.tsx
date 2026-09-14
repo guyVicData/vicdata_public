@@ -78,6 +78,8 @@ import SortedBarChart from "./SortedBarChart";
 import TargetRollBarChart from "./TargetRollBarChart";
 import { Card, SectionHeading } from "./GraphsView";
 import CategoryFilter from "./CategoryFilter";
+import AggregateTrendChart, { AGGREGATE_TARGET_COLOUR, AGGREGATE_REGION_COLOUR, AGGREGATE_NATION_COLOUR, type AggregateChartSeries } from "./AggregateTrendChart";
+import type { AcademicAggregateTrends } from "@/lib/academic-aggregate-trends";
 
 // Round 2, Part B: a small, self-contained N-slice donut for the entries-share
 // breakdown (spec §4, "echoes the gender donut") -- GenderSplitCard.tsx's own Donut is
@@ -187,12 +189,22 @@ export default function AcademicGraphsView({
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
   ks5Cohort = null,
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
+  isLargeSet = false,
+  aggregateTrends = null,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
   stage: KsStage;
   startPeriod: number;
   activeSetLabel: string | null;
+  // Region/Nation comparator round 2: same real shape as Rolls' own GraphsView.tsx
+  // isLargeSet/aggregateTrends props -- true once the active comparator set is a real
+  // Region/Nation-scale recipe past LARGE_SET_PROFILE_THRESHOLD. aggregateTrends stays
+  // undefined/null while the fetch is in flight (a real, distinct "still loading" state
+  // from "fetched, genuinely nothing real to show"), same convention Rolls' own prop
+  // already establishes.
+  isLargeSet?: boolean;
+  aggregateTrends?: AcademicAggregateTrends | null;
   familyId?: string | null;
   familyLabel?: string | null;
   // Graphs edit 2, Section 3: the real picker itself (CategoryFilter, moved here
@@ -386,6 +398,38 @@ export default function AcademicGraphsView({
     value: (stage === "ks2" ? populationAtAge(p, HEADLINE_AGE.ks2) : latestEntriesCount(p, stage, ks5Cohort)?.value) ?? 0,
   }));
 
+  // Region/Nation comparator round 2: real prior art reused directly (GraphsView.tsx's
+  // own aggregateSeries), for Section 2 (Results) only -- a real finding checked
+  // directly against real hosted data before building Section 1's own equivalent (not
+  // assumed the same source would just work): academic_geography_aggregate's own
+  // entries_total column is NEVER populated for family_id='whole_school' rows --
+  // confirmed both by reading ingest/academic_aggregates.py's own accumulator (the
+  // whole-school headline branch only ever sums `value`/`n`, never an entries figure)
+  // and by a live fetch (every real national/region row returned entriesTotal: null).
+  // entries_total only exists for a real, specific subject family (from
+  // academic_subject_family_rollup), which this round's large-set scope doesn't fetch
+  // (round 1's own choropleth is whole-school only for the same reason). So there is no
+  // real national/region "candidate numbers" aggregate to chart -- Section 1's own
+  // isLargeSet branch below withholds the comparator card with an honest note instead
+  // of fabricating one from a field that's structurally always null at this scope.
+  const headlineAggregateSeries: AggregateChartSeries[] = isLargeSet
+    ? [
+        {
+          key: "target",
+          label: targetProfile.name,
+          colourLight: AGGREGATE_TARGET_COLOUR.light,
+          colourDark: AGGREGATE_TARGET_COLOUR.dark,
+          points: allPeriods.map((p) => ({ period: p, value: valueFor(targetProfile, p) })).filter((pt): pt is { period: number; value: number } => pt.value !== null),
+        },
+        ...(aggregateTrends?.region
+          ? [{ key: "region", label: aggregateTrends.region.label, colourLight: AGGREGATE_REGION_COLOUR.light, colourDark: AGGREGATE_REGION_COLOUR.dark, points: aggregateTrends.region.points.map((p) => ({ period: p.period, value: p.value })) }]
+          : []),
+        ...(aggregateTrends?.national
+          ? [{ key: "nation", label: aggregateTrends.national.label, colourLight: AGGREGATE_NATION_COLOUR.light, colourDark: AGGREGATE_NATION_COLOUR.dark, points: aggregateTrends.national.points.map((p) => ({ period: p.period, value: p.value })) }]
+          : []),
+      ]
+    : [];
+
   return (
     <div className="space-y-8">
       {/* Round 3, Part B: three independently-collapsible sections, reusing Rolls'
@@ -406,51 +450,87 @@ export default function AcademicGraphsView({
                 </p>
               )}
             </Card>
-            <Card title={`Candidate numbers${entriesPeriods.length > 0 ? `, ${academicYearLabel(entriesPeriods[entriesPeriods.length - 1])}` : ""} — ${targetProfile.name} vs ${setLabel}`}>
-              <SortedBarChart points={entriesBarPoints} />
-              <p className="mt-2 text-xs text-neutral-400">{entriesNoun}, real DfE entries counts (roll population for KS2, which DfE doesn&rsquo;t publish an entries figure for).</p>
-            </Card>
+            {isLargeSet ? (
+              // Region/Nation comparator round 2: the comparator-set bar chart
+              // (SortedBarChart over `comparableGroup`) is meaningless at this scale
+              // (comparableGroup is only ever the bounded ticked/widened group, never
+              // the real 5,000+-school set) -- but unlike Section 2, there's no real
+              // national/region aggregate to show instead here: confirmed directly
+              // against real hosted data (see this file's own comment above the
+              // aggregate-series computation) that academic_geography_aggregate never
+              // carries a whole-school entries total. Withheld honestly rather than
+              // faked from an always-null field.
+              <Card title="Candidate numbers vs region and nation">
+                <p className="text-sm text-neutral-500">
+                  A real national/region comparison isn&rsquo;t available for candidate numbers at this scale -- {targetProfile.name}&rsquo;s own trend is shown on the left.
+                </p>
+              </Card>
+            ) : (
+              <Card title={`Candidate numbers${entriesPeriods.length > 0 ? `, ${academicYearLabel(entriesPeriods[entriesPeriods.length - 1])}` : ""} — ${targetProfile.name} vs ${setLabel}`}>
+                <SortedBarChart points={entriesBarPoints} />
+                <p className="mt-2 text-xs text-neutral-400">{entriesNoun}, real DfE entries counts (roll population for KS2, which DfE doesn&rsquo;t publish an entries figure for).</p>
+              </Card>
+            )}
           </div>
         )}
       </section>
 
       <section>
         <SectionHeading number="02" title="Results" isOpen={!closedSections.has("02")} onToggle={() => toggleSection("02")} />
-        {!closedSections.has("02") && (
-          // Graphs edit 2, Section 2: the preserved headline-number/SpreadStrip/
-          // TargetVsAverageTrend "introductory" block that used to sit here is
-          // gone -- a real, explicit Round 3 judgement call (see that round's own
-          // build report) reversed on direct instruction after Guy saw it live.
-          // Section 2 is now just the two Card components below, side by side,
-          // nothing above them -- Part B's own original 50:50 two-column ask: left,
-          // the overall results summary bar chart (school vs comparison set, latest
-          // real year); right, the growth/decline chart.
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card title={latestPeriod !== null ? `${groupHeadlineLabel}, ${academicYearLabel(latestPeriod)} — ${targetProfile.name} vs ${setLabel}` : "Results summary"}>
-              {anyWholeGroupExcluded ? (
-                <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
-              ) : latestPeriod !== null ? (
-                <>
-                  {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
-                  <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
-                </>
-              ) : (
-                <p className="text-sm text-neutral-500">No real data available for this key stage.</p>
-              )}
-            </Card>
-            <Card title={`Growth / decline since ${academicYearLabel(baseline)}`}>
-              {anyWholeGroupExcluded ? (
-                <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
-              ) : (
-                <>
-                  {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
-                  <p className="mb-2 text-xs text-neutral-500">Change in {groupHeadlineLabel}, across {setLabel}.</p>
-                  <DivergingBarChart points={growthPoints} />
-                </>
-              )}
-            </Card>
-          </div>
-        )}
+        {!closedSections.has("02") &&
+          (isLargeSet ? (
+            // Region/Nation comparator round 2: same real swap as Section 1 above,
+            // applied to the headline measure instead of entries -- the one chart
+            // this whole product exists to show at scale (Attainment 8/APS trend vs
+            // region and nation), not a comparator-set bar chart over a handful of
+            // ticked schools.
+            <>
+              <Card title={`${groupHeadlineLabel}, ${targetProfile.name} vs region and nation since ${academicYearLabel(baseline)}`}>
+                {aggregateTrends === undefined || aggregateTrends === null ? (
+                  <p className="text-sm text-neutral-500">Loading region/nation comparison…</p>
+                ) : (
+                  <AggregateTrendChart series={headlineAggregateSeries} />
+                )}
+              </Card>
+              <p className="mt-2 text-xs text-neutral-400">
+                At this scale, Results compares whole-school trends only -- GCSE/IGCSE and KS5 qualification-type exclusions aren&rsquo;t reflected in this chart.
+              </p>
+            </>
+          ) : (
+            // Graphs edit 2, Section 2: the preserved headline-number/SpreadStrip/
+            // TargetVsAverageTrend "introductory" block that used to sit here is
+            // gone -- a real, explicit Round 3 judgement call (see that round's own
+            // build report) reversed on direct instruction after Guy saw it live.
+            // Section 2 is now just the two Card components below, side by side,
+            // nothing above them -- Part B's own original 50:50 two-column ask: left,
+            // the overall results summary bar chart (school vs comparison set, latest
+            // real year); right, the growth/decline chart.
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Card title={latestPeriod !== null ? `${groupHeadlineLabel}, ${academicYearLabel(latestPeriod)} — ${targetProfile.name} vs ${setLabel}` : "Results summary"}>
+                {anyWholeGroupExcluded ? (
+                  <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
+                ) : latestPeriod !== null ? (
+                  <>
+                    {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
+                    <SortedBarChart points={sameYearBarPoints} formatValue={(v) => formatHeadline(stage, v)} />
+                  </>
+                ) : (
+                  <p className="text-sm text-neutral-500">No real data available for this key stage.</p>
+                )}
+              </Card>
+              <Card title={`Growth / decline since ${academicYearLabel(baseline)}`}>
+                {anyWholeGroupExcluded ? (
+                  <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
+                ) : (
+                  <>
+                    {anyGroupNote && <p className="mb-2 text-xs italic text-neutral-500">{anyGroupNote}</p>}
+                    <p className="mb-2 text-xs text-neutral-500">Change in {groupHeadlineLabel}, across {setLabel}.</p>
+                    <DivergingBarChart points={growthPoints} />
+                  </>
+                )}
+              </Card>
+            </div>
+          ))}
       </section>
 
       <section>
@@ -487,13 +567,30 @@ export default function AcademicGraphsView({
                 {familyPointScoreAvailable ? (
                   <>
                     <div className="mb-4">
-                      <p className="mb-2 text-xs text-neutral-500">
-                        Average point score per entry in {familyLabel}, {targetFamilyYear ? academicYearLabel(targetFamilyYear.period) : ""} — {targetProfile.name} compared with {setLabel}.
-                      </p>
-                      {familyBarPointsWithScore.length > 0 ? (
-                        <SortedBarChart points={familyBarPointsWithScore.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.isTarget, value: p.avgPointScore }))} formatValue={(v) => v.toFixed(1)} />
+                      {isLargeSet ? (
+                        // Region/Nation comparator round 2: family-level comparison
+                        // has no real region/nation aggregate to fall back on
+                        // (academic_geography_aggregate's own family_id scoping was
+                        // never fetched for the large-set path this round -- round 1's
+                        // own choropleth is whole-school only too, same real scope
+                        // limit, not extended here) -- the comparator bar chart over
+                        // `group` is meaningless at this scale for the same reason
+                        // Sections 1/2 swap theirs out, so it's withheld with an
+                        // honest note rather than shown against a near-empty ticked
+                        // group. The donut/subject table/trend below are all real,
+                        // target-only figures and stay exactly as they are.
+                        <p className="text-sm text-neutral-500">Comparison across {setLabel} isn&rsquo;t available for individual subject categories at this scale.</p>
                       ) : (
-                        <p className="text-sm text-neutral-500">No real point-score data for {familyLabel} across this set.</p>
+                        <>
+                          <p className="mb-2 text-xs text-neutral-500">
+                            Average point score per entry in {familyLabel}, {targetFamilyYear ? academicYearLabel(targetFamilyYear.period) : ""} — {targetProfile.name} compared with {setLabel}.
+                          </p>
+                          {familyBarPointsWithScore.length > 0 ? (
+                            <SortedBarChart points={familyBarPointsWithScore.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.isTarget, value: p.avgPointScore }))} formatValue={(v) => v.toFixed(1)} />
+                          ) : (
+                            <p className="text-sm text-neutral-500">No real point-score data for {familyLabel} across this set.</p>
+                          )}
+                        </>
                       )}
                     </div>
                     <div>

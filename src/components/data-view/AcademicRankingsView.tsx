@@ -4,15 +4,19 @@
 // (the headline measure for the selected key stage) + rank-over-time, same real shape
 // as Rolls' own RankingsView.tsx (rankDescendingWithTies/chunkedRankingDisplay/
 // trendBadge -- all confirmed genuinely generic, reused directly) but built as its own
-// component since DataViewSchoolProfile there is Rolls-specific end to end. Ticked-
-// comparator-set only -- no Region/Nation scale this round (Part C).
+// component since DataViewSchoolProfile there is Rolls-specific end to end.
+//
+// Region/Nation comparator round 2: the "Ticked-comparator-set only -- no Region/
+// Nation scale this round (Part C)" scope limit this file used to state here is now
+// reversed -- academic_region_nation_rank() exists, and largeSetRank below mirrors
+// Rolls' own RankingsView.tsx large-set branch (LargeSetMetricRanking) exactly, per
+// this round's own brief ("mirror this exact shape... rather than a different
+// large-set design").
 //
 // Open question from the brief (§5, §9), decided here: subject-family metrics do NOT
 // get their own Rankings entry -- only the whole-school headline measure is ranked,
 // consistent with Rolls' own deliberate single-metric cut-down. Family/subject
-// comparisons live in Graphs only (this round's own scope reduction, see the build
-// report -- Graphs' own family breakdown section wasn't built either, so this is
-// currently moot in practice, but the decision stands for when it is).
+// comparisons live in Graphs only.
 
 import {
   HEADLINE_MEASURE,
@@ -35,7 +39,8 @@ import {
   type KsStage,
   type Ks5Cohort,
 } from "@/lib/academic-data-view";
-import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, type RankedEntry } from "@/lib/data-view-cards";
+import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, percentile, type RankedEntry } from "@/lib/data-view-cards";
+import type { AcademicRegionNationRankMetric } from "@/lib/academic-region-nation-rank";
 import { academicYearLabel } from "./TrendPill";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
@@ -75,12 +80,22 @@ export default function AcademicRankingsView({
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
   ks5Cohort = "A level",
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
+  largeSetRank,
+  largeSetRankLoading,
+  largeSetLabel,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
   stage: KsStage;
   startPeriod: number;
   activeSetLabel?: string | null;
+  // Region/Nation comparator round 2: non-null only when the active comparator set is
+  // Region/Nation-scale AND the server-side academic_region_nation_rank() fetch has
+  // resolved -- see AcademicDataView's own academicLargeSetRank state/effect. Same
+  // three-prop shape as Rolls' own RankingsView.tsx.
+  largeSetRank?: AcademicRegionNationRankMetric | null;
+  largeSetRankLoading?: boolean;
+  largeSetLabel?: string | null;
   // GCSE exclusion round, Part 2 -- see AcademicGraphsView's own header comment for
   // the same prop.
   ks4ExcludedUrns?: Set<string>;
@@ -102,6 +117,26 @@ export default function AcademicRankingsView({
   ks5Cohort?: Ks5Cohort | null;
   ks5ExcludedUrns?: Set<string>;
 }) {
+  // Region/Nation comparator round 2: mirrors Rolls' own RankingsView.tsx exactly --
+  // an early return replaces the WHOLE view (four-tile row included), not just the
+  // rank tables below, since the tiles' own targetRank/averageCurrentValue are
+  // computed from `comparableGroup` (the bounded ticked group), which would otherwise
+  // show a stale, misleadingly-small ranking alongside the real large-set one.
+  if (largeSetRank !== undefined && largeSetRank !== null) {
+    return (
+      <div className="space-y-6">
+        <p className="text-xs text-neutral-400">
+          Ranked across {largeSetLabel ?? "this set"} — computed server-side, on {HEADLINE_LABEL[stage]} only (each school&rsquo;s own qualification-type/subject-family
+          variants, and GCSE/IGCSE exclusion, aren&rsquo;t reflected at this scale).
+        </p>
+        <LargeSetRanking metricLabel={HEADLINE_LABEL[stage]} format={(v) => formatHeadline(stage, v)} data={largeSetRank} targetUrn={targetProfile.urn} />
+      </div>
+    );
+  }
+  if (largeSetRankLoading) {
+    return <p className="py-12 text-center text-sm text-neutral-500">Ranking this school across the full set…</p>;
+  }
+
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   const measureKeyFor = (p: AcademicSchoolProfile) => (stage === "ks5" ? ks5MeasureFor(p, ks5Cohort).measureKey : HEADLINE_MEASURE[stage]);
   // Group-level title: the specific label when one cohort is explicitly selected
@@ -294,6 +329,79 @@ export default function AcademicRankingsView({
         </>
       )}
     </div>
+  );
+}
+
+const LARGE_SET_TOP_N = 15;
+
+// Region/Nation comparator round 2: the design doc's own "target rank/percentile plus
+// the top 15 plus a neighbour window" -- a straight structural mirror of Rolls' own
+// RankingsView.tsx LargeSetMetricRanking, adapted for AcademicRegionNationRankMetric's
+// own entry shape (structurally identical -- urn/name/value/rank -- but a distinct
+// type from a different module, so a real, separate small component here, matching
+// this whole file's own "own component, not a modification of Rolls'" convention).
+function LargeSetRanking({
+  metricLabel,
+  format,
+  data,
+  targetUrn,
+}: {
+  metricLabel: string;
+  format: (v: number) => string;
+  data: AcademicRegionNationRankMetric;
+  targetUrn: string;
+}) {
+  if (data.total === 0 || data.targetRank === null) {
+    return (
+      <section>
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{metricLabel}</h3>
+        <p className="text-sm text-neutral-500">No real data available for this metric in the current set.</p>
+      </section>
+    );
+  }
+
+  const targetInTop15 = data.targetRank <= LARGE_SET_TOP_N;
+  // Neighbours past rank 15 only -- top15 already covers ranks 1-15, so this avoids
+  // showing the same row twice when the target's own rank is close to 15.
+  const neighboursBeyondTop15 = data.neighbours.filter((r) => r.rank > LARGE_SET_TOP_N);
+
+  const row = (r: { urn: string; name: string; value: number; rank: number }) => (
+    <tr
+      key={r.urn}
+      className={
+        r.urn === targetUrn
+          ? "border-t border-neutral-100 bg-red-50 dark:border-neutral-800 dark:bg-red-950/30"
+          : "border-t border-neutral-100 dark:border-neutral-800"
+      }
+    >
+      <td className="w-10 py-1.5 text-neutral-500">#{r.rank}</td>
+      <td className="py-1.5">
+        {r.name}
+        {r.urn === targetUrn && " (this school)"}
+      </td>
+      <td className="py-1.5 text-right font-medium">{format(r.value)}</td>
+    </tr>
+  );
+
+  return (
+    <section>
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{metricLabel}</h3>
+      <p className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
+        Top <strong>{100 - percentile(data.targetRank, data.total)}%</strong> of this set ({data.total.toLocaleString()} schools) — ranks{" "}
+        <strong>#{data.targetRank.toLocaleString()}</strong>
+      </p>
+      <table className="w-full text-sm">
+        <tbody>{data.top15.map(row)}</tbody>
+      </table>
+      {!targetInTop15 && neighboursBeyondTop15.length > 0 && (
+        <>
+          <p className="mt-3 mb-1 text-xs text-neutral-400">Around this school</p>
+          <table className="w-full text-sm">
+            <tbody>{neighboursBeyondTop15.map(row)}</tbody>
+          </table>
+        </>
+      )}
+    </section>
   );
 }
 
