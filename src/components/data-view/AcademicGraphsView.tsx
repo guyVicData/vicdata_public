@@ -9,10 +9,11 @@
 //
 // Round 2, Part C: a subject-level table inside Overview, once a specific subject is
 // picked from the Subject dropdown below (shown once a category is selected, per spec
-// §2's Category -> Subject nesting -- NOT actually filtered to that category's own real
-// subjects, a flagged approximation: subject_family_map isn't exposed via any RPC this
-// round, so the dropdown lists every real subject for the stage, not just the
-// selected family's). Deliberately narrower than spec §6 asks for -- entries count
+// §2's Category -> Subject nesting). Subject area round, 2026-09-14: the dropdown now
+// IS genuinely filtered to the active category's own real subjects, closing the gap
+// this comment used to flag -- academic_subject_family_map_lookup (new vicdata RPC
+// this round) finally exposes subject_family_map, which nothing before this round
+// could read at all. Deliberately narrower than spec §6 asks for -- entries count
 // (both stages) and KS5 value-added with its real confidence interval, but NOT average
 // grade/point score at subject level (either stage), and NOT a subject-level Map. Real
 // reasons, not an oversight, checked directly against the live ingested data before
@@ -78,8 +79,10 @@ import SortedBarChart from "./SortedBarChart";
 import TargetRollBarChart from "./TargetRollBarChart";
 import { Card, SectionHeading } from "./GraphsView";
 import CategoryFilter from "./CategoryFilter";
+import SubjectAreaSection from "./SubjectAreaSection";
 import AggregateTrendChart, { AGGREGATE_TARGET_COLOUR, AGGREGATE_REGION_COLOUR, AGGREGATE_NATION_COLOUR, type AggregateChartSeries } from "./AggregateTrendChart";
 import type { AcademicAggregateTrends } from "@/lib/academic-aggregate-trends";
+import { subjectFamilyColour } from "@/lib/subject-family-colours";
 
 // Round 2, Part B: a small, self-contained N-slice donut for the entries-share
 // breakdown (spec §4, "echoes the gender donut") -- GenderSplitCard.tsx's own Donut is
@@ -87,9 +90,17 @@ import type { AcademicAggregateTrends } from "@/lib/academic-aggregate-trends";
 // from an arbitrary-length family list, so this is a new, small implementation rather
 // than forcing that component into a shape it wasn't built for (same principle
 // TargetVsAverageTrend below already applies to the two-line trend chart).
-function familyColour(index: number, total: number): string {
-  const hue = Math.round((index / Math.max(total, 1)) * 360);
-  return `hsl(${hue}, 55%, 55%)`;
+//
+// 2026-09-14, subject-category colour round: was a dynamic index-based HSL hue
+// (`familyColour(index,total)`) -- meant every family's donut slice/dot colour was
+// arbitrary and re-shuffled depending on which families were present/how they
+// sorted, so the SAME real family (e.g. Sciences & Maths) could read as a different
+// colour on different schools. Replaced with the new fixed, site-wide
+// subject-family-colours.ts palette, keyed on the family's own real familyId --
+// per Guy's direct instruction that a subject category needs ONE distinct colour,
+// consistent everywhere it appears (map, buttons, graphs), not a per-render one.
+function familyColour(familyId: string): string {
+  return subjectFamilyColour(familyId).light[1];
 }
 
 function EntriesShareDonut({ families, highlightFamilyId }: { families: AcademicFamilyYear[]; highlightFamilyId: string }) {
@@ -98,19 +109,19 @@ function EntriesShareDonut({ families, highlightFamilyId }: { families: Academic
   let acc = 0;
   const stops: string[] = [];
   const sorted = [...families].sort((a, b) => b.entriesTotal - a.entriesTotal);
-  sorted.forEach((f, i) => {
+  sorted.forEach((f) => {
     const start = (acc / total) * 100;
     acc += f.entriesTotal;
     const end = (acc / total) * 100;
-    stops.push(`${familyColour(i, sorted.length)} ${start.toFixed(1)}% ${end.toFixed(1)}%`);
+    stops.push(`${familyColour(f.familyId)} ${start.toFixed(1)}% ${end.toFixed(1)}%`);
   });
   return (
     <div className="flex items-center gap-5">
       <div className="h-24 w-24 shrink-0 rounded-full" style={{ background: `conic-gradient(${stops.join(", ")})` }} />
       <div className="flex flex-col gap-1.5">
-        {sorted.map((f, i) => (
+        {sorted.map((f) => (
           <div key={f.familyId} className={`flex items-center gap-2 text-[13px] ${f.familyId === highlightFamilyId ? "font-semibold text-neutral-900 dark:text-neutral-100" : "text-neutral-600 dark:text-neutral-400"}`}>
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: familyColour(i, sorted.length) }} />
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: familyColour(f.familyId) }} />
             {f.familyLabel} — {((f.entriesTotal / total) * 100).toFixed(0)}%
           </div>
         ))}
@@ -217,7 +228,7 @@ export default function AcademicGraphsView({
   // state owner.
   families?: { familyId: string; familyLabel: string }[];
   onFamilyChange?: (familyId: string | null) => void;
-  subjectData?: { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[] } | null;
+  subjectData?: { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; subjectFamilyMap: Record<string, string> } | null;
   // GCSE exclusion round, Part 2: real URNs excluded from GCSE comparison this render
   // (empty whenever stage !== "ks4", per AcademicDataView's own gating) -- affects
   // Section 2 (Results) only; Section 3 (family/subject breakdown) is untouched, a
@@ -350,10 +361,16 @@ export default function AcademicGraphsView({
 
   // Round 2, Part C: real distinct subject names, union of both real sources (a
   // subject with entries but no value-added row, or vice-versa, should still be a
-  // real, selectable option) -- NOT filtered to the active family (see this file's own
-  // header comment for why: subject_family_map isn't exposed via any RPC this round).
+  // real, selectable option). Subject area round, 2026-09-14: NOW filtered to the
+  // active family when one's picked -- academic_subject_family_map_lookup (new this
+  // round) closes the real gap this comment used to flag ("subject_family_map isn't
+  // exposed via any RPC," subjectData.subjectFamilyMap below). Whole-school (no
+  // family picked) still lists every real subject for the stage, same as before --
+  // there's no "family" to filter against at that scope.
   const subjectNames = subjectData
-    ? Array.from(new Set([...subjectData.entries.map((e) => e.subject), ...subjectData.valueAdded.map((v) => v.subject)])).sort((a, b) => a.localeCompare(b))
+    ? Array.from(new Set([...subjectData.entries.map((e) => e.subject), ...subjectData.valueAdded.map((v) => v.subject)]))
+        .filter((name) => !familyId || subjectData.subjectFamilyMap[name] === familyId)
+        .sort((a, b) => a.localeCompare(b))
     : [];
   const subjectEntryRows = subject && subjectData ? subjectData.entries.filter((e) => e.subject === subject) : [];
   const subjectLatestEntry = subjectEntryRows.length > 0 ? subjectEntryRows.reduce((a, b) => (a.period > b.period ? a : b)) : null;
@@ -547,6 +564,16 @@ export default function AcademicGraphsView({
           <div>
             <div className="mb-4">
               <CategoryFilter families={families} activeFamilyId={familyId} onChange={onFamilyChange} />
+            </div>
+            {/* Subject area, per Guy's direct brief (2026-09-14): "whole school
+                selected show the categories, if a category selected show the
+                subjects within the category" -- always rendered here, whether or
+                not a family's picked, distinct from (and above) the EXISTING
+                family-specific content below, which answers a different question
+                (how this school's own category compares with OTHER schools, not
+                with its own other categories/subjects) and is untouched. */}
+            <div className="mb-6">
+              <SubjectAreaSection profile={targetProfile} stage={stage} familyId={familyId} familyLabel={familyLabel} subjectData={subjectData} />
             </div>
             {familyId && familyLabel ? (
               // Part B's own explicit instruction for this content: relocate the

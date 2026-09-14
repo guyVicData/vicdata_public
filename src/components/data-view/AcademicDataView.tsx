@@ -384,7 +384,7 @@ export default function AcademicDataView({
   // that component already remounts on stage/family change (its parent
   // DataViewErrorBoundary key includes both), so its local subject selection resets
   // for free on either change, no explicit reset effect needed.
-  const [subjectData, setSubjectData] = useState<{ entries: SubjectEntry[]; valueAdded: SubjectValueAdded[] } | null>(null);
+  const [subjectData, setSubjectData] = useState<{ entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; subjectFamilyMap: Record<string, string> } | null>(null);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -400,7 +400,7 @@ export default function AcademicDataView({
           headers: { Authorization: `Bearer ${authToken}` },
         });
         if (cancelled || !res.ok) return;
-        const body = (await res.json()) as { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[] };
+        const body = (await res.json()) as { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; subjectFamilyMap: Record<string, string> };
         setSubjectData(body);
       } catch {
         // Non-fatal -- the subject table just doesn't appear; headline/family levels

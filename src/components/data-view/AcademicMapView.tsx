@@ -41,6 +41,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { bngToLatLng } from "@/lib/bng";
 import { trendColour, gradeBandColour, GRADE_BAND_LEGEND_STOPS, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
+import { gradeBandColourForFamily, gradeBandLegendStopsForFamily } from "@/lib/subject-family-colours";
 import { trendBadge, rankDescendingWithTies } from "@/lib/data-view-cards";
 import type { ViewKey } from "@/lib/data-view-types";
 import type { AcademicGeographyChoroplethEntry } from "@/lib/academic-geography-choropleth";
@@ -230,9 +231,16 @@ function TrendColourKey({ box, title }: { box: { top: number; height: number } |
 // blue palette (trend-colours.ts's gradeBandColour/GRADE_BAND_LEGEND_STOPS), a
 // genuinely different scale from Trend's diverging red-green one, not a relabelling
 // of it.
-function GradeBandColourKey({ box, min, max, stage }: { box: { top: number; height: number } | null; min: number; max: number; stage: KsStage }) {
+//
+// Map round 4, per Guy's direct instruction (2026-09-14): Grade band at
+// subject-category scope now colours "to match the subject category," not the
+// generic whole-school blue -- `stops` is optional so this SAME legend component
+// (position/shape/label logic all unchanged) can render either ramp, just fed a
+// different 5-stop gradient (subject-family-colours.ts's own
+// gradeBandLegendStopsForFamily, same shape as GRADE_BAND_LEGEND_STOPS) rather than
+// forking a second copy of this component.
+function GradeBandColourKey({ box, min, max, stage, stops = GRADE_BAND_LEGEND_STOPS }: { box: { top: number; height: number } | null; min: number; max: number; stage: KsStage; stops?: { t: number; hex: string }[] }) {
   if (!box) return null;
-  const stops = GRADE_BAND_LEGEND_STOPS;
   const gradient = [...stops].reverse().map((s) => s.hex).join(",");
   const barHeight = Math.max(0, box.height - TREND_KEY_TITLE_HEIGHT);
   const mid = min + (max - min) / 2;
@@ -420,8 +428,18 @@ export default function AcademicMapView({
   // for its own real default state (ks5Cohort === null) and every cohort except
   // "A level" -- see this file's own header comment and the build report for the
   // real root cause and why it's fixed this way, not by loosening the gate a little.
-  const gradeBandAvailable = !familyId;
-  const effectiveColourMode: ColourMode = gradeBandAvailable ? colourMode : "trend";
+  //
+  // Map round 4, per Guy's direct live feedback (2026-09-14): "when the subject
+  // category is selected... we need... grade band view as per whole school view...
+  // and trends view as whole school view." Grade band used to be force-disabled at
+  // family level (the toggle itself was hidden, not just defaulted away) -- the
+  // real data it needs (data.avgValue, rowDataByUrn below) was ALREADY being
+  // populated from the family series in that case, so there was no real data gap
+  // forcing this, just a UI gate left over from before family-level colouring
+  // existed. Grade band is now available at every scope; only its COLOUR ramp
+  // differs by scope (gradeBandColourForFamily below), not its availability.
+  const gradeBandAvailable = true;
+  const effectiveColourMode: ColourMode = colourMode;
 
   // LA/Region choropleth: standalone, independent of ticked schools entirely. Only
   // ever available whole-school (no familyId -- this round's own real scope, see
@@ -808,7 +826,12 @@ export default function AcademicMapView({
           const badge = trendBadge(data.avgValue, data.anchorValue);
           if (badge) colour = trendColour(badge.pctChange);
         } else if (data.avgValue !== null) {
-          colour = gradeBandColour(data.avgValue, minGrade, maxGrade);
+          // Map round 4: family scope now colours "to match the subject category"
+          // (subject-family-colours.ts's own ramp, anchored on that category's site-
+          // wide colour) instead of the generic whole-school blue -- same real
+          // min-max normalisation either way, gradeBandColour/gradeBandColourForFamily
+          // just differ in which hue they interpolate through.
+          colour = familyId ? gradeBandColourForFamily(data.avgValue, minGrade, maxGrade, familyId) : gradeBandColour(data.avgValue, minGrade, maxGrade);
         }
 
         // A4: real popup rewrite -- bold key numbers, one stat per line, a real date
@@ -1121,7 +1144,7 @@ export default function AcademicMapView({
       ) : effectiveColourMode === "trend" ? (
         <TrendColourKey box={trendKeyBox} title="Growth" />
       ) : (
-        <GradeBandColourKey box={trendKeyBox} min={minGrade} max={maxGrade} stage={stage} />
+        <GradeBandColourKey box={trendKeyBox} min={minGrade} max={maxGrade} stage={stage} stops={familyId ? gradeBandLegendStopsForFamily(familyId) : undefined} />
       )}
 
       {/* Real bug found live (Guy, 2026-09-14): the choropleth's own fetch (region +

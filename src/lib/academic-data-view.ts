@@ -12,7 +12,7 @@
 // shape as KS4/KS5.
 
 import { createServerAnonSupabaseClient } from "./supabase";
-import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicKs5QualificationFlags, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
+import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
 import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "./roll-data";
 import { trendBadge } from "./data-view-cards";
@@ -851,12 +851,27 @@ function parseSubjectValueAdded(facts: ReferenceFact[]): SubjectValueAdded[] {
   return Array.from(byKey.values());
 }
 
-export async function fetchSubjectLevelData(urn: string, stage: KsStage): Promise<{ entries: SubjectEntry[]; valueAdded: SubjectValueAdded[] }> {
-  if (stage === "ks2") return { entries: [], valueAdded: [] };
+// Subject area round, 2026-09-14: now also returns subjectFamilyMap (raw_subject ->
+// family_id for this stage, via the new academic_subject_family_map_lookup RPC) --
+// a static reference lookup, not entity-scoped, fetched alongside the target's own
+// entries/value-added here rather than as a separate route, since every caller of
+// this function needs both together (the Subject dropdown's own filtering, and the
+// new Subject area section's subject-level breakdown). Returned as a plain
+// Record<string,string> rather than the RPC's own row-array shape -- exactly the
+// lookup shape every real caller actually wants (subject name -> family_id), so the
+// conversion happens once here instead of in every consumer.
+export async function fetchSubjectLevelData(
+  urn: string,
+  stage: KsStage,
+): Promise<{ entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; subjectFamilyMap: Record<string, string> }> {
+  if (stage === "ks2") return { entries: [], valueAdded: [], subjectFamilyMap: {} };
   const sourceId = stage === "ks4" ? "dfe_ks4_subject_entries" : "dfe_ks5_subject_results";
-  const [rawFacts, vaFacts] = await Promise.all([
+  const [rawFacts, vaFacts, familyMapRows] = await Promise.all([
     lookupReferenceData({ sourceId, entityIds: [urn] }),
     stage === "ks5" ? lookupReferenceData({ sourceId: "dfe_ks5_subject_value_added", entityIds: [urn] }) : Promise.resolve([]),
+    lookupAcademicSubjectFamilyMap({ ksStage: stage }),
   ]);
-  return { entries: parseSubjectEntries(rawFacts), valueAdded: parseSubjectValueAdded(vaFacts) };
+  const subjectFamilyMap: Record<string, string> = {};
+  for (const row of familyMapRows) subjectFamilyMap[row.raw_subject] = row.family_id;
+  return { entries: parseSubjectEntries(rawFacts), valueAdded: parseSubjectValueAdded(vaFacts), subjectFamilyMap };
 }

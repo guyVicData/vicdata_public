@@ -210,6 +210,42 @@ export async function lookupAcademicSubjectFamily(params: {
   return rows;
 }
 
+// Subject area round, 2026-09-14: exposes subject_family_map itself (raw_subject ->
+// family_id, per ks_stage) -- a static reference table, not entity-scoped, so no
+// entityIds param at all (genuinely different shape from the two lookups above,
+// which are both per-school). Needed so the frontend can finally filter "subjects
+// within this category" instead of listing every real subject for the stage
+// regardless of category (this file's own header comment on the previous round
+// already flagged this exact gap).
+export type AcademicSubjectFamilyMapRow = {
+  raw_subject: string;
+  family_id: string;
+  ks_stage: KsStage;
+};
+
+export async function lookupAcademicSubjectFamilyMap(params: {
+  ksStage?: KsStage;
+  familyIds?: string[];
+  signal?: AbortSignal;
+}): Promise<AcademicSubjectFamilyMapRow[]> {
+  const rows: AcademicSubjectFamilyMapRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage(
+      "academic_subject_family_map_lookup",
+      {
+        p_ks_stage: params.ksStage ?? null,
+        p_family_ids: params.familyIds ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+      },
+      params.signal,
+    )) as AcademicSubjectFamilyMapRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
 export type AcademicGeographyRow = {
   grouping_type: "la" | "region" | "national";
   grouping_key: string;
