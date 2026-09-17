@@ -234,20 +234,49 @@ export type AcademicSubjectHeadlineRow = {
   points_coverage_percent: number | null;
 };
 
-export async function lookupAcademicSubjectHeadline(params: {
-  entityIds?: string[];
-  ksStage?: KsStage;
-  familyId?: string;
-  periodMin?: number;
-  periodMax?: number;
-  signal?: AbortSignal;
-}): Promise<AcademicSubjectHeadlineRow[]> {
+// Fault isolation for academic_subject_headline_lookup. NOT a size limit.
+//
+// Real bug, reproduced live 2026-09-17 against the hosted database. A small number of
+// INDIVIDUAL schools make this RPC cross the database's statement timeout at ks4,
+// failing with Postgres 57014 ("canceling statement due to statement timeout") and
+// surfacing as an HTTP 500. URN 150956 (Gateacre School) is the confirmed example:
+//
+//   150956 alone, ks4, any family filter -> ~3,050ms, HTTP 500
+//   150956 alone, ks5, any family filter -> ~2,410ms, HTTP 200 (89 rows)
+//   100053 alone, ks4, any family filter ->     73ms, HTTP 200 (143 rows)
+//
+// It is per-school and per-stage, not a volume problem: with no such school in the
+// set, ks4 answers 120 schools in 176ms. That distinction matters because the
+// obvious reading -- "GCSE sets are bigger/heavier, so they time out" -- is wrong,
+// and chunking for SIZE would fix nothing.
+//
+// One poisoned school used to blank the entire drawer, because a single rejected
+// call failed the whole request. Chunking here bounds that blast radius: a bad
+// school takes out its own chunk and the remaining schools still return. Per-chunk
+// failures are logged with their entity ids and the result is partial rather than
+// empty, which is the right trade for a comparison view -- 39 schools of 40 is
+// useful, nothing at all is not.
+//
+// Chunks run SEQUENTIALLY. Running them in parallel was tried and is worse than the
+// original bug: concurrent statements contend for the same database and all slow
+// past the timeout (measured: 2 of 8 chunks failed at ks4, 6 of 8 at ks5, where the
+// single unchunked ks5 call had succeeded).
+//
+// Rare enough (0 of 60 schools in a fresh sample) that this is containment, not a
+// cure. The real fix belongs upstream in the vicdata project, on the RPC or its
+// indexes; see this round's build report.
+const HEADLINE_ENTITY_CHUNK = 20;
+
+async function lookupAcademicSubjectHeadlineChunk(
+  entityIds: string[] | null,
+  params: { ksStage?: KsStage; familyId?: string; periodMin?: number; periodMax?: number; signal?: AbortSignal },
+): Promise<AcademicSubjectHeadlineRow[]> {
   const rows: AcademicSubjectHeadlineRow[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
     const batch = (await fetchPage(
       "academic_subject_headline_lookup",
       {
-        p_entity_ids: params.entityIds ?? null,
+        p_entity_ids: entityIds,
         p_ks_stage: params.ksStage ?? null,
         p_family_id: params.familyId ?? null,
         p_period_min: params.periodMin ?? null,
@@ -259,6 +288,45 @@ export async function lookupAcademicSubjectHeadline(params: {
     )) as AcademicSubjectHeadlineRow[];
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
+export async function lookupAcademicSubjectHeadline(params: {
+  entityIds?: string[];
+  ksStage?: KsStage;
+  familyId?: string;
+  periodMin?: number;
+  periodMax?: number;
+  signal?: AbortSignal;
+}): Promise<AcademicSubjectHeadlineRow[]> {
+  const entityIds = params.entityIds ?? null;
+  // Unscoped (every entity), or a single chunk's worth: one call, and a failure
+  // still throws, exactly as before this fix -- there is nothing to isolate it from.
+  if (!entityIds || entityIds.length <= HEADLINE_ENTITY_CHUNK) {
+    return lookupAcademicSubjectHeadlineChunk(entityIds, params);
+  }
+  // Sequential, and tolerant per chunk -- see HEADLINE_ENTITY_CHUNK above.
+  const rows: AcademicSubjectHeadlineRow[] = [];
+  const failed: string[] = [];
+  for (let i = 0; i < entityIds.length; i += HEADLINE_ENTITY_CHUNK) {
+    const chunk = entityIds.slice(i, i + HEADLINE_ENTITY_CHUNK);
+    try {
+      rows.push(...(await lookupAcademicSubjectHeadlineChunk(chunk, params)));
+    } catch (err) {
+      failed.push(...chunk);
+      console.error("[lookupAcademicSubjectHeadline] chunk failed, continuing with the rest", {
+        ksStage: params.ksStage,
+        familyId: params.familyId,
+        entityIds: chunk,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+  // Every chunk failed: that is not partial data, it is no data, and the caller
+  // should see an error rather than an empty result it would render as "nothing yet".
+  if (rows.length === 0 && failed.length === entityIds.length) {
+    throw new Error(`academic_subject_headline_lookup failed for all ${failed.length} entities`);
   }
   return rows;
 }

@@ -51,10 +51,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "no urns requested" }, { status: 400 });
   }
 
-  const [{ byUrn: subjectByUrn }, headlineByUrnMap] = await Promise.all([
-    fetchSubjectLevelDataForSchools(urns, stage),
-    fetchSubjectHeadlineForSchools(urns, stage, familyId ?? undefined),
-  ]);
+  // Sequential, not Promise.all, deliberately -- and this is the second half of the
+  // 2026-09-17 timeout fix, not a style preference.
+  //
+  // These two lookups hit the same database, and both are heavy for a real
+  // comparison set. Run concurrently they contend, and the headline lookup crosses
+  // that database's statement timeout and fails with Postgres 57014: a 25-school
+  // headline chunk that takes ~90ms on its own still timed out here purely because
+  // the raw-fact lookup was in flight beside it. Chunking the headline lookup alone
+  // (see lookupAcademicSubjectHeadline) was not enough while this Promise.all
+  // remained.
+  //
+  // The cost of serialising is small and bounded -- the raw-fact lookup is the fast
+  // one -- and a request that takes slightly longer is strictly better than one that
+  // returns a 500 the UI reads as "no data".
+  const { byUrn: subjectByUrn } = await fetchSubjectLevelDataForSchools(urns, stage);
+  const headlineByUrnMap = await fetchSubjectHeadlineForSchools(urns, stage, familyId ?? undefined);
 
   return NextResponse.json({
     subjectByUrn: Object.fromEntries(subjectByUrn),

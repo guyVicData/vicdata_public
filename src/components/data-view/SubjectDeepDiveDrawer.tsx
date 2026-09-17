@@ -148,6 +148,12 @@ export default function SubjectDeepDiveDrawer({
   const [subjectByUrn, setSubjectByUrn] = useState<Map<string, SchoolSubjectData>>(new Map());
   const [headlineByUrn, setHeadlineByUrn] = useState<Map<string, AcademicSubjectHeadlineEntry[]>>(new Map());
   const [loading, setLoading] = useState(false);
+  // Why this exists: until 2026-09-17 this fetch discarded every failure -- a non-ok
+  // response returned silently and the catch was bare -- so a real HTTP 500 from the
+  // upstream lookup rendered as an ordinary "no data" drawer. The bug behind that
+  // (a statement timeout, see lookupAcademicSubjectHeadline) was invisible from the
+  // UI for exactly that reason. A failed fetch now says so.
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     // react-hooks/set-state-in-effect: the setState call lives inside this async
@@ -165,22 +171,45 @@ export default function SubjectDeepDiveDrawer({
         if (!cancelled) {
           setSubjectByUrn(new Map());
           setHeadlineByUrn(new Map());
+          setFetchError(target && !authToken ? "You need to be signed in to load subject detail." : null);
         }
         return;
       }
       setLoading(true);
+      setFetchError(null);
       try {
         const urns = Array.from(new Set([urn, ...comparableGroup.map((p) => p.urn)]));
         const params = new URLSearchParams({ anchorUrn: urn, urns: urns.join(","), stage, familyId: target.familyId });
         const res = await fetch(`/api/data-view/academic-subject-comparison?${params.toString()}`, {
           headers: { Authorization: `Bearer ${authToken}` },
         });
-        if (cancelled || !res.ok) return;
+        if (cancelled) return;
+        if (!res.ok) {
+          // A failed request is NOT "no data" -- distinguishing the two is the whole
+          // point of this branch. Reported here and logged with the real status so
+          // the next occurrence is diagnosable from the console alone.
+          console.error("[SubjectDeepDiveDrawer] subject comparison fetch failed", {
+            status: res.status,
+            stage,
+            familyId: target.familyId,
+            urnCount: urns.length,
+          });
+          setSubjectByUrn(new Map());
+          setHeadlineByUrn(new Map());
+          setFetchError(
+            res.status >= 500
+              ? "Couldn't load subject detail just now -- the data service didn't respond in time. Try again, or narrow your comparison set."
+              : "Couldn't load subject detail for this category.",
+          );
+          return;
+        }
         const body = (await res.json()) as { subjectByUrn: Record<string, SchoolSubjectData>; headlineByUrn: Record<string, AcademicSubjectHeadlineEntry[]> };
         setSubjectByUrn(new Map(Object.entries(body.subjectByUrn)));
         setHeadlineByUrn(new Map(Object.entries(body.headlineByUrn)));
-      } catch {
-        // Non-fatal -- the drawer just shows "no real data yet" below.
+      } catch (err) {
+        if (cancelled) return;
+        console.error("[SubjectDeepDiveDrawer] subject comparison fetch threw", err);
+        setFetchError("Couldn't load subject detail just now. Try again.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -200,6 +229,15 @@ export default function SubjectDeepDiveDrawer({
   // the category-level list, and the subject-level row lookups both key off this.
   const allSubjectNames = new Set<string>();
   for (const rows of headlineByUrn.values()) for (const r of rows) allSubjectNames.add(r.subject);
+
+  // The category-level list: every real subject in this category that the target
+  // school actually has entries for, ranked by entry count. Hoisted out of the JSX
+  // so the empty state below can tell "category returned nothing" apart from
+  // "subjects exist but none has entries data".
+  const listedSubjects = Array.from(allSubjectNames)
+    .map((name) => ({ name, row: rowFor(profile.urn, name) }))
+    .filter((s): s is { name: string; row: SubjectRow } => s.row !== null && s.row.candidates !== null)
+    .sort((a, b) => (b.row.candidates ?? 0) - (a.row.candidates ?? 0));
 
   function rowFor(schoolUrn: string, subject: string): SubjectRow | null {
     const own = subjectByUrn.get(schoolUrn);
@@ -239,15 +277,15 @@ export default function SubjectDeepDiveDrawer({
 
         {loading && subjectByUrn.size === 0 ? (
           <p className="py-12 text-center text-sm text-neutral-500">Loading real subject data…</p>
+        ) : fetchError ? (
+          <div className="rounded border border-amber-300 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+            <p className="text-sm text-amber-900 dark:text-amber-200">{fetchError}</p>
+          </div>
         ) : !target.subject ? (
           // CATEGORY level -- real subjects listed, each a click target into the subject level.
           <div className="space-y-1">
             <h3 className="mb-3 text-sm font-semibold text-neutral-900 dark:text-neutral-100">Subjects within {target.familyLabel}</h3>
-            {Array.from(allSubjectNames)
-              .map((name) => ({ name, row: rowFor(profile.urn, name) }))
-              .filter((s): s is { name: string; row: SubjectRow } => s.row !== null && s.row.candidates !== null)
-              .sort((a, b) => (b.row.candidates ?? 0) - (a.row.candidates ?? 0))
-              .map(({ name, row }) => (
+            {listedSubjects.map(({ name, row }) => (
                 <button
                   key={name}
                   type="button"
@@ -260,7 +298,20 @@ export default function SubjectDeepDiveDrawer({
                   </span>
                 </button>
               ))}
-            {allSubjectNames.size === 0 && <p className="text-sm text-neutral-500">No real subject data for this category yet.</p>}
+            {/* Two genuinely different empty states. `allSubjectNames` empty means the
+                category itself returned nothing; names present but every row filtered
+                out means the subjects exist in the headline rollup but have no
+                entries in the modern raw-fact source. Previously only the first was
+                reported, so the second rendered as a heading above nothing. */}
+            {allSubjectNames.size === 0 ? (
+              <p className="text-sm text-neutral-500">No real subject data for this category yet.</p>
+            ) : (
+              listedSubjects.length === 0 && (
+                <p className="text-sm text-neutral-500">
+                  No entries data for the {allSubjectNames.size} subject{allSubjectNames.size === 1 ? "" : "s"} in this category yet.
+                </p>
+              )
+            )}
           </div>
         ) : (
           (() => {
