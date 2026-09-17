@@ -81,6 +81,7 @@ import TargetRollBarChart from "./TargetRollBarChart";
 import { Card, SectionHeading } from "./GraphsView";
 import CategoryFilter from "./CategoryFilter";
 import SubjectAreaSection from "./SubjectAreaSection";
+import Ks2DomainSection from "./Ks2DomainSection";
 import TargetVsAverageTrend from "./TargetVsAverageTrend";
 import SubjectTable from "./SubjectTable";
 import SubjectDeepDiveDrawer, { type DeepDiveTarget } from "./SubjectDeepDiveDrawer";
@@ -649,24 +650,21 @@ export default function AcademicGraphsView({
             state before a family's picked), rather than staying invisible until a
             family's already selected via a control that no longer exists anywhere
             else -- there'd be no way to ever reach this section otherwise. */}
-        {/* KS2 has no subject taxonomy at all -- no subject_family_map entries, no
+        {/* KS2 has no subject taxonomy -- no subject_family_map entries, no
             category/subject split -- and never will: every pupil sits the same fixed
-            national tests, so there is nothing to categorise. KS2 is measured by
-            DOMAIN (Reading, Writing, Maths, GPS, Science, and the combined RWM
-            figure), which is whole-school data shown in Section 01 above.
-            Section 01's own Entries row already gates itself on stage !== "ks2"
-            (see its condition above); this section did not, so at KS2 it rendered a
-            category picker with nothing in it and the bar chart's generic "No real
-            data to show yet." -- which reads as a data gap that will be filled later,
-            the opposite of the truth. Explained rather than hidden outright: a
-            section that silently disappears is its own small mystery. */}
+            national tests, so there is nothing to categorise. It does have DOMAIN,
+            which is a real comparison axis of the same shape, so this section now
+            carries real domain content here rather than the explanatory placeholder
+            that stood in for it when Section 03 was first gated for this stage.
+            Deliberately a separate component, not SubjectAreaSection with a KS2 mode:
+            no candidates concept, no drawer, and two different units across the six
+            rows. See Ks2DomainSection.tsx's own header for the reasoning. */}
         {!closedSections.has("03") && stage === "ks2" && (
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              KS2 is assessed by domain, not by subject. There are no subject categories to compare at this stage -- the
-              Reading, Writing, Maths, GPS, Science and combined RWM figures are whole-school measures, shown above.
-            </p>
-          </div>
+          <Ks2DomainSection
+            profile={targetProfile}
+            comparableGroup={comparableGroup}
+            setLabel={setLabel}
+          />
         )}
         {!closedSections.has("03") && stage !== "ks2" && (
           <div>
