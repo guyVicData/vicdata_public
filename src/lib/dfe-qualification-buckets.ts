@@ -128,11 +128,31 @@ const AS_LEVEL: Record<string, number> = { A: 25, B: 20, C: 15, D: 10, E: 5, Fai
 // verbatim rather than one scaled from the other.
 const IB_HIGHER: Record<string, number> = { "7": 60, "6": 48, "5": 36, "4": 24, "3": 12, "2": 0, "1": 0, Fail: 0 };
 const IB_STANDARD: Record<string, number> = { "7": 25, "6": 20, "5": 15, "4": 10, "3": 5, "2": 0, "1": 0, Fail: 0 };
-// Table 2g. The ingested data does not name which core component a row is, only its
-// size, and the two real sizes happen to identify them.
-const IB_CORE_BY_SIZE: Record<string, Record<string, number>> = {
-  "0.3": { A: 12, B: 9, C: 6, D: 3, E: 0, Fail: 0 },
-  "0.2": { A: 10, B: 8, C: 6, D: 4, E: 2, Fail: 0 },
+// Table 2g. CORRECTED: it has THREE columns, not two, and two of them share size 0.2,
+// so size alone CANNOT identify a core component. The previous comment here was wrong,
+// and the 0.2 table in use was the Reflective project column, which over-scored every
+// Extended essay entry by 2 points at every grade.
+//
+//   Grade   Reflective project (0.2)   Extended essay (0.2)   Theory of knowledge (0.3)
+//   A                 10                        8                       12
+//   B                  8                        6                        9
+//   C                  6                        4                        6
+//   D                  4                        2                        3
+//   E                  2                        0                        0
+//
+// Which DfE raw subject is which, established from real data, not from the names:
+//   Learning Skills  -> Theory of knowledge (0.3 is unique to TOK).
+//   Study Skills     -> Extended essay. Never appears without Learning Skills in any
+//                       (school, period): 0 exceptions. That is the TOK+EE pair every
+//                       Diploma candidate takes.
+//   Self Development -> Reflective project. Appears WITHOUT Study Skills in 68
+//                       (school, period) pairs versus with it in 42, so it REPLACES the
+//                       extended essay -- IB's Career-related Programme.
+// Must stay in agreement with IB_CORE_BY_SUBJECT in ingest/dfe_points.py.
+const IB_CORE_BY_SUBJECT: Record<string, Record<string, number>> = {
+  "Learning Skills": { A: 12, B: 9, C: 6, D: 3, E: 0, Fail: 0 },
+  "Study Skills": { A: 8, B: 6, C: 4, D: 2, E: 0, Fail: 0 },
+  "Self Development": { A: 10, B: 8, C: 6, D: 4, E: 2, Fail: 0 },
 };
 // Tables 3f/3g (four-grade), 3j (seven-grade), 3k (ten-grade), as challenge per UNIT
 // of size. Verified linear against the guide's own per-size columns: four-grade size 2
@@ -176,7 +196,7 @@ const NON_GRADE_LABELS = new Set(["No result", "No result / X", "Suppressed", "A
 // publishes no points for it. Multiply by size for points; accumulate size for the
 // size-weighted denominator. Returns null rather than 0 for anything unscorable so
 // callers keep scored and unscored entries apart instead of averaging absences in.
-export function challengeFor(qualificationType: string, size: number | null, grade: string): number | null {
+export function challengeFor(qualificationType: string, size: number | null, grade: string, subject?: string): number | null {
   if (NON_GRADE_LABELS.has(grade)) return null;
   const bucket = bucketFor(qualificationType);
 
@@ -201,8 +221,13 @@ export function challengeFor(qualificationType: string, size: number | null, gra
       return p === undefined ? null : p / (size || 0.5);
     }
     if (qualificationType.includes("Diploma Programme Core")) {
-      if (!size) return null;
-      const p = (IB_CORE_BY_SIZE[sizeKey(size)] ?? {})[grade];
+      // Subject-aware, NOT size-aware: two of DfE's three core components share size
+      // 0.2 with different tables. An unrecognised core subject is left unscored rather
+      // than guessed at from its size.
+      if (!size || subject === undefined) return null;
+      const table = IB_CORE_BY_SUBJECT[subject];
+      if (table === undefined) return null;
+      const p = table[grade];
       return p === undefined ? null : p / size;
     }
     // The whole Diploma ("International Baccalaureate", size 5, grades 24-45) and the
@@ -247,21 +272,16 @@ export function challengeFor(qualificationType: string, size: number | null, gra
   return null;
 }
 
-// Match IB_CORE_BY_SIZE's keys without float-equality trouble ("0.3" vs 0.30000004).
-function sizeKey(size: number): string {
-  return String(Math.round(size * 100) / 100);
-}
-
 // Size-weighted average across real subject-grain grade rows, DfE's own formula.
 // Returns null when nothing in the set is scorable, never 0 -- an honest absence.
 export function averagePointsFor(
-  rows: { qualificationType: string; sizeWeight: number | null; grade: string; entries: number }[],
+  rows: { qualificationType: string; sizeWeight: number | null; grade: string; entries: number; subject?: string }[],
 ): { average: number; scoredEntries: number } | null {
   let points = 0;
   let sizeUnits = 0;
   let scored = 0;
   for (const r of rows) {
-    const challenge = challengeFor(r.qualificationType, r.sizeWeight, r.grade);
+    const challenge = challengeFor(r.qualificationType, r.sizeWeight, r.grade, r.subject);
     if (challenge === null || !r.sizeWeight) continue;
     points += challenge * r.sizeWeight * r.entries;
     sizeUnits += r.sizeWeight * r.entries;

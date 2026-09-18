@@ -459,6 +459,28 @@ export {
 } from "@/lib/dfe-qualification-buckets";
 export type { Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 
+// The IB Diploma's own total score, out of 45 -- the number IB schools actually quote,
+// and one DfE publishes no headline column for (its five cohort categories blend IB into
+// "Academic" with A-level). Computed in the ingest from the Diploma total-score rows;
+// see _ks5_bucket_measures in ingest/academic_aggregates.py for the methodology.
+//
+// Returns null for any school with no real Diploma cohort, which is most of them --
+// an honest absence, never a zero.
+export function ibDiplomaHeadline(
+  profile: AcademicSchoolProfile,
+): { period: number; averageScore: number; students: number; entries: number } | null {
+  const latest = latestMeasureAt(profile.ks5, "ib_diploma::avg_total_points");
+  if (!latest) return null;
+  const students = headlineValueAt(profile.ks5, latest.period, "ib_diploma::avg_total_points_student_count");
+  const entries = headlineValueAt(profile.ks5, latest.period, "ib_diploma::entries");
+  return {
+    period: latest.period,
+    averageScore: latest.value,
+    students: students ?? 0,
+    entries: entries ?? students ?? 0,
+  };
+}
+
 export const KS5_BUCKET_OPTIONS: { bucket: Ks5Bucket; pillLabel: string; description: string }[] = KS5_BUCKETS.map((bucket) => ({
   bucket,
   pillLabel: KS5_BUCKET_LABEL[bucket],

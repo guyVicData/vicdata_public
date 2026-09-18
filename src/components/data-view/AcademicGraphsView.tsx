@@ -51,6 +51,7 @@ import {
   ks5BucketExclusionNote,
   ks5BucketWholeGroupSentence,
   ks5BucketMeasureFor,
+  ibDiplomaHeadline,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -368,6 +369,10 @@ export default function AcademicGraphsView({
   // non-empty when the parent has a specific ks5Bucket selected -- the default
   // per-school state does no qualification-type matching at all (item 11) -- so the
   // `?? "A level"` fallbacks below are type-safety-only, never a real path.
+  // Only the target school's own Diploma figure: this is a whole-cohort headline for the
+  // school being viewed, not a comparator-set measure.
+  const ibDiploma = stage === "ks5" ? ibDiplomaHeadline(targetProfile) : null;
+
   const ks5GroupNote = stage === "ks5" ? ks5BucketExclusionNote(excludedNamesKs5, ks5Bucket ?? "alevel") : null;
   // Only one of the two is ever non-null/true for a given render (each gated to its
   // own stage) -- combined once here so the JSX below doesn't need to repeat both
@@ -678,6 +683,38 @@ export default function AcademicGraphsView({
                 family-specific content below, which answers a different question
                 (how this school's own category compares with OTHER schools, not
                 with its own other categories/subjects) and is untouched. */}
+            {/* The IB Diploma total score, placed directly ABOVE the subject list.
+                Reasoning for this spot: it is the whole-cohort counterpart of the
+                subject-by-subject breakdown that follows -- a reader who has picked
+                Post-16 at an IB school wants the Diploma average before the per-subject
+                detail, the same way the A-level points figure precedes its own subject
+                list. It is deliberately NOT in the whole-school headline strip at the
+                top, which is shared by every school and every stage; only a minority of
+                schools run the Diploma, and a card that is absent for most schools reads
+                better adjacent to the subject content it explains than as a hole in a
+                fixed header. Renders only when the school has a real Diploma cohort. */}
+            {stage === "ks5" && ibDiploma && (
+              <div className="mb-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  International Baccalaureate Diploma
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+                  {ibDiploma.averageScore.toFixed(2)}
+                  <span className="ml-1 text-base font-normal text-neutral-500">out of 45</span>
+                </p>
+                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                  Average total Diploma score across {ibDiploma.students.toLocaleString()} candidate
+                  {ibDiploma.students === 1 ? "" : "s"} in {academicYearLabel(ibDiploma.period)}
+                  {ibDiploma.entries > ibDiploma.students
+                    ? `. ${(ibDiploma.entries - ibDiploma.students).toLocaleString()} further candidate${ibDiploma.entries - ibDiploma.students === 1 ? "" : "s"} did not receive a scored result and are not in the average.`
+                    : "."}
+                </p>
+                <p className="mt-2 text-xs text-neutral-500">
+                  The Diploma score is a different scale from the points figures above: it runs 24 to 45 and
+                  counts the whole Diploma, not one entry.
+                </p>
+              </div>
+            )}
             <div className="mb-6">
               <SubjectAreaSection
                 ks5Bucket={ks5Bucket}
