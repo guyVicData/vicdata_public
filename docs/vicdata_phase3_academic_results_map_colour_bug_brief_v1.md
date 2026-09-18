@@ -1,10 +1,10 @@
 # Academic Results — Map: grade-band colour/scale bugs (live review, post round 3)
 
-Four items reported live straight after Round 3 shipped (1-3 against Yerbury
-Primary School's map, 4 against the trend wording generally). Read directly
-against the real code before writing this up (not guessed) — every root
-cause below is confirmed by reading the actual constants/logic, not by live
-reproduction.
+Five items reported live straight after Round 3 shipped (1-3 and 5 against
+Yerbury Primary School's map, 4 against the trend wording generally). Read
+directly against the real code before writing this up (not guessed) — every
+root cause below is confirmed by reading the actual constants/logic, not by
+live reproduction.
 
 ## 1 & 2. Root cause: grade-band colour is driven by a DIFFERENT real measure
 than the one shown as the school's percentage
@@ -136,6 +136,49 @@ to the new 7-tier scheme needs a real design call on how to do that without
 breaking Rolls' own existing 3-tier usage — make that call directly, name it
 in the build report, rather than guessing silently.
 
+## 5. Grade-band palette: lightest stops don't read against the map
+
+Guy's own direct instruction: the current scale's lightest stops (the low
+end) don't have enough contrast against the map basemap to read as a real
+colour at all. Shift the whole scale darker rather than just deleting the
+lightest stop — start the bottom of the new scale where the CURRENT scale's
+own quarter-mark stop is, and make the top darker than the current top too,
+so the scale still spans a genuinely wide range, just shifted up.
+
+`GRADE_BAND_STOPS` (`src/lib/trend-colours.ts`) is currently:
+
+```ts
+const GRADE_BAND_STOPS: { t: number; hex: string }[] = [
+  { t: 0, hex: "#eff6ff" }, // blue-50
+  { t: 0.25, hex: "#bfdbfe" }, // blue-200
+  { t: 0.5, hex: "#60a5fa" }, // blue-400
+  { t: 0.75, hex: "#2563eb" }, // blue-600
+  { t: 1, hex: "#1e3a8a" }, // blue-900
+];
+```
+
+Replace with the same five-stop shape, shifted two steps darker along the
+same Tailwind blue scale (bottom = today's t=0.25 stop, top = one step
+darker than today's t=1 stop):
+
+```ts
+const GRADE_BAND_STOPS: { t: number; hex: string }[] = [
+  { t: 0, hex: "#bfdbfe" }, // blue-200 -- was the t=0.25 stop
+  { t: 0.25, hex: "#60a5fa" }, // blue-400 -- was the t=0.5 stop
+  { t: 0.5, hex: "#2563eb" }, // blue-600 -- was the t=0.75 stop
+  { t: 0.75, hex: "#1e40af" }, // blue-800 -- new
+  { t: 1, hex: "#172554" }, // blue-950 -- darker than the old t=1 stop
+];
+```
+
+Sense-check this actually reads well against the real basemap (light mode
+and dark mode both, if the map supports both) before treating it as done —
+this is a first specific proposal grounded in Guy's own instruction, not a
+locked value; retune the exact stops if they don't look right once actually
+rendered. This is independent of item 1/2's fix (which changes what real
+VALUE the colour is computed from, not the palette itself) — both apply
+together.
+
 ## Build notes
 
 Local build/test only, no commit/push, same discipline as every round.
@@ -143,5 +186,6 @@ Re-verify items 1 and 2 live against Yerbury Primary and at least one GCSE
 and one Post-16 school (to confirm the KS4/KS5 shape is really the same
 issue, not just theorised from the code) before fixing. For item 4, name
 the real schools/values used to confirm the new tiers land where expected.
-Name the real before/after values for a couple of real schools in the build
+For item 5, look at the real rendered result before calling it done. Name
+the real before/after values for a couple of real schools in the build
 report throughout — not just "fixed."

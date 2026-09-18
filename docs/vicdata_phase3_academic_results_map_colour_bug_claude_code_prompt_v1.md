@@ -38,6 +38,15 @@ ratio-based ones without a real reason) and flags that `trend-labels.ts`
 (shared with Rolls) needs a real design call to extend from 3 tiers to 7
 without breaking Rolls' own existing usage.
 
+Item 5 (palette contrast): Guy's own instruction — the lightest grade-band
+stops don't read against the map basemap. Shift the whole `GRADE_BAND_STOPS`
+scale darker rather than dropping the lightest stop: the brief gives a
+specific concrete replacement (bottom = today's quarter-mark stop, top one
+step darker than today's top, same Tailwind blue scale) as a starting
+proposal — look at how it actually renders and retune if it doesn't read
+well, don't treat the given hex values as locked in. Independent of items
+1/2 (palette vs. the value driving it) — both apply together.
+
 Local build/test only, no commit/push. Full build report when done, naming
 real before/after values for a couple of real schools for every item, not
 just "fixed."
