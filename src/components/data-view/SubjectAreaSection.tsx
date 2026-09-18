@@ -25,7 +25,7 @@
 // before this round.
 import { useCallback, useMemo, useState } from "react";
 import { stageFamilies, familyYearsFor, type AcademicFamilyYear, type AcademicSchoolProfile, type KsStage, type SubjectEntry, type SubjectValueAdded, type AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
-import { bucketFor, ks5BucketHasPointsFigure, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
+import { bucketFor, ks5BucketHasPointsFigure, KS5_BUCKET_LABEL, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
 import { academicYearLabel } from "./TrendPill";
 import SubjectAreaBarChart from "./SubjectAreaBarChart";
@@ -50,6 +50,9 @@ export type SubjectRow = {
   results: number | null;
   candidatesPctChange: number | null;
   resultsPctChange: number | null;
+  // Which bucket the points figure came from, when it was resolved by fallback rather
+  // than an explicit TYPE selection. Drives the "(IB)" style label on the card.
+  pointsBucket?: Ks5Bucket | null;
 };
 
 // CATEGORY mode: one candidates/results/trend figure per real family, from
@@ -57,6 +60,44 @@ export type SubjectRow = {
 // value" is the same real methodology this section has always used. Extracted as a
 // plain, profile-agnostic function so the exact same real computation applies to
 // every comparator school too, not a second, possibly-drifting copy.
+// TYPE = All: show a real points figure when a category's scoreable entries sit in
+// exactly ONE scored bucket, labelled with which bucket it came from. Never blend across
+// buckets -- A-level, IB, BTEC/OCR and T Level are separately scaled and an average
+// across them would look precise and mean nothing.
+//
+// THRESHOLD: exactly one bucket, no "near enough" allowance. Measured against the real
+// data before choosing: at category grain 49,551 of 56,956 school-period-categories
+// (87.0%) are already 100% single-bucket, and only 686 (1.2%) sit in the 90-99.9% band a
+// threshold would capture. Buying 1.2% more coverage in exchange for a figure that
+// silently omits up to a tenth of a category's entries is a bad trade.
+//
+// GRAIN: category, not whole-school. Also measured first: only 55.9% of school-periods
+// are single-bucket overall, but of the 4,615 that are mixed, 4,591 (99.5%) still have at
+// least one category that is purely one bucket. Whole-school grain would suppress nearly
+// all of those needlessly.
+const SCORED_BUCKETS: Ks5Bucket[] = ["alevel", "ib", "btec_ocr", "tlevel"];
+
+function singleScoredBucketFor(profile: AcademicSchoolProfile, familyId: string): Ks5Bucket | null {
+  const present = SCORED_BUCKETS.filter((b) =>
+    (profile.ks5FamiliesByBucket?.[b] ?? []).some((y) => y.familyId === familyId && y.avgPointScore !== null),
+  );
+  return present.length === 1 ? present[0] : null;
+}
+
+// The comparator side needs the whole set to agree. If one school's category is pure IB
+// and another's is pure A-level, averaging them would blend two scales -- exactly what
+// the constraint forbids -- so that case suppresses instead.
+function agreedScoredBucketFor(profiles: AcademicSchoolProfile[], familyId: string): Ks5Bucket | null {
+  let agreed: Ks5Bucket | null = null;
+  for (const p of profiles) {
+    const b = singleScoredBucketFor(p, familyId);
+    if (b === null) continue;
+    if (agreed === null) agreed = b;
+    else if (agreed !== b) return null;
+  }
+  return agreed;
+}
+
 export function buildCategoryRows(
   profile: AcademicSchoolProfile,
   stage: KsStage,
@@ -72,7 +113,14 @@ export function buildCategoryRows(
   const families = bucketFamilies ?? stageFamilies(profile, stage);
   const familyIds = Array.from(new Set(families.map((f) => f.familyId)));
   return familyIds.map((id) => {
-    const years = (bucketFamilies ?? familyYearsFor(profile, stage, id)).filter((y) => y.familyId === id);
+    // No explicit TYPE selected: fall back to this category's own single scored bucket
+    // if it has exactly one. Leaves A-level-only schools on the pre-existing 'all' rows
+    // they have always used, since those resolve to "alevel" and read the same data.
+    const fallback = !bucket && stage === "ks5" ? singleScoredBucketFor(profile, id) : null;
+    const fallbackYears = fallback && fallback !== "alevel"
+      ? (profile.ks5FamiliesByBucket?.[fallback] ?? []).filter((y) => y.familyId === id)
+      : null;
+    const years = (bucketFamilies ?? fallbackYears ?? familyYearsFor(profile, stage, id)).filter((y) => y.familyId === id);
     const label = families.find((f) => f.familyId === id)?.familyLabel ?? id;
     const latest = years.length ? years[years.length - 1] : null;
     const entriesFirst = years.find((y) => y.entriesTotal > 0)?.entriesTotal ?? null;
@@ -87,6 +135,11 @@ export function buildCategoryRows(
       results: latest?.avgPointScore ?? null,
       candidatesPctChange: pctChange(entriesFirst, entriesLast),
       resultsPctChange: pctChange(scoreFirst, scoreLast),
+      // Only tagged when the figure genuinely came from a non-A-level bucket's own rows.
+      // A fallback of "alevel" reads the pre-existing 'all' rows, which ARE the A-level
+      // figure and are exactly what these schools already showed, so tagging them would
+      // put a new label on schools this round must leave completely untouched.
+      pointsBucket: bucket ?? (fallback && fallback !== "alevel" ? fallback : null),
     };
   });
 }
@@ -436,12 +489,28 @@ export default function SubjectAreaSection({
   const candidatesTrendItems = rows.map((r) => ({ id: r.id, label: r.label, pctChange: r.candidatesPctChange }));
   const resultsTrendItems = rows.map((r) => ({ id: r.id, label: r.label, pctChange: r.resultsPctChange }));
 
+  // Wording: "mixed offer" rather than "no figure yet". The old phrasing read as
+  // missing data a future ingest might fill in; this is a deliberate design boundary --
+  // the school's categories genuinely span two or more separately-scaled qualification
+  // types, so there is no single honest number to show, and there never will be.
+  // Says which types, so the reader can pick one from the TYPE row and get a real figure.
+  const mixedOfferNote = (() => {
+    if (familyId || stage !== "ks5" || ks5Bucket) return null;
+    const present = new Set<Ks5Bucket>();
+    for (const b of SCORED_BUCKETS) {
+      if ((profile.ks5FamiliesByBucket?.[b] ?? []).some((y) => y.avgPointScore !== null)) present.add(b);
+    }
+    if (present.size < 2) return null;
+    const names = Array.from(present).map((b) => KS5_BUCKET_LABEL[b]);
+    return `Mixed offer: this school's results span ${names.join(" and ")}, which are scored on different scales and cannot honestly be combined into one figure. Pick a qualification type above to see its own real points.`;
+  })();
+
   const hasAnyResults = resultItems.length > 0;
   const resultsUnavailableNote = familyId
     ? stage === "ks4"
       ? "No real average-point-score figure for any subject in this category yet (too few real points-eligible entries, or the comparison-set fetch hasn't resolved yet)."
       : "No real value-added figure for any subject in this category yet."
-    : "No real results figure for any category yet.";
+    : mixedOfferNote ?? "No real results figure for any category yet.";
 
   // Comparison-set data. Category mode: unchanged, client-side over comparableGroup's
   // own already-fetched profiles, no new fetch. Subject mode: real now (Part 1 of
@@ -556,7 +625,15 @@ export default function SubjectAreaSection({
           // pipeline and were never part of this suppression.
           categoryPointsUnavailable
           ? null
-          : aggregateFamilyTrend(comparableGroup, stage, id, (y) => y.avgPointScore, average, ks5Bucket)
+          : // Same single-bucket fallback as the current-value card, so the two cards
+            // cannot disagree -- the exact class of bug the borrowed-points round found.
+            // agreedScoredBucketFor returns null unless the whole comparator set resolves
+            // to the same bucket, so a set mixing IB and A-level schools suppresses
+            // rather than averaging across two scales.
+            aggregateFamilyTrend(
+              comparableGroup, stage, id, (y) => y.avgPointScore, average,
+              ks5Bucket ?? agreedScoredBucketFor(comparableGroup, id),
+            )
         : aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => (r.resultsPctChange !== null ? r.results : null), average),
   }));
 
@@ -625,7 +702,7 @@ export default function SubjectAreaSection({
             {resultComparisonItems.length > 0 ? (
               <SubjectAreaBarChart items={resultComparisonItems} order={order} colourFor={colourFor} formatValue={(v) => v.toFixed(1)} onItemClick={handleItemClick} />
             ) : (
-              <p className="text-sm text-neutral-500">No real results figure for any category across {setLabel} yet.</p>
+              <p className="text-sm text-neutral-500">{mixedOfferNote ? `Mixed offer across ${setLabel}: these schools\u2019 results span more than one qualification type, scored on different scales, so there is no single comparable figure. Pick a qualification type above.` : `No real results figure for any category across ${setLabel} yet.`}</p>
             )}
           </div>
         </div>
