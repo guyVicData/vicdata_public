@@ -24,13 +24,14 @@
 // DfE (27.51 computed vs 27.95 published, against 26.34 for raw entries). See
 // dfe_points.py's docstring for the full table and the IB cross-check.
 
-export const KS5_BUCKETS = ["alevel", "ib", "btec_ocr", "other"] as const;
+export const KS5_BUCKETS = ["alevel", "ib", "btec_ocr", "tlevel", "other"] as const;
 export type Ks5Bucket = (typeof KS5_BUCKETS)[number];
 
 export const KS5_BUCKET_LABEL: Record<Ks5Bucket, string> = {
   alevel: "A-level",
   ib: "IB",
   btec_ocr: "BTec & OCR",
+  tlevel: "T Level",
   other: "Other",
 };
 
@@ -38,6 +39,7 @@ export const KS5_BUCKET_DESCRIPTION: Record<Ks5Bucket, string> = {
   alevel: "A level, AS level and Advanced Extension Award. Uses DfE's own published A-level points figure, unchanged.",
   ib: "International Baccalaureate: Higher and Standard level components and the Diploma Programme Core.",
   btec_ocr: "BTEC and OCR Cambridge Technical qualifications, combined into one comparable bucket.",
+  tlevel: "T Levels: 2-year technical programmes equivalent in size to 3 A levels, shown by DfE occupational pathway.",
   other: "EPQ, Core Maths, Pre-U, VRQ and other general qualifications. Shown by subject only: see the note below for why there is no single points figure.",
 };
 
@@ -90,16 +92,20 @@ export function ks5BucketEntriesKey(bucket: Ks5Bucket): string {
   return `bucket:${bucket}::entries`;
 }
 
-// T Level is deliberately absent and falls to "other": DfE has published no challenge
-// table for it at all ("T Level Points for 16-19 performance tables will be shared in
-// due course", confirmed absent from the same guide), which is exactly why its own
-// separate brief uses UCAS Tariff instead. Adding a fifth bucket later needs only a
-// branch here and a label above -- the filter does not have to be restructured.
+// T Level is now its own real bucket on DfE's own published points. It previously fell
+// to "other" because the points practical guide has no table for it and still says only
+// "T Level Points for 16-19 performance tables will be shared in due course". Re-checking
+// for the T Level round found the table published elsewhere -- DfE's "16 to 18 technical
+// guidance" (February 2026), Table 51 -- so it uses real DfE points, not UCAS Tariff.
 export function bucketFor(qualificationType: string): Ks5Bucket {
   const q = qualificationType || "";
   if (q === "GCE A level" || q.startsWith("GCE AS level") || q === "Advanced Extension Award") return "alevel";
   if (q.startsWith("IBO ") || q.startsWith("International Baccalaureate")) return "ib";
   if (q.startsWith("BTEC ") || q.startsWith("OCR Cambridge Technical")) return "btec_ocr";
+  // Exact match, deliberately not a substring test: "at Level 3" contains the substring
+  // "t Level", so a loose rule silently swallows every OCR Cambridge Technical and Core
+  // Maths qualification string in the real data.
+  if (q === "T Level") return "tlevel";
   return "other";
 }
 
@@ -135,6 +141,24 @@ const VOC_TEN: Record<string, number> = {
   "Merit-Merit-Merit": 25, "Merit-Merit-Pass": 65 / 3, "Merit-Pass-Pass": 55 / 3,
   "Pass-Pass-Pass": 15, Fail: 0,
 };
+
+// Table 51 of DfE's "16 to 18 technical guidance" (February 2026). DfE publishes TOTAL
+// points for the whole T Level and states the conversion verbatim: "As an A level earns
+// a maximum of 60 points in the performance tables and a T Level is the equivalent of 3
+// A levels, the maximum points available are 180... To derive a points per entry (PPE),
+// as per other qualifications, we divide these total points by 3 (T Level's A level
+// equivalent size) so PPE is on the scale 0 - 60." Stored here already divided, as
+// challenge per unit of size, so T Level lands on the same 0-60 scale as every other
+// bucket and can share an axis with them rather than being held apart.
+const TLEVEL: Record<string, number> = { "Distinction*": 60, Distinction: 50, Merit: 40, Pass: 30, Unclassified: 0 };
+
+// "Partial achievement" is a real outcome carrying real points that CANNOT be derived
+// from the published provider-level data: DfE computes them per component (core,
+// occupational specialism, industry placement) and the release publishes only an
+// undifferentiated head count. Scored 0 it would be false; given a mid-point it would be
+// fabricated. Counted as a real entry, left unscored -- the same treatment every other
+// unscorable row here gets.
+const TLEVEL_UNSCORABLE = new Set(["Partial achievement"]);
 
 // Real rows that carry no result to score: DfE small-number suppression, absence, and
 // the IB Combined Certificate's award flag. Never silently treated as a fail.
@@ -180,6 +204,12 @@ export function challengeFor(qualificationType: string, size: number | null, gra
     // empirically -- including the whole Diploma pushed school 100369's IB average to
     // 60.2, ABOVE the HL maximum of 60.
     return null;
+  }
+
+  if (bucket === "tlevel") {
+    if (TLEVEL_UNSCORABLE.has(grade)) return null;
+    const p = TLEVEL[grade];
+    return p === undefined ? null : p;
   }
 
   if (bucket === "btec_ocr") {

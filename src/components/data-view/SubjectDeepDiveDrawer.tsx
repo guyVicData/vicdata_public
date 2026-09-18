@@ -110,12 +110,20 @@ const GRADE_SCALES: string[][] = [
   ["Level 2 distinction star", "Level 2 distinction", "Level 2 merit", "Level 2 pass", "Level 1 distinction star", "Level 1 distinction", "Level 1 merit", "Level 1 pass"],
   // Pre-U.
   ["D1", "D2", "D3", "M1", "M2", "M3", "P1", "P2", "P3"],
+  // T Level, its OWN scale rather than the vocational one above. The two share
+  // Distinction*/Distinction/Merit/Pass, so a T Level distribution would part-match the
+  // vocational scale and silently drop its two distinctive bands -- the same shape as
+  // the bug that forced IB into A-level's A*-E and rendered an empty chart. "Partial
+  // achievement" is a real T Level outcome (a student who passed some but not all
+  // components), ranked below Pass and above Unclassified, and deliberately NOT treated
+  // as a non-result: it is a real attainment band, just one with no derivable points.
+  ["Distinction*", "Distinction", "Merit", "Pass", "Partial achievement", "Unclassified"],
 ];
 
 // Present in almost every scale and always the bottom of it, so they are ranked below
 // every graded band rather than being indexed alongside them -- otherwise a fail sorts
 // to the TOP of the chart.
-const BOTTOM_RANK: Record<string, number> = { Fail: 900, U: 901 };
+const BOTTOM_RANK: Record<string, number> = { Fail: 900, U: 901, Unclassified: 902 };
 
 // Not attainment bands: DfE suppression and non-results. Excluded from the chart's axis
 // so a distribution is not padded with rows that cannot be compared between schools.
