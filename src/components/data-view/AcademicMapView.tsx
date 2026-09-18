@@ -56,10 +56,11 @@ import {
   TREND_BASELINE_PERIOD,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
-  ks5HeadlineMeasureKey,
-  ks5CohortExclusionNote,
-  ks5CohortWholeGroupSentence,
-  ks5MeasureFor,
+  ks5BucketMeasureKey,
+  KS5_BUCKET_LABEL,
+  ks5BucketExclusionNote,
+  ks5BucketWholeGroupSentence,
+  ks5BucketMeasureFor,
   headlineValueAt,
   latestMeasureAt,
   latestEntriesCount,
@@ -71,7 +72,7 @@ import {
   latestFamilyYear,
   type AcademicSchoolProfile,
   type KsStage,
-  type Ks5Cohort,
+  type Ks5Bucket,
 } from "@/lib/academic-data-view";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
@@ -326,7 +327,7 @@ export default function AcademicMapView({
   familyLabel = null,
   activeSetLabel = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
-  ks5Cohort = null,
+  ks5Bucket = null,
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
   activeView,
   onChangeView,
@@ -356,7 +357,7 @@ export default function AcademicMapView({
   // above) and whenever stage !== "ks5". Item 10: null is the real default now --
   // each circle then uses ITS OWN dominant real cohort (ks5MeasureFor), not one
   // shared measure across a mixed group.
-  ks5Cohort?: Ks5Cohort | null;
+  ks5Bucket?: Ks5Bucket | null;
   ks5ExcludedUrns?: Set<string>;
   // Stage 2 UX review, item 6: this map now renders its own ViewSwitcher/
   // PdfExportButton overlays (matching Rolls' MapView.tsx exactly), since
@@ -424,8 +425,8 @@ export default function AcademicMapView({
   // series to colour by at all -- i.e. always, except at family level (which has its
   // own separate, single, always-available trend-only colour concept, Round 2 Part B
   // above -- a real, distinct scope decision, not touched this round). The OLD gate
-  // (`stage !== "ks5" || ks5Cohort === "A level"`) forced Post-16 into Trend-only
-  // for its own real default state (ks5Cohort === null) and every cohort except
+  // (`stage !== "ks5" || ks5Bucket === "A level"`) forced Post-16 into Trend-only
+  // for its own real default state (ks5Bucket === null) and every cohort except
   // "A level" -- see this file's own header comment and the build report for the
   // real root cause and why it's fixed this way, not by loosening the gate a little.
   //
@@ -497,7 +498,7 @@ export default function AcademicMapView({
   const rowDataByUrn = useMemo(() => {
     const age = HEADLINE_AGE[stage];
     const baseline = TREND_BASELINE_PERIOD[stage];
-    const measureKey = stage === "ks5" && ks5Cohort ? ks5HeadlineMeasureKey(ks5Cohort) : HEADLINE_MEASURE[stage];
+    const measureKey = stage === "ks5" && ks5Bucket ? ks5BucketMeasureKey(ks5Bucket) : HEADLINE_MEASURE[stage];
     const map = new Map<string, RowData>();
     for (const p of withCoords) {
       if (familyId) {
@@ -514,12 +515,12 @@ export default function AcademicMapView({
         });
         continue;
       }
-      const rowKs5 = stage === "ks5" ? ks5MeasureFor(p, ks5Cohort) : null;
+      const rowKs5 = stage === "ks5" ? ks5BucketMeasureFor(p, ks5Bucket) : null;
       const rowMeasureKey = rowKs5 ? rowKs5.measureKey : measureKey;
       const years = stageYears(p, stage);
       const headline = latestMeasureAt(years, rowMeasureKey);
       const anchor = headlineValueAt(years, baseline, rowMeasureKey);
-      const entries = stage === "ks2" ? null : latestEntriesCount(p, stage, ks5Cohort);
+      const entries = stage === "ks2" ? null : latestEntriesCount(p, stage, ks5Bucket);
       const size = stage === "ks2" ? populationAtAge(p, age) : (entries?.value ?? null);
 
       // Map colour bug round, items 1-2's real fix: grade band's colour source is
@@ -544,7 +545,7 @@ export default function AcademicMapView({
       });
     }
     return map;
-  }, [withCoords, familyId, stage, ks5Cohort]);
+  }, [withCoords, familyId, stage, ks5Bucket]);
 
   // Map round 2, item 4 / round 3 A2: hoisted so both legends and the drawing effect
   // share the SAME real min/max, never recomputed twice. Colour bug round, items
@@ -999,7 +1000,7 @@ export default function AcademicMapView({
     });
   }, [mapReady, viewByArea, choroplethData, choroplethTier, choroplethEntries, choroplethMin, choroplethMax, stage]);
 
-  const sizeCaption = stage === "ks2" ? `${HEADLINE_AGE.ks2}-year-olds` : stage === "ks4" ? "pupils entered for GCSEs" : ks5Cohort ? `${ks5Cohort} entries` : "pupils entered for Post-16 exams";
+  const sizeCaption = stage === "ks2" ? `${HEADLINE_AGE.ks2}-year-olds` : stage === "ks4" ? "pupils entered for GCSEs" : ks5Bucket ? `${KS5_BUCKET_LABEL[ks5Bucket]} entries` : "pupils entered for Post-16 exams";
 
   return (
     <div ref={rootRef} className="vd-academic-map relative h-full w-full">
@@ -1143,16 +1144,16 @@ export default function AcademicMapView({
               </p>
             ) : null)}
             {/* ks5ExcludedUrns (and so this whole branch) is only ever non-empty when the
-                parent has a specific ks5Cohort selected -- the default per-school state
+                parent has a specific ks5Bucket selected -- the default per-school state
                 does no qualification-type matching at all (item 11) -- so the `?? "A
                 level"` fallback below is a type-safety-only no-op, never a real path. */}
             {stage === "ks5" && (mapKs5WholeGroupExcluded ? (
               <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
-                {ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level")}
+                {ks5BucketWholeGroupSentence(setLabel, ks5Bucket ?? "alevel")}
               </p>
             ) : ks5ExcludedForMap.length > 0 ? (
               <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
-                {ks5CohortExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Cohort ?? "A level")}
+                {ks5BucketExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Bucket ?? "alevel")}
               </p>
             ) : null)}
           </div>

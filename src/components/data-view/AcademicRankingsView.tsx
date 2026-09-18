@@ -27,17 +27,17 @@ import {
   ks4ExclusionTargetSentence,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
-  ks5HeadlineLabel,
-  ks5CohortExclusionNote,
-  ks5CohortWholeGroupSentence,
-  ks5MeasureFor,
+  ks5BucketHeadlineLabel,
+  ks5BucketExclusionNote,
+  ks5BucketWholeGroupSentence,
+  ks5BucketMeasureFor,
   headlineValueAt,
   latestYear,
   stageYears,
   trendWordingFor,
   type AcademicSchoolProfile,
   type KsStage,
-  type Ks5Cohort,
+  type Ks5Bucket,
 } from "@/lib/academic-data-view";
 import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, percentile, type RankedEntry } from "@/lib/data-view-cards";
 import type { AcademicRegionNationRankMetric } from "@/lib/academic-region-nation-rank";
@@ -78,7 +78,7 @@ export default function AcademicRankingsView({
   startPeriod,
   activeSetLabel,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
-  ks5Cohort = "A level",
+  ks5Bucket = "alevel",
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
   largeSetRank,
   largeSetRankLoading,
@@ -114,7 +114,7 @@ export default function AcademicRankingsView({
   // same underlying scale (e.g. IB points vs. Applied General points), so per-row
   // cohort labels are shown below whenever a specific cohort ISN'T selected, so this
   // never reads as a same-metric ranking when it isn't one.
-  ks5Cohort?: Ks5Cohort | null;
+  ks5Bucket?: Ks5Bucket | null;
   ks5ExcludedUrns?: Set<string>;
 }) {
   // Region/Nation comparator round 2: mirrors Rolls' own RankingsView.tsx exactly --
@@ -138,22 +138,22 @@ export default function AcademicRankingsView({
   }
 
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
-  const measureKeyFor = (p: AcademicSchoolProfile) => (stage === "ks5" ? ks5MeasureFor(p, ks5Cohort).measureKey : HEADLINE_MEASURE[stage]);
+  const measureKeyFor = (p: AcademicSchoolProfile) => (stage === "ks5" ? ks5BucketMeasureFor(p, ks5Bucket).measureKey : HEADLINE_MEASURE[stage]);
   // Group-level title: the specific label when one cohort is explicitly selected
   // (unchanged from before), a generic one in the default per-school state (no
   // single real label covers a mixed group) -- per-row labels below fill the gap.
-  const headlineLabel = stage === "ks5" ? (ks5Cohort ? ks5HeadlineLabel(ks5Cohort) : "Headline measure (each school's own qualification type)") : HEADLINE_LABEL[stage];
+  const headlineLabel = stage === "ks5" ? (ks5Bucket ? ks5BucketHeadlineLabel(ks5Bucket) : "Headline measure (each school's own qualification type)") : HEADLINE_LABEL[stage];
   // Target's own number ("This school's position") always names its OWN resolved
   // cohort specifically, same "always the target's own real cohort" rule Graphs'
   // Part 3 Overview number already follows -- there's no ambiguity for a single school.
-  const targetOwnLabel = stage === "ks5" ? ks5HeadlineLabel(ks5MeasureFor(targetProfile, ks5Cohort).cohort, targetProfile.ks5QualTypes.ib) : HEADLINE_LABEL[stage];
+  const targetOwnLabel = stage === "ks5" ? ks5BucketHeadlineLabel(ks5BucketMeasureFor(targetProfile, ks5Bucket).bucket) : HEADLINE_LABEL[stage];
   // Per-row cohort label (item 10's own explicit design ask: "Rankings' own table
   // should probably show each row's qualification type alongside its figure") --
   // only populated in the mixed/default state; redundant noise on every row when one
   // cohort is already named in the section title above, so withheld there.
   const cohortLabelByUrn: Map<string, string> | undefined =
-    stage === "ks5" && ks5Cohort === null
-      ? new Map(group.map((p) => [p.urn, ks5HeadlineLabel(ks5MeasureFor(p, ks5Cohort).cohort, p.ks5QualTypes.ib)]))
+    stage === "ks5" && ks5Bucket === null
+      ? new Map(group.map((p) => [p.urn, ks5BucketHeadlineLabel(ks5BucketMeasureFor(p, ks5Bucket).bucket)]))
       : undefined;
   const setLabel = activeSetLabel ?? "the ticked comparator set";
 
@@ -169,13 +169,13 @@ export default function AcademicRankingsView({
   const excludedNamesKs5 = group.filter((p) => ks5ExcludedUrns.has(p.urn)).map((p) => p.name);
   const ks5WholeGroupExcluded = stage === "ks5" && comparableGroup.length === 0;
   // ks5ExcludedUrns (and so excludedNamesKs5/ks5WholeGroupExcluded) is only ever
-  // non-empty when the parent has a specific ks5Cohort selected -- the default
+  // non-empty when the parent has a specific ks5Bucket selected -- the default
   // per-school state does no qualification-type matching at all (item 11) -- so the
   // `?? "A level"` fallbacks below are type-safety-only, never a real path.
-  const ks5GroupNote = stage === "ks5" ? ks5CohortExclusionNote(excludedNamesKs5, ks5Cohort ?? "A level") : null;
+  const ks5GroupNote = stage === "ks5" ? ks5BucketExclusionNote(excludedNamesKs5, ks5Bucket ?? "alevel") : null;
   const anyWholeGroupExcluded = wholeGroupExcluded || ks5WholeGroupExcluded;
   const anyGroupNote = ks4GroupNote ?? ks5GroupNote;
-  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level");
+  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5BucketWholeGroupSentence(setLabel, ks5Bucket ?? "alevel");
 
   const currentEntries = comparableGroup.map((p) => {
     const years = stageYears(p, stage);

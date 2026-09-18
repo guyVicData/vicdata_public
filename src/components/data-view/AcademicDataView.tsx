@@ -34,12 +34,14 @@ import {
   availableFamilies,
   deserializeAcademicProfile,
   igcseExclusionLikely,
-  ks5HasCohortEntries,
-  KS5_COHORT_OPTIONS,
+  ks5HasBucketEntries,
+  KS5_BUCKET_OPTIONS,
+  KS5_OTHER_NO_FIGURE_NOTE,
+  ks5BucketHasPointsFigure,
   type AcademicSchoolProfile,
   type WireAcademicSchoolProfile,
   type KsStage,
-  type Ks5Cohort,
+  type Ks5Bucket,
   type SubjectEntry,
   type SubjectValueAdded,
   type SubjectLevelSchoolData,
@@ -93,33 +95,44 @@ function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; acti
 // spread/growth/trend sections, Map) -- deliberately visually distinct from
 // CategoryFilter above (a different real concept: WHICH qualification type is being
 // compared, not which subject family) even though it reuses the same pill shape.
-// Defaults to the target school's own real dominant cohort on first load (so opening
-// Capital City College's Rankings shows its real Applied General ranking by default,
-// not a jarring near-empty A-level one) but is a real, changeable control from there.
-// Stage 2 UX review, item 10: `active` is now nullable -- null is the real default
-// state (nothing explicitly clicked, every school shown on its own real dominant
-// cohort), not "not yet resolved." No pill shows as active in that state, which is
+// The TYPE control. These pills are the real-world comparability buckets (A-level /
+// IB / BTec & OCR / Other), which REPLACED DfE's own five pre-blended cohort pills
+// (A level / Academic / Applied general / Tech level / Technical certificate).
+//
+// Why the replacement: DfE's categories describe DfE's reporting, not a school's own
+// offer. "Academic" silently blends A-level with IB, so there was no way to see IB on
+// its own; Cambridge Technicals split across "Applied general" and "Tech level" by
+// subject area, so no single pill matched a school's BTEC/OCR provision; and "Tech
+// level" is DfE's own 2013 category, routinely misread as the T Level qualification.
+//
+// The cost of replacing them is that DfE publishes a headline points figure for only
+// one of the four buckets (A-level). The other figures are computed from DfE's OWN
+// per-qualification challenge tables at subject grain -- never UCAS Tariff, which
+// DfE's own guide explicitly forbids comparing its points to. A-level itself still
+// uses DfE's own published number, completely unchanged. "Other" deliberately gets no
+// figure at all. See src/lib/dfe-qualification-buckets.ts for the tables, the
+// verification against DfE's published figures, and the reasoning.
+//
+// Stage 2 UX review, item 10 still holds: `active` is nullable, and null is the real
+// default state (nothing explicitly clicked, every school shown on its own dominant
+// bucket), not "not yet resolved." No pill shows as active in that state, which is
 // deliberate: there IS no single shared measure to highlight yet.
-function Ks5CohortSwitcher({ active, onChange }: { active: Ks5Cohort | null; onChange: (c: Ks5Cohort) => void }) {
+function Ks5TypeSwitcher({ active, onChange }: { active: Ks5Bucket | null; onChange: (b: Ks5Bucket) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {/* "TYPE" rather than "Qualification type": this now sits to the right of the
-          stage buttons under a shared "QUALIFICATION" label, so the two read together
-          as "QUALIFICATION ... TYPE ...". The five pill labels themselves are DfE's own
-          exam_cohort values verbatim and are deliberately NOT renamed -- "Tech Level"
-          is DfE's own 2013 category and is NOT the T Level qualification, and
-          "Academic" genuinely blends A-level with IB in DfE's reporting, so calling it
-          "IB" would misdescribe it. */}
+      {/* "TYPE" rather than "Qualification type": this sits to the right of the stage
+          buttons under a shared "QUALIFICATION" label, so the two read together as
+          "QUALIFICATION ... TYPE ...". */}
       <span className={`mr-1 ${CONTROL_LABEL}`}>Type</span>
-      {KS5_COHORT_OPTIONS.map((opt) => (
+      {KS5_BUCKET_OPTIONS.map((opt) => (
         <button
-          key={opt.cohort}
+          key={opt.bucket}
           type="button"
-          aria-pressed={active === opt.cohort}
+          aria-pressed={active === opt.bucket}
           title={opt.description}
-          onClick={() => onChange(opt.cohort)}
+          onClick={() => onChange(opt.bucket)}
           className={
-            active === opt.cohort
+            active === opt.bucket
               ? "inline-flex items-center gap-1 rounded-full border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-medium text-white dark:border-blue-100 dark:bg-blue-100 dark:text-blue-900"
               : "inline-flex items-center gap-1 rounded-full border border-blue-300 px-3 py-1 text-xs text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
           }
@@ -140,28 +153,36 @@ function QualificationRow({
   activeStage,
   onChangeStage,
   showType,
-  activeCohort,
-  onChangeCohort,
+  activeBucket,
+  onChangeBucket,
 }: {
   stages: KsStage[];
   activeStage: KsStage;
   onChangeStage: (s: KsStage) => void;
   showType: boolean;
-  activeCohort: Ks5Cohort | null;
-  onChangeCohort: (c: Ks5Cohort) => void;
+  activeBucket: Ks5Bucket | null;
+  onChangeBucket: (b: Ks5Bucket) => void;
 }) {
   // KsStageSwitcher renders null for a school with only one real stage; with no type
   // half either, the whole row would be an empty bordered strip.
   if (stages.length <= 1 && !showType) return null;
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-      {stages.length > 1 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className={`mr-1 ${CONTROL_LABEL}`}>Qualification</span>
-          <KsStageSwitcher stages={stages} active={activeStage} onChange={onChangeStage} />
-        </div>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {stages.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`mr-1 ${CONTROL_LABEL}`}>Qualification</span>
+            <KsStageSwitcher stages={stages} active={activeStage} onChange={onChangeStage} />
+          </div>
+        )}
+        {showType && <Ks5TypeSwitcher active={activeBucket} onChange={onChangeBucket} />}
+      </div>
+      {/* The "Other" bucket deliberately has no headline points figure, and the reason
+          has to be visible at the moment it is selected rather than buried in a doc --
+          otherwise the missing number reads as a data gap or a bug. */}
+      {showType && activeBucket !== null && !ks5BucketHasPointsFigure(activeBucket) && (
+        <p className="max-w-3xl text-xs text-neutral-600 dark:text-neutral-400">{KS5_OTHER_NO_FIGURE_NOTE}</p>
       )}
-      {showType && <Ks5CohortSwitcher active={activeCohort} onChange={onChangeCohort} />}
     </div>
   );
 }
@@ -246,14 +267,14 @@ export default function AcademicDataView({
   // a stage switch reads as confusing state, not a helpful default.
   const [familyId, setFamilyId] = useState<string | null>(null);
   // Item 10: null is the real default (per-school own-cohort mode, no forced
-  // "target's dominant cohort" default any more) -- see Ks5CohortSwitcher's own
+  // "target's dominant cohort" default any more) -- see Ks5TypeSwitcher's own
   // comment. Reset on every stage change for the same reason familyId is.
-  const [ks5Cohort, setKs5Cohort] = useState<Ks5Cohort | null>(null);
+  const [ks5Bucket, setKs5Bucket] = useState<Ks5Bucket | null>(null);
   function changeStage(next: KsStage) {
     setStage(next);
     setFamilyId(null);
     setKs5WidenedUrns([]);
-    setKs5Cohort(null);
+    setKs5Bucket(null);
   }
 
   useEffect(() => {
@@ -347,7 +368,7 @@ export default function AcademicDataView({
     }
   }
 
-  // Item 10: NO forced default any more -- ks5Cohort stays exactly what the user
+  // Item 10: NO forced default any more -- ks5Bucket stays exactly what the user
   // has (or hasn't) explicitly clicked. null means "every school on its own real
   // dominant cohort," a genuinely different default from item 11's own scope
   // below. Only a SPECIFIC selection produces an exclusion set at all: per item
@@ -356,19 +377,19 @@ export default function AcademicDataView({
   // since the comparator-widening effect below already guarantees ~10 real
   // KS5-having schools regardless of which cohort each one is shown on.
   const ks5ExcludedUrns = new Set<string>();
-  if (effectiveStage === "ks5" && ks5Cohort !== null) {
+  if (effectiveStage === "ks5" && ks5Bucket !== null) {
     const seen = new Set<string>();
     for (const p of [targetProfile, ...academicGroupProfiles]) {
       if (!p || seen.has(p.urn)) continue;
       seen.add(p.urn);
-      if (!ks5HasCohortEntries(p, ks5Cohort)) ks5ExcludedUrns.add(p.urn);
+      if (!ks5HasBucketEntries(p, ks5Bucket)) ks5ExcludedUrns.add(p.urn);
     }
   }
 
   // Item 11: "comparator set must always be 10 real schools" for the KS5 view --
   // reuses surrounding-schools.ts's own findSurroundingSchools() engine via the new
   // /api/data-view/academic-comparator-widen route (see that route's own comment),
-  // rather than inventing new selection logic. Default state (ks5Cohort === null):
+  // rather than inventing new selection logic. Default state (ks5Bucket === null):
   // the extra filter is just "has any real KS5 data at all." A specific cohort
   // selected: narrows to "has real entries for THIS cohort" -- e.g. selecting IB on
   // Sevenoaks brings in the nearest 10 real IB schools nationally if fewer are
@@ -387,7 +408,7 @@ export default function AcademicDataView({
         return;
       }
       const baseGroup = [targetProfile, ...tickedProfiles];
-      const qualifying = baseGroup.filter((p) => (ks5Cohort ? ks5HasCohortEntries(p, ks5Cohort) : stagesPresent(p).includes("ks5"))).length;
+      const qualifying = baseGroup.filter((p) => (ks5Bucket ? ks5HasBucketEntries(p, ks5Bucket) : stagesPresent(p).includes("ks5"))).length;
       const needed = 10 - qualifying;
       if (needed <= 0) {
         setKs5WidenedUrns((prev) => (prev.length === 0 ? prev : []));
@@ -395,7 +416,7 @@ export default function AcademicDataView({
       }
       const excludeAll = new Set([urn, ...tickedUrns, ...addedUrns.map((a) => a.urn)]);
       const params = new URLSearchParams({ anchorUrn: urn, count: String(needed), excludeUrns: Array.from(excludeAll).join(",") });
-      if (ks5Cohort) params.set("cohort", ks5Cohort);
+      if (ks5Bucket) params.set("bucket", ks5Bucket);
       try {
         const res = await fetch(`/api/data-view/academic-comparator-widen?${params.toString()}`, {
           headers: { Authorization: `Bearer ${authToken}` },
@@ -417,7 +438,7 @@ export default function AcademicDataView({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveStage, targetProfile, tickedUrns, addedUrns, ks5Cohort, authToken, urn]);
+  }, [effectiveStage, targetProfile, tickedUrns, addedUrns, ks5Bucket, authToken, urn]);
 
   // Round 2, Part C: subject-level data for the TARGET school only (see this file's
   // own header comment for why), refetched whenever the stage changes (ks4/ks5 are
@@ -598,7 +619,7 @@ export default function AcademicDataView({
           its own overlay copies instead (see that component). Item 8: CategoryFilter
           also moves out of this row for Map (rendered below the map div instead),
           so this whole header row has nothing left to show for Map unless the
-          Ks5CohortSwitcher is also present -- gated to avoid a stray empty bordered
+          Ks5TypeSwitcher is also present -- gated to avoid a stray empty bordered
           strip when neither applies. */}
       {/* The stage buttons live in this row now (Part A), so it renders whenever there
           is a stage at all -- previously it could be skipped entirely for Map, which
@@ -634,8 +655,8 @@ export default function AcademicDataView({
             activeStage={effectiveStage}
             onChangeStage={changeStage}
             showType={effectiveStage === "ks5"}
-            activeCohort={ks5Cohort}
-            onChangeCohort={setKs5Cohort}
+            activeBucket={ks5Bucket}
+            onChangeBucket={setKs5Bucket}
           />
         </div>
       )}
@@ -662,7 +683,7 @@ export default function AcademicDataView({
                 familyLabel={families.find((f) => f.familyId === familyId)?.familyLabel ?? null}
                 activeSetLabel={activeSetLabel}
                 ks4ExcludedUrns={ks4ExcludedUrns}
-                ks5Cohort={ks5Cohort}
+                ks5Bucket={ks5Bucket}
                 ks5ExcludedUrns={ks5ExcludedUrns}
                 activeView={activeView}
                 onChangeView={onChangeView}
@@ -685,7 +706,7 @@ export default function AcademicDataView({
                 comparatorSubjectByUrn={comparatorSubjectByUrn}
                 comparatorSubjectHeadlineByUrn={comparatorSubjectHeadlineByUrn}
                 ks4ExcludedUrns={ks4ExcludedUrns}
-                ks5Cohort={ks5Cohort}
+                ks5Bucket={ks5Bucket}
                 ks5ExcludedUrns={ks5ExcludedUrns}
                 isLargeSet={isLargeSet}
                 aggregateTrends={resolvedAcademicAggregateTrends}
@@ -699,7 +720,7 @@ export default function AcademicDataView({
                 startPeriod={startPeriod}
                 activeSetLabel={activeSetLabel}
                 ks4ExcludedUrns={ks4ExcludedUrns}
-                ks5Cohort={ks5Cohort}
+                ks5Bucket={ks5Bucket}
                 ks5ExcludedUrns={ks5ExcludedUrns}
                 largeSetRank={resolvedAcademicLargeSetRank}
                 largeSetRankLoading={academicLargeSetRankLoading}

@@ -47,10 +47,10 @@ import {
   TREND_BASELINE_PERIOD,
   ks4ExclusionGroupNote,
   ks4ExclusionWholeGroupSentence,
-  ks5HeadlineLabel,
-  ks5CohortExclusionNote,
-  ks5CohortWholeGroupSentence,
-  ks5MeasureFor,
+  ks5BucketHeadlineLabel,
+  ks5BucketExclusionNote,
+  ks5BucketWholeGroupSentence,
+  ks5BucketMeasureFor,
   headlineValueAt,
   latestYear,
   stageYears,
@@ -64,7 +64,7 @@ import {
   type AcademicSchoolProfile,
   type AcademicFamilyYear,
   type KsStage,
-  type Ks5Cohort,
+  type Ks5Bucket,
   type SubjectEntry,
   type SubjectValueAdded,
   type SubjectGradeCount,
@@ -227,7 +227,7 @@ export default function AcademicGraphsView({
   comparatorSubjectByUrn = EMPTY_COMPARATOR_SUBJECT_MAP,
   comparatorSubjectHeadlineByUrn = EMPTY_COMPARATOR_HEADLINE_MAP,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
-  ks5Cohort = null,
+  ks5Bucket = null,
   ks5ExcludedUrns = EMPTY_EXCLUDED_SET,
   isLargeSet = false,
   aggregateTrends = null,
@@ -287,7 +287,7 @@ export default function AcademicGraphsView({
   // stage !== "ks5". Item 10: null is the real default now -- every school in the
   // group is then valued on ITS OWN dominant cohort (ks5MeasureFor) rather than one
   // shared measure across a mixed group.
-  ks5Cohort?: Ks5Cohort | null;
+  ks5Bucket?: Ks5Bucket | null;
   ks5ExcludedUrns?: Set<string>;
 }) {
   // Local, not lifted -- this component already remounts (its parent's
@@ -315,7 +315,7 @@ export default function AcademicGraphsView({
   const group = tickedProfiles.some((p) => p.urn === targetProfile.urn) ? tickedProfiles : [targetProfile, ...tickedProfiles];
   // KS5 qualification-type-awareness round, Part 4: group-comparison sections
   // (spread/growth/trend/same-year bar) key their measure on the selected cohort.
-  // Item 10: with no cohort selected (ks5Cohort === null, the new default), there is
+  // Item 10: with no cohort selected (ks5Bucket === null, the new default), there is
   // no single shared measure -- valueFor resolves each school's OWN real dominant
   // cohort via ks5MeasureFor instead of a shared measureKey.
   const baseline = TREND_BASELINE_PERIOD[stage];
@@ -325,7 +325,7 @@ export default function AcademicGraphsView({
     const years = stageYears(p, stage);
     const y = period !== undefined ? years.find((yy) => yy.period === period) : latestYear(years);
     if (!y) return null;
-    const measureKey = stage === "ks5" ? ks5MeasureFor(p, ks5Cohort).measureKey : HEADLINE_MEASURE[stage];
+    const measureKey = stage === "ks5" ? ks5BucketMeasureFor(p, ks5Bucket).measureKey : HEADLINE_MEASURE[stage];
     return headlineValueAt(years, y.period, measureKey);
   };
 
@@ -336,7 +336,7 @@ export default function AcademicGraphsView({
   // cohort) -- rather than naming one arbitrarily, these sections use a generic
   // caption instead (see the JSX call sites below). This constant stays the
   // specific label whenever an explicit cohort IS selected (unchanged behaviour).
-  const groupHeadlineLabel = stage === "ks5" ? (ks5Cohort ? ks5HeadlineLabel(ks5Cohort) : "each school's own qualification-type headline measure") : HEADLINE_LABEL[stage];
+  const groupHeadlineLabel = stage === "ks5" ? (ks5Bucket ? ks5BucketHeadlineLabel(ks5Bucket) : "each school's own qualification-type headline measure") : HEADLINE_LABEL[stage];
 
   // GCSE exclusion round, Part 2 (supersedes stage-1's caveat-alongside-a-number Part
   // D): the excluded set is computed once in AcademicDataView and threaded down here
@@ -365,16 +365,16 @@ export default function AcademicGraphsView({
   const excludedNamesKs5 = group.filter((p) => ks5ExcludedUrns.has(p.urn)).map((p) => p.name);
   const ks5WholeGroupExcluded = stage === "ks5" && comparableGroup.length === 0;
   // ks5ExcludedUrns (and so excludedNamesKs5/ks5WholeGroupExcluded) is only ever
-  // non-empty when the parent has a specific ks5Cohort selected -- the default
+  // non-empty when the parent has a specific ks5Bucket selected -- the default
   // per-school state does no qualification-type matching at all (item 11) -- so the
   // `?? "A level"` fallbacks below are type-safety-only, never a real path.
-  const ks5GroupNote = stage === "ks5" ? ks5CohortExclusionNote(excludedNamesKs5, ks5Cohort ?? "A level") : null;
+  const ks5GroupNote = stage === "ks5" ? ks5BucketExclusionNote(excludedNamesKs5, ks5Bucket ?? "alevel") : null;
   // Only one of the two is ever non-null/true for a given render (each gated to its
   // own stage) -- combined once here so the JSX below doesn't need to repeat both
   // stages' own conditionals in every affected section.
   const anyWholeGroupExcluded = wholeGroupExcluded || ks5WholeGroupExcluded;
   const anyGroupNote = ks4GroupNote ?? ks5GroupNote;
-  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5CohortWholeGroupSentence(setLabel, ks5Cohort ?? "A level");
+  const anyWholeGroupSentence = wholeGroupExcluded ? ks4ExclusionWholeGroupSentence(setLabel) : ks5BucketWholeGroupSentence(setLabel, ks5Bucket ?? "alevel");
 
   const growthPoints = comparableGroup.map((p) => {
     const current = valueFor(p);
@@ -441,7 +441,7 @@ export default function AcademicGraphsView({
   // single current-year point any more; KS2 still has no real DfE entries/cohort-
   // size figure at all, confirmed via that data set's own /meta response, so this
   // stays population, just a real history of it now instead of one snapshot).
-  const targetEntriesSeries = stage === "ks2" ? populationSeriesAtAge(targetProfile, HEADLINE_AGE.ks2) : entriesSeries(targetProfile, stage, ks5Cohort);
+  const targetEntriesSeries = stage === "ks2" ? populationSeriesAtAge(targetProfile, HEADLINE_AGE.ks2) : entriesSeries(targetProfile, stage, ks5Bucket);
   // Fallback to a single current-snapshot point only for KS2, and only in the real
   // edge case of a school with no per-period census history at all (e.g. brand new)
   // -- GCSE/Post-16 correctly stay a genuinely empty series in their own equivalent
@@ -462,7 +462,7 @@ export default function AcademicGraphsView({
     urn: p.urn,
     name: p.name,
     isTarget: p.urn === targetProfile.urn,
-    value: (stage === "ks2" ? populationAtAge(p, HEADLINE_AGE.ks2) : latestEntriesCount(p, stage, ks5Cohort)?.value) ?? 0,
+    value: (stage === "ks2" ? populationAtAge(p, HEADLINE_AGE.ks2) : latestEntriesCount(p, stage, ks5Bucket)?.value) ?? 0,
   }));
 
   // Entries/Subjects comparison redesign (2026-09-14), Section 01's new bottom row:
@@ -680,6 +680,7 @@ export default function AcademicGraphsView({
                 with its own other categories/subjects) and is untouched. */}
             <div className="mb-6">
               <SubjectAreaSection
+                ks5Bucket={ks5Bucket}
                 profile={targetProfile}
                 comparableGroup={comparableGroup}
                 stage={stage}
@@ -804,6 +805,7 @@ export default function AcademicGraphsView({
           position: fixed and covers the whole viewport regardless of where in the DOM
           it sits; no layout effect on anything around it either way. */}
       <SubjectDeepDiveDrawer
+        ks5Bucket={ks5Bucket}
         target={deepDiveTarget}
         onNavigate={setDeepDiveTarget}
         profile={targetProfile}

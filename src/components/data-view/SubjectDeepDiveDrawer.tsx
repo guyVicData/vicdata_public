@@ -35,7 +35,7 @@
 // directly); a real trend line back to 2020/21 (TargetVsAverageTrend, reused
 // directly); the comparator selector, plus a real ranked list of every comparator's
 // own figure for this one subject.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { buildSubjectRows, type SubjectRow } from "./SubjectAreaSection";
 import SubjectTable from "./SubjectTable";
 import TargetVsAverageTrend from "./TargetVsAverageTrend";
@@ -50,6 +50,7 @@ import {
   type AcademicSubjectHeadlineEntry,
   HEADLINE_LABEL,
 } from "@/lib/academic-data-view";
+import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 
 export type DeepDiveTarget = { familyId: string; familyLabel: string; subject?: string };
 
@@ -223,6 +224,7 @@ export default function SubjectDeepDiveDrawer({
   setLabel,
   urn,
   authToken,
+  ks5Bucket = null,
 }: {
   target: DeepDiveTarget | null;
   onNavigate: (target: DeepDiveTarget | null) => void;
@@ -232,8 +234,12 @@ export default function SubjectDeepDiveDrawer({
   setLabel: string;
   urn: string;
   authToken: string | null;
+  // The active TYPE bucket, shared with the headline filter and the subject cards so
+  // one selection means the same thing everywhere (Part B). null shows every type.
+  ks5Bucket?: Ks5Bucket | null;
 }) {
   const [selectedComparatorUrn, setSelectedComparatorUrn] = useState<string | null>(null);
+
   const [subjectByUrn, setSubjectByUrn] = useState<Map<string, SchoolSubjectData>>(new Map());
   const [headlineByUrn, setHeadlineByUrn] = useState<Map<string, AcademicSubjectHeadlineEntry[]>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -243,6 +249,21 @@ export default function SubjectDeepDiveDrawer({
   // (a statement timeout, see lookupAcademicSubjectHeadline) was invisible from the
   // UI for exactly that reason. A failed fetch now says so.
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Part B: the same bucketFor() rule the pills, the subject cards and the ingest use.
+  // Applied to this drawer's OWN fetched rows (it fetches independently -- see the
+  // file header), so a drawer opened with IB selected shows IB entries and IB grades,
+  // not every qualification type for the subject.
+  const bucketActive = stage === "ks5" && ks5Bucket !== null;
+  const scopedSubjectByUrn = useMemo(() => {
+    if (!bucketActive) return subjectByUrn;
+    const keep = <T extends { qualificationType: string }>(rows: T[]) => rows.filter((r) => bucketFor(r.qualificationType) === ks5Bucket);
+    const out = new Map<string, SchoolSubjectData>();
+    for (const [u, d] of subjectByUrn) {
+      out.set(u, { entries: keep(d.entries), valueAdded: keep(d.valueAdded), gradeDistribution: keep(d.gradeDistribution) });
+    }
+    return out;
+  }, [subjectByUrn, bucketActive, ks5Bucket]);
 
   useEffect(() => {
     // react-hooks/set-state-in-effect: the setState call lives inside this async
@@ -328,7 +349,7 @@ export default function SubjectDeepDiveDrawer({
     .sort((a, b) => (b.row.candidates ?? 0) - (a.row.candidates ?? 0));
 
   function rowFor(schoolUrn: string, subject: string): SubjectRow | null {
-    const own = subjectByUrn.get(schoolUrn);
+    const own = scopedSubjectByUrn.get(schoolUrn);
     const headline = (headlineByUrn.get(schoolUrn) ?? []).filter((r) => r.subject === subject);
     const bySubject = new Map<string, AcademicSubjectHeadlineEntry[]>([[subject, headline]]);
     const rows = buildSubjectRows(stage, targetFamilyId, own ? { ...own, subjectFamilyMap: { [subject]: targetFamilyId } } : null, bySubject);
@@ -435,7 +456,7 @@ export default function SubjectDeepDiveDrawer({
             // batched raw-fact fetch (gradeDistribution), modern years only (2023/24
             // on, same real limitation as the underlying source itself).
             const schoolGradeCounts = new Map<string, number>();
-            for (const g of subjectByUrn.get(profile.urn)?.gradeDistribution ?? []) {
+            for (const g of scopedSubjectByUrn.get(profile.urn)?.gradeDistribution ?? []) {
               if (g.subject !== subject) continue;
               schoolGradeCounts.set(g.grade, (schoolGradeCounts.get(g.grade) ?? 0) + g.entries);
             }
@@ -447,7 +468,7 @@ export default function SubjectDeepDiveDrawer({
             const comparisonGradeValues: string[] = [];
             for (const sc of comparableGroup) {
               if (sc.urn === profile.urn) continue;
-              for (const g of subjectByUrn.get(sc.urn)?.gradeDistribution ?? []) {
+              for (const g of scopedSubjectByUrn.get(sc.urn)?.gradeDistribution ?? []) {
                 if (g.subject === subject) comparisonGradeValues.push(g.grade);
               }
             }
@@ -458,7 +479,7 @@ export default function SubjectDeepDiveDrawer({
             for (const sc of comparableGroup) {
               if (sc.urn === profile.urn) continue;
               const counts = new Map<string, number>();
-              for (const g of subjectByUrn.get(sc.urn)?.gradeDistribution ?? []) {
+              for (const g of scopedSubjectByUrn.get(sc.urn)?.gradeDistribution ?? []) {
                 if (g.subject !== subject) continue;
                 counts.set(g.grade, (counts.get(g.grade) ?? 0) + g.entries);
               }
@@ -474,8 +495,8 @@ export default function SubjectDeepDiveDrawer({
             for (const [grade, samples] of comparisonGradeSamples) comparisonGradePercents.set(grade, samples.reduce((s, v) => s + v, 0) / samples.length);
 
             // KS5 value-added, real, with its CI -- SubjectTable, reused directly.
-            const targetEntryRow = subjectByUrn.get(profile.urn)?.entries.find((e) => e.subject === subject) ?? null;
-            const targetValueAddedRows = subjectByUrn.get(profile.urn)?.valueAdded.filter((v) => v.subject === subject) ?? [];
+            const targetEntryRow = scopedSubjectByUrn.get(profile.urn)?.entries.find((e) => e.subject === subject) ?? null;
+            const targetValueAddedRows = scopedSubjectByUrn.get(profile.urn)?.valueAdded.filter((v) => v.subject === subject) ?? [];
 
             const resultsUnit = HEADLINE_LABEL[stage];
 

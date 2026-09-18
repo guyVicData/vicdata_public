@@ -17,6 +17,16 @@ import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "./roll-data";
 import { trendBadge } from "./data-view-cards";
 import { TREND_LABELS, PP_TREND_LABELS, classifyPpTrend } from "./trend-labels";
+import {
+  KS5_BUCKETS,
+  KS5_BUCKET_DESCRIPTION,
+  KS5_BUCKET_LABEL,
+  KS5_OTHER_NO_FIGURE_NOTE,
+  ks5BucketEntriesKey,
+  ks5BucketHasPointsFigure,
+  ks5BucketMeasureKey,
+  type Ks5Bucket,
+} from "@/lib/dfe-qualification-buckets";
 
 export type KsStage = "ks2" | "ks4" | "ks5";
 
@@ -190,10 +200,10 @@ const ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION = "end1618_student_count";
 // explicit instruction. null for KS2 (no real DfE figure exists) or for a genuinely
 // missing/suppressed real value -- same honest-absence convention as every other
 // headlineValueAt call in this module, never a fabricated fallback.
-export function entriesCountAt(profile: AcademicSchoolProfile, stage: KsStage, period: number, ks5Cohort: Ks5Cohort | null): number | null {
+export function entriesCountAt(profile: AcademicSchoolProfile, stage: KsStage, period: number, ks5Bucket: Ks5Bucket | null): number | null {
   if (stage === "ks4") return headlineValueAt(profile.ks4, period, ENTRIES_MEASURE_KS4);
   if (stage === "ks5") {
-    const key = ks5Cohort ? `${ks5Cohort}::aps_per_entry_student_count` : ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION;
+    const key = ks5Bucket ? ks5BucketEntriesKey(ks5Bucket) : ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION;
     return headlineValueAt(profile.ks5, period, key);
   }
   return null;
@@ -219,10 +229,10 @@ export function latestMeasureAt(years: AcademicHeadlineYear[], key: string): { p
 // Convenience wrapper over latestMeasureAt for the entries/candidate count
 // specifically -- the map/popup's own "this school's own real latest entries figure,
 // with its own real year" (A4), not a second, independently-derived lookup.
-export function latestEntriesCount(profile: AcademicSchoolProfile, stage: KsStage, ks5Cohort: Ks5Cohort | null): { period: number; value: number } | null {
+export function latestEntriesCount(profile: AcademicSchoolProfile, stage: KsStage, ks5Bucket: Ks5Bucket | null): { period: number; value: number } | null {
   if (stage === "ks4") return latestMeasureAt(profile.ks4, ENTRIES_MEASURE_KS4);
   if (stage === "ks5") {
-    const key = ks5Cohort ? `${ks5Cohort}::aps_per_entry_student_count` : ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION;
+    const key = ks5Bucket ? ks5BucketEntriesKey(ks5Bucket) : ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION;
     return latestMeasureAt(profile.ks5, key);
   }
   return null;
@@ -236,10 +246,10 @@ export function latestEntriesCount(profile: AcademicSchoolProfile, stage: KsStag
 // single real current populationAtAge figure instead, not a second, new multi-year
 // population fetch, per that section's own explicit "same source the map now uses,
 // not a second computation" instruction.
-export function entriesSeries(profile: AcademicSchoolProfile, stage: KsStage, ks5Cohort: Ks5Cohort | null): { period: number; value: number }[] {
+export function entriesSeries(profile: AcademicSchoolProfile, stage: KsStage, ks5Bucket: Ks5Bucket | null): { period: number; value: number }[] {
   if (stage === "ks2") return [];
   return stageYears(profile, stage)
-    .map((y) => ({ period: y.period, value: entriesCountAt(profile, stage, y.period, ks5Cohort) }))
+    .map((y) => ({ period: y.period, value: entriesCountAt(profile, stage, y.period, ks5Bucket) }))
     .filter((r): r is { period: number; value: number } => r.value !== null);
 }
 
@@ -385,6 +395,89 @@ export function ks5HasCohortEntries(profile: AcademicSchoolProfile, cohort: Ks5C
 export function ks5MeasureFor(profile: AcademicSchoolProfile, selected: Ks5Cohort | null): { cohort: Ks5Cohort; measureKey: string } {
   const cohort = selected ?? dominantKs5Cohort(profile) ?? "A level";
   return { cohort, measureKey: ks5HeadlineMeasureKey(cohort) };
+}
+
+// The comparability-bucket sibling of ks5MeasureFor, and the one the TYPE filter now
+// drives. Same shape and same no-selection contract: with nothing explicitly clicked
+// (`selected === null`) every school is measured on ITS OWN dominant bucket rather
+// than one shared axis, which is the behaviour item 10 established and the reason the
+// forced default was removed in the first place.
+export function ks5BucketMeasureFor(profile: AcademicSchoolProfile, selected: Ks5Bucket | null): { bucket: Ks5Bucket; measureKey: string } {
+  const bucket = selected ?? dominantKs5Bucket(profile) ?? "alevel";
+  return { bucket, measureKey: ks5BucketMeasureKey(bucket) };
+}
+
+// Which bucket this school actually has most entries in, for the no-selection default.
+// Reads the real per-bucket entries counts the ingest computes; "other" is a genuine
+// candidate here (a school really can be mostly Other), and a school whose only
+// provision is Other correctly gets a bucket with no points figure rather than being
+// silently shown an A-level number it has no entries for.
+export function dominantKs5Bucket(profile: AcademicSchoolProfile): Ks5Bucket | null {
+  const y = latestYear(profile.ks5);
+  if (!y) return null;
+  let best: Ks5Bucket | null = null;
+  let bestCount = -Infinity;
+  for (const bucket of KS5_BUCKETS) {
+    const count = headlineValueAt(profile.ks5, y.period, ks5BucketEntriesKey(bucket));
+    if (count !== null && count > bestCount) {
+      bestCount = count;
+      best = bucket;
+    }
+  }
+  return best;
+}
+
+// Does this school have real, usable data in this bucket for a GROUP comparison?
+// "other" is deliberately judged on ENTRIES, not on a points figure, because it has
+// none by design -- judging it on points would exclude every school from an Other
+// comparison and make the bucket look empty when it genuinely is not.
+export function ks5HasBucketEntries(profile: AcademicSchoolProfile, bucket: Ks5Bucket): boolean {
+  const y = latestYear(profile.ks5);
+  if (!y) return false;
+  if (!ks5BucketHasPointsFigure(bucket)) {
+    const entries = headlineValueAt(profile.ks5, y.period, ks5BucketEntriesKey(bucket));
+    return entries !== null && entries > 0;
+  }
+  return headlineValueAt(profile.ks5, y.period, ks5BucketMeasureKey(bucket)) !== null;
+}
+
+// The TYPE filter's real options, replacing DfE's five pre-blended cohort pills. These
+// are the real-world buckets a school actually recognises; DfE's own pills blended
+// A-level with IB and split Cambridge Technicals across two categories by subject
+// area, neither of which matches how a school thinks about its own offer. A fifth
+// bucket (T Level, once DfE publishes a challenge table for it) slots in here without
+// restructuring anything.
+export {
+  KS5_BUCKET_LABEL,
+  KS5_OTHER_NO_FIGURE_NOTE,
+  ks5BucketEntriesKey,
+  ks5BucketHasPointsFigure,
+  ks5BucketHeadlineLabel,
+  ks5BucketMeasureKey,
+} from "@/lib/dfe-qualification-buckets";
+export type { Ks5Bucket } from "@/lib/dfe-qualification-buckets";
+
+export const KS5_BUCKET_OPTIONS: { bucket: Ks5Bucket; pillLabel: string; description: string }[] = KS5_BUCKETS.map((bucket) => ({
+  bucket,
+  pillLabel: KS5_BUCKET_LABEL[bucket],
+  description: KS5_BUCKET_DESCRIPTION[bucket],
+}));
+
+export function ks5BucketExclusionNote(excludedNames: string[], bucket: Ks5Bucket): string | null {
+  if (excludedNames.length === 0) return null;
+  const label = KS5_BUCKET_LABEL[bucket];
+  if (excludedNames.length === 1) {
+    return `${excludedNames[0]} isn't shown in this ${label} comparison — it has no real ${label} entries recorded.`;
+  }
+  return `${excludedNames.length} schools aren't shown in this ${label} comparison — ${excludedNames.join(", ")}: none have real ${label} entries recorded.`;
+}
+
+export function ks5BucketWholeGroupSentence(setLabel: string, bucket: Ks5Bucket): string {
+  // "Other" needs its own sentence: the schools are not missing, the FIGURE is, and
+  // deliberately so. Saying "try a different qualification type" there would imply the
+  // data is absent rather than that the comparison is one we refuse to fake.
+  if (!ks5BucketHasPointsFigure(bucket)) return KS5_OTHER_NO_FIGURE_NOTE;
+  return `None of the schools in ${setLabel} have entries in ${KS5_BUCKET_LABEL[bucket]} to show here — try a different qualification type.`;
 }
 
 // The qualification-type selector's real options (Part 4) -- no separate Pre-U option
@@ -824,6 +917,11 @@ export type SubjectGradeCount = {
   period: number;
   grade: string;
   entries: number;
+  // DfE's own "size" (A-level-equivalent size) for this row, from the third breakdown
+  // segment at KS5. Kept because points are size x challenge and the AVERAGE is over
+  // size-weighted entries, so a grade row without its size cannot be scored at all.
+  // null at KS4, whose breakdowns genuinely carry no size segment.
+  sizeWeight: number | null;
 };
 
 export type SubjectValueAdded = {
@@ -862,7 +960,10 @@ function parseSubjectGradeDistribution(facts: ReferenceFact[]): SubjectGradeCoun
     if (SUBJECT_TOTAL_LABELS.has(grade)) continue;
     const [qualificationType, subject] = parts;
     if (subject === ALL_SUBJECTS_PSEUDO_ROW) continue;
-    rows.push({ qualificationType, subject, period: f.period, grade, entries: f.value_numeric });
+    // KS5 breakdowns are qualification::subject::size::grade; KS4's carry no size.
+    const rawSize = parts.length >= 4 ? Number.parseFloat(parts[2]) : Number.NaN;
+    const sizeWeight = Number.isFinite(rawSize) ? rawSize : null;
+    rows.push({ qualificationType, subject, period: f.period, grade, entries: f.value_numeric, sizeWeight });
   }
   return rows;
 }

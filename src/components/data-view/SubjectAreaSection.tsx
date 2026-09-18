@@ -23,8 +23,9 @@
 // fetch (not the new heavier batched one) -- unchanged latency for the school side;
 // the new batched fetch only slows the COMPARISON side, which had no data at all
 // before this round.
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { stageFamilies, familyYearsFor, type AcademicFamilyYear, type AcademicSchoolProfile, type KsStage, type SubjectEntry, type SubjectValueAdded, type AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
+import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
 import { academicYearLabel } from "./TrendPill";
 import SubjectAreaBarChart from "./SubjectAreaBarChart";
@@ -271,6 +272,7 @@ export default function SubjectAreaSection({
   comparatorSubjectHeadlineByUrn,
   setLabel,
   onSelectSubjectArea,
+  ks5Bucket = null,
 }: {
   profile: AcademicSchoolProfile;
   comparableGroup: AcademicSchoolProfile[];
@@ -289,6 +291,10 @@ export default function SubjectAreaSection({
   // the single-subject deep dive. Optional so this component still renders (read-only
   // bars) if a caller doesn't wire the drawer up.
   onSelectSubjectArea?: (target: { familyId: string; familyLabel: string; subject?: string }) => void;
+  // The active TYPE bucket, shared with the headline filter above so one selection
+  // means the same thing in both places -- the whole point of Part B. null means no
+  // explicit selection and every qualification type is shown, exactly as before.
+  ks5Bucket?: Ks5Bucket | null;
 }) {
   // Individual-school selector ("as we did for rolls"). Applies to rows C, D's right
   // column, and Row B's own %-change right column -- NOT Row B's own raw market-share
@@ -298,6 +304,52 @@ export default function SubjectAreaSection({
   const [selectedComparatorUrn, setSelectedComparatorUrn] = useState<string | null>(null);
 
   const categoryMode = !familyId;
+
+  // Part B: the TYPE bucket filters the subject rows too, not just the headline
+  // figures, using the SAME bucketFor() rule the pills and the ingest both use.
+  // Only at KS5: the bucket concept is a Post-16 qualification distinction and the
+  // other stages have no qualification dimension to filter on.
+  const bucketActive = stage === "ks5" && ks5Bucket !== null;
+  const inBucket = useCallback(
+    <T extends { qualificationType: string }>(rows: T[]): T[] =>
+      bucketActive ? rows.filter((r) => bucketFor(r.qualificationType) === ks5Bucket) : rows,
+    [bucketActive, ks5Bucket],
+  );
+
+  const scopedSubjectData = useMemo(
+    () => (subjectData && bucketActive
+      ? { ...subjectData, entries: inBucket(subjectData.entries), valueAdded: inBucket(subjectData.valueAdded) }
+      : subjectData),
+    [subjectData, bucketActive, inBucket],
+  );
+
+  const scopedComparatorSubjectByUrn = useMemo(() => {
+    if (!bucketActive) return comparatorSubjectByUrn;
+    const out = new Map<string, { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[] }>();
+    for (const [urn, d] of comparatorSubjectByUrn) {
+      out.set(urn, { entries: inBucket(d.entries), valueAdded: inBucket(d.valueAdded) });
+    }
+    return out;
+  }, [comparatorSubjectByUrn, bucketActive, inBucket]);
+
+  // Honest gap, deliberately surfaced rather than papered over: the CATEGORY-mode
+  // figures come from the subject-family rollup, whose points are computed for the
+  // points-bearing qualification only (GCE A level at KS5 -- see
+  // POINTS_BEARING_QUALIFICATION). That rollup has no qualification-bucket dimension,
+  // so with a non-A-level bucket selected its points figure would be an A-level number
+  // shown against IB or BTEC rows. Suppressing it leaves entries, which ARE correctly
+  // bucket-scoped, and shows no points figure at all rather than a wrong one. Giving
+  // category mode real per-bucket points needs the rollup itself to gain the bucket
+  // dimension; flagged in this round's build report, not silently faked here.
+  const categoryPointsUnavailable = bucketActive && ks5Bucket !== "alevel" && categoryMode;
+
+  // Strips the points figure off category rows when it would be an A-level number
+  // shown against a non-A-level bucket. See categoryPointsUnavailable above.
+  const withoutBorrowedPoints = useCallback(
+    (rows: SubjectRow[]): SubjectRow[] =>
+      categoryPointsUnavailable ? rows.map((r) => ({ ...r, results: null, resultsPctChange: null })) : rows,
+    [categoryPointsUnavailable],
+  );
 
   // Real headline rows for one school, scoped to the active family -- a small local
   // helper (not memoized per-call; comparator sets here are small, ~10 real schools,
@@ -322,12 +374,12 @@ export default function SubjectAreaSection({
   const rows = useMemo(
     // "qualification": the subject-mode list is exactly where a BTEC row must not be
     // merged with an A-level row that happens to share its name. See buildSubjectRows.
-    () => (categoryMode ? buildCategoryRows(profile, stage) : familyId ? buildSubjectRows(stage, familyId, subjectData, headlineBySubjectFor(profile.urn), "qualification") : []),
+    () => (categoryMode ? withoutBorrowedPoints(buildCategoryRows(profile, stage)) : familyId ? buildSubjectRows(stage, familyId, scopedSubjectData, headlineBySubjectFor(profile.urn), "qualification") : []),
     // headlineBySubjectFor is a plain function of familyId/comparatorSubjectHeadlineByUrn
     // (both already listed) redefined every render -- omitted deliberately, not a stale-
     // closure risk, since everything it reads is already tracked here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [categoryMode, profile, stage, familyId, subjectData, comparatorSubjectHeadlineByUrn],
+    [categoryMode, profile, stage, familyId, scopedSubjectData, comparatorSubjectHeadlineByUrn],
   );
   const latestPeriod = rows.map((r) => r.candidatesPeriod).find((p): p is number => p !== null) ?? null;
   const colourFor = (id: string) => subjectFamilyColour(familyId ?? id).light[1];
@@ -373,12 +425,12 @@ export default function SubjectAreaSection({
         continue;
       }
       if (categoryMode) {
-        map.set(p.urn, buildCategoryRows(p, stage));
+        map.set(p.urn, withoutBorrowedPoints(buildCategoryRows(p, stage)));
       } else if (familyId) {
         // subjectFamilyMap is stage-scoped, static reference data -- identical for
         // every real school, so the target's own already-fetched copy (subjectData)
         // is reused here rather than re-fetching it once per comparator.
-        const own = comparatorSubjectByUrn.get(p.urn);
+        const own = scopedComparatorSubjectByUrn.get(p.urn);
         const comparatorSubjectData = own ? { ...own, subjectFamilyMap: subjectData?.subjectFamilyMap ?? {} } : null;
         // Same grouping as the target side, or the two sides would not line up by id.
         map.set(p.urn, buildSubjectRows(stage, familyId, comparatorSubjectData, headlineBySubjectFor(p.urn), "qualification"));

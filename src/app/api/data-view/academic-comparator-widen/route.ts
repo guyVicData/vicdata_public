@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { findSurroundingSchools } from "@/lib/surrounding-schools";
 import { CURRENT_CENSUS_PERIOD } from "@/lib/roll-data";
-import { fetchAcademicProfiles, ks5HasCohortEntries, stagesPresent, KS5_COHORTS, type Ks5Cohort } from "@/lib/academic-data-view";
+import { fetchAcademicProfiles, ks5HasBucketEntries, stagesPresent, type Ks5Bucket } from "@/lib/academic-data-view";
+import { KS5_BUCKETS } from "@/lib/dfe-qualification-buckets";
 
 // Stage 2 UX review, item 11: "comparator set must always be 10 real schools/
 // colleges" for the Academic KS5 view, reusing surrounding-schools.ts's own
@@ -23,7 +24,7 @@ import { fetchAcademicProfiles, ks5HasCohortEntries, stagesPresent, KS5_COHORTS,
 export async function GET(request: NextRequest) {
   const anchorUrn = request.nextUrl.searchParams.get("anchorUrn");
   const countParam = request.nextUrl.searchParams.get("count");
-  const cohortParam = request.nextUrl.searchParams.get("cohort");
+  const bucketParam = request.nextUrl.searchParams.get("bucket");
   const excludeParam = request.nextUrl.searchParams.get("excludeUrns") ?? "";
   const authHeader = request.headers.get("authorization");
   if (!anchorUrn || !authHeader) {
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "count must be a positive integer" }, { status: 400 });
   }
 
-  // Real, checked cohort string only -- an unrecognised value falls back to the
+  // Real, checked bucket string only -- an unrecognised value falls back to the
   // default "any real KS5 data at all" filter rather than silently matching nothing.
-  const cohort: Ks5Cohort | null = cohortParam && (KS5_COHORTS as readonly string[]).includes(cohortParam) ? (cohortParam as Ks5Cohort) : null;
+  const bucket: Ks5Bucket | null = bucketParam && (KS5_BUCKETS as readonly string[]).includes(bucketParam) ? (bucketParam as Ks5Bucket) : null;
   const excludeUrns = new Set(excludeParam.split(",").map((s) => s.trim()).filter(Boolean));
 
   const supabase = createClient(
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
       const relevant = candidateUrns.filter((u) => !excludeUrns.has(u) && u !== anchorUrn);
       if (relevant.length === 0) return new Set();
       const profiles = await fetchAcademicProfiles(relevant, { includePopulation: false });
-      const passing = profiles.filter((p) => (cohort ? ks5HasCohortEntries(p, cohort) : stagesPresent(p).includes("ks5")));
+      const passing = profiles.filter((p) => (bucket ? ks5HasBucketEntries(p, bucket) : stagesPresent(p).includes("ks5")));
       return new Set(passing.map((p) => p.urn));
     },
   });
