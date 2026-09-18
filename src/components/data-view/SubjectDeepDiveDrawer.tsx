@@ -426,8 +426,8 @@ export default function SubjectDeepDiveDrawer({
                 `allSubjectNames.size` -- a count taken from the UNFILTERED headline
                 rollup, so it reported every qualification type combined as though that
                 many subjects were missing data. Capital City College filtered to
-                BTec & OCR read "No entries data for the 27 subjects in this category
-                yet" when the real answer is that it has no BTec & OCR provision in this
+                BTec, OCR, VRQ read "No entries data for the 27 subjects in this category
+                yet" when the real answer is that it has no BTec, OCR, VRQ provision in this
                 category at all. Never quote that count while a bucket is narrowing the
                 list: it was never scoped to the thing causing the emptiness. */}
             {allSubjectNames.size === 0 ? (

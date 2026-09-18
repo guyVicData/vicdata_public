@@ -30,7 +30,7 @@ export type Ks5Bucket = (typeof KS5_BUCKETS)[number];
 export const KS5_BUCKET_LABEL: Record<Ks5Bucket, string> = {
   alevel: "A-level",
   ib: "IB",
-  btec_ocr: "BTec & OCR",
+  btec_ocr: "BTec, OCR, VRQ",
   tlevel: "T Level",
   other: "Other",
 };
@@ -47,7 +47,7 @@ export const KS5_BUCKET_DESCRIPTION: Record<Ks5Bucket, string> = {
 export const KS5_OTHER_NO_FIGURE_NOTE =
   "No single points figure is shown for Other because these qualifications are not comparable with each other. It groups the Extended Project, Core Maths, Free-standing Maths, Pre-U and other general qualifications, which differ in size, level and purpose, so an average across them would imply a comparability that does not exist.";
 
-// BTec & OCR is now a PARTIAL-coverage bucket, and says so rather than leaving a silent
+// BTec, OCR, VRQ is now a PARTIAL-coverage bucket, and says so rather than leaving a silent
 // gap. VRQ moved in here because DfE classifies a great deal of everyday "BTEC-like"
 // provision as VRQ (Capital City College's real Art and Design course among it), so
 // leaving it in Other hid it from the pill anyone would click first. But VRQ cannot be
@@ -58,7 +58,7 @@ export const KS5_BTEC_OCR_PARTIAL_POINTS_NOTE =
 // A-level deliberately keeps DfE's OWN published measure, byte-identical to what the
 // page used before this filter changed -- the most scrutinised figure here, and DfE's
 // real number already matches this bucket exactly, so it is never recomputed.
-// IB and BTec & OCR use the computed bucket measures, which DfE has never published.
+// IB and BTec, OCR, VRQ use the computed bucket measures, which DfE has never published.
 //
 // "Other" returns a key the backend DELIBERATELY never writes. That is not a trick to
 // fake an absence: the absence is the real, intended answer (see

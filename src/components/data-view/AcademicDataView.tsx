@@ -98,7 +98,7 @@ function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; acti
 // CategoryFilter above (a different real concept: WHICH qualification type is being
 // compared, not which subject family) even though it reuses the same pill shape.
 // The TYPE control. These pills are the real-world comparability buckets (A-level /
-// IB / BTec & OCR / Other), which REPLACED DfE's own five pre-blended cohort pills
+// IB / BTec, OCR, VRQ / Other), which REPLACED DfE's own five pre-blended cohort pills
 // (A level / Academic / Applied general / Tech level / Technical certificate).
 //
 // Why the replacement: DfE's categories describe DfE's reporting, not a school's own
@@ -120,9 +120,9 @@ function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; acti
 // bucket), not "not yet resolved." No pill shows as active in that state, which is
 // deliberate: there IS no single shared measure to highlight yet.
 const PILL_ON =
-  "inline-flex items-center gap-1 rounded-full border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-medium text-white dark:border-blue-100 dark:bg-blue-100 dark:text-blue-900";
+  "inline-flex items-center gap-1 rounded-full border border-blue-900 bg-blue-900 whitespace-nowrap px-3 py-1 text-xs font-medium text-white dark:border-blue-100 dark:bg-blue-100 dark:text-blue-900";
 const PILL_OFF =
-  "inline-flex items-center gap-1 rounded-full border border-blue-300 px-3 py-1 text-xs text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950";
+  "inline-flex items-center gap-1 rounded-full border border-blue-300 whitespace-nowrap px-3 py-1 text-xs text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950";
 
 function Ks5TypeSwitcher({
   active,
@@ -217,7 +217,7 @@ function QualificationRow({
       {/* Two buckets carry an honest caveat, and both have to be visible at the moment
           the bucket is selected rather than buried in a doc -- otherwise a missing or
           partial number reads as a data gap or a bug. "Other" has no points figure at
-          all; BTec & OCR has one that covers only part of the bucket, because VRQ
+          all; BTec, OCR, VRQ has one that covers only part of the bucket, because VRQ
           entries are counted but cannot be scored. */}
       {showType && activeBucket !== null && !ks5BucketHasPointsFigure(activeBucket) && (
         <p className="max-w-3xl text-xs text-neutral-600 dark:text-neutral-400">{KS5_OTHER_NO_FIGURE_NOTE}</p>
