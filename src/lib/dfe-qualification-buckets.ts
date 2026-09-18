@@ -73,9 +73,20 @@ export function ks5BucketHeadlineLabel(bucket: Ks5Bucket): string {
   return `average points per ${KS5_BUCKET_LABEL[bucket]} entry`;
 }
 
-// Real entries behind the bucket. A-level again stays on DfE's own paired count.
+// Real ENTRIES behind the bucket, on one consistent basis for all four.
+//
+// Deliberately NOT DfE's "A level::aps_per_entry_student_count" for the A-level
+// bucket, even though that is what the old five-pill UI used. That measure is a
+// STUDENT count, not an entry count: at school 100369 it reads 71 against 225 real
+// A-level entries, because 71 students each sat about three A-levels. Left as-is it
+// would put a student count and an entry count side by side under one "entries"
+// label, so A-level would look a third the size of that school's IB provision when
+// it is in fact larger -- wrong in the pills, and wrong again wherever entries drive
+// a magnitude, such as the map's circle sizing.
+//
+// The points figure above still uses DfE's own published A-level number, untouched.
+// Only this count changes basis, and it changes to the one the label already claims.
 export function ks5BucketEntriesKey(bucket: Ks5Bucket): string {
-  if (bucket === "alevel") return "A level::aps_per_entry_student_count";
   return `bucket:${bucket}::entries`;
 }
 
