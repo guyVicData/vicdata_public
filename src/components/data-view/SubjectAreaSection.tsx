@@ -39,6 +39,11 @@ function pctChange(first: number | null, last: number | null): number | null {
 export type SubjectRow = {
   id: string;
   label: string;
+  // The real subject name, kept separate from `label` because `label` may carry a
+  // disambiguating qualification suffix. null qualificationType means "every
+  // qualification type for this subject, summed" (buildSubjectRows' "subject" mode).
+  subject?: string;
+  qualificationType?: string | null;
   candidates: number | null;
   candidatesPeriod: number | null;
   results: number | null;
@@ -74,28 +79,98 @@ export function buildCategoryRows(profile: AcademicSchoolProfile, stage: KsStage
   });
 }
 
+// The one qualification type per stage that actually carries a points-based score.
+// Confirmed live against ingested data: only these two feed avg_point_score into the
+// rollup, so only their row can honestly claim the headline-derived `results` figure.
+// Every other qualification type at the same stage has real entries and no score.
+const POINTS_BEARING_QUALIFICATION: Record<KsStage, string | null> = {
+  ks2: null,
+  ks4: "GCSE (9-1) Full Course",
+  ks5: "GCE A level",
+};
+
+// Trims the DfE band/grade-structure suffix off a qualification label so a
+// disambiguating row label stays readable: "BTEC National Foundation Diploma L3 -
+// Band H - P-D*" becomes "BTEC National Foundation Diploma L3". Purely cosmetic.
+function shortQualificationLabel(qualificationType: string): string {
+  return qualificationType.split(" - Band ")[0].replace(/\s*\(any AO and grade structure\)/i, "").trim();
+}
+
 // SUBJECT mode: real subjects mapped to the active family via
 // academic_subject_family_map_lookup (subjectData.subjectFamilyMap) for candidates
-// (raw facts, unchanged from before this round), with results/resultsPctChange now
-// enriched from vicdata's own new academic_subject_headline rollup (headlineBySubject)
-// for KS4 -- real, multi-period, closing the gap this file used to flag. KS5 stays on
-// the real value-added figure (a genuinely different, real metric, labelled as such,
-// not relabelled as if it were the same avg-point-score idea family level uses) --
-// resultsPctChange for KS5 stays null, deliberately: value-added centres on/crosses
-// zero, where a %-change is mathematically unstable and would mislead.
+// (raw facts), with results/resultsPctChange enriched from vicdata's own
+// academic_subject_headline rollup (headlineBySubject) for KS4 -- real, multi-period.
+// KS5 stays on the real value-added figure (a genuinely different, real metric,
+// labelled as such, not relabelled as if it were the same avg-point-score idea family
+// level uses) -- resultsPctChange for KS5 stays null, deliberately: value-added
+// centres on/crosses zero, where a %-change is mathematically unstable and would
+// mislead.
+//
+// `groupBy` exists because two callers want genuinely different things from the same
+// inputs, and conflating them was the bug:
+//
+//   "qualification" -- one row per (subject, qualification type). A college running
+//       both BTEC and A-level in the same subject gets two rows, not one merged row.
+//       Used by the subject-mode list, where the qualification IS the distinction the
+//       reader is looking at.
+//   "subject"       -- one row per subject, entries summed across qualification types.
+//       The pre-existing behaviour, kept exactly, for the deep-dive drawer: the drawer
+//       resolves a subject against academic_subject_headline, and that rollup has no
+//       qualification dimension at all, so a per-qualification row there would have
+//       nothing to reconcile against.
+//
+// Real bug this fixes (Capital City College, URN 130421, verified live 2026-09-18):
+// grouping by subject name alone merged qualification types that share a name. Its
+// 2024 "Psychology" row summed 207 A-level entries with 36 BTEC ones, so a reader
+// looking at BTEC provision saw a row that was 85% A-level. "Business Studies" merged
+// four BTEC bands with 129 A-level entries into a single 515-entry row. Every one of
+// that college's 38 BTEC subject names IS present in subjectFamilyMap, so nothing was
+// being filtered out -- the rows were being silently combined, which is a different
+// bug with a different fix.
 export function buildSubjectRows(
   stage: KsStage,
   familyId: string,
   subjectData: { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; subjectFamilyMap: Record<string, string> } | null,
   headlineBySubject: Map<string, AcademicSubjectHeadlineEntry[]>,
+  groupBy: "subject" | "qualification" = "subject",
 ): SubjectRow[] {
   if (!subjectData) return [];
   const namesInFamily = new Set(Object.entries(subjectData.subjectFamilyMap).filter(([, fam]) => fam === familyId).map(([name]) => name));
-  const subjectNames = Array.from(
-    new Set([...subjectData.entries.map((e) => e.subject), ...subjectData.valueAdded.map((v) => v.subject)].filter((s) => namesInFamily.has(s))),
-  );
-  return subjectNames.map((name) => {
-    const entryRows = subjectData.entries.filter((e) => e.subject === name);
+  const inFamily = (s: string) => namesInFamily.has(s);
+  const entriesInFamily = subjectData.entries.filter((e) => inFamily(e.subject));
+  const valueAddedInFamily = subjectData.valueAdded.filter((v) => inFamily(v.subject));
+
+  // One group per row. In "subject" mode the qualification part of the key is fixed,
+  // which reproduces the previous single-row-per-subject behaviour exactly.
+  const groups = new Map<string, { subject: string; qualificationType: string | null }>();
+  for (const e of entriesInFamily) {
+    const qual = groupBy === "qualification" ? e.qualificationType : null;
+    groups.set(`${qual ?? ""}\u0000${e.subject}`, { subject: e.subject, qualificationType: qual });
+  }
+  for (const v of valueAddedInFamily) {
+    const qual = groupBy === "qualification" ? v.qualificationType : null;
+    groups.set(`${qual ?? ""}\u0000${v.subject}`, { subject: v.subject, qualificationType: qual });
+  }
+
+  // Only disambiguate a label when this school really does run the same subject under
+  // more than one qualification type -- otherwise every row would carry a noisy suffix
+  // it does not need, and the common single-qualification case would read differently
+  // from before for no reason.
+  const qualsPerSubject = new Map<string, Set<string>>();
+  if (groupBy === "qualification") {
+    for (const g of groups.values()) {
+      if (!g.qualificationType) continue;
+      const set = qualsPerSubject.get(g.subject) ?? new Set<string>();
+      set.add(g.qualificationType);
+      qualsPerSubject.set(g.subject, set);
+    }
+  }
+
+  return Array.from(groups.entries()).map(([key, { subject: name, qualificationType }]) => {
+    const matches = <T extends { subject: string; qualificationType: string }>(r: T) =>
+      r.subject === name && (qualificationType === null || r.qualificationType === qualificationType);
+
+    const entryRows = entriesInFamily.filter(matches);
     const periods = Array.from(new Set(entryRows.map((e) => e.period))).sort((a, b) => a - b);
     const latestPeriod = periods.length ? periods[periods.length - 1] : null;
     const firstPeriod = periods.length ? periods[0] : null;
@@ -105,12 +180,16 @@ export function buildSubjectRows(
     let results: number | null = null;
     let resultsPctChange: number | null = null;
     if (stage === "ks5") {
-      const vaRows = subjectData.valueAdded.filter((v) => v.subject === name && v.valueAdded !== null);
+      const vaRows = valueAddedInFamily.filter((v) => matches(v) && v.valueAdded !== null);
       const vaLatestPeriod = vaRows.length ? Math.max(...vaRows.map((v) => v.period)) : null;
       const vaAtLatest = vaLatestPeriod !== null ? vaRows.filter((v) => v.period === vaLatestPeriod) : [];
       results = vaAtLatest.length > 0 ? vaAtLatest.reduce((sum, v) => sum + (v.valueAdded ?? 0), 0) / vaAtLatest.length : null;
     } else {
-      const years = [...(headlineBySubject.get(name) ?? [])].sort((a, b) => a.period - b.period);
+      // headlineBySubject comes from the rollup, which has no qualification dimension,
+      // so its score describes the points-bearing qualification alone. Attaching it to
+      // a BTEC row would put a GCSE score on a BTEC line.
+      const scoreBelongsHere = qualificationType === null || qualificationType === POINTS_BEARING_QUALIFICATION[stage];
+      const years = scoreBelongsHere ? [...(headlineBySubject.get(name) ?? [])].sort((a, b) => a.period - b.period) : [];
       if (years.length > 0) {
         results = years[years.length - 1].avgPointScore;
         const scoreFirst = years.find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
@@ -119,7 +198,18 @@ export function buildSubjectRows(
       }
     }
 
-    return { id: name, label: name, candidates, candidatesPeriod: latestPeriod, results, candidatesPctChange: pctChange(candidatesFirst, candidates), resultsPctChange };
+    const needsSuffix = qualificationType !== null && (qualsPerSubject.get(name)?.size ?? 0) > 1;
+    return {
+      id: qualificationType === null ? name : key,
+      label: needsSuffix ? `${name} (${shortQualificationLabel(qualificationType)})` : name,
+      subject: name,
+      qualificationType,
+      candidates,
+      candidatesPeriod: latestPeriod,
+      results,
+      candidatesPctChange: pctChange(candidatesFirst, candidates),
+      resultsPctChange,
+    };
   });
 }
 
@@ -230,7 +320,9 @@ export default function SubjectAreaSection({
   // latency for the school side -- this round's new batched fetch only affects the
   // comparison side below), enriched with the target's own real headline rows.
   const rows = useMemo(
-    () => (categoryMode ? buildCategoryRows(profile, stage) : familyId ? buildSubjectRows(stage, familyId, subjectData, headlineBySubjectFor(profile.urn)) : []),
+    // "qualification": the subject-mode list is exactly where a BTEC row must not be
+    // merged with an A-level row that happens to share its name. See buildSubjectRows.
+    () => (categoryMode ? buildCategoryRows(profile, stage) : familyId ? buildSubjectRows(stage, familyId, subjectData, headlineBySubjectFor(profile.urn), "qualification") : []),
     // headlineBySubjectFor is a plain function of familyId/comparatorSubjectHeadlineByUrn
     // (both already listed) redefined every render -- omitted deliberately, not a stale-
     // closure risk, since everything it reads is already tracked here.
@@ -243,12 +335,16 @@ export default function SubjectAreaSection({
   const candidateItems = rows.filter((r) => r.candidates !== null).map((r) => ({ id: r.id, label: r.label, value: r.candidates as number }));
   const order = [...candidateItems].sort((a, b) => b.value - a.value).map((i) => i.id);
   const labelById = new Map(rows.map((r) => [r.id, r.label]));
+  // In subject mode a row's id is now (qualification type, subject), but the drawer
+  // resolves a subject against academic_subject_headline, which has no qualification
+  // dimension -- so it must be handed the real subject NAME, never the composite id.
+  const subjectById = new Map(rows.map((r) => [r.id, r.subject ?? r.id]));
   const handleItemClick = onSelectSubjectArea
     ? (id: string) => {
         if (categoryMode) {
           onSelectSubjectArea({ familyId: id, familyLabel: labelById.get(id) ?? id });
         } else if (familyId) {
-          onSelectSubjectArea({ familyId, familyLabel: familyLabel ?? familyId, subject: id });
+          onSelectSubjectArea({ familyId, familyLabel: familyLabel ?? familyId, subject: subjectById.get(id) ?? id });
         }
       }
     : undefined;
@@ -284,7 +380,8 @@ export default function SubjectAreaSection({
         // is reused here rather than re-fetching it once per comparator.
         const own = comparatorSubjectByUrn.get(p.urn);
         const comparatorSubjectData = own ? { ...own, subjectFamilyMap: subjectData?.subjectFamilyMap ?? {} } : null;
-        map.set(p.urn, buildSubjectRows(stage, familyId, comparatorSubjectData, headlineBySubjectFor(p.urn)));
+        // Same grouping as the target side, or the two sides would not line up by id.
+        map.set(p.urn, buildSubjectRows(stage, familyId, comparatorSubjectData, headlineBySubjectFor(p.urn), "qualification"));
       } else {
         map.set(p.urn, []);
       }

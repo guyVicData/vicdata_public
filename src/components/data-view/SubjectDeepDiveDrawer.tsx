@@ -53,8 +53,97 @@ import {
 
 export type DeepDiveTarget = { familyId: string; familyLabel: string; subject?: string };
 
-const GCSE_GRADE_ORDER = ["9", "8", "7", "6", "5", "4", "3", "2", "1", "U"];
-const ALEVEL_GRADE_ORDER = ["A*", "A", "B", "C", "D", "E", "U"];
+// Grade bands used to be two hardcoded lists picked by stage alone, so everything that
+// was not GCSE got forced into the A-level bands. Confirmed live 2026-09-18 against
+// ingested grade rows: that is wrong for most qualification types, not just IB.
+// 31 qualification types carry real subject-grain grade rows at KS5 alone, across at
+// least eight genuinely different scales:
+//
+//   A-level / AS / Core Maths / Extended Project   A*  A  B  C  D  E   (+ Fail)
+//   IBO Higher + Standard level component          7 6 5 4 3 2 1
+//   IBO Diploma Programme Core                     A  B  C  D  E       (a different
+//                                                                       A-E scale)
+//   International Baccalaureate (the Diploma)      45 ... 24
+//   BTEC / OCR Technicals / VRQ, single award      Distinction* ... Pass
+//   ... double award                               Distinction*-Distinction* ...
+//   ... triple award                               Distinction*-Distinction*-D* ...
+//   Pre-U                                          D1 D2 D3 M1 M2 M3 P1 P2 P3
+//
+// and at KS4 only "GCSE (9-1) Full Course" matches the old GCSE list -- Double Award
+// publishes two-digit pairs (99, 98, 87 ... 11) and the vocational labels use two
+// different encodings between their own label variants ("Level 2 distinction" vs
+// "D2"). Hardcoding every one of those, times their label variants, would be wrong
+// again the first time DfE adds a band.
+//
+// So the order is derived from the grades actually present in this subject's real
+// SubjectGradeCount rows, and only the ORDERING is knowledge we supply: a rank table
+// covering the scales above, highest attainment first. A grade outside the table still
+// renders, sorted after the ones we recognise, rather than vanishing.
+// Ordered best-to-worst, one array per real scale. Deliberately NOT flattened into a
+// single global rank table: the same grade string means opposite things in different
+// scales. "D1" is the TOP Pre-U grade but the LOWER of the two vocational distinctions
+// (where the digit is the level, so D2 beats D1), and a flat table ranked Pre-U as
+// "D3 D1 M2 P3". So the scale is chosen per subject, by which one best covers the
+// grades actually present, and only then used to order them.
+const GRADE_SCALES: string[][] = [
+  // KS4 GCSE 9-1, then the Double Award pairs, highest first.
+  ["9", "8", "7", "6", "5", "4", "3", "2", "1"],
+  ["99", "98", "88", "87", "77", "76", "66", "65", "55", "54", "44", "43", "33", "32", "22", "21", "11"],
+  // A-level family. "*" appears as a real raw value alongside "A*" in the source.
+  ["A*", "*", "A", "B", "C", "D", "E"],
+  // IB subject components (Higher and Standard level).
+  ["7", "6", "5", "4", "3", "2", "1"],
+  // IB Diploma points total.
+  ["45", "44", "43", "42", "41", "40", "39", "38", "37", "36", "35", "34", "33", "32", "31", "30", "29", "28", "27", "26", "25", "24"],
+  // Vocational single / double / triple award, highest first.
+  ["Distinction*", "Distinction", "High merit", "Merit", "High pass", "Pass"],
+  ["Distinction*-Distinction*", "Distinction*-Distinction", "Distinction-Distinction", "Distinction-Merit", "Merit-Merit", "Merit-Pass", "Pass-Pass"],
+  [
+    "Distinction*-Distinction*-Distinction*", "Distinction*-Distinction*-Distinction", "Distinction*-Distinction-Distinction",
+    "Distinction-Distinction-Distinction", "Distinction-Distinction-Merit", "Distinction-Merit-Merit",
+    "Merit-Merit-Merit", "Merit-Merit-Pass", "Merit-Pass-Pass", "Pass-Pass-Pass",
+  ],
+  // KS4 vocational, both real encodings.
+  ["L2*", "L2D", "L2M", "L2P", "L1D", "L1M", "L1P"],
+  ["*2", "*1", "D2", "D1", "M2", "M1", "P2", "P1"],
+  ["Level 2 distinction star", "Level 2 distinction", "Level 2 merit", "Level 2 pass", "Level 1 distinction star", "Level 1 distinction", "Level 1 merit", "Level 1 pass"],
+  // Pre-U.
+  ["D1", "D2", "D3", "M1", "M2", "M3", "P1", "P2", "P3"],
+];
+
+// Present in almost every scale and always the bottom of it, so they are ranked below
+// every graded band rather than being indexed alongside them -- otherwise a fail sorts
+// to the TOP of the chart.
+const BOTTOM_RANK: Record<string, number> = { Fail: 900, U: 901 };
+
+// Not attainment bands: DfE suppression and non-results. Excluded from the chart's axis
+// so a distribution is not padded with rows that cannot be compared between schools.
+const NON_GRADE_VALUES = new Set(["Suppressed", "No result", "No result / X", "X", "Covid impacted", "Not Awarded", "Awarded"]);
+
+function gradeOrderFrom(...gradeSets: Iterable<string>[]): string[] {
+  const present = new Set<string>();
+  for (const set of gradeSets) for (const g of set) if (!NON_GRADE_VALUES.has(g)) present.add(g);
+  const graded = Array.from(present).filter((g) => !(g in BOTTOM_RANK));
+
+  // Pick the scale covering the most of what is actually here. Ties go to the shorter
+  // scale, which is the more specific match for the same coverage.
+  let best: string[] = [];
+  let bestHits = 0;
+  for (const scale of GRADE_SCALES) {
+    const hits = graded.filter((g) => scale.includes(g)).length;
+    if (hits > bestHits || (hits === bestHits && hits > 0 && scale.length < best.length)) {
+      best = scale;
+      bestHits = hits;
+    }
+  }
+
+  const rank = (g: string) => {
+    if (g in BOTTOM_RANK) return BOTTOM_RANK[g];
+    const i = best.indexOf(g);
+    return i === -1 ? 800 : i; // unrecognised grades still render, just after the known ones
+  };
+  return Array.from(present).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+}
 
 type SchoolSubjectData = { entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; gradeDistribution: SubjectGradeCount[] };
 
@@ -223,7 +312,6 @@ export default function SubjectDeepDiveDrawer({
   const targetFamilyId = target.familyId;
 
   const comparatorOptions = comparableGroup.filter((p) => p.urn !== profile.urn);
-  const gradeOrder = stage === "ks4" ? GCSE_GRADE_ORDER : ALEVEL_GRADE_ORDER;
 
   // Every real subject in this category, union across every real school fetched --
   // the category-level list, and the subject-level row lookups both key off this.
@@ -351,6 +439,20 @@ export default function SubjectDeepDiveDrawer({
               if (g.subject !== subject) continue;
               schoolGradeCounts.set(g.grade, (schoolGradeCounts.get(g.grade) ?? 0) + g.entries);
             }
+            // Bands come from the grades this subject really carries, across the school
+            // and its comparison set, so an IB or BTEC subject charts its own scale
+            // instead of being forced into A-level's seven bands and rendering as zeros.
+            // The set union matters: a comparator offering a band the target does not
+            // still gets a column, which is the whole point of the comparison.
+            const comparisonGradeValues: string[] = [];
+            for (const sc of comparableGroup) {
+              if (sc.urn === profile.urn) continue;
+              for (const g of subjectByUrn.get(sc.urn)?.gradeDistribution ?? []) {
+                if (g.subject === subject) comparisonGradeValues.push(g.grade);
+              }
+            }
+            const gradeOrder = gradeOrderFrom(schoolGradeCounts.keys(), comparisonGradeValues);
+
             const comparisonGradePercents = new Map<string, number>();
             const comparisonGradeSamples = new Map<string, number[]>();
             for (const sc of comparableGroup) {
