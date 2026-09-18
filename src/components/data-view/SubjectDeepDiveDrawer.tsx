@@ -50,7 +50,7 @@ import {
   type AcademicSubjectHeadlineEntry,
   HEADLINE_LABEL,
 } from "@/lib/academic-data-view";
-import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
+import { bucketFor, KS5_BUCKET_LABEL, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 
 export type DeepDiveTarget = { familyId: string; familyLabel: string; subject?: string };
 
@@ -415,17 +415,29 @@ export default function SubjectDeepDiveDrawer({
                   </span>
                 </button>
               ))}
-            {/* Two genuinely different empty states. `allSubjectNames` empty means the
-                category itself returned nothing; names present but every row filtered
-                out means the subjects exist in the headline rollup but have no
-                entries in the modern raw-fact source. Previously only the first was
-                reported, so the second rendered as a heading above nothing. */}
+            {/* THREE genuinely different empty states, not two.
+                  1. `allSubjectNames` empty: the category itself returned nothing.
+                  2. A TYPE bucket is selected and nothing in this category matches it.
+                     This is the common case and it is NOT missing data -- the school's
+                     provision here is simply a different qualification type.
+                  3. No bucket selected, subjects exist, but none has entries in the
+                     modern raw-fact source.
+                Case 2 used to fall into case 3's wording and quote
+                `allSubjectNames.size` -- a count taken from the UNFILTERED headline
+                rollup, so it reported every qualification type combined as though that
+                many subjects were missing data. Capital City College filtered to
+                BTec & OCR read "No entries data for the 27 subjects in this category
+                yet" when the real answer is that it has no BTec & OCR provision in this
+                category at all. Never quote that count while a bucket is narrowing the
+                list: it was never scoped to the thing causing the emptiness. */}
             {allSubjectNames.size === 0 ? (
               <p className="text-sm text-neutral-500">No real subject data for this category yet.</p>
             ) : (
               listedSubjects.length === 0 && (
                 <p className="text-sm text-neutral-500">
-                  No entries data for the {allSubjectNames.size} subject{allSubjectNames.size === 1 ? "" : "s"} in this category yet.
+                  {bucketActive && ks5Bucket
+                    ? `No ${KS5_BUCKET_LABEL[ks5Bucket]} entries for this category at this school.`
+                    : `No entries data for the ${allSubjectNames.size} subject${allSubjectNames.size === 1 ? "" : "s"} in this category yet.`}
                 </p>
               )
             )}

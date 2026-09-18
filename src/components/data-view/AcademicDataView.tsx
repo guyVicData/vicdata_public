@@ -36,6 +36,7 @@ import {
   igcseExclusionLikely,
   ks5HasBucketEntries,
   KS5_BUCKET_OPTIONS,
+  KS5_BUCKETS,
   KS5_OTHER_NO_FIGURE_NOTE,
   ks5BucketHasPointsFigure,
   type AcademicSchoolProfile,
@@ -117,25 +118,51 @@ function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; acti
 // default state (nothing explicitly clicked, every school shown on its own dominant
 // bucket), not "not yet resolved." No pill shows as active in that state, which is
 // deliberate: there IS no single shared measure to highlight yet.
-function Ks5TypeSwitcher({ active, onChange }: { active: Ks5Bucket | null; onChange: (b: Ks5Bucket) => void }) {
+const PILL_ON =
+  "inline-flex items-center gap-1 rounded-full border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-medium text-white dark:border-blue-100 dark:bg-blue-100 dark:text-blue-900";
+const PILL_OFF =
+  "inline-flex items-center gap-1 rounded-full border border-blue-300 px-3 py-1 text-xs text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950";
+
+function Ks5TypeSwitcher({
+  active,
+  onChange,
+  availableBuckets,
+}: {
+  active: Ks5Bucket | null;
+  onChange: (b: Ks5Bucket | null) => void;
+  // Only the buckets this school has real entries for. A pill for a qualification type
+  // a school does not offer is not a filter, it is a dead end that empties the page.
+  availableBuckets: Ks5Bucket[];
+}) {
+  const options = KS5_BUCKET_OPTIONS.filter((opt) => availableBuckets.includes(opt.bucket));
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {/* "TYPE" rather than "Qualification type": this sits to the right of the stage
           buttons under a shared "QUALIFICATION" label, so the two read together as
           "QUALIFICATION ... TYPE ...". */}
       <span className={`mr-1 ${CONTROL_LABEL}`}>Type</span>
-      {KS5_BUCKET_OPTIONS.map((opt) => (
+      {/* The way back to the real default. null is not "nothing selected yet", it is a
+          genuine state with its own meaning -- every school measured on its own
+          dominant qualification type rather than one shared axis -- so it needs a
+          control, not just an initial value nobody can return to. Always rendered,
+          regardless of the availability filter below. */}
+      <button
+        type="button"
+        aria-pressed={active === null}
+        title="Every qualification type together: each school on its own dominant type."
+        onClick={() => onChange(null)}
+        className={active === null ? PILL_ON : PILL_OFF}
+      >
+        All
+      </button>
+      {options.map((opt) => (
         <button
           key={opt.bucket}
           type="button"
           aria-pressed={active === opt.bucket}
           title={opt.description}
           onClick={() => onChange(opt.bucket)}
-          className={
-            active === opt.bucket
-              ? "inline-flex items-center gap-1 rounded-full border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-medium text-white dark:border-blue-100 dark:bg-blue-100 dark:text-blue-900"
-              : "inline-flex items-center gap-1 rounded-full border border-blue-300 px-3 py-1 text-xs text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
-          }
+          className={active === opt.bucket ? PILL_ON : PILL_OFF}
         >
           {opt.pillLabel}
         </button>
@@ -155,13 +182,15 @@ function QualificationRow({
   showType,
   activeBucket,
   onChangeBucket,
+  availableBuckets,
 }: {
   stages: KsStage[];
   activeStage: KsStage;
   onChangeStage: (s: KsStage) => void;
   showType: boolean;
   activeBucket: Ks5Bucket | null;
-  onChangeBucket: (b: Ks5Bucket) => void;
+  onChangeBucket: (b: Ks5Bucket | null) => void;
+  availableBuckets: Ks5Bucket[];
 }) {
   // KsStageSwitcher renders null for a school with only one real stage; with no type
   // half either, the whole row would be an empty bordered strip.
@@ -169,13 +198,20 @@ function QualificationRow({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {stages.length > 1 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={`mr-1 ${CONTROL_LABEL}`}>Qualification</span>
+        {/* The label and a stage indicator show whether or not there is anything to
+            switch between. A Post-16-only college is the common case, not an edge one,
+            and hiding both left its TYPE pills floating with no heading and no sign of
+            which stage was being shown. With one stage the indicator is plain text, not
+            a disabled-looking button: there is genuinely nothing to click. */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={`mr-1 ${CONTROL_LABEL}`}>Qualification</span>
+          {stages.length > 1 ? (
             <KsStageSwitcher stages={stages} active={activeStage} onChange={onChangeStage} />
-          </div>
-        )}
-        {showType && <Ks5TypeSwitcher active={activeBucket} onChange={onChangeBucket} />}
+          ) : (
+            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{STAGE_LABEL[activeStage]}</span>
+          )}
+        </div>
+        {showType && <Ks5TypeSwitcher active={activeBucket} onChange={onChangeBucket} availableBuckets={availableBuckets} />}
       </div>
       {/* The "Other" bucket deliberately has no headline points figure, and the reason
           has to be visible at the moment it is selected rather than buried in a doc --
@@ -376,6 +412,16 @@ export default function AcademicDataView({
   // qualification-type matching -- a mixed set is correct and expected there,
   // since the comparator-widening effect below already guarantees ~10 real
   // KS5-having schools regardless of which cohort each one is shown on.
+  // Which TYPE pills this school should even offer. Uses the SAME ks5HasBucketEntries
+  // this file already uses to exclude comparator schools from a bucket comparison, so
+  // "does this school have real entries in this bucket" means one thing in both places.
+  // A bucket the school does not offer is dropped rather than rendered as a clickable
+  // pill that empties the page -- Capital City College has no real IB, and was still
+  // showing an IB pill.
+  const availableKs5Buckets = targetProfile
+    ? KS5_BUCKETS.filter((b) => ks5HasBucketEntries(targetProfile, b))
+    : [];
+
   const ks5ExcludedUrns = new Set<string>();
   if (effectiveStage === "ks5" && ks5Bucket !== null) {
     const seen = new Set<string>();
@@ -657,6 +703,7 @@ export default function AcademicDataView({
             showType={effectiveStage === "ks5"}
             activeBucket={ks5Bucket}
             onChangeBucket={setKs5Bucket}
+            availableBuckets={availableKs5Buckets}
           />
         </div>
       )}

@@ -448,6 +448,7 @@ export function ks5HasBucketEntries(profile: AcademicSchoolProfile, bucket: Ks5B
 // bucket (T Level, once DfE publishes a challenge table for it) slots in here without
 // restructuring anything.
 export {
+  KS5_BUCKETS,
   KS5_BUCKET_LABEL,
   KS5_OTHER_NO_FIGURE_NOTE,
   ks5BucketEntriesKey,
