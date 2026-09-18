@@ -179,6 +179,9 @@ export type AcademicSubjectFamilyRow = {
   entries_share_percent: number | null;
   avg_point_score: number | null;
   points_coverage_percent: number | null;
+  // Appended by the bucket-aware rollup round. 'all' is the pre-existing whole-school
+  // row; the rest are the KS5 comparability buckets.
+  bucket?: string;
 };
 
 export async function lookupAcademicSubjectFamily(params: {
@@ -187,6 +190,8 @@ export async function lookupAcademicSubjectFamily(params: {
   familyIds?: string[];
   periodMin?: number;
   periodMax?: number;
+  // undefined means the RPC default, 'all'. null asks for every bucket in one call.
+  bucket?: string | null;
   signal?: AbortSignal;
 }): Promise<AcademicSubjectFamilyRow[]> {
   const rows: AcademicSubjectFamilyRow[] = [];
@@ -201,6 +206,7 @@ export async function lookupAcademicSubjectFamily(params: {
         p_period_max: params.periodMax ?? null,
         p_limit: PAGE_SIZE,
         p_offset: page * PAGE_SIZE,
+        p_bucket: params.bucket === undefined ? 'all' : params.bucket,
       },
       params.signal,
     )) as AcademicSubjectFamilyRow[];
@@ -269,7 +275,7 @@ const HEADLINE_ENTITY_CHUNK = 20;
 
 async function lookupAcademicSubjectHeadlineChunk(
   entityIds: string[] | null,
-  params: { ksStage?: KsStage; familyId?: string; periodMin?: number; periodMax?: number; signal?: AbortSignal },
+  params: { ksStage?: KsStage; familyId?: string; periodMin?: number; periodMax?: number; bucket?: string; signal?: AbortSignal },
 ): Promise<AcademicSubjectHeadlineRow[]> {
   const rows: AcademicSubjectHeadlineRow[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
@@ -283,6 +289,9 @@ async function lookupAcademicSubjectHeadlineChunk(
         p_period_max: params.periodMax ?? null,
         p_limit: PAGE_SIZE,
         p_offset: page * PAGE_SIZE,
+        // Omitted means the RPC's own default, 'all' -- byte-identical to the rows
+        // this call returned before the bucket dimension existed.
+        p_bucket: params.bucket ?? 'all',
       },
       params.signal,
     )) as AcademicSubjectHeadlineRow[];
@@ -298,6 +307,7 @@ export async function lookupAcademicSubjectHeadline(params: {
   familyId?: string;
   periodMin?: number;
   periodMax?: number;
+  bucket?: string;
   signal?: AbortSignal;
 }): Promise<AcademicSubjectHeadlineRow[]> {
   const entityIds = params.entityIds ?? null;

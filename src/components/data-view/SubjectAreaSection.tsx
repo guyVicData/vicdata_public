@@ -25,7 +25,7 @@
 // before this round.
 import { useCallback, useMemo, useState } from "react";
 import { stageFamilies, familyYearsFor, type AcademicFamilyYear, type AcademicSchoolProfile, type KsStage, type SubjectEntry, type SubjectValueAdded, type AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
-import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
+import { bucketFor, ks5BucketHasPointsFigure, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
 import { academicYearLabel } from "./TrendPill";
 import SubjectAreaBarChart from "./SubjectAreaBarChart";
@@ -57,11 +57,22 @@ export type SubjectRow = {
 // value" is the same real methodology this section has always used. Extracted as a
 // plain, profile-agnostic function so the exact same real computation applies to
 // every comparator school too, not a second, possibly-drifting copy.
-export function buildCategoryRows(profile: AcademicSchoolProfile, stage: KsStage): SubjectRow[] {
-  const families = stageFamilies(profile, stage);
+export function buildCategoryRows(
+  profile: AcademicSchoolProfile,
+  stage: KsStage,
+  // Which bucket's family rows to read. Omitted, or "all", gives the pre-existing
+  // whole-school rows this function has always returned. A real bucket gives that
+  // bucket's own entries AND its own points -- the whole point of the bucket-aware
+  // rollup round, and what makes an IB-only school's categories scoreable at all.
+  bucket?: Ks5Bucket | null,
+): SubjectRow[] {
+  const bucketFamilies = bucket && bucket !== "alevel" && stage === "ks5"
+    ? profile.ks5FamiliesByBucket?.[bucket]
+    : undefined;
+  const families = bucketFamilies ?? stageFamilies(profile, stage);
   const familyIds = Array.from(new Set(families.map((f) => f.familyId)));
   return familyIds.map((id) => {
-    const years = familyYearsFor(profile, stage, id);
+    const years = (bucketFamilies ?? familyYearsFor(profile, stage, id)).filter((y) => y.familyId === id);
     const label = families.find((f) => f.familyId === id)?.familyLabel ?? id;
     const latest = years.length ? years[years.length - 1] : null;
     const entriesFirst = years.find((y) => y.entriesTotal > 0)?.entriesTotal ?? null;
@@ -227,10 +238,19 @@ function aggregateFamilyTrend(
   familyId: string,
   pick: (y: AcademicFamilyYear) => number | null,
   combine: (values: number[]) => number,
+  // Which bucket's family history to walk. Omitted or "alevel" reads the pre-existing
+  // 'all' rows, exactly as before. Passing a real bucket is what stops this helper
+  // averaging A-level points under a non-A-level selection -- the borrowed-points bug
+  // the previous round fixed by suppression, now fixable with real data instead.
+  bucket?: Ks5Bucket | null,
 ): number | null {
+  const useBucket = bucket && bucket !== "alevel" && stage === "ks5";
   const byPeriod = new Map<number, number[]>();
   for (const p of profiles) {
-    for (const y of familyYearsFor(p, stage, familyId)) {
+    const years = useBucket
+      ? (p.ks5FamiliesByBucket?.[bucket] ?? []).filter((y) => y.familyId === familyId)
+      : familyYearsFor(p, stage, familyId);
+    for (const y of years) {
       const v = pick(y);
       if (v === null) continue;
       const existing = byPeriod.get(y.period);
@@ -341,7 +361,19 @@ export default function SubjectAreaSection({
   // bucket-scoped, and shows no points figure at all rather than a wrong one. Giving
   // category mode real per-bucket points needs the rollup itself to gain the bucket
   // dimension; flagged in this round's build report, not silently faked here.
-  const categoryPointsUnavailable = bucketActive && ks5Bucket !== "alevel" && categoryMode;
+  // Before the bucket-aware rollup round there were no per-bucket points at all, so any
+  // non-A-level bucket in category mode had to suppress a borrowed A-level figure. Real
+  // per-bucket rows now exist, so suppression is needed only where they genuinely are
+  // not available: the "other" bucket, which has no DfE challenge table by design, and
+  // any school with no rows for the selected bucket. A-level deliberately still reads
+  // the pre-existing 'all' rows -- see the build report; harmonising the two A-level
+  // methods is its own deferred round.
+  const bucketFamilyRows = bucketActive && ks5Bucket && ks5Bucket !== "alevel" && stage === "ks5"
+    ? profile.ks5FamiliesByBucket?.[ks5Bucket]
+    : undefined;
+  const categoryPointsUnavailable =
+    bucketActive && ks5Bucket !== "alevel" && categoryMode
+    && (!ks5Bucket || !ks5BucketHasPointsFigure(ks5Bucket) || !bucketFamilyRows || bucketFamilyRows.length === 0);
 
   // Strips the points figure off category rows when it would be an A-level number
   // shown against a non-A-level bucket. See categoryPointsUnavailable above.
@@ -374,7 +406,7 @@ export default function SubjectAreaSection({
   const rows = useMemo(
     // "qualification": the subject-mode list is exactly where a BTEC row must not be
     // merged with an A-level row that happens to share its name. See buildSubjectRows.
-    () => (categoryMode ? withoutBorrowedPoints(buildCategoryRows(profile, stage)) : familyId ? buildSubjectRows(stage, familyId, scopedSubjectData, headlineBySubjectFor(profile.urn), "qualification") : []),
+    () => (categoryMode ? withoutBorrowedPoints(buildCategoryRows(profile, stage, ks5Bucket)) : familyId ? buildSubjectRows(stage, familyId, scopedSubjectData, headlineBySubjectFor(profile.urn), "qualification") : []),
     // headlineBySubjectFor is a plain function of familyId/comparatorSubjectHeadlineByUrn
     // (both already listed) redefined every render -- omitted deliberately, not a stale-
     // closure risk, since everything it reads is already tracked here.
@@ -425,7 +457,7 @@ export default function SubjectAreaSection({
         continue;
       }
       if (categoryMode) {
-        map.set(p.urn, withoutBorrowedPoints(buildCategoryRows(p, stage)));
+        map.set(p.urn, withoutBorrowedPoints(buildCategoryRows(p, stage, ks5Bucket)));
       } else if (familyId) {
         // subjectFamilyMap is stage-scoped, static reference data -- identical for
         // every real school, so the target's own already-fetched copy (subjectData)
@@ -474,7 +506,7 @@ export default function SubjectAreaSection({
     pctChange: selectedRows
       ? (selectedRows.find((r) => r.id === id)?.candidatesPctChange ?? null)
       : categoryMode
-        ? aggregateFamilyTrend(comparableGroup, stage, id, (y) => (y.entriesTotal > 0 ? y.entriesTotal : null), sum)
+        ? aggregateFamilyTrend(comparableGroup, stage, id, (y) => (y.entriesTotal > 0 ? y.entriesTotal : null), sum, ks5Bucket)
         : aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => r.candidatesPctChange !== null ? r.candidates : null, sum),
   }));
 
@@ -524,7 +556,7 @@ export default function SubjectAreaSection({
           // pipeline and were never part of this suppression.
           categoryPointsUnavailable
           ? null
-          : aggregateFamilyTrend(comparableGroup, stage, id, (y) => y.avgPointScore, average)
+          : aggregateFamilyTrend(comparableGroup, stage, id, (y) => y.avgPointScore, average, ks5Bucket)
         : aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => (r.resultsPctChange !== null ? r.results : null), average),
   }));
 
