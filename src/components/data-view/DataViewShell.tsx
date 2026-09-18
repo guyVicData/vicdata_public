@@ -392,12 +392,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
   // -- academicHasData defaults to true (not false) so the Academic tab doesn't
   // flash disabled-then-enabled while the eager fetch is still in flight; it only
   // ever flips to false once AcademicDataView's own fetch has genuinely resolved
-  // with zero real ks2/ks4/ks5 stages for this target. stageSwitcherSlot is a
-  // callback-ref target: TopicTabs attaches it to a real DOM node in its own row,
-  // AcademicDataView portals its KsStageSwitcher into that node once it exists --
-  // avoids lifting stage/availableStages state itself up to this component at all.
+  // with zero real ks2/ks4/ks5 stages for this target.
   const [academicHasData, setAcademicHasData] = useState(true);
-  const [stageSwitcherSlot, setStageSwitcherSlot] = useState<HTMLDivElement | null>(null);
   // One shared collapse toggle for the one shared filter bar (see the render's own
   // 2026-09-05 comment) -- applies identically regardless of which view is active,
   // rather than a per-view floating overlay only Map used to have.
@@ -1526,7 +1522,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
         activeTopic={activeTopic}
         onChange={setActiveTopic}
         academicHasData={academicHasData}
-        onStageSwitcherSlotReady={setStageSwitcherSlot}
       />
 
       {activeTopic === "rolls" && (
@@ -1663,9 +1658,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
             than only existing once the Academic tab is first clicked -- it needs to
             fetch the target's own real academic profile and report stagesPresent
             up (via onHasAnyData) so TopicTabs can grey out the Academic tab for a
-            school with no real data at all, and so its own KsStageSwitcher can be
-            portalled into TopicTabs' own row (stageSwitcherSlot) the moment data
-            loads, regardless of which topic happens to be showing right now. A
+            school with no real data at all, regardless of which topic happens to be
+            showing right now. A
             real, deliberate tradeoff: the academic-schools fetch now runs eagerly
             on every Data View page load once authenticated, not only once a member
             actually clicks into Academic -- flagged in this round's own report.
@@ -1682,7 +1676,6 @@ export default function DataViewShell({ urn }: { urn: string }) {
           activeView={activeView}
           onChangeView={setActiveView}
           isActiveTopic={activeTopic === "academic"}
-          stageSwitcherSlot={stageSwitcherSlot}
           onHasAnyData={setAcademicHasData}
           // Region/Nation comparator round 2: the SAME three values already computed
           // above for Rolls' own large-set path -- isLargeSet/currentLargeSetRankScopeKey/
@@ -1868,7 +1861,6 @@ function TopicTabs({
   activeTopic,
   onChange,
   academicHasData,
-  onStageSwitcherSlotReady,
 }: {
   schoolName: string;
   activeTopic: DataViewTopic;
@@ -1881,7 +1873,6 @@ function TopicTabs({
   // Item 2: AcademicDataView portals its own KsStageSwitcher into this slot once
   // real data loads, so the stage buttons render on this SAME row, right-aligned,
   // rather than in their own row below.
-  onStageSwitcherSlotReady: (el: HTMLDivElement | null) => void;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-neutral-200 px-4 py-3 sm:px-6 dark:border-neutral-800">
@@ -1936,7 +1927,6 @@ function TopicTabs({
           just within <nav>'s own hugged width. The ref callback runs on every
           mount/unmount, so switching topics correctly re-fires it with `null` then
           a fresh node. */}
-      {activeTopic === "academic" && <div ref={onStageSwitcherSlotReady} className="ml-auto flex flex-wrap items-center gap-2" />}
       <style>{`
         @media (prefers-color-scheme: dark) {
           :root:where(:not([data-theme="light"])) .topic-tab-active {

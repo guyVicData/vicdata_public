@@ -28,7 +28,6 @@
 // a ticked-set comparison, so there's no reason to pull it for every ticked school.
 
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import type { ViewKey } from "@/lib/data-view-types";
 import {
   stagesPresent,
@@ -64,6 +63,8 @@ import AcademicMapView from "./AcademicMapView";
 import AcademicGraphsView from "./AcademicGraphsView";
 import AcademicRankingsView from "./AcademicRankingsView";
 import CategoryFilter from "./CategoryFilter";
+
+const CONTROL_LABEL = "text-xs font-semibold uppercase tracking-wide text-neutral-500";
 
 function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; active: KsStage; onChange: (s: KsStage) => void }) {
   if (stages.length <= 1) return null;
@@ -102,7 +103,14 @@ function KsStageSwitcher({ stages, active, onChange }: { stages: KsStage[]; acti
 function Ks5CohortSwitcher({ active, onChange }: { active: Ks5Cohort | null; onChange: (c: Ks5Cohort) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Qualification type</span>
+      {/* "TYPE" rather than "Qualification type": this now sits to the right of the
+          stage buttons under a shared "QUALIFICATION" label, so the two read together
+          as "QUALIFICATION ... TYPE ...". The five pill labels themselves are DfE's own
+          exam_cohort values verbatim and are deliberately NOT renamed -- "Tech Level"
+          is DfE's own 2013 category and is NOT the T Level qualification, and
+          "Academic" genuinely blends A-level with IB in DfE's reporting, so calling it
+          "IB" would misdescribe it. */}
+      <span className={`mr-1 ${CONTROL_LABEL}`}>Type</span>
       {KS5_COHORT_OPTIONS.map((opt) => (
         <button
           key={opt.cohort}
@@ -123,6 +131,41 @@ function Ks5CohortSwitcher({ active, onChange }: { active: Ks5Cohort | null; onC
   );
 }
 
+// Part A of the qualification-type comparability round: the stage buttons used to be
+// portalled up into TopicTabs' own row while the type pills lived down here, so two
+// halves of one question ("which qualification?") sat in two different places. They are
+// one row now. Behaviour of both controls is unchanged -- this is layout only.
+function QualificationRow({
+  stages,
+  activeStage,
+  onChangeStage,
+  showType,
+  activeCohort,
+  onChangeCohort,
+}: {
+  stages: KsStage[];
+  activeStage: KsStage;
+  onChangeStage: (s: KsStage) => void;
+  showType: boolean;
+  activeCohort: Ks5Cohort | null;
+  onChangeCohort: (c: Ks5Cohort) => void;
+}) {
+  // KsStageSwitcher renders null for a school with only one real stage; with no type
+  // half either, the whole row would be an empty bordered strip.
+  if (stages.length <= 1 && !showType) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      {stages.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={`mr-1 ${CONTROL_LABEL}`}>Qualification</span>
+          <KsStageSwitcher stages={stages} active={activeStage} onChange={onChangeStage} />
+        </div>
+      )}
+      {showType && <Ks5CohortSwitcher active={activeCohort} onChange={onChangeCohort} />}
+    </div>
+  );
+}
+
 export default function AcademicDataView({
   urn,
   authToken,
@@ -133,7 +176,6 @@ export default function AcademicDataView({
   activeView,
   onChangeView,
   isActiveTopic,
-  stageSwitcherSlot,
   onHasAnyData,
   isLargeSet,
   regionNationScopeKey,
@@ -155,7 +197,6 @@ export default function AcademicDataView({
   // Rolls' own MapView -- the fetch/portal/tab-gating logic below stays active
   // either way.
   isActiveTopic: boolean;
-  stageSwitcherSlot: HTMLDivElement | null;
   onHasAnyData: (has: boolean) => void;
   // Region/Nation comparator round 2: all three values below are computed ONCE in
   // DataViewShell.tsx off the shared `activeSet` (topic-agnostic) and passed straight
@@ -552,13 +593,6 @@ export default function AcademicDataView({
 
   return (
     <div hidden={!isActiveTopic} className="flex min-w-0 flex-1 flex-col">
-      {/* Item 2: portalled into TopicTabs' own row (DataViewShell), not rendered
-          in-flow here -- see that component's own comment. Guarded on
-          effectiveStage !== null since KsStageSwitcher's own `active` prop isn't
-          nullable; an empty/1-stage filteredStages already makes it render null
-          internally either way. */}
-      {stageSwitcherSlot && effectiveStage && createPortal(<KsStageSwitcher stages={filteredStages} active={effectiveStage} onChange={changeStage} />, stageSwitcherSlot)}
-
       {/* Item 6: the in-flow ViewSwitcher/PdfExportButton row is skipped for Map,
           matching Rolls' own MapView.tsx pattern exactly -- AcademicMapView renders
           its own overlay copies instead (see that component). Item 8: CategoryFilter
@@ -566,7 +600,10 @@ export default function AcademicDataView({
           so this whole header row has nothing left to show for Map unless the
           Ks5CohortSwitcher is also present -- gated to avoid a stray empty bordered
           strip when neither applies. */}
-      {effectiveStage && (activeView !== "map" || effectiveStage === "ks5") && (
+      {/* The stage buttons live in this row now (Part A), so it renders whenever there
+          is a stage at all -- previously it could be skipped entirely for Map, which
+          would now take the stage switcher down with it. */}
+      {effectiveStage && (
         <div className="flex flex-col gap-2 border-b border-neutral-100 px-4 py-2 sm:px-6 print:hidden dark:border-neutral-900">
           {activeView !== "map" && (
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -592,7 +629,14 @@ export default function AcademicDataView({
               down -- so it isn't hidden on Rankings. Deliberately its own row/colour
               (blue vs. CategoryFilter's neutral pills) so it doesn't read as the same
               control by a different name. */}
-          {effectiveStage === "ks5" && <Ks5CohortSwitcher active={ks5Cohort} onChange={setKs5Cohort} />}
+          <QualificationRow
+            stages={filteredStages}
+            activeStage={effectiveStage}
+            onChangeStage={changeStage}
+            showType={effectiveStage === "ks5"}
+            activeCohort={ks5Cohort}
+            onChangeCohort={setKs5Cohort}
+          />
         </div>
       )}
 
