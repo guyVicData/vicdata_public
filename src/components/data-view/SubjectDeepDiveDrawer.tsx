@@ -551,10 +551,33 @@ export default function SubjectDeepDiveDrawer({
                   <GradeDistributionChart familyId={target.familyId} gradeOrder={gradeOrder} schoolCounts={schoolGradeCounts} comparisonPercents={comparisonGradePercents} />
                 </div>
 
-                {periods.length > 1 && (
+                {/* The SAME borrowed-points leak fixed in SubjectAreaSection's
+                    "Results, % change" card, in this drawer's own trend chart. Both
+                    series read avgPointScore from headlineByUrn, which is NOT
+                    bucket-filtered (only scopedSubjectByUrn is), and which comes from
+                    academic_subject_headline -- a rollup whose points are A-level-only
+                    by construction. So under a non-A-level TYPE the chart plotted an
+                    A-level points trend beside a bucket-correct grade distribution.
+                    Worse on the comparison line than the target line: an IB-only school
+                    has no points of its own, so the target series came back empty while
+                    the comparison series happily averaged its A-level comparators --
+                    exactly the school-empty/comparator-populated split reported on the
+                    other card. Suppressed rather than corrected: giving this an honest
+                    per-bucket figure needs the rollup to gain a bucket dimension, which
+                    is the structural build deliberately out of scope here. */}
+                {periods.length > 1 && !(bucketActive && ks5Bucket !== "alevel") && (
                   <div>
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Trend since {academicYearLabel(periods[0])}</p>
                     <TargetVsAverageTrend periods={periods} targetSeries={targetTrendSeries} averageSeries={averageTrendSeries} />
+                  </div>
+                )}
+                {periods.length > 1 && bucketActive && ks5Bucket !== "alevel" && (
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Trend</p>
+                    <p className="text-sm text-neutral-500">
+                      No real {KS5_BUCKET_LABEL[ks5Bucket]} points trend for this subject. The points series available here
+                      covers A-level entries only.
+                    </p>
                   </div>
                 )}
 

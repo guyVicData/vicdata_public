@@ -507,7 +507,24 @@ export default function SubjectAreaSection({
     pctChange: selectedRows
       ? (selectedRows.find((r) => r.id === id)?.resultsPctChange ?? null)
       : categoryMode
-        ? aggregateFamilyTrend(comparableGroup, stage, id, (y) => y.avgPointScore, average)
+        ? // categoryPointsUnavailable has to be checked EXPLICITLY here, unlike every
+          // other points path in this component. The others read comparatorRowsByUrn,
+          // which has already had withoutBorrowedPoints applied; this one calls
+          // aggregateFamilyTrend over the raw comparableGroup profiles and their own
+          // familyYearsFor history, so the suppression never reaches it.
+          //
+          // Without this gate the "Results, % change" card showed a real A-level points
+          // trend for the comparator set while a non-A-level TYPE bucket was selected --
+          // directly contradicting the "Results, 2024/25" card immediately above it,
+          // which correctly showed no figure at all. Found live at Sevenoaks School
+          // under TYPE = IB: school side honestly empty, comparator side showing data.
+          //
+          // The gate is deliberately NOT applied to the candidates trend above, which
+          // uses the same helper: entries are legitimately bucket-scoped earlier in the
+          // pipeline and were never part of this suppression.
+          categoryPointsUnavailable
+          ? null
+          : aggregateFamilyTrend(comparableGroup, stage, id, (y) => y.avgPointScore, average)
         : aggregateSubjectTrend(comparatorRowsByUrn, id, (r) => (r.resultsPctChange !== null ? r.results : null), average),
   }));
 
