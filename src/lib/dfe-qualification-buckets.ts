@@ -38,14 +38,22 @@ export const KS5_BUCKET_LABEL: Record<Ks5Bucket, string> = {
 export const KS5_BUCKET_DESCRIPTION: Record<Ks5Bucket, string> = {
   alevel: "A level, AS level and Advanced Extension Award. Uses DfE's own published A-level points figure, unchanged.",
   ib: "International Baccalaureate: Higher and Standard level components and the Diploma Programme Core.",
-  btec_ocr: "BTEC and OCR Cambridge Technical qualifications, combined into one comparable bucket.",
+  btec_ocr: "BTEC, OCR Cambridge Technical and VRQ vocational qualifications. VRQ entries are counted here but are not included in the points figure: see the note below.",
   tlevel: "T Levels: 2-year technical programmes equivalent in size to 3 A levels, shown by DfE occupational pathway.",
   other: "EPQ, Core Maths, Pre-U, VRQ and other general qualifications. Shown by subject only: see the note below for why there is no single points figure.",
 };
 
 // Why "Other" carries no headline number, stated in the UI rather than left implicit.
 export const KS5_OTHER_NO_FIGURE_NOTE =
-  "No single points figure is shown for Other because these qualifications are not comparable with each other. VRQ Level 3 alone covers nine different qualification sizes under one DfE label, so an average across this group would imply a comparability that does not exist.";
+  "No single points figure is shown for Other because these qualifications are not comparable with each other. It groups the Extended Project, Core Maths, Free-standing Maths, Pre-U and other general qualifications, which differ in size, level and purpose, so an average across them would imply a comparability that does not exist.";
+
+// BTec & OCR is now a PARTIAL-coverage bucket, and says so rather than leaving a silent
+// gap. VRQ moved in here because DfE classifies a great deal of everyday "BTEC-like"
+// provision as VRQ (Capital City College's real Art and Design course among it), so
+// leaving it in Other hid it from the pill anyone would click first. But VRQ cannot be
+// scored: see challengeFor.
+export const KS5_BTEC_OCR_PARTIAL_POINTS_NOTE =
+  "The points figure covers BTEC and OCR Cambridge Technical entries only. VRQ entries are included in the entry counts but not in the points average: DfE groups many different vocational qualifications, with different grade scales, under one VRQ label, so their grades cannot be matched to a points table reliably enough to publish a figure.";
 
 // A-level deliberately keeps DfE's OWN published measure, byte-identical to what the
 // page used before this filter changed -- the most scrutinised figure here, and DfE's
@@ -101,7 +109,7 @@ export function bucketFor(qualificationType: string): Ks5Bucket {
   const q = qualificationType || "";
   if (q === "GCE A level" || q.startsWith("GCE AS level") || q === "Advanced Extension Award") return "alevel";
   if (q.startsWith("IBO ") || q.startsWith("International Baccalaureate")) return "ib";
-  if (q.startsWith("BTEC ") || q.startsWith("OCR Cambridge Technical")) return "btec_ocr";
+  if (q.startsWith("BTEC ") || q.startsWith("OCR Cambridge Technical") || q.startsWith("VRQ ")) return "btec_ocr";
   // Exact match, deliberately not a substring test: "at Level 3" contains the substring
   // "t Level", so a loose rule silently swallows every OCR Cambridge Technical and Core
   // Maths qualification string in the real data.
@@ -213,6 +221,21 @@ export function challengeFor(qualificationType: string, size: number | null, gra
   }
 
   if (bucket === "btec_ocr") {
+    // VRQ counts toward the bucket's ENTRIES but is deliberately never scored, and this
+    // guard must come FIRST: without it a VRQ "Merit" matches VOC_FOUR and a VRQ
+    // "Distinction-Merit" matches VOC_SEVEN, silently scoring VRQ on BTEC's tables.
+    //
+    // DfE's challenge tables are keyed by a qualification's GRADE STRUCTURE, and "VRQ
+    // Level 3" is not one qualification -- it is DfE's catch-all for every Level 3
+    // vocational award outside the tracked BTEC/OCR cohorts, so many awarding bodies'
+    // qualifications with different grade structures share the label. Confirmed real:
+    // VRQ Level 3 at size 0.5 in 2023 carries *, A, B, C, D, E alongside Distinction,
+    // Distinction*, Merit and Pass in one (qualification, size) group. A "D" there is
+    // the sixth grade of a six-grade scale (18/unit), the fifth of a five-grade scale
+    // (10), or an abbreviated Distinction on a four-grade scale (35) -- a factor of
+    // three apart, with nothing in the data to choose between them.
+    // See ingest/dfe_points.py for the full reasoning; the two must stay in agreement.
+    if (qualificationType.startsWith("VRQ ")) return null;
     if (!size || size <= 0) return null;
     for (const table of [VOC_TEN, VOC_SEVEN, VOC_FOUR]) {
       if (grade in table) return table[grade];

@@ -37,6 +37,7 @@ import {
   ks5HasBucketEntries,
   KS5_BUCKET_OPTIONS,
   KS5_BUCKETS,
+  KS5_BTEC_OCR_PARTIAL_POINTS_NOTE,
   KS5_OTHER_NO_FIGURE_NOTE,
   ks5BucketHasPointsFigure,
   type AcademicSchoolProfile,
@@ -213,11 +214,16 @@ function QualificationRow({
         </div>
         {showType && <Ks5TypeSwitcher active={activeBucket} onChange={onChangeBucket} availableBuckets={availableBuckets} />}
       </div>
-      {/* The "Other" bucket deliberately has no headline points figure, and the reason
-          has to be visible at the moment it is selected rather than buried in a doc --
-          otherwise the missing number reads as a data gap or a bug. */}
+      {/* Two buckets carry an honest caveat, and both have to be visible at the moment
+          the bucket is selected rather than buried in a doc -- otherwise a missing or
+          partial number reads as a data gap or a bug. "Other" has no points figure at
+          all; BTec & OCR has one that covers only part of the bucket, because VRQ
+          entries are counted but cannot be scored. */}
       {showType && activeBucket !== null && !ks5BucketHasPointsFigure(activeBucket) && (
         <p className="max-w-3xl text-xs text-neutral-600 dark:text-neutral-400">{KS5_OTHER_NO_FIGURE_NOTE}</p>
+      )}
+      {showType && activeBucket === "btec_ocr" && (
+        <p className="max-w-3xl text-xs text-neutral-600 dark:text-neutral-400">{KS5_BTEC_OCR_PARTIAL_POINTS_NOTE}</p>
       )}
     </div>
   );

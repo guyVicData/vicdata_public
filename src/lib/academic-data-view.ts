@@ -449,6 +449,7 @@ export function ks5HasBucketEntries(profile: AcademicSchoolProfile, bucket: Ks5B
 // restructuring anything.
 export {
   KS5_BUCKETS,
+  KS5_BTEC_OCR_PARTIAL_POINTS_NOTE,
   KS5_BUCKET_LABEL,
   KS5_OTHER_NO_FIGURE_NOTE,
   ks5BucketEntriesKey,
