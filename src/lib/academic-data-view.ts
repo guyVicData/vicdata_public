@@ -999,17 +999,26 @@ function parseSubjectValueAdded(facts: ReferenceFact[]): SubjectValueAdded[] {
 // Record<string,string> rather than the RPC's own row-array shape -- exactly the
 // lookup shape every real caller actually wants (subject name -> family_id), so the
 // conversion happens once here instead of in every consumer.
+// T Level's real subject-grain rows live in their OWN source (dfe_tlevel_results), not
+// in dfe_ks5_subject_results, so they have to be fetched alongside it and concatenated.
+// Without this the pathway rows stay invisible in the subject list and the deep-dive
+// drawer however they are mapped in subject_family_map, because the fetch never asks
+// for them. Their breakdown is the same four-segment
+// qualification::subject::size::grade shape, so both parsers below handle them as-is.
+const KS5_SUBJECT_SOURCE_IDS = ["dfe_ks5_subject_results", "dfe_tlevel_results"];
+
 export async function fetchSubjectLevelData(
   urn: string,
   stage: KsStage,
 ): Promise<{ entries: SubjectEntry[]; valueAdded: SubjectValueAdded[]; subjectFamilyMap: Record<string, string> }> {
   if (stage === "ks2") return { entries: [], valueAdded: [], subjectFamilyMap: {} };
-  const sourceId = stage === "ks4" ? "dfe_ks4_subject_entries" : "dfe_ks5_subject_results";
-  const [rawFacts, vaFacts, familyMapRows] = await Promise.all([
-    lookupReferenceData({ sourceId, entityIds: [urn] }),
+  const sourceIds = stage === "ks4" ? ["dfe_ks4_subject_entries"] : KS5_SUBJECT_SOURCE_IDS;
+  const [rawFactsPerSource, vaFacts, familyMapRows] = await Promise.all([
+    Promise.all(sourceIds.map((sourceId) => lookupReferenceData({ sourceId, entityIds: [urn] }))),
     stage === "ks5" ? lookupReferenceData({ sourceId: "dfe_ks5_subject_value_added", entityIds: [urn] }) : Promise.resolve([]),
     lookupAcademicSubjectFamilyMap({ ksStage: stage }),
   ]);
+  const rawFacts = rawFactsPerSource.flat();
   const subjectFamilyMap: Record<string, string> = {};
   for (const row of familyMapRows) subjectFamilyMap[row.raw_subject] = row.family_id;
   return { entries: parseSubjectEntries(rawFacts), valueAdded: parseSubjectValueAdded(vaFacts), subjectFamilyMap };
@@ -1033,12 +1042,13 @@ export async function fetchSubjectLevelDataForSchools(
 ): Promise<{ byUrn: Map<string, SubjectLevelSchoolData>; subjectFamilyMap: Record<string, string> }> {
   const byUrn = new Map<string, SubjectLevelSchoolData>();
   if (stage === "ks2" || urns.length === 0) return { byUrn, subjectFamilyMap: {} };
-  const sourceId = stage === "ks4" ? "dfe_ks4_subject_entries" : "dfe_ks5_subject_results";
-  const [rawFacts, vaFacts, familyMapRows] = await Promise.all([
-    lookupReferenceData({ sourceId, entityIds: urns }),
+  const sourceIds = stage === "ks4" ? ["dfe_ks4_subject_entries"] : KS5_SUBJECT_SOURCE_IDS;
+  const [rawFactsPerSource, vaFacts, familyMapRows] = await Promise.all([
+    Promise.all(sourceIds.map((sourceId) => lookupReferenceData({ sourceId, entityIds: urns }))),
     stage === "ks5" ? lookupReferenceData({ sourceId: "dfe_ks5_subject_value_added", entityIds: urns }) : Promise.resolve([]),
     lookupAcademicSubjectFamilyMap({ ksStage: stage }),
   ]);
+  const rawFacts = rawFactsPerSource.flat();
   const subjectFamilyMap: Record<string, string> = {};
   for (const row of familyMapRows) subjectFamilyMap[row.raw_subject] = row.family_id;
 
