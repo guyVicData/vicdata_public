@@ -142,7 +142,37 @@ export function availableFamilies(profiles: AcademicSchoolProfile[], stage: KsSt
 }
 
 export function stagesPresent(profile: AcademicSchoolProfile): KsStage[] {
-  return (["ks2", "ks4", "ks5"] as KsStage[]).filter((s) => stageYears(profile, s).length > 0);
+  return (["ks2", "ks4", "ks5"] as KsStage[]).filter((s) => stageHasUsableData(profile, s));
+}
+
+// A stage counts as present only if the school has something real to show for it. Having
+// a row is not enough: 53 real KS4 rows in production carry pupil_count = 0 and nothing
+// else -- newly-opened free schools and academies that have a key-stage row but have not
+// yet reached Year 11. Those rendered as empty or zero-valued entries beside real schools
+// in comparator sets and rankings, which is a data artefact, not a result to compare.
+//
+// Checked against production before writing this, and the answer was not what was
+// assumed: none of the 53 are hospital schools (hospital schools, PRUs and alternative
+// provision have NO academic_headline_snapshot rows at all -- 0 of 329 -- so they could
+// never appear here anyway). KS5 has no real zeros at all (0 of 2,979).
+//
+// Deliberately NOT a blanket "zero or null" rule. A further 70 KS4 schools have no
+// pupil_count measure at all yet DO have a real attainment8_average -- excluding those
+// would delete 70 schools with genuine results. So the test is "has a real candidate
+// count, or has a real headline measure", not "has a candidate count".
+//
+// KS2 keeps the old presence test untouched: its zeros are legitimate values (a real 0%
+// at the higher standard), not artefacts -- 15,643 of 16,025 KS2 schools carry a zero
+// somewhere, so a zero-based exclusion there would be catastrophic.
+export function stageHasUsableData(profile: AcademicSchoolProfile, stage: KsStage): boolean {
+  const years = stageYears(profile, stage);
+  if (years.length === 0) return false;
+  if (stage === "ks2") return true;
+  return years.some((y) => {
+    const entries = numericMeasure(y, stage === "ks4" ? ENTRIES_MEASURE_KS4 : ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION);
+    if (entries !== null && entries > 0) return true;
+    return numericMeasure(y, HEADLINE_MEASURE[stage]) !== null;
+  });
 }
 
 // KS2's real, live period range is 2022-2024 (dfe_ks2_attainment, confirmed against
