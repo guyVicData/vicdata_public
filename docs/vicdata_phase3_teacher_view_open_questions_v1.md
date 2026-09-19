@@ -179,3 +179,59 @@ It does — SMT, Finance and Admissions views are built on rolls, feeder schools
 catchment context, none of which depend on exam data, and this school type has all of
 them. Those views are not part of this build, but the empty state now says plainly that
 this is a "someone here should be on a different role" case rather than a dead end.
+
+## Q12. The nearest-neighbour pool is geographic only, so rankings needed phase filtering at BOTH ends
+
+**Decided:** filter the neighbour pool by the phases that actually sit the stage, at KS4
+and KS5 as well as KS2 -- `KS4_KS5_PHASES = Secondary, All-through, 16 plus, Middle
+deemed secondary`, alongside the existing `KS2_PHASES`.
+
+**Why:** `school_nearest_neighbours` is a pure distance table. I had filtered it for KS2
+(where "the nearest 10 primaries" is explicitly what §5 asks for) but left the KS4/KS5
+path filtering on `status` alone, on the assumption that a secondary's nearest schools
+would be broadly secondary. That assumption was wrong, and only real data showed it:
+**Haverstock School's ten nearest schools contain zero secondaries** -- five Primary and
+five "Not applicable" independent preps -- so its Rankings card ranked it "position 1 of
+2" against a comparator set that was almost entirely primary schools. Technically true,
+completely useless, and worse than showing nothing because it looks like a real result.
+
+This was caught by running the real card against a real school, not by reading the code,
+where it looks correct: the KS2 branch has an obvious filter and the KS4 branch has an
+obvious `status` check, and nothing about the shape of it suggests a problem.
+
+**After the fix, verified against live data:**
+
+| School | Stage | Neighbours | Phases | With a real figure | Rank |
+|---|---|---|---|---|---|
+| Haverstock School (100049) | KS4 | 10 | Secondary x10 | 11 of 11 | 10th of 11, A8 41.5 |
+| Haverstock School (100049) | KS5 | 10 | Secondary x10 | 10 of 11 | 6th of 10, APS 32.52 |
+| St Peter's Methodist Primary (118707) | KS2 | 10 | Primary x10 | 10 of 11 | 5th of 10, RWM 63% |
+
+The two neighbours with no figure are correct, not gaps: **St Stephen's Infant School**
+takes no KS2 tests, and **Lift Beacon High** has no A-level cohort. Both stay visible in
+the comparator list without a fabricated number.
+
+**Also changed:** `fetchNearestSchools` now takes a 100-row slice like
+`fetchNearestPrimaries` rather than 60, for the same reason -- once the pool is filtered,
+the tenth real secondary can sit well down the geographic list in a primary-dense area.
+
+## Q13. KS2 does not live in `academic_headline_snapshot`, and my first verification of it was wrong
+
+**Logged as a correction to my own testing, not a code change.**
+
+My first attempt to verify KS2 rankings reported "0 neighbours with data" for St Peter's
+Methodist Primary and I nearly recorded it as a real gap. It was not. I had verified
+through `academic_headline_lookup`, which is **KS4/KS5 only and returns 0 rows for KS2** --
+KS2 comes from `canonical_facts` via the generic `reference_data_lookup` RPC with
+`source_id='dfe_ks2_attainment'`. The route was never affected: it goes through
+`fetchAcademicProfiles`, which already reads KS2 from the right place.
+
+A second flaw in the same test: I had invented the measure keys rather than using
+`HEADLINE_MEASURE`, so every stage silently scored null. The real keys are
+`attainment8_average` (KS4), `A level::aps_per_entry` (KS5) and
+`Reading, writing and maths::expected_standard_pupil_percent` (KS2).
+
+**Why it is worth recording:** both flaws produced a clean, plausible, entirely wrong
+"no data" result. A verification harness that reaches for a data source or a measure key
+of its own rather than the one the code under test uses is not verifying that code, and
+it fails in the direction that looks like a finding.

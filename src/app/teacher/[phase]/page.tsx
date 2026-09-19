@@ -10,7 +10,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote } from "@/lib/teacher-view-data";
+import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
+import { rankOf, type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import type { AcademicSubjectHeadlineEntry, SubjectEntry } from "@/lib/academic-data-view";
@@ -71,6 +73,59 @@ function SubjectPicker({
   );
 }
 
+
+// §12: a personal, private note against a specific chart, visible only to its author.
+// RLS enforces that at the database, so this component carries no ownership logic of its
+// own -- it simply trusts the policy, which is the only place it can be enforced anyway.
+function NoteBox({ chartKey }: { chartKey: string }) {
+  const supabase = createBrowserSupabaseClient();
+  const [open, setOpen] = useState(false);
+  const [body, setBody] = useState("");
+  const [saved, setSaved] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const existing = await fetchNote(supabase, chartKey);
+      setBody(existing ?? "");
+      setSaved(existing);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartKey]);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-3 text-xs text-blue-700 hover:underline dark:text-blue-400"
+      >
+        {saved ? "Your note" : "Add a private note"}
+      </button>
+    );
+  }
+  return (
+    <div className="mt-3">
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={2}
+        placeholder="Only you can see this."
+        className="w-full rounded-md border border-neutral-300 bg-transparent p-2 text-xs dark:border-neutral-700"
+      />
+      <div className="mt-1 flex gap-2">
+        <button
+          type="button"
+          onClick={async () => { await saveNote(supabase, chartKey, body); setSaved(body.trim() || null); setOpen(false); }}
+          className="rounded-md bg-blue-700 px-2 py-1 text-xs font-medium text-white"
+        >
+          Save
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-neutral-500">Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 export default function TeacherPhaseDashboard() {
   const params = useParams<{ phase: string }>();
   const phase = (TEACHER_PHASES as readonly string[]).includes(params.phase) ? (params.phase as TeacherPhase) : null;
@@ -83,6 +138,8 @@ export default function TeacherPhaseDashboard() {
   const [entries, setEntries] = useState<SubjectEntry[]>([]);
   const [headline, setHeadline] = useState<AcademicSubjectHeadlineEntry[]>([]);
   const [rollAtAge10, setRollAtAge10] = useState<number | null>(null);
+  const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
+  const [headlineLabel, setHeadlineLabel] = useState<string>("");
   const [ticked, setTicked] = useState<string[]>([]);
   const [onboarded, setOnboarded] = useState(false);
   const [step, setStep] = useState(0);
@@ -114,6 +171,8 @@ export default function TeacherPhaseDashboard() {
         setEntries(body.subjectData?.entries ?? []);
         setHeadline(body.headline ?? []);
         setRollAtAge10(body.rollAtAge10 ?? null);
+        setNeighbours(body.neighbours ?? []);
+        setHeadlineLabel(body.headlineLabel ?? "");
       } else {
         setError("Could not load this school's data. Try again.");
       }
@@ -178,6 +237,24 @@ export default function TeacherPhaseDashboard() {
   }
 
   const q = PHASE_QUESTIONS[phase];
+  const nearbyOnly = neighbours.filter((n) => !n.isTarget);
+  const position = rankOf(neighbours, schoolUrn ?? "");
+
+  // §13's "this moved": surfaced on the card rather than waiting for someone to notice.
+  // Thresholds are measured from real national variation, not invented -- see
+  // teacher-view-this-moved.ts for the distributions behind them.
+  const candidateSeries = (() => {
+    const byPeriod = new Map<number, number>();
+    for (const e of entries) byPeriod.set(e.period, (byPeriod.get(e.period) ?? 0) + e.entries);
+    const periods = Array.from(byPeriod.keys()).sort((a, b) => a - b);
+    return periods.length >= 2
+      ? { prev: byPeriod.get(periods[periods.length - 2]) ?? null, latest: byPeriod.get(periods[periods.length - 1]) ?? null, label: String(periods[periods.length - 1]) }
+      : null;
+  })();
+  const movedCandidates = candidateSeries
+    ? candidatesMoved(candidateSeries.prev, candidateSeries.latest, candidateSeries.label)
+    : null;
+
 
   if (!onboarded) {
     const headings = [
@@ -258,6 +335,12 @@ export default function TeacherPhaseDashboard() {
               </p>
             </>
           )}
+          {movedCandidates && (
+            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              {movedCandidates.sentence}
+            </p>
+          )}
+          <NoteBox chartKey={`${phase}:candidates`} />
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
@@ -282,24 +365,68 @@ export default function TeacherPhaseDashboard() {
               })}
             </ul>
           )}
+          <NoteBox chartKey={`${phase}:results`} />
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <h2 className="text-sm font-semibold">{q.nearMe}</h2>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-            {phase === "ks2"
-              ? "Nearest-primaries comparison is not wired up in this pass."
-              : schoolTotal > 0
+          {phase === "ks2" ? (
+            <>
+              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                The {nearbyOnly.length} nearest primaries, by distance.
+              </p>
+              <ul className="mt-2 space-y-1 text-sm">
+                {nearbyOnly.slice(0, 5).map((n) => (
+                  <li key={n.urn} className="flex items-baseline justify-between gap-2">
+                    <span className="truncate">{n.name}</span>
+                    <span className="tabular-nums text-neutral-500">
+                      {n.distanceKm === null ? "" : `${n.distanceKm.toFixed(1)} km`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              {schoolTotal > 0
                 ? `Your subjects are ${Math.round((liveCount / schoolTotal) * 100)}% of ${schoolTotal.toLocaleString()} entries across the school.`
                 : "No entries recorded for this school."}
-          </p>
+            </p>
+          )}
+          <NoteBox chartKey={`${phase}:context`} />
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <h2 className="text-sm font-semibold">{q.wider}</h2>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-            Comparator sets and rankings exist in the advanced view; this card is not wired to them in this pass.
-          </p>
+          {position ? (
+            <>
+              {/* §14: the position IS the anchor -- the figure never stands alone. */}
+              <p className="mt-2 text-3xl font-semibold tabular-nums">
+                {position.position}
+                <span className="ml-1 text-base font-normal text-neutral-500">of {position.outOf}</span>
+              </p>
+              <p className="text-sm text-neutral-500">
+                among the nearest schools with data, on {headlineLabel}
+              </p>
+              <ul className="mt-3 space-y-1 text-sm">
+                {[...neighbours]
+                  .filter((n) => n.value !== null)
+                  .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+                  .slice(0, 5)
+                  .map((n) => (
+                    <li key={n.urn} className={`flex items-baseline justify-between gap-2 ${n.isTarget ? "font-semibold" : ""}`}>
+                      <span className="truncate">{n.name}</span>
+                      <span className="tabular-nums">{n.value?.toFixed(1)}</span>
+                    </li>
+                  ))}
+              </ul>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              No nearby schools with comparable published data for this phase.
+            </p>
+          )}
+          <NoteBox chartKey={`${phase}:rankings`} />
         </section>
       </div>
 
