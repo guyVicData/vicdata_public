@@ -23,7 +23,6 @@ export default function TeacherHomePage() {
   const supabase = createBrowserSupabaseClient();
   const [loading, setLoading] = useState(true);
   const [schoolName, setSchoolName] = useState<string | null>(null);
-  const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [phases, setPhases] = useState<TeacherPhase[]>([]);
   const [onboarded, setOnboarded] = useState<TeacherPhase[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +44,6 @@ export default function TeacherHomePage() {
 
       const urn = membership?.school_accounts?.school_urn ?? null;
       setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);
-      setSchoolUrn(urn);
       if (!urn) {
         setError("Teacher view is available to verified school staff.");
         setLoading(false);

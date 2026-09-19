@@ -79,6 +79,9 @@ export function seesTeacherView(role: TeacherViewRole): boolean {
 // HOD's distinguishing capability is the department dropdown and roster, which is 1.1 and
 // explicitly NOT this build (§4). Exposed as a named predicate anyway so 1.1 has one
 // place to switch on, and so nothing in this build accidentally gates on the role itself.
-export function hasDepartmentCapability(_role: TeacherViewRole): boolean {
+// The parameter is the whole point: 1.1 switches on it here, and keeping it now means
+// callers written in this build do not change when it starts returning true for hod.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function hasDepartmentCapability(role: TeacherViewRole): boolean {
   return false;
 }

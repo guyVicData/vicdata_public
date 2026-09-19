@@ -88,8 +88,11 @@ export default function TeacherPhaseDashboard() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    if (!phase) { setError("Unknown phase."); setLoading(false); return; }
+    // Every setState below lives inside this async callback rather than the effect body,
+    // matching React's own guidance and the same fix already applied elsewhere in this
+    // codebase -- a synchronous setState here triggers cascading renders.
     (async () => {
+      if (!phase) { setError("Unknown phase."); setLoading(false); return; }
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) { setError("Sign in to see this dashboard."); setLoading(false); return; }
