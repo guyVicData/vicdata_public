@@ -235,3 +235,57 @@ A second flaw in the same test: I had invented the measure keys rather than usin
 "no data" result. A verification harness that reaches for a data source or a measure key
 of its own rather than the one the code under test uses is not verifying that code, and
 it fails in the direction that looks like a finding.
+
+## Q14. Creator-only visibility, actually exercised by a non-owning account
+
+**Asked for explicitly:** confirm the RLS-enforced creator-only visibility on
+Recruitment/Meetings/Notes was exercised by a second, non-owning account and seen to
+return nothing -- not assumed from the policy definition.
+
+**Done, with one caveat stated up front.** There is exactly **one profile on the whole
+project**, so a genuine second account does not exist to log in as. I did not create one:
+that would put a real auth user into a production project purely for a test. Instead the
+second account is impersonated at the SQL level by setting
+`request.jwt.claims->>'sub'` to a uid that owns nothing, which is the same value
+`auth.uid()` reads for a real signed-in user, so the policies are evaluated by exactly
+the code path a real second login takes. The whole test ran inside a transaction that was
+rolled back.
+
+**The control matters more than the result.** "B sees 0 rows" is worthless on its own --
+it is equally consistent with the impersonation silently failing, or the tables being
+empty. So account A, the real owner, was run through the identical queries first:
+
+| Actor | onboarding | preferences | notes | jobs | candidates (PII) | meetings | slides |
+|---|---|---|---|---|---|---|---|
+| A (owner) | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+| B (non-owner) | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| anon (logged out) | 0 | -- | 0 | -- | 0 | -- | -- |
+
+Writes as B were tested too, because read-blocking alone is not creator-only:
+
+- `UPDATE teacher_view_notes SET body='TAMPERED'` -- **0 rows changed**
+- `DELETE FROM recruitment_candidates` -- **0 rows deleted**
+- `INSERT` a note with `profile_id` set to A's uid -- **refused**: "new row violates
+  row-level security policy for table teacher_view_notes" (the `WITH CHECK` half doing
+  its job; without it B could plant rows into A's view)
+
+Data was re-checked outside the transaction afterwards: 1 note, 0 tampered, 0 forged, 1
+candidate. Nothing was altered.
+
+**The two tables I most expected to fail did not.** `recruitment_candidates` and
+`meeting_slides` own no `profile_id` of their own -- they are protected only by a
+subquery back to the parent (`job_id IN (SELECT ... WHERE profile_id = auth.uid())`).
+That indirection is the classic place a creator-only guarantee leaks. Both returned 0.
+`recruitment_candidates` is the one that matters most: `candidate_name` is the only
+personal-data field on the platform (§10).
+
+**What this does and does not prove.** It proves the policies themselves hold for reads,
+writes, deletes and forged inserts, including through parent-table indirection. It does
+not exercise the real login flow, session handling or the UI. It would also be void if
+any Teacher view code reached the database with the service role, which bypasses RLS
+entirely -- so that was checked rather than assumed: both API routes
+(`/api/teacher/dashboard`, `/api/teacher/phases`) construct their client with
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` and the caller's own `Authorization` header, and
+`teacher-view-data.ts` uses the browser client. There is no service-role path in Teacher
+view, so RLS is load-bearing on every route, which is what makes the result above
+describe production rather than a lab.
