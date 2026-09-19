@@ -1,0 +1,23 @@
+-- Teacher view persistence (design brief v2 §§5, 7, 10, 11, 12).
+-- Applied to vicdata-public via the Supabase migration API; recorded here so the repo
+-- remains the source of truth for schema.
+--
+-- Every table here is CREATOR-ONLY private: §10, §11 and §12 all specify creator-only
+-- visibility for this build, with sharing deferred to §16. So RLS is simply
+-- profile_id = auth.uid(), rather than saved_sets' school-account-scoped pattern -- those
+-- are school-owned artefacts, these are personal ones.
+--
+--   teacher_view_onboarding   presence of a row IS the unlock (§5). No third
+--                             locked/teaser state, no separate show-again setting.
+--   teacher_view_preferences  personal subject picker + per-column customisation (§3, §7).
+--   teacher_view_notes        private per-chart note (§12).
+--   recruitment_jobs          title is free text; subject is the real taxonomy scoping
+--                             that drives the comparison (§10).
+--   recruitment_candidates    candidate_name is the ONLY personal-data field anywhere on
+--                             the platform (§10).
+--   meetings / meeting_slides slides may draw on ANY card and ANY phase the person has
+--                             access to -- §11 is explicit they are not gated to one
+--                             dataset.
+--
+-- See the migration applied under the name `teacher_view_persistence` for the exact DDL;
+-- this file mirrors it verbatim.

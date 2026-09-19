@@ -501,3 +501,18 @@ export async function lookupAcademicRegionNationRank(params: {
     neighbours: data?.neighbours ?? [],
   };
 }
+
+// The most recent published period per academic phase, nationally.
+//
+// Teacher view (design brief v2 §5) gates a phase tile on the school having data in the
+// CURRENT year, and that reference year has to be national: a school whose data stops in
+// 2022 would otherwise look current against its own latest row, which is the exact case
+// §5 excludes. 385 KS4 and 187 KS5 schools are really in that position.
+export async function lookupAcademicCurrentPeriods(params?: { signal?: AbortSignal }): Promise<Record<string, number | null>> {
+  const rows = (await fetchPage("academic_current_periods", {}, params?.signal)) as
+    | { ks_stage: string; latest_period: number | null }[]
+    | null;
+  const out: Record<string, number | null> = {};
+  for (const r of rows ?? []) out[r.ks_stage] = r.latest_period;
+  return out;
+}

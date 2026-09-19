@@ -110,3 +110,72 @@ Not a judgment call — recorded here so the log is complete. Applying DDL to
 migration is written and committed but NOT applied, and every phase requiring new tables
 (saved state, Recruitment, Meetings, notes) could not be built or verified. Read access
 was unaffected, so all real-data verification in this round is genuine.
+
+## Q9. `normaliseRole()`'s legacy branch is now dead — strip or keep?
+
+**Verified first:** the constraint now reads
+`role = ANY (ARRAY['teacher','hod','smt','finance','admissions'])`, the default is
+`'teacher'`, and the single membership row reads `teacher`. So no new write can produce
+`head_governor`, `director_of_studies` or `head_of_department`.
+
+**Decided:** keep the function, keep its NULL handling, and keep the legacy map — but
+re-comment the map as unreachable-in-normal-operation rather than leaving it looking like
+live logic.
+
+**Why:** two separate things were tangled here. The NULL branch is genuinely still
+reachable: a CHECK constraint passes on NULL, so `role` can still be explicitly set to
+NULL, and `normaliseRole(null) -> teacher` is the rule that makes Teacher the baseline.
+The three legacy string branches are genuinely dead. Deleting them costs nothing today,
+but they are the only executable record of §3's folding rules, and they would bridge a
+restore from a backup taken before the migration. Six lines, honestly labelled, beat a
+silent gap if that ever happens.
+
+## Q10. What a school with zero available phases sees
+
+**The gap:** Phase 2 verification found an independent junior/prep has no available phase
+at all — confirmed zero KS2 data (0 of 1,588 open independents), and no KS4/KS5 access.
+St Paul's Cathedral School is a live example. The brief does not say what that teacher's
+home screen shows.
+
+**Decided:** a genuine, explanatory empty state, not a blank screen and not a fabricated
+or greyed-out tile. It says plainly which phases the platform covers, states that DfE
+publishes no KS2 results for independent schools and no accessible KS4/KS5 data for this
+school, and points at what the platform genuinely does hold for them (roll and context
+data). It never implies the data is coming, because for this school type it is not.
+
+**Why:** §5 is explicit that there is no third "locked/teaser" state, so a greyed tile
+would contradict it. The standing discipline is that an absence must be explained rather
+than rendered as a gap. And the cause here is structural, not a coverage gap that a
+future ingest fixes, so "not yet" wording would be untrue.
+
+## Q11. Shape of the persistence schema
+
+**Decided:** seven small creator-only tables rather than one generic key/value store;
+onboarding modelled as "a row exists" rather than a boolean column.
+
+**Why:** §5 says completing a walkthrough is literally what unlocks a phase, so presence
+of a row IS the state — a boolean would need a separate "unset" meaning. Separate tables
+keep Recruitment's `candidate_name`, the only personal-data field on the platform (§10),
+isolated in one place with its own retention column, rather than buried inside a shared
+JSON blob where it could not be found or purged reliably.
+
+## Q10a. CORRECTION to Q10 — the empty state is smaller than I made it
+
+**Corrected mid-build by Guy.** My Q10 answer treated "no available phase" as a design
+problem needing an explanatory dashboard. It is not. Teacher view is subject-exam-data
+only. An independent junior/prep sits no public exams at that stage and has confirmed
+zero KS2 data, so there will never be exam data for this school type to show here. It is
+Teacher view not applying to the school, not a gap in it.
+
+**Two things my first version got wrong:**
+
+1. It was too elaborate — three paragraphs building an experience around an absence that
+   needs one honest line.
+2. Its "in the meantime" phrasing implied the data was coming. It is not, and "no data
+   yet" or "coming soon" would both be untrue.
+
+**Also added:** the original risked implying the platform holds nothing for this school.
+It does — SMT, Finance and Admissions views are built on rolls, feeder schools and
+catchment context, none of which depend on exam data, and this school type has all of
+them. Those views are not part of this build, but the empty state now says plainly that
+this is a "someone here should be on a different role" case rather than a dead end.
