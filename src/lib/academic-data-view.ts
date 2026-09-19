@@ -45,6 +45,9 @@ export type AcademicFamilyYear = {
   entriesSharePercent: number | null;
   avgPointScore: number | null;
   pointsCoveragePercent: number | null;
+  // Which comparability bucket this row's points come from. Lets a subject row take the
+  // points belonging to its OWN qualification rather than the whole-school 'all' row.
+  bucket?: string;
 };
 
 export type AcademicSchoolProfile = {
@@ -766,7 +769,7 @@ function groupHeadlineRows(rows: { entity_id: string; period: number; measures: 
 }
 
 function groupFamilyRows(
-  rows: { entity_id: string; family_id: string; family_label: string; period: number; entries_total: number; entries_share_percent: number | null; avg_point_score: number | null; points_coverage_percent: number | null }[],
+  rows: { entity_id: string; family_id: string; family_label: string; period: number; entries_total: number; entries_share_percent: number | null; avg_point_score: number | null; points_coverage_percent: number | null; bucket?: string }[],
 ): Map<string, AcademicFamilyYear[]> {
   const byUrn = new Map<string, AcademicFamilyYear[]>();
   for (const r of rows) {
@@ -778,6 +781,7 @@ function groupFamilyRows(
       entriesSharePercent: r.entries_share_percent,
       avgPointScore: r.avg_point_score,
       pointsCoveragePercent: r.points_coverage_percent,
+      bucket: r.bucket,
     };
     const existing = byUrn.get(r.entity_id);
     if (existing) existing.push(year);
@@ -1164,6 +1168,9 @@ export type AcademicSubjectHeadlineEntry = {
   entriesShareOfFamilyPercent: number | null;
   avgPointScore: number | null;
   pointsCoveragePercent: number | null;
+  // Which comparability bucket these points come from, so a subject row can take the
+  // points belonging to its OWN qualification rather than the whole-school 'all' row.
+  bucket?: string;
 };
 
 // Subject deep-dive round: the real, multi-period (2020/21 on) source for
@@ -1180,7 +1187,7 @@ export async function fetchSubjectHeadlineForSchools(
   familyId?: string,
   // Which comparability bucket's points to read. Omitted means 'all', the pre-existing
   // whole-school rows, so every caller that does not pass this is completely unaffected.
-  bucket?: string,
+  bucket?: string | null,
 ): Promise<Map<string, AcademicSubjectHeadlineEntry[]>> {
   const byUrn = new Map<string, AcademicSubjectHeadlineEntry[]>();
   if (stage === "ks2" || urns.length === 0) return byUrn;
@@ -1197,6 +1204,7 @@ export async function fetchSubjectHeadlineForSchools(
       entriesShareOfFamilyPercent: r.entries_share_of_family_percent,
       avgPointScore: r.avg_point_score,
       pointsCoveragePercent: r.points_coverage_percent,
+      bucket: r.bucket,
     };
     const list = byUrn.get(r.entity_id);
     if (list) list.push(entry);

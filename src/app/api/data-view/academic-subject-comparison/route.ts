@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
   // one -- and a request that takes slightly longer is strictly better than one that
   // returns a 500 the UI reads as "no data".
   const { byUrn: subjectByUrn } = await fetchSubjectLevelDataForSchools(urns, stage);
-  const headlineByUrnMap = await fetchSubjectHeadlineForSchools(urns, stage, familyId ?? undefined);
+  const headlineByUrnMap = await fetchSubjectHeadlineForSchools(urns, stage, familyId ?? undefined, stage === "ks5" ? null : undefined);
 
   return NextResponse.json({
     subjectByUrn: Object.fromEntries(subjectByUrn),

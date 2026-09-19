@@ -238,6 +238,8 @@ export type AcademicSubjectHeadlineRow = {
   entries_share_of_family_percent: number | null;
   avg_point_score: number | null;
   points_coverage_percent: number | null;
+  // Appended by the bucket-aware rollup round.
+  bucket?: string;
 };
 
 // Fault isolation for academic_subject_headline_lookup. NOT a size limit.
@@ -275,7 +277,7 @@ const HEADLINE_ENTITY_CHUNK = 20;
 
 async function lookupAcademicSubjectHeadlineChunk(
   entityIds: string[] | null,
-  params: { ksStage?: KsStage; familyId?: string; periodMin?: number; periodMax?: number; bucket?: string; signal?: AbortSignal },
+  params: { ksStage?: KsStage; familyId?: string; periodMin?: number; periodMax?: number; bucket?: string | null; signal?: AbortSignal },
 ): Promise<AcademicSubjectHeadlineRow[]> {
   const rows: AcademicSubjectHeadlineRow[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
@@ -291,7 +293,7 @@ async function lookupAcademicSubjectHeadlineChunk(
         p_offset: page * PAGE_SIZE,
         // Omitted means the RPC's own default, 'all' -- byte-identical to the rows
         // this call returned before the bucket dimension existed.
-        p_bucket: params.bucket ?? 'all',
+        p_bucket: params.bucket === undefined ? 'all' : params.bucket,
       },
       params.signal,
     )) as AcademicSubjectHeadlineRow[];
@@ -307,7 +309,7 @@ export async function lookupAcademicSubjectHeadline(params: {
   familyId?: string;
   periodMin?: number;
   periodMax?: number;
-  bucket?: string;
+  bucket?: string | null;
   signal?: AbortSignal;
 }): Promise<AcademicSubjectHeadlineRow[]> {
   const entityIds = params.entityIds ?? null;

@@ -37,7 +37,6 @@
 // own figure for this one subject.
 import { useEffect, useMemo, useState } from "react";
 import { buildSubjectRows, type SubjectRow } from "./SubjectAreaSection";
-import SubjectTable from "./SubjectTable";
 import TargetVsAverageTrend from "./TargetVsAverageTrend";
 import { academicYearLabel } from "./TrendPill";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
@@ -515,8 +514,6 @@ export default function SubjectDeepDiveDrawer({
             for (const [grade, samples] of comparisonGradeSamples) comparisonGradePercents.set(grade, samples.reduce((s, v) => s + v, 0) / samples.length);
 
             // KS5 value-added, real, with its CI -- SubjectTable, reused directly.
-            const targetEntryRow = scopedSubjectByUrn.get(profile.urn)?.entries.find((e) => e.subject === subject) ?? null;
-            const targetValueAddedRows = scopedSubjectByUrn.get(profile.urn)?.valueAdded.filter((v) => v.subject === subject) ?? [];
 
             const resultsUnit = HEADLINE_LABEL[stage];
 
@@ -529,7 +526,7 @@ export default function SubjectDeepDiveDrawer({
                   <StatTile label={`Market share of ${setLabel}`} value={marketShare !== null ? `${marketShare.toFixed(0)}%` : "—"} />
                   <StatTile label="Candidates, % change" value={targetRow?.candidatesPctChange !== null && targetRow?.candidatesPctChange !== undefined ? `${targetRow.candidatesPctChange > 0 ? "+" : ""}${targetRow.candidatesPctChange.toFixed(0)}%` : "Not enough real history"} />
                   <StatTile
-                    label={`Results${stage === "ks5" ? " (value added)" : ""}`}
+                    label="Results"
                     value={targetRow?.results !== null && targetRow?.results !== undefined ? targetRow.results.toFixed(1) : "No real figure yet"}
                     sub={comparisonResultsValue !== null ? `${comparisonResultsLabel}: ${comparisonResultsValue.toFixed(1)}` : undefined}
                   />
@@ -581,12 +578,10 @@ export default function SubjectDeepDiveDrawer({
                   </div>
                 )}
 
-                {stage === "ks5" && (
-                  <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Value-added</p>
-                    <SubjectTable subject={subject} schoolName={profile.name} entryRow={targetEntryRow} valueAddedRows={targetValueAddedRows} ksStage={stage} />
-                  </div>
-                )}
+                {/* The KS5-only "Value-added" block lived here, rendering SubjectTable
+                    purely to carry its value-added column. Removed with value-added
+                    itself: KS4 never had this block, so KS5 now matches, and the drawer
+                    still shows this subject's entries, grade distribution and trend. */}
 
                 {comparatorOptions.length > 0 && (
                   <div>

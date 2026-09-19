@@ -203,37 +203,56 @@ export function buildSubjectRows(
   const namesInFamily = new Set(Object.entries(subjectData.subjectFamilyMap).filter(([, fam]) => fam === familyId).map(([name]) => name));
   const inFamily = (s: string) => namesInFamily.has(s);
   const entriesInFamily = subjectData.entries.filter((e) => inFamily(e.subject));
-  const valueAddedInFamily = subjectData.valueAdded.filter((v) => inFamily(v.subject));
 
   // One group per row. In "subject" mode the qualification part of the key is fixed,
   // which reproduces the previous single-row-per-subject behaviour exactly.
+  //
+  // At KS5 the key is the BUCKET, not the raw qualification. The original reason for
+  // splitting by qualification was to stop a BTEC row merging with an A-level row of the
+  // same subject name -- bucket keying preserves that completely, since those are
+  // different buckets. What it additionally does is collapse qualifications that sit
+  // INSIDE one bucket (IB Higher and Standard level, A level and AS, two BTEC sizes)
+  // into the single row the points data actually supports: academic_subject_rollup's
+  // grain is (subject, bucket), so a per-qualification row could only ever show a figure
+  // describing several qualifications jointly. Splitting them would print one identical
+  // number against two genuinely different courses.
+  //
+  // This matters at real scale, measured: 54.5% of IB subject cells run more than one
+  // qualification in the same bucket, 33.2% of BTEC/OCR and 11.3% of A-level.
+  const groupKeyFor = (qualificationType: string): string =>
+    stage === "ks5" ? bucketFor(qualificationType) : qualificationType;
+
   const groups = new Map<string, { subject: string; qualificationType: string | null }>();
   for (const e of entriesInFamily) {
-    const qual = groupBy === "qualification" ? e.qualificationType : null;
-    groups.set(`${qual ?? ""}\u0000${e.subject}`, { subject: e.subject, qualificationType: qual });
-  }
-  for (const v of valueAddedInFamily) {
-    const qual = groupBy === "qualification" ? v.qualificationType : null;
-    groups.set(`${qual ?? ""}\u0000${v.subject}`, { subject: v.subject, qualificationType: qual });
+    if (groupBy !== "qualification") {
+      groups.set(`\u0000${e.subject}`, { subject: e.subject, qualificationType: null });
+      continue;
+    }
+    const key = groupKeyFor(e.qualificationType);
+    // First qualification seen for this (subject, key) is the representative, used for
+    // matching entry rows and for the label when no disambiguation is needed.
+    if (!groups.has(`${key}\u0000${e.subject}`)) {
+      groups.set(`${key}\u0000${e.subject}`, { subject: e.subject, qualificationType: e.qualificationType });
+    }
   }
 
   // Only disambiguate a label when this school really does run the same subject under
-  // more than one qualification type -- otherwise every row would carry a noisy suffix
-  // it does not need, and the common single-qualification case would read differently
-  // from before for no reason.
+  // more than one group -- otherwise every row would carry a noisy suffix it does not
+  // need, and the common single-qualification case would read as it always has.
   const qualsPerSubject = new Map<string, Set<string>>();
   if (groupBy === "qualification") {
-    for (const g of groups.values()) {
+    for (const [key, g] of groups.entries()) {
       if (!g.qualificationType) continue;
       const set = qualsPerSubject.get(g.subject) ?? new Set<string>();
-      set.add(g.qualificationType);
+      set.add(key.split("\u0000")[0]);
       qualsPerSubject.set(g.subject, set);
     }
   }
 
   return Array.from(groups.entries()).map(([key, { subject: name, qualificationType }]) => {
+    const groupKey = qualificationType === null ? null : groupKeyFor(qualificationType);
     const matches = <T extends { subject: string; qualificationType: string }>(r: T) =>
-      r.subject === name && (qualificationType === null || r.qualificationType === qualificationType);
+      r.subject === name && (groupKey === null || groupKeyFor(r.qualificationType) === groupKey);
 
     const entryRows = entriesInFamily.filter(matches);
     const periods = Array.from(new Set(entryRows.map((e) => e.period))).sort((a, b) => a - b);
@@ -245,10 +264,45 @@ export function buildSubjectRows(
     let results: number | null = null;
     let resultsPctChange: number | null = null;
     if (stage === "ks5") {
-      const vaRows = valueAddedInFamily.filter((v) => matches(v) && v.valueAdded !== null);
-      const vaLatestPeriod = vaRows.length ? Math.max(...vaRows.map((v) => v.period)) : null;
-      const vaAtLatest = vaLatestPeriod !== null ? vaRows.filter((v) => v.period === vaLatestPeriod) : [];
-      results = vaAtLatest.length > 0 ? vaAtLatest.reduce((sum, v) => sum + (v.valueAdded ?? 0), 0) / vaAtLatest.length : null;
+      // Value-added used to own this card, because before the bucket-aware points
+      // rollup it was the only real KS5 figure at SUBJECT grain. That is no longer
+      // true: the rollup now carries real, bucket-scored points per subject, with
+      // 40,121 of 65,938 (school, subject) pairs covered at 2024 -- comparable to
+      // value-added's own 45,783 -- so the card shows real points instead.
+      //
+      // Each row takes the points belonging to ITS OWN qualification's bucket, not the
+      // whole-school 'all' row. That is the same concern the KS4 comment below
+      // describes (never put one qualification's score on another's line), solved
+      // properly rather than by suppression: the comparison route asks for every
+      // bucket at KS5, and the row matches on its own bucket.
+      //
+      // resultsPctChange is now real here. It was deliberately null for value-added
+      // because that measure centres on and crosses zero, making a percentage change
+      // mathematically unstable. Points do not cross zero, so the same first/last real
+      // period method every other trend on this page uses applies cleanly.
+      const ownBucket = qualificationType === null ? null : bucketFor(qualificationType);
+      // The rollup's grain is (subject, BUCKET); this card's is (subject, QUALIFICATION).
+      // Where a subject runs under more than one qualification inside the same bucket --
+      // IB Higher and Standard level, A level and AS, two BTEC sizes -- the rollup figure
+      // describes them JOINTLY. Printing it on each row would show an identical number
+      // against two genuinely different courses and invite the reader to conclude they
+      // performed the same. Suppressed in that case rather than shown misattributed: the
+      // same discipline as never putting one qualification's score on another's line.
+      //
+      // Real cost, measured: this withholds the figure from 54.5% of IB subject cells,
+      // 33.2% of BTEC/OCR and 11.3% of A-level. Recovering it properly means keying these
+      // rows by (subject, bucket) so the levels collapse into the one row the data
+      // actually supports -- a row-identity change, deliberately not made inside a
+      // display-removal round. Flagged in the build report as the follow-up.
+      const years = [...(headlineBySubject.get(name) ?? [])]
+        .filter((h) => ownBucket === null || (h.bucket ?? "all") === ownBucket)
+        .sort((a, b) => a.period - b.period);
+      if (years.length > 0) {
+        results = years[years.length - 1].avgPointScore;
+        const scoreFirst = years.find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
+        const scoreLast = [...years].reverse().find((y) => y.avgPointScore !== null)?.avgPointScore ?? null;
+        resultsPctChange = pctChange(scoreFirst, scoreLast);
+      }
     } else {
       // headlineBySubject comes from the rollup, which has no qualification dimension,
       // so its score describes the points-bearing qualification alone. Attaching it to
@@ -266,7 +320,15 @@ export function buildSubjectRows(
     const needsSuffix = qualificationType !== null && (qualsPerSubject.get(name)?.size ?? 0) > 1;
     return {
       id: qualificationType === null ? name : key,
-      label: needsSuffix ? `${name} (${shortQualificationLabel(qualificationType)})` : name,
+      // At KS5 a row can cover several qualifications inside one bucket, so the
+      // disambiguating suffix names the BUCKET rather than one of the qualifications it
+      // contains -- "Biology (IB)" rather than "Biology (IBO Higher level component)",
+      // which would misdescribe a row that also holds Standard level.
+      label: needsSuffix
+        ? stage === "ks5"
+          ? `${name} (${KS5_BUCKET_LABEL[bucketFor(qualificationType) as Ks5Bucket]})`
+          : `${name} (${shortQualificationLabel(qualificationType)})`
+        : name,
       subject: name,
       qualificationType,
       candidates,
@@ -687,7 +749,7 @@ export default function SubjectAreaSection({
         </div>
       </Card>
 
-      <Card title={`Results${latestPeriod !== null ? `, ${academicYearLabel(latestPeriod)}` : ""}${familyId && stage === "ks5" ? " (value added)" : ""}`}>
+      <Card title={`Results${latestPeriod !== null ? `, ${academicYearLabel(latestPeriod)}` : ""}`}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-xs text-neutral-500">{profile.name}</p>

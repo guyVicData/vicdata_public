@@ -423,20 +423,12 @@ export default function AcademicGraphsView({
   // family picked) still lists every real subject for the stage, same as before --
   // there's no "family" to filter against at that scope.
   const subjectNames = subjectData
-    ? Array.from(new Set([...subjectData.entries.map((e) => e.subject), ...subjectData.valueAdded.map((v) => v.subject)]))
+    ? Array.from(new Set(subjectData.entries.map((e) => e.subject)))
         .filter((name) => !familyId || subjectData.subjectFamilyMap[name] === familyId)
         .sort((a, b) => a.localeCompare(b))
     : [];
   const subjectEntryRows = subject && subjectData ? subjectData.entries.filter((e) => e.subject === subject) : [];
   const subjectLatestEntry = subjectEntryRows.length > 0 ? subjectEntryRows.reduce((a, b) => (a.period > b.period ? a : b)) : null;
-  // A subject can have more than one real value-added row (different qualification
-  // types/size-weights genuinely coexist for the same subject name, e.g. a BTEC and a
-  // GCE A level both called "Biology") -- show every real one rather than silently
-  // picking the first, since collapsing them would misstate which qualification the
-  // figure is actually for.
-  const subjectValueAddedRows = subject && subjectData
-    ? subjectData.valueAdded.filter((v) => v.subject === subject && v.period === Math.max(...subjectData.valueAdded.filter((x) => x.subject === subject).map((x) => x.period), -Infinity))
-    : [];
 
   // Round 3, Part B, Section 1 (Entries): real per-school candidate/entries counts --
   // A1's own real GCSE/Post-16 entries figures (entriesSeries), roll population for
@@ -818,8 +810,6 @@ export default function AcademicGraphsView({
                         subject={subject}
                         schoolName={targetProfile.name}
                         entryRow={subjectLatestEntry}
-                        valueAddedRows={subjectValueAddedRows}
-                        ksStage={stage}
                       />
                     )}
                   </div>
