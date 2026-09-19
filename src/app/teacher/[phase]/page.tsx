@@ -10,7 +10,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, type ColumnState } from "@/lib/teacher-view-data";
+import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
+import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import type { ColumnId, SubjectRef } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
 import { rankOf, type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
@@ -141,6 +144,8 @@ export default function TeacherPhaseDashboard() {
   const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
   const [headlineLabel, setHeadlineLabel] = useState<string>("");
   const [ticked, setTicked] = useState<string[]>([]);
+  const [columns, setColumns] = useState<ColumnState>({});
+  const [theme, setTheme] = useTeacherTheme();
   const [onboarded, setOnboarded] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -180,6 +185,7 @@ export default function TeacherPhaseDashboard() {
       setOnboarded(done.includes(phase));
       const prefs = await fetchPreferences(supabase, urn, phase);
       setTicked(prefs.subjects);
+      setColumns(prefs.columns);
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,6 +213,24 @@ export default function TeacherPhaseDashboard() {
     [persist, ticked],
   );
 
+  // §7: "Saved state is now a hard requirement, not optional." Every tick round-trips
+  // immediately -- there is no explicit save, so there is nothing to forget to press.
+  // An empty pin list uses resetColumn's own shape (key removed) so "never customised"
+  // and "reset" stay the same state rather than drifting into two.
+  const setColumn = useCallback(
+    async (columnId: string, pinned: string[]) => {
+      const next: ColumnState = { ...columns };
+      if (pinned.length === 0) delete next[columnId];
+      else next[columnId] = pinned;
+      setColumns(next);
+      if (schoolUrn && phase) {
+        const prefs = await fetchPreferences(supabase, schoolUrn, phase);
+        await savePreferences(supabase, schoolUrn, phase, { ...prefs, columns: next });
+      }
+    },
+    [columns, schoolUrn, phase, supabase],
+  );
+
   const resultsFor = useCallback(
     (item: SubjectItem): number | null => {
       const bucket: Ks5Bucket | null = phase === "ks5" ? bucketFor(item.qualificationType) : null;
@@ -225,6 +249,11 @@ export default function TeacherPhaseDashboard() {
     const vals = items.map(resultsFor).filter((v): v is number => v !== null);
     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
   }, [items, resultsFor]);
+
+  // SubjectItem carries an entries count the catalogue has no use for; SubjectRef is the
+  // narrower shape it actually needs.
+  const asRefs = (list: SubjectItem[]): SubjectRef[] =>
+    list.map((i) => ({ key: i.key, subject: i.subject, qualificationType: i.qualificationType, label: i.label }));
 
   if (loading) return <main className="mx-auto max-w-4xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
   if (error || !phase) {
@@ -254,6 +283,30 @@ export default function TeacherPhaseDashboard() {
   const movedCandidates = candidateSeries
     ? candidatesMoved(candidateSeries.prev, candidateSeries.latest, candidateSeries.label)
     : null;
+
+  // §13's other half, on the Results card. Measured across the subjects this person
+  // actually teaches rather than the whole school: a headline that moved because a
+  // department they have nothing to do with moved is not "this moved" for them.
+  // Both years must be computed over the SAME subject set, or a subject appearing or
+  // disappearing between years reads as a results swing that never happened.
+  const movedResults = (() => {
+    if (tickedItems.length === 0) return null;
+    const names = new Set(tickedItems.map((i) => i.subject));
+    const buckets = new Set<string>(
+      phase === "ks5" ? tickedItems.map((i) => (bucketFor(i.qualificationType) ?? "other") as string) : [],
+    );
+    const rows = headline.filter(
+      (h) => names.has(h.subject) && h.avgPointScore !== null && (phase !== "ks5" || buckets.has(h.bucket ?? "all")),
+    );
+    const periods = Array.from(new Set(rows.map((r) => r.period))).sort((a, b) => a - b);
+    if (periods.length < 2) return null;
+    const [prevP, lastP] = [periods[periods.length - 2], periods[periods.length - 1]];
+    const mean = (p: number) => {
+      const vals = rows.filter((r) => r.period === p).map((r) => r.avgPointScore!);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
+    return resultsMoved(mean(prevP), mean(lastP), String(lastP));
+  })();
 
 
   if (!onboarded) {
@@ -313,13 +366,30 @@ export default function TeacherPhaseDashboard() {
     );
   }
 
+  const builderProps = {
+    phase,
+    ticked: asRefs(tickedItems),
+    allSubjects: asRefs(items),
+    headline,
+  };
+
   return (
-    <main className="mx-auto max-w-4xl p-4 sm:p-6">
+    // §7: the theme attribute is scoped to Teacher view, never to <html> -- see
+    // TeacherChrome for why, and Q15.
+    <main id="teacher-root" data-theme={theme} className="mx-auto max-w-4xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-xl font-semibold sm:text-2xl">{PHASE_LABELS[phase]}</h1>
-        <Link href="/teacher" className="text-sm text-blue-700 hover:underline dark:text-blue-400">All dashboards</Link>
+        <div className="flex items-center gap-3">
+          <TeacherChrome theme={theme} onTheme={setTheme} />
+          <Link href="/teacher" className="text-sm text-blue-700 hover:underline print:hidden dark:text-blue-400">All dashboards</Link>
+        </div>
       </div>
       {schoolName && <p className="mt-1 text-sm text-neutral-500">{schoolName}</p>}
+      {/* §7: an exported page must say what produced it -- same "show your assumptions"
+          rule the Data View's own print summary follows. */}
+      <p className="mt-1 hidden text-xs text-neutral-600 print:block">
+        {PHASE_LABELS[phase]} · {tickedItems.length} subject{tickedItems.length === 1 ? "" : "s"} selected · exported {new Date().toLocaleDateString("en-GB")}
+      </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
@@ -340,6 +410,7 @@ export default function TeacherPhaseDashboard() {
               {movedCandidates.sentence}
             </p>
           )}
+          <ColumnBuilder columnId={"candidates" as ColumnId} {...builderProps} pinned={columns["candidates"] ?? []} onChange={(n) => setColumn("candidates", n)} />
           <NoteBox chartKey={`${phase}:candidates`} />
         </section>
 
@@ -365,6 +436,12 @@ export default function TeacherPhaseDashboard() {
               })}
             </ul>
           )}
+          {movedResults && (
+            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              {movedResults.sentence}
+            </p>
+          )}
+          <ColumnBuilder columnId={"results" as ColumnId} {...builderProps} pinned={columns["results"] ?? []} onChange={(n) => setColumn("results", n)} />
           <NoteBox chartKey={`${phase}:results`} />
         </section>
 
@@ -393,6 +470,7 @@ export default function TeacherPhaseDashboard() {
                 : "No entries recorded for this school."}
             </p>
           )}
+          <ColumnBuilder columnId={"context" as ColumnId} {...builderProps} pinned={columns["context"] ?? []} onChange={(n) => setColumn("context", n)} />
           <NoteBox chartKey={`${phase}:context`} />
         </section>
 

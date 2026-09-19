@@ -289,3 +289,54 @@ entirely -- so that was checked rather than assumed: both API routes
 `teacher-view-data.ts` uses the browser client. There is no service-role path in Teacher
 view, so RLS is load-bearing on every route, which is what makes the result above
 describe production rather than a lab.
+
+## Q15. "Light/dark theme: a proper toggle, defaulting to dark" -- scoped to Teacher view, not the site
+
+**Decided:** build the toggle, default it to dark, and scope the override to Teacher
+view's own subtree rather than to `<html>`.
+
+**Why:** §7's sentence sits in a Teacher view brief, in a section about Teacher view card
+interactions. Taken literally at site level it would change the public product's default
+appearance for every existing visitor -- a visible change to pages this build was never
+asked to touch, and not something to do as a side effect of a dashboard round.
+
+**What made scoping possible.** Tailwind v4's stock `dark:` variant is media-query-only,
+so before this round there was no mechanism anywhere on the site to override the system
+setting. The usual recipe is to redefine the variant as attribute-only, but that would
+have been the silent site-wide change described above: every existing `dark:` class would
+stop answering `prefers-color-scheme` until some new script set an attribute. So the
+variant in `globals.css` now answers to **both** -- the media query as before, plus a
+`data-theme` attribute that acts as a local override in either direction. Verified in the
+compiled CSS rather than assumed: 154 attribute branches, 154 light-escape guards and 70
+media branches are emitted, so system preference still drives every page that does not
+opt in.
+
+**Print.** §7 also wants export to render light "regardless of on-screen theme". CSS
+cannot un-apply a utility, so a `@media print` block could not undo `dark:` classes on a
+themed subtree. The attribute is the only honest lever: `beforeprint` swaps the subtree to
+light and `afterprint` restores it, on top of the existing Data View print stylesheet
+rather than as a second export mechanism.
+
+**Flagged for Guy:** if the intent really was a site-wide dark default, that is now a
+one-line change (move the attribute to `<html>` and seed it) -- but it should be a
+deliberate decision about the public site, not a by-product of this round.
+
+## Q16. Trend views are gated per subject, and that gate bites unevenly on real data
+
+**Not a decision so much as a finding worth recording**, because it looks like a bug the
+first time you see it.
+
+§9 offers a trend view "once 3+ years of data exist". Implemented as a real count of
+periods that genuinely carry a figure for that subject in that bucket -- not periods that
+merely have a row. The consequence on live data at Haverstock School (100049):
+
+- **Candidate numbers**: entries are published from 2021, so trends are offered widely.
+- **Results, BTec subjects**: points only exist from **2023**, so a BTec subject has two
+  years and is correctly offered **no** results trend.
+- **Results, A-level subjects**: 13 of 29 have 3+ years of points; the other 16 do not.
+
+So two subjects sitting next to each other on the same card can legitimately offer
+different menus. My own first test ticked Arabic and Art and Design -- alphabetically
+first, and both sparse -- saw zero results trends, and looked like a blanket failure.
+It was not: ticking Biology and Mathematics produces 9. The gate discriminates per
+subject, which is the intended behaviour and the honest one.

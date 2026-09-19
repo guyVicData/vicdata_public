@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+/* Teacher view, Phase 4 (design brief v2 §7): "Light/dark theme: a proper toggle,
+   defaulting to dark".
+
+   Tailwind v4's stock `dark:` variant is media-query-only, so there was no way to
+   override the system setting anywhere on this site. Redefining the variant to be
+   attribute-only would have been the usual recipe, but it would silently change the
+   PUBLIC site for every existing visitor -- every `dark:` class across the app would
+   stop responding to prefers-color-scheme until some new script set an attribute.
+
+   So this variant answers to BOTH, and the attribute only ever acts as a local
+   override: system preference keeps working exactly as before everywhere it is not
+   explicitly overridden, and a subtree carrying data-theme can force either direction.
+   That is what lets Teacher view default itself to dark (§7) without imposing dark on
+   the rest of the site, which the brief never asks for. See Q15. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme="light"], [data-theme="light"] *)) {
+      @slot;
+    }
+  }
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
