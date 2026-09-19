@@ -28,12 +28,20 @@ export const TREND_MIN_YEARS = 3;
 // flagged rather than just described.
 export type AxisId = "vs_school_avg" | "vs_category" | "vs_all_subjects" | "vs_chosen" | "category_vs_categories";
 
-export const AXES: { id: AxisId; label: string; needsChoice?: boolean }[] = [
-  { id: "vs_school_avg", label: "vs the school average in this qualification" },
-  { id: "vs_category", label: "vs other subjects in the same category" },
-  { id: "vs_all_subjects", label: "vs every other subject in the school" },
-  { id: "vs_chosen", label: "vs subjects I choose", needsChoice: true },
-  { id: "category_vs_categories", label: "this category vs every other category" },
+// §14 makes natural-language questions "a fundamental, load-bearing principle, not one
+// bullet among several", and names this menu explicitly: "every item in School Context's
+// comparison menu ... named as the real question it answers, not a generic label".
+//
+// So an axis carries a question-builder rather than a noun phrase. "Biology -- vs the
+// school average" and "How is Biology doing against the school average in this
+// qualification?" describe the same computation; only the second tells someone who has
+// not read a spec what they are about to find out.
+export const AXES: { id: AxisId; question: (subject: string) => string; needsChoice?: boolean }[] = [
+  { id: "vs_school_avg", question: (s) => `How is ${s} doing against the school average in this qualification?` },
+  { id: "vs_category", question: (s) => `How is ${s} doing against the other subjects in its category?` },
+  { id: "vs_all_subjects", question: (s) => `How is ${s} doing against every other subject here?` },
+  { id: "vs_chosen", question: (s) => `How is ${s} doing against subjects I pick myself?`, needsChoice: true },
+  { id: "category_vs_categories", question: (s) => `How is ${s}'s whole category doing against every other category?` },
 ];
 
 // §8 applies the five axes to BOTH Results and Candidate numbers -- same axes, different
@@ -128,14 +136,15 @@ export function availableViews(
       out.push({
         id: viewId(columnId, axis.id, s.key, false),
         columnId, axis: axis.id, subjectKey: s.key, trend: false,
-        label: `${s.label} -- ${axis.label}`,
+        label: axis.question(s.label),
         sublabel: `${measure.label} · ${qualLabel}`,
       });
       if (years >= TREND_MIN_YEARS) {
         out.push({
           id: viewId(columnId, axis.id, s.key, true),
           columnId, axis: axis.id, subjectKey: s.key, trend: true,
-          label: `${s.label} -- ${axis.label}, over time`,
+          // The trend variant is a different question, not the same one with a suffix.
+          label: axis.question(s.label).replace(/\?$/, "") + ", year on year?",
           sublabel: `${measure.label} · ${qualLabel} · ${years} years`,
         });
       }

@@ -158,7 +158,7 @@ function JobCard({ job, anchorUrn }: { job: RecruitmentJob; anchorUrn: string })
       </label>
 
       <ul className="mt-3 space-y-2">
-        {candidates.length === 0 && <li className="text-xs text-neutral-500">No candidates yet.</li>}
+        {candidates.length === 0 && <li className="text-xs text-neutral-500">Nobody added yet. Who is coming in?</li>}
         {candidates.map((c) => (
           <li key={c.id} className="rounded-md border border-neutral-100 p-2 dark:border-neutral-900">
             <div className="flex flex-wrap items-center gap-2">
@@ -261,7 +261,8 @@ export default function RecruitmentPage() {
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-2xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-xl font-semibold sm:text-2xl">Recruitment</h1>
+        {/* §14: named as the question it answers, not "Recruitment". */}
+        <h1 className="text-xl font-semibold sm:text-2xl">Who are we hiring, and how do they compare?</h1>
         <div className="flex items-center gap-3">
           <TeacherChrome theme={theme} onTheme={setTheme} />
           <Link href="/teacher" className="text-sm text-blue-700 hover:underline print:hidden dark:text-blue-400">All dashboards</Link>
@@ -273,11 +274,11 @@ export default function RecruitmentPage() {
 
       <div className="mt-6 space-y-4">
         {jobs.map((j) => anchorUrn && <JobCard key={j.id} job={j} anchorUrn={anchorUrn} />)}
-        {jobs.length === 0 && <p className="text-sm text-neutral-500">No jobs yet. Create one below.</p>}
+        {jobs.length === 0 && <p className="text-sm text-neutral-500">Nothing open at the moment. Start with what you&rsquo;re hiring for, below.</p>}
       </div>
 
       <section className="mt-6 rounded-lg border border-neutral-200 p-4 print:hidden dark:border-neutral-800">
-        <h2 className="text-sm font-semibold">New job</h2>
+        <h2 className="text-sm font-semibold">What are you hiring for?</h2>
         <div className="mt-3 space-y-2">
           <input
             value={title}

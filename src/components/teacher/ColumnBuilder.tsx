@@ -20,6 +20,7 @@ import { availableViews, computeView, COLUMN_MEASURE, AXES, type ColumnId, type 
 import type { AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { ViewChart } from "./ViewChart";
+import { TickList } from "./TickList";
 
 export function ColumnBuilder({
   columnId,
@@ -74,17 +75,13 @@ export function ColumnBuilder({
               </button>
             </figcaption>
             {needsChoice.has(v.axis) && (
-              <div className="mt-2 max-h-24 overflow-y-auto rounded-md border border-neutral-200 print:hidden dark:border-neutral-800">
-                {allSubjects.map((s) => (
-                  <label key={s.key} className="flex cursor-pointer items-center gap-2 px-2 py-1 text-[11px]">
-                    <input
-                      type="checkbox"
-                      checked={chosen.includes(s.key)}
-                      onChange={() => setChosen(chosen.includes(s.key) ? chosen.filter((k) => k !== s.key) : [...chosen, s.key])}
-                    />
-                    <span className="truncate">{s.label}</span>
-                  </label>
-                ))}
+              <div className="mt-2 print:hidden">
+                <TickList
+                  items={allSubjects.map((x) => ({ key: x.key, label: x.label }))}
+                  checked={(k) => chosen.includes(k)}
+                  onToggle={(k) => setChosen(chosen.includes(k) ? chosen.filter((c) => c !== k) : [...chosen, k])}
+                  maxHeightClass="max-h-32"
+                />
               </div>
             )}
             <ViewChart computed={computed} unit={measure.unit} />
@@ -117,21 +114,12 @@ export function ColumnBuilder({
                 : "No comparable views for this subject yet."}
             </p>
           ) : (
-            // Same scroll-box-of-tick-rows as SubjectPicker, on purpose (§14).
-            <div className="max-h-72 overflow-y-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-              {views.map((v) => (
-                <label
-                  key={v.id}
-                  className="flex cursor-pointer items-center gap-3 border-b border-neutral-100 px-3 py-2 text-xs last:border-b-0 dark:border-neutral-900"
-                >
-                  <input type="checkbox" checked={pinned.includes(v.id)} onChange={() => toggle(v.id)} />
-                  <span className="flex-1">
-                    <span className="block truncate">{v.label}</span>
-                    <span className="block text-[11px] text-neutral-500">{v.sublabel}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
+            // §14: literally the same component as the subject picker, not a lookalike.
+            <TickList
+              items={views.map((v) => ({ key: v.id, label: v.label, sublabel: v.sublabel }))}
+              checked={(k) => pinned.includes(k)}
+              onToggle={toggle}
+            />
           )}
         </div>
       )}

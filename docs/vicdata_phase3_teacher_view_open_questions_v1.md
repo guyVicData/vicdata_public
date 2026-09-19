@@ -374,3 +374,36 @@ rather than a failure. The row earns its place; the fabricated version of it did
 **The general lesson, which is not specific to recruitment:** "has rows" is not "has
 data", and a gate written against row counts will pass exactly the cases where a figure
 is missing, because suppression removes values and leaves rows behind.
+
+## Q18. Design texture, and the one part of it I could not verify
+
+§14's principles were applied as implementation rather than as intent:
+
+**Natural-language questions as headings.** §14 raises this to "a fundamental,
+load-bearing principle" and names the places it must reach: "every card, every onboarding
+step, every item in School Context's comparison menu, Recruitment, Meetings". The cards
+and onboarding already complied; the comparison menu and the two standalone features did
+not. An axis now carries a question-builder rather than a noun phrase, so the menu reads
+"How is Biology doing against the other subjects in its category?" instead of "Biology --
+vs other subjects in the same category", and the trend variant asks its own question
+("... year on year?") rather than wearing a suffix. Recruitment and Meetings are titled by
+what they answer, including on their home tiles.
+
+**Radical visual consistency, made structural.** Three lists used the tick gesture --
+subjects you teach, views to pin, slides to add -- as three separate blocks of lookalike
+markup. That is precisely how "pixel-identical" stops being true without anyone noticing:
+one list gets a padding change and nothing catches it. They are now one `TickList`
+component, so the consistency is enforced by structure rather than by discipline. The
+right-hand figure is part of the pattern rather than a caller's extra, following §14's
+"comparisons and context, everywhere" -- a thing you are about to pick should say how big
+it is while you are picking it.
+
+**Mobile-first and full-screen -- verified structurally, NOT visually.** The browser
+tooling was unavailable for this entire build, so I could not open these pages at 320px or
+on a projector, and I am not going to claim I did. What I did check is structural and
+real: no fixed pixel widths anywhere in the Teacher view tree, every multi-column grid
+collapses to one column below `sm`, wide content sits in its own overflow container, and
+the print path forces the light palette through the theme attribute rather than hoping CSS
+can unwind it. That is necessary but not sufficient -- **the "feels considered at both
+size extremes" half of §14 remains genuinely unverified and needs a real device and a real
+projector.**

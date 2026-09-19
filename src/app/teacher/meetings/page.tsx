@@ -27,6 +27,7 @@ import { availableViews, computeView, COLUMN_MEASURE, type ColumnId, type Subjec
 import { PHASE_LABELS, type TeacherPhase } from "@/lib/teacher-view-phases";
 import type { AcademicSubjectHeadlineEntry, SubjectEntry } from "@/lib/academic-data-view";
 import { ViewChart } from "@/components/teacher/ViewChart";
+import { TickList } from "@/components/teacher/TickList";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 
 const COLUMNS: ColumnId[] = ["candidates", "results", "context"];
@@ -115,7 +116,7 @@ function MeetingDeck({ meeting, bundles }: { meeting: Meeting; bundles: PhaseBun
         <span className="text-neutral-500">{slides.length} slide{slides.length === 1 ? "" : "s"}</span>
       </div>
 
-      {slides.length === 0 && <p className="mt-3 text-xs text-neutral-500">No slides yet. Add one below.</p>}
+      {slides.length === 0 && <p className="mt-3 text-xs text-neutral-500">Nothing in this deck yet. What do you want to walk them through?</p>}
 
       {mode === "grid" ? (
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -142,27 +143,24 @@ function MeetingDeck({ meeting, bundles }: { meeting: Meeting; bundles: PhaseBun
       )}
 
       {picking && (
-        <div className="mt-3 max-h-72 overflow-y-auto rounded-md border border-neutral-200 print:hidden dark:border-neutral-800">
-          {bundles.length === 0 && <p className="px-3 py-2 text-xs text-neutral-500">Complete a dashboard walkthrough first -- slides are built from its views.</p>}
-          {bundles.map((b) =>
-            COLUMNS.flatMap((c) => availableViews(c, b.phase, b.ticked, b.headline)).map((v) => {
-              const key = slideKey(b.phase, v);
-              const already = slides.some((s) => s.chart_key === key);
-              return (
-                <label key={key} className="flex cursor-pointer items-center gap-3 border-b border-neutral-100 px-3 py-2 text-xs last:border-b-0 dark:border-neutral-900">
-                  <input
-                    type="checkbox"
-                    checked={already}
-                    disabled={already}
-                    onChange={async () => { await addSlide(supabase, meeting.id, key, slides.length, null); reload(); }}
-                  />
-                  <span className="flex-1">
-                    <span className="block truncate">{v.label}</span>
-                    <span className="block text-[11px] text-neutral-500">{PHASE_LABELS[b.phase]} · {v.sublabel}</span>
-                  </span>
-                </label>
-              );
-            }),
+        <div className="mt-3 print:hidden">
+          {bundles.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-neutral-500">Complete a dashboard walkthrough first -- slides are built from its views.</p>
+          ) : (
+            // §14: the same TickList as the subject picker and the view builder.
+            <TickList
+              items={bundles.flatMap((b) =>
+                COLUMNS.flatMap((c) => availableViews(c, b.phase, b.ticked, b.headline)).map((v) => ({
+                  key: slideKey(b.phase, v),
+                  label: v.label,
+                  sublabel: `${PHASE_LABELS[b.phase]} · ${v.sublabel}`,
+                  disabled: slides.some((sl) => sl.chart_key === slideKey(b.phase, v)),
+                })),
+              )}
+              checked={(k) => slides.some((sl) => sl.chart_key === k)}
+              onToggle={async (k) => { await addSlide(supabase, meeting.id, k, slides.length, null); reload(); }}
+              empty="No views available to add yet."
+            />
           )}
         </div>
       )}
@@ -225,7 +223,8 @@ export default function MeetingsPage() {
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-xl font-semibold sm:text-2xl">Meetings</h1>
+        {/* §14: named as the question it answers, not "Meetings". */}
+        <h1 className="text-xl font-semibold sm:text-2xl">What do you need to show, and to whom?</h1>
         <div className="flex items-center gap-3">
           <TeacherChrome theme={theme} onTheme={setTheme} />
           <Link href="/teacher" className="text-sm text-blue-700 hover:underline print:hidden dark:text-blue-400">All dashboards</Link>
@@ -235,11 +234,11 @@ export default function MeetingsPage() {
 
       <div className="mt-6 space-y-4">
         {meetings.map((m) => <MeetingDeck key={m.id} meeting={m} bundles={bundles} />)}
-        {meetings.length === 0 && <p className="text-sm text-neutral-500">No meetings yet.</p>}
+        {meetings.length === 0 && <p className="text-sm text-neutral-500">Nothing prepared yet. What&rsquo;s coming up?</p>}
       </div>
 
       <section className="mt-6 rounded-lg border border-neutral-200 p-4 print:hidden dark:border-neutral-800">
-        <h2 className="text-sm font-semibold">New meeting</h2>
+        <h2 className="text-sm font-semibold">What meeting are you preparing for?</h2>
         <div className="mt-3 space-y-2">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Meeting name, e.g. Autumn governors"
             className="w-full rounded-md border border-neutral-300 bg-transparent px-2 py-1 text-sm dark:border-neutral-700" />

@@ -12,6 +12,7 @@ import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, type ColumnState } from "@/lib/teacher-view-data";
 import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
+import { TickList } from "@/components/teacher/TickList";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import type { ColumnId, SubjectRef } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
@@ -59,23 +60,16 @@ function SubjectPicker({
   ticked: string[];
   onToggle: (key: string) => void;
 }) {
+  // §14: the same TickList every other pick-list in Teacher view uses.
   return (
-    <div className="max-h-72 overflow-y-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-      {items.length === 0 && <p className="px-3 py-3 text-sm text-neutral-500">No subject entries recorded for this school.</p>}
-      {items.map((i) => (
-        <label
-          key={i.key}
-          className="flex cursor-pointer items-center gap-3 border-b border-neutral-100 px-3 py-2 text-sm last:border-b-0 dark:border-neutral-900"
-        >
-          <input type="checkbox" checked={ticked.includes(i.key)} onChange={() => onToggle(i.key)} />
-          <span className="flex-1 truncate">{i.label}</span>
-          <span className="tabular-nums text-neutral-500">{i.entries}</span>
-        </label>
-      ))}
-    </div>
+    <TickList
+      items={items.map((i) => ({ key: i.key, label: i.label, trailing: i.entries }))}
+      checked={(k) => ticked.includes(k)}
+      onToggle={onToggle}
+      empty="No subject entries recorded for this school."
+    />
   );
 }
-
 
 // §12: a personal, private note against a specific chart, visible only to its author.
 // RLS enforces that at the database, so this component carries no ownership logic of its

@@ -104,7 +104,7 @@ export default function TeacherHomePage() {
             href="/teacher/recruitment"
             className="rounded-lg border border-neutral-200 p-4 transition hover:border-blue-400 dark:border-neutral-800 dark:hover:border-blue-600"
           >
-            <p className="text-base font-semibold">Recruitment</p>
+            <p className="text-base font-semibold">Who are we hiring, and how do they compare?</p>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
               Compare a candidate&rsquo;s current school with your own, on the subject you&rsquo;re hiring for.
             </p>
@@ -113,7 +113,7 @@ export default function TeacherHomePage() {
             href="/teacher/meetings"
             className="rounded-lg border border-neutral-200 p-4 transition hover:border-blue-400 dark:border-neutral-800 dark:hover:border-blue-600"
           >
-            <p className="text-base font-semibold">Meetings</p>
+            <p className="text-base font-semibold">What do you need to show, and to whom?</p>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
               Sequence graphs from any dashboard into slides you can present or hand round.
             </p>
