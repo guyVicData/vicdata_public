@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, type ColumnState } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, type ColumnState } from "@/lib/teacher-view-data";
 import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import type { ColumnId, SubjectRef } from "@/lib/teacher-view-catalogue";
@@ -146,6 +146,10 @@ export default function TeacherPhaseDashboard() {
   const [ticked, setTicked] = useState<string[]>([]);
   const [columns, setColumns] = useState<ColumnState>({});
   const [theme, setTheme] = useTeacherTheme();
+  // §13: captured once at load. Marking the period seen immediately afterwards would make
+  // the banner vanish on the very next render, so what was new at load stays visible for
+  // this visit and simply does not reappear on the next one.
+  const [newDataPeriod, setNewDataPeriod] = useState<number | null>(null);
   const [onboarded, setOnboarded] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -155,6 +159,9 @@ export default function TeacherPhaseDashboard() {
     // codebase -- a synchronous setState here triggers cascading renders.
     (async () => {
       if (!phase) { setError("Unknown phase."); setLoading(false); return; }
+      // Read straight from the response rather than from state: setHeadline has not
+      // committed by the time the new-data check below runs.
+      let loadedHeadline: AcademicSubjectHeadlineEntry[] = [];
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) { setError("Sign in to see this dashboard."); setLoading(false); return; }
@@ -175,6 +182,7 @@ export default function TeacherPhaseDashboard() {
         const body = await res.json();
         setEntries(body.subjectData?.entries ?? []);
         setHeadline(body.headline ?? []);
+        loadedHeadline = body.headline ?? [];
         setRollAtAge10(body.rollAtAge10 ?? null);
         setNeighbours(body.neighbours ?? []);
         setHeadlineLabel(body.headlineLabel ?? "");
@@ -186,6 +194,12 @@ export default function TeacherPhaseDashboard() {
       const prefs = await fetchPreferences(supabase, urn, phase);
       setTicked(prefs.subjects);
       setColumns(prefs.columns);
+
+      // §13's "New-data-in", derived rather than pushed -- see hasNewData.
+      const periods = (loadedHeadline as AcademicSubjectHeadlineEntry[]).map((h) => h.period);
+      const latestPeriod = periods.length ? Math.max(...periods) : null;
+      if (hasNewData(latestPeriod, prefs.lastSeenPeriod)) setNewDataPeriod(latestPeriod);
+      await markPeriodSeen(supabase, urn, phase, latestPeriod);
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -385,6 +399,14 @@ export default function TeacherPhaseDashboard() {
         </div>
       </div>
       {schoolName && <p className="mt-1 text-sm text-neutral-500">{schoolName}</p>}
+
+      {/* §13's banner. States what actually changed and when, rather than just shouting. */}
+      {newDataPeriod !== null && (
+        <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 print:hidden dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200">
+          <span className="mr-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
+          {newDataPeriod} results have been published since you were last here.
+        </p>
+      )}
       {/* §7: an exported page must say what produced it -- same "show your assumptions"
           rule the Data View's own print summary follows. */}
       <p className="mt-1 hidden text-xs text-neutral-600 print:block">
@@ -415,7 +437,14 @@ export default function TeacherPhaseDashboard() {
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold">{q.howWell}</h2>
+          <h2 className="text-sm font-semibold">
+            {q.howWell}
+            {/* §13's "NEW pill wherever something's actually changed" -- on the card the
+                new data actually lands in, not on every card. */}
+            {newDataPeriod !== null && (
+              <span className="ml-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
+            )}
+          </h2>
           {tickedItems.length === 0 ? (
             <p className="mt-2 text-sm text-neutral-500">Pick a subject below to see its results.</p>
           ) : (

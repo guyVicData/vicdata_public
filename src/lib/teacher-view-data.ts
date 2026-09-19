@@ -32,9 +32,9 @@ export async function completeOnboarding(supabase: Supa, phase: TeacherPhase): P
 // and inherited. §7: saved state is a hard requirement, not optional.
 export type ColumnState = Record<string, string[]>; // column id -> pinned view ids
 
-export type TeacherPreferences = { subjects: string[]; columns: ColumnState };
+export type TeacherPreferences = { subjects: string[]; columns: ColumnState; lastSeenPeriod: number | null };
 
-const EMPTY_PREFERENCES: TeacherPreferences = { subjects: [], columns: {} };
+const EMPTY_PREFERENCES: TeacherPreferences = { subjects: [], columns: {}, lastSeenPeriod: null };
 
 export async function fetchPreferences(
   supabase: Supa,
@@ -43,7 +43,7 @@ export async function fetchPreferences(
 ): Promise<TeacherPreferences> {
   const { data, error } = await supabase
     .from("teacher_view_preferences")
-    .select("subjects, columns")
+    .select("subjects, columns, last_seen_period")
     .eq("school_urn", schoolUrn)
     .eq("phase", phase)
     .maybeSingle();
@@ -51,6 +51,7 @@ export async function fetchPreferences(
   return {
     subjects: Array.isArray(data.subjects) ? (data.subjects as string[]) : [],
     columns: (data.columns as ColumnState) ?? {},
+    lastSeenPeriod: (data.last_seen_period as number | null) ?? null,
   };
 }
 
@@ -69,6 +70,7 @@ export async function savePreferences(
       phase,
       subjects: prefs.subjects,
       columns: prefs.columns,
+      last_seen_period: prefs.lastSeenPeriod,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "profile_id,school_urn,phase" },
@@ -238,5 +240,36 @@ export async function addSlide(
   const { error } = await supabase
     .from("meeting_slides")
     .insert({ meeting_id: meetingId, chart_key: chartKey, position, caption });
+  return !error;
+}
+
+// --------------------------------------------------------- notifications (§13)
+//
+// §13's v1 channel is deliberately light: "a banner on the dashboard, a notice on login,
+// and a 'NEW' pill wherever something's actually changed. No email/push infrastructure
+// needed for this build."
+//
+// So "new" is derived, not pushed: the newest period the data holds, against the newest
+// period this person has seen. That means it cannot go stale, cannot double-fire, and
+// needs no read/unread bookkeeping -- and a first-ever visitor is never told that
+// perfectly ordinary data is new, because their stored value is NULL rather than 0.
+export function hasNewData(latestPeriod: number | null, lastSeenPeriod: number | null): boolean {
+  if (latestPeriod === null || lastSeenPeriod === null) return false;
+  return latestPeriod > lastSeenPeriod;
+}
+
+export async function markPeriodSeen(
+  supabase: Supa,
+  schoolUrn: string,
+  phase: TeacherPhase,
+  period: number | null,
+): Promise<boolean> {
+  if (period === null) return false;
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return false;
+  const { error } = await supabase.from("teacher_view_preferences").upsert(
+    { profile_id: userData.user.id, school_urn: schoolUrn, phase, last_seen_period: period, updated_at: new Date().toISOString() },
+    { onConflict: "profile_id,school_urn,phase" },
+  );
   return !error;
 }

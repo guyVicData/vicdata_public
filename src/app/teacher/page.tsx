@@ -94,6 +94,33 @@ export default function TeacherHomePage() {
         </div>
       )}
 
+      {/* §10 and §11: Recruitment and Meetings are standalone features, "not one of the
+          four repeating cards", so they sit apart from the phase tiles rather than among
+          them. Shown only where Teacher view itself applies -- a school with no exam data
+          has nothing to build a candidate comparison or a slide deck from. */}
+      {!error && phases.length > 0 && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/teacher/recruitment"
+            className="rounded-lg border border-neutral-200 p-4 transition hover:border-blue-400 dark:border-neutral-800 dark:hover:border-blue-600"
+          >
+            <p className="text-base font-semibold">Recruitment</p>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              Compare a candidate&rsquo;s current school with your own, on the subject you&rsquo;re hiring for.
+            </p>
+          </Link>
+          <Link
+            href="/teacher/meetings"
+            className="rounded-lg border border-neutral-200 p-4 transition hover:border-blue-400 dark:border-neutral-800 dark:hover:border-blue-600"
+          >
+            <p className="text-base font-semibold">Meetings</p>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              Sequence graphs from any dashboard into slides you can present or hand round.
+            </p>
+          </Link>
+        </div>
+      )}
+
       {/* Q10 in the open-questions log, as corrected mid-build. This is NOT a data gap
           to design around: Teacher view is subject-exam-data only, and an independent
           junior/prep has no public exams at that stage and confirmed zero KS2 data (DfE

@@ -340,3 +340,37 @@ different menus. My own first test ticked Arabic and Art and Design -- alphabeti
 first, and both sparse -- saw zero results trends, and looked like a blanket failure.
 It was not: ticking Biology and Mathematics produces 9. The gate discriminates per
 subject, which is the intended behaviour and the honest one.
+
+## Q17. "Both schools genuinely have data for" needed three attempts to get right
+
+**Decided:** a phase appears in a candidate comparison only if there is at least one year
+where **both** schools carry a real figure, and the comparison is anchored on the latest
+such year.
+
+**Why it took three goes.** §10 says the comparison uses "whichever measurable phases
+(KS4/KS5) both schools genuinely have data for". Two weaker readings both looked right in
+code and both failed against Haverstock School vs The Camden School for Girls:
+
+1. **"Both sides have rows."** Wrong: DfE suppresses figures for small entry counts while
+   the rows themselves remain. Arabic at KS4 produced a full comparison table of "--"
+   against "--", with a points row reading `undefined`.
+2. **"Both sides have a figure in some year."** Still wrong: the headline figures are read
+   at the latest period, and Camden's Arabic figures stop before Haverstock's do, so the
+   table passed the gate and then rendered blank headline rows anyway.
+3. **"Both sides have a figure in the same year, and that year is the anchor."** Correct.
+
+**After the fix, on live data:**
+
+| Subject | KS4 | KS5 |
+|---|---|---|
+| Biology | shown -- entries 21 v 30, points 6.1 v 7.7 | shown -- entries 14 v 36, points 31.0 v 41.7 |
+| Mathematics | dropped -- no shared year | shown -- entries 24 v 117, points 36.8 v 45.3 |
+| Arabic | narrowed to 2022-23 -- entries 3 v 1, points honestly "--" | dropped -- no shared year |
+
+Arabic at KS4 is the interesting survivor: the entries comparison is real (3 against 1)
+and the points genuinely are suppressed at those numbers, so "--" is the true answer
+rather than a failure. The row earns its place; the fabricated version of it did not.
+
+**The general lesson, which is not specific to recruitment:** "has rows" is not "has
+data", and a gate written against row counts will pass exactly the cases where a figure
+is missing, because suppression removes values and leaves rows behind.
