@@ -74,7 +74,7 @@ function SubjectPicker({
 // §12: a personal, private note against a specific chart, visible only to its author.
 // RLS enforces that at the database, so this component carries no ownership logic of its
 // own -- it simply trusts the policy, which is the only place it can be enforced anyway.
-function NoteBox({ chartKey }: { chartKey: string }) {
+function NoteBox({ schoolUrn, chartKey }: { schoolUrn: string | null; chartKey: string }) {
   const supabase = createBrowserSupabaseClient();
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
@@ -82,12 +82,18 @@ function NoteBox({ chartKey }: { chartKey: string }) {
 
   useEffect(() => {
     (async () => {
-      const existing = await fetchNote(supabase, chartKey);
+      if (!schoolUrn) return;
+      const existing = await fetchNote(supabase, schoolUrn, chartKey);
       setBody(existing ?? "");
       setSaved(existing);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartKey]);
+  }, [schoolUrn, chartKey]);
+
+  // A note is meaningless without a school to attach it to, and writing one scoped to an
+  // empty urn would make it visible at every school. The dashboard already errors out
+  // before rendering any card when there is no membership, so this is belt-and-braces.
+  if (!schoolUrn) return null;
 
   if (!open) {
     return (
@@ -112,7 +118,7 @@ function NoteBox({ chartKey }: { chartKey: string }) {
       <div className="mt-1 flex gap-2">
         <button
           type="button"
-          onClick={async () => { await saveNote(supabase, chartKey, body); setSaved(body.trim() || null); setOpen(false); }}
+          onClick={async () => { if (!schoolUrn) return; await saveNote(supabase, schoolUrn, chartKey, body); setSaved(body.trim() || null); setOpen(false); }}
           className="rounded-md bg-blue-700 px-2 py-1 text-xs font-medium text-white"
         >
           Save
@@ -183,7 +189,7 @@ export default function TeacherPhaseDashboard() {
       } else {
         setError("Could not load this school's data. Try again.");
       }
-      const done = await fetchOnboardedPhases(supabase);
+      const done = await fetchOnboardedPhases(supabase, urn);
       setOnboarded(done.includes(phase));
       const prefs = await fetchPreferences(supabase, urn, phase);
       setTicked(prefs.subjects);
@@ -363,7 +369,7 @@ export default function TeacherPhaseDashboard() {
             type="button"
             onClick={async () => {
               if (step < 3) { setStep(step + 1); return; }
-              if (await completeOnboarding(supabase, phase)) setOnboarded(true);
+              if (schoolUrn && await completeOnboarding(supabase, schoolUrn, phase)) setOnboarded(true);
             }}
             className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
           >
@@ -427,7 +433,7 @@ export default function TeacherPhaseDashboard() {
             </p>
           )}
           <ColumnBuilder columnId={"candidates" as ColumnId} {...builderProps} pinned={columns["candidates"] ?? []} onChange={(n) => setColumn("candidates", n)} />
-          <NoteBox chartKey={`${phase}:candidates`} />
+          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:candidates`} />
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
@@ -465,7 +471,7 @@ export default function TeacherPhaseDashboard() {
             </p>
           )}
           <ColumnBuilder columnId={"results" as ColumnId} {...builderProps} pinned={columns["results"] ?? []} onChange={(n) => setColumn("results", n)} />
-          <NoteBox chartKey={`${phase}:results`} />
+          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:results`} />
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
@@ -494,7 +500,7 @@ export default function TeacherPhaseDashboard() {
             </p>
           )}
           <ColumnBuilder columnId={"context" as ColumnId} {...builderProps} pinned={columns["context"] ?? []} onChange={(n) => setColumn("context", n)} />
-          <NoteBox chartKey={`${phase}:context`} />
+          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:context`} />
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
@@ -527,7 +533,7 @@ export default function TeacherPhaseDashboard() {
               No nearby schools with comparable published data for this phase.
             </p>
           )}
-          <NoteBox chartKey={`${phase}:rankings`} />
+          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:rankings`} />
         </section>
       </div>
 

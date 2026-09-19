@@ -407,3 +407,46 @@ the print path forces the light palette through the theme attribute rather than 
 can unwind it. That is necessary but not sufficient -- **the "feels considered at both
 size extremes" half of §14 remains genuinely unverified and needs a real device and a real
 projector.**
+
+## Q19. The account page's Teacher View link is not school-scoped the way its sibling is
+
+**Logged, not fixed, deliberately.** The per-membership card now renders "Open Teacher
+View" above "Open Advanced Dashboard". The second is scoped explicitly
+(`/schools/${account.school_urn}/data`); the first is plain `/teacher`, which resolves the
+school from the caller's own membership rather than from a URN.
+
+Correct today, because a profile only ever has one membership -- the testing switcher
+deletes every existing row before inserting the new one, so "which school" is never
+ambiguous. It would be wrong the day multi-school membership exists: the card is rendered
+per membership, so two cards would both link to the same Teacher view.
+
+**Why it was not scoped now:** `/teacher` is not the only page that resolves school this
+way. `/teacher/[phase]`, `/teacher/recruitment` and `/teacher/meetings` all run the same
+`maybeSingle()` membership query, so adding `?school=` to the entry point alone would be
+cosmetic -- the first click through to a phase dashboard would resolve the single
+membership again regardless. Doing it properly means threading a school through four
+routes, which is more than this round asked for.
+
+## Q20. Two pre-existing lint errors in the account page, untouched
+
+`src/app/account/page.tsx` has two `react-hooks/set-state-in-effect` errors, at the
+`load()` call in its main effect and at one other effect further down. **They pre-date
+this round** -- confirmed by running eslint against the unmodified file at HEAD before my
+change, which reported the same two -- and they are the same class of issue already fixed
+in the Teacher view files. Left alone because this round is scoped to the school-scoping
+bug and one link change, and the fix belongs with whoever next works in that file.
+
+## Q21. The bugfix brief's row counts were slightly off, and the compiler found two call sites it did not list
+
+Two small corrections, neither changing the fix:
+
+1. The brief describes "the one existing row" in each of `teacher_view_onboarding` and
+   `teacher_view_notes`. There were **two** in each (onboarding: ks4 and ks5; notes:
+   `ks4:results:Biology` and `ks5:results`). All four resolved to the same school via the
+   profile's approved membership, so the backfill covered them and nothing was dropped.
+2. The brief lists the call sites as being in `src/app/teacher/[phase]/page.tsx`. Two more
+   existed and would have kept the bug alive: `src/app/teacher/page.tsx` and
+   `src/app/teacher/meetings/page.tsx` both call `fetchOnboardedPhases`. The type checker
+   surfaced them the moment the signature changed, which is the argument for changing the
+   signature rather than adding an optional parameter with a default -- an optional
+   `schoolUrn` would have compiled cleanly and left both sites silently unscoped.

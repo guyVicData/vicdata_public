@@ -250,11 +250,24 @@ function MembershipCard({
       </p>
 
       {membership.status === "approved" && (
-        <p className="mt-2 text-sm">
-          <Link href={`/schools/${account.school_urn}/data`} className="underline">
-            Open Data View
-          </Link>
-        </p>
+        <>
+          {/* Not school-scoped the way its sibling below is: /teacher resolves the school
+              from the caller's own membership rather than from a URN. Correct today (a
+              profile only ever has one membership, which the testing switcher enforces)
+              but it would be wrong the day multi-school membership exists -- logged as
+              Q19 rather than fixed here, since scoping it properly means threading a
+              school through /teacher, /teacher/[phase], recruitment and meetings. */}
+          <p className="mt-2 text-sm">
+            <Link href="/teacher" className="underline">
+              Open Teacher View
+            </Link>
+          </p>
+          <p className="mt-2 text-sm">
+            <Link href={`/schools/${account.school_urn}/data`} className="underline">
+              Open Advanced Dashboard
+            </Link>
+          </p>
+        </>
       )}
 
       {isPendingRecipient && (

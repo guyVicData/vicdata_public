@@ -58,7 +58,7 @@ export default function TeacherHomePage() {
       } else {
         setError("Could not load your school's data. Try again.");
       }
-      setOnboarded(await fetchOnboardedPhases(supabase));
+      setOnboarded(await fetchOnboardedPhases(supabase, urn));
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps

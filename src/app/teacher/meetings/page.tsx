@@ -193,7 +193,7 @@ export default function MeetingsPage() {
 
       // §11's "any phase they have access to" -- every phase this person has actually
       // onboarded, not just one.
-      const phases = await fetchOnboardedPhases(supabase);
+      const phases = urn ? await fetchOnboardedPhases(supabase, urn) : [];
       const built: PhaseBundle[] = [];
       if (urn && token) {
         for (const phase of phases) {

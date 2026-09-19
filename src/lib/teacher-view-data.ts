@@ -12,18 +12,31 @@ type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 // ---------------------------------------------------------------- onboarding (§5)
 // Presence of a row IS the unlock. There is no boolean to flip and no "show again"
 // setting, because §5 resolves repeatability through the mechanism itself.
-export async function fetchOnboardedPhases(supabase: Supa): Promise<TeacherPhase[]> {
-  const { data, error } = await supabase.from("teacher_view_onboarding").select("phase");
+//
+// Scoped by school as well as by person, exactly as fetchPreferences/savePreferences
+// below already were. Completing the KS4 walkthrough is a fact about this person AT THIS
+// SCHOOL, not about the person: the walkthrough's own subject picker is built from one
+// school's taxonomy, so carrying its completion across schools skipped the only step that
+// asks which subjects you teach -- leaving the new school's dashboard with the previous
+// school's subject list.
+export async function fetchOnboardedPhases(supabase: Supa, schoolUrn: string): Promise<TeacherPhase[]> {
+  const { data, error } = await supabase
+    .from("teacher_view_onboarding")
+    .select("phase")
+    .eq("school_urn", schoolUrn);
   if (error || !data) return [];
   return data.map((r: { phase: string }) => r.phase as TeacherPhase);
 }
 
-export async function completeOnboarding(supabase: Supa, phase: TeacherPhase): Promise<boolean> {
+export async function completeOnboarding(supabase: Supa, schoolUrn: string, phase: TeacherPhase): Promise<boolean> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return false;
   const { error } = await supabase
     .from("teacher_view_onboarding")
-    .upsert({ profile_id: userData.user.id, phase }, { onConflict: "profile_id,phase" });
+    .upsert(
+      { profile_id: userData.user.id, school_urn: schoolUrn, phase },
+      { onConflict: "profile_id,school_urn,phase" },
+    );
   return !error;
 }
 
@@ -88,28 +101,38 @@ export function resetColumn(columns: ColumnState, columnId: string): ColumnState
 }
 
 // --------------------------------------------------------------- notes (§12)
-export async function fetchNote(supabase: Supa, chartKey: string): Promise<string | null> {
+// Scoped by school for the same reason onboarding is: chart_key is only a phase and a
+// card ("ks5:results"), so it does not identify a school on its own. Without the scope a
+// note written about one school's dip appeared against a different school's figures --
+// which is worse than losing the note, because it reads as a claim about the new school.
+export async function fetchNote(supabase: Supa, schoolUrn: string, chartKey: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("teacher_view_notes")
     .select("body")
+    .eq("school_urn", schoolUrn)
     .eq("chart_key", chartKey)
     .maybeSingle();
   if (error || !data) return null;
   return data.body as string;
 }
 
-export async function saveNote(supabase: Supa, chartKey: string, body: string): Promise<boolean> {
+export async function saveNote(supabase: Supa, schoolUrn: string, chartKey: string, body: string): Promise<boolean> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return false;
   // An emptied note is a deleted note: leaving a blank row would show an empty note
-  // indicator on a chart the person has deliberately cleared.
+  // indicator on a chart the person has deliberately cleared. Scoped too -- an unscoped
+  // delete would clear the same card's note at every school this person has ever used.
   if (body.trim() === "") {
-    const { error } = await supabase.from("teacher_view_notes").delete().eq("chart_key", chartKey);
+    const { error } = await supabase
+      .from("teacher_view_notes")
+      .delete()
+      .eq("school_urn", schoolUrn)
+      .eq("chart_key", chartKey);
     return !error;
   }
   const { error } = await supabase.from("teacher_view_notes").upsert(
-    { profile_id: userData.user.id, chart_key: chartKey, body, updated_at: new Date().toISOString() },
-    { onConflict: "profile_id,chart_key" },
+    { profile_id: userData.user.id, school_urn: schoolUrn, chart_key: chartKey, body, updated_at: new Date().toISOString() },
+    { onConflict: "profile_id,school_urn,chart_key" },
   );
   return !error;
 }
