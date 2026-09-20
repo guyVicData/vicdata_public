@@ -1,10 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { timingSafeEqual, sha256Hex, PREVIEW_GATE_COOKIE } from "@/lib/timing-safe";
 
 // Default-deny: the gate is active unless ACCESS_GATE_ENABLED is explicitly "false".
 // Missing credentials with the gate enabled fails closed (blocks everything), it
 // never falls open. See docs/vicdata_phase3_full_build_brief_v1.md — "Launch gating".
+// api/testing/preview-session joins api/health in being excluded, and for a stronger
+// reason than health's: that route is what SATISFIES the gate, so it has to be reachable
+// before the gate is satisfied or the whole mechanism deadlocks. It does its own
+// fail-closed checks and its own timing-safe token comparison, so being outside the gate
+// costs nothing -- when the feature is unconfigured it is a plain 404.
 export const config = {
-  matcher: "/((?!_next/static|_next/image|favicon.ico|api/health).*)",
+  matcher: "/((?!_next/static|_next/image|favicon.ico|api/health|api/testing/preview-session).*)",
 };
 
 function unauthorized(): NextResponse {
@@ -16,16 +22,7 @@ function unauthorized(): NextResponse {
   });
 }
 
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i++) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return mismatch === 0;
-}
-
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const gateEnabled = process.env.ACCESS_GATE_ENABLED !== "false";
   if (!gateEnabled) {
     return NextResponse.next();
@@ -35,6 +32,20 @@ export function proxy(request: NextRequest): NextResponse {
   const expectedPassword = process.env.ACCESS_GATE_PASSWORD;
   if (!expectedUser || !expectedPassword) {
     return unauthorized();
+  }
+
+  // Preview-access bypass (docs/vicdata_phase3_agent_preview_access_brief_v1.md).
+  // An ADDITIONAL way to satisfy this gate, never a replacement: it is checked before the
+  // Basic Auth paths below and changes nothing for anyone not holding the cookie. The
+  // cookie carries a SHA-256 of the preview token rather than the token, so a stolen
+  // cookie gets past the gate but cannot mint a session -- and if the feature is
+  // unconfigured there is no expected value to match, so the branch cannot fire at all.
+  const previewToken = process.env.PREVIEW_ACCESS_TOKEN;
+  if (process.env.PREVIEW_ACCESS_ENABLED === "true" && previewToken) {
+    const presented = request.cookies.get(PREVIEW_GATE_COOKIE)?.value;
+    if (presented && timingSafeEqual(presented, await sha256Hex(previewToken))) {
+      return NextResponse.next();
+    }
   }
 
   const authHeader = request.headers.get("authorization");

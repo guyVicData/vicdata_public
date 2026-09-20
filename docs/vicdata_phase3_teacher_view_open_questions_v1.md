@@ -450,3 +450,54 @@ Two small corrections, neither changing the fix:
    surfaced them the moment the signature changed, which is the argument for changing the
    signature rather than adding an optional parameter with a default -- an optional
    `schoolUrn` would have compiled cleanly and left both sites silently unscoped.
+
+## Q22. The preview route could not use the sign-in path the brief assumed, because this app has neither half of it
+
+**The brief's step 3** says to generate a magic link and "redirect straight into the app's
+existing callback handler, so the browser ends up in a completely normal, real session".
+Neither piece of that exists here, and the second one is not a gap that could be filled
+cheaply:
+
+1. **There is no callback handler.** The app's only sign-in is
+   `supabase.auth.signInWithPassword` in `src/app/login/page.tsx`. No OTP, no magic link,
+   no OAuth, no `/auth/callback` route.
+2. **Sessions are not in cookies.** `src/lib/supabase.ts` uses plain
+   `@supabase/supabase-js`, not `@supabase/ssr`, so the browser client persists its session
+   to **localStorage**. A server route cannot write localStorage, so no cookie this route
+   sets could ever become a Supabase session, however it were shaped. This rules the
+   obvious implementation out rather than making it awkward.
+
+**What it does instead, which is still the app's own mechanism and not a parallel one:**
+`createClient` leaves `detectSessionInUrl` at its default of `true`, so the existing
+browser client already knows how to complete a sign-in from tokens in the URL fragment.
+The route therefore asks the Admin API for a real magic link and redirects to it; Supabase
+verifies its own one-time token and bounces back to our origin with the tokens in the
+fragment, where the app's existing client picks them up. Nothing bespoke is minted or
+stored, and no new auth path exists for real users.
+
+Verified as a real chain rather than assumed, against a live server:
+`/api/testing/preview-session?token=...` -> 302 to Supabase `/auth/v1/verify` -> 303 back
+to `/teacher#access_token=...&refresh_token=...&type=magiclink`. That access token was then
+presented to `/auth/v1/user` and came back as `preview-agent@vicdata.co.uk`, role
+`authenticated`, and under RLS it reads exactly one approved membership.
+
+**Consequence worth knowing:** the fragment never reaches the server, which is why the gate
+cookie must be set on the first redirect, before handing off to Supabase.
+
+## Q23. The preview redirect target must be on Supabase's redirect allow-list
+
+`generateLink` is given `redirectTo: <origin><redirect path>`, and Supabase refuses to
+redirect anywhere not on the project's Auth redirect allow-list. `http://localhost:3010`
+worked during testing because Supabase permits localhost by default. **`https://vicdata.co.uk/*`
+must be present in the project's Auth "Redirect URLs" before this works on the deployed
+site** -- otherwise the route will look correct, the link will generate, and Supabase will
+silently bounce to the project's Site URL instead. Flagged because the failure is quiet and
+would read as a bug in this route.
+
+## Q24. Gate-bypass cookie stores a hash, not the token
+
+Minor, but a deliberate choice rather than an oversight. The cookie only needs to satisfy
+the Basic Auth gate, whereas `PREVIEW_ACCESS_TOKEN` also mints sessions. The cookie
+therefore carries `SHA-256(token)`, so a stolen cookie can get past the gate but cannot
+call the route to sign in as anyone. Verified live: a forged cookie value returns 401 while
+the real one returns 200, and the cookie does not contain the raw token.

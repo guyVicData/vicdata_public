@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
+import { grantApprovedMembership } from "@/lib/testing-membership";
 
 // Testing-only convenience (2026-09-05, per direct request): lets Guy's own account
 // jump between schools to exercise the Data View's filters/lists from many different
@@ -57,86 +58,16 @@ export async function POST(request: NextRequest) {
   }
   const profileId = userData.user.id;
 
-  const { data: school } = await callerClient.from("schools").select("urn").eq("urn", urn).maybeSingle();
-  if (!school) {
-    return NextResponse.json({ error: "Unknown school" }, { status: 404 });
-  }
-
-  // Service-role from here -- deliberately bypasses the ordinary join-and-wait RLS
-  // policies (school_memberships_insert_own only lets a member insert their own
-  // PENDING row; there's no policy letting a plain member self-approve or move an
-  // existing row to a school they're not already admin/holder at). That's the whole
-  // point of this being a real shortcut, not a client-side trick against RLS.
+  // The membership work -- including the four-foreign-key cleanup documented above, found
+  // by live testing rather than code review -- now lives in one place, shared with
+  // /api/testing/preview-session, which needs exactly the same thing. It was extracted
+  // from here unchanged rather than reimplemented there.
   const admin = createServiceRoleSupabaseClient();
-
-  let { data: account } = await admin.from("school_accounts").select("id, account_holder_membership_id").eq("school_urn", urn).maybeSingle();
-  if (!account) {
-    const { data: created, error: createError } = await admin
-      .from("school_accounts")
-      .insert({ school_urn: urn, tier: "individual" })
-      .select("id, account_holder_membership_id")
-      .single();
-    if (createError || !created) {
-      return NextResponse.json({ error: "Could not create a school account for this school" }, { status: 500 });
-    }
-    account = created;
+  const result = await grantApprovedMembership(admin, profileId, urn);
+  if (!result.ok) {
+    const status = result.error === "Unknown school" ? 404 : 500;
+    return NextResponse.json({ error: result.error }, { status });
   }
-
-  // 2026-09-05, two real bugs found and fixed via live end-to-end tests (not just code
-  // review) -- deleting a membership row can be blocked by FOUR separate foreign keys
-  // across the schema, confirmed by grepping every migration for
-  // "references public.school_memberships" rather than guessing: school_accounts'
-  // account_holder_membership_id and pending_account_holder_membership_id (neither
-  // has an ON DELETE action, so Postgres defaults to RESTRICT), school_memberships'
-  // own self-referencing approved_by, and saved_sets' owner_membership_id. The first
-  // attempt at this route only cleared the school_accounts columns and didn't check
-  // the delete's own error -- it silently failed (a saved_sets row this same testing
-  // session had created at the old school blocked it) and the account page ended up
-  // showing two schools instead of "switching." All four are cleared/removed here,
-  // then the delete's result is actually checked.
-  const { data: ownMemberships } = await admin.from("school_memberships").select("id, school_account_id").eq("profile_id", profileId);
-  const ownMembershipIds = (ownMemberships ?? []).map((m) => m.id);
-  const ownAccountIds = (ownMemberships ?? []).map((m) => m.school_account_id);
-
-  if (ownAccountIds.length > 0) {
-    await admin
-      .from("school_accounts")
-      .update({ account_holder_membership_id: null, pending_account_holder_membership_id: null })
-      .in("id", ownAccountIds);
-  }
-  if (ownMembershipIds.length > 0) {
-    await admin.from("school_memberships").update({ approved_by: null }).in("approved_by", ownMembershipIds);
-    await admin.from("saved_sets").delete().in("owner_membership_id", ownMembershipIds);
-  }
-
-  const { error: deleteError } = await admin.from("school_memberships").delete().eq("profile_id", profileId);
-  if (deleteError) {
-    console.error("[switch-school] could not delete existing memberships:", deleteError);
-    return NextResponse.json({ error: "Could not clear your existing membership" }, { status: 500 });
-  }
-
-  const { data: membership, error: membershipError } = await admin
-    .from("school_memberships")
-    .insert({
-      school_account_id: account.id,
-      profile_id: profileId,
-      status: "approved",
-      is_admin: true,
-      approved_at: new Date().toISOString(),
-    })
-    .select("id")
-    .single();
-  if (membershipError || !membership) {
-    console.error("[switch-school] could not insert new membership:", membershipError);
-    return NextResponse.json({ error: "Could not create a membership for this school" }, { status: 500 });
-  }
-
-  // Unconditional, not "only if not already set" -- `account.account_holder_membership_id`
-  // was read before the cleanup above, so it can be stale (e.g. re-switching back to a
-  // school this same testing account used before, whose old holder reference was just
-  // nulled out a few lines up). Always making the switch leave a clean, unambiguous
-  // holder is also just the right behaviour for a testing tool regardless.
-  await admin.from("school_accounts").update({ account_holder_membership_id: membership.id }).eq("id", account.id);
 
   return NextResponse.json({ urn });
 }
