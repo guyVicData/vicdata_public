@@ -501,3 +501,54 @@ the Basic Auth gate, whereas `PREVIEW_ACCESS_TOKEN` also mints sessions. The coo
 therefore carries `SHA-256(token)`, so a stolen cookie can get past the gate but cannot
 call the route to sign in as anyone. Verified live: a forged cookie value returns 401 while
 the real one returns 200, and the cookie does not contain the raw token.
+
+## Q25. The production redirect bug was the Supabase Site URL fallback, not only the request origin -- and Q23 is NOT fully handled
+
+**The fix asked for is right and is done**: the magic-link origin now comes from a new
+required env var, `PREVIEW_ACCESS_SITE_URL`, instead of `request.nextUrl.origin`, and the
+route 404s if it is missing like the other three. Deriving an absolute URL from the
+incoming request was never safe behind Render and Cloudflare.
+
+**But the stated mechanism does not fit the evidence, and the difference is actionable.**
+The prompt says the failure was `request.nextUrl.origin` resolving to the container's
+internal address, and explicitly rules out the allow-list: "not the Supabase redirect
+allow-list (Q23, already handled)". Probing the real project says otherwise:
+
+| `redirectTo` requested | what Supabase returned |
+|---|---|
+| `https://vicdata.co.uk/teacher` | honoured |
+| `https://vicdata.co.uk/account` | honoured |
+| `https://vicdata.co.uk/` | honoured |
+| `http://localhost:3010/teacher` | honoured (localhost is permitted by default) |
+| `https://vicdata.co.uk/teacher/ks5` | **substituted -> `http://localhost:3000`** |
+| `https://totally-not-allowed.example.com/x` | **substituted -> `http://localhost:3000`** |
+
+Two facts follow. First, **`http://localhost:3000` is this project's Auth Site URL**, which
+Supabase silently substitutes whenever a `redirect_to` is not allow-listed -- it does not
+error. Second, the allow-list matches **one path segment but not two**, i.e. a `/*` pattern
+rather than `/**`.
+
+**Why that rules out the stated mechanism:** the observed production value was
+`redirect_to=http://localhost:3000`, with **no path**. Anything built as
+`${origin}${redirectPath}` necessarily carries `/teacher`. And a container origin of
+`http://localhost:3000` would have been *honoured* with its path, since localhost is
+permitted by default. A bare, path-less Site URL is only producible by the substitution
+path -- so in production the constructed URL was some other non-allow-listed origin (a
+`*.onrender.com` or internal address) and Supabase replaced it wholesale.
+
+**Three things to set, not one:**
+
+1. `PREVIEW_ACCESS_SITE_URL=https://vicdata.co.uk` in Render, alongside the other three.
+2. **Supabase Auth Site URL** -> `https://vicdata.co.uk`. It is still `http://localhost:3000`,
+   which makes every unmatched auth redirect on the project land on a dead address, not
+   just this route's.
+3. **Add `https://vicdata.co.uk/**`** to the Auth redirect allow-list. Without the double
+   star, `?redirect=/teacher/ks5` and every other nested path silently falls back.
+
+**Also added, slightly beyond the literal scope of "just the origin" -- flagged so it can
+be vetoed:** the route now compares the `redirect_to` in the link Supabase actually issued
+against the one it asked for, and 404s with an explanatory log line if they differ. The
+whole reason this bug survived a round of live testing is that the substitution is silent
+and the resulting link looks valid; refusing to hand out a link that goes somewhere other
+than intended converts that into an honest failure. Verified live: the allow-listed path
+still 302s, `/teacher/ks5` now 404s and logs the exact cause.
