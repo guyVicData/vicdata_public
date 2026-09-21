@@ -12,7 +12,6 @@ import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, chosenKey, dropChosenForUnpinned, type ColumnState } from "@/lib/teacher-view-data";
 import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
-import { TickList } from "@/components/teacher/TickList";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
 import { DashboardGrid } from "@/components/teacher/DashboardGrid";
@@ -62,26 +61,6 @@ function buildSubjectItems(entries: SubjectEntry[]): SubjectItem[] {
     if ((qualsPerSubject.get(it.subject)?.size ?? 0) > 1) it.label = `${it.subject} (${it.qualificationType})`;
   }
   return Array.from(byKey.values()).sort((a, b) => b.entries - a.entries);
-}
-
-function SubjectPicker({
-  items,
-  ticked,
-  onToggle,
-}: {
-  items: SubjectItem[];
-  ticked: string[];
-  onToggle: (key: string) => void;
-}) {
-  // §14: the same TickList every other pick-list in Teacher view uses.
-  return (
-    <TickList
-      items={items.map((i) => ({ key: i.key, label: i.label, trailing: i.entries }))}
-      checked={(k) => ticked.includes(k)}
-      onToggle={onToggle}
-      empty="No subject entries recorded for this school."
-    />
-  );
 }
 
 // §12: a personal, private note against a specific chart, visible only to its author.
@@ -182,6 +161,11 @@ export default function TeacherPhaseDashboard() {
   // "every family the school has entries under" -- the mockup's pre-ticked default, so a
   // teacher with only GCSE and BTEC entries never has to discover and tick GCSE by hand.
   const [qualSelection, setQualSelection] = useState<string[] | null>(null);
+  // The dashboard's quick-edit families (the "Which subjects do you teach?" section).
+  // null = derive from what is actually ticked, the returning user's real selection;
+  // frozen to an explicit list on the first edit, so unticking a family's last subject
+  // does not make its tile and tab vanish mid-edit.
+  const [quickFamilies, setQuickFamilies] = useState<string[] | null>(null);
   // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
   // handed to both the card's map and the fullscreen one, so opening fullscreen is not a
   // second round trip. null = not loaded yet; [] = loaded, nothing to draw.
@@ -414,6 +398,25 @@ export default function TeacherPhaseDashboard() {
   })();
 
 
+  // One mapping from the school's subject items to the picker's rows, shared by onboarding
+  // step 2 and the dashboard's quick edit, so the two can never disagree (the QuickEdit
+  // mockup: "kept identical so quick-edit and onboarding never disagree").
+  const familyOfItem = (ph: "ks4" | "ks5", i: SubjectItem) => qualificationFamilyOf(ph, i.qualificationType);
+  const toPickerItems = (ph: "ks4" | "ks5", list: SubjectItem[]) =>
+    list.map((i) => ({
+      key: i.key,
+      // By subject name, as the mockup lists them -- unless the same subject sits under
+      // two qualifications in one tab (a BTEC Diploma and Extended Certificate in Art and
+      // Design, say), where the rows would otherwise look like duplicates; those name
+      // their qualification too.
+      label: items.some((o) => o.key !== i.key && o.subject === i.subject && familyOfItem(ph, o) === familyOfItem(ph, i))
+        ? `${i.subject} (${shortQualificationLabel(i.qualificationType)})`
+        : i.subject,
+      entries: i.entries,
+      familyId: familyOfItem(ph, i),
+      category: familyFor(headline, i.subject),
+    }));
+
   // KS2 keeps its own walkthrough: every pupil sits the same tests, so there are no
   // qualifications or subjects to pick, and the four-step mockup flow has nothing to show.
   if (!onboarded && phase === "ks2") {
@@ -428,19 +431,7 @@ export default function TeacherPhaseDashboard() {
         <p className="text-xs uppercase tracking-wide text-neutral-500">{PHASE_LABELS[phase]} · step {step + 1} of 4</p>
         <h1 className="mt-1 text-xl font-semibold sm:text-2xl">{headings[step]}</h1>
 
-        {step === 0 && phase !== "ks2" && (
-          <>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              Tick the ones you teach. Everything else follows from this, and you can change it whenever you like.
-            </p>
-            <p className="mt-4 text-3xl font-semibold tabular-nums">{liveCount.toLocaleString()}</p>
-            <p className="text-sm text-neutral-500">
-              {liveCount === 1 ? "candidate" : "candidates"} across {tickedItems.length} subject{tickedItems.length === 1 ? "" : "s"}
-            </p>
-            <div className="mt-4"><SubjectPicker items={items} ticked={ticked} onToggle={toggle} /></div>
-          </>
-        )}
-        {step === 0 && phase === "ks2" && (
+        {step === 0 && (
           <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
             Every pupil sits the same tests, so there is nothing to pick here. Your Year 6 cohort is{" "}
             <strong className="tabular-nums">{rollAtAge10?.toLocaleString() ?? "not published"}</strong>.
@@ -555,21 +546,7 @@ export default function TeacherPhaseDashboard() {
             </p>
             <CategorySubjectPicker
               families={present.filter((f) => selectedFamilies.includes(f.id))}
-              items={items
-                .filter((i) => selectedFamilies.includes(familyOf(i)))
-                .map((i) => ({
-                  key: i.key,
-                  // By subject name, as the mockup lists them -- unless the same subject sits
-                  // under two qualifications in one tab (a BTEC Diploma and Extended
-                  // Certificate in Art and Design, say), where the rows would otherwise
-                  // look like duplicates; those name their qualification too.
-                  label: items.some((o) => o.key !== i.key && o.subject === i.subject && familyOf(o) === familyOf(i))
-                    ? `${i.subject} (${shortQualificationLabel(i.qualificationType)})`
-                    : i.subject,
-                  entries: i.entries,
-                  familyId: familyOf(i),
-                  category: familyFor(headline, i.subject),
-                }))}
+              items={toPickerItems(ph, items.filter((i) => selectedFamilies.includes(familyOf(i))))}
               ticked={ticked}
               onToggle={toggle}
               theme={theme}
@@ -1094,7 +1071,61 @@ export default function TeacherPhaseDashboard() {
         <section id="subjects" className="mt-6 scroll-mt-4 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
           <h2 className="text-sm font-semibold">Which subjects do you teach?</h2>
           <p className="mt-1 text-xs text-neutral-500">Personal to you. Changing it updates every card above.</p>
-          <div className="mt-3"><SubjectPicker items={items} ticked={ticked} onToggle={toggle} /></div>
+          {/* The QuickEdit mockup: onboarding's steps 1 and 2 on one screen -- the family
+              tiles, then the category picker straight underneath, no Next between them. */}
+          {(() => {
+            const ph = phase as "ks4" | "ks5";
+            const present = QUALIFICATION_FAMILIES[ph].filter((f) => items.some((i) => familyOfItem(ph, i) === f.id));
+            // Pre-ticked from the real current selection: every family that holds at least
+            // one ticked subject. (Onboarding pre-ticks everything with data instead; that
+            // default is for someone who has not chosen yet.)
+            const derived = present.filter((f) => tickedItems.some((i) => familyOfItem(ph, i) === f.id)).map((f) => f.id);
+            const selected = quickFamilies ?? derived;
+            const toggleQuickFamily = (id: string) => {
+              if (selected.includes(id)) {
+                setQuickFamilies(selected.filter((f) => f !== id));
+                // As in onboarding: a family's subjects go with it, rather than staying
+                // saved, hidden from the picker, and still on every card above.
+                const drop = new Set(items.filter((i) => familyOfItem(ph, i) === id).map((i) => i.key));
+                if (ticked.some((k) => drop.has(k))) persist(ticked.filter((k) => !drop.has(k)));
+              } else {
+                setQuickFamilies([...selected, id]);
+              }
+            };
+            const toggleQuickSubject = (key: string) => {
+              if (quickFamilies === null) setQuickFamilies(derived);
+              toggle(key);
+            };
+            const open = present.filter((f) => selected.includes(f.id));
+            // A tile is only offered where the school has real entries, so the mockup's
+            // "ticked but nothing to pick underneath it" note cannot arise here.
+            return present.length === 0 ? (
+              <p className="mt-3 text-sm text-[var(--muted)]">No subject entries recorded for this school.</p>
+            ) : (
+              <div className="mt-4 flex flex-col gap-4">
+                <QualificationFamilyTiles
+                  phase={ph}
+                  families={present}
+                  selected={selected}
+                  onToggle={toggleQuickFamily}
+                  subjectCounts={Object.fromEntries(present.map((f) => [f.id, items.filter((i) => familyOfItem(ph, i) === f.id).length]))}
+                />
+                {open.length === 0 ? (
+                  <p className="py-4 text-center text-[13px] text-[var(--muted3)]">
+                    Tick {present.map((f) => f.label).join(" or ")} above to choose subjects.
+                  </p>
+                ) : (
+                  <CategorySubjectPicker
+                    families={open}
+                    items={toPickerItems(ph, items.filter((i) => selected.includes(familyOfItem(ph, i))))}
+                    ticked={ticked}
+                    onToggle={toggleQuickSubject}
+                    theme={theme}
+                  />
+                )}
+              </div>
+            );
+          })()}
         </section>
       )}
     </main>
