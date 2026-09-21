@@ -16,11 +16,20 @@ export function RankingsMap({
   targetUrn,
   stage,
   heightClass,
+  subject = null,
+  subjectLabel = null,
+  subjectBucket = null,
 }: {
   profiles: AcademicSchoolProfile[] | null;
   targetUrn: string;
   stage: KsStage;
   heightClass: string;
+  // The ticked subject the map is currently plotting (the card's chips choose it); null
+  // plots the whole-school headline, as before. Passed straight to AcademicMapView's
+  // subject mode.
+  subject?: string | null;
+  subjectLabel?: string | null;
+  subjectBucket?: string | null;
 }) {
   const target = profiles?.find((p) => p.urn === targetUrn) ?? null;
   if (!profiles) {
@@ -39,6 +48,9 @@ export function RankingsMap({
         tickedProfiles={profiles.filter((p) => p.urn !== targetUrn)}
         stage={stage}
         activeSetLabel="the 10 nearest schools"
+        subject={subject}
+        subjectLabel={subjectLabel}
+        subjectBucket={subjectBucket}
         // Same GCSE exclusion the advanced dashboard's map applies, with its own note.
         ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}
       />

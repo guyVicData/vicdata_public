@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "no urns requested" }, { status: 400 });
   }
 
-  const profiles = await fetchAcademicProfiles(urns);
+  // Subject-grain rows are opt-in per request. This route serves both the Data View's own
+  // Academic map, which never reads them, and Teacher view's Rankings map, which asks with
+  // includeSubjects=1 -- so the Data View keeps making exactly the fetch it always made.
+  const includeSubjects = request.nextUrl.searchParams.get("includeSubjects") === "1";
+  const profiles = await fetchAcademicProfiles(urns, { includeSubjects });
   return NextResponse.json({ profiles: profiles.map(serializeAcademicProfile) });
 }

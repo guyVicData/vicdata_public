@@ -79,6 +79,16 @@ export type AcademicSchoolProfile = {
   // 25-school set versus 29.9ms for 'all' alone), so this costs no extra round trip.
   // ks5Families itself remains exactly the bucket='all' rows it has always been.
   ks5FamiliesByBucket: Record<string, AcademicFamilyYear[]>;
+  // Subject-grain siblings of the three family fields above (Teacher view Rankings map,
+  // subject mode): each subject's own entries and average point score per year. Only
+  // populated when fetchAcademicProfiles is called with includeSubjects: true -- empty
+  // otherwise. The grains differ by stage because the data does: at KS4 a subject has
+  // one row per school/year, entries and points already merged across qualification
+  // types; at KS5 each comparability bucket is its own real row. ks5Subjects holds the
+  // bucket='all' rows, ks5SubjectsByBucket the rest, split from one every-bucket fetch.
+  ks4Subjects: AcademicSubjectHeadlineEntry[];
+  ks5Subjects: AcademicSubjectHeadlineEntry[];
+  ks5SubjectsByBucket: Record<string, AcademicSubjectHeadlineEntry[]>;
   // Current-snapshot per-age census population (dfe_school_census) -- the map's
   // headline-level circle size (spec §3a: population, not candidates/entries, since
   // the academic ingest itself has no cohort headcount field at all, confirmed
@@ -125,6 +135,23 @@ export function familyYearsFor(profile: AcademicSchoolProfile, stage: KsStage, f
 
 export function latestFamilyYear(profile: AcademicSchoolProfile, stage: KsStage, familyId: string): AcademicFamilyYear | null {
   const years = familyYearsFor(profile, stage, familyId);
+  return years.length ? years[years.length - 1] : null;
+}
+
+// Subject-grain siblings of familyYearsFor/latestFamilyYear: one school's own years for
+// a single subject, ascending by period. `bucket` only means anything at KS5 (a real,
+// separate row per bucket there); omitted or null reads the whole-subject 'all' rows,
+// the only grain KS4 has. KS2 has no subject rows, so it naturally gets [].
+export function subjectYearsFor(profile: AcademicSchoolProfile, stage: KsStage, subject: string, bucket?: string | null): AcademicSubjectHeadlineEntry[] {
+  const rows =
+    stage === "ks4" ? profile.ks4Subjects
+      : stage === "ks5" ? (bucket && bucket !== "all" ? profile.ks5SubjectsByBucket[bucket] ?? [] : profile.ks5Subjects)
+        : [];
+  return rows.filter((r) => r.subject === subject).sort((a, b) => a.period - b.period);
+}
+
+export function latestSubjectYear(profile: AcademicSchoolProfile, stage: KsStage, subject: string, bucket?: string | null): AcademicSubjectHeadlineEntry | null {
+  const years = subjectYearsFor(profile, stage, subject, bucket);
   return years.length ? years[years.length - 1] : null;
 }
 
@@ -825,9 +852,15 @@ type SchoolRow = { urn: string; current_name: string; town: string | null; easti
 // the highest-traffic page on the site -- was paying for a second real network
 // round-trip to vicdata (fetchCensusFactsBatched) for a field nothing on that page
 // path ever consumes. `false` skips that fetch entirely and returns an empty Map.
-export async function fetchAcademicProfiles(urns: string[], options?: { includePopulation?: boolean }): Promise<AcademicSchoolProfile[]> {
+//
+// `includeSubjects` (default FALSE) follows the same reasoning in the other direction:
+// the subject-grain fields feed only the Teacher view Rankings map's subject mode. The
+// free snapshot card, the Data View's own map and every other caller never read them,
+// so they should not pay for the extra batched subject fetch -- off unless asked for.
+export async function fetchAcademicProfiles(urns: string[], options?: { includePopulation?: boolean; includeSubjects?: boolean }): Promise<AcademicSchoolProfile[]> {
   if (urns.length === 0) return [];
   const includePopulation = options?.includePopulation ?? true;
+  const includeSubjects = options?.includeSubjects ?? false;
   const supabase = createServerAnonSupabaseClient();
 
   const [{ data: rows }, ks4Rows, ks5Rows, ks4FamilyRows, ks5FamilyRows, ks2Facts, censusFacts, ks5QualFlagRows] = await Promise.all([
@@ -842,6 +875,24 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
     includePopulation ? fetchCensusFactsBatched(urns, { breakdowns: CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS }) : Promise.resolve([]),
     lookupAcademicKs5QualificationFlags({ entityIds: urns }),
   ]);
+
+  // The existing batched subject fetch, not a new one. KS4 reads the 'all' rows (its only
+  // real grain); KS5 asks for every bucket in one call (bucket: null) and splits them
+  // back out below -- the same trick the ks5 family fetch above uses. Sequential rather
+  // than in the Promise.all: these lookups contend with the ones above, and running
+  // them together is what produced a real statement timeout before.
+  const ks4SubjectsByUrn = includeSubjects ? await fetchSubjectHeadlineForSchools(urns, "ks4") : new Map<string, AcademicSubjectHeadlineEntry[]>();
+  const ks5AllBucketSubjectsByUrn = includeSubjects ? await fetchSubjectHeadlineForSchools(urns, "ks5", undefined, null) : new Map<string, AcademicSubjectHeadlineEntry[]>();
+  const ks5SubjectsFor = (urn: string) => (ks5AllBucketSubjectsByUrn.get(urn) ?? []).filter((r) => (r.bucket ?? "all") === "all");
+  const ks5SubjectsByBucketFor = (urn: string): Record<string, AcademicSubjectHeadlineEntry[]> => {
+    const out: Record<string, AcademicSubjectHeadlineEntry[]> = {};
+    for (const r of ks5AllBucketSubjectsByUrn.get(urn) ?? []) {
+      const b = r.bucket ?? "all";
+      if (b === "all") continue;
+      (out[b] ??= []).push(r);
+    }
+    return out;
+  };
 
   const ks5QualTypesByUrn = new Map<string, Ks5QualTypes>(
     ks5QualFlagRows.map((r) => [r.entity_id, { ib: r.has_ib, preU: r.has_pre_u }]),
@@ -908,6 +959,9 @@ export async function fetchAcademicProfiles(urns: string[], options?: { includeP
     ks4Families: ks4FamilyByUrn.get(row.urn) ?? [],
     ks5Families: ks5FamilyByUrn.get(row.urn) ?? [],
     ks5FamiliesByBucket: ks5FamilyByBucketByUrn.get(row.urn) ?? {},
+    ks4Subjects: ks4SubjectsByUrn.get(row.urn) ?? [],
+    ks5Subjects: ks5SubjectsFor(row.urn),
+    ks5SubjectsByBucket: ks5SubjectsByBucketFor(row.urn),
     ageGenderCounts: currentAgeGenderCounts(row.urn),
     ageGenderCountsByPeriod: ageGenderCountsByPeriodFor(row.urn),
   }));

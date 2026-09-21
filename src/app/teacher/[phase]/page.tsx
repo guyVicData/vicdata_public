@@ -166,6 +166,8 @@ export default function TeacherPhaseDashboard() {
   // frozen to an explicit list on the first edit, so unticking a family's last subject
   // does not make its tile and tab vanish mid-edit.
   const [quickFamilies, setQuickFamilies] = useState<string[] | null>(null);
+  // Which subject chip the Rankings map is plotting (null = the first chip).
+  const [mapChip, setMapChip] = useState<string | null>(null);
   // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
   // handed to both the card's map and the fullscreen one, so opening fullscreen is not a
   // second round trip. null = not loaded yet; [] = loaded, nothing to draw.
@@ -240,7 +242,8 @@ export default function TeacherPhaseDashboard() {
       if (!token) return;
       const urns = neighbours.map((n) => n.urn).join(",");
       const res = await fetch(
-        `/api/data-view/academic-schools?anchorUrn=${encodeURIComponent(schoolUrn)}&urns=${encodeURIComponent(urns)}`,
+        // includeSubjects=1: the map's subject chips need each school's per-subject rows.
+        `/api/data-view/academic-schools?anchorUrn=${encodeURIComponent(schoolUrn)}&urns=${encodeURIComponent(urns)}&includeSubjects=1`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (cancelled) return;
@@ -664,6 +667,41 @@ export default function TeacherPhaseDashboard() {
 
   const formatHeadline = (v: number) => (phase === "ks2" ? `${Math.round(v)}%` : v.toFixed(1));
 
+  // The Rankings map's subject chips, at the grain the data really has:
+  //   - KS4: one chip per ticked SUBJECT. A KS4 subject has one row per school and year,
+  //     entries and points already merged across its qualification types, so a subject
+  //     ticked under GCSE and a Cambridge National is still one series. The qualifications
+  //     are named on the chip for the teacher's own context; they select nothing.
+  //   - KS5: one chip per ticked (subject, bucket). Each bucket is a real, separate row
+  //     there, so A-level and BTEC Geography are two series and two chips.
+  // Coloured by qualification family (QUALIFICATION_FAMILIES), as onboarding colours
+  // them. KS2 has no subjects, so no chips.
+  type MapChip = { key: string; subject: string; bucket: string | null; label: string; legend: string; hex: string };
+  const mapChips: MapChip[] = [];
+  if (phase !== "ks2") {
+    const ph = phase;
+    for (const i of tickedItems) {
+      const bucket = ph === "ks5" ? comparabilityKey(ph, i.qualificationType) : null;
+      const key = `${i.subject}|${bucket ?? "all"}`;
+      const qual = qualificationShortLabel(ph, i.qualificationType);
+      const existing = mapChips.find((c) => c.key === key);
+      if (existing) {
+        if (!existing.label.includes(qual)) existing.label += `, ${qual}`;
+        continue;
+      }
+      const fam = QUALIFICATION_FAMILIES[ph].find((f) => f.id === qualificationFamilyOf(ph, i.qualificationType));
+      mapChips.push({
+        key,
+        subject: i.subject,
+        bucket,
+        label: `${i.subject} · ${qual}`,
+        legend: ph === "ks5" ? `${i.subject} (${qual})` : i.subject,
+        hex: fam?.hex ?? "var(--muted)",
+      });
+    }
+  }
+  const activeMapChip = mapChips.find((c) => c.key === mapChip) ?? mapChips[0] ?? null;
+
   // Round 6 (card content rebuild): the mockups' visual layer. Colour is per qualification
   // group, shared by the chip header, the Candidates bars, the Results scores and the pie.
   const accent = PHASE_ACCENT[phase];
@@ -1038,11 +1076,41 @@ export default function TeacherPhaseDashboard() {
                     below stays as the exportable form of the same ranking. */}
                 {schoolUrn && neighbours.length > 0 && (
                   <div className="print:hidden">
+                    {/* The mockup's chip row: the map plots one ticked subject at a time.
+                        Filled in the subject's qualification colour when chosen, outlined
+                        when not. With nothing ticked there are no chips and the map shows
+                        the whole-school headline, as it always has. */}
+                    {mapChips.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-[5px]" role="group" aria-label="Subject shown on the map">
+                        {mapChips.map((c) => {
+                          const on = c.key === activeMapChip?.key;
+                          return (
+                            <button
+                              key={c.key}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() => setMapChip(c.key)}
+                              className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
+                              style={
+                                on
+                                  ? { background: c.hex, color: "#0a0a0b", border: `1.5px solid ${c.hex}` }
+                                  : { background: "transparent", color: c.hex, border: `1.5px solid ${c.hex}80` }
+                              }
+                            >
+                              {c.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                     <RankingsMap
                       profiles={mapProfiles}
                       targetUrn={schoolUrn}
                       stage={phase}
                       heightClass={fullscreen ? "h-[70vh] min-h-[22rem]" : "h-72"}
+                      subject={activeMapChip?.subject ?? null}
+                      subjectLabel={activeMapChip?.legend ?? null}
+                      subjectBucket={activeMapChip?.bucket ?? null}
                     />
                   </div>
                 )}

@@ -70,6 +70,8 @@ import {
   populationAtAge,
   familyYearsFor,
   latestFamilyYear,
+  subjectYearsFor,
+  latestSubjectYear,
   type AcademicSchoolProfile,
   type KsStage,
   type Ks5Bucket,
@@ -282,7 +284,7 @@ function GradeBandColourKey({ box, min, max, stage, stops = GRADE_BAND_LEGEND_ST
 // Map round 2, item 4: same real three-representative-sizes scale box as MapView.tsx's
 // own SizeLegend, reusing radiusFor's own min/max (hoisted to render time below, shared
 // with the drawing effect, not recomputed separately).
-function SizeLegend({ minSize, maxSize, familyId, familyLabel, sizeCaption }: { minSize: number; maxSize: number; familyId: string | null; familyLabel: string | null; sizeCaption: string }) {
+function SizeLegend({ minSize, maxSize, familyId, familyLabel, subjectLabel, sizeCaption }: { minSize: number; maxSize: number; familyId: string | null; familyLabel: string | null; subjectLabel?: string | null; sizeCaption: string }) {
   const hasRange = maxSize > minSize;
   const steps = hasRange
     ? [minSize, Math.round((minSize + maxSize) / 2), maxSize].map((v) => ({ v, r: radiusFor(v, minSize, maxSize) }))
@@ -298,7 +300,7 @@ function SizeLegend({ minSize, maxSize, familyId, familyLabel, sizeCaption }: { 
           </div>
         ))}
       </div>
-      <p className="mt-2 text-xs text-neutral-400">{familyId ? `Entries in ${familyLabel ?? "this category"}` : sizeCaption}</p>
+      <p className="mt-2 text-xs text-neutral-400">{subjectLabel ? `Entries in ${subjectLabel}` : familyId ? `Entries in ${familyLabel ?? "this category"}` : sizeCaption}</p>
     </div>
   );
 }
@@ -325,6 +327,9 @@ export default function AcademicMapView({
   stage,
   familyId = null,
   familyLabel = null,
+  subject = null,
+  subjectLabel = null,
+  subjectBucket = null,
   activeSetLabel = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
   ks5Bucket = null,
@@ -346,6 +351,16 @@ export default function AcademicMapView({
   // rendering nothing useful.
   familyId?: string | null;
   familyLabel?: string | null;
+  // Teacher view Rankings map (subject-specific round): subject depth, one grain finer
+  // than familyId -- circle size becomes that subject's own entries at each school, colour
+  // its average point score (grade band) or its change since the baseline year (trend).
+  // Needs profiles fetched with includeSubjects. subjectBucket only means anything at KS5,
+  // where each comparability bucket is a real, separate series; KS4 has one per subject.
+  // In practice exclusive of familyId; subject mode is checked first wherever both could
+  // apply, never merged with it.
+  subject?: string | null;
+  subjectLabel?: string | null;
+  subjectBucket?: string | null;
   activeSetLabel?: string | null;
   // GCSE exclusion round, Part 2 -- see AcademicGraphsView's own header comment for
   // the same prop. An excluded school (target or ticked) gets no circle at all, KS4
@@ -464,7 +479,7 @@ export default function AcademicMapView({
   // derived value, exactly mirroring Rolls' own MapView.tsx (no manual toggle there
   // either, no separate state to keep in sync with the real trigger) -- no button, no
   // state, no auto-on/auto-off effects to keep synchronised with each other.
-  const viewByAreaAvailable = !familyId && stage !== "ks2";
+  const viewByAreaAvailable = !familyId && !subject && stage !== "ks2";
   const viewByArea = isRegionOrNationScope && viewByAreaAvailable;
   // Real bug found live (Guy, 2026-09-14): see activeRegionName's own comment above.
   // Tracks whether this session has already defaulted the tier to "la" for a Region-
@@ -506,6 +521,22 @@ export default function AcademicMapView({
     const measureKey = stage === "ks5" && ks5Bucket ? ks5BucketMeasureKey(ks5Bucket) : HEADLINE_MEASURE[stage];
     const map = new Map<string, RowData>();
     for (const p of withCoords) {
+      // Subject mode: the family branch below, one grain finer -- same fields, same
+      // baseline-year anchor for trend, read from the subject rows instead.
+      if (subject) {
+        const sy = latestSubjectYear(p, stage, subject, subjectBucket);
+        const years = subjectYearsFor(p, stage, subject, subjectBucket);
+        const anchor = years.find((y) => y.period === baseline)?.avgPointScore ?? null;
+        map.set(p.urn, {
+          avgValue: sy?.avgPointScore ?? null,
+          avgPeriod: sy?.period ?? null,
+          anchorValue: anchor,
+          entriesValue: sy?.entriesTotal ?? null,
+          entriesPeriod: sy?.period ?? null,
+          size: sy?.entriesTotal ?? null,
+        });
+        continue;
+      }
       if (familyId) {
         const fy = latestFamilyYear(p, stage, familyId);
         const years = familyYearsFor(p, stage, familyId);
@@ -550,7 +581,7 @@ export default function AcademicMapView({
       });
     }
     return map;
-  }, [withCoords, familyId, stage, ks5Bucket]);
+  }, [withCoords, familyId, subject, subjectBucket, stage, ks5Bucket]);
 
   // Map round 2, item 4 / round 3 A2: hoisted so both legends and the drawing effect
   // share the SAME real min/max, never recomputed twice. Colour bug round, items
@@ -800,7 +831,10 @@ export default function AcademicMapView({
         // genuinely differ), a real rank on the grade-band popup, and the shared
         // noun-form growth/decline wording (trend-labels.ts) on the trend popup.
         const lines: string[] = [];
-        if (familyId) {
+        if (subject) {
+          if (data.entriesValue !== null) lines.push(`<strong>${data.entriesValue.toLocaleString()}</strong> entries in ${escapeHtml(subjectLabel ?? subject)}${data.entriesPeriod !== null ? ` (${academicYearLabel(data.entriesPeriod)})` : ""}`);
+          if (data.avgValue !== null) lines.push(`<strong>${data.avgValue.toFixed(1)}</strong> avg. point score${data.avgPeriod !== null ? ` (${academicYearLabel(data.avgPeriod)})` : ""}`);
+        } else if (familyId) {
           if (data.entriesValue !== null) lines.push(`<strong>${data.entriesValue.toLocaleString()}</strong> entries in ${escapeHtml(familyLabel ?? "this category")}${data.entriesPeriod !== null ? ` (${academicYearLabel(data.entriesPeriod)})` : ""}`);
           if (data.avgValue !== null) lines.push(`<strong>${data.avgValue.toFixed(1)}</strong> avg. point score${data.avgPeriod !== null ? ` (${academicYearLabel(data.avgPeriod)})` : ""}`);
         } else if (effectiveColourMode === "grade_band") {
@@ -845,7 +879,7 @@ export default function AcademicMapView({
         mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
       }
     });
-  }, [mapReady, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, familyId, familyLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
+  }, [mapReady, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
 
   // LA/Region choropleth: real min/max over the CURRENTLY SHOWN tier's own real
   // values -- same "computed once, shared" discipline as minGrade/maxGrade above,
@@ -1148,7 +1182,7 @@ export default function AcademicMapView({
               (GCSE/KS5-cohort round) has no Rolls precedent -- kept as its own stacked
               box directly below the size scale, in the same corner. */}
           <div className="absolute bottom-3 left-3 z-[1000] flex max-w-xs flex-col gap-2">
-            <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} sizeCaption={sizeCaption} />
+            <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} subjectLabel={subject ? (subjectLabel ?? subject) : null} sizeCaption={sizeCaption} />
             {stage === "ks4" && (mapWholeGroupExcluded ? (
               <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
                 {ks4ExclusionWholeGroupSentence(setLabel)}
