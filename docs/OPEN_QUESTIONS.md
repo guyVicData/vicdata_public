@@ -730,12 +730,15 @@ that pool already contains.
 nothing. Its only effect would be on special schools' OWN dashboards (see below), which
 this decision did not cover.
 
-**Open, product call:** `nearest_schools()` is symmetric, so a special school's own pool
+**Resolved, 2026-09-21 (Guy: "stay"):** special schools' own Rankings compare against
+nearby special schools of both sectors. The paragraph below is kept as the record of why.
+
+**Was open, product call:** `nearest_schools()` is symmetric, so a special school's own pool
 is made up entirely of other special schools, of both sectors. Before round 5 Teacher
 view's phase filter dropped all of them, so a special school's Rankings card was always
 empty. Since round 5 the age-range rule admits them, so a special school with GCSE data
 is now ranked against nearby special schools. That is probably the right comparison,
-but it is a change nobody decided on. Say if it should go back to empty.
+but it is a change nobody decided on.
 
 **Tiny independents:** Unique Children's School (URN 145295) is an "Other independent
 school" with 2 pupils, ages 11–18, so it stays in pools as an ordinary independent. Most
