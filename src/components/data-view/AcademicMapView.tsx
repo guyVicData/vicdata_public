@@ -678,8 +678,13 @@ export default function AcademicMapView({
       if (cancelled || !mapElRef.current) return;
       const L = (mod as unknown as { default?: typeof mod }).default ?? mod;
       const [lat, lng] = bngToLatLng(targetProfile.easting!, targetProfile.northing!);
-      const map = L.map(mapElRef.current, { center: [lat, lng], zoom: 11, zoomControl: false });
-      L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
+      // Dense (Teacher view's card-size map): no basemap, just the dots -- and so no
+      // attribution for tiles that aren't drawn. The map itself is unchanged (same
+      // projection, same pan/zoom), only what sits underneath the dots. Read once at mount
+      // on purpose: fullscreen mounts its own separate instance (see CardBox), so `dense`
+      // never changes for the life of one map.
+      const map = L.map(mapElRef.current, { center: [lat, lng], zoom: 11, zoomControl: false, attributionControl: !dense });
+      if (!dense) L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
       layerGroupRef.current = L.layerGroup().addTo(map);
       // LA/Region choropleth: created but NOT added to the map yet -- only attached
@@ -1089,7 +1094,9 @@ export default function AcademicMapView({
           transform: translate(-50%, -50%);
         }
       `}</style>
-      <div ref={mapElRef} className="h-full w-full" />
+      {/* Dense: a quiet theme-aware fill behind the dots in place of the basemap (inline,
+          so it wins over leaflet.css's own grey container background). */}
+      <div ref={mapElRef} className="h-full w-full" style={dense ? { background: "var(--box-bg, #f5f5f5)" } : undefined} />
 
       {/* A3: colour-mode toggle moved back to the RIGHT overlay, under
           PdfExportButton -- Rolls' own real Trend/Sector toggle position

@@ -19,6 +19,7 @@ export function RankingsMap({
   subject = null,
   subjectLabel = null,
   subjectBucket = null,
+  familyId = null,
   dense = false,
 }: {
   profiles: AcademicSchoolProfile[] | null;
@@ -31,6 +32,10 @@ export function RankingsMap({
   subject?: string | null;
   subjectLabel?: string | null;
   subjectBucket?: string | null;
+  // The plotted subject's real category (subject_families), so its dots take that
+  // category's colour ramp. AcademicMapView still reads the subject's own figures -- its
+  // subject mode is checked before its family mode -- and only the hue comes from this.
+  familyId?: string | null;
   // The card-size map passes true: AcademicMapView's compact overlays (one caption line)
   // instead of the full legend stack the fullscreen map keeps.
   dense?: boolean;
@@ -55,6 +60,7 @@ export function RankingsMap({
         subject={subject}
         subjectLabel={subjectLabel}
         subjectBucket={subjectBucket}
+        familyId={familyId}
         dense={dense}
         // Same GCSE exclusion the advanced dashboard's map applies, with its own note.
         ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}

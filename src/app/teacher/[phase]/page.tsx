@@ -676,7 +676,10 @@ export default function TeacherPhaseDashboard() {
   //     there, so A-level and BTEC Geography are two series and two chips.
   // Coloured by qualification family (QUALIFICATION_FAMILIES), as onboarding colours
   // them. KS2 has no subjects, so no chips.
-  type MapChip = { key: string; subject: string; bucket: string | null; label: string; legend: string; hex: string };
+  // familyId: the subject's real category, which colours the map's dots (a Biology map
+  // takes Sciences & Maths' ramp, History Humanities' amber). The chip itself keeps its
+  // qualification colour.
+  type MapChip = { key: string; subject: string; bucket: string | null; label: string; legend: string; hex: string; familyId: string | null };
   const mapChips: MapChip[] = [];
   if (phase !== "ks2") {
     const ph = phase;
@@ -697,6 +700,7 @@ export default function TeacherPhaseDashboard() {
         label: `${i.subject} · ${qual}`,
         legend: ph === "ks5" ? `${i.subject} (${qual})` : i.subject,
         hex: fam?.hex ?? "var(--muted)",
+        familyId: familyFor(headline, i.subject)?.id ?? null,
       });
     }
   }
@@ -1072,8 +1076,9 @@ export default function TeacherPhaseDashboard() {
                   </p>
                 )}
                 {/* Round 5: the real map, at card size here and near-viewport size in the
-                    modal. The map is a live Leaflet map and does not print, so the list
-                    below stays as the exportable form of the same ranking. */}
+                    modal. The map is a live Leaflet map and does not print; the ranking's
+                    list form is the pinnable "Nearest 10, as a list" view ("Add a view"),
+                    which prints, rather than a second always-on copy here. */}
                 {schoolUrn && neighbours.length > 0 && (
                   <div className="print:hidden">
                     {/* The mockup's chip row: the map plots one ticked subject at a time.
@@ -1111,25 +1116,12 @@ export default function TeacherPhaseDashboard() {
                       subject={activeMapChip?.subject ?? null}
                       subjectLabel={activeMapChip?.legend ?? null}
                       subjectBucket={activeMapChip?.bucket ?? null}
+                      familyId={activeMapChip?.familyId ?? null}
                       // Compact overlays at card size; the fullscreen map keeps the full
                       // toggle, legend and exclusion notes.
                       dense={!fullscreen}
                     />
                   </div>
-                )}
-                {position && (
-                  <ul className="mt-3 space-y-1 text-sm">
-                    {[...neighbours]
-                      .filter((n) => n.value !== null)
-                      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
-                      .slice(0, fullscreen ? neighbours.length : 5)
-                      .map((n) => (
-                        <li key={n.urn} className={`flex items-baseline justify-between gap-2 ${n.isTarget ? "font-semibold" : ""}`}>
-                          <span className="truncate">{n.name}</span>
-                          <span className="tabular-nums">{n.value?.toFixed(1)}</span>
-                        </li>
-                      ))}
-                  </ul>
                 )}
               </>
             )}
