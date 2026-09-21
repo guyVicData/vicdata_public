@@ -146,8 +146,8 @@ export default function TeacherPhaseDashboard() {
   const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
   const [cohortSeries, setCohortSeries] = useState<{ period: number; value: number }[]>([]);
   // The Results card's anchor -- see englandAverages in the dashboard route for why the
-  // basis is the qualification bucket at Post-16 but the subject family at GCSE.
-  const [englandAvg, setEnglandAvg] = useState<{ basis: "bucket" | "family"; values: { key: string; period: number; value: number }[] } | null>(null);
+  // basis is the qualification bucket at Post-16 and the subject itself at GCSE.
+  const [englandAvg, setEnglandAvg] = useState<{ basis: "bucket" | "subject"; values: { key: string; period: number; value: number }[] } | null>(null);
   const [ticked, setTicked] = useState<string[]>([]);
   const [columns, setColumns] = useState<ColumnState>({});
   const [theme, setTheme] = useTeacherTheme();
@@ -314,14 +314,14 @@ export default function TeacherPhaseDashboard() {
   // without this gate an OCR or BTEC row for the same subject showed the GCSE score as
   // its own.
   const resultsFor = useCallback(
-    (item: SubjectItem): { value: number; period: number; familyId: string } | null => {
+    (item: SubjectItem): { value: number; period: number } | null => {
       if (phase === "ks4" && item.qualificationType !== POINTS_BEARING_QUALIFICATION.ks4) return null;
       const bucket: Ks5Bucket | null = phase === "ks5" ? bucketFor(item.qualificationType) : null;
       const rows = headline
         .filter((h) => h.subject === item.subject && (bucket === null || (h.bucket ?? "all") === bucket) && h.avgPointScore !== null)
         .sort((a, b) => a.period - b.period);
       const last = rows[rows.length - 1];
-      return last ? { value: last.avgPointScore as number, period: last.period, familyId: last.familyId } : null;
+      return last ? { value: last.avgPointScore as number, period: last.period } : null;
     },
     [headline, phase],
   );
@@ -331,9 +331,10 @@ export default function TeacherPhaseDashboard() {
   // neighbours down the corridor, not with the country). Same year as the score or no
   // anchor at all: a delta against a different year is a difference nobody measured.
   const englandFor = useCallback(
-    (item: SubjectItem, score: { period: number; familyId: string }): number | null => {
+    (item: SubjectItem, score: { period: number }): number | null => {
       if (!englandAvg || !phase || phase === "ks2") return null;
-      const key = englandAvg.basis === "bucket" ? comparabilityKey(phase, item.qualificationType) : score.familyId;
+      // GCSE rows are keyed by subject, spelt as the headline rows spell it.
+      const key = englandAvg.basis === "bucket" ? comparabilityKey(phase, item.qualificationType) : item.subject;
       return englandAvg.values.find((v) => v.key === key && v.period === score.period)?.value ?? null;
     },
     [englandAvg, phase],
@@ -497,7 +498,7 @@ export default function TeacherPhaseDashboard() {
       {
         heading: "How well do they do?",
         intro: ph === "ks4"
-          ? "Average point score per entry for what you ticked, against the England GCSE average for each subject's family. Each qualification is shown on its own — never blended into one."
+          ? "Average point score per entry for what you ticked, against the England GCSE average for each subject. Each qualification is shown on its own — never blended into one."
           : "Average point score per entry for what you ticked, against the England average for the same qualification. Each qualification is shown on its own — never blended into one.",
         next: "Next — the views you'll get",
       },
@@ -610,7 +611,7 @@ export default function TeacherPhaseDashboard() {
                             ? "No published points score for this qualification."
                             : delta === null
                               ? "No England average published for the same year."
-                              : `${Math.abs(delta).toFixed(1)} points ${delta >= 0 ? "above" : "below"} the England ${ph === "ks4" ? "GCSE average for its subject family" : "average for this qualification"}.`}
+                              : `${Math.abs(delta).toFixed(1)} points ${delta >= 0 ? "above" : "below"} the England ${ph === "ks4" ? "GCSE average for this subject" : "average for this qualification"}.`}
                         </p>
                       </div>
                     </div>
@@ -887,8 +888,8 @@ export default function TeacherPhaseDashboard() {
             caption={
               phase === "ks2"
                 ? undefined
-                : englandAvg?.basis === "family"
-                  ? "Average point score per GCSE entry, vs. the England GCSE average for that subject's family."
+                : englandAvg?.basis === "subject"
+                  ? "Average point score per GCSE entry, vs. the England GCSE average for that subject."
                   : "Average point score per entry, vs. the England average for that same qualification."
             }
             source={phase === "ks2" ? undefined : sourceLine()}

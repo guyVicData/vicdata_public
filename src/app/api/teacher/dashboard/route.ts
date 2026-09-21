@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { lookupAcademicGeography } from "@/lib/vicdata-reference";
+import { lookupAcademicGeography, lookupAcademicSubjectGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -113,22 +113,21 @@ async function rankSets(
   return { ranked: out, targetProfile: byUrn.get(targetUrn) ?? null };
 }
 
-// The Results card's anchor: the England average for the same qualification, from
-// academic_geography_aggregate's national rows -- the same table and grouping key the
-// advanced dashboard's national trend line reads.
-//
-// What "same qualification" can honestly mean differs by phase, because it differs in the
-// data:
-//   - Post-16: per comparability bucket ("bucket:alevel::aps_per_entry" and so on), on
-//     the same points-per-entry scale as a subject's own bucket-scoped score. Exactly the
-//     mockup's comparison.
-//   - GCSE: there is no national figure per subject or per qualification. The finest
-//     national points figure is per SUBJECT FAMILY (avg_point_score by family_id). Only
-//     "GCSE (9-1) Full Course" carries points at KS4, so that is a GCSE average for the
-//     family. The card's caption says so rather than claiming "same qualification".
+// The Results card's anchor: the England average for the same subject or qualification,
+// from vicdata's national aggregate rows.
+//   - GCSE: per SUBJECT, from academic_subject_geography_aggregate via
+//     academic_subject_geography_lookup. Until 2026-09-21 no national figure existed per
+//     subject, and this used the England average for the subject's whole family instead;
+//     the backend round of that date added the subject-grain aggregate (the national
+//     roll-up of academic_subject_rollup), so a subject is now compared with itself. Only
+//     "GCSE (9-1) Full Course" carries points at KS4, so this is the England GCSE average
+//     for that subject. Keyed by subject name, spelt as the headline rows spell it.
+//   - Post-16: per comparability bucket ("bucket:alevel::aps_per_entry" and so on), from
+//     academic_geography_aggregate -- the same points-per-entry scale as a subject's own
+//     bucket-scoped score. Bucket grain for now; a later round may take it to subject.
 type EnglandAverage = { key: string; period: number; value: number };
 
-async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "bucket" | "family"; values: EnglandAverage[] }> {
+async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "bucket" | "subject"; values: EnglandAverage[] }> {
   if (phase === "ks5") {
     const rows = await lookupAcademicGeography({ ksStage: "ks5", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], familyId: "whole_school" });
     const values: EnglandAverage[] = [];
@@ -138,10 +137,10 @@ async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "bucket" 
     }
     return { basis: "bucket", values };
   }
-  const rows = await lookupAcademicGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY] });
+  const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY] });
   return {
-    basis: "family",
-    values: rows.filter((r) => r.avg_value !== null).map((r) => ({ key: r.family_id, period: r.period, value: r.avg_value as number })),
+    basis: "subject",
+    values: rows.filter((r) => r.avg_value !== null).map((r) => ({ key: r.subject, period: r.period, value: Number(r.avg_value) })),
   };
 }
 

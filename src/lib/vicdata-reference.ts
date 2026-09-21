@@ -420,6 +420,59 @@ export async function lookupAcademicKs5QualificationFlags(params: {
   )) as Ks5QualificationFlagsRow[];
 }
 
+// The subject-grain sibling of academic_geography_lookup (vicdata:
+// 20260921121000_academic_subject_geography_lookup.sql): LA/region/national average point
+// score per SUBJECT, from academic_subject_geography_aggregate. KS4 only so far. `subject`
+// is spelt exactly as in academic_subject_rollup / academic_subject_headline ("Maths
+// (General)"), so it matches the headline rows' own subject with no translation.
+export type AcademicSubjectGeographyRow = {
+  grouping_type: "la" | "region" | "national";
+  grouping_key: string;
+  ks_stage: KsStage;
+  subject: string;
+  family_id: string;
+  measure: string;
+  period: number;
+  avg_value: number | null;
+  entries_total: number | null;
+  school_count: number;
+};
+
+export async function lookupAcademicSubjectGeography(params: {
+  ksStage: KsStage;
+  measure?: string;
+  groupingType?: "la" | "region" | "national";
+  groupingKeys?: string[];
+  subject?: string;
+  familyId?: string;
+  periodMin?: number;
+  periodMax?: number;
+  signal?: AbortSignal;
+}): Promise<AcademicSubjectGeographyRow[]> {
+  const rows: AcademicSubjectGeographyRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage(
+      "academic_subject_geography_lookup",
+      {
+        p_ks_stage: params.ksStage,
+        p_measure: params.measure ?? null,
+        p_grouping_type: params.groupingType ?? null,
+        p_grouping_keys: params.groupingKeys ?? null,
+        p_subject: params.subject ?? null,
+        p_family_id: params.familyId ?? null,
+        p_period_min: params.periodMin ?? null,
+        p_period_max: params.periodMax ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+      },
+      params.signal,
+    )) as AcademicSubjectGeographyRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
 export async function lookupAcademicGeography(params: {
   ksStage: KsStage;
   measure?: string;
