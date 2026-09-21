@@ -6,7 +6,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -14,6 +14,7 @@ import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePrefere
 import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
+import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { SharePie, type PieSlice } from "@/components/teacher/SharePie";
@@ -168,6 +169,10 @@ export default function TeacherPhaseDashboard() {
   const [quickFamilies, setQuickFamilies] = useState<string[] | null>(null);
   // Which subject chip the Rankings map is plotting (null = the first chip).
   const [mapChip, setMapChip] = useState<string | null>(null);
+  // The subject picker is a popup opened by the chip header's "±", not a permanent
+  // section of the dashboard.
+  const [subjectPickerOpen, setSubjectPickerOpen] = useState(false);
+  const subjectPickerCloseRef = useRef<HTMLButtonElement | null>(null);
   // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
   // handed to both the card's map and the fullscreen one, so opening fullscreen is not a
   // second round trip. null = not loaded yet; [] = loaded, nothing to draw.
@@ -828,8 +833,7 @@ export default function TeacherPhaseDashboard() {
       {schoolName && <p className="mt-1 text-sm text-[var(--muted)]">{schoolName}</p>}
 
       {/* The mockups' subject header: one chip per ticked subject/qualification in its
-          group colour, then "±" to change them. Changing subjects lives in the picker at
-          the foot of this page, so that is where "±" goes. */}
+          group colour, then "±" to change them, which opens the subject picker as a popup. */}
       {phase !== "ks2" && (
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           {tickedItems.map((i) => {
@@ -844,14 +848,16 @@ export default function TeacherPhaseDashboard() {
               </span>
             );
           })}
-          <a
-            href="#subjects"
+          <button
+            type="button"
+            onClick={() => setSubjectPickerOpen(true)}
             aria-label="Change subjects"
+            aria-haspopup="dialog"
             title="Change subjects"
             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[var(--accent)] text-[13px] font-extrabold text-[var(--accent)] print:hidden"
           >
             &plusmn;
-          </a>
+          </button>
         </div>
       )}
 
@@ -1131,10 +1137,33 @@ export default function TeacherPhaseDashboard() {
         </DashboardColumn>
       </DashboardGrid>
 
-      {phase !== "ks2" && (
-        <section id="subjects" className="mt-6 scroll-mt-4 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-          <h2 className="text-sm font-semibold">Which subjects do you teach?</h2>
-          <p className="mt-1 text-xs text-neutral-500">Personal to you. Changing it updates every card above.</p>
+      {/* The subject picker, as a popup from "±" rather than a permanent section of the
+          page. Same modal shell as a card's fullscreen (TeacherModal: backdrop click,
+          Escape, scroll lock). Nothing to save: ticking updates `ticked` immediately, which
+          is what every card reads, so the cards behind the backdrop change as you tick. */}
+      {phase !== "ks2" && subjectPickerOpen && (
+        <TeacherModal
+          label="Which subjects do you teach?"
+          backdropLabel="Close subject picker"
+          onClose={() => setSubjectPickerOpen(false)}
+          initialFocusRef={subjectPickerCloseRef}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h2 className="text-base font-bold">Which subjects do you teach?</h2>
+              <p className="mt-1 text-xs text-[var(--muted2)]">Personal to you. Changing it updates every card on the dashboard.</p>
+            </div>
+            <button
+              ref={subjectPickerCloseRef}
+              type="button"
+              onClick={() => setSubjectPickerOpen(false)}
+              aria-label="Close subject picker"
+              title="Close"
+              className={`shrink-0 ${MODAL_CLOSE_BUTTON_CLASS}`}
+            >
+              <ExpandIcon expanded />
+            </button>
+          </div>
           {/* The QuickEdit mockup: onboarding's steps 1 and 2 on one screen -- the family
               tiles, then the category picker straight underneath, no Next between them. */}
           {(() => {
@@ -1190,7 +1219,7 @@ export default function TeacherPhaseDashboard() {
               </div>
             );
           })()}
-        </section>
+        </TeacherModal>
       )}
     </main>
   );

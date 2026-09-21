@@ -18,24 +18,13 @@
 //   - z-[1500], the same layer FullscreenChartModal uses, because Leaflet's own panes and
 //     controls go up to 1000 and the map card underneath must not show through.
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
 // ColumnBuilder -- is fullscreen, without threading a callback through every level. The
 // dashboard uses it to hide its column dividers, as the mockup does. Defaults to a no-op,
 // so a CardBox outside the dashboard is unaffected.
 export const FullscreenReport = createContext<(open: boolean) => void>(() => {});
-
-function ExpandIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      {expanded ? (
-        <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" strokeLinecap="round" strokeLinejoin="round" />
-      ) : (
-        <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" strokeLinecap="round" strokeLinejoin="round" />
-      )}
-    </svg>
-  );
-}
 
 export function CardBox({
   title,
@@ -73,22 +62,8 @@ export function CardBox({
     return () => report(false);
   }, [fullscreen, report]);
 
-  useEffect(() => {
-    if (!fullscreen) return;
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFullscreen(false);
-    };
-    // The page behind a modal should not scroll under the wheel; the modal panel scrolls
-    // itself instead.
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [fullscreen]);
+  // Escape, backdrop click, scroll lock and focus live in TeacherModal, shared with the
+  // dashboard's subject picker.
 
   const header = (isModal: boolean) => (
     <div className="flex items-start justify-between gap-2">
@@ -109,7 +84,7 @@ export function CardBox({
           // colour. --accent is set per phase on #teacher-root; KS2 has none and falls back.
           className={
             isModal
-              ? "flex h-6 w-6 items-center justify-center rounded-md bg-[rgba(var(--accent-rgb,96,165,250),0.12)] text-[var(--accent,var(--muted2))]"
+              ? MODAL_CLOSE_BUTTON_CLASS
               : "flex h-6 w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
           }
         >
@@ -134,23 +109,11 @@ export function CardBox({
       {footer}
 
       {fullscreen && (
-        <div className="fixed inset-0 z-[1500] print:hidden" role="dialog" aria-modal="true" aria-label={`${title}, full screen`}>
-          {/* The backdrop is a real button so clicking it is an ordinary, keyboard-
-              reachable dismissal rather than a click handler on a div. */}
-          <button
-            type="button"
-            aria-label="Close full screen"
-            tabIndex={-1}
-            onClick={() => setFullscreen(false)}
-            className="absolute inset-0 h-full w-full cursor-default bg-neutral-900/40 backdrop-blur-sm dark:bg-black/60"
-          />
-          {/* ~5% margin on desktop, 3% on a phone, per the round 5 brief. */}
-          <div className="absolute inset-[3%] flex flex-col gap-2.5 overflow-auto rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-[var(--fg)] shadow-2xl sm:inset-[5%] sm:p-6">
-            {header(true)}
-            <div className="mt-1 min-h-0 flex-1">{children({ fullscreen: true })}</div>
-            {footer}
-          </div>
-        </div>
+        <TeacherModal label={`${title}, full screen`} backdropLabel="Close full screen" onClose={() => setFullscreen(false)} initialFocusRef={closeRef}>
+          {header(true)}
+          <div className="mt-1 min-h-0 flex-1">{children({ fullscreen: true })}</div>
+          {footer}
+        </TeacherModal>
       )}
     </div>
   );
