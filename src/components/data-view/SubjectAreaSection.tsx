@@ -148,7 +148,7 @@ export function buildCategoryRows(
 // Confirmed live against ingested data: only these two feed avg_point_score into the
 // rollup, so only their row can honestly claim the headline-derived `results` figure.
 // Every other qualification type at the same stage has real entries and no score.
-const POINTS_BEARING_QUALIFICATION: Record<KsStage, string | null> = {
+export const POINTS_BEARING_QUALIFICATION: Record<KsStage, string | null> = {
   ks2: null,
   ks4: "GCSE (9-1) Full Course",
   ks5: "GCE A level",
@@ -157,7 +157,7 @@ const POINTS_BEARING_QUALIFICATION: Record<KsStage, string | null> = {
 // Trims the DfE band/grade-structure suffix off a qualification label so a
 // disambiguating row label stays readable: "BTEC National Foundation Diploma L3 -
 // Band H - P-D*" becomes "BTEC National Foundation Diploma L3". Purely cosmetic.
-function shortQualificationLabel(qualificationType: string): string {
+export function shortQualificationLabel(qualificationType: string): string {
   return qualificationType.split(" - Band ")[0].replace(/\s*\(any AO and grade structure\)/i, "").trim();
 }
 

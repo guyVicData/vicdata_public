@@ -18,7 +18,22 @@ function fmt(v: number | null, unit: string): string {
 
 // `scaleMax` pins the bar scale -- a share of the year group reads against 100%, not
 // against whichever subject happens to be largest.
-export function ViewChart({ computed, unit, scaleMax }: { computed: ComputedView; unit: string; scaleMax?: number }) {
+//
+// `layout="labelled"` is the mockups' own bar row: name and qualification on one line,
+// then an 8px bar on a --panel-border track, filled in the row's colour, with the figure
+// at the end. Same data shape and scaling as the compact rows, so every bar on the
+// dashboard still comes from this one component.
+export function ViewChart({
+  computed,
+  unit,
+  scaleMax,
+  layout = "compact",
+}: {
+  computed: ComputedView;
+  unit: string;
+  scaleMax?: number;
+  layout?: "compact" | "labelled";
+}) {
   if (computed.series && computed.periods) {
     const periods = computed.periods;
     const all = computed.series.flatMap((s) => s.values).filter((v): v is number => v !== null);
@@ -66,6 +81,31 @@ export function ViewChart({ computed, unit, scaleMax }: { computed: ComputedView
   const vals = rows.map((r) => r.value).filter((v): v is number => v !== null);
   if (!vals.length) return <p className="mt-2 text-xs text-neutral-500">No published figures for this comparison.</p>;
   const max = scaleMax ?? (Math.max(...vals) || 1);
+  if (layout === "labelled") {
+    return (
+      <div className="flex flex-col gap-2">
+        {rows.map((r) => (
+          <div key={`${r.label}|${r.sublabel ?? ""}`}>
+            <div className="flex items-baseline justify-between gap-2 text-[12.5px]">
+              <span className="min-w-0 truncate font-semibold">{r.label}</span>
+              {r.sublabel && <span className="max-w-[50%] shrink-0 truncate text-[var(--muted2)]">{r.sublabel}</span>}
+            </div>
+            <div className="mt-1 flex items-center gap-2">
+              <div className="h-2 flex-grow overflow-hidden rounded bg-[var(--panel-border)]">
+                <div
+                  className="h-full"
+                  style={{ width: r.value === null ? "0%" : `${Math.max(1, (r.value / max) * 100)}%`, background: r.color ?? "var(--muted)" }}
+                />
+              </div>
+              <span className={`min-w-6 text-right text-[12.5px] font-bold tabular-nums ${r.value === null ? "font-normal text-[var(--muted3)]" : ""}`}>
+                {fmt(r.value, unit)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <ul className="mt-2 space-y-1">
       {rows.slice(0, 12).map((r) => (

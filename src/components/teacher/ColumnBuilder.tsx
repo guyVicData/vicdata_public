@@ -122,7 +122,7 @@ export function ColumnBuilder({
           type="button"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
-          className="text-xs font-medium text-blue-700 hover:underline dark:text-blue-400"
+          className="text-xs font-bold text-[var(--accent,#2563eb)] hover:underline"
         >
           {open ? "Done" : pinnedViews.length ? `Add a view (${pinnedViews.length} pinned)` : "Expand"}
         </button>

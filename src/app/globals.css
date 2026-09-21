@@ -25,6 +25,28 @@
   }
 }
 
+/* Teacher view dashboard palette, literal from the approved mockups
+   (docs/vicdata_phase3_teacher_view_design_reference_v1.md). Scoped to #teacher-root
+   and keyed on its own data-theme, the same way the dark variant above is, so it never
+   reaches the rest of the site and the existing toggle drives it with no new mechanism. */
+#teacher-root {
+  --bg: #f7f7f8; --fg: #17171b; --muted: #6b6b72; --muted2: #55555c; --muted3: #9a9aa2;
+  --border: #e6e6ea; --panel-bg: #ffffff; --panel-border: #e2e2e7; --panel-border2: #d8d8dd;
+  --box-bg: #f7f7f9; --source: #8d8d95;
+}
+@media (prefers-color-scheme: dark) {
+  #teacher-root:not([data-theme="light"]) {
+    --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
+    --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
+    --box-bg: #0e0e10; --source: #5c5c62;
+  }
+}
+#teacher-root[data-theme="dark"] {
+  --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
+  --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
+  --box-bg: #0e0e10; --source: #5c5c62;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

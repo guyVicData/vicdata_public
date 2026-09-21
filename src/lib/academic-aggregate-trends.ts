@@ -39,7 +39,7 @@ function toSeries(rows: { grouping_key: string; period: number; avg_value: numbe
 // England-only 'national' grouping -- academic_geography_aggregate's own real
 // grouping_key for grouping_type='national' (confirmed directly against
 // ingest/academic_aggregates.py: zero Wales schools ever contribute to it).
-const NATIONAL_GROUPING_KEY = "England";
+export const NATIONAL_GROUPING_KEY = "England";
 
 export async function fetchAcademicAggregateTrends(targetUrn: string, ksStage: KsStage, periodMin: number): Promise<AcademicAggregateTrends> {
   const measure = HEADLINE_MEASURE[ksStage];

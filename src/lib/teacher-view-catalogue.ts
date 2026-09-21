@@ -264,7 +264,9 @@ export function availableViews(
 // Computing a pinned view against real data.
 // ---------------------------------------------------------------------------
 
-export type ComparisonRow = { label: string; value: number | null; isSubject: boolean };
+// `sublabel` and `color` are only used by the labelled layout (the Candidates default:
+// "Geography" over "GCSE", bar in that qualification group's chip colour).
+export type ComparisonRow = { label: string; value: number | null; isSubject: boolean; sublabel?: string; color?: string };
 export type TrendSeries = { label: string; values: (number | null)[]; isSubject: boolean };
 // A view is EITHER a current-position comparison (rows) or a trend (periods+series) --
 // never both, so the renderer never has to guess which half is authoritative.

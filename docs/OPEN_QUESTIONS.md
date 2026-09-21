@@ -744,3 +744,65 @@ but it is a change nobody decided on.
 school" with 2 pupils, ages 11–18, so it stays in pools as an ordinary independent. Most
 such schools have no published results and show "no figure", unranked. Excluding very
 small schools would be a new size rule, not this filter.
+
+---
+
+## 2026-09-21 — Teacher view card content rebuild: judgment calls and data limits
+
+Built against the mockup boards themselves (`GCSE/Post16-Dashboard-Desktop.dc.html`,
+read from the Design artifact) as well as the design reference. Where the two differed,
+or the data could not support the literal mockup, this is what was done:
+
+**England average at GCSE is the family average, not the qualification average.** The
+Results anchor used to be the school's own average across its subjects. It is now England,
+from `academic_geography_aggregate`'s national rows. At Post-16 that matches the mockup
+exactly: `bucket:<bucket>::aps_per_entry` is per qualification bucket, on the same scale
+as the subject's own score (Acland Burghley A-level Geography 35.45 vs England A-level
+33.56). At GCSE no national figure exists per subject or per qualification. None is
+ingested (checked `academic_geography_aggregate` and the raw KS4 subject facts). The
+finest national points figure is per subject family. Only "GCSE (9-1) Full Course"
+carries points at KS4, so that is an England GCSE average for the family. The GCSE caption
+says "vs. the England GCSE average for that subject's family" rather than the mockup's
+"same qualification", which would be untrue. **Needs:** a national per-subject GCSE
+points figure in the ingest, if the literal comparison is wanted.
+
+**Real bug fixed on the way:** at GCSE, headline points are keyed by subject alone, so a
+vocational row (e.g. Sports Studies as an OCR Cambridge National) showed that subject's
+GCSE score as its own. Only the points-bearing qualification now shows a score
+(`POINTS_BEARING_QUALIFICATION`, reused from the Data View); other rows say "no score".
+The Results "this moved" line (`movedResults`) still averages across qualifications at
+KS4. Pre-existing, not touched.
+
+**Where the mockup and the briefs differed:**
+- The mockups put the 3px accent bar on the outer column card, not on each inner box (the
+  rebuild brief said CardBox). Built as the mockup draws it.
+- The mockups colour a positive delta grey (`--muted2`); the design reference and rebuild
+  brief both say green. Followed the briefs: green above, red below.
+- Chip colours follow the qualification group, not each subject: in the mockups both GCSE
+  subjects are green and the BTEC one blue, and Post-16 uses pink then teal. The same
+  grouping drives the Candidates bars, the Results scores and the pie slices.
+
+**Small calls of mine:**
+- KS4 vocational names shortened to "Cambridge National" and "BTEC" on chips and rows; the
+  DfE names crowd out the subject name.
+- The Candidates caption uses the Post-16 mockup's general line ("by qualification type —
+  never blended into one number") for both phases. The GCSE mockup's caption is specific
+  to its made-up example data.
+- The Context caption keeps the existing sentence, as the rebuild brief asks, with the
+  mockup's "share of every entry" phrase appended.
+- "±" scrolls to the subject picker at the foot of the dashboard, the real place subjects
+  are changed. There is no separate quick-edit screen.
+
+**Not built, and why:**
+- The Rankings card's subject-filter chips. The Rankings sets rank on each school's
+  whole-school headline (Attainment 8 / A-level APS), not per subject, so a per-subject
+  chip would switch nothing. It would need per-subject comparator data, which is new
+  comparator logic.
+- Layout: the real dashboard is a 2×2 grid, not the laptop board's four columns in a row.
+  None of the five listed items covers layout.
+- The icon-only theme button: explicitly deferred by the brief.
+
+**Verification so far:** the real components were screenshotted locally with Acland
+Burghley's figures, GCSE and Post-16, light and dark, in a temporary harness (not
+committed), via headless Chrome; the browser extension could not take screenshots this
+session. The live-site check against a signed-in dashboard is still to do.

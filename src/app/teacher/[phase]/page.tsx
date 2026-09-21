@@ -15,6 +15,11 @@ import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
 import { TickList } from "@/components/teacher/TickList";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
+import { DashboardColumn } from "@/components/teacher/DashboardColumn";
+import { SharePie, type PieSlice } from "@/components/teacher/SharePie";
+import { POINTS_BEARING_QUALIFICATION } from "@/components/data-view/SubjectAreaSection";
+import { PHASE_ACCENT, DELTA_POSITIVE, DELTA_NEGATIVE, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel } from "@/lib/teacher-view-theme";
+import { comparabilityKey } from "@/lib/teacher-view-catalogue";
 import { RankingsMap } from "@/components/teacher/RankingsMap";
 import { RankedSet, type RankedSetRow } from "@/components/teacher/RankedSet";
 import { ViewChart } from "@/components/teacher/ViewChart";
@@ -152,6 +157,9 @@ export default function TeacherPhaseDashboard() {
   const [comparatorSets, setComparatorSets] = useState<Partial<Record<RankingsSetId, RankedSetRow[]>>>({});
   const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
   const [cohortSeries, setCohortSeries] = useState<{ period: number; value: number }[]>([]);
+  // The Results card's anchor -- see englandAverages in the dashboard route for why the
+  // basis is the qualification bucket at Post-16 but the subject family at GCSE.
+  const [englandAvg, setEnglandAvg] = useState<{ basis: "bucket" | "family"; values: { key: string; period: number; value: number }[] } | null>(null);
   const [ticked, setTicked] = useState<string[]>([]);
   const [columns, setColumns] = useState<ColumnState>({});
   const [theme, setTheme] = useTeacherTheme();
@@ -202,6 +210,7 @@ export default function TeacherPhaseDashboard() {
         setComparatorSets(body.comparatorSets ?? {});
         setSetInfo(body.setInfo ?? null);
         setCohortSeries(body.cohortSeries ?? []);
+        setEnglandAvg(body.englandAverages ?? null);
       } else {
         setError("Could not load this school's data. Try again.");
       }
@@ -302,24 +311,36 @@ export default function TeacherPhaseDashboard() {
     [columns, schoolUrn, phase, supabase],
   );
 
+  // A subject's latest real score, with its year so the England anchor can be read for the
+  // SAME year. At GCSE only "GCSE (9-1) Full Course" carries points (the Data View's
+  // POINTS_BEARING_QUALIFICATION): headline rows are keyed by subject alone there, so
+  // without this gate an OCR or BTEC row for the same subject showed the GCSE score as
+  // its own.
   const resultsFor = useCallback(
-    (item: SubjectItem): number | null => {
+    (item: SubjectItem): { value: number; period: number; familyId: string } | null => {
+      if (phase === "ks4" && item.qualificationType !== POINTS_BEARING_QUALIFICATION.ks4) return null;
       const bucket: Ks5Bucket | null = phase === "ks5" ? bucketFor(item.qualificationType) : null;
       const rows = headline
-        .filter((h) => h.subject === item.subject && (bucket === null || (h.bucket ?? "all") === bucket))
+        .filter((h) => h.subject === item.subject && (bucket === null || (h.bucket ?? "all") === bucket) && h.avgPointScore !== null)
         .sort((a, b) => a.period - b.period);
-      return rows.length ? rows[rows.length - 1].avgPointScore : null;
+      const last = rows[rows.length - 1];
+      return last ? { value: last.avgPointScore as number, period: last.period, familyId: last.familyId } : null;
     },
     [headline, phase],
   );
 
-  // §6/§14: never a bare number. The anchor is the school's own average across every
-  // subject that has a real figure, so a result always arrives with something to read it
-  // against.
-  const schoolAnchor = useMemo(() => {
-    const vals = items.map(resultsFor).filter((v): v is number => v !== null);
-    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  }, [items, resultsFor]);
+  // §6/§14: never a bare number. The anchor is the England average (it used to be this
+  // school's own average across its subjects, which compares a subject with its
+  // neighbours down the corridor, not with the country). Same year as the score or no
+  // anchor at all: a delta against a different year is a difference nobody measured.
+  const englandFor = useCallback(
+    (item: SubjectItem, score: { period: number; familyId: string }): number | null => {
+      if (!englandAvg || !phase || phase === "ks2") return null;
+      const key = englandAvg.basis === "bucket" ? comparabilityKey(phase, item.qualificationType) : score.familyId;
+      return englandAvg.values.find((v) => v.key === key && v.period === score.period)?.value ?? null;
+    },
+    [englandAvg, phase],
+  );
 
   // SubjectItem carries an entries count the catalogue has no use for; SubjectRef is the
   // narrower shape it actually needs.
@@ -439,6 +460,30 @@ export default function TeacherPhaseDashboard() {
 
   const formatHeadline = (v: number) => (phase === "ks2" ? `${Math.round(v)}%` : v.toFixed(1));
 
+  // Round 6 (card content rebuild): the mockups' visual layer. Colour is per qualification
+  // group, shared by the chip header, the Candidates bars, the Results scores and the pie.
+  const accent = PHASE_ACCENT[phase];
+  const groupColour = colourByGroup(phase, tickedItems);
+  const colourOf = (i: SubjectItem) => groupColour.get(comparabilityKey(phase, i.qualificationType)) ?? "var(--muted)";
+  const latestPeriod = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
+  const sourceLine = (extra = "") =>
+    latestPeriod === null ? null : (
+      <>
+        Source: {SOURCE_NAME[phase]}, {academicYearLabel(latestPeriod)}
+        {extra} &middot;{" "}
+        <Link href="/sources" className="text-[var(--muted)] underline">Sources</Link>
+      </>
+    );
+  // The pie's slices: one per qualification group, as the mockups draw it.
+  const pieSlices: PieSlice[] = Array.from(groupColour.entries()).map(([key, color]) => {
+    const inGroup = tickedItems.filter((i) => comparabilityKey(phase, i.qualificationType) === key);
+    return {
+      label: `${inGroup.map((i) => i.subject).join(" & ")} (${qualificationShortLabel(phase, inGroup[0].qualificationType)})`,
+      value: inGroup.reduce((a, i) => a + i.entries, 0),
+      color,
+    };
+  });
+
   // Round 5's non-axis views. Everything here reads data the dashboard already loaded.
   const renderSpecial = (v: ViewDef, fullscreen: boolean) => {
     if (v.axis === "share_of_cohort") {
@@ -518,7 +563,14 @@ export default function TeacherPhaseDashboard() {
   return (
     // §7: the theme attribute is scoped to Teacher view, never to <html> -- see
     // TeacherChrome for why, and Q15.
-    <main id="teacher-root" data-theme={theme} className="mx-auto max-w-4xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">
+    <main
+      id="teacher-root"
+      data-theme={theme}
+      // The phase accent reaches every card and box as a custom property, so the shared
+      // components never carry a phase-specific hex of their own.
+      style={accent ? ({ "--accent": accent.hex, "--accent-rgb": accent.rgb } as React.CSSProperties) : undefined}
+      className="mx-auto max-w-4xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
+    >
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-xl font-semibold sm:text-2xl">{PHASE_LABELS[phase]}</h1>
         <div className="flex items-center gap-3">
@@ -526,7 +578,35 @@ export default function TeacherPhaseDashboard() {
           <Link href="/teacher" className="text-sm text-blue-700 hover:underline print:hidden dark:text-blue-400">All dashboards</Link>
         </div>
       </div>
-      {schoolName && <p className="mt-1 text-sm text-neutral-500">{schoolName}</p>}
+      {schoolName && <p className="mt-1 text-sm text-[var(--muted)]">{schoolName}</p>}
+
+      {/* The mockups' subject header: one chip per ticked subject/qualification in its
+          group colour, then "±" to change them. Changing subjects lives in the picker at
+          the foot of this page, so that is where "±" goes. */}
+      {phase !== "ks2" && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          {tickedItems.map((i) => {
+            const c = colourOf(i);
+            return (
+              <span
+                key={i.key}
+                className="rounded-full border px-2.5 py-[5px] text-xs font-semibold"
+                style={{ background: `${c}1F`, color: c, borderColor: `${c}59` }}
+              >
+                {i.subject} &middot; {qualificationShortLabel(phase, i.qualificationType)}
+              </span>
+            );
+          })}
+          <a
+            href="#subjects"
+            aria-label="Change subjects"
+            title="Change subjects"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[var(--accent)] text-[13px] font-extrabold text-[var(--accent)] print:hidden"
+          >
+            &plusmn;
+          </a>
+        </div>
+      )}
 
       {/* §13's banner. States what actually changed and when, rather than just shouting. */}
       {newDataPeriod !== null && (
@@ -542,23 +622,37 @@ export default function TeacherPhaseDashboard() {
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold">{q.howMany}</h2>
+        <DashboardColumn columnId="candidates" question={q.howMany} accented={!!accent}>
           {/* Round 5: the column's default content is a box like any pinned view, titled
               from the catalogue rather than hardcoded here. */}
-          <CardBox title={defaultBoxTitle("candidates", phase)} question={q.howMany}>
+          <CardBox
+            title={defaultBoxTitle("candidates", phase)}
+            question={q.howMany}
+            caption={phase === "ks2" ? undefined : "Entries this year, by qualification type — never blended into one number."}
+            source={phase === "ks2" ? undefined : sourceLine()}
+          >
             {({ fullscreen }) => (
               <>
                 {phase === "ks2" ? (
                   <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{rollAtAge10?.toLocaleString() ?? "—"}</p>
+                ) : tickedItems.length === 0 ? (
+                  <p className="text-sm text-[var(--muted)]">Pick a subject below to see its entries.</p>
                 ) : (
-                  <>
-                    <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{liveCount.toLocaleString()}</p>
-                    <p className="text-sm text-neutral-500">
-                      across {tickedItems.length} subject{tickedItems.length === 1 ? "" : "s"}
-                      {schoolTotal > 0 && ` · ${Math.round((liveCount / schoolTotal) * 100)}% of the school's entries`}
-                    </p>
-                  </>
+                  // One bar row per ticked subject/qualification -- never summed, so a
+                  // GCSE and a vocational course in the same subject stay two rows.
+                  <ViewChart
+                    layout="labelled"
+                    unit="entries"
+                    computed={{
+                      rows: tickedItems.map((i) => ({
+                        label: i.subject,
+                        sublabel: qualificationShortLabel(phase, i.qualificationType),
+                        value: i.entries,
+                        isSubject: true,
+                        color: colourOf(i),
+                      })),
+                    }}
+                  />
                 )}
                 {movedCandidates && (
                   <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
@@ -570,18 +664,30 @@ export default function TeacherPhaseDashboard() {
           </CardBox>
           <ColumnBuilder columnId={"candidates" as ColumnId} {...builderProps} pinned={columns["candidates"] ?? []} onChange={(n) => setColumn("candidates", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:candidates`} />
-        </section>
+        </DashboardColumn>
 
-        <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold">
-            {q.howWell}
-            {/* §13's "NEW pill wherever something's actually changed" -- on the card the
-                new data actually lands in, not on every card. */}
-            {newDataPeriod !== null && (
-              <span className="ml-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
-            )}
-          </h2>
-          <CardBox title={defaultBoxTitle("results", phase)} question={q.howWell}>
+        <DashboardColumn
+          columnId="results"
+          question={q.howWell}
+          accented={!!accent}
+          // §13's "NEW pill wherever something's actually changed" -- on the card the new
+          // data actually lands in, not on every card.
+          badge={newDataPeriod !== null && (
+            <span className="ml-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
+          )}
+        >
+          <CardBox
+            title={defaultBoxTitle("results", phase)}
+            question={q.howWell}
+            caption={
+              phase === "ks2"
+                ? undefined
+                : englandAvg?.basis === "family"
+                  ? "Average point score per GCSE entry, vs. the England GCSE average for that subject's family."
+                  : "Average point score per entry, vs. the England average for that same qualification."
+            }
+            source={phase === "ks2" ? undefined : sourceLine()}
+          >
             {({ fullscreen }) => (
               <>
                 {phase === "ks2" ? (
@@ -608,18 +714,36 @@ export default function TeacherPhaseDashboard() {
                 ) : tickedItems.length === 0 ? (
                   <p className="mt-2 text-sm text-neutral-500">Pick a subject below to see its results.</p>
                 ) : (
-                  <ul className={`mt-2 space-y-1 ${fullscreen ? "text-lg" : "text-sm"}`}>
+                  // Mockup row: subject · qualification on the left; score in the group
+                  // colour on the right, then the delta against England -- green above,
+                  // red below.
+                  <ul className="flex flex-col gap-2">
                     {tickedItems.map((i) => {
-                      const v = resultsFor(i);
+                      const score = resultsFor(i);
+                      const england = score ? englandFor(i, score) : null;
+                      const delta = score && england !== null ? score.value - england : null;
                       return (
-                        <li key={i.key} className="flex items-baseline justify-between gap-2">
-                          <span className="truncate">{i.label}</span>
-                          <span className="tabular-nums">
-                            {v === null ? <span className="text-neutral-400">no figure</span> : v.toFixed(1)}
-                            {v !== null && schoolAnchor !== null && (
-                              <span className="ml-2 text-xs text-neutral-500">school avg {schoolAnchor.toFixed(1)}</span>
-                            )}
+                        <li key={i.key} className="flex items-center justify-between gap-2">
+                          <span className={`truncate font-semibold ${fullscreen ? "text-base" : "text-[12.5px]"}`}>
+                            {i.subject}{" "}
+                            <span className="font-medium text-[var(--muted3)]">&middot; {qualificationShortLabel(phase, i.qualificationType)}</span>
                           </span>
+                          {score === null ? (
+                            <span className="shrink-0 whitespace-nowrap text-[12.5px] text-[var(--muted3)]">no score</span>
+                          ) : (
+                            <span className={`shrink-0 font-extrabold tabular-nums ${fullscreen ? "text-xl" : "text-sm"}`} style={{ color: colourOf(i) }}>
+                              {score.value.toFixed(1)}
+                              {delta !== null && (
+                                <span
+                                  className="ml-1 text-[10.5px] font-semibold"
+                                  style={{ color: delta >= 0 ? DELTA_POSITIVE : DELTA_NEGATIVE }}
+                                  title={`England average ${england!.toFixed(1)} (${academicYearLabel(score.period)})`}
+                                >
+                                  {delta >= 0 ? "+" : "−"}{Math.abs(delta).toFixed(1)}
+                                </span>
+                              )}
+                            </span>
+                          )}
                         </li>
                       );
                     })}
@@ -635,11 +759,23 @@ export default function TeacherPhaseDashboard() {
           </CardBox>
           <ColumnBuilder columnId={"results" as ColumnId} {...builderProps} pinned={columns["results"] ?? []} onChange={(n) => setColumn("results", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:results`} />
-        </section>
+        </DashboardColumn>
 
-        <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold">{q.nearMe}</h2>
-          <CardBox title={defaultBoxTitle("context", phase)} question={q.nearMe}>
+        <DashboardColumn columnId="context" question={q.nearMe} accented={!!accent}>
+          <CardBox
+            title={defaultBoxTitle("context", phase)}
+            question={q.nearMe}
+            // The existing sentence is kept, as the caption under the pie rather than in
+            // place of it.
+            caption={
+              phase === "ks2"
+                ? undefined
+                : schoolTotal > 0
+                  ? `Your subjects are ${Math.round((liveCount / schoolTotal) * 100)}% of ${schoolTotal.toLocaleString()} entries across the ${phase === "ks5" ? "sixth form" : "school"} — share of every entry, not just how many take it.`
+                  : "No entries recorded for this school."
+            }
+            source={phase === "ks2" ? undefined : sourceLine()}
+          >
             {({ fullscreen }) =>
               phase === "ks2" ? (
                 <>
@@ -658,22 +794,21 @@ export default function TeacherPhaseDashboard() {
                     ))}
                   </ul>
                 </>
-              ) : (
-                <p className={`mt-2 text-neutral-600 dark:text-neutral-400 ${fullscreen ? "text-lg" : "text-sm"}`}>
-                  {schoolTotal > 0
-                    ? `Your subjects are ${Math.round((liveCount / schoolTotal) * 100)}% of ${schoolTotal.toLocaleString()} entries across the school.`
-                    : "No entries recorded for this school."}
-                </p>
-              )
+              ) : schoolTotal > 0 ? (
+                <SharePie slices={pieSlices} total={schoolTotal} fullscreen={fullscreen} />
+              ) : null
             }
           </CardBox>
           <ColumnBuilder columnId={"context" as ColumnId} {...builderProps} pinned={columns["context"] ?? []} onChange={(n) => setColumn("context", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:context`} />
-        </section>
+        </DashboardColumn>
 
-        <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold">{q.wider}</h2>
-          <CardBox title={defaultBoxTitle("rankings", phase)} question={q.wider}>
+        <DashboardColumn columnId="rankings" question={q.wider} accented={!!accent}>
+          <CardBox
+            title={defaultBoxTitle("rankings", phase)}
+            question={q.wider}
+            source={phase === "ks2" ? undefined : sourceLine("; school locations from GIAS")}
+          >
             {({ fullscreen }) => (
               <>
                 {position ? (
@@ -724,11 +859,11 @@ export default function TeacherPhaseDashboard() {
           </CardBox>
           <ColumnBuilder columnId={"rankings" as ColumnId} {...builderProps} pinned={columns["rankings"] ?? []} onChange={(n) => setColumn("rankings", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:rankings`} />
-        </section>
+        </DashboardColumn>
       </div>
 
       {phase !== "ks2" && (
-        <section className="mt-6 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <section id="subjects" className="mt-6 scroll-mt-4 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
           <h2 className="text-sm font-semibold">Which subjects do you teach?</h2>
           <p className="mt-1 text-xs text-neutral-500">Personal to you. Changing it updates every card above.</p>
           <div className="mt-3"><SubjectPicker items={items} ticked={ticked} onToggle={toggle} /></div>

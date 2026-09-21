@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { lookupAcademicGeography } from "@/lib/vicdata-reference";
+import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { createClient } from "@supabase/supabase-js";
 import {
   fetchSubjectLevelDataForSchools,
@@ -111,6 +113,38 @@ async function rankSets(
   return { ranked: out, targetProfile: byUrn.get(targetUrn) ?? null };
 }
 
+// The Results card's anchor: the England average for the same qualification, from
+// academic_geography_aggregate's national rows -- the same table and grouping key the
+// advanced dashboard's national trend line reads.
+//
+// What "same qualification" can honestly mean differs by phase, because it differs in the
+// data:
+//   - Post-16: per comparability bucket ("bucket:alevel::aps_per_entry" and so on), on
+//     the same points-per-entry scale as a subject's own bucket-scoped score. Exactly the
+//     mockup's comparison.
+//   - GCSE: there is no national figure per subject or per qualification. The finest
+//     national points figure is per SUBJECT FAMILY (avg_point_score by family_id). Only
+//     "GCSE (9-1) Full Course" carries points at KS4, so that is a GCSE average for the
+//     family. The card's caption says so rather than claiming "same qualification".
+type EnglandAverage = { key: string; period: number; value: number };
+
+async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "bucket" | "family"; values: EnglandAverage[] }> {
+  if (phase === "ks5") {
+    const rows = await lookupAcademicGeography({ ksStage: "ks5", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], familyId: "whole_school" });
+    const values: EnglandAverage[] = [];
+    for (const r of rows) {
+      const m = /^bucket:(.+)::aps_per_entry$/.exec(r.measure);
+      if (m && r.avg_value !== null) values.push({ key: m[1], period: r.period, value: r.avg_value });
+    }
+    return { basis: "bucket", values };
+  }
+  const rows = await lookupAcademicGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY] });
+  return {
+    basis: "family",
+    values: rows.filter((r) => r.avg_value !== null).map((r) => ({ key: r.family_id, period: r.period, value: r.avg_value as number })),
+  };
+}
+
 export async function GET(request: NextRequest) {
   const urn = request.nextUrl.searchParams.get("urn");
   const phase = request.nextUrl.searchParams.get("phase") as KsStage | null;
@@ -188,6 +222,7 @@ export async function GET(request: NextRequest) {
   // Every bucket at KS5, so a subject row can take the points belonging to its own
   // qualification rather than the whole-school 'all' row.
   const headlineByUrn = await fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined);
+  const england = await englandAverages(phase);
 
   return NextResponse.json({
     phase,
@@ -199,6 +234,7 @@ export async function GET(request: NextRequest) {
     setInfo,
     // Candidates' "Entries, % of year group": the whole exam cohort per year -- the
     // same figure the map sizes this school's dot by.
+    englandAverages: england,
     cohortSeries: targetProfile ? entriesSeries(targetProfile, phase, null) : [],
     headlineLabel: HEADLINE_LABEL[phase],
   });

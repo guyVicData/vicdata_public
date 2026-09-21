@@ -36,6 +36,8 @@ export function CardBox({
   subtitle,
   question,
   actions,
+  caption,
+  source,
   children,
 }: {
   title: string;
@@ -45,6 +47,11 @@ export function CardBox({
   // there is space for it.
   question?: string;
   actions?: ReactNode;
+  // The mockups' two closing lines under every box's content: a one-line explanation
+  // (11.5px, --muted2) and a source line (9.5px, --source). Optional because a pinned
+  // axis view carries its own framing in its subtitle.
+  caption?: ReactNode;
+  source?: ReactNode;
   // Called twice while fullscreen is open -- once for the box underneath, once for the
   // modal -- so it must be safe to mount two copies (the map is: each instance owns its
   // own Leaflet map).
@@ -73,7 +80,7 @@ export function CardBox({
   const header = (isModal: boolean) => (
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
-        <h3 className={isModal ? "text-base font-semibold" : "text-xs font-semibold"}>{title}</h3>
+        <h3 className={isModal ? "text-base font-bold" : "text-[11.5px] font-bold text-[var(--muted2)]"}>{title}</h3>
         {isModal && question && <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">{question}</p>}
         {subtitle && <p className="text-[11px] text-neutral-500">{subtitle}</p>}
       </div>
@@ -85,7 +92,13 @@ export function CardBox({
           onClick={() => setFullscreen(!isModal)}
           aria-label={isModal ? `Exit full screen: ${title}` : `Full screen: ${title}`}
           title={isModal ? "Exit full screen" : "Full screen"}
-          className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+          // Mockup: muted3 at rest; the exit icon sits on a faint accent tint in the accent
+          // colour. --accent is set per phase on #teacher-root; KS2 has none and falls back.
+          className={
+            isModal
+              ? "flex h-6 w-6 items-center justify-center rounded-md bg-[rgba(var(--accent-rgb,96,165,250),0.12)] text-[var(--accent,var(--muted2))]"
+              : "flex h-6 w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
+          }
         >
           <ExpandIcon expanded={isModal} />
         </button>
@@ -93,10 +106,19 @@ export function CardBox({
     </div>
   );
 
+  const footer = (
+    <>
+      {caption && <p className="text-[11.5px] text-[var(--muted2)]">{caption}</p>}
+      {source && <p className="text-[9.5px] text-[var(--source)]">{source}</p>}
+    </>
+  );
+
   return (
-    <div className="mt-3 rounded-md border border-neutral-200 p-3 dark:border-neutral-800">
+    // Mockup box: radius 10px, 1px --panel-border, --box-bg, 12px padding, 10px gap.
+    <div className="mt-3 flex flex-col gap-2.5 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3">
       {header(false)}
-      {children({ fullscreen: false })}
+      <div>{children({ fullscreen: false })}</div>
+      {footer}
 
       {fullscreen && (
         <div className="fixed inset-0 z-[1500] print:hidden" role="dialog" aria-modal="true" aria-label={`${title}, full screen`}>
@@ -110,9 +132,10 @@ export function CardBox({
             className="absolute inset-0 h-full w-full cursor-default bg-neutral-900/40 backdrop-blur-sm dark:bg-black/60"
           />
           {/* ~5% margin on desktop, 3% on a phone, per the round 5 brief. */}
-          <div className="absolute inset-[3%] flex flex-col overflow-auto rounded-lg border border-neutral-200 bg-white p-4 text-neutral-900 shadow-2xl sm:inset-[5%] sm:p-6 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100">
+          <div className="absolute inset-[3%] flex flex-col gap-2.5 overflow-auto rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-[var(--fg)] shadow-2xl sm:inset-[5%] sm:p-6">
             {header(true)}
-            <div className="mt-3 min-h-0 flex-1">{children({ fullscreen: true })}</div>
+            <div className="mt-1 min-h-0 flex-1">{children({ fullscreen: true })}</div>
+            {footer}
           </div>
         </div>
       )}
