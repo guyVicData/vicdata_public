@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
-import { PHASE_LABELS, PHASE_QUESTIONS, phaseTileState, type TeacherPhase } from "@/lib/teacher-view-phases";
+import { PHASE_LABELS, PHASE_HOME_CARD_DESCRIPTION, phaseTileState, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, FEATURE_ACCENT } from "@/lib/teacher-view-theme";
 import { HomeCard, PhaseGlyph, RecruitmentGlyph, MeetingsGlyph, NEUTRAL_TILE } from "@/components/teacher/HomeCard";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
@@ -25,6 +25,10 @@ export default function TeacherHomePage() {
   const supabase = createBrowserSupabaseClient();
   const [loading, setLoading] = useState(true);
   const [schoolName, setSchoolName] = useState<string | null>(null);
+  // Home.dc.html greets the teacher by name. From their own profiles row (the
+  // profiles_select_own policy), falling back to email exactly as the account page does
+  // for its member list -- so the greeting line is never blank.
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [phases, setPhases] = useState<TeacherPhase[]>([]);
   const [onboarded, setOnboarded] = useState<TeacherPhase[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +44,15 @@ export default function TeacherHomePage() {
         setError("Sign in to see your school's dashboards.");
         setLoading(false);
         return;
+      }
+      const user = sessionData.session?.user;
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", user.id)
+          .maybeSingle<{ email: string | null; full_name: string | null }>();
+        setDisplayName(profile?.full_name || profile?.email || user.email || null);
       }
       const { data: membership } = await supabase
         .from("school_memberships")
@@ -73,8 +86,13 @@ export default function TeacherHomePage() {
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6">
-      <h1 className="text-xl font-semibold sm:text-2xl">What would you like to look at?</h1>
-      {schoolName && <p className="mt-1 text-sm text-[var(--muted)]">{schoolName}</p>}
+      {/* Home.dc.html's order: the teacher's name as the page's headline, their school
+          directly under it, then the question as its own line -- a prompt, not a heading. */}
+      <div>
+        {displayName && <h1 className="text-[22px] font-bold leading-tight">{displayName}</h1>}
+        {schoolName && <p className="mt-0.5 text-[13px] text-[var(--muted)]">{schoolName}</p>}
+      </div>
+      <p className="mt-[22px] text-base font-semibold text-[var(--muted2)]">What would you like to look at?</p>
 
       {error && <p className="mt-6 text-sm text-amber-700 dark:text-amber-400">{error}</p>}
 
@@ -90,7 +108,7 @@ export default function TeacherHomePage() {
                 colour={PHASE_ACCENT[phase] ?? NEUTRAL_TILE}
                 icon={<PhaseGlyph phase={phase} />}
                 title={PHASE_LABELS[phase]}
-                description={PHASE_QUESTIONS[phase].howWell}
+                description={PHASE_HOME_CARD_DESCRIPTION[phase]}
                 footer={state === "open-dashboard" ? "Open dashboard" : "Take the 4-step tour to unlock"}
               />
             );

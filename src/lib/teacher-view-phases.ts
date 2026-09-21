@@ -31,6 +31,17 @@ export const PHASE_LABELS: Record<TeacherPhase, string> = {
   ks5: "Post-16",
 };
 
+// The Teacher view home's card descriptions (Home.dc.html), addressed to the teacher --
+// "your subjects", and pupils at GCSE but students at Post-16. Deliberately separate from
+// PHASE_QUESTIONS, whose first-person wording ("my subjects") heads the dashboard itself:
+// the two say different things to different moments and are expected to diverge further.
+// KS2 is not in the mockups; its line is the existing KS2 question, addressed the same way.
+export const PHASE_HOME_CARD_DESCRIPTION: Record<TeacherPhase, string> = {
+  ks2: "How well do your pupils do in each area?",
+  ks4: "How well do pupils do in each of your subjects?",
+  ks5: "How well do students do in each of your subjects?",
+};
+
 export const PHASE_QUESTIONS: Record<TeacherPhase, { howMany: string; howWell: string; nearMe: string; wider: string }> = {
   ks4: {
     howMany: "How many pupils take each of my subjects?",
