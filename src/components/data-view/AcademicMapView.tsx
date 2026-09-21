@@ -330,6 +330,7 @@ export default function AcademicMapView({
   subject = null,
   subjectLabel = null,
   subjectBucket = null,
+  dense = false,
   activeSetLabel = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
   ks5Bucket = null,
@@ -361,6 +362,12 @@ export default function AcademicMapView({
   subject?: string | null;
   subjectLabel?: string | null;
   subjectBucket?: string | null;
+  // Teacher view's Rankings card draws this map in a ~288px box, where the full-size
+  // overlays (colour-mode toggle, colour key, dot-size legend, exclusion notes) covered
+  // nearly all of it. `dense` swaps them for the wireframe's compact treatment: one
+  // caption line, plus a small hoverable badge when schools are excluded. Default false,
+  // so every existing caller -- the Data View's own map -- renders exactly as before.
+  dense?: boolean;
   activeSetLabel?: string | null;
   // GCSE exclusion round, Part 2 -- see AcademicGraphsView's own header comment for
   // the same prop. An excluded school (target or ticked) gets no circle at all, KS4
@@ -1110,7 +1117,7 @@ export default function AcademicMapView({
         {/* Grade band/Trends only means anything for individual school circles --
             hidden while the choropleth (always value-coloured, no separate trend
             concept fetched this round) has taken over the map. */}
-        {!viewByArea && gradeBandAvailable && (
+        {!dense && !viewByArea && gradeBandAvailable && (
           <div className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
             <button
               type="button"
@@ -1135,7 +1142,7 @@ export default function AcademicMapView({
           explanatory paragraph. LA/Region choropleth: reuses the SAME GradeBandColourKey
           component while active, just scaled to the current tier's own real min-max --
           the same real colour language throughout, never a third scale. */}
-      {viewByArea ? (
+      {dense ? null : viewByArea ? (
         <GradeBandColourKey box={trendKeyBox} min={choroplethMin} max={choroplethMax} stage={stage} />
       ) : effectiveColourMode === "trend" ? (
         <TrendColourKey box={trendKeyBox} title="Growth" />
@@ -1181,6 +1188,49 @@ export default function AcademicMapView({
           {/* Item 4 (round 2): real dot-size scale, bottom-left. The exclusion note
               (GCSE/KS5-cohort round) has no Rolls precedent -- kept as its own stacked
               box directly below the size scale, in the same corner. */}
+          {dense ? (
+            // Dense: one understated caption line in the corner instead of the legend and
+            // note boxes, clear of Leaflet's zoom control bottom-right. It names the
+            // subject or category when one is plotted. Exclusions keep their existing
+            // sentence, on hover of a small badge rather than as a paragraph on the map.
+            (() => {
+              const exclusion =
+                stage === "ks4"
+                  ? mapWholeGroupExcluded
+                    ? { n: group.length, text: ks4ExclusionWholeGroupSentence(setLabel) }
+                    : excludedForMap.length > 0
+                      ? { n: excludedForMap.length, text: ks4ExclusionGroupNote(excludedForMap.map((p) => p.name)) }
+                      : null
+                  : stage === "ks5"
+                    ? mapKs5WholeGroupExcluded
+                      ? { n: group.length, text: ks5BucketWholeGroupSentence(setLabel, ks5Bucket ?? "alevel") }
+                      : ks5ExcludedForMap.length > 0
+                        ? { n: ks5ExcludedForMap.length, text: ks5BucketExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Bucket ?? "alevel") }
+                        : null
+                    : null;
+              const sizeText = subject ? `entries in ${subjectLabel ?? subject}` : familyId ? `entries in ${familyLabel ?? "this category"}` : sizeCaption;
+              const caption = `Dot size: ${sizeText} · Colour: ${effectiveColourMode === "trend" ? "growth" : "grade band"}`;
+              return (
+                // bottom-6: just above Leaflet's attribution line, which sits in the same
+                // bottom edge. One line only; if a narrow card truncates it, the full text
+                // is on hover.
+                <div className="absolute bottom-6 left-2 z-[1000] flex max-w-[calc(100%-4.5rem)] items-center gap-1.5">
+                  <p title={caption} className="truncate whitespace-nowrap rounded bg-white/85 px-1.5 py-0.5 text-[10px] text-neutral-600 dark:bg-neutral-950/85 dark:text-neutral-400">
+                    {caption}
+                  </p>
+                  {exclusion && (
+                    <span
+                      title={exclusion.text ?? undefined}
+                      aria-label={exclusion.text ?? undefined}
+                      className="shrink-0 cursor-help whitespace-nowrap rounded bg-white/85 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-neutral-950/85 dark:text-amber-400"
+                    >
+                      &#9432; {exclusion.n} not shown
+                    </span>
+                  )}
+                </div>
+              );
+            })()
+          ) : (
           <div className="absolute bottom-3 left-3 z-[1000] flex max-w-xs flex-col gap-2">
             <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} subjectLabel={subject ? (subjectLabel ?? subject) : null} sizeCaption={sizeCaption} />
             {stage === "ks4" && (mapWholeGroupExcluded ? (
@@ -1206,6 +1256,7 @@ export default function AcademicMapView({
               </p>
             ) : null)}
           </div>
+          )}
         </>
       )}
     </div>

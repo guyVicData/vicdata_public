@@ -1111,6 +1111,9 @@ export default function TeacherPhaseDashboard() {
                       subject={activeMapChip?.subject ?? null}
                       subjectLabel={activeMapChip?.legend ?? null}
                       subjectBucket={activeMapChip?.bucket ?? null}
+                      // Compact overlays at card size; the fullscreen map keeps the full
+                      // toggle, legend and exclusion notes.
+                      dense={!fullscreen}
                     />
                   </div>
                 )}

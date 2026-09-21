@@ -19,6 +19,7 @@ export function RankingsMap({
   subject = null,
   subjectLabel = null,
   subjectBucket = null,
+  dense = false,
 }: {
   profiles: AcademicSchoolProfile[] | null;
   targetUrn: string;
@@ -30,6 +31,9 @@ export function RankingsMap({
   subject?: string | null;
   subjectLabel?: string | null;
   subjectBucket?: string | null;
+  // The card-size map passes true: AcademicMapView's compact overlays (one caption line)
+  // instead of the full legend stack the fullscreen map keeps.
+  dense?: boolean;
 }) {
   const target = profiles?.find((p) => p.urn === targetUrn) ?? null;
   if (!profiles) {
@@ -51,6 +55,7 @@ export function RankingsMap({
         subject={subject}
         subjectLabel={subjectLabel}
         subjectBucket={subjectBucket}
+        dense={dense}
         // Same GCSE exclusion the advanced dashboard's map applies, with its own note.
         ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}
       />
