@@ -305,6 +305,30 @@ function SizeLegend({ minSize, maxSize, familyId, familyLabel, subjectLabel, siz
   );
 }
 
+type HoverInfo = { name: string; isTarget: boolean; lines: string[] };
+
+// The dense map's hover bar. Owns the hover state so that hovering re-renders only this
+// bar, never the map (see setHoverInfoRef). Registers its setter on mount.
+function DenseHoverBar({ setterRef }: { setterRef: { current: (info: HoverInfo | null) => void } }) {
+  const [info, setInfo] = useState<HoverInfo | null>(null);
+  useEffect(() => {
+    setterRef.current = setInfo;
+    return () => {
+      setterRef.current = () => {};
+    };
+  }, [setterRef]);
+  if (!info) return null;
+  return (
+    <div className="pointer-events-none absolute left-2 right-6 top-2 z-[1000]">
+      <p className="rounded bg-white/85 px-1.5 py-0.5 text-[10px] leading-snug text-neutral-600 dark:bg-neutral-950/85 dark:text-neutral-400 [&_strong]:text-neutral-900 dark:[&_strong]:text-neutral-100">
+        <strong>{info.name}{info.isTarget ? " (this school)" : ""}</strong>
+        {/* The tooltip's own lines, which bold their figures (built with escapeHtml). */}
+        {info.lines.length > 0 && <span dangerouslySetInnerHTML={{ __html: ` &middot; ${info.lines.join(" &middot; ")}` }} />}
+      </p>
+    </div>
+  );
+}
+
 type ColourMode = "trend" | "grade_band";
 
 // Real per-profile figures, computed ONCE per render (useMemo below) and shared by
@@ -331,6 +355,7 @@ export default function AcademicMapView({
   subjectLabel = null,
   subjectBucket = null,
   dense = false,
+  onTargetRank,
   activeSetLabel = null,
   ks4ExcludedUrns = EMPTY_EXCLUDED_SET,
   ks5Bucket = null,
@@ -368,6 +393,11 @@ export default function AcademicMapView({
   // caption line, plus a small hoverable badge when schools are excluded. Default false,
   // so every existing caller -- the Data View's own map -- renders exactly as before.
   dense?: boolean;
+  // Reports the target school's rank among the mapped schools with a figure, on whatever
+  // the map is currently plotting (the subject, when one is set) -- the rank this file
+  // already computes for its tooltips, surfaced so Teacher view's "N of M" line can match
+  // the map. null when the target has no figure. Optional; the Data View never passes it.
+  onTargetRank?: (info: { rank: number; total: number } | null) => void;
   activeSetLabel?: string | null;
   // GCSE exclusion round, Part 2 -- see AcademicGraphsView's own header comment for
   // the same prop. An excluded school (target or ticked) gets no circle at all, KS4
@@ -444,6 +474,13 @@ export default function AcademicMapView({
   // finishes its own async init, ported directly from Rolls' own MapView.tsx.
   const [mapReady, setMapReady] = useState(false);
   const [trendKeyBox, setTrendKeyBox] = useState<{ top: number; height: number } | null>(null);
+  // Dense only: the hovered school's tooltip content goes to a fixed bar at the top of the
+  // map instead of a floating Leaflet tooltip, which the small card's overflow-hidden edges
+  // clipped. Same content, different place. The hover state lives in DenseHoverBar, not
+  // here, and the markers reach it through this ref: a state change in THIS component
+  // re-runs the marker-drawing effect (withCoords is rebuilt every render), which redrew
+  // every dot and wiped the hover the moment it appeared -- caught in verification.
+  const setHoverInfoRef = useRef<(info: HoverInfo | null) => void>(() => {});
   // A3: default stays Grade band (round 2, item 6 already made this the default;
   // unchanged this round). A5's own fix (below) means this default now genuinely
   // WORKS for Post-16 too, not just KS2/GCSE.
@@ -615,7 +652,7 @@ export default function AcademicMapView({
   // (same "recompute against the live set" discipline round 2's own comparator
   // widening established) -- based on the same real headline value already driving
   // the circle's own label, never a cached figure.
-  const { ranked: rankedRows, total: rankTotal } = useMemo(
+  const { ranked: rankedRows, total: rankTotal, targetRank } = useMemo(
     () =>
       rankDescendingWithTies(
         withCoords.map((p) => ({ urn: p.urn, name: p.name, isTarget: p.urn === targetProfile.urn, value: rowDataByUrn.get(p.urn)?.avgValue ?? null })),
@@ -623,6 +660,15 @@ export default function AcademicMapView({
     [withCoords, rowDataByUrn, targetProfile.urn],
   );
   const rankByUrn = useMemo(() => new Map(rankedRows.map((r) => [r.urn, r.rank])), [rankedRows]);
+
+  // Held in a ref so a caller's fresh function each render doesn't re-fire the report.
+  const onTargetRankRef = useRef(onTargetRank);
+  useEffect(() => {
+    onTargetRankRef.current = onTargetRank;
+  }, [onTargetRank]);
+  useEffect(() => {
+    onTargetRankRef.current?.(targetRank !== null ? { rank: targetRank, total: rankTotal } : null);
+  }, [targetRank, rankTotal, targetProfile.urn]);
 
   // LA/Region choropleth: real fetch, region + LA tiers together (both are cheap --
   // 9 real region rows, ~153 real LA rows nationally -- so both are fetched once
@@ -782,6 +828,9 @@ export default function AcademicMapView({
     import("leaflet").then((mod) => {
       const L = (mod as unknown as { default?: typeof mod }).default ?? mod;
       const group2 = layerGroupRef.current!;
+      // The markers are about to be redrawn, so any hover state belongs to a dot that is
+      // going away.
+      if (dense) setHoverInfoRef.current(null);
       group2.clearLayers();
       const cs = getComputedStyle(rootRef.current!);
 
@@ -876,22 +925,27 @@ export default function AcademicMapView({
           lines.length > 0 ? `<br/>${lines.join("<br/>")}` : ""
         }</div>`;
 
-        L.circleMarker([lat, lng], {
+        const marker = L.circleMarker([lat, lng], {
           radius,
           fillColor: colour,
           fillOpacity: 0.75,
           color: isTarget ? "#dc2626" : "#ffffff",
           weight: isTarget ? 2.5 : 1,
-        })
-          .bindTooltip(tooltipHtml, { direction: "top", offset: [0, -4] })
-          .addTo(group2);
+        });
+        if (dense) {
+          // The same tooltip content, routed to the fixed top bar (see hoverInfo).
+          marker.on("mouseover", () => setHoverInfoRef.current({ name: p.name, isTarget, lines })).on("mouseout", () => setHoverInfoRef.current(null));
+        } else {
+          marker.bindTooltip(tooltipHtml, { direction: "top", offset: [0, -4] });
+        }
+        marker.addTo(group2);
       }
 
       if (bounds.length > 1) {
         mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
       }
     });
-  }, [mapReady, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
+  }, [mapReady, dense, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
 
   // LA/Region choropleth: real min/max over the CURRENTLY SHOWN tier's own real
   // values -- same "computed once, shared" discipline as minGrade/maxGrade above,
@@ -1098,6 +1152,12 @@ export default function AcademicMapView({
           so it wins over leaflet.css's own grey container background). */}
       <div ref={mapElRef} className="h-full w-full" style={dense ? { background: "var(--box-bg, #f5f5f5)" } : undefined} />
 
+      {/* Dense: the hovered school's details in a fixed bar across the top -- the space the
+          hidden toggle leaves free -- styled like the bottom caption, clear of the colour
+          strip on the right. Same content as fullscreen's floating tooltip: the name, then
+          the tooltip's own lines (which bold their figures; built with escapeHtml above). */}
+      {dense && <DenseHoverBar setterRef={setHoverInfoRef} />}
+
       {/* A3: colour-mode toggle moved back to the RIGHT overlay, under
           PdfExportButton -- Rolls' own real Trend/Sector toggle position
           (topRightStackRef, MapView.tsx). Round 2 had moved it to the left
@@ -1149,7 +1209,18 @@ export default function AcademicMapView({
           explanatory paragraph. LA/Region choropleth: reuses the SAME GradeBandColourKey
           component while active, just scaled to the current tier's own real min-max --
           the same real colour language throughout, never a third scale. */}
-      {dense ? null : viewByArea ? (
+      {dense ? (
+        // The wireframe's compact colour scale: a thin vertical strip on the right edge, no
+        // title, no boxed labels -- the caption already says in words what colour means.
+        // Same stops GradeBandColourKey uses, top = highest, so the strip, the dots and the
+        // fullscreen key cannot disagree. Stops short of Leaflet's zoom control below it.
+        // Dense never offers Trends (the toggle is hidden), so grade band is all it needs.
+        <div
+          aria-hidden="true"
+          className="absolute right-2 top-2 bottom-[84px] z-[1000] w-[7px] rounded-full shadow-sm"
+          style={{ background: `linear-gradient(to bottom, ${[...(familyId ? gradeBandLegendStopsForFamily(familyId) : GRADE_BAND_LEGEND_STOPS)].reverse().map((st) => st.hex).join(",")})` }}
+        />
+      ) : viewByArea ? (
         <GradeBandColourKey box={trendKeyBox} min={choroplethMin} max={choroplethMax} stage={stage} />
       ) : effectiveColourMode === "trend" ? (
         <TrendColourKey box={trendKeyBox} title="Growth" />

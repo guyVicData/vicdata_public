@@ -169,6 +169,9 @@ export default function TeacherPhaseDashboard() {
   const [quickFamilies, setQuickFamilies] = useState<string[] | null>(null);
   // Which subject chip the Rankings map is plotting (null = the first chip).
   const [mapChip, setMapChip] = useState<string | null>(null);
+  // The map's own rank for this school on the subject it is plotting (reported by
+  // AcademicMapView), so the "N of M" line can match the map once a chip is active.
+  const [mapRank, setMapRank] = useState<{ rank: number; total: number } | null>(null);
   // The subject picker is a popup opened by the chip header's "±", not a permanent
   // section of the dashboard.
   const [subjectPickerOpen, setSubjectPickerOpen] = useState(false);
@@ -1065,7 +1068,27 @@ export default function TeacherPhaseDashboard() {
           >
             {({ fullscreen }) => (
               <>
-                {position ? (
+                {activeMapChip && schoolUrn && neighbours.length > 0 ? (
+                  // A subject chip is active (and the map is drawn), so the map is plotting that subject: the
+                  // figure follows it, from the map's own rank (the same one its dots'
+                  // tooltips use), not the whole-school ranking below. Worded as the map's
+                  // subject tooltip is ("avg. point score").
+                  mapRank ? (
+                    <>
+                      <p className="mt-2 text-3xl font-semibold tabular-nums">
+                        {mapRank.rank}
+                        <span className="ml-1 text-base font-normal text-neutral-500">of {mapRank.total}</span>
+                      </p>
+                      <p className="text-sm text-neutral-500">
+                        among the nearest schools with data, on {activeMapChip.legend} avg. point score
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                      {mapProfiles === null ? "Loading the map…" : `No ${activeMapChip.legend} points score for this school to rank.`}
+                    </p>
+                  )
+                ) : position ? (
                   <>
                     {/* §14: the position IS the anchor -- the figure never stands alone. */}
                     <p className="mt-2 text-3xl font-semibold tabular-nums">
@@ -1126,6 +1149,7 @@ export default function TeacherPhaseDashboard() {
                       // Compact overlays at card size; the fullscreen map keeps the full
                       // toggle, legend and exclusion notes.
                       dense={!fullscreen}
+                      onTargetRank={setMapRank}
                     />
                   </div>
                 )}
