@@ -688,8 +688,56 @@ another year's.
 primaries' average, instead of asking for a subject. At KS2 the subject-scoped columns
 no longer show an "Expand" link, which led to "Tick a subject first".
 
-**Still open, noticed in passing:** the independent pool now also admits independent
-special schools and very small settings whose age range qualifies (e.g. a nearby
-"Unique Children's School" for Highgate). The state side of the pool excludes special
-schools by phase; whether to exclude independent special schools by type too is a
-product call.
+**Corrected, see the entry below:** this originally said the independent pool "now also
+admits independent special schools", citing "Unique Children's School". That was wrong.
+Unique Children's School is an ordinary "Other independent school" in GIAS, and
+independent special schools never reach a mainstream school's pool at all.
+
+---
+
+## 2026-09-21 — Independent special schools in Teacher view Rankings: already excluded, nothing to build
+
+The independent-special-schools brief asked to extend the state-special-school
+exclusion to independent special schools. Looking for that exclusion showed it already
+covers both sectors, one layer below Teacher view. The premise came from my own round-5
+note above, which mislabelled a school.
+
+**Where the exclusion lives:** `public.nearest_schools()`, which builds the
+`school_nearest_neighbours` 'general' pool that every Teacher view Rankings set is drawn
+from (Nearest 10, same sector, local rivals, similar-sized). Its `is_special` is:
+- the whole `establishment_type_group = 'Special schools'`, which GIAS uses for
+  "Other independent special school" (952 open) and "Non-maintained special school" as
+  well as the state community/foundation specials;
+- plus the special academy and free-school types.
+
+A mainstream target never receives any of them as a neighbour. So independent special
+schools are excluded from appearing and from counting as neighbours, exactly as state
+ones are, by the same single filter. The round-5 age-range rule only operates on what
+that pool already contains.
+
+**Verified on live data, Acland Burghley (URN 100053):**
+- Its 100-school pool reaches 3.1 km.
+- Kestrel House School (URN 135683, "Other independent special school", ages 5–16) is
+  2.5 km away and is not in it.
+- Neither are the nearby state specials: Harmood School (Community special), The Bridge
+  School (Academy special converter), The Bridge Keystone (Free schools special) and
+  Royal Free Hospital Children's School.
+- Collège Français Bilingue, Channing and Highgate, all ordinary independents, are in
+  the pool and in its Rankings sets.
+
+**No code change shipped.** A filter restricting the age-range route to the
+"Independent schools" group was drafted and reverted. For mainstream schools it changes
+nothing. Its only effect would be on special schools' OWN dashboards (see below), which
+this decision did not cover.
+
+**Open, product call:** `nearest_schools()` is symmetric, so a special school's own pool
+is made up entirely of other special schools, of both sectors. Before round 5 Teacher
+view's phase filter dropped all of them, so a special school's Rankings card was always
+empty. Since round 5 the age-range rule admits them, so a special school with GCSE data
+is now ranked against nearby special schools. That is probably the right comparison,
+but it is a change nobody decided on. Say if it should go back to empty.
+
+**Tiny independents:** Unique Children's School (URN 145295) is an "Other independent
+school" with 2 pupils, ages 11–18, so it stays in pools as an ordinary independent. Most
+such schools have no published results and show "no figure", unranked. Excluding very
+small schools would be a new size rule, not this filter.
