@@ -14,7 +14,8 @@
 import type { ReactNode } from "react";
 import type { ColumnId } from "@/lib/teacher-view-catalogue";
 
-const ICON_PATHS: Record<ColumnId, ReactNode> = {
+// Exported so onboarding step 4 shows the very same icons rather than redrawn copies.
+export const COLUMN_ICON_PATHS: Record<ColumnId, ReactNode> = {
   candidates: (
     <>
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -65,7 +66,7 @@ export function DashboardColumn({
           {accented && (
             <div className="flex h-[39px] w-[39px] shrink-0 items-center justify-center rounded-lg bg-[rgba(var(--accent-rgb),0.14)] text-[var(--accent)]">
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                {ICON_PATHS[columnId]}
+                {COLUMN_ICON_PATHS[columnId]}
               </svg>
             </div>
           )}

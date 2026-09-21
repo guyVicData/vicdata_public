@@ -86,7 +86,14 @@ export function defaultBoxTitle(columnId: ColumnId, phase: TeacherPhase): string
 // or a second mapping. It is also the resolution availableViews and computeView already
 // use to decide what "its category" means, so the title and the figures agree.
 export function familyLabelFor(headline: AcademicSubjectHeadlineEntry[], subject: string): string | null {
-  return headline.find((h) => h.subject === subject)?.familyLabel ?? null;
+  return familyFor(headline, subject)?.label ?? null;
+}
+
+// The same resolution with the family_id as well, for places that need the category's
+// site-wide colour (SUBJECT_FAMILY_COLOURS is keyed by family_id) as well as its name.
+export function familyFor(headline: AcademicSubjectHeadlineEntry[], subject: string): { id: string; label: string } | null {
+  const h = headline.find((r) => r.subject === subject);
+  return h ? { id: h.familyId, label: h.familyLabel } : null;
 }
 
 // §8 applies the five axes to BOTH Results and Candidate numbers -- same axes, different

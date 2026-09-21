@@ -22,6 +22,10 @@ export type TickItem = {
   // it is at the moment you pick it, not after.
   trailing?: ReactNode;
   disabled?: boolean;
+  // The colour a checked row takes. Optional: a caller with a meaningful per-item colour
+  // (the view builder colours each view by its subject's qualification group) passes it;
+  // everyone else gets the list's `accent`.
+  color?: string;
 };
 
 export function TickList({
@@ -30,29 +34,50 @@ export function TickList({
   onToggle,
   empty,
   maxHeightClass = "max-h-72",
+  // Default checked-row colour: the phase accent where the list sits inside a themed
+  // Teacher view page, otherwise the site's ordinary link blue.
+  accent = "var(--accent, #2563eb)",
 }: {
   items: TickItem[];
   checked: (key: string) => boolean;
   onToggle: (key: string) => void;
   empty?: ReactNode;
   maxHeightClass?: string;
+  accent?: string;
 }) {
   return (
-    <div className={`${maxHeightClass} overflow-y-auto rounded-md border border-neutral-200 dark:border-neutral-800`}>
+    // contain: inline-size -- rows truncate their labels (white-space: nowrap), and without
+    // containment that full-length label becomes the list's minimum width. Inside the
+    // app's flex-column <body> a centred <main> sizes to its content, so opening a list
+    // with a long view name on a phone widened the whole page past the screen (measured:
+    // 472px on a 420px viewport). Containment keeps the list at whatever width it is given.
+    <div className={`${maxHeightClass} overflow-y-auto rounded-md border border-neutral-200 [contain:inline-size] dark:border-neutral-800`}>
       {items.length === 0 && <p className="px-3 py-3 text-sm text-neutral-500">{empty ?? "Nothing to choose from here."}</p>}
-      {items.map((i) => (
+      {items.map((i) => {
+        // A checked row carries real visual weight -- a 3px coloured left edge and a faint
+        // tint of the same colour -- matching the onboarding picker's checked rows, rather
+        // than a ticked box on an otherwise identical grey row. Unchecked rows keep a
+        // transparent edge so ticking never shifts the text.
+        const on = checked(i.key);
+        const c = i.color ?? accent;
+        return (
         <label
           key={i.key}
-          className="flex cursor-pointer items-center gap-3 border-b border-neutral-100 px-3 py-2 text-sm last:border-b-0 dark:border-neutral-900"
+          className="flex cursor-pointer items-center gap-3 border-b border-l-[3px] border-b-neutral-100 px-3 py-2 text-sm transition-colors last:border-b-0 dark:border-b-neutral-900"
+          style={{
+            borderLeftColor: on ? c : "transparent",
+            background: on ? `color-mix(in srgb, ${c} 10%, transparent)` : undefined,
+          }}
         >
-          <input type="checkbox" checked={checked(i.key)} disabled={i.disabled} onChange={() => onToggle(i.key)} />
+          <input type="checkbox" checked={on} disabled={i.disabled} onChange={() => onToggle(i.key)} style={{ accentColor: c }} />
           <span className="min-w-0 flex-1">
             <span className="block truncate">{i.label}</span>
             {i.sublabel && <span className="block truncate text-[11px] text-neutral-500">{i.sublabel}</span>}
           </span>
           {i.trailing !== undefined && <span className="shrink-0 tabular-nums text-neutral-500">{i.trailing}</span>}
         </label>
-      ))}
+        );
+      })}
     </div>
   );
 }

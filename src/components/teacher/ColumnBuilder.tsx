@@ -16,7 +16,8 @@
 // Saved state is a hard requirement in §7, not optional, so every tick round-trips to
 // teacher_view_preferences immediately -- there is no explicit save.
 import { useMemo, useState, type ReactNode } from "react";
-import { availableViews, computeView, isAxisView, COLUMN_MEASURE, AXES, type ColumnId, type SubjectRef, type ViewDef } from "@/lib/teacher-view-catalogue";
+import { availableViews, computeView, isAxisView, comparabilityKey, COLUMN_MEASURE, AXES, type ColumnId, type SubjectRef, type ViewDef } from "@/lib/teacher-view-catalogue";
+import { colourByGroup } from "@/lib/teacher-view-theme";
 import type { AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { ViewChart } from "./ViewChart";
@@ -66,6 +67,16 @@ export function ColumnBuilder({
   if (views.length === 0 && (phase === "ks2" || (!measure && columnId !== "rankings"))) return null;
 
   const toggle = (id: string) => onChange(pinned.includes(id) ? pinned.filter((p) => p !== id) : [...pinned, id]);
+
+  // A view about one subject takes that subject's qualification-group colour -- the same
+  // colourByGroup the dashboard's chips, bars and scores use -- so a checked view reads as
+  // belonging to the subject it is about. Views that are not about one subject (Rankings'
+  // sets, the whole-cohort share) take the list's phase accent.
+  const groupColour = colourByGroup(phase, ticked);
+  const viewColour = (v: ViewDef): string | undefined => {
+    const s = ticked.find((t) => t.key === v.subjectKey);
+    return s ? groupColour.get(comparabilityKey(phase, s.qualificationType)) : undefined;
+  };
 
   return (
     <div>
@@ -144,7 +155,7 @@ export function ColumnBuilder({
           ) : (
             // §14: literally the same component as the subject picker, not a lookalike.
             <TickList
-              items={views.map((v) => ({ key: v.id, label: v.label, sublabel: v.sublabel }))}
+              items={views.map((v) => ({ key: v.id, label: v.label, sublabel: v.sublabel, color: viewColour(v) }))}
               checked={(k) => pinned.includes(k)}
               onToggle={toggle}
             />
