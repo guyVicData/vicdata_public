@@ -36,13 +36,58 @@ export type AxisId = "vs_school_avg" | "vs_category" | "vs_all_subjects" | "vs_c
 // school average" and "How is Biology doing against the school average in this
 // qualification?" describe the same computation; only the second tells someone who has
 // not read a spec what they are about to find out.
-export const AXES: { id: AxisId; question: (subject: string) => string; needsChoice?: boolean }[] = [
-  { id: "vs_school_avg", question: (s) => `How is ${s} doing against the school average in this qualification?` },
-  { id: "vs_category", question: (s) => `How is ${s} doing against the other subjects in its category?` },
-  { id: "vs_all_subjects", question: (s) => `How is ${s} doing against every other subject here?` },
-  { id: "vs_chosen", question: (s) => `How is ${s} doing against subjects I pick myself?`, needsChoice: true },
-  { id: "category_vs_categories", question: (s) => `How is ${s}'s whole category doing against every other category?` },
+//
+// Round 5 adds a box title alongside the question: 2-4 words, because the question is a
+// sentence and a box on the dashboard needs something it can carry in its corner. Both are
+// built from the same facts (qualification, subject family), so the short title can never
+// describe a different comparison from the question it sits above. The family is the real
+// one from the platform's subject-family taxonomy -- see familyLabelFor -- so a Geography
+// teacher's box reads "Vs. Humanities & Social Sciences", never a placeholder.
+type TitleContext = { qualLabel: string; familyLabel: string | null };
+
+export const AXES: {
+  id: AxisId;
+  question: (subject: string) => string;
+  shortTitle: (c: TitleContext) => string;
+  needsChoice?: boolean;
+}[] = [
+  { id: "vs_school_avg", question: (s) => `How is ${s} doing against the school average in this qualification?`, shortTitle: (c) => `Vs. ${c.qualLabel} average` },
+  { id: "vs_category", question: (s) => `How is ${s} doing against the other subjects in its category?`, shortTitle: (c) => `Vs. ${c.familyLabel ?? "its category"}` },
+  { id: "vs_all_subjects", question: (s) => `How is ${s} doing against every other subject here?`, shortTitle: () => "Vs. whole school" },
+  { id: "vs_chosen", question: (s) => `How is ${s} doing against subjects I pick myself?`, shortTitle: () => "Vs. your comparison set", needsChoice: true },
+  { id: "category_vs_categories", question: (s) => `How is ${s}'s whole category doing against every other category?`, shortTitle: (c) => `${c.familyLabel ?? "Its category"} vs. every category` },
 ];
+
+// The box title for what each column shows before anything is pinned. These are the
+// columns' own default content, not catalogue entries -- there is nothing to tick to get
+// them -- but they are titled from here rather than in the page so every box title on
+// the dashboard comes from one place.
+//
+// KS2 differs where the GCSE/Post-16 wording would be false rather than merely
+// different: a primary has no entries (every pupil sits the same tests, §5), and its
+// third card lists the nearest primaries rather than a share of entries.
+export function defaultBoxTitle(columnId: ColumnId, phase: TeacherPhase): string {
+  switch (columnId) {
+    case "candidates":
+      return phase === "ks2" ? "Year 6 cohort" : "Entries this year";
+    case "results":
+      return "Average point score";
+    case "context":
+      return phase === "ks2" ? "Nearest primaries" : "Share of entries";
+    case "rankings":
+      return "10 nearest schools";
+  }
+}
+
+// The subject's family, from the headline rows Teacher view already loads. Those rows come
+// from academic_subject_headline, which is keyed on the same subject_family_map that
+// academic_subject_family_map_lookup exposes to CategoryFilter and SubjectAreaSection -- so
+// this is that taxonomy, read from data already on the page rather than a second lookup
+// or a second mapping. It is also the resolution availableViews and computeView already
+// use to decide what "its category" means, so the title and the figures agree.
+export function familyLabelFor(headline: AcademicSubjectHeadlineEntry[], subject: string): string | null {
+  return headline.find((h) => h.subject === subject)?.familyLabel ?? null;
+}
 
 // §8 applies the five axes to BOTH Results and Candidate numbers -- same axes, different
 // measure -- which is why the measure is a property of the column rather than of the axis.
@@ -70,17 +115,63 @@ export function comparabilityLabel(phase: TeacherPhase, qualificationType: strin
   return b ? KS5_BUCKET_LABEL[b] : qualificationType;
 }
 
+// Round 5: views that are not one of §8's five axes. They are not per-subject comparisons,
+// so computeView (which is) never sees them; the dashboard renders them from its own data.
+//   - Candidates' "Entries, % of year group": the ticked subjects' entries as a share of
+//     the whole exam cohort.
+//   - Rankings' four other comparator sets, beside the Nearest 10 map default. Rankings had
+//     no menu at all before this round.
+export type SpecialViewId =
+  | "share_of_cohort"
+  | "rank_list"
+  | "rank_same_sector"
+  | "rank_local_rivals"
+  | "rank_similar_size";
+
+export function isAxisView(v: ViewDef): v is ViewDef & { axis: AxisId } {
+  return AXES.some((a) => a.id === v.axis);
+}
+
+function specialView(columnId: ColumnId, axis: SpecialViewId, shortTitle: string, label: string, sublabel: string): ViewDef {
+  return { id: viewId(columnId, axis, null, false), columnId, axis, subjectKey: null, trend: false, label, sublabel, shortTitle, subjectLabel: "" };
+}
+
+// Rankings' pinnable sets, in the round-5 brief's order. Each is a real selection from
+// the same neighbour pool as the default Nearest 10 -- see teacher-view-rankings.ts.
+// Similar-sized is GCSE/Post-16 only: KS2 publishes no exam-cohort size to match on.
+function rankingsViews(phase: TeacherPhase): ViewDef[] {
+  const out = [
+    specialView("rankings", "rank_list", "Nearest 10, as a list", "How do we rank against the ten nearest schools, one by one?", "Ranked list · same ten as the map"),
+    specialView("rankings", "rank_same_sector", "Nearest 10, same sector", "How do we rank against the nearest schools in our own sector?", "State with state, independent with independent"),
+    specialView("rankings", "rank_local_rivals", "Local rivals", "How do we rank against the local schools families weigh us against?", "The five nearest state and five nearest independent schools"),
+  ];
+  if (phase !== "ks2") {
+    out.push(
+      specialView(
+        "rankings",
+        "rank_similar_size",
+        phase === "ks5" ? "Similar-sized sixth forms" : "Similar-sized schools",
+        phase === "ks5" ? "How do we rank against nearby sixth forms of a similar size?" : "How do we rank against nearby schools with a similar-sized GCSE year?",
+        "The ten nearby schools with the closest exam cohort",
+      ),
+    );
+  }
+  return out;
+}
+
 export type ViewDef = {
   id: string;
   columnId: ColumnId;
-  axis: AxisId;
+  axis: AxisId | SpecialViewId;
   subjectKey: string | null;
   trend: boolean;
   label: string;
   sublabel: string;
+  shortTitle: string;
+  subjectLabel: string;
 };
 
-export function viewId(columnId: ColumnId, axis: AxisId, subjectKey: string | null, trend: boolean): string {
+export function viewId(columnId: ColumnId, axis: AxisId | SpecialViewId, subjectKey: string | null, trend: boolean): string {
   return [columnId, axis, subjectKey ?? "-", trend ? "trend" : "now"].join("|");
 }
 
@@ -113,15 +204,24 @@ export function availableViews(
   ticked: SubjectRef[],
   headline: AcademicSubjectHeadlineEntry[],
 ): ViewDef[] {
+  // Rankings compares schools, not subjects, so it gets its comparator sets and no axis
+  // menu -- and they do not depend on which subjects are ticked.
+  if (columnId === "rankings") return rankingsViews(phase);
   const measure = COLUMN_MEASURE[columnId];
-  if (!measure) return []; // rankings: compares schools, not subjects -- no axis menu.
+  if (!measure) return [];
   if (ticked.length === 0) return [];
 
   const out: ViewDef[] = [];
+  // Every subject pick-list is empty at KS2 (no subject picker there), so this is
+  // unreachable at KS2 in practice; the phase test states it rather than relying on it.
+  if (columnId === "candidates" && phase !== "ks2") {
+    out.push(specialView("candidates", "share_of_cohort", "Entries, % of year group", "What share of the whole year group takes the subjects I teach?", `Entries ÷ ${phase === "ks5" ? "the 16-18 exam cohort" : "the GCSE cohort"}`));
+  }
   for (const s of ticked) {
     const bucket = phase === "ks5" ? comparabilityKey(phase, s.qualificationType) : null;
     const years = yearsOfData(headline, s.subject, bucket, measure.key);
     const qualLabel = comparabilityLabel(phase, s.qualificationType);
+    const titleContext: TitleContext = { qualLabel, familyLabel: familyLabelFor(headline, s.subject) };
     for (const axis of AXES) {
       // Axis 5 is about the category, not the subject, so it would be the identical view
       // repeated once per ticked subject in the same category. Offered once per category.
@@ -138,6 +238,8 @@ export function availableViews(
         columnId, axis: axis.id, subjectKey: s.key, trend: false,
         label: axis.question(s.label),
         sublabel: `${measure.label} · ${qualLabel}`,
+        shortTitle: axis.shortTitle(titleContext),
+        subjectLabel: s.label,
       });
       if (years >= TREND_MIN_YEARS) {
         out.push({
@@ -146,6 +248,11 @@ export function availableViews(
           // The trend variant is a different question, not the same one with a suffix.
           label: axis.question(s.label).replace(/\?$/, "") + ", year on year?",
           sublabel: `${measure.label} · ${qualLabel} · ${years} years`,
+          // The real span, not the mockup's fixed "5-year": trends are offered from
+          // TREND_MIN_YEARS up, and a title claiming five years over three would be
+          // the one place on the box that is wrong.
+          shortTitle: `${axis.shortTitle(titleContext)}, ${years}-year trend`,
+          subjectLabel: s.label,
         });
       }
     }
@@ -189,7 +296,7 @@ export function computeView(
   chosenKeys: string[],
 ): ComputedView {
   const measure = COLUMN_MEASURE[view.columnId];
-  if (!measure) return { rows: [] };
+  if (!measure || !isAxisView(view)) return { rows: [] };
   const subject = ticked.find((t) => t.key === view.subjectKey) ?? allSubjects.find((t) => t.key === view.subjectKey);
   if (!subject) return { rows: [] };
 

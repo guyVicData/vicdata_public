@@ -91,6 +91,26 @@ export async function savePreferences(
   return !error;
 }
 
+// "Vs. your comparison set" needs the subjects it compares against saved with it, or a
+// pinned box comes back empty on every reload. Stored in the same `columns` JSON as the
+// pins, under a prefix that can never collide with a column id, so it needs no schema
+// change and round-trips through the same save. Keyed by pinned view, not by column:
+// two such boxes for two subjects each keep their own choice.
+export const CHOSEN_PREFIX = "chosen:";
+export const chosenKey = (viewId: string) => `${CHOSEN_PREFIX}${viewId}`;
+
+// A view's saved choice goes when the view does -- otherwise unpinning and re-pinning
+// would silently restore a comparison the person had already thrown away.
+export function dropChosenForUnpinned(columns: ColumnState, columnId: string, stillPinned: string[]): ColumnState {
+  const next = { ...columns };
+  for (const key of Object.keys(next)) {
+    if (!key.startsWith(CHOSEN_PREFIX)) continue;
+    const viewId = key.slice(CHOSEN_PREFIX.length);
+    if (viewId.startsWith(`${columnId}|`) && !stillPinned.includes(viewId)) delete next[key];
+  }
+  return next;
+}
+
 // §7: "A reset button per column wipes it back to the single default view." Modelled as
 // removing the column's key entirely rather than storing an empty array, so "never
 // customised" and "reset to default" are the same state and cannot drift apart.

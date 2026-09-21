@@ -10,16 +10,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, type ColumnState } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, chosenKey, dropChosenForUnpinned, type ColumnState } from "@/lib/teacher-view-data";
 import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
 import { TickList } from "@/components/teacher/TickList";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
-import type { ColumnId, SubjectRef } from "@/lib/teacher-view-catalogue";
+import { CardBox } from "@/components/teacher/CardBox";
+import { RankingsMap } from "@/components/teacher/RankingsMap";
+import { RankedSet, type RankedSetRow } from "@/components/teacher/RankedSet";
+import { ViewChart } from "@/components/teacher/ViewChart";
+import { defaultBoxTitle, type ColumnId, type SubjectRef, type ViewDef } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
-import { rankOf, type RankedSchool } from "@/lib/teacher-view-rankings";
+import { rankOf, type RankedSchool, type RankingsSetId } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
-import type { AcademicSubjectHeadlineEntry, SubjectEntry } from "@/lib/academic-data-view";
+import { deserializeAcademicProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry } from "@/lib/academic-data-view";
 
 // §3: the picker works at real taught-qualification level, not subject-family level --
 // "someone might teach AS Maths but not Statistics". So an item is a (subject,
@@ -143,6 +147,11 @@ export default function TeacherPhaseDashboard() {
   const [rollAtAge10, setRollAtAge10] = useState<number | null>(null);
   const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
   const [headlineLabel, setHeadlineLabel] = useState<string>("");
+  // Round 5: the Rankings card's other comparator sets, each already ranked by the
+  // dashboard route, and the whole-cohort series Candidates' "% of year group" divides by.
+  const [comparatorSets, setComparatorSets] = useState<Partial<Record<RankingsSetId, RankedSetRow[]>>>({});
+  const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
+  const [cohortSeries, setCohortSeries] = useState<{ period: number; value: number }[]>([]);
   const [ticked, setTicked] = useState<string[]>([]);
   const [columns, setColumns] = useState<ColumnState>({});
   const [theme, setTheme] = useTeacherTheme();
@@ -152,6 +161,10 @@ export default function TeacherPhaseDashboard() {
   const [newDataPeriod, setNewDataPeriod] = useState<number | null>(null);
   const [onboarded, setOnboarded] = useState(false);
   const [step, setStep] = useState(0);
+  // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
+  // handed to both the card's map and the fullscreen one, so opening fullscreen is not a
+  // second round trip. null = not loaded yet; [] = loaded, nothing to draw.
+  const [mapProfiles, setMapProfiles] = useState<AcademicSchoolProfile[] | null>(null);
 
   useEffect(() => {
     // Every setState below lives inside this async callback rather than the effect body,
@@ -186,6 +199,9 @@ export default function TeacherPhaseDashboard() {
         setRollAtAge10(body.rollAtAge10 ?? null);
         setNeighbours(body.neighbours ?? []);
         setHeadlineLabel(body.headlineLabel ?? "");
+        setComparatorSets(body.comparatorSets ?? {});
+        setSetInfo(body.setInfo ?? null);
+        setCohortSeries(body.cohortSeries ?? []);
       } else {
         setError("Could not load this school's data. Try again.");
       }
@@ -204,6 +220,31 @@ export default function TeacherPhaseDashboard() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.phase]);
+
+  // The map's profiles come through /api/data-view/academic-schools -- the same membership-
+  // gated route the advanced dashboard's map is fed from -- for exactly the schools this
+  // card already ranks against. A separate effect rather than part of the loader above so
+  // the dashboard renders without waiting for the map's heavier fetch.
+  useEffect(() => {
+    if (!schoolUrn || !onboarded || neighbours.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const urns = neighbours.map((n) => n.urn).join(",");
+      const res = await fetch(
+        `/api/data-view/academic-schools?anchorUrn=${encodeURIComponent(schoolUrn)}&urns=${encodeURIComponent(urns)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (cancelled) return;
+      if (!res.ok) { setMapProfiles([]); return; }
+      const body = await res.json();
+      if (!cancelled) setMapProfiles((body.profiles ?? []).map(deserializeAcademicProfile));
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolUrn, onboarded, neighbours]);
 
   const items = useMemo(() => buildSubjectItems(entries), [entries]);
   const tickedItems = useMemo(() => items.filter((i) => ticked.includes(i.key)), [items, ticked]);
@@ -233,9 +274,25 @@ export default function TeacherPhaseDashboard() {
   // and "reset" stay the same state rather than drifting into two.
   const setColumn = useCallback(
     async (columnId: string, pinned: string[]) => {
-      const next: ColumnState = { ...columns };
+      const next: ColumnState = dropChosenForUnpinned(columns, columnId, pinned);
       if (pinned.length === 0) delete next[columnId];
       else next[columnId] = pinned;
+      setColumns(next);
+      if (schoolUrn && phase) {
+        const prefs = await fetchPreferences(supabase, schoolUrn, phase);
+        await savePreferences(supabase, schoolUrn, phase, { ...prefs, columns: next });
+      }
+    },
+    [columns, schoolUrn, phase, supabase],
+  );
+
+  // The subjects a pinned "Vs. your comparison set" box compares against, saved with the
+  // pins so the choice survives a reload (see chosenKey).
+  const setChosen = useCallback(
+    async (viewId: string, keys: string[]) => {
+      const next: ColumnState = { ...columns };
+      if (keys.length === 0) delete next[chosenKey(viewId)];
+      else next[chosenKey(viewId)] = keys;
       setColumns(next);
       if (schoolUrn && phase) {
         const prefs = await fetchPreferences(supabase, schoolUrn, phase);
@@ -380,11 +437,82 @@ export default function TeacherPhaseDashboard() {
     );
   }
 
+  const formatHeadline = (v: number) => (phase === "ks2" ? `${Math.round(v)}%` : v.toFixed(1));
+
+  // Round 5's non-axis views. Everything here reads data the dashboard already loaded.
+  const renderSpecial = (v: ViewDef, fullscreen: boolean) => {
+    if (v.axis === "share_of_cohort") {
+      // Entries come from the latest year the subject rows cover, so the cohort must be
+      // that same year's -- dividing this year's entries by last year's cohort would be
+      // a figure about no real year group.
+      const latest = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
+      const cohort = cohortSeries.find((c) => c.period === latest)?.value ?? null;
+      if (tickedItems.length === 0) return <p className="mt-2 text-xs text-neutral-500">Tick a subject to see its share of the year group.</p>;
+      if (!cohort) return <p className="mt-2 text-xs text-neutral-500">No published cohort size for {latest ?? "the latest year"}, so there is nothing to divide by.</p>;
+      return (
+        <>
+          <p className="mt-1 text-[11px] text-neutral-500">
+            Year group: {Math.round(cohort).toLocaleString()} pupils ({latest})
+          </p>
+          <ViewChart
+            computed={{
+              rows: tickedItems
+                .map((i) => ({ label: i.label, value: (i.entries / cohort) * 100, isSubject: true }))
+                .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)),
+            }}
+            unit="percent"
+            scaleMax={100}
+          />
+          {fullscreen && (
+            <p className="mt-3 text-xs text-neutral-500">
+              Each pupil takes several subjects, so these shares are not meant to add up to 100%.
+            </p>
+          )}
+        </>
+      );
+    }
+    const setFor: Record<string, RankingsSetId> = {
+      rank_list: "nearest",
+      rank_same_sector: "same_sector",
+      rank_local_rivals: "local_rivals",
+      rank_similar_size: "similar_size",
+    };
+    const setId = setFor[v.axis];
+    if (!setId) return null;
+    const empty: Record<RankingsSetId, string> = {
+      nearest: "No nearby schools with comparable published data for this phase.",
+      same_sector: `No nearby ${setInfo?.targetIndependent ? "independent" : "state"} schools of this phase to compare with.`,
+      local_rivals: "No nearby schools of this phase to compare with.",
+      similar_size: setInfo?.targetCohortSize ? "No nearby schools with a published cohort size to match." : "This school has no published cohort size to match on.",
+    };
+    return (
+      <>
+        {setId === "same_sector" && setInfo && (
+          <p className="mt-1 text-[11px] text-neutral-500">{setInfo.targetIndependent ? "Independent schools only" : "State schools only"}</p>
+        )}
+        {setId === "similar_size" && setInfo?.targetCohortSize && (
+          <p className="mt-1 text-[11px] text-neutral-500">This school: {Math.round(setInfo.targetCohortSize).toLocaleString()} pupils in the exam cohort</p>
+        )}
+        <RankedSet
+          rows={comparatorSets[setId]}
+          headlineLabel={headlineLabel}
+          formatValue={formatHeadline}
+          showCohort={setId === "similar_size"}
+          fullscreen={fullscreen}
+          emptyText={empty[setId]}
+        />
+      </>
+    );
+  };
+
   const builderProps = {
     phase,
     ticked: asRefs(tickedItems),
     allSubjects: asRefs(items),
     headline,
+    chosenFor: (viewId: string) => columns[chosenKey(viewId)] ?? [],
+    onChosenChange: setChosen,
+    renderSpecial,
   };
 
   return (
@@ -416,22 +544,30 @@ export default function TeacherPhaseDashboard() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <h2 className="text-sm font-semibold">{q.howMany}</h2>
-          {phase === "ks2" ? (
-            <p className="mt-2 text-3xl font-semibold tabular-nums">{rollAtAge10?.toLocaleString() ?? "—"}</p>
-          ) : (
-            <>
-              <p className="mt-2 text-3xl font-semibold tabular-nums">{liveCount.toLocaleString()}</p>
-              <p className="text-sm text-neutral-500">
-                across {tickedItems.length} subject{tickedItems.length === 1 ? "" : "s"}
-                {schoolTotal > 0 && ` · ${Math.round((liveCount / schoolTotal) * 100)}% of the school's entries`}
-              </p>
-            </>
-          )}
-          {movedCandidates && (
-            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              {movedCandidates.sentence}
-            </p>
-          )}
+          {/* Round 5: the column's default content is a box like any pinned view, titled
+              from the catalogue rather than hardcoded here. */}
+          <CardBox title={defaultBoxTitle("candidates", phase)} question={q.howMany}>
+            {({ fullscreen }) => (
+              <>
+                {phase === "ks2" ? (
+                  <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{rollAtAge10?.toLocaleString() ?? "—"}</p>
+                ) : (
+                  <>
+                    <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{liveCount.toLocaleString()}</p>
+                    <p className="text-sm text-neutral-500">
+                      across {tickedItems.length} subject{tickedItems.length === 1 ? "" : "s"}
+                      {schoolTotal > 0 && ` · ${Math.round((liveCount / schoolTotal) * 100)}% of the school's entries`}
+                    </p>
+                  </>
+                )}
+                {movedCandidates && (
+                  <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                    {movedCandidates.sentence}
+                  </p>
+                )}
+              </>
+            )}
+          </CardBox>
           <ColumnBuilder columnId={"candidates" as ColumnId} {...builderProps} pinned={columns["candidates"] ?? []} onChange={(n) => setColumn("candidates", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:candidates`} />
         </section>
@@ -445,94 +581,148 @@ export default function TeacherPhaseDashboard() {
               <span className="ml-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
             )}
           </h2>
-          {tickedItems.length === 0 ? (
-            <p className="mt-2 text-sm text-neutral-500">Pick a subject below to see its results.</p>
-          ) : (
-            <ul className="mt-2 space-y-1 text-sm">
-              {tickedItems.map((i) => {
-                const v = resultsFor(i);
-                return (
-                  <li key={i.key} className="flex items-baseline justify-between gap-2">
-                    <span className="truncate">{i.label}</span>
-                    <span className="tabular-nums">
-                      {v === null ? <span className="text-neutral-400">no figure</span> : v.toFixed(1)}
-                      {v !== null && schoolAnchor !== null && (
-                        <span className="ml-2 text-xs text-neutral-500">school avg {schoolAnchor.toFixed(1)}</span>
-                      )}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {movedResults && (
-            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              {movedResults.sentence}
-            </p>
-          )}
+          <CardBox title={defaultBoxTitle("results", phase)} question={q.howWell}>
+            {({ fullscreen }) => (
+              <>
+                {phase === "ks2" ? (
+                  // KS2 has no subject picker -- every pupil sits the same tests -- so this
+                  // card used to ask for a subject nobody could pick. Its result is the
+                  // school's own headline, read against the nearest primaries (§14: never a
+                  // bare number).
+                  (() => {
+                    const own = neighbours.find((n) => n.isTarget)?.value ?? null;
+                    const others = neighbours.filter((n) => !n.isTarget && n.value !== null).map((n) => n.value!);
+                    const avg = others.length ? others.reduce((a, b) => a + b, 0) / others.length : null;
+                    return own === null ? (
+                      <p className="mt-2 text-sm text-neutral-500">No published {headlineLabel} for this school yet.</p>
+                    ) : (
+                      <>
+                        <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{formatHeadline(own)}</p>
+                        <p className="text-sm text-neutral-500">
+                          {headlineLabel}
+                          {avg !== null && ` · nearest primaries average ${formatHeadline(avg)}`}
+                        </p>
+                      </>
+                    );
+                  })()
+                ) : tickedItems.length === 0 ? (
+                  <p className="mt-2 text-sm text-neutral-500">Pick a subject below to see its results.</p>
+                ) : (
+                  <ul className={`mt-2 space-y-1 ${fullscreen ? "text-lg" : "text-sm"}`}>
+                    {tickedItems.map((i) => {
+                      const v = resultsFor(i);
+                      return (
+                        <li key={i.key} className="flex items-baseline justify-between gap-2">
+                          <span className="truncate">{i.label}</span>
+                          <span className="tabular-nums">
+                            {v === null ? <span className="text-neutral-400">no figure</span> : v.toFixed(1)}
+                            {v !== null && schoolAnchor !== null && (
+                              <span className="ml-2 text-xs text-neutral-500">school avg {schoolAnchor.toFixed(1)}</span>
+                            )}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {movedResults && (
+                  <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                    {movedResults.sentence}
+                  </p>
+                )}
+              </>
+            )}
+          </CardBox>
           <ColumnBuilder columnId={"results" as ColumnId} {...builderProps} pinned={columns["results"] ?? []} onChange={(n) => setColumn("results", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:results`} />
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <h2 className="text-sm font-semibold">{q.nearMe}</h2>
-          {phase === "ks2" ? (
-            <>
-              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                The {nearbyOnly.length} nearest primaries, by distance.
-              </p>
-              <ul className="mt-2 space-y-1 text-sm">
-                {nearbyOnly.slice(0, 5).map((n) => (
-                  <li key={n.urn} className="flex items-baseline justify-between gap-2">
-                    <span className="truncate">{n.name}</span>
-                    <span className="tabular-nums text-neutral-500">
-                      {n.distanceKm === null ? "" : `${n.distanceKm.toFixed(1)} km`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              {schoolTotal > 0
-                ? `Your subjects are ${Math.round((liveCount / schoolTotal) * 100)}% of ${schoolTotal.toLocaleString()} entries across the school.`
-                : "No entries recorded for this school."}
-            </p>
-          )}
+          <CardBox title={defaultBoxTitle("context", phase)} question={q.nearMe}>
+            {({ fullscreen }) =>
+              phase === "ks2" ? (
+                <>
+                  <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                    The {nearbyOnly.length} nearest primaries, by distance.
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {/* Fullscreen has room for the whole set rather than the card's first five. */}
+                    {nearbyOnly.slice(0, fullscreen ? nearbyOnly.length : 5).map((n) => (
+                      <li key={n.urn} className="flex items-baseline justify-between gap-2">
+                        <span className="truncate">{n.name}</span>
+                        <span className="tabular-nums text-neutral-500">
+                          {n.distanceKm === null ? "" : `${n.distanceKm.toFixed(1)} km`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className={`mt-2 text-neutral-600 dark:text-neutral-400 ${fullscreen ? "text-lg" : "text-sm"}`}>
+                  {schoolTotal > 0
+                    ? `Your subjects are ${Math.round((liveCount / schoolTotal) * 100)}% of ${schoolTotal.toLocaleString()} entries across the school.`
+                    : "No entries recorded for this school."}
+                </p>
+              )
+            }
+          </CardBox>
           <ColumnBuilder columnId={"context" as ColumnId} {...builderProps} pinned={columns["context"] ?? []} onChange={(n) => setColumn("context", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:context`} />
         </section>
 
         <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <h2 className="text-sm font-semibold">{q.wider}</h2>
-          {position ? (
-            <>
-              {/* §14: the position IS the anchor -- the figure never stands alone. */}
-              <p className="mt-2 text-3xl font-semibold tabular-nums">
-                {position.position}
-                <span className="ml-1 text-base font-normal text-neutral-500">of {position.outOf}</span>
-              </p>
-              <p className="text-sm text-neutral-500">
-                among the nearest schools with data, on {headlineLabel}
-              </p>
-              <ul className="mt-3 space-y-1 text-sm">
-                {[...neighbours]
-                  .filter((n) => n.value !== null)
-                  .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
-                  .slice(0, 5)
-                  .map((n) => (
-                    <li key={n.urn} className={`flex items-baseline justify-between gap-2 ${n.isTarget ? "font-semibold" : ""}`}>
-                      <span className="truncate">{n.name}</span>
-                      <span className="tabular-nums">{n.value?.toFixed(1)}</span>
-                    </li>
-                  ))}
-              </ul>
-            </>
-          ) : (
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              No nearby schools with comparable published data for this phase.
-            </p>
-          )}
+          <CardBox title={defaultBoxTitle("rankings", phase)} question={q.wider}>
+            {({ fullscreen }) => (
+              <>
+                {position ? (
+                  <>
+                    {/* §14: the position IS the anchor -- the figure never stands alone. */}
+                    <p className="mt-2 text-3xl font-semibold tabular-nums">
+                      {position.position}
+                      <span className="ml-1 text-base font-normal text-neutral-500">of {position.outOf}</span>
+                    </p>
+                    <p className="text-sm text-neutral-500">
+                      among the nearest schools with data, on {headlineLabel}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                    No nearby schools with comparable published data for this phase.
+                  </p>
+                )}
+                {/* Round 5: the real map, at card size here and near-viewport size in the
+                    modal. The map is a live Leaflet map and does not print, so the list
+                    below stays as the exportable form of the same ranking. */}
+                {schoolUrn && neighbours.length > 0 && (
+                  <div className="print:hidden">
+                    <RankingsMap
+                      profiles={mapProfiles}
+                      targetUrn={schoolUrn}
+                      stage={phase}
+                      heightClass={fullscreen ? "h-[70vh] min-h-[22rem]" : "h-72"}
+                    />
+                  </div>
+                )}
+                {position && (
+                  <ul className="mt-3 space-y-1 text-sm">
+                    {[...neighbours]
+                      .filter((n) => n.value !== null)
+                      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+                      .slice(0, fullscreen ? neighbours.length : 5)
+                      .map((n) => (
+                        <li key={n.urn} className={`flex items-baseline justify-between gap-2 ${n.isTarget ? "font-semibold" : ""}`}>
+                          <span className="truncate">{n.name}</span>
+                          <span className="tabular-nums">{n.value?.toFixed(1)}</span>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </CardBox>
+          <ColumnBuilder columnId={"rankings" as ColumnId} {...builderProps} pinned={columns["rankings"] ?? []} onChange={(n) => setColumn("rankings", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:rankings`} />
         </section>
       </div>

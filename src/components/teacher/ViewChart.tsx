@@ -12,10 +12,13 @@ import type { ComputedView } from "@/lib/teacher-view-catalogue";
 
 function fmt(v: number | null, unit: string): string {
   if (v === null) return "no figure";
+  if (unit === "percent") return `${Math.round(v)}%`;
   return unit === "entries" ? Math.round(v).toLocaleString() : v.toFixed(1);
 }
 
-export function ViewChart({ computed, unit }: { computed: ComputedView; unit: string }) {
+// `scaleMax` pins the bar scale -- a share of the year group reads against 100%, not
+// against whichever subject happens to be largest.
+export function ViewChart({ computed, unit, scaleMax }: { computed: ComputedView; unit: string; scaleMax?: number }) {
   if (computed.series && computed.periods) {
     const periods = computed.periods;
     const all = computed.series.flatMap((s) => s.values).filter((v): v is number => v !== null);
@@ -62,7 +65,7 @@ export function ViewChart({ computed, unit }: { computed: ComputedView; unit: st
   const rows = computed.rows;
   const vals = rows.map((r) => r.value).filter((v): v is number => v !== null);
   if (!vals.length) return <p className="mt-2 text-xs text-neutral-500">No published figures for this comparison.</p>;
-  const max = Math.max(...vals) || 1;
+  const max = scaleMax ?? (Math.max(...vals) || 1);
   return (
     <ul className="mt-2 space-y-1">
       {rows.slice(0, 12).map((r) => (

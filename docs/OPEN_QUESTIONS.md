@@ -577,3 +577,119 @@ Both mistakes are logged here deliberately, not just the corrected answer -- the
 same "why," not just "what changed" discipline every other entry in this file
 follows, and a real reminder that a plausible-sounding mechanism (late starts) is
 not the same as a confirmed one.
+
+---
+
+## 2026-09-21 — Teacher view round 5 (card mechanism): where the brief and the real build differ
+
+Round 5's brief was written from the Design-artifact mockups (Versions 33/34), not from
+the repo. Several things it treats as already built only exist in the mockups. Logged
+here rather than silently built or skipped.
+
+**1. Round 4's box structure was never built for real.** The real dashboard had no
+per-view boxes, no fullscreen toggle, no share icon and no "Edit this view →" link. Its
+builder link reads "Expand" / "Add a view (N pinned)". This round builds the boxes and
+fullscreen because titles and fullscreen need somewhere to live (`CardBox.tsx`). It does
+**not** add a share icon, because the brief says to leave the share icon alone and there
+was no icon to leave. It also leaves the "Expand" wording unrenamed. Both are round-4
+items still outstanding.
+
+**2. The real view catalogue is not the mockup's `VIEWS` arrays.** `teacher-view-catalogue.ts`
+generates views as §8's five comparison axes × each ticked subject × an optional trend
+variant. The same menu is used for Candidates, Results and School Context. Rankings has
+no menu at all. So the round-5 short titles were applied to what exists:
+- Axis views use the School Context list verbatim: "Vs. [qualification] average",
+  "Vs. [subject family]", "Vs. whole school", "Vs. your comparison set",
+  "[Subject family] vs. every category".
+- Each column's unpinned default content uses the default titles: "Entries this
+  year", "Average point score", "Share of entries", "10 nearest schools".
+- These mockup views do **not** exist in the real catalogue, and were not added, because
+  the brief says the catalogue is confirmed as-is:
+  - Candidates: "Entries vs. Nearest 10" and "Entries, % of year group"
+  - Rankings: "Nearest 10, as a list", "Nearest 10, same sector", "Local rivals" and
+    "Similar-sized schools"
+  
+  "Entries, 5-year trend" and "Points, 5-year trend" map to the axis trend variants
+  instead. **Decision needed:** are the missing Rankings comparator sets wanted? They
+  would be new comparator logic, not titling.
+
+**3. Trend titles say the real span, not "5-year".** Trends are offered from 3 years up
+(`TREND_MIN_YEARS`), so the title is "Vs. whole school, 4-year trend" and so on. A fixed
+"5-year" would be wrong on most subjects.
+
+**4. KS2 default titles are my call.** The brief only covers GCSE/Post-16. At KS2,
+"Entries this year" and "Share of entries" would be false, so KS2 uses "Year 6 cohort"
+and "Nearest primaries". Please confirm or reword.
+
+**5. Pre-existing, not fixed: KS2 Results card.** It says "Pick a subject below to see
+its results", but KS2 has no subject picker (it is hidden for KS2), so the card can never
+show anything.
+
+**6. Pre-existing, not fixed: "Vs. your comparison set" loses its subjects on reload.**
+The chosen subjects are kept in ColumnBuilder's local state by design (Phase 4 comment).
+So a pinned box of this kind is empty after a reload until subjects are re-ticked. Now
+that it carries its own titled box, that is more visible than it was.
+
+**7. Local live verification is blocked by the Q25 auth change.** The project's Auth
+Site URL is now https://vicdata.co.uk and localhost is not on the redirect allow-list.
+The preview-session route therefore correctly refuses on a local server ("Supabase
+substituted the redirect target"). Round-5 code is not deployed, so neither
+vicdata.co.uk nor localhost can currently be driven as the preview profile. To fix it,
+either add `http://localhost:3010/**` to the Auth redirect allow-list, or sign in on the
+local server by hand.
+
+### Follow-up, same day — gaps closed and shipped (gaps-and-ship brief v1)
+
+Items 2 (Rankings/Candidates views), 4 (KS2 titles), 5 (KS2 Results card) and 6
+(comparison set persistence) above are now built. Item 7 (localhost not on the Auth
+allow-list) is unchanged; verification moves to the live site instead. The judgment
+calls, so they can be vetoed:
+
+**Independent schools were missing from every Teacher view neighbour pool.** A real,
+pre-existing bug, found while building "same sector". All 1,588 open independent schools
+have phase "Not applicable", so the KS4/KS5 phase filter dropped every one of them. An
+independent school's "Nearest 10" was therefore entirely state schools. Fixed in
+`inStagePool`: an independent school joins the pool when its statutory age range reaches
+the stage (GCSE year, or a sixth form). That still excludes the 3–13 preps the
+Haverstock fix was about. **This changes the default Nearest 10 as well**, deliberately,
+because every set comes from one pool. Acland Burghley's Nearest 10 now includes Collège
+Français Bilingue and Channing; Highgate's same-sector set is ten real independents.
+
+**GCSE IGCSE exclusion now applies in Teacher view too.** Once independents enter the
+pool, an IGCSE-heavy school's Attainment 8 would rank as if comparable. The advanced
+dashboard's own rule (`igcseExclusionLikely`) is reused: the school stays in the set,
+unranked, labelled "IGCSE, not comparable", and the map drops its dot with the existing
+note.
+
+**How each new Rankings set is defined.** All four are selections from the same
+phase-filtered 100-nearest pool as Nearest 10:
+- *Same sector*: the nearest ten of the target's own sector, state or independent.
+- *Local rivals*: the nearest five state and nearest five independent schools. This is
+  the existing Local-rivals recipe's per-sector split (the comparator builder's
+  `feeder_candidates` mode), applied to the phase-filtered pool rather than by calling
+  `feeder_candidates` itself. That RPC has no phase filter, so for a secondary school it
+  returns mostly primaries.
+- *Similar-sized*: the ten pool schools whose latest exam cohort (the figure the map
+  sizes dots by) is closest on a log-ratio. Not offered at KS2, which has no exam-cohort
+  size.
+- All sets can come out short of ten where the pool runs out, for example independents
+  in a state-dense area. Short sets are shown as they are, not padded.
+
+**The new Rankings views are ranked lists, not maps.** The map stays on the default
+"10 nearest schools" box. Giving each set its own map would need a per-set profile
+fetch; that's worth doing if the lists read thin on screen.
+
+**"Entries, % of year group"** divides each ticked subject's entries by the whole exam
+cohort of the same year: `pupil_count` at GCSE, and the whole-institution 16–18 count at
+Post-16. If that year has no cohort figure, the box says so rather than dividing by
+another year's.
+
+**KS2 Results card** now shows the school's own KS2 headline against the nearest
+primaries' average, instead of asking for a subject. At KS2 the subject-scoped columns
+no longer show an "Expand" link, which led to "Tick a subject first".
+
+**Still open, noticed in passing:** the independent pool now also admits independent
+special schools and very small settings whose age range qualifies (e.g. a nearby
+"Unique Children's School" for Highgate). The state side of the pool excludes special
+schools by phase; whether to exclude independent special schools by type too is a
+product call.

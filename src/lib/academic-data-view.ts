@@ -276,6 +276,23 @@ export function latestEntriesCount(profile: AcademicSchoolProfile, stage: KsStag
   return null;
 }
 
+// Teacher view round 5's "Similar-sized schools/sixth forms": the latest whole-cohort
+// size (the same ENTRIES_MEASURE_KS4 / whole-institution KS5 figure the map sizes its
+// dots by) for a whole neighbour pool in ONE headline call -- rather than
+// fetchAcademicProfiles, which would also pull families, KS2 facts and qualification
+// flags for up to a hundred schools just to read one number each.
+export async function fetchLatestCohortSizes(urns: string[], stage: "ks4" | "ks5"): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (urns.length === 0) return out;
+  const rows = await lookupAcademicHeadline({ entityIds: urns, ksStage: stage as AcademicRpcKsStage });
+  const key = stage === "ks4" ? ENTRIES_MEASURE_KS4 : ENTRIES_MEASURE_KS5_WHOLE_INSTITUTION;
+  for (const [urn, years] of groupHeadlineRows(rows)) {
+    const latest = latestMeasureAt(years, key);
+    if (latest !== null && latest.value > 0) out.set(urn, latest.value);
+  }
+  return out;
+}
+
 // Real per-school entries series, ascending by period -- Part B, Section 1's own
 // "candidate numbers since the start of the real series" trend line. GCSE/Post-16
 // only: KS2 has no equivalent multi-year series on this profile shape at all

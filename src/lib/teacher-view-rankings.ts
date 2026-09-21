@@ -30,6 +30,27 @@ export function phasesFor(stage: "ks2" | "ks4" | "ks5"): string[] {
   return stage === "ks2" ? KS2_PHASES : KS4_KS5_PHASES;
 }
 
+// Independent schools carry no real phase: all 1,588 open ones in `schools` are "Not
+// applicable" (checked, round 5). So phasesFor alone silently dropped EVERY independent
+// school from every Teacher view neighbour pool, which went unnoticed while Rankings
+// only had a sector-blind Nearest 10, and would leave "same sector" empty for every
+// independent school and "local rivals" with no independent half at all.
+//
+// For those schools the statutory age range is the real phase signal. It still keeps
+// out the independent preps the Haverstock fix was about: a 3-13 prep does not reach
+// GCSE age.
+export function inStagePool(
+  stage: "ks2" | "ks4" | "ks5",
+  s: { phase: string | null; statutory_low_age: number | null; statutory_high_age: number | null },
+): boolean {
+  if (s.phase && phasesFor(stage).includes(s.phase)) return true;
+  if (s.phase !== "Not applicable" || s.statutory_low_age === null || s.statutory_high_age === null) return false;
+  const [lo, hi] = [s.statutory_low_age, s.statutory_high_age];
+  if (stage === "ks2") return lo <= 10 && hi >= 11; // sits the Year 6 tests
+  if (stage === "ks4") return lo <= 15 && hi >= 16; // reaches the GCSE year
+  return hi >= 18; // has a sixth form
+}
+
 // `status` is lowercase in this database ('open', not 'Open') -- found the hard way, by a
 // filter that silently returned nothing.
 export const OPEN_STATUS = "open";
@@ -102,4 +123,64 @@ export function rankOf(rows: RankedSchool[], urn: string): { position: number; o
   const scored = rows.filter((r) => r.value !== null).sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
   const idx = scored.findIndex((r) => r.urn === urn);
   return idx === -1 ? null : { position: idx + 1, outOf: scored.length };
+}
+
+// ---------------------------------------------------------------------------
+// Round 5: the Rankings card's other comparator sets.
+//
+// Every set is drawn from the SAME phase-filtered, open neighbour pool the Nearest 10 is
+// (the 100 nearest in school_nearest_neighbours' general pool). So "near me" keeps one
+// meaning across all of them, and none of them can quietly reintroduce the Haverstock
+// problem of a secondary being compared with primaries. They differ only in which of
+// those neighbours they keep.
+// ---------------------------------------------------------------------------
+
+export type RankingsSetId = "nearest" | "same_sector" | "local_rivals" | "similar_size";
+
+export type PoolSchool = { urn: string; name: string; distanceKm: number | null; independent: boolean };
+
+// The sector split every existing recipe uses: feeder_candidates partitions on exactly
+// this equality, and the comparator builder's sector filter tests it the same way.
+export function isIndependent(establishmentTypeGroup: string | null): boolean {
+  return establishmentTypeGroup === "Independent schools";
+}
+
+export const SET_SIZE = 10;
+// Local rivals: half of the set from each sector. See localRivals for why.
+export const LOCAL_RIVALS_PER_SECTOR = SET_SIZE / 2;
+
+// "State vs. state, independent vs. independent" -- the nearest ten of the target's own
+// sector. The pool is geographic, so in a state-dense area an independent school's
+// nearest ten independents can run out inside it; the set is then honestly short
+// rather than padded with the other sector.
+export function sameSector(pool: PoolSchool[], targetIndependent: boolean): PoolSchool[] {
+  return pool.filter((p) => p.independent === targetIndependent).slice(0, SET_SIZE);
+}
+
+// "Local rivals" is the existing recipe's idea (the comparator builder's Local rivals
+// mode: geography first, a target count PER SECTOR, as feeder_candidates does), applied
+// to the phase-filtered pool rather than by calling feeder_candidates itself. That
+// function has no phase filter, so for a secondary its nearest fifteen per sector are
+// mostly primaries. What makes the set differ from Nearest 10 is the split: the schools
+// a family would actually weigh against this one, from both sectors, even where one
+// sector crowds the other out of the plain nearest ten.
+export function localRivals(pool: PoolSchool[]): PoolSchool[] {
+  const state = pool.filter((p) => !p.independent).slice(0, LOCAL_RIVALS_PER_SECTOR);
+  const independent = pool.filter((p) => p.independent).slice(0, LOCAL_RIVALS_PER_SECTOR);
+  return [...state, ...independent].sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+}
+
+// Similar-sized: the ten neighbours whose exam cohort is closest to this school's, on
+// the ratio rather than the difference. A 100-pupil gap is a big one at a cohort of 80
+// and a small one at a cohort of 300, and a ratio treats "twice the size" and "half
+// the size" as equally far. Schools with no published cohort figure are left out
+// rather than guessed at.
+export function similarSize(pool: PoolSchool[], sizes: Map<string, number>, targetSize: number | null): PoolSchool[] {
+  if (targetSize === null || targetSize <= 0) return [];
+  return pool
+    .filter((p) => sizes.has(p.urn))
+    .map((p) => ({ p, gap: Math.abs(Math.log(sizes.get(p.urn)! / targetSize)) }))
+    .sort((a, b) => a.gap - b.gap || (a.p.distanceKm ?? Infinity) - (b.p.distanceKm ?? Infinity))
+    .slice(0, SET_SIZE)
+    .map((x) => x.p);
 }

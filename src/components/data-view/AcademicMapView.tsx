@@ -363,8 +363,13 @@ export default function AcademicMapView({
   // PdfExportButton overlays (matching Rolls' MapView.tsx exactly), since
   // AcademicDataView's own in-flow header row skips them for Map -- needs the same
   // controlled active/onChange pair that row already threads through.
-  activeView: ViewKey;
-  onChangeView: (v: ViewKey) => void;
+  //
+  // Optional since Teacher view round 5, which embeds this same map in its Rankings card.
+  // There the ViewSwitcher would switch views of a dashboard that is not on the page, and
+  // Teacher view has its own Export -- so an embedding that passes neither gets neither
+  // overlay. Every existing caller passes both and is unaffected.
+  activeView?: ViewKey;
+  onChangeView?: (v: ViewKey) => void;
   // LA/Region choropleth: the real bearer token the new academic-region-choropleth/
   // academic-la-choropleth routes need (same membership-gated pattern every other
   // Academic fetch already uses) -- this component didn't previously do any fetching
@@ -1005,11 +1010,17 @@ export default function AcademicMapView({
   return (
     <div ref={rootRef} className="vd-academic-map relative h-full w-full">
       <style>{`
+        /* Theme follows the NEAREST data-theme ancestor, the same rule globals.css's own
+           dark variant uses, rather than only <html>'s. Teacher view scopes its theme to
+           #teacher-root (Q15), so a :root-only selector painted this map's ring and labels
+           dark under a system dark preference even with Teacher view switched to light.
+           Nothing on the advanced dashboard sets data-theme, so there it behaves exactly
+           as before. */
         .vd-academic-map { --distance-ring: #9ca3af; }
         @media (prefers-color-scheme: dark) {
-          :root:where(:not([data-theme="light"])) .vd-academic-map { --distance-ring: #6b7280; }
+          .vd-academic-map:where(:not([data-theme="light"] *)) { --distance-ring: #6b7280; }
         }
-        :root[data-theme="dark"] .vd-academic-map { --distance-ring: #6b7280; }
+        [data-theme="dark"] .vd-academic-map { --distance-ring: #6b7280; }
         .vd-academic-ring-label {
           font-size: 10px; font-weight: 600; color: var(--distance-ring);
           text-align: center; white-space: nowrap; background: transparent;
@@ -1020,9 +1031,9 @@ export default function AcademicMapView({
            rather than a lookalike with its own styling. */
         .vd-academic-map { --label-bg: #fff; --label-fg: #171717; --choropleth-label-bg: rgba(255,255,255,0.88); }
         @media (prefers-color-scheme: dark) {
-          :root:where(:not([data-theme="light"])) .vd-academic-map { --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85); }
+          .vd-academic-map:where(:not([data-theme="light"] *)) { --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85); }
         }
-        :root[data-theme="dark"] .vd-academic-map { --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85); }
+        [data-theme="dark"] .vd-academic-map { --label-bg: #171717; --label-fg: #fafafa; --choropleth-label-bg: rgba(23,23,23,0.85); }
         .vd-choropleth-label {
           /* Live bug fix, same real root cause as MapView.tsx's own identical class
              (found live, "strange 1-character white-on-black label, no function") --
@@ -1045,14 +1056,18 @@ export default function AcademicMapView({
           overlay; that turned out not to match Rolls' actual layout once seen
           live, so this supersedes it. Order reversed too: Grade band first,
           then "Trends" (plural, matching the noun form used everywhere else). */}
-      <div className="absolute left-3 top-3 z-[1000] rounded-md bg-white shadow-sm dark:bg-neutral-950">
-        <ViewSwitcher active={activeView} onChange={onChangeView} />
-      </div>
+      {activeView && onChangeView && (
+        <div className="absolute left-3 top-3 z-[1000] rounded-md bg-white shadow-sm dark:bg-neutral-950">
+          <ViewSwitcher active={activeView} onChange={onChangeView} />
+        </div>
+      )}
 
       <div ref={topRightStackRef} className="absolute right-3 top-3 z-[1000] flex flex-col items-end gap-2">
-        <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
-          <PdfExportButton />
-        </div>
+        {activeView && onChangeView && (
+          <div className="rounded-md bg-white shadow-sm dark:bg-neutral-950">
+            <PdfExportButton />
+          </div>
+        )}
         {/* Live feedback (Guy, 2026-09-14): the standalone "View by area" toggle is
             removed entirely -- the choropleth now only ever appears the same way
             Rolls' own map's does, via a real Region/Nation-scale set picked from the

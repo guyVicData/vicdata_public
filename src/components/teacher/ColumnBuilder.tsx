@@ -15,12 +15,13 @@
 //
 // Saved state is a hard requirement in §7, not optional, so every tick round-trips to
 // teacher_view_preferences immediately -- there is no explicit save.
-import { useMemo, useState } from "react";
-import { availableViews, computeView, COLUMN_MEASURE, AXES, type ColumnId, type SubjectRef } from "@/lib/teacher-view-catalogue";
+import { useMemo, useState, type ReactNode } from "react";
+import { availableViews, computeView, isAxisView, COLUMN_MEASURE, AXES, type ColumnId, type SubjectRef, type ViewDef } from "@/lib/teacher-view-catalogue";
 import type { AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { ViewChart } from "./ViewChart";
 import { TickList } from "./TickList";
+import { CardBox } from "./CardBox";
 
 export function ColumnBuilder({
   columnId,
@@ -30,6 +31,9 @@ export function ColumnBuilder({
   headline,
   pinned,
   onChange,
+  chosenFor,
+  onChosenChange,
+  renderSpecial,
 }: {
   columnId: ColumnId;
   phase: TeacherPhase;
@@ -38,54 +42,78 @@ export function ColumnBuilder({
   headline: AcademicSubjectHeadlineEntry[];
   pinned: string[];
   onChange: (next: string[]) => void;
+  // Axis 4 ("vs subjects I choose") is the one axis that needs a second input. It used to
+  // be local state here, so a pinned "Vs. your comparison set" box came back empty after
+  // every reload, and two such boxes in one column shared one choice. Now it is saved per
+  // pinned view, alongside the pins themselves (see the dashboard's setChosen).
+  chosenFor: (viewId: string) => string[];
+  onChosenChange: (viewId: string, keys: string[]) => void;
+  // Round 5's non-axis views (Candidates' "% of year group", Rankings' comparator sets)
+  // are drawn from data the dashboard holds rather than from the subject headline, so it
+  // renders them.
+  renderSpecial?: (view: ViewDef, fullscreen: boolean) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  // Axis 4 ("vs subjects I choose") is the one axis that needs a second input. Kept local
-  // to the builder rather than persisted: it is a framing of a pinned view, and persisting
-  // it would need its own per-view store that §7 does not ask for.
-  const [chosen, setChosen] = useState<string[]>([]);
 
   const views = useMemo(() => availableViews(columnId, phase, ticked, headline), [columnId, phase, ticked, headline]);
   const measure = COLUMN_MEASURE[columnId];
   const pinnedViews = useMemo(() => views.filter((v) => pinned.includes(v.id)), [views, pinned]);
   const needsChoice = useMemo(() => new Set(AXES.filter((a) => a.needsChoice).map((a) => a.id)), []);
 
-  if (!measure) return null; // §7's topic gate: this column has no axis menu at all.
+  // §7's topic gate: a column with nothing on offer has no builder at all. Includes every
+  // subject-scoped column at KS2, where there is no subject picker -- offering "Expand"
+  // there only led to "Tick a subject first", which a KS2 user has no way to do.
+  if (views.length === 0 && (phase === "ks2" || (!measure && columnId !== "rankings"))) return null;
 
   const toggle = (id: string) => onChange(pinned.includes(id) ? pinned.filter((p) => p !== id) : [...pinned, id]);
 
   return (
-    <div className="mt-3">
+    <div>
+      {/* Round 5: each pinned view is its own box, titled by its catalogue shortTitle --
+          two pinned views are two boxes with two titles, never one merged figure. The
+          subject goes in the subtitle because the short title is per axis: pinning the
+          same comparison for two subjects must still leave the boxes distinguishable. */}
       {pinnedViews.map((v) => {
-        const computed = computeView(v, phase, ticked, allSubjects, headline, chosen);
+        const chosen = chosenFor(v.id);
         return (
-          <figure key={v.id} className="mt-3 border-t border-neutral-100 pt-3 dark:border-neutral-900">
-            <figcaption className="flex items-start justify-between gap-2">
-              <span>
-                <span className="block text-xs font-medium">{v.label}</span>
-                <span className="block text-[11px] text-neutral-500">{v.sublabel}</span>
-              </span>
+          <CardBox
+            key={v.id}
+            title={v.shortTitle}
+            subtitle={v.subjectLabel ? `${v.subjectLabel} · ${v.sublabel}` : v.sublabel}
+            question={v.label}
+            actions={
               <button
                 type="button"
                 onClick={() => toggle(v.id)}
-                className="shrink-0 text-[11px] text-neutral-500 hover:underline print:hidden"
+                className="text-[11px] text-neutral-500 hover:underline"
                 aria-label={`Remove ${v.label}`}
               >
                 Remove
               </button>
-            </figcaption>
-            {needsChoice.has(v.axis) && (
-              <div className="mt-2 print:hidden">
-                <TickList
-                  items={allSubjects.map((x) => ({ key: x.key, label: x.label }))}
-                  checked={(k) => chosen.includes(k)}
-                  onToggle={(k) => setChosen(chosen.includes(k) ? chosen.filter((c) => c !== k) : [...chosen, k])}
-                  maxHeightClass="max-h-32"
-                />
-              </div>
+            }
+          >
+            {({ fullscreen }) => (
+              <>
+                {/* The chooser is an editing control, not part of the figure, so it stays
+                    on the card rather than being projected. */}
+                {!fullscreen && isAxisView(v) && needsChoice.has(v.axis) && (
+                  <div className="mt-2 print:hidden">
+                    <TickList
+                      items={allSubjects.map((x) => ({ key: x.key, label: x.label }))}
+                      checked={(k) => chosen.includes(k)}
+                      onToggle={(k) => onChosenChange(v.id, chosen.includes(k) ? chosen.filter((c) => c !== k) : [...chosen, k])}
+                      maxHeightClass="max-h-32"
+                    />
+                  </div>
+                )}
+                {isAxisView(v) && measure ? (
+                  <ViewChart computed={computeView(v, phase, ticked, allSubjects, headline, chosen)} unit={measure.unit} />
+                ) : (
+                  renderSpecial?.(v, fullscreen)
+                )}
+              </>
             )}
-            <ViewChart computed={computed} unit={measure.unit} />
-          </figure>
+          </CardBox>
         );
       })}
 
