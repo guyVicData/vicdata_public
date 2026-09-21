@@ -9,10 +9,12 @@
 //
 // §14: every heading is the real question it answers, not a label.
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, PHASE_QUESTIONS, phaseTileState, type TeacherPhase } from "@/lib/teacher-view-phases";
+import { PHASE_ACCENT, FEATURE_ACCENT } from "@/lib/teacher-view-theme";
+import { HomeCard, PhaseGlyph, RecruitmentGlyph, MeetingsGlyph, NEUTRAL_TILE } from "@/components/teacher/HomeCard";
+import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 
 type Membership = {
   id: string;
@@ -26,6 +28,9 @@ export default function TeacherHomePage() {
   const [phases, setPhases] = useState<TeacherPhase[]>([]);
   const [onboarded, setOnboarded] = useState<TeacherPhase[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // The home page has no toggle of its own; it follows the theme chosen on a dashboard, so
+  // the cards' tokens (scoped to #teacher-root) resolve here too. Same hook, no new state.
+  const [theme] = useTeacherTheme();
 
   useEffect(() => {
     (async () => {
@@ -67,57 +72,50 @@ export default function TeacherHomePage() {
   if (loading) return <main className="mx-auto max-w-3xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
 
   return (
-    <main className="mx-auto max-w-3xl p-4 sm:p-6">
+    <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6">
       <h1 className="text-xl font-semibold sm:text-2xl">What would you like to look at?</h1>
-      {schoolName && <p className="mt-1 text-sm text-neutral-500">{schoolName}</p>}
+      {schoolName && <p className="mt-1 text-sm text-[var(--muted)]">{schoolName}</p>}
 
       {error && <p className="mt-6 text-sm text-amber-700 dark:text-amber-400">{error}</p>}
 
+      {/* Phases and features in one stacked list, as Home.dc.html has it. */}
       {!error && phases.length > 0 && (
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="mt-6 flex flex-col gap-3">
           {phases.map((phase) => {
             const state = phaseTileState(phase, onboarded);
             return (
-              <Link
+              <HomeCard
                 key={phase}
                 href={`/teacher/${phase}`}
-                className="rounded-lg border border-neutral-200 p-4 transition hover:border-blue-400 dark:border-neutral-800 dark:hover:border-blue-600"
-              >
-                <p className="text-base font-semibold">{PHASE_LABELS[phase]}</p>
-                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{PHASE_QUESTIONS[phase].howWell}</p>
-                <p className="mt-3 text-xs font-medium text-blue-700 dark:text-blue-400">
-                  {state === "open-dashboard" ? "Open dashboard" : "Take the 4-step tour to unlock"}
-                </p>
-              </Link>
+                colour={PHASE_ACCENT[phase] ?? NEUTRAL_TILE}
+                icon={<PhaseGlyph phase={phase} />}
+                title={PHASE_LABELS[phase]}
+                description={PHASE_QUESTIONS[phase].howWell}
+                footer={state === "open-dashboard" ? "Open dashboard" : "Take the 4-step tour to unlock"}
+              />
             );
           })}
-        </div>
-      )}
 
-      {/* §10 and §11: Recruitment and Meetings are standalone features, "not one of the
-          four repeating cards", so they sit apart from the phase tiles rather than among
-          them. Shown only where Teacher view itself applies -- a school with no exam data
-          has nothing to build a candidate comparison or a slide deck from. */}
-      {!error && phases.length > 0 && (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Link
+          {/* §10 and §11: Recruitment and Meetings are standalone features, not phases.
+              They follow the phase cards in the same list, as in the mockup, each in its
+              own colour and with no tour line. Shown only where Teacher view itself
+              applies -- a school with no exam data has nothing to build a candidate
+              comparison or a slide deck from. Titled by name with the question as the
+              description, so §14's question still leads the card's reading. */}
+          <HomeCard
             href="/teacher/recruitment"
-            className="rounded-lg border border-neutral-200 p-4 transition hover:border-blue-400 dark:border-neutral-800 dark:hover:border-blue-600"
-          >
-            <p className="text-base font-semibold">Who are we hiring, and how do they compare?</p>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              Compare a candidate&rsquo;s current school with your own, on the subject you&rsquo;re hiring for.
-            </p>
-          </Link>
-          <Link
+            colour={FEATURE_ACCENT.recruitment}
+            icon={<RecruitmentGlyph />}
+            title="Recruitment"
+            description="Who are we hiring, and how do their current schools compare with ours?"
+          />
+          <HomeCard
             href="/teacher/meetings"
-            className="rounded-lg border border-neutral-200 p-4 transition hover:border-blue-400 dark:border-neutral-800 dark:hover:border-blue-600"
-          >
-            <p className="text-base font-semibold">What do you need to show, and to whom?</p>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              Sequence graphs from any dashboard into slides you can present or hand round.
-            </p>
-          </Link>
+            colour={FEATURE_ACCENT.meetings}
+            icon={<MeetingsGlyph />}
+            title="Meetings"
+            description="What do you need to show, and to whom?"
+          />
         </div>
       )}
 

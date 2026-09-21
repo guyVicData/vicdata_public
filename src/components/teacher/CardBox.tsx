@@ -17,7 +17,13 @@
 //     what makes it a modal rather than a layout swap: close it and nothing reflows.
 //   - z-[1500], the same layer FullscreenChartModal uses, because Leaflet's own panes and
 //     controls go up to 1000 and the map card underneath must not show through.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+
+// Lets the dashboard know when any box -- a column's default box or a pinned one deep in
+// ColumnBuilder -- is fullscreen, without threading a callback through every level. The
+// dashboard uses it to hide its column dividers, as the mockup does. Defaults to a no-op,
+// so a CardBox outside the dashboard is unaffected.
+export const FullscreenReport = createContext<(open: boolean) => void>(() => {});
 
 function ExpandIcon({ expanded }: { expanded: boolean }) {
   return (
@@ -59,6 +65,13 @@ export function CardBox({
 }) {
   const [fullscreen, setFullscreen] = useState(false);
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  const report = useContext(FullscreenReport);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    report(true);
+    return () => report(false);
+  }, [fullscreen, report]);
 
   useEffect(() => {
     if (!fullscreen) return;

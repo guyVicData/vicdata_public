@@ -17,6 +17,14 @@ export const PHASE_ACCENT: Record<TeacherPhase, { hex: string; rgb: string } | n
   ks5: { hex: "#a78bfa", rgb: "167,139,250" },
 };
 
+// The two standalone features' colours on the Teacher view home (Home.dc.html): amber for
+// Recruitment, rose for Meetings. Same shape as PHASE_ACCENT so the home cards treat a
+// phase and a feature identically.
+export const FEATURE_ACCENT = {
+  recruitment: { hex: "#fbbf24", rgb: "251,191,36" },
+  meetings: { hex: "#fb7185", rgb: "251,113,133" },
+} as const;
+
 // Subject-chip colours. In the mockups a colour belongs to a QUALIFICATION GROUP, not to
 // each subject: both GCSE subjects are green and the BTEC one blue, and the pie groups
 // its slices the same way ("Geography & Sports (GCSE) — 9%"). Post-16 starts further

@@ -33,6 +33,9 @@
   --bg: #f7f7f8; --fg: #17171b; --muted: #6b6b72; --muted2: #55555c; --muted3: #9a9aa2;
   --border: #e6e6ea; --panel-bg: #ffffff; --panel-border: #e2e2e7; --panel-border2: #d8d8dd;
   --box-bg: #f7f7f9; --source: #8d8d95;
+  /* The dashboard's column dividers. An alias, not a new colour: it follows
+     --panel-border2 in each theme because it is declared on the same element. */
+  --divider: var(--panel-border2);
 }
 @media (prefers-color-scheme: dark) {
   #teacher-root:not([data-theme="light"]) {

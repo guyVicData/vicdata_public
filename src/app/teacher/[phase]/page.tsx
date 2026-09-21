@@ -15,6 +15,7 @@ import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
 import { TickList } from "@/components/teacher/TickList";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
+import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { SharePie, type PieSlice } from "@/components/teacher/SharePie";
 import { POINTS_BEARING_QUALIFICATION } from "@/components/data-view/SubjectAreaSection";
@@ -569,7 +570,8 @@ export default function TeacherPhaseDashboard() {
       // The phase accent reaches every card and box as a custom property, so the shared
       // components never carry a phase-specific hex of their own.
       style={accent ? ({ "--accent": accent.hex, "--accent-rgb": accent.rgb } as React.CSSProperties) : undefined}
-      className="mx-auto max-w-4xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
+      // max-w-7xl is 80rem = 1280px, the laptop board's own width.
+      className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-xl font-semibold sm:text-2xl">{PHASE_LABELS[phase]}</h1>
@@ -621,7 +623,8 @@ export default function TeacherPhaseDashboard() {
         {PHASE_LABELS[phase]} · {tickedItems.length} subject{tickedItems.length === 1 ? "" : "s"} selected · exported {new Date().toLocaleDateString("en-GB")}
       </p>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      {/* The laptop board's four-column row, with its dividers -- see DashboardGrid. */}
+      <DashboardGrid>
         <DashboardColumn columnId="candidates" question={q.howMany} accented={!!accent}>
           {/* Round 5: the column's default content is a box like any pinned view, titled
               from the catalogue rather than hardcoded here. */}
@@ -860,7 +863,7 @@ export default function TeacherPhaseDashboard() {
           <ColumnBuilder columnId={"rankings" as ColumnId} {...builderProps} pinned={columns["rankings"] ?? []} onChange={(n) => setColumn("rankings", n)} />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:rankings`} />
         </DashboardColumn>
-      </div>
+      </DashboardGrid>
 
       {phase !== "ks2" && (
         <section id="subjects" className="mt-6 scroll-mt-4 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
