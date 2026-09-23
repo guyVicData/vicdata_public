@@ -17,13 +17,30 @@ import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 
 // The expand/exit-full-screen glyph. `expanded` draws the exit form, which is also the
 // modal's close control.
+//
+// Round 7 §3 swapped in the round-6 wireframe's own mark: two opposite corners with a
+// diagonal running out of each, rather than the four-bracket box shipped before. It reads
+// as a direction at 14px, where four symmetrical brackets read as a noisy square. One
+// copy, used by every fullscreen control and by the modal's own close button, so the
+// gesture looks the same wherever it appears (§14).
 export function ExpandIcon({ expanded }: { expanded: boolean }) {
   return (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {expanded ? (
-        <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" strokeLinecap="round" strokeLinejoin="round" />
+        // Collapsing: the corners sit inside and the diagonals run outward to them.
+        <>
+          <polyline points="8,3 8,8 3,8" />
+          <polyline points="12,17 12,12 17,12" />
+          <line x1="8" y1="8" x2="2.5" y2="2.5" />
+          <line x1="12" y1="12" x2="17.5" y2="17.5" />
+        </>
       ) : (
-        <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" strokeLinecap="round" strokeLinejoin="round" />
+        <>
+          <polyline points="7,2 2,2 2,7" />
+          <polyline points="13,18 18,18 18,13" />
+          <line x1="2" y1="2" x2="8" y2="8" />
+          <line x1="18" y1="18" x2="12" y2="12" />
+        </>
       )}
     </svg>
   );

@@ -47,15 +47,28 @@ export const COLUMN_ICON_PATHS: Record<ColumnId, ReactNode> = {
 
 export function DashboardColumn({
   columnId,
+  title,
   question,
   accented,
   badge,
+  action,
   children,
 }: {
   columnId: ColumnId;
+  // Round 7 §1: the wireframe's single-line header -- icon, title and subtitle on the
+  // left, the Add button on the right, one row -- but keeping the built dashboard's own
+  // per-column icon rather than dropping it for the wireframe's plainer treatment.
+  title: string;
+  // The natural-language question, now the header's subtitle rather than its heading.
+  // §14 wants the real question wherever there is room for it; this keeps it, and gives
+  // the card the short name it also needs.
   question: string;
   accented: boolean;
   badge?: ReactNode;
+  // The column's "+ Add" control. Rendered here so the header is genuinely one row --
+  // it belongs to the panel mechanism, so the page passes it down rather than this
+  // component knowing anything about panels.
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -70,10 +83,14 @@ export function DashboardColumn({
               </svg>
             </div>
           )}
-          <h2 className="flex-grow text-sm font-bold">
-            {question}
-            {badge}
-          </h2>
+          <div className="min-w-0 flex-grow">
+            <h2 className="text-[15px] font-bold leading-tight">
+              {title}
+              {badge}
+            </h2>
+            <p className="mt-0.5 text-[12.5px] leading-snug text-[var(--muted)]">{question}</p>
+          </div>
+          {action && <div className="shrink-0 print:hidden">{action}</div>}
         </div>
         {children}
       </div>

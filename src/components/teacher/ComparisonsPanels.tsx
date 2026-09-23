@@ -431,7 +431,6 @@ export function ComparisonsPanels({
       columnId="rankings"
       panels={panels}
       onPanelsChange={onPanelsChange}
-      changeLabel={measure.changeLabel}
       controls={
         <div className="flex flex-col items-start gap-1.5">
           <div className="relative" ref={setRef}>

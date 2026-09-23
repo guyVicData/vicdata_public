@@ -19,6 +19,7 @@ import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
+import { AddPanelButton } from "@/components/teacher/AddPanelButton";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPicker, type CompareAgainstId } from "@/components/teacher/ContextPicker";
 import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
@@ -29,7 +30,7 @@ import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
 import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicker";
 import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
-import { defaultBoxTitle } from "@/lib/teacher-view-catalogue";
+import { COLUMN_TITLE, defaultBoxTitle } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
 import { type RankedSchool, type RankingsSetId } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
@@ -1045,7 +1046,21 @@ export default function TeacherPhaseDashboard() {
 
       {/* The laptop board's four-column row, with its dividers -- see DashboardGrid. */}
       <DashboardGrid>
-        <DashboardColumn columnId="candidates" question={q.howMany} accented={!!accent}>
+        <DashboardColumn
+          columnId="candidates"
+          title={COLUMN_TITLE.candidates}
+          question={q.howMany}
+          accented={!!accent}
+          action={
+            phase === "ks2" || tickedItems.length === 0 ? undefined : (
+              <AddPanelButton
+                panels={panelsOf("candidates")}
+                onPanelsChange={(next) => setPanels("candidates", next)}
+                changeLabel={ENTRIES_MEASURE.changeLabel}
+              />
+            )
+          }
+        >
           {phase === "ks2" ? (
             // KS2 keeps its own single box: every pupil sits the same tests, so there are
             // no subjects to plot per year and nothing for the panel mechanism to offer
@@ -1088,8 +1103,18 @@ export default function TeacherPhaseDashboard() {
 
         <DashboardColumn
           columnId="results"
+          title={COLUMN_TITLE.results}
           question={q.howWell}
           accented={!!accent}
+          action={
+            phase === "ks2" || tickedItems.length === 0 ? undefined : (
+              <AddPanelButton
+                panels={panelsOf("results")}
+                onPanelsChange={(next) => setPanels("results", next)}
+                changeLabel={resultsMeasure.changeLabel}
+              />
+            )
+          }
           // §13's "NEW pill wherever something's actually changed" -- on the card the new
           // data actually lands in, not on every card.
           badge={newDataPeriod !== null && (
@@ -1166,7 +1191,21 @@ export default function TeacherPhaseDashboard() {
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:results`} />
         </DashboardColumn>
 
-        <DashboardColumn columnId="context" question={q.nearMe} accented={!!accent}>
+        <DashboardColumn
+          columnId="context"
+          title={COLUMN_TITLE.context}
+          question={q.nearMe}
+          accented={!!accent}
+          action={
+            phase === "ks2" || tickedItems.length === 0 ? undefined : (
+              <AddPanelButton
+                panels={panelsOf("context")}
+                onPanelsChange={(next) => setPanels("context", next)}
+                changeLabel={contextMeasure.changeLabel}
+              />
+            )
+          }
+        >
           {phase === "ks2" ? (
             <CardBox title={defaultBoxTitle("context", phase)} question={q.nearMe}>
               {({ fullscreen }) => (
@@ -1246,7 +1285,19 @@ export default function TeacherPhaseDashboard() {
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:context`} />
         </DashboardColumn>
 
-        <DashboardColumn columnId="rankings" question={q.wider} accented={!!accent}>
+        <DashboardColumn
+          columnId="rankings"
+          title={COLUMN_TITLE.rankings}
+          question={q.wider}
+          accented={!!accent}
+          action={
+            <AddPanelButton
+              panels={panelsOf("rankings")}
+              onPanelsChange={(next) => setPanels("rankings", next)}
+              changeLabel={comparisonsMeasure.changeLabel}
+            />
+          }
+        >
           <ComparisonsPanels
             phase={phase}
             panels={panelsOf("rankings")}

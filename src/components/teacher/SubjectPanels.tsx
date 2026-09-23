@@ -440,7 +440,6 @@ export function SubjectPanels({
       panels={panels}
       onPanelsChange={onPanelsChange}
       controls={controls}
-      changeLabel={measure.changeLabel}
       render={{ current, trend, change }}
     />
   );

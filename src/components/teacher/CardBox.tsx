@@ -44,16 +44,22 @@ export function CardBox({
   // fullscreen box has room for the sentence, and §14 wants the real question wherever
   // there is space for it.
   question?: string;
-  // Round 6: a panel is titled by a small tinted pill ("Current — 2024/25") rather than
-  // the plain muted heading a pinned view uses -- the round-6 wireframe's own treatment.
-  // The pill REPLACES the heading's look, not the heading itself: `title` still names the
-  // box for its fullscreen button, its modal and every aria label, so the two can never
-  // describe different things. Optional, so every round-5 caller is untouched.
+  // Round 6: a panel's own heading, which replaces the plain muted title a pinned view
+  // uses. `title` still names the box for its fullscreen button, its modal and every aria
+  // label, so the two can never describe different things. Optional, so every round-5
+  // caller is untouched.
+  //
+  // Round 7 §2 dropped the tinted pill this used to sit in: on the real dashboard it read
+  // as a button, which it never was. Plain text, a little larger, so losing the pill does
+  // not read as a demotion.
   tag?: ReactNode;
+  // The panel's VIEW-CHOICE icons (bar/table/donut/map/…). Round 7 §3 moved these out of
+  // the top-right corner, which was carrying up to four icons, onto their own row under
+  // the heading -- leaving exactly two in the corner. They choose how to draw the figure,
+  // so they belong beside the figure; fullscreen and remove act on the panel itself.
   actions?: ReactNode;
-  // Icon controls that belong AFTER the fullscreen button. The round-6 panels put their
-  // view toggles before it and the remove × after it, which is the wireframe's own order
-  // on all four boards.
+  // The one icon that belongs AFTER the fullscreen button: remove. Two icons, top-right,
+  // on every panel (round 7 §3).
   trailingActions?: ReactNode;
   // A full-width control row under the header, above the content: the panels' subject
   // chips and their From:/Since:/Trend-line pills. Not part of the figure, so -- like the
@@ -97,7 +103,6 @@ export function CardBox({
         {subtitle && <p className="text-[11px] text-neutral-500">{subtitle}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-0.5 print:hidden">
-        {!isModal && actions}
         <button
           ref={isModal ? closeRef : undefined}
           type="button"
@@ -130,6 +135,8 @@ export function CardBox({
     // Mockup box: radius 10px, 1px --panel-border, --box-bg, 12px padding, 10px gap.
     <div className="mt-3 flex flex-col gap-2.5 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3">
       {header(false)}
+      {/* Round 7 §3: the view-choice icons, top-left under the heading. */}
+      {actions && <div className="-mt-1 flex items-center gap-0.5 print:hidden">{actions}</div>}
       {controls && <div className="print:hidden">{controls}</div>}
       <div>{children({ fullscreen: false })}</div>
       {footer}

@@ -58,6 +58,16 @@ export const AXES: {
   { id: "category_vs_categories", question: (s) => `How is ${s}'s whole category doing against every other category?`, shortTitle: (c) => `${c.familyLabel ?? "Its category"} vs. every category` },
 ];
 
+// Each column's own name, as a person reads it. One source, shared by the dashboard's
+// header row and onboarding step 4, so the two can never name a card differently.
+// "Comparisons" is round 6 §6.2's copy-only rename -- the ColumnId stays `rankings`.
+export const COLUMN_TITLE: Record<ColumnId, string> = {
+  candidates: "Candidates",
+  results: "Results",
+  context: "Context",
+  rankings: "Comparisons",
+};
+
 // The box title for what each column shows before anything is pinned. These are the
 // columns' own default content, not catalogue entries -- there is nothing to tick to get
 // them -- but they are titled from here rather than in the page so every box title on

@@ -19,11 +19,11 @@
 //
 // Each column supplies its own panel contents through `render`; this file knows nothing
 // about measures, subjects or schools.
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { CardBox } from "./CardBox";
-import { IconButton, PANEL_PICKER_ICONS, PlusIcon, RemoveIcon } from "./PanelIcons";
-import { MenuCardRow, MenuHeading, PanelMenu, useDismiss } from "./PanelMenu";
-import { PANEL_ORDER, addPanel, canRemovePanel, removePanel, type PanelId } from "@/lib/teacher-view-panels";
+import { ADD_LABEL } from "./AddPanelButton";
+import { IconButton, RemoveIcon } from "./PanelIcons";
+import { PANEL_ORDER, canRemovePanel, removePanel, type PanelId } from "@/lib/teacher-view-panels";
 
 export type PanelRender = {
   // The pill at the top-left of the panel: "Current — 2024/25", "Candidates — 2021/22 to
@@ -43,69 +43,27 @@ export type PanelRender = {
   source?: ReactNode;
 };
 
-const ADD_LABEL: Record<PanelId, string> = {
-  current: "Current snapshot",
-  trend: "Trend over time",
-  change: "% change",
-};
-
 export function ColumnPanels({
   columnId,
   panels,
   onPanelsChange,
   controls,
-  changeLabel,
   render,
 }: {
   columnId: string;
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
-  // The column's own header controls -- Results' measure pill, Context's combined picker,
-  // Comparisons' two pills. Rendered to the left of Add.
+  // The column's own data controls -- Results' measure pill, Context's and Comparisons'
+  // two pills each. They sit under the card header, above the panels; Add itself now
+  // lives in that header (round 7 §1, AddPanelButton).
   controls?: ReactNode;
-  // "% change in candidate numbers" / "% change in average point score": the Add row
-  // names the measure it would actually plot, so picking it is not a guess.
-  changeLabel?: string;
   render: Partial<Record<PanelId, PanelRender>>;
 }) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useDismiss(open, () => setOpen(false));
-
-  const missing = PANEL_ORDER.filter((p) => !panels.includes(p) && render[p]);
   const removable = canRemovePanel(panels);
 
   return (
     <div>
-      <div className="relative mt-2 flex items-start justify-between gap-2 print:hidden" ref={menuRef}>
-        <div className="min-w-0">{controls}</div>
-        {missing.length > 0 && (
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => setOpen(!open)}
-              aria-expanded={open}
-              aria-haspopup="menu"
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--fg)] bg-[var(--fg)] px-3 py-1.5 text-[13px] font-semibold text-[var(--bg)]"
-            >
-              {PlusIcon}
-              Add
-            </button>
-            {open && (
-              <PanelMenu label="Add a view" align="right" width={268}>
-                <MenuHeading>Add a view</MenuHeading>
-                {missing.map((p) => (
-                  <MenuCardRow
-                    key={p}
-                    icon={PANEL_PICKER_ICONS[p]}
-                    label={p === "change" ? changeLabel ?? ADD_LABEL.change : ADD_LABEL[p]}
-                    onClick={() => { onPanelsChange(addPanel(panels, p)); setOpen(false); }}
-                  />
-                ))}
-              </PanelMenu>
-            )}
-          </div>
-        )}
-      </div>
+      {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
 
       {PANEL_ORDER.filter((p) => panels.includes(p)).map((id) => {
         const panel = render[id];
@@ -116,11 +74,13 @@ export function ColumnPanels({
             title={panel.tag}
             question={panel.question}
             tag={
+              // Round 7 §2: plain text, no pill. The tinted pill it replaced read as a
+              // button on the real dashboard, and nothing about a panel heading is
+              // clickable. Scaled up from 11px so dropping the background is not read as
+              // a demotion.
               <span className="flex flex-wrap items-center gap-1.5">
                 {panel.beforeTag}
-                <span className="inline-block rounded-full bg-[rgba(var(--accent-rgb,138,138,144),0.14)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--accent,var(--muted2))]">
-                  {panel.tag}
-                </span>
+                <span className="text-[13px] font-semibold text-[var(--fg)]">{panel.tag}</span>
               </span>
             }
             actions={panel.actions}

@@ -261,7 +261,6 @@ export function CandidatesPanels({
       columnId="candidates"
       panels={panels}
       onPanelsChange={onPanelsChange}
-      changeLabel={measure.changeLabel}
       render={{ current, trend, change }}
     />
   );
