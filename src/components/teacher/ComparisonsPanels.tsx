@@ -31,6 +31,7 @@ import {
   percentChange,
   periodsWithData,
   sliceFrom,
+  trimToData,
   startOptions,
   trendSentence,
   type Measure,
@@ -332,13 +333,13 @@ export function ComparisonsPanels({
     </div>
   );
 
-  const full: PanelData = {
+  const full: PanelData = trimToData({
     periods,
     series: [
       { key: "own", label: "Your school", colour: "var(--fg)", values: target ? valuesFor(target.urn) : [] },
       { key: "versus", label: versusLabel, colour: "var(--muted3)", values: versusValues, comparison: true },
     ],
-  };
+  });
   const realPeriods = periodsWithData(full);
   const trendData = sliceFrom(full, trendStart);
   const changeData = sliceFrom(full, changeStart);

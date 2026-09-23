@@ -23,6 +23,7 @@ import {
   percentChange,
   periodsWithData,
   sliceFrom,
+  trimToData,
   startOptions,
   trendSentence,
   type PanelData,
@@ -98,19 +99,20 @@ export function CandidatesPanels({
   const allValues = periods.map((_, i) => combine(subjectSeries.map((s) => s.values[i]), measure.aggregate));
 
   const focused = subjects.find((s) => s.key === focus);
-  const focusSeries: PanelData = {
+  const focusSeries: PanelData = trimToData({
     periods,
     series: [
       focused
         ? { key: focused.key, label: focused.label, colour: focused.colour, values: subjectSeries.find((s) => s.key === focused.key)!.values }
         : { key: "all", label: "All subjects", colour: "var(--muted2)", values: allValues },
     ],
-  };
+  });
 
   const trendPeriods = periodsWithData(focusSeries);
   const trendData = sliceFrom(focusSeries, trendStart);
-  const changeData = sliceFrom({ periods, series: subjectSeries }, changeStart);
-  const changePeriods = periodsWithData({ periods, series: subjectSeries });
+  const changeFull = trimToData({ periods, series: subjectSeries });
+  const changeData = sliceFrom(changeFull, changeStart);
+  const changePeriods = periodsWithData(changeFull);
 
   const spanLabel = (data: PanelData) =>
     data.periods.length ? `${academicYearLabel(data.periods[0])}–${academicYearLabel(data.periods[data.periods.length - 1])}` : "";

@@ -23,6 +23,7 @@ import {
   percentChange,
   periodsWithData,
   sliceFrom,
+  trimToData,
   startOptions,
   trendSentence,
   type Measure,
@@ -304,7 +305,7 @@ export function SubjectPanels({
   const allValues = periods.map((_, i) => combine(subjects.map((s) => s.values[i]), measure.aggregate));
   const focusLabel = focused ? focused.label : subjects.length === 1 ? subjects[0].label : "All subjects";
 
-  const trendFull: PanelData = {
+  const trendFull: PanelData = trimToData({
     periods,
     series: [
       focused
@@ -314,11 +315,13 @@ export function SubjectPanels({
         ? [{ key: "group", label: groupSeries.label, colour: "var(--muted3)", values: groupSeries.values, comparison: true }]
         : []),
     ],
-  };
+  });
   const trendPeriods = periodsWithData(trendFull);
   const trendData = sliceFrom(trendFull, trendStart);
   const trendSaid = trendSentence({
-    subjectClause: `${focusLabel}'s ${measure.noun}`,
+    // "All subjects" is plural, so it takes a bare possessive -- "All subjects's average
+    // point score" was reading as a typo on every aggregate trend.
+    subjectClause: `${focusLabel}${focusLabel.endsWith("s") ? "'" : "'s"} ${measure.noun}`,
     values: trendData.series[0]?.values ?? [],
     measure,
     startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
@@ -375,7 +378,7 @@ export function SubjectPanels({
   };
 
   // -------------------------------------------------------------- % change
-  const changeFull: PanelData = {
+  const changeFull: PanelData = trimToData({
     periods,
     series: [
       ...subjects.map((s) => ({ key: s.key, label: s.label, colour: s.colour, values: s.values })),
@@ -383,7 +386,7 @@ export function SubjectPanels({
       // ones -- "individual subjects and the school as a whole" in one picture.
       ...(groupSeries ? [{ key: "group", label: groupSeries.label, colour: "#57534e", values: groupSeries.values }] : []),
     ],
-  };
+  });
   const changePeriods = periodsWithData(changeFull);
   const changeData = sliceFrom(changeFull, changeStart);
   const changeBars: ChangeBar[] = changeData.series.map((s) => ({

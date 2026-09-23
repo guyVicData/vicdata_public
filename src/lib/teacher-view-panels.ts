@@ -215,6 +215,37 @@ export function periodsWithData(data: PanelData): number[] {
   return data.periods.filter((_, i) => data.series.some((s) => s.values[i] !== null));
 }
 
+// Drop the leading and trailing periods where NOTHING is published, so a panel's first
+// period is a period it can actually draw.
+//
+// Round 7 §7, the real bug this fixes. `academic_subject_headline` has rows for 2020/21 --
+// entries were recorded -- but `avg_point_score` is null for every school and every
+// subject that year, nationwide: 2020/21 GCSE grades were teacher-assessed and DfE never
+// published average point scores for that cohort. So every Results trend arrived here
+// with a leading null, and everything that read `periods[0]` -- the panel's own tag, the
+// "From:" pill, and the narrative's "since <year>" -- named 2020/21 as the start of a
+// series that genuinely begins in 2021/22.
+//
+// Note what was NOT wrong: the values. `endpoints()` has always skipped nulls, so the
+// figures either side of "grown from X to Y" were real. It was the period they were
+// attributed to that was not, which is its own kind of wrong -- a 2021/22 figure labelled
+// 2020/21 is not a real fact about 2020/21.
+//
+// Fixed here, once, rather than in each column: all three panel sets build their series
+// through this, so the tag, the pill, the axis and the sentence cannot disagree about
+// where a series starts. Interior gaps are LEFT ALONE -- a missing middle year is real
+// and TrendChart draws it as a break in the line.
+export function trimToData(data: PanelData): PanelData {
+  const real = data.periods.map((_, i) => data.series.some((s) => s.values[i] !== null));
+  const first = real.indexOf(true);
+  if (first === -1) return { periods: [], series: data.series.map((s) => ({ ...s, values: [] })) };
+  const last = real.lastIndexOf(true);
+  return {
+    periods: data.periods.slice(first, last + 1),
+    series: data.series.map((s) => ({ ...s, values: s.values.slice(first, last + 1) })),
+  };
+}
+
 // The start years a From:/Since: control can offer. A range needs two points to be a
 // range, so the last period is never a valid start -- picking it would draw a single dot
 // and describe a change over no elapsed time.
