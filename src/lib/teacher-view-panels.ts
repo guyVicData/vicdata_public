@@ -292,6 +292,24 @@ export function trendChartKind(data: PanelData): "bars" | "line" {
   return periodsWithData(data).length >= TREND_LINE_MIN_YEARS ? "line" : "bars";
 }
 
+// Ranking a comparator set on whatever figure is active (round 7 §9). Schools with no
+// published figure are left UNRANKED rather than placed last: "no data" is not a
+// position, and giving it one would let a school with nothing published appear to beat
+// one with a genuinely low score.
+//
+// Ties share a position and the next rank skips accordingly -- two schools 3rd means the
+// next is 5th -- because the alternative is telling two identical schools that one of
+// them is better.
+export function rankByValue(rows: { key: string; value: number | null }[]): Map<string, number> {
+  const placed = rows.filter((r) => r.value !== null).sort((a, b) => b.value! - a.value!);
+  const ranks = new Map<string, number>();
+  placed.forEach((r, i) => {
+    const previous = placed[i - 1];
+    ranks.set(r.key, previous && previous.value === r.value ? ranks.get(previous.key)! : i + 1);
+  });
+  return ranks;
+}
+
 // ------------------------------------------------------------- trend arithmetic
 
 export function leastSquares(values: (number | null)[]): { slope: number; intercept: number } | null {

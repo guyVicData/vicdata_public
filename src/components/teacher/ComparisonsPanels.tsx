@@ -28,6 +28,7 @@ import {
   DIRECTION_WORD,
   meanOf,
   nextStart,
+  rankByValue,
   percentChange,
   periodsWithData,
   sliceFrom,
@@ -66,6 +67,9 @@ export type SchoolSeries = { results: { period: number; value: number }[]; candi
 // The "vs:" selector's own value: the set's average, or one named school in it.
 const AVERAGE = "average";
 
+// The subject chip row's own "no subject" value -- compare on the phase headline instead.
+export const WHOLE_SCHOOL = "whole-school";
+
 export function ComparisonsPanels({
   phase,
   panels,
@@ -93,6 +97,7 @@ export function ComparisonsPanels({
   onMapChip,
   mapRank,
   onMapRank,
+  subjectLabel,
   emptyText,
 }: {
   phase: KsStage;
@@ -119,6 +124,10 @@ export function ComparisonsPanels({
   onMapChip: (key: string) => void;
   mapRank: { rank: number; total: number } | null;
   onMapRank: (info: { rank: number; total: number } | null) => void;
+  // Round 7 §9: the active subject chip's own label, or null for the whole school. Every
+  // view reads the same selection, so the narrative has to name it too -- a rank "on
+  // Geography avg. point score" is a different statement from one on Attainment 8.
+  subjectLabel: string | null;
   emptyText: string;
 }) {
   // Ranking is the default view (§4.3), even though Graph comes first in the icon row.
@@ -137,6 +146,9 @@ export function ComparisonsPanels({
   const versusRef = useDismiss(versusOpen, () => setVersusOpen(false));
   const changeVersusRef = useDismiss(changeVersusOpen, () => setChangeVersusOpen(false));
 
+  // What the card is comparing on, in a sentence. §9 made this follow the chip, so it is
+  // no longer always the phase headline.
+  const comparedOn = subjectLabel ? `${subjectLabel} ${measure.label.toLowerCase()}` : headlineLabel;
   const seriesKey = measure.id === "entries" ? "candidates" : "results";
   const seriesFor = (urn: string) => seriesByUrn[urn]?.[seriesKey] ?? [];
 
@@ -170,8 +182,12 @@ export function ComparisonsPanels({
     .map((s) => ({ ...s, value: valueAt(s.urn) }))
     .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
   const placed = ranked.filter((r) => r.value !== null);
-  const rankOfUrn = new Map(placed.map((r, i) => [r.urn, i + 1]));
+  const rankOfUrn = rankByValue(ranked.map((r) => ({ key: r.urn, value: r.value })));
   const targetRank = target ? rankOfUrn.get(target.urn) ?? null : null;
+  // The Map reports its own rank, computed inside AcademicMapView over the schools it
+  // could actually plot. Where it has one it wins, because a figure beside a map should
+  // match the map.
+  const shownRank = view === "map" && mapRank ? mapRank : targetRank && placed.length > 1 ? { rank: targetRank, total: placed.length } : null;
 
   const rankingRows: SortRow[] = ranked.map((r) => ({
     key: r.urn,
@@ -195,31 +211,6 @@ export function ComparisonsPanels({
         <IconButton label="Ranking" active={view === "ranking"} onClick={() => setView("ranking")}>{RankListIcon}</IconButton>
       </>
     ),
-    // The map plots one ticked subject at a time; the chips only belong to that view.
-    controls:
-      view === "map" && mapChips.length > 0 ? (
-        <div className="flex flex-wrap gap-[5px]" role="group" aria-label="Subject shown on the map">
-          {mapChips.map((c) => {
-            const on = c.key === activeMapChip?.key;
-            return (
-              <button
-                key={c.key}
-                type="button"
-                aria-pressed={on}
-                onClick={() => onMapChip(c.key)}
-                className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
-                style={
-                  on
-                    ? { background: c.hex, color: "#0a0a0b", border: `1.5px solid ${c.hex}` }
-                    : { background: "transparent", color: c.hex, border: `1.5px solid ${c.hex}80` }
-                }
-              >
-                {c.label}
-              </button>
-            );
-          })}
-        </div>
-      ) : undefined,
     body: (fullscreen) => {
       if (schools.length === 0) return <p className="text-sm text-[var(--muted)]">{emptyText}</p>;
       if (view === "map") {
@@ -227,15 +218,6 @@ export function ComparisonsPanels({
           // A live Leaflet map, which does not print -- the Ranking view is the one that
           // does, which is why it stays the default rather than this.
           <div className="print:hidden">
-            {activeMapChip && (
-              <p className="mb-1 text-[11px] text-[var(--muted)]">
-                {mapRank
-                  ? `${mapRank.rank} of ${mapRank.total} on ${activeMapChip.legend} avg. point score`
-                  : mapProfiles === null
-                    ? "Loading the map…"
-                    : `No ${activeMapChip.legend} points score for this school to rank.`}
-              </p>
-            )}
             <RankingsMap
               profiles={mapProfiles}
               targetUrn={schoolUrn}
@@ -284,14 +266,17 @@ export function ComparisonsPanels({
         />
       );
     },
-    summary:
-      targetRank && placed.length > 1 ? (
-        <PanelSummary>
-          This school is {targetRank} of {placed.length} on {headlineLabel}, among {setLabel.toLowerCase()}.
-        </PanelSummary>
-      ) : (
-        <PanelSummary>No nearby schools with comparable published data for this phase.</PanelSummary>
-      ),
+    summary: shownRank ? (
+      <PanelSummary>
+        This school is {shownRank.rank} of {shownRank.total} on {comparedOn}, among {setLabel.toLowerCase()}.
+      </PanelSummary>
+    ) : (
+      <PanelSummary>
+        {subjectLabel
+          ? `No published ${subjectLabel} figure for this school to rank against this set.`
+          : "No nearby schools with comparable published data for this phase."}
+      </PanelSummary>
+    ),
     source: source(),
   };
 
@@ -343,7 +328,7 @@ export function ComparisonsPanels({
 
   // -------------------------------------------------------------------- Trend
   const trendSaid = trendSentence({
-    subjectClause: `Your school's ${headlineLabel}`,
+    subjectClause: `Your school's ${comparedOn}`,
     values: trendData.series[0]?.values ?? [],
     measure,
     startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
@@ -413,7 +398,7 @@ export function ComparisonsPanels({
         <PanelSummary>Not enough published years yet to measure a change.</PanelSummary>
       ) : (
         <PanelSummary>
-          This school&rsquo;s {headlineLabel} has {ownPct >= 0 ? "risen" : "fallen"} {Math.abs(Math.round(ownPct))}% since {changeSince}
+          This school&rsquo;s {comparedOn} has {ownPct >= 0 ? "risen" : "fallen"} {Math.abs(Math.round(ownPct))}% since {changeSince}
           {versusPct === null
             ? "."
             : `, against ${versusPct >= 0 ? "a rise" : "a fall"} of ${Math.abs(Math.round(versusPct))}% for ${versusLabel.toLowerCase()}.`}
@@ -450,6 +435,46 @@ export function ComparisonsPanels({
               ))
             }
           </PillMenu>
+          {/* Round 7 §9: one subject selection for the whole column. The Map has offered
+              these chips since an earlier round; Graph, Ranking, Trend and % change now
+              read the same choice and the same per-subject rows. "Whole school" keeps the
+              headline comparison reachable. */}
+          {mapChips.length > 0 && (
+            <div className="flex flex-wrap gap-[5px]" role="group" aria-label="Compare on">
+              <button
+                type="button"
+                aria-pressed={!activeMapChip}
+                onClick={() => onMapChip(WHOLE_SCHOOL)}
+                className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
+                style={
+                  !activeMapChip
+                    ? { background: "var(--fg)", color: "var(--bg)", border: "1.5px solid var(--fg)" }
+                    : { background: "transparent", color: "var(--muted2)", border: "1.5px solid var(--panel-border2)" }
+                }
+              >
+                Whole school
+              </button>
+              {mapChips.map((c) => {
+                const on = c.key === activeMapChip?.key;
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => onMapChip(c.key)}
+                    className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
+                    style={
+                      on
+                        ? { background: c.hex, color: "#0a0a0b", border: `1.5px solid ${c.hex}` }
+                        : { background: "transparent", color: c.hex, border: `1.5px solid ${c.hex}80` }
+                    }
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }

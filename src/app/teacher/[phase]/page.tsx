@@ -18,7 +18,7 @@ import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
-import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
+import { ComparisonsPanels, WHOLE_SCHOOL, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
 import { AddPanelButton } from "@/components/teacher/AddPanelButton";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
@@ -35,7 +35,7 @@ import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
 import { type RankedSchool, type RankingsSetId } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
-import { deserializeAcademicProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
+import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
 
 // §3: the picker works at real taught-qualification level, not subject-family level --
 // "someone might teach AS Maths but not Statistics". So an item is a (subject,
@@ -250,20 +250,32 @@ export default function TeacherPhaseDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.phase]);
 
-  // The map's profiles come through /api/data-view/academic-schools -- the same membership-
-  // gated route the advanced dashboard's map is fed from -- for exactly the schools this
-  // card already ranks against. A separate effect rather than part of the loader above so
-  // the dashboard renders without waiting for the map's heavier fetch.
+  // The comparator profiles come through /api/data-view/academic-schools -- the same
+  // membership-gated route the advanced dashboard's map is fed from -- for exactly the
+  // schools this card ranks against. A separate effect rather than part of the loader
+  // above so the dashboard renders without waiting for this heavier fetch.
+  //
+  // Round 7 §9: fetched for the UNION of all four comparator sets, not just the nearest
+  // ten. These rows are what make Comparisons' Graph and Ranking subject-specific, and
+  // they now have to cover whichever set the "Compared against" pill is on. Same call,
+  // same route, a longer urn list -- the dashboard route already resolves this same union
+  // server-side, so it is a set that is known to be a sane size.
+  const comparatorUrns = useMemo(
+    () => Array.from(new Set(Object.values(comparatorSets).flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
+    [comparatorSets],
+  );
+
   useEffect(() => {
-    if (!schoolUrn || !onboarded || neighbours.length === 0) return;
+    if (!schoolUrn || !onboarded || comparatorUrns.length === 0) return;
     let cancelled = false;
     (async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) return;
-      const urns = neighbours.map((n) => n.urn).join(",");
+      const urns = comparatorUrns.join(",");
       const res = await fetch(
-        // includeSubjects=1: the map's subject chips need each school's per-subject rows.
+        // includeSubjects=1: the subject chips need each school's per-subject rows, and
+        // since round 7 so do Graph, Ranking, Trend and % change.
         `/api/data-view/academic-schools?anchorUrn=${encodeURIComponent(schoolUrn)}&urns=${encodeURIComponent(urns)}&includeSubjects=1`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -274,7 +286,7 @@ export default function TeacherPhaseDashboard() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolUrn, onboarded, neighbours]);
+  }, [schoolUrn, onboarded, comparatorUrns]);
 
   const items = useMemo(() => buildSubjectItems(entries), [entries]);
   const tickedItems = useMemo(() => items.filter((i) => ticked.includes(i.key)), [items, ticked]);
@@ -735,7 +747,13 @@ export default function TeacherPhaseDashboard() {
       });
     }
   }
-  const activeMapChip = mapChips.find((c) => c.key === mapChip) ?? mapChips[0] ?? null;
+  // null = compare on the whole-school headline. Round 7 §9 made this one selection for
+  // the whole Comparisons column rather than the map alone, so it needs an explicit
+  // "no subject" state; without one, picking Whole school fell straight back to the first
+  // chip. Defaulting to the first ticked subject is the Map's own existing behaviour,
+  // kept so the chips mean the same thing they always did.
+  const activeMapChip =
+    mapChip === WHOLE_SCHOOL ? null : mapChips.find((c) => c.key === mapChip) ?? mapChips[0] ?? null;
 
   // Round 6 (card content rebuild): the mockups' visual layer. Colour is per qualification
   // group, shared by the chip header, the Candidates bars, the Results scores and the pie.
@@ -944,7 +962,33 @@ export default function TeacherPhaseDashboard() {
   // §6.7: the flat Results/Candidates pair only. Comparator-school data is whole-school
   // headline, not per-subject, so a Grade 4+ option here would have nothing behind it --
   // it is left off rather than shown and broken.
-  const COMPARISONS_MEASURES = [headlineMeasure(phase, headlineLabel), ENTRIES_MEASURE];
+  // With a subject active the figure is that subject's own points per entry, not
+  // Attainment 8, so the measure -- its label, its format and its scale -- follows the
+  // chip too. §9 asks for the "Measure" pill itself to read the per-subject source.
+  const COMPARISONS_MEASURES = [
+    activeMapChip ? measuresFor(phase)[0] : headlineMeasure(phase, headlineLabel),
+    ENTRIES_MEASURE,
+  ];
+  // Round 7 §9: when a subject chip is active, every Comparisons view reads that
+  // subject's real per-school figures instead of the whole-school headline. The data is
+  // the one the Map has been using all along (mapProfiles' own per-subject rows), which
+  // is why §6.7's "comparator data is whole-school only" was wrong -- the Map disproved
+  // it. Nothing new is fetched here; subjectYearsFor reads the profiles already loaded.
+  const comparatorSubjectSeries: Record<string, SchoolSeries> = {};
+  if (activeMapChip && mapProfiles) {
+    for (const profile of mapProfiles) {
+      const rows = subjectYearsFor(profile, phase, activeMapChip.subject, activeMapChip.bucket);
+      comparatorSubjectSeries[profile.urn] = {
+        results: rows
+          .filter((r) => r.avgPointScore !== null)
+          .map((r) => ({ period: r.period, value: r.avgPointScore as number })),
+        candidates: rows
+          .filter((r) => r.entriesTotal !== null && r.entriesTotal !== undefined)
+          .map((r) => ({ period: r.period, value: r.entriesTotal })),
+      };
+    }
+  }
+
   const savedComparisonsMeasure = readSetting(columns, measureKey("rankings"));
   const comparisonsMeasure =
     COMPARISONS_MEASURES.find((m) => m.id === savedComparisonsMeasure) ?? COMPARISONS_MEASURES[0];
@@ -1311,7 +1355,8 @@ export default function TeacherPhaseDashboard() {
             setLabel={comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "the nearest schools"}
             setNote={comparatorSetNote}
             schools={comparatorSets[comparisonsSet] ?? []}
-            seriesByUrn={seriesByUrn}
+            seriesByUrn={activeMapChip ? comparatorSubjectSeries : seriesByUrn}
+            subjectLabel={activeMapChip?.legend ?? null}
             measure={comparisonsMeasure}
             measureOptions={COMPARISONS_MEASURES.map((m) => ({ id: m.id, label: m.label }))}
             onMeasureChange={(id) => setColumnSetting(measureKey("rankings"), id)}
