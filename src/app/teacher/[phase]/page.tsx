@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, type ColumnState } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, measureKey, readSetting, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
@@ -19,7 +19,9 @@ import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type MapChip } from "@/components/teacher/ComparisonsPanels";
-import { ENTRIES_MEASURE, headlineMeasure, measuresFor, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
+import { MeasurePicker } from "@/components/teacher/MeasurePicker";
+import { ENTRIES_MEASURE, headlineMeasure, measureById, measuresFor, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
+import { thresholdRate } from "@/lib/subject-grades";
 import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
 import { comparabilityKey, familyFor } from "@/lib/teacher-view-catalogue";
@@ -31,7 +33,7 @@ import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
 import { rankOf, type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
-import { deserializeAcademicProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry } from "@/lib/academic-data-view";
+import { deserializeAcademicProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
 
 // §3: the picker works at real taught-qualification level, not subject-family level --
 // "someone might teach AS Maths but not Statistics". So an item is a (subject,
@@ -136,6 +138,9 @@ export default function TeacherPhaseDashboard() {
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string | null>(null);
   const [entries, setEntries] = useState<SubjectEntry[]>([]);
+  // Round 6 (§6.5): the real per-grade rows behind the threshold measure. They were
+  // already in this route's payload and simply never read -- see subject-grades.ts.
+  const [gradeRows, setGradeRows] = useState<SubjectGradeCount[]>([]);
   const [headline, setHeadline] = useState<AcademicSubjectHeadlineEntry[]>([]);
   const [rollAtAge10, setRollAtAge10] = useState<number | null>(null);
   const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
@@ -207,6 +212,7 @@ export default function TeacherPhaseDashboard() {
       if (res.ok) {
         const body = await res.json();
         setEntries(body.subjectData?.entries ?? []);
+        setGradeRows(body.subjectData?.gradeDistribution ?? []);
         setHeadline(body.headline ?? []);
         loadedHeadline = body.headline ?? [];
         setRollAtAge10(body.rollAtAge10 ?? null);
@@ -293,6 +299,22 @@ export default function TeacherPhaseDashboard() {
       const next: ColumnState = { ...columns };
       if (panels.length === 1 && panels[0] === "current") delete next[columnId];
       else next[columnId] = panels;
+      setColumns(next);
+      if (schoolUrn && phase) {
+        const prefs = await fetchPreferences(supabase, schoolUrn, phase);
+        await savePreferences(supabase, schoolUrn, phase, { ...prefs, columns: next });
+      }
+    },
+    [columns, schoolUrn, phase, supabase],
+  );
+
+  // A column's "which data" choice -- the measure its three panels all point at, and in
+  // Context the comparison group too. Saved alongside the panels, because coming back to
+  // a card showing a DIFFERENT NUMBER from the one you left is disorienting in a way that
+  // coming back to the same number drawn differently is not.
+  const setColumnSetting = useCallback(
+    async (key: string, value: string | null) => {
+      const next = writeSetting(columns, key, value);
       setColumns(next);
       if (schoolUrn && phase) {
         const prefs = await fetchPreferences(supabase, schoolUrn, phase);
@@ -740,13 +762,46 @@ export default function TeacherPhaseDashboard() {
     return englandAvg.values.find((v) => v.key === key && v.period === period)?.value ?? null;
   };
 
+  // §6.5: the threshold measure, computed from the real per-grade rows already in the
+  // payload. Scoped to this subject AND this qualification type -- the grade rows carry
+  // their own qualificationType, so a GCSE and a Cambridge National in the same subject
+  // are scored separately rather than pooled into a rate belonging to neither.
+  const thresholdAt = (i: SubjectItem, period: number): number | null => {
+    const rows = gradeRows.filter(
+      (g) => g.subject === i.subject && g.qualificationType === i.qualificationType && g.period === period,
+    );
+    return thresholdRate(rows, phase)?.rate ?? null;
+  };
+
+  // Which measure Results' three panels are pointed at. Persisted per column, so the card
+  // comes back showing the figure it was left showing.
+  const resultsMeasures = measuresFor(phase);
+  const resultsMeasure = measureById(phase, readSetting(columns, measureKey("results")) ?? resultsMeasures[0].id);
+  const usingThreshold = resultsMeasure.id === "threshold";
+
+  const valueForResults = (i: SubjectItem, period: number) =>
+    usingThreshold ? thresholdAt(i, period) : pointsAt(i, period);
+
+  // The periods the ACTIVE measure genuinely covers. The threshold rows only go back to
+  // 2023/24 (parseSubjectGradeDistribution's own documented limit), so pointing Results at
+  // it shortens the axis rather than drawing four empty years -- §6.5's "state that in the
+  // UI rather than padding the range". Computed BEFORE the series, so the values and the
+  // periods they are indexed against are always the same list.
+  const resultsPeriods = usingThreshold
+    ? subjectPeriods.filter((p) => tickedItems.some((i) => thresholdAt(i, p) !== null))
+    : subjectPeriods;
+
+  // The threshold measure has no published England figure to sit against -- the national
+  // anchor this app holds is points per entry, per subject. So its bars carry no marker
+  // and its table's third column falls back to change, rather than a delta against a
+  // number nobody published.
   const resultsSeries: SubjectSeries[] = tickedItems.map((i) => ({
     key: i.key,
     label: i.label,
     shortLabel: shortSubject(i.subject),
     colour: colourOf(i),
-    values: subjectPeriods.map((p) => pointsAt(i, p)),
-    benchmark: subjectPeriods.map((p) => englandAt(i, p)),
+    values: resultsPeriods.map((p) => valueForResults(i, p)),
+    benchmark: usingThreshold ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
   }));
 
   const contextSeries: SubjectSeries[] = tickedItems.map((i) => ({
@@ -913,14 +968,28 @@ export default function TeacherPhaseDashboard() {
           ) : (
             <SubjectPanels
               columnId="results"
-              periods={subjectPeriods}
+              periods={resultsPeriods}
               subjects={resultsSeries}
-              measure={measuresFor(phase)[0]}
-              benchmarkLabel="National"
+              measure={resultsMeasure}
+              controls={
+                <MeasurePicker
+                  measures={resultsMeasures}
+                  active={resultsMeasure}
+                  onChange={(id) => setColumnSetting(measureKey("results"), id)}
+                />
+              }
+              benchmarkLabel={usingThreshold ? undefined : "National"}
               benchmarkNoun={
-                englandAvg?.basis === "subject"
-                  ? "the England GCSE average for the subject"
-                  : "the England average for the same qualification"
+                usingThreshold
+                  ? undefined
+                  : englandAvg?.basis === "subject"
+                    ? "the England GCSE average for the subject"
+                    : "the England average for the same qualification"
+              }
+              note={
+                usingThreshold
+                  ? `${resultsMeasure.label} is published per grade only from 2023/24, so this covers fewer years than average point score. Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
+                  : undefined
               }
               questions={{
                 current: q.howWell,

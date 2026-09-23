@@ -71,7 +71,8 @@ export function SubjectPanels({
   subjects: SubjectSeries[];
   measure: Measure;
   // Names the marker under the bars and the table's third column ("National", "Whole
-  // school"). Absent = no benchmark anywhere, and the third column falls back to rank.
+  // school"). Absent = there is no benchmark for this measure, and both the marker and
+  // the delta fall back to the subject's own previous published year.
   benchmarkLabel?: string;
   // The same thing in a sentence ("the national average").
   benchmarkNoun?: string;
@@ -107,10 +108,21 @@ export function SubjectPanels({
   })();
   const latest = latestIdx >= 0 ? periods[latestIdx] : null;
 
+  // The third column. Against a benchmark where there is one; otherwise against this
+  // subject's own previous published year, which is the other real comparison available
+  // -- never a column of dashes. Results' threshold measure is the case that needs it:
+  // the national anchor this app holds is points per entry, so a Grade 4+ rate has no
+  // published England figure to sit against.
+  const previousValue = (s: SubjectSeries): number | null => {
+    for (let i = latestIdx - 1; i >= 0; i--) if (s.values[i] !== null) return s.values[i];
+    return null;
+  };
+
   const rows = subjects.map((s) => {
     const value = latestIdx >= 0 ? s.values[latestIdx] : null;
     const bench = latestIdx >= 0 ? s.benchmark?.[latestIdx] ?? null : null;
-    const delta = value !== null && bench !== null ? value - bench : null;
+    const against = benchmarkLabel ? bench : previousValue(s);
+    const delta = value !== null && against !== null ? value - against : null;
     return { s, value, bench, delta };
   });
 
@@ -132,6 +144,7 @@ export function SubjectPanels({
   const byDelta = rows.filter((r) => r.delta !== null).sort((a, b) => b.delta! - a.delta!);
   const bestRow = byDelta[0];
   const worstRow = byDelta[byDelta.length - 1];
+  const againstNoun = benchmarkNoun ?? "its own previous year";
 
   const current: PanelRender = {
     tag: `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
@@ -169,7 +182,7 @@ export function SubjectPanels({
               rows={tableRows}
               sort={sort}
               onSort={(key) => setSort(nextSort(sort, key))}
-              columns={{ name: "Subject", value: "Result", delta: benchmarkLabel ? `vs ${benchmarkLabel}` : "Change" }}
+              columns={{ name: "Subject", value: "Result", delta: benchmarkLabel ? `vs ${benchmarkLabel}` : "vs last year" }}
               fullscreen={fullscreen}
             />
           )}
@@ -177,14 +190,14 @@ export function SubjectPanels({
         </>
       ),
     summary:
-      bestRow && worstRow && benchmarkNoun ? (
+      bestRow && worstRow ? (
         bestRow.s.key === worstRow.s.key ? (
           <PanelSummary>
-            {bestRow.s.label} sits {measure.formatDelta(bestRow.delta!)} against {benchmarkNoun}.
+            {bestRow.s.label} sits {measure.formatDelta(bestRow.delta!)} against {againstNoun}.
           </PanelSummary>
         ) : (
           <PanelSummary>
-            {bestRow.s.label} sits furthest above {benchmarkNoun} ({measure.formatDelta(bestRow.delta!)});{" "}
+            {bestRow.s.label} sits furthest above {againstNoun} ({measure.formatDelta(bestRow.delta!)});{" "}
             {worstRow.delta! < 0
               ? `${worstRow.s.label} is the one below it (${measure.formatDelta(worstRow.delta!)}).`
               : `${worstRow.s.label} is closest to it (${measure.formatDelta(worstRow.delta!)}).`}
