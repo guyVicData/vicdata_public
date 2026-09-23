@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, measureKey, readSetting, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, againstKey, chosenKey, measureKey, readList, readSetting, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
@@ -20,11 +20,12 @@ import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type MapChip } from "@/components/teacher/ComparisonsPanels";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
-import { ENTRIES_MEASURE, headlineMeasure, measureById, measuresFor, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
+import { ContextPicker, type CompareAgainstId } from "@/components/teacher/ContextPicker";
+import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
 import { thresholdRate } from "@/lib/subject-grades";
 import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
-import { comparabilityKey, familyFor } from "@/lib/teacher-view-catalogue";
+import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
 import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicker";
 import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
@@ -177,6 +178,10 @@ export default function TeacherPhaseDashboard() {
   const [mapRank, setMapRank] = useState<{ rank: number; total: number } | null>(null);
   // The subject picker is a popup opened by the chip header's "±", not a permanent
   // section of the dashboard.
+  // Context's focused subject chip, lifted out of SubjectPanels: the combined picker
+  // labels its "Other subjects in ..." row from the focused subject's own real family,
+  // so the two controls cannot describe different groups.
+  const [contextFocus, setContextFocus] = useState<string>("all");
   const [subjectPickerOpen, setSubjectPickerOpen] = useState(false);
   const subjectPickerCloseRef = useRef<HTMLButtonElement | null>(null);
   // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
@@ -269,7 +274,6 @@ export default function TeacherPhaseDashboard() {
   const tickedItems = useMemo(() => items.filter((i) => ticked.includes(i.key)), [items, ticked]);
   // The live count §6 and §14 both single out: ticking a subject moves this immediately.
   const liveCount = useMemo(() => tickedItems.reduce((sum, i) => sum + i.entries, 0), [tickedItems]);
-  const schoolTotal = useMemo(() => items.reduce((sum, i) => sum + i.entries, 0), [items]);
 
   const persist = useCallback(
     async (next: string[]) => {
@@ -315,6 +319,19 @@ export default function TeacherPhaseDashboard() {
   const setColumnSetting = useCallback(
     async (key: string, value: string | null) => {
       const next = writeSetting(columns, key, value);
+      setColumns(next);
+      if (schoolUrn && phase) {
+        const prefs = await fetchPreferences(supabase, schoolUrn, phase);
+        await savePreferences(supabase, schoolUrn, phase, { ...prefs, columns: next });
+      }
+    },
+    [columns, schoolUrn, phase, supabase],
+  );
+
+  // Context's "Selected subjects" tick set, saved the same way its measure is.
+  const setColumnList = useCallback(
+    async (key: string, values: string[]) => {
+      const next = writeList(columns, key, values);
       setColumns(next);
       if (schoolUrn && phase) {
         const prefs = await fetchPreferences(supabase, schoolUrn, phase);
@@ -804,12 +821,98 @@ export default function TeacherPhaseDashboard() {
     benchmark: usingThreshold ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
   }));
 
+  // ------------------------------------------------------------------ Context (§4.2)
+  //
+  // Context's measure is now a genuine per-instance choice rather than the catalogue's
+  // fixed `COLUMN_MEASURE.context = entries`. That fixed entry still serves the meetings
+  // slide picker, which renders axis views; the dashboard column reads this instead.
+  const contextMeasure = measureById(phase, readSetting(columns, measureKey("context")) ?? ENTRIES_MEASURE.id);
+  const contextAgainst = (readSetting(columns, againstKey("context")) ?? "whole") as CompareAgainstId;
+  const contextSelected = readList(columns, chosenKey("context"));
+
+  // The subject the comparison is anchored on: the focused chip, or the first ticked
+  // subject when the chips are on "All subjects". Its family names the "Other subjects
+  // in ..." option and decides that option's membership.
+  const contextAnchor = tickedItems.find((i) => i.key === contextFocus) ?? tickedItems[0] ?? null;
+  const contextAreaLabel = contextAnchor ? familyLabelFor(headline, contextAnchor.subject) : null;
+  const contextAnchorFamily = contextAnchor ? familyFor(headline, contextAnchor.subject)?.id ?? null : null;
+
+  // One value per SUBJECT NAME per period, for whichever measure is active. Group members
+  // are subjects of the whole school, not just the ticked ones, so they are addressed by
+  // name rather than by the ticked list's (subject, qualification) key.
+  const groupValueFor = (subject: string, period: number): number | null => {
+    const rows = headline.filter((h) => h.subject === subject && h.period === period);
+    if (rows.length === 0) return null;
+    if (contextMeasure.id === "entries") {
+      return rows.reduce((a, h) => a + (h.entriesTotal ?? 0), 0);
+    }
+    if (contextMeasure.id === "points") {
+      const vals = rows.map((h) => h.avgPointScore).filter((v): v is number => v !== null);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    }
+    // Threshold: rate per qualification type, then the mean of the ones that have a bar.
+    // Pooling every grade row for a subject would mix scales -- a GCSE 9-1 row beside a
+    // vocational Pass -- and score them against a bar only one of them is on.
+    const quals = Array.from(
+      new Set(gradeRows.filter((g) => g.subject === subject && g.period === period).map((g) => g.qualificationType)),
+    );
+    const rates = quals
+      .map((qt) => thresholdRate(gradeRows.filter((g) => g.subject === subject && g.qualificationType === qt && g.period === period), phase)?.rate)
+      .filter((v): v is number => v !== undefined && v !== null);
+    return rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : null;
+  };
+
+  // §4.2: the group is SELF-INCLUSIVE -- it contains the subject being compared, matching
+  // the convention the comparator-set averages already use elsewhere.
+  const contextMembers: string[] = (() => {
+    const every = Array.from(new Set(headline.map((h) => h.subject)));
+    if (contextAgainst === "area") {
+      return contextAnchorFamily ? every.filter((n) => headline.some((h) => h.subject === n && h.familyId === contextAnchorFamily)) : every;
+    }
+    if (contextAgainst === "selected") {
+      const names = new Set(items.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
+      // Nothing ticked yet falls back to the subjects this person teaches, which is the
+      // most useful "not chosen yet" group and is one click from being narrowed.
+      return names.size ? every.filter((n) => names.has(n)) : Array.from(new Set(tickedItems.map((i) => i.subject)));
+    }
+    return every;
+  })();
+
+  const contextGroupLabel =
+    contextAgainst === "area" ? contextAreaLabel ?? "Its category" : contextAgainst === "selected" ? "Selected subjects" : "Whole school";
+
+  // Two different group figures, and they are not interchangeable:
+  //   - the TOTAL, which the donut's share is a share of;
+  //   - the PER-SUBJECT AVERAGE, which is what a single subject is actually comparable
+  //     with, and so what the bar marker, the trend's second line and the % change bar
+  //     all use. (The wireframe's own caption flags that it faked this by dividing a flat
+  //     school-wide figure by an assumed 24 subjects; here it is the real per-subject
+  //     figures, so no assumption is needed.)
+  const contextGroupTotals = subjectPeriods.map((p) =>
+    combine(contextMembers.map((n) => groupValueFor(n, p)), contextMeasure.aggregate),
+  );
+  const contextGroupAverage = subjectPeriods.map((p) => meanOf(contextMembers.map((n) => groupValueFor(n, p))));
+
+  const contextValueFor = (i: SubjectItem, period: number): number | null => {
+    if (contextMeasure.id === "entries") return entriesAt(i, period);
+    if (contextMeasure.id === "points") return pointsAt(i, period);
+    return thresholdAt(i, period);
+  };
+
+  const contextPeriods =
+    contextMeasure.id === "threshold"
+      ? subjectPeriods.filter((p) => tickedItems.some((i) => thresholdAt(i, p) !== null))
+      : subjectPeriods;
+  const atContextPeriod = (values: (number | null)[]) =>
+    contextPeriods.map((p) => values[subjectPeriods.indexOf(p)] ?? null);
+
   const contextSeries: SubjectSeries[] = tickedItems.map((i) => ({
     key: i.key,
     label: i.label,
     shortLabel: shortSubject(i.subject),
     colour: colourOf(i),
-    values: subjectPeriods.map((p) => entriesAt(i, p)),
+    values: contextPeriods.map((p) => contextValueFor(i, p)),
+    benchmark: atContextPeriod(contextGroupAverage),
   }));
 
   const panelsOf = (columnId: string): PanelId[] => panelsFrom(columns[columnId]);
@@ -1036,21 +1139,53 @@ export default function TeacherPhaseDashboard() {
           ) : (
             <SubjectPanels
               columnId="context"
-              periods={subjectPeriods}
+              periods={contextPeriods}
               subjects={contextSeries}
-              measure={ENTRIES_MEASURE}
+              measure={contextMeasure}
+              focus={contextFocus}
+              onFocusChange={setContextFocus}
+              yearControl
+              controls={
+                <ContextPicker
+                  against={contextAgainst}
+                  onAgainst={(id) => setColumnSetting(againstKey("context"), id)}
+                  areaLabel={contextAreaLabel}
+                  candidatesMeasure={ENTRIES_MEASURE}
+                  resultMeasures={measuresFor(phase)}
+                  active={contextMeasure}
+                  allSubjects={items.map((i) => ({ key: i.key, label: i.label, colour: colourOf(i) }))}
+                  selected={contextSelected}
+                  onToggleSelected={(key) =>
+                    setColumnList(
+                      chosenKey("context"),
+                      contextSelected.includes(key) ? contextSelected.filter((k) => k !== key) : [...contextSelected, key],
+                    )
+                  }
+                  onMeasure={(id) => setColumnSetting(measureKey("context"), id)}
+                />
+              }
+              benchmarkLabel={contextGroupLabel}
+              benchmarkNoun={`the ${contextGroupLabel.toLowerCase()} average`}
+              groupSeries={{ label: `${contextGroupLabel} average`, values: atContextPeriod(contextGroupAverage) }}
+              donut={{
+                // §4.2: a share of an average point score is not a meaningful percentage,
+                // so the donut is genuinely inert for a Results measure, not just greyed.
+                enabled: contextMeasure.id === "entries",
+                groupLabel: contextGroupLabel,
+                groupTotals: atContextPeriod(contextGroupTotals),
+              }}
               questions={{
                 current: q.nearMe,
-                trend: "How have my subjects' entries moved against the rest of the school?",
-                change: "Which of my subjects have grown or shrunk most within the school?",
+                trend: `How have my subjects moved against ${contextGroupLabel.toLowerCase()}?`,
+                change: `Which of my subjects have moved most, against ${contextGroupLabel.toLowerCase()}?`,
               }}
               source={panelSource}
               panels={panelsOf("context")}
               onPanelsChange={(next) => setPanels("context", next)}
               emptyText="Pick a subject above to see how it sits in the school."
               note={
-                schoolTotal > 0
-                  ? `Your subjects are ${Math.round((liveCount / schoolTotal) * 100)}% of ${schoolTotal.toLocaleString()} entries across the ${phase === "ks5" ? "sixth form" : "school"}.`
+                contextMeasure.id === "threshold"
+                  ? `${contextMeasure.label} is published per grade only from 2023/24, so this covers fewer years than the other measures.`
                   : undefined
               }
             />

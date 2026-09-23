@@ -31,7 +31,8 @@ import {
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelRender } from "./ColumnPanels";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { HorizontalBarsIcon, IconButton, Pill, RankListIcon, SubjectChip } from "./PanelIcons";
+import { DonutIcon, HorizontalBarsIcon, IconButton, NextYearIcon, Pill, PrevYearIcon, RankListIcon, SubjectChip } from "./PanelIcons";
+import { ShareDonut } from "./ShareDonut";
 import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
 import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
@@ -58,6 +59,10 @@ export function SubjectPanels({
   benchmarkLabel,
   benchmarkNoun,
   groupSeries,
+  donut,
+  yearControl = false,
+  focus: focusProp,
+  onFocusChange,
   controls,
   questions,
   source,
@@ -79,6 +84,24 @@ export function SubjectPanels({
   // Context's comparison group, drawn as the Trend panel's second, dashed line and as one
   // extra bar on % change. Results has none -- its benchmark is per subject, not a group.
   groupSeries?: { label: string; values: (number | null)[] };
+  // Context's third Current view. Present = the donut icon exists; `enabled` false greys
+  // it AND disables the button, so a Results measure cannot select it at all (§4.2) --
+  // a share of an average point score is not a meaningful percentage.
+  //
+  // `groupTotals` is the group's own TOTAL per period, which is a different figure from
+  // `groupSeries`. The lines and bars plot the group's per-subject average, because that
+  // is what a single subject is comparable with; a share has to be of the whole, or the
+  // percentage is of the wrong denominator.
+  donut?: { enabled: boolean; groupLabel: string; groupTotals: (number | null)[] };
+  // Context's year prev/next pair, so Current is no longer pinned to the latest year.
+  // Only the years the active measure really has (§6.3); absent elsewhere, matching the
+  // wireframe, which draws it on Context alone.
+  yearControl?: boolean;
+  // The focused subject chip, lifted when the caller needs it -- Context's picker labels
+  // its "Other subjects in ..." row from the focused subject's own family. Left
+  // uncontrolled, it is ordinary internal state.
+  focus?: string;
+  onFocusChange?: (key: string) => void;
   controls?: ReactNode;
   questions: { current: string; trend: string; change: string };
   source: (span?: string) => ReactNode;
@@ -89,24 +112,40 @@ export function SubjectPanels({
   // 2023/24 onward. Shown under the figure, not hidden in a tooltip.
   note?: ReactNode;
 }) {
-  const [view, setView] = useState<"bar" | "table">("bar");
+  const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
-  const [focus, setFocus] = useState<string>("all");
+  const [ownFocus, setOwnFocus] = useState<string>("all");
+  const [yearIdx, setYearIdx] = useState<number | null>(null);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
+
+  const focus = focusProp ?? ownFocus;
+  const setFocus = (key: string) => (onFocusChange ? onFocusChange(key) : setOwnFocus(key));
+  // The donut is Candidates-only, so a measure switch has to fall back rather than leave
+  // the panel on a view it can no longer draw.
+  const effectiveView = view === "donut" && !donut?.enabled ? "bar" : view;
 
   const spanLabel = (ps: number[]) =>
     ps.length ? `${academicYearLabel(ps[0])}–${academicYearLabel(ps[ps.length - 1])}` : "";
 
   // --------------------------------------------------------------- Current
+  // Only the years this measure genuinely has a figure for, so the prev/next control can
+  // never step onto an empty one (§6.3). The threshold measure is the case that matters:
+  // switching to it shortens this list rather than padding the axis.
+  const realIdx = periods.map((_, i) => i).filter((i) => subjects.some((s) => s.values[i] !== null));
   // The latest period any subject has a figure for -- not simply the last period in the
   // list, which may be a year this measure has not been published for yet.
-  const latestIdx = (() => {
-    for (let i = periods.length - 1; i >= 0; i--) if (subjects.some((s) => s.values[i] !== null)) return i;
-    return -1;
-  })();
+  const defaultIdx = realIdx.length ? realIdx[realIdx.length - 1] : -1;
+  // A year chosen by the prev/next pair survives a measure switch only while that year
+  // still has data; otherwise it falls back rather than showing an empty card.
+  const latestIdx = yearIdx !== null && realIdx.includes(yearIdx) ? yearIdx : defaultIdx;
   const latest = latestIdx >= 0 ? periods[latestIdx] : null;
+  const atRealIdx = realIdx.indexOf(latestIdx);
+  const stepYear = (by: -1 | 1) => {
+    const next = realIdx[atRealIdx + by];
+    if (next !== undefined) setYearIdx(next);
+  };
 
   // The third column. Against a benchmark where there is one; otherwise against this
   // subject's own previous published year, which is the other real comparison available
@@ -146,13 +185,41 @@ export function SubjectPanels({
   const worstRow = byDelta[byDelta.length - 1];
   const againstNoun = benchmarkNoun ?? "its own previous year";
 
+  // The donut's two numbers: the focused subject (or every ticked subject combined) as a
+  // share of the comparison group's own total for the SAME year Current is showing.
+  const focusedSubject = subjects.find((s) => s.key === focus);
+  const donutValue = latestIdx < 0
+    ? null
+    : focusedSubject
+      ? focusedSubject.values[latestIdx]
+      : combine(subjects.map((s) => s.values[latestIdx]), measure.aggregate);
+  const donutGroupValue = latestIdx >= 0 ? donut?.groupTotals[latestIdx] ?? null : null;
+  const donutPercent =
+    donutValue !== null && donutGroupValue !== null && donutGroupValue > 0 ? (donutValue / donutGroupValue) * 100 : null;
+
   const current: PanelRender = {
     tag: `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
     question: questions.current,
+    beforeTag: yearControl && realIdx.length > 1 ? (
+      <span className="flex items-center gap-1.5">
+        <IconButton label="Previous year" disabled={atRealIdx <= 0} onClick={() => stepYear(-1)}>{PrevYearIcon}</IconButton>
+        <IconButton label="Next year" disabled={atRealIdx >= realIdx.length - 1} onClick={() => stepYear(1)}>{NextYearIcon}</IconButton>
+      </span>
+    ) : undefined,
     actions: (
       <>
-        <IconButton label="Bar chart" active={view === "bar"} onClick={() => setView("bar")}>{HorizontalBarsIcon}</IconButton>
-        <IconButton label="Sortable table" active={view === "table"} onClick={() => setView("table")}>{RankListIcon}</IconButton>
+        {donut && (
+          <IconButton
+            label={donut.enabled ? "Share (donut)" : "Share is only meaningful for candidate numbers"}
+            active={effectiveView === "donut"}
+            disabled={!donut.enabled}
+            onClick={() => setView("donut")}
+          >
+            {DonutIcon}
+          </IconButton>
+        )}
+        <IconButton label="Bar chart" active={effectiveView === "bar"} onClick={() => setView("bar")}>{HorizontalBarsIcon}</IconButton>
+        <IconButton label="Sortable table" active={effectiveView === "table"} onClick={() => setView("table")}>{RankListIcon}</IconButton>
       </>
     ),
     body: (fullscreen) =>
@@ -160,7 +227,24 @@ export function SubjectPanels({
         <p className="text-sm text-[var(--muted)]">{emptyText}</p>
       ) : (
         <>
-          {view === "bar" ? (
+          {effectiveView === "donut" && donut ? (
+            donutPercent === null ? (
+              <p className="text-xs text-[var(--muted)]">
+                No published figure for {focusedSubject?.label ?? "these subjects"} or for {donut.groupLabel} in{" "}
+                {latest === null ? "this year" : academicYearLabel(latest)}.
+              </p>
+            ) : (
+              <ShareDonut
+                percent={donutPercent}
+                label={focusedSubject?.label ?? "Your subjects"}
+                groupLabel={donut.groupLabel}
+                valueLabel={measure.format(donutValue!)}
+                groupValueLabel={measure.format(donutGroupValue!)}
+                colour={focusedSubject?.colour ?? "var(--muted2)"}
+                fullscreen={fullscreen}
+              />
+            )
+          ) : effectiveView === "bar" ? (
             <ViewChart
               layout="row"
               unit=""
@@ -190,7 +274,15 @@ export function SubjectPanels({
         </>
       ),
     summary:
-      bestRow && worstRow ? (
+      effectiveView === "donut" && donut ? (
+        donutPercent === null ? undefined : (
+          <PanelSummary>
+            {focusedSubject?.label ?? "Your subjects"} {focusedSubject ? "is" : "are"} {Math.round(donutPercent)}% of{" "}
+            {donut.groupLabel.toLowerCase()} ({measure.format(donutGroupValue!)}) in{" "}
+            {latest === null ? "this year" : academicYearLabel(latest)}.
+          </PanelSummary>
+        )
+      ) : bestRow && worstRow ? (
         bestRow.s.key === worstRow.s.key ? (
           <PanelSummary>
             {bestRow.s.label} sits {measure.formatDelta(bestRow.delta!)} against {againstNoun}.
@@ -208,7 +300,7 @@ export function SubjectPanels({
   };
 
   // ----------------------------------------------------------------- Trend
-  const focused = subjects.find((s) => s.key === focus);
+  const focused = focusedSubject;
   const allValues = periods.map((_, i) => combine(subjects.map((s) => s.values[i]), measure.aggregate));
   const focusLabel = focused ? focused.label : subjects.length === 1 ? subjects[0].label : "All subjects";
 

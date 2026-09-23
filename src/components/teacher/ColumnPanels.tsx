@@ -29,6 +29,9 @@ export type PanelRender = {
   // The pill at the top-left of the panel: "Current — 2024/25", "Candidates — 2021/22 to
   // 2024/25".
   tag: string;
+  // Controls that sit before the pill rather than in the icon row -- Context's year
+  // prev/next pair, which the wireframe puts either side of the tag.
+  beforeTag?: ReactNode;
   // The full natural-language question, used as the fullscreen modal's heading (§14).
   question: string;
   // View-toggle icons, which sit before the fullscreen button.
@@ -113,8 +116,11 @@ export function ColumnPanels({
             title={panel.tag}
             question={panel.question}
             tag={
-              <span className="inline-block rounded-full bg-[rgba(var(--accent-rgb,138,138,144),0.14)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--accent,var(--muted2))]">
-                {panel.tag}
+              <span className="flex flex-wrap items-center gap-1.5">
+                {panel.beforeTag}
+                <span className="inline-block rounded-full bg-[rgba(var(--accent-rgb,138,138,144),0.14)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--accent,var(--muted2))]">
+                  {panel.tag}
+                </span>
               </span>
             }
             actions={panel.actions}
