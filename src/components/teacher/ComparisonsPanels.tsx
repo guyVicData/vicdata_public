@@ -40,7 +40,8 @@ import {
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelRender } from "./ColumnPanels";
 import { ChangeChart } from "./ChangeChart";
-import { ChevronDown, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon } from "./PanelIcons";
+import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon } from "./PanelIcons";
+import { PillMenu } from "./PillMenu";
 import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
 import { RankingsMap } from "./RankingsMap";
 import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
@@ -129,16 +130,12 @@ export function ComparisonsPanels({
   const [versus, setVersus] = useState<string>(AVERAGE);
   const [versusOpen, setVersusOpen] = useState(false);
   const [changeVersusOpen, setChangeVersusOpen] = useState(false);
-  const [setOpen, setSetOpen] = useState(false);
-  const [measureOpen, setMeasureOpen] = useState(false);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
 
   const versusRef = useDismiss(versusOpen, () => setVersusOpen(false));
   const changeVersusRef = useDismiss(changeVersusOpen, () => setChangeVersusOpen(false));
-  const setRef = useDismiss(setOpen, () => setSetOpen(false));
-  const measureRef = useDismiss(measureOpen, () => setMeasureOpen(false));
 
   const seriesKey = measure.id === "entries" ? "candidates" : "results";
   const seriesFor = (urn: string) => seriesByUrn[urn]?.[seriesKey] ?? [];
@@ -150,7 +147,6 @@ export function ComparisonsPanels({
     setVersusOpen(false);
     setChangeVersusOpen(false);
     onSetChange(id);
-    setSetOpen(false);
   };
 
   const target = schools.find((s) => s.isTarget) ?? null;
@@ -433,51 +429,27 @@ export function ComparisonsPanels({
       onPanelsChange={onPanelsChange}
       controls={
         <div className="flex flex-col items-start gap-1.5">
-          <div className="relative" ref={setRef}>
-            <button
-              type="button"
-              onClick={() => setSetOpen(!setOpen)}
-              aria-expanded={setOpen}
-              aria-haspopup="menu"
-              className="inline-flex items-center gap-1 rounded-full border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--muted2)] hover:border-[var(--fg)]"
-            >
-              Compared against: {setLabel}
-              {ChevronDown}
-            </button>
-            {setOpen && (
-              <PanelMenu label="Compared against" width={220}>
-                <MenuHeading>Compared against</MenuHeading>
-                {setOptions.map((o) => (
-                  <MenuRow key={o.id} label={o.label} selected={o.id === setId} onClick={() => changeSet(o.id)} />
-                ))}
-              </PanelMenu>
-            )}
-          </div>
-          <div className="relative" ref={measureRef}>
-            <button
-              type="button"
-              onClick={() => setMeasureOpen(!measureOpen)}
-              aria-expanded={measureOpen}
-              aria-haspopup="menu"
-              className="inline-flex items-center gap-1 rounded-full border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--muted2)] hover:border-[var(--fg)]"
-            >
-              Measure: {measure.label}
-              {ChevronDown}
-            </button>
-            {measureOpen && (
-              <PanelMenu label="Measure" width={180}>
-                <MenuHeading>Measure</MenuHeading>
-                {measureOptions.map((o) => (
-                  <MenuRow
-                    key={o.id}
-                    label={o.label}
-                    selected={o.id === measure.id}
-                    onClick={() => { onMeasureChange(o.id); setMeasureOpen(false); }}
-                  />
-                ))}
-              </PanelMenu>
-            )}
-          </div>
+          {/* The same PillMenu Context uses, so round 7 §8's "matching Comparisons'
+              pattern exactly" is one component rather than two lookalikes. */}
+          <PillMenu label="Compared against" value={setLabel} menuLabel="Compared against">
+            {(close) =>
+              setOptions.map((o) => (
+                <MenuRow key={o.id} label={o.label} selected={o.id === setId} onClick={() => { changeSet(o.id); close(); }} />
+              ))
+            }
+          </PillMenu>
+          <PillMenu label="Measure" value={measure.label} width={200}>
+            {(close) =>
+              measureOptions.map((o) => (
+                <MenuRow
+                  key={o.id}
+                  label={o.label}
+                  selected={o.id === measure.id}
+                  onClick={() => { onMeasureChange(o.id); close(); }}
+                />
+              ))
+            }
+          </PillMenu>
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }

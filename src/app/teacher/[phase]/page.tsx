@@ -21,7 +21,7 @@ import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectP
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
 import { AddPanelButton } from "@/components/teacher/AddPanelButton";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
-import { ContextPicker, type CompareAgainstId } from "@/components/teacher/ContextPicker";
+import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
 import { thresholdRate } from "@/lib/subject-grades";
 import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
@@ -1238,7 +1238,7 @@ export default function TeacherPhaseDashboard() {
               onFocusChange={setContextFocus}
               yearControl
               controls={
-                <ContextPicker
+                <ContextPills
                   against={contextAgainst}
                   onAgainst={(id) => setColumnSetting(againstKey("context"), id)}
                   areaLabel={contextAreaLabel}
