@@ -1357,6 +1357,7 @@ export default function TeacherPhaseDashboard() {
             schools={comparatorSets[comparisonsSet] ?? []}
             seriesByUrn={activeMapChip ? comparatorSubjectSeries : seriesByUrn}
             subjectLabel={activeMapChip?.legend ?? null}
+            seriesLoading={!!activeMapChip && mapProfiles === null}
             measure={comparisonsMeasure}
             measureOptions={COMPARISONS_MEASURES.map((m) => ({ id: m.id, label: m.label }))}
             onMeasureChange={(id) => setColumnSetting(measureKey("rankings"), id)}

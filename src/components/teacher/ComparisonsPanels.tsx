@@ -98,6 +98,7 @@ export function ComparisonsPanels({
   mapRank,
   onMapRank,
   subjectLabel,
+  seriesLoading,
   emptyText,
 }: {
   phase: KsStage;
@@ -128,6 +129,10 @@ export function ComparisonsPanels({
   // view reads the same selection, so the narrative has to name it too -- a rank "on
   // Geography avg. point score" is a different statement from one on Attainment 8.
   subjectLabel: string | null;
+  // The per-subject rows arrive on their own, heavier fetch than the rest of the card
+  // (they are the map's profiles). With a subject chip active by default, saying "no
+  // published figures" while they are still in flight would be a plain lie.
+  seriesLoading: boolean;
   emptyText: string;
 }) {
   // Ranking is the default view (§4.3), even though Graph comes first in the icon row.
@@ -213,6 +218,8 @@ export function ComparisonsPanels({
     ),
     body: (fullscreen) => {
       if (schools.length === 0) return <p className="text-sm text-[var(--muted)]">{emptyText}</p>;
+      // The map draws its own loading state, so only the other two views need one.
+      if (seriesLoading && view !== "map") return <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>;
       if (view === "map") {
         return schoolUrn ? (
           // A live Leaflet map, which does not print -- the Ranking view is the one that
@@ -266,7 +273,7 @@ export function ComparisonsPanels({
         />
       );
     },
-    summary: shownRank ? (
+    summary: seriesLoading ? undefined : shownRank ? (
       <PanelSummary>
         This school is {shownRank.rank} of {shownRank.total} on {comparedOn}, among {setLabel.toLowerCase()}.
       </PanelSummary>
@@ -354,8 +361,13 @@ export function ComparisonsPanels({
         <Pill label="Trend line" active={showFit} onClick={() => setShowFit(!showFit)} />
       </div>
     ),
-    body: (fullscreen) => <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />,
-    summary: trendSaid ? (
+    body: (fullscreen) =>
+      seriesLoading ? (
+        <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
+      ) : (
+        <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
+      ),
+    summary: seriesLoading ? undefined : trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>
         {trendSaid.sentence.replace(/\.$/, "")}{versusClause || "."}
       </PanelSummary>
@@ -384,7 +396,10 @@ export function ComparisonsPanels({
         )}
       </div>
     ),
-    body: (fullscreen) => (
+    body: (fullscreen) =>
+      seriesLoading ? (
+        <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
+      ) : (
       <ChangeChart
         bars={[
           { key: "own", label: "Your school", shortLabel: "You", colour: "var(--fg)", percent: ownPct },
@@ -392,9 +407,9 @@ export function ComparisonsPanels({
         ]}
         fullscreen={fullscreen}
       />
-    ),
+      ),
     summary:
-      ownPct === null ? (
+      seriesLoading ? undefined : ownPct === null ? (
         <PanelSummary>Not enough published years yet to measure a change.</PanelSummary>
       ) : (
         <PanelSummary>
