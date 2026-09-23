@@ -9,6 +9,12 @@
 // painting its own colours, every stroke either a theme token or the subject's own
 // qualification colour passed in by the caller.
 //
+// The plot SVG stretches to the card's width (preserveAspectRatio="none") so the line
+// fills whatever space there is, and it therefore contains NO text: a stretched viewBox
+// scales glyphs with it, so an axis label inside it would be squashed at card width and
+// stretched at fullscreen. Both axes are HTML positioned over the same coordinate space
+// instead, which also means they inherit the theme's own type rather than an SVG font.
+//
 // What the wireframe asked for and this keeps: a real y-axis (a spine with tick marks
 // beside the numbers, not floating text), x ticks at every real data point with labels
 // thinned so they never crowd, an "Academic year" axis title, an optional dashed
@@ -20,12 +26,11 @@
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { leastSquares, type Measure, type PanelData } from "@/lib/teacher-view-panels";
 
-// The wireframe's own geometry, kept so the chart lands at the same size on the card.
+// The wireframe's own plot geometry, as a coordinate space the HTML axes share.
 const W = 260;
 const H = 80;
 const TOP = 6;
 const BOTTOM = 74;
-const AXIS_W = 30;
 
 // Labels are thinned to at most four at card width. The wireframe notes this is a
 // heuristic pending a real measurement pass, and that fullscreen is where every date gets
@@ -84,54 +89,65 @@ export function TrendChart({
     const y = TOP + (1 - (v - scaleMin) / span) * (BOTTOM - TOP);
     return Math.max(TOP, Math.min(BOTTOM, y));
   };
+  // The same y in per-cent of the plot's height, for the HTML axis beside it.
+  const yPercent = (v: number) => (yFor(v) / H) * 100;
   const xFor = (i: number) => (periods.length > 1 ? (i / (periods.length - 1)) * W : W / 2);
+  const xPercent = (i: number) => (periods.length > 1 ? (i / (periods.length - 1)) * 100 : 50);
 
   const show = labelledIndices(periods.length, fullscreen ? periods.length : 4);
   // The focus line draws last so it sits above the dashed comparison line.
   const ordered = [...series].sort((a, b) => Number(!!b.comparison) - Number(!!a.comparison));
   const focus = series.find((s) => !s.comparison) ?? series[0];
   const fit = showFit ? leastSquares(focus.values) : null;
-  const height = fullscreen ? 220 : H;
+  const plotHeight = fullscreen ? 220 : H;
+  const ticks = [scaleMax, (scaleMax + scaleMin) / 2, scaleMin];
 
   return (
     <div className="mt-1">
       <div className="flex gap-2">
-        {/* The y spine and its three ticks, as its own fixed-width SVG so the plot area
-            keeps a clean 0-260 coordinate space whatever the card's real width is. */}
-        <svg width={AXIS_W} height={height} viewBox={`0 0 ${AXIS_W} ${H}`} preserveAspectRatio="none" aria-hidden="true" className="shrink-0">
-          <line x1={AXIS_W - 1} y1={TOP} x2={AXIS_W - 1} y2={BOTTOM + 2} stroke="var(--panel-border2)" strokeWidth="1" />
-          {[scaleMax, (scaleMax + scaleMin) / 2, scaleMin].map((v) => (
-            <g key={v}>
-              <line x1={AXIS_W - 5} y1={yFor(v)} x2={AXIS_W - 1} y2={yFor(v)} stroke="var(--muted3)" strokeWidth="1" />
-              <text x={AXIS_W - 7} y={yFor(v) + 3} textAnchor="end" fontSize="9.5" fill="var(--muted)">
-                {measure.format(v)}
-              </text>
-            </g>
+        {/* The y axis: its labels are HTML, positioned at the same fractions of the plot's
+            height that the SVG uses, so they stay upright at any card width. */}
+        <div className="relative w-8 shrink-0" style={{ height: plotHeight }} aria-hidden="true">
+          <span className="absolute right-0 w-px bg-[var(--panel-border2)]" style={{ top: `${(TOP / H) * 100}%`, bottom: `${((H - BOTTOM - 2) / H) * 100}%` }} />
+          {ticks.map((v) => (
+            <span
+              key={v}
+              className="absolute right-0 flex translate-y-[-50%] items-center gap-1 text-[9.5px] tabular-nums text-[var(--muted)]"
+              style={{ top: `${yPercent(v)}%` }}
+            >
+              {measure.format(v)}
+              <span className="inline-block h-px w-1 bg-[var(--muted3)]" />
+            </span>
           ))}
-        </svg>
+        </div>
         <svg
           width="100%"
-          height={height}
+          height={plotHeight}
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
           className="block flex-grow"
           role="img"
           aria-label={`${focus.label}, ${academicYearLabel(periods[0])} to ${academicYearLabel(periods[periods.length - 1])}`}
         >
-          <line x1="0" y1={TOP} x2={W} y2={TOP} stroke="var(--panel-border)" strokeWidth="1" />
-          <line x1="0" y1={(TOP + BOTTOM) / 2} x2={W} y2={(TOP + BOTTOM) / 2} stroke="var(--panel-border)" strokeWidth="1" />
-          <line x1="0" y1={BOTTOM} x2={W} y2={BOTTOM} stroke="var(--panel-border2)" strokeWidth="1" />
+          <line x1="0" y1={TOP} x2={W} y2={TOP} stroke="var(--panel-border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <line x1="0" y1={(TOP + BOTTOM) / 2} x2={W} y2={(TOP + BOTTOM) / 2} stroke="var(--panel-border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <line x1="0" y1={BOTTOM} x2={W} y2={BOTTOM} stroke="var(--panel-border2)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           {ordered.map((s) =>
             runsOf(s.values).map((run, ri) =>
               run.length === 1 ? (
                 // A lone real value between two gaps still has to appear -- a one-point
-                // polyline draws nothing at all.
-                <circle
+                // polyline draws nothing at all. Drawn as a short flat dash rather than a
+                // circle, because a circle in a stretched viewBox becomes an ellipse.
+                <line
                   key={`${s.key}-${ri}`}
-                  cx={xFor(run[0].i)}
-                  cy={yFor(run[0].v)}
-                  r={s.comparison ? 1.8 : 2.4}
-                  fill={s.comparison ? "var(--muted3)" : s.colour}
+                  x1={xFor(run[0].i)}
+                  y1={yFor(run[0].v)}
+                  x2={xFor(run[0].i)}
+                  y2={yFor(run[0].v)}
+                  stroke={s.comparison ? "var(--muted3)" : s.colour}
+                  strokeWidth={s.comparison ? 4 : 5}
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
                 />
               ) : (
                 <polyline
@@ -164,31 +180,31 @@ export function TrendChart({
         </svg>
       </div>
 
+      {/* The x axis, positioned over the same 0-100% the plot spans. */}
       <div className="flex gap-2">
-        <div className="shrink-0" style={{ width: AXIS_W }} />
-        <svg width="100%" height="16" viewBox={`0 0 ${W} 16`} preserveAspectRatio="none" aria-hidden="true" className="block flex-grow">
+        <div className="w-8 shrink-0" />
+        <div className="relative h-4 flex-grow" aria-hidden="true">
           {periods.map((p, i) => (
-            <g key={p}>
-              <line x1={xFor(i)} y1="0" x2={xFor(i)} y2="4" stroke="var(--panel-border2)" strokeWidth="1" />
+            <span key={p} className="absolute top-0" style={{ left: `${xPercent(i)}%` }}>
+              <span className="absolute left-0 top-0 h-1 w-px bg-[var(--panel-border2)]" />
               {show[i] && (
-                <text
-                  x={xFor(i)}
-                  y="14"
-                  textAnchor={i === 0 ? "start" : i === periods.length - 1 ? "end" : "middle"}
-                  fontSize="9.5"
-                  fill="var(--muted)"
+                <span
+                  className={`absolute top-1.5 whitespace-nowrap text-[9.5px] tabular-nums text-[var(--muted)] ${
+                    i === 0 ? "left-0" : i === periods.length - 1 ? "right-0 translate-x-0" : "-translate-x-1/2"
+                  }`}
+                  style={i === periods.length - 1 ? { transform: "translateX(-100%)" } : undefined}
                 >
                   {academicYearLabel(p)}
-                </text>
+                </span>
               )}
-            </g>
+            </span>
           ))}
-        </svg>
+        </div>
       </div>
-      <p className="pl-[38px] text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]">Academic year</p>
+      <p className="mt-3 pl-10 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]">Academic year</p>
 
       {series.length > 1 && (
-        <div className="mt-2 flex flex-wrap gap-3.5 pl-[38px]">
+        <div className="mt-2 flex flex-wrap gap-3.5 pl-10">
           {series.map((s) => (
             <span key={s.key} className="flex items-center gap-1.5 text-[10.5px] text-[var(--muted)]">
               <span
