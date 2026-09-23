@@ -10,26 +10,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, chosenKey, dropChosenForUnpinned, type ColumnState } from "@/lib/teacher-view-data";
-import { ColumnBuilder } from "@/components/teacher/ColumnBuilder";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, type ColumnState } from "@/lib/teacher-view-data";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
-import { SharePie, type PieSlice } from "@/components/teacher/SharePie";
+import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
+import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
+import { ComparisonsPanels, type MapChip } from "@/components/teacher/ComparisonsPanels";
+import { ENTRIES_MEASURE, headlineMeasure, measuresFor, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
 import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
-import { PHASE_ACCENT, DELTA_POSITIVE, DELTA_NEGATIVE, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
+import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
 import { comparabilityKey, familyFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
 import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicker";
 import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
-import { RankingsMap } from "@/components/teacher/RankingsMap";
-import { RankedSet, type RankedSetRow } from "@/components/teacher/RankedSet";
-import { ViewChart } from "@/components/teacher/ViewChart";
-import { defaultBoxTitle, type ColumnId, type SubjectRef, type ViewDef } from "@/lib/teacher-view-catalogue";
+import { defaultBoxTitle } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
-import { rankOf, type RankedSchool, type RankingsSetId } from "@/lib/teacher-view-rankings";
+import { rankOf, type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import { deserializeAcademicProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry } from "@/lib/academic-data-view";
@@ -141,11 +140,10 @@ export default function TeacherPhaseDashboard() {
   const [rollAtAge10, setRollAtAge10] = useState<number | null>(null);
   const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
   const [headlineLabel, setHeadlineLabel] = useState<string>("");
-  // Round 5: the Rankings card's other comparator sets, each already ranked by the
-  // dashboard route, and the whole-cohort series Candidates' "% of year group" divides by.
-  const [comparatorSets, setComparatorSets] = useState<Partial<Record<RankingsSetId, RankedSetRow[]>>>({});
-  const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
-  const [cohortSeries, setCohortSeries] = useState<{ period: number; value: number }[]>([]);
+  // Round 6: this school's own headline measure per published year, for Comparisons'
+  // Trend and % change panels. Real figures from the dashboard route (§6.4), not the
+  // wireframe's fabricated drift.
+  const [ownSeries, setOwnSeries] = useState<{ period: number; value: number }[]>([]);
   // The Results card's anchor -- see englandAverages in the dashboard route for why the
   // basis is the qualification bucket at Post-16 and the subject itself at GCSE.
   const [englandAvg, setEnglandAvg] = useState<{ basis: "bucket" | "subject"; values: { key: string; period: number; value: number }[] } | null>(null);
@@ -214,9 +212,7 @@ export default function TeacherPhaseDashboard() {
         setRollAtAge10(body.rollAtAge10 ?? null);
         setNeighbours(body.neighbours ?? []);
         setHeadlineLabel(body.headlineLabel ?? "");
-        setComparatorSets(body.comparatorSets ?? {});
-        setSetInfo(body.setInfo ?? null);
-        setCohortSeries(body.cohortSeries ?? []);
+        setOwnSeries(body.ownSeries ?? []);
         setEnglandAvg(body.englandAverages ?? null);
       } else {
         setError("Could not load this school's data. Try again.");
@@ -285,31 +281,18 @@ export default function TeacherPhaseDashboard() {
     [persist, ticked],
   );
 
-  // §7: "Saved state is now a hard requirement, not optional." Every tick round-trips
+  // §7: "Saved state is now a hard requirement, not optional." Every change round-trips
   // immediately -- there is no explicit save, so there is nothing to forget to press.
-  // An empty pin list uses resetColumn's own shape (key removed) so "never customised"
-  // and "reset" stay the same state rather than drifting into two.
-  const setColumn = useCallback(
-    async (columnId: string, pinned: string[]) => {
-      const next: ColumnState = dropChosenForUnpinned(columns, columnId, pinned);
-      if (pinned.length === 0) delete next[columnId];
-      else next[columnId] = pinned;
-      setColumns(next);
-      if (schoolUrn && phase) {
-        const prefs = await fetchPreferences(supabase, schoolUrn, phase);
-        await savePreferences(supabase, schoolUrn, phase, { ...prefs, columns: next });
-      }
-    },
-    [columns, schoolUrn, phase, supabase],
-  );
-
-  // The subjects a pinned "Vs. your comparison set" box compares against, saved with the
-  // pins so the choice survives a reload (see chosenKey).
-  const setChosen = useCallback(
-    async (viewId: string, keys: string[]) => {
+  //
+  // Round 6 stores the column's PANELS here, where round 5 stored its pinned view ids.
+  // The default set (Current alone) is modelled as the key being absent, exactly as
+  // resetColumn already models "never customised", so the two cannot drift into two
+  // states -- see panelsFrom().
+  const setPanels = useCallback(
+    async (columnId: string, panels: PanelId[]) => {
       const next: ColumnState = { ...columns };
-      if (keys.length === 0) delete next[chosenKey(viewId)];
-      else next[chosenKey(viewId)] = keys;
+      if (panels.length === 1 && panels[0] === "current") delete next[columnId];
+      else next[columnId] = panels;
       setColumns(next);
       if (schoolUrn && phase) {
         const prefs = await fetchPreferences(supabase, schoolUrn, phase);
@@ -350,11 +333,6 @@ export default function TeacherPhaseDashboard() {
     },
     [englandAvg, phase],
   );
-
-  // SubjectItem carries an entries count the catalogue has no use for; SubjectRef is the
-  // narrower shape it actually needs.
-  const asRefs = (list: SubjectItem[]): SubjectRef[] =>
-    list.map((i) => ({ key: i.key, subject: i.subject, qualificationType: i.qualificationType, label: i.label }));
 
   if (loading) return <main className="mx-auto max-w-4xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
   if (error || !phase) {
@@ -687,7 +665,6 @@ export default function TeacherPhaseDashboard() {
   // familyId: the subject's real category, which colours the map's dots (a Biology map
   // takes Sciences & Maths' ramp, History Humanities' amber). The chip itself keeps its
   // qualification colour.
-  type MapChip = { key: string; subject: string; bucket: string | null; label: string; legend: string; hex: string; familyId: string | null };
   const mapChips: MapChip[] = [];
   if (phase !== "ks2") {
     const ph = phase;
@@ -720,99 +697,77 @@ export default function TeacherPhaseDashboard() {
   const groupColour = colourByGroup(phase, tickedItems);
   const colourOf = (i: SubjectItem) => groupColour.get(comparabilityKey(phase, i.qualificationType)) ?? "var(--muted)";
   const latestPeriod = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
-  const sourceLine = (extra = "") =>
+
+  // Round 6: the per-subject series the Results and Context panels plot. One value per
+  // ticked subject per published year, read from the SAME `headline` rows the card
+  // already used for its latest-year figure -- grouped by period rather than collapsed to
+  // the last one. Nothing is derived a second way, so the panels and the old headline
+  // figure can never disagree.
+  const bucketOf = (i: SubjectItem): string | null => (phase === "ks5" ? comparabilityKey(phase, i.qualificationType) : null);
+
+  const headlineRowsFor = (i: SubjectItem, period: number) => {
+    const bucket = bucketOf(i);
+    return headline.filter((h) => h.subject === i.subject && (bucket === null || (h.bucket ?? "all") === bucket) && h.period === period);
+  };
+
+  // At KS4 only "GCSE (9-1) Full Course" carries points, and headline rows there are keyed
+  // by subject alone -- so without this gate an OCR or BTEC row for the same subject shows
+  // the GCSE score as its own. The same guard resultsFor already applies.
+  const pointsAt = (i: SubjectItem, period: number): number | null => {
+    if (phase === "ks4" && i.qualificationType !== POINTS_BEARING_QUALIFICATION.ks4) return null;
+    const vals = headlineRowsFor(i, period).map((h) => h.avgPointScore).filter((v): v is number => v !== null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
+
+  const entriesAt = (i: SubjectItem, period: number): number | null => {
+    const rows = headlineRowsFor(i, period);
+    return rows.length ? rows.reduce((a, h) => a + (h.entriesTotal ?? 0), 0) : null;
+  };
+
+  // Every period any ticked subject has a headline row for, ascending -- the real range
+  // §6.3 requires, not a constant.
+  const subjectPeriods = Array.from(
+    new Set(headline.filter((h) => tickedItems.some((i) => i.subject === h.subject)).map((h) => h.period)),
+  ).sort((a, b) => a - b);
+
+  const shortSubject = (label: string) => (label.length <= 6 ? label : `${label.slice(0, 4)}.`);
+
+  // The England anchor for the same subject and the same year (englandFor's own rule,
+  // applied per period rather than only to the latest one).
+  const englandAt = (i: SubjectItem, period: number): number | null => {
+    if (!englandAvg || phase === "ks2") return null;
+    const key = englandAvg.basis === "bucket" ? comparabilityKey(phase, i.qualificationType) : i.subject;
+    return englandAvg.values.find((v) => v.key === key && v.period === period)?.value ?? null;
+  };
+
+  const resultsSeries: SubjectSeries[] = tickedItems.map((i) => ({
+    key: i.key,
+    label: i.label,
+    shortLabel: shortSubject(i.subject),
+    colour: colourOf(i),
+    values: subjectPeriods.map((p) => pointsAt(i, p)),
+    benchmark: subjectPeriods.map((p) => englandAt(i, p)),
+  }));
+
+  const contextSeries: SubjectSeries[] = tickedItems.map((i) => ({
+    key: i.key,
+    label: i.label,
+    shortLabel: shortSubject(i.subject),
+    colour: colourOf(i),
+    values: subjectPeriods.map((p) => entriesAt(i, p)),
+  }));
+
+  const panelsOf = (columnId: string): PanelId[] => panelsFrom(columns[columnId]);
+
+  // Every panel's source line. `span` is the real year range that panel is plotting, so a
+  // Trend showing 2021/22-2024/25 says so rather than repeating the latest year (§6.3).
+  const panelSource = (span?: string) =>
     latestPeriod === null ? null : (
       <>
-        Source: {SOURCE_NAME[phase]}, {academicYearLabel(latestPeriod)}
-        {extra} &middot;{" "}
+        Source: {SOURCE_NAME[phase]}, {span ?? academicYearLabel(latestPeriod)} &middot;{" "}
         <Link href="/sources" className="text-[var(--muted)] underline">Sources</Link>
       </>
     );
-  // The pie's slices: one per qualification group, as the mockups draw it.
-  const pieSlices: PieSlice[] = Array.from(groupColour.entries()).map(([key, color]) => {
-    const inGroup = tickedItems.filter((i) => comparabilityKey(phase, i.qualificationType) === key);
-    return {
-      label: `${inGroup.map((i) => i.subject).join(" & ")} (${qualificationShortLabel(phase, inGroup[0].qualificationType)})`,
-      value: inGroup.reduce((a, i) => a + i.entries, 0),
-      color,
-    };
-  });
-
-  // Round 5's non-axis views. Everything here reads data the dashboard already loaded.
-  const renderSpecial = (v: ViewDef, fullscreen: boolean) => {
-    if (v.axis === "share_of_cohort") {
-      // Entries come from the latest year the subject rows cover, so the cohort must be
-      // that same year's -- dividing this year's entries by last year's cohort would be
-      // a figure about no real year group.
-      const latest = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
-      const cohort = cohortSeries.find((c) => c.period === latest)?.value ?? null;
-      if (tickedItems.length === 0) return <p className="mt-2 text-xs text-neutral-500">Tick a subject to see its share of the year group.</p>;
-      if (!cohort) return <p className="mt-2 text-xs text-neutral-500">No published cohort size for {latest ?? "the latest year"}, so there is nothing to divide by.</p>;
-      return (
-        <>
-          <p className="mt-1 text-[11px] text-neutral-500">
-            Year group: {Math.round(cohort).toLocaleString()} pupils ({latest})
-          </p>
-          <ViewChart
-            computed={{
-              rows: tickedItems
-                .map((i) => ({ label: i.label, value: (i.entries / cohort) * 100, isSubject: true }))
-                .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)),
-            }}
-            unit="percent"
-            scaleMax={100}
-          />
-          {fullscreen && (
-            <p className="mt-3 text-xs text-neutral-500">
-              Each pupil takes several subjects, so these shares are not meant to add up to 100%.
-            </p>
-          )}
-        </>
-      );
-    }
-    const setFor: Record<string, RankingsSetId> = {
-      rank_list: "nearest",
-      rank_same_sector: "same_sector",
-      rank_local_rivals: "local_rivals",
-      rank_similar_size: "similar_size",
-    };
-    const setId = setFor[v.axis];
-    if (!setId) return null;
-    const empty: Record<RankingsSetId, string> = {
-      nearest: "No nearby schools with comparable published data for this phase.",
-      same_sector: `No nearby ${setInfo?.targetIndependent ? "independent" : "state"} schools of this phase to compare with.`,
-      local_rivals: "No nearby schools of this phase to compare with.",
-      similar_size: setInfo?.targetCohortSize ? "No nearby schools with a published cohort size to match." : "This school has no published cohort size to match on.",
-    };
-    return (
-      <>
-        {setId === "same_sector" && setInfo && (
-          <p className="mt-1 text-[11px] text-neutral-500">{setInfo.targetIndependent ? "Independent schools only" : "State schools only"}</p>
-        )}
-        {setId === "similar_size" && setInfo?.targetCohortSize && (
-          <p className="mt-1 text-[11px] text-neutral-500">This school: {Math.round(setInfo.targetCohortSize).toLocaleString()} pupils in the exam cohort</p>
-        )}
-        <RankedSet
-          rows={comparatorSets[setId]}
-          headlineLabel={headlineLabel}
-          formatValue={formatHeadline}
-          showCohort={setId === "similar_size"}
-          fullscreen={fullscreen}
-          emptyText={empty[setId]}
-        />
-      </>
-    );
-  };
-
-  const builderProps = {
-    phase,
-    ticked: asRefs(tickedItems),
-    allSubjects: asRefs(items),
-    headline,
-    chosenFor: (viewId: string) => columns[chosenKey(viewId)] ?? [],
-    onChosenChange: setChosen,
-    renderSpecial,
-  };
 
   return (
     // §7: the theme attribute is scoped to Teacher view, never to <html> -- see
@@ -880,46 +835,43 @@ export default function TeacherPhaseDashboard() {
       {/* The laptop board's four-column row, with its dividers -- see DashboardGrid. */}
       <DashboardGrid>
         <DashboardColumn columnId="candidates" question={q.howMany} accented={!!accent}>
-          {/* Round 5: the column's default content is a box like any pinned view, titled
-              from the catalogue rather than hardcoded here. */}
-          <CardBox
-            title={defaultBoxTitle("candidates", phase)}
-            question={q.howMany}
-            caption={phase === "ks2" ? undefined : "Entries this year, by qualification type — never blended into one number."}
-            source={phase === "ks2" ? undefined : sourceLine()}
-          >
-            {({ fullscreen }) => (
-              <>
-                {phase === "ks2" ? (
-                  <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{rollAtAge10?.toLocaleString() ?? "—"}</p>
-                ) : tickedItems.length === 0 ? (
-                  <p className="text-sm text-[var(--muted)]">Pick a subject below to see its entries.</p>
-                ) : (
-                  // One bar row per ticked subject/qualification -- never summed, so a
-                  // GCSE and a vocational course in the same subject stay two rows.
-                  <ViewChart
-                    layout="labelled"
-                    unit="entries"
-                    computed={{
-                      rows: tickedItems.map((i) => ({
-                        label: i.subject,
-                        sublabel: qualificationShortLabel(phase, i.qualificationType),
-                        value: i.entries,
-                        isSubject: true,
-                        color: colourOf(i),
-                      })),
-                    }}
-                  />
-                )}
-                {movedCandidates && (
-                  <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                    {movedCandidates.sentence}
-                  </p>
-                )}
-              </>
-            )}
-          </CardBox>
-          <ColumnBuilder columnId={"candidates" as ColumnId} {...builderProps} pinned={columns["candidates"] ?? []} onChange={(n) => setColumn("candidates", n)} />
+          {phase === "ks2" ? (
+            // KS2 keeps its own single box: every pupil sits the same tests, so there are
+            // no subjects to plot per year and nothing for the panel mechanism to offer
+            // (§6.9). Untouched from round 5.
+            <CardBox title={defaultBoxTitle("candidates", phase)} question={q.howMany}>
+              {({ fullscreen }) => (
+                <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>
+                  {rollAtAge10?.toLocaleString() ?? "—"}
+                </p>
+              )}
+            </CardBox>
+          ) : tickedItems.length === 0 ? (
+            <CardBox title={defaultBoxTitle("candidates", phase)} question={q.howMany}>
+              {() => <p className="text-sm text-[var(--muted)]">Pick a subject above to see its entries.</p>}
+            </CardBox>
+          ) : (
+            <CandidatesPanels
+              phase={phase}
+              subjects={tickedItems.map((i) => ({
+                key: i.key,
+                subject: i.subject,
+                qualificationType: i.qualificationType,
+                label: i.label,
+                colour: colourOf(i),
+              }))}
+              entries={entries}
+              panels={panelsOf("candidates")}
+              onPanelsChange={(next) => setPanels("candidates", next)}
+              question={q.howMany}
+              source={panelSource}
+            />
+          )}
+          {movedCandidates && (
+            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              {movedCandidates.sentence}
+            </p>
+          )}
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:candidates`} />
         </DashboardColumn>
 
@@ -933,230 +885,130 @@ export default function TeacherPhaseDashboard() {
             <span className="ml-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
           )}
         >
-          <CardBox
-            title={defaultBoxTitle("results", phase)}
-            question={q.howWell}
-            caption={
-              phase === "ks2"
-                ? undefined
-                : englandAvg?.basis === "subject"
-                  ? "Average point score per GCSE entry, vs. the England GCSE average for that subject."
-                  : "Average point score per entry, vs. the England average for that same qualification."
-            }
-            source={phase === "ks2" ? undefined : sourceLine()}
-          >
-            {({ fullscreen }) => (
-              <>
-                {phase === "ks2" ? (
-                  // KS2 has no subject picker -- every pupil sits the same tests -- so this
-                  // card used to ask for a subject nobody could pick. Its result is the
-                  // school's own headline, read against the nearest primaries (§14: never a
-                  // bare number).
-                  (() => {
-                    const own = neighbours.find((n) => n.isTarget)?.value ?? null;
-                    const others = neighbours.filter((n) => !n.isTarget && n.value !== null).map((n) => n.value!);
-                    const avg = others.length ? others.reduce((a, b) => a + b, 0) / others.length : null;
-                    return own === null ? (
-                      <p className="mt-2 text-sm text-neutral-500">No published {headlineLabel} for this school yet.</p>
-                    ) : (
-                      <>
-                        <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{formatHeadline(own)}</p>
-                        <p className="text-sm text-neutral-500">
-                          {headlineLabel}
-                          {avg !== null && ` · nearest primaries average ${formatHeadline(avg)}`}
-                        </p>
-                      </>
-                    );
-                  })()
-                ) : tickedItems.length === 0 ? (
-                  <p className="mt-2 text-sm text-neutral-500">Pick a subject below to see its results.</p>
+          {phase === "ks2" ? (
+            <CardBox title={defaultBoxTitle("results", phase)} question={q.howWell}>
+              {({ fullscreen }) => {
+                // KS2 has no subject picker, so its result is the school's own headline,
+                // read against the nearest primaries (§14: never a bare number).
+                const own = neighbours.find((n) => n.isTarget)?.value ?? null;
+                const others = neighbours.filter((n) => !n.isTarget && n.value !== null).map((n) => n.value!);
+                const avg = others.length ? others.reduce((a, b) => a + b, 0) / others.length : null;
+                return own === null ? (
+                  <p className="mt-2 text-sm text-[var(--muted)]">No published {headlineLabel} for this school yet.</p>
                 ) : (
-                  // Mockup row: subject · qualification on the left; score in the group
-                  // colour on the right, then the delta against England -- green above,
-                  // red below.
-                  <ul className="flex flex-col gap-2">
-                    {tickedItems.map((i) => {
-                      const score = resultsFor(i);
-                      const england = score ? englandFor(i, score) : null;
-                      const delta = score && england !== null ? score.value - england : null;
-                      return (
-                        <li key={i.key} className="flex items-center justify-between gap-2">
-                          <span className={`truncate font-semibold ${fullscreen ? "text-base" : "text-[12.5px]"}`}>
-                            {i.subject}{" "}
-                            <span className="font-medium text-[var(--muted3)]">&middot; {qualificationShortLabel(phase, i.qualificationType)}</span>
-                          </span>
-                          {score === null ? (
-                            <span className="shrink-0 whitespace-nowrap text-[12.5px] text-[var(--muted3)]">no score</span>
-                          ) : (
-                            <span className={`shrink-0 font-extrabold tabular-nums ${fullscreen ? "text-xl" : "text-sm"}`} style={{ color: colourOf(i) }}>
-                              {score.value.toFixed(1)}
-                              {delta !== null && (
-                                <span
-                                  className="ml-1 text-[10.5px] font-semibold"
-                                  style={{ color: delta >= 0 ? DELTA_POSITIVE : DELTA_NEGATIVE }}
-                                  title={`England average ${england!.toFixed(1)} (${academicYearLabel(score.period)})`}
-                                >
-                                  {delta >= 0 ? "+" : "−"}{Math.abs(delta).toFixed(1)}
-                                </span>
-                              )}
-                            </span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                {movedResults && (
-                  <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                    {movedResults.sentence}
-                  </p>
-                )}
-              </>
-            )}
-          </CardBox>
-          <ColumnBuilder columnId={"results" as ColumnId} {...builderProps} pinned={columns["results"] ?? []} onChange={(n) => setColumn("results", n)} />
+                  <>
+                    <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{formatHeadline(own)}</p>
+                    <p className="text-sm text-[var(--muted)]">
+                      {headlineLabel}
+                      {avg !== null && ` · nearest primaries average ${formatHeadline(avg)}`}
+                    </p>
+                  </>
+                );
+              }}
+            </CardBox>
+          ) : tickedItems.length === 0 ? (
+            <CardBox title={defaultBoxTitle("results", phase)} question={q.howWell}>
+              {() => <p className="text-sm text-[var(--muted)]">Pick a subject above to see its results.</p>}
+            </CardBox>
+          ) : (
+            <SubjectPanels
+              columnId="results"
+              periods={subjectPeriods}
+              subjects={resultsSeries}
+              measure={measuresFor(phase)[0]}
+              benchmarkLabel="National"
+              benchmarkNoun={
+                englandAvg?.basis === "subject"
+                  ? "the England GCSE average for the subject"
+                  : "the England average for the same qualification"
+              }
+              questions={{
+                current: q.howWell,
+                trend: "How have my subjects' results moved, year on year?",
+                change: "Which of my subjects' results have moved most?",
+              }}
+              source={panelSource}
+              panels={panelsOf("results")}
+              onPanelsChange={(next) => setPanels("results", next)}
+              emptyText="Pick a subject above to see its results."
+            />
+          )}
+          {movedResults && (
+            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              {movedResults.sentence}
+            </p>
+          )}
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:results`} />
         </DashboardColumn>
 
         <DashboardColumn columnId="context" question={q.nearMe} accented={!!accent}>
-          <CardBox
-            title={defaultBoxTitle("context", phase)}
-            question={q.nearMe}
-            // The existing sentence is kept, as the caption under the pie rather than in
-            // place of it.
-            caption={
-              phase === "ks2"
-                ? undefined
-                : schoolTotal > 0
-                  ? `Your subjects are ${Math.round((liveCount / schoolTotal) * 100)}% of ${schoolTotal.toLocaleString()} entries across the ${phase === "ks5" ? "sixth form" : "school"} — share of every entry, not just how many take it.`
-                  : "No entries recorded for this school."
-            }
-            source={phase === "ks2" ? undefined : sourceLine()}
-          >
-            {({ fullscreen }) =>
-              phase === "ks2" ? (
+          {phase === "ks2" ? (
+            <CardBox title={defaultBoxTitle("context", phase)} question={q.nearMe}>
+              {({ fullscreen }) => (
                 <>
-                  <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                    The {nearbyOnly.length} nearest primaries, by distance.
-                  </p>
+                  <p className="mt-2 text-sm text-[var(--muted2)]">The {nearbyOnly.length} nearest primaries, by distance.</p>
                   <ul className="mt-2 space-y-1 text-sm">
-                    {/* Fullscreen has room for the whole set rather than the card's first five. */}
                     {nearbyOnly.slice(0, fullscreen ? nearbyOnly.length : 5).map((n) => (
                       <li key={n.urn} className="flex items-baseline justify-between gap-2">
                         <span className="truncate">{n.name}</span>
-                        <span className="tabular-nums text-neutral-500">
+                        <span className="tabular-nums text-[var(--muted)]">
                           {n.distanceKm === null ? "" : `${n.distanceKm.toFixed(1)} km`}
                         </span>
                       </li>
                     ))}
                   </ul>
                 </>
-              ) : schoolTotal > 0 ? (
-                <SharePie slices={pieSlices} total={schoolTotal} fullscreen={fullscreen} />
-              ) : null
-            }
-          </CardBox>
-          <ColumnBuilder columnId={"context" as ColumnId} {...builderProps} pinned={columns["context"] ?? []} onChange={(n) => setColumn("context", n)} />
+              )}
+            </CardBox>
+          ) : tickedItems.length === 0 ? (
+            <CardBox title={defaultBoxTitle("context", phase)} question={q.nearMe}>
+              {() => <p className="text-sm text-[var(--muted)]">Pick a subject above to see how it sits in the school.</p>}
+            </CardBox>
+          ) : (
+            <SubjectPanels
+              columnId="context"
+              periods={subjectPeriods}
+              subjects={contextSeries}
+              measure={ENTRIES_MEASURE}
+              questions={{
+                current: q.nearMe,
+                trend: "How have my subjects' entries moved against the rest of the school?",
+                change: "Which of my subjects have grown or shrunk most within the school?",
+              }}
+              source={panelSource}
+              panels={panelsOf("context")}
+              onPanelsChange={(next) => setPanels("context", next)}
+              emptyText="Pick a subject above to see how it sits in the school."
+              note={
+                schoolTotal > 0
+                  ? `Your subjects are ${Math.round((liveCount / schoolTotal) * 100)}% of ${schoolTotal.toLocaleString()} entries across the ${phase === "ks5" ? "sixth form" : "school"}.`
+                  : undefined
+              }
+            />
+          )}
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:context`} />
         </DashboardColumn>
 
         <DashboardColumn columnId="rankings" question={q.wider} accented={!!accent}>
-          <CardBox
-            title={defaultBoxTitle("rankings", phase)}
+          <ComparisonsPanels
+            phase={phase}
+            panels={panelsOf("rankings")}
+            onPanelsChange={(next) => setPanels("rankings", next)}
             question={q.wider}
-            source={phase === "ks2" ? undefined : sourceLine("; school locations from GIAS")}
-          >
-            {({ fullscreen }) => (
-              <>
-                {activeMapChip && schoolUrn && neighbours.length > 0 ? (
-                  // A subject chip is active (and the map is drawn), so the map is plotting that subject: the
-                  // figure follows it, from the map's own rank (the same one its dots'
-                  // tooltips use), not the whole-school ranking below. Worded as the map's
-                  // subject tooltip is ("avg. point score").
-                  mapRank ? (
-                    <>
-                      <p className="mt-2 text-3xl font-semibold tabular-nums">
-                        {mapRank.rank}
-                        <span className="ml-1 text-base font-normal text-neutral-500">of {mapRank.total}</span>
-                      </p>
-                      <p className="text-sm text-neutral-500">
-                        among the nearest schools with data, on {activeMapChip.legend} avg. point score
-                      </p>
-                    </>
-                  ) : (
-                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                      {mapProfiles === null ? "Loading the map…" : `No ${activeMapChip.legend} points score for this school to rank.`}
-                    </p>
-                  )
-                ) : position ? (
-                  <>
-                    {/* §14: the position IS the anchor -- the figure never stands alone. */}
-                    <p className="mt-2 text-3xl font-semibold tabular-nums">
-                      {position.position}
-                      <span className="ml-1 text-base font-normal text-neutral-500">of {position.outOf}</span>
-                    </p>
-                    <p className="text-sm text-neutral-500">
-                      among the nearest schools with data, on {headlineLabel}
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                    No nearby schools with comparable published data for this phase.
-                  </p>
-                )}
-                {/* Round 5: the real map, at card size here and near-viewport size in the
-                    modal. The map is a live Leaflet map and does not print; the ranking's
-                    list form is the pinnable "Nearest 10, as a list" view ("Add a view"),
-                    which prints, rather than a second always-on copy here. */}
-                {schoolUrn && neighbours.length > 0 && (
-                  <div className="print:hidden">
-                    {/* The mockup's chip row: the map plots one ticked subject at a time.
-                        Filled in the subject's qualification colour when chosen, outlined
-                        when not. With nothing ticked there are no chips and the map shows
-                        the whole-school headline, as it always has. */}
-                    {mapChips.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-[5px]" role="group" aria-label="Subject shown on the map">
-                        {mapChips.map((c) => {
-                          const on = c.key === activeMapChip?.key;
-                          return (
-                            <button
-                              key={c.key}
-                              type="button"
-                              aria-pressed={on}
-                              onClick={() => setMapChip(c.key)}
-                              className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
-                              style={
-                                on
-                                  ? { background: c.hex, color: "#0a0a0b", border: `1.5px solid ${c.hex}` }
-                                  : { background: "transparent", color: c.hex, border: `1.5px solid ${c.hex}80` }
-                              }
-                            >
-                              {c.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    <RankingsMap
-                      profiles={mapProfiles}
-                      targetUrn={schoolUrn}
-                      stage={phase}
-                      heightClass={fullscreen ? "h-[70vh] min-h-[22rem]" : "h-72"}
-                      subject={activeMapChip?.subject ?? null}
-                      subjectLabel={activeMapChip?.legend ?? null}
-                      subjectBucket={activeMapChip?.bucket ?? null}
-                      familyId={activeMapChip?.familyId ?? null}
-                      // Compact overlays at card size; the fullscreen map keeps the full
-                      // toggle, legend and exclusion notes.
-                      dense={!fullscreen}
-                      onTargetRank={setMapRank}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </CardBox>
-          <ColumnBuilder columnId={"rankings" as ColumnId} {...builderProps} pinned={columns["rankings"] ?? []} onChange={(n) => setColumn("rankings", n)} />
+            source={panelSource}
+            headlineLabel={headlineLabel}
+            ownSeries={ownSeries}
+            measure={headlineMeasure(phase, headlineLabel)}
+            schoolUrn={schoolUrn}
+            hasNeighbours={neighbours.length > 0}
+            mapProfiles={mapProfiles}
+            mapChips={mapChips}
+            activeMapChip={activeMapChip}
+            onMapChip={setMapChip}
+            mapRank={mapRank}
+            onMapRank={setMapRank}
+            position={position}
+          />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:rankings`} />
         </DashboardColumn>
       </DashboardGrid>

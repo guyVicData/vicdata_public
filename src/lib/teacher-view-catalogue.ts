@@ -273,7 +273,21 @@ export function availableViews(
 
 // `sublabel` and `color` are only used by the labelled layout (the Candidates default:
 // "Geography" over "GCSE", bar in that qualification group's chip colour).
-export type ComparisonRow = { label: string; value: number | null; isSubject: boolean; sublabel?: string; color?: string };
+// Round 6 adds two optional fields, both only read by the new `row` layout:
+//   - `marker`: the benchmark this row is read against -- the England average in Results,
+//     the comparison group's own average in Context. Drawn as a tick ON the row's track,
+//     so the comparison is inside the bar rather than in a tooltip beside it.
+//   - `emphasis`: draw this row heavier. Comparisons uses it for your own school among
+//     the comparator set, where `isSubject` would be the wrong word for the same idea.
+export type ComparisonRow = {
+  label: string;
+  value: number | null;
+  isSubject: boolean;
+  sublabel?: string;
+  color?: string;
+  marker?: number | null;
+  emphasis?: boolean;
+};
 export type TrendSeries = { label: string; values: (number | null)[]; isSubject: boolean };
 // A view is EITHER a current-position comparison (rows) or a trend (periods+series) --
 // never both, so the renderer never has to guess which half is authoritative.

@@ -91,32 +91,64 @@ export async function savePreferences(
   return !error;
 }
 
-// "Vs. your comparison set" needs the subjects it compares against saved with it, or a
-// pinned box comes back empty on every reload. Stored in the same `columns` JSON as the
-// pins, under a prefix that can never collide with a column id, so it needs no schema
-// change and round-trips through the same save. Keyed by pinned view, not by column:
-// two such boxes for two subjects each keep their own choice.
+// Round 6: a column's settings live in the SAME `columns` JSON as its panel list, under
+// prefixes that can never collide with a column id -- so the whole round needs no schema
+// change and round-trips through the one existing save. Values are string arrays because
+// that is the column shape already; a scalar is simply a one-element array.
+//
+// What is saved here is deliberately "which data", not "which shape": the measure, the
+// comparison group, the chosen subject set, the comparator set. Coming back to a card
+// showing a DIFFERENT NUMBER from the one you left is disorienting in a way that coming
+// back to the same number drawn as bars rather than a table is not -- so the view
+// toggles, sort order, focus chip and From:/Since: span stay component state and reset on
+// reload. Flagged as a judgement call in the round-6 build report.
 export const CHOSEN_PREFIX = "chosen:";
-export const chosenKey = (viewId: string) => `${CHOSEN_PREFIX}${viewId}`;
+export const MEASURE_PREFIX = "measure:";
+export const AGAINST_PREFIX = "against:";
+export const SET_PREFIX = "set:";
 
-// A view's saved choice goes when the view does -- otherwise unpinning and re-pinning
-// would silently restore a comparison the person had already thrown away.
-export function dropChosenForUnpinned(columns: ColumnState, columnId: string, stillPinned: string[]): ColumnState {
+export const chosenKey = (columnId: string) => `${CHOSEN_PREFIX}${columnId}`;
+export const measureKey = (columnId: string) => `${MEASURE_PREFIX}${columnId}`;
+export const againstKey = (columnId: string) => `${AGAINST_PREFIX}${columnId}`;
+export const setKey = (columnId: string) => `${SET_PREFIX}${columnId}`;
+
+// Read one saved scalar setting. Returns undefined rather than a default so each caller's
+// own default stays in one place (its catalogue), not duplicated here.
+export function readSetting(columns: ColumnState, key: string): string | undefined {
+  const value = columns[key];
+  return Array.isArray(value) && value.length > 0 ? value[0] : undefined;
+}
+
+export function writeSetting(columns: ColumnState, key: string, value: string | null): ColumnState {
   const next = { ...columns };
-  for (const key of Object.keys(next)) {
-    if (!key.startsWith(CHOSEN_PREFIX)) continue;
-    const viewId = key.slice(CHOSEN_PREFIX.length);
-    if (viewId.startsWith(`${columnId}|`) && !stillPinned.includes(viewId)) delete next[key];
-  }
+  if (value === null) delete next[key];
+  else next[key] = [value];
+  return next;
+}
+
+export function readList(columns: ColumnState, key: string): string[] {
+  const value = columns[key];
+  return Array.isArray(value) ? value : [];
+}
+
+export function writeList(columns: ColumnState, key: string, values: string[]): ColumnState {
+  const next = { ...columns };
+  if (values.length === 0) delete next[key];
+  else next[key] = values;
   return next;
 }
 
 // §7: "A reset button per column wipes it back to the single default view." Modelled as
 // removing the column's key entirely rather than storing an empty array, so "never
-// customised" and "reset to default" are the same state and cannot drift apart.
+// customised" and "reset to default" are the same state and cannot drift apart. Round 6
+// keeps that convention exactly -- an absent key now means "Current alone", which is what
+// panelsFrom() returns for it -- and extends it to the column's settings, so a reset
+// clears the measure and comparison group with the panels rather than leaving a card
+// pointed at a measure nobody can see they chose.
 export function resetColumn(columns: ColumnState, columnId: string): ColumnState {
   const next = { ...columns };
   delete next[columnId];
+  for (const key of [chosenKey(columnId), measureKey(columnId), againstKey(columnId), setKey(columnId)]) delete next[key];
   return next;
 }
 

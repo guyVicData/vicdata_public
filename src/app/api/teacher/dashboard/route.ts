@@ -11,6 +11,7 @@ import {
   HEADLINE_LABEL,
   populationAtAge,
   latestMeasureAt,
+  headlineValueAt,
   entriesSeries,
   fetchLatestCohortSizes,
   igcseExclusionLikely,
@@ -70,6 +71,23 @@ function neighbourPool(rows: NeighbourRow[], phase: KsStage): PoolSchool[] {
   return pool;
 }
 
+// Round 6 (§6.4): the real per-year history behind Comparisons' Trend and % change
+// panels. It was already being fetched and thrown away -- fetchAcademicProfiles returns
+// every school's whole `AcademicHeadlineYear[]`, ascending by period, and rankSets
+// collapsed each one to latestMeasureAt() below. So the wireframe's fabricated
+// genSeries() drift is not needed: this is the same real measure as `value`, just not
+// reduced to its last point.
+type YearValue = { period: number; value: number };
+
+function seriesOf(profile: AcademicSchoolProfile | undefined, phase: KsStage): YearValue[] {
+  if (!profile) return [];
+  const years = phase === "ks2" ? profile.ks2 : phase === "ks4" ? profile.ks4 : profile.ks5;
+  return years
+    .map((y) => ({ period: y.period, value: headlineValueAt(years, y.period, HEADLINE_MEASURE[phase]) }))
+    .filter((r): r is YearValue => r.value !== null)
+    .sort((a, b) => a.period - b.period);
+}
+
 type RankedRow = {
   urn: string; name: string; value: number | null; isTarget: boolean; distanceKm: number | null;
   cohortSize?: number | null;
@@ -87,7 +105,7 @@ async function rankSets(
   sets: Partial<Record<RankingsSetId, PoolSchool[]>>,
   phase: KsStage,
   cohortSizes: Map<string, number> | null,
-): Promise<{ ranked: Partial<Record<RankingsSetId, RankedRow[]>>; targetProfile: AcademicSchoolProfile | null }> {
+): Promise<{ ranked: Partial<Record<RankingsSetId, RankedRow[]>>; targetProfile: AcademicSchoolProfile | null; targetSeries: YearValue[] }> {
   // The target is always in the union, so its profile comes back even when it has no
   // neighbours -- Candidates' "% of year group" reads its cohort from it.
   const union = new Set<string>([targetUrn]);
@@ -110,7 +128,7 @@ async function rankSets(
       ...set.map((p) => ({ urn: p.urn, name: p.name, value: valueFor(p.urn), isTarget: false, distanceKm: p.distanceKm, cohortSize: sizeFor(p.urn), igcseExcluded: excluded(p.urn) })),
     ];
   }
-  return { ranked: out, targetProfile: byUrn.get(targetUrn) ?? null };
+  return { ranked: out, targetProfile: byUrn.get(targetUrn) ?? null, targetSeries: seriesOf(byUrn.get(targetUrn), phase) };
 }
 
 // The Results card's anchor: the England average for the same subject or qualification,
@@ -198,7 +216,7 @@ export async function GET(request: NextRequest) {
     local_rivals: localRivals(pool),
   };
   if (cohortSizes) sets.similar_size = similarSize(pool, cohortSizes, cohortSizes.get(urn) ?? null);
-  const { ranked: comparatorSets, targetProfile } = await rankSets(urn, sets, phase, cohortSizes);
+  const { ranked: comparatorSets, targetProfile, targetSeries } = await rankSets(urn, sets, phase, cohortSizes);
   const setInfo = { targetIndependent, targetCohortSize: cohortSizes?.get(urn) ?? null };
 
   if (phase === "ks2") {
@@ -213,6 +231,10 @@ export async function GET(request: NextRequest) {
       comparatorSets,
       setInfo,
       cohortSeries: [],
+      // Round 6: this school's own headline measure per year, for Comparisons' Trend and
+      // % change panels (§6.4). Real published figures only -- years with no figure are
+      // absent rather than carried forward.
+      ownSeries: targetSeries,
       headlineLabel: HEADLINE_LABEL[phase],
     });
   }
@@ -235,6 +257,7 @@ export async function GET(request: NextRequest) {
     // same figure the map sizes this school's dot by.
     englandAverages: england,
     cohortSeries: targetProfile ? entriesSeries(targetProfile, phase, null) : [],
+    ownSeries: targetSeries,
     headlineLabel: HEADLINE_LABEL[phase],
   });
 }

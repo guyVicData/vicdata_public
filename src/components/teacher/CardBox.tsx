@@ -30,7 +30,10 @@ export function CardBox({
   title,
   subtitle,
   question,
+  tag,
   actions,
+  trailingActions,
+  controls,
   caption,
   source,
   children,
@@ -41,7 +44,21 @@ export function CardBox({
   // fullscreen box has room for the sentence, and §14 wants the real question wherever
   // there is space for it.
   question?: string;
+  // Round 6: a panel is titled by a small tinted pill ("Current — 2024/25") rather than
+  // the plain muted heading a pinned view uses -- the round-6 wireframe's own treatment.
+  // The pill REPLACES the heading's look, not the heading itself: `title` still names the
+  // box for its fullscreen button, its modal and every aria label, so the two can never
+  // describe different things. Optional, so every round-5 caller is untouched.
+  tag?: ReactNode;
   actions?: ReactNode;
+  // Icon controls that belong AFTER the fullscreen button. The round-6 panels put their
+  // view toggles before it and the remove × after it, which is the wireframe's own order
+  // on all four boards.
+  trailingActions?: ReactNode;
+  // A full-width control row under the header, above the content: the panels' subject
+  // chips and their From:/Since:/Trend-line pills. Not part of the figure, so -- like the
+  // comparison-set chooser already here -- it is dropped when the box is projected.
+  controls?: ReactNode;
   // The mockups' two closing lines under every box's content: a one-line explanation
   // (11.5px, --muted2) and a source line (9.5px, --source). Optional because a pinned
   // axis view carries its own framing in its subtitle.
@@ -68,11 +85,18 @@ export function CardBox({
   const header = (isModal: boolean) => (
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
-        <h3 className={isModal ? "text-base font-bold" : "text-[11.5px] font-bold text-[var(--muted2)]"}>{title}</h3>
+        {tag && !isModal ? (
+          // The pill carries the title visually; the heading itself stays in the tree for
+          // screen readers rather than being replaced by a decorative span.
+          <h3 className="sr-only">{title}</h3>
+        ) : (
+          <h3 className={isModal ? "text-base font-bold" : "text-[11.5px] font-bold text-[var(--muted2)]"}>{title}</h3>
+        )}
+        {tag && !isModal && tag}
         {isModal && question && <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">{question}</p>}
         {subtitle && <p className="text-[11px] text-neutral-500">{subtitle}</p>}
       </div>
-      <div className="flex shrink-0 items-center gap-2 print:hidden">
+      <div className="flex shrink-0 items-center gap-0.5 print:hidden">
         {!isModal && actions}
         <button
           ref={isModal ? closeRef : undefined}
@@ -90,6 +114,7 @@ export function CardBox({
         >
           <ExpandIcon expanded={isModal} />
         </button>
+        {!isModal && trailingActions}
       </div>
     </div>
   );
@@ -105,6 +130,7 @@ export function CardBox({
     // Mockup box: radius 10px, 1px --panel-border, --box-bg, 12px padding, 10px gap.
     <div className="mt-3 flex flex-col gap-2.5 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3">
       {header(false)}
+      {controls && <div className="print:hidden">{controls}</div>}
       <div>{children({ fullscreen: false })}</div>
       {footer}
 
