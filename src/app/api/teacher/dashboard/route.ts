@@ -88,6 +88,12 @@ function seriesOf(profile: AcademicSchoolProfile | undefined, phase: KsStage): Y
     .sort((a, b) => a.period - b.period);
 }
 
+// Round 6 §4.3: both measures Comparisons' pills offer, per school, per year. Keyed by
+// urn ONCE for the union of every set rather than inlined into each RankedRow -- the four
+// sets overlap heavily (the nearest schools recur in most of them), so inlining would
+// send the same history three or four times over.
+type SchoolSeries = { results: YearValue[]; candidates: YearValue[] };
+
 type RankedRow = {
   urn: string; name: string; value: number | null; isTarget: boolean; distanceKm: number | null;
   cohortSize?: number | null;
@@ -105,7 +111,12 @@ async function rankSets(
   sets: Partial<Record<RankingsSetId, PoolSchool[]>>,
   phase: KsStage,
   cohortSizes: Map<string, number> | null,
-): Promise<{ ranked: Partial<Record<RankingsSetId, RankedRow[]>>; targetProfile: AcademicSchoolProfile | null; targetSeries: YearValue[] }> {
+): Promise<{
+  ranked: Partial<Record<RankingsSetId, RankedRow[]>>;
+  targetProfile: AcademicSchoolProfile | null;
+  targetSeries: YearValue[];
+  seriesByUrn: Record<string, SchoolSeries>;
+}> {
   // The target is always in the union, so its profile comes back even when it has no
   // neighbours -- Candidates' "% of year group" reads its cohort from it.
   const union = new Set<string>([targetUrn]);
@@ -128,7 +139,19 @@ async function rankSets(
       ...set.map((p) => ({ urn: p.urn, name: p.name, value: valueFor(p.urn), isTarget: false, distanceKm: p.distanceKm, cohortSize: sizeFor(p.urn), igcseExcluded: excluded(p.urn) })),
     ];
   }
-  return { ranked: out, targetProfile: byUrn.get(targetUrn) ?? null, targetSeries: seriesOf(byUrn.get(targetUrn), phase) };
+  // A school excluded from the ranking (an IGCSE-heavy independent at GCSE) is excluded
+  // from the trend too: its Attainment 8 is not comparable in any year, not just the
+  // latest one, so plotting its history would put a line on the chart the ranking beside
+  // it deliberately refuses to place.
+  const seriesByUrn: Record<string, SchoolSeries> = {};
+  for (const urn of union) {
+    const prof = byUrn.get(urn);
+    seriesByUrn[urn] = {
+      results: excluded(urn) ? [] : seriesOf(prof, phase),
+      candidates: prof ? entriesSeries(prof, phase, null) : [],
+    };
+  }
+  return { ranked: out, targetProfile: byUrn.get(targetUrn) ?? null, targetSeries: seriesOf(byUrn.get(targetUrn), phase), seriesByUrn };
 }
 
 // The Results card's anchor: the England average for the same subject or qualification,
@@ -216,7 +239,7 @@ export async function GET(request: NextRequest) {
     local_rivals: localRivals(pool),
   };
   if (cohortSizes) sets.similar_size = similarSize(pool, cohortSizes, cohortSizes.get(urn) ?? null);
-  const { ranked: comparatorSets, targetProfile, targetSeries } = await rankSets(urn, sets, phase, cohortSizes);
+  const { ranked: comparatorSets, targetProfile, targetSeries, seriesByUrn } = await rankSets(urn, sets, phase, cohortSizes);
   const setInfo = { targetIndependent, targetCohortSize: cohortSizes?.get(urn) ?? null };
 
   if (phase === "ks2") {
@@ -235,6 +258,7 @@ export async function GET(request: NextRequest) {
       // % change panels (§6.4). Real published figures only -- years with no figure are
       // absent rather than carried forward.
       ownSeries: targetSeries,
+      seriesByUrn,
       headlineLabel: HEADLINE_LABEL[phase],
     });
   }
@@ -258,6 +282,7 @@ export async function GET(request: NextRequest) {
     englandAverages: england,
     cohortSeries: targetProfile ? entriesSeries(targetProfile, phase, null) : [],
     ownSeries: targetSeries,
+    seriesByUrn,
     headlineLabel: HEADLINE_LABEL[phase],
   });
 }

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, againstKey, chosenKey, measureKey, readList, readSetting, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, againstKey, chosenKey, measureKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
@@ -18,7 +18,7 @@ import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
-import { ComparisonsPanels, type MapChip } from "@/components/teacher/ComparisonsPanels";
+import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPicker, type CompareAgainstId } from "@/components/teacher/ContextPicker";
 import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
@@ -31,7 +31,7 @@ import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicke
 import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
 import { defaultBoxTitle } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
-import { rankOf, type RankedSchool } from "@/lib/teacher-view-rankings";
+import { type RankedSchool, type RankingsSetId } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import { deserializeAcademicProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
@@ -146,10 +146,13 @@ export default function TeacherPhaseDashboard() {
   const [rollAtAge10, setRollAtAge10] = useState<number | null>(null);
   const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
   const [headlineLabel, setHeadlineLabel] = useState<string>("");
-  // Round 6: this school's own headline measure per published year, for Comparisons'
-  // Trend and % change panels. Real figures from the dashboard route (§6.4), not the
-  // wireframe's fabricated drift.
-  const [ownSeries, setOwnSeries] = useState<{ period: number; value: number }[]>([]);
+  // Round 6 (§6.4): the four real comparator sets, and every school in them with its own
+  // real per-year history for both measures. All of it already existed in the route's own
+  // fetch -- rankSets simply collapsed each school to its latest figure and dropped the
+  // rest. No fabricated drift, and no new ingestion.
+  const [comparatorSets, setComparatorSets] = useState<Partial<Record<RankingsSetId, ComparatorSchool[]>>>({});
+  const [seriesByUrn, setSeriesByUrn] = useState<Record<string, SchoolSeries>>({});
+  const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route for why the
   // basis is the qualification bucket at Post-16 and the subject itself at GCSE.
   const [englandAvg, setEnglandAvg] = useState<{ basis: "bucket" | "subject"; values: { key: string; period: number; value: number }[] } | null>(null);
@@ -223,7 +226,9 @@ export default function TeacherPhaseDashboard() {
         setRollAtAge10(body.rollAtAge10 ?? null);
         setNeighbours(body.neighbours ?? []);
         setHeadlineLabel(body.headlineLabel ?? "");
-        setOwnSeries(body.ownSeries ?? []);
+        setComparatorSets(body.comparatorSets ?? {});
+        setSeriesByUrn(body.seriesByUrn ?? {});
+        setSetInfo(body.setInfo ?? null);
         setEnglandAvg(body.englandAverages ?? null);
       } else {
         setError("Could not load this school's data. Try again.");
@@ -385,7 +390,6 @@ export default function TeacherPhaseDashboard() {
 
   const q = PHASE_QUESTIONS[phase];
   const nearbyOnly = neighbours.filter((n) => !n.isTarget);
-  const position = rankOf(neighbours, schoolUrn ?? "");
 
   // §13's "this moved": surfaced on the card rather than waiting for someone to notice.
   // Thresholds are measured from real national variation, not invented -- see
@@ -656,7 +660,9 @@ export default function TeacherPhaseDashboard() {
               ["candidates", "Candidates", q.howMany],
               ["results", "Results", q.howWell],
               ["context", "School Context", q.nearMe],
-              ["rankings", "Rankings", q.wider],
+              // §6.2: UI copy only. The ColumnId, the note key and the module all stay
+              // "rankings"; only what a person reads changes.
+              ["rankings", "Comparisons", q.wider],
             ] as const).map(([id, title, question]) => (
               <div key={id} className="flex items-center gap-3 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
                 <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-[rgba(var(--accent-rgb),0.14)] text-[var(--accent)]">
@@ -914,6 +920,53 @@ export default function TeacherPhaseDashboard() {
     values: contextPeriods.map((p) => contextValueFor(i, p)),
     benchmark: atContextPeriod(contextGroupAverage),
   }));
+
+  // ------------------------------------------------------------- Comparisons (§4.3)
+  //
+  // The four real comparator sets become the options in one "Compared against" pill
+  // rather than four separate pinnable boxes competing for one of the column's three
+  // panel slots (§6.7). Similar-sized is GCSE/Post-16 only -- KS2 publishes no exam-cohort
+  // size to match on -- so it is offered only where the route really built it.
+  const comparatorSetOptions: { id: RankingsSetId; label: string }[] = (
+    [
+      { id: "nearest", label: "Nearest 10 schools" },
+      { id: "same_sector", label: "Same sector schools" },
+      { id: "local_rivals", label: "Local rivals" },
+      { id: "similar_size", label: phase === "ks5" ? "Similar-sized sixth forms" : "Similar-sized schools" },
+    ] as { id: RankingsSetId; label: string }[]
+  ).filter((o) => comparatorSets[o.id] !== undefined);
+
+  const savedSet = readSetting(columns, setKey("rankings")) as RankingsSetId | undefined;
+  const comparisonsSet: RankingsSetId =
+    savedSet && comparatorSets[savedSet] !== undefined ? savedSet : comparatorSetOptions[0]?.id ?? "nearest";
+
+  // §6.7: the flat Results/Candidates pair only. Comparator-school data is whole-school
+  // headline, not per-subject, so a Grade 4+ option here would have nothing behind it --
+  // it is left off rather than shown and broken.
+  const COMPARISONS_MEASURES = [headlineMeasure(phase, headlineLabel), ENTRIES_MEASURE];
+  const savedComparisonsMeasure = readSetting(columns, measureKey("rankings"));
+  const comparisonsMeasure =
+    COMPARISONS_MEASURES.find((m) => m.id === savedComparisonsMeasure) ?? COMPARISONS_MEASURES[0];
+
+  // Each set's own caveat, kept from round 5 -- the reason a set is what it is belongs
+  // beside the set, not in a tooltip.
+  const comparatorSetNote =
+    comparisonsSet === "same_sector" && setInfo
+      ? setInfo.targetIndependent ? "Independent schools only" : "State schools only"
+      : comparisonsSet === "similar_size" && setInfo?.targetCohortSize
+        ? `This school: ${Math.round(setInfo.targetCohortSize).toLocaleString()} pupils in the exam cohort`
+        : undefined;
+
+  const comparatorEmptyText: string =
+    comparisonsSet === "same_sector"
+      ? `No nearby ${setInfo?.targetIndependent ? "independent" : "state"} schools of this phase to compare with.`
+      : comparisonsSet === "local_rivals"
+        ? "No nearby schools of this phase to compare with."
+        : comparisonsSet === "similar_size"
+          ? setInfo?.targetCohortSize
+            ? "No nearby schools with a published cohort size to match."
+            : "This school has no published cohort size to match on."
+          : "No nearby schools with comparable published data for this phase.";
 
   const panelsOf = (columnId: string): PanelId[] => panelsFrom(columns[columnId]);
 
@@ -1201,17 +1254,24 @@ export default function TeacherPhaseDashboard() {
             question={q.wider}
             source={panelSource}
             headlineLabel={headlineLabel}
-            ownSeries={ownSeries}
-            measure={headlineMeasure(phase, headlineLabel)}
+            setId={comparisonsSet}
+            setOptions={comparatorSetOptions}
+            onSetChange={(id) => setColumnSetting(setKey("rankings"), id)}
+            setLabel={comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "the nearest schools"}
+            setNote={comparatorSetNote}
+            schools={comparatorSets[comparisonsSet] ?? []}
+            seriesByUrn={seriesByUrn}
+            measure={comparisonsMeasure}
+            measureOptions={COMPARISONS_MEASURES.map((m) => ({ id: m.id, label: m.label }))}
+            onMeasureChange={(id) => setColumnSetting(measureKey("rankings"), id)}
             schoolUrn={schoolUrn}
-            hasNeighbours={neighbours.length > 0}
             mapProfiles={mapProfiles}
             mapChips={mapChips}
             activeMapChip={activeMapChip}
             onMapChip={setMapChip}
             mapRank={mapRank}
             onMapRank={setMapRank}
-            position={position}
+            emptyText={comparatorEmptyText}
           />
           <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:rankings`} />
         </DashboardColumn>

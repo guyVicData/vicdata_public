@@ -1,22 +1,32 @@
 "use client";
 
-// Teacher view, round 6: the Comparisons card's three panels (Rankings.dc.html; brief
-// §4.3). Named "Comparisons" in every heading and label; the module, the `rankings`
-// ColumnId, the rank_* view ids and the note key stay as they are -- §6.2 settled the
-// rename as UI copy only, so nothing persisted changes and there is no migration.
+// Teacher view, round 6: the Comparisons card (Rankings.dc.html; brief §4.3).
 //
-// Current keeps the real, shipped card: the "N of M" position, the subject chips and
-// RankingsMap. §4.3 is explicit that the map is reused as-is rather than rebuilt.
+// Named "Comparisons" in every heading and label. §6.2 settled that as UI copy only, so
+// teacher-view-rankings.ts, the `rankings` ColumnId, the rank_* view ids and the
+// `<phase>:rankings` note key all stay exactly as they are -- nothing persisted changes
+// and there is no migration to run.
 //
-// Trend and % change plot this school's own real headline measure per year -- the series
-// the dashboard route already fetched and used to throw away (§6.4). The comparator
-// set's own line, and the "vs:" selector that picks it, arrive with the rest of §4.3.
+// Two pills here, not Context's one combined dropdown. That is deliberate rather than
+// inconsistent: Context's two dimensions are read as one sentence, so they are chosen
+// together; which schools you compare with and which measure you compare on are
+// independent questions, and the wireframe keeps them apart.
+//
+// Current has three views in the wireframe's own order -- Graph, Map, Ranking, with
+// Ranking the default. The Map is the real, shipped RankingsMap, reused as-is: §4.3 is
+// explicit that it is not to be rebuilt.
+//
+// Trend and % change compare this school against the comparator set's own history. That
+// history is REAL (§6.4): fetchAcademicProfiles already returned every comparator's whole
+// year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
+// not used and not needed.
 import { useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
+  meanOf,
   nextStart,
   percentChange,
   periodsWithData,
@@ -29,9 +39,12 @@ import {
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelRender } from "./ColumnPanels";
 import { ChangeChart } from "./ChangeChart";
-import { Pill } from "./PanelIcons";
+import { ChevronDown, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon } from "./PanelIcons";
+import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
 import { RankingsMap } from "./RankingsMap";
+import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
 import { TrendChart } from "./TrendChart";
+import { ViewChart } from "./ViewChart";
 
 const DIRECTION_COLOUR = { up: "#0d9488", down: "#b45309", flat: "var(--muted)" } as const;
 
@@ -45,6 +58,12 @@ export type MapChip = {
   familyId: string | null;
 };
 
+export type ComparatorSchool = { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean };
+export type SchoolSeries = { results: { period: number; value: number }[]; candidates: { period: number; value: number }[] };
+
+// The "vs:" selector's own value: the set's average, or one named school in it.
+const AVERAGE = "average";
+
 export function ComparisonsPanels({
   phase,
   panels,
@@ -52,18 +71,27 @@ export function ComparisonsPanels({
   question,
   source,
   headlineLabel,
-  ownSeries,
+  // Which comparator set is active, and what the four are called.
+  setId,
+  setOptions,
+  onSetChange,
+  setLabel,
+  setNote,
+  schools,
+  seriesByUrn,
+  // Which measure the pills have selected, and both descriptors.
   measure,
-  // Current's real, already-shipped content.
+  measureOptions,
+  onMeasureChange,
+  // Current's real, already-shipped map content.
   schoolUrn,
-  hasNeighbours,
   mapProfiles,
   mapChips,
   activeMapChip,
   onMapChip,
   mapRank,
   onMapRank,
-  position,
+  emptyText,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -71,96 +99,145 @@ export function ComparisonsPanels({
   question: string;
   source: (span?: string) => ReactNode;
   headlineLabel: string;
-  // This school's own headline measure per published year, ascending.
-  ownSeries: { period: number; value: number }[];
+  setId: string;
+  setOptions: { id: string; label: string }[];
+  onSetChange: (id: string) => void;
+  setLabel: string;
+  // The set's own caveat, where it has one ("Independent schools only").
+  setNote?: ReactNode;
+  schools: ComparatorSchool[];
+  seriesByUrn: Record<string, SchoolSeries>;
   measure: Measure;
+  measureOptions: { id: string; label: string }[];
+  onMeasureChange: (id: string) => void;
   schoolUrn: string | null;
-  hasNeighbours: boolean;
   mapProfiles: AcademicSchoolProfile[] | null;
   mapChips: MapChip[];
   activeMapChip: MapChip | null;
   onMapChip: (key: string) => void;
   mapRank: { rank: number; total: number } | null;
   onMapRank: (info: { rank: number; total: number } | null) => void;
-  position: { position: number; outOf: number } | null;
+  emptyText: string;
 }) {
+  // Ranking is the default view (§4.3), even though Graph comes first in the icon row.
+  const [view, setView] = useState<"graph" | "map" | "ranking">("ranking");
+  const [sort, setSort] = useState<SortState>({ key: "delta", dir: "asc" });
+  // One `versus` shared by Trend and % change -- the wireframe puts the selector on both
+  // and keeps them in step -- but each panel's own popover open/closed flag, or opening
+  // one would open the other.
+  const [versus, setVersus] = useState<string>(AVERAGE);
+  const [versusOpen, setVersusOpen] = useState(false);
+  const [changeVersusOpen, setChangeVersusOpen] = useState(false);
+  const [setOpen, setSetOpen] = useState(false);
+  const [measureOpen, setMeasureOpen] = useState(false);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
 
-  const periods = ownSeries.map((r) => r.period);
-  const ownValues = ownSeries.map((r) => r.value as number | null);
-  const full: PanelData = {
-    periods,
-    series: [{ key: "own", label: "Your school", colour: "var(--fg)", values: ownValues }],
+  const versusRef = useDismiss(versusOpen, () => setVersusOpen(false));
+  const changeVersusRef = useDismiss(changeVersusOpen, () => setChangeVersusOpen(false));
+  const setRef = useDismiss(setOpen, () => setSetOpen(false));
+  const measureRef = useDismiss(measureOpen, () => setMeasureOpen(false));
+
+  const seriesKey = measure.id === "entries" ? "candidates" : "results";
+  const seriesFor = (urn: string) => seriesByUrn[urn]?.[seriesKey] ?? [];
+
+  // §4.3: picking a different comparator set resets the "vs:" selector back to Average --
+  // the school it was pointing at may not even be in the new set.
+  const changeSet = (id: string) => {
+    setVersus(AVERAGE);
+    setVersusOpen(false);
+    setChangeVersusOpen(false);
+    onSetChange(id);
+    setSetOpen(false);
   };
-  const realPeriods = periodsWithData(full);
-  const trendData = sliceFrom(full, trendStart);
-  const changeData = sliceFrom(full, changeStart);
-  const spanLabel = (ps: number[]) => (ps.length ? `${academicYearLabel(ps[0])}–${academicYearLabel(ps[ps.length - 1])}` : "");
+
+  const target = schools.find((s) => s.isTarget) ?? null;
+  const others = schools.filter((s) => !s.isTarget);
+
+  // Every period any school in the set has a figure for, ascending -- the real range, per
+  // §6.3, which is also what reconciles the date-range inconsistency the wireframe flagged
+  // but could not fix: there is no fixed range left to disagree with the other columns.
+  const periods = Array.from(new Set(schools.flatMap((s) => seriesFor(s.urn).map((r) => r.period)))).sort((a, b) => a - b);
+  const valuesFor = (urn: string) => periods.map((p) => seriesFor(urn).find((r) => r.period === p)?.value ?? null);
+
+  const latestIdx = (() => {
+    for (let i = periods.length - 1; i >= 0; i--) if (schools.some((s) => valuesFor(s.urn)[i] !== null)) return i;
+    return -1;
+  })();
+  const latest = latestIdx >= 0 ? periods[latestIdx] : null;
+  const valueAt = (urn: string) => (latestIdx >= 0 ? valuesFor(urn)[latestIdx] : null);
 
   // ------------------------------------------------------------------ Current
-  const current: PanelRender = {
-    tag: `Current — ${periods.length ? academicYearLabel(periods[periods.length - 1]) : "no year"}`,
-    question,
-    body: (fullscreen) => (
-      <>
-        {activeMapChip && schoolUrn && hasNeighbours ? (
-          // A subject chip is active, so the map is plotting that subject and the figure
-          // follows it -- the map's own rank, not the whole-school one below.
-          mapRank ? (
-            <>
-              <p className="mt-1 text-3xl font-semibold tabular-nums">
-                {mapRank.rank}
-                <span className="ml-1 text-base font-normal text-[var(--muted)]">of {mapRank.total}</span>
-              </p>
-              <p className="text-sm text-[var(--muted)]">
-                among the nearest schools with data, on {activeMapChip.legend} avg. point score
-              </p>
-            </>
-          ) : (
-            <p className="mt-1 text-sm text-[var(--muted2)]">
-              {mapProfiles === null ? "Loading the map…" : `No ${activeMapChip.legend} points score for this school to rank.`}
-            </p>
-          )
-        ) : position ? (
-          <>
-            {/* §14: the position IS the anchor -- the figure never stands alone. */}
-            <p className="mt-1 text-3xl font-semibold tabular-nums">
-              {position.position}
-              <span className="ml-1 text-base font-normal text-[var(--muted)]">of {position.outOf}</span>
-            </p>
-            <p className="text-sm text-[var(--muted)]">among the nearest schools with data, on {headlineLabel}</p>
-          </>
-        ) : (
-          <p className="mt-1 text-sm text-[var(--muted2)]">No nearby schools with comparable published data for this phase.</p>
-        )}
+  const ranked = [...schools]
+    .map((s) => ({ ...s, value: valueAt(s.urn) }))
+    .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  const placed = ranked.filter((r) => r.value !== null);
+  const rankOfUrn = new Map(placed.map((r, i) => [r.urn, i + 1]));
+  const targetRank = target ? rankOfUrn.get(target.urn) ?? null : null;
 
-        {/* The map is a live Leaflet map and does not print. */}
-        {schoolUrn && hasNeighbours && (
+  const rankingRows: SortRow[] = ranked.map((r) => ({
+    key: r.urn,
+    label: r.isTarget ? "This school" : r.name,
+    value: r.value,
+    valueLabel: r.value === null ? (r.igcseExcluded ? "not comparable" : "—") : measure.format(r.value),
+    // The third column IS the rank here, so it sorts on the rank rather than on a delta.
+    delta: rankOfUrn.get(r.urn) ?? null,
+    deltaLabel: rankOfUrn.has(r.urn) ? `${rankOfUrn.get(r.urn)} of ${placed.length}` : "—",
+    deltaTone: "neutral",
+    emphasis: r.isTarget,
+  }));
+
+  const current: PanelRender = {
+    tag: `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
+    question,
+    actions: (
+      <>
+        <IconButton label="Bar chart" active={view === "graph"} onClick={() => setView("graph")}>{HorizontalBarsIcon}</IconButton>
+        <IconButton label="Map" active={view === "map"} onClick={() => setView("map")}>{MapPinIcon}</IconButton>
+        <IconButton label="Ranking" active={view === "ranking"} onClick={() => setView("ranking")}>{RankListIcon}</IconButton>
+      </>
+    ),
+    // The map plots one ticked subject at a time; the chips only belong to that view.
+    controls:
+      view === "map" && mapChips.length > 0 ? (
+        <div className="flex flex-wrap gap-[5px]" role="group" aria-label="Subject shown on the map">
+          {mapChips.map((c) => {
+            const on = c.key === activeMapChip?.key;
+            return (
+              <button
+                key={c.key}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onMapChip(c.key)}
+                className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
+                style={
+                  on
+                    ? { background: c.hex, color: "#0a0a0b", border: `1.5px solid ${c.hex}` }
+                    : { background: "transparent", color: c.hex, border: `1.5px solid ${c.hex}80` }
+                }
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : undefined,
+    body: (fullscreen) => {
+      if (schools.length === 0) return <p className="text-sm text-[var(--muted)]">{emptyText}</p>;
+      if (view === "map") {
+        return schoolUrn ? (
+          // A live Leaflet map, which does not print -- the Ranking view is the one that
+          // does, which is why it stays the default rather than this.
           <div className="print:hidden">
-            {mapChips.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-[5px]" role="group" aria-label="Subject shown on the map">
-                {mapChips.map((c) => {
-                  const on = c.key === activeMapChip?.key;
-                  return (
-                    <button
-                      key={c.key}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => onMapChip(c.key)}
-                      className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
-                      style={
-                        on
-                          ? { background: c.hex, color: "#0a0a0b", border: `1.5px solid ${c.hex}` }
-                          : { background: "transparent", color: c.hex, border: `1.5px solid ${c.hex}80` }
-                      }
-                    >
-                      {c.label}
-                    </button>
-                  );
-                })}
-              </div>
+            {activeMapChip && (
+              <p className="mb-1 text-[11px] text-[var(--muted)]">
+                {mapRank
+                  ? `${mapRank.rank} of ${mapRank.total} on ${activeMapChip.legend} avg. point score`
+                  : mapProfiles === null
+                    ? "Loading the map…"
+                    : `No ${activeMapChip.legend} points score for this school to rank.`}
+              </p>
             )}
             <RankingsMap
               profiles={mapProfiles}
@@ -175,11 +252,97 @@ export function ComparisonsPanels({
               onTargetRank={onMapRank}
             />
           </div>
-        )}
-      </>
-    ),
+        ) : (
+          <p className="text-sm text-[var(--muted)]">No location is recorded for this school, so there is no map to draw.</p>
+        );
+      }
+      if (view === "graph") {
+        return (
+          <ViewChart
+            layout="row"
+            unit=""
+            formatValue={measure.format}
+            scaleMax={measure.barScaleMax ?? undefined}
+            computed={{
+              // No benchmark marker: the other bars ARE the comparison (§4.3). Your own
+              // school takes the foreground colour and reads bold.
+              rows: ranked.map((r) => ({
+                label: r.isTarget ? "This school" : r.name,
+                value: r.value,
+                isSubject: r.isTarget,
+                color: r.isTarget ? "var(--fg)" : "var(--muted3)",
+                emphasis: r.isTarget,
+              })),
+            }}
+          />
+        );
+      }
+      return (
+        <SortTable
+          rows={rankingRows}
+          sort={sort}
+          onSort={(key) => setSort(nextSort(sort, key))}
+          columns={{ name: "School", value: "Result", delta: "Rank" }}
+          fullscreen={fullscreen}
+        />
+      );
+    },
+    summary:
+      targetRank && placed.length > 1 ? (
+        <PanelSummary>
+          This school is {targetRank} of {placed.length} on {headlineLabel}, among {setLabel.toLowerCase()}.
+        </PanelSummary>
+      ) : (
+        <PanelSummary>No nearby schools with comparable published data for this phase.</PanelSummary>
+      ),
     source: source(),
   };
+
+  // ------------------------------------------------- the "vs:" selector (§4.3)
+  const versusSchool = others.find((s) => s.urn === versus) ?? null;
+  const versusLabel = versusSchool ? versusSchool.name : `Average across ${setLabel.toLowerCase()}`;
+  const versusValues = versusSchool
+    ? valuesFor(versusSchool.urn)
+    : // The set's average per period, over the schools that genuinely have a figure that
+      // year -- so a school joining or leaving the published data does not read as the
+      // whole set moving.
+      periods.map((_, i) => meanOf(others.map((s) => valuesFor(s.urn)[i])));
+
+  const versusPill = (open: boolean, setOpenState: (v: boolean) => void, ref: React.RefObject<HTMLDivElement | null>) => (
+    <div className="relative" ref={ref}>
+      <Pill label={`vs: ${versusLabel} ▾`} expanded={open} onClick={() => setOpenState(!open)} />
+      {open && (
+        <PanelMenu label="Compare with" align="right" width={220}>
+          <MenuHeading>Compare with</MenuHeading>
+          <MenuRow
+            label={`Average across ${setLabel.toLowerCase()}`}
+            selected={versus === AVERAGE}
+            onClick={() => { setVersus(AVERAGE); setOpenState(false); }}
+          />
+          {others.map((s) => (
+            <MenuRow
+              key={s.urn}
+              label={s.name}
+              selected={versus === s.urn}
+              onClick={() => { setVersus(s.urn); setOpenState(false); }}
+            />
+          ))}
+        </PanelMenu>
+      )}
+    </div>
+  );
+
+  const full: PanelData = {
+    periods,
+    series: [
+      { key: "own", label: "Your school", colour: "var(--fg)", values: target ? valuesFor(target.urn) : [] },
+      { key: "versus", label: versusLabel, colour: "var(--muted3)", values: versusValues, comparison: true },
+    ],
+  };
+  const realPeriods = periodsWithData(full);
+  const trendData = sliceFrom(full, trendStart);
+  const changeData = sliceFrom(full, changeStart);
+  const spanLabel = (ps: number[]) => (ps.length ? `${academicYearLabel(ps[0])}–${academicYearLabel(ps[ps.length - 1])}` : "");
 
   // -------------------------------------------------------------------- Trend
   const trendSaid = trendSentence({
@@ -188,12 +351,18 @@ export function ComparisonsPanels({
     measure,
     startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
   });
+  const versusClause = (() => {
+    const vals = (trendData.series[1]?.values ?? []).filter((v): v is number => v !== null);
+    if (vals.length < 2) return "";
+    return ` — against ${versusLabel.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
+  })();
 
   const trend: PanelRender = {
     tag: `${measure.label} — ${spanLabel(trendData.periods) || "no history"}`,
-    question: "How has this school moved, year on year?",
+    question: "How has this school moved against its comparators, year on year?",
     controls: (
       <div className="flex flex-wrap justify-end gap-1.5">
+        {versusPill(versusOpen, setVersusOpen, versusRef)}
         {startOptions(realPeriods).length > 1 && (
           <Pill
             label={`From: ${trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "—"} ▾`}
@@ -206,7 +375,7 @@ export function ComparisonsPanels({
     body: (fullscreen) => <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />,
     summary: trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>
-        {trendSaid.sentence}
+        {trendSaid.sentence.replace(/\.$/, "")}{versusClause || "."}
       </PanelSummary>
     ) : (
       <PanelSummary>Not enough published years yet to describe a trend for this school.</PanelSummary>
@@ -216,33 +385,41 @@ export function ComparisonsPanels({
 
   // ---------------------------------------------------------------- % change
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
-  const changePct = percentChange(changeData.series[0]?.values ?? []);
+  const ownPct = percentChange(changeData.series[0]?.values ?? []);
+  const versusPct = percentChange(changeData.series[1]?.values ?? []);
 
   const change: PanelRender = {
     tag: `% change in ${measure.label.toLowerCase()} — since ${changeSince || "—"}`,
-    question: "How much has this school moved over the period?",
-    controls:
-      startOptions(realPeriods).length > 1 ? (
-        <div className="flex justify-end">
+    question: "How much has this school moved, against its comparators?",
+    controls: (
+      <div className="flex flex-wrap justify-end gap-1.5">
+        {versusPill(changeVersusOpen, setChangeVersusOpen, changeVersusRef)}
+        {startOptions(realPeriods).length > 1 && (
           <Pill
             label={`Since: ${changeSince || "—"} ▾`}
             onClick={() => setChangeStart(nextStart(realPeriods, changeStart ?? realPeriods[0] ?? null))}
           />
-        </div>
-      ) : undefined,
+        )}
+      </div>
+    ),
     body: (fullscreen) => (
       <ChangeChart
-        bars={[{ key: "own", label: "Your school", shortLabel: "You", colour: "var(--fg)", percent: changePct }]}
+        bars={[
+          { key: "own", label: "Your school", shortLabel: "You", colour: "var(--fg)", percent: ownPct },
+          { key: "versus", label: versusLabel, shortLabel: versusSchool ? versusSchool.name.slice(0, 4) + "." : "Avg.", colour: "#57534e", percent: versusPct },
+        ]}
         fullscreen={fullscreen}
       />
     ),
     summary:
-      changePct === null ? (
+      ownPct === null ? (
         <PanelSummary>Not enough published years yet to measure a change.</PanelSummary>
       ) : (
         <PanelSummary>
-          This school&rsquo;s {headlineLabel} has {changePct >= 0 ? "risen" : "fallen"} {Math.abs(Math.round(changePct))}% since{" "}
-          {changeSince}.
+          This school&rsquo;s {headlineLabel} has {ownPct >= 0 ? "risen" : "fallen"} {Math.abs(Math.round(ownPct))}% since {changeSince}
+          {versusPct === null
+            ? "."
+            : `, against ${versusPct >= 0 ? "a rise" : "a fall"} of ${Math.abs(Math.round(versusPct))}% for ${versusLabel.toLowerCase()}.`}
         </PanelSummary>
       ),
     source: source(spanLabel(changeData.periods)),
@@ -254,6 +431,56 @@ export function ComparisonsPanels({
       panels={panels}
       onPanelsChange={onPanelsChange}
       changeLabel={measure.changeLabel}
+      controls={
+        <div className="flex flex-col items-start gap-1.5">
+          <div className="relative" ref={setRef}>
+            <button
+              type="button"
+              onClick={() => setSetOpen(!setOpen)}
+              aria-expanded={setOpen}
+              aria-haspopup="menu"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--muted2)] hover:border-[var(--fg)]"
+            >
+              Compared against: {setLabel}
+              {ChevronDown}
+            </button>
+            {setOpen && (
+              <PanelMenu label="Compared against" width={220}>
+                <MenuHeading>Compared against</MenuHeading>
+                {setOptions.map((o) => (
+                  <MenuRow key={o.id} label={o.label} selected={o.id === setId} onClick={() => changeSet(o.id)} />
+                ))}
+              </PanelMenu>
+            )}
+          </div>
+          <div className="relative" ref={measureRef}>
+            <button
+              type="button"
+              onClick={() => setMeasureOpen(!measureOpen)}
+              aria-expanded={measureOpen}
+              aria-haspopup="menu"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--muted2)] hover:border-[var(--fg)]"
+            >
+              Measure: {measure.label}
+              {ChevronDown}
+            </button>
+            {measureOpen && (
+              <PanelMenu label="Measure" width={180}>
+                <MenuHeading>Measure</MenuHeading>
+                {measureOptions.map((o) => (
+                  <MenuRow
+                    key={o.id}
+                    label={o.label}
+                    selected={o.id === measure.id}
+                    onClick={() => { onMeasureChange(o.id); setMeasureOpen(false); }}
+                  />
+                ))}
+              </PanelMenu>
+            )}
+          </div>
+          {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
+        </div>
+      }
       render={{ current, trend, change }}
     />
   );
