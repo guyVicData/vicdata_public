@@ -275,6 +275,23 @@ export function sliceFrom(data: PanelData, start: number | null): PanelData {
   };
 }
 
+// --------------------------------------------------- how a trend is drawn (§4)
+//
+// Round 7 §4: a trend with three real years or fewer is drawn as bars, four or more as a
+// line. A line through two or three points overstates the precision a short series has --
+// it draws a trajectory between them that nobody measured -- where bars simply state each
+// year's figure and leave the reading to the person.
+//
+// This is a real threshold, not a hint, and the two measures either side of it are real:
+// average point score genuinely has four years (2021/22 on, since DfE published no point
+// scores for the teacher-assessed 2020/21 cohort), while the threshold measure genuinely
+// has two (2023/24 on). Same column, same card, two different DfE datasets.
+export const TREND_LINE_MIN_YEARS = 4;
+
+export function trendChartKind(data: PanelData): "bars" | "line" {
+  return periodsWithData(data).length >= TREND_LINE_MIN_YEARS ? "line" : "bars";
+}
+
 // ------------------------------------------------------------- trend arithmetic
 
 export function leastSquares(values: (number | null)[]): { slope: number; intercept: number } | null {

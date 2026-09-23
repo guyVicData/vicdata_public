@@ -14,19 +14,6 @@ import type { Measure } from "@/lib/teacher-view-panels";
 
 export type VerticalBar = { key: string; label: string; shortLabel: string; value: number | null; colour: string };
 
-// A round number at or above the tallest bar, so the top gridline is a figure someone
-// would actually say out loud rather than the maximum to two decimal places.
-function niceMax(max: number, step: number): number {
-  if (max <= 0) return step * 4;
-  const rough = max * 1.1;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
-  for (const m of [1, 2, 2.5, 5, 10]) {
-    const candidate = m * magnitude;
-    if (candidate >= rough) return candidate;
-  }
-  return 10 * magnitude;
-}
-
 export function VerticalBars({
   bars,
   measure,
@@ -39,7 +26,11 @@ export function VerticalBars({
   const real = bars.map((b) => b.value).filter((v): v is number => v !== null);
   if (real.length === 0) return <p className="text-xs text-[var(--muted)]">No published figures for these subjects yet.</p>;
 
-  const top = niceMax(Math.max(...real), measure.axisStep);
+  // Round 7 §5: the tallest real bar fills the chart. This used to round up to a "nice"
+  // round number, which on a real dashboard meant Candidates' tallest bar of 231 being
+  // drawn against an axis top of 500 -- half the height, for no reason a reader could
+  // see. The axis figures are the data's own now, not a rounder number near it.
+  const top = Math.max(...real);
   const plot = fullscreen ? 220 : 90;
   const bodyH = plot - 16; // the label strip under the baseline
   const ticks = [1, 0.75, 0.5, 0.25, 0];

@@ -24,7 +24,7 @@
 // published figure breaks the line rather than being bridged -- drawing straight through
 // a missing year invites reading the gap as a real, measured trajectory.
 import { academicYearLabel } from "@/lib/teacher-view-theme";
-import { leastSquares, type Measure, type PanelData } from "@/lib/teacher-view-panels";
+import { leastSquares, trendChartKind, type Measure, type PanelData } from "@/lib/teacher-view-panels";
 
 // The wireframe's own plot geometry, as a coordinate space the HTML axes share.
 const W = 260;
@@ -73,6 +73,11 @@ export function TrendChart({
   const all = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
   if (periods.length === 0 || all.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
+  }
+
+  // Round 7 §4: too few real years to draw a line through honestly -- bars instead.
+  if (trendChartKind(data) === "bars") {
+    return <TrendBars data={data} measure={measure} fullscreen={fullscreen} />;
   }
 
   // Scale to the data, rounded out to the measure's own step, with a little headroom --
@@ -214,6 +219,87 @@ export function TrendChart({
                     ? { backgroundImage: "linear-gradient(90deg, var(--muted3) 60%, transparent 40%)", backgroundSize: "6px 2.5px" }
                     : { background: s.colour }
                 }
+              />
+              {s.label}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The short-series form (§4). One group of bars per year, one bar per series, on a scale
+// whose top is the largest real value -- §5's autoscale, so the tallest bar fills the
+// chart rather than sitting halfway up a padded axis.
+//
+// Zero is the floor rather than the smallest value. A bar chart read against a non-zero
+// baseline exaggerates every difference, which is exactly what a three-point series
+// should not do; a line chart can crop its axis because it is showing direction, not
+// magnitude.
+function TrendBars({ data, measure, fullscreen }: { data: PanelData; measure: Measure; fullscreen?: boolean }) {
+  const { periods, series } = data;
+  const all = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
+  const top = Math.max(...all);
+  const bodyH = fullscreen ? 200 : 96;
+  const ticks = [1, 0.5, 0];
+
+  return (
+    <div className="mt-1">
+      <div className="flex gap-2">
+        <div className="relative w-8 shrink-0" style={{ height: bodyH + 12 }} aria-hidden="true">
+          {ticks.map((t) => (
+            <span
+              key={t}
+              className="absolute right-0 flex translate-y-[-50%] items-center gap-1 text-[9.5px] tabular-nums text-[var(--muted)]"
+              style={{ top: 6 + (1 - t) * bodyH }}
+            >
+              {measure.format(top * t)}
+              <span className="inline-block h-px w-1 bg-[var(--muted3)]" />
+            </span>
+          ))}
+        </div>
+        <div className="relative flex-grow">
+          {ticks.slice(0, -1).map((t) => (
+            <div key={t} className="absolute inset-x-0 h-px bg-[var(--panel-border)]" style={{ top: 6 + (1 - t) * bodyH }} />
+          ))}
+          <div className="absolute inset-x-0 h-px bg-[var(--panel-border2)]" style={{ top: 6 + bodyH }} />
+          <div className="flex justify-around gap-2 overflow-x-auto px-1 pt-[6px]">
+            {periods.map((p, i) => (
+              <div key={p} className="flex shrink-0 flex-col items-center gap-1">
+                <div className="flex items-end gap-1" style={{ height: bodyH }}>
+                  {series.map((s) => {
+                    const v = s.values[i];
+                    return (
+                      <div
+                        key={s.key}
+                        title={`${s.label} ${academicYearLabel(p)}: ${v === null ? "no figure" : measure.format(v)}`}
+                        className="rounded-t"
+                        style={{
+                          width: series.length > 1 ? 14 : 24,
+                          height: v === null ? 0 : Math.max(2, (v / top) * bodyH),
+                          // The comparison series stays the muted dashed-line grey it has
+                          // on the line chart, so the two forms read as the same pair.
+                          background: s.comparison ? "var(--muted3)" : s.colour,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                <span className="text-[9.5px] tabular-nums text-[var(--muted)]">{academicYearLabel(p)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 pl-10 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]">Academic year</p>
+      {series.length > 1 && (
+        <div className="mt-2 flex flex-wrap gap-3.5 pl-10">
+          {series.map((s) => (
+            <span key={s.key} className="flex items-center gap-1.5 text-[10.5px] text-[var(--muted)]">
+              <span
+                className="inline-block h-2 w-2 rounded-[2px]"
+                style={{ background: s.comparison ? "var(--muted3)" : s.colour }}
               />
               {s.label}
             </span>
