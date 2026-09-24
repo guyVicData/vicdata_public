@@ -19,6 +19,7 @@
 //     controls go up to 1000 and the map card underneath must not show through.
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
+import { SourceNote } from "./PanelFooter";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
 // ColumnBuilder -- is fullscreen, without threading a callback through every level. The
@@ -90,8 +91,9 @@ export function CardBox({
   caption?: ReactNode;
   source?: ReactNode;
   // Round 8 §4: the footer's own controls -- the private note and Export -- beside the
-  // source icon, all pinned to the panel's real bottom edge.
-  footerActions?: ReactNode;
+  // source icon, all pinned to the panel's real bottom edge. Given `print`, so Export can
+  // drive this box's own fullscreen-and-print without reaching into it.
+  footerActions?: (tools: { print: () => void }) => ReactNode;
   // Round 8 §2: every panel is the same height, so the three columns read as a true 3x3
   // grid rather than three ragged stacks. Absent = size to content, which is what the KS2
   // boxes and any non-panel caller still want.
@@ -102,8 +104,31 @@ export function CardBox({
   children: (mode: { fullscreen: boolean }) => ReactNode;
 }) {
   const [fullscreen, setFullscreen] = useState(false);
+  // Round 8 §5: a panel print is the same fullscreen modal, opened for the print and
+  // marked as the one subtree to paint. Tracked separately from `fullscreen` so closing
+  // the print does not leave an ordinary fullscreen open behind it.
+  const [printing, setPrinting] = useState(false);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const report = useContext(FullscreenReport);
+
+  // Open the modal, let it paint, print, then put everything back. afterprint is the only
+  // honest signal for "the dialog has gone" -- there is no promise to await.
+  const printPanel = () => {
+    setPrinting(true);
+    setFullscreen(true);
+    const root = document.getElementById("teacher-root");
+    root?.setAttribute("data-print-panel", "");
+    const done = () => {
+      root?.removeAttribute("data-print-panel");
+      setPrinting(false);
+      setFullscreen(false);
+      window.removeEventListener("afterprint", done);
+    };
+    window.addEventListener("afterprint", done);
+    // Two frames: one for the modal to mount, one for it to lay out before the print
+    // dialog snapshots the page.
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  };
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -155,9 +180,15 @@ export function CardBox({
   // put their source, note and Export in exactly the same place. The panel reserves the
   // room for it in its own bottom padding.
   const footerRow = (
-    <div className={fixedHeight ? "absolute inset-x-3 bottom-2.5 flex items-center gap-1.5" : "flex items-center gap-1.5"}>
-      {source}
-      {footerActions}
+    <div
+      className={[
+        fixedHeight ? "absolute inset-x-3 bottom-2.5" : "",
+        "flex items-center gap-1.5 print:hidden",
+      ].join(" ")}
+    >
+      {/* §4: the citation is an icon that opens its own text, not a printed sentence. */}
+      <SourceNote>{source}</SourceNote>
+      {footerActions?.({ print: printPanel })}
     </div>
   );
 
@@ -196,7 +227,13 @@ export function CardBox({
       {footerRow}
 
       {fullscreen && (
-        <TeacherModal label={`${title}, full screen`} backdropLabel="Close full screen" onClose={() => setFullscreen(false)} initialFocusRef={closeRef}>
+        <TeacherModal
+          label={`${title}, full screen`}
+          backdropLabel="Close full screen"
+          onClose={() => setFullscreen(false)}
+          initialFocusRef={closeRef}
+          printable={printing}
+        >
           {header(true)}
           <div className="mt-1 flex min-h-0 flex-1 items-stretch">
             {actions && (
@@ -205,9 +242,12 @@ export function CardBox({
             <div className="flex min-w-0 flex-grow flex-col">{children({ fullscreen: true })}</div>
           </div>
           {captionLine}
-          <div className="flex items-center gap-1.5">
-            {source}
-            {footerActions}
+          {/* Printed with the panel: a figure on its own page needs its citation ON the
+              page, which is exactly where a popover would be no use. */}
+          <p className="hidden text-[9.5px] text-[var(--source)] print:block">{source}</p>
+          <div className="flex items-center gap-1.5 print:hidden">
+            <SourceNote>{source}</SourceNote>
+            {footerActions?.({ print: printPanel })}
           </div>
         </TeacherModal>
       )}

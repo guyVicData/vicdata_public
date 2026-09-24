@@ -29,7 +29,7 @@ import {
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
-import { ColumnPanels, PanelSummary, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { IconButton, Pill, RankListIcon, SubjectChip, VerticalBarsIcon } from "./PanelIcons";
 import { TrendChart } from "./TrendChart";
@@ -52,6 +52,7 @@ export function CandidatesPanels({
   entries,
   panels,
   onPanelsChange,
+  notes,
   question,
   source,
   currentLabel,
@@ -61,6 +62,7 @@ export function CandidatesPanels({
   entries: SubjectEntry[];
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
+  notes?: PanelNotes;
   question: string;
   source: (span?: string) => ReactNode;
   // §4: the Current tag names the column ("Candidates 2024/25") -- see SubjectPanels.
@@ -266,6 +268,7 @@ export function CandidatesPanels({
       columnId="candidates"
       panels={panels}
       onPanelsChange={onPanelsChange}
+      notes={notes}
       render={{ current, trend, change }}
     />
   );

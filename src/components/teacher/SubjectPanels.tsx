@@ -30,7 +30,7 @@ import {
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
-import { ColumnPanels, PanelSummary, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { DonutIcon, HorizontalBarsIcon, IconButton, NextYearIcon, Pill, PrevYearIcon, RankListIcon, SubjectChip } from "./PanelIcons";
 import { ShareDonut } from "./ShareDonut";
@@ -69,6 +69,7 @@ export function SubjectPanels({
   source,
   panels,
   onPanelsChange,
+  notes,
   emptyText,
   note,
   currentLabel,
@@ -109,6 +110,7 @@ export function SubjectPanels({
   source: (span?: string) => ReactNode;
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
+  notes?: PanelNotes;
   emptyText: string;
   // An honest limit worth saying on the card -- e.g. the threshold measure only having
   // 2023/24 onward. Shown under the figure, not hidden in a tooltip.
@@ -447,6 +449,7 @@ export function SubjectPanels({
       columnId={columnId}
       panels={panels}
       onPanelsChange={onPanelsChange}
+      notes={notes}
       controls={controls}
       render={{ current, trend, change }}
     />

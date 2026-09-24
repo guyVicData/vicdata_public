@@ -153,6 +153,17 @@ export function resetColumn(columns: ColumnState, columnId: string): ColumnState
 }
 
 // --------------------------------------------------------------- notes (§12)
+//
+// Round 8 §6: a note is now per PANEL, not per card. `chart_key` is free text and always
+// has been, so the finer grain is simply a longer key and needs no schema change --
+// "ks4:candidates" becomes "ks4:candidates:trend".
+//
+// Worth recording, because round 8's brief said the opposite: this table is real and has
+// been since the original Teacher-view persistence migration, with creator-only RLS. The
+// brief's check was scoped to src/components/teacher, and the note UI lived in the phase
+// page, so it read as absent. Round 8 relocates and re-keys it; it does not build it.
+export const panelNoteKey = (phase: string, columnId: string, panelId: string) => `${phase}:${columnId}:${panelId}`;
+
 // Scoped by school for the same reason onboarding is: chart_key is only a phase and a
 // card ("ks5:results"), so it does not identify a school on its own. Without the scope a
 // note written about one school's dip appeared against a different school's figures --
@@ -166,6 +177,19 @@ export async function fetchNote(supabase: Supa, schoolUrn: string, chartKey: str
     .maybeSingle();
   if (error || !data) return null;
   return data.body as string;
+}
+
+// Every note this person has for this school, keyed by chart_key. RLS already restricts
+// the rows to their author, so this asks for "my notes here" and gets exactly that.
+export async function fetchNotes(supabase: Supa, schoolUrn: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from("teacher_view_notes")
+    .select("chart_key, body")
+    .eq("school_urn", schoolUrn);
+  if (error || !data) return {};
+  const out: Record<string, string> = {};
+  for (const row of data as { chart_key: string; body: string }[]) out[row.chart_key] = row.body;
+  return out;
 }
 
 export async function saveNote(supabase: Supa, schoolUrn: string, chartKey: string, body: string): Promise<boolean> {

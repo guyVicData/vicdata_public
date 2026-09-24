@@ -93,3 +93,44 @@ body {
     color: #000000;
   }
 }
+
+/* Teacher view, round 8 §5: "Print this graph" -- one panel, not the dashboard.
+   The page-level Export (TeacherChrome) still prints the whole page and is untouched.
+   A panel print opens that panel's existing fullscreen modal, marks #teacher-root, and
+   prints only that subtree.
+
+   Done with `visibility` rather than `display`, deliberately: hiding every other element
+   outright collapses the layout the modal is positioned against, and the panel then
+   prints in the wrong place or not at all. Visibility leaves the boxes where they are and
+   simply stops them painting, which is the long-established way to isolate one subtree
+   for print. The target is then pinned to the page's own top-left so it does not print
+   inside the hole its own page position left behind. */
+@media print {
+  #teacher-root[data-print-panel] *,
+  #teacher-root[data-print-panel] *::before,
+  #teacher-root[data-print-panel] *::after {
+    visibility: hidden;
+  }
+  #teacher-root[data-print-panel] .teacher-print-target,
+  #teacher-root[data-print-panel] .teacher-print-target * {
+    visibility: visible;
+  }
+  #teacher-root[data-print-panel] .teacher-print-target {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+  /* The backdrop is a real <button>; it must not print as a grey slab over the figure. */
+  #teacher-root[data-print-panel] .teacher-print-target > button[aria-label] {
+    display: none;
+  }
+  /* Inside the print target the modal panel is the page, so it drops its own framing. */
+  #teacher-root[data-print-panel] .teacher-print-target > div {
+    position: static;
+    inset: auto;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+}

@@ -39,7 +39,7 @@ import {
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
-import { ColumnPanels, PanelSummary, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { ChangeChart } from "./ChangeChart";
 import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon } from "./PanelIcons";
 import { PillMenu } from "./PillMenu";
@@ -74,6 +74,7 @@ export function ComparisonsPanels({
   phase,
   panels,
   onPanelsChange,
+  notes,
   question,
   source,
   headlineLabel,
@@ -102,6 +103,7 @@ export function ComparisonsPanels({
   phase: KsStage;
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
+  notes?: PanelNotes;
   question: string;
   source: (span?: string) => ReactNode;
   headlineLabel: string;
@@ -426,6 +428,7 @@ export function ComparisonsPanels({
       columnId="rankings"
       panels={panels}
       onPanelsChange={onPanelsChange}
+      notes={notes}
       controls={
         <div className="flex flex-col items-start gap-1.5">
           {/* The same PillMenu Context uses, so round 7 §8's "matching Comparisons'

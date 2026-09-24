@@ -23,7 +23,15 @@ import type { ReactNode } from "react";
 import { CardBox } from "./CardBox";
 import { ADD_LABEL } from "./AddPanelButton";
 import { IconButton, RemoveIcon } from "./PanelIcons";
+import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, canRemovePanel, removePanel, type PanelId } from "@/lib/teacher-view-panels";
+
+// Round 8 §6: one private note per person per panel. The page owns the school and the
+// Supabase client, so it supplies the reader and the writer and this only routes them.
+export type PanelNotes = {
+  bodyFor: (panelId: PanelId) => string | null;
+  onSave: (panelId: PanelId, body: string) => Promise<void> | void;
+};
 
 export type PanelRender = {
   // The pill at the top-left of the panel: "Current — 2024/25", "Candidates — 2021/22 to
@@ -41,8 +49,6 @@ export type PanelRender = {
   body: (fullscreen: boolean) => ReactNode;
   summary?: ReactNode;
   source?: ReactNode;
-  // The footer row's own controls, beside the source icon (round 8 §§4-6).
-  footerActions?: ReactNode;
 };
 
 export function ColumnPanels({
@@ -50,6 +56,7 @@ export function ColumnPanels({
   panels,
   onPanelsChange,
   controls,
+  notes,
   render,
 }: {
   columnId: string;
@@ -59,6 +66,9 @@ export function ColumnPanels({
   // two pills each. They sit under the card header, above the panels; Add itself now
   // lives in that header (round 7 §1, AddPanelButton).
   controls?: ReactNode;
+  // Round 8 §6: the private note, one per person per PANEL. Owned by the page, which holds
+  // the school and the Supabase client; this just gives each panel its own slot.
+  notes?: PanelNotes;
   render: Partial<Record<PanelId, PanelRender>>;
 }) {
   const removable = canRemovePanel(panels);
@@ -102,7 +112,14 @@ export function ColumnPanels({
             controls={panel.controls}
             caption={panel.summary}
             source={panel.source}
-            footerActions={panel.footerActions}
+            footerActions={({ print }) => (
+              <>
+                {notes && (
+                  <PanelNote body={notes.bodyFor(id)} onSave={(body) => notes.onSave(id, body)} />
+                )}
+                <PanelExport onPrint={print} />
+              </>
+            )}
             // Round 8 §2: every panel the same height, so the three columns read as one
             // 3x3 grid rather than three ragged stacks.
             fixedHeight

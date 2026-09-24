@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNote, saveNote, hasNewData, markPeriodSeen, againstKey, chosenKey, measureKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNotes, saveNote, hasNewData, markPeriodSeen, againstKey, chosenKey, measureKey, panelNoteKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
@@ -66,64 +66,6 @@ function buildSubjectItems(entries: SubjectEntry[]): SubjectItem[] {
     if ((qualsPerSubject.get(it.subject)?.size ?? 0) > 1) it.label = `${it.subject} (${it.qualificationType})`;
   }
   return Array.from(byKey.values()).sort((a, b) => b.entries - a.entries);
-}
-
-// §12: a personal, private note against a specific chart, visible only to its author.
-// RLS enforces that at the database, so this component carries no ownership logic of its
-// own -- it simply trusts the policy, which is the only place it can be enforced anyway.
-function NoteBox({ schoolUrn, chartKey }: { schoolUrn: string | null; chartKey: string }) {
-  const supabase = createBrowserSupabaseClient();
-  const [open, setOpen] = useState(false);
-  const [body, setBody] = useState("");
-  const [saved, setSaved] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      if (!schoolUrn) return;
-      const existing = await fetchNote(supabase, schoolUrn, chartKey);
-      setBody(existing ?? "");
-      setSaved(existing);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolUrn, chartKey]);
-
-  // A note is meaningless without a school to attach it to, and writing one scoped to an
-  // empty urn would make it visible at every school. The dashboard already errors out
-  // before rendering any card when there is no membership, so this is belt-and-braces.
-  if (!schoolUrn) return null;
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mt-3 text-xs text-blue-700 hover:underline dark:text-blue-400"
-      >
-        {saved ? "Your note" : "Add a private note"}
-      </button>
-    );
-  }
-  return (
-    <div className="mt-3">
-      <textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        rows={2}
-        placeholder="Only you can see this."
-        className="w-full rounded-md border border-neutral-300 bg-transparent p-2 text-xs dark:border-neutral-700"
-      />
-      <div className="mt-1 flex gap-2">
-        <button
-          type="button"
-          onClick={async () => { if (!schoolUrn) return; await saveNote(supabase, schoolUrn, chartKey, body); setSaved(body.trim() || null); setOpen(false); }}
-          className="rounded-md bg-blue-700 px-2 py-1 text-xs font-medium text-white"
-        >
-          Save
-        </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-neutral-500">Cancel</button>
-      </div>
-    </div>
-  );
 }
 
 // The onboarding steps only ever run for GCSE and Post-16, which always have an accent.
@@ -186,6 +128,9 @@ export default function TeacherPhaseDashboard() {
   // Context has always called "All subjects" and Comparisons "Whole school". Column 1's
   // own multi-subject bars are a separate mechanism and this does not touch them.
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  // Round 8 §6: every private note this person has for this school, keyed by chart_key and
+  // fetched once. Nine panels would otherwise be nine round trips on every load.
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [subjectPickerOpen, setSubjectPickerOpen] = useState(false);
   const subjectPickerCloseRef = useRef<HTMLButtonElement | null>(null);
   // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
@@ -239,6 +184,7 @@ export default function TeacherPhaseDashboard() {
       const prefs = await fetchPreferences(supabase, urn, phase);
       setTicked(prefs.subjects);
       setColumns(prefs.columns);
+      setNotes(await fetchNotes(supabase, urn));
 
       // §13's "New-data-in", derived rather than pushed -- see hasNewData.
       const periods = (loadedHeadline as AcademicSubjectHeadlineEntry[]).map((h) => h.period);
@@ -1032,6 +978,24 @@ export default function TeacherPhaseDashboard() {
   // Results and finding your Trend panel gone would read as a bug.
   const COL1 = "candidates";
 
+  // One note slot per column, keyed per panel. RLS on teacher_view_notes is
+  // profile_id = auth.uid(), so a note is only ever readable by the person who wrote it --
+  // the privacy bar the original brief §12 set, enforced at the database rather than here.
+  const notesFor = (columnId: string) => ({
+    bodyFor: (panelId: PanelId) => notes[panelNoteKey(phase, columnId, panelId)] ?? null,
+    onSave: async (panelId: PanelId, body: string) => {
+      if (!schoolUrn) return;
+      const key = panelNoteKey(phase, columnId, panelId);
+      await saveNote(supabase, schoolUrn, key, body);
+      setNotes((prev) => {
+        const next = { ...prev };
+        if (body.trim()) next[key] = body;
+        else delete next[key];
+        return next;
+      });
+    },
+  });
+
   const panelsOf = (columnId: string): PanelId[] => panelsFrom(columns[columnId]);
 
   // Every panel's source line. `span` is the real year range that panel is plotting, so a
@@ -1206,6 +1170,7 @@ export default function TeacherPhaseDashboard() {
               source={panelSource}
               panels={panelsOf(COL1)}
               onPanelsChange={(next) => setPanels(COL1, next)}
+              notes={notesFor(COL1)}
               emptyText="Pick a subject above to see its results."
               currentLabel={COLUMN_TITLE.results}
             />
@@ -1224,6 +1189,7 @@ export default function TeacherPhaseDashboard() {
               onPanelsChange={(next) => setPanels(COL1, next)}
               question={q.howMany}
               source={panelSource}
+              notes={notesFor(COL1)}
               currentLabel={COLUMN_TITLE.candidates}
             />
           )}
@@ -1232,7 +1198,6 @@ export default function TeacherPhaseDashboard() {
               {(showingResults ? movedResults : movedCandidates)!.sentence}
             </p>
           )}
-          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:${COL1}`} />
         </DashboardColumn>
 
         <DashboardColumn
@@ -1314,6 +1279,7 @@ export default function TeacherPhaseDashboard() {
               source={panelSource}
               panels={panelsOf("context")}
               onPanelsChange={(next) => setPanels("context", next)}
+              notes={notesFor("context")}
               emptyText="Pick a subject above to see how it sits in the school."
               currentLabel={COLUMN_TITLE.context}
               note={
@@ -1323,7 +1289,6 @@ export default function TeacherPhaseDashboard() {
               }
             />
           )}
-          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:context`} />
         </DashboardColumn>
 
         <DashboardColumn
@@ -1343,6 +1308,7 @@ export default function TeacherPhaseDashboard() {
             phase={phase}
             panels={panelsOf("rankings")}
             onPanelsChange={(next) => setPanels("rankings", next)}
+            notes={notesFor("rankings")}
             question={q.wider}
             source={panelSource}
             headlineLabel={headlineLabel}
@@ -1363,7 +1329,6 @@ export default function TeacherPhaseDashboard() {
             onMapRank={setMapRank}
             emptyText={comparatorEmptyText}
           />
-          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:rankings`} />
         </DashboardColumn>
       </DashboardGrid>
 

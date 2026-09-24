@@ -56,12 +56,18 @@ export function TeacherModal({
   backdropLabel,
   onClose,
   initialFocusRef,
+  printable = false,
   children,
 }: {
   label: string;
   backdropLabel: string;
   onClose: () => void;
   initialFocusRef?: RefObject<HTMLElement | null>;
+  // Round 8 §5: "Print this graph" isolates one panel by opening it fullscreen and
+  // printing only this subtree. The modal is normally print:hidden -- the whole point of
+  // the page-level Export is to print the dashboard, not whatever happens to be open --
+  // so a panel print opts back in and marks itself as the one thing to show.
+  printable?: boolean;
   children: ReactNode;
 }) {
   // Held in a ref so a caller passing a fresh arrow each render does not re-run the
@@ -88,7 +94,12 @@ export function TeacherModal({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[1500] print:hidden" role="dialog" aria-modal="true" aria-label={label}>
+    <div
+      className={`fixed inset-0 z-[1500] ${printable ? "teacher-print-target" : "print:hidden"}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+    >
       <button
         type="button"
         aria-label={backdropLabel}
