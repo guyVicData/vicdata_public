@@ -73,6 +73,7 @@ export function SubjectPanels({
   emptyText,
   note,
   currentLabel,
+  showChips = true,
 }: {
   columnId: string;
   periods: number[];
@@ -120,6 +121,11 @@ export function SubjectPanels({
   // fullscreen, or printed -- still says which card it came from. Absent falls back to
   // the old wording, which is what any caller that has not been given a name wants.
   currentLabel?: string;
+  // Round 8 §3: Context's focus subject is chosen in the shared control bar now, so its
+  // panels must NOT draw a second chip row for the same thing. Column 1 keeps its own --
+  // its multi-subject selection is explicitly a separate mechanism the shared chips do
+  // not touch -- which is why this is a prop rather than a blanket removal.
+  showChips?: boolean;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -345,7 +351,7 @@ export function SubjectPanels({
     return ` — against ${groupSeries.label.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
   })();
 
-  const chipRow = (
+  const chipRow = !showChips ? null : (
     <div className="flex flex-wrap gap-1.5">
       <SubjectChip label="All subjects" colour="#57534e" active={focus === "all"} onClick={() => setFocus("all")} />
       {subjects.map((s) => (
@@ -359,7 +365,7 @@ export function SubjectPanels({
     question: questions.trend,
     controls: (
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {chipRow}
+        {chipRow ?? <span />}
         <div className="flex gap-1.5">
           {startOptions(trendPeriods).length > 1 && (
             <Pill

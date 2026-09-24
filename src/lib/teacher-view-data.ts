@@ -168,17 +168,6 @@ export const panelNoteKey = (phase: string, columnId: string, panelId: string) =
 // card ("ks5:results"), so it does not identify a school on its own. Without the scope a
 // note written about one school's dip appeared against a different school's figures --
 // which is worse than losing the note, because it reads as a claim about the new school.
-export async function fetchNote(supabase: Supa, schoolUrn: string, chartKey: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("teacher_view_notes")
-    .select("body")
-    .eq("school_urn", schoolUrn)
-    .eq("chart_key", chartKey)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data.body as string;
-}
-
 // Every note this person has for this school, keyed by chart_key. RLS already restricts
 // the rows to their author, so this asks for "my notes here" and gets exactly that.
 export async function fetchNotes(supabase: Supa, schoolUrn: string): Promise<Record<string, string>> {

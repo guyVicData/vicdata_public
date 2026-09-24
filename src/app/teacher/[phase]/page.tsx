@@ -1280,6 +1280,9 @@ export default function TeacherPhaseDashboard() {
               panels={panelsOf("context")}
               onPanelsChange={(next) => setPanels("context", next)}
               notes={notesFor("context")}
+              // The shared control bar owns the focus subject now (§3), so this column
+              // must not draw a second chip row for the same choice.
+              showChips={false}
               emptyText="Pick a subject above to see how it sits in the school."
               currentLabel={COLUMN_TITLE.context}
               note={
