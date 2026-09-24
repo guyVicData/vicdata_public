@@ -1,11 +1,16 @@
 "use client";
 
-// The dashboard's four question cards, in the laptop board's row
-// (GCSE/Post16-Dashboard-Desktop.dc.html): four equal columns with a 2px divider column
-// between each -- grid-template-columns 1fr 2px 1fr 2px 1fr 2px 1fr, gap 18px, aligned to
-// the top. The mockups only draw 390px and 1280px, so the steps in between are a
-// judgement call: stacked on a phone, paired from md, the full divided row from xl
-// (1280px, the board's own width and max-w-7xl's). The dividers only exist at xl.
+// The dashboard's question cards, in the laptop board's row: equal columns with a 2px
+// divider column between each, gap 18px, aligned to the top. The mockups only draw 390px
+// and 1280px, so the steps in between are a judgement call: stacked on a phone, paired
+// from md, the full divided row from xl (1280px, the board's own width and max-w-7xl's).
+// The dividers only exist at xl.
+//
+// Round 8 §2: three columns, not four. Candidates and Results merged into one column
+// driven by the shared Candidates/Results toggle, so the row is
+// 1fr 2px 1fr 2px 1fr -- same divider pattern, one fewer divider. Each column gains width
+// from the change alone: CardBox sets no width of its own, so nothing else has to move.
+// The 1280px page cap in page.tsx is already the board's own width and is left alone.
 import { Children, Fragment, useCallback, useState, type ReactNode } from "react";
 import { FullscreenReport } from "./CardBox";
 
@@ -25,7 +30,7 @@ export function DashboardGrid({ children }: { children: ReactNode }) {
   const columns = Children.toArray(children);
   return (
     <FullscreenReport.Provider value={report}>
-      <div className="mt-6 grid items-start gap-[18px] md:grid-cols-2 xl:grid-cols-[1fr_2px_1fr_2px_1fr_2px_1fr]">
+      <div className="mt-6 grid items-start gap-[18px] md:grid-cols-2 xl:grid-cols-[1fr_2px_1fr_2px_1fr]">
         {columns.map((col, i) => (
           <Fragment key={i}>
             {i > 0 && <ColumnDivider hidden={openFullscreens > 0} />}

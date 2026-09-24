@@ -85,16 +85,14 @@ export function ComparisonsPanels({
   setNote,
   schools,
   seriesByUrn,
-  // Which measure the pills have selected, and both descriptors.
+  // Round 8 §3: the measure comes from the shared control bar now. This column's own
+  // Candidates/Results pill is gone; only "Compared against" -- which SCHOOLS, a question
+  // the shared toggle does not answer -- remains its own.
   measure,
-  measureOptions,
-  onMeasureChange,
   // Current's real, already-shipped map content.
   schoolUrn,
   mapProfiles,
-  mapChips,
   activeMapChip,
-  onMapChip,
   mapRank,
   onMapRank,
   subjectLabel,
@@ -116,13 +114,9 @@ export function ComparisonsPanels({
   schools: ComparatorSchool[];
   seriesByUrn: Record<string, SchoolSeries>;
   measure: Measure;
-  measureOptions: { id: string; label: string }[];
-  onMeasureChange: (id: string) => void;
   schoolUrn: string | null;
   mapProfiles: AcademicSchoolProfile[] | null;
-  mapChips: MapChip[];
   activeMapChip: MapChip | null;
-  onMapChip: (key: string) => void;
   mapRank: { rank: number; total: number } | null;
   onMapRank: (info: { rank: number; total: number } | null) => void;
   // Round 7 §9: the active subject chip's own label, or null for the whole school. Every
@@ -438,58 +432,6 @@ export function ComparisonsPanels({
               ))
             }
           </PillMenu>
-          <PillMenu label="Measure" value={measure.label} width={200}>
-            {(close) =>
-              measureOptions.map((o) => (
-                <MenuRow
-                  key={o.id}
-                  label={o.label}
-                  selected={o.id === measure.id}
-                  onClick={() => { onMeasureChange(o.id); close(); }}
-                />
-              ))
-            }
-          </PillMenu>
-          {/* Round 7 §9: one subject selection for the whole column. The Map has offered
-              these chips since an earlier round; Graph, Ranking, Trend and % change now
-              read the same choice and the same per-subject rows. "Whole school" keeps the
-              headline comparison reachable. */}
-          {mapChips.length > 0 && (
-            <div className="flex flex-wrap gap-[5px]" role="group" aria-label="Compare on">
-              <button
-                type="button"
-                aria-pressed={!activeMapChip}
-                onClick={() => onMapChip(WHOLE_SCHOOL)}
-                className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
-                style={
-                  !activeMapChip
-                    ? { background: "var(--fg)", color: "var(--bg)", border: "1.5px solid var(--fg)" }
-                    : { background: "transparent", color: "var(--muted2)", border: "1.5px solid var(--panel-border2)" }
-                }
-              >
-                Whole school
-              </button>
-              {mapChips.map((c) => {
-                const on = c.key === activeMapChip?.key;
-                return (
-                  <button
-                    key={c.key}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => onMapChip(c.key)}
-                    className="rounded-full px-[9px] py-1 text-[10.5px] font-bold"
-                    style={
-                      on
-                        ? { background: c.hex, color: "#0a0a0b", border: `1.5px solid ${c.hex}` }
-                        : { background: "transparent", color: c.hex, border: `1.5px solid ${c.hex}80` }
-                    }
-                  >
-                    {c.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }

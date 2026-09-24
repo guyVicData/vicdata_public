@@ -18,8 +18,9 @@ import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
-import { ComparisonsPanels, WHOLE_SCHOOL, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
+import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
 import { AddPanelButton } from "@/components/teacher/AddPanelButton";
+import { ControlBar, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
@@ -175,17 +176,16 @@ export default function TeacherPhaseDashboard() {
   // frozen to an explicit list on the first edit, so unticking a family's last subject
   // does not make its tile and tab vanish mid-edit.
   const [quickFamilies, setQuickFamilies] = useState<string[] | null>(null);
-  // Which subject chip the Rankings map is plotting (null = the first chip).
-  const [mapChip, setMapChip] = useState<string | null>(null);
   // The map's own rank for this school on the subject it is plotting (reported by
   // AcademicMapView), so the "N of M" line can match the map once a chip is active.
   const [mapRank, setMapRank] = useState<{ rank: number; total: number } | null>(null);
   // The subject picker is a popup opened by the chip header's "±", not a permanent
   // section of the dashboard.
-  // Context's focused subject chip, lifted out of SubjectPanels: the combined picker
-  // labels its "Other subjects in ..." row from the focused subject's own real family,
-  // so the two controls cannot describe different groups.
-  const [contextFocus, setContextFocus] = useState<string>("all");
+  // Round 8 §3: ONE focus subject for the whole dashboard, read by Context and by
+  // Comparisons -- both already single-subject mechanisms. null = no single subject, which
+  // Context has always called "All subjects" and Comparisons "Whole school". Column 1's
+  // own multi-subject bars are a separate mechanism and this does not touch them.
+  const [focusKey, setFocusKey] = useState<string | null>(null);
   const [subjectPickerOpen, setSubjectPickerOpen] = useState(false);
   const subjectPickerCloseRef = useRef<HTMLButtonElement | null>(null);
   // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
@@ -752,8 +752,15 @@ export default function TeacherPhaseDashboard() {
   // "no subject" state; without one, picking Whole school fell straight back to the first
   // chip. Defaulting to the first ticked subject is the Map's own existing behaviour,
   // kept so the chips mean the same thing they always did.
-  const activeMapChip =
-    mapChip === WHOLE_SCHOOL ? null : mapChips.find((c) => c.key === mapChip) ?? mapChips[0] ?? null;
+  // Round 8 §3: driven by the shared focus subject rather than its own chip state. The
+  // two are keyed differently -- chips by subject|bucket, the ticked list by
+  // subject::qualification -- so the focus resolves through the subject it names.
+  const focusItem = focusKey ? tickedItems.find((i) => i.key === focusKey) ?? null : null;
+  const activeMapChip = focusItem
+    ? mapChips.find(
+        (c) => c.subject === focusItem.subject && (phase !== "ks5" || c.bucket === comparabilityKey(phase, focusItem.qualificationType)),
+      ) ?? null
+    : null;
 
   // Round 6 (card content rebuild): the mockups' visual layer. Colour is per qualification
   // group, shared by the chip header, the Candidates bars, the Results scores and the pie.
@@ -804,6 +811,14 @@ export default function TeacherPhaseDashboard() {
     return englandAvg.values.find((v) => v.key === key && v.period === period)?.value ?? null;
   };
 
+  // Round 8 §3: the one Candidates/Results toggle, driving all three columns. Persisted
+  // like every other "which data" choice (round 6's rule: coming back to a card showing a
+  // DIFFERENT NUMBER is disorienting in a way a different chart shape is not), under a key
+  // that cannot collide with a column id.
+  const SHARED_MEASURE_KEY = measureKey("shared");
+  const sharedMeasure: SharedMeasure = readSetting(columns, SHARED_MEASURE_KEY) === "results" ? "results" : "candidates";
+  const showingResults = sharedMeasure === "results";
+
   // §6.5: the threshold measure, computed from the real per-grade rows already in the
   // payload. Scoped to this subject AND this qualification type -- the grade rows carry
   // their own qualificationType, so a GCSE and a Cambridge National in the same subject
@@ -851,14 +866,18 @@ export default function TeacherPhaseDashboard() {
   // Context's measure is now a genuine per-instance choice rather than the catalogue's
   // fixed `COLUMN_MEASURE.context = entries`. That fixed entry still serves the meetings
   // slide picker, which renders axis views; the dashboard column reads this instead.
-  const contextMeasure = measureById(phase, readSetting(columns, measureKey("context")) ?? ENTRIES_MEASURE.id);
+  // Round 8 §3: Context reads the SHARED toggle. Its own Candidates/Results pill is gone
+  // -- one global toggle replaces two independent per-column ones. On Results it follows
+  // Column 1's sub-measure too, so "Results" means the same figure in both columns rather
+  // than two columns both claiming to show results while showing different ones.
+  const contextMeasure = showingResults ? resultsMeasure : ENTRIES_MEASURE;
   const contextAgainst = (readSetting(columns, againstKey("context")) ?? "whole") as CompareAgainstId;
   const contextSelected = readList(columns, chosenKey("context"));
 
   // The subject the comparison is anchored on: the focused chip, or the first ticked
   // subject when the chips are on "All subjects". Its family names the "Other subjects
   // in ..." option and decides that option's membership.
-  const contextAnchor = tickedItems.find((i) => i.key === contextFocus) ?? tickedItems[0] ?? null;
+  const contextAnchor = tickedItems.find((i) => i.key === focusKey) ?? tickedItems[0] ?? null;
   const contextAreaLabel = contextAnchor ? familyLabelFor(headline, contextAnchor.subject) : null;
   const contextAnchorFamily = contextAnchor ? familyFor(headline, contextAnchor.subject)?.id ?? null : null;
 
@@ -959,16 +978,6 @@ export default function TeacherPhaseDashboard() {
   const comparisonsSet: RankingsSetId =
     savedSet && comparatorSets[savedSet] !== undefined ? savedSet : comparatorSetOptions[0]?.id ?? "nearest";
 
-  // §6.7: the flat Results/Candidates pair only. Comparator-school data is whole-school
-  // headline, not per-subject, so a Grade 4+ option here would have nothing behind it --
-  // it is left off rather than shown and broken.
-  // With a subject active the figure is that subject's own points per entry, not
-  // Attainment 8, so the measure -- its label, its format and its scale -- follows the
-  // chip too. §9 asks for the "Measure" pill itself to read the per-subject source.
-  const COMPARISONS_MEASURES = [
-    activeMapChip ? measuresFor(phase)[0] : headlineMeasure(phase, headlineLabel),
-    ENTRIES_MEASURE,
-  ];
   // Round 7 §9: when a subject chip is active, every Comparisons view reads that
   // subject's real per-school figures instead of the whole-school headline. The data is
   // the one the Map has been using all along (mapProfiles' own per-subject rows), which
@@ -989,9 +998,14 @@ export default function TeacherPhaseDashboard() {
     }
   }
 
-  const savedComparisonsMeasure = readSetting(columns, measureKey("rankings"));
-  const comparisonsMeasure =
-    COMPARISONS_MEASURES.find((m) => m.id === savedComparisonsMeasure) ?? COMPARISONS_MEASURES[0];
+  // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
+  // The figure still follows the focus subject (round 7 §9): with one in focus it is that
+  // subject's own points per entry, otherwise the whole-school headline.
+  const comparisonsMeasure = showingResults
+    ? activeMapChip
+      ? measuresFor(phase)[0]
+      : headlineMeasure(phase, headlineLabel)
+    : ENTRIES_MEASURE;
 
   // Each set's own caveat, kept from round 5 -- the reason a set is what it is belongs
   // beside the set, not in a tooltip.
@@ -1012,6 +1026,11 @@ export default function TeacherPhaseDashboard() {
             ? "No nearby schools with a published cohort size to match."
             : "This school has no published cohort size to match on."
           : "No nearby schools with comparable published data for this phase.";
+
+  // Column 1's persistence key. Both modes share it, because the toggle changes the
+  // measure a panel is about, not which panels the person chose to keep -- switching to
+  // Results and finding your Trend panel gone would read as a bug.
+  const COL1 = "candidates";
 
   const panelsOf = (columnId: string): PanelId[] => panelsFrom(columns[columnId]);
 
@@ -1037,43 +1056,29 @@ export default function TeacherPhaseDashboard() {
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-xl font-semibold sm:text-2xl">{PHASE_LABELS[phase]}</h1>
-        <div className="flex items-center gap-3">
-          <TeacherChrome theme={theme} onTheme={setTheme} />
-          <Link href="/teacher" className="text-sm text-blue-700 hover:underline print:hidden dark:text-blue-400">All dashboards</Link>
-        </div>
-      </div>
-      {schoolName && <p className="mt-1 text-sm text-[var(--muted)]">{schoolName}</p>}
-
-      {/* The mockups' subject header: one chip per ticked subject/qualification in its
-          group colour, then "±" to change them, which opens the subject picker as a popup. */}
-      {phase !== "ks2" && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {tickedItems.map((i) => {
-            const c = colourOf(i);
-            return (
-              <span
-                key={i.key}
-                className="rounded-full border px-2.5 py-[5px] text-xs font-semibold"
-                style={{ background: `${c}1F`, color: c, borderColor: `${c}59` }}
-              >
-                {i.subject} &middot; {qualificationShortLabel(phase, i.qualificationType)}
-              </span>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => setSubjectPickerOpen(true)}
-            aria-label="Change subjects"
-            aria-haspopup="dialog"
-            title="Change subjects"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[var(--accent)] text-[13px] font-extrabold text-[var(--accent)] print:hidden"
-          >
-            &plusmn;
-          </button>
-        </div>
-      )}
+      {/* Round 8 §3: one control bar replaces the old title row, the school line and the
+          per-column header rows. Everything measure-specific was deliberately kept OUT of
+          it -- see ControlBar's own note on the row-alignment reason. */}
+      <ControlBar
+        phaseLabel={PHASE_LABELS[phase]}
+        schoolName={schoolName}
+        measure={sharedMeasure}
+        onMeasure={(next) => setColumnSetting(SHARED_MEASURE_KEY, next)}
+        subjects={phase === "ks2" ? [] : tickedItems.map((i) => ({
+          key: i.key,
+          label: `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`,
+          colour: colourOf(i),
+        }))}
+        focusKey={focusKey}
+        onFocus={setFocusKey}
+        onEditSubjects={() => setSubjectPickerOpen(true)}
+        chrome={
+          <>
+            <TeacherChrome theme={theme} onTheme={setTheme} />
+            <Link href="/teacher" className="text-sm text-blue-700 hover:underline dark:text-blue-400">All dashboards</Link>
+          </>
+        }
+      />
 
       {/* §13's banner. States what actually changed and when, rather than just shouting. */}
       {newDataPeriod !== null && (
@@ -1090,113 +1095,90 @@ export default function TeacherPhaseDashboard() {
 
       {/* The laptop board's four-column row, with its dividers -- see DashboardGrid. */}
       <DashboardGrid>
+        {/* COLUMN 1, round 8 §2: Candidates and Results merged. One column, one Add
+            control, one set of three panels, and the shared toggle decides which measure
+            they are about. They used to be two columns with two pin sets; they now share
+            one column key, so a panel set built in one mode is the same set in the other --
+            the toggle changes what the panels are about, not which panels you kept. */}
         <DashboardColumn
-          columnId="candidates"
-          title={COLUMN_TITLE.candidates}
-          question={q.howMany}
+          columnId={showingResults ? "results" : "candidates"}
+          title={showingResults ? COLUMN_TITLE.results : COLUMN_TITLE.candidates}
+          question={showingResults ? q.howWell : q.howMany}
           accented={!!accent}
           action={
             phase === "ks2" || tickedItems.length === 0 ? undefined : (
               <AddPanelButton
-                panels={panelsOf("candidates")}
-                onPanelsChange={(next) => setPanels("candidates", next)}
-                changeLabel={ENTRIES_MEASURE.changeLabel}
+                panels={panelsOf(COL1)}
+                onPanelsChange={(next) => setPanels(COL1, next)}
+                changeLabel={(showingResults ? resultsMeasure : ENTRIES_MEASURE).changeLabel}
               />
             )
           }
+          // §13's "NEW pill wherever something's actually changed" -- on the measure the
+          // new data actually lands in, so it follows the toggle rather than sitting on a
+          // column currently showing candidate counts.
+          badge={showingResults && newDataPeriod !== null && (
+            <span className="ml-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
+          )}
         >
           {phase === "ks2" ? (
             // KS2 keeps its own single box: every pupil sits the same tests, so there are
             // no subjects to plot per year and nothing for the panel mechanism to offer
             // (§6.9). Untouched from round 5.
-            <CardBox title={defaultBoxTitle("candidates", phase)} question={q.howMany}>
-              {({ fullscreen }) => (
-                <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>
-                  {rollAtAge10?.toLocaleString() ?? "—"}
+            <CardBox
+              title={defaultBoxTitle(showingResults ? "results" : "candidates", phase)}
+              question={showingResults ? q.howWell : q.howMany}
+            >
+              {({ fullscreen }) =>
+                showingResults ? (
+                  (() => {
+                    // KS2 has no subject picker, so its result is the school's own
+                    // headline, read against the nearest primaries (§14: never a bare
+                    // number).
+                    const own = neighbours.find((n) => n.isTarget)?.value ?? null;
+                    const others = neighbours.filter((n) => !n.isTarget && n.value !== null).map((n) => n.value!);
+                    const avg = others.length ? others.reduce((a, b) => a + b, 0) / others.length : null;
+                    return own === null ? (
+                      <p className="mt-2 text-sm text-[var(--muted)]">No published {headlineLabel} for this school yet.</p>
+                    ) : (
+                      <>
+                        <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{formatHeadline(own)}</p>
+                        <p className="text-sm text-[var(--muted)]">
+                          {headlineLabel}
+                          {avg !== null && ` · nearest primaries average ${formatHeadline(avg)}`}
+                        </p>
+                      </>
+                    );
+                  })()
+                ) : (
+                  <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>
+                    {rollAtAge10?.toLocaleString() ?? "—"}
+                  </p>
+                )
+              }
+            </CardBox>
+          ) : tickedItems.length === 0 ? (
+            <CardBox
+              title={defaultBoxTitle(showingResults ? "results" : "candidates", phase)}
+              question={showingResults ? q.howWell : q.howMany}
+            >
+              {() => (
+                <p className="text-sm text-[var(--muted)]">
+                  Pick a subject above to see its {showingResults ? "results" : "entries"}.
                 </p>
               )}
             </CardBox>
-          ) : tickedItems.length === 0 ? (
-            <CardBox title={defaultBoxTitle("candidates", phase)} question={q.howMany}>
-              {() => <p className="text-sm text-[var(--muted)]">Pick a subject above to see its entries.</p>}
-            </CardBox>
-          ) : (
-            <CandidatesPanels
-              phase={phase}
-              subjects={tickedItems.map((i) => ({
-                key: i.key,
-                subject: i.subject,
-                qualificationType: i.qualificationType,
-                label: i.label,
-                colour: colourOf(i),
-              }))}
-              entries={entries}
-              panels={panelsOf("candidates")}
-              onPanelsChange={(next) => setPanels("candidates", next)}
-              question={q.howMany}
-              source={panelSource}
-            />
-          )}
-          {movedCandidates && (
-            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              {movedCandidates.sentence}
-            </p>
-          )}
-          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:candidates`} />
-        </DashboardColumn>
-
-        <DashboardColumn
-          columnId="results"
-          title={COLUMN_TITLE.results}
-          question={q.howWell}
-          accented={!!accent}
-          action={
-            phase === "ks2" || tickedItems.length === 0 ? undefined : (
-              <AddPanelButton
-                panels={panelsOf("results")}
-                onPanelsChange={(next) => setPanels("results", next)}
-                changeLabel={resultsMeasure.changeLabel}
-              />
-            )
-          }
-          // §13's "NEW pill wherever something's actually changed" -- on the card the new
-          // data actually lands in, not on every card.
-          badge={newDataPeriod !== null && (
-            <span className="ml-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
-          )}
-        >
-          {phase === "ks2" ? (
-            <CardBox title={defaultBoxTitle("results", phase)} question={q.howWell}>
-              {({ fullscreen }) => {
-                // KS2 has no subject picker, so its result is the school's own headline,
-                // read against the nearest primaries (§14: never a bare number).
-                const own = neighbours.find((n) => n.isTarget)?.value ?? null;
-                const others = neighbours.filter((n) => !n.isTarget && n.value !== null).map((n) => n.value!);
-                const avg = others.length ? others.reduce((a, b) => a + b, 0) / others.length : null;
-                return own === null ? (
-                  <p className="mt-2 text-sm text-[var(--muted)]">No published {headlineLabel} for this school yet.</p>
-                ) : (
-                  <>
-                    <p className={`mt-2 font-semibold tabular-nums ${fullscreen ? "text-6xl" : "text-3xl"}`}>{formatHeadline(own)}</p>
-                    <p className="text-sm text-[var(--muted)]">
-                      {headlineLabel}
-                      {avg !== null && ` · nearest primaries average ${formatHeadline(avg)}`}
-                    </p>
-                  </>
-                );
-              }}
-            </CardBox>
-          ) : tickedItems.length === 0 ? (
-            <CardBox title={defaultBoxTitle("results", phase)} question={q.howWell}>
-              {() => <p className="text-sm text-[var(--muted)]">Pick a subject above to see its results.</p>}
-            </CardBox>
-          ) : (
+          ) : showingResults ? (
             <SubjectPanels
-              columnId="results"
+              columnId={COL1}
               periods={resultsPeriods}
               subjects={resultsSeries}
               measure={resultsMeasure}
               controls={
+                // §3's row-alignment fix: the Results sub-measure pill sits under this
+                // column's own heading, the same slot Context's and Comparisons' pills
+                // use -- not in the shared bar, where it existed in only one toggle state
+                // and pushed the three columns' panels out of line with each other.
                 <MeasurePicker
                   measures={resultsMeasures}
                   active={resultsMeasure}
@@ -1222,17 +1204,33 @@ export default function TeacherPhaseDashboard() {
                 change: "Which of my subjects' results have moved most?",
               }}
               source={panelSource}
-              panels={panelsOf("results")}
-              onPanelsChange={(next) => setPanels("results", next)}
+              panels={panelsOf(COL1)}
+              onPanelsChange={(next) => setPanels(COL1, next)}
               emptyText="Pick a subject above to see its results."
             />
+          ) : (
+            <CandidatesPanels
+              phase={phase}
+              subjects={tickedItems.map((i) => ({
+                key: i.key,
+                subject: i.subject,
+                qualificationType: i.qualificationType,
+                label: i.label,
+                colour: colourOf(i),
+              }))}
+              entries={entries}
+              panels={panelsOf(COL1)}
+              onPanelsChange={(next) => setPanels(COL1, next)}
+              question={q.howMany}
+              source={panelSource}
+            />
           )}
-          {movedResults && (
+          {(showingResults ? movedResults : movedCandidates) && (
             <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              {movedResults.sentence}
+              {(showingResults ? movedResults : movedCandidates)!.sentence}
             </p>
           )}
-          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:results`} />
+          <NoteBox schoolUrn={schoolUrn} chartKey={`${phase}:${COL1}`} />
         </DashboardColumn>
 
         <DashboardColumn
@@ -1278,17 +1276,14 @@ export default function TeacherPhaseDashboard() {
               periods={contextPeriods}
               subjects={contextSeries}
               measure={contextMeasure}
-              focus={contextFocus}
-              onFocusChange={setContextFocus}
+              focus={focusKey ?? "all"}
+              onFocusChange={(key) => setFocusKey(key === "all" ? null : key)}
               yearControl
               controls={
                 <ContextPills
                   against={contextAgainst}
                   onAgainst={(id) => setColumnSetting(againstKey("context"), id)}
                   areaLabel={contextAreaLabel}
-                  candidatesMeasure={ENTRIES_MEASURE}
-                  resultMeasures={measuresFor(phase)}
-                  active={contextMeasure}
                   allSubjects={items.map((i) => ({ key: i.key, label: i.label, colour: colourOf(i) }))}
                   selected={contextSelected}
                   onToggleSelected={(key) =>
@@ -1297,7 +1292,6 @@ export default function TeacherPhaseDashboard() {
                       contextSelected.includes(key) ? contextSelected.filter((k) => k !== key) : [...contextSelected, key],
                     )
                   }
-                  onMeasure={(id) => setColumnSetting(measureKey("context"), id)}
                 />
               }
               benchmarkLabel={contextGroupLabel}
@@ -1359,13 +1353,9 @@ export default function TeacherPhaseDashboard() {
             subjectLabel={activeMapChip?.legend ?? null}
             seriesLoading={!!activeMapChip && mapProfiles === null}
             measure={comparisonsMeasure}
-            measureOptions={COMPARISONS_MEASURES.map((m) => ({ id: m.id, label: m.label }))}
-            onMeasureChange={(id) => setColumnSetting(measureKey("rankings"), id)}
             schoolUrn={schoolUrn}
             mapProfiles={mapProfiles}
-            mapChips={mapChips}
             activeMapChip={activeMapChip}
-            onMapChip={setMapChip}
             mapRank={mapRank}
             onMapRank={setMapRank}
             emptyText={comparatorEmptyText}

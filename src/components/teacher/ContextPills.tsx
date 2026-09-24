@@ -11,9 +11,14 @@
 // "Matching Comparisons' pattern exactly" is implemented as literally the same component
 // (PillMenu), not a second lookalike -- see that file's own note.
 //
+// Round 8 §3: this used to carry a second pill for Candidates/Results. That is gone --
+// the shared control bar's one toggle replaces it and Comparisons' equivalent, so a
+// dashboard has one measure rather than three independent ones. What remains is Context's
+// own dimension, which the shared toggle does not answer: WHICH GROUP the subject is being
+// read against.
+//
 // §6.1's decision is unchanged: three compare-against options, with category-vs-category
 // still deferred because it compares subject GROUPS rather than a subject to a group.
-import { COMING_SOON_MEASURES, type Measure } from "@/lib/teacher-view-panels";
 import { MenuHeading, MenuRow } from "./PanelMenu";
 import { PillMenu } from "./PillMenu";
 
@@ -23,26 +28,18 @@ export function ContextPills({
   against,
   onAgainst,
   areaLabel,
-  candidatesMeasure,
-  resultMeasures,
-  active,
   allSubjects,
   selected,
   onToggleSelected,
-  onMeasure,
 }: {
   against: CompareAgainstId;
   onAgainst: (id: CompareAgainstId) => void;
   // The real subject family of the subject currently in focus, so the row reads
   // "Other subjects in Humanities & Social Sciences" rather than a placeholder.
   areaLabel: string | null;
-  candidatesMeasure: Measure;
-  resultMeasures: Measure[];
-  active: Measure;
   allSubjects: { key: string; label: string; colour: string }[];
   selected: string[];
   onToggleSelected: (key: string) => void;
-  onMeasure: (id: string) => void;
 }) {
   const againstLabel =
     against === "area" ? areaLabel ?? "Its category" : against === "selected" ? "Selected subjects" : "Whole school";
@@ -86,31 +83,6 @@ export function ContextPills({
         )}
       </PillMenu>
 
-      <PillMenu label="Measure" value={active.label} width={236}>
-        {(close) => (
-          <>
-            <MenuHeading>Measure</MenuHeading>
-            <MenuRow
-              label={candidatesMeasure.label}
-              selected={active.id === candidatesMeasure.id}
-              onClick={() => { onMeasure(candidatesMeasure.id); close(); }}
-            />
-            <MenuHeading indented>Results</MenuHeading>
-            {resultMeasures.map((m) => (
-              <MenuRow
-                key={m.id}
-                label={m.label}
-                indented
-                selected={active.id === m.id}
-                onClick={() => { onMeasure(m.id); close(); }}
-              />
-            ))}
-            {COMING_SOON_MEASURES.map((m) => (
-              <MenuRow key={m.id} label={m.label} tag="Coming soon" indented disabled onClick={() => {}} />
-            ))}
-          </>
-        )}
-      </PillMenu>
     </div>
   );
 }
