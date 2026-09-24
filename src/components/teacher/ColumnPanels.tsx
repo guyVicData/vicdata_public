@@ -41,6 +41,8 @@ export type PanelRender = {
   body: (fullscreen: boolean) => ReactNode;
   summary?: ReactNode;
   source?: ReactNode;
+  // The footer row's own controls, beside the source icon (round 8 §§4-6).
+  footerActions?: ReactNode;
 };
 
 export function ColumnPanels({
@@ -100,6 +102,10 @@ export function ColumnPanels({
             controls={panel.controls}
             caption={panel.summary}
             source={panel.source}
+            footerActions={panel.footerActions}
+            // Round 8 §2: every panel the same height, so the three columns read as one
+            // 3x3 grid rather than three ragged stacks.
+            fixedHeight
           >
             {({ fullscreen }) => panel.body(fullscreen)}
           </CardBox>

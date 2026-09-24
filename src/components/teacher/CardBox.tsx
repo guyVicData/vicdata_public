@@ -26,6 +26,22 @@ import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherMod
 // so a CardBox outside the dashboard is unaffected.
 export const FullscreenReport = createContext<(open: boolean) => void>(() => {});
 
+// Round 8 §2/§7: every panel is this tall, so the three columns line up as a real 3x3 grid.
+//
+// Computed from the REAL grid rather than copied from the wireframe, which §7 asks for
+// explicitly. At the 1280px cap: 1280 - 48 page padding = 1232 content; minus 4 gaps of
+// 18px and two 2px dividers leaves 1156 across three tracks, so a column track is 385px.
+// The wireframe's proportion is 260px tall at 394px wide, so 260 x 385/394 = 254px, rounded
+// to the nearest 8px step.
+//
+// Deliberately scaled against the COLUMN track, which is the brief's own wording ("260px at
+// its own 394px column width"). Scaling against the panel's inner width instead -- 353px
+// once DashboardColumn's padding is taken off -- would give 233px, and the wireframe's own
+// 394 is ambiguous between the two, since its panel and its column head are both 394. The
+// taller reading leaves a usable chart area; flagged in the build report as the judgement
+// §7 asked to have made explicitly rather than silently.
+export const PANEL_HEIGHT = 256;
+
 export function CardBox({
   title,
   subtitle,
@@ -36,6 +52,8 @@ export function CardBox({
   controls,
   caption,
   source,
+  footerActions,
+  fixedHeight = false,
   children,
 }: {
   title: string;
@@ -54,9 +72,10 @@ export function CardBox({
   // not read as a demotion.
   tag?: ReactNode;
   // The panel's VIEW-CHOICE icons (bar/table/donut/map/…). Round 7 §3 moved these out of
-  // the top-right corner, which was carrying up to four icons, onto their own row under
-  // the heading -- leaving exactly two in the corner. They choose how to draw the figure,
-  // so they belong beside the figure; fullscreen and remove act on the panel itself.
+  // the top-right corner, which was carrying up to four icons; round 8 §4 moves them again,
+  // from a horizontal row under the heading to a vertical RAIL down the left of the
+  // content, with a divider between the two. They choose how to draw the figure, so they
+  // belong beside the figure; fullscreen and remove act on the panel itself.
   actions?: ReactNode;
   // The one icon that belongs AFTER the fullscreen button: remove. Two icons, top-right,
   // on every panel (round 7 §3).
@@ -70,6 +89,13 @@ export function CardBox({
   // axis view carries its own framing in its subtitle.
   caption?: ReactNode;
   source?: ReactNode;
+  // Round 8 §4: the footer's own controls -- the private note and Export -- beside the
+  // source icon, all pinned to the panel's real bottom edge.
+  footerActions?: ReactNode;
+  // Round 8 §2: every panel is the same height, so the three columns read as a true 3x3
+  // grid rather than three ragged stacks. Absent = size to content, which is what the KS2
+  // boxes and any non-panel caller still want.
+  fixedHeight?: boolean;
   // Called twice while fullscreen is open -- once for the box underneath, once for the
   // modal -- so it must be safe to mount two copies (the map is: each instance owns its
   // own Leaflet map).
@@ -124,28 +150,65 @@ export function CardBox({
     </div>
   );
 
-  const footer = (
-    <>
-      {caption && <p className="text-[11.5px] text-[var(--muted2)]">{caption}</p>}
-      {source && <p className="text-[9.5px] text-[var(--source)]">{source}</p>}
-    </>
+  // Round 8 §4: one footer row, pinned to the panel's own bottom edge by absolute
+  // positioning rather than pushed there by flex order -- so a short chart and a long one
+  // put their source, note and Export in exactly the same place. The panel reserves the
+  // room for it in its own bottom padding.
+  const footerRow = (
+    <div className={fixedHeight ? "absolute inset-x-3 bottom-2.5 flex items-center gap-1.5" : "flex items-center gap-1.5"}>
+      {source}
+      {footerActions}
+    </div>
   );
+
+  // The caption is the panel's one-line conclusion and still reads as text above the
+  // footer; only the citation moved into the row (§4).
+  const captionLine = caption ? <p className="text-[11.5px] leading-snug text-[var(--muted2)]">{caption}</p> : null;
 
   return (
     // Mockup box: radius 10px, 1px --panel-border, --box-bg, 12px padding, 10px gap.
-    <div className="mt-3 flex flex-col gap-2.5 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3">
+    // Fixed-height panels add bottom padding to reserve the footer's row and go
+    // `relative` so it can be pinned there.
+    <div
+      className={[
+        "mt-3 flex flex-col gap-2 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3",
+        fixedHeight ? "relative overflow-hidden pb-9" : "",
+      ].join(" ")}
+      // PANEL_HEIGHT is computed from the real grid, not copied from the wireframe -- see
+      // its own note.
+      style={fixedHeight ? { height: PANEL_HEIGHT } : undefined}
+    >
       {header(false)}
-      {/* Round 7 §3: the view-choice icons, top-left under the heading. */}
-      {actions && <div className="-mt-1 flex items-center gap-0.5 print:hidden">{actions}</div>}
-      {controls && <div className="print:hidden">{controls}</div>}
-      <div>{children({ fullscreen: false })}</div>
-      {footer}
+      {controls && <div className="shrink-0 print:hidden">{controls}</div>}
+      {/* Round 8 §4: the view rail runs down the left of the content, divided from it, and
+          both stretch to fill whatever height the fixed panel leaves them. */}
+      <div className={fixedHeight ? "flex min-h-0 flex-grow items-stretch gap-0" : ""}>
+        {actions && (
+          <div className="mr-2.5 flex shrink-0 flex-col gap-[3px] border-r border-[var(--panel-border)] pr-2.5 print:hidden">
+            {actions}
+          </div>
+        )}
+        <div className={fixedHeight ? "flex min-w-0 flex-grow flex-col" : "min-w-0 flex-grow"}>
+          {children({ fullscreen: false })}
+        </div>
+      </div>
+      {captionLine}
+      {footerRow}
 
       {fullscreen && (
         <TeacherModal label={`${title}, full screen`} backdropLabel="Close full screen" onClose={() => setFullscreen(false)} initialFocusRef={closeRef}>
           {header(true)}
-          <div className="mt-1 min-h-0 flex-1">{children({ fullscreen: true })}</div>
-          {footer}
+          <div className="mt-1 flex min-h-0 flex-1 items-stretch">
+            {actions && (
+              <div className="mr-3 flex shrink-0 flex-col gap-1 border-r border-[var(--panel-border)] pr-3 print:hidden">{actions}</div>
+            )}
+            <div className="flex min-w-0 flex-grow flex-col">{children({ fullscreen: true })}</div>
+          </div>
+          {captionLine}
+          <div className="flex items-center gap-1.5">
+            {source}
+            {footerActions}
+          </div>
         </TeacherModal>
       )}
     </div>

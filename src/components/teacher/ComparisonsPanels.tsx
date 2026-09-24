@@ -258,13 +258,18 @@ export function ComparisonsPanels({
         );
       }
       return (
-        <SortTable
-          rows={rankingRows}
-          sort={sort}
-          onSort={(key) => setSort(nextSort(sort, key))}
-          columns={{ name: "School", value: "Result", delta: "Rank" }}
-          fullscreen={fullscreen}
-        />
+        // Round 8 §4: a comparator set longer than the panel scrolls within its own box.
+        // The panel's height is fixed now, so without this a 10-school set would either
+        // overflow it or push the footer off the bottom.
+        <div className="min-h-0 flex-grow overflow-y-auto">
+          <SortTable
+            rows={rankingRows}
+            sort={sort}
+            onSort={(key) => setSort(nextSort(sort, key))}
+            columns={{ name: "School", value: "Result", delta: "Rank" }}
+            fullscreen={fullscreen}
+          />
+        </div>
       );
     },
     summary: seriesLoading ? undefined : shownRank ? (

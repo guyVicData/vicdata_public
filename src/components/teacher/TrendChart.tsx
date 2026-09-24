@@ -104,15 +104,18 @@ export function TrendChart({
   const ordered = [...series].sort((a, b) => Number(!!b.comparison) - Number(!!a.comparison));
   const focus = series.find((s) => !s.comparison) ?? series[0];
   const fit = showFit ? leastSquares(focus.values) : null;
-  const plotHeight = fullscreen ? 220 : H;
+  // Round 8 §4: fill whatever vertical room the fixed-height panel leaves, rather than a
+  // fixed 80px box. The SVG already stretches (preserveAspectRatio="none") and its axes are
+  // HTML positioned as percentages of it, so both follow the container for free.
+  const plotHeight = fullscreen ? 220 : undefined;
   const ticks = [scaleMax, (scaleMax + scaleMin) / 2, scaleMin];
 
   return (
-    <div className="mt-1">
-      <div className="flex gap-2">
+    <div className="mt-1 flex min-h-0 flex-grow flex-col">
+      <div className="flex min-h-0 flex-grow gap-2">
         {/* The y axis: its labels are HTML, positioned at the same fractions of the plot's
             height that the SVG uses, so they stay upright at any card width. */}
-        <div className="relative w-8 shrink-0" style={{ height: plotHeight }} aria-hidden="true">
+        <div className="relative w-8 shrink-0" style={plotHeight ? { height: plotHeight } : undefined} aria-hidden="true">
           <span className="absolute right-0 w-px bg-[var(--panel-border2)]" style={{ top: `${(TOP / H) * 100}%`, bottom: `${((H - BOTTOM - 2) / H) * 100}%` }} />
           {ticks.map((v) => (
             <span
@@ -127,10 +130,10 @@ export function TrendChart({
         </div>
         <svg
           width="100%"
-          height={plotHeight}
+          height={plotHeight ?? "100%"}
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
-          className="block flex-grow"
+          className="block min-h-0 flex-grow"
           role="img"
           aria-label={`${focus.label}, ${academicYearLabel(periods[0])} to ${academicYearLabel(periods[periods.length - 1])}`}
         >
@@ -186,7 +189,7 @@ export function TrendChart({
       </div>
 
       {/* The x axis, positioned over the same 0-100% the plot spans. */}
-      <div className="flex gap-2">
+      <div className="flex shrink-0 gap-2">
         <div className="w-8 shrink-0" />
         <div className="relative h-4 flex-grow" aria-hidden="true">
           {periods.map((p, i) => (
@@ -241,7 +244,7 @@ function TrendBars({ data, measure, fullscreen }: { data: PanelData; measure: Me
   const { periods, series } = data;
   const all = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
   const top = Math.max(...all);
-  const bodyH = fullscreen ? 200 : 96;
+  const bodyH = fullscreen ? 200 : 96;  // fallback only; the flex row below drives it
   const ticks = [1, 0.5, 0];
 
   return (

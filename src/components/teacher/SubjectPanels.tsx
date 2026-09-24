@@ -71,6 +71,7 @@ export function SubjectPanels({
   onPanelsChange,
   emptyText,
   note,
+  currentLabel,
 }: {
   columnId: string;
   periods: number[];
@@ -112,6 +113,11 @@ export function SubjectPanels({
   // An honest limit worth saying on the card -- e.g. the threshold measure only having
   // 2023/24 onward. Shown under the figure, not hidden in a tooltip.
   note?: ReactNode;
+  // Round 8 §4: the Current panel's tag names its own column ("Results 2024/25",
+  // "Context 2024/25") rather than the generic "Current", so a panel read on its own --
+  // fullscreen, or printed -- still says which card it came from. Absent falls back to
+  // the old wording, which is what any caller that has not been given a name wants.
+  currentLabel?: string;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -199,7 +205,9 @@ export function SubjectPanels({
     donutValue !== null && donutGroupValue !== null && donutGroupValue > 0 ? (donutValue / donutGroupValue) * 100 : null;
 
   const current: PanelRender = {
-    tag: `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
+    tag: currentLabel
+      ? `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim()
+      : `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
     question: questions.current,
     beforeTag: yearControl && realIdx.length > 1 ? (
       <span className="flex items-center gap-1.5">

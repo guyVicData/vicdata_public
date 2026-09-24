@@ -1207,6 +1207,7 @@ export default function TeacherPhaseDashboard() {
               panels={panelsOf(COL1)}
               onPanelsChange={(next) => setPanels(COL1, next)}
               emptyText="Pick a subject above to see its results."
+              currentLabel={COLUMN_TITLE.results}
             />
           ) : (
             <CandidatesPanels
@@ -1223,6 +1224,7 @@ export default function TeacherPhaseDashboard() {
               onPanelsChange={(next) => setPanels(COL1, next)}
               question={q.howMany}
               source={panelSource}
+              currentLabel={COLUMN_TITLE.candidates}
             />
           )}
           {(showingResults ? movedResults : movedCandidates) && (
@@ -1313,6 +1315,7 @@ export default function TeacherPhaseDashboard() {
               panels={panelsOf("context")}
               onPanelsChange={(next) => setPanels("context", next)}
               emptyText="Pick a subject above to see how it sits in the school."
+              currentLabel={COLUMN_TITLE.context}
               note={
                 contextMeasure.id === "threshold"
                   ? `${contextMeasure.label} is published per grade only from 2023/24, so this covers fewer years than the other measures.`

@@ -54,6 +54,7 @@ export function CandidatesPanels({
   onPanelsChange,
   question,
   source,
+  currentLabel,
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -62,6 +63,8 @@ export function CandidatesPanels({
   onPanelsChange: (next: PanelId[]) => void;
   question: string;
   source: (span?: string) => ReactNode;
+  // §4: the Current tag names the column ("Candidates 2024/25") -- see SubjectPanels.
+  currentLabel?: string;
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
   const [focus, setFocus] = useState<string>("all");
@@ -127,7 +130,9 @@ export function CandidatesPanels({
   const smallest = withFigures[withFigures.length - 1];
 
   const current: PanelRender = {
-    tag: `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
+    tag: currentLabel
+      ? `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim()
+      : `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
     question,
     actions: (
       <>
