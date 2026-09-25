@@ -19,8 +19,9 @@ export type PanelId = "current" | "trend" | "change";
 // Render order on the card -- the wireframe's own order (Main.dc.html), not alphabetical.
 export const PANEL_ORDER: readonly PanelId[] = ["current", "trend", "change"] as const;
 
-// Content round S10: every column always has all three panels, each independently OPEN or
-// collapsed to a header bar ("so teacher builds complexity"). What is stored per column is
+// Content round S10: every column always has all three panels, each OPEN or collapsed to a
+// header bar ("so teacher builds complexity"). The accordion round made them a standard
+// accordion -- one open at a time (see togglePanel). What is stored per column is
 // the set of OPEN panels -- the same key and the same list the Add/remove mechanism
 // stored as the set of PRESENT panels, which is what makes the change safe for saved
 // state: anything someone had added comes back open, and nothing they kept disappears.
@@ -43,9 +44,15 @@ export function panelsFrom(saved: string[] | undefined): PanelId[] {
   return PANEL_ORDER.filter((p) => saved.includes(p));
 }
 
-// Open a collapsed panel or collapse an open one; the others are untouched.
+// Opening a closed panel makes it the only open one; opening the open one closes it.
+// A standard accordion, not S10's independent-toggle model -- see the round's own
+// note on why: a wider panel with only one thing in it draws a much better chart.
+// (Guy, accordion round: "opening one panel closes the other two -- and the height of the
+// open one can therefore expand substantially.") The stored open set is now always zero or
+// one panel; a set saved under S10 with two or three open still reads, and the next click
+// in that column settles it to one. Nothing needs migrating.
 export function togglePanel(open: PanelId[], id: PanelId): PanelId[] {
-  return open.includes(id) ? open.filter((p) => p !== id) : PANEL_ORDER.filter((p) => p === id || open.includes(p));
+  return open.includes(id) ? open.filter((p) => p !== id) : [id];
 }
 
 // --------------------------------------------------------------- the measures

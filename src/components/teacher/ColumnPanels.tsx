@@ -6,9 +6,10 @@
 // Rules this component owns, so no column can implement them differently:
 //   1. PANEL_ORDER is the render order, and all three panels are always there -- there is
 //      nothing to add back, so there is no "+ Add" and no remove "x".
-//   2. Each panel opens and collapses on its own; more than one can be open (not a
-//      single-open accordion). A collapsed panel is a one-line header bar carrying the
-//      panel's own headline figure, not a bare title.
+//   2. A standard accordion (accordion round, revising S10's independent toggles):
+//      opening a panel closes the other two, and closing the open one leaves all three
+//      collapsed. The one open panel gets the room -- see PANEL_HEIGHT. A collapsed panel
+//      is a one-line header bar carrying the panel's own headline figure, not a bare title.
 //   3. The open set is what the page persists, under the key the present set used to use
 //      -- see panelsFrom for why that keeps everyone's saved panels.
 //

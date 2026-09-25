@@ -55,7 +55,32 @@ export const FullscreenReport = createContext<(open: boolean) => void>(() => {})
 // open panels move the column by twice any change, so +8px is +16px on the ~800px total
 // and 240 would be +32px. Round 2 §8 also moved every caption out of the panel body into
 // a footer popover, so the chart area grows by more than these 8px on its own.
-export const PANEL_HEIGHT = 232;
+//
+// Accordion round: 384px. The shape changed -- one panel open and two collapsed bars, never
+// two open -- so the budget is redone from scratch for that shape, from the real classes,
+// on a 13" laptop (1440x900 screen, a browser viewport of about 790px):
+//   page top padding (sm:p-6)                         24
+//   TeacherNav row                                    34
+//   ControlBar: mt-4 16 + py-3 24 + 40px badge + 2    82
+//   DashboardGrid mt-6                                24
+//   column border 1 + accent bar 3 + p-4 top 16       20
+//   column heading (the S11 sentence, two lines)      42
+//   column pills: mt-2.5 10 + pill 26                 36
+//   two collapsed bars, each mt-3 12 + bar 46        116
+//   the open panel's own mt-3                         12
+//   column p-4 bottom 16 + border 1                   17
+//                                                    ---
+//                                                    407
+// 790 - 407 = 383, taken to the 8px step: 384 -- 152px (65%) more than the two-open 232,
+// which is the whole point of the accordion. On a taller screen there is simply room
+// below; Column 1's occasional "this moved" note (~28px) is the one thing that can tip a
+// 790px viewport into a short scroll.
+//
+// Kept a single fixed height, not a floor that grows with content: the three columns'
+// open panels still line up as one row, whichever panel each has open, and content taller
+// than 384px (a long subject list, a ten-school legend) scrolls inside the panel's own
+// content box rather than making one column longer than the others.
+export const PANEL_HEIGHT = 384;
 
 export function CardBox({
   title,
