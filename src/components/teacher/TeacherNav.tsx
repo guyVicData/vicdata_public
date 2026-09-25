@@ -64,37 +64,39 @@ export function TeacherNav({
   onTheme: (t: Theme) => void;
 }) {
   return (
-    // One row in the wireframe's order, left-packed -- the brief lists Account and the
-    // theme toggle straight after the second divider, not pushed to the far edge.
-    <nav aria-label="Teacher view" className="flex flex-wrap items-center gap-3.5 print:hidden">
+    // Two groups at opposite edges, as in Redesign.dc.html: the wordmark alone on the
+    // left, everything from Home to the theme toggle as one cluster pinned to the right.
+    <nav aria-label="Teacher view" className="flex flex-wrap items-center justify-between gap-3.5 print:hidden">
       <Link href="/" className="text-[15px] font-extrabold tracking-tight">VicData</Link>
-      <Link
-        href="/teacher"
-        aria-label={labelsOn ? undefined : "Home"}
-        title="Home"
-        className="inline-flex h-[34px] shrink-0 items-center gap-2 pr-1 text-xs font-bold text-[var(--muted)] hover:text-[var(--fg)]"
-      >
-        <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)]">{HOME_ICON}</span>
-        {labelsOn && <span>Home</span>}
-      </Link>
-      <Divider />
-      <div className="flex flex-wrap items-center gap-2.5">
-        <PhaseSwitcher phase={phase} phases={phases} labelsOn={labelsOn} />
-        <button
-          type="button"
-          onClick={() => onLabelsOn(!labelsOn)}
-          aria-pressed={labelsOn}
-          aria-label={labelsOn ? "Hide labels" : "Show labels"}
-          title={labelsOn ? "Hide labels" : "Show labels"}
-          className="flex h-[34px] w-[26px] shrink-0 items-center justify-center text-[var(--muted)] hover:text-[var(--fg)]"
+      <div className="flex flex-wrap items-center gap-3.5">
+        <Link
+          href="/teacher"
+          aria-label={labelsOn ? undefined : "Home"}
+          title="Home"
+          className="inline-flex h-[34px] shrink-0 items-center gap-2 pr-1 text-xs font-bold text-[var(--muted)] hover:text-[var(--fg)]"
         >
-          {LINES_ICON}
-        </button>
-      </div>
-      <Divider />
-      <div className="flex items-center gap-2.5">
-        <AccountMenu />
-        <ThemeToggle theme={theme} onTheme={onTheme} variant="icon" />
+          <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)]">{HOME_ICON}</span>
+          {labelsOn && <span>Home</span>}
+        </Link>
+        <Divider />
+        <div className="flex flex-wrap items-center gap-2.5">
+          <PhaseSwitcher phase={phase} phases={phases} labelsOn={labelsOn} />
+          <button
+            type="button"
+            onClick={() => onLabelsOn(!labelsOn)}
+            aria-pressed={labelsOn}
+            aria-label={labelsOn ? "Hide labels" : "Show labels"}
+            title={labelsOn ? "Hide labels" : "Show labels"}
+            className="flex h-[34px] w-[26px] shrink-0 items-center justify-center text-[var(--muted)] hover:text-[var(--fg)]"
+          >
+            {LINES_ICON}
+          </button>
+        </div>
+        <Divider />
+        <div className="flex items-center gap-2.5">
+          <AccountMenu />
+          <ThemeToggle theme={theme} onTheme={onTheme} variant="icon" />
+        </div>
       </div>
     </nav>
   );
