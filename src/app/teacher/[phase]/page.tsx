@@ -1114,14 +1114,21 @@ export default function TeacherPhaseDashboard() {
     const qual = qualificationShortLabel(phase, focusItem.qualificationType);
     const learners = phase === "ks5" ? "students" : "pupils";
     const setLabel = (comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "nearest schools").toLowerCase();
+    // Round 2 §6: every set label already carries its own noun ("Nearest 10 schools",
+    // "Similar-sized sixth forms", "Local rivals"), so nothing is appended to it -- the
+    // guard only adds "schools" if a future label arrives without one.
+    const setNoun = /(schools|sixth forms|rivals)$/.test(setLabel) ? setLabel : `${setLabel} schools`;
     return {
-      candidates: { title: `${subj} Candidates`, question: `how many ${learners} take ${subj} ${qual}.` },
-      results: { title: `${subj} Results`, question: `how well ${learners} do in ${subj} ${qual}.` },
+      // Round 2 §2-§3: the title already names the subject, so the sentence says "this
+      // subject" / "this GCSE" rather than repeating it. Candidates keeps the qualification
+      // word -- GCSE vs A level vs BTEC is the useful part there.
+      candidates: { title: `${subj} Candidates`, question: `how many ${learners} take this ${qual}.` },
+      results: { title: `${subj} Results`, question: `how well ${learners} do in this subject.` },
       context: {
         title: `${subj} in Context`,
         question: `how ${subj} compares with ${contextAgainst === "selected" ? "the subjects you selected" : "the whole school"}.`,
       },
-      rankings: { title: `${subj} Comparisons`, question: `how ${subj} here compares with the ${setLabel}.` },
+      rankings: { title: `${subj} Comparisons`, question: `how this subject compares with the ${setNoun}.` },
     };
   })();
   const openSubjectPicker = () => setSubjectPickerOpen(true);
