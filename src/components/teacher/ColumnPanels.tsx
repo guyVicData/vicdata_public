@@ -37,6 +37,9 @@ export type PanelRender = {
   // Controls that sit before the pill rather than in the icon row -- Context's year
   // prev/next pair, which the wireframe puts either side of the tag.
   beforeTag?: ReactNode;
+  // Controls that sit straight after the title -- S11's "From {year} ▾" start-year menu
+  // on Trends and % Change.
+  afterTag?: ReactNode;
   // The full natural-language question, used as the fullscreen modal's heading (§14).
   question: string;
   // View-toggle icons, which sit before the fullscreen button.
@@ -96,6 +99,7 @@ export function ColumnPanels({
               <span className="flex flex-wrap items-center gap-1.5">
                 {panel.beforeTag}
                 <span className="text-[13px] font-semibold text-[var(--fg)]">{panel.tag}</span>
+                {panel.afterTag}
               </span>
             }
             actions={panel.actions}

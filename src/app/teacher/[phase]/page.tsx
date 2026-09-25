@@ -775,6 +775,8 @@ export default function TeacherPhaseDashboard() {
   ).sort((a, b) => a - b);
 
   const shortSubject = (label: string) => (label.length <= 6 ? label : `${label.slice(0, 4)}.`);
+  // "Nearest 10 schools" -> "Nearest 10 Schools", for the tags that name a set or group.
+  const titleCase = (label: string) => label.replace(/\b([a-z])/g, (m) => m.toUpperCase());
 
   // The England anchor for the same subject and the same year (englandFor's own rule,
   // applied per period rather than only to the latest one).
@@ -1097,6 +1099,26 @@ export default function TeacherPhaseDashboard() {
     icon: familyIcon(phase, qualificationFamilyOf(phase, i.qualificationType)),
   }));
   const onSharedMeasure = (next: SharedMeasure) => setColumnSetting(SHARED_MEASURE_KEY, next);
+
+  // S11: each column's heading as one sentence naming the focused subject and what that
+  // column reads it against. Falls back to the plain titles and §5 questions when no
+  // subject is ticked yet, and at KS2, which has no subjects.
+  const subjectHeadings = (() => {
+    if (!focusItem || phase === "ks2") return null;
+    const subj = focusItem.subject;
+    const qual = qualificationShortLabel(phase, focusItem.qualificationType);
+    const learners = phase === "ks5" ? "students" : "pupils";
+    const setLabel = (comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "nearest schools").toLowerCase();
+    return {
+      candidates: { title: `${subj} Candidates`, question: `how many ${learners} take ${subj} ${qual}.` },
+      results: { title: `${subj} Results`, question: `how well ${learners} do in ${subj} ${qual}.` },
+      context: {
+        title: `${subj} in Context`,
+        question: `how ${subj} compares with ${contextAgainst === "selected" ? "the subjects you selected" : "the whole school"}.`,
+      },
+      rankings: { title: `${subj} Comparisons`, question: `how ${subj} here compares with the ${setLabel}.` },
+    };
+  })();
   const openSubjectPicker = () => setSubjectPickerOpen(true);
 
   return (
@@ -1180,8 +1202,8 @@ export default function TeacherPhaseDashboard() {
             the toggle changes what the panels are about, not which panels you kept. */}
         <DashboardColumn
           columnId={showingResults ? "results" : "candidates"}
-          title={showingResults ? COLUMN_TITLE.results : COLUMN_TITLE.candidates}
-          question={showingResults ? q.howWell : q.howMany}
+          title={subjectHeadings ? subjectHeadings[showingResults ? "results" : "candidates"].title : showingResults ? COLUMN_TITLE.results : COLUMN_TITLE.candidates}
+          question={subjectHeadings ? subjectHeadings[showingResults ? "results" : "candidates"].question : showingResults ? q.howWell : q.howMany}
           accented={!!accent}
           // §13's "NEW pill wherever something's actually changed" -- on the measure the
           // new data actually lands in, so it follows the toggle rather than sitting on a
@@ -1317,8 +1339,8 @@ export default function TeacherPhaseDashboard() {
 
         <DashboardColumn
           columnId="context"
-          title={COLUMN_TITLE.context}
-          question={q.nearMe}
+          title={subjectHeadings?.context.title ?? COLUMN_TITLE.context}
+          question={subjectHeadings?.context.question ?? q.nearMe}
           accented={!!accent}
         >
           {phase === "ks2" ? (
@@ -1387,7 +1409,9 @@ export default function TeacherPhaseDashboard() {
               onPanelsChange={(next) => setPanels("context", next)}
               notes={notesFor("context")}
               emptyText="Pick a subject above to see how it sits in the school."
-              currentLabel={COLUMN_TITLE.context}
+              // S11: the tag names the live comparison group -- "Whole School Context
+              // 2024/25" or "Selected Subjects Context 2024/25".
+              currentLabel={`${titleCase(contextGroupLabel)} Context`}
               note={
                 contextMeasure.id === "threshold"
                   ? `${contextMeasure.label} is published per grade only from 2023/24, so this covers fewer years than the other measures.`
@@ -1399,8 +1423,8 @@ export default function TeacherPhaseDashboard() {
 
         <DashboardColumn
           columnId="rankings"
-          title={COLUMN_TITLE.rankings}
-          question={q.wider}
+          title={subjectHeadings?.rankings.title ?? COLUMN_TITLE.rankings}
+          question={subjectHeadings?.rankings.question ?? q.wider}
           accented={!!accent}
         >
           <ComparisonsPanels
@@ -1428,6 +1452,7 @@ export default function TeacherPhaseDashboard() {
             onMapRank={setMapRank}
             emptyText={comparatorEmptyText}
             targetName={schoolName ?? "This school"}
+            currentLabel={`${showingResults ? "Results" : "Candidates"} at the ${titleCase(comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "nearest schools")}`}
           />
         </DashboardColumn>
       </DashboardGrid>

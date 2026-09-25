@@ -241,20 +241,11 @@ export function trimToData(data: PanelData): PanelData {
   };
 }
 
-// The start years a From:/Since: control can offer. A range needs two points to be a
+// The start years a "From {year}" menu can offer (FromYearMenu). A range needs two points to be a
 // range, so the last period is never a valid start -- picking it would draw a single dot
 // and describe a change over no elapsed time.
 export function startOptions(periods: number[]): number[] {
   return periods.slice(0, Math.max(0, periods.length - 1));
-}
-
-// Cycling wraps, as the wireframe's pills do. Returns the next start period, or null when
-// there is nothing to cycle through.
-export function nextStart(periods: number[], current: number | null): number | null {
-  const options = startOptions(periods);
-  if (options.length === 0) return null;
-  const at = current === null ? -1 : options.indexOf(current);
-  return options[(at + 1) % options.length];
 }
 
 // The data from `start` onwards. Everything downstream (the chart, the summary, the

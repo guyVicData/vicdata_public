@@ -19,17 +19,16 @@ import {
   DIRECTION_WORD,
   ENTRIES_MEASURE,
   meanOf,
-  nextStart,
   percentChange,
   periodsWithData,
   sliceFrom,
   trimToData,
-  startOptions,
   trendSentence,
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { FromYearMenu } from "./FromYearMenu";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { IconButton, Pill, RankListIcon, VerticalBarsIcon } from "./PanelIcons";
 import { TrendChart } from "./TrendChart";
@@ -198,19 +197,13 @@ export function CandidatesPanels({
   });
 
   const trend: PanelRender = {
-    tag: `Candidates — ${spanLabel(trendData) || "no history"}`,
+    // S11: one uniform title, with the span's start as its own dropdown beside it.
+    tag: "Trends",
+    afterTag: <FromYearMenu periods={trendPeriods} from={trendData.periods[0] ?? null} onChange={setTrendStart} />,
     question: "How have candidate numbers moved, year on year?",
     controls: (
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <div className="flex gap-1.5">
-          {startOptions(trendPeriods).length > 1 && (
-            <Pill
-              label={`From: ${trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "—"} ▾`}
-              onClick={() => setTrendStart(nextStart(trendPeriods, trendStart ?? trendPeriods[0] ?? null))}
-            />
-          )}
-          <Pill label="Trend line" active={showFit} onClick={() => setShowFit(!showFit)} />
-        </div>
+        <Pill label="Trend line" active={showFit} onClick={() => setShowFit(!showFit)} />
       </div>
     ),
     body: (fullscreen) => <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />,
@@ -243,17 +236,9 @@ export function CandidatesPanels({
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
 
   const change: PanelRender = {
-    tag: `% change by subject — since ${changeSince || "—"}`,
-    question: "Which of the subjects I teach are growing, and which are shrinking?",
-    controls:
-      startOptions(changePeriods).length > 1 ? (
-        <div className="flex justify-end">
-          <Pill
-            label={`Since: ${changeSince || "—"} ▾`}
-            onClick={() => setChangeStart(nextStart(changePeriods, changeStart ?? changePeriods[0] ?? null))}
-          />
-        </div>
-      ) : undefined,
+    tag: "% Change",
+    afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
+    question: "Which subjects in this category are growing, and which are shrinking?",
     body: (fullscreen) => <ChangeChart bars={changeBars} fullscreen={fullscreen} />,
     summary:
       best && worst && best.key !== worst.key ? (

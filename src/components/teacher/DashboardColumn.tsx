@@ -83,11 +83,14 @@ export function DashboardColumn({
             </div>
           )}
           <div className="min-w-0 flex-grow">
-            <h2 className="text-[15px] font-bold leading-tight">
+            {/* Content round S11: the heading is one full sentence -- "{Subject} Candidates
+                — how many pupils take {Subject} GCSE." -- the short name in bold and the
+                explanation after it, in the same h2. */}
+            <h2 className="text-[15px] font-bold leading-snug">
               {title}
               {badge}
+              <span className="font-normal text-[var(--muted)]"> — {question}</span>
             </h2>
-            <p className="mt-0.5 text-[12.5px] leading-snug text-[var(--muted)]">{question}</p>
           </div>
           {action && <div className="shrink-0 print:hidden">{action}</div>}
         </div>

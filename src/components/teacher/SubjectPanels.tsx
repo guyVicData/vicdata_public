@@ -18,18 +18,17 @@ import { academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
-  nextStart,
   percentChange,
   periodsWithData,
   sliceFrom,
   trimToData,
-  startOptions,
   trendSentence,
   type Measure,
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { FromYearMenu } from "./FromYearMenu";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { DonutIcon, HorizontalBarsIcon, IconButton, NextYearIcon, Pill, PrevYearIcon, RankListIcon } from "./PanelIcons";
 import { ShareDonut } from "./ShareDonut";
@@ -111,8 +110,9 @@ export function SubjectPanels({
   onPanelsChange: (next: PanelId[]) => void;
   notes?: PanelNotes;
   emptyText: string;
-  // An honest limit worth saying on the card -- e.g. the threshold measure only having
-  // 2023/24 onward. Shown under the figure, not hidden in a tooltip.
+  // An honest limit worth saying -- e.g. the threshold measure only having 2023/24
+  // onward. Content round S11 moved it from under every panel's figure (printed three
+  // times per column) into each panel's "i" popover, after the source it qualifies.
   note?: ReactNode;
   // Round 8 §4: the Current panel's tag names its own column ("Results 2024/25",
   // "Context 2024/25") rather than the generic "Current", so a panel read on its own --
@@ -130,6 +130,17 @@ export function SubjectPanels({
   // The donut is Candidates-only, so a measure switch has to fall back rather than leave
   // the panel on a view it can no longer draw.
   const effectiveView = view === "donut" && !donut?.enabled ? "bar" : view;
+
+  // The source line with the caveat after it -- what every panel's "i" opens.
+  const sourceWithNote = (span?: string) => {
+    const cited = source(span);
+    return note ? (
+      <>
+        {cited}
+        <span className="mt-1.5 block">{note}</span>
+      </>
+    ) : cited;
+  };
 
   const spanLabel = (ps: number[]) =>
     ps.length ? `${academicYearLabel(ps[0])}–${academicYearLabel(ps[ps.length - 1])}` : "";
@@ -273,7 +284,6 @@ export function SubjectPanels({
               fullscreen={fullscreen}
             />
           )}
-          {note && <p className="mt-2 text-[11px] text-[var(--muted3)]">{note}</p>}
         </>
       ),
     summary:
@@ -299,7 +309,7 @@ export function SubjectPanels({
           </PanelSummary>
         )
       ) : undefined,
-    source: source(),
+    source: sourceWithNote(),
     // S10: the collapsed bar's figure -- the focused subject's own value this year.
     headline: (() => {
       const v = focusedSubject && latestIdx >= 0 ? focusedSubject.values[latestIdx] : null;
@@ -338,25 +348,18 @@ export function SubjectPanels({
   })();
 
   const trend: PanelRender = {
-    tag: `${measure.label} — ${spanLabel(trendData.periods) || "no history"}`,
+    // S11: one uniform title, with the span's start as its own dropdown beside it.
+    tag: "Trends",
+    afterTag: <FromYearMenu periods={trendPeriods} from={trendData.periods[0] ?? null} onChange={setTrendStart} />,
     question: questions.trend,
     controls: (
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <div className="flex gap-1.5">
-          {startOptions(trendPeriods).length > 1 && (
-            <Pill
-              label={`From: ${trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "—"} ▾`}
-              onClick={() => setTrendStart(nextStart(trendPeriods, trendStart ?? trendPeriods[0] ?? null))}
-            />
-          )}
-          <Pill label="Trend line" active={showFit} onClick={() => setShowFit(!showFit)} />
-        </div>
+        <Pill label="Trend line" active={showFit} onClick={() => setShowFit(!showFit)} />
       </div>
     ),
     body: (fullscreen) => (
       <>
         <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
-        {note && <p className="mt-2 text-[11px] text-[var(--muted3)]">{note}</p>}
       </>
     ),
     summary: trendSaid ? (
@@ -366,7 +369,7 @@ export function SubjectPanels({
     ) : (
       <PanelSummary>Not enough published years yet to describe a trend.</PanelSummary>
     ),
-    source: source(spanLabel(trendData.periods)),
+    source: sourceWithNote(spanLabel(trendData.periods)),
     headline: trendSaid ? (
       <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
@@ -399,21 +402,12 @@ export function SubjectPanels({
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
 
   const change: PanelRender = {
-    tag: `% change in ${measure.label.toLowerCase()} — since ${changeSince || "—"}`,
+    tag: "% Change",
+    afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: questions.change,
-    controls:
-      startOptions(changePeriods).length > 1 ? (
-        <div className="flex justify-end">
-          <Pill
-            label={`Since: ${changeSince || "—"} ▾`}
-            onClick={() => setChangeStart(nextStart(changePeriods, changeStart ?? changePeriods[0] ?? null))}
-          />
-        </div>
-      ) : undefined,
     body: (fullscreen) => (
       <>
         <ChangeChart bars={changeBars} fullscreen={fullscreen} />
-        {note && <p className="mt-2 text-[11px] text-[var(--muted3)]">{note}</p>}
       </>
     ),
     summary:
@@ -428,7 +422,7 @@ export function SubjectPanels({
       ) : (
         <PanelSummary>Not enough published years yet to compare on change.</PanelSummary>
       ),
-    source: source(spanLabel(changeData.periods)),
+    source: sourceWithNote(spanLabel(changeData.periods)),
     headline: (() => {
       const p = changeBars.find((b) => b.key === focusedSubject?.key)?.percent ?? null;
       return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;

@@ -27,19 +27,18 @@ import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
   meanOf,
-  nextStart,
   rankByValue,
   percentChange,
   periodsWithData,
   sliceFrom,
   trimToData,
-  startOptions,
   trendSentence,
   type Measure,
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { FromYearMenu } from "./FromYearMenu";
 import { ChangeChart } from "./ChangeChart";
 import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon } from "./PanelIcons";
 import { PillMenu } from "./PillMenu";
@@ -100,6 +99,7 @@ export function ComparisonsPanels({
   seriesLoading,
   emptyText,
   targetName,
+  currentLabel,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -133,6 +133,9 @@ export function ComparisonsPanels({
   emptyText: string;
   // Content round S9: the school's real name for its own row, in place of "This school".
   targetName: string;
+  // S11: the Current tag names what is compared and against whom, e.g. "Candidates at the
+  // Nearest 10 Schools 2024/25" -- built by the page from the live set label.
+  currentLabel: string;
 }) {
   // Ranking is the default view (§4.3), even though Graph comes first in the icon row.
   const [view, setView] = useState<"graph" | "map" | "ranking">("ranking");
@@ -217,7 +220,7 @@ export function ComparisonsPanels({
   }));
 
   const current: PanelRender = {
-    tag: `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
+    tag: `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim(),
     question,
     actions: (
       <>
@@ -364,17 +367,13 @@ export function ComparisonsPanels({
   })();
 
   const trend: PanelRender = {
-    tag: `${measure.label} — ${spanLabel(trendData.periods) || "no history"}`,
+    // S11: one uniform title, with the span's start as its own dropdown beside it.
+    tag: "Trends",
+    afterTag: <FromYearMenu periods={realPeriods} from={trendData.periods[0] ?? null} onChange={setTrendStart} />,
     question: "How has this school moved against its comparators, year on year?",
     controls: (
       <div className="flex flex-wrap justify-end gap-1.5">
         {versusPill(versusOpen, setVersusOpen, versusRef)}
-        {startOptions(realPeriods).length > 1 && (
-          <Pill
-            label={`From: ${trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "—"} ▾`}
-            onClick={() => setTrendStart(nextStart(realPeriods, trendStart ?? realPeriods[0] ?? null))}
-          />
-        )}
         <Pill label="Trend line" active={showFit} onClick={() => setShowFit(!showFit)} />
       </div>
     ),
@@ -405,17 +404,12 @@ export function ComparisonsPanels({
   const versusPct = percentChange(changeData.series[1]?.values ?? []);
 
   const change: PanelRender = {
-    tag: `% change in ${measure.label.toLowerCase()} — since ${changeSince || "—"}`,
+    tag: "% Change",
+    afterTag: <FromYearMenu periods={realPeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: "How much has this school moved, against its comparators?",
     controls: (
       <div className="flex flex-wrap justify-end gap-1.5">
         {versusPill(changeVersusOpen, setChangeVersusOpen, changeVersusRef)}
-        {startOptions(realPeriods).length > 1 && (
-          <Pill
-            label={`Since: ${changeSince || "—"} ▾`}
-            onClick={() => setChangeStart(nextStart(realPeriods, changeStart ?? realPeriods[0] ?? null))}
-          />
-        )}
       </div>
     ),
     body: (fullscreen) =>
