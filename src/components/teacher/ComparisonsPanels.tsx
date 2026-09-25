@@ -39,6 +39,7 @@ import {
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
+import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart } from "./ChangeChart";
 import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon } from "./PanelIcons";
 import { PillMenu } from "./PillMenu";
@@ -374,9 +375,17 @@ export function ComparisonsPanels({
     controls: (
       <div className="flex flex-wrap justify-end gap-1.5">
         {versusPill(versusOpen, setVersusOpen, versusRef)}
-        <Pill label="Trend line" active={showFit} onClick={() => setShowFit(!showFit)} />
       </div>
     ),
+    // S12: the direction flag sits right-aligned in the footer; the full sentence is its
+    // tooltip here and the caption in fullscreen, where there is room for it.
+    flag: !seriesLoading && trendSaid ? (
+      <span title={trendSaid.sentence} style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
+        {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
+      </span>
+    ) : undefined,
+    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} />,
+
     body: (fullscreen) =>
       seriesLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>

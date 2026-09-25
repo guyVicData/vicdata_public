@@ -67,6 +67,8 @@ export function CardBox({
   collapsed = false,
   onExpand,
   headline,
+  footerLead,
+  flag,
   children,
 }: {
   title: string;
@@ -115,6 +117,14 @@ export function CardBox({
   collapsed?: boolean;
   onExpand?: () => void;
   headline?: ReactNode;
+  // Content round S12: two optional footer slots, so the Trend panels can move controls
+  // out of the panel body -- `footerLead` sits first in the row, before the "i" (the
+  // Trend-line toggle); `flag` sits at the row's right edge (the growth/decline flag,
+  // "the first of our flags"). A panel that passes neither gets exactly the footer it
+  // had. With a flag, the panel's caption is not also printed above the footer -- the
+  // flag carries it; the fullscreen view, which has the room, still shows the sentence.
+  footerLead?: ReactNode;
+  flag?: ReactNode;
   // Called twice while fullscreen is open -- once for the box underneath, once for the
   // modal -- so it must be safe to mount two copies (the map is: each instance owns its
   // own Leaflet map).
@@ -219,9 +229,11 @@ export function CardBox({
         "flex items-center gap-1.5 print:hidden",
       ].join(" ")}
     >
+      {footerLead}
       {/* §4: the citation is an icon that opens its own text, not a printed sentence. */}
       <SourceNote>{source}</SourceNote>
       {footerActions?.({ print: printPanel })}
+      {flag && <span className="ml-auto min-w-0 truncate text-[11.5px] font-bold">{flag}</span>}
     </div>
   );
 
@@ -256,7 +268,7 @@ export function CardBox({
           {children({ fullscreen: false })}
         </div>
       </div>
-      {captionLine}
+      {!flag && captionLine}
       {footerRow}
 
       {fullscreen && (
@@ -279,6 +291,7 @@ export function CardBox({
               page, which is exactly where a popover would be no use. */}
           <p className="hidden text-[9.5px] text-[var(--source)] print:block">{source}</p>
           <div className="flex items-center gap-1.5 print:hidden">
+            {footerLead}
             <SourceNote>{source}</SourceNote>
             {footerActions?.({ print: printPanel })}
           </div>

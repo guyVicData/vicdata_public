@@ -53,6 +53,10 @@ export type PanelRender = {
   // value (the focused subject's figure, the trend's direction, its % change), reused
   // rather than computed again for the bar.
   headline?: ReactNode;
+  // S12: the footer's own leading control (Trend's "Trend line") and right-aligned flag
+  // (Trend's growth/decline word) -- see CardBox.
+  footerLead?: ReactNode;
+  flag?: ReactNode;
 };
 
 export function ColumnPanels({
@@ -89,6 +93,8 @@ export function ColumnPanels({
             collapsed={!open}
             onExpand={toggle}
             headline={panel.headline}
+            footerLead={panel.footerLead}
+            flag={panel.flag}
             title={panel.tag}
             question={panel.question}
             tag={

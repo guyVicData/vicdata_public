@@ -174,3 +174,24 @@ export function PanelExport({ onPrint }: { onPrint: () => void }) {
     </span>
   );
 }
+
+// ------------------------------------------------------- trend line (content round S12)
+
+// Trend's "Trend line" toggle, moved from the top of the panel into its footer, just
+// before the "i". Sized to sit in that row beside the 17px footer icons, rather than as
+// the full pill it was.
+export function TrendLineToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={on}
+      className={[
+        "h-[17px] shrink-0 rounded-full border px-1.5 text-[10px] font-semibold leading-none",
+        on ? "border-[var(--accent,var(--fg))] text-[var(--accent,var(--fg))]" : "border-[var(--panel-border2)] text-[var(--muted)] hover:text-[var(--fg)]",
+      ].join(" ")}
+    >
+      Trend line
+    </button>
+  );
+}

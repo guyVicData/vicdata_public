@@ -29,8 +29,9 @@ import {
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
+import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { IconButton, Pill, RankListIcon, VerticalBarsIcon } from "./PanelIcons";
+import { IconButton, RankListIcon, VerticalBarsIcon } from "./PanelIcons";
 import { TrendChart } from "./TrendChart";
 import { VerticalBars } from "./VerticalBars";
 
@@ -201,11 +202,14 @@ export function CandidatesPanels({
     tag: "Trends",
     afterTag: <FromYearMenu periods={trendPeriods} from={trendData.periods[0] ?? null} onChange={setTrendStart} />,
     question: "How have candidate numbers moved, year on year?",
-    controls: (
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Pill label="Trend line" active={showFit} onClick={() => setShowFit(!showFit)} />
-      </div>
-    ),
+    // S12: the direction flag sits right-aligned in the footer; the full sentence is its
+    // tooltip here and the caption in fullscreen, where there is room for it.
+    flag: trendSaid ? (
+      <span title={trendSaid.sentence} style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
+        {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
+      </span>
+    ) : undefined,
+    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} />,
     body: (fullscreen) => <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />,
     summary: trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>
