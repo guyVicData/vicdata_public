@@ -214,6 +214,11 @@ export function SubjectPanels({
   const bestRow = byDelta[0];
   const worstRow = byDelta[byDelta.length - 1];
   const againstNoun = benchmarkNoun ?? "its own previous year";
+  // Round 2 §D2: with changeScope "focus" (Context, whose rows are now the whole school)
+  // the sentence is about the focused subject alone. The extremes above only described it
+  // when it happened to be top or bottom -- History focused read as a sentence about
+  // Maths and Turkish.
+  const focusedRow = rows.find((r) => r.s.key === focusedKey && r.delta !== null);
 
   // The donut's two numbers: the focused subject as a share of the comparison group's own
   // total for the SAME year Current is showing.
@@ -320,6 +325,14 @@ export function SubjectPanels({
             {latest === null ? "this year" : academicYearLabel(latest)}.
           </PanelSummary>
         )
+      ) : changeScope === "focus" ? (
+        // No delta for the focused subject = no sentence, the same as the undefined
+        // branch below when no row has one.
+        focusedRow ? (
+          <PanelSummary>
+            {focusedRow.s.label} sits {measure.formatDelta(focusedRow.delta!)} against {againstNoun}.
+          </PanelSummary>
+        ) : undefined
       ) : bestRow && worstRow ? (
         bestRow.s.key === worstRow.s.key ? (
           <PanelSummary>
