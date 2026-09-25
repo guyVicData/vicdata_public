@@ -64,6 +64,23 @@ export const RankListIcon = (
   </Glyph>
 );
 
+// Trend redesign: the Trend panel's chart view (a line over time) and the table view
+// shared by Trend (Option E) and % Change (Option I).
+export const TrendLineIcon = (
+  <Glyph>
+    <polyline points="2.5,15 7,10 11,12.5 17.5,4.5" />
+  </Glyph>
+);
+
+export const TableIcon = (
+  <Glyph>
+    <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" />
+    <line x1="2.5" y1="8" x2="17.5" y2="8" />
+    <line x1="2.5" y1="12.3" x2="17.5" y2="12.3" />
+    <line x1="8" y1="8" x2="8" y2="16.5" />
+  </Glyph>
+);
+
 export const DonutIcon = (
   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
     <circle cx="10" cy="10" r="7.5" />

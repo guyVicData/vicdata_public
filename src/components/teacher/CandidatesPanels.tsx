@@ -30,8 +30,9 @@ import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from ".
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { IconButton, RankListIcon, VerticalBarsIcon } from "./PanelIcons";
-import { MultiTrend, multiTrendHasLine } from "./SeriesViews";
+import { HorizontalBarsIcon, IconButton, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { CentredOnTarget } from "./CentredOnTarget";
+import { MultiTrend, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { VerticalBars } from "./VerticalBars";
 
@@ -86,6 +87,9 @@ export function CandidatesPanels({
   groupLabel?: string;
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
+  // Step 6: Trend and % change each gain a table beside their chart.
+  const [trendView, setTrendView] = useState<"chart" | "table">("chart");
+  const [changeView, setChangeView] = useState<"chart" | "table">("chart");
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
@@ -124,6 +128,8 @@ export function CandidatesPanels({
   const trendFocusData = trendData.series.find((s) => s.key === focused?.key);
   const changeFull = trimToData({ periods, series: [...subjectSeries, ...(group ? [{ ...group, colour: "#57534e" }] : [])] });
   const changeData = sliceFrom(changeFull, changeStart);
+  // The subjects alone, without the group series -- what the tables list.
+  const changeSubjectsData: PanelData = { periods: changeData.periods, series: changeData.series.filter((s) => s.key !== "group") };
   const changePeriods = periodsWithData(changeFull);
 
   const spanLabel = (data: PanelData) =>
@@ -206,10 +212,25 @@ export function CandidatesPanels({
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
       </span>
     ) : undefined,
-    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={!multiTrendHasLine(trendData)} />,
-    body: (fullscreen) => (
-      <MultiTrend data={trendData} measure={measure} focusKey={focused?.key ?? null} showFit={showFit} fullscreen={fullscreen} />
+    footerLead: (
+      <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={trendView === "table" || !multiTrendHasLine(trendData)} />
     ),
+    actions: (
+      <>
+        <IconButton label="Chart" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
+        <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+      </>
+    ),
+    body: (fullscreen) =>
+      trendView === "table" ? (
+        // Option E: the real headcounts the indexed chart hides -- first and last year on
+        // the card, every year in fullscreen.
+        <CentredOnTarget watch={`trend-table:${focused?.key}:${trendData.periods.join(",")}`}>
+          <YearTable data={trendData} measure={measure} focusKey={focused?.key ?? null} fullscreen={fullscreen} />
+        </CentredOnTarget>
+      ) : (
+        <MultiTrend data={trendData} measure={measure} focusKey={focused?.key ?? null} showFit={showFit} fullscreen={fullscreen} />
+      ),
     summary: trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>
         {trendSaid.sentence}
@@ -242,7 +263,22 @@ export function CandidatesPanels({
     tag: "% Change",
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: "Which subjects in this category are growing, and which are shrinking?",
-    body: (fullscreen) => <ChangeChart bars={changeBars} fullscreen={fullscreen} />,
+    actions: (
+      <>
+        <IconButton label="Ranked change" active={changeView === "chart"} onClick={() => setChangeView("chart")}>{HorizontalBarsIcon}</IconButton>
+        <IconButton label="Table" active={changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
+      </>
+    ),
+    body: (fullscreen) =>
+      changeView === "table" ? (
+        // Option I: the base year and the latest beside the change, so a big % on a
+        // handful of candidates reads as what it is.
+        <CentredOnTarget watch={`change-table:${focused?.key}:${changeData.periods.join(",")}`}>
+          <YearTable data={changeSubjectsData} measure={measure} focusKey={focused?.key ?? null} fullscreen={fullscreen} />
+        </CentredOnTarget>
+      ) : (
+        <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+      ),
     summary:
       best && worst && best.key !== worst.key ? (
         <PanelSummary>
