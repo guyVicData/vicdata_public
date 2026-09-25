@@ -31,7 +31,7 @@ import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from ".
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { DonutIcon, HorizontalBarsIcon, IconButton, NextYearIcon, PrevYearIcon, RankListIcon } from "./PanelIcons";
+import { DonutIcon, HorizontalBarsIcon, IconButton, RankListIcon } from "./PanelIcons";
 import { ShareDonut } from "./ShareDonut";
 import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
 import { TrendChart } from "./TrendChart";
@@ -152,22 +152,17 @@ export function SubjectPanels({
     ps.length ? `${academicYearLabel(ps[0])}–${academicYearLabel(ps[ps.length - 1])}` : "";
 
   // --------------------------------------------------------------- Current
-  // Only the years this measure genuinely has a figure for, so the prev/next control can
-  // never step onto an empty one (§6.3). The threshold measure is the case that matters:
+  // Only the years this measure genuinely has a figure for, so the year menu can never
+  // offer an empty one (§6.3). The threshold measure is the case that matters:
   // switching to it shortens this list rather than padding the axis.
   const realIdx = periods.map((_, i) => i).filter((i) => subjects.some((s) => s.values[i] !== null));
   // The latest period any subject has a figure for -- not simply the last period in the
   // list, which may be a year this measure has not been published for yet.
   const defaultIdx = realIdx.length ? realIdx[realIdx.length - 1] : -1;
-  // A year chosen by the prev/next pair survives a measure switch only while that year
+  // A year chosen in the year menu survives a measure switch only while that year
   // still has data; otherwise it falls back rather than showing an empty card.
   const latestIdx = yearIdx !== null && realIdx.includes(yearIdx) ? yearIdx : defaultIdx;
   const latest = latestIdx >= 0 ? periods[latestIdx] : null;
-  const atRealIdx = realIdx.indexOf(latestIdx);
-  const stepYear = (by: -1 | 1) => {
-    const next = realIdx[atRealIdx + by];
-    if (next !== undefined) setYearIdx(next);
-  };
 
   // The third column. Against a benchmark where there is one; otherwise against this
   // subject's own previous published year, which is the other real comparison available
@@ -216,15 +211,19 @@ export function SubjectPanels({
     donutValue !== null && donutGroupValue !== null && donutGroupValue > 0 ? (donutValue / donutGroupValue) * 100 : null;
 
   const current: PanelRender = {
-    tag: currentLabel
-      ? `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim()
-      : `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
+    tag:
+      yearControl && realIdx.length > 1 && currentLabel
+        ? currentLabel
+        : currentLabel
+          ? `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim()
+          : `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
     question: questions.current,
-    beforeTag: yearControl && realIdx.length > 1 ? (
-      <span className="flex items-center gap-1.5">
-        <IconButton label="Previous year" disabled={atRealIdx <= 0} onClick={() => stepYear(-1)}>{PrevYearIcon}</IconButton>
-        <IconButton label="Next year" disabled={atRealIdx >= realIdx.length - 1} onClick={() => stepYear(1)}>{NextYearIcon}</IconButton>
-      </span>
+    // Round 2 §4: Context's year choice is the same dropdown Trends and % Change use, in
+    // its one-year mode, beside the tag -- replacing a prev/next chevron pair whose
+    // usually-disabled left chevron read as a stray "back" button. The year leaves the
+    // tag text, since the menu beside it now says it.
+    afterTag: yearControl && realIdx.length > 1 ? (
+      <FromYearMenu mode="year" periods={realIdx.map((i) => periods[i])} from={latest} onChange={(p) => setYearIdx(periods.indexOf(p))} />
     ) : undefined,
     actions: (
       <>

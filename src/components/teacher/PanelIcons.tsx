@@ -78,18 +78,6 @@ export const MapPinIcon = (
   </Glyph>
 );
 
-export const PrevYearIcon = (
-  <svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <polyline points="12,4 6,10 12,16" />
-  </svg>
-);
-
-export const NextYearIcon = (
-  <svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <polyline points="8,4 14,10 8,16" />
-  </svg>
-);
-
 // The wireframe's 26px icon button: transparent at rest, inverted when active, and at
 // 35% with pointer events off when disabled. Disabled is a real `disabled` attribute as
 // well as a look -- §4.2 wants the donut genuinely inert for a Results measure, not just

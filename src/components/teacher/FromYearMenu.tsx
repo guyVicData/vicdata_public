@@ -19,20 +19,25 @@ export function FromYearMenu({
   periods,
   from,
   onChange,
+  mode = "from",
 }: {
   // Every period the panel has a figure for, ascending.
   periods: number[];
   // The first period the panel is currently showing, or null when it has none.
   from: number | null;
   onChange: (start: number) => void;
+  // Round 2 §4: "year" picks ONE year to show (Context's Current, which used to have a
+  // prev/next stepper) rather than the start of a range -- so every real year is offered,
+  // the latest included, and the button reads "2024/25 ▾" rather than "From 2024/25 ▾".
+  mode?: "from" | "year";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
-  const options = startOptions(periods);
+  const options = mode === "year" ? [...periods].reverse() : startOptions(periods);
   const label = from === null ? "—" : academicYearLabel(from);
 
   if (options.length < 2) {
-    return <span className="text-[12px] font-medium text-[var(--muted)]">from {label}</span>;
+    return <span className="text-[12px] font-medium text-[var(--muted)]">{mode === "year" ? label : `from ${label}`}</span>;
   }
   return (
     <span className="relative inline-flex" ref={ref}>
@@ -43,11 +48,11 @@ export function FromYearMenu({
         aria-haspopup="menu"
         className="inline-flex items-center gap-1 rounded-md px-1 text-[12px] font-medium text-[var(--muted)] hover:text-[var(--fg)]"
       >
-        From {label}
+        {mode === "year" ? label : `From ${label}`}
         {ChevronDown}
       </button>
       {open && (
-        <PanelMenu label="Start year" width={140}>
+        <PanelMenu label={mode === "year" ? "Year" : "Start year"} width={140}>
           {options.map((p) => (
             <MenuRow
               key={p}
