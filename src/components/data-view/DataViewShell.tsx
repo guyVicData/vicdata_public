@@ -1173,7 +1173,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
       .select("id")
       .single();
     if (insertError || !set) {
-      // The personal-set cap (3, enforced by the DB trigger -- saved_sets.sql's own
+      // The personal-set cap (8 since the 20260925232857 migration, enforced by the DB
+      // trigger -- saved_sets.sql's own
       // enforce_personal_comparator_cap) surfaces here as a real Postgres exception
       // message, same as /sets/comparator/new/page.tsx's own save already surfaces
       // it -- not re-worded, so the two save paths give the member the same answer.

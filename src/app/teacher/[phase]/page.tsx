@@ -19,7 +19,9 @@ import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
-import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
+import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries, type SetOption } from "@/components/teacher/ComparisonsPanels";
+import { ComparatorSetChooser } from "@/components/teacher/ComparatorSetChooser";
+import { fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
@@ -101,6 +103,12 @@ export default function TeacherPhaseDashboard() {
   // rest. No fabricated drift, and no new ingestion.
   const [comparatorSets, setComparatorSets] = useState<Partial<Record<RankingsSetId, ComparatorSchool[]>>>({});
   const [seriesByUrn, setSeriesByUrn] = useState<Record<string, SchoolSeries>>({});
+  // Accordion round Part 3: the saved comparator sets (the teacher's own and the school's
+  // shared ones), fetched after the main load and again after the chooser saves. Merged
+  // into the same comparator-set map as the four presets, keyed "saved:<id>", so the
+  // pill, the validity check and the per-subject map fetch all treat them alike.
+  const [savedSets, setSavedSets] = useState<SavedSetsPayload | null>(null);
+  const [chooser, setChooser] = useState<{ editing: SavedComparatorSet | null; startingFrom: { label: string; urns: string[] } | null } | null>(null);
   const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route for why the
   // basis is the qualification bucket at Post-16 and the subject itself at GCSE.
@@ -214,10 +222,33 @@ export default function TeacherPhaseDashboard() {
   // they now have to cover whichever set the "Compared against" pill is on. Same call,
   // same route, a longer urn list -- the dashboard route already resolves this same union
   // server-side, so it is a set that is known to be a sane size.
-  const comparatorUrns = useMemo(
-    () => Array.from(new Set(Object.values(comparatorSets).flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
-    [comparatorSets],
+  const allComparatorSets = useMemo<Record<string, ComparatorSchool[] | undefined>>(
+    () => ({
+      ...comparatorSets,
+      ...Object.fromEntries((savedSets?.sets ?? []).map((set) => [savedSetKey(set.id), set.rows])),
+    }),
+    [comparatorSets, savedSets],
   );
+  const comparatorUrns = useMemo(
+    () => Array.from(new Set(Object.values(allComparatorSets).flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
+    [allComparatorSets],
+  );
+
+  const reloadSavedSets = useCallback(async () => {
+    if (!schoolUrn || !phase) return;
+    setSavedSets(await fetchSavedSets(supabase, schoolUrn, phase));
+  }, [schoolUrn, phase, supabase]);
+
+  useEffect(() => {
+    if (!schoolUrn || !onboarded || !phase) return;
+    let cancelled = false;
+    (async () => {
+      const payload = await fetchSavedSets(supabase, schoolUrn, phase);
+      if (!cancelled) setSavedSets(payload);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolUrn, onboarded, phase]);
 
   useEffect(() => {
     if (!schoolUrn || !onboarded || comparatorUrns.length === 0) return;
@@ -1029,18 +1060,33 @@ export default function TeacherPhaseDashboard() {
   // rather than four separate pinnable boxes competing for one of the column's three
   // panel slots (§6.7). Similar-sized is GCSE/Post-16 only -- KS2 publishes no exam-cohort
   // size to match on -- so it is offered only where the route really built it.
-  const comparatorSetOptions: { id: RankingsSetId; label: string }[] = (
+  const presetOptions: SetOption[] = (
     [
       { id: "nearest", label: "Nearest 10 schools" },
       { id: "same_sector", label: "Same sector schools" },
       { id: "local_rivals", label: "Local rivals" },
       { id: "similar_size", label: phase === "ks5" ? "Similar-sized sixth forms" : "Similar-sized schools" },
     ] as { id: RankingsSetId; label: string }[]
-  ).filter((o) => comparatorSets[o.id] !== undefined);
+  )
+    .filter((o) => comparatorSets[o.id] !== undefined)
+    .map((o) => ({ ...o, group: "preset" as const }));
+  // Accordion round Part 3: saved sets join the same list, in the wireframe's groups --
+  // the teacher's own, then the school's shared ones.
+  const savedOptions: SetOption[] = (savedSets?.sets ?? []).map((set) => ({
+    id: savedSetKey(set.id),
+    label: set.name,
+    group: set.mine ? "mine" : "shared",
+    meta: `${set.members.length} school${set.members.length === 1 ? "" : "s"}`,
+    editable: set.editable,
+  }));
+  const comparatorSetOptions: SetOption[] = [...presetOptions, ...savedOptions];
 
-  const savedSet = readSetting(columns, setKey("rankings")) as RankingsSetId | undefined;
-  const comparisonsSet: RankingsSetId =
-    savedSet && comparatorSets[savedSet] !== undefined ? savedSet : comparatorSetOptions[0]?.id ?? "nearest";
+  const savedSet = readSetting(columns, setKey("rankings"));
+  const comparisonsSet: string =
+    savedSet && allComparatorSets[savedSet] !== undefined ? savedSet : comparatorSetOptions[0]?.id ?? "nearest";
+  const activeSavedSet = (savedSets?.sets ?? []).find((set) => savedSetKey(set.id) === comparisonsSet) ?? null;
+  const activeSetLabel = comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "Nearest 10 schools";
+
 
   // Round 7 §9: when a subject chip is active, every Comparisons view reads that
   // subject's real per-school figures instead of the whole-school headline. The data is
@@ -1150,11 +1196,13 @@ export default function TeacherPhaseDashboard() {
     const subj = focusItem.subject;
     const qual = qualificationShortLabel(phase, focusItem.qualificationType);
     const learners = phase === "ks5" ? "students" : "pupils";
-    const setLabel = (comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "nearest schools").toLowerCase();
+    // A saved set is a name someone chose, so a sentence quotes it rather than lower-casing
+    // it: "compares with the schools in "Grammar rivals"".
+    const setLabel = activeSavedSet ? `schools in "${activeSavedSet.name}"` : activeSetLabel.toLowerCase();
     // Round 2 §6: every set label already carries its own noun ("Nearest 10 schools",
     // "Similar-sized sixth forms", "Local rivals"), so nothing is appended to it -- the
     // guard only adds "schools" if a future label arrives without one.
-    const setNoun = /(schools|sixth forms|rivals)$/.test(setLabel) ? setLabel : `${setLabel} schools`;
+    const setNoun = activeSavedSet || /(schools|sixth forms|rivals)$/.test(setLabel) ? setLabel : `${setLabel} schools`;
     return {
       // Round 2 §2-§3: the title already names the subject, so the sentence says "this
       // subject" / "this GCSE" rather than repeating it. Candidates keeps the qualification
@@ -1502,10 +1550,23 @@ export default function TeacherPhaseDashboard() {
             setId={comparisonsSet}
             setOptions={comparatorSetOptions}
             onSetChange={(id) => setColumnSetting(setKey("rankings"), id)}
-            setLabel={comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "the nearest schools"}
+            setLabel={activeSetLabel}
             setNote={comparatorSetNote}
-            schools={comparatorSets[comparisonsSet] ?? []}
-            seriesByUrn={activeMapChip ? comparatorSubjectSeries : seriesByUrn}
+            schools={allComparatorSets[comparisonsSet] ?? []}
+            seriesByUrn={activeMapChip ? comparatorSubjectSeries : { ...seriesByUrn, ...(savedSets?.seriesByUrn ?? {}) }}
+            // Part 3: "Choose schools…" / "Edit" open the chooser. A new set starts from
+            // whichever set is selected now.
+            onManageSet={(id) => {
+              if (!savedSets) return;
+              const editing = id ? savedSets.sets.find((set) => savedSetKey(set.id) === id) ?? null : null;
+              setChooser({
+                editing,
+                startingFrom: editing
+                  ? null
+                  : { label: activeSetLabel, urns: (allComparatorSets[comparisonsSet] ?? []).filter((r) => !r.isTarget).map((r) => r.urn) },
+              });
+            }}
+            personalSetsNote={savedSets ? `${savedSets.personalCount} / ${savedSets.cap}` : undefined}
             subjectLabel={activeMapChip?.legend ?? null}
             seriesLoading={!!activeMapChip && mapProfiles === null}
             measure={comparisonsMeasure}
@@ -1516,7 +1577,11 @@ export default function TeacherPhaseDashboard() {
             onMapRank={setMapRank}
             emptyText={comparatorEmptyText}
             targetName={schoolName ?? "This school"}
-            currentLabel={`${showingResults ? "Results" : "Candidates"} at the ${titleCase(comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "nearest schools")}`}
+            currentLabel={
+              activeSavedSet
+                ? `${showingResults ? "Results" : "Candidates"} against ${activeSavedSet.name}`
+                : `${showingResults ? "Results" : "Candidates"} at the ${titleCase(activeSetLabel)}`
+            }
           />
         </DashboardColumn>
       </DashboardGrid>
@@ -1604,6 +1669,24 @@ export default function TeacherPhaseDashboard() {
             );
           })()}
         </TeacherModal>
+      )}
+      {chooser && savedSets && schoolUrn && (
+        <ComparatorSetChooser
+          payload={savedSets}
+          editing={chooser.editing}
+          startingFrom={chooser.startingFrom}
+          targetUrn={schoolUrn}
+          targetName={schoolName ?? "this school"}
+          onClose={() => setChooser(null)}
+          onSaved={async (id) => {
+            setChooser(null);
+            await reloadSavedSets();
+            // A saved set becomes the one Comparisons reads; a deleted one that was
+            // selected falls back to the first preset.
+            if (id) await setColumnSetting(setKey("rankings"), savedSetKey(id));
+            else if (activeSavedSet && activeSavedSet.id === chooser.editing?.id) await setColumnSetting(setKey("rankings"), null);
+          }}
+        />
       )}
     </main>
   );

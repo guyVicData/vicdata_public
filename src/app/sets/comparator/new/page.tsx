@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { PERSONAL_COMPARATOR_CAP } from "@/lib/teacher-view-saved-sets";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 type Candidate = {
@@ -164,19 +165,21 @@ function ComparatorSetBuilder() {
     );
   }
 
-  const atCap = personalSetCount !== null && personalSetCount >= 3;
+  // The cap is shared with Teacher view's comparator chooser (raised 3 -> 8 by the
+  // 20260925232857 migration), so both read the one constant.
+  const atCap = personalSetCount !== null && personalSetCount >= PERSONAL_COMPARATOR_CAP;
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="mb-2 text-xl font-semibold">Build a Comparator Set</h1>
       {personalSetCount !== null && (
         <p className="mb-4 text-sm text-neutral-500">
-          {personalSetCount} / 3 personal sets used.
+          {personalSetCount} / {PERSONAL_COMPARATOR_CAP} personal sets used.
         </p>
       )}
       {atCap && (
         <p className="mb-4 rounded-md border border-neutral-300 p-3 text-sm dark:border-neutral-700">
-          You&rsquo;ve reached your personal cap of 3 sets. Delete one from your account
+          You&rsquo;ve reached your personal cap of {PERSONAL_COMPARATOR_CAP} sets. Delete one from your account
           page, or save this as a shared set instead (not built in this view yet).
         </p>
       )}

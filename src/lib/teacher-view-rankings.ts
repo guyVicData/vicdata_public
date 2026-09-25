@@ -137,7 +137,9 @@ export function rankOf(rows: RankedSchool[], urn: string): { position: number; o
 
 export type RankingsSetId = "nearest" | "same_sector" | "local_rivals" | "similar_size";
 
-export type PoolSchool = { urn: string; name: string; distanceKm: number | null; independent: boolean };
+// `laName` (accordion round Part 3): the school's local authority, for the comparator
+// chooser's grouping. Optional -- nothing that builds a set reads it.
+export type PoolSchool = { urn: string; name: string; distanceKm: number | null; independent: boolean; laName?: string | null };
 
 // The sector split every existing recipe uses: feeder_candidates partitions on exactly
 // this equality, and the comparator builder's sector filter tests it the same way.

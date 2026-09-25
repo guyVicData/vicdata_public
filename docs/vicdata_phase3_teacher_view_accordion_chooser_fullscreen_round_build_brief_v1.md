@@ -30,3 +30,11 @@ Guy's message named three things: "the new graph/table views," "the subject pick
 ## Review plan for tomorrow
 
 One end-to-end live walkthrough covering all three rounds now on `main` plus whatever lands from this prompt: content round S1-S12, round 2, Trend & % Change, and this round's bug fix / accordion / chooser / full screen. Answer the open lettered decisions from all three build reports as they come up, rather than in advance.
+
+## This is tonight's last round
+
+Guy's words: "let's make this the final round tonight." Nothing else gets briefed or built tonight after this prompt — the next step is tomorrow's single end-to-end live walkthrough (see "Review plan for tomorrow" above), not another round.
+
+For the avoidance of doubt, given how much ground this evening covered: the Trend & % Change redesign — "the new graph/table views" Guy asked about by name — is fully accounted for and needs no further code tonight. Its own live review is written up in full: `vicdata_phase3_teacher_view_trend_pct_change_redesign_live_review_v1.md`. Short version — Candidates, Context and Comparisons (in fullscreen) all confirmed matching spec; Results confirmed untouched; all six of its judgement calls (§D1-§D6) are answered, including §D2 ("lose group average line," this evening's answer); its one real bug (the Comparisons card-view chart collapsing to zero height) is Part 1 of this prompt, not a separate ask. So that round contributes exactly one thing to tonight's build — the Part 1 bug fix — and otherwise stands as shipped and reviewed.
+
+That means tonight's actual scope is precisely the four parts in the prompt: the bug fix, the accordion, the chooser first draft, and full screen first draft. Everything else that came up along the way — the content round's own §D1-§D7, round 2's own §D1-§D5 — is confirmed-as-built-no-change-needed or explicitly deferred to tomorrow's live walkthrough, not waiting on tonight's build.

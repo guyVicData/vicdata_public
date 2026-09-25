@@ -65,6 +65,16 @@ export type MapChip = {
   familyId: string | null;
 };
 
+// One "Compared against" choice. `group` (accordion round Part 3) places it in the pill's
+// menu: the algorithmic presets, the teacher's own saved sets, or the school's shared ones.
+export type SetOption = {
+  id: string;
+  label: string;
+  group?: "preset" | "mine" | "shared";
+  meta?: string;
+  editable?: boolean;
+};
+
 export type ComparatorSchool = { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean };
 export type SchoolSeries = { results: { period: number; value: number }[]; candidates: { period: number; value: number }[] };
 
@@ -107,6 +117,8 @@ export function ComparisonsPanels({
   emptyText,
   targetName,
   currentLabel,
+  onManageSet,
+  personalSetsNote,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -116,7 +128,7 @@ export function ComparisonsPanels({
   source: (span?: string) => ReactNode;
   headlineLabel: string;
   setId: string;
-  setOptions: { id: string; label: string }[];
+  setOptions: SetOption[];
   onSetChange: (id: string) => void;
   setLabel: string;
   // The set's own caveat, where it has one ("Independent schools only").
@@ -143,6 +155,10 @@ export function ComparisonsPanels({
   // S11: the Current tag names what is compared and against whom, e.g. "Candidates at the
   // Nearest 10 Schools 2024/25" -- built by the page from the live set label.
   currentLabel: string;
+  // Part 3: open the comparator chooser -- a set's id to edit it, null for a new set.
+  onManageSet?: (setId: string | null) => void;
+  // "2 / 8": personal sets used, for the "Your sets" heading.
+  personalSetsNote?: string;
 }) {
   // Ranking is the default view (§4.3), even though Graph comes first in the icon row.
   const [view, setView] = useState<"graph" | "map" | "ranking">("ranking");
@@ -527,12 +543,48 @@ export function ComparisonsPanels({
         <div className="flex flex-col items-start gap-1.5">
           {/* The same PillMenu Context uses, so round 7 §8's "matching Comparisons'
               pattern exactly" is one component rather than two lookalikes. */}
-          <PillMenu label="Compared against" value={setLabel} menuLabel="Compared against">
-            {(close) =>
-              setOptions.map((o) => (
-                <MenuRow key={o.id} label={o.label} selected={o.id === setId} onClick={() => { changeSet(o.id); close(); }} />
-              ))
-            }
+          <PillMenu label="Compared against" value={setLabel} menuLabel="Compared against" width={260}>
+            {(close) => {
+              // Part 3: the wireframe's three groups -- starting points, your sets, the
+              // school's sets -- and a way into the chooser at the bottom.
+              const row = (o: SetOption) => (
+                <div key={o.id} className="flex items-center gap-1">
+                  <div className="min-w-0 flex-grow">
+                    <MenuRow label={o.meta ? `${o.label} · ${o.meta}` : o.label} selected={o.id === setId} onClick={() => { changeSet(o.id); close(); }} />
+                  </div>
+                  {o.editable && onManageSet && (
+                    <button
+                      type="button"
+                      onClick={() => { onManageSet(o.id); close(); }}
+                      className="shrink-0 rounded-md px-1.5 py-1 text-[11.5px] font-semibold text-[var(--accent,var(--fg))] hover:underline"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+              );
+              const mine = setOptions.filter((o) => o.group === "mine");
+              const shared = setOptions.filter((o) => o.group === "shared");
+              return (
+                <>
+                  <MenuHeading>Starting points</MenuHeading>
+                  {setOptions.filter((o) => !o.group || o.group === "preset").map(row)}
+                  {onManageSet && (
+                    <>
+                      <MenuHeading>Your sets{personalSetsNote ? ` (${personalSetsNote})` : ""}</MenuHeading>
+                      {mine.length ? mine.map(row) : <p className="px-2.5 py-1 text-[12px] italic text-[var(--muted3)]">None yet</p>}
+                      {shared.length > 0 && (
+                        <>
+                          <MenuHeading>School&rsquo;s sets</MenuHeading>
+                          {shared.map(row)}
+                        </>
+                      )}
+                      <MenuRow label="Choose schools…" onClick={() => { onManageSet(null); close(); }} />
+                    </>
+                  )}
+                </>
+              );
+            }}
           </PillMenu>
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
