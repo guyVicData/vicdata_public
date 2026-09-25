@@ -20,6 +20,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
 import { SourceNote } from "./PanelFooter";
+import { ChevronDown } from "./PanelIcons";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
 // ColumnBuilder -- is fullscreen, without threading a callback through every level. The
@@ -41,7 +42,15 @@ export const FullscreenReport = createContext<(open: boolean) => void>(() => {})
 // 394 is ambiguous between the two, since its panel and its column head are both 394. The
 // taller reading leaves a usable chart area; flagged in the build report as the judgement
 // §7 asked to have made explicitly rather than silently.
-export const PANEL_HEIGHT = 256;
+//
+// Content round S10 lowered it from 256px to 224px. The new sizing target is vertical:
+// two panels open plus one collapsed bar should fit a laptop viewport without scrolling.
+// Summed at 256px -- page padding, nav, control bar, column header and pills, two panels,
+// one ~42px bar -- the column ran to about 860px, over a typical ~800px laptop viewport;
+// at 224px it is about 800px. S12 moved the Trend sentence out of the panel body into
+// the footer, which gives back most of the chart height this takes away. Three open is
+// allowed to scroll, as agreed.
+export const PANEL_HEIGHT = 224;
 
 export function CardBox({
   title,
@@ -55,6 +64,9 @@ export function CardBox({
   source,
   footerActions,
   fixedHeight = false,
+  collapsed = false,
+  onExpand,
+  headline,
   children,
 }: {
   title: string;
@@ -98,6 +110,11 @@ export function CardBox({
   // grid rather than three ragged stacks. Absent = size to content, which is what the KS2
   // boxes and any non-panel caller still want.
   fixedHeight?: boolean;
+  // Content round S10: a collapsed panel is one header bar -- its title, its headline
+  // figure, and a chevron to open it -- and nothing else. The whole bar is the button.
+  collapsed?: boolean;
+  onExpand?: () => void;
+  headline?: ReactNode;
   // Called twice while fullscreen is open -- once for the box underneath, once for the
   // modal -- so it must be safe to mount two copies (the map is: each instance owns its
   // own Leaflet map).
@@ -138,6 +155,22 @@ export function CardBox({
 
   // Escape, backdrop click, scroll lock and focus live in TeacherModal, shared with the
   // dashboard's subject picker.
+
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-expanded={false}
+        aria-label={`Open: ${title}`}
+        className="mt-3 flex w-full items-center gap-2 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] px-3 py-2.5 text-left hover:border-[var(--panel-border2)] print:hidden"
+      >
+        <span className="min-w-0 flex-grow truncate text-[13px] font-semibold text-[var(--muted2)]">{title}</span>
+        {headline && <span className="shrink-0 text-[13px] font-bold tabular-nums text-[var(--fg)]">{headline}</span>}
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-[var(--muted3)]">{ChevronDown}</span>
+      </button>
+    );
+  }
 
   const header = (isModal: boolean) => (
     <div className="flex items-start justify-between gap-2">

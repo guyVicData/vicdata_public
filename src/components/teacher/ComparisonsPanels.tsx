@@ -300,6 +300,8 @@ export function ComparisonsPanels({
       </PanelSummary>
     ),
     source: source(),
+    // S10: the collapsed bar's figure -- where the school sits in the set.
+    headline: seriesLoading || !shownRank ? undefined : `${shownRank.rank} of ${shownRank.total}`,
   };
 
   // ------------------------------------------------- the "vs:" selector (§4.3)
@@ -390,6 +392,11 @@ export function ComparisonsPanels({
       <PanelSummary>Not enough published years yet to describe a trend for this school.</PanelSummary>
     ),
     source: source(spanLabel(trendData.periods)),
+    headline: seriesLoading || !trendSaid ? undefined : (
+      <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
+        {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
+      </span>
+    ),
   };
 
   // ---------------------------------------------------------------- % change
@@ -435,6 +442,7 @@ export function ComparisonsPanels({
         </PanelSummary>
       ),
     source: source(spanLabel(changeData.periods)),
+    headline: seriesLoading ? undefined : ownPct === null || ownPct === undefined ? undefined : `${ownPct >= 0 ? "+" : "−"}${Math.abs(Math.round(ownPct))}%`,
   };
 
   return (

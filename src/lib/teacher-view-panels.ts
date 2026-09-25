@@ -16,11 +16,16 @@ import type { TeacherPhase } from "./teacher-view-phases";
 
 export type PanelId = "current" | "trend" | "change";
 
-// Render order on the card, and the order the Add picker offers them in -- the
-// wireframe's own order (Main.dc.html), not alphabetical.
+// Render order on the card -- the wireframe's own order (Main.dc.html), not alphabetical.
 export const PANEL_ORDER: readonly PanelId[] = ["current", "trend", "change"] as const;
 
-// A column nobody has touched shows Current alone. Deliberately the SAME shape
+// Content round S10: every column always has all three panels, each independently OPEN or
+// collapsed to a header bar ("so teacher builds complexity"). What is stored per column is
+// the set of OPEN panels -- the same key and the same list the Add/remove mechanism
+// stored as the set of PRESENT panels, which is what makes the change safe for saved
+// state: anything someone had added comes back open, and nothing they kept disappears.
+//
+// A column nobody has touched opens Current alone. Deliberately the SAME shape
 // resetColumn already uses (the column's key absent from `columns`), so "never
 // customised" and "reset" stay one state rather than drifting into two -- see
 // teacher-view-data.ts's own note on that.
@@ -30,27 +35,17 @@ export function isPanelId(value: string): value is PanelId {
   return (PANEL_ORDER as readonly string[]).includes(value);
 }
 
-// The panels a column is currently showing, in PANEL_ORDER. Anything saved that is not a
-// panel id is ignored rather than rendered -- and an empty result falls back to the
-// default, so a column can never come back from the database with nothing on it.
+// The panels a column has OPEN, in PANEL_ORDER. Anything saved that is not a panel id is
+// ignored. Absent = the default. An empty list is now a real state -- every panel
+// collapsed -- where under Add/remove it could not arise.
 export function panelsFrom(saved: string[] | undefined): PanelId[] {
-  const kept = PANEL_ORDER.filter((p) => saved?.includes(p));
-  return kept.length ? kept : [...DEFAULT_PANELS];
+  if (!saved) return [...DEFAULT_PANELS];
+  return PANEL_ORDER.filter((p) => saved.includes(p));
 }
 
-// §3: the remove control is disabled, never hidden, once it is the only panel left.
-// Expressed here rather than in each column so all four can only ever agree.
-export function canRemovePanel(panels: PanelId[]): boolean {
-  return panels.length > 1;
-}
-
-export function addPanel(panels: PanelId[], id: PanelId): PanelId[] {
-  return PANEL_ORDER.filter((p) => p === id || panels.includes(p));
-}
-
-export function removePanel(panels: PanelId[], id: PanelId): PanelId[] {
-  if (!canRemovePanel(panels)) return panels;
-  return panels.filter((p) => p !== id);
+// Open a collapsed panel or collapse an open one; the others are untouched.
+export function togglePanel(open: PanelId[], id: PanelId): PanelId[] {
+  return open.includes(id) ? open.filter((p) => p !== id) : PANEL_ORDER.filter((p) => p === id || open.includes(p));
 }
 
 // --------------------------------------------------------------- the measures
@@ -64,7 +59,7 @@ export type MeasureId = "entries" | "points" | "threshold";
 export type Measure = {
   id: MeasureId;
   label: string;
-  // How the column's own "% change in {…}" Add row reads.
+  // "% change in average point score" -- the measure's own change phrase.
   changeLabel: string;
   format: (value: number) => string;
   // Deltas carry their own unit: a point score differs by points, a rate by percentage

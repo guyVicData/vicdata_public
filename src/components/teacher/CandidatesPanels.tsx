@@ -181,6 +181,11 @@ export function CandidatesPanels({
       <PanelSummary>{biggest.label} is the only subject with a published entry count this year ({measure.format(biggest.value!)}).</PanelSummary>
     ) : undefined,
     source: source(),
+    // S10: the collapsed bar's figure -- the focused subject's candidates this year.
+    headline: (() => {
+      const v = focused && latest !== null ? valueAt(focused, latest) : null;
+      return v === null ? undefined : measure.format(v);
+    })(),
   };
 
   // -------------------------------------------------------------------- Trend
@@ -217,6 +222,11 @@ export function CandidatesPanels({
       <PanelSummary>Not enough published years yet to describe a trend.</PanelSummary>
     ),
     source: source(spanLabel(trendData)),
+    headline: trendSaid ? (
+      <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
+        {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
+      </span>
+    ) : undefined,
   };
 
   // ---------------------------------------------------------------- % change
@@ -257,6 +267,10 @@ export function CandidatesPanels({
         <PanelSummary>Not enough published years yet to compare subjects on change.</PanelSummary>
       ),
     source: source(spanLabel(changeData)),
+    headline: (() => {
+      const p = changeBars.find((b) => b.key === focused?.key)?.percent ?? null;
+      return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;
+    })(),
   };
 
   // KS2 never reaches here: it has no subject picker, so there is nothing to plot per

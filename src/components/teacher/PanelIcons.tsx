@@ -28,42 +28,6 @@ function Glyph({ children, fill = false, size = 15 }: { children: ReactNode; fil
   );
 }
 
-// Add picker rows, in the wireframe's own order.
-export const PANEL_PICKER_ICONS = {
-  current: (
-    <Glyph size={16}>
-      <rect x="3" y="4" width="14" height="12" rx="2" />
-      <line x1="3" y1="8" x2="17" y2="8" />
-    </Glyph>
-  ),
-  trend: (
-    <Glyph size={16}>
-      <polyline points="2,15 7,10.5 11,12.5 18,4" />
-      <circle cx="18" cy="4" r="1.3" fill="currentColor" stroke="none" />
-    </Glyph>
-  ),
-  change: (
-    <Glyph size={16}>
-      <line x1="4" y1="16" x2="16" y2="4" />
-      <polyline points="8,4 16,4 16,12" />
-    </Glyph>
-  ),
-} as const;
-
-export const PlusIcon = (
-  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <line x1="10" y1="3" x2="10" y2="17" />
-    <line x1="3" y1="10" x2="17" y2="10" />
-  </svg>
-);
-
-export const RemoveIcon = (
-  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-    <line x1="4" y1="4" x2="16" y2="16" />
-    <line x1="16" y1="4" x2="4" y2="16" />
-  </svg>
-);
-
 export const ChevronDown = (
   <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <polyline points="5,8 10,13 15,8" />

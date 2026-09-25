@@ -1,30 +1,27 @@
 "use client";
 
-// Teacher view, round 6: the card mechanism (brief §3, §6.6).
+// Teacher view, round 6: the card mechanism (brief §3, §6.6). Content round S10 replaced
+// its Add/remove pair with an open/shut toggle per panel.
 //
-// This replaces ColumnBuilder. Round 5's shape was "one hardcoded default box that could
-// not be removed, plus a tick-list of per-subject AXES views pinned beside it"; round 6's
-// is three peers -- Current, Trend, % change -- any two of which can go, leaving whichever
-// one the person kept. §6.6 settled that the axis tick-list is REPLACED rather than kept
-// alongside, so there is no second add gesture here and no dormant copy of the old one.
-//
-// Three rules this component owns, so no column can implement them differently:
-//   1. PANEL_ORDER is the render order, whatever order they were added in.
-//   2. Add offers exactly the panels that are currently missing, and disappears when all
-//      three are showing -- there is nothing left to add.
-//   3. The remove control is always present and becomes DISABLED, not hidden, on the last
-//      panel. §3 is explicit: "visibly present but greyed, so it's clear why it won't
-//      respond". A hidden control reads as a missing feature; a greyed one reads as a
-//      floor, which is what it is.
+// Rules this component owns, so no column can implement them differently:
+//   1. PANEL_ORDER is the render order, and all three panels are always there -- there is
+//      nothing to add back, so there is no "+ Add" and no remove "x".
+//   2. Each panel opens and collapses on its own; more than one can be open (not a
+//      single-open accordion). A collapsed panel is a one-line header bar carrying the
+//      panel's own headline figure, not a bare title.
+//   3. The open set is what the page persists, under the key the present set used to use
+//      -- see panelsFrom for why that keeps everyone's saved panels.
 //
 // Each column supplies its own panel contents through `render`; this file knows nothing
 // about measures, subjects or schools.
 import type { ReactNode } from "react";
 import { CardBox } from "./CardBox";
-import { ADD_LABEL } from "./AddPanelButton";
-import { IconButton, RemoveIcon } from "./PanelIcons";
+import { ChevronDown, IconButton } from "./PanelIcons";
 import { PanelExport, PanelNote } from "./PanelFooter";
-import { PANEL_ORDER, canRemovePanel, removePanel, type PanelId } from "@/lib/teacher-view-panels";
+import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
+
+// What each panel is called in its toggle's label.
+const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends", change: "% change" };
 
 // Round 8 §6: one private note per person per panel. The page owns the school and the
 // Supabase client, so it supplies the reader and the writer and this only routes them.
@@ -49,6 +46,10 @@ export type PanelRender = {
   body: (fullscreen: boolean) => ReactNode;
   summary?: ReactNode;
   source?: ReactNode;
+  // S10: the figure a COLLAPSED panel shows in its header bar -- the panel's own lead
+  // value (the focused subject's figure, the trend's direction, its % change), reused
+  // rather than computed again for the bar.
+  headline?: ReactNode;
 };
 
 export function ColumnPanels({
@@ -63,26 +64,28 @@ export function ColumnPanels({
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
   // The column's own data controls -- Results' measure pill, Context's and Comparisons'
-  // two pills each. They sit under the card header, above the panels; Add itself now
-  // lives in that header (round 7 §1, AddPanelButton).
+  // pills. They sit under the card header, above the panels.
   controls?: ReactNode;
   // Round 8 §6: the private note, one per person per PANEL. Owned by the page, which holds
   // the school and the Supabase client; this just gives each panel its own slot.
   notes?: PanelNotes;
   render: Partial<Record<PanelId, PanelRender>>;
 }) {
-  const removable = canRemovePanel(panels);
-
   return (
     <div>
       {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
 
-      {PANEL_ORDER.filter((p) => panels.includes(p)).map((id) => {
+      {PANEL_ORDER.map((id) => {
         const panel = render[id];
         if (!panel) return null;
+        const open = panels.includes(id);
+        const toggle = () => onPanelsChange(togglePanel(panels, id));
         return (
           <CardBox
             key={`${columnId}-${id}`}
+            collapsed={!open}
+            onExpand={toggle}
+            headline={panel.headline}
             title={panel.tag}
             question={panel.question}
             tag={
@@ -97,16 +100,8 @@ export function ColumnPanels({
             }
             actions={panel.actions}
             trailingActions={
-              <IconButton
-                label={
-                  removable
-                    ? `Remove the ${ADD_LABEL[id].toLowerCase()} view`
-                    : `Cannot remove the ${ADD_LABEL[id].toLowerCase()} view — a card always keeps at least one`
-                }
-                disabled={!removable}
-                onClick={() => onPanelsChange(removePanel(panels, id))}
-              >
-                {RemoveIcon}
+              <IconButton label={`Collapse ${PANEL_NAME[id]}`} onClick={toggle}>
+                <span className="flex rotate-180">{ChevronDown}</span>
               </IconButton>
             }
             controls={panel.controls}

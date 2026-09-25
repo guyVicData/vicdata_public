@@ -20,7 +20,6 @@ import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
-import { AddPanelButton } from "@/components/teacher/AddPanelButton";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
@@ -1184,15 +1183,6 @@ export default function TeacherPhaseDashboard() {
           title={showingResults ? COLUMN_TITLE.results : COLUMN_TITLE.candidates}
           question={showingResults ? q.howWell : q.howMany}
           accented={!!accent}
-          action={
-            phase === "ks2" || tickedItems.length === 0 ? undefined : (
-              <AddPanelButton
-                panels={panelsOf(COL1)}
-                onPanelsChange={(next) => setPanels(COL1, next)}
-                changeLabel={(showingResults ? resultsMeasure : ENTRIES_MEASURE).changeLabel}
-              />
-            )
-          }
           // §13's "NEW pill wherever something's actually changed" -- on the measure the
           // new data actually lands in, so it follows the toggle rather than sitting on a
           // column currently showing candidate counts.
@@ -1330,15 +1320,6 @@ export default function TeacherPhaseDashboard() {
           title={COLUMN_TITLE.context}
           question={q.nearMe}
           accented={!!accent}
-          action={
-            phase === "ks2" || tickedItems.length === 0 ? undefined : (
-              <AddPanelButton
-                panels={panelsOf("context")}
-                onPanelsChange={(next) => setPanels("context", next)}
-                changeLabel={contextMeasure.changeLabel}
-              />
-            )
-          }
         >
           {phase === "ks2" ? (
             <CardBox title={defaultBoxTitle("context", phase)} question={q.nearMe}>
@@ -1421,13 +1402,6 @@ export default function TeacherPhaseDashboard() {
           title={COLUMN_TITLE.rankings}
           question={q.wider}
           accented={!!accent}
-          action={
-            <AddPanelButton
-              panels={panelsOf("rankings")}
-              onPanelsChange={(next) => setPanels("rankings", next)}
-              changeLabel={comparisonsMeasure.changeLabel}
-            />
-          }
         >
           <ComparisonsPanels
             phase={phase}

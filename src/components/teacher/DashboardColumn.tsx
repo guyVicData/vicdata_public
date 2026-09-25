@@ -65,9 +65,8 @@ export function DashboardColumn({
   question: string;
   accented: boolean;
   badge?: ReactNode;
-  // The column's "+ Add" control. Rendered here so the header is genuinely one row --
-  // it belongs to the panel mechanism, so the page passes it down rather than this
-  // component knowing anything about panels.
+  // An optional control at the right of the header row. It held "+ Add" until content
+  // round S10 replaced Add/remove with per-panel open/shut; nothing passes one today.
   action?: ReactNode;
   children: ReactNode;
 }) {

@@ -300,6 +300,11 @@ export function SubjectPanels({
         )
       ) : undefined,
     source: source(),
+    // S10: the collapsed bar's figure -- the focused subject's own value this year.
+    headline: (() => {
+      const v = focusedSubject && latestIdx >= 0 ? focusedSubject.values[latestIdx] : null;
+      return v === null ? undefined : measure.format(v);
+    })(),
   };
 
   // ----------------------------------------------------------------- Trend
@@ -362,6 +367,11 @@ export function SubjectPanels({
       <PanelSummary>Not enough published years yet to describe a trend.</PanelSummary>
     ),
     source: source(spanLabel(trendData.periods)),
+    headline: trendSaid ? (
+      <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
+        {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
+      </span>
+    ) : undefined,
   };
 
   // -------------------------------------------------------------- % change
@@ -419,6 +429,10 @@ export function SubjectPanels({
         <PanelSummary>Not enough published years yet to compare on change.</PanelSummary>
       ),
     source: source(spanLabel(changeData.periods)),
+    headline: (() => {
+      const p = changeBars.find((b) => b.key === focusedSubject?.key)?.percent ?? null;
+      return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;
+    })(),
   };
 
   return (
