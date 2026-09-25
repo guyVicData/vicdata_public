@@ -31,7 +31,8 @@ import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { IconButton, RankListIcon, VerticalBarsIcon } from "./PanelIcons";
-import { TrendChart } from "./TrendChart";
+import { MultiTrend } from "./SeriesViews";
+import { FOCUS_COLOUR, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { VerticalBars } from "./VerticalBars";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
@@ -40,7 +41,8 @@ import { VerticalBars } from "./VerticalBars";
 // dfe_ks4_subject_entries facts, which only go back to 2023/24 (deliberately: the older
 // sibling source's labels are ambiguous), and that short run was the whole reason
 // Candidates' Trend and From menu stopped at 2023/24 while Context's went back to 2020/21.
-export type CandidateSubject = { key: string; subject: string; label: string; colour: string; values: (number | null)[] };
+// No colour: the redesign tints subjects here, in Current's order (step 2).
+export type CandidateSubject = { key: string; subject: string; label: string; values: (number | null)[] };
 
 // The summary sentences name the direction in colour, matching the wireframe: teal for
 // growth, amber for decline, muted for flat. Same two tones the delta badges use.
@@ -92,7 +94,17 @@ export function CandidatesPanels({
 
   const valueAt = (s: CandidateSubject, period: number): number | null => s.values[periods.indexOf(period)] ?? null;
 
-  const subjectSeries = subjects.map((s) => ({ key: s.key, label: s.label, colour: s.colour, values: s.values }));
+  // Trend redesign step 2: one colour per subject for every view -- greys in Current's own
+  // order (largest this year first, lightest grey first), the focused subject in the
+  // accent. Worked out once here so Current, Trend and % Change cannot disagree.
+  const latestPeriod = periods.length ? periods[periods.length - 1] : null;
+  const currentOrder = [...subjects].sort(
+    (a, b) => ((latestPeriod === null ? null : valueAt(b, latestPeriod)) ?? -Infinity) - ((latestPeriod === null ? null : valueAt(a, latestPeriod)) ?? -Infinity),
+  );
+  const tints = tintInOrder(currentOrder.map((s) => s.key), focus ?? subjects[0]?.key ?? null, FOCUS_COLOUR);
+  const colourOf = (key: string) => tints.get(key) ?? "var(--muted3)";
+
+  const subjectSeries = currentOrder.map((s) => ({ key: s.key, label: s.label, colour: colourOf(s.key), values: s.values }));
 
   const focused = subjects.find((s) => s.key === focus) ?? subjects[0];
   // Self-inclusive, per subject -- a category "average" of candidate numbers is what one
@@ -101,18 +113,15 @@ export function CandidatesPanels({
     groupLabel && subjects.length > 1
       ? { key: "group", label: groupLabel, colour: "var(--muted3)", values: periods.map((_, i) => meanOf(subjectSeries.map((s) => s.values[i]))) }
       : null;
-  const focusSeries: PanelData = trimToData({
-    periods,
-    series: [
-      ...(focused
-        ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: subjectSeries.find((s) => s.key === focused.key)!.values }]
-        : []),
-      ...(group ? [{ ...group, comparison: true }] : []),
-    ],
-  });
+  // Steps 2, 4, 5: Trend draws EVERY subject in the category individually -- the same
+  // series % change already used -- not the focused subject against one category-average
+  // line. MultiTrend picks the form: Option B under four real years, Option D2 (each
+  // subject indexed to its own first year) from four.
+  const trendFull: PanelData = trimToData({ periods, series: subjectSeries });
 
-  const trendPeriods = periodsWithData(focusSeries);
-  const trendData = sliceFrom(focusSeries, trendStart);
+  const trendPeriods = periodsWithData(trendFull);
+  const trendData = sliceFrom(trendFull, trendStart);
+  const trendFocusData = trendData.series.find((s) => s.key === focused?.key);
   const changeFull = trimToData({ periods, series: [...subjectSeries, ...(group ? [{ ...group, colour: "#57534e" }] : [])] });
   const changeData = sliceFrom(changeFull, changeStart);
   const changePeriods = periodsWithData(changeFull);
@@ -145,7 +154,7 @@ export function CandidatesPanels({
         <p className="text-sm text-[var(--muted)]">Pick a subject to see its entries.</p>
       ) : view === "bars" ? (
         <VerticalBars
-          bars={currentRows.map((r) => ({ key: r.key, label: r.label, shortLabel: shortLabel(r.subject), value: r.value, colour: r.colour }))}
+          bars={currentRows.map((r) => ({ key: r.key, label: r.label, shortLabel: shortLabel(r.subject), value: r.value, colour: colourOf(r.key) }))}
           measure={measure}
           fullscreen={fullscreen}
         />
@@ -177,7 +186,7 @@ export function CandidatesPanels({
   };
 
   // -------------------------------------------------------------------- Trend
-  const trendFocusValues = trendData.series[0]?.values ?? [];
+  const trendFocusValues = trendFocusData?.values ?? [];
   const trendSaid = trendSentence({
     subjectClause: `The number of ${focused?.label ?? ""} candidates`,
     values: trendFocusValues,
@@ -198,7 +207,9 @@ export function CandidatesPanels({
       </span>
     ) : undefined,
     footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} />,
-    body: (fullscreen) => <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />,
+    body: (fullscreen) => (
+      <MultiTrend data={trendData} measure={measure} focusKey={focused?.key ?? null} showFit={showFit} fullscreen={fullscreen} />
+    ),
     summary: trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>
         {trendSaid.sentence}

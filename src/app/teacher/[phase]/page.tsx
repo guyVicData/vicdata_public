@@ -1349,7 +1349,6 @@ export default function TeacherPhaseDashboard() {
                 key: i.key,
                 subject: i.subject,
                 label: phase === "ks4" ? i.subject : i.label,
-                colour: categoryColour(i),
                 values: categoryPeriods.map((p) => entriesAt(i, p)),
               }))}
               periods={categoryPeriods}

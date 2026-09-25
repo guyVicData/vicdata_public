@@ -63,14 +63,29 @@ export function TrendChart({
   measure,
   showFit = false,
   fullscreen = false,
+  focusKey,
+  reference,
+  band,
 }: {
   data: PanelData;
   measure: Measure;
   showFit?: boolean;
   fullscreen?: boolean;
+  // Trend redesign (D2/K): with many solid lines, which one is the focus -- drawn last and
+  // thickest, and the one the fit follows. Absent = the first non-comparison series, as
+  // before.
+  focusKey?: string;
+  // A dashed horizontal line: D2's index 100 ("no change since the first year shown").
+  reference?: { value: number; label: string };
+  // Option K's shaded min-max band for the series not drawn individually.
+  band?: { min: (number | null)[]; max: (number | null)[]; label: string };
 }) {
   const { periods, series } = data;
-  const all = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
+  const all = [
+    ...series.flatMap((s) => s.values),
+    ...(band ? [...band.min, ...band.max] : []),
+    ...(reference ? [reference.value] : []),
+  ].filter((v): v is number => v !== null);
   if (periods.length === 0 || all.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
   }
@@ -100,9 +115,24 @@ export function TrendChart({
   const xPercent = (i: number) => (periods.length > 1 ? (i / (periods.length - 1)) * 100 : 50);
 
   const show = labelledIndices(periods.length, fullscreen ? periods.length : 4);
-  // The focus line draws last so it sits above the dashed comparison line.
-  const ordered = [...series].sort((a, b) => Number(!!b.comparison) - Number(!!a.comparison));
-  const focus = series.find((s) => !s.comparison) ?? series[0];
+  // The focus line draws last so it sits above the dashed comparison line -- and, with a
+  // focusKey, above every other solid line too.
+  const focus = (focusKey ? series.find((s) => s.key === focusKey) : undefined) ?? series.find((s) => !s.comparison) ?? series[0];
+  const ordered = [...series].sort(
+    (a, b) => Number(!!b.comparison) - Number(!!a.comparison) || Number(a.key === focus.key) - Number(b.key === focus.key),
+  );
+  // With a named focus, the other solid lines are context and draw thinner.
+  const widthOf = (s: (typeof series)[number]) => (s.comparison ? 2 : focusKey && s.key !== focus.key ? 1.6 : 2.4);
+  const bandPoints = band
+    ? (() => {
+        const top = band.max.map((v, i) => (v === null ? null : `${xFor(i).toFixed(1)},${yFor(v).toFixed(1)}`)).filter(Boolean);
+        const bottom = band.min
+          .map((v, i) => (v === null ? null : `${xFor(i).toFixed(1)},${yFor(v).toFixed(1)}`))
+          .filter(Boolean)
+          .reverse();
+        return [...top, ...bottom].join(" ");
+      })()
+    : null;
   const fit = showFit ? leastSquares(focus.values) : null;
   // Round 8 §4: fill whatever vertical room the fixed-height panel leaves, rather than a
   // fixed 80px box. The SVG already stretches (preserveAspectRatio="none") and its axes are
@@ -140,6 +170,19 @@ export function TrendChart({
           <line x1="0" y1={TOP} x2={W} y2={TOP} stroke="var(--panel-border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           <line x1="0" y1={(TOP + BOTTOM) / 2} x2={W} y2={(TOP + BOTTOM) / 2} stroke="var(--panel-border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           <line x1="0" y1={BOTTOM} x2={W} y2={BOTTOM} stroke="var(--panel-border2)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          {bandPoints && <polygon points={bandPoints} fill="var(--muted3)" opacity="0.18" stroke="none" />}
+          {reference && (
+            <line
+              x1="0"
+              y1={yFor(reference.value)}
+              x2={W}
+              y2={yFor(reference.value)}
+              stroke="var(--muted2)"
+              strokeWidth="1"
+              strokeDasharray="2,3"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
           {ordered.map((s) =>
             runsOf(s.values).map((run, ri) =>
               run.length === 1 ? (
@@ -163,7 +206,7 @@ export function TrendChart({
                   points={run.map((p) => `${xFor(p.i).toFixed(1)},${yFor(p.v).toFixed(1)}`).join(" ")}
                   fill="none"
                   stroke={s.colour}
-                  strokeWidth={s.comparison ? 2 : 2.4}
+                  strokeWidth={widthOf(s)}
                   strokeDasharray={s.comparison ? "4,3" : undefined}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -211,10 +254,10 @@ export function TrendChart({
       </div>
       <p className="mt-3 pl-10 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]">Academic year</p>
 
-      {series.length > 1 && (
-        <div className="mt-2 flex flex-wrap gap-3.5 pl-10">
+      {(series.length > 1 || band || reference) && (
+        <div className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1 pl-10">
           {series.map((s) => (
-            <span key={s.key} className="flex items-center gap-1.5 text-[10.5px] text-[var(--muted)]">
+            <span key={s.key} className={`flex items-center gap-1.5 text-[10.5px] ${s.key === focus.key && focusKey ? "font-semibold text-[var(--fg)]" : "text-[var(--muted)]"}`}>
               <span
                 className="inline-block h-[2.5px] w-3 rounded-[1px]"
                 style={
@@ -226,6 +269,18 @@ export function TrendChart({
               {s.label}
             </span>
           ))}
+          {band && (
+            <span className="flex items-center gap-1.5 text-[10.5px] text-[var(--muted)]">
+              <span className="inline-block h-2 w-3 rounded-[1px] bg-[var(--muted3)] opacity-40" />
+              {band.label}
+            </span>
+          )}
+          {reference && (
+            <span className="flex items-center gap-1.5 text-[10.5px] text-[var(--muted)]">
+              <span className="inline-block h-px w-3 border-t border-dashed border-[var(--muted2)]" />
+              {reference.label}
+            </span>
+          )}
         </div>
       )}
     </div>
