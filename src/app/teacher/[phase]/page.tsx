@@ -81,6 +81,10 @@ export default function TeacherPhaseDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Set by the loader's own session check. The site NavBar is hidden on this route and
+  // TeacherNav only renders past the error screen, so a signed-out visitor needs a Login
+  // link on the error screen itself or they have no way to sign in from here.
+  const [signedOut, setSignedOut] = useState(false);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string | null>(null);
   const [entries, setEntries] = useState<SubjectEntry[]>([]);
@@ -152,7 +156,7 @@ export default function TeacherPhaseDashboard() {
       let loadedHeadline: AcademicSubjectHeadlineEntry[] = [];
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      if (!token) { setError("Sign in to see this dashboard."); setLoading(false); return; }
+      if (!token) { setSignedOut(true); setError("Sign in to see this dashboard."); setLoading(false); return; }
       const { data: membership } = await supabase
         .from("school_memberships")
         .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
@@ -364,6 +368,9 @@ export default function TeacherPhaseDashboard() {
     return (
       <main className="mx-auto max-w-4xl p-6">
         <p className="text-sm text-amber-700 dark:text-amber-400">{error ?? "Unknown phase."}</p>
+        {signedOut && (
+          <Link href="/login" className="mr-4 mt-3 inline-block text-sm text-blue-700 hover:underline dark:text-blue-400">Log in</Link>
+        )}
         <Link href="/teacher" className="mt-3 inline-block text-sm text-blue-700 hover:underline dark:text-blue-400">Back</Link>
       </main>
     );
