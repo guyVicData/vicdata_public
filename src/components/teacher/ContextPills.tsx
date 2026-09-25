@@ -17,32 +17,34 @@
 // own dimension, which the shared toggle does not answer: WHICH GROUP the subject is being
 // read against.
 //
-// §6.1's decision is unchanged: three compare-against options, with category-vs-category
-// still deferred because it compares subject GROUPS rather than a subject to a group.
+// Content round S8: two compare-against options, Whole school and Selected subjects. The
+// third, "Other subjects in <category>", moved to Column 1, which now always reads the
+// focused subject against its own category (S6) -- so offering it here too would have been
+// the same comparison in two places.
 import { MenuHeading, MenuRow } from "./PanelMenu";
 import { PillMenu } from "./PillMenu";
 
-export type CompareAgainstId = "whole" | "area" | "selected";
+export type CompareAgainstId = "whole" | "selected";
 
 export function ContextPills({
   against,
   onAgainst,
-  areaLabel,
   allSubjects,
   selected,
   onToggleSelected,
+  onSetSelected,
 }: {
   against: CompareAgainstId;
   onAgainst: (id: CompareAgainstId) => void;
-  // The real subject family of the subject currently in focus, so the row reads
-  // "Other subjects in Humanities & Social Sciences" rather than a placeholder.
-  areaLabel: string | null;
+  // Only subjects with real entries at this school -- the caller filters, so the list can
+  // never offer a subject there is nothing behind.
   allSubjects: { key: string; label: string; colour: string }[];
   selected: string[];
   onToggleSelected: (key: string) => void;
+  // S8: select-all / clear-all, one write rather than one per subject.
+  onSetSelected: (keys: string[]) => void;
 }) {
-  const againstLabel =
-    against === "area" ? areaLabel ?? "Its category" : against === "selected" ? "Selected subjects" : "Whole school";
+  const againstLabel = against === "selected" ? "Selected subjects" : "Whole school";
 
   return (
     <div className="flex flex-col items-start gap-1.5">
@@ -55,17 +57,29 @@ export function ContextPills({
               selected={against === "whole"}
               onClick={() => { onAgainst("whole"); close(); }}
             />
-            <MenuRow
-              label={areaLabel ? `Other subjects in ${areaLabel}` : "Other subjects in its category"}
-              selected={against === "area"}
-              disabled={!areaLabel}
-              onClick={() => { onAgainst("area"); close(); }}
-            />
             {/* Not closed on click: picking "Selected subjects" reveals the checklist
                 underneath it, and closing would hide the thing just asked for. */}
             <MenuRow label="Selected subjects" selected={against === "selected"} onClick={() => onAgainst("selected")} />
             {against === "selected" && (
               <div className="flex flex-col gap-px py-1 pl-1">
+                <div className="flex items-center gap-3 px-3 pb-1 text-[11.5px] font-semibold">
+                  <button
+                    type="button"
+                    disabled={selected.length === allSubjects.length}
+                    onClick={() => onSetSelected(allSubjects.map((s) => s.key))}
+                    className="text-[var(--accent,var(--fg))] disabled:text-[var(--muted3)]"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selected.length === 0}
+                    onClick={() => onSetSelected([])}
+                    className="text-[var(--accent,var(--fg))] disabled:text-[var(--muted3)]"
+                  >
+                    Clear all
+                  </button>
+                </div>
                 {allSubjects.map((s) => (
                   <MenuRow
                     key={s.key}

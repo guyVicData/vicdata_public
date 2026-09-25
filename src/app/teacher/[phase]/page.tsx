@@ -904,15 +904,11 @@ export default function TeacherPhaseDashboard() {
   // Column 1's sub-measure too, so "Results" means the same figure in both columns rather
   // than two columns both claiming to show results while showing different ones.
   const contextMeasure = showingResults ? resultsMeasure : ENTRIES_MEASURE;
-  const contextAgainst = (readSetting(columns, againstKey("context")) ?? "whole") as CompareAgainstId;
+  // S8: "area" is no longer an option here (Column 1 owns the category comparison now), so
+  // a saved "area" from before reads as the default rather than as a third state.
+  const contextAgainst: CompareAgainstId = readSetting(columns, againstKey("context")) === "selected" ? "selected" : "whole";
   const contextSelected = readList(columns, chosenKey("context"));
 
-  // The subject the comparison is anchored on: the focused chip, or the first ticked
-  // subject when the chips are on "All subjects". Its family names the "Other subjects
-  // in ..." option and decides that option's membership.
-  const contextAnchor = focusItem;
-  const contextAreaLabel = contextAnchor ? familyLabelFor(headline, contextAnchor.subject) : null;
-  const contextAnchorFamily = contextAnchor ? familyFor(headline, contextAnchor.subject)?.id ?? null : null;
 
   // One value per SUBJECT NAME per period, for whichever measure is active. Group members
   // are subjects of the whole school, not just the ticked ones, so they are addressed by
@@ -943,9 +939,6 @@ export default function TeacherPhaseDashboard() {
   // the convention the comparator-set averages already use elsewhere.
   const contextMembers: string[] = (() => {
     const every = Array.from(new Set(headline.map((h) => h.subject)));
-    if (contextAgainst === "area") {
-      return contextAnchorFamily ? every.filter((n) => headline.some((h) => h.subject === n && h.familyId === contextAnchorFamily)) : every;
-    }
     if (contextAgainst === "selected") {
       const names = new Set(items.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
       // Nothing ticked yet falls back to the subjects this person teaches, which is the
@@ -955,8 +948,7 @@ export default function TeacherPhaseDashboard() {
     return every;
   })();
 
-  const contextGroupLabel =
-    contextAgainst === "area" ? contextAreaLabel ?? "Its category" : contextAgainst === "selected" ? "Selected subjects" : "Whole school";
+  const contextGroupLabel = contextAgainst === "selected" ? "Selected subjects" : "Whole school";
 
   // Two different group figures, and they are not interchangeable:
   //   - the TOTAL, which the donut's share is a share of;
@@ -1382,9 +1374,10 @@ export default function TeacherPhaseDashboard() {
                 <ContextPills
                   against={contextAgainst}
                   onAgainst={(id) => setColumnSetting(againstKey("context"), id)}
-                  areaLabel={contextAreaLabel}
-                  allSubjects={items.map((i) => ({ key: i.key, label: i.label, colour: colourOf(i) }))}
+                  // S8: only subjects with real entries at the school in the latest year.
+                  allSubjects={items.filter((i) => i.entries > 0).map((i) => ({ key: i.key, label: i.label, colour: colourOf(i) }))}
                   selected={contextSelected}
+                  onSetSelected={(keys) => setColumnList(chosenKey("context"), keys)}
                   onToggleSelected={(key) =>
                     setColumnList(
                       chosenKey("context"),
