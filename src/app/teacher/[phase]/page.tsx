@@ -813,27 +813,86 @@ export default function TeacherPhaseDashboard() {
   const valueForResults = (i: SubjectItem, period: number) =>
     usingThreshold ? thresholdAt(i, period) : pointsAt(i, period);
 
+  // ------------------------------------------ Column 1's category (content round S6-S7)
+  //
+  // Column 1 reads the focused subject against the OTHER subjects this school runs in the
+  // same taxonomy category (Maths against the rest of Sciences & Maths), replacing the
+  // multi-subject bars S5 removed. The grouping is not new: it is the same familyFor
+  // lookup Context's "Other subjects in ..." option used, fixed to the focused subject's
+  // category rather than chosen. Members are this school's own (subject, qualification)
+  // items, focused subject first, then the rest by entries.
+  const focusFamilyId = focusItem ? familyFor(headline, focusItem.subject)?.id ?? null : null;
+  const focusFamilyLabel = focusItem ? familyLabelFor(headline, focusItem.subject) ?? "its category" : null;
+  const categoryItems: SubjectItem[] = focusItem
+    ? [
+        focusItem,
+        ...items
+          .filter((i) => i.key !== focusItem.key && focusFamilyId !== null && familyFor(headline, i.subject)?.id === focusFamilyId)
+          .sort((a, b) => b.entries - a.entries),
+      ]
+    : [];
+  // The peers are context, not the teacher's own subjects, so they take one muted colour
+  // and the focused subject keeps its qualification colour.
+  const PEER_COLOUR = "var(--muted3)";
+  // S7: the England category line gets its own colour so it is not a second grey dash.
+  const ENGLAND_COLOUR = "#60a5fa";
+  const categoryColour = (i: SubjectItem) => (i.key === focusKey ? colourOf(i) : PEER_COLOUR);
+
+  // Every period any category member has a headline row for.
+  const categoryPeriods = Array.from(
+    new Set(headline.filter((h) => categoryItems.some((i) => i.subject === h.subject)).map((h) => h.period)),
+  ).sort((a, b) => a - b);
+
   // The periods the ACTIVE measure genuinely covers. The threshold rows only go back to
   // 2023/24 (parseSubjectGradeDistribution's own documented limit), so pointing Results at
   // it shortens the axis rather than drawing four empty years -- §6.5's "state that in the
   // UI rather than padding the range". Computed BEFORE the series, so the values and the
   // periods they are indexed against are always the same list.
   const resultsPeriods = usingThreshold
-    ? subjectPeriods.filter((p) => tickedItems.some((i) => thresholdAt(i, p) !== null))
-    : subjectPeriods;
+    ? categoryPeriods.filter((p) => categoryItems.some((i) => thresholdAt(i, p) !== null))
+    : categoryPeriods;
 
   // The threshold measure has no published England figure to sit against -- the national
   // anchor this app holds is points per entry, per subject. So its bars carry no marker
   // and its table's third column falls back to change, rather than a delta against a
   // number nobody published.
-  const resultsSeries: SubjectSeries[] = tickedItems.map((i) => ({
-    key: i.key,
-    label: i.label,
-    shortLabel: shortSubject(i.subject),
-    colour: colourOf(i),
-    values: resultsPeriods.map((p) => valueForResults(i, p)),
-    benchmark: usingThreshold ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
-  }));
+  //
+  // S7: at GCSE every member carries its own England marker (the per-subject national
+  // figure exists for all of them). At Post-16 the national figure is only per
+  // qualification BUCKET, not per subject, so only the focused subject keeps the marker it
+  // always had and the peers carry none -- the per-subject KS5 backend is a separate,
+  // already-logged round.
+  const resultsSeries: SubjectSeries[] = categoryItems
+    .map((i) => ({
+      key: i.key,
+      label: i.label,
+      shortLabel: shortSubject(i.subject),
+      colour: categoryColour(i),
+      values: resultsPeriods.map((p) => valueForResults(i, p)),
+      benchmark: usingThreshold || (phase !== "ks4" && i.key !== focusKey) ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
+    }))
+    // A peer with no figure at all on this measure (at GCSE, a BTEC or Cambridge National
+    // on points) says nothing about the category, so it is left out rather than drawn
+    // as an empty row. The focused subject always stays.
+    .filter((r) => r.key === focusKey || r.values.some((v) => v !== null));
+
+  // S6: the category's own per-subject average, self-inclusive (the convention Context's
+  // group and the comparator-set averages already use). S7, GCSE and points only: what
+  // England scores across the SAME subjects -- the mean of each member's national figure --
+  // so "how this category does here" sits beside "how it does nationally".
+  const resultsGroups: { label: string; values: (number | null)[]; colour?: string }[] =
+    resultsSeries.length < 2
+      ? []
+      : [
+          { label: `${focusFamilyLabel} average`, values: resultsPeriods.map((_, pi) => meanOf(resultsSeries.map((r) => r.values[pi]))) },
+          ...(phase === "ks4" && !usingThreshold
+            ? [{
+                label: `England ${focusFamilyLabel} average`,
+                colour: ENGLAND_COLOUR,
+                values: resultsPeriods.map((_, pi) => meanOf(resultsSeries.map((r) => r.benchmark?.[pi] ?? null))),
+              }]
+            : []),
+        ];
 
   // ------------------------------------------------------------------ Context (§4.2)
   //
@@ -1200,9 +1259,10 @@ export default function TeacherPhaseDashboard() {
             <SubjectPanels
               columnId={COL1}
               periods={resultsPeriods}
-              // Content round S5: one subject, the one in focus.
-              subjects={resultsSeries.filter((r) => r.key === focusKey)}
+              // Content round S6: the focused subject and its category peers.
+              subjects={resultsSeries}
               focus={focusKey}
+              groups={resultsGroups}
               measure={resultsMeasure}
               controls={
                 // §3's row-alignment fix: the Results sub-measure pill sits under this
@@ -1246,14 +1306,17 @@ export default function TeacherPhaseDashboard() {
           ) : (
             <CandidatesPanels
               phase={phase}
-              subjects={tickedItems.filter((i) => i.key === focusKey).map((i) => ({
+              // Content round S6: the focused subject and its category peers. No England
+              // overlay here -- "for candidates the national average is irrelevant".
+              subjects={categoryItems.map((i) => ({
                 key: i.key,
                 subject: i.subject,
                 qualificationType: i.qualificationType,
                 label: i.label,
-                colour: colourOf(i),
+                colour: categoryColour(i),
               }))}
               focus={focusKey}
+              groupLabel={`${focusFamilyLabel} average`}
               entries={entries}
               panels={panelsOf(COL1)}
               onPanelsChange={(next) => setPanels(COL1, next)}
@@ -1332,7 +1395,7 @@ export default function TeacherPhaseDashboard() {
               }
               benchmarkLabel={contextGroupLabel}
               benchmarkNoun={`the ${contextGroupLabel.toLowerCase()} average`}
-              groupSeries={{ label: `${contextGroupLabel} average`, values: atContextPeriod(contextGroupAverage) }}
+              groups={[{ label: `${contextGroupLabel} average`, values: atContextPeriod(contextGroupAverage) }]}
               donut={{
                 // §4.2: a share of an average point score is not a meaningful percentage,
                 // so the donut is genuinely inert for a Results measure, not just greyed.

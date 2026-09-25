@@ -152,7 +152,7 @@ export function TrendChart({
                   y1={yFor(run[0].v)}
                   x2={xFor(run[0].i)}
                   y2={yFor(run[0].v)}
-                  stroke={s.comparison ? "var(--muted3)" : s.colour}
+                  stroke={s.colour}
                   strokeWidth={s.comparison ? 4 : 5}
                   strokeLinecap="round"
                   vectorEffect="non-scaling-stroke"
@@ -162,7 +162,7 @@ export function TrendChart({
                   key={`${s.key}-${ri}`}
                   points={run.map((p) => `${xFor(p.i).toFixed(1)},${yFor(p.v).toFixed(1)}`).join(" ")}
                   fill="none"
-                  stroke={s.comparison ? "var(--muted3)" : s.colour}
+                  stroke={s.colour}
                   strokeWidth={s.comparison ? 2 : 2.4}
                   strokeDasharray={s.comparison ? "4,3" : undefined}
                   strokeLinecap="round"
@@ -219,7 +219,7 @@ export function TrendChart({
                 className="inline-block h-[2.5px] w-3 rounded-[1px]"
                 style={
                   s.comparison
-                    ? { backgroundImage: "linear-gradient(90deg, var(--muted3) 60%, transparent 40%)", backgroundSize: "6px 2.5px" }
+                    ? { backgroundImage: `linear-gradient(90deg, ${s.colour} 60%, transparent 40%)`, backgroundSize: "6px 2.5px" }
                     : { background: s.colour }
                 }
               />
@@ -281,9 +281,9 @@ function TrendBars({ data, measure, fullscreen }: { data: PanelData; measure: Me
                         style={{
                           width: series.length > 1 ? 14 : 24,
                           height: v === null ? 0 : Math.max(2, (v / top) * bodyH),
-                          // The comparison series stays the muted dashed-line grey it has
-                          // on the line chart, so the two forms read as the same pair.
-                          background: s.comparison ? "var(--muted3)" : s.colour,
+                          // A comparison series keeps the colour its dashed line has on the
+                          // line chart, so the two forms read as the same pair.
+                          background: s.colour,
                         }}
                       />
                     );
@@ -302,7 +302,7 @@ function TrendBars({ data, measure, fullscreen }: { data: PanelData; measure: Me
             <span key={s.key} className="flex items-center gap-1.5 text-[10.5px] text-[var(--muted)]">
               <span
                 className="inline-block h-2 w-2 rounded-[2px]"
-                style={{ background: s.comparison ? "var(--muted3)" : s.colour }}
+                style={{ background: s.colour }}
               />
               {s.label}
             </span>

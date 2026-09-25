@@ -18,6 +18,7 @@ import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
   ENTRIES_MEASURE,
+  meanOf,
   nextStart,
   percentChange,
   periodsWithData,
@@ -56,6 +57,7 @@ export function CandidatesPanels({
   source,
   currentLabel,
   focus,
+  groupLabel,
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -70,6 +72,10 @@ export function CandidatesPanels({
   // The dashboard's one focus subject (content round S5: no "All"). Trend follows it, or
   // the first subject when it is not among `subjects`.
   focus: string | null;
+  // Content round S6: `subjects` is the focused subject and its category peers, and this
+  // names their per-subject average ("Sciences & Maths average"), drawn as Trend's dashed
+  // line and one extra % change bar. Absent, or one subject only = no group to draw.
+  groupLabel?: string;
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
   const [trendStart, setTrendStart] = useState<number | null>(null);
@@ -101,16 +107,25 @@ export function CandidatesPanels({
   }));
 
   const focused = subjects.find((s) => s.key === focus) ?? subjects[0];
+  // Self-inclusive, per subject -- a category "average" of candidate numbers is what one
+  // subject is comparable with; the category's total would dwarf it.
+  const group =
+    groupLabel && subjects.length > 1
+      ? { key: "group", label: groupLabel, colour: "var(--muted3)", values: periods.map((_, i) => meanOf(subjectSeries.map((s) => s.values[i]))) }
+      : null;
   const focusSeries: PanelData = trimToData({
     periods,
-    series: focused
-      ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: subjectSeries.find((s) => s.key === focused.key)!.values }]
-      : [],
+    series: [
+      ...(focused
+        ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: subjectSeries.find((s) => s.key === focused.key)!.values }]
+        : []),
+      ...(group ? [{ ...group, comparison: true }] : []),
+    ],
   });
 
   const trendPeriods = periodsWithData(focusSeries);
   const trendData = sliceFrom(focusSeries, trendStart);
-  const changeFull = trimToData({ periods, series: subjectSeries });
+  const changeFull = trimToData({ periods, series: [...subjectSeries, ...(group ? [{ ...group, colour: "#57534e" }] : [])] });
   const changeData = sliceFrom(changeFull, changeStart);
   const changePeriods = periodsWithData(changeFull);
 
@@ -159,7 +174,7 @@ export function CandidatesPanels({
       ),
     summary: biggest && smallest && biggest.key !== smallest.key ? (
       <PanelSummary>
-        {biggest.label} is your largest subject this year with {measure.format(biggest.value!)} candidates; {smallest.label} the
+        {biggest.label} is the largest subject {groupLabel ? "in this category " : ""}this year with {measure.format(biggest.value!)} candidates; {smallest.label} the
         smallest, with {measure.format(smallest.value!)}.
       </PanelSummary>
     ) : biggest ? (

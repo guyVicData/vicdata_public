@@ -58,7 +58,7 @@ export function SubjectPanels({
   measure,
   benchmarkLabel,
   benchmarkNoun,
-  groupSeries,
+  groups = [],
   donut,
   yearControl = false,
   focus,
@@ -82,9 +82,11 @@ export function SubjectPanels({
   benchmarkLabel?: string;
   // The same thing in a sentence ("the national average").
   benchmarkNoun?: string;
-  // Context's comparison group, drawn as the Trend panel's second, dashed line and as one
-  // extra bar on % change. Results has none -- its benchmark is per subject, not a group.
-  groupSeries?: { label: string; values: (number | null)[] };
+  // Comparison groups, each drawn as a dashed line on Trend and one extra bar on % change:
+  // Context's comparison group, and (content round S6-S7) Column 1's category average and,
+  // at GCSE, the England average across the same category. The first one is the group the
+  // Trend sentence names. `colour` tells two of them apart; absent = the usual grey.
+  groups?: { label: string; values: (number | null)[]; colour?: string }[];
   // Context's third Current view. Present = the donut icon exists; `enabled` false greys
   // it AND disables the button, so a Results measure cannot select it at all (§4.2) --
   // a share of an average point score is not a meaningful percentage.
@@ -308,9 +310,7 @@ export function SubjectPanels({
     periods,
     series: [
       ...(focused ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: focused.values }] : []),
-      ...(groupSeries
-        ? [{ key: "group", label: groupSeries.label, colour: "var(--muted3)", values: groupSeries.values, comparison: true }]
-        : []),
+      ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "var(--muted3)", values: g.values, comparison: true })),
     ],
   });
   const trendPeriods = periodsWithData(trendFull);
@@ -322,13 +322,14 @@ export function SubjectPanels({
     measure,
     startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
   });
-  // Context's two-line trend says what the group did over the same years, so the focus
-  // line is never read in isolation. Results has no group line and no such clause.
+  // A trend with a group line says what the (first) group did over the same years, so
+  // the focus line is never read in isolation.
   const groupClause = (() => {
-    if (!groupSeries || !trendData.series[1]) return "";
-    const vals = trendData.series[1].values.filter((v): v is number => v !== null);
+    const first = trendData.series.find((x) => x.key === "group-0");
+    if (!first) return "";
+    const vals = first.values.filter((v): v is number => v !== null);
     if (vals.length < 2) return "";
-    return ` — against ${groupSeries.label.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
+    return ` — against ${first.label.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
   })();
 
   const trend: PanelRender = {
@@ -368,9 +369,9 @@ export function SubjectPanels({
     periods,
     series: [
       ...subjects.map((s) => ({ key: s.key, label: s.label, colour: s.colour, values: s.values })),
-      // §4.2: one extra bar for the comparison group itself, alongside the per-subject
-      // ones -- "individual subjects and the school as a whole" in one picture.
-      ...(groupSeries ? [{ key: "group", label: groupSeries.label, colour: "#57534e", values: groupSeries.values }] : []),
+      // §4.2: one extra bar per comparison group, alongside the per-subject ones --
+      // "individual subjects and the school as a whole" in one picture.
+      ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "#57534e", values: g.values })),
     ],
   });
   const changePeriods = periodsWithData(changeFull);
