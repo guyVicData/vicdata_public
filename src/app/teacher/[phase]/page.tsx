@@ -29,7 +29,7 @@ import { thresholdRate } from "@/lib/subject-grades";
 import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
-import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
+import { QualificationFamilyTiles, familyIcon } from "@/components/teacher/QualificationFamilyTiles";
 import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicker";
 import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
 import { COLUMN_TITLE, defaultBoxTitle } from "@/lib/teacher-view-catalogue";
@@ -1070,6 +1070,7 @@ export default function TeacherPhaseDashboard() {
           key: i.key,
           label: `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`,
           colour: colourOf(i),
+          icon: familyIcon(phase, qualificationFamilyOf(phase, i.qualificationType)),
         }))}
         focusKey={focusKey}
         onFocus={setFocusKey}

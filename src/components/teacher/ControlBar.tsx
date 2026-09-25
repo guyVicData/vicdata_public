@@ -20,6 +20,25 @@ import type { ReactNode } from "react";
 
 export type SharedMeasure = "candidates" | "results";
 
+// One focus chip's row. `icon` is the qualification family's own icon (the onboarding tile
+// picker's, via familyIcon), resolved once by the page so every place that draws a subject
+// -- these chips, and anything else handed the same rows -- shows the same one.
+export type FocusSubject = { key: string; label: string; colour: string; icon: ReactNode };
+
+// The small icon square before a chip's label. It follows the chip's own on/off treatment:
+// tinted in the chip's colour when focused, plain muted glyph when not.
+export function SubjectIconSquare({ icon, colour, on }: { icon: ReactNode; colour: string; on: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] [&>svg]:h-[11px] [&>svg]:w-[11px]"
+      style={on ? { background: `${colour}33`, color: colour } : undefined}
+    >
+      {icon}
+    </span>
+  );
+}
+
 // The qualification glyph -- a mortarboard, the one icon the wireframe sizes up above
 // every other on the page (40px box, 23px glyph, against the columns' 30/16).
 const QUALIFICATION_ICON = (
@@ -45,7 +64,7 @@ export function ControlBar({
   schoolName: string | null;
   measure: SharedMeasure;
   onMeasure: (next: SharedMeasure) => void;
-  subjects: { key: string; label: string; colour: string }[];
+  subjects: FocusSubject[];
   // null = no single subject in focus; Context reads it as "All subjects" and Comparisons
   // as "Whole school", which is what each already called that state.
   focusKey: string | null;
@@ -113,13 +132,14 @@ export function ControlBar({
                   // Single-select: picking one replaces the previous focus rather than
                   // adding to it, and picking the active one clears back to All.
                   onClick={() => onFocus(on ? null : s.key)}
-                  className="rounded-full border px-3 py-[5px] text-xs font-semibold"
+                  className="inline-flex items-center gap-1.5 rounded-full border py-[5px] pl-[5px] pr-3 text-xs font-semibold"
                   style={
                     on
                       ? { borderColor: s.colour, background: `${s.colour}29`, color: s.colour }
                       : { borderColor: "var(--panel-border2)", background: "transparent", color: "var(--muted2)" }
                   }
                 >
+                  <SubjectIconSquare icon={s.icon} colour={s.colour} on={on} />
                   {s.label}
                 </button>
               );
