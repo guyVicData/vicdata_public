@@ -142,7 +142,14 @@ export function TrendChart({
 
   return (
     <div className="mt-1 flex min-h-0 flex-grow flex-col">
-      <div className="flex min-h-0 flex-grow gap-2">
+      {/* Accordion round Part 1: the plot row has a floor. In a fixed-height card the
+          legend below is sized to its content, so with nine or ten entries (Comparisons'
+          "All schools, individually") it wrapped to several lines and took the whole
+          column, squeezing this flex-grow row -- and the SVG in it -- to 0px high. With a
+          floor, a legend that no longer fits pushes the content taller than the card
+          instead, and CardBox's content box scrolls: a chart you scroll to beats a chart
+          that is not there. Fullscreen sets its own height and never hit this. */}
+      <div className="flex min-h-[110px] flex-grow gap-2">
         {/* The y axis: its labels are HTML, positioned at the same fractions of the plot's
             height that the SVG uses, so they stay upright at any card width. */}
         <div className="relative w-8 shrink-0" style={plotHeight ? { height: plotHeight } : undefined} aria-hidden="true">
