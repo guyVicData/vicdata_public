@@ -1453,6 +1453,7 @@ export default function TeacherPhaseDashboard() {
             mapRank={mapRank}
             onMapRank={setMapRank}
             emptyText={comparatorEmptyText}
+            targetName={schoolName ?? "This school"}
           />
         </DashboardColumn>
       </DashboardGrid>

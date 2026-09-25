@@ -20,7 +20,7 @@
 // history is REAL (§6.4): fetchAcademicProfiles already returned every comparator's whole
 // year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
 // not used and not needed.
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import {
@@ -99,6 +99,7 @@ export function ComparisonsPanels({
   subjectLabel,
   seriesLoading,
   emptyText,
+  targetName,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -130,6 +131,8 @@ export function ComparisonsPanels({
   // published figures" while they are still in flight would be a plain lie.
   seriesLoading: boolean;
   emptyText: string;
+  // Content round S9: the school's real name for its own row, in place of "This school".
+  targetName: string;
 }) {
   // Ranking is the default view (§4.3), even though Graph comes first in the icon row.
   const [view, setView] = useState<"graph" | "map" | "ranking">("ranking");
@@ -202,7 +205,7 @@ export function ComparisonsPanels({
 
   const rankingRows: SortRow[] = ranked.map((r) => ({
     key: r.urn,
-    label: r.isTarget ? "This school" : r.name,
+    label: r.isTarget ? targetName : r.name,
     value: r.value,
     valueLabel: r.value === null ? (r.igcseExcluded ? "not comparable" : "—") : measure.format(r.value),
     // The third column IS the rank here, so it sorts on the rank rather than on a delta.
@@ -210,6 +213,7 @@ export function ComparisonsPanels({
     deltaLabel: rankOfUrn.has(r.urn) ? `${rankOfUrn.get(r.urn)} of ${placed.length}` : "—",
     deltaTone: "neutral",
     emphasis: r.isTarget,
+    highlight: r.isTarget,
   }));
 
   const current: PanelRender = {
@@ -259,10 +263,10 @@ export function ComparisonsPanels({
               // No benchmark marker: the other bars ARE the comparison (§4.3). Your own
               // school takes the foreground colour and reads bold.
               rows: ranked.map((r) => ({
-                label: r.isTarget ? "This school" : r.name,
+                label: r.isTarget ? targetName : r.name,
                 value: r.value,
                 isSubject: r.isTarget,
-                color: r.isTarget ? "var(--fg)" : "var(--muted3)",
+                color: r.isTarget ? "var(--accent,var(--fg))" : "var(--muted3)",
                 emphasis: r.isTarget,
               })),
             }}
@@ -273,7 +277,7 @@ export function ComparisonsPanels({
         // Round 8 §4: a comparator set longer than the panel scrolls within its own box.
         // The panel's height is fixed now, so without this a 10-school set would either
         // overflow it or push the footer off the bottom.
-        <div className="min-h-0 flex-grow overflow-y-auto">
+        <CentredOnTarget watch={`${sort.key}:${sort.dir}:${rankingRows.map((r) => r.key).join(",")}`}>
           <SortTable
             rows={rankingRows}
             sort={sort}
@@ -281,7 +285,7 @@ export function ComparisonsPanels({
             columns={{ name: "School", value: "Result", delta: "Rank" }}
             fullscreen={fullscreen}
           />
-        </div>
+        </CentredOnTarget>
       );
     },
     summary: seriesLoading ? undefined : shownRank ? (
@@ -455,5 +459,25 @@ export function ComparisonsPanels({
       }
       render={{ current, trend, change }}
     />
+  );
+}
+
+// Content round S9: a ranking longer than the panel scrolls inside its own box, and the
+// school's own row is scrolled to the MIDDLE of that box -- so it is in view with schools
+// above and below it -- whenever the rows or their order change. Sets the box's own
+// scrollTop rather than calling scrollIntoView, which would scroll the whole page too.
+function CentredOnTarget({ watch, children }: { watch: string; children: ReactNode }) {
+  const box = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = box.current;
+    const row = el?.querySelector<HTMLElement>("[data-highlight]");
+    if (!el || !row || el.scrollHeight <= el.clientHeight) return;
+    el.scrollTop = row.offsetTop - (el.clientHeight - row.offsetHeight) / 2;
+  }, [watch]);
+  // `relative`, so the row's offsetTop is measured from this box.
+  return (
+    <div ref={box} className="relative min-h-0 flex-grow overflow-y-auto">
+      {children}
+    </div>
   );
 }

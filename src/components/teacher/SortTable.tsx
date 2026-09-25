@@ -29,6 +29,9 @@ export type SortRow = {
   deltaLabel: string;
   deltaTone?: "positive" | "negative" | "neutral";
   emphasis?: boolean;
+  // Content round S9: the row to pick out in the phase accent (the school's own row in
+  // Comparisons' ranking). Also marks the row a scroll container centres on.
+  highlight?: boolean;
 };
 
 // Each column's natural first direction: names read A-Z, figures read best-first.
@@ -110,7 +113,14 @@ export function SortTable({
         <Header label={columns.delta} sortKey="delta" sort={sort} onSort={onSort} className="w-[5.5rem] shrink-0 justify-end text-right" />
       </div>
       {sorted.map((r) => (
-        <div key={r.key} className="flex items-center gap-1.5 border-b border-[var(--panel-border)] px-0.5 py-[7px] last:border-b-0">
+        <div
+          key={r.key}
+          data-highlight={r.highlight ? "" : undefined}
+          className={`flex items-center gap-1.5 border-b border-[var(--panel-border)] px-0.5 py-[7px] last:border-b-0 ${r.highlight ? "rounded-md px-1.5" : ""}`}
+          // The same rgba(accent, 0.14) the qualification badge and the nav's active phase
+          // use, with the accent itself for the text.
+          style={r.highlight ? { background: "rgba(var(--accent-rgb,138,138,144),0.14)", color: "var(--accent,var(--fg))" } : undefined}
+        >
           {r.colour && <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: r.colour }} />}
           <span className={`min-w-0 flex-grow truncate ${r.emphasis ? "font-bold" : ""}`} title={r.label}>{r.label}</span>
           <span className={`w-14 shrink-0 text-right font-semibold tabular-nums ${r.value === null ? "font-normal text-[var(--muted3)]" : ""}`}>
