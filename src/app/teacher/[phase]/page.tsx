@@ -28,7 +28,7 @@ import { thresholdRate } from "@/lib/subject-grades";
 import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
-import { QualificationFamilyTiles, familyIcon } from "@/components/teacher/QualificationFamilyTiles";
+import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
 import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicker";
 import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
 import { COLUMN_TITLE, defaultBoxTitle } from "@/lib/teacher-view-catalogue";
@@ -1092,11 +1092,16 @@ export default function TeacherPhaseDashboard() {
   // What both nav layouts read -- computed once here so the desktop pair and the phone nav
   // cannot disagree about which phases, subjects or icons there are.
   const navPhases = TEACHER_PHASES.filter((p) => p === phase || onboardedPhases.includes(p));
+  // Round 2 §1: the chip is the subject's name alone -- the ControlBar badge already says
+  // "GCSE — {school}" once, so "· GCSE" on every chip was noise. The one exception is a
+  // subject ticked under two qualifications (GCSE and BTEC Art), where two identical
+  // chips could not be told apart; those two keep their qualification.
   const focusSubjects: FocusSubject[] = phase === "ks2" ? [] : tickedItems.map((i) => ({
     key: i.key,
-    label: `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`,
+    label: tickedItems.some((o) => o.key !== i.key && o.subject === i.subject)
+      ? `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`
+      : i.subject,
     colour: colourOf(i),
-    icon: familyIcon(phase, qualificationFamilyOf(phase, i.qualificationType)),
   }));
   const onSharedMeasure = (next: SharedMeasure) => setColumnSetting(SHARED_MEASURE_KEY, next);
 

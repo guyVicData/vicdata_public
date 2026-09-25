@@ -20,7 +20,7 @@ import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { PhaseGlyph } from "./HomeCard";
 import { PanelMenu, MenuDivider, useDismiss } from "./PanelMenu";
 import { ChevronDown } from "./PanelIcons";
-import { MeasureToggle, SubjectIconSquare, type FocusSubject, type SharedMeasure } from "./ControlBar";
+import { MeasureToggle, type FocusSubject, type SharedMeasure } from "./ControlBar";
 import { ThemeToggle, type Theme } from "./TeacherChrome";
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
@@ -247,7 +247,7 @@ function AccountMenu() {
 // Phone width (NavPhone.dc.html), phase dashboards only. The page renders this below `sm`
 // and TeacherNav + ControlBar above it -- a rendering fork, not a data fork: every prop is
 // the same state the desktop pair reads, and every control is the same component
-// (AccountMenu, ThemeToggle, MeasureToggle, SubjectIconSquare, the "±" handler).
+// (AccountMenu, ThemeToggle, MeasureToggle, the "±" handler).
 //
 // Row 1 is identity and settings, icon-only with no label toggle -- icon-only is the phone
 // design, not a labels-off state. Row 2 is what you are looking at: the phase badge (its
@@ -376,17 +376,16 @@ function SubjectMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={`Focus subject: ${focused?.label ?? "none"}`}
-        className="flex h-[30px] max-w-full items-center gap-1.5 rounded-full border py-[5px] pl-[5px] pr-2.5 text-xs font-semibold"
+        className="flex h-[30px] max-w-full items-center gap-1.5 rounded-full border py-[5px] pl-3 pr-2.5 text-xs font-semibold"
         style={
           focused
             ? { borderColor: focused.colour, background: `${focused.colour}29`, color: focused.colour }
             : { borderColor: "var(--panel-border2)", color: "var(--muted2)" }
         }
       >
-        {focused && <SubjectIconSquare icon={focused.icon} colour={focused.colour} on />}
         {/* Content round S5: there is no "All" -- a subject is always focused whenever
             any is ticked, and this menu is not drawn when none is. */}
-        <span className={`truncate ${focused ? "" : "pl-1.5"}`}>{focused?.label ?? ""}</span>
+        <span className="truncate">{focused?.label ?? ""}</span>
         <span className="shrink-0">{ChevronDown}</span>
       </button>
       {open && (
@@ -402,7 +401,6 @@ function SubjectMenu({
                 className={PHONE_MENU_ROW}
                 style={on ? { color: s.colour } : { color: "var(--muted2)" }}
               >
-                <SubjectIconSquare icon={s.icon} colour={s.colour} on={on} />
                 <span className="truncate">{s.label}</span>
               </button>
             );

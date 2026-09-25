@@ -22,24 +22,10 @@ import { PhaseGlyph } from "./HomeCard";
 
 export type SharedMeasure = "candidates" | "results";
 
-// One focus chip's row. `icon` is the qualification family's own icon (the onboarding tile
-// picker's, via familyIcon), resolved once by the page so every place that draws a subject
-// -- these chips, and anything else handed the same rows -- shows the same one.
-export type FocusSubject = { key: string; label: string; colour: string; icon: ReactNode };
-
-// The small icon square before a chip's label. It follows the chip's own on/off treatment:
-// tinted in the chip's colour when focused, plain muted glyph when not.
-export function SubjectIconSquare({ icon, colour, on }: { icon: ReactNode; colour: string; on: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] [&>svg]:h-[11px] [&>svg]:w-[11px]"
-      style={on ? { background: `${colour}33`, color: colour } : undefined}
-    >
-      {icon}
-    </span>
-  );
-}
+// One focus chip's row. Round 2 §1 dropped the chips' icon: it was the qualification
+// FAMILY's icon (built for the onboarding tiles, three at KS4), so every standard GCSE
+// subject showed the same mortarboard. There is no per-subject icon set to use instead.
+export type FocusSubject = { key: string; label: string; colour: string };
 
 // The toggle itself: a segmented control, not a dropdown, because there are two options and
 // both should be readable without opening anything. Exported so the phone nav renders this
@@ -130,14 +116,13 @@ export function ControlBar({
                   // Single-select, and always one: content round S5 removed "All", so picking
                   // the active chip again keeps it rather than clearing the focus.
                   onClick={() => onFocus(s.key)}
-                  className="inline-flex items-center gap-1.5 rounded-full border py-[5px] pl-[5px] pr-3 text-xs font-semibold"
+                  className="rounded-full border px-3 py-[5px] text-xs font-semibold"
                   style={
                     on
                       ? { borderColor: s.colour, background: `${s.colour}29`, color: s.colour }
                       : { borderColor: "var(--panel-border2)", background: "transparent", color: "var(--muted2)" }
                   }
                 >
-                  <SubjectIconSquare icon={s.icon} colour={s.colour} on={on} />
                   {s.label}
                 </button>
               );
