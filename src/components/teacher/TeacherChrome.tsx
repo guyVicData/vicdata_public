@@ -54,25 +54,14 @@ export function useTeacherTheme(): [Theme, (t: Theme) => void] {
   return [theme, set];
 }
 
-// Top-nav round: the toggle and Export used to be one inseparable pair, which only worked
-// where both belonged together. The phase dashboard now puts the toggle in TeacherNav and
-// keeps Export in its control bar, while Recruitment and Meetings still render the pair --
-// so the pair is now just these two pieces composed, and each piece exists exactly once.
+// Top-nav rounds: the toggle and Export used to be one inseparable pair. The toggle now
+// lives in TeacherNav on every Teacher view page, and Export stays in each page's own
+// header or control bar -- so they are two separate components, each defined once.
 //
-// The print-forcing effect lives in ThemeToggle, not in a third wrapper: it depends only
-// on the theme, and the toggle is the one thing every page that owns a theme renders. It
-// still runs when the toggle is print:hidden -- CSS hides the button, not the component.
-export function ThemeToggle({
-  theme,
-  onTheme,
-  variant = "text",
-}: {
-  theme: Theme;
-  onTheme: (t: Theme) => void;
-  // "text" is the original bordered Light/Dark button; "icon" is TeacherNav's circular
-  // sun/moon button. Same click, same label, same effect -- only the face differs.
-  variant?: "text" | "icon";
-}) {
+// The print-forcing effect lives in ThemeToggle: it depends only on the theme, and the
+// toggle is the one thing every page that owns a theme renders. It still runs when the
+// toggle is print:hidden -- CSS hides the button, not the component.
+export function ThemeToggle({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
   useEffect(() => {
     const root = document.getElementById("teacher-root");
     if (!root) return;
@@ -87,32 +76,20 @@ export function ThemeToggle({
   }, [theme]);
 
   const next: Theme = theme === "dark" ? "light" : "dark";
-  if (variant === "icon") {
-    return (
-      <button
-        type="button"
-        onClick={() => onTheme(next)}
-        aria-label={`Switch to ${next} theme`}
-        title={`Switch to ${next} theme`}
-        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]"
-      >
-        {theme === "dark" ? SUN_ICON : MOON_ICON}
-      </button>
-    );
-  }
   return (
     <button
       type="button"
       onClick={() => onTheme(next)}
       aria-label={`Switch to ${next} theme`}
-      className="rounded-md border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
+      title={`Switch to ${next} theme`}
+      className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]"
     >
-      {theme === "dark" ? "Light" : "Dark"}
+      {theme === "dark" ? SUN_ICON : MOON_ICON}
     </button>
   );
 }
 
-// The icon shows the theme a click switches TO, matching the text variant's own label.
+// The icon shows the theme a click switches TO.
 const SUN_ICON = (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="4" />
@@ -134,14 +111,5 @@ export function ExportButton() {
     >
       Export
     </button>
-  );
-}
-
-export function TeacherChrome({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
-  return (
-    <div className="flex items-center gap-3 print:hidden">
-      <ThemeToggle theme={theme} onTheme={onTheme} />
-      <ExportButton />
-    </div>
   );
 }

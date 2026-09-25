@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNotes, saveNote, hasNewData, markPeriodSeen, NAV_LABELS_KEY, againstKey, chosenKey, measureKey, panelNoteKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNotes, saveNote, hasNewData, markPeriodSeen, NAV_LABELS_KEY, saveNavLabels, againstKey, chosenKey, measureKey, panelNoteKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
@@ -306,14 +306,9 @@ export default function TeacherPhaseDashboard() {
   // row, not just this one. Each row is read-modify-written like setColumnSetting does.
   const setNavLabels = useCallback(
     async (on: boolean) => {
-      const value = on ? null : "off";
-      await setColumnSetting(NAV_LABELS_KEY, value);
+      await setColumnSetting(NAV_LABELS_KEY, on ? null : "off");
       if (!schoolUrn || !phase) return;
-      for (const other of onboardedPhases) {
-        if (other === phase) continue;
-        const prefs = await fetchPreferences(supabase, schoolUrn, other);
-        await savePreferences(supabase, schoolUrn, other, { ...prefs, columns: writeSetting(prefs.columns, NAV_LABELS_KEY, value) });
-      }
+      await saveNavLabels(supabase, schoolUrn, onboardedPhases.filter((p) => p !== phase), on);
     },
     [setColumnSetting, onboardedPhases, schoolUrn, phase, supabase],
   );
@@ -1039,7 +1034,7 @@ export default function TeacherPhaseDashboard() {
 
   return (
     // §7: the theme attribute is scoped to Teacher view, never to <html> -- see
-    // TeacherChrome for why, and Q15.
+    // TeacherChrome.tsx for why, and Q15.
     <main
       id="teacher-root"
       data-theme={theme}

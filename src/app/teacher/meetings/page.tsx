@@ -16,7 +16,6 @@
 // it is opened, so a meeting prepared in September and presented in October shows October's
 // figures rather than a stale snapshot.
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import {
   fetchMeetings, createMeeting, fetchSlides, addSlide, fetchPreferences,
@@ -28,7 +27,8 @@ import { PHASE_LABELS, type TeacherPhase } from "@/lib/teacher-view-phases";
 import type { AcademicSubjectHeadlineEntry, SubjectEntry } from "@/lib/academic-data-view";
 import { ViewChart } from "@/components/teacher/ViewChart";
 import { TickList } from "@/components/teacher/TickList";
-import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
 
 const COLUMNS: ColumnId[] = ["candidates", "results", "context"];
 
@@ -173,6 +173,11 @@ export default function MeetingsPage() {
   const [theme, setTheme] = useTeacherTheme();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [bundles, setBundles] = useState<PhaseBundle[]>([]);
+  // Kept for the nav: its phase switcher and label setting. The loader already fetched
+  // both; they used to be dropped once the bundles were built.
+  const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
+  const [onboardedPhases, setOnboardedPhases] = useState<TeacherPhase[]>([]);
+  const [labelsOn, setLabelsOn] = useNavLabels(schoolUrn, onboardedPhases);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
@@ -194,6 +199,8 @@ export default function MeetingsPage() {
       // §11's "any phase they have access to" -- every phase this person has actually
       // onboarded, not just one.
       const phases = urn ? await fetchOnboardedPhases(supabase, urn) : [];
+      setSchoolUrn(urn);
+      setOnboardedPhases(phases);
       const built: PhaseBundle[] = [];
       if (urn && token) {
         for (const phase of phases) {
@@ -222,13 +229,13 @@ export default function MeetingsPage() {
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">
-      <div className="flex items-baseline justify-between gap-3">
+      <TeacherNav phase={null} phases={onboardedPhases} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
+      <div className="mt-6 flex items-baseline justify-between gap-3">
         {/* §14: named as the question it answers, not "Meetings". */}
         <h1 className="text-xl font-semibold sm:text-2xl">What do you need to show, and to whom?</h1>
-        <div className="flex items-center gap-3">
-          <TeacherChrome theme={theme} onTheme={setTheme} />
-          <Link href="/teacher" className="text-sm text-blue-700 hover:underline print:hidden dark:text-blue-400">All dashboards</Link>
-        </div>
+        {/* Top-nav completion round: the theme toggle moved up into TeacherNav and "All
+            dashboards" went with it (the nav's Home is the same way back); Export stays. */}
+        <ExportButton />
       </div>
       <p className="mt-1 text-sm text-neutral-500">Private to you. Slides read live data, so a deck is never out of date.</p>
 

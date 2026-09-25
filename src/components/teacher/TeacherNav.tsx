@@ -1,19 +1,21 @@
 "use client";
 
-// Teacher view, top-nav round: the phase dashboard's own nav bar (Redesign.dc.html).
+// Teacher view, top-nav rounds: the nav bar on every Teacher view page (Redesign.dc.html)
+// -- the phase dashboards, Home, Recruitment and Meetings -- replacing the site NavBar there.
 //
-// Left to right: wordmark, Home, divider, phase switcher, label toggle, divider, Account,
-// theme toggle. The theme toggle is the one thing that MOVED here (out of the control
-// bar); everything else is new to this page.
+// Left to right: wordmark; then, pinned right, Home, divider, phase switcher, label
+// toggle, divider, Account, theme toggle. The theme toggle MOVED here from each page's own
+// header; everything else is new to these pages.
 //
 // Colours are the Teacher view tokens, not the wireframe's literal hexes: the wireframe
 // was drawn dark-only, and #7a7a7a / #1c1c1c / #262626 are its eyeballed stand-ins for
 // --muted / --panel-bg / --panel-border2, which also have light-theme values.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { PHASE_LABELS, type TeacherPhase } from "@/lib/teacher-view-phases";
+import { fetchNavLabels, saveNavLabels } from "@/lib/teacher-view-data";
+import { PHASE_LABELS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { PhaseGlyph } from "./HomeCard";
 import { PanelMenu, useDismiss } from "./PanelMenu";
@@ -55,8 +57,11 @@ export function TeacherNav({
   theme,
   onTheme,
 }: {
-  phase: TeacherPhase;
-  // Every phase this school has onboarded (the current one always included).
+  // The dashboard's own phase, or null on the pages that have none (Home, Recruitment,
+  // Meetings) -- where every switcher item is a plain link and none is active.
+  phase: TeacherPhase | null;
+  // The phases the switcher offers: every onboarded one on a phase dashboard, Recruitment
+  // and Meetings; [] on Home, whose own tile list already IS the phase picker.
   phases: TeacherPhase[];
   labelsOn: boolean;
   onLabelsOn: (on: boolean) => void;
@@ -95,14 +100,41 @@ export function TeacherNav({
         <Divider />
         <div className="flex items-center gap-2.5">
           <AccountMenu />
-          <ThemeToggle theme={theme} onTheme={onTheme} variant="icon" />
+          <ThemeToggle theme={theme} onTheme={onTheme} />
         </div>
       </div>
     </nav>
   );
 }
 
-function PhaseSwitcher({ phase, phases, labelsOn }: { phase: TeacherPhase; phases: TeacherPhase[]; labelsOn: boolean }) {
+// For the pages without a phase: the label setting is read from, and saved to, every
+// onboarded phase's preferences row -- the same store the phase dashboard writes -- so one
+// toggle means the same thing everywhere. With nothing onboarded there is no row to hold
+// it, and it simply lasts for the visit.
+export function useNavLabels(schoolUrn: string | null, phases: TeacherPhase[]): [boolean, (on: boolean) => void] {
+  const [labelsOn, setLabelsOn] = useState(true);
+  const phaseList = phases.join(",");
+  useEffect(() => {
+    if (!schoolUrn || !phaseList) return;
+    let cancelled = false;
+    (async () => {
+      const on = await fetchNavLabels(createBrowserSupabaseClient(), schoolUrn, phaseList.split(",") as TeacherPhase[]);
+      if (!cancelled) setLabelsOn(on);
+    })();
+    return () => { cancelled = true; };
+  }, [schoolUrn, phaseList]);
+  const set = useCallback(
+    (on: boolean) => {
+      setLabelsOn(on);
+      if (schoolUrn && phaseList) void saveNavLabels(createBrowserSupabaseClient(), schoolUrn, phaseList.split(",") as TeacherPhase[], on);
+    },
+    [schoolUrn, phaseList],
+  );
+  return [labelsOn, set];
+}
+
+function PhaseSwitcher({ phase, phases, labelsOn }: { phase: TeacherPhase | null; phases: TeacherPhase[]; labelsOn: boolean }) {
+  if (phases.length === 0) return null;
   const item = (p: TeacherPhase) => {
     const accent = PHASE_ACCENT[p];
     const active = p === phase;
@@ -122,14 +154,15 @@ function PhaseSwitcher({ phase, phases, labelsOn }: { phase: TeacherPhase; phase
   // One onboarded phase: plain context, not a one-tab switcher -- a tab that looks
   // clickable but can only lead back to the page you are on is a control that does
   // nothing. It keeps the active styling so the nav reads the same at either count.
-  if (phases.length <= 1) {
+  if (phase && phases.length <= 1) {
     const { style, body } = item(phase);
     return <span className={ROW} style={style} title={PHASE_LABELS[phase]}>{body}</span>;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2.5" aria-label="Phase">
-      {phases.map((p) => {
+      {/* TEACHER_PHASES order, whatever order the onboarding rows came back in. */}
+      {TEACHER_PHASES.filter((p) => phases.includes(p)).map((p) => {
         const { active, style, body } = item(p);
         return (
           <Link
@@ -154,6 +187,16 @@ function AccountMenu() {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
+  // TeacherNav replaces the site NavBar on the teacher routes, and that bar was a signed-out
+  // visitor's only Log in link -- so the menu offers Log in when there is no session. A
+  // local session read (no network), and null until known so neither set of rows flashes.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data } = await createBrowserSupabaseClient().auth.getSession();
+      setSignedIn(Boolean(data.session));
+    })();
+  }, []);
 
   // The same call account/page.tsx's own "Log out" makes, then the same destination.
   async function logOut() {
@@ -178,10 +221,16 @@ function AccountMenu() {
       </button>
       {open && (
         <PanelMenu label="Account" align="right" width={180}>
-          <Link href="/account" className={rowClass} onClick={() => setOpen(false)}>Your Account</Link>
-          <button type="button" onClick={logOut} disabled={loggingOut} className={rowClass}>
-            {loggingOut ? "Logging out…" : "Log Out"}
-          </button>
+          {signedIn === false ? (
+            <Link href="/login" className={rowClass} onClick={() => setOpen(false)}>Log in</Link>
+          ) : (
+            <>
+              <Link href="/account" className={rowClass} onClick={() => setOpen(false)}>Your Account</Link>
+              <button type="button" onClick={logOut} disabled={loggingOut || signedIn === null} className={rowClass}>
+                {loggingOut ? "Logging out…" : "Log Out"}
+              </button>
+            </>
+          )}
         </PanelMenu>
       )}
     </div>

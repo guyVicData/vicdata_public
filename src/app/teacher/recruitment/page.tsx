@@ -16,14 +16,16 @@
 //   - Creator-only. Enforced by RLS, not by anything here -- exercised by a non-owning
 //     account rather than assumed, see Q14.
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import SchoolSearch, { type SchoolSearchResult } from "@/components/SchoolSearch";
 import {
   fetchJobs, createJob, extendJobRetention, fetchCandidates, addCandidate, setCandidateInterviewed,
   type RecruitmentJob, type RecruitmentCandidate,
 } from "@/lib/teacher-view-data";
-import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
+import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
+import type { TeacherPhase } from "@/lib/teacher-view-phases";
 
 type Comparison = {
   mine: { urn: string; name: string | null; sector: string | null; gender: string | null; roll: number | null };
@@ -237,6 +239,10 @@ export default function RecruitmentPage() {
   const [theme, setTheme] = useTeacherTheme();
   const [jobs, setJobs] = useState<RecruitmentJob[]>([]);
   const [anchorUrn, setAnchorUrn] = useState<string | null>(null);
+  // The nav's phase switcher and its label setting both need the onboarded phases, which
+  // this page never fetched before -- same call Home and Meetings make.
+  const [onboardedPhases, setOnboardedPhases] = useState<TeacherPhase[]>([]);
+  const [labelsOn, setLabelsOn] = useNavLabels(anchorUrn, onboardedPhases);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
@@ -249,7 +255,9 @@ export default function RecruitmentPage() {
         .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn)")
         .eq("status", "approved")
         .maybeSingle<{ school_accounts: { school_urn: string } | null }>();
-      setAnchorUrn(membership?.school_accounts?.school_urn ?? null);
+      const urn = membership?.school_accounts?.school_urn ?? null;
+      setAnchorUrn(urn);
+      if (urn) setOnboardedPhases(await fetchOnboardedPhases(supabase, urn));
       setJobs(await fetchJobs(supabase));
       setLoading(false);
     })();
@@ -260,13 +268,13 @@ export default function RecruitmentPage() {
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-2xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">
-      <div className="flex items-baseline justify-between gap-3">
+      <TeacherNav phase={null} phases={onboardedPhases} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
+      <div className="mt-6 flex items-baseline justify-between gap-3">
         {/* §14: named as the question it answers, not "Recruitment". */}
         <h1 className="text-xl font-semibold sm:text-2xl">Who are we hiring, and how do they compare?</h1>
-        <div className="flex items-center gap-3">
-          <TeacherChrome theme={theme} onTheme={setTheme} />
-          <Link href="/teacher" className="text-sm text-blue-700 hover:underline print:hidden dark:text-blue-400">All dashboards</Link>
-        </div>
+        {/* Top-nav completion round: the theme toggle moved up into TeacherNav and "All
+            dashboards" went with it (the nav's Home is the same way back); Export stays. */}
+        <ExportButton />
       </div>
       <p className="mt-1 text-sm text-neutral-500">
         Private to you. Candidate names are deleted on the date you set for each job.

@@ -118,6 +118,24 @@ export const setKey = (columnId: string) => `${SET_PREFIX}${columnId}`;
 // same absent-means-default rule the column keys above follow.
 export const NAV_LABELS_KEY = "nav:labels";
 
+// The nav's label toggle is ONE setting to the teacher, but the store is keyed per phase --
+// so it is read from, and written to, every onboarded phase's row. Pages with no phase of
+// their own (Home, Recruitment, Meetings) use both; the phase dashboard writes its own row
+// through its in-memory column state (so a later column save cannot clobber it) and uses
+// saveNavLabels for the rest.
+export async function fetchNavLabels(supabase: Supa, schoolUrn: string, phases: TeacherPhase[]): Promise<boolean> {
+  if (phases.length === 0) return true;
+  const prefs = await fetchPreferences(supabase, schoolUrn, phases[0]);
+  return readSetting(prefs.columns, NAV_LABELS_KEY) !== "off";
+}
+
+export async function saveNavLabels(supabase: Supa, schoolUrn: string, phases: TeacherPhase[], on: boolean): Promise<void> {
+  for (const phase of phases) {
+    const prefs = await fetchPreferences(supabase, schoolUrn, phase);
+    await savePreferences(supabase, schoolUrn, phase, { ...prefs, columns: writeSetting(prefs.columns, NAV_LABELS_KEY, on ? null : "off") });
+  }
+}
+
 // Read one saved scalar setting. Returns undefined rather than a default so each caller's
 // own default stays in one place (its catalogue), not duplicated here.
 export function readSetting(columns: ColumnState, key: string): string | undefined {

@@ -95,7 +95,7 @@ body {
 }
 
 /* Teacher view, round 8 §5: "Print this graph" -- one panel, not the dashboard.
-   The page-level Export (TeacherChrome) still prints the whole page and is untouched.
+   The page-level Export (ExportButton) still prints the whole page and is untouched.
    A panel print opens that panel's existing fullscreen modal, marks #teacher-root, and
    prints only that subtree.
 

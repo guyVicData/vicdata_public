@@ -15,6 +15,7 @@ import { PHASE_LABELS, PHASE_HOME_CARD_DESCRIPTION, phaseTileState, type Teacher
 import { PHASE_ACCENT, FEATURE_ACCENT } from "@/lib/teacher-view-theme";
 import { HomeCard, PhaseGlyph, RecruitmentGlyph, MeetingsGlyph, NEUTRAL_TILE } from "@/components/teacher/HomeCard";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
 
 type Membership = {
   id: string;
@@ -31,10 +32,12 @@ export default function TeacherHomePage() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [phases, setPhases] = useState<TeacherPhase[]>([]);
   const [onboarded, setOnboarded] = useState<TeacherPhase[]>([]);
+  const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // The home page has no toggle of its own; it follows the theme chosen on a dashboard, so
-  // the cards' tokens (scoped to #teacher-root) resolve here too. Same hook, no new state.
-  const [theme] = useTeacherTheme();
+  // Same hook and storage key as every dashboard; since the top-nav completion round the
+  // toggle itself is in TeacherNav here too.
+  const [theme, setTheme] = useTeacherTheme();
+  const [labelsOn, setLabelsOn] = useNavLabels(schoolUrn, onboarded);
 
   useEffect(() => {
     (async () => {
@@ -61,6 +64,7 @@ export default function TeacherHomePage() {
         .maybeSingle<Membership>();
 
       const urn = membership?.school_accounts?.school_urn ?? null;
+      setSchoolUrn(urn);
       setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);
       if (!urn) {
         setError("Teacher view is available to verified school staff.");
@@ -86,9 +90,12 @@ export default function TeacherHomePage() {
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6">
+      {/* No phase switcher here (phases={[]}): the tile list below already is the phase
+          picker, and a richer one than the nav's. */}
+      <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
       {/* Home.dc.html's order: the teacher's name as the page's headline, their school
           directly under it, then the question as its own line -- a prompt, not a heading. */}
-      <div>
+      <div className="mt-6">
         {displayName && <h1 className="text-[22px] font-bold leading-tight">{displayName}</h1>}
         {schoolName && <p className="mt-0.5 text-[13px] text-[var(--muted)]">{schoolName}</p>}
       </div>
