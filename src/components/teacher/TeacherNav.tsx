@@ -274,7 +274,7 @@ export function PhoneNav({
   onMeasure: (next: SharedMeasure) => void;
   subjects: FocusSubject[];
   focusKey: string | null;
-  onFocus: (key: string | null) => void;
+  onFocus: (key: string) => void;
   onEditSubjects: () => void;
   // The page's breakpoint class (sm:hidden) -- the swap point is the page's call.
   className?: string;
@@ -361,13 +361,13 @@ function SubjectMenu({
 }: {
   subjects: FocusSubject[];
   focusKey: string | null;
-  onFocus: (key: string | null) => void;
+  onFocus: (key: string) => void;
   onEditSubjects: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
   const focused = subjects.find((s) => s.key === focusKey) ?? null;
-  const choose = (key: string | null) => { onFocus(key); setOpen(false); };
+  const choose = (key: string) => { onFocus(key); setOpen(false); };
   return (
     <div className="relative ml-auto min-w-0" ref={ref}>
       <button
@@ -375,7 +375,7 @@ function SubjectMenu({
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={`Focus subject: ${focused?.label ?? "All subjects"}`}
+        aria-label={`Focus subject: ${focused?.label ?? "none"}`}
         className="flex h-[30px] max-w-full items-center gap-1.5 rounded-full border py-[5px] pl-[5px] pr-2.5 text-xs font-semibold"
         style={
           focused
@@ -384,15 +384,13 @@ function SubjectMenu({
         }
       >
         {focused && <SubjectIconSquare icon={focused.icon} colour={focused.colour} on />}
-        {/* "All", as the desktop chip row says it: at 375px this chip has ~50px of label. */}
-        <span className={`truncate ${focused ? "" : "pl-1.5"}`}>{focused?.label ?? "All"}</span>
+        {/* Content round S5: there is no "All" -- a subject is always focused whenever
+            any is ticked, and this menu is not drawn when none is. */}
+        <span className={`truncate ${focused ? "" : "pl-1.5"}`}>{focused?.label ?? ""}</span>
         <span className="shrink-0">{ChevronDown}</span>
       </button>
       {open && (
         <PanelMenu label="Focus subject" align="right" width={240}>
-          <button type="button" onClick={() => choose(null)} aria-pressed={focusKey === null} className={`${PHONE_MENU_ROW} ${focusKey === null ? "" : "text-[var(--muted2)]"}`}>
-            All subjects
-          </button>
           {subjects.map((s) => {
             const on = s.key === focusKey;
             return (

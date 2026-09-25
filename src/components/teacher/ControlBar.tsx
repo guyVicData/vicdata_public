@@ -93,10 +93,10 @@ export function ControlBar({
   measure: SharedMeasure;
   onMeasure: (next: SharedMeasure) => void;
   subjects: FocusSubject[];
-  // null = no single subject in focus; Context reads it as "All subjects" and Comparisons
-  // as "Whole school", which is what each already called that state.
+  // Always one of `subjects` (content round S5: there is no "All"); null only when no
+  // subject is ticked, in which case there are no chips to highlight either.
   focusKey: string | null;
-  onFocus: (key: string | null) => void;
+  onFocus: (key: string) => void;
   onEditSubjects: () => void;
   // The theme toggle and export, which belong to the page rather than to this bar.
   chrome?: ReactNode;
@@ -120,19 +120,6 @@ export function ControlBar({
       <div className="flex flex-wrap items-center gap-2 print:hidden">
         {subjects.length > 0 && (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Focus subject">
-            <button
-              type="button"
-              aria-pressed={focusKey === null}
-              onClick={() => onFocus(null)}
-              className="rounded-full border px-3 py-[5px] text-xs font-semibold"
-              style={
-                focusKey === null
-                  ? { borderColor: "var(--fg)", background: "var(--fg)", color: "var(--bg)" }
-                  : { borderColor: "var(--panel-border2)", background: "transparent", color: "var(--muted2)" }
-              }
-            >
-              All
-            </button>
             {subjects.map((s) => {
               const on = s.key === focusKey;
               return (
@@ -140,9 +127,9 @@ export function ControlBar({
                   key={s.key}
                   type="button"
                   aria-pressed={on}
-                  // Single-select: picking one replaces the previous focus rather than
-                  // adding to it, and picking the active one clears back to All.
-                  onClick={() => onFocus(on ? null : s.key)}
+                  // Single-select, and always one: content round S5 removed "All", so picking
+                  // the active chip again keeps it rather than clearing the focus.
+                  onClick={() => onFocus(s.key)}
                   className="inline-flex items-center gap-1.5 rounded-full border py-[5px] pl-[5px] pr-3 text-xs font-semibold"
                   style={
                     on

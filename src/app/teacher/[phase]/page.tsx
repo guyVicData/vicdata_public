@@ -130,11 +130,11 @@ export default function TeacherPhaseDashboard() {
   const [mapRank, setMapRank] = useState<{ rank: number; total: number } | null>(null);
   // The subject picker is a popup opened by the chip header's "±", not a permanent
   // section of the dashboard.
-  // Round 8 §3: ONE focus subject for the whole dashboard, read by Context and by
-  // Comparisons -- both already single-subject mechanisms. null = no single subject, which
-  // Context has always called "All subjects" and Comparisons "Whole school". Column 1's
-  // own multi-subject bars are a separate mechanism and this does not touch them.
-  const [focusKey, setFocusKey] = useState<string | null>(null);
+  // Round 8 §3: ONE focus subject for the whole dashboard. Content round S5 killed "All":
+  // every column now shows exactly one subject, so this is only ever the teacher's own
+  // CHOICE -- what is actually in focus is `focusKey` below, which falls back to the first
+  // ticked subject. Kept nullable because "not chosen yet" is real; it is not "All".
+  const [chosenFocusKey, setFocusKey] = useState<string | null>(null);
   // Round 8 §6: every private note this person has for this school, keyed by chart_key and
   // fetched once. Nine panels would otherwise be nine round trips on every load.
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -372,6 +372,10 @@ export default function TeacherPhaseDashboard() {
   }
 
   const q = PHASE_QUESTIONS[phase];
+  // The subject in focus: the teacher's choice while it is still ticked, otherwise the
+  // first ticked subject. null only when nothing is ticked at all -- a real empty state
+  // every column already has its own "Pick a subject" text for.
+  const focusKey = tickedItems.some((i) => i.key === chosenFocusKey) ? chosenFocusKey : tickedItems[0]?.key ?? null;
   const nearbyOnly = neighbours.filter((n) => !n.isTarget);
 
   // §13's "this moved": surfaced on the card rather than waiting for someone to notice.
@@ -725,7 +729,7 @@ export default function TeacherPhaseDashboard() {
   // Round 8 §3: driven by the shared focus subject rather than its own chip state. The
   // two are keyed differently -- chips by subject|bucket, the ticked list by
   // subject::qualification -- so the focus resolves through the subject it names.
-  const focusItem = focusKey ? tickedItems.find((i) => i.key === focusKey) ?? null : null;
+  const focusItem = tickedItems.find((i) => i.key === focusKey) ?? null;
   const activeMapChip = focusItem
     ? mapChips.find(
         (c) => c.subject === focusItem.subject && (phase !== "ks5" || c.bucket === comparabilityKey(phase, focusItem.qualificationType)),
@@ -847,7 +851,7 @@ export default function TeacherPhaseDashboard() {
   // The subject the comparison is anchored on: the focused chip, or the first ticked
   // subject when the chips are on "All subjects". Its family names the "Other subjects
   // in ..." option and decides that option's membership.
-  const contextAnchor = tickedItems.find((i) => i.key === focusKey) ?? tickedItems[0] ?? null;
+  const contextAnchor = focusItem;
   const contextAreaLabel = contextAnchor ? familyLabelFor(headline, contextAnchor.subject) : null;
   const contextAnchorFamily = contextAnchor ? familyFor(headline, contextAnchor.subject)?.id ?? null : null;
 
@@ -920,7 +924,8 @@ export default function TeacherPhaseDashboard() {
   const atContextPeriod = (values: (number | null)[]) =>
     contextPeriods.map((p) => values[subjectPeriods.indexOf(p)] ?? null);
 
-  const contextSeries: SubjectSeries[] = tickedItems.map((i) => ({
+  // Content round S5: the focused subject alone -- every column shows one subject.
+  const contextSeries: SubjectSeries[] = tickedItems.filter((i) => i.key === focusKey).map((i) => ({
     key: i.key,
     label: i.label,
     shortLabel: shortSubject(i.subject),
@@ -1195,7 +1200,9 @@ export default function TeacherPhaseDashboard() {
             <SubjectPanels
               columnId={COL1}
               periods={resultsPeriods}
-              subjects={resultsSeries}
+              // Content round S5: one subject, the one in focus.
+              subjects={resultsSeries.filter((r) => r.key === focusKey)}
+              focus={focusKey}
               measure={resultsMeasure}
               controls={
                 // §3's row-alignment fix: the Results sub-measure pill sits under this
@@ -1239,13 +1246,14 @@ export default function TeacherPhaseDashboard() {
           ) : (
             <CandidatesPanels
               phase={phase}
-              subjects={tickedItems.map((i) => ({
+              subjects={tickedItems.filter((i) => i.key === focusKey).map((i) => ({
                 key: i.key,
                 subject: i.subject,
                 qualificationType: i.qualificationType,
                 label: i.label,
                 colour: colourOf(i),
               }))}
+              focus={focusKey}
               entries={entries}
               panels={panelsOf(COL1)}
               onPanelsChange={(next) => setPanels(COL1, next)}
@@ -1305,8 +1313,7 @@ export default function TeacherPhaseDashboard() {
               periods={contextPeriods}
               subjects={contextSeries}
               measure={contextMeasure}
-              focus={focusKey ?? "all"}
-              onFocusChange={(key) => setFocusKey(key === "all" ? null : key)}
+              focus={focusKey}
               yearControl
               controls={
                 <ContextPills
@@ -1342,9 +1349,6 @@ export default function TeacherPhaseDashboard() {
               panels={panelsOf("context")}
               onPanelsChange={(next) => setPanels("context", next)}
               notes={notesFor("context")}
-              // The shared control bar owns the focus subject now (§3), so this column
-              // must not draw a second chip row for the same choice.
-              showChips={false}
               emptyText="Pick a subject above to see how it sits in the school."
               currentLabel={COLUMN_TITLE.context}
               note={

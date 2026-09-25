@@ -18,7 +18,6 @@ import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
   ENTRIES_MEASURE,
-  combine,
   nextStart,
   percentChange,
   periodsWithData,
@@ -31,7 +30,7 @@ import {
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { IconButton, Pill, RankListIcon, SubjectChip, VerticalBarsIcon } from "./PanelIcons";
+import { IconButton, Pill, RankListIcon, VerticalBarsIcon } from "./PanelIcons";
 import { TrendChart } from "./TrendChart";
 import { VerticalBars } from "./VerticalBars";
 
@@ -56,6 +55,7 @@ export function CandidatesPanels({
   question,
   source,
   currentLabel,
+  focus,
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -67,9 +67,11 @@ export function CandidatesPanels({
   source: (span?: string) => ReactNode;
   // §4: the Current tag names the column ("Candidates 2024/25") -- see SubjectPanels.
   currentLabel?: string;
+  // The dashboard's one focus subject (content round S5: no "All"). Trend follows it, or
+  // the first subject when it is not among `subjects`.
+  focus: string | null;
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
-  const [focus, setFocus] = useState<string>("all");
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
@@ -98,19 +100,12 @@ export function CandidatesPanels({
     values: periods.map((p) => valueAt(s, p)),
   }));
 
-  // "All subjects" sums: two subjects' candidates really do add up, unlike two subjects'
-  // average point scores. ENTRIES_MEASURE.aggregate says so; this reads it rather than
-  // restating the rule.
-  const allValues = periods.map((_, i) => combine(subjectSeries.map((s) => s.values[i]), measure.aggregate));
-
-  const focused = subjects.find((s) => s.key === focus);
+  const focused = subjects.find((s) => s.key === focus) ?? subjects[0];
   const focusSeries: PanelData = trimToData({
     periods,
-    series: [
-      focused
-        ? { key: focused.key, label: focused.label, colour: focused.colour, values: subjectSeries.find((s) => s.key === focused.key)!.values }
-        : { key: "all", label: "All subjects", colour: "var(--muted2)", values: allValues },
-    ],
+    series: focused
+      ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: subjectSeries.find((s) => s.key === focused.key)!.values }]
+      : [],
   });
 
   const trendPeriods = periodsWithData(focusSeries);
@@ -176,27 +171,17 @@ export function CandidatesPanels({
   // -------------------------------------------------------------------- Trend
   const trendFocusValues = trendData.series[0]?.values ?? [];
   const trendSaid = trendSentence({
-    subjectClause: focused ? `The number of ${focused.label} candidates` : "The total number of candidates across your subjects",
+    subjectClause: `The number of ${focused?.label ?? ""} candidates`,
     values: trendFocusValues,
     measure,
     startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
   });
 
-  const chipRow = (
-    <div className="flex flex-wrap gap-1.5">
-      <SubjectChip label="All subjects" colour="#57534e" active={focus === "all"} onClick={() => setFocus("all")} />
-      {subjects.map((s) => (
-        <SubjectChip key={s.key} label={s.label} colour={s.colour} active={focus === s.key} onClick={() => setFocus(s.key)} />
-      ))}
-    </div>
-  );
-
   const trend: PanelRender = {
     tag: `Candidates — ${spanLabel(trendData) || "no history"}`,
     question: "How have candidate numbers moved, year on year?",
     controls: (
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {chipRow}
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex gap-1.5">
           {startOptions(trendPeriods).length > 1 && (
             <Pill

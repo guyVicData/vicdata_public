@@ -18,7 +18,6 @@ import { academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
-  combine,
   nextStart,
   percentChange,
   periodsWithData,
@@ -32,7 +31,7 @@ import {
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { DonutIcon, HorizontalBarsIcon, IconButton, NextYearIcon, Pill, PrevYearIcon, RankListIcon, SubjectChip } from "./PanelIcons";
+import { DonutIcon, HorizontalBarsIcon, IconButton, NextYearIcon, Pill, PrevYearIcon, RankListIcon } from "./PanelIcons";
 import { ShareDonut } from "./ShareDonut";
 import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
 import { TrendChart } from "./TrendChart";
@@ -62,8 +61,7 @@ export function SubjectPanels({
   groupSeries,
   donut,
   yearControl = false,
-  focus: focusProp,
-  onFocusChange,
+  focus,
   controls,
   questions,
   source,
@@ -73,7 +71,6 @@ export function SubjectPanels({
   emptyText,
   note,
   currentLabel,
-  showChips = true,
 }: {
   columnId: string;
   periods: number[];
@@ -101,11 +98,10 @@ export function SubjectPanels({
   // Only the years the active measure really has (§6.3); absent elsewhere, matching the
   // wireframe, which draws it on Context alone.
   yearControl?: boolean;
-  // The focused subject chip, lifted when the caller needs it -- Context's picker labels
-  // its "Other subjects in ..." row from the focused subject's own family. Left
-  // uncontrolled, it is ordinary internal state.
-  focus?: string;
-  onFocusChange?: (key: string) => void;
+  // The dashboard's one focus subject (the shared control bar's chips). Content round S5
+  // removed "All", so Trend and the donut always follow a single subject: this one, or
+  // the first subject when it is not among `subjects`.
+  focus: string | null;
   controls?: ReactNode;
   questions: { current: string; trend: string; change: string };
   source: (span?: string) => ReactNode;
@@ -121,22 +117,14 @@ export function SubjectPanels({
   // fullscreen, or printed -- still says which card it came from. Absent falls back to
   // the old wording, which is what any caller that has not been given a name wants.
   currentLabel?: string;
-  // Round 8 §3: Context's focus subject is chosen in the shared control bar now, so its
-  // panels must NOT draw a second chip row for the same thing. Column 1 keeps its own --
-  // its multi-subject selection is explicitly a separate mechanism the shared chips do
-  // not touch -- which is why this is a prop rather than a blanket removal.
-  showChips?: boolean;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
-  const [ownFocus, setOwnFocus] = useState<string>("all");
   const [yearIdx, setYearIdx] = useState<number | null>(null);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
 
-  const focus = focusProp ?? ownFocus;
-  const setFocus = (key: string) => (onFocusChange ? onFocusChange(key) : setOwnFocus(key));
   // The donut is Candidates-only, so a measure switch has to fall back rather than leave
   // the panel on a view it can no longer draw.
   const effectiveView = view === "donut" && !donut?.enabled ? "bar" : view;
@@ -200,14 +188,10 @@ export function SubjectPanels({
   const worstRow = byDelta[byDelta.length - 1];
   const againstNoun = benchmarkNoun ?? "its own previous year";
 
-  // The donut's two numbers: the focused subject (or every ticked subject combined) as a
-  // share of the comparison group's own total for the SAME year Current is showing.
-  const focusedSubject = subjects.find((s) => s.key === focus);
-  const donutValue = latestIdx < 0
-    ? null
-    : focusedSubject
-      ? focusedSubject.values[latestIdx]
-      : combine(subjects.map((s) => s.values[latestIdx]), measure.aggregate);
+  // The donut's two numbers: the focused subject as a share of the comparison group's own
+  // total for the SAME year Current is showing.
+  const focusedSubject = subjects.find((s) => s.key === focus) ?? subjects[0];
+  const donutValue = latestIdx < 0 || !focusedSubject ? null : focusedSubject.values[latestIdx];
   const donutGroupValue = latestIdx >= 0 ? donut?.groupTotals[latestIdx] ?? null : null;
   const donutPercent =
     donutValue !== null && donutGroupValue !== null && donutGroupValue > 0 ? (donutValue / donutGroupValue) * 100 : null;
@@ -253,7 +237,7 @@ export function SubjectPanels({
             ) : (
               <ShareDonut
                 percent={donutPercent}
-                label={focusedSubject?.label ?? "Your subjects"}
+                label={focusedSubject?.label ?? ""}
                 groupLabel={donut.groupLabel}
                 valueLabel={measure.format(donutValue!)}
                 groupValueLabel={measure.format(donutGroupValue!)}
@@ -294,7 +278,7 @@ export function SubjectPanels({
       effectiveView === "donut" && donut ? (
         donutPercent === null ? undefined : (
           <PanelSummary>
-            {focusedSubject?.label ?? "Your subjects"} {focusedSubject ? "is" : "are"} {Math.round(donutPercent)}% of{" "}
+            {focusedSubject?.label} is {Math.round(donutPercent)}% of{" "}
             {donut.groupLabel.toLowerCase()} ({measure.format(donutGroupValue!)}) in{" "}
             {latest === null ? "this year" : academicYearLabel(latest)}.
           </PanelSummary>
@@ -318,15 +302,12 @@ export function SubjectPanels({
 
   // ----------------------------------------------------------------- Trend
   const focused = focusedSubject;
-  const allValues = periods.map((_, i) => combine(subjects.map((s) => s.values[i]), measure.aggregate));
-  const focusLabel = focused ? focused.label : subjects.length === 1 ? subjects[0].label : "All subjects";
+  const focusLabel = focused?.label ?? "";
 
   const trendFull: PanelData = trimToData({
     periods,
     series: [
-      focused
-        ? { key: focused.key, label: focused.label, colour: focused.colour, values: focused.values }
-        : { key: "all", label: "All subjects", colour: "var(--muted2)", values: allValues },
+      ...(focused ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: focused.values }] : []),
       ...(groupSeries
         ? [{ key: "group", label: groupSeries.label, colour: "var(--muted3)", values: groupSeries.values, comparison: true }]
         : []),
@@ -335,8 +316,7 @@ export function SubjectPanels({
   const trendPeriods = periodsWithData(trendFull);
   const trendData = sliceFrom(trendFull, trendStart);
   const trendSaid = trendSentence({
-    // "All subjects" is plural, so it takes a bare possessive -- "All subjects's average
-    // point score" was reading as a typo on every aggregate trend.
+    // A plural subject name takes a bare possessive -- "Classics's" reads as a typo.
     subjectClause: `${focusLabel}${focusLabel.endsWith("s") ? "'" : "'s"} ${measure.noun}`,
     values: trendData.series[0]?.values ?? [],
     measure,
@@ -351,21 +331,11 @@ export function SubjectPanels({
     return ` — against ${groupSeries.label.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
   })();
 
-  const chipRow = !showChips ? null : (
-    <div className="flex flex-wrap gap-1.5">
-      <SubjectChip label="All subjects" colour="#57534e" active={focus === "all"} onClick={() => setFocus("all")} />
-      {subjects.map((s) => (
-        <SubjectChip key={s.key} label={s.label} colour={s.colour} active={focus === s.key} onClick={() => setFocus(s.key)} />
-      ))}
-    </div>
-  );
-
   const trend: PanelRender = {
     tag: `${measure.label} — ${spanLabel(trendData.periods) || "no history"}`,
     question: questions.trend,
     controls: (
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {chipRow ?? <span />}
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex gap-1.5">
           {startOptions(trendPeriods).length > 1 && (
             <Pill
