@@ -25,6 +25,7 @@ import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
 import { thresholdRate } from "@/lib/subject-grades";
+import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
@@ -774,7 +775,12 @@ export default function TeacherPhaseDashboard() {
     new Set(headline.filter((h) => tickedItems.some((i) => i.subject === h.subject)).map((h) => h.period)),
   ).sort((a, b) => a - b);
 
-  const shortSubject = (label: string) => (label.length <= 6 ? label : `${label.slice(0, 4)}.`);
+  // Step 8: one shared shortener (curated table, then fallback, then a collision check
+  // over everything shown together) replaces the old "first four letters + ." copies.
+  const shortLabelsFor = (list: SubjectItem[]) =>
+    shortSubjectLabels(
+      list.map((i) => ({ key: i.key, subject: i.subject, bucket: bucketOf(i), detail: qualificationShortLabel(phase, i.qualificationType) })),
+    );
   // "Nearest 10 schools" -> "Nearest 10 Schools", for the tags that name a set or group.
   const titleCase = (label: string) => label.replace(/\b([a-z])/g, (m) => m.toUpperCase());
 
@@ -847,6 +853,7 @@ export default function TeacherPhaseDashboard() {
   const candidateItems = categoryItems.filter(
     (i, idx) => categoryItems.findIndex((o) => o.subject === i.subject && bucketOf(o) === bucketOf(i)) === idx,
   );
+  const candidateShort = shortLabelsFor(candidateItems);
 
   // Every period any category member has a headline row for.
   const categoryPeriods = Array.from(
@@ -872,11 +879,12 @@ export default function TeacherPhaseDashboard() {
   // qualification BUCKET, not per subject, so only the focused subject keeps the marker it
   // always had and the peers carry none -- the per-subject KS5 backend is a separate,
   // already-logged round.
+  const categoryShort = shortLabelsFor(categoryItems);
   const resultsSeries: SubjectSeries[] = categoryItems
     .map((i) => ({
       key: i.key,
       label: i.label,
-      shortLabel: shortSubject(i.subject),
+      shortLabel: categoryShort.get(i.key) ?? i.subject,
       colour: categoryColour(i),
       values: resultsPeriods.map((p) => valueForResults(i, p)),
       benchmark: usingThreshold || (phase !== "ks4" && i.key !== focusKey) ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
@@ -991,11 +999,12 @@ export default function TeacherPhaseDashboard() {
   // Column 1's category draws from -- this school's own items -- without the category
   // filter. A subject with no figure on the active measure (a BTEC on points at GCSE) is
   // left out, as in Column 1; the focused subject always stays.
+  const contextShort = shortLabelsFor(focusItem ? [focusItem, ...items.filter((i) => i.key !== focusItem.key && i.entries > 0)] : []);
   const contextSeries: SubjectSeries[] = (focusItem ? [focusItem, ...items.filter((i) => i.key !== focusItem.key && i.entries > 0)] : [])
     .map((i) => ({
       key: i.key,
       label: i.label,
-      shortLabel: shortSubject(i.subject),
+      shortLabel: contextShort.get(i.key) ?? i.subject,
       colour: i.key === focusKey ? colourOf(i) : PEER_COLOUR,
       values: contextPeriods.map((p) => contextValueFor(i, p)),
       benchmark: atContextPeriod(contextGroupAverage),
@@ -1349,6 +1358,7 @@ export default function TeacherPhaseDashboard() {
                 key: i.key,
                 subject: i.subject,
                 label: phase === "ks4" ? i.subject : i.label,
+                shortLabel: candidateShort.get(i.key) ?? i.subject,
                 values: categoryPeriods.map((p) => entriesAt(i, p)),
               }))}
               periods={categoryPeriods}

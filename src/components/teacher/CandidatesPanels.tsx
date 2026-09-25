@@ -43,16 +43,13 @@ import { VerticalBars } from "./VerticalBars";
 // sibling source's labels are ambiguous), and that short run was the whole reason
 // Candidates' Trend and From menu stopped at 2023/24 while Context's went back to 2020/21.
 // No colour: the redesign tints subjects here, in Current's order (step 2).
-export type CandidateSubject = { key: string; subject: string; label: string; values: (number | null)[] };
+// `shortLabel` comes from the one shared shortener (step 8), computed by the page over
+// every subject shown together so its collision check can see them all.
+export type CandidateSubject = { key: string; subject: string; label: string; shortLabel: string; values: (number | null)[] };
 
 // The summary sentences name the direction in colour, matching the wireframe: teal for
 // growth, amber for decline, muted for flat. Same two tones the delta badges use.
 const DIRECTION_COLOUR = { up: "#0d9488", down: "#b45309", flat: "var(--muted)" } as const;
-
-// A four-letter stub ("Geog.", "Chem.") under a bar, where the full name would not fit.
-function shortLabel(label: string): string {
-  return label.length <= 6 ? label : `${label.slice(0, 4)}.`;
-}
 
 export function CandidatesPanels({
   phase,
@@ -160,7 +157,7 @@ export function CandidatesPanels({
         <p className="text-sm text-[var(--muted)]">Pick a subject to see its entries.</p>
       ) : view === "bars" ? (
         <VerticalBars
-          bars={currentRows.map((r) => ({ key: r.key, label: r.label, shortLabel: shortLabel(r.subject), value: r.value, colour: colourOf(r.key) }))}
+          bars={currentRows.map((r) => ({ key: r.key, label: r.label, shortLabel: r.shortLabel, value: r.value, colour: colourOf(r.key) }))}
           measure={measure}
           fullscreen={fullscreen}
         />
@@ -250,7 +247,7 @@ export function CandidatesPanels({
   const changeBars: ChangeBar[] = changeData.series.map((s) => ({
     key: s.key,
     label: s.label,
-    shortLabel: shortLabel(subjects.find((x) => x.key === s.key)?.subject ?? s.label),
+    shortLabel: subjects.find((x) => x.key === s.key)?.shortLabel ?? s.label,
     colour: s.colour,
     percent: percentChange(s.values),
   }));
