@@ -269,7 +269,13 @@ export function CardBox({
             {actions}
           </div>
         )}
-        <div className={fixedHeight ? "flex min-w-0 flex-grow flex-col" : "min-w-0 flex-grow"}>
+        {/* Round 2 §7: the content scrolls inside its own box. It used to have no overflow
+            rule, so anything taller than the space the panel leaves it -- a long ranking, a
+            trend chart and its legend -- spilled into the reserved bottom padding and drew
+            underneath the pinned footer (the panel only clipped at its outer edge). The
+            reserve itself was never short: the footer is 17px tall pinned 10px up, inside
+            36px. A list that centres its own row (CentredOnTarget) still scrolls itself. */}
+        <div className={fixedHeight ? "flex min-h-0 min-w-0 flex-grow flex-col overflow-y-auto" : "min-w-0 flex-grow"}>
           {children({ fullscreen: false })}
         </div>
       </div>
