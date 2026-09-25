@@ -97,18 +97,33 @@ type SchoolSeries = { results: YearValue[]; candidates: YearValue[] };
 type RankedRow = {
   urn: string; name: string; value: number | null; isTarget: boolean; distanceKm: number | null;
   cohortSize?: number | null;
-  // GCSE only: DfE's tables exclude IGCSEs, so an IGCSE-heavy independent's Attainment 8
-  // is not comparable. Same rule the advanced dashboard applies (igcseExclusionLikely):
-  // the school stays in the set, unranked, with the reason shown.
+  // GCSE only, and only ever on the TARGET row now: an IGCSE-heavy independent's own
+  // Attainment 8 is not comparable (DfE's tables exclude IGCSEs), and a school cannot be
+  // left out of its own dashboard. Comparator schools that trip the same rule are dropped
+  // from every set instead -- see rankSets.
   igcseExcluded?: boolean;
 };
 
-// One fetchAcademicProfiles call for the union of every set, not one per set: the sets
-// overlap heavily (the nearest schools recur in most of them), and these lookups are
-// the ones that have hit statement timeouts when multiplied.
+// The four sets, built from whichever pool schools are usable. A function rather than a
+// value because rankSets may have to rebuild them: see below.
+type SetBuilder = (pool: PoolSchool[]) => Partial<Record<RankingsSetId, PoolSchool[]>>;
+
+// One fetchAcademicProfiles call per pass for every set's union, not one per set: the sets
+// overlap heavily (the nearest schools recur in most of them), and these lookups are the
+// ones that have hit statement timeouts when multiplied.
+//
+// Content round S4: at GCSE, a comparator school that igcseExclusionLikely flags is left
+// OUT of every set, in both measures -- the rule 514e285 applies on the public pages
+// ("omit, don't caveat"). Round 6 kept such schools in the set, unranked, which surfaced
+// as real-looking candidate numbers (their entries series was never gated) and as "not
+// comparable" placeholder rows. Dropping them after the sets were built would leave
+// "Nearest 10" holding eight schools, so the sets are rebuilt from the pool minus the
+// excluded schools, and any newly-admitted schools are fetched and checked in turn. Each
+// pass only ever shrinks the pool, so this settles in a pass or two; the cap is a guard.
 async function rankSets(
   targetUrn: string,
-  sets: Partial<Record<RankingsSetId, PoolSchool[]>>,
+  pool: PoolSchool[],
+  buildSets: SetBuilder,
   phase: KsStage,
   cohortSizes: Map<string, number> | null,
 ): Promise<{
@@ -117,13 +132,27 @@ async function rankSets(
   targetSeries: YearValue[];
   seriesByUrn: Record<string, SchoolSeries>;
 }> {
-  // The target is always in the union, so its profile comes back even when it has no
-  // neighbours -- Candidates' "% of year group" reads its cohort from it.
-  const union = new Set<string>([targetUrn]);
-  for (const set of Object.values(sets)) for (const p of set ?? []) union.add(p.urn);
-  const profiles = await fetchAcademicProfiles(Array.from(union), { includePopulation: false });
-  const byUrn = new Map<string, AcademicSchoolProfile>(profiles.map((p) => [p.urn, p]));
+  const byUrn = new Map<string, AcademicSchoolProfile>();
+  const fetched = new Set<string>();
   const excluded = (u: string) => phase === "ks4" && !!byUrn.get(u) && igcseExclusionLikely(byUrn.get(u)!);
+  let usable = pool;
+  let sets = buildSets(usable);
+  for (let pass = 0; pass < 4; pass++) {
+    // The target is always in the union, so its profile comes back even when it has no
+    // neighbours -- Candidates' "% of year group" reads its cohort from it.
+    const union = new Set<string>([targetUrn]);
+    for (const set of Object.values(sets)) for (const p of set ?? []) union.add(p.urn);
+    const missing = Array.from(union).filter((u) => !fetched.has(u));
+    if (missing.length) {
+      for (const p of await fetchAcademicProfiles(missing, { includePopulation: false })) byUrn.set(p.urn, p);
+      for (const u of missing) fetched.add(u);
+    }
+    const drop = new Set(Array.from(union).filter((u) => u !== targetUrn && excluded(u)));
+    if (drop.size === 0) break;
+    usable = usable.filter((p) => !drop.has(p.urn));
+    sets = buildSets(usable);
+  }
+
   const valueFor = (u: string): number | null => {
     const prof = byUrn.get(u);
     if (!prof || excluded(u)) return null;
@@ -132,19 +161,22 @@ async function rankSets(
   };
   const sizeFor = (u: string) => (cohortSizes ? cohortSizes.get(u) ?? null : undefined);
   const out: Partial<Record<RankingsSetId, RankedRow[]>> = {};
+  const members = new Set<string>([targetUrn]);
   for (const [id, set] of Object.entries(sets) as [RankingsSetId, PoolSchool[]][]) {
-    if (set.length === 0) { out[id] = []; continue; }
+    // Belt and braces: the loop above has already rebuilt without them, unless it hit
+    // its cap, in which case a still-flagged school is dropped here rather than shown.
+    const kept = set.filter((p) => !excluded(p.urn));
+    if (kept.length === 0) { out[id] = []; continue; }
+    for (const p of kept) members.add(p.urn);
     out[id] = [
       { urn: targetUrn, name: "This school", value: valueFor(targetUrn), isTarget: true, distanceKm: 0, cohortSize: sizeFor(targetUrn), igcseExcluded: excluded(targetUrn) },
-      ...set.map((p) => ({ urn: p.urn, name: p.name, value: valueFor(p.urn), isTarget: false, distanceKm: p.distanceKm, cohortSize: sizeFor(p.urn), igcseExcluded: excluded(p.urn) })),
+      ...kept.map((p) => ({ urn: p.urn, name: p.name, value: valueFor(p.urn), isTarget: false, distanceKm: p.distanceKm, cohortSize: sizeFor(p.urn) })),
     ];
   }
-  // A school excluded from the ranking (an IGCSE-heavy independent at GCSE) is excluded
-  // from the trend too: its Attainment 8 is not comparable in any year, not just the
-  // latest one, so plotting its history would put a line on the chart the ranking beside
-  // it deliberately refuses to place.
+  // The target's own results history is withheld when it is excluded, as before: its
+  // Attainment 8 is not comparable in any year, not just the latest one.
   const seriesByUrn: Record<string, SchoolSeries> = {};
-  for (const urn of union) {
+  for (const urn of members) {
     const prof = byUrn.get(urn);
     seriesByUrn[urn] = {
       results: excluded(urn) ? [] : seriesOf(prof, phase),
@@ -233,13 +265,16 @@ export async function GET(request: NextRequest) {
   // published KS2 exam-cohort figure, only the census Year 6 count, and the brief only
   // defines this set for GCSE and Post-16.
   const cohortSizes = phase === "ks2" ? null : await fetchLatestCohortSizes([urn, ...pool.map((p) => p.urn)], phase);
-  const sets: Partial<Record<RankingsSetId, PoolSchool[]>> = {
-    nearest: pool.slice(0, SET_SIZE),
-    same_sector: sameSector(pool, targetIndependent),
-    local_rivals: localRivals(pool),
+  const buildSets: SetBuilder = (usable) => {
+    const sets: Partial<Record<RankingsSetId, PoolSchool[]>> = {
+      nearest: usable.slice(0, SET_SIZE),
+      same_sector: sameSector(usable, targetIndependent),
+      local_rivals: localRivals(usable),
+    };
+    if (cohortSizes) sets.similar_size = similarSize(usable, cohortSizes, cohortSizes.get(urn) ?? null);
+    return sets;
   };
-  if (cohortSizes) sets.similar_size = similarSize(pool, cohortSizes, cohortSizes.get(urn) ?? null);
-  const { ranked: comparatorSets, targetProfile, targetSeries, seriesByUrn } = await rankSets(urn, sets, phase, cohortSizes);
+  const { ranked: comparatorSets, targetProfile, targetSeries, seriesByUrn } = await rankSets(urn, pool, buildSets, phase, cohortSizes);
   const setInfo = { targetIndependent, targetCohortSize: cohortSizes?.get(urn) ?? null };
 
   if (phase === "ks2") {

@@ -17,6 +17,8 @@
 // Comparisons, both already single-subject mechanisms. Column 1's own multi-subject bars
 // are a separate thing and this does not touch them.
 import type { ReactNode } from "react";
+import type { TeacherPhase } from "@/lib/teacher-view-phases";
+import { PhaseGlyph } from "./HomeCard";
 
 export type SharedMeasure = "candidates" | "results";
 
@@ -38,16 +40,6 @@ export function SubjectIconSquare({ icon, colour, on }: { icon: ReactNode; colou
     </span>
   );
 }
-
-// The qualification glyph -- a mortarboard, the one icon the wireframe sizes up above
-// every other on the page (40px box, 23px glyph, against the columns' 30/16).
-const QUALIFICATION_ICON = (
-  <svg width="23" height="23" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M2 8l8-4 8 4-8 4-8-4z" />
-    <path d="M5.5 9.7V13c0 1.1 2 2 4.5 2s4.5-.9 4.5-2V9.7" />
-    <path d="M17 8v4.5" />
-  </svg>
-);
 
 // The toggle itself: a segmented control, not a dropdown, because there are two options and
 // both should be readable without opening anything. Exported so the phone nav renders this
@@ -82,6 +74,7 @@ export function MeasureToggle({
 }
 
 export function ControlBar({
+  phase,
   phaseLabel,
   schoolName,
   measure,
@@ -92,6 +85,9 @@ export function ControlBar({
   onEditSubjects,
   chrome,
 }: {
+  // Content round S1: the badge draws the phase's own PhaseGlyph -- the one the Teacher
+  // home tiles and the nav's phase switcher use -- not a separate mortarboard.
+  phase: TeacherPhase;
   phaseLabel: string;
   schoolName: string | null;
   measure: SharedMeasure;
@@ -110,7 +106,7 @@ export function ControlBar({
       <div className="flex flex-wrap items-center gap-3.5">
         <div className="flex items-center gap-2.5 whitespace-nowrap">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[rgba(var(--accent-rgb,138,138,144),0.14)] text-[var(--accent,var(--muted2))]">
-            {QUALIFICATION_ICON}
+            <span className="flex [&>svg]:h-[23px] [&>svg]:w-[23px]"><PhaseGlyph phase={phase} /></span>
           </span>
           <p className="text-base font-bold">
             {phaseLabel}

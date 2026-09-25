@@ -1088,6 +1088,7 @@ export default function TeacherPhaseDashboard() {
             per-column header rows. Everything measure-specific was deliberately kept OUT of
             it -- see ControlBar's own note on the row-alignment reason. */}
         <ControlBar
+          phase={phase}
           phaseLabel={PHASE_LABELS[phase]}
           schoolName={schoolName}
           measure={sharedMeasure}
@@ -1230,7 +1231,10 @@ export default function TeacherPhaseDashboard() {
               onPanelsChange={(next) => setPanels(COL1, next)}
               notes={notesFor(COL1)}
               emptyText="Pick a subject above to see its results."
-              currentLabel={COLUMN_TITLE.results}
+              // Content round S3 (Redesign.dc.html v27): on average point score the Current
+              // tag says what the figure is -- "Av. Points 2024/25" -- while the column
+              // heading stays "Results". The threshold measure keeps its existing tag.
+              currentLabel={resultsMeasure.id === "points" ? "Av. Points" : COLUMN_TITLE.results}
             />
           ) : (
             <CandidatesPanels

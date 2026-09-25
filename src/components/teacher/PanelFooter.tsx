@@ -133,7 +133,7 @@ export function PanelNote({
 
 // ---------------------------------------------------------------- export (§5)
 
-const ExportIcon = (
+export const ExportIcon = (
   <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M10 3v9M6.5 8.5 10 12l3.5-3.5" />
     <path d="M3.5 14.5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2" />

@@ -84,7 +84,7 @@ export function ComparisonsPanels({
   onSetChange,
   setLabel,
   setNote,
-  schools,
+  schools: allSchools,
   seriesByUrn,
   // Round 8 §3: the measure comes from the shared control bar now. This column's own
   // Candidates/Results pill is gone; only "Compared against" -- which SCHOOLS, a question
@@ -162,6 +162,13 @@ export function ComparisonsPanels({
     onSetChange(id);
   };
 
+  // Content round S4: a comparator with no published figure for what is being compared --
+  // at Post-16 most often a school that does not offer the focused subject -- is simply
+  // not listed for it, rather than drawn as a bare "—  —" row. Per subject and per
+  // measure: the same school reappears for any subject it does have figures for. Not
+  // applied while the per-subject rows are still loading, when "no data yet" is not "no
+  // data". The school itself always stays.
+  const schools = seriesLoading ? allSchools : allSchools.filter((s) => s.isTarget || seriesFor(s.urn).length > 0);
   const target = schools.find((s) => s.isTarget) ?? null;
   const others = schools.filter((s) => !s.isTarget);
 
@@ -179,8 +186,11 @@ export function ComparisonsPanels({
   const valueAt = (urn: string) => (latestIdx >= 0 ? valuesFor(urn)[latestIdx] : null);
 
   // ------------------------------------------------------------------ Current
+  // A comparator with history but nothing in the latest year is left out of the ranking
+  // for the same reason: a row of dashes is not a position.
   const ranked = [...schools]
     .map((s) => ({ ...s, value: valueAt(s.urn) }))
+    .filter((r) => r.isTarget || r.value !== null)
     .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
   const placed = ranked.filter((r) => r.value !== null);
   const rankOfUrn = rankByValue(ranked.map((r) => ({ key: r.urn, value: r.value })));

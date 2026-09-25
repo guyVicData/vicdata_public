@@ -20,6 +20,7 @@
 //    so this completes the same job for themed subtrees rather than adding a second
 //    export mechanism.
 import { useEffect, useState } from "react";
+import { ExportIcon } from "./PanelFooter";
 
 export type Theme = "dark" | "light";
 const STORAGE_KEY = "vicdata.teacher.theme";
@@ -102,14 +103,18 @@ const MOON_ICON = (
   </svg>
 );
 
+// Content round S2: an icon, the same glyph every panel's own Export uses, so the
+// whole-dashboard export and a panel's read as the same action at two sizes.
 export function ExportButton() {
   return (
     <button
       type="button"
       onClick={() => window.print()}
-      className="rounded-md border border-neutral-300 px-2 py-1 text-xs print:hidden dark:border-neutral-700"
+      aria-label="Export all visible panels"
+      title="Export all visible panels"
+      className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-md border border-[var(--panel-border2)] text-[var(--muted)] hover:border-[var(--fg)] hover:text-[var(--fg)] print:hidden [&>svg]:h-4 [&>svg]:w-4"
     >
-      Export
+      {ExportIcon}
     </button>
   );
 }
