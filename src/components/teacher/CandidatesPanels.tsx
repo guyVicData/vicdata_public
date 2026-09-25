@@ -29,10 +29,10 @@ import {
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
-import { ChangeChart, type ChangeBar } from "./ChangeChart";
+import { type ChangeBar } from "./ChangeChart";
 import { HorizontalBarsIcon, IconButton, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { MultiTrend, YearTable, multiTrendHasLine } from "./SeriesViews";
+import { ChangeList, MultiTrend, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { VerticalBars } from "./VerticalBars";
 
@@ -254,7 +254,7 @@ export function CandidatesPanels({
     colour: s.colour,
     percent: percentChange(s.values),
   }));
-  const ranked = changeBars.filter((b) => b.percent !== null).sort((a, b) => b.percent! - a.percent!);
+  const ranked = changeBars.filter((b) => b.key !== "group" && b.percent !== null).sort((a, b) => b.percent! - a.percent!);
   const best = ranked[0];
   const worst = ranked[ranked.length - 1];
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
@@ -277,7 +277,15 @@ export function CandidatesPanels({
           <YearTable data={changeSubjectsData} measure={measure} focusKey={focused?.key ?? null} fullscreen={fullscreen} />
         </CentredOnTarget>
       ) : (
-        <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+        // Step 7, Option H: ranked by % change, the category average a dashed line
+        // through the rows rather than an eighth bar competing with the subjects.
+        <CentredOnTarget watch={`change-list:${focused?.key}:${changeData.periods.join(",")}`}>
+          <ChangeList
+            rows={changeBars.filter((b) => b.key !== "group")}
+            focusKey={focused?.key ?? null}
+            group={group ? { label: group.label, percent: percentChange(changeData.series.find((s) => s.key === "group")?.values ?? []) } : undefined}
+          />
+        </CentredOnTarget>
       ),
     summary:
       best && worst && best.key !== worst.key ? (
