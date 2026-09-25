@@ -49,6 +49,38 @@ const QUALIFICATION_ICON = (
   </svg>
 );
 
+// The toggle itself: a segmented control, not a dropdown, because there are two options and
+// both should be readable without opening anything. Exported so the phone nav renders this
+// same control rather than a lookalike; `compact` only tightens its padding for phone width.
+export function MeasureToggle({
+  measure,
+  onMeasure,
+  compact = false,
+}: {
+  measure: SharedMeasure;
+  onMeasure: (next: SharedMeasure) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className="inline-flex shrink-0 rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] p-[3px] print:hidden" role="group" aria-label="Measure">
+      {(["candidates", "results"] as const).map((m) => (
+        <button
+          key={m}
+          type="button"
+          aria-pressed={measure === m}
+          onClick={() => onMeasure(m)}
+          className={[
+            compact ? "rounded-full px-3 py-1 text-xs font-bold" : "rounded-full px-4 py-1.5 text-[13px] font-bold",
+            measure === m ? "bg-[var(--accent,var(--fg))] text-[#06120c]" : "text-[var(--muted)] hover:text-[var(--fg)]",
+          ].join(" ")}
+        >
+          {m === "candidates" ? "Candidates" : "Results"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ControlBar({
   phaseLabel,
   schoolName,
@@ -86,24 +118,7 @@ export function ControlBar({
           </p>
         </div>
 
-        {/* The toggle itself: a segmented control, not a dropdown, because there are two
-            options and both should be readable without opening anything. */}
-        <div className="inline-flex rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] p-[3px] print:hidden" role="group" aria-label="Measure">
-          {(["candidates", "results"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={measure === m}
-              onClick={() => onMeasure(m)}
-              className={[
-                "rounded-full px-4 py-1.5 text-[13px] font-bold",
-                measure === m ? "bg-[var(--accent,var(--fg))] text-[#06120c]" : "text-[var(--muted)] hover:text-[var(--fg)]",
-              ].join(" ")}
-            >
-              {m === "candidates" ? "Candidates" : "Results"}
-            </button>
-          ))}
-        </div>
+        <MeasureToggle measure={measure} onMeasure={onMeasure} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2 print:hidden">

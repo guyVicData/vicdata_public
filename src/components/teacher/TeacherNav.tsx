@@ -12,13 +12,15 @@
 // --muted / --panel-bg / --panel-border2, which also have light-theme values.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchNavLabels, saveNavLabels } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { PhaseGlyph } from "./HomeCard";
-import { PanelMenu, useDismiss } from "./PanelMenu";
+import { PanelMenu, MenuDivider, useDismiss } from "./PanelMenu";
+import { ChevronDown } from "./PanelIcons";
+import { MeasureToggle, SubjectIconSquare, type FocusSubject, type SharedMeasure } from "./ControlBar";
 import { ThemeToggle, type Theme } from "./TeacherChrome";
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
@@ -107,6 +109,15 @@ export function TeacherNav({
   );
 }
 
+// The active phase's tint -- one rule for the desktop tabs and the phone badge and menu.
+// Same derivation as ControlBar's qualification badge: the accent at 0.14, so the tab and
+// the badge are visibly the same tint rather than two hand-picked ones.
+function activePhaseStyle(p: TeacherPhase, active: boolean): CSSProperties | undefined {
+  if (!active) return undefined;
+  const accent = PHASE_ACCENT[p];
+  return { background: accent ? `rgba(${accent.rgb},0.14)` : "var(--panel-bg)", color: accent?.hex ?? "var(--fg)" };
+}
+
 // For the pages without a phase: the label setting is read from, and saved to, every
 // onboarded phase's preferences row -- the same store the phase dashboard writes -- so one
 // toggle means the same thing everywhere. With nothing onboarded there is no row to hold
@@ -136,13 +147,8 @@ export function useNavLabels(schoolUrn: string | null, phases: TeacherPhase[]): 
 function PhaseSwitcher({ phase, phases, labelsOn }: { phase: TeacherPhase | null; phases: TeacherPhase[]; labelsOn: boolean }) {
   if (phases.length === 0) return null;
   const item = (p: TeacherPhase) => {
-    const accent = PHASE_ACCENT[p];
     const active = p === phase;
-    // Same derivation as ControlBar's qualification badge: the accent at 0.14, so the tab
-    // and the badge below it are visibly the same tint rather than two hand-picked ones.
-    const style = active
-      ? { background: accent ? `rgba(${accent.rgb},0.14)` : "var(--panel-bg)", color: accent?.hex ?? "var(--fg)" }
-      : undefined;
+    const style = activePhaseStyle(p, active);
     return { active, style, body: (
       <>
         <span className={GLYPH_WRAP}><PhaseGlyph phase={p} /></span>
@@ -231,6 +237,183 @@ function AccountMenu() {
               </button>
             </>
           )}
+        </PanelMenu>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------------------
+// Phone width (NavPhone.dc.html), phase dashboards only. The page renders this below `sm`
+// and TeacherNav + ControlBar above it -- a rendering fork, not a data fork: every prop is
+// the same state the desktop pair reads, and every control is the same component
+// (AccountMenu, ThemeToggle, MeasureToggle, SubjectIconSquare, the "±" handler).
+//
+// Row 1 is identity and settings, icon-only with no label toggle -- icon-only is the phone
+// design, not a labels-off state. Row 2 is what you are looking at: the phase badge (its
+// own dropdown), the measure toggle, and the focus subject (its own dropdown) at the right
+// edge. No whole-page Export here by design; each panel's own export is untouched.
+export function PhoneNav({
+  phase,
+  phases,
+  theme,
+  onTheme,
+  measure,
+  onMeasure,
+  subjects,
+  focusKey,
+  onFocus,
+  onEditSubjects,
+  className = "",
+}: {
+  phase: TeacherPhase;
+  phases: TeacherPhase[];
+  theme: Theme;
+  onTheme: (t: Theme) => void;
+  measure: SharedMeasure;
+  onMeasure: (next: SharedMeasure) => void;
+  subjects: FocusSubject[];
+  focusKey: string | null;
+  onFocus: (key: string | null) => void;
+  onEditSubjects: () => void;
+  // The page's breakpoint class (sm:hidden) -- the swap point is the page's call.
+  className?: string;
+}) {
+  return (
+    <div className={`print:hidden ${className}`}>
+      <div className="flex items-center justify-between gap-3 pb-3">
+        <Link href="/" className="text-[15px] font-extrabold tracking-tight">VicData</Link>
+        <div className="flex items-center gap-2.5">
+          <Link href="/teacher" aria-label="Home" title="Home" className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]">
+            {HOME_ICON}
+          </Link>
+          <AccountMenu />
+          <ThemeToggle theme={theme} onTheme={onTheme} />
+        </div>
+      </div>
+      <div className="h-px bg-[var(--panel-border2)]" />
+      <div className="flex items-center gap-2 pt-3">
+        <PhaseBadgeMenu phase={phase} phases={phases} />
+        <MeasureToggle measure={measure} onMeasure={onMeasure} compact />
+        {subjects.length > 0 && (
+          <SubjectMenu subjects={subjects} focusKey={focusKey} onFocus={onFocus} onEditSubjects={onEditSubjects} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+const PHONE_MENU_ROW = "flex w-full items-center gap-2 rounded-[8px] px-2 py-2 text-left text-[13px] font-semibold hover:bg-[var(--box-bg)]";
+
+function PhaseBadgeMenu({ phase, phases }: { phase: TeacherPhase; phases: TeacherPhase[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(open, () => setOpen(false));
+  const listed = TEACHER_PHASES.filter((p) => p === phase || phases.includes(p));
+  const badge = "flex h-[34px] shrink-0 items-center gap-1 rounded-[10px] px-2.5";
+  // Same single-phase rule as the desktop switcher: plain context, not a menu of one.
+  if (listed.length <= 1) {
+    return (
+      <span className={badge} style={activePhaseStyle(phase, true)} title={PHASE_LABELS[phase]}>
+        <span className={GLYPH_WRAP}><PhaseGlyph phase={phase} /></span>
+      </span>
+    );
+  }
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Phase: ${PHASE_LABELS[phase]}`}
+        className={badge}
+        style={activePhaseStyle(phase, true)}
+      >
+        <span className={GLYPH_WRAP}><PhaseGlyph phase={phase} /></span>
+        {ChevronDown}
+      </button>
+      {open && (
+        <PanelMenu label="Phase" width={180}>
+          {listed.map((p) => (
+            <Link
+              key={p}
+              href={`/teacher/${p}`}
+              aria-current={p === phase ? "page" : undefined}
+              onClick={() => setOpen(false)}
+              className={`${PHONE_MENU_ROW} ${p === phase ? "" : "text-[var(--muted2)]"}`}
+              style={activePhaseStyle(p, p === phase)}
+            >
+              <span className={GLYPH_WRAP}><PhaseGlyph phase={p} /></span>
+              {PHASE_LABELS[p]}
+            </Link>
+          ))}
+        </PanelMenu>
+      )}
+    </div>
+  );
+}
+
+function SubjectMenu({
+  subjects,
+  focusKey,
+  onFocus,
+  onEditSubjects,
+}: {
+  subjects: FocusSubject[];
+  focusKey: string | null;
+  onFocus: (key: string | null) => void;
+  onEditSubjects: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(open, () => setOpen(false));
+  const focused = subjects.find((s) => s.key === focusKey) ?? null;
+  const choose = (key: string | null) => { onFocus(key); setOpen(false); };
+  return (
+    <div className="relative ml-auto min-w-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Focus subject: ${focused?.label ?? "All subjects"}`}
+        className="flex h-[30px] max-w-full items-center gap-1.5 rounded-full border py-[5px] pl-[5px] pr-2.5 text-xs font-semibold"
+        style={
+          focused
+            ? { borderColor: focused.colour, background: `${focused.colour}29`, color: focused.colour }
+            : { borderColor: "var(--panel-border2)", color: "var(--muted2)" }
+        }
+      >
+        {focused && <SubjectIconSquare icon={focused.icon} colour={focused.colour} on />}
+        {/* "All", as the desktop chip row says it: at 375px this chip has ~50px of label. */}
+        <span className={`truncate ${focused ? "" : "pl-1.5"}`}>{focused?.label ?? "All"}</span>
+        <span className="shrink-0">{ChevronDown}</span>
+      </button>
+      {open && (
+        <PanelMenu label="Focus subject" align="right" width={240}>
+          <button type="button" onClick={() => choose(null)} aria-pressed={focusKey === null} className={`${PHONE_MENU_ROW} ${focusKey === null ? "" : "text-[var(--muted2)]"}`}>
+            All subjects
+          </button>
+          {subjects.map((s) => {
+            const on = s.key === focusKey;
+            return (
+              <button
+                key={s.key}
+                type="button"
+                aria-pressed={on}
+                onClick={() => choose(s.key)}
+                className={PHONE_MENU_ROW}
+                style={on ? { color: s.colour } : { color: "var(--muted2)" }}
+              >
+                <SubjectIconSquare icon={s.icon} colour={s.colour} on={on} />
+                <span className="truncate">{s.label}</span>
+              </button>
+            );
+          })}
+          <MenuDivider />
+          <button type="button" onClick={() => { setOpen(false); onEditSubjects(); }} className={`${PHONE_MENU_ROW} text-[var(--accent,var(--fg))]`}>
+            <span className="flex h-4 w-4 items-center justify-center text-[13px] font-extrabold">&plusmn;</span>
+            Edit subjects
+          </button>
         </PanelMenu>
       )}
     </div>

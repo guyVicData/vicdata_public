@@ -12,7 +12,7 @@ import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNotes, saveNote, hasNewData, markPeriodSeen, NAV_LABELS_KEY, saveNavLabels, againstKey, chosenKey, measureKey, panelNoteKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
-import { TeacherNav } from "@/components/teacher/TeacherNav";
+import { PhoneNav, TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardGrid } from "@/components/teacher/DashboardGrid";
@@ -21,7 +21,7 @@ import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries } from "@/components/teacher/ComparisonsPanels";
 import { AddPanelButton } from "@/components/teacher/AddPanelButton";
-import { ControlBar, type SharedMeasure } from "@/components/teacher/ControlBar";
+import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
@@ -1032,6 +1032,18 @@ export default function TeacherPhaseDashboard() {
       </>
     );
 
+  // What both nav layouts read -- computed once here so the desktop pair and the phone nav
+  // cannot disagree about which phases, subjects or icons there are.
+  const navPhases = TEACHER_PHASES.filter((p) => p === phase || onboardedPhases.includes(p));
+  const focusSubjects: FocusSubject[] = phase === "ks2" ? [] : tickedItems.map((i) => ({
+    key: i.key,
+    label: `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`,
+    colour: colourOf(i),
+    icon: familyIcon(phase, qualificationFamilyOf(phase, i.qualificationType)),
+  }));
+  const onSharedMeasure = (next: SharedMeasure) => setColumnSetting(SHARED_MEASURE_KEY, next);
+  const openSubjectPicker = () => setSubjectPickerOpen(true);
+
   return (
     // §7: the theme attribute is scoped to Teacher view, never to <html> -- see
     // TeacherChrome.tsx for why, and Q15.
@@ -1044,36 +1056,51 @@ export default function TeacherPhaseDashboard() {
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
-      <TeacherNav
+      {/* Top-nav completion part 3: below `sm` the phone nav (NavPhone.dc.html) replaces
+          TeacherNav + ControlBar. A CSS swap, so there is no viewport check to hydrate
+          wrongly -- and both read the same state, so switching phase, subject or measure
+          on either lands in exactly the same place. The desktop pair stays in print, where
+          the phone nav is hidden. */}
+      <PhoneNav
         phase={phase}
-        phases={TEACHER_PHASES.filter((p) => p === phase || onboardedPhases.includes(p))}
-        labelsOn={readSetting(columns, NAV_LABELS_KEY) !== "off"}
-        onLabelsOn={setNavLabels}
+        phases={navPhases}
         theme={theme}
         onTheme={setTheme}
-      />
-
-      {/* Round 8 §3: one control bar replaces the old title row, the school line and the
-          per-column header rows. Everything measure-specific was deliberately kept OUT of
-          it -- see ControlBar's own note on the row-alignment reason. */}
-      <ControlBar
-        phaseLabel={PHASE_LABELS[phase]}
-        schoolName={schoolName}
         measure={sharedMeasure}
-        onMeasure={(next) => setColumnSetting(SHARED_MEASURE_KEY, next)}
-        subjects={phase === "ks2" ? [] : tickedItems.map((i) => ({
-          key: i.key,
-          label: `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`,
-          colour: colourOf(i),
-          icon: familyIcon(phase, qualificationFamilyOf(phase, i.qualificationType)),
-        }))}
+        onMeasure={onSharedMeasure}
+        subjects={focusSubjects}
         focusKey={focusKey}
         onFocus={setFocusKey}
-        onEditSubjects={() => setSubjectPickerOpen(true)}
-        // Top-nav round: Export alone. The theme toggle moved up into TeacherNav, and
-        // "All dashboards" went with it -- the nav's Home link is the same way back.
-        chrome={<ExportButton />}
+        onEditSubjects={openSubjectPicker}
+        className="sm:hidden"
       />
+      <div className="hidden sm:block print:block">
+        <TeacherNav
+          phase={phase}
+          phases={navPhases}
+          labelsOn={readSetting(columns, NAV_LABELS_KEY) !== "off"}
+          onLabelsOn={setNavLabels}
+          theme={theme}
+          onTheme={setTheme}
+        />
+
+        {/* Round 8 §3: one control bar replaces the old title row, the school line and the
+            per-column header rows. Everything measure-specific was deliberately kept OUT of
+            it -- see ControlBar's own note on the row-alignment reason. */}
+        <ControlBar
+          phaseLabel={PHASE_LABELS[phase]}
+          schoolName={schoolName}
+          measure={sharedMeasure}
+          onMeasure={onSharedMeasure}
+          subjects={focusSubjects}
+          focusKey={focusKey}
+          onFocus={setFocusKey}
+          onEditSubjects={openSubjectPicker}
+          // Top-nav round: Export alone. The theme toggle moved up into TeacherNav, and
+          // "All dashboards" went with it -- the nav's Home link is the same way back.
+          chrome={<ExportButton />}
+        />
+      </div>
 
       {/* §13's banner. States what actually changed and when, rather than just shouting. */}
       {newDataPeriod !== null && (
