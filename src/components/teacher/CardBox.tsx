@@ -50,7 +50,12 @@ export const FullscreenReport = createContext<(open: boolean) => void>(() => {})
 // at 224px it is about 800px. S12 moved the Trend sentence out of the panel body into
 // the footer, which gives back most of the chart height this takes away. Three open is
 // allowed to scroll, as agreed.
-export const PANEL_HEIGHT = 224;
+//
+// Round 2 §6 raised it "slightly", to 232px -- the low end of the 232-240 asked for. Two
+// open panels move the column by twice any change, so +8px is +16px on the ~800px total
+// and 240 would be +32px. Round 2 §8 also moved every caption out of the panel body into
+// a footer popover, so the chart area grows by more than these 8px on its own.
+export const PANEL_HEIGHT = 232;
 
 export function CardBox({
   title,
