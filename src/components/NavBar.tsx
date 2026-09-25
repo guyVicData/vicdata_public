@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 export default function NavBar() {
   const supabase = createBrowserSupabaseClient();
+  const pathname = usePathname();
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -16,6 +18,14 @@ export default function NavBar() {
     return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 2026-09-25: the Teacher view phase dashboards (/teacher/ks4 etc.) carry their own
+  // TeacherNav -- wordmark, Home, Account -- so this bar would be a second wordmark and a
+  // second Account link stacked directly above it. Only those routes: /teacher itself,
+  // /teacher/recruitment and /teacher/meetings have no TeacherNav and keep this bar. The
+  // phases are spelt out rather than importing TEACHER_PHASES, whose module drags the
+  // academic data layer into every page's bundle for the sake of one list.
+  if (pathname && /^\/teacher\/(ks2|ks4|ks5)\/?$/.test(pathname)) return null;
 
   return (
     <header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 text-sm dark:border-neutral-800">

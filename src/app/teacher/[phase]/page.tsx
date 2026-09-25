@@ -10,8 +10,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNotes, saveNote, hasNewData, markPeriodSeen, againstKey, chosenKey, measureKey, panelNoteKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
-import { TeacherChrome, useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNotes, saveNote, hasNewData, markPeriodSeen, NAV_LABELS_KEY, againstKey, chosenKey, measureKey, panelNoteKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
+import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
+import { TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardGrid } from "@/components/teacher/DashboardGrid";
@@ -108,6 +109,8 @@ export default function TeacherPhaseDashboard() {
   // this visit and simply does not reappear on the next one.
   const [newDataPeriod, setNewDataPeriod] = useState<number | null>(null);
   const [onboarded, setOnboarded] = useState(false);
+  // Every phase this school has onboarded -- the nav's switcher offers only these.
+  const [onboardedPhases, setOnboardedPhases] = useState<TeacherPhase[]>([]);
   const [step, setStep] = useState(0);
   // Onboarding step 1's ticked qualification families. null = not touched yet, which means
   // "every family the school has entries under" -- the mockup's pre-ticked default, so a
@@ -181,6 +184,7 @@ export default function TeacherPhaseDashboard() {
       }
       const done = await fetchOnboardedPhases(supabase, urn);
       setOnboarded(done.includes(phase));
+      setOnboardedPhases(done);
       const prefs = await fetchPreferences(supabase, urn, phase);
       setTicked(prefs.subjects);
       setColumns(prefs.columns);
@@ -290,6 +294,24 @@ export default function TeacherPhaseDashboard() {
       }
     },
     [columns, schoolUrn, phase, supabase],
+  );
+
+  // The nav's label toggle, saved through the same path as every column setting. That
+  // store is keyed per phase, and a nav toggle that flipped back when you used the nav's
+  // own phase switcher would read as a bug -- so it is written to every onboarded phase's
+  // row, not just this one. Each row is read-modify-written like setColumnSetting does.
+  const setNavLabels = useCallback(
+    async (on: boolean) => {
+      const value = on ? null : "off";
+      await setColumnSetting(NAV_LABELS_KEY, value);
+      if (!schoolUrn || !phase) return;
+      for (const other of onboardedPhases) {
+        if (other === phase) continue;
+        const prefs = await fetchPreferences(supabase, schoolUrn, other);
+        await savePreferences(supabase, schoolUrn, other, { ...prefs, columns: writeSetting(prefs.columns, NAV_LABELS_KEY, value) });
+      }
+    },
+    [setColumnSetting, onboardedPhases, schoolUrn, phase, supabase],
   );
 
   // Context's "Selected subjects" tick set, saved the same way its measure is.
@@ -1020,6 +1042,15 @@ export default function TeacherPhaseDashboard() {
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
+      <TeacherNav
+        phase={phase}
+        phases={TEACHER_PHASES.filter((p) => p === phase || onboardedPhases.includes(p))}
+        labelsOn={readSetting(columns, NAV_LABELS_KEY) !== "off"}
+        onLabelsOn={setNavLabels}
+        theme={theme}
+        onTheme={setTheme}
+      />
+
       {/* Round 8 §3: one control bar replaces the old title row, the school line and the
           per-column header rows. Everything measure-specific was deliberately kept OUT of
           it -- see ControlBar's own note on the row-alignment reason. */}
@@ -1036,12 +1067,9 @@ export default function TeacherPhaseDashboard() {
         focusKey={focusKey}
         onFocus={setFocusKey}
         onEditSubjects={() => setSubjectPickerOpen(true)}
-        chrome={
-          <>
-            <TeacherChrome theme={theme} onTheme={setTheme} />
-            <Link href="/teacher" className="text-sm text-blue-700 hover:underline dark:text-blue-400">All dashboards</Link>
-          </>
-        }
+        // Top-nav round: Export alone. The theme toggle moved up into TeacherNav, and
+        // "All dashboards" went with it -- the nav's Home link is the same way back.
+        chrome={<ExportButton />}
       />
 
       {/* §13's banner. States what actually changed and when, rather than just shouting. */}

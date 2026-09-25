@@ -54,7 +54,25 @@ export function useTeacherTheme(): [Theme, (t: Theme) => void] {
   return [theme, set];
 }
 
-export function TeacherChrome({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
+// Top-nav round: the toggle and Export used to be one inseparable pair, which only worked
+// where both belonged together. The phase dashboard now puts the toggle in TeacherNav and
+// keeps Export in its control bar, while Recruitment and Meetings still render the pair --
+// so the pair is now just these two pieces composed, and each piece exists exactly once.
+//
+// The print-forcing effect lives in ThemeToggle, not in a third wrapper: it depends only
+// on the theme, and the toggle is the one thing every page that owns a theme renders. It
+// still runs when the toggle is print:hidden -- CSS hides the button, not the component.
+export function ThemeToggle({
+  theme,
+  onTheme,
+  variant = "text",
+}: {
+  theme: Theme;
+  onTheme: (t: Theme) => void;
+  // "text" is the original bordered Light/Dark button; "icon" is TeacherNav's circular
+  // sun/moon button. Same click, same label, same effect -- only the face differs.
+  variant?: "text" | "icon";
+}) {
   useEffect(() => {
     const root = document.getElementById("teacher-root");
     if (!root) return;
@@ -68,23 +86,62 @@ export function TeacherChrome({ theme, onTheme }: { theme: Theme; onTheme: (t: T
     };
   }, [theme]);
 
+  const next: Theme = theme === "dark" ? "light" : "dark";
+  if (variant === "icon") {
+    return (
+      <button
+        type="button"
+        onClick={() => onTheme(next)}
+        aria-label={`Switch to ${next} theme`}
+        title={`Switch to ${next} theme`}
+        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]"
+      >
+        {theme === "dark" ? SUN_ICON : MOON_ICON}
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onTheme(next)}
+      aria-label={`Switch to ${next} theme`}
+      className="rounded-md border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
+    >
+      {theme === "dark" ? "Light" : "Dark"}
+    </button>
+  );
+}
+
+// The icon shows the theme a click switches TO, matching the text variant's own label.
+const SUN_ICON = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+  </svg>
+);
+const MOON_ICON = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
+
+export function ExportButton() {
+  return (
+    <button
+      type="button"
+      onClick={() => window.print()}
+      className="rounded-md border border-neutral-300 px-2 py-1 text-xs print:hidden dark:border-neutral-700"
+    >
+      Export
+    </button>
+  );
+}
+
+export function TeacherChrome({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
   return (
     <div className="flex items-center gap-3 print:hidden">
-      <button
-        type="button"
-        onClick={() => onTheme(theme === "dark" ? "light" : "dark")}
-        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-        className="rounded-md border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
-      >
-        {theme === "dark" ? "Light" : "Dark"}
-      </button>
-      <button
-        type="button"
-        onClick={() => window.print()}
-        className="rounded-md border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
-      >
-        Export
-      </button>
+      <ThemeToggle theme={theme} onTheme={onTheme} />
+      <ExportButton />
     </div>
   );
 }

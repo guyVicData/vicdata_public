@@ -112,6 +112,12 @@ export const measureKey = (columnId: string) => `${MEASURE_PREFIX}${columnId}`;
 export const againstKey = (columnId: string) => `${AGAINST_PREFIX}${columnId}`;
 export const setKey = (columnId: string) => `${SET_PREFIX}${columnId}`;
 
+// Top-nav round: TeacherNav's label-visibility toggle. Not a column setting, but this is
+// the one per-person store that follows a teacher across devices, which is what the
+// wireframe asks of this toggle. Labels default ON, so only "off" is ever stored -- the
+// same absent-means-default rule the column keys above follow.
+export const NAV_LABELS_KEY = "nav:labels";
+
 // Read one saved scalar setting. Returns undefined rather than a default so each caller's
 // own default stays in one place (its catalogue), not duplicated here.
 export function readSetting(columns: ColumnState, key: string): string | undefined {
