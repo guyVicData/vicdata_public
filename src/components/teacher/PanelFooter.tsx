@@ -42,6 +42,45 @@ export function SourceNote({ children }: { children: ReactNode }) {
   );
 }
 
+// ------------------------------------------------------------- caption (round 2 §8)
+
+const CaptionIcon = (
+  <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3.5 4.5h13v8.5H9l-3.5 3v-3h-2z" />
+    <path d="M7 8h6M7 10.5h4" />
+  </svg>
+);
+
+// The panel's one-line conclusion ("Additional Maths has grown the most…"), moved out of
+// the panel body into the footer behind a button, closed by default. A real button rather
+// than a hover tooltip: hover does not exist on the phone layout this dashboard also
+// serves, and it keeps Escape/click-outside dismissal the same as the "i" beside it.
+export function CaptionNote({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(open, () => setOpen(false));
+  if (!children) return null;
+  return (
+    <span className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-label="What this shows"
+        title="What this shows"
+        className={`flex h-[17px] w-[17px] items-center justify-center rounded-[5px] ${open ? "text-[var(--fg)]" : "text-[var(--muted)]"} hover:text-[var(--fg)]`}
+      >
+        {CaptionIcon}
+      </button>
+      {open && (
+        // Opens upward, like the source note: the footer is pinned to the panel's bottom.
+        <span className="absolute bottom-6 left-0 z-30 block w-[18rem] max-w-[80vw] rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-2 shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+          {children}
+        </span>
+      )}
+    </span>
+  );
+}
+
 // ------------------------------------------------------------------ note (§6)
 
 const NoteIcon = (

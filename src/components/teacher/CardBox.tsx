@@ -19,7 +19,7 @@
 //     controls go up to 1000 and the map card underneath must not show through.
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
-import { SourceNote } from "./PanelFooter";
+import { CaptionNote, SourceNote } from "./PanelFooter";
 import { ChevronDown } from "./PanelIcons";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
@@ -126,8 +126,8 @@ export function CardBox({
   // out of the panel body -- `footerLead` sits first in the row, before the "i" (the
   // Trend-line toggle); `flag` sits at the row's right edge (the growth/decline flag,
   // "the first of our flags"). A panel that passes neither gets exactly the footer it
-  // had. With a flag, the panel's caption is not also printed above the footer -- the
-  // flag carries it; the fullscreen view, which has the room, still shows the sentence.
+  // had. (Round 2 §8: every panel's caption now sits behind the footer's own button, flag
+  // or no flag; the fullscreen view, which has the room, still prints it.)
   footerLead?: ReactNode;
   flag?: ReactNode;
   // Called twice while fullscreen is open -- once for the box underneath, once for the
@@ -237,13 +237,15 @@ export function CardBox({
       {footerLead}
       {/* §4: the citation is an icon that opens its own text, not a printed sentence. */}
       <SourceNote>{source}</SourceNote>
+      {/* Round 2 §8: the caption is behind its own button too, beside the source. */}
+      <CaptionNote>{caption}</CaptionNote>
       {footerActions?.({ print: printPanel })}
       {flag && <span className="ml-auto min-w-0 truncate text-[11.5px] font-bold">{flag}</span>}
     </div>
   );
 
-  // The caption is the panel's one-line conclusion and still reads as text above the
-  // footer; only the citation moved into the row (§4).
+  // The caption is the panel's one-line conclusion. Round 2 §8 moved it out of the panel
+  // body into the footer's CaptionNote button; only the fullscreen modal still prints it.
   const captionLine = caption ? <p className="text-[11.5px] leading-snug text-[var(--muted2)]">{caption}</p> : null;
 
   return (
@@ -279,7 +281,6 @@ export function CardBox({
           {children({ fullscreen: false })}
         </div>
       </div>
-      {!flag && captionLine}
       {footerRow}
 
       {fullscreen && (
