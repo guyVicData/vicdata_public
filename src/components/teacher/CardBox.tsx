@@ -19,7 +19,7 @@
 //     controls go up to 1000 and the map card underneath must not show through.
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
-import { CaptionNote, SourceNote } from "./PanelFooter";
+import { CaptionNote, PanelNote, SourceNote } from "./PanelFooter";
 import { ChevronDown } from "./PanelIcons";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
@@ -99,6 +99,7 @@ export function CardBox({
   headline,
   footerLead,
   flag,
+  note,
   children,
 }: {
   title: string;
@@ -137,7 +138,12 @@ export function CardBox({
   // Round 8 §4: the footer's own controls -- the private note and Export -- beside the
   // source icon, all pinned to the panel's real bottom edge. Given `print`, so Export can
   // drive this box's own fullscreen-and-print without reaching into it.
-  footerActions?: (tools: { print: () => void }) => ReactNode;
+  // `fullscreen` (accordion round Part 4) lets a caller leave out, in the modal, a control
+  // the fullscreen rail now carries in its own place -- the private note.
+  footerActions?: (tools: { print: () => void; fullscreen: boolean }) => ReactNode;
+  // Part 4: the private note, for the fullscreen rail -- its text shown outright, and the
+  // same editor as the card's footer icon. Absent = the panel has no note slot.
+  note?: { body: string | null; onSave: (body: string) => Promise<void> | void };
   // Round 8 §2: every panel is the same height, so the three columns read as a true 3x3
   // grid rather than three ragged stacks. Absent = size to content, which is what the KS2
   // boxes and any non-panel caller still want.
@@ -264,7 +270,7 @@ export function CardBox({
       <SourceNote>{source}</SourceNote>
       {/* Round 2 §8: the caption is behind its own button too, beside the source. */}
       <CaptionNote>{caption}</CaptionNote>
-      {footerActions?.({ print: printPanel })}
+      {footerActions?.({ print: printPanel, fullscreen: false })}
       {flag && <span className="ml-auto min-w-0 truncate text-[11.5px] font-bold">{flag}</span>}
     </div>
   );
@@ -317,20 +323,52 @@ export function CardBox({
           printable={printing}
         >
           {header(true)}
-          <div className="mt-1 flex min-h-0 flex-1 items-stretch">
-            {actions && (
-              <div className="mr-3 flex shrink-0 flex-col gap-1 border-r border-[var(--panel-border)] pr-3 print:hidden">{actions}</div>
+          {/* Accordion round Part 4 (first draft): the main area -- view rail, figure,
+              conclusion, source -- and, beside it, a narrow rail for what the panel has
+              that reads as a flag or a note. A 15rem rail against the ~1150px modal on a
+              laptop is roughly the "7-column main, narrow rail" steer; below lg it stacks
+              under the main area. The compact card is untouched and stays icon-driven. */}
+          <div className={`mt-1 grid min-h-0 flex-1 gap-4 ${flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
+            <div className="flex min-h-0 min-w-0 flex-col gap-2">
+              <div className="flex min-h-0 flex-1 items-stretch">
+                {actions && (
+                  <div className="mr-3 flex shrink-0 flex-col gap-1 border-r border-[var(--panel-border)] pr-3 print:hidden">{actions}</div>
+                )}
+                <div className="flex min-w-0 flex-grow flex-col">{children({ fullscreen: true })}</div>
+              </div>
+              {captionLine}
+              {/* The source is plain text here, on screen AND in print -- the same line
+                  in both, rather than a print-only copy of what the card hides behind "i". */}
+              {source && <p className="text-[11px] leading-relaxed text-[var(--source)]">{source}</p>}
+            </div>
+            {(flag || note) && (
+              <aside className="flex flex-col gap-4 border-t border-[var(--panel-border)] pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+                {flag && (
+                  <section>
+                    <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Flag</h4>
+                    <p className="mt-1.5 text-[13px] font-bold">{flag}</p>
+                  </section>
+                )}
+                {note && (
+                  // Private to its author, so it stays off a printout that may be handed on.
+                  <section className="print:hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Your note &middot; private</h4>
+                      <PanelNote body={note.body} onSave={note.onSave} variant="rail" />
+                    </div>
+                    <p className={`mt-1.5 whitespace-pre-wrap text-[12.5px] leading-relaxed ${note.body?.trim() ? "text-[var(--fg)]" : "italic text-[var(--muted3)]"}`}>
+                      {note.body?.trim() ? note.body : "No note on this panel yet."}
+                    </p>
+                  </section>
+                )}
+              </aside>
             )}
-            <div className="flex min-w-0 flex-grow flex-col">{children({ fullscreen: true })}</div>
           </div>
-          {captionLine}
-          {/* Printed with the panel: a figure on its own page needs its citation ON the
-              page, which is exactly where a popover would be no use. */}
-          <p className="hidden text-[9.5px] text-[var(--source)] print:block">{source}</p>
+          {/* What is left for the footer: Trend's line toggle and Export. The source is
+              above as text, the flag and note are in the rail. */}
           <div className="flex items-center gap-1.5 print:hidden">
             {footerLead}
-            <SourceNote>{source}</SourceNote>
-            {footerActions?.({ print: printPanel })}
+            {footerActions?.({ print: printPanel, fullscreen: true })}
           </div>
         </TeacherModal>
       )}

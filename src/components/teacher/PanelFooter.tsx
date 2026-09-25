@@ -99,10 +99,15 @@ export function PanelNote({
   body,
   onSave,
   disabled = false,
+  variant = "icon",
 }: {
   body: string | null;
   onSave: (next: string) => Promise<void> | void;
   disabled?: boolean;
+  // Accordion round Part 4: "rail" is the fullscreen side rail's labelled button ("Add
+  // note" / "Edit note"), whose editor opens downward and right-aligned -- the rail sits
+  // at the top right of the modal, where an upward popover would leave the screen.
+  variant?: "icon" | "rail";
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(body ?? "");
@@ -134,15 +139,18 @@ export function PanelNote({
         aria-label={has ? "Your private note" : "Add a private note"}
         title={has ? "Your private note" : "Add a private note"}
         className={[
-          "flex h-[17px] w-[17px] items-center justify-center rounded-[5px]",
+          variant === "rail"
+            ? "flex items-center gap-1.5 rounded-md border border-[var(--panel-border2)] px-2 py-1 text-[11.5px] font-semibold"
+            : "flex h-[17px] w-[17px] items-center justify-center rounded-[5px]",
           has ? "text-[var(--accent,var(--fg))]" : "text-[var(--muted)]",
           disabled ? "cursor-not-allowed opacity-40" : "hover:text-[var(--fg)]",
         ].join(" ")}
       >
         {NoteIcon}
+        {variant === "rail" && (has ? "Edit note" : "Add note")}
       </button>
       {open && (
-        <span className="absolute bottom-6 left-0 z-30 block w-[18rem] max-w-[80vw] rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+        <span className={`absolute z-30 block ${variant === "rail" ? "right-0 top-8" : "bottom-6 left-0"} w-[18rem] max-w-[80vw] rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.3)]`}>
           <textarea
             ref={area}
             value={draft}

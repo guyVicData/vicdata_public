@@ -118,14 +118,16 @@ export function ColumnPanels({
             controls={panel.controls}
             caption={panel.summary}
             source={panel.source}
-            footerActions={({ print }) => (
+            footerActions={({ print, fullscreen }) => (
               <>
-                {notes && (
+                {/* In fullscreen the note has its own place in the side rail (Part 4). */}
+                {notes && !fullscreen && (
                   <PanelNote body={notes.bodyFor(id)} onSave={(body) => notes.onSave(id, body)} />
                 )}
                 <PanelExport onPrint={print} />
               </>
             )}
+            note={notes ? { body: notes.bodyFor(id), onSave: (body) => notes.onSave(id, body) } : undefined}
             // Round 8 §2: every panel the same height, so the three columns read as one
             // 3x3 grid rather than three ragged stacks.
             fixedHeight
