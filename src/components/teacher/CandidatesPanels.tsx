@@ -31,7 +31,7 @@ import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { IconButton, RankListIcon, VerticalBarsIcon } from "./PanelIcons";
-import { MultiTrend } from "./SeriesViews";
+import { MultiTrend, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { VerticalBars } from "./VerticalBars";
 
@@ -206,7 +206,7 @@ export function CandidatesPanels({
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
       </span>
     ) : undefined,
-    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} />,
+    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={!multiTrendHasLine(trendData)} />,
     body: (fullscreen) => (
       <MultiTrend data={trendData} measure={measure} focusKey={focused?.key ?? null} showFit={showFit} fullscreen={fullscreen} />
     ),

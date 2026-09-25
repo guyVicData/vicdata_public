@@ -32,6 +32,7 @@ import {
   periodsWithData,
   sliceFrom,
   trimToData,
+  trendChartKind,
   trendSentence,
   type Measure,
   type PanelData,
@@ -385,7 +386,7 @@ export function ComparisonsPanels({
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
       </span>
     ) : undefined,
-    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} />,
+    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={trendChartKind(trendData) === "bars"} />,
 
     body: (fullscreen) =>
       seriesLoading ? (

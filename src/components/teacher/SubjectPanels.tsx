@@ -22,6 +22,7 @@ import {
   periodsWithData,
   sliceFrom,
   trimToData,
+  trendChartKind,
   trendSentence,
   type Measure,
   type PanelData,
@@ -397,7 +398,7 @@ export function SubjectPanels({
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
       </span>
     ) : undefined,
-    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} />,
+    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={trendChartKind(trendData) === "bars"} />,
     body: (fullscreen) => (
       <>
         <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
