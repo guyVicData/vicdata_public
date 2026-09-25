@@ -1124,10 +1124,15 @@ export default function TeacherPhaseDashboard() {
       // word -- GCSE vs A level vs BTEC is the useful part there.
       candidates: { title: `${subj} Candidates`, question: `how many ${learners} take this ${qual}.` },
       results: { title: `${subj} Results`, question: `how well ${learners} do in this subject.` },
-      context: {
-        title: `${subj} in Context`,
-        question: `how ${subj} compares with ${contextAgainst === "selected" ? "the subjects you selected" : "the whole school"}.`,
-      },
+      // Round 2 §4-§5: Context says something different per measure, and names the school.
+      context: (() => {
+        const against = contextAgainst === "selected" ? "the subjects you selected" : "the whole school";
+        const at = schoolName ?? "your school";
+        return {
+          results: { title: `${subj} in Context`, question: `this subject's results compared with ${against} at ${at}.` },
+          candidates: { title: `${subj} in Context`, question: `entry numbers compared with ${against} at ${at}.` },
+        };
+      })(),
       rankings: { title: `${subj} Comparisons`, question: `how this subject compares with the ${setNoun}.` },
     };
   })();
@@ -1351,8 +1356,8 @@ export default function TeacherPhaseDashboard() {
 
         <DashboardColumn
           columnId="context"
-          title={subjectHeadings?.context.title ?? COLUMN_TITLE.context}
-          question={subjectHeadings?.context.question ?? q.nearMe}
+          title={subjectHeadings?.context[showingResults ? "results" : "candidates"].title ?? COLUMN_TITLE.context}
+          question={subjectHeadings?.context[showingResults ? "results" : "candidates"].question ?? q.nearMe}
           accented={!!accent}
         >
           {phase === "ks2" ? (
@@ -1410,6 +1415,13 @@ export default function TeacherPhaseDashboard() {
                 enabled: contextMeasure.id === "entries",
                 groupLabel: contextGroupLabel,
                 groupTotals: atContextPeriod(contextGroupTotals),
+                // Round 2 §3: the sentence names the school. The share is of ENTRIES (a
+                // pupil sits several subjects), so it says "student entries" rather than
+                // "students" -- see the round 2 build report.
+                shareOf:
+                  contextAgainst === "selected"
+                    ? `entries in the subjects you selected at ${schoolName ?? "your school"}`
+                    : `all student entries at ${schoolName ?? "your school"}`,
               }}
               questions={{
                 current: q.nearMe,

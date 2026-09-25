@@ -95,7 +95,12 @@ export function SubjectPanels({
   // `groupSeries`. The lines and bars plot the group's per-subject average, because that
   // is what a single subject is comparable with; a share has to be of the whole, or the
   // percentage is of the wrong denominator.
-  donut?: { enabled: boolean; groupLabel: string; groupTotals: (number | null)[] };
+  //
+  // `shareOf` (round 2 §3) is what the donut's SENTENCE says the share is of -- "all
+  // student entries at The Chase" -- deliberately separate from `groupLabel`, which the
+  // benchmark label, trend/change questions and Current tag also read and which must keep
+  // saying "Whole school".
+  donut?: { enabled: boolean; groupLabel: string; groupTotals: (number | null)[]; shareOf?: string };
   // Context's year prev/next pair, so Current is no longer pinned to the latest year.
   // Only the years the active measure really has (§6.3); absent elsewhere, matching the
   // wireframe, which draws it on Context alone.
@@ -292,7 +297,7 @@ export function SubjectPanels({
         donutPercent === null ? undefined : (
           <PanelSummary>
             {focusedSubject?.label} is {Math.round(donutPercent)}% of{" "}
-            {donut.groupLabel.toLowerCase()} ({measure.format(donutGroupValue!)}) in{" "}
+            {donut.shareOf ?? donut.groupLabel.toLowerCase()} ({measure.format(donutGroupValue!)}) in{" "}
             {latest === null ? "this year" : academicYearLabel(latest)}.
           </PanelSummary>
         )
