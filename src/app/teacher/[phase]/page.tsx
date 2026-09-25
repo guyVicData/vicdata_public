@@ -999,8 +999,20 @@ export default function TeacherPhaseDashboard() {
   // Column 1's category draws from -- this school's own items -- without the category
   // filter. A subject with no figure on the active measure (a BTEC on points at GCSE) is
   // left out, as in Column 1; the focused subject always stays.
-  const contextShort = shortLabelsFor(focusItem ? [focusItem, ...items.filter((i) => i.key !== focusItem.key && i.entries > 0)] : []);
-  const contextSeries: SubjectSeries[] = (focusItem ? [focusItem, ...items.filter((i) => i.key !== focusItem.key && i.entries > 0)] : [])
+  // Trend redesign step 9: with "Selected subjects" chosen, Context's subjects are the
+  // selected set (the same contextMembers its group average is built from), plus the
+  // focused subject -- a bounded, hand-picked list, drawn like Column 1's category. With
+  // "Whole school" they are every subject the school has (round 2 part 5).
+  const contextItems = focusItem
+    ? [
+        focusItem,
+        ...items.filter(
+          (i) => i.key !== focusItem.key && i.entries > 0 && (contextAgainst !== "selected" || contextMembers.includes(i.subject)),
+        ),
+      ]
+    : [];
+  const contextShort = shortLabelsFor(contextItems);
+  const contextSeries: SubjectSeries[] = contextItems
     .map((i) => ({
       key: i.key,
       label: i.label,
@@ -1414,7 +1426,9 @@ export default function TeacherPhaseDashboard() {
               subjects={contextSeries}
               measure={contextMeasure}
               focus={focusKey}
-              changeScope="focus"
+              // Steps 9-10: Selected subjects is a bounded list, drawn like Column 1 ("individual");
+              // the whole school is Option K ("curated").
+              changeScope={contextAgainst === "selected" ? "individual" : "curated"}
               yearControl
               controls={
                 <ContextPills

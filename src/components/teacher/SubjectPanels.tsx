@@ -29,11 +29,13 @@ import {
   type PanelId,
 } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
+import { ChangeList, MultiTrend, YearTable, curatedKeys, multiTrendHasLine } from "./SeriesViews";
+import { FOCUS_COLOUR, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { DonutIcon, HorizontalBarsIcon, IconButton, RankListIcon } from "./PanelIcons";
+import { DonutIcon, HorizontalBarsIcon, IconButton, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
 import { ShareDonut } from "./ShareDonut";
 import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
 import { TrendChart } from "./TrendChart";
@@ -131,7 +133,16 @@ export function SubjectPanels({
   // Round 2 §5: which subjects % change draws a bar for. "all" = every subject handed in
   // (Column 1's category); "focus" = the focused subject and the groups only, for Context,
   // whose subject list is now the whole school -- twenty-odd bars would be unreadable.
-  changeScope?: "all" | "focus";
+  //
+  // Trend redesign steps 9-10 replace "focus" with two modes for Context, whose subject
+  // list is either a hand-picked Selected set or the whole school:
+  //   "individual" -- Selected subjects: like Column 1 Candidates. Every subject its own
+  //                   line (Option B / D2) or row (Option H), tables E and I beside them.
+  //   "curated"    -- All subjects: Trend is Option K (focus + top movers + a rest-of-
+  //                   school band) with a table of the same curated rows on the card;
+  //                   % change is Option H over every subject (a list scales fine).
+  // "all" is Column 1 Results' classic behaviour and is deliberately unchanged by both.
+  changeScope?: "all" | "individual" | "curated";
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -139,6 +150,10 @@ export function SubjectPanels({
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
+  // Steps 9-10: Context's Trend and % change gain a table beside their chart.
+  const [trendView, setTrendView] = useState<"chart" | "table">("chart");
+  const [changeView, setChangeView] = useState<"chart" | "table">("chart");
+  const redesigned = changeScope !== "all";
 
   // The donut is Candidates-only, so a measure switch has to fall back rather than leave
   // the panel on a view it can no longer draw.
@@ -194,6 +209,11 @@ export function SubjectPanels({
   });
 
   const barRows = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  // Steps 9-10: in Context's modes every subject is tinted in Current's own order -- the
+  // grey ramp, lightest for the largest -- with the focus in the accent, the same colours
+  // in Current, Trend and % change. Results keeps the colours it is handed.
+  const tints = tintInOrder(barRows.map((r) => r.s.key), focusedKey, FOCUS_COLOUR);
+  const colourFor = (s: SubjectSeries) => (redesigned ? tints.get(s.key) ?? s.colour : s.colour);
 
   // Round 2 §5: the table reads like Comparisons' ranking -- no colour dots, the focused
   // subject's row tinted in the phase accent and centred when the list scrolls.
@@ -215,7 +235,7 @@ export function SubjectPanels({
   const bestRow = byDelta[0];
   const worstRow = byDelta[byDelta.length - 1];
   const againstNoun = benchmarkNoun ?? "its own previous year";
-  // Round 2 §D2: with changeScope "focus" (Context, whose rows are now the whole school)
+  // Round 2 §D2: in Context's modes (whose rows can be the whole school)
   // the sentence is about the focused subject alone. The extremes above only described it
   // when it happened to be top or bottom -- History focused read as a sentence about
   // Maths and Turkish.
@@ -297,7 +317,7 @@ export function SubjectPanels({
                     label: r.s.label,
                     value: r.value,
                     isSubject: true,
-                    color: r.s.colour,
+                    color: colourFor(r.s),
                     marker: r.bench,
                     emphasis: r.s.key === focusedKey,
                   })),
@@ -326,7 +346,7 @@ export function SubjectPanels({
             {latest === null ? "this year" : academicYearLabel(latest)}.
           </PanelSummary>
         )
-      ) : changeScope === "focus" ? (
+      ) : changeScope !== "all" ? (
         // No delta for the focused subject = no sentence, the same as the undefined
         // branch below when no row has one.
         focusedRow ? (
@@ -360,19 +380,23 @@ export function SubjectPanels({
   const focused = focusedSubject;
   const focusLabel = focused?.label ?? "";
 
+  // Context's modes draw every subject individually, in Current's order; Results keeps
+  // its focused line against the group line(s).
   const trendFull: PanelData = trimToData({
     periods,
-    series: [
-      ...(focused ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: focused.values }] : []),
-      ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "var(--muted3)", values: g.values, comparison: true })),
-    ],
+    series: redesigned
+      ? barRows.map((r) => ({ key: r.s.key, label: r.s.label, colour: colourFor(r.s), values: r.s.values }))
+      : [
+          ...(focused ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: focused.values }] : []),
+          ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "var(--muted3)", values: g.values, comparison: true })),
+        ],
   });
   const trendPeriods = periodsWithData(trendFull);
   const trendData = sliceFrom(trendFull, trendStart);
   const trendSaid = trendSentence({
     // A plural subject name takes a bare possessive -- "Classics's" reads as a typo.
     subjectClause: `${focusLabel}${focusLabel.endsWith("s") ? "'" : "'s"} ${measure.noun}`,
-    values: trendData.series[0]?.values ?? [],
+    values: trendData.series.find((x) => x.key === focused?.key)?.values ?? [],
     measure,
     startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
   });
@@ -398,12 +422,45 @@ export function SubjectPanels({
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
       </span>
     ) : undefined,
-    footerLead: <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={trendChartKind(trendData) === "bars"} />,
-    body: (fullscreen) => (
-      <>
-        <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
-      </>
+    footerLead: (
+      <TrendLineToggle
+        on={showFit}
+        onToggle={() => setShowFit(!showFit)}
+        disabled={redesigned ? trendView === "table" || !multiTrendHasLine(trendData) : trendChartKind(trendData) === "bars"}
+      />
     ),
+    actions: redesigned ? (
+      <>
+        <IconButton label="Chart" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
+        <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+      </>
+    ) : undefined,
+    body: (fullscreen) =>
+      !redesigned ? (
+        <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
+      ) : trendView === "table" ? (
+        // All subjects: the card lists the rows the K chart draws (read from the same
+        // curatedKeys/topMovers call) plus one rest-of-school range row; fullscreen, all.
+        <CentredOnTarget watch={`trend-table:${focusedKey}:${trendData.periods.join(",")}`}>
+          <YearTable
+            data={trendData}
+            measure={measure}
+            focusKey={focusedKey}
+            fullscreen={fullscreen}
+            curate={changeScope === "curated" ? { keys: curatedKeys(trendData, measure, focusedKey), restLabel: "Rest of school" } : undefined}
+          />
+        </CentredOnTarget>
+      ) : (
+        <MultiTrend
+          data={trendData}
+          measure={measure}
+          focusKey={focusedKey}
+          curated={changeScope === "curated"}
+          restLabel="rest of school"
+          showFit={showFit}
+          fullscreen={fullscreen}
+        />
+      ),
     summary: trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>
         {trendSaid.sentence.replace(/\.$/, "")}{groupClause || "."}
@@ -423,7 +480,7 @@ export function SubjectPanels({
   const changeFull: PanelData = trimToData({
     periods,
     series: [
-      ...(changeScope === "focus" ? subjects.filter((s) => s.key === focusedKey) : subjects).map((s) => ({ key: s.key, label: s.label, colour: s.colour, values: s.values })),
+      ...(redesigned ? barRows.map((r) => r.s) : subjects).map((s) => ({ key: s.key, label: s.label, colour: colourFor(s), values: s.values })),
       // §4.2: one extra bar per comparison group, alongside the per-subject ones --
       // "individual subjects and the school as a whole" in one picture.
       ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "#57534e", values: g.values })),
@@ -438,7 +495,10 @@ export function SubjectPanels({
     colour: s.colour,
     percent: percentChange(s.values),
   }));
-  const rankedChange = changeBars.filter((b) => b.percent !== null).sort((a, b) => b.percent! - a.percent!);
+  // In Context's modes the group is a reference line, not a ranked peer (Option H).
+  const rankedChange = changeBars
+    .filter((b) => b.percent !== null && !(redesigned && b.key.startsWith("group-")))
+    .sort((a, b) => b.percent! - a.percent!);
   const bestChange = rankedChange[0];
   const worstChange = rankedChange[rankedChange.length - 1];
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
@@ -447,11 +507,38 @@ export function SubjectPanels({
     tag: "% Change",
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: questions.change,
-    body: (fullscreen) => (
+    actions: redesigned ? (
       <>
-        <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+        <IconButton label="Ranked change" active={changeView === "chart"} onClick={() => setChangeView("chart")}>{HorizontalBarsIcon}</IconButton>
+        <IconButton label="Table" active={changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
       </>
-    ),
+    ) : undefined,
+    body: (fullscreen) =>
+      !redesigned ? (
+        <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+      ) : changeView === "table" ? (
+        <CentredOnTarget watch={`change-table:${focusedKey}:${changeData.periods.join(",")}`}>
+          <YearTable
+            data={{ periods: changeData.periods, series: changeData.series.filter((x) => !x.key.startsWith("group-")) }}
+            measure={measure}
+            focusKey={focusedKey}
+            fullscreen={fullscreen}
+          />
+        </CentredOnTarget>
+      ) : (
+        // Option H over every subject -- a list, so twenty rows just scroll.
+        <CentredOnTarget watch={`change-list:${focusedKey}:${changeData.periods.join(",")}`}>
+          <ChangeList
+            rows={changeBars.filter((b) => !b.key.startsWith("group-"))}
+            focusKey={focusedKey}
+            group={
+              groups[0]
+                ? { label: groups[0].label, percent: percentChange(changeData.series.find((x) => x.key === "group-0")?.values ?? []) }
+                : undefined
+            }
+          />
+        </CentredOnTarget>
+      ),
     summary:
       bestChange && worstChange && bestChange.key !== worstChange.key ? (
         <PanelSummary>
