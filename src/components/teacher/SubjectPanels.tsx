@@ -27,6 +27,7 @@ import {
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
+import { CentredOnTarget } from "./CentredOnTarget";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
@@ -71,6 +72,7 @@ export function SubjectPanels({
   emptyText,
   note,
   currentLabel,
+  changeScope = "all",
 }: {
   columnId: string;
   periods: number[];
@@ -125,6 +127,10 @@ export function SubjectPanels({
   // fullscreen, or printed -- still says which card it came from. Absent falls back to
   // the old wording, which is what any caller that has not been given a name wants.
   currentLabel?: string;
+  // Round 2 §5: which subjects % change draws a bar for. "all" = every subject handed in
+  // (Column 1's category); "focus" = the focused subject and the groups only, for Context,
+  // whose subject list is now the whole school -- twenty-odd bars would be unreadable.
+  changeScope?: "all" | "focus";
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -174,6 +180,10 @@ export function SubjectPanels({
     return null;
   };
 
+  // The focused subject's key, resolved once -- highlighted in the bars and table, and
+  // the one Trend and the donut follow.
+  const focusedKey = (subjects.find((s) => s.key === focus) ?? subjects[0])?.key ?? null;
+
   const rows = subjects.map((s) => {
     const value = latestIdx >= 0 ? s.values[latestIdx] : null;
     const bench = latestIdx >= 0 ? s.benchmark?.[latestIdx] ?? null : null;
@@ -184,10 +194,13 @@ export function SubjectPanels({
 
   const barRows = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
 
+  // Round 2 §5: the table reads like Comparisons' ranking -- no colour dots, the focused
+  // subject's row tinted in the phase accent and centred when the list scrolls.
   const tableRows: SortRow[] = rows.map((r) => ({
     key: r.s.key,
     label: r.s.label,
-    colour: r.s.colour,
+    highlight: r.s.key === focusedKey,
+    emphasis: r.s.key === focusedKey,
     value: r.value,
     valueLabel: r.value === null ? "—" : measure.format(r.value),
     delta: r.delta,
@@ -264,30 +277,37 @@ export function SubjectPanels({
               />
             )
           ) : effectiveView === "bar" ? (
-            <ViewChart
-              layout="row"
-              unit=""
-              formatValue={measure.format}
-              markerLabel={benchmarkLabel ? `${benchmarkLabel} average` : undefined}
-              scaleMax={measure.barScaleMax ?? undefined}
-              computed={{
-                rows: barRows.map((r) => ({
-                  label: r.s.label,
-                  value: r.value,
-                  isSubject: true,
-                  color: r.s.colour,
-                  marker: r.bench,
-                })),
-              }}
-            />
+            // Round 2 §5: with a long list (Context's whole school) the bars scroll inside
+            // the panel, starting with the focused subject in view.
+            <CentredOnTarget watch={`bar:${focusedKey}:${barRows.map((r) => r.s.key).join(",")}`}>
+              <ViewChart
+                layout="row"
+                unit=""
+                formatValue={measure.format}
+                markerLabel={benchmarkLabel ? `${benchmarkLabel} average` : undefined}
+                scaleMax={measure.barScaleMax ?? undefined}
+                computed={{
+                  rows: barRows.map((r) => ({
+                    label: r.s.label,
+                    value: r.value,
+                    isSubject: true,
+                    color: r.s.colour,
+                    marker: r.bench,
+                    emphasis: r.s.key === focusedKey,
+                  })),
+                }}
+              />
+            </CentredOnTarget>
           ) : (
-            <SortTable
-              rows={tableRows}
-              sort={sort}
-              onSort={(key) => setSort(nextSort(sort, key))}
-              columns={{ name: "Subject", value: "Result", delta: benchmarkLabel ? `vs ${benchmarkLabel}` : "vs last year" }}
-              fullscreen={fullscreen}
-            />
+            <CentredOnTarget watch={`table:${focusedKey}:${sort.key}:${sort.dir}:${tableRows.length}`}>
+              <SortTable
+                rows={tableRows}
+                sort={sort}
+                onSort={(key) => setSort(nextSort(sort, key))}
+                columns={{ name: "Subject", value: "Result", delta: benchmarkLabel ? `vs ${benchmarkLabel}` : "vs last year" }}
+                fullscreen={fullscreen}
+              />
+            </CentredOnTarget>
           )}
         </>
       ),
@@ -389,7 +409,7 @@ export function SubjectPanels({
   const changeFull: PanelData = trimToData({
     periods,
     series: [
-      ...subjects.map((s) => ({ key: s.key, label: s.label, colour: s.colour, values: s.values })),
+      ...(changeScope === "focus" ? subjects.filter((s) => s.key === focusedKey) : subjects).map((s) => ({ key: s.key, label: s.label, colour: s.colour, values: s.values })),
       // §4.2: one extra bar per comparison group, alongside the per-subject ones --
       // "individual subjects and the school as a whole" in one picture.
       ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "#57534e", values: g.values })),

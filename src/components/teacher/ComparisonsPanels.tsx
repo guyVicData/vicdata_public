@@ -20,7 +20,7 @@
 // history is REAL (§6.4): fetchAcademicProfiles already returned every comparator's whole
 // year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
 // not used and not needed.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import {
@@ -38,6 +38,7 @@ import {
   type PanelId,
 } from "@/lib/teacher-view-panels";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { CentredOnTarget } from "./CentredOnTarget";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart } from "./ChangeChart";
@@ -473,22 +474,3 @@ export function ComparisonsPanels({
   );
 }
 
-// Content round S9: a ranking longer than the panel scrolls inside its own box, and the
-// school's own row is scrolled to the MIDDLE of that box -- so it is in view with schools
-// above and below it -- whenever the rows or their order change. Sets the box's own
-// scrollTop rather than calling scrollIntoView, which would scroll the whole page too.
-function CentredOnTarget({ watch, children }: { watch: string; children: ReactNode }) {
-  const box = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const el = box.current;
-    const row = el?.querySelector<HTMLElement>("[data-highlight]");
-    if (!el || !row || el.scrollHeight <= el.clientHeight) return;
-    el.scrollTop = row.offsetTop - (el.clientHeight - row.offsetHeight) / 2;
-  }, [watch]);
-  // `relative`, so the row's offsetTop is measured from this box.
-  return (
-    <div ref={box} className="relative min-h-0 flex-grow overflow-y-auto">
-      {children}
-    </div>
-  );
-}

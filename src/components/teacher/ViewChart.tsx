@@ -103,7 +103,12 @@ export function ViewChart({
     return (
       <div className="flex flex-col gap-2.5">
         {rows.map((r) => (
-          <div key={`${r.label}|${r.sublabel ?? ""}`} className="flex items-center gap-2">
+          <div
+            key={`${r.label}|${r.sublabel ?? ""}`}
+            // The emphasised row is the one a scroll container centres on (CentredOnTarget).
+            data-highlight={r.emphasis ? "" : undefined}
+            className="flex items-center gap-2"
+          >
             <span className="flex w-[4.5rem] shrink-0 items-center gap-1.5 overflow-hidden sm:w-[5.5rem]">
               {r.color && <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.color }} />}
               <span className={`truncate text-[11px] ${r.emphasis ? "font-bold text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.label}>

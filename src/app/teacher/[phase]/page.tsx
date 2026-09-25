@@ -976,15 +976,22 @@ export default function TeacherPhaseDashboard() {
   const atContextPeriod = (values: (number | null)[]) =>
     contextPeriods.map((p) => values[subjectPeriods.indexOf(p)] ?? null);
 
-  // Content round S5: the focused subject alone -- every column shows one subject.
-  const contextSeries: SubjectSeries[] = tickedItems.filter((i) => i.key === focusKey).map((i) => ({
-    key: i.key,
-    label: i.label,
-    shortLabel: shortSubject(i.subject),
-    colour: colourOf(i),
-    values: contextPeriods.map((p) => contextValueFor(i, p)),
-    benchmark: atContextPeriod(contextGroupAverage),
-  }));
+  // Round 2 §5: every subject this school has, not just the focused one, so Current's bar
+  // and table views show the whole school with the focused subject picked out (Trend and
+  // the donut still follow the focused subject alone). The population is the same one
+  // Column 1's category draws from -- this school's own items -- without the category
+  // filter. A subject with no figure on the active measure (a BTEC on points at GCSE) is
+  // left out, as in Column 1; the focused subject always stays.
+  const contextSeries: SubjectSeries[] = (focusItem ? [focusItem, ...items.filter((i) => i.key !== focusItem.key && i.entries > 0)] : [])
+    .map((i) => ({
+      key: i.key,
+      label: i.label,
+      shortLabel: shortSubject(i.subject),
+      colour: i.key === focusKey ? colourOf(i) : PEER_COLOUR,
+      values: contextPeriods.map((p) => contextValueFor(i, p)),
+      benchmark: atContextPeriod(contextGroupAverage),
+    }))
+    .filter((r) => r.key === focusKey || r.values.some((v) => v !== null));
 
   // ------------------------------------------------------------- Comparisons (§4.3)
   //
@@ -1389,6 +1396,7 @@ export default function TeacherPhaseDashboard() {
               subjects={contextSeries}
               measure={contextMeasure}
               focus={focusKey}
+              changeScope="focus"
               yearControl
               controls={
                 <ContextPills
