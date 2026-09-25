@@ -839,6 +839,15 @@ export default function TeacherPhaseDashboard() {
   const ENGLAND_COLOUR = "#60a5fa";
   const categoryColour = (i: SubjectItem) => (i.key === focusKey ? colourOf(i) : PEER_COLOUR);
 
+  // Trend/% change redesign step 1: Candidates reads entries from `headline` (entriesAt),
+  // whose grain is one row per SUBJECT at GCSE -- entries already summed across its
+  // qualifications -- and per (subject, bucket) at Post-16. Two items that map to the same
+  // row (GCSE and BTEC Art) would otherwise both show Art's whole total, so the category
+  // is taken once per headline row here, focused subject first.
+  const candidateItems = categoryItems.filter(
+    (i, idx) => categoryItems.findIndex((o) => o.subject === i.subject && bucketOf(o) === bucketOf(i)) === idx,
+  );
+
   // Every period any category member has a headline row for.
   const categoryPeriods = Array.from(
     new Set(headline.filter((h) => categoryItems.some((i) => i.subject === h.subject)).map((h) => h.period)),
@@ -1336,16 +1345,16 @@ export default function TeacherPhaseDashboard() {
               phase={phase}
               // Content round S6: the focused subject and its category peers. No England
               // overlay here -- "for candidates the national average is irrelevant".
-              subjects={categoryItems.map((i) => ({
+              subjects={candidateItems.map((i) => ({
                 key: i.key,
                 subject: i.subject,
-                qualificationType: i.qualificationType,
-                label: i.label,
+                label: phase === "ks4" ? i.subject : i.label,
                 colour: categoryColour(i),
+                values: categoryPeriods.map((p) => entriesAt(i, p)),
               }))}
+              periods={categoryPeriods}
               focus={focusKey}
               groupLabel={`${focusFamilyLabel} average`}
-              entries={entries}
               panels={panelsOf(COL1)}
               onPanelsChange={(next) => setPanels(COL1, next)}
               question={q.howMany}

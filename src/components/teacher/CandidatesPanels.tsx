@@ -10,8 +10,7 @@
 // Every figure is the school's own real entries, from the same `entries` rows the card
 // already counted before this round -- grouped by period rather than collapsed to the
 // latest one. Nothing here is derived a second way.
-import { useMemo, useState, type ReactNode } from "react";
-import type { SubjectEntry } from "@/lib/academic-data-view";
+import { useState, type ReactNode } from "react";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import {
@@ -35,7 +34,13 @@ import { IconButton, RankListIcon, VerticalBarsIcon } from "./PanelIcons";
 import { TrendChart } from "./TrendChart";
 import { VerticalBars } from "./VerticalBars";
 
-export type CandidateSubject = { key: string; subject: string; qualificationType: string; label: string; colour: string };
+// Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
+// `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
+// field Context and Results already read. It used to be derived here from the raw
+// dfe_ks4_subject_entries facts, which only go back to 2023/24 (deliberately: the older
+// sibling source's labels are ambiguous), and that short run was the whole reason
+// Candidates' Trend and From menu stopped at 2023/24 while Context's went back to 2020/21.
+export type CandidateSubject = { key: string; subject: string; label: string; colour: string; values: (number | null)[] };
 
 // The summary sentences name the direction in colour, matching the wireframe: teal for
 // growth, amber for decline, muted for flat. Same two tones the delta badges use.
@@ -49,7 +54,7 @@ function shortLabel(label: string): string {
 export function CandidatesPanels({
   phase,
   subjects,
-  entries,
+  periods,
   panels,
   onPanelsChange,
   notes,
@@ -61,7 +66,8 @@ export function CandidatesPanels({
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
-  entries: SubjectEntry[];
+  // Every period any of `subjects` has a figure for, ascending.
+  periods: number[];
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
   notes?: PanelNotes;
@@ -84,27 +90,9 @@ export function CandidatesPanels({
 
   const measure = ENTRIES_MEASURE;
 
-  // Every period any TICKED subject has entries for, ascending. Restricted to the ticked
-  // set rather than the whole school, or a year only an untaught subject has data for
-  // would open as an empty column on the chart. Derived from the data rather than a
-  // constant, per §6.3 -- there is no hardcoded start year anywhere.
-  const mine = useMemo(() => {
-    const keys = new Set(subjects.map((s) => `${s.subject}::${s.qualificationType}`));
-    return entries.filter((e) => keys.has(`${e.subject}::${e.qualificationType}`));
-  }, [entries, subjects]);
-  const periods = useMemo(() => Array.from(new Set(mine.map((e) => e.period))).sort((a, b) => a - b), [mine]);
+  const valueAt = (s: CandidateSubject, period: number): number | null => s.values[periods.indexOf(period)] ?? null;
 
-  const valueAt = (s: CandidateSubject, period: number): number | null => {
-    const rows = mine.filter((e) => e.subject === s.subject && e.qualificationType === s.qualificationType && e.period === period);
-    return rows.length ? rows.reduce((a, r) => a + r.entries, 0) : null;
-  };
-
-  const subjectSeries = subjects.map((s) => ({
-    key: s.key,
-    label: s.label,
-    colour: s.colour,
-    values: periods.map((p) => valueAt(s, p)),
-  }));
+  const subjectSeries = subjects.map((s) => ({ key: s.key, label: s.label, colour: s.colour, values: s.values }));
 
   const focused = subjects.find((s) => s.key === focus) ?? subjects[0];
   // Self-inclusive, per subject -- a category "average" of candidate numbers is what one
