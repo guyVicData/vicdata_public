@@ -997,7 +997,9 @@ export default function TeacherPhaseDashboard() {
     return every;
   })();
 
-  const contextGroupLabel = contextAgainst === "selected" ? "Selected subjects" : "Whole school";
+  // Live review Part B: shown as "All subjects" (the id stays "whole"). This one label feeds
+  // the panel tag, the Trend/% change sentences, the benchmark and the donut.
+  const contextGroupLabel = contextAgainst === "selected" ? "Selected subjects" : "All subjects";
 
   // Two different group figures, and they are not interchangeable:
   //   - the TOTAL, which the donut's share is a share of;

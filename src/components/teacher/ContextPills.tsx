@@ -44,7 +44,8 @@ export function ContextPills({
   // S8: select-all / clear-all, one write rather than one per subject.
   onSetSelected: (keys: string[]) => void;
 }) {
-  const againstLabel = against === "selected" ? "Selected subjects" : "Whole school";
+  // Live review Part B: "All subjects" on screen; the id stays "whole".
+  const againstLabel = against === "selected" ? "Selected subjects" : "All subjects";
 
   return (
     <div className="flex flex-col items-start gap-1.5">
@@ -53,7 +54,7 @@ export function ContextPills({
           <>
             <MenuHeading>Compare against</MenuHeading>
             <MenuRow
-              label="Whole school"
+              label="All subjects"
               selected={against === "whole"}
               onClick={() => { onAgainst("whole"); close(); }}
             />
