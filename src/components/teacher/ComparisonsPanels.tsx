@@ -118,6 +118,7 @@ export function ComparisonsPanels({
   currentLabel,
   onManageSet,
   personalSetsNote,
+  unavailableNote,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -158,6 +159,10 @@ export function ComparisonsPanels({
   onManageSet?: (setId: string | null) => void;
   // "2 / 8": personal sets used, for the "Your sets" heading.
   personalSetsNote?: string;
+  // Set when the chosen measure has no comparator figures (a grade 4+ / A*-E rate for a
+  // focused subject: the per-subject comparator source carries only entries and average
+  // point score). Every panel then says so instead of drawing points under a rate's name.
+  unavailableNote?: string | null;
 }) {
   // Column 3 round Part 1: Map is the default view, and first in the icon rail to match.
   const [view, setView] = useState<"graph" | "map" | "ranking">("map");
@@ -536,6 +541,19 @@ export function ComparisonsPanels({
     headline: seriesLoading ? undefined : ownPct === null || ownPct === undefined ? undefined : `${ownPct >= 0 ? "+" : "−"}${Math.abs(Math.round(ownPct))}%`,
   };
 
+  // The panel keeps its tag and question; its views, controls and figures give way to the
+  // note, as Results' % Change does when LA / region / England figures don't exist.
+  const notAvailable = (p: PanelRender): PanelRender => ({
+    tag: p.tag,
+    question: p.question,
+    body: () => (
+      <>
+        {subjectLabel && <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{subjectLabel} against comparator schools</p>}
+        <p className="text-[12px] leading-relaxed text-[var(--muted2)]">{unavailableNote}</p>
+      </>
+    ),
+  });
+
   return (
     <ColumnPanels
       columnId="rankings"
@@ -592,7 +610,7 @@ export function ComparisonsPanels({
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }
-      render={{ current, trend, change }}
+      render={unavailableNote ? { current: notAvailable(current), trend: notAvailable(trend), change: notAvailable(change) } : { current, trend, change }}
     />
   );
 }

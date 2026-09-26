@@ -1112,7 +1112,9 @@ export default function TeacherPhaseDashboard() {
 
   // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
   // The figure still follows the focus subject (round 7 §9): with one in focus it is that
-  // subject's own points per entry, otherwise the whole-school headline.
+  // subject's own points per entry, otherwise the whole-school headline. With a rate
+  // chosen and a subject in focus there is no comparator figure at all: the column says so
+  // (ComparisonsPanels' unavailableNote) rather than showing points under the rate's name.
   const comparisonsMeasure = showingResults
     ? activeMapChip
       ? measuresFor(phase)[0]
@@ -1630,6 +1632,11 @@ export default function TeacherPhaseDashboard() {
             subjectLabel={activeMapChip?.legend ?? null}
             seriesLoading={!!activeMapChip && mapProfiles === null}
             measure={comparisonsMeasure}
+            unavailableNote={
+              showingResults && activeMapChip && usingThreshold
+                ? `Comparator schools' ${resultsMeasure.label.replace(/^Grade/, "grade")} is not published per subject, only their entries and average point score. Switch Results to average point score to compare ${activeMapChip.legend} across these schools.`
+                : null
+            }
             schoolUrn={schoolUrn}
             mapProfiles={mapProfiles}
             activeMapChip={activeMapChip}
