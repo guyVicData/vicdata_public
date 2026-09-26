@@ -332,10 +332,10 @@ export function CandidatesPanels({
     }
     if (!geo || geo.subject !== geography.subject) return { kind: "message", text: "Loading LA, regional and national figures…" };
     const tiers = [
-      { area: geo.data?.la, suffix: " (LA)", shade: areaColours.get("area-la")! },
-      { area: geo.data?.region, suffix: " (region)", shade: areaColours.get("area-region")! },
-      { area: geo.data?.national, suffix: "", shade: areaColours.get("area-national")! },
-    ].filter((t): t is { area: NonNullable<typeof t.area>; suffix: string; shade: string } => !!t.area);
+      { key: "area-la", area: geo.data?.la, suffix: " (LA)", shade: areaColours.get("area-la")! },
+      { key: "area-region", area: geo.data?.region, suffix: " (region)", shade: areaColours.get("area-region")! },
+      { key: "area-national", area: geo.data?.national, suffix: "", shade: areaColours.get("area-national")! },
+    ].filter((t): t is { key: string; area: NonNullable<typeof t.area>; suffix: string; shade: string } => !!t.area);
     if (tiers.length === 0) return { kind: "message", text: `No LA, regional or national entries figures are published for ${geography.label}.` };
     const geoPeriods = new Set(tiers.flatMap((t) => t.area.rows.filter((r) => r.entries !== null).map((r) => r.period)));
     const shown = changeData.periods.filter((p) => geoPeriods.has(p));
@@ -345,7 +345,7 @@ export function CandidatesPanels({
       shown,
       series: [
         { key: "own", label: "This school", colour: FOCUS_COLOUR, values: shown.map((p) => geography.own[periods.indexOf(p)] ?? null) },
-        ...tiers.map((t, i) => ({ key: `area-${i}`, label: `${t.area.name}${t.suffix}`, colour: t.shade, values: shown.map((p) => valueAtPeriod(t.area.rows, p)) })),
+        ...tiers.map((t) => ({ key: t.key, label: `${t.area.name}${t.suffix}`, colour: t.shade, values: shown.map((p) => valueAtPeriod(t.area.rows, p)) })),
       ],
     };
   };
@@ -393,7 +393,14 @@ export function CandidatesPanels({
     return (
       <>
         {geographyHeading}
-        <MultiTrend data={{ periods: state.shown, series: state.series }} measure={measure} focusKey="own" fullscreen={fullscreen} />
+        {/* No region line: its path runs almost on top of England's, so the chart shows
+            the school, its LA and England. The table keeps all four rows. */}
+        <MultiTrend
+          data={{ periods: state.shown, series: state.series.filter((x) => x.key !== "area-region") }}
+          measure={measure}
+          focusKey="own"
+          fullscreen={fullscreen}
+        />
       </>
     );
   };
