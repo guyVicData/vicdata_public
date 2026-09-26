@@ -5,7 +5,7 @@
 // header are shared components, and a hex copied into each of them would be a second
 // source of truth waiting to drift.
 import { comparabilityKey, comparabilityLabel } from "./teacher-view-catalogue";
-import { bucketFor, KS5_BUCKET_LABEL } from "./dfe-qualification-buckets";
+import { displayBucketFor, KS5_BUCKET_LABEL } from "./dfe-qualification-buckets";
 import type { TeacherPhase } from "./teacher-view-phases";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 
@@ -73,7 +73,7 @@ export function qualificationShortLabel(phase: TeacherPhase, qualificationType: 
 
 // KS4's qualification families for onboarding step 1 (GCSE-Step1.dc.html): GCSE, BTEC &
 // OCR, everything else. KS5 needs no equivalent -- its families ARE the existing
-// KS5_BUCKETS via bucketFor, byte-for-byte the mockup's five tiles.
+// KS5_BUCKETS via displayBucketFor (bucketFor, with AS level under Other).
 export type Ks4QualificationFamily = "gcse" | "btec_ocr" | "other_vocational";
 export function ks4QualificationFamily(qualificationType: string): Ks4QualificationFamily {
   if (qualificationType === KS4_GCSE || qualificationType === KS4_GCSE_DOUBLE) return "gcse";
@@ -93,17 +93,18 @@ export const QUALIFICATION_FAMILIES: Record<"ks4" | "ks5", QualificationFamily[]
     { id: "other_vocational", label: "Other vocational", description: "Other Level 1/2 vocational qualifications, VRQ", hex: "#a1a1aa", rgb: "161,161,170" },
   ],
   ks5: [
-    { id: "alevel", label: KS5_BUCKET_LABEL.alevel, description: "A level, AS level, Advanced Extension Award", hex: "#f472b6", rgb: "244,114,182" },
+    { id: "alevel", label: KS5_BUCKET_LABEL.alevel, description: "A level, Advanced Extension Award", hex: "#f472b6", rgb: "244,114,182" },
     { id: "ib", label: KS5_BUCKET_LABEL.ib, description: "Higher & Standard level, Diploma Core", hex: "#38bdf8", rgb: "56,189,248" },
     { id: "btec_ocr", label: KS5_BUCKET_LABEL.btec_ocr, description: "Vocational and technical qualifications", hex: "#2dd4bf", rgb: "45,212,191" },
     { id: "tlevel", label: KS5_BUCKET_LABEL.tlevel, description: "2-year technical programmes, by pathway", hex: "#fb923c", rgb: "251,146,60" },
-    { id: "other", label: KS5_BUCKET_LABEL.other, description: "EPQ, Core Maths, Pre-U and similar", hex: "#a1a1aa", rgb: "161,161,170" },
+    { id: "other", label: KS5_BUCKET_LABEL.other, description: "AS level, EPQ, Core Maths, Pre-U and similar", hex: "#a1a1aa", rgb: "161,161,170" },
   ],
 };
 
-// Which family a (subject, qualification) item belongs to.
+// Which family a (subject, qualification) item is shown under. At KS5 the display bucket:
+// AS level sits in "other", not beside A level (displayBucketFor).
 export function qualificationFamilyOf(phase: "ks4" | "ks5", qualificationType: string): string {
-  return phase === "ks5" ? bucketFor(qualificationType) : ks4QualificationFamily(qualificationType);
+  return phase === "ks5" ? displayBucketFor(qualificationType) : ks4QualificationFamily(qualificationType);
 }
 
 // "Source: DfE Key stage 4 performance, 2024/25", per the mockups' source line.

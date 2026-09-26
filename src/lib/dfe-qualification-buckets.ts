@@ -117,6 +117,17 @@ export function bucketFor(qualificationType: string): Ks5Bucket {
   return "other";
 }
 
+// The bucket a qualification is SHOWN under in Teacher view's subject picker and family
+// tiles: bucketFor() with one difference, AS level goes to "other" (beside EPQ, Core Maths,
+// Pre-U) instead of "alevel", so a school running AS and A level in one subject does not
+// list that subject twice under A-level. Display only. bucketFor() keeps AS in "alevel"
+// because DfE's own published A-level points blend AS entries in at half size, and every
+// points figure, rollup match and Academic Results pill must keep agreeing with that.
+export function displayBucketFor(qualificationType: string): Ks5Bucket {
+  if ((qualificationType || "").startsWith("GCE AS level")) return "other";
+  return bucketFor(qualificationType);
+}
+
 // Table 2a. `*` is the SAME GRADE as `A*`, just DfE's label for it in the 2021-2023
 // sources: confirmed in the real data, where the two labels never co-occur in one
 // period. Omitting it silently drops every top A-level grade in the historic years.

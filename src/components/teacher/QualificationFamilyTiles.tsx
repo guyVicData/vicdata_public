@@ -2,7 +2,7 @@
 
 // Teacher view onboarding, step 1 (GCSE/Post16-Step1.dc.html): "Which qualifications do
 // you teach?" -- one tick-to-select tile per qualification family the school genuinely
-// has entries under. The families come from real data (KS5_BUCKETS / bucketFor at KS5,
+// has entries under. The families come from real data (KS5_BUCKETS / displayBucketFor at KS5,
 // ks4QualificationFamily at KS4); only their icons, colours and one-line descriptions are
 // design. A family with nothing behind it is never offered.
 import type { ReactNode } from "react";
