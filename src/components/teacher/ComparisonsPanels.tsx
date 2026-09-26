@@ -489,7 +489,7 @@ export function ComparisonsPanels({
   // Every school's % change over the span, as the table ranks them, and the set's average
   // (the mean figure per year over the schools that have one, as Trend's "Average across"
   // line) as the reference -- not whichever school Trend's "vs:" points at.
-  const changeRows: ChangeRow[] = changeTable.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, percent: percentChange(s.values) }));
+  const changeRows: ChangeRow[] = changeTable.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: percentChange(s.values) }));
   const averageLabel = `Average across ${setLabel.toLowerCase()}`;
   const averagePct = percentChange(
     changeTable.periods.map((_, i) => meanOf(changeTable.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
@@ -518,7 +518,7 @@ export function ComparisonsPanels({
         // Option H, as Candidates and Context draw their % change: every school ranked by
         // its change, the school itself picked out, the set's average a dashed line.
         <CentredOnTarget watch={`change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
-          <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, percent: averagePct }} />
+          <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averagePct }} />
         </CentredOnTarget>
       ),
     summary:

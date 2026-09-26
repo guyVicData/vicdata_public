@@ -604,11 +604,11 @@ export function SubjectPanels({
         // Option H over every subject -- a list, so twenty rows just scroll.
         <CentredOnTarget watch={`change-list:${focusedKey}:${changeData.periods.join(",")}`}>
           <ChangeList
-            rows={changeBars.filter((b) => !b.key.startsWith("group-"))}
+            rows={changeBars.filter((b) => !b.key.startsWith("group-")).map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.percent }))}
             focusKey={focusedKey}
             group={
               groups[0]
-                ? { label: groups[0].label, percent: percentChange(changeData.series.find((x) => x.key === "group-0")?.values ?? []) }
+                ? { label: groups[0].label, value: percentChange(changeData.series.find((x) => x.key === "group-0")?.values ?? []) }
                 : undefined
             }
           />

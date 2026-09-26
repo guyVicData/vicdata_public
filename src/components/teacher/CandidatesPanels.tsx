@@ -341,9 +341,9 @@ export function CandidatesPanels({
         // through the rows rather than an eighth bar competing with the subjects.
         <CentredOnTarget watch={`change-list:${focused?.key}:${changeData.periods.join(",")}`}>
           <ChangeList
-            rows={changeBars.filter((b) => b.key !== "group")}
+            rows={changeBars.filter((b) => b.key !== "group").map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.percent }))}
             focusKey={focused?.key ?? null}
-            group={group ? { label: group.label, percent: percentChange(changeData.series.find((s) => s.key === "group")?.values ?? []) } : undefined}
+            group={group ? { label: group.label, value: percentChange(changeData.series.find((s) => s.key === "group")?.values ?? []) } : undefined}
           />
         </CentredOnTarget>
       ),

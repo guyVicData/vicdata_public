@@ -4,11 +4,11 @@
 // chart style options"): the views that draw every subject -- or every comparator school
 // -- individually, shared by Column 1 Candidates, Context and Comparisons.
 //
-//   MultiTrend  -- Trend's chart. Option B (slope rows on one shared scale) below
-//                  TREND_LINE_MIN_YEARS real years; Option D2 (one line each, indexed to
+//   MultiTrend  -- Trend's chart. Option H's ranked bars (each series' change in the
+//                  measure's own units) below TREND_LINE_MIN_YEARS real years; Option D2 (one line each, indexed to
 //                  its own first year = 100 for headcounts) from there; Option K (focus +
 //                  top movers as lines, the rest one min-max band) when the list is long.
-//   ChangeList  -- Option H: % change as a ranked, diverging list, the group average a
+//   ChangeList  -- Option H: a change (% by default) as a ranked, diverging list, the group average a
 //                  dashed reference line rather than a competing bar.
 //   YearTable   -- Options E and I: one column per year (first and last on the card,
 //                  every year in fullscreen), a latest-year rank, and the change.
@@ -45,7 +45,7 @@ const INDEX_MEASURE: Measure = {
   barScaleMax: null,
 };
 
-// Whether the Trend line toggle means anything for this data: Option B is a list with no
+// Whether the Trend line toggle means anything for this data: the fallback is a list with no
 // time axis to fit a line along.
 export function multiTrendHasLine(data: PanelData): boolean {
   return periodsWithData(data).length >= TREND_LINE_MIN_YEARS;
@@ -77,9 +77,15 @@ export function MultiTrend({
     // A long list scrolls inside the panel, starting with the focused row in view. Only
     // the list: the line chart sizes itself by stretching to fill the panel, which a
     // scroll box would break.
+    // Option H's ranked bars, on each series' change first -> last in the measure's own
+    // units (pp for a rate, points, entries) -- not % change -- and no reference line.
     return (
       <CentredOnTarget watch={`${focusKey}:${data.series.map((s) => s.key).join(",")}`}>
-        <TrendList data={data} measure={measure} focusKey={focusKey} />
+        <ChangeList
+          rows={data.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOver(s.values)?.delta ?? null }))}
+          focusKey={focusKey}
+          formatValue={measure.formatDelta}
+        />
       </CentredOnTarget>
     );
   }
@@ -105,111 +111,15 @@ export function MultiTrend({
   );
 }
 
-// Option B, as slope rows: one row per series on one shared horizontal scale, a dot per
-// year at its value (the latest solid, earlier years hollow and fainter), joined in order
-// by a line, and the change first -> last in the number column. No time axis, so more
-// subjects just means a taller list -- the pattern Column 2/3's Current views already use.
-// The scale is the measure's own bar scale where it has one (100% for rates), else the
-// largest figure shown, as Current's bars are.
-function TrendList({ data, measure, focusKey }: { data: PanelData; measure: Measure; focusKey: string | null }) {
-  const all = data.series.flatMap((s) => s.values).filter((v): v is number => v !== null);
-  if (data.periods.length === 0 || all.length === 0) {
-    return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
-  }
-  const max = measure.barScaleMax ?? (Math.max(...all) || 1);
-  const at = (v: number) => `${Math.min(100, Math.max(0, (v / max) * 100))}%`;
-  const n = data.periods.length;
-  const opacity = (i: number) => (i === n - 1 ? 1 : 0.3 + (0.35 * i) / Math.max(1, n - 1));
-  const cols = "grid grid-cols-[5.5rem_1fr_3.25rem] items-center gap-2";
-  return (
-    <div className="flex flex-col gap-0.5">
-      {data.series.map((s) => {
-        const c = changeOver(s.values);
-        const dir = directionOf(c?.delta ?? null);
-        const focus = s.key === focusKey;
-        const points = s.values.flatMap((v, i) => (v === null ? [] : [{ v, i }]));
-        const lo = points.length ? Math.min(...points.map((p) => p.v)) : null;
-        const hi = points.length ? Math.max(...points.map((p) => p.v)) : null;
-        return (
-          <div
-            key={s.key}
-            data-highlight={focus ? "" : undefined}
-            className={`${cols} rounded-[5px] px-1 py-[3px] text-[11px]`}
-            style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.14)" } : undefined}
-          >
-            <span
-              className={`truncate ${focus ? "font-bold" : "text-[var(--muted2)]"}`}
-              style={focus ? { color: "var(--accent,var(--fg))" } : undefined}
-              title={s.label}
-            >
-              {s.label}
-            </span>
-            <span className="relative h-[18px]">
-              <span className="absolute inset-x-0 top-1/2 h-px bg-[var(--panel-border)]" />
-              {/* The line through every year in order: on one axis, it runs lowest to highest. */}
-              {lo !== null && hi !== null && hi > lo && (
-                <span
-                  className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-[1px]"
-                  style={{ left: at(lo), width: `calc(${at(hi)} - ${at(lo)})`, background: s.colour, opacity: 0.55 }}
-                />
-              )}
-              {points.map(({ v, i }) => {
-                const latest = i === n - 1;
-                return (
-                  <span
-                    key={data.periods[i]}
-                    className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${latest ? "h-2.5 w-2.5" : "h-2 w-2 border-2"}`}
-                    style={{
-                      left: at(v),
-                      opacity: opacity(i),
-                      ...(latest
-                        ? { background: s.colour, boxShadow: "0 0 0 2px var(--box-bg,#fff)" }
-                        : { borderColor: s.colour, background: "var(--box-bg,#fff)" }),
-                    }}
-                    title={`${s.label} ${academicYearLabel(data.periods[i])}: ${measure.format(v)}`}
-                  />
-                );
-              })}
-            </span>
-            <span className="text-right leading-tight tabular-nums">
-              <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{c ? measure.formatDelta(c.delta) : "—"}</span>
-              {c?.percent !== null && c?.percent !== undefined && (
-                <span className="block text-[9.5px] text-[var(--muted2)]">{signed(Math.round(c.percent), (v) => `${v}%`)}</span>
-              )}
-            </span>
-          </div>
-        );
-      })}
-      {/* The shared scale, under the dot column. */}
-      <div className={`${cols} px-1 text-[9px] text-[var(--muted3)] tabular-nums`}>
-        <span />
-        <span className="flex justify-between">
-          {[0, 0.5, 1].map((f) => (
-            <span key={f}>{measure.format(max * f)}</span>
-          ))}
-        </span>
-        <span />
-      </div>
-      <div className="mt-1 flex flex-wrap gap-3 text-[10px] text-[var(--muted)]">
-        {data.periods.map((p, i) => (
-          <span key={p} className="flex items-center gap-1">
-            <span
-              className={`inline-block h-2 w-2 rounded-full ${i === n - 1 ? "bg-[var(--muted)]" : "border-2 border-[var(--muted)]"}`}
-              style={{ opacity: opacity(i) }}
-            />
-            {academicYearLabel(p)}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ----------------------------------------------------------------- ChangeList
 
-export type ChangeRow = { key: string; label: string; colour: string; percent: number | null };
+export type ChangeRow = { key: string; label: string; colour: string; value: number | null };
 
-// Option H. Ranked by % change, biggest rise first, so reading order alone answers "which
+// A % change, rounded, with its sign: ChangeList's default formatting.
+const signedPercent = (v: number) => signed(Math.round(v), (x) => `${x}%`);
+
+// Option H. Ranked by change (a % change unless the caller formats something else, as
+// Trend's short-span fallback does with a measure's own delta), biggest rise first, so reading order alone answers "which
 // moved most" -- the same convention as the rankings. Bars grow either way from a centre
 // zero; every value is printed in full beside its bar, which is also why one outlier no
 // longer squashes the rest: a short bar still carries a full-size "+2%". The group
@@ -218,29 +128,36 @@ export function ChangeList({
   rows,
   focusKey,
   group,
+  formatValue,
 }: {
   rows: ChangeRow[];
   focusKey: string | null;
-  group?: { label: string; percent: number | null };
+  group?: { label: string; value: number | null };
+  // How a row's value prints, sign included, as ViewChart's formatValue: the measure
+  // formats its own values. Absent = a rounded, signed % change.
+  formatValue?: (v: number) => string;
 }) {
-  const ranked = [...rows].sort((a, b) => (b.percent ?? -Infinity) - (a.percent ?? -Infinity));
-  const real = ranked.filter((r) => r.percent !== null).map((r) => Math.abs(r.percent!));
+  const format = formatValue ?? signedPercent;
+  // The tone follows the printed figure: a % change is shown rounded, so "+0%" reads flat.
+  const dirOf = (v: number | null) => directionOf(v === null ? null : formatValue ? v : Math.round(v));
+  const ranked = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  const real = ranked.filter((r) => r.value !== null).map((r) => Math.abs(r.value!));
   if (real.length === 0) return <p className="text-xs text-[var(--muted)]">No two years of published figures to compare yet.</p>;
-  const maxAbs = Math.max(...real, group?.percent !== null && group?.percent !== undefined ? Math.abs(group.percent) : 0) || 1;
+  const maxAbs = Math.max(...real, group?.value !== null && group?.value !== undefined ? Math.abs(group.value) : 0) || 1;
   // Half the track either side of zero, with a little room so the longest bar never
   // touches the edge.
-  const pos = (pct: number) => 50 + (pct / maxAbs) * 46;
+  const pos = (v: number) => 50 + (v / maxAbs) * 46;
   // Nulls sort last, so a row's rank is simply its position among the real ones.
   return (
     <div className="flex flex-col gap-1.5">
       {ranked.map((r, idx) => {
         const rank = idx + 1;
-        const dir = directionOf(r.percent === null ? null : Math.round(r.percent));
+        const dir = dirOf(r.value);
         const focus = r.key === focusKey;
         return (
           <div key={r.key} data-highlight={focus ? "" : undefined} className="grid grid-cols-[6.5rem_1fr_2.75rem] items-center gap-2 text-[11px]">
             <span className="flex min-w-0 items-center gap-1.5">
-              <span className="w-3 shrink-0 text-right text-[9px] tabular-nums text-[var(--muted3)]">{r.percent === null ? "" : rank}</span>
+              <span className="w-3 shrink-0 text-right text-[9px] tabular-nums text-[var(--muted3)]">{r.value === null ? "" : rank}</span>
               <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.colour }} />
               {/* The focused row's label takes its own colour (the accent), as its dot does. */}
               <span
@@ -253,25 +170,25 @@ export function ChangeList({
             </span>
             <span className="relative h-3.5 rounded-[3px] bg-[var(--panel-border)]">
               <span className="absolute -bottom-0.5 -top-0.5 left-1/2 w-px bg-[var(--panel-border2)]" />
-              {r.percent !== null && (
+              {r.value !== null && (
                 <span
                   className="absolute inset-y-0 rounded-[2px]"
                   style={{
-                    left: `${Math.min(50, pos(r.percent))}%`,
-                    width: `${Math.abs(pos(r.percent) - 50)}%`,
+                    left: `${Math.min(50, pos(r.value))}%`,
+                    width: `${Math.abs(pos(r.value) - 50)}%`,
                     background: DIRECTION_FILL[dir],
                   }}
                 />
               )}
-              {group?.percent !== null && group?.percent !== undefined && (
+              {group?.value !== null && group?.value !== undefined && (
                 <span
                   className="absolute -bottom-1 -top-1 w-0 border-l border-dashed border-[var(--fg)] opacity-60"
-                  style={{ left: `${pos(group.percent)}%` }}
+                  style={{ left: `${pos(group.value)}%` }}
                 />
               )}
             </span>
             <span className={`text-right font-semibold tabular-nums ${DIRECTION_TEXT[dir]}`}>
-              {r.percent === null ? "—" : signed(Math.round(r.percent), (v) => `${v}%`)}
+              {r.value === null ? "—" : format(r.value)}
             </span>
           </div>
         );
@@ -279,7 +196,7 @@ export function ChangeList({
       {group && (
         <div className="mt-1 flex items-center gap-1.5 border-t border-dashed border-[var(--panel-border2)] pt-1.5 text-[10px] text-[var(--muted2)]">
           <span className="inline-block h-3 w-0 border-l border-dashed border-[var(--fg)] opacity-60" />
-          {group.label}: {group.percent === null ? "no figure" : signed(Math.round(group.percent), (v) => `${v}%`)}
+          {group.label}: {group.value === null ? "no figure" : format(group.value)}
         </div>
       )}
     </div>
