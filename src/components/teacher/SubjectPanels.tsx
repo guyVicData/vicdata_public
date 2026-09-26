@@ -29,6 +29,7 @@ import {
   type PanelId,
 } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
+import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { ChangeList, MultiTrend, YearTable, curatedKeys, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
@@ -82,6 +83,7 @@ export function SubjectPanels({
   deltaHeading,
   spaciousBars = false,
   categoryLabel,
+  geography,
 }: {
   columnId: string;
   periods: number[];
@@ -164,6 +166,10 @@ export function SubjectPanels({
   // {category}" title over Current -- as Candidates titles its panels. Results passes it;
   // Context does not, and gets no title.
   categoryLabel?: string;
+  // Results' % change: the focused GCSE subject's average point score against its LA,
+  // region and England -- the same shared view Candidates uses for entries. When present
+  // it replaces the category-subjects chart and table in % change. Context never passes it.
+  geography?: GeographyInput;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -174,6 +180,7 @@ export function SubjectPanels({
   // Steps 9-10: Context's Trend and % change gain a table beside their chart.
   const [trendView, setTrendView] = useState<"chart" | "table">("chart");
   const [changeView, setChangeView] = useState<"chart" | "table">("chart");
+  const geo = useSubjectGeography(geography);
   const redesigned = changeScope !== "all";
 
   // The donut is Candidates-only, so a measure switch has to fall back rather than leave
@@ -549,16 +556,32 @@ export function SubjectPanels({
   const change: PanelRender = {
     tag: "% Change",
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
-    question: questions.change,
+    question: geography ? `How has ${geography.label} moved, against its LA, region and England?` : questions.change,
     actions: redesigned ? (
       <>
-        <IconButton label="Ranked change" active={changeView === "chart"} onClick={() => setChangeView("chart")}>{HorizontalBarsIcon}</IconButton>
+        {/* With the geography comparison the chart is a line chart, so its icon says so. */}
+        <IconButton label={geography ? "Chart" : "Ranked change"} active={changeView === "chart"} onClick={() => setChangeView("chart")}>
+          {geography ? TrendLineIcon : HorizontalBarsIcon}
+        </IconButton>
         <IconButton label="Table" active={changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
       </>
     ) : undefined,
     body: (fullscreen) =>
       !redesigned ? (
         <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+      ) : geography ? (
+        <GeographyView
+          geography={geography}
+          geo={geo}
+          metric="avgPointScore"
+          ownPeriods={periods}
+          spanPeriods={changeData.periods}
+          measure={measure}
+          theme={theme}
+          accentHex={accentHex}
+          view={changeView}
+          fullscreen={fullscreen}
+        />
       ) : changeView === "table" ? (
         <CentredOnTarget watch={`change-table:${focusedKey}:${changeData.periods.join(",")}`}>
           <YearTable

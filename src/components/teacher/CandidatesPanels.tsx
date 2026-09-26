@@ -10,9 +10,8 @@
 // Every figure is the school's own real entries, from the same `entries` rows the card
 // already counted before this round -- grouped by period rather than collapsed to the
 // latest one. Nothing here is derived a second way.
-import { useEffect, useState, type ReactNode } from "react";
-import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { fetchSubjectGeography, type GeographyPayload } from "@/lib/teacher-view-geography";
+import { useState, type ReactNode } from "react";
+import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
@@ -98,25 +97,14 @@ export function CandidatesPanels({
   // `applies` is false when the focused subject's entries are outside GCSE points (the
   // geography figures count points-eligible entries only); `own` is the school's own
   // points-eligible entries, aligned to `periods`, so all rows count the same thing.
-  geography?: { urn: string; subject: string; label: string; applies: boolean; own: (number | null)[] };
+  geography?: GeographyInput;
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
   // Step 6: Trend and % change each gain a table beside their chart.
   const [trendView, setTrendView] = useState<"chart" | "table">("chart");
   const [changeView, setChangeView] = useState<"chart" | "table">("chart");
-  // Part 5: fetched only when the % Change table is opened, per subject.
-  const [geo, setGeo] = useState<{ subject: string; data: GeographyPayload | null } | null>(null);
-  // Either % Change view now shows the geography comparison (Part 2 added the chart).
-  const geoWanted = !!geography?.applies;
-  useEffect(() => {
-    if (!geoWanted || !geography || geo?.subject === geography.subject) return;
-    let cancelled = false;
-    (async () => {
-      const data = await fetchSubjectGeography(createBrowserSupabaseClient(), geography.urn, geography.subject);
-      if (!cancelled) setGeo({ subject: geography.subject, data });
-    })();
-    return () => { cancelled = true; };
-  }, [geoWanted, geography, geo?.subject]);
+  // Part 5: the geography figures, fetched once per subject when the comparison applies.
+  const geo = useSubjectGeography(geography);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
@@ -299,111 +287,28 @@ export function CandidatesPanels({
   const worst = ranked[ranked.length - 1];
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
 
-  // Part 5: the focused subject against its LA, region and England, over the years the
-  // geography figures exist (2021/22 on -- DfE published no GCSE points for 2020/21) within
-  // the From range, so every row's change runs over the same span. Four rows in the same
-  // YearTable, rank off: ranking an LA against England by size says nothing.
-  // One step both geography views read: the not-applicable / loading / no-data states, or
-  // the four series (the school's own points-eligible entries, then its LA, region and
-  // England) over the years the area figures exist (2021/22 on -- DfE published no GCSE
-  // points for 2020/21) within the From range, so every line and row covers the same span.
-  //
-  // Chart colours for LA, region and England: the same categorical palette as this
-  // column's Trends lines (paletteInOrder, b518e1e), which also skips hues near the phase
-  // accent. A three-shade ramp of one hue was tried first and read as too close together
-  // live. The school keeps FOCUS_COLOUR; the table keeps a single grey (rows are labelled).
-  const areaColours = paletteInOrder(
-    ["own", "area-la", "area-region", "area-national"],
-    "own",
-    FOCUS_COLOUR,
-    theme === "light" ? PALETTE_LIGHT : PALETTE_DARK,
-    PHASE_ACCENT[phase]?.hex ?? null,
-  );
-  const geographyState = ():
-    | { kind: "message"; text: string }
-    | { kind: "data"; shown: number[]; series: { key: string; label: string; colour: string; values: (number | null)[] }[] }
-    | null => {
-    if (!geography) return null;
-    if (!geography.applies) {
-      return {
-        kind: "message",
-        text: `LA, regional and national entries figures aren't available for ${geography.label}: they count GCSE (points-eligible) entries only, and this school's ${geography.label} entries are in a qualification outside that.`,
-      };
-    }
-    if (!geo || geo.subject !== geography.subject) return { kind: "message", text: "Loading LA, regional and national figures…" };
-    const tiers = [
-      { key: "area-la", area: geo.data?.la, suffix: " (LA)", shade: areaColours.get("area-la")! },
-      { key: "area-region", area: geo.data?.region, suffix: " (region)", shade: areaColours.get("area-region")! },
-      { key: "area-national", area: geo.data?.national, suffix: "", shade: areaColours.get("area-national")! },
-    ].filter((t): t is { key: string; area: NonNullable<typeof t.area>; suffix: string; shade: string } => !!t.area);
-    if (tiers.length === 0) return { kind: "message", text: `No LA, regional or national entries figures are published for ${geography.label}.` };
-    const geoPeriods = new Set(tiers.flatMap((t) => t.area.rows.filter((r) => r.entries !== null).map((r) => r.period)));
-    const shown = changeData.periods.filter((p) => geoPeriods.has(p));
-    const valueAtPeriod = (rows: { period: number; entries: number | null }[], p: number) => rows.find((r) => r.period === p)?.entries ?? null;
-    return {
-      kind: "data",
-      shown,
-      series: [
-        { key: "own", label: "This school", colour: FOCUS_COLOUR, values: shown.map((p) => geography.own[periods.indexOf(p)] ?? null) },
-        ...tiers.map((t) => ({ key: t.key, label: `${t.area.name}${t.suffix}`, colour: t.shade, values: shown.map((p) => valueAtPeriod(t.area.rows, p)) })),
-      ],
-    };
-  };
-  const geographyHeading = geography ? (
-    <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{geography.label} against the wider system</p>
-  ) : null;
-  const geographyNote = (text: string) => <p className="text-[12px] leading-relaxed text-[var(--muted2)]">{text}</p>;
+  // Part 5 / Part 2: the focused subject against its LA, region and England -- the shared
+  // GeographyView (also Results'), reading points-eligible entries here.
+  const geographyView = (view: "chart" | "table", fullscreen: boolean) =>
+    geography ? (
+      <GeographyView
+        geography={geography}
+        geo={geo}
+        metric="entries"
+        ownPeriods={periods}
+        spanPeriods={changeData.periods}
+        measure={measure}
+        theme={theme}
+        accentHex={PHASE_ACCENT[phase]?.hex ?? null}
+        view={view}
+        fullscreen={fullscreen}
+      />
+    ) : null;
   // Honest labelling (these are not every entry) -- in the panel's caption, behind the
   // footer's "What this shows" button, rather than printed under the figure: micro fix
   // Part 3, so the chart gets that height back.
   const pointsEligibleCaveat =
     "All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.";
-
-  const geographyTable = (fullscreen: boolean) => {
-    const state = geographyState();
-    if (!state) return null;
-    if (state.kind === "message") return <>{geographyHeading}{geographyNote(state.text)}</>;
-    return (
-      <>
-        {geographyHeading}
-        <CentredOnTarget watch={`geo:${geography!.subject}:${state.shown.join(",")}`}>
-          <YearTable
-            // The table's area rows stay one grey; the shades are for telling lines apart.
-            data={{ periods: state.shown, series: state.series.map((x) => (x.key === "own" ? x : { ...x, colour: "var(--muted3)" })) }}
-            measure={measure}
-            focusKey="own"
-            fullscreen={fullscreen}
-            nameHeading="Where"
-            showRank={false}
-            changeEmphasis="percent"
-          />
-        </CentredOnTarget>
-      </>
-    );
-  };
-
-  // Live review Part 2: the chart view as an indexed multi-line trend -- MultiTrend, the
-  // component this column's own Trends panel uses. For entries it indexes every line to
-  // its own first year = 100, which is what puts ~200 school entries and ~600,000 England
-  // entries on one readable chart.
-  const geographyChart = (fullscreen: boolean) => {
-    const state = geographyState();
-    if (!state) return null;
-    if (state.kind === "message") return <>{geographyHeading}{geographyNote(state.text)}</>;
-    return (
-      <>
-        {geographyHeading}
-        {/* No region line: its path runs almost on top of England's, so the chart shows
-            the school, its LA and England. The table keeps all four rows. */}
-        <MultiTrend
-          data={{ periods: state.shown, series: state.series.filter((x) => x.key !== "area-region") }}
-          measure={measure}
-          focusKey="own"
-          fullscreen={fullscreen}
-        />
-      </>
-    );
-  };
 
   const change: PanelRender = {
     tag: "% Change",
@@ -423,10 +328,8 @@ export function CandidatesPanels({
       </>
     ),
     body: (fullscreen) =>
-      changeView === "table" && geography ? (
-        geographyTable(fullscreen)
-      ) : changeView === "chart" && geography ? (
-        geographyChart(fullscreen)
+      geography ? (
+        geographyView(changeView, fullscreen)
       ) : changeView === "table" ? (
         // Option I: the base year and the latest beside the change, so a big % on a
         // handful of candidates reads as what it is.

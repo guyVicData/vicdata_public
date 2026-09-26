@@ -9,7 +9,9 @@ import type { createBrowserSupabaseClient } from "@/lib/supabase";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
-export type GeographyRow = { period: number; entries: number | null; schoolCount: number };
+// avgPointScore: the area's own average point score for the subject -- what Results
+// compares against. entries: its points-eligible entries -- what Candidates compares.
+export type GeographyRow = { period: number; entries: number | null; avgPointScore: number | null; schoolCount: number };
 export type GeographyPayload = {
   la: { name: string; rows: GeographyRow[] } | null;
   region: { name: string; rows: GeographyRow[] } | null;

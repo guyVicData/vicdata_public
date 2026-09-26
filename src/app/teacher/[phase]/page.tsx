@@ -1381,6 +1381,26 @@ export default function TeacherPhaseDashboard() {
               spaciousBars
               categoryLabel={focusFamilyLabel ?? undefined}
               theme={theme}
+              // % change: the focused subject's average point score against its LA, region
+              // and England (the shared GeographyView). GCSE only (the source is KS4), on
+              // average point score only -- no area grade-4+ rate is published -- and only
+              // for the points-bearing GCSE qualification. The school's row is its own
+              // average point score, from the same series the other panels plot.
+              geography={
+                phase === "ks4" && focusItem && schoolUrn
+                  ? {
+                      urn: schoolUrn,
+                      subject: focusItem.subject,
+                      label: focusItem.subject,
+                      applies: resultsMeasure.id === "points" && focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4,
+                      own: resultsSeries.find((r) => r.key === focusItem.key)?.values ?? [],
+                      notApplicableText:
+                        resultsMeasure.id !== "points"
+                          ? `LA, regional and national figures are published for average point score only, not ${resultsMeasure.label.toLowerCase()}. Switch Results to average point score to compare ${focusItem.subject} with the wider system.`
+                          : `LA, regional and national figures cover GCSE (full course) average point scores only, and this school's ${focusItem.subject} entries are in a qualification outside that.`,
+                    }
+                  : undefined
+              }
               accentHex={accent?.hex ?? null}
               measure={resultsMeasure}
               controls={
@@ -1452,6 +1472,7 @@ export default function TeacherPhaseDashboard() {
                       subject: focusItem.subject,
                       label: focusItem.subject,
                       applies: focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4,
+                      notApplicableText: `LA, regional and national entries figures aren't available for ${focusItem.subject}: they count GCSE (points-eligible) entries only, and this school's ${focusItem.subject} entries are in a qualification outside that.`,
                       own: categoryPeriods.map((p) => {
                         const rows = headlineRowsFor(focusItem, p).filter((h) => h.pointsCoveragePercent !== null);
                         return rows.length ? Math.round(rows.reduce((a, h) => a + (h.entriesTotal ?? 0) * (h.pointsCoveragePercent! / 100), 0)) : null;

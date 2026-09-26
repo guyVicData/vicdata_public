@@ -45,7 +45,14 @@ export async function GET(request: NextRequest) {
     if (!key) return null;
     const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType, groupingKeys: [key], subject });
     const out = rows
-      .map((r) => ({ period: r.period, entries: r.entries_total === null ? null : Number(r.entries_total), schoolCount: r.school_count }))
+      .map((r) => ({
+        period: r.period,
+        entries: r.entries_total === null ? null : Number(r.entries_total),
+        // The same rows' avg_value -- already fetched (measure avg_point_score), now kept
+        // for Results' comparison.
+        avgPointScore: r.avg_value === null ? null : Number(r.avg_value),
+        schoolCount: r.school_count,
+      }))
       .sort((a, b) => a.period - b.period);
     return out.length ? { name: key, rows: out } : null;
   };
