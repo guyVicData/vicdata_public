@@ -649,7 +649,7 @@ export function SubjectPanels({
                 ...current,
                 body: (fullscreen) => (
                   <>
-                    <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">
+                    <p className="mb-2 shrink-0 text-[12px] font-semibold text-[var(--muted2)]">
                       {measure.id === "entries" ? "Entries" : "Results"} in {categoryLabel}
                     </p>
                     {current.body(fullscreen)}
