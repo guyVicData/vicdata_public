@@ -128,6 +128,17 @@ export function displayBucketFor(qualificationType: string): Ks5Bucket {
   return bucketFor(qualificationType);
 }
 
+// AS level and Advanced Extension Award exactly -- the two A-level-bucket qualifications that
+// are not a full A level. Teacher view leaves them out of its "compare with other subjects at
+// this school" lists (Column 1's category, Context's subjects) and every total or average
+// those lists compute, while keeping them selectable in the picker. Deliberately narrower
+// than displayBucketFor() === "other": EPQ, Core Maths, Pre-U and the rest of Other are
+// genuine qualifications in their own right and stay in those lists as before.
+export function isAsLevelOrAea(qualificationType: string): boolean {
+  const q = qualificationType || "";
+  return q.startsWith("GCE AS level") || q === "Advanced Extension Award";
+}
+
 // Table 2a. `*` is the SAME GRADE as `A*`, just DfE's label for it in the 2021-2023
 // sources: confirmed in the real data, where the two labels never co-occur in one
 // period. Omitting it silently drops every top A-level grade in the historic years.

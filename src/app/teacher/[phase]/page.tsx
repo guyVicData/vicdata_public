@@ -38,7 +38,7 @@ import { COLUMN_TITLE, defaultBoxTitle } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
 import { type RankedSchool, type RankingsSetId } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
-import { bucketFor, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
+import { bucketFor, isAsLevelOrAea, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
 
 // §3: the picker works at real taught-qualification level, not subject-family level --
@@ -859,13 +859,24 @@ export default function TeacherPhaseDashboard() {
   // lookup Context's "Other subjects in ..." option used, fixed to the focused subject's
   // category rather than chosen. Members are this school's own (subject, qualification)
   // items, focused subject first, then the rest by entries.
+  //
+  // Post-16 Part C1: AS level and Advanced Extension Award peers are left out here, BEFORE
+  // the subject+bucket dedup below, so an AS row can never be the one a same-subject
+  // A-level entry is deduped into, never needs a "(GCE AS level)" suffix to tell it from
+  // its A level, and never feeds the category's own average line. They stay selectable in
+  // the picker, and a teacher who focuses one directly still gets its own panels: the
+  // focused item is never filtered.
+  const comparablePeer = (i: SubjectItem) => !isAsLevelOrAea(i.qualificationType);
   const focusFamilyId = focusItem ? familyFor(headline, focusItem.subject)?.id ?? null : null;
   const focusFamilyLabel = focusItem ? familyLabelFor(headline, focusItem.subject) ?? "its category" : null;
   const categoryItems: SubjectItem[] = focusItem
     ? [
         focusItem,
         ...items
-          .filter((i) => i.key !== focusItem.key && focusFamilyId !== null && familyFor(headline, i.subject)?.id === focusFamilyId)
+          .filter(
+            (i) =>
+              i.key !== focusItem.key && comparablePeer(i) && focusFamilyId !== null && familyFor(headline, i.subject)?.id === focusFamilyId,
+          )
           .sort((a, b) => b.entries - a.entries),
       ]
     : [];
@@ -986,13 +997,26 @@ export default function TeacherPhaseDashboard() {
 
   // §4.2: the group is SELF-INCLUSIVE -- it contains the subject being compared, matching
   // the convention the comparator-set averages already use elsewhere.
+  //
+  // Post-16 Part C1: a subject this school runs ONLY as AS level or Advanced Extension Award
+  // is not a member -- its headline row would be AS figures alone, counted into the total
+  // and the per-subject average. A subject with a real A level (or any other qualification)
+  // beside its AS stays: the headline row is per bucket, so its AS entries remain blended
+  // into it until Part B-2 separates them.
+  const asOrAeaOnly = new Set(
+    items
+      .map((i) => i.subject)
+      .filter((n) => items.every((i) => i.subject !== n || isAsLevelOrAea(i.qualificationType))),
+  );
   const contextMembers: string[] = (() => {
-    const every = Array.from(new Set(headline.map((h) => h.subject)));
+    const every = Array.from(new Set(headline.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
     if (contextAgainst === "selected") {
       const names = new Set(items.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
       // Nothing ticked yet falls back to the subjects this person teaches, which is the
       // most useful "not chosen yet" group and is one click from being narrowed.
-      return names.size ? every.filter((n) => names.has(n)) : Array.from(new Set(tickedItems.map((i) => i.subject)));
+      return names.size
+        ? every.filter((n) => names.has(n))
+        : Array.from(new Set(tickedItems.map((i) => i.subject))).filter((n) => !asOrAeaOnly.has(n));
     }
     return every;
   })();
@@ -1040,7 +1064,11 @@ export default function TeacherPhaseDashboard() {
     ? [
         focusItem,
         ...items.filter(
-          (i) => i.key !== focusItem.key && i.entries > 0 && (contextAgainst !== "selected" || contextMembers.includes(i.subject)),
+          (i) =>
+            i.key !== focusItem.key &&
+            i.entries > 0 &&
+            comparablePeer(i) &&
+            (contextAgainst !== "selected" || contextMembers.includes(i.subject)),
         ),
       ]
     : [];
