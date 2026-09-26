@@ -63,6 +63,7 @@ export function CandidatesPanels({
   currentLabel,
   focus,
   groupLabel,
+  categoryLabel,
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -82,6 +83,9 @@ export function CandidatesPanels({
   // names their per-subject average ("Sciences & Maths average"), drawn as Trend's dashed
   // line and one extra % change bar. Absent, or one subject only = no group to draw.
   groupLabel?: string;
+  // The category itself ("Sciences & Maths") -- the same family label `groupLabel` is built
+  // from -- for the "Entries in {category}" title over every panel.
+  categoryLabel?: string;
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
   // Step 6: Trend and % change each gain a table beside their chart.
@@ -306,13 +310,30 @@ export function CandidatesPanels({
   // subject. The dashboard renders its own single box for that phase instead.
   if (phase === "ks2") return null;
 
+  // Live review Part 2: every panel names the category it is comparing within, above the
+  // chart or table, whichever view is showing. Only when there IS a comparison (the
+  // category average exists, i.e. more than one subject); a lone subject has nothing to
+  // name, so no title rather than an empty-feeling one.
+  const titled = (panel: PanelRender): PanelRender =>
+    group && categoryLabel
+      ? {
+          ...panel,
+          body: (fullscreen) => (
+            <>
+              <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">Entries in {categoryLabel}</p>
+              {panel.body(fullscreen)}
+            </>
+          ),
+        }
+      : panel;
+
   return (
     <ColumnPanels
       columnId="candidates"
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}
-      render={{ current, trend, change }}
+      render={{ current: titled(current), trend: titled(trend), change: titled(change) }}
     />
   );
 }

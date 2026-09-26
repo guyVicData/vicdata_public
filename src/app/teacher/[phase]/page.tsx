@@ -1424,6 +1424,7 @@ export default function TeacherPhaseDashboard() {
               periods={categoryPeriods}
               focus={focusKey}
               groupLabel={`${focusFamilyLabel} average`}
+              categoryLabel={focusFamilyLabel ?? undefined}
               panels={panelsOf(COL1)}
               onPanelsChange={(next) => setPanels(COL1, next)}
               question={q.howMany}
