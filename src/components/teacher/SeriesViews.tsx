@@ -197,7 +197,14 @@ export function ChangeList({
             <span className="flex min-w-0 items-center gap-1.5">
               <span className="w-3 shrink-0 text-right text-[9px] tabular-nums text-[var(--muted3)]">{r.percent === null ? "" : rank}</span>
               <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.colour }} />
-              <span className={`truncate ${focus ? "font-semibold text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.label}>{r.label}</span>
+              {/* The focused row's label takes its own colour (the accent), as its dot does. */}
+              <span
+                className={`truncate ${focus ? "font-semibold" : "text-[var(--muted2)]"}`}
+                style={focus ? { color: r.colour } : undefined}
+                title={r.label}
+              >
+                {r.label}
+              </span>
             </span>
             <span className="relative h-3.5 rounded-[3px] bg-[var(--panel-border)]">
               <span className="absolute -bottom-0.5 -top-0.5 left-1/2 w-px bg-[var(--panel-border2)]" />
