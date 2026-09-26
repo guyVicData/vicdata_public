@@ -15,8 +15,8 @@
 // throughout this codebase: Map's target ring, SpreadStrip's target circle, this
 // page's previous RollTrendChart) and a second red-family line in the same legend
 // would read as a second "this one matters" signal.
-const PALETTE_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"];
-const PALETTE_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9"];
+export const PALETTE_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"];
+export const PALETTE_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9"];
 
 // 2026-09-08, per direct request: "keep trying for a distinct colour per school,
 // but where the palette runs thin, add line-type as a secondary encoding" --

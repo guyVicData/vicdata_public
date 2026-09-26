@@ -1412,6 +1412,7 @@ export default function TeacherPhaseDashboard() {
           ) : (
             <CandidatesPanels
               phase={phase}
+              theme={theme}
               // Content round S6: the focused subject and its category peers. No England
               // overlay here -- "for candidates the national average is irrelevant".
               subjects={candidateItems.map((i) => ({

@@ -12,7 +12,7 @@
 // latest one. Nothing here is derived a second way.
 import { useState, type ReactNode } from "react";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
-import { academicYearLabel } from "@/lib/teacher-view-theme";
+import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
@@ -33,7 +33,8 @@ import { type ChangeBar } from "./ChangeChart";
 import { HorizontalBarsIcon, IconButton, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, YearTable, multiTrendHasLine } from "./SeriesViews";
-import { FOCUS_COLOUR, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { VerticalBars } from "./VerticalBars";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
@@ -64,6 +65,7 @@ export function CandidatesPanels({
   focus,
   groupLabel,
   categoryLabel,
+  theme = "dark",
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -86,6 +88,8 @@ export function CandidatesPanels({
   // The category itself ("Sciences & Maths") -- the same family label `groupLabel` is built
   // from -- for the "Entries in {category}" title over every panel.
   categoryLabel?: string;
+  // The palette has light and dark versions (Part 3's Trend colours).
+  theme?: "dark" | "light";
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
   // Step 6: Trend and % change each gain a table beside their chart.
@@ -110,6 +114,19 @@ export function CandidatesPanels({
   const colourOf = (key: string) => tints.get(key) ?? "var(--muted3)";
 
   const subjectSeries = currentOrder.map((s) => ({ key: s.key, label: s.label, colour: colourOf(s.key), values: s.values }));
+  // Live review Part 3: the Trend LINE chart alone gets real hues for the non-focused
+  // subjects (paletteInOrder), same order, same focus accent. Current's bars and % change
+  // keep the grey ramp above, unchanged -- they stay legible without colour; six-plus
+  // overlapping lines do not. The legend and the table's dots read the same series, so
+  // they always match the lines.
+  const trendColours = paletteInOrder(
+    currentOrder.map((s) => s.key),
+    focus ?? subjects[0]?.key ?? null,
+    FOCUS_COLOUR,
+    theme === "light" ? PALETTE_LIGHT : PALETTE_DARK,
+    PHASE_ACCENT[phase]?.hex ?? null,
+  );
+  const trendSubjectSeries = currentOrder.map((s) => ({ key: s.key, label: s.label, colour: trendColours.get(s.key) ?? "var(--muted3)", values: s.values }));
 
   const focused = subjects.find((s) => s.key === focus) ?? subjects[0];
   // Self-inclusive, per subject -- a category "average" of candidate numbers is what one
@@ -122,7 +139,7 @@ export function CandidatesPanels({
   // series % change already used -- not the focused subject against one category-average
   // line. MultiTrend picks the form: Option B under four real years, Option D2 (each
   // subject indexed to its own first year) from four.
-  const trendFull: PanelData = trimToData({ periods, series: subjectSeries });
+  const trendFull: PanelData = trimToData({ periods, series: trendSubjectSeries });
 
   const trendPeriods = periodsWithData(trendFull);
   const trendData = sliceFrom(trendFull, trendStart);

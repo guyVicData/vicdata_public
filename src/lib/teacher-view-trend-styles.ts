@@ -39,6 +39,48 @@ export function tintInOrder(keysInCurrentOrder: string[], focusKey: string | nul
   return out;
 }
 
+// Live review Part 3: a line chart of six-plus overlapping lines needs real hues, not a
+// grey ramp -- bars and ranked rows stay legible in greys, lines do not. So Candidates'
+// Trend (only) gives its non-focused subjects the site's existing categorical palette
+// (school-series-colours.ts, the Data View's multi-school lines), in Current's order, the
+// way tintInOrder hands out greys; the focus keeps FOCUS_COLOUR.
+//
+// Hues within 40 degrees of the phase accent are skipped: the focused line IS the accent
+// (GCSE green, hue ~158; Post-16 purple, ~255), and a peer drawn in nearly the same colour
+// would read as a second focus. At GCSE that drops the palette's two greens (#1baf7a at 0
+// degrees off, #008300 at 38); at Post-16 its purple (#4a3aa7, 9 off) -- its blue, 42 off,
+// stays. Past the remaining hues the colours cycle.
+export function paletteInOrder(
+  keysInCurrentOrder: string[],
+  focusKey: string | null,
+  focusColour: string,
+  palette: string[],
+  accentHex: string | null,
+): Map<string, string> {
+  const accentHue = accentHex ? hueOf(accentHex) : null;
+  const usable = palette.filter((c) => accentHue === null || hueDistance(hueOf(c), accentHue) > 40);
+  const hues = usable.length ? usable : palette;
+  const out = new Map<string, string>();
+  keysInCurrentOrder.filter((k) => k !== focusKey).forEach((k, i) => out.set(k, hues[i % hues.length]));
+  if (focusKey !== null && keysInCurrentOrder.includes(focusKey)) out.set(focusKey, focusColour);
+  return out;
+}
+
+function hueOf(hex: string): number {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255);
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (d === 0) return 0;
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h * 60 + 360) % 360;
+}
+
+function hueDistance(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
 // The accent the focused subject is drawn in, everywhere in this redesign.
 export const FOCUS_COLOUR = "var(--accent,var(--fg))";
 
