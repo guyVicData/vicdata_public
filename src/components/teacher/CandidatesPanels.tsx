@@ -308,11 +308,17 @@ export function CandidatesPanels({
   // England) over the years the area figures exist (2021/22 on -- DfE published no GCSE
   // points for 2020/21) within the From range, so every line and row covers the same span.
   //
-  // Live review Part 2 (chart): LA, region and England are a geographic hierarchy, not
-  // three unrelated categories, so on the chart they are one neutral hue in three shades,
-  // lightest for the LA and darkest for England -- "zooming out" -- distinct from the
-  // school's accent line. (The table keeps a single grey: its rows are labelled.)
-  const AREA_SHADES = theme === "light" ? ["#94a3b8", "#64748b", "#334155"] : ["#cbd5e1", "#94a3b8", "#64748b"];
+  // Chart colours for LA, region and England: the same categorical palette as this
+  // column's Trends lines (paletteInOrder, b518e1e), which also skips hues near the phase
+  // accent. A three-shade ramp of one hue was tried first and read as too close together
+  // live. The school keeps FOCUS_COLOUR; the table keeps a single grey (rows are labelled).
+  const areaColours = paletteInOrder(
+    ["own", "area-la", "area-region", "area-national"],
+    "own",
+    FOCUS_COLOUR,
+    theme === "light" ? PALETTE_LIGHT : PALETTE_DARK,
+    PHASE_ACCENT[phase]?.hex ?? null,
+  );
   const geographyState = ():
     | { kind: "message"; text: string }
     | { kind: "data"; shown: number[]; series: { key: string; label: string; colour: string; values: (number | null)[] }[] }
@@ -326,9 +332,9 @@ export function CandidatesPanels({
     }
     if (!geo || geo.subject !== geography.subject) return { kind: "message", text: "Loading LA, regional and national figures…" };
     const tiers = [
-      { area: geo.data?.la, suffix: " (LA)", shade: AREA_SHADES[0] },
-      { area: geo.data?.region, suffix: " (region)", shade: AREA_SHADES[1] },
-      { area: geo.data?.national, suffix: "", shade: AREA_SHADES[2] },
+      { area: geo.data?.la, suffix: " (LA)", shade: areaColours.get("area-la")! },
+      { area: geo.data?.region, suffix: " (region)", shade: areaColours.get("area-region")! },
+      { area: geo.data?.national, suffix: "", shade: areaColours.get("area-national")! },
     ].filter((t): t is { area: NonNullable<typeof t.area>; suffix: string; shade: string } => !!t.area);
     if (tiers.length === 0) return { kind: "message", text: `No LA, regional or national entries figures are published for ${geography.label}.` };
     const geoPeriods = new Set(tiers.flatMap((t) => t.area.rows.filter((r) => r.entries !== null).map((r) => r.period)));
