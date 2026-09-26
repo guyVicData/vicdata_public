@@ -1502,6 +1502,8 @@ export default function TeacherPhaseDashboard() {
               // Steps 9-10: Selected subjects is a bounded list, drawn like Column 1 ("individual");
               // the whole school is Option K ("curated").
               changeScope={contextAgainst === "selected" ? "individual" : "curated"}
+              theme={theme}
+              accentHex={accent?.hex ?? null}
               yearControl
               controls={
                 <ContextPills

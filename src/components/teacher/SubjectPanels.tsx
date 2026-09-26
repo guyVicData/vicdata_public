@@ -30,7 +30,8 @@ import {
 } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, YearTable, curatedKeys, multiTrendHasLine } from "./SeriesViews";
-import { FOCUS_COLOUR, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
@@ -76,6 +77,8 @@ export function SubjectPanels({
   note,
   currentLabel,
   changeScope = "all",
+  theme = "dark",
+  accentHex = null,
 }: {
   columnId: string;
   periods: number[];
@@ -143,6 +146,10 @@ export function SubjectPanels({
   //                   % change is Option H over every subject (a list scales fine).
   // "all" is Column 1 Results' classic behaviour and is deliberately unchanged by both.
   changeScope?: "all" | "individual" | "curated";
+  // Live review Part D: Context's Trend lines take the categorical palette, which has light
+  // and dark versions and skips hues close to the phase accent (see paletteInOrder).
+  theme?: "dark" | "light";
+  accentHex?: string | null;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -214,6 +221,19 @@ export function SubjectPanels({
   // in Current, Trend and % change. Results keeps the colours it is handed.
   const tints = tintInOrder(barRows.map((r) => r.s.key), focusedKey, FOCUS_COLOUR);
   const colourFor = (s: SubjectSeries) => (redesigned ? tints.get(s.key) ?? s.colour : s.colour);
+  // Live review Part D: the Trend LINE chart alone gets real hues for the non-focused
+  // subjects, as Candidates' does (b518e1e) -- same helper, same order, same focus accent.
+  // Current's bars and % change keep the grey ramp above. In both Context modes: Selected
+  // subjects draws every subject as a line; All subjects (Option K) draws the focus and
+  // four standouts, which need telling apart just as much -- the rest-of-school band
+  // stays grey. The Trend table's dots read the same series, so they match the lines.
+  const trendColours = paletteInOrder(
+    barRows.map((r) => r.s.key),
+    focusedKey,
+    FOCUS_COLOUR,
+    theme === "light" ? PALETTE_LIGHT : PALETTE_DARK,
+    accentHex,
+  );
 
   // Round 2 §5: the table reads like Comparisons' ranking -- no colour dots, the focused
   // subject's row tinted in the phase accent and centred when the list scrolls.
@@ -385,7 +405,7 @@ export function SubjectPanels({
   const trendFull: PanelData = trimToData({
     periods,
     series: redesigned
-      ? barRows.map((r) => ({ key: r.s.key, label: r.s.label, colour: colourFor(r.s), values: r.s.values }))
+      ? barRows.map((r) => ({ key: r.s.key, label: r.s.label, colour: trendColours.get(r.s.key) ?? colourFor(r.s), values: r.s.values }))
       : [
           ...(focused ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: focused.values }] : []),
           ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "var(--muted3)", values: g.values, comparison: true })),
