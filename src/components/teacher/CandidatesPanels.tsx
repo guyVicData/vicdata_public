@@ -353,12 +353,11 @@ export function CandidatesPanels({
     <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{geography.label} against the wider system</p>
   ) : null;
   const geographyNote = (text: string) => <p className="text-[12px] leading-relaxed text-[var(--muted2)]">{text}</p>;
-  // Honest labelling: these are not every entry.
-  const pointsEligibleNote = (
-    <p className="shrink-0 text-[10.5px] text-[var(--muted3)]">
-      All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.
-    </p>
-  );
+  // Honest labelling (these are not every entry) -- in the panel's caption, behind the
+  // footer's "What this shows" button, rather than printed under the figure: micro fix
+  // Part 3, so the chart gets that height back.
+  const pointsEligibleCaveat =
+    "All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.";
 
   const geographyTable = (fullscreen: boolean) => {
     const state = geographyState();
@@ -379,7 +378,6 @@ export function CandidatesPanels({
             changeEmphasis="percent"
           />
         </CentredOnTarget>
-        {pointsEligibleNote}
       </>
     );
   };
@@ -396,7 +394,6 @@ export function CandidatesPanels({
       <>
         {geographyHeading}
         <MultiTrend data={{ periods: state.shown, series: state.series }} measure={measure} focusKey="own" fullscreen={fullscreen} />
-        {pointsEligibleNote}
       </>
     );
   };
@@ -440,7 +437,11 @@ export function CandidatesPanels({
           />
         </CentredOnTarget>
       ),
-    summary:
+    // With the geography views the caption is their caveat (the category's biggest and
+    // smallest movers are not what either view shows at GCSE any more).
+    summary: geography ? (
+      <PanelSummary>{pointsEligibleCaveat}</PanelSummary>
+    ) :
       best && worst && best.key !== worst.key ? (
         <PanelSummary>
           {best.label} has grown the most ({best.percent! >= 0 ? "+" : "−"}
