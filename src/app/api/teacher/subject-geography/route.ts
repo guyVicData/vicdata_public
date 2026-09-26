@@ -43,7 +43,9 @@ export async function GET(request: NextRequest) {
   // route serialises its own for the same reason.
   const fetchRows = async (groupingType: "la" | "region" | "national", key: string | null) => {
     if (!key) return null;
-    const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType, groupingKeys: [key], subject });
+    // LA and region keep the backend's minimum of 5 schools; England takes every real row.
+    const minSchoolCount = groupingType === "national" ? 1 : undefined;
+    const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType, groupingKeys: [key], subject, minSchoolCount });
     const out = rows
       .map((r) => ({
         period: r.period,

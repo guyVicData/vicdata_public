@@ -447,6 +447,12 @@ export async function lookupAcademicSubjectGeography(params: {
   familyId?: string;
   periodMin?: number;
   periodMax?: number;
+  // The backend leaves out any row backed by fewer than this many schools (vicdata
+  // 20260926140000). Omitted is sent as null, which the RPC reads as its default of 5 --
+  // not as "off" -- so every existing call keeps the threshold. National callers pass 1:
+  // a subject taken at four schools nationally is a real published figure, not a
+  // disclosure risk, whereas a one-school LA row is that school's own number.
+  minSchoolCount?: number;
   signal?: AbortSignal;
 }): Promise<AcademicSubjectGeographyRow[]> {
   const rows: AcademicSubjectGeographyRow[] = [];
@@ -464,6 +470,7 @@ export async function lookupAcademicSubjectGeography(params: {
         p_period_max: params.periodMax ?? null,
         p_limit: PAGE_SIZE,
         p_offset: page * PAGE_SIZE,
+        p_min_school_count: params.minSchoolCount ?? null,
       },
       params.signal,
     )) as AcademicSubjectGeographyRow[];
