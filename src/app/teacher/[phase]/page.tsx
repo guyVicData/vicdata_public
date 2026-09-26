@@ -1001,24 +1001,53 @@ export default function TeacherPhaseDashboard() {
   const contextSelected = readList(columns, chosenKey("context"));
 
 
+  // Post-16 Part D: the rows Context's group is built from. At GCSE, the subject rows (one
+  // per subject per year). At Post-16, the exact-qualification rows WITHOUT AS level and
+  // Advanced Extension Award -- not the bucket rows, which came in twice per subject (the
+  // whole-subject "all" row beside each bucket's row, so every total was doubled) and
+  // which had AS baked into the A-level figure. C1 left AS/AEA out of the subject list;
+  // this leaves them out of the figures too.
+  const groupRows = phase === "ks5" ? qualificationHeadline.filter((h) => !isAsLevelOrAea(h.qualificationType ?? "")) : headline;
+  const inGroup = (qualificationType: string) => phase !== "ks5" || !isAsLevelOrAea(qualificationType);
+
   // One value per SUBJECT NAME per period, for whichever measure is active. Group members
   // are subjects of the whole school, not just the ticked ones, so they are addressed by
   // name rather than by the ticked list's (subject, qualification) key.
   const groupValueFor = (subject: string, period: number): number | null => {
-    const rows = headline.filter((h) => h.subject === subject && h.period === period);
+    const rows = groupRows.filter((h) => h.subject === subject && h.period === period);
     if (rows.length === 0) return null;
     if (contextMeasure.id === "entries") {
       return rows.reduce((a, h) => a + (h.entriesTotal ?? 0), 0);
     }
     if (contextMeasure.id === "points") {
+      // Post-16: one figure per subject from its qualifications' figures, each weighted by
+      // its points-eligible entries -- the nearest this data gets to the whole-subject row
+      // it replaces (DfE weights by size), and without letting one IB entry count as much
+      // as forty A-level ones. GCSE has one row per subject, so it is read as it was.
+      if (phase === "ks5") {
+        let points = 0;
+        let weight = 0;
+        for (const h of rows) {
+          if (h.avgPointScore === null || !h.pointsCoveragePercent) continue;
+          const eligible = (h.entriesTotal ?? 0) * (h.pointsCoveragePercent / 100);
+          points += h.avgPointScore * eligible;
+          weight += eligible;
+        }
+        return weight > 0 ? points / weight : null;
+      }
       const vals = rows.map((h) => h.avgPointScore).filter((v): v is number => v !== null);
       return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     }
     // Threshold: rate per qualification type, then the mean of the ones that have a bar.
     // Pooling every grade row for a subject would mix scales -- a GCSE 9-1 row beside a
-    // vocational Pass -- and score them against a bar only one of them is on.
+    // vocational Pass -- and score them against a bar only one of them is on. AS and AEA
+    // are left out at Post-16, as in the other two measures.
     const quals = Array.from(
-      new Set(gradeRows.filter((g) => g.subject === subject && g.period === period).map((g) => g.qualificationType)),
+      new Set(
+        gradeRows
+          .filter((g) => g.subject === subject && g.period === period && inGroup(g.qualificationType))
+          .map((g) => g.qualificationType),
+      ),
     );
     const rates = quals
       .map((qt) => thresholdRate(gradeRows.filter((g) => g.subject === subject && g.qualificationType === qt && g.period === period), phase)?.rate)
@@ -1030,17 +1059,16 @@ export default function TeacherPhaseDashboard() {
   // the convention the comparator-set averages already use elsewhere.
   //
   // Post-16 Part C1: a subject this school runs ONLY as AS level or Advanced Extension Award
-  // is not a member -- its headline row would be AS figures alone, counted into the total
-  // and the per-subject average. A subject with a real A level (or any other qualification)
-  // beside its AS stays: the headline row is per bucket, so its AS entries remain blended
-  // into it until Part B-2 separates them.
+  // is not a member. Part D: at Post-16 that now follows from groupRows, which has no
+  // AS/AEA rows; asOrAeaOnly still guards the "nothing selected yet" fallback below, which
+  // starts from the ticked items rather than from the rows.
   const asOrAeaOnly = new Set(
     items
       .map((i) => i.subject)
       .filter((n) => items.every((i) => i.subject !== n || isAsLevelOrAea(i.qualificationType))),
   );
   const contextMembers: string[] = (() => {
-    const every = Array.from(new Set(headline.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
+    const every = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
     if (contextAgainst === "selected") {
       const names = new Set(items.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
       // Nothing ticked yet falls back to the subjects this person teaches, which is the
