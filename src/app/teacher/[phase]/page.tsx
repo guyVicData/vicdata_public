@@ -1378,6 +1378,7 @@ export default function TeacherPhaseDashboard() {
               // takes the grey-ramp tints Context has. The group lines (category and England
               // category averages) leave the per-subject Trend, as they did for Context.
               changeScope="individual"
+              spaciousBars
               theme={theme}
               accentHex={accent?.hex ?? null}
               measure={resultsMeasure}

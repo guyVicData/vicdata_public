@@ -80,6 +80,7 @@ export function SubjectPanels({
   theme = "dark",
   accentHex = null,
   deltaHeading,
+  spaciousBars = false,
 }: {
   columnId: string;
   periods: number[];
@@ -155,6 +156,9 @@ export function SubjectPanels({
   // Context's "vs average", the same whichever compare-against set is chosen. Absent =
   // "vs {benchmarkLabel}" (Results' "vs National"), or "vs last year" with no benchmark.
   deltaHeading?: string;
+  // Results' Current bars: ViewChart's roomier row style (thicker, more spaced, wrapping
+  // labels). Context does not pass it and keeps the compact rows.
+  spaciousBars?: boolean;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -337,6 +341,7 @@ export function SubjectPanels({
                 formatValue={measure.format}
                 markerLabel={benchmarkLabel ? `${benchmarkLabel} average` : undefined}
                 scaleMax={measure.barScaleMax ?? undefined}
+                spacious={spaciousBars}
                 computed={{
                   rows: barRows.map((r) => ({
                     label: r.s.label,

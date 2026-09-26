@@ -36,6 +36,7 @@ export function ViewChart({
   layout = "compact",
   markerLabel,
   formatValue,
+  spacious = false,
 }: {
   computed: ComputedView;
   unit: string;
@@ -45,6 +46,10 @@ export function ViewChart({
   // Round 6: a measure formats its own values ("5.1", "77%", "1,204"), so a chart shared
   // by three measures does not have to infer the format from a unit string.
   formatValue?: (value: number) => string;
+  // Row layout only (Results' Current bars): a thicker track, more space between rows, and
+  // labels that wrap to two lines instead of truncating, in a slightly wider label column.
+  // Off by default, so Context's bars and Comparisons' graph are unchanged.
+  spacious?: boolean;
 }) {
   if (computed.series && computed.periods) {
     const periods = computed.periods;
@@ -101,7 +106,7 @@ export function ViewChart({
   if (layout === "row") {
     const pct = (v: number) => Math.max(0, Math.min(100, (v / max) * 100));
     return (
-      <div className="flex flex-col gap-2.5">
+      <div className={`flex flex-col ${spacious ? "gap-3.5" : "gap-2.5"}`}>
         {rows.map((r) => (
           <div
             key={`${r.label}|${r.sublabel ?? ""}`}
@@ -109,13 +114,22 @@ export function ViewChart({
             data-highlight={r.emphasis ? "" : undefined}
             className="flex items-center gap-2"
           >
-            <span className="flex w-[4.5rem] shrink-0 items-center gap-1.5 overflow-hidden sm:w-[5.5rem]">
+            <span
+              className={
+                spacious
+                  ? "flex w-[5.5rem] shrink-0 items-center gap-1.5 sm:w-[6.5rem]"
+                  : "flex w-[4.5rem] shrink-0 items-center gap-1.5 overflow-hidden sm:w-[5.5rem]"
+              }
+            >
               {r.color && <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.color }} />}
-              <span className={`truncate text-[11px] ${r.emphasis ? "font-bold text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.label}>
+              <span
+                className={`${spacious ? "line-clamp-2 leading-tight" : "truncate"} text-[11px] ${r.emphasis ? "font-bold text-[var(--fg)]" : "text-[var(--muted2)]"}`}
+                title={r.label}
+              >
                 {r.label}
               </span>
             </span>
-            <span className="relative h-3 flex-grow rounded-[3px] bg-[var(--panel-border)]">
+            <span className={`relative ${spacious ? "h-4" : "h-3"} flex-grow rounded-[3px] bg-[var(--panel-border)]`}>
               <span
                 className="absolute inset-y-0 left-0 rounded-[3px]"
                 style={{ width: r.value === null ? 0 : `${pct(r.value)}%`, background: r.color ?? "var(--muted)" }}
