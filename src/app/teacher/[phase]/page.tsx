@@ -1112,12 +1112,14 @@ export default function TeacherPhaseDashboard() {
 
   // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
   // The figure still follows the focus subject (round 7 §9): with one in focus it is that
-  // subject's own points per entry, otherwise the whole-school headline. With a rate
-  // chosen and a subject in focus there is no comparator figure at all: the column says so
-  // (ComparisonsPanels' unavailableNote) rather than showing points under the rate's name.
+  // subject's own figure on Results' chosen measure -- points per entry, or the Grade 4+ /
+  // A*-E rate, which ComparisonsPanels scores per school from each one's grade counts
+  // (its `threshold` prop) -- otherwise the whole-school headline.
   const comparisonsMeasure = showingResults
     ? activeMapChip
-      ? measuresFor(phase)[0]
+      ? usingThreshold
+        ? resultsMeasure
+        : measuresFor(phase)[0]
       : headlineMeasure(phase, headlineLabel)
     : ENTRIES_MEASURE;
 
@@ -1632,9 +1634,11 @@ export default function TeacherPhaseDashboard() {
             subjectLabel={activeMapChip?.legend ?? null}
             seriesLoading={!!activeMapChip && mapProfiles === null}
             measure={comparisonsMeasure}
-            unavailableNote={
-              showingResults && activeMapChip && usingThreshold
-                ? `Comparator schools' ${resultsMeasure.label.replace(/^Grade/, "grade")} is not published per subject, only their entries and average point score. Switch Results to average point score to compare ${activeMapChip.legend} across these schools.`
+            // Results on a grade threshold with a subject in focus: the column fetches every
+            // comparator's grade counts for it and scores them as thresholdAt() scores ours.
+            threshold={
+              showingResults && usingThreshold && activeMapChip && focusItem && phase !== "ks2"
+                ? { subject: focusItem.subject, qualificationType: focusItem.qualificationType, rateOf: (rows) => thresholdRate(rows, phase)?.rate ?? null }
                 : null
             }
             schoolUrn={schoolUrn}

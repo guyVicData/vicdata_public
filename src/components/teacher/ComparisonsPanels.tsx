@@ -20,8 +20,10 @@
 // history is REAL (§6.4): fetchAcademicProfiles already returned every comparator's whole
 // year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
 // not used and not needed.
-import { useState, type ReactNode } from "react";
-import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
+import { useEffect, useState, type ReactNode } from "react";
+import type { AcademicSchoolProfile, KsStage, SubjectGradeCount } from "@/lib/academic-data-view";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
@@ -111,13 +113,13 @@ export function ComparisonsPanels({
   mapRank,
   onMapRank,
   subjectLabel,
-  seriesLoading,
+  seriesLoading: profilesLoading,
   emptyText,
   targetName,
   currentLabel,
   onManageSet,
   personalSetsNote,
-  unavailableNote,
+  threshold,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -158,11 +160,46 @@ export function ComparisonsPanels({
   onManageSet?: (setId: string | null) => void;
   // "2 / 8": personal sets used, for the "Your sets" heading.
   personalSetsNote?: string;
-  // Set when the chosen measure has no comparator figures (a grade 4+ / A*-E rate for a
-  // focused subject: the per-subject comparator source carries only entries and average
-  // point score). Every panel then says so instead of drawing points under a rate's name.
-  unavailableNote?: string | null;
+  // Set when Results is on a grade threshold (Grade 4+ / A*-E rate) with a subject in
+  // focus. The map's profiles carry only entries and average point score per subject, so
+  // the rates come from each school's own per-grade counts (/api/teacher/comparator-grades),
+  // fetched here for the set's schools and scored by `rateOf` -- the page's own
+  // thresholdRate, so every school is scored exactly as the school itself is.
+  threshold?: { subject: string; qualificationType: string; rateOf: (rows: SubjectGradeCount[]) => number | null } | null;
 }) {
+  // ------------------------------------------- threshold rates (grade counts per school)
+  const gradeUrns = allSchools.map((s) => s.urn).sort();
+  const gradesKey = threshold && schoolUrn ? `${threshold.subject}|${gradeUrns.join(",")}` : null;
+  const [grades, setGrades] = useState<{ key: string; rows: Record<string, SubjectGradeCount[]> | null } | null>(null);
+  useEffect(() => {
+    // After the map's profiles have landed, not beside them: the two lookups hit the same
+    // reference database, and run together the heavier one can cross its statement timeout
+    // (the academic-subject-comparison route serialises them for the same reason).
+    if (!gradesKey || !threshold || !schoolUrn || profilesLoading || grades?.key === gradesKey) return;
+    let cancelled = false;
+    (async () => {
+      const rows = await fetchComparatorGrades(createBrowserSupabaseClient(), schoolUrn, gradeUrns, phase, threshold.subject);
+      if (!cancelled) setGrades({ key: gradesKey, rows });
+    })();
+    return () => { cancelled = true; };
+    // gradesKey carries the subject and the schools; threshold and gradeUrns are read through it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gradesKey, schoolUrn, phase, profilesLoading, grades?.key]);
+  const gradesLoaded = !!gradesKey && grades?.key === gradesKey;
+  const seriesLoading = profilesLoading || (!!gradesKey && !gradesLoaded);
+  // Each school's rate per year: its rows for this subject AND this qualification type
+  // (a GCSE and a Cambridge National in one subject are scored apart), as the page does.
+  const rateSeries: Record<string, { period: number; value: number }[]> = {};
+  if (threshold && gradesLoaded && grades?.rows) {
+    for (const [urn, rows] of Object.entries(grades.rows)) {
+      const mine = rows.filter((g) => g.subject === threshold.subject && g.qualificationType === threshold.qualificationType);
+      rateSeries[urn] = Array.from(new Set(mine.map((g) => g.period)))
+        .sort((a, b) => a - b)
+        .map((period) => ({ period, value: threshold.rateOf(mine.filter((g) => g.period === period)) }))
+        .filter((r): r is { period: number; value: number } => r.value !== null);
+    }
+  }
+
   // Column 3 round Part 1: Map is the default view, and first in the icon rail to match.
   const [view, setView] = useState<"graph" | "map" | "ranking">("map");
   // The card map's "Dot size / Colour" line, handed up by the map (onCaption) so it can
@@ -186,7 +223,7 @@ export function ComparisonsPanels({
   // no longer always the phase headline.
   const comparedOn = subjectLabel ? `${subjectLabel} ${measure.label.toLowerCase()}` : headlineLabel;
   const seriesKey = measure.id === "entries" ? "candidates" : "results";
-  const seriesFor = (urn: string) => seriesByUrn[urn]?.[seriesKey] ?? [];
+  const seriesFor = (urn: string) => (threshold ? rateSeries[urn] ?? [] : seriesByUrn[urn]?.[seriesKey] ?? []);
 
   // §4.3: picking a different comparator set resets the "vs:" selector back to Average --
   // the school it was pointing at may not even be in the new set.
@@ -232,7 +269,8 @@ export function ComparisonsPanels({
   // The Map reports its own rank, computed inside AcademicMapView over the schools it
   // could actually plot. Where it has one it wins, because a figure beside a map should
   // match the map.
-  const shownRank = view === "map" && mapRank ? mapRank : targetRank && placed.length > 1 ? { rank: targetRank, total: placed.length } : null;
+  // Not on a rate: the map is still coloured and ranked by average point score.
+  const shownRank = view === "map" && mapRank && !threshold ? mapRank : targetRank && placed.length > 1 ? { rank: targetRank, total: placed.length } : null;
 
   // Column 3 round Part 2: the school-ranking table's rows -- rank, school, sector,
   // figure, distance from the school itself.
@@ -535,6 +573,17 @@ export function ComparisonsPanels({
     source: source(spanLabel(changeData.periods)),
     headline: seriesLoading ? undefined : ownPct === null || ownPct === undefined ? undefined : `${ownPct >= 0 ? "+" : "−"}${Math.abs(Math.round(ownPct))}%`,
   };
+
+  // On a rate, a school that publishes no grades for the subject drops out of the lists as
+  // it does for points. The whole column gives way to a note only when no comparator has a
+  // rate at all, or the grade counts could not be loaded.
+  const unavailableNote = !threshold || !gradesLoaded
+    ? null
+    : grades?.rows === null
+      ? `Comparator schools' ${measure.label.replace(/^Grade/, "grade")} for ${subjectLabel ?? threshold.subject} could not be loaded. Try again shortly.`
+      : others.length === 0 && allSchools.some((s) => !s.isTarget)
+        ? `None of the ${setLabel.toLowerCase()} publishes a ${measure.label.replace(/^Grade/, "grade")} for ${subjectLabel ?? threshold.subject}.`
+        : null;
 
   // The panel keeps its tag and question; its views, controls and figures give way to the
   // note, as Results' % Change does when LA / region / England figures don't exist.
