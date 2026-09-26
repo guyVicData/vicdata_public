@@ -106,7 +106,8 @@ export function CandidatesPanels({
   const [changeView, setChangeView] = useState<"chart" | "table">("chart");
   // Part 5: fetched only when the % Change table is opened, per subject.
   const [geo, setGeo] = useState<{ subject: string; data: GeographyPayload | null } | null>(null);
-  const geoWanted = changeView === "table" && !!geography?.applies;
+  // Either % Change view now shows the geography comparison (Part 2 added the chart).
+  const geoWanted = !!geography?.applies;
   useEffect(() => {
     if (!geoWanted || !geography || geo?.subject === geography.subject) return;
     let cancelled = false;
@@ -302,47 +303,94 @@ export function CandidatesPanels({
   // geography figures exist (2021/22 on -- DfE published no GCSE points for 2020/21) within
   // the From range, so every row's change runs over the same span. Four rows in the same
   // YearTable, rank off: ranking an LA against England by size says nothing.
-  const geographyTable = (fullscreen: boolean) => {
+  // One step both geography views read: the not-applicable / loading / no-data states, or
+  // the four series (the school's own points-eligible entries, then its LA, region and
+  // England) over the years the area figures exist (2021/22 on -- DfE published no GCSE
+  // points for 2020/21) within the From range, so every line and row covers the same span.
+  //
+  // Live review Part 2 (chart): LA, region and England are a geographic hierarchy, not
+  // three unrelated categories, so on the chart they are one neutral hue in three shades,
+  // lightest for the LA and darkest for England -- "zooming out" -- distinct from the
+  // school's accent line. (The table keeps a single grey: its rows are labelled.)
+  const AREA_SHADES = theme === "light" ? ["#94a3b8", "#64748b", "#334155"] : ["#cbd5e1", "#94a3b8", "#64748b"];
+  const geographyState = ():
+    | { kind: "message"; text: string }
+    | { kind: "data"; shown: number[]; series: { key: string; label: string; colour: string; values: (number | null)[] }[] }
+    | null => {
     if (!geography) return null;
-    const note = (text: string) => <p className="text-[12px] leading-relaxed text-[var(--muted2)]">{text}</p>;
-    const heading = (
-      <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{geography.label} against the wider system</p>
-    );
     if (!geography.applies) {
-      return (
-        <>
-          {heading}
-          {note(`LA, regional and national entries figures aren't available for ${geography.label}: they count GCSE (points-eligible) entries only, and this school's ${geography.label} entries are in a qualification outside that.`)}
-        </>
-      );
+      return {
+        kind: "message",
+        text: `LA, regional and national entries figures aren't available for ${geography.label}: they count GCSE (points-eligible) entries only, and this school's ${geography.label} entries are in a qualification outside that.`,
+      };
     }
-    if (!geo || geo.subject !== geography.subject) return <>{heading}{note("Loading LA, regional and national figures…")}</>;
-    const areas = [geo.data?.la, geo.data?.region, geo.data?.national].filter((a): a is NonNullable<typeof a> => !!a);
-    if (areas.length === 0) {
-      return <>{heading}{note(`No LA, regional or national entries figures are published for ${geography.label}.`)}</>;
-    }
-    const geoPeriods = new Set(areas.flatMap((a) => a.rows.filter((r) => r.entries !== null).map((r) => r.period)));
+    if (!geo || geo.subject !== geography.subject) return { kind: "message", text: "Loading LA, regional and national figures…" };
+    const tiers = [
+      { area: geo.data?.la, suffix: " (LA)", shade: AREA_SHADES[0] },
+      { area: geo.data?.region, suffix: " (region)", shade: AREA_SHADES[1] },
+      { area: geo.data?.national, suffix: "", shade: AREA_SHADES[2] },
+    ].filter((t): t is { area: NonNullable<typeof t.area>; suffix: string; shade: string } => !!t.area);
+    if (tiers.length === 0) return { kind: "message", text: `No LA, regional or national entries figures are published for ${geography.label}.` };
+    const geoPeriods = new Set(tiers.flatMap((t) => t.area.rows.filter((r) => r.entries !== null).map((r) => r.period)));
     const shown = changeData.periods.filter((p) => geoPeriods.has(p));
     const valueAtPeriod = (rows: { period: number; entries: number | null }[], p: number) => rows.find((r) => r.period === p)?.entries ?? null;
-    const series = [
-      { key: "own", label: `This school`, colour: FOCUS_COLOUR, values: shown.map((p) => geography.own[periods.indexOf(p)] ?? null) },
-      ...areas.map((a, i) => ({
-        key: `area-${i}`,
-        label: a === geo.data?.national ? a.name : `${a.name} (${a === geo.data?.la ? "LA" : "region"})`,
-        colour: "var(--muted3)",
-        values: shown.map((p) => valueAtPeriod(a.rows, p)),
-      })),
-    ];
+    return {
+      kind: "data",
+      shown,
+      series: [
+        { key: "own", label: "This school", colour: FOCUS_COLOUR, values: shown.map((p) => geography.own[periods.indexOf(p)] ?? null) },
+        ...tiers.map((t, i) => ({ key: `area-${i}`, label: `${t.area.name}${t.suffix}`, colour: t.shade, values: shown.map((p) => valueAtPeriod(t.area.rows, p)) })),
+      ],
+    };
+  };
+  const geographyHeading = geography ? (
+    <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{geography.label} against the wider system</p>
+  ) : null;
+  const geographyNote = (text: string) => <p className="text-[12px] leading-relaxed text-[var(--muted2)]">{text}</p>;
+  // Honest labelling: these are not every entry.
+  const pointsEligibleNote = (
+    <p className="shrink-0 text-[10.5px] text-[var(--muted3)]">
+      All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.
+    </p>
+  );
+
+  const geographyTable = (fullscreen: boolean) => {
+    const state = geographyState();
+    if (!state) return null;
+    if (state.kind === "message") return <>{geographyHeading}{geographyNote(state.text)}</>;
     return (
       <>
-        {heading}
-        <CentredOnTarget watch={`geo:${geography.subject}:${shown.join(",")}`}>
-          <YearTable data={{ periods: shown, series }} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="Where" showRank={false} changeEmphasis="percent" />
+        {geographyHeading}
+        <CentredOnTarget watch={`geo:${geography!.subject}:${state.shown.join(",")}`}>
+          <YearTable
+            // The table's area rows stay one grey; the shades are for telling lines apart.
+            data={{ periods: state.shown, series: state.series.map((x) => (x.key === "own" ? x : { ...x, colour: "var(--muted3)" })) }}
+            measure={measure}
+            focusKey="own"
+            fullscreen={fullscreen}
+            nameHeading="Where"
+            showRank={false}
+            changeEmphasis="percent"
+          />
         </CentredOnTarget>
-        {/* Honest labelling: these are not every entry. */}
-        <p className="shrink-0 text-[10.5px] text-[var(--muted3)]">
-          All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.
-        </p>
+        {pointsEligibleNote}
+      </>
+    );
+  };
+
+  // Live review Part 2: the chart view as an indexed multi-line trend -- MultiTrend, the
+  // component this column's own Trends panel uses. For entries it indexes every line to
+  // its own first year = 100, which is what puts ~200 school entries and ~600,000 England
+  // entries on one readable chart.
+  const geographyChart = (fullscreen: boolean) => {
+    const state = geographyState();
+    if (!state) return null;
+    if (state.kind === "message") return <>{geographyHeading}{geographyNote(state.text)}</>;
+    return (
+      <>
+        {geographyHeading}
+        <MultiTrend data={{ periods: state.shown, series: state.series }} measure={measure} focusKey="own" fullscreen={fullscreen} />
+        {pointsEligibleNote}
       </>
     );
   };
@@ -350,16 +398,25 @@ export function CandidatesPanels({
   const change: PanelRender = {
     tag: "% Change",
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
-    question: "Which subjects in this category are growing, and which are shrinking?",
+    // The fullscreen heading follows what the panel now shows: at GCSE both % Change views
+    // are the subject against the wider system (Part 5 / Part 2), elsewhere the category.
+    question: geography
+      ? `How has ${geography.label} moved, against its LA, region and England?`
+      : "Which subjects in this category are growing, and which are shrinking?",
     actions: (
       <>
-        <IconButton label="Ranked change" active={changeView === "chart"} onClick={() => setChangeView("chart")}>{HorizontalBarsIcon}</IconButton>
+        {/* With the geography view the chart is a line chart, so its icon says so. */}
+        <IconButton label={geography ? "Chart" : "Ranked change"} active={changeView === "chart"} onClick={() => setChangeView("chart")}>
+          {geography ? TrendLineIcon : HorizontalBarsIcon}
+        </IconButton>
         <IconButton label="Table" active={changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
       </>
     ),
     body: (fullscreen) =>
       changeView === "table" && geography ? (
         geographyTable(fullscreen)
+      ) : changeView === "chart" && geography ? (
+        geographyChart(fullscreen)
       ) : changeView === "table" ? (
         // Option I: the base year and the latest beside the change, so a big % on a
         // handful of candidates reads as what it is.
@@ -422,8 +479,8 @@ export function CandidatesPanels({
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}
-      // The geography table carries its own heading: it is not about the category.
-      render={{ current: titled(current), trend: titled(trend), change: changeView === "table" && geography ? change : titled(change) }}
+      // The geography views carry their own heading: they are not about the category.
+      render={{ current: titled(current), trend: titled(trend), change: geography ? change : titled(change) }}
     />
   );
 }
