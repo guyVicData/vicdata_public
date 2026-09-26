@@ -41,10 +41,9 @@ import {
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { FromYearMenu } from "./FromYearMenu";
-import { YearTable } from "./SeriesViews";
+import { ChangeList, YearTable, type ChangeRow } from "./SeriesViews";
 import { TrendLineToggle } from "./PanelFooter";
-import { ChangeChart } from "./ChangeChart";
-import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
 import { PillMenu } from "./PillMenu";
 import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
 import { RankingsMap } from "./RankingsMap";
@@ -169,12 +168,10 @@ export function ComparisonsPanels({
   // The card map's "Dot size / Colour" line, handed up by the map (onCaption) so it can
   // sit behind the caption button rather than over the map.
   const [mapCaption, setMapCaption] = useState<string | null>(null);
-  // One `versus` shared by Trend and % change -- the wireframe puts the selector on both
-  // and keeps them in step -- but each panel's own popover open/closed flag, or opening
-  // one would open the other.
+  // Trend's "vs:" choice. % Change no longer has one: its list shows every school, with
+  // the set's average as a reference line.
   const [versus, setVersus] = useState<string>(AVERAGE);
   const [versusOpen, setVersusOpen] = useState(false);
-  const [changeVersusOpen, setChangeVersusOpen] = useState(false);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
@@ -184,7 +181,6 @@ export function ComparisonsPanels({
   const [changeView, setChangeView] = useState<"chart" | "table">("chart");
 
   const versusRef = useDismiss(versusOpen, () => setVersusOpen(false));
-  const changeVersusRef = useDismiss(changeVersusOpen, () => setChangeVersusOpen(false));
 
   // What the card is comparing on, in a sentence. §9 made this follow the chip, so it is
   // no longer always the phase headline.
@@ -197,7 +193,6 @@ export function ComparisonsPanels({
   const changeSet = (id: string) => {
     setVersus(AVERAGE);
     setVersusOpen(false);
-    setChangeVersusOpen(false);
     onSetChange(id);
   };
 
@@ -491,22 +486,24 @@ export function ComparisonsPanels({
   // ---------------------------------------------------------------- % change
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
   const ownPct = percentChange(changeData.series[0]?.values ?? []);
-  const versusPct = percentChange(changeData.series[1]?.values ?? []);
+  // Every school's % change over the span, as the table ranks them, and the set's average
+  // (the mean figure per year over the schools that have one, as Trend's "Average across"
+  // line) as the reference -- not whichever school Trend's "vs:" points at.
+  const changeRows: ChangeRow[] = changeTable.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, percent: percentChange(s.values) }));
+  const averageLabel = `Average across ${setLabel.toLowerCase()}`;
+  const averagePct = percentChange(
+    changeTable.periods.map((_, i) => meanOf(changeTable.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
+  );
 
   const change: PanelRender = {
     tag: "% Change",
     afterTag: <FromYearMenu periods={realPeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: "How much has this school moved, against its comparators?",
-    controls: (
-      <div className="flex flex-wrap justify-end gap-1.5">
-        {versusPill(changeVersusOpen, setChangeVersusOpen, changeVersusRef)}
-      </div>
-    ),
-    // Column 3 round Part 4: a table beside the bars, in the same format as Context's %
+    // Column 3 round Part 4: a table beside the chart, in the same format as Context's %
     // change table (ranked by change, bare rank first, no sorting).
     actions: (
       <>
-        <IconButton label="Bar chart" active={changeView === "chart"} onClick={() => setChangeView("chart")}>{VerticalBarsIcon}</IconButton>
+        <IconButton label="Ranked bars" active={changeView === "chart"} onClick={() => setChangeView("chart")}>{HorizontalBarsIcon}</IconButton>
         <IconButton label="Table" active={changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
       </>
     ),
@@ -518,13 +515,11 @@ export function ComparisonsPanels({
           <YearTable data={changeTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" leadingRank />
         </CentredOnTarget>
       ) : (
-      <ChangeChart
-        bars={[
-          { key: "own", label: "Your school", shortLabel: "You", colour: "var(--accent,var(--fg))", percent: ownPct },
-          { key: "versus", label: versusLabel, shortLabel: versusSchool ? versusSchool.name.slice(0, 4) + "." : "Avg.", colour: "#57534e", percent: versusPct },
-        ]}
-        fullscreen={fullscreen}
-      />
+        // Option H, as Candidates and Context draw their % change: every school ranked by
+        // its change, the school itself picked out, the set's average a dashed line.
+        <CentredOnTarget watch={`change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
+          <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, percent: averagePct }} />
+        </CentredOnTarget>
       ),
     summary:
       seriesLoading ? undefined : ownPct === null ? (
@@ -532,9 +527,9 @@ export function ComparisonsPanels({
       ) : (
         <PanelSummary>
           This school&rsquo;s {comparedOn} has {ownPct >= 0 ? "risen" : "fallen"} {Math.abs(Math.round(ownPct))}% since {changeSince}
-          {versusPct === null
+          {averagePct === null
             ? "."
-            : `, against ${versusPct >= 0 ? "a rise" : "a fall"} of ${Math.abs(Math.round(versusPct))}% for ${versusLabel.toLowerCase()}.`}
+            : `, against ${averagePct >= 0 ? "a rise" : "a fall"} of ${Math.abs(Math.round(averagePct))}% for the ${averageLabel.toLowerCase()}.`}
         </PanelSummary>
       ),
     source: source(spanLabel(changeData.periods)),
