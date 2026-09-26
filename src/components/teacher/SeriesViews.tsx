@@ -264,6 +264,7 @@ export function YearTable({
   nameHeading = "Subject",
   showRank = true,
   leadingRank = false,
+  changeEmphasis = "value",
 }: {
   data: PanelData;
   measure: Measure;
@@ -279,6 +280,11 @@ export function YearTable({
   // column, shown on the card as well as fullscreen; padding and type tighten so name,
   // rank, both years and Change fit a card without scrolling sideways.
   leadingRank?: boolean;
+  // Which half of the Change cell leads. "value" (the default, every existing table): the
+  // count bold and coloured, the % small and muted beneath. "percent" (the % Change
+  // geography table, where a count of 33,271 beside 53 means little): the % bold and
+  // coloured, the count beneath in a legible light tone rather than near-invisible grey.
+  changeEmphasis?: "value" | "percent";
 }) {
   const [userSort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: showRank ? "rank" : "given", dir: 1 });
   const sort: { key: SortKey; dir: 1 | -1 } = leadingRank ? { key: "rank", dir: 1 } : userSort;
@@ -389,9 +395,20 @@ export function YearTable({
                 </td>
               ))}
               <td className={`whitespace-nowrap ${pad} text-right leading-tight`}>
-                <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? signed(r.change.delta, measure.format) : "—"}</span>
-                {r.change?.percent !== null && r.change?.percent !== undefined && (
-                  <span className="block text-[9.5px] text-[var(--muted2)]">{signed(Math.round(r.change.percent), (v) => `${v}%`)}</span>
+                {changeEmphasis === "percent" ? (
+                  <>
+                    <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>
+                      {r.change?.percent !== null && r.change?.percent !== undefined ? signed(Math.round(r.change.percent), (v) => `${v}%`) : "—"}
+                    </span>
+                    {r.change && <span className="block text-[9.5px] text-[var(--fg)] opacity-85">{signed(r.change.delta, measure.format)}</span>}
+                  </>
+                ) : (
+                  <>
+                    <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? signed(r.change.delta, measure.format) : "—"}</span>
+                    {r.change?.percent !== null && r.change?.percent !== undefined && (
+                      <span className="block text-[9.5px] text-[var(--muted2)]">{signed(Math.round(r.change.percent), (v) => `${v}%`)}</span>
+                    )}
+                  </>
                 )}
               </td>
             </tr>

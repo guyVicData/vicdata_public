@@ -337,7 +337,7 @@ export function CandidatesPanels({
       <>
         {heading}
         <CentredOnTarget watch={`geo:${geography.subject}:${shown.join(",")}`}>
-          <YearTable data={{ periods: shown, series }} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="Where" showRank={false} />
+          <YearTable data={{ periods: shown, series }} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="Where" showRank={false} changeEmphasis="percent" />
         </CentredOnTarget>
         {/* Honest labelling: these are not every entry. */}
         <p className="shrink-0 text-[10.5px] text-[var(--muted3)]">
