@@ -243,7 +243,9 @@ export function ChangeList({
 
 // ------------------------------------------------------------------ YearTable
 
-type SortKey = "name" | "rank" | "change" | number;
+// "given": the caller's own row order (Part 5's school, LA, region, England), until a
+// header is clicked.
+type SortKey = "given" | "name" | "rank" | "change" | number;
 
 // Options E and I, one component. Real figures per year -- the headcounts D2 deliberately
 // hides behind an index, and the base that tells a big move on 8 candidates from one on
@@ -260,6 +262,7 @@ export function YearTable({
   fullscreen = false,
   curate,
   nameHeading = "Subject",
+  showRank = true,
 }: {
   data: PanelData;
   measure: Measure;
@@ -267,8 +270,10 @@ export function YearTable({
   fullscreen?: boolean;
   curate?: { keys: string[]; restLabel: string };
   nameHeading?: string;
+  // Off where a rank means nothing -- Part 5's geography rows (England is always "1st").
+  showRank?: boolean;
 }) {
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "rank", dir: 1 });
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: showRank ? "rank" : "given", dir: 1 });
   const { periods, series } = data;
   if (periods.length === 0 || series.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
@@ -289,7 +294,7 @@ export function YearTable({
   const rest = curating ? rows.filter((r) => !curate!.keys.includes(r.s.key)) : [];
 
   const valueFor = (r: (typeof rows)[number], key: SortKey): number | string | null =>
-    key === "name" ? r.s.label : key === "rank" ? rankOf.get(r.s.key) ?? null : key === "change" ? r.change?.percent ?? null : r.s.values[key];
+    key === "given" ? 0 : key === "name" ? r.s.label : key === "rank" ? rankOf.get(r.s.key) ?? null : key === "change" ? r.change?.percent ?? null : r.s.values[key];
   const sorted = [...shown].sort((a, b) => {
     const av = valueFor(a, sort.key);
     const bv = valueFor(b, sort.key);
@@ -327,7 +332,7 @@ export function YearTable({
           {/* Live review Part 4: Rank only in fullscreen. On the card it pushed the year and
               Change columns -- the figures that matter there -- out of view. The ranking
               itself still drives the default sort either way. */}
-          {fullscreen && head("rank", "Rank")}
+          {fullscreen && showRank && head("rank", "Rank")}
           {yearIdx.map((i) => head(i, academicYearLabel(periods[i])))}
           {head("change", "Change")}
         </tr>
@@ -349,7 +354,7 @@ export function YearTable({
                   <span className={`truncate ${focus ? "font-semibold text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.s.label}>{r.s.label}</span>
                 </span>
               </td>
-              {fullscreen && (
+              {fullscreen && showRank && (
                 <td className="whitespace-nowrap px-1.5 text-right text-[var(--muted2)]">
                   {rankOf.has(r.s.key) ? `${rankOf.get(r.s.key)} of ${ranked}` : "—"}
                 </td>
@@ -371,7 +376,7 @@ export function YearTable({
         {rest.length > 0 && (
           <tr className="text-[var(--muted2)]">
             <td className="px-1.5 py-[5px] text-left italic">{curate!.restLabel} ({rest.length})</td>
-            {fullscreen && <td />}
+            {fullscreen && showRank && <td />}
             {yearIdx.map((i) => (
               <td key={periods[i]} className="whitespace-nowrap px-1.5 text-right">{range(rest.map((r) => r.s.values[i]))}</td>
             ))}

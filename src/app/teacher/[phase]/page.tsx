@@ -1426,6 +1426,26 @@ export default function TeacherPhaseDashboard() {
               focus={focusKey}
               groupLabel={`${focusFamilyLabel} average`}
               categoryLabel={focusFamilyLabel ?? undefined}
+              // Live review Part 5: the % Change table compares the focused subject with its
+              // LA, region and England. GCSE only (the geography source is KS4), and only
+              // where the focused item is the points-bearing qualification -- the area
+              // figures count GCSE points-eligible entries, so a non-GCSE Dance or an FSMQ
+              // would be set against a different thing. The school's own row is its
+              // points-eligible entries (entries x points coverage), for the same reason.
+              geography={
+                phase === "ks4" && focusItem && schoolUrn
+                  ? {
+                      urn: schoolUrn,
+                      subject: focusItem.subject,
+                      label: focusItem.subject,
+                      applies: focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4,
+                      own: categoryPeriods.map((p) => {
+                        const rows = headlineRowsFor(focusItem, p).filter((h) => h.pointsCoveragePercent !== null);
+                        return rows.length ? Math.round(rows.reduce((a, h) => a + (h.entriesTotal ?? 0) * (h.pointsCoveragePercent! / 100), 0)) : null;
+                      }),
+                    }
+                  : undefined
+              }
               panels={panelsOf(COL1)}
               onPanelsChange={(next) => setPanels(COL1, next)}
               question={q.howMany}

@@ -10,7 +10,9 @@
 // Every figure is the school's own real entries, from the same `entries` rows the card
 // already counted before this round -- grouped by period rather than collapsed to the
 // latest one. Nothing here is derived a second way.
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { fetchSubjectGeography, type GeographyPayload } from "@/lib/teacher-view-geography";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
@@ -66,6 +68,7 @@ export function CandidatesPanels({
   groupLabel,
   categoryLabel,
   theme = "dark",
+  geography,
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -90,11 +93,29 @@ export function CandidatesPanels({
   categoryLabel?: string;
   // The palette has light and dark versions (Part 3's Trend colours).
   theme?: "dark" | "light";
+  // Live review Part 5: what the % Change TABLE compares the focused subject against --
+  // its own LA, region and England -- instead of the category's other subjects. GCSE only.
+  // `applies` is false when the focused subject's entries are outside GCSE points (the
+  // geography figures count points-eligible entries only); `own` is the school's own
+  // points-eligible entries, aligned to `periods`, so all rows count the same thing.
+  geography?: { urn: string; subject: string; label: string; applies: boolean; own: (number | null)[] };
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
   // Step 6: Trend and % change each gain a table beside their chart.
   const [trendView, setTrendView] = useState<"chart" | "table">("chart");
   const [changeView, setChangeView] = useState<"chart" | "table">("chart");
+  // Part 5: fetched only when the % Change table is opened, per subject.
+  const [geo, setGeo] = useState<{ subject: string; data: GeographyPayload | null } | null>(null);
+  const geoWanted = changeView === "table" && !!geography?.applies;
+  useEffect(() => {
+    if (!geoWanted || !geography || geo?.subject === geography.subject) return;
+    let cancelled = false;
+    (async () => {
+      const data = await fetchSubjectGeography(createBrowserSupabaseClient(), geography.urn, geography.subject);
+      if (!cancelled) setGeo({ subject: geography.subject, data });
+    })();
+    return () => { cancelled = true; };
+  }, [geoWanted, geography, geo?.subject]);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
@@ -277,6 +298,55 @@ export function CandidatesPanels({
   const worst = ranked[ranked.length - 1];
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
 
+  // Part 5: the focused subject against its LA, region and England, over the years the
+  // geography figures exist (2021/22 on -- DfE published no GCSE points for 2020/21) within
+  // the From range, so every row's change runs over the same span. Four rows in the same
+  // YearTable, rank off: ranking an LA against England by size says nothing.
+  const geographyTable = (fullscreen: boolean) => {
+    if (!geography) return null;
+    const note = (text: string) => <p className="text-[12px] leading-relaxed text-[var(--muted2)]">{text}</p>;
+    const heading = (
+      <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{geography.label} against the wider system</p>
+    );
+    if (!geography.applies) {
+      return (
+        <>
+          {heading}
+          {note(`LA, regional and national entries figures aren't available for ${geography.label}: they count GCSE (points-eligible) entries only, and this school's ${geography.label} entries are in a qualification outside that.`)}
+        </>
+      );
+    }
+    if (!geo || geo.subject !== geography.subject) return <>{heading}{note("Loading LA, regional and national figures…")}</>;
+    const areas = [geo.data?.la, geo.data?.region, geo.data?.national].filter((a): a is NonNullable<typeof a> => !!a);
+    if (areas.length === 0) {
+      return <>{heading}{note(`No LA, regional or national entries figures are published for ${geography.label}.`)}</>;
+    }
+    const geoPeriods = new Set(areas.flatMap((a) => a.rows.filter((r) => r.entries !== null).map((r) => r.period)));
+    const shown = changeData.periods.filter((p) => geoPeriods.has(p));
+    const valueAtPeriod = (rows: { period: number; entries: number | null }[], p: number) => rows.find((r) => r.period === p)?.entries ?? null;
+    const series = [
+      { key: "own", label: `This school`, colour: FOCUS_COLOUR, values: shown.map((p) => geography.own[periods.indexOf(p)] ?? null) },
+      ...areas.map((a, i) => ({
+        key: `area-${i}`,
+        label: a === geo.data?.national ? a.name : `${a.name} (${a === geo.data?.la ? "LA" : "region"})`,
+        colour: "var(--muted3)",
+        values: shown.map((p) => valueAtPeriod(a.rows, p)),
+      })),
+    ];
+    return (
+      <>
+        {heading}
+        <CentredOnTarget watch={`geo:${geography.subject}:${shown.join(",")}`}>
+          <YearTable data={{ periods: shown, series }} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="Where" showRank={false} />
+        </CentredOnTarget>
+        {/* Honest labelling: these are not every entry. */}
+        <p className="shrink-0 text-[10.5px] text-[var(--muted3)]">
+          All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.
+        </p>
+      </>
+    );
+  };
+
   const change: PanelRender = {
     tag: "% Change",
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
@@ -288,7 +358,9 @@ export function CandidatesPanels({
       </>
     ),
     body: (fullscreen) =>
-      changeView === "table" ? (
+      changeView === "table" && geography ? (
+        geographyTable(fullscreen)
+      ) : changeView === "table" ? (
         // Option I: the base year and the latest beside the change, so a big % on a
         // handful of candidates reads as what it is.
         <CentredOnTarget watch={`change-table:${focused?.key}:${changeData.periods.join(",")}`}>
@@ -350,7 +422,8 @@ export function CandidatesPanels({
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}
-      render={{ current: titled(current), trend: titled(trend), change: titled(change) }}
+      // The geography table carries its own heading: it is not about the category.
+      render={{ current: titled(current), trend: titled(trend), change: changeView === "table" && geography ? change : titled(change) }}
     />
   );
 }
