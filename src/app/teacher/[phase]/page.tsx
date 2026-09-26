@@ -1210,12 +1210,13 @@ export default function TeacherPhaseDashboard() {
       candidates: { title: `${subj} Candidates`, question: `how many ${learners} take this ${qual}.` },
       results: { title: `${subj} Results`, question: `how well ${learners} do in this subject.` },
       // Round 2 §4-§5: Context says something different per measure, and names the school.
+      // Live review Part A: the same words whichever compare-against set is chosen -- "other
+      // subjects" -- rather than echoing the pill beside it.
       context: (() => {
-        const against = contextAgainst === "selected" ? "the subjects you selected" : "the whole school";
         const at = schoolName ?? "your school";
         return {
-          results: { title: `${subj} in Context`, question: `this subject's results compared with ${against} at ${at}.` },
-          candidates: { title: `${subj} in Context`, question: `entry numbers compared with ${against} at ${at}.` },
+          results: { title: `${subj} in Context`, question: `this subject's results compared with other subjects at ${at}.` },
+          candidates: { title: `${subj} in Context`, question: `entry numbers compared with other subjects at ${at}.` },
         };
       })(),
       rankings: { title: `${subj} Comparisons`, question: `how this subject compares with the ${setNoun}.` },
