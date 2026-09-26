@@ -84,7 +84,18 @@ export type RankedRow = {
   // left out of its own dashboard. Comparator schools that trip the same rule are dropped
   // from every set instead -- see rankSets.
   igcseExcluded?: boolean;
+  // Column 3 round Part 2: the ranking table's sector icon (state / independent), from the
+  // school's own establishment type -- the same test every set recipe uses.
+  independent?: boolean;
 };
+
+// Straight-line distance between two schools from their British National Grid
+// coordinates (metres), in km -- exact on the grid, so saved sets get a real distance too
+// (the preset sets already carry school_nearest_neighbours' own distance_km).
+function gridDistanceKm(a: AcademicSchoolProfile | undefined, b: AcademicSchoolProfile | undefined): number | null {
+  if (!a || !b || a.easting === null || a.northing === null || b.easting === null || b.northing === null) return null;
+  return Math.hypot(a.easting - b.easting, a.northing - b.northing) / 1000;
+}
 
 // The four sets, built from whichever pool schools are usable. A function rather than a
 // value because rankSets may have to rebuild them: see below.
@@ -151,8 +162,8 @@ export async function rankSets(
     if (kept.length === 0) { out[id] = []; continue; }
     for (const p of kept) members.add(p.urn);
     out[id] = [
-      { urn: targetUrn, name: "This school", value: valueFor(targetUrn), isTarget: true, distanceKm: 0, cohortSize: sizeFor(targetUrn), igcseExcluded: excluded(targetUrn) },
-      ...kept.map((p) => ({ urn: p.urn, name: p.name, value: valueFor(p.urn), isTarget: false, distanceKm: p.distanceKm, cohortSize: sizeFor(p.urn) })),
+      { urn: targetUrn, name: "This school", value: valueFor(targetUrn), isTarget: true, distanceKm: 0, cohortSize: sizeFor(targetUrn), igcseExcluded: excluded(targetUrn), independent: isIndependent(byUrn.get(targetUrn)?.establishmentTypeGroup ?? null) },
+      ...kept.map((p) => ({ urn: p.urn, name: p.name, value: valueFor(p.urn), isTarget: false, distanceKm: p.distanceKm, cohortSize: sizeFor(p.urn), independent: p.independent })),
     ];
   }
   // The target's own results history is withheld when it is excluded, as before: its
@@ -192,8 +203,15 @@ export async function rankFixedSets(
   for (const set of sets) {
     const kept = set.urns.filter((u) => u !== targetUrn && !excluded(u));
     ranked[set.id] = [
-      { urn: targetUrn, name: "This school", value: valueFor(targetUrn), isTarget: true, distanceKm: 0, igcseExcluded: excluded(targetUrn) },
-      ...kept.map((u) => ({ urn: u, name: byUrn.get(u)?.name ?? u, value: valueFor(u), isTarget: false, distanceKm: null })),
+      { urn: targetUrn, name: "This school", value: valueFor(targetUrn), isTarget: true, distanceKm: 0, igcseExcluded: excluded(targetUrn), independent: isIndependent(byUrn.get(targetUrn)?.establishmentTypeGroup ?? null) },
+      ...kept.map((u) => ({
+        urn: u,
+        name: byUrn.get(u)?.name ?? u,
+        value: valueFor(u),
+        isTarget: false,
+        distanceKm: gridDistanceKm(byUrn.get(targetUrn), byUrn.get(u)),
+        independent: isIndependent(byUrn.get(u)?.establishmentTypeGroup ?? null),
+      })),
     ];
   }
   const seriesByUrn: Record<string, SchoolSeries> = {};

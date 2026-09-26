@@ -49,7 +49,7 @@ import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon } from "
 import { PillMenu } from "./PillMenu";
 import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
 import { RankingsMap } from "./RankingsMap";
-import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
+import { SchoolRankingTable, type SchoolRankingRow } from "./SchoolRankingTable";
 import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
 
@@ -75,7 +75,9 @@ export type SetOption = {
   editable?: boolean;
 };
 
-export type ComparatorSchool = { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean };
+// distanceKm / independent (Column 3 round Part 2): the ranking table's distance column
+// and sector icon, from the dashboard and saved-sets routes.
+export type ComparatorSchool = { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean; distanceKm?: number | null; independent?: boolean };
 export type SchoolSeries = { results: { period: number; value: number }[]; candidates: { period: number; value: number }[] };
 
 // The "vs:" selector's own value: the set's average, or one named school in it.
@@ -165,7 +167,6 @@ export function ComparisonsPanels({
   // The card map's "Dot size / Colour" line, handed up by the map (onCaption) so it can
   // sit behind the caption button rather than over the map.
   const [mapCaption, setMapCaption] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortState>({ key: "delta", dir: "asc" });
   // One `versus` shared by Trend and % change -- the wireframe puts the selector on both
   // and keeps them in step -- but each panel's own popover open/closed flag, or opening
   // one would open the other.
@@ -232,17 +233,17 @@ export function ComparisonsPanels({
   // match the map.
   const shownRank = view === "map" && mapRank ? mapRank : targetRank && placed.length > 1 ? { rank: targetRank, total: placed.length } : null;
 
-  const rankingRows: SortRow[] = ranked.map((r) => ({
+  // Column 3 round Part 2: the school-ranking table's rows -- rank, school, sector,
+  // figure, distance from the school itself.
+  const rankingRows: SchoolRankingRow[] = ranked.map((r) => ({
     key: r.urn,
-    label: r.isTarget ? targetName : r.name,
+    name: r.isTarget ? targetName : r.name,
+    rank: rankOfUrn.get(r.urn) ?? null,
     value: r.value,
     valueLabel: r.value === null ? (r.igcseExcluded ? "not comparable" : "—") : measure.format(r.value),
-    // The third column IS the rank here, so it sorts on the rank rather than on a delta.
-    delta: rankOfUrn.get(r.urn) ?? null,
-    deltaLabel: rankOfUrn.has(r.urn) ? `${rankOfUrn.get(r.urn)} of ${placed.length}` : "—",
-    deltaTone: "neutral",
-    emphasis: r.isTarget,
-    highlight: r.isTarget,
+    distanceKm: r.distanceKm ?? null,
+    independent: r.independent ?? null,
+    isTarget: r.isTarget,
   }));
 
   const current: PanelRender = {
@@ -311,12 +312,11 @@ export function ComparisonsPanels({
         // Round 8 §4: a comparator set longer than the panel scrolls within its own box.
         // The panel's height is fixed now, so without this a 10-school set would either
         // overflow it or push the footer off the bottom.
-        <CentredOnTarget watch={`${sort.key}:${sort.dir}:${rankingRows.map((r) => r.key).join(",")}`}>
-          <SortTable
+        <CentredOnTarget watch={rankingRows.map((r) => r.key).join(",")}>
+          <SchoolRankingTable
             rows={rankingRows}
-            sort={sort}
-            onSort={(key) => setSort(nextSort(sort, key))}
-            columns={{ name: "School", value: "Result", delta: "Rank" }}
+            valueHeading={measure.id === "entries" ? "Entries" : "Result"}
+            targetName={targetName}
             fullscreen={fullscreen}
           />
         </CentredOnTarget>

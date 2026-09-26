@@ -28,15 +28,9 @@ import {
   type SetMember,
 } from "@/lib/teacher-view-saved-sets";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
+import { SECTOR, sectorOf, type SectorId } from "@/lib/school-sector";
 
-// The wireframe's sector colours. There is no shared sector palette in the app yet
-// (checked: the Data View's sector filter is text-only), so they are named here.
-const SECTOR = {
-  state: { label: "State-funded", hex: "#4b7bd6" },
-  independent: { label: "Independent", hex: "#c2478b" },
-} as const;
-type SectorId = keyof typeof SECTOR;
-const sectorOf = (m: { independent: boolean }): SectorId => (m.independent ? "independent" : "state");
+// The sector palette is shared with the Comparisons ranking table (school-sector.ts).
 
 type Candidate = SetMember & { distanceKm: number | null };
 

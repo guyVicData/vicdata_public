@@ -30,7 +30,7 @@ export type SavedComparatorSet = {
   editable: boolean;
   config: { startedFrom?: string } & Record<string, unknown>;
   members: SetMember[];
-  rows: { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean }[];
+  rows: { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean; distanceKm?: number | null; independent?: boolean }[];
 };
 
 export type SavedSetsPayload = {
