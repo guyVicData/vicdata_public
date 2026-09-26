@@ -81,6 +81,7 @@ export function SubjectPanels({
   accentHex = null,
   deltaHeading,
   spaciousBars = false,
+  categoryLabel,
 }: {
   columnId: string;
   periods: number[];
@@ -159,6 +160,10 @@ export function SubjectPanels({
   // Results' Current bars: ViewChart's roomier row style (thicker, more spaced, wrapping
   // labels). Context does not pass it and keeps the compact rows.
   spaciousBars?: boolean;
+  // The focused subject's category ("Sciences & Maths"), for a "{Results|Entries} in
+  // {category}" title over Current -- as Candidates titles its panels. Results passes it;
+  // Context does not, and gets no title.
+  categoryLabel?: string;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -605,7 +610,26 @@ export function SubjectPanels({
       onPanelsChange={onPanelsChange}
       notes={notes}
       controls={controls}
-      render={{ current, trend, change }}
+      // Title over Current's views (bar chart and table), only when there is a comparison
+      // within the category -- a lone subject has nothing to name.
+      render={{
+        current:
+          categoryLabel && subjects.length > 1
+            ? {
+                ...current,
+                body: (fullscreen) => (
+                  <>
+                    <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">
+                      {measure.id === "entries" ? "Entries" : "Results"} in {categoryLabel}
+                    </p>
+                    {current.body(fullscreen)}
+                  </>
+                ),
+              }
+            : current,
+        trend,
+        change,
+      }}
     />
   );
 }

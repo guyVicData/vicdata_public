@@ -1379,6 +1379,7 @@ export default function TeacherPhaseDashboard() {
               // category averages) leave the per-subject Trend, as they did for Context.
               changeScope="individual"
               spaciousBars
+              categoryLabel={focusFamilyLabel ?? undefined}
               theme={theme}
               accentHex={accent?.hex ?? null}
               measure={resultsMeasure}
