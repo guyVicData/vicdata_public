@@ -44,7 +44,7 @@ import { FromYearMenu } from "./FromYearMenu";
 import { YearTable } from "./SeriesViews";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart } from "./ChangeChart";
-import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
+import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { PillMenu } from "./PillMenu";
 import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
 import { RankingsMap } from "./RankingsMap";
@@ -175,6 +175,8 @@ export function ComparisonsPanels({
   const [showFit, setShowFit] = useState(false);
   // Column 3 round Part 3: a table view beside Trend's chart.
   const [trendView, setTrendView] = useState<"chart" | "table">("chart");
+  // Part 4: and one beside % change's bars.
+  const [changeView, setChangeView] = useState<"chart" | "table">("chart");
 
   const versusRef = useDismiss(versusOpen, () => setVersusOpen(false));
   const changeVersusRef = useDismiss(changeVersusOpen, () => setChangeVersusOpen(false));
@@ -475,9 +477,19 @@ export function ComparisonsPanels({
         {versusPill(changeVersusOpen, setChangeVersusOpen, changeVersusRef)}
       </div>
     ),
+    // Column 3 round Part 4: a table beside the bars, in the same format as Context's %
+    // change table (ranked by change, bare rank first, no sorting).
+    actions: (
+      <>
+        <IconButton label="Bar chart" active={changeView === "chart"} onClick={() => setChangeView("chart")}>{VerticalBarsIcon}</IconButton>
+        <IconButton label="Table" active={changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
+      </>
+    ),
     body: (fullscreen) =>
       seriesLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
+      ) : changeView === "table" ? (
+        <YearTable data={changeData} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" leadingRank />
       ) : (
       <ChangeChart
         bars={[
