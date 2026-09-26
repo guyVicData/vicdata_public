@@ -1194,38 +1194,28 @@ export default function TeacherPhaseDashboard() {
   }));
   const onSharedMeasure = (next: SharedMeasure) => setColumnSetting(SHARED_MEASURE_KEY, next);
 
-  // S11: each column's heading as one sentence naming the focused subject and what that
-  // column reads it against. Falls back to the plain titles and §5 questions when no
+  // Each column's question once a subject is focused: a full question naming the subject,
+  // its qualification and the school, after the column's plain one-word title (COLUMN_TITLE,
+  // the same whether or not a subject is focused). Falls back to the §5 questions when no
   // subject is ticked yet, and at KS2, which has no subjects.
   const subjectHeadings = (() => {
     if (!focusItem || phase === "ks2") return null;
     const subj = focusItem.subject;
     const qual = qualificationShortLabel(phase, focusItem.qualificationType);
     const learners = phase === "ks5" ? "students" : "pupils";
-    // A saved set is a name someone chose, so a sentence quotes it rather than lower-casing
-    // it: "compares with the schools in "Grammar rivals"".
-    const setLabel = activeSavedSet ? `schools in "${activeSavedSet.name}"` : activeSetLabel.toLowerCase();
-    // Round 2 §6: every set label already carries its own noun ("Nearest 10 schools",
-    // "Similar-sized sixth forms", "Local rivals"), so nothing is appended to it -- the
-    // guard only adds "schools" if a future label arrives without one.
-    const setNoun = activeSavedSet || /(schools|sixth forms|rivals)$/.test(setLabel) ? setLabel : `${setLabel} schools`;
+    const at = schoolName ?? "your school";
     return {
-      // Round 2 §2-§3: the title already names the subject, so the sentence says "this
-      // subject" / "this GCSE" rather than repeating it. Candidates keeps the qualification
-      // word -- GCSE vs A level vs BTEC is the useful part there.
-      candidates: { title: `${subj} Candidates`, question: `how many ${learners} take this ${qual}.` },
-      results: { title: `${subj} Results`, question: `how well ${learners} do in this subject.` },
-      // Round 2 §4-§5: Context says something different per measure, and names the school.
-      // Live review Part A: the same words whichever compare-against set is chosen -- "other
-      // subjects" -- rather than echoing the pill beside it.
-      context: (() => {
-        const at = schoolName ?? "your school";
-        return {
-          results: { title: `${subj} in Context`, question: `this subject's results compared with other subjects at ${at}.` },
-          candidates: { title: `${subj} in Context`, question: `entry numbers compared with other subjects at ${at}.` },
-        };
-      })(),
-      rankings: { title: `${subj} Comparisons`, question: `how this subject compares with the ${setNoun}.` },
+      candidates: { question: `How many ${learners} at ${at} are entered for ${subj} ${qual}?` },
+      results: { question: `How well do ${learners} at ${at} do in ${subj} ${qual}?` },
+      // Context and Comparisons say something different per measure.
+      context: {
+        results: { question: `How do ${subj} ${qual} results compare with other subjects at ${at}?` },
+        candidates: { question: `How do ${subj} ${qual} entries compare with other subjects at ${at}?` },
+      },
+      rankings: {
+        results: { question: `How do ${at}'s ${subj} results compare with other schools?` },
+        candidates: { question: `How do ${at}'s ${subj} entry numbers compare with other schools?` },
+      },
     };
   })();
   const openSubjectPicker = () => setSubjectPickerOpen(true);
@@ -1311,7 +1301,7 @@ export default function TeacherPhaseDashboard() {
             the toggle changes what the panels are about, not which panels you kept. */}
         <DashboardColumn
           columnId={showingResults ? "results" : "candidates"}
-          title={subjectHeadings ? subjectHeadings[showingResults ? "results" : "candidates"].title : showingResults ? COLUMN_TITLE.results : COLUMN_TITLE.candidates}
+          title={COLUMN_TITLE[showingResults ? "results" : "candidates"]}
           question={subjectHeadings ? subjectHeadings[showingResults ? "results" : "candidates"].question : showingResults ? q.howWell : q.howMany}
           accented={!!accent}
           // §13's "NEW pill wherever something's actually changed" -- on the measure the
@@ -1501,7 +1491,7 @@ export default function TeacherPhaseDashboard() {
 
         <DashboardColumn
           columnId="context"
-          title={subjectHeadings?.context[showingResults ? "results" : "candidates"].title ?? COLUMN_TITLE.context}
+          title={COLUMN_TITLE.context}
           question={subjectHeadings?.context[showingResults ? "results" : "candidates"].question ?? q.nearMe}
           accented={!!accent}
         >
@@ -1599,8 +1589,8 @@ export default function TeacherPhaseDashboard() {
 
         <DashboardColumn
           columnId="rankings"
-          title={subjectHeadings?.rankings.title ?? COLUMN_TITLE.rankings}
-          question={subjectHeadings?.rankings.question ?? q.wider}
+          title={COLUMN_TITLE.rankings}
+          question={subjectHeadings?.rankings[showingResults ? "results" : "candidates"].question ?? q.wider}
           accented={!!accent}
         >
           <ComparisonsPanels
