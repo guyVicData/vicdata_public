@@ -41,11 +41,10 @@ import {
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { FromYearMenu } from "./FromYearMenu";
-import { ChangeList, MultiTrend, multiTrendHasLine } from "./SeriesViews";
-import { INDIVIDUAL_SERIES_MAX, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { YearTable } from "./SeriesViews";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart } from "./ChangeChart";
-import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon } from "./PanelIcons";
+import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
 import { PillMenu } from "./PillMenu";
 import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
 import { RankingsMap } from "./RankingsMap";
@@ -82,8 +81,6 @@ export type SchoolSeries = { results: { period: number; value: number }[]; candi
 
 // The "vs:" selector's own value: the set's average, or one named school in it.
 const AVERAGE = "average";
-// Trend redesign step 11: the third "vs:" choice -- every comparator as its own line/row.
-const ALL_SCHOOLS = "all-schools";
 
 // The subject chip row's own "no subject" value -- compare on the phase headline instead.
 export const WHOLE_SCHOOL = "whole-school";
@@ -176,6 +173,8 @@ export function ComparisonsPanels({
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
+  // Column 3 round Part 3: a table view beside Trend's chart.
+  const [trendView, setTrendView] = useState<"chart" | "table">("chart");
 
   const versusRef = useDismiss(versusOpen, () => setVersusOpen(false));
   const changeVersusRef = useDismiss(changeVersusOpen, () => setChangeVersusOpen(false));
@@ -344,8 +343,9 @@ export function ComparisonsPanels({
 
   // ------------------------------------------------- the "vs:" selector (§4.3)
   const versusSchool = others.find((s) => s.urn === versus) ?? null;
-  const everySchool = versus === ALL_SCHOOLS;
-  const versusLabel = everySchool ? "All schools, individually" : versusSchool ? versusSchool.name : `Average across ${setLabel.toLowerCase()}`;
+  // Column 3 round Part 3: "All schools, individually" is gone (it shipped in c76312e) --
+  // the set's average or one named school, as before it.
+  const versusLabel = versusSchool ? versusSchool.name : `Average across ${setLabel.toLowerCase()}`;
   const versusValues = versusSchool
     ? valuesFor(versusSchool.urn)
     : // The set's average per period, over the schools that genuinely have a figure that
@@ -364,13 +364,6 @@ export function ComparisonsPanels({
             selected={versus === AVERAGE}
             onClick={() => { setVersus(AVERAGE); setOpenState(false); }}
           />
-          {/* Step 11: every school at once. Below the two existing choices, so the menu
-              still opens on what it always offered. */}
-          <MenuRow
-            label="All schools, individually"
-            selected={everySchool}
-            onClick={() => { setVersus(ALL_SCHOOLS); setOpenState(false); }}
-          />
           {others.map((s) => (
             <MenuRow
               key={s.urn}
@@ -387,32 +380,16 @@ export function ComparisonsPanels({
   const full: PanelData = trimToData({
     periods,
     series: [
-      { key: "own", label: "Your school", colour: "var(--fg)", values: target ? valuesFor(target.urn) : [] },
-      { key: "versus", label: versusLabel, colour: "var(--muted3)", values: versusValues, comparison: true },
+      // Column 3 round Part 3: the school in the phase accent, as the bar graph already
+      // draws it; the comparison as a solid line (it was dashed). TrendChart is told which
+      // line is the focus (focusKey "own"), so it still draws on top and the fit follows it.
+      { key: "own", label: "Your school", colour: "var(--accent,var(--fg))", values: target ? valuesFor(target.urn) : [] },
+      { key: "versus", label: versusLabel, colour: "var(--muted3)", values: versusValues },
     ],
   });
-  // Step 11, "All schools, individually": your school in the foreground colour, every
-  // comparator its own grey in the ranking's order (the same tints-in-Current's-order
-  // convention as Column 1), sliced to the same spans. TrendChart and the H list take any
-  // number of series, so this is wiring, not a new chart.
-  const allOrder = [...ranked.map((r) => r.urn), ...schools.map((s) => s.urn).filter((u) => !ranked.some((r) => r.urn === u))];
-  const allTints = tintInOrder(allOrder, target?.urn ?? null, "var(--fg)");
-  const allFull: PanelData = trimToData({
-    periods,
-    series: allOrder.map((urn) => {
-      const school = schools.find((s) => s.urn === urn)!;
-      return { key: urn, label: school.isTarget ? targetName : school.name, colour: allTints.get(urn) ?? "var(--muted3)", values: valuesFor(urn) };
-    }),
-  });
-  // Past INDIVIDUAL_SERIES_MAX comparators the lines stop being readable one by one, and
-  // Trend folds into Option K (focus + top movers + a rest-of-set band).
-  const allCurated = others.length > INDIVIDUAL_SERIES_MAX;
-
-  const realPeriods = periodsWithData(everySchool ? allFull : full);
+  const realPeriods = periodsWithData(full);
   const trendData = sliceFrom(full, trendStart);
   const changeData = sliceFrom(full, changeStart);
-  const allTrendData = sliceFrom(allFull, trendStart);
-  const allChangeData = sliceFrom(allFull, changeStart);
   const spanLabel = (ps: number[]) => (ps.length ? `${academicYearLabel(ps[0])}–${academicYearLabel(ps[ps.length - 1])}` : "");
 
   // -------------------------------------------------------------------- Trend
@@ -423,7 +400,6 @@ export function ComparisonsPanels({
     startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
   });
   const versusClause = (() => {
-    if (everySchool) return "";
     const vals = (trendData.series[1]?.values ?? []).filter((v): v is number => v !== null);
     if (vals.length < 2) return "";
     return ` — against ${versusLabel.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
@@ -450,25 +426,25 @@ export function ComparisonsPanels({
       <TrendLineToggle
         on={showFit}
         onToggle={() => setShowFit(!showFit)}
-        disabled={everySchool ? !multiTrendHasLine(allTrendData) : trendChartKind(trendData) === "bars"}
+        disabled={trendView === "table" || trendChartKind(trendData) === "bars"}
       />
+    ),
+    // Column 3 round Part 3: a table beside the chart, as Columns 1 and 2 have.
+    actions: (
+      <>
+        <IconButton label="Chart" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
+        <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+      </>
     ),
 
     body: (fullscreen) =>
       seriesLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
-      ) : everySchool ? (
-        <MultiTrend
-          data={allTrendData}
-          measure={measure}
-          focusKey={target?.urn ?? null}
-          curated={allCurated}
-          restLabel="rest of the set"
-          showFit={showFit}
-          fullscreen={fullscreen}
-        />
+      ) : trendView === "table" ? (
+        // Two rows -- the school and the "vs:" choice -- so there is nothing to rank.
+        <YearTable data={trendData} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" showRank={false} />
       ) : (
-        <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
+        <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} focusKey="own" />
       ),
     summary: seriesLoading ? undefined : trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>
@@ -502,16 +478,6 @@ export function ComparisonsPanels({
     body: (fullscreen) =>
       seriesLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
-      ) : everySchool ? (
-        // Step 11: every school as its own row, ranked by change (Option H), the set's
-        // average a dashed line rather than a row.
-        <CentredOnTarget watch={`all-change:${allChangeData.periods.join(",")}`}>
-          <ChangeList
-            rows={allChangeData.series.map((x) => ({ key: x.key, label: x.label, colour: x.colour, percent: percentChange(x.values) }))}
-            focusKey={target?.urn ?? null}
-            group={{ label: `Average across ${setLabel.toLowerCase()}`, percent: percentChange(sliceFrom(full, changeStart).series[1]?.values ?? []) }}
-          />
-        </CentredOnTarget>
       ) : (
       <ChangeChart
         bars={[
@@ -527,16 +493,7 @@ export function ComparisonsPanels({
       ) : (
         <PanelSummary>
           This school&rsquo;s {comparedOn} has {ownPct >= 0 ? "risen" : "fallen"} {Math.abs(Math.round(ownPct))}% since {changeSince}
-          {everySchool
-            ? (() => {
-                const order = allChangeData.series
-                  .map((x) => ({ key: x.key, pct: percentChange(x.values) }))
-                  .filter((x) => x.pct !== null)
-                  .sort((a, b) => b.pct! - a.pct!);
-                const at = order.findIndex((x) => x.key === target?.urn);
-                return at < 0 ? "." : `, ${at + 1} of ${order.length} in the set on change.`;
-              })()
-            : versusPct === null
+          {versusPct === null
             ? "."
             : `, against ${versusPct >= 0 ? "a rise" : "a fall"} of ${Math.abs(Math.round(versusPct))}% for ${versusLabel.toLowerCase()}.`}
         </PanelSummary>
