@@ -1372,6 +1372,14 @@ export default function TeacherPhaseDashboard() {
               subjects={resultsSeries}
               focus={focusKey}
               groups={resultsGroups}
+              // Results joins the redesigned path: its subjects are a bounded category-peer
+              // list, like Context's Selected subjects, so every peer is its own line/row --
+              // Trend and % change gain chart/table toggles and palette colours, and Current
+              // takes the grey-ramp tints Context has. The group lines (category and England
+              // category averages) leave the per-subject Trend, as they did for Context.
+              changeScope="individual"
+              theme={theme}
+              accentHex={accent?.hex ?? null}
               measure={resultsMeasure}
               controls={
                 // §3's row-alignment fix: the Results sub-measure pill sits under this
@@ -1502,6 +1510,7 @@ export default function TeacherPhaseDashboard() {
               // Steps 9-10: Selected subjects is a bounded list, drawn like Column 1 ("individual");
               // the whole school is Option K ("curated").
               changeScope={contextAgainst === "selected" ? "individual" : "curated"}
+              deltaHeading="vs average"
               theme={theme}
               accentHex={accent?.hex ?? null}
               yearControl

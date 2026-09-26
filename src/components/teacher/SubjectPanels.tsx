@@ -79,6 +79,7 @@ export function SubjectPanels({
   changeScope = "all",
   theme = "dark",
   accentHex = null,
+  deltaHeading,
 }: {
   columnId: string;
   periods: number[];
@@ -150,6 +151,10 @@ export function SubjectPanels({
   // and dark versions and skips hues close to the phase accent (see paletteInOrder).
   theme?: "dark" | "light";
   accentHex?: string | null;
+  // The Current table's third-column heading, where the caller wants a fixed one --
+  // Context's "vs average", the same whichever compare-against set is chosen. Absent =
+  // "vs {benchmarkLabel}" (Results' "vs National"), or "vs last year" with no benchmark.
+  deltaHeading?: string;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
@@ -351,13 +356,13 @@ export function SubjectPanels({
                 sort={sort}
                 onSort={(key) => setSort(nextSort(sort, key))}
                 // Micro fix Part 1: "Entries" for a candidate count; and in Context the third
-                // column is each subject against the comparison group's average, so it says
-                // "vs average" whichever set is chosen -- "vs All subjects" read as something
-                // else and crowded the narrow header. Results keeps "vs National".
+                // column is each subject against the comparison group's average, so Context
+                // passes a fixed "vs average" (deltaHeading) -- "vs All subjects" read as
+                // something else and crowded the narrow header. Results keeps "vs National".
                 columns={{
                   name: "Subject",
                   value: measure.id === "entries" ? "Entries" : "Result",
-                  delta: !benchmarkLabel ? "vs last year" : redesigned ? "vs average" : `vs ${benchmarkLabel}`,
+                  delta: !benchmarkLabel ? "vs last year" : deltaHeading ?? `vs ${benchmarkLabel}`,
                 }}
                 fullscreen={fullscreen}
               />
