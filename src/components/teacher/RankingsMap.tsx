@@ -22,6 +22,8 @@ export function RankingsMap({
   familyId = null,
   dense = false,
   onTargetRank,
+  accentHex = null,
+  onCaption,
 }: {
   profiles: AcademicSchoolProfile[] | null;
   targetUrn: string;
@@ -42,6 +44,10 @@ export function RankingsMap({
   dense?: boolean;
   // The target school's rank on whatever the map is plotting, from AcademicMapView.
   onTargetRank?: (info: { rank: number; total: number } | null) => void;
+  // Column 3 round Part 1: the phase accent for the value scale, and the card map's
+  // explanation line handed to the panel (see AcademicMapView's own notes).
+  accentHex?: string | null;
+  onCaption?: (caption: string) => void;
 }) {
   const target = profiles?.find((p) => p.urn === targetUrn) ?? null;
   if (!profiles) {
@@ -66,6 +72,8 @@ export function RankingsMap({
         familyId={familyId}
         dense={dense}
         onTargetRank={onTargetRank}
+        accentHex={accentHex}
+        onCaption={onCaption}
         // Same GCSE exclusion the advanced dashboard's map applies, with its own note.
         ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}
       />

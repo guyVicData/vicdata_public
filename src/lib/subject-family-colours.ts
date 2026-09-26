@@ -100,3 +100,26 @@ export function gradeBandLegendStopsForFamily(familyId: string | null | undefine
   const { light } = subjectFamilyColour(familyId);
   return [0, 0.25, 0.5, 0.75, 1].map((t) => ({ t, hex: sequentialColourAt(t, light[0], light[1]) }));
 }
+
+// Teacher view Comparisons map (Column 3 round, Part 1): the phase's own accent (GCSE
+// green, Post-16 purple) as a value ramp -- lighter for a lower figure, darker for a higher
+// one, the same min-max normalisation as the two ramps above. Teacher view only.
+//
+// Both ends are the accent DARKENED (25% and 40% towards black), not lightened: the GCSE
+// accent is itself a light green, 1.8:1 against the light panel, so a paler tint would
+// all but vanish in the light theme. Measured against the panels (#f7f7f9 light, #0e0e10
+// dark): GCSE #279e73 -> #1f7f5c is 3.15-4.62:1 on light and 5.72-3.90:1 on dark; Post-16
+// #7d68bc -> #645396 is 4.29-6.10:1 on light and 4.20-2.96:1 on dark.
+function darken(hex: string, t: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(r * (1 - t), g * (1 - t), b * (1 - t));
+}
+
+export function accentBandColour(value: number, min: number, max: number, accentHex: string): string {
+  const t = max > min ? Math.max(0, Math.min(1, (value - min) / (max - min))) : 0.5;
+  return sequentialColourAt(t, darken(accentHex, 0.25), darken(accentHex, 0.4));
+}
+
+export function accentLegendStops(accentHex: string): { t: number; hex: string }[] {
+  return [0, 0.25, 0.5, 0.75, 1].map((t) => ({ t, hex: sequentialColourAt(t, darken(accentHex, 0.25), darken(accentHex, 0.4)) }));
+}

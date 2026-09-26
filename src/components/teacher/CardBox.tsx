@@ -100,6 +100,8 @@ export function CardBox({
   footerLead,
   flag,
   note,
+  visibleCaption,
+  suggestFullscreen = false,
   children,
 }: {
   title: string;
@@ -144,6 +146,13 @@ export function CardBox({
   // Part 4: the private note, for the fullscreen rail -- its text shown outright, and the
   // same editor as the card's footer icon. Absent = the panel has no note slot.
   note?: { body: string | null; onSave: (body: string) => Promise<void> | void };
+  // Column 3 round Part 1: a caption line shown WITHOUT a click, on the card only -- the
+  // counterpart to CaptionNote (which stays behind its button). Fullscreen does not show it:
+  // there is nothing left to invite anyone into once they are there.
+  visibleCaption?: ReactNode;
+  // A built-in "Full screen" link on that line, opening this box's own fullscreen -- for
+  // views that read far better with room (Comparisons' map). Off by default.
+  suggestFullscreen?: boolean;
   // Round 8 §2: every panel is the same height, so the three columns read as a true 3x3
   // grid rather than three ragged stacks. Absent = size to content, which is what the KS2
   // boxes and any non-panel caller still want.
@@ -312,6 +321,20 @@ export function CardBox({
           {children({ fullscreen: false })}
         </div>
       </div>
+      {(visibleCaption || suggestFullscreen) && (
+        <div className="flex shrink-0 items-center gap-2 text-[11.5px] leading-snug text-[var(--muted2)] print:hidden">
+          {visibleCaption && <p className="min-w-0 flex-1">{visibleCaption}</p>}
+          {suggestFullscreen && (
+            <button
+              type="button"
+              onClick={() => setFullscreen(true)}
+              className="ml-auto inline-flex shrink-0 items-center gap-1 font-semibold text-[var(--muted)] hover:text-[var(--fg)]"
+            >
+              Full screen <ExpandIcon expanded={false} />
+            </button>
+          )}
+        </div>
+      )}
       {footerRow}
 
       {fullscreen && (

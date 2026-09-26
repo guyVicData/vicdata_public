@@ -58,6 +58,10 @@ export type PanelRender = {
   // (Trend's growth/decline word) -- see CardBox.
   footerLead?: ReactNode;
   flag?: ReactNode;
+  // Column 3 round Part 1 -- see CardBox: a caption shown without a click, and a visible
+  // "Full screen" invitation.
+  visibleCaption?: ReactNode;
+  suggestFullscreen?: boolean;
 };
 
 export function ColumnPanels({
@@ -96,6 +100,8 @@ export function ColumnPanels({
             headline={panel.headline}
             footerLead={panel.footerLead}
             flag={panel.flag}
+            visibleCaption={panel.visibleCaption}
+            suggestFullscreen={panel.suggestFullscreen}
             title={panel.tag}
             question={panel.question}
             tag={

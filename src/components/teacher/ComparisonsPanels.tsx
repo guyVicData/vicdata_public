@@ -22,7 +22,7 @@
 // not used and not needed.
 import { useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
-import { academicYearLabel } from "@/lib/teacher-view-theme";
+import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
@@ -160,8 +160,11 @@ export function ComparisonsPanels({
   // "2 / 8": personal sets used, for the "Your sets" heading.
   personalSetsNote?: string;
 }) {
-  // Ranking is the default view (§4.3), even though Graph comes first in the icon row.
-  const [view, setView] = useState<"graph" | "map" | "ranking">("ranking");
+  // Column 3 round Part 1: Map is the default view, and first in the icon rail to match.
+  const [view, setView] = useState<"graph" | "map" | "ranking">("map");
+  // The card map's "Dot size / Colour" line, handed up by the map (onCaption) so it can
+  // sit behind the caption button rather than over the map.
+  const [mapCaption, setMapCaption] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>({ key: "delta", dir: "asc" });
   // One `versus` shared by Trend and % change -- the wireframe puts the selector on both
   // and keeps them in step -- but each panel's own popover open/closed flag, or opening
@@ -247,8 +250,8 @@ export function ComparisonsPanels({
     question,
     actions: (
       <>
-        <IconButton label="Bar chart" active={view === "graph"} onClick={() => setView("graph")}>{HorizontalBarsIcon}</IconButton>
         <IconButton label="Map" active={view === "map"} onClick={() => setView("map")}>{MapPinIcon}</IconButton>
+        <IconButton label="Bar chart" active={view === "graph"} onClick={() => setView("graph")}>{HorizontalBarsIcon}</IconButton>
         <IconButton label="Ranking" active={view === "ranking"} onClick={() => setView("ranking")}>{RankListIcon}</IconButton>
       </>
     ),
@@ -259,18 +262,23 @@ export function ComparisonsPanels({
       if (view === "map") {
         return schoolUrn ? (
           // A live Leaflet map, which does not print -- the Ranking view is the one that
-          // does, which is why it stays the default rather than this.
-          <div className="print:hidden">
+          // does. (Map is now the default view on screen, Column 3 round Part 1.) On the
+          // card it fills whatever height the panel leaves it rather than a fixed 288px.
+          <div className={fullscreen ? "print:hidden" : "flex min-h-0 flex-1 flex-col print:hidden"}>
             <RankingsMap
               profiles={mapProfiles}
               targetUrn={schoolUrn}
               stage={phase}
-              heightClass={fullscreen ? "h-[70vh] min-h-[22rem]" : "h-72"}
+              heightClass={fullscreen ? "h-[70vh] min-h-[22rem]" : "min-h-[10rem] flex-1"}
               subject={activeMapChip?.subject ?? null}
               subjectLabel={activeMapChip?.legend ?? null}
               subjectBucket={activeMapChip?.bucket ?? null}
               familyId={activeMapChip?.familyId ?? null}
               dense={!fullscreen}
+              // The phase's own accent for the value scale (Teacher view only), and the
+              // card map's explanation line handed up rather than printed on the map.
+              accentHex={phase === "ks2" ? null : PHASE_ACCENT[phase]?.hex ?? null}
+              onCaption={fullscreen ? undefined : setMapCaption}
               onTargetRank={onMapRank}
             />
           </div>
@@ -317,6 +325,7 @@ export function ComparisonsPanels({
     summary: seriesLoading ? undefined : shownRank ? (
       <PanelSummary>
         This school is {shownRank.rank} of {shownRank.total} on {comparedOn}, among {setLabel.toLowerCase()}.
+        {view === "map" && mapCaption ? ` ${mapCaption}.` : ""}
       </PanelSummary>
     ) : (
       <PanelSummary>
@@ -326,6 +335,9 @@ export function ComparisonsPanels({
       </PanelSummary>
     ),
     source: source(),
+    // Column 3 round Part 1: a visible "Full screen" line under the card -- the map
+    // especially reads far better with room.
+    suggestFullscreen: true,
     // S10: the collapsed bar's figure -- where the school sits in the set.
     headline: seriesLoading || !shownRank ? undefined : `${shownRank.rank} of ${shownRank.total}`,
   };

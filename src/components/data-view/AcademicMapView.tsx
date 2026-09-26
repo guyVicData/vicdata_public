@@ -41,7 +41,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { bngToLatLng } from "@/lib/bng";
 import { trendColour, gradeBandColour, GRADE_BAND_LEGEND_STOPS, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
-import { gradeBandColourForFamily, gradeBandLegendStopsForFamily } from "@/lib/subject-family-colours";
+import { accentBandColour, accentLegendStops, gradeBandColourForFamily, gradeBandLegendStopsForFamily } from "@/lib/subject-family-colours";
 import { trendBadge, rankDescendingWithTies } from "@/lib/data-view-cards";
 import type { ViewKey } from "@/lib/data-view-types";
 import type { AcademicGeographyChoroplethEntry } from "@/lib/academic-geography-choropleth";
@@ -329,7 +329,10 @@ function DenseHoverBar({ setterRef }: { setterRef: { current: (info: HoverInfo |
   );
 }
 
-type ColourMode = "trend" | "grade_band";
+// "accent" (Teacher view Comparisons, Column 3 round Part 1): grade band's value scale,
+// drawn in the phase's own accent rather than the blue or category ramp. Only ever on when
+// the caller passes accentHex -- the Data View never does, so it never sees this mode.
+type ColourMode = "trend" | "grade_band" | "accent";
 
 // Real per-profile figures, computed ONCE per render (useMemo below) and shared by
 // the rank computation, the min-max normalisation (size AND grade band), the SizeLegend/
@@ -365,6 +368,8 @@ export default function AcademicMapView({
   authToken = null,
   isRegionOrNationScope = false,
   activeRegionName = null,
+  accentHex = null,
+  onCaption,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -450,6 +455,12 @@ export default function AcademicMapView({
   // initial choropleth view straight to that filtered LA tier, instead of the
   // national 9-region overview a Region-scale member never actually wants first.
   activeRegionName?: string | null;
+  // Teacher view Comparisons (Column 3 round Part 1): colour the value scale in the phase
+  // accent (see ColourMode "accent"), and hand the dense map's "Dot size / Colour" line to
+  // the caller -- which shows it behind its panel's caption button -- instead of printing
+  // it over the map. Neither is passed by the Data View.
+  accentHex?: string | null;
+  onCaption?: (caption: string) => void;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -484,7 +495,10 @@ export default function AcademicMapView({
   // A3: default stays Grade band (round 2, item 6 already made this the default;
   // unchanged this round). A5's own fix (below) means this default now genuinely
   // WORKS for Post-16 too, not just KS2/GCSE.
-  const [colourMode, setColourMode] = useState<ColourMode>("grade_band");
+  const [colourMode, setColourMode] = useState<ColourMode>(accentHex ? "accent" : "grade_band");
+  // The value-scale mode this map offers: the accent where the caller gave one.
+  const valueMode: ColourMode = accentHex ? "accent" : "grade_band";
+  const valueStops = accentHex ? accentLegendStops(accentHex) : familyId ? gradeBandLegendStopsForFamily(familyId) : undefined;
   // A5's real fix: grade band is available whenever there's a real headline/family
   // series to colour by at all -- i.e. always, except at family level (which has its
   // own separate, single, always-available trend-only colour concept, Round 2 Part B
@@ -731,7 +745,10 @@ export default function AcademicMapView({
       // never changes for the life of one map.
       const map = L.map(mapElRef.current, { center: [lat, lng], zoom: 11, zoomControl: false, attributionControl: !dense });
       if (!dense) L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
-      L.control.zoom({ position: "bottomright" }).addTo(map);
+      // Column 3 round Part 1: no zoom buttons on the dense (card) map -- gated like the
+      // tile layer and attribution beside it. The Data View never sets dense, and Teacher
+      // view's own fullscreen map is not dense, so both keep the control.
+      if (!dense) L.control.zoom({ position: "bottomright" }).addTo(map);
       layerGroupRef.current = L.layerGroup().addTo(map);
       // LA/Region choropleth: created but NOT added to the map yet -- only attached
       // once "View by area" is actually on (the drawing effects below swap which of
@@ -877,6 +894,8 @@ export default function AcademicMapView({
         if (effectiveColourMode === "trend") {
           const badge = trendBadge(data.avgValue, data.anchorValue);
           if (badge) colour = trendColour(badge.pctChange);
+        } else if (data.avgValue !== null && effectiveColourMode === "accent" && accentHex) {
+          colour = accentBandColour(data.avgValue, minGrade, maxGrade, accentHex);
         } else if (data.avgValue !== null) {
           // Map round 4: family scope now colours "to match the subject category"
           // (subject-family-colours.ts's own ramp, anchored on that category's site-
@@ -898,7 +917,7 @@ export default function AcademicMapView({
         } else if (familyId) {
           if (data.entriesValue !== null) lines.push(`<strong>${data.entriesValue.toLocaleString()}</strong> entries in ${escapeHtml(familyLabel ?? "this category")}${data.entriesPeriod !== null ? ` (${academicYearLabel(data.entriesPeriod)})` : ""}`);
           if (data.avgValue !== null) lines.push(`<strong>${data.avgValue.toFixed(1)}</strong> avg. point score${data.avgPeriod !== null ? ` (${academicYearLabel(data.avgPeriod)})` : ""}`);
-        } else if (effectiveColourMode === "grade_band") {
+        } else if (effectiveColourMode !== "trend") {
           if (data.entriesValue !== null) {
             lines.push(`<strong>${Math.round(data.entriesValue).toLocaleString()}</strong> ${ENTRIES_NOUN[stage]}${data.entriesPeriod !== null ? ` (${academicYearLabel(data.entriesPeriod)})` : ""}`);
           }
@@ -945,7 +964,7 @@ export default function AcademicMapView({
         mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
       }
     });
-  }, [mapReady, dense, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
+  }, [mapReady, dense, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, accentHex, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
 
   // LA/Region choropleth: real min/max over the CURRENTLY SHOWN tier's own real
   // values -- same "computed once, shared" discipline as minGrade/maxGrade above,
@@ -1107,6 +1126,15 @@ export default function AcademicMapView({
 
   const sizeCaption = stage === "ks2" ? `${HEADLINE_AGE.ks2}-year-olds` : stage === "ks4" ? "pupils entered for GCSEs" : ks5Bucket ? `${KS5_BUCKET_LABEL[ks5Bucket]} entries` : "pupils entered for Post-16 exams";
 
+  // The dense map's one-line explanation. With an onCaption caller (Teacher view) it is
+  // handed up to be shown behind the panel's caption button rather than over the map;
+  // without one it is printed on the map as before.
+  const denseSizeText = subject ? `entries in ${subjectLabel ?? subject}` : familyId ? `entries in ${familyLabel ?? "this category"}` : sizeCaption;
+  const denseCaption = `Dot size: ${denseSizeText} · Colour: ${effectiveColourMode === "trend" ? "growth" : "grade band (darker = higher)"}`;
+  useEffect(() => {
+    if (dense) onCaption?.(denseCaption);
+  }, [dense, denseCaption, onCaption]);
+
   return (
     <div ref={rootRef} className="vd-academic-map relative h-full w-full">
       <style>{`
@@ -1188,8 +1216,8 @@ export default function AcademicMapView({
           <div className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
             <button
               type="button"
-              onClick={() => setColourMode("grade_band")}
-              className={colourMode === "grade_band" ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
+              onClick={() => setColourMode(valueMode)}
+              className={colourMode === valueMode ? "rounded bg-neutral-900 px-2 py-1 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900" : "rounded px-2 py-1 text-neutral-600 dark:text-neutral-400"}
             >
               Grade band
             </button>
@@ -1218,14 +1246,14 @@ export default function AcademicMapView({
         <div
           aria-hidden="true"
           className="absolute right-2 top-2 bottom-[84px] z-[1000] w-[7px] rounded-full shadow-sm"
-          style={{ background: `linear-gradient(to bottom, ${[...(familyId ? gradeBandLegendStopsForFamily(familyId) : GRADE_BAND_LEGEND_STOPS)].reverse().map((st) => st.hex).join(",")})` }}
+          style={{ background: `linear-gradient(to bottom, ${[...(valueStops ?? GRADE_BAND_LEGEND_STOPS)].reverse().map((st) => st.hex).join(",")})` }}
         />
       ) : viewByArea ? (
         <GradeBandColourKey box={trendKeyBox} min={choroplethMin} max={choroplethMax} stage={stage} />
       ) : effectiveColourMode === "trend" ? (
         <TrendColourKey box={trendKeyBox} title="Growth" />
       ) : (
-        <GradeBandColourKey box={trendKeyBox} min={minGrade} max={maxGrade} stage={stage} stops={familyId ? gradeBandLegendStopsForFamily(familyId) : undefined} />
+        <GradeBandColourKey box={trendKeyBox} min={minGrade} max={maxGrade} stage={stage} stops={valueStops} />
       )}
 
       {/* Real bug found live (Guy, 2026-09-14): the choropleth's own fetch (region +
@@ -1286,16 +1314,17 @@ export default function AcademicMapView({
                         ? { n: ks5ExcludedForMap.length, text: ks5BucketExclusionNote(ks5ExcludedForMap.map((p) => p.name), ks5Bucket ?? "alevel") }
                         : null
                     : null;
-              const sizeText = subject ? `entries in ${subjectLabel ?? subject}` : familyId ? `entries in ${familyLabel ?? "this category"}` : sizeCaption;
-              const caption = `Dot size: ${sizeText} · Colour: ${effectiveColourMode === "trend" ? "growth" : "grade band"}`;
+              const caption = denseCaption;
               return (
                 // bottom-6: just above Leaflet's attribution line, which sits in the same
                 // bottom edge. One line only; if a narrow card truncates it, the full text
                 // is on hover.
                 <div className="absolute bottom-6 left-2 z-[1000] flex max-w-[calc(100%-4.5rem)] items-center gap-1.5">
-                  <p title={caption} className="truncate whitespace-nowrap rounded bg-white/85 px-1.5 py-0.5 text-[10px] text-neutral-600 dark:bg-neutral-950/85 dark:text-neutral-400">
-                    {caption}
-                  </p>
+                  {!onCaption && (
+                    <p title={caption} className="truncate whitespace-nowrap rounded bg-white/85 px-1.5 py-0.5 text-[10px] text-neutral-600 dark:bg-neutral-950/85 dark:text-neutral-400">
+                      {caption}
+                    </p>
+                  )}
                   {exclusion && (
                     <span
                       title={exclusion.text ?? undefined}
