@@ -543,6 +543,8 @@ export function SubjectPanels({
             measure={measure}
             focusKey={focusedKey}
             fullscreen={fullscreen}
+            // Live review Part E: ranked by change, bare rank first, no sorting.
+            leadingRank
           />
         </CentredOnTarget>
       ) : (

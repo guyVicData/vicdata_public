@@ -263,6 +263,7 @@ export function YearTable({
   curate,
   nameHeading = "Subject",
   showRank = true,
+  leadingRank = false,
 }: {
   data: PanelData;
   measure: Measure;
@@ -272,8 +273,16 @@ export function YearTable({
   nameHeading?: string;
   // Off where a rank means nothing -- Part 5's geography rows (England is always "1st").
   showRank?: boolean;
+  // Live review Part E (the % change table): a ranked list rather than a sortable table.
+  // Rows are ranked by % CHANGE -- the order the ranked list beside it uses -- and stay in
+  // that order (headers are not clickable); the rank is a bare number in an unheaded first
+  // column, shown on the card as well as fullscreen; padding and type tighten so name,
+  // rank, both years and Change fit a card without scrolling sideways.
+  leadingRank?: boolean;
 }) {
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: showRank ? "rank" : "given", dir: 1 });
+  const [userSort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: showRank ? "rank" : "given", dir: 1 });
+  const sort: { key: SortKey; dir: 1 | -1 } = leadingRank ? { key: "rank", dir: 1 } : userSort;
+  const pad = leadingRank ? "px-1" : "px-1.5";
   const { periods, series } = data;
   if (periods.length === 0 || series.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
@@ -283,10 +292,17 @@ export function YearTable({
 
   const rows = series.map((s) => ({ s, change: changeOver(s.values), last: s.values[lastIdx] }));
   const rankOf = new Map<string, number>();
-  [...rows]
-    .filter((r) => r.last !== null)
-    .sort((a, b) => b.last! - a.last!)
-    .forEach((r, i) => rankOf.set(r.s.key, i + 1));
+  if (leadingRank) {
+    [...rows]
+      .filter((r) => r.change?.percent !== null && r.change?.percent !== undefined)
+      .sort((a, b) => b.change!.percent! - a.change!.percent!)
+      .forEach((r, i) => rankOf.set(r.s.key, i + 1));
+  } else {
+    [...rows]
+      .filter((r) => r.last !== null)
+      .sort((a, b) => b.last! - a.last!)
+      .forEach((r, i) => rankOf.set(r.s.key, i + 1));
+  }
   const ranked = rankOf.size;
 
   const curating = !!curate && !fullscreen;
@@ -307,7 +323,10 @@ export function YearTable({
     setSort((cur) => (cur.key === key ? { key, dir: cur.dir === 1 ? -1 : 1 } : { key, dir: key === "name" || key === "rank" ? 1 : -1 }));
 
   const head = (k: SortKey, children: React.ReactNode, left = false) => (
-    <th key={String(k)} className={`px-1.5 pb-1.5 font-semibold ${left ? "text-left" : "text-right"}`}>
+    <th key={String(k)} className={`${pad} pb-1.5 font-semibold ${left ? "text-left" : "text-right"}`}>
+      {leadingRank ? (
+        <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.02em] text-[var(--muted)]">{children}</span>
+      ) : (
       <button
         type="button"
         onClick={() => onSort(k)}
@@ -316,6 +335,7 @@ export function YearTable({
         {children}
         <span aria-hidden="true" className={sort.key === k ? "" : "opacity-0"}>{sort.dir === 1 ? "▲" : "▼"}</span>
       </button>
+      )}
     </th>
   );
 
@@ -325,14 +345,15 @@ export function YearTable({
   };
 
   return (
-    <table className={`w-full border-collapse tabular-nums ${fullscreen ? "text-[13px]" : "text-[11.5px]"}`}>
+    <table className={`w-full border-collapse tabular-nums ${fullscreen ? "text-[13px]" : leadingRank ? "text-[11px]" : "text-[11.5px]"}`}>
       <thead className="border-b border-[var(--panel-border2)]">
         <tr>
+          {leadingRank && <th className="w-5 pb-1.5" aria-label="Rank" />}
           {head("name", nameHeading, true)}
           {/* Live review Part 4: Rank only in fullscreen. On the card it pushed the year and
               Change columns -- the figures that matter there -- out of view. The ranking
               itself still drives the default sort either way. */}
-          {fullscreen && showRank && head("rank", "Rank")}
+          {fullscreen && showRank && !leadingRank && head("rank", "Rank")}
           {yearIdx.map((i) => head(i, academicYearLabel(periods[i])))}
           {head("change", "Change")}
         </tr>
@@ -348,23 +369,26 @@ export function YearTable({
               className="border-b border-[var(--panel-border)] last:border-b-0"
               style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.10)" } : undefined}
             >
-              <td className="max-w-0 px-1.5 py-[5px] text-left">
+              {leadingRank && (
+                <td className="w-5 pl-0.5 pr-1 text-right text-[var(--muted3)]">{rankOf.get(r.s.key) ?? ""}</td>
+              )}
+              <td className={`max-w-0 ${pad} py-[5px] text-left`}>
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.s.colour }} />
                   <span className={`truncate ${focus ? "font-semibold text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.s.label}>{r.s.label}</span>
                 </span>
               </td>
-              {fullscreen && showRank && (
+              {fullscreen && showRank && !leadingRank && (
                 <td className="whitespace-nowrap px-1.5 text-right text-[var(--muted2)]">
                   {rankOf.has(r.s.key) ? `${rankOf.get(r.s.key)} of ${ranked}` : "—"}
                 </td>
               )}
               {yearIdx.map((i) => (
-                <td key={periods[i]} className={`px-1.5 text-right ${focus ? "font-semibold" : "text-[var(--muted2)]"}`}>
+                <td key={periods[i]} className={`${pad} text-right ${focus ? "font-semibold" : "text-[var(--muted2)]"}`}>
                   {r.s.values[i] === null ? "—" : measure.format(r.s.values[i]!)}
                 </td>
               ))}
-              <td className="whitespace-nowrap px-1.5 text-right leading-tight">
+              <td className={`whitespace-nowrap ${pad} text-right leading-tight`}>
                 <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? signed(r.change.delta, measure.format) : "—"}</span>
                 {r.change?.percent !== null && r.change?.percent !== undefined && (
                   <span className="block text-[9.5px] text-[var(--muted2)]">{signed(Math.round(r.change.percent), (v) => `${v}%`)}</span>
@@ -376,7 +400,8 @@ export function YearTable({
         {rest.length > 0 && (
           <tr className="text-[var(--muted2)]">
             <td className="px-1.5 py-[5px] text-left italic">{curate!.restLabel} ({rest.length})</td>
-            {fullscreen && showRank && <td />}
+            {leadingRank && <td />}
+            {fullscreen && showRank && !leadingRank && <td />}
             {yearIdx.map((i) => (
               <td key={periods[i]} className="whitespace-nowrap px-1.5 text-right">{range(rest.map((r) => r.s.values[i]))}</td>
             ))}
