@@ -73,7 +73,7 @@ export function qualificationShortLabel(phase: TeacherPhase, qualificationType: 
 
 // KS4's qualification families for onboarding step 1 (GCSE-Step1.dc.html): GCSE, BTEC &
 // OCR, everything else. KS5 needs no equivalent -- its families ARE the existing
-// KS5_BUCKETS via displayBucketFor (bucketFor, with AS level under Other).
+// KS5_BUCKETS via displayBucketFor (bucketFor, with AS level and AEA under Other).
 export type Ks4QualificationFamily = "gcse" | "btec_ocr" | "other_vocational";
 export function ks4QualificationFamily(qualificationType: string): Ks4QualificationFamily {
   if (qualificationType === KS4_GCSE || qualificationType === KS4_GCSE_DOUBLE) return "gcse";
@@ -102,7 +102,7 @@ export const QUALIFICATION_FAMILIES: Record<"ks4" | "ks5", QualificationFamily[]
 };
 
 // Which family a (subject, qualification) item is shown under. At KS5 the display bucket:
-// AS level sits in "other", not beside A level (displayBucketFor).
+// AS level and AEA sit in "other", not beside A level (displayBucketFor).
 export function qualificationFamilyOf(phase: "ks4" | "ks5", qualificationType: string): string {
   return phase === "ks5" ? displayBucketFor(qualificationType) : ks4QualificationFamily(qualificationType);
 }

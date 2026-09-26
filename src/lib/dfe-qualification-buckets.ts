@@ -118,13 +118,14 @@ export function bucketFor(qualificationType: string): Ks5Bucket {
 }
 
 // The bucket a qualification is SHOWN under in Teacher view's subject picker and family
-// tiles: bucketFor() with one difference, AS level goes to "other" (beside EPQ, Core Maths,
-// Pre-U) instead of "alevel", so a school running AS and A level in one subject does not
-// list that subject twice under A-level. Display only. bucketFor() keeps AS in "alevel"
-// because DfE's own published A-level points blend AS entries in at half size, and every
-// points figure, rollup match and Academic Results pill must keep agreeing with that.
+// tiles: bucketFor() with one difference, AS level and Advanced Extension Award go to
+// "other" (beside EPQ, Core Maths, Pre-U) instead of "alevel", so a school running AS or
+// AEA beside A level in one subject does not list that subject twice under A-level.
+// Display only. bucketFor() keeps both in "alevel" because DfE's own published A-level
+// points blend AS entries in at half size, and every points figure, rollup match and
+// Academic Results pill must keep agreeing with that.
 export function displayBucketFor(qualificationType: string): Ks5Bucket {
-  if ((qualificationType || "").startsWith("GCE AS level")) return "other";
+  if (isAsLevelOrAea(qualificationType)) return "other";
   return bucketFor(qualificationType);
 }
 
