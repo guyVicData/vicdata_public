@@ -12,7 +12,7 @@
 // shape as KS4/KS5.
 
 import { createServerAnonSupabaseClient } from "./supabase";
-import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicSubjectHeadline, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
+import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicSubjectHeadline, lookupAcademicSubjectQualificationHeadline, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
 import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "./roll-data";
 import { trendBadge } from "./data-view-cards";
@@ -1242,6 +1242,9 @@ export type AcademicSubjectHeadlineEntry = {
   // Which comparability bucket these points come from, so a subject row can take the
   // points belonging to its OWN qualification rather than the whole-school 'all' row.
   bucket?: string;
+  // Set only on the exact-qualification rows (fetchSubjectQualificationHeadlineForSchools):
+  // the one qualification these figures belong to, e.g. "GCE AS level".
+  qualificationType?: string;
 };
 
 // Subject deep-dive round: the real, multi-period (2020/21 on) source for
@@ -1276,6 +1279,40 @@ export async function fetchSubjectHeadlineForSchools(
       avgPointScore: r.avg_point_score,
       pointsCoveragePercent: r.points_coverage_percent,
       bucket: r.bucket,
+    };
+    const list = byUrn.get(r.entity_id);
+    if (list) list.push(entry);
+    else byUrn.set(r.entity_id, [entry]);
+  }
+  return byUrn;
+}
+
+// Post-16 Part C: the exact-qualification sibling of fetchSubjectHeadlineForSchools, from
+// academic_subject_qualification_headline_lookup -- one row per (subject, qualification
+// type), so AS and A level, or IB Higher and Standard level, in one subject each carry
+// their own figure instead of their bucket's blend. Same batching and lineage handling.
+// The share fields are shares of the school's WHOLE KS5 entries (not of a bucket), so do
+// not mix them with the bucket rows' shares.
+export async function fetchSubjectQualificationHeadlineForSchools(
+  urns: string[],
+  stage: KsStage,
+): Promise<Map<string, AcademicSubjectHeadlineEntry[]>> {
+  const byUrn = new Map<string, AcademicSubjectHeadlineEntry[]>();
+  if (stage === "ks2" || urns.length === 0) return byUrn;
+  for (const urn of urns) byUrn.set(urn, []);
+  const rows = await lookupAcademicSubjectQualificationHeadline({ entityIds: urns, ksStage: stage });
+  for (const r of rows) {
+    const entry: AcademicSubjectHeadlineEntry = {
+      subject: r.subject,
+      familyId: r.family_id,
+      familyLabel: r.family_label,
+      period: r.period,
+      entriesTotal: r.entries_total,
+      entriesShareOfSchoolPercent: r.entries_share_of_school_percent,
+      entriesShareOfFamilyPercent: r.entries_share_of_family_percent,
+      avgPointScore: r.avg_point_score,
+      pointsCoveragePercent: r.points_coverage_percent,
+      qualificationType: r.qualification_type,
     };
     const list = byUrn.get(r.entity_id);
     if (list) list.push(entry);

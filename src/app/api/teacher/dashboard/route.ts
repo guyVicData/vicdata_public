@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { lookupAcademicGeography, lookupAcademicSubjectGeography } from "@/lib/vicdata-reference";
+import { lookupAcademicGeography, lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { createClient } from "@supabase/supabase-js";
 import {
   fetchSubjectLevelDataForSchools,
   fetchSubjectHeadlineForSchools,
+  fetchSubjectQualificationHeadlineForSchools,
   fetchAcademicProfiles,
   HEADLINE_AGE,
   HEADLINE_LABEL,
@@ -43,12 +44,18 @@ import {
 //     roll-up of academic_subject_rollup), so a subject is now compared with itself. Only
 //     "GCSE (9-1) Full Course" carries points at KS4, so this is the England GCSE average
 //     for that subject. Keyed by subject name, spelt as the headline rows spell it.
-//   - Post-16: per comparability bucket ("bucket:alevel::aps_per_entry" and so on), from
-//     academic_geography_aggregate -- the same points-per-entry scale as a subject's own
-//     bucket-scoped score. Bucket grain for now; a later round may take it to subject.
+//   - Post-16 (Part C): per SUBJECT and exact QUALIFICATION TYPE, keyed
+//     "{subject}::{qualificationType}" in `qualificationValues`, from
+//     academic_subject_qualification_geography_aggregate -- A-level Maths against England's
+//     A-level Maths, not against every A-level entry. `values` keeps the per-bucket figures
+//     ("bucket:alevel::aps_per_entry" and so on, from academic_geography_aggregate) as the
+//     fallback for a qualification the exact table has no row for: it holds scored
+//     qualifications only, so nothing for VRQ, AEA or Other.
 type EnglandAverage = { key: string; period: number; value: number };
 
-async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "bucket" | "subject"; values: EnglandAverage[] }> {
+async function englandAverages(
+  phase: "ks4" | "ks5",
+): Promise<{ basis: "bucket" | "subject"; values: EnglandAverage[]; qualificationValues?: EnglandAverage[] }> {
   if (phase === "ks5") {
     const rows = await lookupAcademicGeography({ ksStage: "ks5", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], familyId: "whole_school" });
     const values: EnglandAverage[] = [];
@@ -56,7 +63,20 @@ async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "bucket" 
       const m = /^bucket:(.+)::aps_per_entry$/.exec(r.measure);
       if (m && r.avg_value !== null) values.push({ key: m[1], period: r.period, value: r.avg_value });
     }
-    return { basis: "bucket", values };
+    // One unfiltered national call, keyed here. National only, so every real row
+    // (minSchoolCount 1): Persian or Gujarati A level at four schools is still England's
+    // real figure.
+    const exact = await lookupAcademicSubjectQualificationGeography({
+      ksStage: "ks5",
+      measure: "avg_point_score",
+      groupingType: "national",
+      groupingKeys: [NATIONAL_GROUPING_KEY],
+      minSchoolCount: 1,
+    });
+    const qualificationValues = exact
+      .filter((r) => r.avg_value !== null)
+      .map((r) => ({ key: `${r.subject}::${r.qualification_type}`, period: r.period, value: Number(r.avg_value) }));
+    return { basis: "bucket", values, qualificationValues };
   }
   // National only, so no minimum school count beyond 1: see minSchoolCount.
   const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
@@ -151,6 +171,10 @@ export async function GET(request: NextRequest) {
   // Every bucket at KS5, so a subject row can take the points belonging to its own
   // qualification rather than the whole-school 'all' row.
   const headlineByUrn = await fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined);
+  // Post-16 Part C: the school's own figures per exact qualification, which is what each
+  // ticked (subject, qualification) item reads. The bucket rows above still serve the
+  // category lookup and Context's whole-subject group.
+  const qualificationHeadline = phase === "ks5" ? (await fetchSubjectQualificationHeadlineForSchools([urn], phase)).get(urn) ?? [] : [];
   const england = await englandAverages(phase);
 
   return NextResponse.json({
@@ -158,6 +182,7 @@ export async function GET(request: NextRequest) {
     rollAtAge10: null,
     subjectData: byUrn.get(urn) ?? { entries: [], valueAdded: [], gradeDistribution: [] },
     headline: headlineByUrn.get(urn) ?? [],
+    qualificationHeadline,
     neighbours: comparatorSets.nearest ?? [],
     comparatorSets,
     setInfo,

@@ -6,7 +6,8 @@
 // took the same comparison, so the fetch, the three states (not applicable / loading / no
 // data), the table and the chart exist once.
 //
-// Source: /api/teacher/subject-geography (academic_subject_geography_lookup, GCSE only),
+// Source: /api/teacher/subject-geography (academic_subject_geography_lookup at GCSE;
+// academic_subject_qualification_geography_lookup at Post-16, per exact qualification),
 // which returns each area's points-eligible entries and its average point score per year.
 // The years shown are those the area figures exist for (2021/22 on -- DfE published no GCSE
 // points for 2020/21) within the panel's From range, so every row and line covers the same
@@ -23,6 +24,8 @@ import { MultiTrend, YearTable } from "./SeriesViews";
 export type GeographyInput = {
   urn: string;
   subject: string;
+  // Post-16 only: the exact qualification the area figures are for. Omitted at GCSE.
+  qualificationType?: string;
   label: string;
   // Whether the comparison means anything for this subject and measure (the caller's rule).
   applies: boolean;
@@ -32,23 +35,28 @@ export type GeographyInput = {
   notApplicableText: string;
 };
 
-type Loaded = { subject: string; data: GeographyPayload | null } | null;
+// `id` is what was fetched: the subject, plus the qualification at Post-16, where A-level
+// and AS Psychology are two different comparisons.
+type Loaded = { id: string; data: GeographyPayload | null } | null;
+const geographyId = (g: GeographyInput) => `${g.subject}::${g.qualificationType ?? ""}`;
 
-// Fetched once per subject, only when the comparison applies.
+// Fetched once per subject (and qualification), only when the comparison applies.
 export function useSubjectGeography(geography: GeographyInput | undefined): Loaded {
   const [geo, setGeo] = useState<Loaded>(null);
   const wanted = !!geography?.applies;
   const urn = geography?.urn;
   const subject = geography?.subject;
+  const qualificationType = geography?.qualificationType;
+  const id = geography ? geographyId(geography) : null;
   useEffect(() => {
-    if (!wanted || !urn || !subject || geo?.subject === subject) return;
+    if (!wanted || !urn || !subject || !id || geo?.id === id) return;
     let cancelled = false;
     (async () => {
-      const data = await fetchSubjectGeography(createBrowserSupabaseClient(), urn, subject);
-      if (!cancelled) setGeo({ subject, data });
+      const data = await fetchSubjectGeography(createBrowserSupabaseClient(), urn, subject, qualificationType);
+      if (!cancelled) setGeo({ id, data });
     })();
     return () => { cancelled = true; };
-  }, [wanted, urn, subject, geo?.subject]);
+  }, [wanted, urn, subject, qualificationType, id, geo?.id]);
   return geo;
 }
 
@@ -88,7 +96,7 @@ export function GeographyView({
   );
 
   if (!geography.applies) return note(geography.notApplicableText);
-  if (!geo || geo.subject !== geography.subject) return note("Loading LA, regional and national figures…");
+  if (!geo || geo.id !== geographyId(geography)) return note("Loading LA, regional and national figures…");
 
   // Chart colours: the categorical palette (paletteInOrder, which skips hues near the phase
   // accent), the school in FOCUS_COLOUR. The table keeps one grey: its rows are labelled.
@@ -123,7 +131,7 @@ export function GeographyView({
     return (
       <>
         {heading}
-        <CentredOnTarget watch={`geo:${geography.subject}:${metric}:${shown.join(",")}`}>
+        <CentredOnTarget watch={`geo:${geographyId(geography)}:${metric}:${shown.join(",")}`}>
           <YearTable
             data={{ periods: shown, series: series.map((x) => (x.key === "own" ? x : { ...x, colour: "var(--muted3)" })) }}
             measure={measure}

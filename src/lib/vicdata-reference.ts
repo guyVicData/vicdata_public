@@ -303,6 +303,41 @@ async function lookupAcademicSubjectHeadlineChunk(
   return rows;
 }
 
+// The chunked, sequential, per-chunk-tolerant call shared by the two subject headline
+// lookups -- see HEADLINE_ENTITY_CHUNK above for why each part is the way it is.
+async function inEntityChunks<T>(
+  rpc: string,
+  entityIds: string[] | null,
+  context: { ksStage?: KsStage; familyId?: string },
+  fetchChunk: (chunk: string[] | null) => Promise<T[]>,
+): Promise<T[]> {
+  // Unscoped (every entity), or a single chunk's worth: one call, and a failure
+  // still throws, exactly as before this fix -- there is nothing to isolate it from.
+  if (!entityIds || entityIds.length <= HEADLINE_ENTITY_CHUNK) return fetchChunk(entityIds);
+  const rows: T[] = [];
+  const failed: string[] = [];
+  for (let i = 0; i < entityIds.length; i += HEADLINE_ENTITY_CHUNK) {
+    const chunk = entityIds.slice(i, i + HEADLINE_ENTITY_CHUNK);
+    try {
+      rows.push(...(await fetchChunk(chunk)));
+    } catch (err) {
+      failed.push(...chunk);
+      console.error(`[${rpc}] chunk failed, continuing with the rest`, {
+        ksStage: context.ksStage,
+        familyId: context.familyId,
+        entityIds: chunk,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+  // Every chunk failed: that is not partial data, it is no data, and the caller
+  // should see an error rather than an empty result it would render as "nothing yet".
+  if (rows.length === 0 && failed.length === entityIds.length) {
+    throw new Error(`${rpc} failed for all ${failed.length} entities`);
+  }
+  return rows;
+}
+
 export async function lookupAcademicSubjectHeadline(params: {
   entityIds?: string[];
   ksStage?: KsStage;
@@ -312,35 +347,56 @@ export async function lookupAcademicSubjectHeadline(params: {
   bucket?: string | null;
   signal?: AbortSignal;
 }): Promise<AcademicSubjectHeadlineRow[]> {
-  const entityIds = params.entityIds ?? null;
-  // Unscoped (every entity), or a single chunk's worth: one call, and a failure
-  // still throws, exactly as before this fix -- there is nothing to isolate it from.
-  if (!entityIds || entityIds.length <= HEADLINE_ENTITY_CHUNK) {
-    return lookupAcademicSubjectHeadlineChunk(entityIds, params);
-  }
-  // Sequential, and tolerant per chunk -- see HEADLINE_ENTITY_CHUNK above.
-  const rows: AcademicSubjectHeadlineRow[] = [];
-  const failed: string[] = [];
-  for (let i = 0; i < entityIds.length; i += HEADLINE_ENTITY_CHUNK) {
-    const chunk = entityIds.slice(i, i + HEADLINE_ENTITY_CHUNK);
-    try {
-      rows.push(...(await lookupAcademicSubjectHeadlineChunk(chunk, params)));
-    } catch (err) {
-      failed.push(...chunk);
-      console.error("[lookupAcademicSubjectHeadline] chunk failed, continuing with the rest", {
-        ksStage: params.ksStage,
-        familyId: params.familyId,
-        entityIds: chunk,
-        error: err instanceof Error ? err.message : String(err),
-      });
+  return inEntityChunks("academic_subject_headline_lookup", params.entityIds ?? null, params, (chunk) =>
+    lookupAcademicSubjectHeadlineChunk(chunk, params),
+  );
+}
+
+// Post-16 Part C: the school's own figure per subject AND exact qualification type, from
+// vicdata's academic_subject_qualification_headline_lookup (20260926130000). The bucket
+// headline above sums every qualification in a bucket into one row per subject -- AS and
+// A level in "alevel", IB Higher and Standard level in "ib", every BTEC size in
+// "btec_ocr" -- so two ticked qualifications in one subject read the same blended figure.
+// These rows sum back exactly to the bucket rows. Same lineage fallback and the same
+// chunking as the bucket lookup. Its entries_share_of_school_percent is a share of the
+// school's WHOLE KS5 entries, not of the bucket: not interchangeable with the bucket
+// rows' share fields.
+export type AcademicSubjectQualificationHeadlineRow = Omit<AcademicSubjectHeadlineRow, "bucket"> & {
+  qualification_type: string;
+};
+
+export async function lookupAcademicSubjectQualificationHeadline(params: {
+  entityIds?: string[];
+  ksStage?: KsStage;
+  familyId?: string;
+  periodMin?: number;
+  periodMax?: number;
+  qualificationType?: string;
+  signal?: AbortSignal;
+}): Promise<AcademicSubjectQualificationHeadlineRow[]> {
+  const rpc = "academic_subject_qualification_headline_lookup";
+  return inEntityChunks(rpc, params.entityIds ?? null, params, async (chunk) => {
+    const rows: AcademicSubjectQualificationHeadlineRow[] = [];
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const batch = (await fetchPage(
+        rpc,
+        {
+          p_entity_ids: chunk,
+          p_ks_stage: params.ksStage ?? null,
+          p_family_id: params.familyId ?? null,
+          p_period_min: params.periodMin ?? null,
+          p_period_max: params.periodMax ?? null,
+          p_limit: PAGE_SIZE,
+          p_offset: page * PAGE_SIZE,
+          p_qualification_type: params.qualificationType ?? null,
+        },
+        params.signal,
+      )) as AcademicSubjectQualificationHeadlineRow[];
+      rows.push(...batch);
+      if (batch.length < PAGE_SIZE) break;
     }
-  }
-  // Every chunk failed: that is not partial data, it is no data, and the caller
-  // should see an error rather than an empty result it would render as "nothing yet".
-  if (rows.length === 0 && failed.length === entityIds.length) {
-    throw new Error(`academic_subject_headline_lookup failed for all ${failed.length} entities`);
-  }
-  return rows;
+    return rows;
+  });
 }
 
 // Subject area round, 2026-09-14: exposes subject_family_map itself (raw_subject ->
@@ -474,6 +530,53 @@ export async function lookupAcademicSubjectGeography(params: {
       },
       params.signal,
     )) as AcademicSubjectGeographyRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
+// Post-16 Part C: LA/region/national average point score per subject AND exact
+// qualification type (vicdata 20260926121000, threshold 20260926140000), from
+// academic_subject_qualification_geography_aggregate. KS5 only so far; measure
+// avg_point_score only. entries_total is points-eligible entries, as in the KS4 sibling.
+// Only scored qualifications have rows: nothing for VRQ, AEA, EPQ or the rest of Other.
+export type AcademicSubjectQualificationGeographyRow = AcademicSubjectGeographyRow & { qualification_type: string };
+
+export async function lookupAcademicSubjectQualificationGeography(params: {
+  ksStage: KsStage;
+  measure?: string;
+  groupingType?: "la" | "region" | "national";
+  groupingKeys?: string[];
+  subject?: string;
+  qualificationType?: string;
+  familyId?: string;
+  periodMin?: number;
+  periodMax?: number;
+  // As lookupAcademicSubjectGeography: omitted means the backend's 5; national callers pass 1.
+  minSchoolCount?: number;
+  signal?: AbortSignal;
+}): Promise<AcademicSubjectQualificationGeographyRow[]> {
+  const rows: AcademicSubjectQualificationGeographyRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage(
+      "academic_subject_qualification_geography_lookup",
+      {
+        p_ks_stage: params.ksStage,
+        p_measure: params.measure ?? null,
+        p_grouping_type: params.groupingType ?? null,
+        p_grouping_keys: params.groupingKeys ?? null,
+        p_subject: params.subject ?? null,
+        p_qualification_type: params.qualificationType ?? null,
+        p_family_id: params.familyId ?? null,
+        p_period_min: params.periodMin ?? null,
+        p_period_max: params.periodMax ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+        p_min_school_count: params.minSchoolCount ?? null,
+      },
+      params.signal,
+    )) as AcademicSubjectQualificationGeographyRow[];
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
   }

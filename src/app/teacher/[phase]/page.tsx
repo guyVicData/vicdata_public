@@ -38,7 +38,7 @@ import { COLUMN_TITLE, defaultBoxTitle } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
 import { type RankedSchool, type RankingsSetId } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
-import { bucketFor, isAsLevelOrAea, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
+import { isAsLevelOrAea } from "@/lib/dfe-qualification-buckets";
 import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
 
 // §3: the picker works at real taught-qualification level, not subject-family level --
@@ -94,6 +94,11 @@ export default function TeacherPhaseDashboard() {
   // already in this route's payload and simply never read -- see subject-grades.ts.
   const [gradeRows, setGradeRows] = useState<SubjectGradeCount[]>([]);
   const [headline, setHeadline] = useState<AcademicSubjectHeadlineEntry[]>([]);
+  // Post-16 Part C: this school's own figures per (subject, EXACT qualification type), so
+  // a ticked AS and A-level Psychology -- or IB Higher and Standard level Biology -- each
+  // read their own numbers rather than their bucket's blend. Empty at GCSE. `headline`
+  // (bucket grain) still serves the category lookup and Context's whole-subject group.
+  const [qualificationHeadline, setQualificationHeadline] = useState<AcademicSubjectHeadlineEntry[]>([]);
   const [rollAtAge10, setRollAtAge10] = useState<number | null>(null);
   const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
   const [headlineLabel, setHeadlineLabel] = useState<string>("");
@@ -110,9 +115,14 @@ export default function TeacherPhaseDashboard() {
   const [savedSets, setSavedSets] = useState<SavedSetsPayload | null>(null);
   const [chooser, setChooser] = useState<{ editing: SavedComparatorSet | null; startingFrom: { label: string; urns: string[] } | null } | null>(null);
   const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
-  // The Results card's anchor -- see englandAverages in the dashboard route for why the
-  // basis is the qualification bucket at Post-16 and the subject itself at GCSE.
-  const [englandAvg, setEnglandAvg] = useState<{ basis: "bucket" | "subject"; values: { key: string; period: number; value: number }[] } | null>(null);
+  // The Results card's anchor -- see englandAverages in the dashboard route: the subject
+  // itself at GCSE; at Post-16 the subject in its exact qualification
+  // (`qualificationValues`), with the bucket figure (`values`) as the fallback.
+  const [englandAvg, setEnglandAvg] = useState<{
+    basis: "bucket" | "subject";
+    values: { key: string; period: number; value: number }[];
+    qualificationValues?: { key: string; period: number; value: number }[];
+  } | null>(null);
   const [ticked, setTicked] = useState<string[]>([]);
   const [columns, setColumns] = useState<ColumnState>({});
   const [theme, setTheme] = useTeacherTheme();
@@ -183,6 +193,7 @@ export default function TeacherPhaseDashboard() {
         setEntries(body.subjectData?.entries ?? []);
         setGradeRows(body.subjectData?.gradeDistribution ?? []);
         setHeadline(body.headline ?? []);
+        setQualificationHeadline(body.qualificationHeadline ?? []);
         loadedHeadline = body.headline ?? [];
         setRollAtAge10(body.rollAtAge10 ?? null);
         setNeighbours(body.neighbours ?? []);
@@ -362,17 +373,59 @@ export default function TeacherPhaseDashboard() {
   // POINTS_BEARING_QUALIFICATION): headline rows are keyed by subject alone there, so
   // without this gate an OCR or BTEC row for the same subject showed the GCSE score as
   // its own.
+  //
+  // Post-16 Part C: an item's own rows, every period. At Post-16 they are the rows for its
+  // exact qualification -- never the bucket's, which blends AS into A level, IB Standard
+  // into Higher level and every BTEC size together. The exact rows sum back to the bucket
+  // rows, so nothing the bucket had is lost: where a bucket row has no exact row for this
+  // item, that row belonged to a sibling qualification. At GCSE, the subject's rows.
+  const ownRowsFor = useCallback(
+    (item: SubjectItem): AcademicSubjectHeadlineEntry[] =>
+      phase === "ks5"
+        ? qualificationHeadline.filter((h) => h.subject === item.subject && h.qualificationType === item.qualificationType)
+        : headline.filter((h) => h.subject === item.subject),
+    [headline, qualificationHeadline, phase],
+  );
+
   const resultsFor = useCallback(
     (item: SubjectItem): { value: number; period: number } | null => {
       if (phase === "ks4" && item.qualificationType !== POINTS_BEARING_QUALIFICATION.ks4) return null;
-      const bucket: Ks5Bucket | null = phase === "ks5" ? bucketFor(item.qualificationType) : null;
-      const rows = headline
-        .filter((h) => h.subject === item.subject && (bucket === null || (h.bucket ?? "all") === bucket) && h.avgPointScore !== null)
+      const rows = ownRowsFor(item)
+        .filter((h) => h.avgPointScore !== null)
         .sort((a, b) => a.period - b.period);
       const last = rows[rows.length - 1];
       return last ? { value: last.avgPointScore as number, period: last.period } : null;
     },
-    [headline, phase],
+    [ownRowsFor, phase],
+  );
+
+  // The England figures keyed for lookup: "{key}@{period}", where key is the subject at
+  // GCSE and the bucket at Post-16, and "{subject}::{qualificationType}@{period}" for the
+  // Post-16 exact-qualification figures.
+  const englandIndex = useMemo(
+    () => ({
+      byKey: new Map((englandAvg?.values ?? []).map((v) => [`${v.key}@${v.period}`, v.value])),
+      byQualification: new Map((englandAvg?.qualificationValues ?? []).map((v) => [`${v.key}@${v.period}`, v.value])),
+    }),
+    [englandAvg],
+  );
+
+  // One item's England figure for one year. Post-16 Part C: the same subject in the same
+  // qualification first. With `fallback`, a qualification the exact table has no row for
+  // reads its bucket's figure instead, as every Post-16 item did before this round. Only
+  // callers that showed a benchmark before pass it; category peers never did, and a
+  // bucket figure beside a peer (a VRQ row marked against BTEC's England average) would be
+  // new and misleading.
+  const englandValue = useCallback(
+    (item: SubjectItem, period: number, fallback: boolean): number | null => {
+      if (!englandAvg || !phase || phase === "ks2") return null;
+      // GCSE rows are keyed by subject, spelt as the headline rows spell it.
+      if (englandAvg.basis === "subject") return englandIndex.byKey.get(`${item.subject}@${period}`) ?? null;
+      const exact = englandIndex.byQualification.get(`${item.subject}::${item.qualificationType}@${period}`);
+      if (exact !== undefined) return exact;
+      return fallback ? englandIndex.byKey.get(`${comparabilityKey(phase, item.qualificationType)}@${period}`) ?? null : null;
+    },
+    [englandAvg, englandIndex, phase],
   );
 
   // §6/§14: never a bare number. The anchor is the England average (it used to be this
@@ -380,13 +433,8 @@ export default function TeacherPhaseDashboard() {
   // neighbours down the corridor, not with the country). Same year as the score or no
   // anchor at all: a delta against a different year is a difference nobody measured.
   const englandFor = useCallback(
-    (item: SubjectItem, score: { period: number }): number | null => {
-      if (!englandAvg || !phase || phase === "ks2") return null;
-      // GCSE rows are keyed by subject, spelt as the headline rows spell it.
-      const key = englandAvg.basis === "bucket" ? comparabilityKey(phase, item.qualificationType) : item.subject;
-      return englandAvg.values.find((v) => v.key === key && v.period === score.period)?.value ?? null;
-    },
-    [englandAvg, phase],
+    (item: SubjectItem, score: { period: number }): number | null => englandValue(item, score.period, true),
+    [englandValue],
   );
 
   if (loading) return <main className="mx-auto max-w-4xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
@@ -431,13 +479,9 @@ export default function TeacherPhaseDashboard() {
   // disappearing between years reads as a results swing that never happened.
   const movedResults = (() => {
     if (tickedItems.length === 0) return null;
-    const names = new Set(tickedItems.map((i) => i.subject));
-    const buckets = new Set<string>(
-      phase === "ks5" ? tickedItems.map((i) => (bucketFor(i.qualificationType) ?? "other") as string) : [],
-    );
-    const rows = headline.filter(
-      (h) => names.has(h.subject) && h.avgPointScore !== null && (phase !== "ks5" || buckets.has(h.bucket ?? "all")),
-    );
+    // Each ticked item's own rows, once each: at GCSE two items in one subject share its
+    // single row, so the set keeps it from counting twice.
+    const rows = Array.from(new Set(tickedItems.flatMap(ownRowsFor))).filter((h) => h.avgPointScore !== null);
     const periods = Array.from(new Set(rows.map((r) => r.period))).sort((a, b) => a - b);
     if (periods.length < 2) return null;
     const [prevP, lastP] = [periods[periods.length - 2], periods[periods.length - 1]];
@@ -774,17 +818,15 @@ export default function TeacherPhaseDashboard() {
   const colourOf = (i: SubjectItem) => groupColour.get(comparabilityKey(phase, i.qualificationType)) ?? "var(--muted)";
   const latestPeriod = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
 
+  // The comparability bucket, which the short labels use to tell same-named subjects apart.
+  const bucketOf = (i: SubjectItem): string | null => (phase === "ks5" ? comparabilityKey(phase, i.qualificationType) : null);
+
   // Round 6: the per-subject series the Results and Context panels plot. One value per
-  // ticked subject per published year, read from the SAME `headline` rows the card
+  // ticked subject per published year, read from the SAME own rows (ownRowsFor) the card
   // already used for its latest-year figure -- grouped by period rather than collapsed to
   // the last one. Nothing is derived a second way, so the panels and the old headline
   // figure can never disagree.
-  const bucketOf = (i: SubjectItem): string | null => (phase === "ks5" ? comparabilityKey(phase, i.qualificationType) : null);
-
-  const headlineRowsFor = (i: SubjectItem, period: number) => {
-    const bucket = bucketOf(i);
-    return headline.filter((h) => h.subject === i.subject && (bucket === null || (h.bucket ?? "all") === bucket) && h.period === period);
-  };
+  const headlineRowsFor = (i: SubjectItem, period: number) => ownRowsFor(i).filter((h) => h.period === period);
 
   // At KS4 only "GCSE (9-1) Full Course" carries points, and headline rows there are keyed
   // by subject alone -- so without this gate an OCR or BTEC row for the same subject shows
@@ -817,11 +859,9 @@ export default function TeacherPhaseDashboard() {
 
   // The England anchor for the same subject and the same year (englandFor's own rule,
   // applied per period rather than only to the latest one).
-  const englandAt = (i: SubjectItem, period: number): number | null => {
-    if (!englandAvg || phase === "ks2") return null;
-    const key = englandAvg.basis === "bucket" ? comparabilityKey(phase, i.qualificationType) : i.subject;
-    return englandAvg.values.find((v) => v.key === key && v.period === period)?.value ?? null;
-  };
+  // Post-16 Part C: the bucket fallback only for the focused item, the one item that had
+  // a Post-16 benchmark before -- see englandValue.
+  const englandAt = (i: SubjectItem, period: number): number | null => englandValue(i, period, i.key === focusKey);
 
   // Round 8 §3: the one Candidates/Results toggle, driving all three columns. Persisted
   // like every other "which data" choice (round 6's rule: coming back to a card showing a
@@ -887,13 +927,15 @@ export default function TeacherPhaseDashboard() {
   const ENGLAND_COLOUR = "#60a5fa";
   const categoryColour = (i: SubjectItem) => (i.key === focusKey ? colourOf(i) : PEER_COLOUR);
 
-  // Trend/% change redesign step 1: Candidates reads entries from `headline` (entriesAt),
-  // whose grain is one row per SUBJECT at GCSE -- entries already summed across its
-  // qualifications -- and per (subject, bucket) at Post-16. Two items that map to the same
-  // row (GCSE and BTEC Art) would otherwise both show Art's whole total, so the category
-  // is taken once per headline row here, focused subject first.
+  // Trend/% change redesign step 1: Candidates reads entries from the item's own rows
+  // (entriesAt), whose grain is one row per SUBJECT at GCSE -- entries already summed
+  // across its qualifications. Two GCSE items in one subject (GCSE and BTEC Art) would
+  // otherwise both show Art's whole total, so the category is taken once per row here,
+  // focused subject first. Post-16 Part C: there every item has its own exact-qualification
+  // row, so nothing is merged -- IB Higher and Standard level Biology are two real bars.
   const candidateItems = categoryItems.filter(
-    (i, idx) => categoryItems.findIndex((o) => o.subject === i.subject && bucketOf(o) === bucketOf(i)) === idx,
+    (i, idx) =>
+      phase === "ks5" || categoryItems.findIndex((o) => o.subject === i.subject) === idx,
   );
   const candidateShort = shortLabelsFor(candidateItems);
 
@@ -916,11 +958,10 @@ export default function TeacherPhaseDashboard() {
   // and its table's third column falls back to change, rather than a delta against a
   // number nobody published.
   //
-  // S7: at GCSE every member carries its own England marker (the per-subject national
-  // figure exists for all of them). At Post-16 the national figure is only per
-  // qualification BUCKET, not per subject, so only the focused subject keeps the marker it
-  // always had and the peers carry none -- the per-subject KS5 backend is a separate,
-  // already-logged round.
+  // S7: every member carries its own England marker. Post-16 Part C: at Post-16 too, now
+  // that England's figure exists per subject and exact qualification -- A-level Chemistry
+  // against England's A-level Chemistry. A qualification with no published points (VRQ,
+  // AEA, EPQ and the rest of Other) has no row, so its marker is simply absent.
   const categoryShort = shortLabelsFor(categoryItems);
   const resultsSeries: SubjectSeries[] = categoryItems
     .map((i) => ({
@@ -929,7 +970,7 @@ export default function TeacherPhaseDashboard() {
       shortLabel: categoryShort.get(i.key) ?? i.subject,
       colour: categoryColour(i),
       values: resultsPeriods.map((p) => valueForResults(i, p)),
-      benchmark: usingThreshold || (phase !== "ks4" && i.key !== focusKey) ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
+      benchmark: usingThreshold ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
     }))
     // A peer with no figure at all on this measure (at GCSE, a BTEC or Cambridge National
     // on points) says nothing about the category, so it is left out rather than drawn
@@ -937,15 +978,16 @@ export default function TeacherPhaseDashboard() {
     .filter((r) => r.key === focusKey || r.values.some((v) => v !== null));
 
   // S6: the category's own per-subject average, self-inclusive (the convention Context's
-  // group and the comparator-set averages already use). S7, GCSE and points only: what
-  // England scores across the SAME subjects -- the mean of each member's national figure --
-  // so "how this category does here" sits beside "how it does nationally".
+  // group and the comparator-set averages already use). S7, points only (both phases since
+  // Post-16 Part C): what England scores across the SAME subjects -- the mean of each
+  // member's national figure -- so "how this category does here" sits beside "how it does
+  // nationally". The threshold measure still has no England figure at either phase.
   const resultsGroups: { label: string; values: (number | null)[]; colour?: string }[] =
     resultsSeries.length < 2
       ? []
       : [
           { label: `${focusFamilyLabel} average`, values: resultsPeriods.map((_, pi) => meanOf(resultsSeries.map((r) => r.values[pi]))) },
-          ...(phase === "ks4" && !usingThreshold
+          ...(!usingThreshold
             ? [{
                 label: `England ${focusFamilyLabel} average`,
                 colour: ENGLAND_COLOUR,
@@ -1404,21 +1446,26 @@ export default function TeacherPhaseDashboard() {
               categoryLabel={focusFamilyLabel ?? undefined}
               theme={theme}
               // % change: the focused subject's average point score against its LA, region
-              // and England (the shared GeographyView). GCSE only (the source is KS4), on
-              // average point score only -- no area grade-4+ rate is published -- and only
-              // for the points-bearing GCSE qualification. The school's row is its own
-              // average point score, from the same series the other panels plot.
+              // and England (the shared GeographyView), on average point score only -- no
+              // area grade-4+ or A*-E rate is published. GCSE: only for the points-bearing
+              // GCSE qualification. Post-16 (Part C): the subject in its exact
+              // qualification; one with no published points (VRQ, AEA, EPQ) comes back with
+              // no area rows and says so. The school's row is its own average point score,
+              // from the same series the other panels plot.
               geography={
-                phase === "ks4" && focusItem && schoolUrn
+                focusItem && schoolUrn
                   ? {
                       urn: schoolUrn,
                       subject: focusItem.subject,
-                      label: focusItem.subject,
-                      applies: resultsMeasure.id === "points" && focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4,
+                      qualificationType: phase === "ks5" ? focusItem.qualificationType : undefined,
+                      label: phase === "ks5" ? focusItem.label : focusItem.subject,
+                      applies:
+                        resultsMeasure.id === "points" &&
+                        (phase === "ks5" || focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4),
                       own: resultsSeries.find((r) => r.key === focusItem.key)?.values ?? [],
                       notApplicableText:
                         resultsMeasure.id !== "points"
-                          ? `LA, regional and national figures are published for average point score only, not ${resultsMeasure.label.toLowerCase()}. Switch Results to average point score to compare ${focusItem.subject} with the wider system.`
+                          ? `LA, regional and national figures are published for average point score only, not ${resultsMeasure.label.toLowerCase()}. Switch Results to average point score to compare ${phase === "ks5" ? focusItem.label : focusItem.subject} with the wider system.`
                           : `LA, regional and national figures cover GCSE (full course) average point scores only, and this school's ${focusItem.subject} entries are in a qualification outside that.`,
                     }
                   : undefined
@@ -1442,7 +1489,7 @@ export default function TeacherPhaseDashboard() {
                   ? undefined
                   : englandAvg?.basis === "subject"
                     ? "the England GCSE average for the subject"
-                    : "the England average for the same qualification"
+                    : "the England average for the same subject and qualification"
               }
               note={
                 usingThreshold
@@ -1482,18 +1529,20 @@ export default function TeacherPhaseDashboard() {
               groupLabel={`${focusFamilyLabel} average`}
               categoryLabel={focusFamilyLabel ?? undefined}
               // Live review Part 5: the % Change table compares the focused subject with its
-              // LA, region and England. GCSE only (the geography source is KS4), and only
-              // where the focused item is the points-bearing qualification -- the area
-              // figures count GCSE points-eligible entries, so a non-GCSE Dance or an FSMQ
-              // would be set against a different thing. The school's own row is its
-              // points-eligible entries (entries x points coverage), for the same reason.
+              // LA, region and England. At GCSE only where the focused item is the
+              // points-bearing qualification -- the area figures count GCSE points-eligible
+              // entries, so a non-GCSE Dance or an FSMQ would be set against a different
+              // thing. Post-16 (Part C): the subject in its exact qualification, whose area
+              // figures are points-eligible entries of that qualification. Either way the
+              // school's own row is its points-eligible entries (entries x points coverage).
               geography={
-                phase === "ks4" && focusItem && schoolUrn
+                focusItem && schoolUrn
                   ? {
                       urn: schoolUrn,
                       subject: focusItem.subject,
-                      label: focusItem.subject,
-                      applies: focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4,
+                      qualificationType: phase === "ks5" ? focusItem.qualificationType : undefined,
+                      label: phase === "ks5" ? focusItem.label : focusItem.subject,
+                      applies: phase === "ks5" || focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4,
                       notApplicableText: `LA, regional and national entries figures aren't available for ${focusItem.subject}: they count GCSE (points-eligible) entries only, and this school's ${focusItem.subject} entries are in a qualification outside that.`,
                       own: categoryPeriods.map((p) => {
                         const rows = headlineRowsFor(focusItem, p).filter((h) => h.pointsCoveragePercent !== null);

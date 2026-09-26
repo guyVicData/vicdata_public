@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { lookupAcademicSubjectGeography } from "@/lib/vicdata-reference";
+import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
 import type { GeographyPayload } from "@/lib/teacher-view-geography";
@@ -15,13 +15,25 @@ import type { GeographyPayload } from "@/lib/teacher-view-geography";
 // FSMQ, a vocational qualification) has no real figure here. The caller decides whether
 // the comparison applies; this route just returns what exists. LA and region resolve
 // the way the existing code does: schools.la_name, and resolveTargetRegionNation().
+//
+// Post-16 Part C: with phase=ks5 and a qualificationType, the same three rows come from
+// academic_subject_qualification_geography_lookup instead -- the subject in that EXACT
+// qualification (A-level Psychology, not AS; IB Higher level Biology, not Standard). Its
+// entries_total is points-eligible entries too, so the payload means the same thing at
+// both phases. Only scored qualifications have rows there (nothing for VRQ, AEA or EPQ),
+// which reaches the panel as its ordinary "no figures published" state.
 
 export async function GET(request: NextRequest) {
   const urn = request.nextUrl.searchParams.get("urn");
   const subject = request.nextUrl.searchParams.get("subject");
+  const phase = request.nextUrl.searchParams.get("phase") === "ks5" ? "ks5" : "ks4";
+  const qualificationType = request.nextUrl.searchParams.get("qualificationType");
   const authHeader = request.headers.get("authorization");
   if (!urn || !subject || !authHeader) {
     return NextResponse.json({ error: "urn, subject and Authorization are required" }, { status: 400 });
+  }
+  if (phase === "ks5" && !qualificationType) {
+    return NextResponse.json({ error: "qualificationType is required for Post-16" }, { status: 400 });
   }
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     global: { headers: { Authorization: authHeader } },
@@ -45,7 +57,11 @@ export async function GET(request: NextRequest) {
     if (!key) return null;
     // LA and region keep the backend's minimum of 5 schools; England takes every real row.
     const minSchoolCount = groupingType === "national" ? 1 : undefined;
-    const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType, groupingKeys: [key], subject, minSchoolCount });
+    const query = { measure: "avg_point_score", groupingType, groupingKeys: [key], subject, minSchoolCount };
+    const rows =
+      phase === "ks5"
+        ? await lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", ...query, qualificationType: qualificationType! })
+        : await lookupAcademicSubjectGeography({ ksStage: "ks4", ...query });
     const out = rows
       .map((r) => ({
         period: r.period,
