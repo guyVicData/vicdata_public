@@ -515,7 +515,7 @@ export function ComparisonsPanels({
       ) : (
       <ChangeChart
         bars={[
-          { key: "own", label: "Your school", shortLabel: "You", colour: "var(--fg)", percent: ownPct },
+          { key: "own", label: "Your school", shortLabel: "You", colour: "var(--accent,var(--fg))", percent: ownPct },
           { key: "versus", label: versusLabel, shortLabel: versusSchool ? versusSchool.name.slice(0, 4) + "." : "Avg.", colour: "#57534e", percent: versusPct },
         ]}
         fullscreen={fullscreen}
