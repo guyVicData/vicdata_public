@@ -392,6 +392,23 @@ export function ComparisonsPanels({
   const realPeriods = periodsWithData(full);
   const trendData = sliceFrom(full, trendStart);
   const changeData = sliceFrom(full, changeStart);
+  // The Trend and % Change tables list every school in the set, one row each, over the
+  // same years as the charts (which keep the two series above). The school's own row is
+  // "own", so it is picked out and centred as the charts' line is.
+  const everySchool: PanelData = {
+    periods: full.periods,
+    series: schools.map((s) => {
+      const values = valuesFor(s.urn);
+      return {
+        key: s.isTarget ? "own" : s.urn,
+        label: s.name,
+        colour: s.isTarget ? "var(--accent,var(--fg))" : "var(--muted3)",
+        values: full.periods.map((p) => values[periods.indexOf(p)] ?? null),
+      };
+    }),
+  };
+  const trendTable = sliceFrom(everySchool, trendStart);
+  const changeTable = sliceFrom(everySchool, changeStart);
   const spanLabel = (ps: number[]) => (ps.length ? `${academicYearLabel(ps[0])}–${academicYearLabel(ps[ps.length - 1])}` : "");
 
   // -------------------------------------------------------------------- Trend
@@ -443,8 +460,11 @@ export function ComparisonsPanels({
       seriesLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
       ) : trendView === "table" ? (
-        // Two rows -- the school and the "vs:" choice -- so there is nothing to rank.
-        <YearTable data={trendData} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" showRank={false} />
+        // Every school in the set, ranked on the latest year (sortable), the school's own
+        // row scrolled into view.
+        <CentredOnTarget watch={`trend-table:${trendTable.periods.join(",")}:${trendTable.series.length}`}>
+          <YearTable data={trendTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" />
+        </CentredOnTarget>
       ) : (
         <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} focusKey="own" />
       ),
@@ -489,7 +509,9 @@ export function ComparisonsPanels({
       seriesLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
       ) : changeView === "table" ? (
-        <YearTable data={changeData} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" leadingRank />
+        <CentredOnTarget watch={`change-table:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
+          <YearTable data={changeTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" leadingRank />
+        </CentredOnTarget>
       ) : (
       <ChangeChart
         bars={[
