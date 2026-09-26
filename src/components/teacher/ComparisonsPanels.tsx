@@ -462,6 +462,10 @@ export function ComparisonsPanels({
     return ` — against ${versusLabel.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
   })();
 
+  // Below TREND_LINE_MIN_YEARS real years TrendChart could only draw bars per year, which
+  // is not a trend line: the panel is the table alone until the span supports a line.
+  const hasTrendLine = trendChartKind(trendData) === "line";
+
   const trend: PanelRender = {
     // S11: one uniform title, with the span's start as its own dropdown beside it.
     tag: "Trends",
@@ -479,27 +483,25 @@ export function ComparisonsPanels({
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
       </span>
     ) : undefined,
-    footerLead: (
-      <TrendLineToggle
-        on={showFit}
-        onToggle={() => setShowFit(!showFit)}
-        disabled={trendView === "table" || trendChartKind(trendData) === "bars"}
-      />
-    ),
-    // Column 3 round Part 3: a table beside the chart, as Columns 1 and 2 have.
-    actions: (
+    footerLead: hasTrendLine ? (
+      <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={trendView === "table"} />
+    ) : undefined,
+    // Column 3 round Part 3: a table beside the chart, as Columns 1 and 2 have -- only once
+    // there is a line to show; before that the table is the one view, so no toggle.
+    actions: hasTrendLine ? (
       <>
         <IconButton label="Chart" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
         <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
       </>
-    ),
+    ) : undefined,
 
     body: (fullscreen) =>
       seriesLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
-      ) : trendView === "table" ? (
+      ) : trendView === "table" || !hasTrendLine ? (
         // Every school in the set, ranked on the latest year (sortable), the school's own
-        // row scrolled into view.
+        // row scrolled into view. Also the only view while the span is too short for a
+        // line, whatever trendView was left on.
         <CentredOnTarget watch={`trend-table:${trendTable.periods.join(",")}:${trendTable.series.length}`}>
           <YearTable data={trendTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" />
         </CentredOnTarget>
