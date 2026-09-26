@@ -350,7 +350,15 @@ export function SubjectPanels({
                 rows={tableRows}
                 sort={sort}
                 onSort={(key) => setSort(nextSort(sort, key))}
-                columns={{ name: "Subject", value: "Result", delta: benchmarkLabel ? `vs ${benchmarkLabel}` : "vs last year" }}
+                // Micro fix Part 1: "Entries" for a candidate count; and in Context the third
+                // column is each subject against the comparison group's average, so it says
+                // "vs average" whichever set is chosen -- "vs All subjects" read as something
+                // else and crowded the narrow header. Results keeps "vs National".
+                columns={{
+                  name: "Subject",
+                  value: measure.id === "entries" ? "Entries" : "Result",
+                  delta: !benchmarkLabel ? "vs last year" : redesigned ? "vs average" : `vs ${benchmarkLabel}`,
+                }}
                 fullscreen={fullscreen}
               />
             </CentredOnTarget>
