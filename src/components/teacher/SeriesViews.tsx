@@ -4,7 +4,7 @@
 // chart style options"): the views that draw every subject -- or every comparator school
 // -- individually, shared by Column 1 Candidates, Context and Comparisons.
 //
-//   MultiTrend  -- Trend's chart. Option B (a list of paired bars, no x-axis) below
+//   MultiTrend  -- Trend's chart. Option B (slope rows on one shared scale) below
 //                  TREND_LINE_MIN_YEARS real years; Option D2 (one line each, indexed to
 //                  its own first year = 100 for headcounts) from there; Option K (focus +
 //                  top movers as lines, the rest one min-max band) when the list is long.
@@ -105,42 +105,74 @@ export function MultiTrend({
   );
 }
 
-// Option B: one row per series, one short track per year (the latest solid, earlier years
-// fainter), and the change first -> last in the number column. No x-axis, so more
+// Option B, as slope rows: one row per series on one shared horizontal scale, a dot per
+// year at its value (the latest solid, earlier years hollow and fainter), joined in order
+// by a line, and the change first -> last in the number column. No time axis, so more
 // subjects just means a taller list -- the pattern Column 2/3's Current views already use.
+// The scale is the measure's own bar scale where it has one (100% for rates), else the
+// largest figure shown, as Current's bars are.
 function TrendList({ data, measure, focusKey }: { data: PanelData; measure: Measure; focusKey: string | null }) {
   const all = data.series.flatMap((s) => s.values).filter((v): v is number => v !== null);
   if (data.periods.length === 0 || all.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
   }
-  const max = Math.max(...all) || 1;
+  const max = measure.barScaleMax ?? (Math.max(...all) || 1);
+  const at = (v: number) => `${Math.min(100, Math.max(0, (v / max) * 100))}%`;
   const n = data.periods.length;
   const opacity = (i: number) => (i === n - 1 ? 1 : 0.3 + (0.35 * i) / Math.max(1, n - 1));
+  const cols = "grid grid-cols-[5.5rem_1fr_3.25rem] items-center gap-2";
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-0.5">
       {data.series.map((s) => {
         const c = changeOver(s.values);
         const dir = directionOf(c?.delta ?? null);
         const focus = s.key === focusKey;
+        const points = s.values.flatMap((v, i) => (v === null ? [] : [{ v, i }]));
+        const lo = points.length ? Math.min(...points.map((p) => p.v)) : null;
+        const hi = points.length ? Math.max(...points.map((p) => p.v)) : null;
         return (
-          <div key={s.key} data-highlight={focus ? "" : undefined} className="grid grid-cols-[5.5rem_1fr_3.25rem] items-center gap-2 text-[11px]">
-            <span className={`truncate ${focus ? "font-semibold text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={s.label}>{s.label}</span>
-            <span className="flex gap-[3px]">
-              {s.values.map((v, i) => (
+          <div
+            key={s.key}
+            data-highlight={focus ? "" : undefined}
+            className={`${cols} rounded-[5px] px-1 py-[3px] text-[11px]`}
+            style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.14)" } : undefined}
+          >
+            <span
+              className={`truncate ${focus ? "font-bold" : "text-[var(--muted2)]"}`}
+              style={focus ? { color: "var(--accent,var(--fg))" } : undefined}
+              title={s.label}
+            >
+              {s.label}
+            </span>
+            <span className="relative h-[18px]">
+              <span className="absolute inset-x-0 top-1/2 h-px bg-[var(--panel-border)]" />
+              {/* The line through every year in order: on one axis, it runs lowest to highest. */}
+              {lo !== null && hi !== null && hi > lo && (
                 <span
-                  key={data.periods[i]}
-                  className="relative h-2 flex-1 overflow-hidden rounded-[3px] bg-[var(--panel-border)]"
-                  title={`${s.label} ${academicYearLabel(data.periods[i])}: ${v === null ? "no figure" : measure.format(v)}`}
-                >
+                  className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-[1px]"
+                  style={{ left: at(lo), width: `calc(${at(hi)} - ${at(lo)})`, background: s.colour, opacity: 0.55 }}
+                />
+              )}
+              {points.map(({ v, i }) => {
+                const latest = i === n - 1;
+                return (
                   <span
-                    className="absolute inset-y-0 left-0 rounded-[3px]"
-                    style={{ width: v === null ? 0 : `${(v / max) * 100}%`, background: s.colour, opacity: opacity(i) }}
+                    key={data.periods[i]}
+                    className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${latest ? "h-2.5 w-2.5" : "h-2 w-2 border-2"}`}
+                    style={{
+                      left: at(v),
+                      opacity: opacity(i),
+                      ...(latest
+                        ? { background: s.colour, boxShadow: "0 0 0 2px var(--box-bg,#fff)" }
+                        : { borderColor: s.colour, background: "var(--box-bg,#fff)" }),
+                    }}
+                    title={`${s.label} ${academicYearLabel(data.periods[i])}: ${measure.format(v)}`}
                   />
-                </span>
-              ))}
+                );
+              })}
             </span>
             <span className="text-right leading-tight tabular-nums">
-              <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{c ? signed(c.delta, measure.format) : "—"}</span>
+              <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{c ? measure.formatDelta(c.delta) : "—"}</span>
               {c?.percent !== null && c?.percent !== undefined && (
                 <span className="block text-[9.5px] text-[var(--muted2)]">{signed(Math.round(c.percent), (v) => `${v}%`)}</span>
               )}
@@ -148,10 +180,23 @@ function TrendList({ data, measure, focusKey }: { data: PanelData; measure: Meas
           </div>
         );
       })}
+      {/* The shared scale, under the dot column. */}
+      <div className={`${cols} px-1 text-[9px] text-[var(--muted3)] tabular-nums`}>
+        <span />
+        <span className="flex justify-between">
+          {[0, 0.5, 1].map((f) => (
+            <span key={f}>{measure.format(max * f)}</span>
+          ))}
+        </span>
+        <span />
+      </div>
       <div className="mt-1 flex flex-wrap gap-3 text-[10px] text-[var(--muted)]">
         {data.periods.map((p, i) => (
           <span key={p} className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-[2px] bg-[var(--muted)]" style={{ opacity: opacity(i) }} />
+            <span
+              className={`inline-block h-2 w-2 rounded-full ${i === n - 1 ? "bg-[var(--muted)]" : "border-2 border-[var(--muted)]"}`}
+              style={{ opacity: opacity(i) }}
+            />
             {academicYearLabel(p)}
           </span>
         ))}
@@ -400,11 +445,11 @@ export function YearTable({
                     <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>
                       {r.change?.percent !== null && r.change?.percent !== undefined ? signed(Math.round(r.change.percent), (v) => `${v}%`) : "—"}
                     </span>
-                    {r.change && <span className="block text-[9.5px] text-[var(--fg)] opacity-85">{signed(r.change.delta, measure.format)}</span>}
+                    {r.change && <span className="block text-[9.5px] text-[var(--fg)] opacity-85">{measure.formatDelta(r.change.delta)}</span>}
                   </>
                 ) : (
                   <>
-                    <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? signed(r.change.delta, measure.format) : "—"}</span>
+                    <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? measure.formatDelta(r.change.delta) : "—"}</span>
                     {r.change?.percent !== null && r.change?.percent !== undefined && (
                       <span className="block text-[9.5px] text-[var(--muted2)]">{signed(Math.round(r.change.percent), (v) => `${v}%`)}</span>
                     )}
