@@ -324,7 +324,10 @@ export function YearTable({
       <thead className="border-b border-[var(--panel-border2)]">
         <tr>
           {head("name", nameHeading, true)}
-          {head("rank", "Rank")}
+          {/* Live review Part 4: Rank only in fullscreen. On the card it pushed the year and
+              Change columns -- the figures that matter there -- out of view. The ranking
+              itself still drives the default sort either way. */}
+          {fullscreen && head("rank", "Rank")}
           {yearIdx.map((i) => head(i, academicYearLabel(periods[i])))}
           {head("change", "Change")}
         </tr>
@@ -346,9 +349,11 @@ export function YearTable({
                   <span className={`truncate ${focus ? "font-semibold text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.s.label}>{r.s.label}</span>
                 </span>
               </td>
-              <td className="whitespace-nowrap px-1.5 text-right text-[var(--muted2)]">
-                {rankOf.has(r.s.key) ? `${rankOf.get(r.s.key)} of ${ranked}` : "—"}
-              </td>
+              {fullscreen && (
+                <td className="whitespace-nowrap px-1.5 text-right text-[var(--muted2)]">
+                  {rankOf.has(r.s.key) ? `${rankOf.get(r.s.key)} of ${ranked}` : "—"}
+                </td>
+              )}
               {yearIdx.map((i) => (
                 <td key={periods[i]} className={`px-1.5 text-right ${focus ? "font-semibold" : "text-[var(--muted2)]"}`}>
                   {r.s.values[i] === null ? "—" : measure.format(r.s.values[i]!)}
@@ -366,7 +371,7 @@ export function YearTable({
         {rest.length > 0 && (
           <tr className="text-[var(--muted2)]">
             <td className="px-1.5 py-[5px] text-left italic">{curate!.restLabel} ({rest.length})</td>
-            <td />
+            {fullscreen && <td />}
             {yearIdx.map((i) => (
               <td key={periods[i]} className="whitespace-nowrap px-1.5 text-right">{range(rest.map((r) => r.s.values[i]))}</td>
             ))}
