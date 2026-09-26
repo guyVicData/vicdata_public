@@ -81,6 +81,7 @@ export function SubjectPanels({
   theme = "dark",
   accentHex = null,
   deltaHeading,
+  rankedTable = false,
   spaciousBars = false,
   categoryLabel,
   geography,
@@ -159,6 +160,9 @@ export function SubjectPanels({
   // Context's "vs average", the same whichever compare-against set is chosen. Absent =
   // "vs {benchmarkLabel}" (Results' "vs National"), or "vs last year" with no benchmark.
   deltaHeading?: string;
+  // Context's Current table: a bare leading rank and no value column (the bars and the
+  // donut already show the figure). Results keeps the value and no rank.
+  rankedTable?: boolean;
   // Results' Current bars: ViewChart's roomier row style (thicker, more spaced, wrapping
   // labels). Context does not pass it and keeps the compact rows.
   spaciousBars?: boolean;
@@ -172,7 +176,8 @@ export function SubjectPanels({
   geography?: GeographyInput;
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
-  const [sort, setSort] = useState<SortState>({ key: "delta", dir: "desc" });
+  // A ranked table opens in rank order (value, largest first), so its numbers read 1, 2, 3.
+  const [sort, setSort] = useState<SortState>(rankedTable ? { key: "value", dir: "desc" } : { key: "delta", dir: "desc" });
   const [yearIdx, setYearIdx] = useState<number | null>(null);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
@@ -381,6 +386,8 @@ export function SubjectPanels({
                   value: measure.id === "entries" ? "Entries" : "Result",
                   delta: !benchmarkLabel ? "vs last year" : deltaHeading ?? `vs ${benchmarkLabel}`,
                 }}
+                leadingRank={rankedTable}
+                showValue={!rankedTable}
                 fullscreen={fullscreen}
               />
             </CentredOnTarget>

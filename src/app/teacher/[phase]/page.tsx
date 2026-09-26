@@ -1534,6 +1534,7 @@ export default function TeacherPhaseDashboard() {
               // the whole school is Option K ("curated").
               changeScope={contextAgainst === "selected" ? "individual" : "curated"}
               deltaHeading="vs average"
+              rankedTable
               theme={theme}
               accentHex={accent?.hex ?? null}
               yearControl

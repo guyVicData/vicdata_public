@@ -63,25 +63,32 @@ function Header({
   sort,
   onSort,
   className,
+  ariaLabel,
+  rankOrder = false,
 }: {
   label: string;
   sortKey: SortKey;
   sort: SortState;
   onSort: (key: SortKey) => void;
   className: string;
+  ariaLabel?: string;
+  // The rank column sorts by value, but reads the other way round: rank 1 first is the
+  // value descending, so its arrow points up then.
+  rankOrder?: boolean;
 }) {
   const on = sort.key === sortKey;
+  const up = rankOrder ? sort.dir === "desc" : sort.dir === "asc";
   return (
     <button
       type="button"
       onClick={() => onSort(sortKey)}
       // aria-sort belongs on the cell, but this table is a flex layout rather than a real
       // <table>, so the state is announced on the control that changes it instead.
-      aria-label={`Sort by ${label}${on ? `, currently ${sort.dir === "asc" ? "ascending" : "descending"}` : ""}`}
+      aria-label={`Sort by ${ariaLabel ?? label}${on ? `, currently ${up ? "ascending" : "descending"}` : ""}`}
       className={`flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.02em] text-[var(--muted)] hover:text-[var(--fg)] ${className}`}
     >
       {label}
-      <span aria-hidden="true" className={on ? "" : "opacity-0"}>{sort.dir === "asc" ? "▲" : "▼"}</span>
+      <span aria-hidden="true" className={on ? "" : "opacity-0"}>{up ? "▲" : "▼"}</span>
     </button>
   );
 }
@@ -92,6 +99,8 @@ export function SortTable({
   onSort,
   columns,
   fullscreen = false,
+  leadingRank = false,
+  showValue = true,
 }: {
   rows: SortRow[];
   sort: SortState;
@@ -100,16 +109,30 @@ export function SortTable({
   // Results, "School / Result / Rank" in Comparisons).
   columns: { name: string; value: string; delta: string };
   fullscreen?: boolean;
+  // A bare rank (by value, largest first) in an unheaded first column -- the same shape as
+  // the % change table's leading rank. Its header sorts the table back into rank order.
+  leadingRank?: boolean;
+  // false drops the value column, where another view on the panel already shows it.
+  showValue?: boolean;
 }) {
   const sorted = applySort(rows, sort);
+  const rankOf = new Map(
+    rows
+      .filter((r) => r.value !== null)
+      .sort((a, b) => b.value! - a.value!)
+      .map((r, i) => [r.key, i + 1]),
+  );
   const tone = (t: SortRow["deltaTone"]) =>
     t === "positive" ? "text-[#0d9488] dark:text-[#2dd4bf]" : t === "negative" ? "text-[#b45309] dark:text-[#fbbf24]" : "text-[var(--muted2)]";
 
   return (
     <div className={`flex flex-col ${fullscreen ? "text-sm" : "text-[12.5px]"}`}>
       <div className="flex items-center gap-1.5 border-b border-[var(--panel-border2)] px-0.5 pb-1.5 pt-0.5">
+        {leadingRank && (
+          <Header label="" ariaLabel="rank" rankOrder sortKey="value" sort={sort} onSort={onSort} className="w-6 shrink-0 justify-end text-right" />
+        )}
         <Header label={columns.name} sortKey="name" sort={sort} onSort={onSort} className="min-w-0 flex-grow text-left" />
-        <Header label={columns.value} sortKey="value" sort={sort} onSort={onSort} className="w-14 shrink-0 justify-end text-right" />
+        {showValue && <Header label={columns.value} sortKey="value" sort={sort} onSort={onSort} className="w-14 shrink-0 justify-end text-right" />}
         <Header label={columns.delta} sortKey="delta" sort={sort} onSort={onSort} className="w-[5.5rem] shrink-0 justify-end text-right" />
       </div>
       {sorted.map((r) => (
@@ -121,11 +144,14 @@ export function SortTable({
           // use, with the accent itself for the text.
           style={r.highlight ? { background: "rgba(var(--accent-rgb,138,138,144),0.14)", color: "var(--accent,var(--fg))" } : undefined}
         >
+          {leadingRank && <span className="w-6 shrink-0 text-right tabular-nums text-[var(--muted3)]">{rankOf.get(r.key) ?? ""}</span>}
           {r.colour && <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: r.colour }} />}
           <span className={`min-w-0 flex-grow truncate ${r.emphasis ? "font-bold" : ""}`} title={r.label}>{r.label}</span>
-          <span className={`w-14 shrink-0 text-right font-semibold tabular-nums ${r.value === null ? "font-normal text-[var(--muted3)]" : ""}`}>
-            {r.valueLabel}
-          </span>
+          {showValue && (
+            <span className={`w-14 shrink-0 text-right font-semibold tabular-nums ${r.value === null ? "font-normal text-[var(--muted3)]" : ""}`}>
+              {r.valueLabel}
+            </span>
+          )}
           <span className={`w-[5.5rem] shrink-0 text-right font-semibold tabular-nums ${tone(r.deltaTone)}`}>{r.deltaLabel}</span>
         </div>
       ))}
