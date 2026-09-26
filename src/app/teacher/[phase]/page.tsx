@@ -116,12 +116,10 @@ export default function TeacherPhaseDashboard() {
   const [chooser, setChooser] = useState<{ editing: SavedComparatorSet | null; startingFrom: { label: string; urns: string[] } | null } | null>(null);
   const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route: the subject
-  // itself at GCSE; at Post-16 the subject in its exact qualification
-  // (`qualificationValues`), with the bucket figure (`values`) as the fallback.
+  // itself at GCSE; at Post-16 the subject in its exact qualification, with no fallback.
   const [englandAvg, setEnglandAvg] = useState<{
-    basis: "bucket" | "subject";
+    basis: "qualification" | "subject";
     values: { key: string; period: number; value: number }[];
-    qualificationValues?: { key: string; period: number; value: number }[];
   } | null>(null);
   const [ticked, setTicked] = useState<string[]>([]);
   const [columns, setColumns] = useState<ColumnState>({});
@@ -399,31 +397,24 @@ export default function TeacherPhaseDashboard() {
     [ownRowsFor, phase],
   );
 
-  // The England figures keyed for lookup: "{key}@{period}", where key is the subject at
-  // GCSE and the bucket at Post-16, and "{subject}::{qualificationType}@{period}" for the
-  // Post-16 exact-qualification figures.
+  // The England figures keyed for lookup, "{key}@{period}": key is the subject at GCSE and
+  // "{subject}::{qualificationType}" at Post-16.
   const englandIndex = useMemo(
-    () => ({
-      byKey: new Map((englandAvg?.values ?? []).map((v) => [`${v.key}@${v.period}`, v.value])),
-      byQualification: new Map((englandAvg?.qualificationValues ?? []).map((v) => [`${v.key}@${v.period}`, v.value])),
-    }),
+    () => new Map((englandAvg?.values ?? []).map((v) => [`${v.key}@${v.period}`, v.value])),
     [englandAvg],
   );
 
-  // One item's England figure for one year. Post-16 Part C: the same subject in the same
-  // qualification first. With `fallback`, a qualification the exact table has no row for
-  // reads its bucket's figure instead, as every Post-16 item did before this round. Only
-  // callers that showed a benchmark before pass it; category peers never did, and a
-  // bucket figure beside a peer (a VRQ row marked against BTEC's England average) would be
-  // new and misleading.
+  // One item's England figure for one year. Post-16: the same subject in the same exact
+  // qualification, or nothing. Part D: no bucket fallback -- where England has no figure
+  // for the qualification (VRQ, AEA, EPQ, a suppressed year) the marker is absent rather
+  // than a blend of other qualifications. The real data showed the fallback only ever sat
+  // beside an empty bar anyway: the school's own figure was null every time it fired.
   const englandValue = useCallback(
-    (item: SubjectItem, period: number, fallback: boolean): number | null => {
+    (item: SubjectItem, period: number): number | null => {
       if (!englandAvg || !phase || phase === "ks2") return null;
       // GCSE rows are keyed by subject, spelt as the headline rows spell it.
-      if (englandAvg.basis === "subject") return englandIndex.byKey.get(`${item.subject}@${period}`) ?? null;
-      const exact = englandIndex.byQualification.get(`${item.subject}::${item.qualificationType}@${period}`);
-      if (exact !== undefined) return exact;
-      return fallback ? englandIndex.byKey.get(`${comparabilityKey(phase, item.qualificationType)}@${period}`) ?? null : null;
+      const key = englandAvg.basis === "subject" ? item.subject : `${item.subject}::${item.qualificationType}`;
+      return englandIndex.get(`${key}@${period}`) ?? null;
     },
     [englandAvg, englandIndex, phase],
   );
@@ -433,7 +424,7 @@ export default function TeacherPhaseDashboard() {
   // neighbours down the corridor, not with the country). Same year as the score or no
   // anchor at all: a delta against a different year is a difference nobody measured.
   const englandFor = useCallback(
-    (item: SubjectItem, score: { period: number }): number | null => englandValue(item, score.period, true),
+    (item: SubjectItem, score: { period: number }): number | null => englandValue(item, score.period),
     [englandValue],
   );
 
@@ -859,9 +850,7 @@ export default function TeacherPhaseDashboard() {
 
   // The England anchor for the same subject and the same year (englandFor's own rule,
   // applied per period rather than only to the latest one).
-  // Post-16 Part C: the bucket fallback only for the focused item, the one item that had
-  // a Post-16 benchmark before -- see englandValue.
-  const englandAt = (i: SubjectItem, period: number): number | null => englandValue(i, period, i.key === focusKey);
+  const englandAt = (i: SubjectItem, period: number): number | null => englandValue(i, period);
 
   // Round 8 §3: the one Candidates/Results toggle, driving all three columns. Persisted
   // like every other "which data" choice (round 6's rule: coming back to a card showing a

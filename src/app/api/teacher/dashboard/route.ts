@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { lookupAcademicGeography, lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
+import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -45,24 +45,16 @@ import {
 //     "GCSE (9-1) Full Course" carries points at KS4, so this is the England GCSE average
 //     for that subject. Keyed by subject name, spelt as the headline rows spell it.
 //   - Post-16 (Part C): per SUBJECT and exact QUALIFICATION TYPE, keyed
-//     "{subject}::{qualificationType}" in `qualificationValues`, from
-//     academic_subject_qualification_geography_aggregate -- A-level Maths against England's
-//     A-level Maths, not against every A-level entry. `values` keeps the per-bucket figures
-//     ("bucket:alevel::aps_per_entry" and so on, from academic_geography_aggregate) as the
-//     fallback for a qualification the exact table has no row for: it holds scored
-//     qualifications only, so nothing for VRQ, AEA or Other.
+//     "{subject}::{qualificationType}", from academic_subject_qualification_geography_aggregate
+//     -- A-level Maths against England's A-level Maths, not against every A-level entry.
+//     It holds scored qualifications only, so VRQ, AEA and Other have no England figure,
+//     and show none. Part D: no fallback to the per-bucket figure any more -- it only ever
+//     marked an empty bar, and it was a cross-qualification blend (VRQ against BTEC's
+//     England average) of exactly the kind the exact figures replace.
 type EnglandAverage = { key: string; period: number; value: number };
 
-async function englandAverages(
-  phase: "ks4" | "ks5",
-): Promise<{ basis: "bucket" | "subject"; values: EnglandAverage[]; qualificationValues?: EnglandAverage[] }> {
+async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "qualification" | "subject"; values: EnglandAverage[] }> {
   if (phase === "ks5") {
-    const rows = await lookupAcademicGeography({ ksStage: "ks5", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], familyId: "whole_school" });
-    const values: EnglandAverage[] = [];
-    for (const r of rows) {
-      const m = /^bucket:(.+)::aps_per_entry$/.exec(r.measure);
-      if (m && r.avg_value !== null) values.push({ key: m[1], period: r.period, value: r.avg_value });
-    }
     // One unfiltered national call, keyed here. National only, so every real row
     // (minSchoolCount 1): Persian or Gujarati A level at four schools is still England's
     // real figure.
@@ -73,10 +65,10 @@ async function englandAverages(
       groupingKeys: [NATIONAL_GROUPING_KEY],
       minSchoolCount: 1,
     });
-    const qualificationValues = exact
+    const values = exact
       .filter((r) => r.avg_value !== null)
       .map((r) => ({ key: `${r.subject}::${r.qualification_type}`, period: r.period, value: Number(r.avg_value) }));
-    return { basis: "bucket", values, qualificationValues };
+    return { basis: "qualification", values };
   }
   // National only, so no minimum school count beyond 1: see minSchoolCount.
   const rows = await lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
