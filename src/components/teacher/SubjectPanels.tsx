@@ -31,7 +31,7 @@ import {
 import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
-import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, curatedKeys, multiTrendHasLine, rankDescending } from "./SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine, rankDescending } from "./SeriesViews";
 import { FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
@@ -92,6 +92,7 @@ export function SubjectPanels({
   geography,
   trendMap,
   tiles,
+  cardTrend,
 }: {
   columnId: string;
   periods: number[];
@@ -154,11 +155,17 @@ export function SubjectPanels({
   // list is either a hand-picked Selected set or the whole school:
   //   "individual" -- Selected subjects: like Column 1 Candidates. Every subject its own
   //                   line (Option B / D2) or row (Option H), tables E and I beside them.
-  //   "curated"    -- All subjects: Trend is Option K (focus + top movers + a rest-of-
-  //                   school band) with a table of the same curated rows on the card;
-  //                   % change is Option H over every subject (a list scales fine).
-  // "all" is Column 1 Results' classic behaviour and is deliberately unchanged by both.
-  changeScope?: "all" | "individual" | "curated";
+  // All subjects was "curated" -- Option K (focus + top movers + a rest-of-school band)
+  // -- until snagging round 1 Part 3 ("all subjects needs to show all, not just top and
+  // bottom"): it is "individual" too now, with `cardTrend` below for its card graph.
+  // "all" is Column 1 Results' classic behaviour and is deliberately unchanged.
+  changeScope?: "all" | "individual";
+  // Snagging round 1 Part 3: Context's All subjects. Every subject is still its own row
+  // and, in fullscreen, its own line with the show/hide legend; but the CARD's graph --
+  // a small box, where twenty-odd lines are noise -- draws just the focused subject
+  // against the group's per-subject average (`groups[0]`, dashed), the same two-line
+  // shape Results' classic Trend draws against England.
+  cardTrend?: "focusVsGroup";
   // Live review Part D: Context's Trend lines take the categorical palette, which has light
   // and dark versions and skips hues close to the phase accent (see paletteInOrder).
   theme?: "dark" | "light";
@@ -282,10 +289,10 @@ export function SubjectPanels({
   const colourFor = (s: SubjectSeries) => (redesigned ? tints.get(s.key) ?? s.colour : s.colour);
   // Live review Part D: the Trend LINE chart alone gets real hues for the non-focused
   // subjects, as Candidates' does (b518e1e) -- same helper, same order, same focus accent.
-  // Current's bars and % change keep the grey ramp above. In both Context modes: Selected
-  // subjects draws every subject as a line; All subjects (Option K) draws the focus and
-  // four standouts, which need telling apart just as much -- the rest-of-school band
-  // stays grey. The Trend table's dots read the same series, so they match the lines.
+  // Current's bars and % change keep the grey ramp above. In both Context modes every
+  // subject is its own line in fullscreen (snagging round 1 Part 3), where the rail's
+  // show/hide legend names each colour. The Trend table's dots read the same series, so
+  // they match the lines.
   const trendColours = paletteInOrder(
     barRows.map((r) => r.s.key),
     focusedKey,
@@ -540,6 +547,20 @@ export function SubjectPanels({
     setHidden({ scope: legendScope, keys: next });
   };
   const railLegend = changeScope === "individual" && trendData.series.length > 1;
+  // Part 3's card graph: the focused line and the group average over the same span.
+  const focusVsGroup: PanelData = {
+    periods: trendData.periods,
+    series: [
+      ...trendData.series.filter((x) => x.key === focusedKey),
+      ...groups.slice(0, 1).map((g) => ({
+        key: "group-0",
+        label: g.label,
+        colour: g.colour ?? "var(--muted3)",
+        values: trendData.periods.map((p) => g.values[periods.indexOf(p)] ?? null),
+        comparison: true,
+      })),
+    ],
+  };
   const trendShown = (fullscreen: boolean): PanelData =>
     railLegend && fullscreen ? { ...trendData, series: trendData.series.filter((x) => x.key === focusedKey || !hiddenKeys.has(x.key)) } : trendData;
   const trendSaid = trendSentence({
@@ -628,15 +649,14 @@ export function SubjectPanels({
           />
         </div>
       ) : trendView === "table" ? (
-        // All subjects: the card lists the rows the K chart draws (read from the same
-        // curatedKeys/topMovers call) plus one rest-of-school range row; fullscreen, all.
+        // Every subject's row, on the card and in fullscreen (the card's list scrolls,
+        // starting at the focused row).
         <CentredOnTarget watch={`trend-table:${focusedKey}:${trendData.periods.join(",")}`}>
           <YearTable
             data={trendShown(fullscreen)}
             measure={measure}
             focusKey={focusedKey}
             fullscreen={fullscreen}
-            curate={changeScope === "curated" ? { keys: curatedKeys(trendData, measure, focusedKey), restLabel: "Rest of school" } : undefined}
           />
         </CentredOnTarget>
       ) : (
@@ -645,11 +665,9 @@ export function SubjectPanels({
             <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}
           <MultiTrend
-            data={trendShown(fullscreen)}
+            data={cardTrend === "focusVsGroup" && !fullscreen ? focusVsGroup : trendShown(fullscreen)}
             measure={measure}
             focusKey={focusedKey}
-            curated={changeScope === "curated"}
-            restLabel="rest of school"
             showFit={showFit}
             fullscreen={fullscreen}
             index={indexedTrend && trendView === "actual" ? false : undefined}

@@ -112,7 +112,9 @@ export function MultiTrend({
     );
   }
   const indexed = index ?? shouldIndex(measure.aggregate);
-  const series: PanelSeries[] = data.series.map((s) => ({ ...s, comparison: false, values: indexed ? indexTo100(s.values) : s.values }));
+  // A series marked as a comparison (Context's card: the group average beside the focus)
+  // keeps its dashed line; everything else is drawn solid, as before.
+  const series: PanelSeries[] = data.series.map((s) => ({ ...s, comparison: s.comparison ?? false, values: indexed ? indexTo100(s.values) : s.values }));
   let lines = series;
   let band: { min: (number | null)[]; max: (number | null)[]; label: string } | undefined;
   if (curated) {

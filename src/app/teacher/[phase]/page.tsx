@@ -1756,9 +1756,12 @@ export default function TeacherPhaseDashboard() {
               subjects={contextSeries}
               measure={contextMeasure}
               focus={focusKey}
-              // Steps 9-10: Selected subjects is a bounded list, drawn like Column 1 ("individual");
-              // the whole school is Option K ("curated").
-              changeScope={contextAgainst === "selected" ? "individual" : "curated"}
+              // Steps 9-10: Selected subjects is a bounded list, drawn like Column 1 ("individual").
+              // Snagging round 1 Part 3: All subjects is no longer curated -- every subject in the
+              // table and in fullscreen, with the rail's show/hide legend -- and its card graph
+              // is the focused subject against the All subjects average.
+              changeScope="individual"
+              cardTrend={contextAgainst === "selected" ? undefined : "focusVsGroup"}
               deltaHeading="vs average"
               rankedTable
               theme={theme}
