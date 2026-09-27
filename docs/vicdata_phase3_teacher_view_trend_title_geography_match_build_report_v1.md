@@ -48,4 +48,17 @@ Confirmed. Nothing reverted or staged.
 
 ## Push and live check
 
-Pushed with this round's commits (see the addendum below for what's live).
+**Pushed `53c02da..bf3a61d` at 10:26:04 UTC.** That's eight commits: this round, the still-local qualification-match / Indexed-Actual round (`45fbc35`, `04d4f9b`, `1013c2a`, `0b0ca40`), and the earlier screenshots addendum (`2fcd523`).
+
+**Live at 10:27:51 UTC**, about 2 minutes later, by Render auto-deploy. What's deployed is **exactly a clean build of `bf3a61d`**, checked the same way as last round:
+- I built a clean `git worktree` of `bf3a61d`, as Render does.
+- Its teacher chunk `1o3hy3rgco31x.js` (which contains the new title wording) is served byte-identical.
+- Both of its CSS files, `04a9-503yxk6p.css` and `0u400317i9w44.css`, are served byte-identical.
+- The previous teacher chunk now returns 404, so a hard-reloaded page can only run this code.
+- The CSS filename is unchanged from the previous deploy because this round added no new classes: the title reuses the heading's existing ones.
+
+The page itself is gated. **Hard-reload (⇧⌘R)**, then check:
+1. The Chase, Column 1, focused on A-level Maths: five Candidates bars, no "Math Stud".
+2. Trend: two heading lines, "Entries in Sciences & Maths" then the Indexed title, in the same style. The rail reads Indexed / Actual / Table, and Actual shows Maths at 38 → 22.
+3. Context, with the shared toggle on Candidates: the same on its Trend.
+4. % Change geography (Column 1, Candidates): the chart has the "Change since …" title under "Mathematics against the wider system".
