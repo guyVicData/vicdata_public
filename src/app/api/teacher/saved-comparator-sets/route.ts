@@ -86,8 +86,40 @@ export async function GET(request: NextRequest) {
       }));
     const shared = r.owner_membership_id === null;
     const mine = r.owner_membership_id === membership.id;
-    return { id: r.id, name: r.name, shared, mine, editable: mine || (shared && canEditShared), config: r.config ?? {}, members };
+    return { id: r.id, name: r.name, shared, mine, editable: mine || (shared && canEditShared), config: r.config ?? {}, members, vc: false };
   });
+
+  // Victoria Consultancy Sets (20261102100000): the VC-authored sets switched on for this
+  // school. Read under the caller's own token, so RLS returns exactly those -- none at all
+  // until VC switches one on -- and never anything writable. Ranked and charted like any
+  // saved set; flagged `vc` so the chooser shows them in their own row.
+  const { data: vcRows } = await supabase
+    .from("vc_set_school_visibility")
+    .select("vc_comparator_sets(id, name, vc_comparator_set_members(school_urn, schools(current_name, la_name, establishment_type_group)))")
+    .eq("school_account_id", membership.school_account_id);
+  type VcRow = {
+    vc_comparator_sets: {
+      id: string;
+      name: string;
+      vc_comparator_set_members: { school_urn: string; schools: { current_name: string; la_name: string | null; establishment_type_group: string | null } | null }[];
+    } | null;
+  };
+  for (const v of (vcRows ?? []) as unknown as VcRow[]) {
+    const vc = v.vc_comparator_sets;
+    if (!vc) continue;
+    sets.push({
+      id: vc.id,
+      name: vc.name,
+      shared: true,
+      mine: false,
+      editable: false,
+      config: {},
+      vc: true,
+      members: vc.vc_comparator_set_members
+        .filter((m) => m.school_urn !== urn)
+        .map((m) => ({ urn: m.school_urn, name: m.schools?.current_name ?? m.school_urn, laName: m.schools?.la_name ?? null, independent: isIndependent(m.schools?.establishment_type_group ?? null) })),
+    });
+  }
 
   const { ranked, seriesByUrn, excludedUrns } = await rankFixedSets(
     urn,

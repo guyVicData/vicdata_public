@@ -31,6 +31,8 @@ export type SavedComparatorSet = {
   editable: boolean;
   config: { startedFrom?: string } & Record<string, unknown>;
   members: SetMember[];
+  // A Victoria Consultancy set switched on for this school (read-only, never mine).
+  vc?: boolean;
   rows: { urn: string; name: string; isTarget: boolean; igcseExcluded?: boolean; distanceKm?: number | null; independent?: boolean }[];
 };
 

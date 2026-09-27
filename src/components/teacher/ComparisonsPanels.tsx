@@ -70,7 +70,7 @@ export type MapChip = {
 export type SetOption = {
   id: string;
   label: string;
-  group?: "preset" | "mine" | "shared";
+  group?: "preset" | "mine" | "shared" | "vc";
   meta?: string;
   editable?: boolean;
 };
@@ -632,6 +632,7 @@ export function ComparisonsPanels({
               );
               const mine = setOptions.filter((o) => o.group === "mine");
               const shared = setOptions.filter((o) => o.group === "shared");
+              const vc = setOptions.filter((o) => o.group === "vc");
               return (
                 <>
                   <MenuHeading>Starting points</MenuHeading>
@@ -644,6 +645,12 @@ export function ComparisonsPanels({
                         <>
                           <MenuHeading>School&rsquo;s sets</MenuHeading>
                           {shared.map(row)}
+                        </>
+                      )}
+                      {vc.length > 0 && (
+                        <>
+                          <MenuHeading>Victoria Consultancy</MenuHeading>
+                          {vc.map(row)}
                         </>
                       )}
                       <MenuRow label="Choose schools…" onClick={() => { onManageSet(null); close(); }} />

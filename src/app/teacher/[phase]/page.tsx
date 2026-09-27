@@ -1261,7 +1261,7 @@ export default function TeacherPhaseDashboard() {
   const savedOptions: SetOption[] = (savedSets?.sets ?? []).map((set) => ({
     id: savedSetKey(set.id),
     label: set.name,
-    group: set.mine ? "mine" : "shared",
+    group: set.vc ? "vc" : set.mine ? "mine" : "shared",
     meta: `${set.members.length} school${set.members.length === 1 ? "" : "s"}`,
     editable: set.editable,
   }));
@@ -1941,7 +1941,6 @@ export default function TeacherPhaseDashboard() {
           targetUrn={schoolUrn}
           targetName={schoolName ?? "This school"}
           initialEdit={chooser.editing}
-          vc={null}
           onClose={() => setChooser(null)}
           onSetsChanged={reloadSavedSets}
           onDone={async (choice) => {

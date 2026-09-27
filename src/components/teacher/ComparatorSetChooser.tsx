@@ -84,7 +84,6 @@ export function ComparatorSetChooser({
   targetUrn,
   targetName,
   initialEdit,
-  vc,
   onClose,
   onDone,
   onSetsChanged,
@@ -97,8 +96,6 @@ export function ComparatorSetChooser({
   targetName: string;
   // Open straight at the custom editor for this set ("Edit" beside a set in the pill).
   initialEdit: SavedComparatorSet | null;
-  // Victoria Consultancy Sets, only when switched on for this school.
-  vc: { sets: SavedComparatorSet[] } | null;
   onClose: () => void;
   onDone: (choice: ChooserChoice) => void | Promise<void>;
   onSetsChanged: () => Promise<void>;
@@ -209,8 +206,11 @@ export function ComparatorSetChooser({
   const [pick, setPick] = useState<HubPick>(initialEdit ? "mine" : "nearest");
   const [setSub, setSetSub] = useState<string | null>(initialEdit?.id ?? null);
   const mine = payload.sets.filter((s) => s.mine);
-  const school = payload.sets.filter((s) => s.shared);
-  const listFor = (p: HubPick) => (p === "mine" ? mine : p === "school" ? school : p === "vc" ? vc?.sets ?? [] : []);
+  const school = payload.sets.filter((s) => s.shared && !s.vc);
+  // Victoria Consultancy Sets: present only when VC has switched at least one on for this
+  // school (the route returns none otherwise), so the row renders only then.
+  const vcSets = payload.sets.filter((s) => s.vc);
+  const listFor = (p: HubPick) => (p === "mine" ? mine : p === "school" ? school : p === "vc" ? vcSets : []);
   const choosePick = (p: HubPick) => {
     setPick(p);
     const list = listFor(p);
@@ -653,7 +653,7 @@ export function ComparatorSetChooser({
         onSetSub={setSetSub}
         onEditSet={(s) => void editSet(s)}
         onDeleteSet={(s) => void removeSet(s)}
-        vc={vc && vc.sets.length ? vc : null}
+        vc={vcSets.length ? { sets: vcSets } : null}
         count={hubCount()}
         action={hubAction()}
       />
