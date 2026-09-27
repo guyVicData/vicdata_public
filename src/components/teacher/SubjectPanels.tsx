@@ -30,14 +30,15 @@ import {
 } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
-import { ChangeList, MultiTrend, YearTable, curatedKeys, multiTrendHasLine } from "./SeriesViews";
+import { shouldIndex } from "@/lib/teacher-view-trend-styles";
+import { ChangeList, MultiTrend, TrendScaleCaption, YearTable, curatedKeys, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { DonutIcon, HorizontalBarsIcon, IconButton, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
+import { DonutIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
 import { ShareDonut } from "./ShareDonut";
 import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
 import { TrendChart } from "./TrendChart";
@@ -183,7 +184,9 @@ export function SubjectPanels({
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
   // Steps 9-10: Context's Trend and % change gain a table beside their chart.
-  const [trendView, setTrendView] = useState<"chart" | "table">("chart");
+  // "chart" is the default chart -- indexed for a headcount measure; "actual" (headcounts
+  // only) the same lines at their real values.
+  const [trendView, setTrendView] = useState<"chart" | "actual" | "table">("chart");
   const [changeView, setChangeView] = useState<"chart" | "table">("chart");
   const geo = useSubjectGeography(geography);
   const redesigned = changeScope !== "all";
@@ -467,6 +470,9 @@ export function SubjectPanels({
     return ` — against ${first.label.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
   })();
 
+  // Whether this panel's Trend is an index (a headcount measure: Context on Candidates);
+  // Results' points and rates never are.
+  const indexedTrend = shouldIndex(measure.aggregate);
   const trend: PanelRender = {
     // S11: one uniform title, with the span's start as its own dropdown beside it.
     tag: "Trends",
@@ -487,10 +493,20 @@ export function SubjectPanels({
       />
     ),
     actions: redesigned ? (
-      <>
-        <IconButton label="Chart" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
-        <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
-      </>
+      indexedTrend ? (
+        // Indexed / Actual / Table, as on Candidates' Trend: two chart forms, so neither is
+        // just "Chart". Points and rates are never indexed and keep Chart / Table.
+        <>
+          <IconButton label="Indexed" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{IndexedLineIcon}</IconButton>
+          <IconButton label="Actual" active={trendView === "actual"} disabled={!multiTrendHasLine(trendData)} onClick={() => setTrendView("actual")}>{TrendLineIcon}</IconButton>
+          <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+        </>
+      ) : (
+        <>
+          <IconButton label="Chart" active={trendView !== "table"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
+          <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+        </>
+      )
     ) : undefined,
     body: (fullscreen) =>
       !redesigned ? (
@@ -508,15 +524,21 @@ export function SubjectPanels({
           />
         </CentredOnTarget>
       ) : (
-        <MultiTrend
-          data={trendData}
-          measure={measure}
-          focusKey={focusedKey}
-          curated={changeScope === "curated"}
-          restLabel="rest of school"
-          showFit={showFit}
-          fullscreen={fullscreen}
-        />
+        <>
+          {indexedTrend && multiTrendHasLine(trendData) && (
+            <TrendScaleCaption view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
+          )}
+          <MultiTrend
+            data={trendData}
+            measure={measure}
+            focusKey={focusedKey}
+            curated={changeScope === "curated"}
+            restLabel="rest of school"
+            showFit={showFit}
+            fullscreen={fullscreen}
+            index={indexedTrend && trendView === "actual" ? false : undefined}
+          />
+        </>
       ),
     summary: trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>

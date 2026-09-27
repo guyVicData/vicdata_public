@@ -31,9 +31,9 @@ import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from ".
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
-import { HorizontalBarsIcon, IconButton, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { HorizontalBarsIcon, IconButton, IndexedLineIcon, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { ChangeList, MultiTrend, YearTable, multiTrendHasLine } from "./SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleCaption, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { VerticalBars } from "./VerticalBars";
@@ -101,7 +101,9 @@ export function CandidatesPanels({
 }) {
   const [view, setView] = useState<"bars" | "list">("bars");
   // Step 6: Trend and % change each gain a table beside their chart.
-  const [trendView, setTrendView] = useState<"chart" | "table">("chart");
+  // "chart" is the indexed chart (the default, as before); "actual" draws the same lines at
+  // their real values.
+  const [trendView, setTrendView] = useState<"chart" | "actual" | "table">("chart");
   const [changeView, setChangeView] = useState<"chart" | "table">("chart");
   // Part 5: the geography figures, fetched once per subject when the comparison applies.
   const geo = useSubjectGeography(geography);
@@ -245,7 +247,11 @@ export function CandidatesPanels({
     ),
     actions: (
       <>
-        <IconButton label="Chart" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
+        {/* Indexed / Actual / Table: "Chart" stopped being unambiguous once there were
+            two chart forms. Actual is offered only where there is a line to draw; the
+            short-span fallback (ranked change bars) is the same in both. */}
+        <IconButton label="Indexed" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{IndexedLineIcon}</IconButton>
+        <IconButton label="Actual" active={trendView === "actual"} disabled={!multiTrendHasLine(trendData)} onClick={() => setTrendView("actual")}>{TrendLineIcon}</IconButton>
         <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
       </>
     ),
@@ -257,7 +263,19 @@ export function CandidatesPanels({
           <YearTable data={trendData} measure={measure} focusKey={focused?.key ?? null} fullscreen={fullscreen} />
         </CentredOnTarget>
       ) : (
-        <MultiTrend data={trendData} measure={measure} focusKey={focused?.key ?? null} showFit={showFit} fullscreen={fullscreen} />
+        <>
+          {multiTrendHasLine(trendData) && (
+            <TrendScaleCaption view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
+          )}
+          <MultiTrend
+            data={trendData}
+            measure={measure}
+            focusKey={focused?.key ?? null}
+            showFit={showFit}
+            fullscreen={fullscreen}
+            index={trendView === "actual" ? false : undefined}
+          />
+        </>
       ),
     summary: trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>

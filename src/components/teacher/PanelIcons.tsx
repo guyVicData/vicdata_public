@@ -72,6 +72,16 @@ export const TrendLineIcon = (
   </Glyph>
 );
 
+// Col 1 / Trend actual-numbers round: the indexed chart's icon -- a line crossing a dashed
+// level, the "100 = no change" line it is read against. The plain line (TrendLineIcon) is
+// the actual-numbers chart.
+export const IndexedLineIcon = (
+  <Glyph>
+    <line x1="2.5" y1="10" x2="17.5" y2="10" strokeDasharray="1.8 1.8" />
+    <polyline points="2.5,14 7,10 11,11.5 17.5,4.5" />
+  </Glyph>
+);
+
 export const TableIcon = (
   <Glyph>
     <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" />

@@ -61,6 +61,7 @@ export function MultiTrend({
   restLabel = "rest",
   showFit = false,
   fullscreen = false,
+  index,
 }: {
   // Every series, in Current's order, already coloured and already sliced to the span.
   data: PanelData;
@@ -72,6 +73,12 @@ export function MultiTrend({
   restLabel?: string;
   showFit?: boolean;
   fullscreen?: boolean;
+  // Col 1 / Trend actual-numbers round: whether to draw the index. Absent = the measure's
+  // own rule (shouldIndex: headcounts indexed, points and rates real). false = the "Actual"
+  // view -- the same lines at their real values, the numbers the index is built from.
+  // Curation needs no special case: topMovers ranks by % change, which is the same on
+  // real and indexed values, so both views pick the same standout lines.
+  index?: boolean;
 }) {
   if (!multiTrendHasLine(data)) {
     // A long list scrolls inside the panel, starting with the focused row in view. Only
@@ -89,7 +96,7 @@ export function MultiTrend({
       </CentredOnTarget>
     );
   }
-  const indexed = shouldIndex(measure.aggregate);
+  const indexed = index ?? shouldIndex(measure.aggregate);
   const series: PanelSeries[] = data.series.map((s) => ({ ...s, comparison: false, values: indexed ? indexTo100(s.values) : s.values }));
   let lines = series;
   let band: { min: (number | null)[]; max: (number | null)[]; label: string } | undefined;
@@ -108,6 +115,28 @@ export function MultiTrend({
       reference={indexed ? { value: 100, label: "100 = first year shown" } : undefined}
       band={band}
     />
+  );
+}
+
+// The line under a headcount Trend's heading that says what its chart is drawing. The
+// indexed chart is the default and was unexplained: a teacher meeting it for the first time
+// had no way to know what "100" meant without hovering. The actual-numbers chart says it
+// is the real figures, which is what makes the index readable beside it.
+export function TrendScaleCaption({ view, from, noun }: { view: "indexed" | "actual"; from: number | null; noun: string }) {
+  return (
+    <p className="mb-1 text-[11.5px] leading-snug text-[var(--muted2)]">
+      {view === "indexed" ? (
+        <>
+          <span className="font-semibold text-[var(--fg)]">Change since {from === null ? "the first year shown" : academicYearLabel(from)}:</span>{" "}
+          each line starts at 100 (no change); 110 = 10% more {noun}, 90 = 10% fewer.
+        </>
+      ) : (
+        <>
+          <span className="font-semibold text-[var(--fg)]">{noun.charAt(0).toUpperCase() + noun.slice(1)} each year, real numbers:</span>{" "}
+          one scale for every subject, so small ones sit low.
+        </>
+      )}
+    </p>
   );
 }
 
