@@ -36,7 +36,7 @@ import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, Podiu
 import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
-import { FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { VerticalBars } from "./VerticalBars";
 
@@ -50,10 +50,6 @@ import { VerticalBars } from "./VerticalBars";
 // `shortLabel` comes from the one shared shortener (step 8), computed by the page over
 // every subject shown together so its collision check can see them all.
 export type CandidateSubject = { key: string; subject: string; label: string; shortLabel: string; values: (number | null)[] };
-
-// The summary sentences name the direction in colour, matching the wireframe: teal for
-// growth, amber for decline, muted for flat. Same two tones the delta badges use.
-const DIRECTION_COLOUR = { up: "#0d9488", down: "#b45309", flat: "var(--muted)" } as const;
 
 export function CandidatesPanels({
   phase,

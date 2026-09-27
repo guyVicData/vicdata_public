@@ -7,6 +7,7 @@
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
 import type { RankingFigures } from "@/lib/chooser-sets";
+import { directionCssVars } from "@/lib/trend-colours";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -1433,8 +1434,9 @@ export default function TeacherPhaseDashboard() {
       id="teacher-root"
       data-theme={theme}
       // The phase accent reaches every card and box as a custom property, so the shared
-      // components never carry a phase-specific hex of their own.
-      style={accent ? ({ "--accent": accent.hex, "--accent-rgb": accent.rgb } as React.CSSProperties) : undefined}
+      // components never carry a phase-specific hex of their own. So does the one change
+      // palette (--dir-up/--dir-down/--dir-flat, trend-colours.ts), in this theme.
+      style={{ ...directionCssVars(theme), ...(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) } as React.CSSProperties}
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >

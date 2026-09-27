@@ -38,9 +38,9 @@ export function NumberTiles({
     <div className={`flex flex-col ${fullscreen ? "gap-6 py-4" : "gap-4 py-1"}`}>
       {main && (
         // The hero: a centred, fit-content box (a theme-aware --fg border) floating over a
-        // soft glow in the app's own teal "up" tone (DIRECTION_FILL.up, #2dd4bf in dark).
+        // soft glow in the change palette's own "up" tone (--dir-up, trend-colours.ts).
         <div className="relative isolate self-center">
-          <div aria-hidden="true" className="absolute inset-0 -z-10 rounded-[18px] bg-[#14b8a6] opacity-25 blur-xl dark:bg-[#2dd4bf]" />
+          <div aria-hidden="true" className="absolute inset-0 -z-10 rounded-[18px] bg-[var(--dir-up)] opacity-25 blur-xl" />
           <div className={`w-fit rounded-[14px] border border-[var(--fg)]/25 bg-[var(--panel-bg)] text-center ${fullscreen ? "px-8 py-5" : "px-5 py-3"}`}>
             <p className={`font-bold leading-none tabular-nums text-[var(--fg)] ${fullscreen ? "text-[112px]" : "text-[80px]"}`}>{main.figure}</p>
             <p className="mt-1.5 text-[12.5px] text-[var(--muted)]">{main.label}</p>

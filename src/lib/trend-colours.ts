@@ -27,15 +27,18 @@
 // contrast/legibility the same way every other colour judgement call in this build
 // has gone.
 
-// Five stops, symmetric around a genuine amber/gold neutral midpoint (0% change) --
-// red for decline, green for growth. Hand-picked (not a named ColorBrewer ramp this
+// Five stops, symmetric around an orange neutral midpoint (0% change) -- red for
+// decline, green for growth. 2026-09-27 (comparisons change-map round), per Guy: "declines
+// are red, growth is green, broadly stable is orange" -- the neutral was amber/gold
+// (#f1c40f); the orange that was -10's is now the neutral, and -10 is a redder orange so
+// a moderate decline still reads as one. Hand-picked (not a named ColorBrewer ramp this
 // time -- see the header comment above for why that trade-off was made consciously).
 // +30/strong-growth reuses tag-colours.ts's own State green (#15803d) for one shared
 // green reference point across the app, rather than a second, subtly-different green.
 const TREND_STOPS: { pct: number; hex: string }[] = [
   { pct: -30, hex: "#c0392b" }, // strong decline -- red
-  { pct: -10, hex: "#e67e22" }, // moderate decline -- orange
-  { pct: 0, hex: "#f1c40f" }, // neutral -- amber/gold, deliberately not grey
+  { pct: -10, hex: "#d35400" }, // moderate decline -- red-orange
+  { pct: 0, hex: "#e67e22" }, // broadly stable -- orange, deliberately not grey
   { pct: 10, hex: "#7cb342" }, // moderate growth -- mid green
   { pct: 30, hex: "#15803d" }, // strong growth -- green (tag-colours.ts's own State green)
 ];
@@ -59,14 +62,56 @@ export function trendColour(pctChange: number): string {
   for (let i = 0; i < TREND_STOPS.length - 1; i++) {
     const a = TREND_STOPS[i];
     const b = TREND_STOPS[i + 1];
-    if (clamped >= a.pct && clamped <= b.pct) {
-      const t = (clamped - a.pct) / (b.pct - a.pct);
-      const [ar, ag, ab] = hexToRgb(a.hex);
-      const [br, bg, bb] = hexToRgb(b.hex);
-      return rgbToHex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t);
-    }
+    if (clamped >= a.pct && clamped <= b.pct) return interpolate(a.hex, b.hex, (clamped - a.pct) / (b.pct - a.pct));
   }
   return TREND_STOPS[TREND_STOPS.length - 1].hex;
+}
+
+// The straight-line blend between two stops, t in 0..1 -- shared by both change scales.
+function interpolate(aHex: string, bHex: string, t: number): string {
+  const [ar, ag, ab] = hexToRgb(aHex);
+  const [br, bg, bb] = hexToRgb(bHex);
+  return rgbToHex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t);
+}
+
+// Comparisons change-map round: the Trend panel's map colours ABSOLUTE change (points,
+// entries, a rate's pp) -- units with no universal scale, so, like gradeBandColour below,
+// it is normalised to the comparison set's own real range (Guy's instruction there:
+// never a fixed universal scale). But diverging around the set's TRUE zero, not its
+// midpoint: no change is always the orange neutral, whatever the rest of the set did;
+// the red and green ends stretch to the set's own real largest fall and largest rise,
+// through this scale's own stops (red, red-orange, orange, mid green, green).
+export function trendColourAbsolute(value: number, min: number, max: number): string {
+  if (value === 0) return TREND_STOPS[2].hex;
+  // Mapped onto the % scale's own -30..+30 so both maps pass through the same five stops.
+  const scaled = value > 0 ? (max > 0 ? Math.min(1, value / max) : 0) * 30 : (min < 0 ? Math.min(1, value / min) : 0) * -30;
+  return trendColour(scaled);
+}
+
+// Comparisons change-map round: the ONE direction palette -- up / down / broadly stable --
+// for every place in Teacher view that colours a change by its direction alone (tables,
+// tiles, the Growing / Declining / Broadly stable sentences and flags), built from this
+// scale's own three anchor stops so those and the maps are one colour language. Dark
+// pairs are a lighter shade of the same hue (the stops were chosen for map dots, not for
+// text on a dark panel). Change these to recolour change site-wide.
+export type ChangeDirection = "up" | "down" | "flat";
+export const DIRECTION_HEX: Record<ChangeDirection, { light: string; dark: string }> = {
+  up: { light: TREND_STOPS[4].hex, dark: "#4ade80" }, // green / green-400
+  down: { light: TREND_STOPS[0].hex, dark: "#f87171" }, // red / red-400
+  flat: { light: TREND_STOPS[2].hex, dark: "#fb923c" }, // orange / orange-400
+};
+
+// DIRECTION_HEX as the CSS custom properties Teacher view's root carries (--dir-up,
+// --dir-down, --dir-flat), for the theme on screen. Tailwind only generates classes it
+// can read literally in the source, so classes and inline styles read these variables
+// (text-[var(--dir-up)], color: var(--dir-up)) rather than an interpolated hex -- and an
+// inline style gets the dark pairing too, which a hex could not.
+export function directionCssVars(theme: "dark" | "light"): Record<string, string> {
+  return {
+    "--dir-up": DIRECTION_HEX.up[theme],
+    "--dir-down": DIRECTION_HEX.down[theme],
+    "--dir-flat": DIRECTION_HEX.flat[theme],
+  };
 }
 
 // Legend stops for MapColourKey-style rendering -- five discrete swatches spanning

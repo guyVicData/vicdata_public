@@ -44,6 +44,7 @@ import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from ".
 import { CentredOnTarget } from "./CentredOnTarget";
 import { FromYearMenu } from "./FromYearMenu";
 import { ChangeList, YearTable, type ChangeRow } from "./SeriesViews";
+import { DIRECTION_COLOUR } from "@/lib/teacher-view-trend-styles";
 import { TrendLineToggle } from "./PanelFooter";
 import { AverageIcon, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
 import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
@@ -54,8 +55,6 @@ import { RankingsMap } from "./RankingsMap";
 import { SchoolRankingTable, type SchoolRankingRow } from "./SchoolRankingTable";
 import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
-
-const DIRECTION_COLOUR = { up: "#0d9488", down: "#b45309", flat: "var(--muted)" } as const;
 
 export type MapChip = {
   key: string;

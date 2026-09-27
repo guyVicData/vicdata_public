@@ -13,6 +13,7 @@
 // Three columns because all three users of it have the same shape: a name, its figure,
 // and that figure read against something (the England average, the comparison group's
 // own average, or the school's rank in the set).
+import { DIRECTION_TEXT } from "@/lib/teacher-view-trend-styles";
 
 export type SortKey = "name" | "value" | "delta";
 
@@ -122,8 +123,8 @@ export function SortTable({
       .sort((a, b) => b.value! - a.value!)
       .map((r, i) => [r.key, i + 1]),
   );
-  const tone = (t: SortRow["deltaTone"]) =>
-    t === "positive" ? "text-[#0d9488] dark:text-[#2dd4bf]" : t === "negative" ? "text-[#b45309] dark:text-[#fbbf24]" : "text-[var(--muted2)]";
+  // The one change palette (trend-colours.ts via DIRECTION_TEXT), not a local copy.
+  const tone = (t: SortRow["deltaTone"]) => DIRECTION_TEXT[t === "positive" ? "up" : t === "negative" ? "down" : "flat"];
 
   return (
     <div className={`flex flex-col ${fullscreen ? "text-sm" : "text-[12.5px]"}`}>
