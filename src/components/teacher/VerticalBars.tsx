@@ -94,15 +94,20 @@ export function VerticalBars({
   const bodyH = Math.max(fallback, measured ?? 0) - BELOW_AND_ABOVE - edge.scrollbar;
   const plot = bodyH + 16;
   const ticks = [1, 0.75, 0.5, 0.25, 0];
+  // The axis is as wide as its widest figure needs, not a fixed 30px: this panel's
+  // figures are mostly one or two digits ("37", "9"), and the fixed box left ~17px of
+  // empty space before them -- the unexplained left margin on the Candidates card. About
+  // 5.6px a character at 9.5px (digits run ~5.2px, so this errs wide), plus 2px each side.
+  const axisW = Math.max(12, Math.ceil(Math.max(...ticks.map((t) => measure.format(top * t).length)) * 5.6) + 4);
 
   return (
     // flex-1 + basis-0: the height comes from the container's free space, never from this
     // chart's own content, so a taller plot cannot feed back into a taller measurement.
     // min-height keeps the old fixed size as a floor where a container gives no height.
     <div ref={box} className="mt-1 flex min-h-0 flex-1 basis-0 gap-2 overflow-hidden" style={{ minHeight: fallback }}>
-      <svg width="30" height={plot} viewBox={`0 0 30 ${plot}`} aria-hidden="true" className="shrink-0">
+      <svg data-axis width={axisW} height={plot} viewBox={`0 0 ${axisW} ${plot}`} aria-hidden="true" className="shrink-0">
         {ticks.map((t) => (
-          <text key={t} x="28" y={6 + (1 - t) * bodyH + 3} textAnchor="end" fontSize="9.5" fill="var(--muted)">
+          <text key={t} x={axisW - 2} y={6 + (1 - t) * bodyH + 3} textAnchor="end" fontSize="9.5" fill="var(--muted)">
             {measure.format(top * t)}
           </text>
         ))}
