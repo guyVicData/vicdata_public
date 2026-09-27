@@ -98,8 +98,7 @@ export function ComparisonsPanels({
   headlineLabel,
   // Which comparator set is active, and what the four are called.
   setId,
-  setOptions,
-  onSetChange,
+  activeSet,
   setLabel,
   setNote,
   schools: allSchools,
@@ -120,7 +119,6 @@ export function ComparisonsPanels({
   targetName,
   currentLabel,
   onManageSet,
-  personalSetsNote,
   threshold,
   rankingSet = null,
 }: {
@@ -132,8 +130,9 @@ export function ComparisonsPanels({
   source: (span?: string) => ReactNode;
   headlineLabel: string;
   setId: string;
-  setOptions: SetOption[];
-  onSetChange: (id: string) => void;
+  // Comparator dropdown round: the one set the column is on. The pill shows it and hands
+  // every change to the chooser (onManageSet) -- it no longer lists other sets itself.
+  activeSet: SetOption;
   setLabel: string;
   // The set's own caveat, where it has one ("Independent schools only").
   setNote?: ReactNode;
@@ -161,8 +160,6 @@ export function ComparisonsPanels({
   currentLabel: string;
   // Part 3: open the comparator chooser -- a set's id to edit it, null for a new set.
   onManageSet?: (setId: string | null) => void;
-  // "2 / 8": personal sets used, for the "Your sets" heading.
-  personalSetsNote?: string;
   // Set when Results is on a grade threshold (Grade 4+ / A*-E rate) with a subject in
   // focus. The map's profiles carry only entries and average point score per subject, so
   // the rates come from each school's own per-grade counts (/api/teacher/comparator-grades),
@@ -219,7 +216,11 @@ export function ComparisonsPanels({
   const [mapCaption, setMapCaption] = useState<string | null>(null);
   // Trend's "vs:" choice. % Change no longer has one: its list shows every school, with
   // the set's average as a reference line.
-  const [versus, setVersus] = useState<string>(AVERAGE);
+  // Stamped with the set it was chosen in: a different set (chosen in the chooser) reads
+  // as Average again -- the school it pointed at may not even be in the new set (§4.3).
+  const [versusChoice, setVersusChoice] = useState<{ set: string; urn: string }>({ set: setId, urn: AVERAGE });
+  const versus = versusChoice.set === setId ? versusChoice.urn : AVERAGE;
+  const setVersus = (urn: string) => setVersusChoice({ set: setId, urn });
   const [versusOpen, setVersusOpen] = useState(false);
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
@@ -236,14 +237,6 @@ export function ComparisonsPanels({
   const comparedOn = subjectLabel ? `${subjectLabel} ${measure.label.toLowerCase()}` : headlineLabel;
   const seriesKey = measure.id === "entries" ? "candidates" : "results";
   const seriesFor = (urn: string) => (threshold ? rateSeries[urn] ?? [] : seriesByUrn[urn]?.[seriesKey] ?? []);
-
-  // §4.3: picking a different comparator set resets the "vs:" selector back to Average --
-  // the school it was pointing at may not even be in the new set.
-  const changeSet = (id: string) => {
-    setVersus(AVERAGE);
-    setVersusOpen(false);
-    onSetChange(id);
-  };
 
   // Content round S4: a comparator with no published figure for what is being compared --
   // at Post-16 most often a school that does not offer the focused subject -- is simply
@@ -685,54 +678,19 @@ export function ComparisonsPanels({
           {/* The same PillMenu Context uses, so round 7 §8's "matching Comparisons'
               pattern exactly" is one component rather than two lookalikes. */}
           <PillMenu label="Compared against" value={setLabel} menuLabel="Compared against" width={260}>
-            {(close) => {
-              // Part 3: the wireframe's three groups -- starting points, your sets, the
-              // school's sets -- and a way into the chooser at the bottom.
-              const row = (o: SetOption) => (
-                <div key={o.id} className="flex items-center gap-1">
-                  <div className="min-w-0 flex-grow">
-                    <MenuRow label={o.meta ? `${o.label} · ${o.meta}` : o.label} selected={o.id === setId} onClick={() => { changeSet(o.id); close(); }} />
-                  </div>
-                  {o.editable && onManageSet && (
-                    <button
-                      type="button"
-                      onClick={() => { onManageSet(o.id); close(); }}
-                      className="shrink-0 rounded-md px-1.5 py-1 text-[11.5px] font-semibold text-[var(--accent,var(--fg))] hover:underline"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-              );
-              const mine = setOptions.filter((o) => o.group === "mine");
-              const shared = setOptions.filter((o) => o.group === "shared");
-              const vc = setOptions.filter((o) => o.group === "vc");
-              return (
-                <>
-                  <MenuHeading>Starting points</MenuHeading>
-                  {setOptions.filter((o) => !o.group || o.group === "preset").map(row)}
-                  {onManageSet && (
-                    <>
-                      <MenuHeading>Your sets{personalSetsNote ? ` (${personalSetsNote})` : ""}</MenuHeading>
-                      {mine.length ? mine.map(row) : <p className="px-2.5 py-1 text-[12px] italic text-[var(--muted3)]">None yet</p>}
-                      {shared.length > 0 && (
-                        <>
-                          <MenuHeading>School&rsquo;s sets</MenuHeading>
-                          {shared.map(row)}
-                        </>
-                      )}
-                      {vc.length > 0 && (
-                        <>
-                          <MenuHeading>Victoria Consultancy</MenuHeading>
-                          {vc.map(row)}
-                        </>
-                      )}
-                      <MenuRow label="Choose schools…" onClick={() => { onManageSet(null); close(); }} />
-                    </>
-                  )}
-                </>
-              );
-            }}
+            {(close) => (
+              // Comparator dropdown round: the same shape as Context's pill -- what is
+              // selected, then the way into the chooser to change it -- instead of its own
+              // list of presets and saved sets (the chooser's hub lists every set).
+              <>
+                <MenuHeading>Compared against</MenuHeading>
+                <MenuRow label={activeSet.meta ? `${activeSet.label} · ${activeSet.meta}` : activeSet.label} selected onClick={close} />
+                {onManageSet && activeSet.editable && (
+                  <MenuRow label="Edit this set…" indented onClick={() => { onManageSet(activeSet.id); close(); }} />
+                )}
+                {onManageSet && <MenuRow label="Change comparison…" onClick={() => { onManageSet(null); close(); }} />}
+              </>
+            )}
           </PillMenu>
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>

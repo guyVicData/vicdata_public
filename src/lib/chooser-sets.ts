@@ -15,6 +15,8 @@ import { HEADLINE_MEASURE, type KsStage } from "./academic-data-view";
 import { rankFixedSets, type RankedRow, type SchoolSeries } from "./teacher-view-comparator-series";
 import { buildRankingPopulation, type RankingPhase } from "./ranking-population";
 import { matchesRanking, type PopulationRow, type RankingFilters } from "./comparator-chooser";
+import { buildDefaultComparatorLists } from "./default-comparator-lists";
+import { resolveNearestOption } from "./nearest-option";
 
 // ------------------------------------------------------------------- population cache
 
@@ -57,6 +59,19 @@ export type RankingFigures = {
   averageLatest: number | null;
   average: { period: number; value: number; schools: number }[];
 };
+
+// Comparator dropdown round (option A): what the Comparisons column shows until a teacher
+// chooses -- the chooser's own "10 nearest schools", by the chooser's own rule (list1, or
+// the boarding-quintile recipe via resolveNearestOption, the Data View's rule too), so the
+// pill's default and the chooser hub's first row are one list. It replaces the old
+// dashboard-route "Nearest 10 schools" preset (school_nearest_neighbours), a different
+// algorithm, as the default.
+export async function resolveDefaultNearest(targetUrn: string, phase: KsStage): Promise<ChooserSetResult & { count: number }> {
+  const lists = await buildDefaultComparatorLists(targetUrn);
+  const chosen = resolveNearestOption(lists.list1, lists.boardingBand, lists.boardingRecipe, null);
+  const urns = (chosen?.schools ?? []).map((s) => s.urn).filter((u) => u !== targetUrn);
+  return { ...(await resolveFixedSet(targetUrn, phase, urns)), count: urns.length };
+}
 
 const TOP = 15;
 const EITHER_SIDE = 5;

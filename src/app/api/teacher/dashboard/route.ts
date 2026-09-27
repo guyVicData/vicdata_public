@@ -126,6 +126,13 @@ export async function GET(request: NextRequest) {
   // published KS2 exam-cohort figure, only the census Year 6 count, and the brief only
   // defines this set for GCSE and Post-16.
   const cohortSizes = phase === "ks2" ? null : await fetchLatestCohortSizes([urn, ...pool.map((p) => p.urn)], phase);
+  // Comparator dropdown round (2026-09-27): MOTHBALLED as comparator choices. The Teacher
+  // view pill no longer offers these four sets -- the comparator chooser replaced them, and
+  // its "10 nearest schools" (chooser-sets.ts resolveDefaultNearest) is the column's
+  // default -- and the page no longer reads comparatorSets or setInfo. They are still
+  // built because `nearest` feeds `neighbours` (the Results headline's comparison) and the
+  // same rankSets pass yields targetSeries and seriesByUrn; retire the other three here
+  // once nothing is expected to bring them back.
   const buildSets: SetBuilder = (usable) => {
     const sets: Partial<Record<RankingsSetId, PoolSchool[]>> = {
       nearest: usable.slice(0, SET_SIZE),

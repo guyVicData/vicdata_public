@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { resolveFixedSet, resolveRankingSet } from "@/lib/chooser-sets";
+import { resolveDefaultNearest, resolveFixedSet, resolveRankingSet } from "@/lib/chooser-sets";
 import type { RankingFilters } from "@/lib/comparator-chooser";
 
 // Teacher view comparator chooser: the rows and series the Comparisons column reads for a
@@ -11,7 +11,10 @@ import type { RankingFilters } from "@/lib/comparator-chooser";
 // GCSE and Post-16, the phases with an exam population to rank within.
 type Body =
   | { urn: string; phase: "ks2" | "ks4" | "ks5"; set: { kind: "urns"; urns: string[] } }
-  | { urn: string; phase: "ks2" | "ks4" | "ks5"; set: { kind: "ranking"; filters: RankingFilters } };
+  | { urn: string; phase: "ks2" | "ks4" | "ks5"; set: { kind: "ranking"; filters: RankingFilters } }
+  // Comparator dropdown round: the column's default before anything is chosen -- the
+  // chooser's own "10 nearest schools", resolved here in one request.
+  | { urn: string; phase: "ks2" | "ks4" | "ks5"; set: { kind: "nearest" } };
 
 // Generous: an LA with its 16+ colleges runs to 60-odd schools (The Chase: 66), and saved
 // sets have no cap at all -- this only stops an absurd request.
@@ -38,6 +41,7 @@ export async function POST(request: NextRequest) {
   if (!membership) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
   try {
+    if (body.set.kind === "nearest") return NextResponse.json(await resolveDefaultNearest(body.urn, body.phase));
     if (body.set.kind === "urns") {
       const urns = Array.from(new Set(body.set.urns.filter((u) => typeof u === "string" && /^\d{5,7}$/.test(u)))).slice(0, MAX_URNS);
       return NextResponse.json(await resolveFixedSet(body.urn, body.phase, urns));

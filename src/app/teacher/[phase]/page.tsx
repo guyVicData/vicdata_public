@@ -22,7 +22,7 @@ import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries, type SetOption } from "@/components/teacher/ComparisonsPanels";
 import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
-import { fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
+import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
@@ -37,7 +37,7 @@ import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicke
 import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
 import { COLUMN_TITLE, defaultBoxTitle } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
-import { type RankedSchool, type RankingsSetId } from "@/lib/teacher-view-rankings";
+import { type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { isAsLevelOrAea } from "@/lib/dfe-qualification-buckets";
 import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
@@ -52,6 +52,28 @@ type SubjectItem = { key: string; subject: string; qualificationType: string; la
 // "Compared against" pill beside the presets and saved sets.
 const CHOOSER_KEY = "chooser:rankings";
 const CHOOSER_SET_ID = "chooser";
+// Comparator dropdown round (option A): with nothing chosen -- or a choice that no longer
+// exists, such as a mothballed preset or a deleted saved set -- the column shows the
+// chooser's own "10 nearest schools" (resolveDefaultNearest). This is its resolve key.
+const DEFAULT_CHOICE_KEY = "default:nearest";
+const DEFAULT_CHOICE_LABEL = "10 nearest schools";
+
+// Comparator dropdown round: what the Comparisons column is on. A saved set by its key
+// ("pending" while saved sets are still loading, so the default never flashes in first);
+// otherwise the chooser's own stored choice; otherwise the default nearest ten. A stored
+// preset id (mothballed) reads as nothing chosen. `activeChoiceKey` is what
+// /api/teacher/chooser-set is asked to resolve: null for a saved set.
+function activeComparison(storedSet: string | undefined, chooserRaw: string | undefined, savedSets: SavedSetsPayload | null) {
+  const storedSaved: "yes" | "no" | "pending" = storedSet?.startsWith(SAVED_SET_PREFIX)
+    ? savedSets
+      ? savedSets.sets.some((set) => savedSetKey(set.id) === storedSet) ? "yes" : "no"
+      : "pending"
+    : "no";
+  const stored = storedSet === CHOOSER_SET_ID ? parseChooserChoice(chooserRaw) : null;
+  const chooserChoice = storedSaved === "no" && stored && stored.kind !== "saved" ? stored : null;
+  const activeChoiceKey: string | null = storedSaved !== "no" ? null : chooserChoice ? chooserRaw! : DEFAULT_CHOICE_KEY;
+  return { storedSaved, chooserChoice, activeChoiceKey };
+}
 
 function parseChooserChoice(raw: string | undefined): ChooserChoice | null {
   if (!raw) return null;
@@ -121,11 +143,9 @@ export default function TeacherPhaseDashboard() {
   const [rollAtAge10, setRollAtAge10] = useState<number | null>(null);
   const [neighbours, setNeighbours] = useState<(RankedSchool & { distanceKm: number | null })[]>([]);
   const [headlineLabel, setHeadlineLabel] = useState<string>("");
-  // Round 6 (§6.4): the four real comparator sets, and every school in them with its own
-  // real per-year history for both measures. All of it already existed in the route's own
-  // fetch -- rankSets simply collapsed each school to its latest figure and dropped the
-  // rest. No fabricated drift, and no new ingestion.
-  const [comparatorSets, setComparatorSets] = useState<Partial<Record<RankingsSetId, ComparatorSchool[]>>>({});
+  // Round 6 (§6.4): every comparator school's own real per-year history for both measures.
+  // (The route's four preset sets themselves -- comparatorSets, with setInfo -- are
+  // mothballed since the comparator dropdown round: still returned, no longer read.)
   const [seriesByUrn, setSeriesByUrn] = useState<Record<string, SchoolSeries>>({});
   // Accordion round Part 3: the saved comparator sets (the teacher's own and the school's
   // shared ones), fetched after the main load and again after the chooser saves. Merged
@@ -140,7 +160,6 @@ export default function TeacherPhaseDashboard() {
   // Snagging round 1 Part 4: a ranking also brings its rank-in-the-whole-population and
   // population-average figures (RankingFigures), which a list of schools does not have.
   const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; ranking: RankingFigures | null } | null>(null);
-  const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route: the subject
   // itself at GCSE; at Post-16 the subject in its exact qualification, with no fallback.
   const [englandAvg, setEnglandAvg] = useState<{
@@ -222,9 +241,7 @@ export default function TeacherPhaseDashboard() {
         setRollAtAge10(body.rollAtAge10 ?? null);
         setNeighbours(body.neighbours ?? []);
         setHeadlineLabel(body.headlineLabel ?? "");
-        setComparatorSets(body.comparatorSets ?? {});
         setSeriesByUrn(body.seriesByUrn ?? {});
-        setSetInfo(body.setInfo ?? null);
         setEnglandAvg(body.englandAverages ?? null);
       } else {
         setError("Could not load this school's data. Try again.");
@@ -260,14 +277,20 @@ export default function TeacherPhaseDashboard() {
   // The chooser's unsaved choice (see chooserSet) joins as CHOOSER_SET_ID: an empty list
   // while it loads, so the pill stays on it rather than falling back to the first preset.
   const chooserRaw = readSetting(columns, CHOOSER_KEY);
-  const allComparatorSets = useMemo<Record<string, ComparatorSchool[] | undefined>>(
-    () => ({
-      ...comparatorSets,
+  // Comparator dropdown round: what the column is on, resolved once. A saved set by its
+  // key (kept while saved sets are still loading, so the default never flashes in first);
+  // otherwise the chooser's own stored choice; otherwise the default nearest ten. The old
+  // presets (Nearest 10 / Same sector / Local rivals / Similar-sized) are mothballed: a
+  // stored preset id now reads as "nothing chosen".
+  const storedSet = readSetting(columns, setKey("rankings"));
+  const allComparatorSets = useMemo<Record<string, ComparatorSchool[] | undefined>>(() => {
+    const key = activeComparison(storedSet, chooserRaw, savedSets).activeChoiceKey;
+    return {
       ...Object.fromEntries((savedSets?.sets ?? []).map((set) => [savedSetKey(set.id), set.rows])),
-      ...(chooserRaw ? { [CHOOSER_SET_ID]: chooserSet?.key === chooserRaw ? chooserSet.rows : [] } : {}),
-    }),
-    [comparatorSets, savedSets, chooserRaw, chooserSet],
-  );
+      ...(key ? { [CHOOSER_SET_ID]: chooserSet?.key === key ? chooserSet.rows : [] } : {}),
+    };
+  }, [savedSets, storedSet, chooserRaw, chooserSet]);
+  const { storedSaved, chooserChoice, activeChoiceKey } = activeComparison(storedSet, chooserRaw, savedSets);
   const comparatorUrns = useMemo(
     () => Array.from(new Set(Object.values(allComparatorSets).flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
     [allComparatorSets],
@@ -275,8 +298,8 @@ export default function TeacherPhaseDashboard() {
 
   // Resolve the chooser's unsaved choice whenever it changes (and once on load).
   useEffect(() => {
-    if (!chooserRaw || !schoolUrn || !phase) return;
-    const choice = parseChooserChoice(chooserRaw);
+    if (!activeChoiceKey || !schoolUrn || !phase) return;
+    const choice = activeChoiceKey === DEFAULT_CHOICE_KEY ? ({ kind: "nearest" } as const) : parseChooserChoice(activeChoiceKey);
     if (!choice || choice.kind === "saved") return;
     let cancelled = false;
     (async () => {
@@ -289,7 +312,7 @@ export default function TeacherPhaseDashboard() {
         body: JSON.stringify({
           urn: schoolUrn,
           phase,
-          set: choice.kind === "urns" ? { kind: "urns", urns: choice.urns } : { kind: "ranking", filters: choice.filters },
+          set: choice.kind === "nearest" ? choice : choice.kind === "urns" ? { kind: "urns", urns: choice.urns } : { kind: "ranking", filters: choice.filters },
         }),
       });
       if (cancelled || !res.ok) return;
@@ -306,10 +329,10 @@ export default function TeacherPhaseDashboard() {
               average: body.average ?? [],
             }
           : null;
-      if (!cancelled) setChooserSet({ key: chooserRaw, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking });
+      if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking });
     })();
     return () => { cancelled = true; };
-  }, [chooserRaw, schoolUrn, phase, supabase]);
+  }, [activeChoiceKey, schoolUrn, phase, supabase]);
 
   const reloadSavedSets = useCallback(async () => {
     if (!schoolUrn || !phase) return;
@@ -1260,41 +1283,25 @@ export default function TeacherPhaseDashboard() {
 
   // ------------------------------------------------------------- Comparisons (§4.3)
   //
-  // The four real comparator sets become the options in one "Compared against" pill
-  // rather than four separate pinnable boxes competing for one of the column's three
-  // panel slots (§6.7). Similar-sized is GCSE/Post-16 only -- KS2 publishes no exam-cohort
-  // size to match on -- so it is offered only where the route really built it.
-  const presetOptions: SetOption[] = (
-    [
-      { id: "nearest", label: "Nearest 10 schools" },
-      { id: "same_sector", label: "Same sector schools" },
-      { id: "local_rivals", label: "Local rivals" },
-      { id: "similar_size", label: phase === "ks5" ? "Similar-sized sixth forms" : "Similar-sized schools" },
-    ] as { id: RankingsSetId; label: string }[]
-  )
-    .filter((o) => comparatorSets[o.id] !== undefined)
-    .map((o) => ({ ...o, group: "preset" as const }));
-  // The chooser's unsaved choice sits with the starting points, under its own name.
-  const chooserChoice = parseChooserChoice(chooserRaw);
-  if (chooserChoice && chooserChoice.kind !== "saved") {
-    presetOptions.unshift({ id: CHOOSER_SET_ID, label: chooserChoice.label, group: "preset" });
-  }
-  // Accordion round Part 3: saved sets join the same list, in the wireframe's groups --
-  // the teacher's own, then the school's shared ones.
-  const savedOptions: SetOption[] = (savedSets?.sets ?? []).map((set) => ({
-    id: savedSetKey(set.id),
-    label: set.name,
-    group: set.vc ? "vc" : set.mine ? "mine" : "shared",
-    meta: `${set.members.length} school${set.members.length === 1 ? "" : "s"}`,
-    editable: set.editable,
-  }));
-  const comparatorSetOptions: SetOption[] = [...presetOptions, ...savedOptions];
-
-  const savedSet = readSetting(columns, setKey("rankings"));
-  const comparisonsSet: string =
-    savedSet && allComparatorSets[savedSet] !== undefined ? savedSet : comparatorSetOptions[0]?.id ?? "nearest";
+  // Comparator dropdown round: the "Compared against" pill shows ONE thing -- what is
+  // selected -- and hands every change to the comparator chooser, as Context's pill does
+  // with its picker. The chooser's hub already lists every saved, school and Victoria
+  // Consultancy set, so the pill no longer repeats them, and the old presets (the
+  // dashboard route's Nearest 10 / Same sector / Local rivals / Similar-sized) are
+  // mothballed: still built by the route, offered nowhere.
+  const comparisonsSet: string = storedSaved === "no" ? CHOOSER_SET_ID : storedSet!;
   const activeSavedSet = (savedSets?.sets ?? []).find((set) => savedSetKey(set.id) === comparisonsSet) ?? null;
-  const activeSetLabel = comparatorSetOptions.find((o) => o.id === comparisonsSet)?.label ?? "Nearest 10 schools";
+  const activeSetLabel = activeSavedSet ? activeSavedSet.name : storedSaved === "pending" ? "Loading…" : chooserChoice ? chooserChoice.label : DEFAULT_CHOICE_LABEL;
+  const activeSetOption: SetOption =
+    activeSavedSet
+      ? {
+          id: comparisonsSet,
+          label: activeSavedSet.name,
+          group: activeSavedSet.vc ? "vc" : activeSavedSet.mine ? "mine" : "shared",
+          meta: `${activeSavedSet.members.length} school${activeSavedSet.members.length === 1 ? "" : "s"}`,
+          editable: activeSavedSet.editable,
+        }
+      : { id: comparisonsSet, label: activeSetLabel };
 
 
   // Round 7 §9: when a subject chip is active, every Comparisons view reads that
@@ -1334,25 +1341,14 @@ export default function TeacherPhaseDashboard() {
   // beside the set, not in a tooltip.
   const comparatorSetNote =
     comparisonsSet === CHOOSER_SET_ID
-      ? chooserSet && chooserSet.key === chooserRaw
+      ? chooserSet && chooserSet.key === activeChoiceKey
         ? chooserSet.note ?? undefined
         : "Loading these schools…"
-      : comparisonsSet === "same_sector" && setInfo
-      ? setInfo.targetIndependent ? "Independent schools only" : "State schools only"
-      : comparisonsSet === "similar_size" && setInfo?.targetCohortSize
-        ? `This school: ${Math.round(setInfo.targetCohortSize).toLocaleString()} pupils in the exam cohort`
+      : storedSaved === "pending"
+        ? "Loading these schools…"
         : undefined;
 
-  const comparatorEmptyText: string =
-    comparisonsSet === "same_sector"
-      ? `No nearby ${setInfo?.targetIndependent ? "independent" : "state"} schools of this phase to compare with.`
-      : comparisonsSet === "local_rivals"
-        ? "No nearby schools of this phase to compare with."
-        : comparisonsSet === "similar_size"
-          ? setInfo?.targetCohortSize
-            ? "No nearby schools with a published cohort size to match."
-            : "This school has no published cohort size to match on."
-          : "No nearby schools with comparable published data for this phase.";
+  const comparatorEmptyText = "No schools in this comparison with comparable published data for this phase.";
 
   // Column 1's persistence key. Both modes share it, because the toggle changes the
   // measure a panel is about, not which panels the person chose to keep -- switching to
@@ -1856,8 +1852,7 @@ export default function TeacherPhaseDashboard() {
             source={panelSource}
             headlineLabel={headlineLabel}
             setId={comparisonsSet}
-            setOptions={comparatorSetOptions}
-            onSetChange={(id) => setColumnSetting(setKey("rankings"), id)}
+            activeSet={activeSetOption}
             setLabel={activeSetLabel}
             setNote={comparatorSetNote}
             schools={allComparatorSets[comparisonsSet] ?? []}
@@ -1871,7 +1866,6 @@ export default function TeacherPhaseDashboard() {
               const editing = id ? savedSets.sets.find((set) => savedSetKey(set.id) === id) ?? null : null;
               setChooser({ editing });
             }}
-            personalSetsNote={savedSets ? `${savedSets.personalCount} / ${savedSets.cap}` : undefined}
             subjectLabel={activeMapChip?.legend ?? null}
             seriesLoading={!!activeMapChip && mapProfiles === null}
             measure={comparisonsMeasure}
@@ -1893,7 +1887,7 @@ export default function TeacherPhaseDashboard() {
             // tiles view by default, and its whole population's average in the graphs. The
             // figures are on the ranking's own measure, the phase headline.
             rankingSet={
-              comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking" && chooserSet && chooserSet.key === chooserRaw && chooserSet.ranking
+              comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking" && chooserSet && chooserSet.key === activeChoiceKey && chooserSet.ranking
                 ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure" }
                 : null
             }
