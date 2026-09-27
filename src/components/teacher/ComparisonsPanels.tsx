@@ -45,7 +45,9 @@ import { CentredOnTarget } from "./CentredOnTarget";
 import { FromYearMenu } from "./FromYearMenu";
 import { ChangeList, YearTable, type ChangeRow } from "./SeriesViews";
 import { TrendLineToggle } from "./PanelFooter";
-import { HorizontalBarsIcon, IconButton, MapPinIcon, Pill, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
+import { AverageIcon, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
+import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import type { RankingFigures } from "@/lib/chooser-sets";
 import { PillMenu } from "./PillMenu";
 import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
 import { RankingsMap } from "./RankingsMap";
@@ -120,6 +122,7 @@ export function ComparisonsPanels({
   onManageSet,
   personalSetsNote,
   threshold,
+  rankingSet = null,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -166,6 +169,12 @@ export function ComparisonsPanels({
   // fetched here for the set's schools and scored by `rateOf` -- the page's own
   // thresholdRate, so every school is scored exactly as the school itself is.
   threshold?: { subject: string; qualificationType: string; rateOf: (rows: SubjectGradeCount[]) => number | null } | null;
+  // Snagging round 1 Part 4: set when the active comparator is a national/regional
+  // RANKING (the chooser's 3a/3b) rather than a list of schools. Its schools are a sample
+  // (the top and this school's neighbours), so the column shows no map of them; it shows
+  // the school's rank in the whole population and that population's true average instead,
+  // on the ranking's own measure (`measure`, the phase headline).
+  rankingSet?: (RankingFigures & { measure: Measure; measureName: string }) | null;
 }) {
   // ------------------------------------------- threshold rates (grade counts per school)
   const gradeUrns = allSchools.map((s) => s.urn).sort();
@@ -201,7 +210,10 @@ export function ComparisonsPanels({
   }
 
   // Column 3 round Part 1: Map is the default view, and first in the icon rail to match.
-  const [view, setView] = useState<"graph" | "map" | "ranking">("map");
+  const [viewChosen, setView] = useState<"tiles" | "graph" | "map" | "ranking">("map");
+  // Part 4: a ranking has no Map -- its default is the tiles view -- and a list of schools
+  // has no tiles view; whichever was chosen falls back to the other's default.
+  const view = rankingSet ? (viewChosen === "map" ? "tiles" : viewChosen) : viewChosen === "tiles" ? "map" : viewChosen;
   // The card map's "Dot size / Colour" line, handed up by the map (onCaption) so it can
   // sit behind the caption button rather than over the map.
   const [mapCaption, setMapCaption] = useState<string | null>(null);
@@ -270,7 +282,19 @@ export function ComparisonsPanels({
   // could actually plot. Where it has one it wins, because a figure beside a map should
   // match the map.
   // Not on a rate: the map is still coloured and ranked by average point score.
-  const shownRank = view === "map" && mapRank && !threshold ? mapRank : targetRank && placed.length > 1 ? { rank: targetRank, total: placed.length } : null;
+  // Part 4: on a ranking, compared on the ranking's own measure (the headline, no subject
+  // chip, not entries), the rank is the one in the WHOLE population, not in the sample.
+  const onRankingMeasure = !!rankingSet && !subjectLabel && !threshold && measure.id !== "entries";
+  const setRank = rankingSet?.targetRank ? { rank: rankingSet.targetRank, total: rankingSet.ranked } : null;
+  const shownRank =
+    (onRankingMeasure || view === "tiles") && setRank
+      ? setRank
+      : view === "map" && mapRank && !threshold
+        ? mapRank
+        : targetRank && placed.length > 1
+          ? { rank: targetRank, total: placed.length }
+          : null;
+  const rankingAverageAt = (period: number | null) => (period === null ? null : rankingSet?.average.find((a) => a.period === period)?.value ?? null);
 
   // Column 3 round Part 2: the school-ranking table's rows -- rank, school, sector,
   // figure, distance from the school itself.
@@ -290,12 +314,34 @@ export function ComparisonsPanels({
     question,
     actions: (
       <>
-        <IconButton label="Map" active={view === "map"} onClick={() => setView("map")}>{MapPinIcon}</IconButton>
+        {rankingSet ? (
+          <IconButton label="Number tiles" active={view === "tiles"} onClick={() => setView("tiles")}>{TilesIcon}</IconButton>
+        ) : (
+          <IconButton label="Map" active={view === "map"} onClick={() => setView("map")}>{MapPinIcon}</IconButton>
+        )}
         <IconButton label="Bar chart" active={view === "graph"} onClick={() => setView("graph")}>{HorizontalBarsIcon}</IconButton>
         <IconButton label="Ranking" active={view === "ranking"} onClick={() => setView("ranking")}>{RankListIcon}</IconButton>
       </>
     ),
     body: (fullscreen) => {
+      if (view === "tiles" && rankingSet) {
+        // Part 4: always on the ranking's own measure, whatever Column 1 is showing --
+        // that is what the population was ranked on; the label says which.
+        const rs = rankingSet;
+        const tiles: NumberTile[] = [];
+        if (rs.targetRank) tiles.push({ key: "rank", icon: PodiumIcon, figure: ordinal(rs.targetRank), detail: `of ${rs.ranked.toLocaleString()} in this set` });
+        // The set's average for the SAME year as the main figure (the graphs' figure too);
+        // the latest-of-each average the rank is on only where that year has none.
+        const avg = (rs.target ? rankingAverageAt(rs.target.period) : null) ?? rs.averageLatest;
+        if (avg !== null) tiles.push({ key: "average", icon: AverageIcon, figure: rs.measure.format(avg), detail: "average across this set" });
+        return (
+          <NumberTiles
+            main={rs.target ? { figure: rs.measure.format(rs.target.value), label: `${targetName} ${rs.measureName} in ${academicYearLabel(rs.target.period)}` } : null}
+            tiles={tiles}
+            fullscreen={fullscreen}
+          />
+        );
+      }
       if (schools.length === 0) return <p className="text-sm text-[var(--muted)]">{emptyText}</p>;
       // The map draws its own loading state, so only the other two views need one.
       if (seriesLoading && view !== "map") return <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>;
@@ -324,6 +370,24 @@ export function ComparisonsPanels({
           </div>
         ) : (
           <p className="text-sm text-[var(--muted)]">No location is recorded for this school, so there is no map to draw.</p>
+        );
+      }
+      if (view === "graph" && onRankingMeasure) {
+        // Part 4: the school against its set's average, not against the sample's schools.
+        const avg = rankingAverageAt(latest);
+        return (
+          <ViewChart
+            layout="row"
+            unit=""
+            formatValue={measure.format}
+            scaleMax={measure.barScaleMax ?? undefined}
+            computed={{
+              rows: [
+                ...(target ? [{ label: targetName, value: valueAt(target.urn), isSubject: true, color: "var(--accent,var(--fg))", emphasis: true }] : []),
+                { label: "Set average", value: avg, isSubject: false, color: "var(--muted3)", emphasis: false },
+              ],
+            }}
+          />
         );
       }
       if (view === "graph") {
@@ -385,13 +449,23 @@ export function ComparisonsPanels({
   const versusSchool = others.find((s) => s.urn === versus) ?? null;
   // Column 3 round Part 3: "All schools, individually" is gone (it shipped in c76312e) --
   // the set's average or one named school, as before it.
-  const versusLabel = versusSchool ? versusSchool.name : `Average across ${setLabel.toLowerCase()}`;
+  // Part 4: on a ranking the "Average" is the whole population's, on the ranking's own
+  // measure; on any other measure it can only be the schools shown, and says so.
+  const versusLabel = versusSchool
+    ? versusSchool.name
+    : rankingSet
+      ? onRankingMeasure
+        ? `Average across this set (${rankingSet.ranked.toLocaleString()} schools)`
+        : "Average of the schools shown"
+      : `Average across ${setLabel.toLowerCase()}`;
   const versusValues = versusSchool
     ? valuesFor(versusSchool.urn)
-    : // The set's average per period, over the schools that genuinely have a figure that
-      // year -- so a school joining or leaving the published data does not read as the
-      // whole set moving.
-      periods.map((_, i) => meanOf(others.map((s) => valuesFor(s.urn)[i])));
+    : onRankingMeasure
+      ? periods.map((p) => rankingAverageAt(p))
+      : // The set's average per period, over the schools that genuinely have a figure that
+        // year -- so a school joining or leaving the published data does not read as the
+        // whole set moving.
+        periods.map((_, i) => meanOf(others.map((s) => valuesFor(s.urn)[i])));
 
   const versusPill = (open: boolean, setOpenState: (v: boolean) => void, ref: React.RefObject<HTMLDivElement | null>) => (
     <div className="relative" ref={ref}>

@@ -6,6 +6,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
+import type { RankingFigures } from "@/lib/chooser-sets";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -136,7 +137,9 @@ export default function TeacherPhaseDashboard() {
   // a ranking), and the rows and series /api/teacher/chooser-set resolved for it. The
   // choice itself is saved as a column setting (CHOOSER_KEY) so it survives a reload; the
   // rows are re-fetched from it rather than stored.
-  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null } | null>(null);
+  // Snagging round 1 Part 4: a ranking also brings its rank-in-the-whole-population and
+  // population-average figures (RankingFigures), which a list of schools does not have.
+  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; ranking: RankingFigures | null } | null>(null);
   const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route: the subject
   // itself at GCSE; at Post-16 the subject in its exact qualification, with no fallback.
@@ -290,8 +293,20 @@ export default function TeacherPhaseDashboard() {
         }),
       });
       if (cancelled || !res.ok) return;
-      const body = (await res.json()) as { rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null };
-      if (!cancelled) setChooserSet({ key: chooserRaw, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note });
+      const body = (await res.json()) as { rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null } & Partial<RankingFigures>;
+      const ranking: RankingFigures | null =
+        choice.kind === "ranking" && body.ranked !== undefined
+          ? {
+              matched: body.matched ?? 0,
+              ranked: body.ranked,
+              targetRank: body.targetRank ?? null,
+              target: body.target ?? null,
+              targetSeries: body.targetSeries ?? [],
+              averageLatest: body.averageLatest ?? null,
+              average: body.average ?? [],
+            }
+          : null;
+      if (!cancelled) setChooserSet({ key: chooserRaw, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking });
     })();
     return () => { cancelled = true; };
   }, [chooserRaw, schoolUrn, phase, supabase]);
@@ -1874,6 +1889,14 @@ export default function TeacherPhaseDashboard() {
             onMapRank={setMapRank}
             emptyText={comparatorEmptyText}
             targetName={schoolName ?? "This school"}
+            // Snagging round 1 Part 4: a national/regional ranking is on -- no map, a rank-in-set
+            // tiles view by default, and its whole population's average in the graphs. The
+            // figures are on the ranking's own measure, the phase headline.
+            rankingSet={
+              comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking" && chooserSet && chooserSet.key === chooserRaw && chooserSet.ranking
+                ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure" }
+                : null
+            }
             currentLabel={
               activeSavedSet
                 ? `${showingResults ? "Results" : "Candidates"} against ${activeSavedSet.name}`
