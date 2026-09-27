@@ -806,3 +806,59 @@ KS4. Pre-existing, not touched.
 Burghley's figures, GCSE and Post-16, light and dark, in a temporary harness (not
 committed), via headless Chrome; the browser extension could not take screenshots this
 session. The live-site check against a signed-in dashboard is still to do.
+
+---
+
+## 2026-09-27 — Teacher view comparator chooser (v29 wireframe): decisions logged, build carried on
+
+Build prompt: `docs/vicdata_phase3_teacher_view_comparator_chooser_build_claude_code_prompt_v1.md`. Everything below was decided without Guy there, per the prompt's "log it and carry on" rule. Full account in `docs/vicdata_phase3_teacher_view_comparator_chooser_build_report_v1.md`.
+
+**Victoria Consultancy Sets: how they're stored, and who can switch them on (§2).** Three new tables in `20261102100000_victoria_consultancy_sets.sql`: `vc_comparator_sets` (a platform-level set, not tied to any school), `vc_comparator_set_members`, and `vc_set_school_visibility` (a row = "switched on for this school").
+- *Not* a flag on `saved_sets`: a `saved_sets` row belongs to one school account, and its RLS lets that school's admins edit and delete its shared rows. A VC set must be neither. Changing `saved_sets`' RLS to carve VC rows out would touch who can edit today's sets, which the prompt says to stop for. The new tables touch nothing in `saved_sets`.
+- **Who can write:** nobody through the API. The three tables have SELECT policies only, so only the service role can write. The platform has no operator role (all three RLS helpers are school-scoped), and the `vicdata` admin app authenticates against a *different* Supabase project. So v1 follows this repo's own precedent for operator writes (service-role scripts, as `scripts/sync-*.ts` do): **`scripts/vc-sets.ts`**, with `list` / `create` / `rename` / `set-members` / `delete` / `show <school-urn> <set-id>` / `hide`.
+- **Who can read:** members of a school see exactly the VC sets switched on for it. This was proven live in a rolled-back transaction, impersonating real members:
+  - a member of the switched-on school saw 1 set / 2 members; their insert was refused (42501), and their update and switch-off each touched 0 rows;
+  - a member of another school, and an anonymous caller, saw nothing.
+- **Open for Guy:** whether this should become an in-app operator screen, and whether a VC set should ever be per-school rather than shared across schools.
+
+**Two different "Independent" colours on one dashboard (§3).** The chooser's Sector chips and school circles use the four-way brand palette (`TAG_COLOURS`: Independent `#F37521`, State `#15803d`, FE `#86198f`, Special `#b91c1c`), per the wireframe. The Comparisons ranking table still uses `school-sector.ts`'s binary `SECTOR` palette (Independent pink `#c2478b`, state blue `#4b7bd6`), which has no FE or Special. **Follow-up call for Guy:** move the ranking table to the four-way palette too?
+
+**Qualification filter: wired, but the count isn't real yet.** A school's KS5 qualification mix is a per-school, per-subject fact today, with no population-scale path. The Qualification chips set state and are saved with a ranking and shown in its description. When one is active, the filter box says "Saved with the ranking, but the count doesn't narrow by qualification yet". `matchesRanking` deliberately doesn't apply it. Real counting needs a population-level qualification flag per school: `academic_ks5_qualification_flags_lookup` covers IB/Pre-U only, so a new field would be needed.
+
+**Saved rankings are their own table, not `saved_sets` rows** (`20261102090000_saved_rankings.sql`).
+- **Why:** a ranking has no members. As a `saved_sets` comparator row it would show up *empty* in every existing comparator-set consumer (the Data View's sets controls, `/sets`, `/api/comparator-set-peers`, Teacher view's saved-sets route). Resolved into members instead, it would make that route fetch thousands of academic profiles on every dashboard load.
+- **Access:** ownership and the four RLS policies mirror `saved_sets` verbatim, with the same personal cap of 8, counted separately from comparator sets.
+- **Quirk mirrored, not fixed:** `saved_sets`' personal-insert policy doesn't check that the membership belongs to the same school account, and the mirror inherits that. Worth tightening in both tables together.
+
+**Boarding filter: the wireframe's literal % bands, not quintiles.** The prompt's prose asked for the Boarding box to "read against the real quintile mechanism", but the wireframe (which wins where they disagree) specifies literal bands: Any / 100% Day / 1–19 / 20–49 / 50–79 / 80%+. Each school's share is the census boarders ÷ total via `boardingRatio()`, rounded before banding.
+- **The quintile mechanism still governs "10 nearest":** `resolveNearestOption`, now shared from `src/lib/nearest-option.ts`, picks list1 or the boarding-quintile recipe exactly as the Data View does.
+- **Colours:** the three middle-band colours are the wireframe's provisional ramp; their dark-mode pairs are mine, not yet in `tag-colours.ts`.
+
+**What a ranking's population is.** Built from `region_nation_set` (England, or one region), with the school itself counted.
+- **"Same phase":** at Post-16, a school with pupils aged 16–18 in its census counts, or an FE college. At GCSE, `phaseTags()` includes Senior.
+- **Special schools are included,** as the wireframe's default "State, Independent, FE & Special" says.
+- **Real counts:** England Post-16 4,857 (the wireframe's 3,842 was mock); West Midlands 552.
+
+**How the dashboard uses a ranking.** Ranked by the dashboard's headline measure (`HEADLINE_MEASURE`). The Comparisons column gets the top 15 plus the 5 either side of this school, with a note ("The Chase ranks 843rd of 2,545 with a published figure (4,857 in this ranking)…"). Schools without a published figure aren't ranked. A population of thousands can't be drawn school by school.
+- **Performance:** the first national load is about 5 seconds (the RPC) plus the headline lookup, then cached for 6 hours per scope.
+- **A school outside its own ranking:** if a ranking excludes the school (a state school looking at independent girls' boarding schools), the note says so and places it against them anyway.
+
+**Size bands: a latent bug worked around, not fixed.** `lookupAgeBandDistributions(null, …)` returns nothing (it filters `scope_key in ("")`). Its only other caller always passes a real LA, so the chooser does the same. Separately, the GCSE ("secondary") national quintiles have p20 = 1, so at GCSE the XS band is almost empty. That's a real data property, not a chooser bug.
+
+**Smaller UI calls where the wireframe is silent or would mislead:**
+- **Dark mode:** the wireframe is light-only. Its hexes are the light values verbatim; in dark mode each maps to the dashboard's own tokens.
+- **Delete on an unsaved fork (2c):** hidden. The wireframe shows it, but nothing is saved yet (Back discards), and the rule is "Delete only where editable".
+- **Delete in the ⋯ menus:** a two-step "Tap again to delete".
+- **Remove (×):** on rows of a custom set, so an edited saved set can lose a school. The wireframe has no remove affordance.
+- **Admins and shared sets:** admins see ⋯ (Edit/Delete) on the school's shared sets, although the row's copy says "can't be edited"; that copy is true for everyone else.
+- **"{School} sets" row:** hidden when the school has none.
+- **Scope "More":** a dropdown of the other English regions.
+- **KS4:** no Qualification box, and the Size box reads "Secondary (Years 7–11)".
+- **KS2:** no rankings row (no exam population).
+- **The admin "Just me / Whole school" choice:** rendered from the wireframe's otherwise-unused `.segmented` style.
+
+**Two "nearest" lists in the "Compared against" pill.** The chooser's "10 nearest schools" is `default-comparator-lists`' list1, as the prompt requires. The pill's existing "Nearest 10 schools" preset is the dashboard route's own `teacher-view-rankings` algorithm, a different selection with a near-identical name. **Call for Guy:** retire the old preset now that the chooser exists, or rename one of them.
+
+**The LA list says "mainstream" but isn't.** `list2` for The Chase ("In Worcestershire (all sectors)", upstream) includes special schools and alternative provision, while the wireframe's copy says "mainstream sectors". The copy is kept as designed. `local16Plus` stays additive: its 36 schools beyond list2 are their own group on screen 2b, under its real label ("Schools and FE colleges, 16+, in Worcestershire").
+
+**Migration history.** Both new migrations were applied surgically (`supabase db query --linked -f`) and recorded individually (`supabase migration repair --status applied <version>`). A plain `supabase db push` would have replayed three older local migrations that the remote history shows as unapplied, including `teacher_view_persistence`, which the live site already relies on (so it was presumably applied by other means). Those three are untouched and still need their own reconciliation.

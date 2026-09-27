@@ -117,7 +117,7 @@ export function matchesBoarding(percent: number | null, choice: BoardingChoice):
 
 // Qualification is deliberately NOT applied: a school's KS5 qualification mix is a
 // per-school, per-subject fact today, with no population-scale path to filter by
-// (docs/OPEN_QUESTIONS.md, 2026-11-02). The chip is kept, saved and described; the
+// (docs/OPEN_QUESTIONS.md, 2026-09-27). The chip is kept, saved and described; the
 // screen says the count does not reflect it yet rather than pretending it does.
 export function matchesRanking(row: PopulationRow, f: RankingFilters): boolean {
   const [, , sector, gender, boardingPercent, size] = row;
