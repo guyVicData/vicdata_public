@@ -897,6 +897,16 @@ export default function TeacherPhaseDashboard() {
   // the picker, and a teacher who focuses one directly still gets its own panels: the
   // focused item is never filtered.
   const comparablePeer = (i: SubjectItem) => !isAsLevelOrAea(i.qualificationType);
+  // Column 1 qualification match: a peer is also in the focused subject's own qualification
+  // family (qualificationFamilyOf -- at Post-16 the display bucket, so A level with A level,
+  // never with Core Maths, EPQ or Pre-U in Other). The one rule Column 1's category and
+  // Context's Selected subjects (§4c) both read, so the two columns cannot disagree about
+  // what counts as the same qualification. Before this, Results left Other-bucket peers
+  // out only by accident (they have no points figure) while Candidates drew them. KS2 has
+  // no qualifications, so everything matches there.
+  const focusQualFamily = focusItem && phase !== "ks2" ? familyOfItem(phase, focusItem) : null;
+  const inFocusQualFamily = (i: SubjectItem) =>
+    focusQualFamily === null || familyOfItem(phase as "ks4" | "ks5", i) === focusQualFamily;
   const focusFamilyId = focusItem ? familyFor(headline, focusItem.subject)?.id ?? null : null;
   const focusFamilyLabel = focusItem ? familyLabelFor(headline, focusItem.subject) ?? "its category" : null;
   const categoryItems: SubjectItem[] = focusItem
@@ -905,7 +915,11 @@ export default function TeacherPhaseDashboard() {
         ...items
           .filter(
             (i) =>
-              i.key !== focusItem.key && comparablePeer(i) && focusFamilyId !== null && familyFor(headline, i.subject)?.id === focusFamilyId,
+              i.key !== focusItem.key &&
+              comparablePeer(i) &&
+              inFocusQualFamily(i) &&
+              focusFamilyId !== null &&
+              familyFor(headline, i.subject)?.id === focusFamilyId,
           )
           .sort((a, b) => b.entries - a.entries),
       ]
@@ -1073,9 +1087,10 @@ export default function TeacherPhaseDashboard() {
   // qualification family -- a comparison set is always with the same qualification -- so
   // the picker offers only that family's subjects (contextOffer), and a key ticked earlier
   // under another family (before this rule, or with a different subject focused) is left
-  // out of the group rather than counted invisibly.
-  const contextFamily = focusItem && phase !== "ks2" ? familyOfItem(phase, focusItem) : null;
-  const inContextFamily = (i: SubjectItem) => contextFamily === null || familyOfItem(phase as "ks4" | "ks5", i) === contextFamily;
+  // out of the group rather than counted invisibly. The same rule as Column 1's category
+  // (focusQualFamily above).
+  const contextFamily = focusQualFamily;
+  const inContextFamily = inFocusQualFamily;
   const contextOffer = items.filter((i) => i.entries > 0 && inContextFamily(i));
   const contextMembers: string[] = (() => {
     const every = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
