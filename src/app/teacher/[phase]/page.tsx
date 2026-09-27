@@ -1197,8 +1197,7 @@ export default function TeacherPhaseDashboard() {
   const contextFamily = focusQualFamily;
   const inContextFamily = inFocusQualFamily;
   const contextOffer = items.filter((i) => i.entries > 0 && inContextFamily(i));
-  // Every subject at the school, by name -- Context's All subjects group, and (snagging
-  // round 1 Part 2) the population of Column 1 Results' "average across all subjects" tile.
+  // Every subject at the school, by name -- Context's All subjects group.
   const schoolSubjectNames = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
   const contextMembers: string[] = (() => {
     const every = schoolSubjectNames;
@@ -1608,13 +1607,10 @@ export default function TeacherPhaseDashboard() {
                   : undefined
               }
               accentHex={accent?.hex ?? null}
+              // Snagging round 1 Part 2: the number tiles, Current's default view.
+              tiles
               // Trend map/legend round Part 3: Trend's Map view -- the same map profiles and
               // focus-subject chip Comparisons' map uses, so the two maps plot one subject.
-              // Snagging round 1 Part 2: the number tiles' middle figure -- the school's own
-              // per-subject average on this measure across every subject it has, the same
-              // groupValueFor figures Context's All subjects average is built from (Context
-              // follows the Results sub-measure, so they are the same measure).
-              tiles={{ schoolAverage: resultsPeriods.map((p) => meanOf(schoolSubjectNames.map((n) => groupValueFor(n, p)))) }}
               trendMap={
                 activeMapChip && schoolUrn
                   ? {

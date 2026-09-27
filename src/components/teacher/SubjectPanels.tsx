@@ -194,10 +194,8 @@ export function SubjectPanels({
   // the focused subject. Absent (Context, KS2, or no focused subject with a map chip) = no
   // Map button.
   // Snagging round 1 Part 2: Column 1 Results' number tiles, the Current panel's default
-  // view when present. `schoolAverage` is the school's own per-subject average on the
-  // active measure across EVERY subject, aligned to `periods` -- the middle tile, a
-  // benchmark beside the focused subject's figure, not a rank. Context never passes it.
-  tiles?: { schoolAverage: (number | null)[] };
+  // view when set. Context never passes it.
+  tiles?: boolean;
   trendMap?: {
     profiles: AcademicSchoolProfile[] | null;
     targetUrn: string;
@@ -353,9 +351,10 @@ export function SubjectPanels({
     if (rank && inCategory.size > 1) {
       tileRow.push({ key: "category", icon: PodiumIcon, figure: ordinal(rank), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}` });
     }
-    const schoolAvg = latestIdx >= 0 ? tiles.schoolAverage[latestIdx] ?? null : null;
-    if (schoolAvg !== null) {
-      tileRow.push({ key: "school", icon: AverageIcon, figure: measure.format(schoolAvg), detail: "average across all subjects at school" });
+    // The middle tile: England's own figure for this subject, a benchmark beside the main
+    // one -- the same England anchor the next tile's gap is taken from.
+    if (tileFocus.bench !== null) {
+      tileRow.push({ key: "england-average", icon: AverageIcon, figure: measure.format(tileFocus.bench), detail: `England average for ${tileFocus.s.label}` });
     }
     if (tileFocus.bench !== null) {
       const gap = tileFocus.value - tileFocus.bench;
