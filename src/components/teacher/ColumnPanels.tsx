@@ -103,6 +103,7 @@ export function ColumnPanels({
             headline={panel.headline}
             footerLead={panel.footerLead}
             flag={panel.flag}
+            legend={panel.legend}
             visibleCaption={panel.visibleCaption}
             suggestFullscreen={panel.suggestFullscreen}
             title={panel.tag}

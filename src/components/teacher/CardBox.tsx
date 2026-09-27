@@ -99,6 +99,7 @@ export function CardBox({
   headline,
   footerLead,
   flag,
+  legend,
   note,
   visibleCaption,
   suggestFullscreen = false,
@@ -170,6 +171,11 @@ export function CardBox({
   // or no flag; the fullscreen view, which has the room, still prints it.)
   footerLead?: ReactNode;
   flag?: ReactNode;
+  // Trend map/legend round: a rail-only slot -- the first section of the fullscreen rail
+  // (Trend's "Subjects shown" show/hide list), divided from the flag and note below it.
+  // Unlike `flag`, the compact card never renders it; below lg the rail stacks under the
+  // chart, so the legend is the first thing after it.
+  legend?: ReactNode;
   // Called twice while fullscreen is open -- once for the box underneath, once for the
   // modal -- so it must be safe to mount two copies (the map is: each instance owns its
   // own Leaflet map).
@@ -351,7 +357,7 @@ export function CardBox({
               that reads as a flag or a note. A 15rem rail against the ~1150px modal on a
               laptop is roughly the "7-column main, narrow rail" steer; below lg it stacks
               under the main area. The compact card is untouched and stays icon-driven. */}
-          <div className={`mt-1 grid min-h-0 flex-1 gap-4 ${flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
+          <div className={`mt-1 grid min-h-0 flex-1 gap-4 ${legend || flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
             <div className="flex min-h-0 min-w-0 flex-col gap-2">
               <div className="flex min-h-0 flex-1 items-stretch">
                 {actions && (
@@ -364,25 +370,37 @@ export function CardBox({
                   in both, rather than a print-only copy of what the card hides behind "i". */}
               {source && <p className="text-[11px] leading-relaxed text-[var(--source)]">{source}</p>}
             </div>
-            {(flag || note) && (
-              <aside className="flex flex-col gap-4 border-t border-[var(--panel-border)] pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                {flag && (
-                  <section>
-                    <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Flag</h4>
-                    <p className="mt-1.5 text-[13px] font-bold">{flag}</p>
+            {(legend || flag || note) && (
+              <aside className="flex min-h-0 flex-col gap-4 border-t border-[var(--panel-border)] pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+                {legend && (
+                  <section className="flex min-h-0 flex-col">
+                    <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Subjects shown</h4>
+                    <div className="mt-2 min-h-0 overflow-y-auto">{legend}</div>
                   </section>
                 )}
-                {note && (
-                  // Private to its author, so it stays off a printout that may be handed on.
-                  <section className="print:hidden">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Your note &middot; private</h4>
-                      <PanelNote body={note.body} onSave={note.onSave} variant="rail" />
-                    </div>
-                    <p className={`mt-1.5 whitespace-pre-wrap text-[12.5px] leading-relaxed ${note.body?.trim() ? "text-[var(--fg)]" : "italic text-[var(--muted3)]"}`}>
-                      {note.body?.trim() ? note.body : "No note on this panel yet."}
-                    </p>
-                  </section>
+                {/* The flag and note sit below a rule, apart from the legend's controls --
+                    the same panel-border line that divides the rail from the chart. */}
+                {(flag || note) && (
+                  <div className={`flex flex-col gap-4 ${legend ? "border-t border-[var(--panel-border)] pt-4" : ""}`}>
+                    {flag && (
+                      <section>
+                        <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Flag</h4>
+                        <p className="mt-1.5 text-[13px] font-bold">{flag}</p>
+                      </section>
+                    )}
+                    {note && (
+                      // Private to its author, so it stays off a printout that may be handed on.
+                      <section className="print:hidden">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Your note &middot; private</h4>
+                          <PanelNote body={note.body} onSave={note.onSave} variant="rail" />
+                        </div>
+                        <p className={`mt-1.5 whitespace-pre-wrap text-[12.5px] leading-relaxed ${note.body?.trim() ? "text-[var(--fg)]" : "italic text-[var(--muted3)]"}`}>
+                          {note.body?.trim() ? note.body : "No note on this panel yet."}
+                        </p>
+                      </section>
+                    )}
+                  </div>
                 )}
               </aside>
             )}
