@@ -27,6 +27,14 @@ const BELOW_AND_ABOVE = 6 + 4 + 2 * LABEL_LINE + BOTTOM_ROOM;
 // The widest a column (and so its label) may be before the label wraps: 4rem.
 const LABEL_MAX = 64;
 
+// The space between two columns (round 3: 16px read as too wide once every column was one
+// width, and kept The Chase's six Sciences & Maths bars 26px short of fitting a
+// three-column desktop card).
+const GAP = 10;
+
+// The widest a horizontal chart's subject-label column may be, and the share of the width.
+const HLABEL_MAX = 128;
+
 // The right-edge fade while more bars are scrolled out of view.
 const EDGE_FADE = "linear-gradient(to right, #000 calc(100% - 28px), transparent)";
 
@@ -50,15 +58,31 @@ export function VerticalBars({
   const real = bars.map((b) => b.value).filter((v): v is number => v !== null);
   const hasData = real.length > 0;
   const barW = bars.length > 5 ? 20 : 26;
+  // Round 7 §5: the tallest real bar fills the chart. This used to round up to a "nice"
+  // round number, which on a real dashboard meant Candidates' tallest bar of 231 being
+  // drawn against an axis top of 500 -- half the height, for no reason a reader could
+  // see. The axis figures are the data's own now, not a rounder number near it.
+  const top = hasData ? Math.max(...real) : 0;
+  const ticks = [1, 0.75, 0.5, 0.25, 0];
+  // The axis is as wide as its widest figure needs, not a fixed 30px: this panel's
+  // figures are mostly one or two digits ("37", "9"), and the fixed box left ~17px of
+  // empty space before them -- the unexplained left margin on the Candidates card. About
+  // 5.6px a character at 9.5px (digits run ~5.2px, so this errs wide), plus 2px each side.
+  const axisW = Math.max(12, Math.ceil(Math.max(...ticks.map((t) => measure.format(top * t).length)) * 5.6) + 4);
   const box = useRef<HTMLDivElement | null>(null);
-  const [measured, setMeasured] = useState<number | null>(null);
+  const [measured, setMeasured] = useState<{ h: number; w: number } | null>(null);
   // A layout effect, so the first measurement lands before the first paint (no frame of
   // the small fallback chart), then a ResizeObserver keeps it current as the panel,
-  // the accordion or the fullscreen modal changes size.
+  // the accordion or the fullscreen modal changes size. The width decides the chart's
+  // orientation (below); the height sizes the vertical form.
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
-    const measure = () => setMeasured(Math.floor(el.getBoundingClientRect().height));
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const next = { h: Math.floor(r.height), w: Math.floor(r.width) };
+      setMeasured((prev) => (prev && prev.h === next.h && prev.w === next.w ? prev : next));
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -73,6 +97,43 @@ export function VerticalBars({
   // labels are never pushed under the card's clipped bottom edge.
   const row = useRef<HTMLDivElement | null>(null);
   const [edge, setEdge] = useState({ more: false, scrollbar: 0 });
+
+  // Round 2: every column is ONE width -- the widest single WORD among this chart's
+  // labels, capped at LABEL_MAX and never narrower than a bar. The label used to set its
+  // own column's width under a max-width cap, so "Bio" made a 20px column and "Math Stud"
+  // a 46px one, and one constant gap between columns of six different widths read as
+  // irregular gaps driven by the label text. Sized to the widest word rather than the
+  // widest whole label, so "Math Stud" and "Fur Maths" wrap onto two lines at their space
+  // (the two-line room is always reserved anyway) instead of widening every column to
+  // fit them on one: on The Chase's six Sciences & Maths bars that is 30px columns in
+  // place of 48px. Not a flat 64px either: six of those would scroll on almost every
+  // card. Measured with the labels' real font (canvas measureText, the box's own font
+  // family at the labels' 10px) before the first paint -- from the box rather than a
+  // rendered label, so it is known in either orientation. `labelW` is the widest whole
+  // label, for the horizontal form's label column.
+  const [text, setText] = useState<{ colW: number; labelW: number } | null>(null);
+  const labelKey = bars.map((b) => b.shortLabel).join("\u0000");
+  useLayoutEffect(() => {
+    const el = box.current;
+    const ctx = el ? document.createElement("canvas").getContext("2d") : null;
+    if (!el || !ctx) return;
+    ctx.font = `10px ${getComputedStyle(el).fontFamily}`;
+    const labels = labelKey.split("\u0000");
+    const widest = (list: string[]) => Math.max(0, ...list.map((t) => ctx.measureText(t).width));
+    const words = labels.flatMap((t) => t.split(/\s+/)).filter(Boolean);
+    setText({ colW: Math.min(LABEL_MAX, Math.max(barW, Math.ceil(widest(words)) + 2)), labelW: Math.ceil(widest(labels)) + 2 });
+  }, [hasData, labelKey, barW]);
+
+  // Round 3: the orientation, from measured fit rather than a subject count. The vertical
+  // form needs every column side by side (plus the row's 4px inset each end); the room is
+  // the box's width less the value axis and the 8px beside it. When the columns would not
+  // fit without scrolling, the chart turns on its side: one row per subject, which a
+  // Languages or Arts category of twenty-odd subjects can hold where twenty-odd two-line
+  // columns cannot. The same rule lets a fullscreen card keep more bars upright than a
+  // three-column card before it turns. Unknown until measured: upright, as before.
+  const colW = text?.colW ?? null;
+  const horizontal =
+    colW !== null && measured !== null && bars.length * colW + (bars.length - 1) * GAP + 8 > measured.w - axisW - 8;
   useLayoutEffect(() => {
     const el = row.current;
     if (!el) return;
@@ -89,48 +150,26 @@ export function VerticalBars({
       el.removeEventListener("scroll", check);
       ro.disconnect();
     };
-  }, [hasData]);
+  }, [hasData, horizontal]);
 
-  // Round 2: every column is ONE width -- the widest single WORD among this chart's
-  // labels, capped at LABEL_MAX and never narrower than a bar. The label used to set its
-  // own column's width under a max-width cap, so "Bio" made a 20px column and "Math Stud"
-  // a 46px one, and one constant gap between columns of six different widths read as
-  // irregular gaps driven by the label text. Sized to the widest word rather than the
-  // widest whole label, so "Math Stud" and "Fur Maths" wrap onto two lines at their space
-  // (the two-line room is always reserved anyway) instead of widening every column to
-  // fit them on one: on The Chase's six Sciences & Maths bars that is 30px columns in
-  // place of 48px. Not a flat 64px either: six of those would scroll on almost every
-  // card. Measured with the label's real font (canvas measureText) before the first paint.
-  const [colW, setColW] = useState<number | null>(null);
-  const labelKey = bars.map((b) => b.shortLabel).join("\u0000");
-  useLayoutEffect(() => {
-    const label = row.current?.querySelector<HTMLElement>("[data-bar-label]");
-    const ctx = label ? document.createElement("canvas").getContext("2d") : null;
-    if (!label || !ctx) return;
-    const cs = getComputedStyle(label);
-    ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-    const words = labelKey.split("\u0000").flatMap((t) => t.split(/\s+/)).filter(Boolean);
-    const widest = Math.max(0, ...words.map((w) => ctx.measureText(w).width));
-    setColW(Math.min(LABEL_MAX, Math.max(barW, Math.ceil(widest) + 2)));
-  }, [hasData, labelKey, barW]);
 
   if (!hasData) return <p className="text-xs text-[var(--muted)]">No published figures for these subjects yet.</p>;
 
-  // Round 7 §5: the tallest real bar fills the chart. This used to round up to a "nice"
-  // round number, which on a real dashboard meant Candidates' tallest bar of 231 being
-  // drawn against an axis top of 500 -- half the height, for no reason a reader could
-  // see. The axis figures are the data's own now, not a rounder number near it.
-  const top = Math.max(...real);
+  if (horizontal && measured) {
+    return (
+      // Natural height, not the fixed-height box: the rows take the room they need and the
+      // card's content box scrolls, as the Ranked list view already does. Still the
+      // measured element, so a wider card (fullscreen, a resize) can turn it upright again.
+      <div ref={box} className="mt-1 flex flex-col">
+        <HorizontalBars bars={bars} measure={measure} top={top} labelW={Math.min(text?.labelW ?? HLABEL_MAX, HLABEL_MAX, Math.floor(measured.w * 0.4))} />
+      </div>
+    );
+  }
+
   // bodyH is the bar area; the axis SVG (plot) is 16px taller, as before.
-  const bodyH = Math.max(fallback, measured ?? 0) - BELOW_AND_ABOVE - edge.scrollbar;
+  const bodyH = Math.max(fallback, measured?.h ?? 0) - BELOW_AND_ABOVE - edge.scrollbar;
   const columnStyle = colW === null ? { maxWidth: LABEL_MAX } : { width: colW };
   const plot = bodyH + 16;
-  const ticks = [1, 0.75, 0.5, 0.25, 0];
-  // The axis is as wide as its widest figure needs, not a fixed 30px: this panel's
-  // figures are mostly one or two digits ("37", "9"), and the fixed box left ~17px of
-  // empty space before them -- the unexplained left margin on the Candidates card. About
-  // 5.6px a character at 9.5px (digits run ~5.2px, so this errs wide), plus 2px each side.
-  const axisW = Math.max(12, Math.ceil(Math.max(...ticks.map((t) => measure.format(top * t).length)) * 5.6) + 4);
 
   return (
     // flex-1 + basis-0: the height comes from the container's free space, never from this
@@ -159,8 +198,8 @@ export function VerticalBars({
             fully right, the last bar and its label clear the edge rather than meeting it. */}
         <div
           ref={row}
-          className="flex gap-4 overflow-x-auto pl-1 pr-4 pt-[6px]"
-          style={edge.more ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : undefined}
+          className="flex overflow-x-auto pl-1 pr-4 pt-[6px]"
+          style={{ gap: GAP, ...(edge.more ? { maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE } : {}) }}
         >
           {bars.map((b) => (
             <div
@@ -192,6 +231,39 @@ export function VerticalBars({
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Round 3: the same bars on their side, for a category with more subjects than the card can
+// hold upright (see `horizontal` above). One row per subject in the chart's own order
+// (focused subject first, then by entries -- already a ranking), the subject on the left
+// in its category colour's bar, the figure at the bar's end. No value axis: the bars are
+// proportional to the largest, and every one is labelled with its own figure, which is
+// what a reader of a long list looks for.
+function HorizontalBars({ bars, measure, top, labelW }: { bars: VerticalBar[]; measure: Measure; top: number; labelW: number }) {
+  return (
+    <div className="grid items-center gap-x-2 gap-y-1.5 pr-1" style={{ gridTemplateColumns: `${labelW}px minmax(0, 1fr)` }}>
+      {bars.map((b) => (
+        <div key={b.key} className="contents" title={`${b.label}: ${b.value === null ? "no figure" : measure.format(b.value)}`}>
+          <span className="line-clamp-2 text-right text-[10px] break-words text-[var(--muted3)]" style={{ lineHeight: `${LABEL_LINE}px` }}>
+            {b.shortLabel}
+          </span>
+          <div className="flex min-w-0 items-center gap-1.5">
+            {/* The bar takes its share of the row less room for the figure after it. */}
+            <div
+              className="h-3.5 flex-none rounded-r"
+              style={{
+                width: b.value === null ? 0 : `max(2px, calc((100% - 2.75rem) * ${top > 0 ? b.value / top : 0}))`,
+                background: b.colour,
+              }}
+            />
+            <span className="shrink-0 text-[10px] tabular-nums text-[var(--muted2)]">
+              {b.value === null ? "no figure" : measure.format(b.value)}
+            </span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
