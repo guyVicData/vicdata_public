@@ -45,6 +45,7 @@ import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
 
 const DIRECTION_COLOUR = { up: "#0d9488", down: "#b45309", flat: "var(--muted)" } as const;
+const NO_KEYS: ReadonlySet<string> = new Set();
 
 export type SubjectSeries = {
   key: string;
@@ -187,6 +188,9 @@ export function SubjectPanels({
   // "chart" is the default chart -- indexed for a headcount measure; "actual" (headcounts
   // only) the same lines at their real values.
   const [trendView, setTrendView] = useState<"chart" | "actual" | "table">("chart");
+  // Trend map/legend round Part 1: the subjects the fullscreen legend has switched off,
+  // stamped with the focus and scope they were chosen under (hiddenKeys, below, reads it).
+  const [hidden, setHidden] = useState<{ scope: string; keys: Set<string> }>({ scope: "", keys: new Set() });
   const [changeView, setChangeView] = useState<"chart" | "table">("chart");
   const geo = useSubjectGeography(geography);
   const redesigned = changeScope !== "all";
@@ -453,6 +457,24 @@ export function SubjectPanels({
   });
   const trendPeriods = periodsWithData(trendFull);
   const trendData = sliceFrom(trendFull, trendStart);
+
+  // Trend map/legend round Part 1: Selected subjects' fullscreen rail lists every line
+  // with a show/hide box; the focused subject is always on. The choice resets when the
+  // focus or scope changes -- the list is that subject's peers, so a set hidden from
+  // another subject's list means nothing once the list is a different one. Only the
+  // fullscreen chart and table are filtered: the card has no legend control to bring a
+  // line back, so it keeps drawing every line with its own legend under the chart.
+  const legendScope = `${changeScope}|${focusedKey ?? ""}`;
+  const hiddenKeys: ReadonlySet<string> = hidden.scope === legendScope ? hidden.keys : NO_KEYS;
+  const toggleHidden = (key: string) => {
+    const next = new Set(hiddenKeys);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setHidden({ scope: legendScope, keys: next });
+  };
+  const railLegend = changeScope === "individual" && trendData.series.length > 1;
+  const trendShown = (fullscreen: boolean): PanelData =>
+    railLegend && fullscreen ? { ...trendData, series: trendData.series.filter((x) => x.key === focusedKey || !hiddenKeys.has(x.key)) } : trendData;
   const trendSaid = trendSentence({
     // A plural subject name takes a bare possessive -- "Classics's" reads as a typo.
     subjectClause: `${focusLabel}${focusLabel.endsWith("s") ? "'" : "'s"} ${measure.noun}`,
@@ -508,6 +530,9 @@ export function SubjectPanels({
         </>
       )
     ) : undefined,
+    legend: railLegend ? (
+      <SubjectsShown series={trendData.series} focusKey={focusedKey} hidden={hiddenKeys} onToggle={toggleHidden} />
+    ) : undefined,
     body: (fullscreen) =>
       !redesigned ? (
         <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
@@ -516,7 +541,7 @@ export function SubjectPanels({
         // curatedKeys/topMovers call) plus one rest-of-school range row; fullscreen, all.
         <CentredOnTarget watch={`trend-table:${focusedKey}:${trendData.periods.join(",")}`}>
           <YearTable
-            data={trendData}
+            data={trendShown(fullscreen)}
             measure={measure}
             focusKey={focusedKey}
             fullscreen={fullscreen}
@@ -529,7 +554,7 @@ export function SubjectPanels({
             <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}
           <MultiTrend
-            data={trendData}
+            data={trendShown(fullscreen)}
             measure={measure}
             focusKey={focusedKey}
             curated={changeScope === "curated"}
@@ -537,6 +562,7 @@ export function SubjectPanels({
             showFit={showFit}
             fullscreen={fullscreen}
             index={indexedTrend && trendView === "actual" ? false : undefined}
+            seriesLegend={!(railLegend && fullscreen)}
           />
         </>
       ),
@@ -683,5 +709,50 @@ export function SubjectPanels({
         change,
       }}
     />
+  );
+}
+
+// Trend map/legend round Part 1: the fullscreen rail's "Subjects shown" list. Each row is
+// one control -- a box filled with the line's own colour when the line is drawn, hollow
+// in that colour when hidden -- so the legend and the switch are the same thing. The
+// focused subject's box is ticked and disabled: the chart is about it.
+function SubjectsShown({
+  series,
+  focusKey,
+  hidden,
+  onToggle,
+}: {
+  series: PanelData["series"];
+  focusKey: string | null;
+  hidden: ReadonlySet<string>;
+  onToggle: (key: string) => void;
+}) {
+  return (
+    <ul className="flex flex-col gap-1.5">
+      {series.map((s) => {
+        const always = s.key === focusKey;
+        const shown = always || !hidden.has(s.key);
+        return (
+          <li key={s.key}>
+            <label className={`flex items-center gap-2 text-[12.5px] ${always ? "cursor-default" : "cursor-pointer"}`}>
+              <input type="checkbox" className="peer sr-only" checked={shown} disabled={always} onChange={() => onToggle(s.key)} />
+              <span
+                aria-hidden="true"
+                className="grid h-3.5 w-3.5 shrink-0 place-items-center rounded-[3px] border-2 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--fg)]"
+                style={{ borderColor: s.colour, background: shown ? s.colour : "transparent" }}
+              >
+                {shown && (
+                  <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 5.2 4.2 7.3 8 2.8" />
+                  </svg>
+                )}
+              </span>
+              <span className={`min-w-0 truncate ${always ? "font-semibold text-[var(--fg)]" : shown ? "text-[var(--fg)]" : "text-[var(--muted)]"}`}>{s.label}</span>
+              {always && <span className="ml-auto shrink-0 text-[10.5px] text-[var(--muted3)]">always on</span>}
+            </label>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

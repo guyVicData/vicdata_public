@@ -58,6 +58,9 @@ export type PanelRender = {
   // (Trend's growth/decline word) -- see CardBox.
   footerLead?: ReactNode;
   flag?: ReactNode;
+  // Trend map/legend round: the fullscreen rail's first section -- Trend's per-subject
+  // show/hide list ("Subjects shown"). Rail-only; the card never renders it.
+  legend?: ReactNode;
   // Column 3 round Part 1 -- see CardBox: a caption shown without a click, and a visible
   // "Full screen" invitation.
   visibleCaption?: ReactNode;

@@ -151,11 +151,17 @@ export function TrendChart({
   focusKey,
   reference,
   band,
+  seriesLegend = true,
 }: {
   data: PanelData;
   measure: Measure;
   showFit?: boolean;
   fullscreen?: boolean;
+  // Trend map/legend round: false drops the per-series entries from the legend under the
+  // chart, for a caller that draws its own (Column 1's fullscreen "Subjects shown" rail,
+  // where each entry is also the line's show/hide control). The band and reference
+  // entries stay -- nothing else explains them.
+  seriesLegend?: boolean;
   // Trend redesign (D2/K): with many solid lines, which one is the focus -- drawn last and
   // thickest, and the one the fit follows. Absent = the first non-comparison series, as
   // before.
@@ -177,7 +183,7 @@ export function TrendChart({
 
   // Round 7 §4: too few real years to draw a line through honestly -- bars instead.
   if (trendChartKind(data) === "bars") {
-    return <TrendBars data={data} measure={measure} fullscreen={fullscreen} />;
+    return <TrendBars data={data} measure={measure} fullscreen={fullscreen} seriesLegend={seriesLegend} />;
   }
 
   // Scale to the data, rounded out to the measure's own step, with a little headroom --
@@ -325,9 +331,9 @@ export function TrendChart({
       <XAxis periods={periods} axisWidth={axisW} />
       <p className="mt-3 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]" style={{ paddingLeft: axisW + 8 }}>Academic year</p>
 
-      {(series.length > 1 || band || reference) && (
+      {((seriesLegend && series.length > 1) || band || reference) && (
         <div className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1" style={{ paddingLeft: axisW + 8 }}>
-          {series.map((s) => (
+          {seriesLegend && series.map((s) => (
             <span key={s.key} className={`flex items-center gap-1.5 text-[10.5px] ${s.key === focus.key && focusKey ? "font-semibold text-[var(--fg)]" : "text-[var(--muted)]"}`}>
               <span
                 className="inline-block h-[2.5px] w-3 rounded-[1px]"
@@ -366,7 +372,7 @@ export function TrendChart({
 // baseline exaggerates every difference, which is exactly what a three-point series
 // should not do; a line chart can crop its axis because it is showing direction, not
 // magnitude.
-function TrendBars({ data, measure, fullscreen }: { data: PanelData; measure: Measure; fullscreen?: boolean }) {
+function TrendBars({ data, measure, fullscreen, seriesLegend = true }: { data: PanelData; measure: Measure; fullscreen?: boolean; seriesLegend?: boolean }) {
   const { periods, series } = data;
   const all = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
   const top = Math.max(...all);
@@ -423,7 +429,7 @@ function TrendBars({ data, measure, fullscreen }: { data: PanelData; measure: Me
         </div>
       </div>
       <p className="mt-2 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]" style={{ paddingLeft: axisW + 8 }}>Academic year</p>
-      {series.length > 1 && (
+      {seriesLegend && series.length > 1 && (
         <div className="mt-2 flex flex-wrap gap-3.5" style={{ paddingLeft: axisW + 8 }}>
           {series.map((s) => (
             <span key={s.key} className="flex items-center gap-1.5 text-[10.5px] text-[var(--muted)]">

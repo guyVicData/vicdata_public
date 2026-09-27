@@ -62,6 +62,7 @@ export function MultiTrend({
   showFit = false,
   fullscreen = false,
   index,
+  seriesLegend,
 }: {
   // Every series, in Current's order, already coloured and already sliced to the span.
   data: PanelData;
@@ -79,6 +80,8 @@ export function MultiTrend({
   // Curation needs no special case: topMovers ranks by % change, which is the same on
   // real and indexed values, so both views pick the same standout lines.
   index?: boolean;
+  // Passed to TrendChart: false when the caller draws the series legend itself.
+  seriesLegend?: boolean;
 }) {
   if (!multiTrendHasLine(data)) {
     // A long list scrolls inside the panel, starting with the focused row in view. Only
@@ -114,6 +117,7 @@ export function MultiTrend({
       focusKey={focusKey ?? undefined}
       reference={indexed ? { value: 100, label: "100 = first year shown" } : undefined}
       band={band}
+      seriesLegend={seriesLegend}
     />
   );
 }
