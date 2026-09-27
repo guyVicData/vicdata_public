@@ -36,6 +36,15 @@ const BOTTOM = 74;
 // Clear space kept between two x-axis labels, in px.
 const LABEL_GAP = 6;
 
+// The y axis is as wide as its widest figure needs, the rule VerticalBars' value axis
+// already uses, rather than a fixed 32px: at 9.5px a figure runs about 5.6px a character
+// (digits ~5.2px, so this errs wide), plus the 8px tick mark and its gap beside it. The
+// fixed box left two-digit axes with ~13px of empty space before their figures, and put
+// this chart's plot 8px right of the bar chart above it in the same column.
+function yAxisWidth(labels: string[]): number {
+  return Math.max(20, Math.ceil(Math.max(...labels.map((l) => l.length)) * 5.6) + 2 + 8);
+}
+
 // Which x-axis labels to show, from the axis's real width and a label's real width -- the
 // measurement pass the wireframe's "at most four" heuristic was waiting for. A count cap
 // could not work: the labels keep their pixel width while the gap between ticks shrinks
@@ -71,7 +80,7 @@ function labelledIndices(count: number, axisWidth: number | null, labelWidth: nu
 // The x axis, positioned over the same 0-100% the plot spans. It measures itself (and one
 // label) so the thinning above works from real pixels: synchronously on mount, before the
 // first paint, then on every resize of the card, the accordion or the fullscreen modal.
-function XAxis({ periods }: { periods: number[] }) {
+function XAxis({ periods, axisWidth }: { periods: number[]; axisWidth: number }) {
   const axis = useRef<HTMLDivElement | null>(null);
   const probe = useRef<HTMLSpanElement | null>(null);
   const [size, setSize] = useState<{ axis: number; label: number } | null>(null);
@@ -90,7 +99,7 @@ function XAxis({ periods }: { periods: number[] }) {
   const labelClass = "whitespace-nowrap text-[9.5px] tabular-nums text-[var(--muted)]";
   return (
     <div className="flex shrink-0 gap-2">
-      <div className="w-8 shrink-0" />
+      <div className="shrink-0" style={{ width: axisWidth }} />
       <div ref={axis} className="relative h-4 flex-grow" aria-hidden="true">
         {/* An invisible copy of the widest label, for its real rendered width. */}
         <span ref={probe} className={`invisible absolute left-0 top-0 ${labelClass}`}>
@@ -213,6 +222,7 @@ export function TrendChart({
   // HTML positioned as percentages of it, so both follow the container for free.
   const plotHeight = fullscreen ? 220 : undefined;
   const ticks = [scaleMax, (scaleMax + scaleMin) / 2, scaleMin];
+  const axisW = yAxisWidth(ticks.map((v) => measure.format(v)));
 
   return (
     <div className="mt-1 flex min-h-0 flex-grow flex-col">
@@ -226,7 +236,7 @@ export function TrendChart({
       <div className="flex min-h-[110px] flex-grow gap-2">
         {/* The y axis: its labels are HTML, positioned at the same fractions of the plot's
             height that the SVG uses, so they stay upright at any card width. */}
-        <div className="relative w-8 shrink-0" style={plotHeight ? { height: plotHeight } : undefined} aria-hidden="true">
+        <div className="relative shrink-0" style={{ width: axisW, ...(plotHeight ? { height: plotHeight } : {}) }} aria-hidden="true">
           <span className="absolute right-0 w-px bg-[var(--panel-border2)]" style={{ top: `${(TOP / H) * 100}%`, bottom: `${((H - BOTTOM - 2) / H) * 100}%` }} />
           {ticks.map((v) => (
             <span
@@ -312,11 +322,11 @@ export function TrendChart({
         </svg>
       </div>
 
-      <XAxis periods={periods} />
-      <p className="mt-3 pl-10 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]">Academic year</p>
+      <XAxis periods={periods} axisWidth={axisW} />
+      <p className="mt-3 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]" style={{ paddingLeft: axisW + 8 }}>Academic year</p>
 
       {(series.length > 1 || band || reference) && (
-        <div className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1 pl-10">
+        <div className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1" style={{ paddingLeft: axisW + 8 }}>
           {series.map((s) => (
             <span key={s.key} className={`flex items-center gap-1.5 text-[10.5px] ${s.key === focus.key && focusKey ? "font-semibold text-[var(--fg)]" : "text-[var(--muted)]"}`}>
               <span
@@ -362,11 +372,12 @@ function TrendBars({ data, measure, fullscreen }: { data: PanelData; measure: Me
   const top = Math.max(...all);
   const bodyH = fullscreen ? 200 : 96;  // fallback only; the flex row below drives it
   const ticks = [1, 0.5, 0];
+  const axisW = yAxisWidth(ticks.map((t) => measure.format(top * t)));
 
   return (
     <div className="mt-1">
       <div className="flex gap-2">
-        <div className="relative w-8 shrink-0" style={{ height: bodyH + 12 }} aria-hidden="true">
+        <div className="relative shrink-0" style={{ width: axisW, height: bodyH + 12 }} aria-hidden="true">
           {ticks.map((t) => (
             <span
               key={t}
@@ -411,9 +422,9 @@ function TrendBars({ data, measure, fullscreen }: { data: PanelData; measure: Me
           </div>
         </div>
       </div>
-      <p className="mt-2 pl-10 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]">Academic year</p>
+      <p className="mt-2 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]" style={{ paddingLeft: axisW + 8 }}>Academic year</p>
       {series.length > 1 && (
-        <div className="mt-2 flex flex-wrap gap-3.5 pl-10">
+        <div className="mt-2 flex flex-wrap gap-3.5" style={{ paddingLeft: axisW + 8 }}>
           {series.map((s) => (
             <span key={s.key} className="flex items-center gap-1.5 text-[10.5px] text-[var(--muted)]">
               <span
