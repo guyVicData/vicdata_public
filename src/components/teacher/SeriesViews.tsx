@@ -53,6 +53,18 @@ export function multiTrendHasLine(data: PanelData): boolean {
 
 // ----------------------------------------------------------------- MultiTrend
 
+// Largest first, 1-based; rows with no figure are left unranked. The one ranking rule the
+// Trend/% change tables and the Current number tiles (snagging round 1 Part 2) share --
+// "2nd of 5" on a tile is the same 2 the table's Rank column prints.
+export function rankDescending(rows: { key: string; value: number | null }[]): Map<string, number> {
+  const rank = new Map<string, number>();
+  rows
+    .filter((r): r is { key: string; value: number } => r.value !== null)
+    .sort((a, b) => b.value - a.value)
+    .forEach((r, i) => rank.set(r.key, i + 1));
+  return rank;
+}
+
 export function MultiTrend({
   data,
   measure,
@@ -287,18 +299,7 @@ export function YearTable({
   const lastIdx = periods.length - 1;
 
   const rows = series.map((s) => ({ s, change: changeOver(s.values), last: s.values[lastIdx] }));
-  const rankOf = new Map<string, number>();
-  if (leadingRank) {
-    [...rows]
-      .filter((r) => r.change?.percent !== null && r.change?.percent !== undefined)
-      .sort((a, b) => b.change!.percent! - a.change!.percent!)
-      .forEach((r, i) => rankOf.set(r.s.key, i + 1));
-  } else {
-    [...rows]
-      .filter((r) => r.last !== null)
-      .sort((a, b) => b.last! - a.last!)
-      .forEach((r, i) => rankOf.set(r.s.key, i + 1));
-  }
+  const rankOf = rankDescending(rows.map((r) => ({ key: r.s.key, value: leadingRank ? r.change?.percent ?? null : r.last })));
   const ranked = rankOf.size;
 
   const curating = !!curate && !fullscreen;

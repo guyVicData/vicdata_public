@@ -31,10 +31,11 @@ import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from ".
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
-import { HorizontalBarsIcon, IconButton, IndexedLineIcon, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, RankListIcon, SchoolIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
-import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine, rankDescending } from "./SeriesViews";
+import { FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { VerticalBars } from "./VerticalBars";
 
@@ -68,6 +69,7 @@ export function CandidatesPanels({
   categoryLabel,
   theme = "dark",
   geography,
+  schoolSubjects,
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -98,8 +100,14 @@ export function CandidatesPanels({
   // geography figures count points-eligible entries only); `own` is the school's own
   // points-eligible entries, aligned to `periods`, so all rows count the same thing.
   geography?: GeographyInput;
+  // Snagging round 1 Part 2: every comparable subject at the school (not just the
+  // category), aligned to `periods` and keyed like `subjects` -- the population the
+  // number tiles' "rank in all subjects at school" is taken over. The same population
+  // Context's All subjects reads, one entry per subject as Column 1 counts them.
+  schoolSubjects?: { key: string; values: (number | null)[] }[];
 }) {
-  const [view, setView] = useState<"bars" | "list">("bars");
+  // Snagging round 1 Part 2: the number tiles are the new default view.
+  const [view, setView] = useState<"tiles" | "bars" | "list">("tiles");
   // Step 6: Trend and % change each gain a table beside their chart.
   // "chart" is the indexed chart (the default, as before); "actual" draws the same lines at
   // their real values.
@@ -174,6 +182,40 @@ export function CandidatesPanels({
   const biggest = withFigures[0];
   const smallest = withFigures[withFigures.length - 1];
 
+  // Snagging round 1 Part 2: the number tiles. MAIN is the focused subject's entries this
+  // year (the panel's own headline figure); then its rank in the category (the same
+  // ranking the tables use), its rank among every subject at the school, and its change
+  // since the earliest published year (changeOver, as Trend's flag sentence reads it).
+  const latestIdx = periods.length - 1;
+  const focusedNow = focused && latest !== null ? valueAt(focused, latest) : null;
+  const tilesMain = focused && latest !== null
+    ? { figure: focusedNow === null ? "—" : measure.format(focusedNow), label: `${focused.label} entries in ${academicYearLabel(latest)}` }
+    : null;
+  const tiles: NumberTile[] = [];
+  if (focused && focusedNow !== null && latestIdx >= 0) {
+    const inCategory = rankDescending(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+    const r = inCategory.get(focused.key);
+    if (r && inCategory.size > 1) {
+      tiles.push({ key: "category", icon: PodiumIcon, figure: ordinal(r), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}` });
+    }
+    if (schoolSubjects?.length) {
+      const inSchool = rankDescending(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+      const rs = inSchool.get(focused.key);
+      if (rs) tiles.push({ key: "school", icon: SchoolIcon, figure: ordinal(rs), detail: `of ${inSchool.size} subjects at school` });
+    }
+    const change = changeOver(focused.values);
+    const firstIdx = focused.values.findIndex((v) => v !== null);
+    if (change && change.percent !== null && firstIdx >= 0) {
+      tiles.push({
+        key: "change",
+        icon: ChangeArrowIcon,
+        figure: signed(Math.round(change.percent), (v) => `${v}%`),
+        detail: `since ${academicYearLabel(periods[firstIdx])}`,
+        direction: directionOf(Math.round(change.percent)),
+      });
+    }
+  }
+
   const current: PanelRender = {
     tag: currentLabel
       ? `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim()
@@ -181,6 +223,7 @@ export function CandidatesPanels({
     question,
     actions: (
       <>
+        <IconButton label="Number tiles" active={view === "tiles"} onClick={() => setView("tiles")}>{TilesIcon}</IconButton>
         <IconButton label="Bar chart" active={view === "bars"} onClick={() => setView("bars")}>{VerticalBarsIcon}</IconButton>
         <IconButton label="Ranked list" active={view === "list"} onClick={() => setView("list")}>{RankListIcon}</IconButton>
       </>
@@ -188,6 +231,8 @@ export function CandidatesPanels({
     body: (fullscreen) =>
       currentRows.length === 0 ? (
         <p className="text-sm text-[var(--muted)]">Pick a subject to see its entries.</p>
+      ) : view === "tiles" ? (
+        <NumberTiles main={tilesMain} tiles={tiles} fullscreen={fullscreen} />
       ) : view === "bars" ? (
         <VerticalBars
           bars={currentRows.map((r) => ({ key: r.key, label: r.label, shortLabel: r.shortLabel, value: r.value, colour: colourOf(r.key) }))}

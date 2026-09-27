@@ -31,14 +31,15 @@ import {
 import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
-import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, curatedKeys, multiTrendHasLine } from "./SeriesViews";
-import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, curatedKeys, multiTrendHasLine, rankDescending } from "./SeriesViews";
+import { FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { DonutIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
+import { AverageIcon, DonutIcon, FlagIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
+import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { RankingsMap } from "./RankingsMap";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { ShareDonut } from "./ShareDonut";
@@ -90,6 +91,7 @@ export function SubjectPanels({
   categoryLabel,
   geography,
   trendMap,
+  tiles,
 }: {
   columnId: string;
   periods: number[];
@@ -183,6 +185,11 @@ export function SubjectPanels({
   // own RankingsMap (AcademicMapView), on the page's already-loaded map profiles, plotting
   // the focused subject. Absent (Context, KS2, or no focused subject with a map chip) = no
   // Map button.
+  // Snagging round 1 Part 2: Column 1 Results' number tiles, the Current panel's default
+  // view when present. `schoolAverage` is the school's own per-subject average on the
+  // active measure across EVERY subject, aligned to `periods` -- the middle tile, a
+  // benchmark beside the focused subject's figure, not a rank. Context never passes it.
+  tiles?: { schoolAverage: (number | null)[] };
   trendMap?: {
     profiles: AcademicSchoolProfile[] | null;
     targetUrn: string;
@@ -194,7 +201,7 @@ export function SubjectPanels({
     accentHex: string | null;
   };
 }) {
-  const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
+  const [view, setView] = useState<"tiles" | "donut" | "bar" | "table">(tiles ? "tiles" : donut ? "donut" : "bar");
   // A ranked table opens in rank order (value, largest first), so its numbers read 1, 2, 3.
   const [sort, setSort] = useState<SortState>(rankedTable ? { key: "value", dir: "desc" } : { key: "delta", dir: "desc" });
   const [yearIdx, setYearIdx] = useState<number | null>(null);
@@ -216,7 +223,7 @@ export function SubjectPanels({
 
   // The donut is Candidates-only, so a measure switch has to fall back rather than leave
   // the panel on a view it can no longer draw.
-  const effectiveView = view === "donut" && !donut?.enabled ? "bar" : view;
+  const effectiveView = (view === "donut" && !donut?.enabled) || (view === "tiles" && !tiles) ? "bar" : view;
 
   // The source line with the caveat after it -- what every panel's "i" opens.
   const sourceWithNote = (span?: string) => {
@@ -321,6 +328,41 @@ export function SubjectPanels({
   const donutPercent =
     donutValue !== null && donutGroupValue !== null && donutGroupValue > 0 ? (donutValue / donutGroupValue) * 100 : null;
 
+  // Snagging round 1 Part 2: Results' number tiles. MAIN is the focused subject's figure
+  // on the active measure (the panel's own headline value, unit-aware through measure);
+  // then its rank in the category (the tables' own ranking), the school's average across
+  // ALL its subjects on the same measure, and the gap to England (the same England anchor
+  // the bars' marker and the table's "vs National" column read).
+  const tileFocus = rows.find((r) => r.s.key === focusedKey) ?? null;
+  const tilesMain =
+    tiles && tileFocus && latest !== null
+      ? { figure: tileFocus.value === null ? "—" : measure.format(tileFocus.value), label: `${tileFocus.s.label} ${measure.noun} in ${academicYearLabel(latest)}` }
+      : null;
+  const tileRow: NumberTile[] = [];
+  if (tiles && tileFocus && tileFocus.value !== null) {
+    const inCategory = rankDescending(rows.map((r) => ({ key: r.s.key, value: r.value })));
+    const rank = inCategory.get(tileFocus.s.key);
+    if (rank && inCategory.size > 1) {
+      tileRow.push({ key: "category", icon: PodiumIcon, figure: ordinal(rank), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}` });
+    }
+    const schoolAvg = latestIdx >= 0 ? tiles.schoolAverage[latestIdx] ?? null : null;
+    if (schoolAvg !== null) {
+      tileRow.push({ key: "school", icon: AverageIcon, figure: measure.format(schoolAvg), detail: "average across all subjects at school" });
+    }
+    if (tileFocus.bench !== null) {
+      const gap = tileFocus.value - tileFocus.bench;
+      // A gap that rounds to nothing at the measure's own precision reads as level.
+      const dir = measure.formatDelta(gap).replace("−", "+") === measure.formatDelta(0) ? "flat" : directionOf(gap);
+      tileRow.push({
+        key: "england",
+        icon: FlagIcon,
+        figure: measure.formatDelta(gap),
+        detail: dir === "flat" ? "level with the England average" : `${dir === "up" ? "above" : "below"} the England average`,
+        direction: dir,
+      });
+    }
+  }
+
   const current: PanelRender = {
     tag:
       yearControl && realIdx.length > 1 && currentLabel
@@ -338,6 +380,7 @@ export function SubjectPanels({
     ) : undefined,
     actions: (
       <>
+        {tiles && <IconButton label="Number tiles" active={effectiveView === "tiles"} onClick={() => setView("tiles")}>{TilesIcon}</IconButton>}
         {donut && (
           <IconButton
             label={donut.enabled ? "Share (donut)" : "Share is only meaningful for candidate numbers"}
@@ -357,7 +400,9 @@ export function SubjectPanels({
         <p className="text-sm text-[var(--muted)]">{emptyText}</p>
       ) : (
         <>
-          {effectiveView === "donut" && donut ? (
+          {effectiveView === "tiles" ? (
+            <NumberTiles main={tilesMain} tiles={tileRow} fullscreen={fullscreen} />
+          ) : effectiveView === "donut" && donut ? (
             donutPercent === null ? (
               <p className="text-xs text-[var(--muted)]">
                 No published figure for {focusedSubject?.label ?? "these subjects"} or for {donut.groupLabel} in{" "}

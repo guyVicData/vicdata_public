@@ -1159,8 +1159,11 @@ export default function TeacherPhaseDashboard() {
   const contextFamily = focusQualFamily;
   const inContextFamily = inFocusQualFamily;
   const contextOffer = items.filter((i) => i.entries > 0 && inContextFamily(i));
+  // Every subject at the school, by name -- Context's All subjects group, and (snagging
+  // round 1 Part 2) the population of Column 1 Results' "average across all subjects" tile.
+  const schoolSubjectNames = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
   const contextMembers: string[] = (() => {
-    const every = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
+    const every = schoolSubjectNames;
     if (contextAgainst === "selected") {
       const names = new Set(contextOffer.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
       // Snagging round 1 Part 1: the group is self-inclusive (§4.2, above) in this mode too.
@@ -1596,6 +1599,11 @@ export default function TeacherPhaseDashboard() {
               accentHex={accent?.hex ?? null}
               // Trend map/legend round Part 3: Trend's Map view -- the same map profiles and
               // focus-subject chip Comparisons' map uses, so the two maps plot one subject.
+              // Snagging round 1 Part 2: the number tiles' middle figure -- the school's own
+              // per-subject average on this measure across every subject it has, the same
+              // groupValueFor figures Context's All subjects average is built from (Context
+              // follows the Results sub-measure, so they are the same measure).
+              tiles={{ schoolAverage: resultsPeriods.map((p) => meanOf(schoolSubjectNames.map((n) => groupValueFor(n, p)))) }}
               trendMap={
                 activeMapChip && schoolUrn
                   ? {
@@ -1665,6 +1673,14 @@ export default function TeacherPhaseDashboard() {
               }))}
               periods={categoryPeriods}
               focus={focusKey}
+              // Snagging round 1 Part 2: the "rank in all subjects at school" population --
+              // every comparable subject with entries, focused subject first and one entry
+              // per subject at GCSE, exactly as candidateItems counts its category.
+              schoolSubjects={items
+                .filter((i) => focusItem !== null && (i.key === focusItem.key || (i.entries > 0 && comparablePeer(i))))
+                .sort((a, b) => (a.key === focusKey ? -1 : b.key === focusKey ? 1 : 0))
+                .filter((i, idx, all) => phase === "ks5" || all.findIndex((o) => o.subject === i.subject) === idx)
+                .map((i) => ({ key: i.key, values: categoryPeriods.map((p) => entriesAt(i, p)) }))}
               groupLabel={`${focusFamilyLabel} average`}
               categoryLabel={focusFamilyLabel ?? undefined}
               // Live review Part 5: the % Change table compares the focused subject with its

@@ -82,6 +82,47 @@ export const IndexedLineIcon = (
   </Glyph>
 );
 
+// Snagging round 1 Part 2: the number-tiles view -- one wide tile over three small ones.
+export const TilesIcon = (
+  <Glyph>
+    <rect x="2.5" y="3" width="15" height="6" rx="1.3" />
+    <rect x="2.5" y="11.5" width="4" height="5.5" rx="1" />
+    <rect x="8" y="11.5" width="4" height="5.5" rx="1" />
+    <rect x="13.5" y="11.5" width="4" height="5.5" rx="1" />
+  </Glyph>
+);
+
+// The tiles' own glyphs, one per kind of figure: a rank within a group (podium), within
+// the school (building), a change over time (arrow), an average (a bar at the mean) and
+// the England comparison (flag).
+export const PodiumIcon = (
+  <Glyph>
+    <path d="M7.5 16.5V7.5h5v9M2.5 16.5v-5h5M12.5 16.5v-3h5v3M2 16.5h16" />
+  </Glyph>
+);
+export const SchoolIcon = (
+  <Glyph>
+    <path d="M3 17V8.5l7-4.5 7 4.5V17M1.8 17h16.4M8 17v-4.5h4V17" />
+  </Glyph>
+);
+export const ChangeArrowIcon = (
+  <Glyph>
+    <polyline points="2.5,14.5 7.5,9.5 10.5,12.5 17,6" />
+    <polyline points="12.5,6 17,6 17,10.5" />
+  </Glyph>
+);
+export const AverageIcon = (
+  <Glyph>
+    <path d="M3.5 16.5V11M8 16.5V6M12.5 16.5V9M17 16.5v-8" />
+    <line x1="1.8" y1="10" x2="18.2" y2="10" strokeDasharray="1.6 1.6" />
+  </Glyph>
+);
+export const FlagIcon = (
+  <Glyph>
+    <path d="M4.5 17.5V3M4.5 3.5h10l-2 3.5 2 3.5h-10" />
+  </Glyph>
+);
+
 export const TableIcon = (
   <Glyph>
     <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" />
