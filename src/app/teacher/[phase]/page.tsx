@@ -1589,6 +1589,22 @@ export default function TeacherPhaseDashboard() {
                   : undefined
               }
               accentHex={accent?.hex ?? null}
+              // Trend map/legend round Part 3: Trend's Map view -- the same map profiles and
+              // focus-subject chip Comparisons' map uses, so the two maps plot one subject.
+              trendMap={
+                activeMapChip && schoolUrn
+                  ? {
+                      profiles: mapProfiles,
+                      targetUrn: schoolUrn,
+                      stage: phase,
+                      subject: activeMapChip.subject,
+                      subjectLabel: activeMapChip.legend,
+                      subjectBucket: activeMapChip.bucket,
+                      familyId: activeMapChip.familyId,
+                      accentHex: accent?.hex ?? null,
+                    }
+                  : undefined
+              }
               measure={resultsMeasure}
               controls={
                 // §3's row-alignment fix: the Results sub-measure pill sits under this

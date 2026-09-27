@@ -284,14 +284,14 @@ function GradeBandColourKey({ box, min, max, stage, stops = GRADE_BAND_LEGEND_ST
 // Map round 2, item 4: same real three-representative-sizes scale box as MapView.tsx's
 // own SizeLegend, reusing radiusFor's own min/max (hoisted to render time below, shared
 // with the drawing effect, not recomputed separately).
-function SizeLegend({ minSize, maxSize, familyId, familyLabel, subjectLabel, sizeCaption }: { minSize: number; maxSize: number; familyId: string | null; familyLabel: string | null; subjectLabel?: string | null; sizeCaption: string }) {
+function SizeLegend({ minSize, maxSize, familyId, familyLabel, subjectLabel, sizeCaption, untitled = false }: { minSize: number; maxSize: number; familyId: string | null; familyLabel: string | null; subjectLabel?: string | null; sizeCaption: string; untitled?: boolean }) {
   const hasRange = maxSize > minSize;
   const steps = hasRange
     ? [minSize, Math.round((minSize + maxSize) / 2), maxSize].map((v) => ({ v, r: radiusFor(v, minSize, maxSize) }))
     : [{ v: maxSize, r: (MIN_RADIUS + MAX_RADIUS) / 2 }];
   return (
-    <div className="rounded-md border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Dot size</h3>
+    <div className={`rounded-md border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950 ${untitled ? "p-2" : "p-3"}`}>
+      {!untitled && <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Dot size</h3>}
       <div className="flex items-end gap-3">
         {steps.map((s) => (
           <div key={s.v} className="flex flex-col items-center gap-1">
@@ -370,6 +370,7 @@ export default function AcademicMapView({
   activeRegionName = null,
   accentHex = null,
   onCaption,
+  untitledSizeLegend = false,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -461,6 +462,10 @@ export default function AcademicMapView({
   // it over the map. Neither is passed by the Data View.
   accentHex?: string | null;
   onCaption?: (caption: string) => void;
+  // Teacher view's Column 1 Trend map (trend map/legend round): the full-size dot-size key
+  // without its "Dot size" heading, in a tighter box -- its caption line already says what
+  // size means. Nothing else passes it.
+  untitledSizeLegend?: boolean;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -1339,7 +1344,7 @@ export default function AcademicMapView({
             })()
           ) : (
           <div className="absolute bottom-3 left-3 z-[1000] flex max-w-xs flex-col gap-2">
-            <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} subjectLabel={subject ? (subjectLabel ?? subject) : null} sizeCaption={sizeCaption} />
+            <SizeLegend minSize={minSize} maxSize={maxSize} familyId={familyId} familyLabel={familyLabel} subjectLabel={subject ? (subjectLabel ?? subject) : null} sizeCaption={sizeCaption} untitled={untitledSizeLegend} />
             {stage === "ks4" && (mapWholeGroupExcluded ? (
               <p className="rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-amber-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-amber-400">
                 {ks4ExclusionWholeGroupSentence(setLabel)}

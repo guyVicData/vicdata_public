@@ -38,7 +38,9 @@ import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from ".
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { DonutIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
+import { DonutIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, RankListIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
+import { RankingsMap } from "./RankingsMap";
+import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { ShareDonut } from "./ShareDonut";
 import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
 import { TrendChart } from "./TrendChart";
@@ -87,6 +89,7 @@ export function SubjectPanels({
   spaciousBars = false,
   categoryLabel,
   geography,
+  trendMap,
 }: {
   columnId: string;
   periods: number[];
@@ -176,6 +179,20 @@ export function SubjectPanels({
   // region and England -- the same shared view Candidates uses for entries. When present
   // it replaces the category-subjects chart and table in % change. Context never passes it.
   geography?: GeographyInput;
+  // Trend map/legend round Part 3: Column 1 Results' Trend gains a Map view -- Comparisons'
+  // own RankingsMap (AcademicMapView), on the page's already-loaded map profiles, plotting
+  // the focused subject. Absent (Context, KS2, or no focused subject with a map chip) = no
+  // Map button.
+  trendMap?: {
+    profiles: AcademicSchoolProfile[] | null;
+    targetUrn: string;
+    stage: KsStage;
+    subject: string;
+    subjectLabel: string;
+    subjectBucket: string | null;
+    familyId: string | null;
+    accentHex: string | null;
+  };
 }) {
   const [view, setView] = useState<"donut" | "bar" | "table">(donut ? "donut" : "bar");
   // A ranked table opens in rank order (value, largest first), so its numbers read 1, 2, 3.
@@ -187,7 +204,9 @@ export function SubjectPanels({
   // Steps 9-10: Context's Trend and % change gain a table beside their chart.
   // "chart" is the default chart -- indexed for a headcount measure; "actual" (headcounts
   // only) the same lines at their real values.
-  const [trendView, setTrendView] = useState<"chart" | "actual" | "table">("chart");
+  const [trendViewChosen, setTrendView] = useState<"chart" | "actual" | "table" | "map">("chart");
+  // A Map choice falls back to the chart when the focus moves to a subject with no map.
+  const trendView = trendViewChosen === "map" && !trendMap ? "chart" : trendViewChosen;
   // Trend map/legend round Part 1: the subjects the fullscreen legend has switched off,
   // stamped with the focus and scope they were chosen under (hiddenKeys, below, reads it).
   const [hidden, setHidden] = useState<{ scope: string; keys: Set<string> }>({ scope: "", keys: new Set() });
@@ -511,7 +530,7 @@ export function SubjectPanels({
       <TrendLineToggle
         on={showFit}
         onToggle={() => setShowFit(!showFit)}
-        disabled={redesigned ? trendView === "table" || !multiTrendHasLine(trendData) : trendChartKind(trendData) === "bars"}
+        disabled={redesigned ? trendView === "table" || trendView === "map" || !multiTrendHasLine(trendData) : trendChartKind(trendData) === "bars"}
       />
     ),
     actions: redesigned ? (
@@ -522,20 +541,44 @@ export function SubjectPanels({
           <IconButton label="Indexed" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{IndexedLineIcon}</IconButton>
           <IconButton label="Actual" active={trendView === "actual"} disabled={!multiTrendHasLine(trendData)} onClick={() => setTrendView("actual")}>{TrendLineIcon}</IconButton>
           <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+          {trendMap && <IconButton label="Map" active={trendView === "map"} onClick={() => setTrendView("map")}>{MapPinIcon}</IconButton>}
         </>
       ) : (
         <>
-          <IconButton label="Chart" active={trendView !== "table"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
+          <IconButton label="Chart" active={trendView === "chart" || trendView === "actual"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
           <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+          {trendMap && <IconButton label="Map" active={trendView === "map"} onClick={() => setTrendView("map")}>{MapPinIcon}</IconButton>}
         </>
       )
     ) : undefined,
-    legend: railLegend ? (
+    legend: railLegend && trendView !== "map" ? (
       <SubjectsShown series={trendData.series} focusKey={focusedKey} hidden={hiddenKeys} onToggle={toggleHidden} />
     ) : undefined,
     body: (fullscreen) =>
       !redesigned ? (
         <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
+      ) : trendView === "map" && trendMap ? (
+        // Part 3: the same map as Comparisons', mounted the same way -- dense on the card,
+        // the full legend stack in fullscreen -- but on the focused subject alone. The
+        // fullscreen size key drops its "Dot size" heading (Guy's board); its caption
+        // line under the dots already says what size means.
+        // Fullscreen fills the chart's own flex area rather than Comparisons' fixed 70vh,
+        // which overflowed it here and covered the summary line beneath.
+        <div className="flex min-h-0 flex-1 flex-col print:hidden">
+          <RankingsMap
+            profiles={trendMap.profiles}
+            targetUrn={trendMap.targetUrn}
+            stage={trendMap.stage}
+            heightClass={fullscreen ? "min-h-[22rem] flex-1" : "min-h-[10rem] flex-1"}
+            subject={trendMap.subject}
+            subjectLabel={trendMap.subjectLabel}
+            subjectBucket={trendMap.subjectBucket}
+            familyId={trendMap.familyId}
+            dense={!fullscreen}
+            accentHex={trendMap.accentHex}
+            untitledSizeLegend
+          />
+        </div>
       ) : trendView === "table" ? (
         // All subjects: the card lists the rows the K chart draws (read from the same
         // curatedKeys/topMovers call) plus one rest-of-school range row; fullscreen, all.
@@ -573,6 +616,8 @@ export function SubjectPanels({
     ) : (
       <PanelSummary>Not enough published years yet to describe a trend.</PanelSummary>
     ),
+    // Part 3: the map, like Comparisons', reads far better with room.
+    suggestFullscreen: trendView === "map",
     source: sourceWithNote(spanLabel(trendData.periods)),
     headline: trendSaid ? (
       <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
