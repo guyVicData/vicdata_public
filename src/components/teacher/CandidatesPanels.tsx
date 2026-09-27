@@ -461,7 +461,8 @@ export function CandidatesPanels({
       onPanelsChange={onPanelsChange}
       notes={notes}
       // The geography views carry their own heading: they are not about the category.
-      render={{ current: titled(current), trend: titled(trend), change: geography ? change : titled(change) }}
+      // The number tiles name the category in their own rank tile, so they take no title.
+      render={{ current: view === "tiles" ? current : titled(current), trend: titled(trend), change: geography ? change : titled(change) }}
     />
   );
 }

@@ -800,10 +800,11 @@ export function SubjectPanels({
       notes={notes}
       controls={controls}
       // Title over Current's views (bar chart and table), only when there is a comparison
-      // within the category -- a lone subject has nothing to name.
+      // within the category -- a lone subject has nothing to name. Not over the number
+      // tiles, whose rank tile already names the category.
       render={{
         current:
-          categoryLabel && subjects.length > 1
+          categoryLabel && subjects.length > 1 && effectiveView !== "tiles"
             ? {
                 ...current,
                 body: (fullscreen) => (
