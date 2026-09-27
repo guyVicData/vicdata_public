@@ -25,6 +25,8 @@ export function RankingsMap({
   accentHex = null,
   onCaption,
   untitledSizeLegend = false,
+  forcedColourMode,
+  changeValues,
 }: {
   profiles: AcademicSchoolProfile[] | null;
   targetUrn: string;
@@ -51,6 +53,10 @@ export function RankingsMap({
   onCaption?: (caption: string) => void;
   // Trend map/legend round Part 3: passed through to AcademicMapView (Column 1's Trend map).
   untitledSizeLegend?: boolean;
+  // Comparisons change-map round: passed through to AcademicMapView (one colour mode, no
+  // toggle; and the panel's own change figures for a change map).
+  forcedColourMode?: "accent" | "grade_band" | "trend" | "trend_absolute";
+  changeValues?: { byUrn: Record<string, number>; format: (v: number) => string; label: string };
 }) {
   const target = profiles?.find((p) => p.urn === targetUrn) ?? null;
   if (!profiles) {
@@ -78,6 +84,8 @@ export function RankingsMap({
         accentHex={accentHex}
         onCaption={onCaption}
         untitledSizeLegend={untitledSizeLegend}
+        forcedColourMode={forcedColourMode}
+        changeValues={changeValues}
         // Same GCSE exclusion the advanced dashboard's map applies, with its own note.
         ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}
       />

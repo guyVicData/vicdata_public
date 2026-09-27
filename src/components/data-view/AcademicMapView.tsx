@@ -40,7 +40,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { bngToLatLng } from "@/lib/bng";
-import { trendColour, gradeBandColour, GRADE_BAND_LEGEND_STOPS, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
+import { trendColour, trendColourAbsolute, gradeBandColour, GRADE_BAND_LEGEND_STOPS, TREND_LEGEND_STOPS } from "@/lib/trend-colours";
 import { accentBandColour, accentLegendStops, gradeBandColourForFamily, gradeBandLegendStopsForFamily } from "@/lib/subject-family-colours";
 import { trendBadge, rankDescendingWithTies } from "@/lib/data-view-cards";
 import type { ViewKey } from "@/lib/data-view-types";
@@ -199,11 +199,16 @@ const HEADLINE_STAT_LABEL: Record<KsStage, string> = {
 // this height is subtracted from.
 const TREND_KEY_TITLE_HEIGHT = 16;
 
-function TrendColourKey({ box, title }: { box: { top: number; height: number } | null; title: string }) {
+// `range` (Comparisons' absolute-change map): the same five-stop bar, labelled with the
+// set's own real largest fall, zero and largest rise instead of the fixed +/-30%. The
+// colours are trendColourAbsolute's -- the fall end maps onto -30, the rise end onto +30.
+function TrendColourKey({ box, title, range }: { box: { top: number; height: number } | null; title: string; range?: { min: number; max: number; format: (v: number) => string } }) {
   if (!box) return null;
-  const stops = TREND_LEGEND_STOPS; // ascending by pct: -30 (red) ... 0 (amber) ... +30 (green)
+  const stops = TREND_LEGEND_STOPS; // ascending by pct: -30 (red) ... 0 (orange) ... +30 (green)
   const min = stops[0].pct;
   const max = stops[stops.length - 1].pct;
+  const labelFor = (pct: number) =>
+    !range ? (pct > 0 ? `+${pct}%` : `${pct}%`) : pct === min ? range.format(range.min) : pct === 0 ? "0" : pct === max ? range.format(range.max) : null;
   const gradient = [...stops].reverse().map((s) => s.hex).join(",");
   const barHeight = Math.max(0, box.height - TREND_KEY_TITLE_HEIGHT);
   return (
@@ -214,12 +219,15 @@ function TrendColourKey({ box, title }: { box: { top: number; height: number } |
       <div className="relative ml-auto w-[26px] rounded-sm shadow-sm" style={{ height: barHeight, background: `linear-gradient(to bottom, ${gradient})` }}>
         {stops.map((s) => {
           const t = (max - s.pct) / (max - min);
+          const label = labelFor(s.pct);
           return (
             <div key={s.pct} className="absolute inset-x-0" style={{ top: `${t * 100}%` }}>
               <div className="h-px w-full bg-white/80" />
-              <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
-                {s.pct > 0 ? `+${s.pct}%` : `${s.pct}%`}
-              </span>
+              {label !== null && (
+                <span className="absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-white/90 px-1 text-[9px] text-neutral-600 shadow-sm dark:bg-neutral-950/90 dark:text-neutral-300">
+                  {label}
+                </span>
+              )}
             </div>
           );
         })}
@@ -332,7 +340,9 @@ function DenseHoverBar({ setterRef }: { setterRef: { current: (info: HoverInfo |
 // "accent" (Teacher view Comparisons, Column 3 round Part 1): grade band's value scale,
 // drawn in the phase's own accent rather than the blue or category ramp. Only ever on when
 // the caller passes accentHex -- the Data View never does, so it never sees this mode.
-type ColourMode = "trend" | "grade_band" | "accent";
+// "trend_absolute" (Teacher view Comparisons' Trend map): absolute change, red-orange-
+// green around the set's true zero (trendColourAbsolute) -- only with changeValues.
+type ColourMode = "trend" | "grade_band" | "accent" | "trend_absolute";
 
 // Real per-profile figures, computed ONCE per render (useMemo below) and shared by
 // the rank computation, the min-max normalisation (size AND grade band), the SizeLegend/
@@ -371,6 +381,8 @@ export default function AcademicMapView({
   accentHex = null,
   onCaption,
   untitledSizeLegend = false,
+  forcedColourMode,
+  changeValues,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -466,6 +478,16 @@ export default function AcademicMapView({
   // without its "Dot size" heading, in a tighter box -- its caption line already says what
   // size means. Nothing else passes it.
   untitledSizeLegend?: boolean;
+  // Comparisons change-map round: a caller that wants ONE colour mode -- no Grade band /
+  // Trends toggle. Teacher view's Comparisons column forces the value colour on Current,
+  // absolute change on Trend and % change on % change. Absent = the toggle, as before
+  // (Column 1's Trend map, the Data View).
+  forcedColourMode?: ColourMode;
+  // With "trend" / "trend_absolute": each school's change as the CALLER's panel measured
+  // it (its own measure and "From" year), so the map and the panel's chart and table
+  // cannot disagree -- used instead of this map's own baseline-year % change. `format`
+  // prints one for the tooltip; `label` says what it is ("% change since 2021/22").
+  changeValues?: { byUrn: Record<string, number>; format: (v: number) => string; label: string };
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -523,7 +545,12 @@ export default function AcademicMapView({
   // existed. Grade band is now available at every scope; only its COLOUR ramp
   // differs by scope (gradeBandColourForFamily below), not its availability.
   const gradeBandAvailable = true;
-  const effectiveColourMode: ColourMode = colourMode;
+  const effectiveColourMode: ColourMode = forcedColourMode ?? colourMode;
+  const changeMode = effectiveColourMode === "trend" || effectiveColourMode === "trend_absolute";
+  // trend_absolute's range: the set's own real largest fall and largest rise.
+  const changeList = changeValues ? Object.values(changeValues.byUrn) : [];
+  const changeMin = changeList.length ? Math.min(0, ...changeList) : 0;
+  const changeMax = changeList.length ? Math.max(0, ...changeList) : 0;
 
   // LA/Region choropleth: independent of ticked schools entirely. Only ever available
   // whole-school (no familyId -- this round's own real scope, see this file's own
@@ -896,7 +923,10 @@ export default function AcademicMapView({
         const radius = data.size !== null && data.size > 0 ? radiusFor(data.size, minSize, maxSize) : UNTICKED_RADIUS;
 
         let colour = UNTICKED_COLOUR;
-        if (effectiveColourMode === "trend") {
+        const supplied = changeValues ? changeValues.byUrn[p.urn] : undefined;
+        if (changeMode && changeValues) {
+          if (supplied !== undefined) colour = effectiveColourMode === "trend_absolute" ? trendColourAbsolute(supplied, changeMin, changeMax) : trendColour(supplied);
+        } else if (effectiveColourMode === "trend") {
           const badge = trendBadge(data.avgValue, data.anchorValue);
           if (badge) colour = trendColour(badge.pctChange);
         } else if (data.avgValue !== null && effectiveColourMode === "accent" && accentHex) {
@@ -916,7 +946,9 @@ export default function AcademicMapView({
         // genuinely differ), a real rank on the grade-band popup, and the shared
         // noun-form growth/decline wording (trend-labels.ts) on the trend popup.
         const lines: string[] = [];
-        if (subject) {
+        if (changeMode && changeValues) {
+          lines.push(supplied !== undefined ? `<strong>${escapeHtml(changeValues.format(supplied))}</strong> ${escapeHtml(changeValues.label)}` : `No ${escapeHtml(changeValues.label)}`);
+        } else if (subject) {
           if (data.entriesValue !== null) lines.push(`<strong>${data.entriesValue.toLocaleString()}</strong> entries in ${escapeHtml(subjectLabel ?? subject)}${data.entriesPeriod !== null ? ` (${academicYearLabel(data.entriesPeriod)})` : ""}`);
           if (data.avgValue !== null) lines.push(`<strong>${data.avgValue.toFixed(1)}</strong> avg. point score${data.avgPeriod !== null ? ` (${academicYearLabel(data.avgPeriod)})` : ""}`);
         } else if (familyId) {
@@ -969,7 +1001,7 @@ export default function AcademicMapView({
         mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
       }
     });
-  }, [mapReady, dense, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, accentHex, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
+  }, [mapReady, dense, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, changeMode, changeValues, changeMin, changeMax, accentHex, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
 
   // LA/Region choropleth: real min/max over the CURRENTLY SHOWN tier's own real
   // values -- same "computed once, shared" discipline as minGrade/maxGrade above,
@@ -1135,7 +1167,7 @@ export default function AcademicMapView({
   // handed up to be shown behind the panel's caption button rather than over the map;
   // without one it is printed on the map as before.
   const denseSizeText = subject ? `entries in ${subjectLabel ?? subject}` : familyId ? `entries in ${familyLabel ?? "this category"}` : sizeCaption;
-  const denseCaption = `Dot size: ${denseSizeText} · Colour: ${effectiveColourMode === "trend" ? "growth" : "grade band (darker = higher)"}`;
+  const denseCaption = `Dot size: ${denseSizeText} · Colour: ${changeMode && changeValues ? changeValues.label : effectiveColourMode === "trend" ? "growth" : "grade band (darker = higher)"}`;
   useEffect(() => {
     if (dense) onCaption?.(denseCaption);
   }, [dense, denseCaption, onCaption]);
@@ -1217,7 +1249,7 @@ export default function AcademicMapView({
         {/* Grade band/Trends only means anything for individual school circles --
             hidden while the choropleth (always value-coloured, no separate trend
             concept fetched this round) has taken over the map. */}
-        {!dense && !viewByArea && gradeBandAvailable && (
+        {!dense && !viewByArea && gradeBandAvailable && !forcedColourMode && (
           <div className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
             <button
               type="button"
@@ -1251,12 +1283,14 @@ export default function AcademicMapView({
         <div
           aria-hidden="true"
           className="absolute right-2 top-2 bottom-[84px] z-[1000] w-[7px] rounded-full shadow-sm"
-          style={{ background: `linear-gradient(to bottom, ${[...(valueStops ?? GRADE_BAND_LEGEND_STOPS)].reverse().map((st) => st.hex).join(",")})` }}
+          style={{ background: `linear-gradient(to bottom, ${[...(changeMode ? TREND_LEGEND_STOPS : valueStops ?? GRADE_BAND_LEGEND_STOPS)].reverse().map((st) => st.hex).join(",")})` }}
         />
       ) : viewByArea ? (
         <GradeBandColourKey box={trendKeyBox} min={choroplethMin} max={choroplethMax} stage={stage} />
+      ) : effectiveColourMode === "trend_absolute" && changeValues ? (
+        <TrendColourKey box={trendKeyBox} title="Change" range={{ min: changeMin, max: changeMax, format: changeValues.format }} />
       ) : effectiveColourMode === "trend" ? (
-        <TrendColourKey box={trendKeyBox} title="Growth" />
+        <TrendColourKey box={trendKeyBox} title={changeValues ? "% change" : "Growth"} />
       ) : (
         <GradeBandColourKey box={trendKeyBox} min={minGrade} max={maxGrade} stage={stage} stops={valueStops} />
       )}
