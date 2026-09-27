@@ -118,24 +118,19 @@ export function MultiTrend({
   );
 }
 
-// The line under a headcount Trend's heading that says what its chart is drawing. The
-// indexed chart is the default and was unexplained: a teacher meeting it for the first time
-// had no way to know what "100" meant without hovering. The actual-numbers chart says it
-// is the real figures, which is what makes the index readable beside it.
-export function TrendScaleCaption({ view, from, noun }: { view: "indexed" | "actual"; from: number | null; noun: string }) {
+// The title over a headcount chart that says what it is drawing. The indexed chart is the
+// default and was unexplained: a teacher meeting it for the first time had no way to know
+// what "100" meant without hovering. The actual-numbers chart says it is the real figures,
+// which is what makes the index readable beside it. A TITLE, not a caption (Guy's call):
+// the same style as the panel's own "Entries in {category}" heading, so it reads as part
+// of what the chart is, not a footnote under it. Also used over Geography's indexed chart,
+// so every indexed-to-100 chart explains itself the same way.
+export function TrendScaleTitle({ view, from, noun }: { view: "indexed" | "actual"; from: number | null; noun: string }) {
   return (
-    <p className="mb-1 text-[11.5px] leading-snug text-[var(--muted2)]">
-      {view === "indexed" ? (
-        <>
-          <span className="font-semibold text-[var(--fg)]">Change since {from === null ? "the first year shown" : academicYearLabel(from)}:</span>{" "}
-          each line starts at 100 (no change); 110 = 10% more {noun}, 90 = 10% fewer.
-        </>
-      ) : (
-        <>
-          <span className="font-semibold text-[var(--fg)]">{noun.charAt(0).toUpperCase() + noun.slice(1)} each year, real numbers:</span>{" "}
-          one scale for every subject, so small ones sit low.
-        </>
-      )}
+    <p className="mb-1 shrink-0 text-[12px] font-semibold leading-snug text-[var(--muted2)]">
+      {view === "indexed"
+        ? `Change since ${from === null ? "the first year shown" : academicYearLabel(from)}: each line starts at 100 (no change); 110 = 10% more ${noun}, 90 = 10% fewer.`
+        : `${noun.charAt(0).toUpperCase() + noun.slice(1)} each year, real numbers: one scale for every subject, so small ones sit low.`}
     </p>
   );
 }

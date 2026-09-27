@@ -31,7 +31,7 @@ import {
 import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
-import { ChangeList, MultiTrend, TrendScaleCaption, YearTable, curatedKeys, multiTrendHasLine } from "./SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, curatedKeys, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
@@ -526,7 +526,7 @@ export function SubjectPanels({
       ) : (
         <>
           {indexedTrend && multiTrendHasLine(trendData) && (
-            <TrendScaleCaption view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
+            <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}
           <MultiTrend
             data={trendData}

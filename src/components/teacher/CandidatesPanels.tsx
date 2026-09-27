@@ -33,7 +33,7 @@ import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
 import { HorizontalBarsIcon, IconButton, IndexedLineIcon, RankListIcon, TableIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { ChangeList, MultiTrend, TrendScaleCaption, YearTable, multiTrendHasLine } from "./SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { VerticalBars } from "./VerticalBars";
@@ -265,7 +265,7 @@ export function CandidatesPanels({
       ) : (
         <>
           {multiTrendHasLine(trendData) && (
-            <TrendScaleCaption view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
+            <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}
           <MultiTrend
             data={trendData}
