@@ -17,7 +17,7 @@
 // the same subject is the same colour in every view.
 import { useState } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
-import { periodsWithData, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
+import { periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
 import {
   DIRECTION_FILL,
   DIRECTION_TEXT,
@@ -52,18 +52,6 @@ export function multiTrendHasLine(data: PanelData): boolean {
 }
 
 // ----------------------------------------------------------------- MultiTrend
-
-// Largest first, 1-based; rows with no figure are left unranked. The one ranking rule the
-// Trend/% change tables and the Current number tiles (snagging round 1 Part 2) share --
-// "2nd of 5" on a tile is the same 2 the table's Rank column prints.
-export function rankDescending(rows: { key: string; value: number | null }[]): Map<string, number> {
-  const rank = new Map<string, number>();
-  rows
-    .filter((r): r is { key: string; value: number } => r.value !== null)
-    .sort((a, b) => b.value - a.value)
-    .forEach((r, i) => rank.set(r.key, i + 1));
-  return rank;
-}
 
 export function MultiTrend({
   data,
@@ -301,7 +289,9 @@ export function YearTable({
   const lastIdx = periods.length - 1;
 
   const rows = series.map((s) => ({ s, change: changeOver(s.values), last: s.values[lastIdx] }));
-  const rankOf = rankDescending(rows.map((r) => ({ key: r.s.key, value: leadingRank ? r.change?.percent ?? null : r.last })));
+  // The one shared ranking rule (teacher-view-panels' rankByValue: largest first, ties
+  // share a rank) -- the Current number tiles and Column 3's ranking read it too.
+  const rankOf = rankByValue(rows.map((r) => ({ key: r.s.key, value: leadingRank ? r.change?.percent ?? null : r.last })));
   const ranked = rankOf.size;
 
   const curating = !!curate && !fullscreen;

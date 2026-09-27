@@ -19,6 +19,7 @@ import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
   percentChange,
+  rankByValue,
   periodsWithData,
   sliceFrom,
   trimToData,
@@ -31,7 +32,7 @@ import {
 import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
-import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine, rankDescending } from "./SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
@@ -347,7 +348,7 @@ export function SubjectPanels({
       : null;
   const tileRow: NumberTile[] = [];
   if (tiles && tileFocus && tileFocus.value !== null) {
-    const inCategory = rankDescending(rows.map((r) => ({ key: r.s.key, value: r.value })));
+    const inCategory = rankByValue(rows.map((r) => ({ key: r.s.key, value: r.value })));
     const rank = inCategory.get(tileFocus.s.key);
     if (rank && inCategory.size > 1) {
       tileRow.push({ key: "category", icon: PodiumIcon, figure: ordinal(rank), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}` });

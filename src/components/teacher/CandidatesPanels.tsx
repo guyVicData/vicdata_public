@@ -20,6 +20,7 @@ import {
   ENTRIES_MEASURE,
   meanOf,
   percentChange,
+  rankByValue,
   periodsWithData,
   sliceFrom,
   trimToData,
@@ -34,7 +35,7 @@ import { type ChangeBar } from "./ChangeChart";
 import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, RankListIcon, SchoolIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine, rankDescending } from "./SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { VerticalBars } from "./VerticalBars";
@@ -193,13 +194,13 @@ export function CandidatesPanels({
     : null;
   const tiles: NumberTile[] = [];
   if (focused && focusedNow !== null && latestIdx >= 0) {
-    const inCategory = rankDescending(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+    const inCategory = rankByValue(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
     const r = inCategory.get(focused.key);
     if (r && inCategory.size > 1) {
       tiles.push({ key: "category", icon: PodiumIcon, figure: ordinal(r), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}` });
     }
     if (schoolSubjects?.length) {
-      const inSchool = rankDescending(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+      const inSchool = rankByValue(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
       const rs = inSchool.get(focused.key);
       if (rs) tiles.push({ key: "school", icon: SchoolIcon, figure: ordinal(rs), detail: `of ${inSchool.size} subjects at school` });
     }
