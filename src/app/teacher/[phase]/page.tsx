@@ -1163,6 +1163,11 @@ export default function TeacherPhaseDashboard() {
     const every = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
     if (contextAgainst === "selected") {
       const names = new Set(contextOffer.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
+      // Snagging round 1 Part 1: the group is self-inclusive (§4.2, above) in this mode too.
+      // It used to be exactly the ticked set, so a focus subject not ticked in the picker
+      // was divided by a group it wasn't in -- a "share" that could pass 100% (the donut
+      // clamps it) and a "Selected subjects average" the focus took no part in.
+      if (names.size && focusItem && inContextFamily(focusItem) && !asOrAeaOnly.has(focusItem.subject)) names.add(focusItem.subject);
       // Nothing ticked yet falls back to the subjects this person teaches, which is the
       // most useful "not chosen yet" group and is one click from being narrowed.
       return names.size

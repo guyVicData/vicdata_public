@@ -369,7 +369,10 @@ export function SubjectPanels({
                 label={focusedSubject?.label ?? ""}
                 groupLabel={donut.groupLabel}
                 valueLabel={measure.format(donutValue!)}
-                groupValueLabel={measure.format(donutGroupValue!)}
+                // Snagging round 1 Part 1: the legend's second line says "All other entries",
+                // so it is the group LESS the focused subject -- it printed the whole group
+                // total, which already contains the focus (the group is self-inclusive).
+                groupValueLabel={measure.format(Math.max(0, donutGroupValue! - donutValue!))}
                 colour={focusedSubject?.colour ?? "var(--muted2)"}
                 fullscreen={fullscreen}
               />
