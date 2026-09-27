@@ -23,6 +23,7 @@
 // What it adds, because real data has it and mock arrays do not: gaps. A period with no
 // published figure breaks the line rather than being bridged -- drawing straight through
 // a missing year invites reading the gap as a real, measured trajectory.
+import { useLayoutEffect, useRef, useState } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { leastSquares, trendChartKind, type Measure, type PanelData } from "@/lib/teacher-view-panels";
 
@@ -32,17 +33,92 @@ const H = 80;
 const TOP = 6;
 const BOTTOM = 74;
 
-// Labels are thinned to at most four at card width. The wireframe notes this is a
-// heuristic pending a real measurement pass, and that fullscreen is where every date gets
-// shown -- so fullscreen raises the cap rather than running the same thinning twice.
-function labelledIndices(count: number, max: number): boolean[] {
+// Clear space kept between two x-axis labels, in px.
+const LABEL_GAP = 6;
+
+// Which x-axis labels to show, from the axis's real width and a label's real width -- the
+// measurement pass the wireframe's "at most four" heuristic was waiting for. A count cap
+// could not work: the labels keep their pixel width while the gap between ticks shrinks
+// with the card, so four labels that fit at 800px land on top of each other at a phone's
+// 375px ("2023/24" over "2024/25"). The first label hangs right from its tick, the last
+// hangs left from its tick (so neither leaves the card), the rest are centred. First and
+// last always show; between them every `step`-th, the smallest step at which no two boxes
+// meet -- dropping the one before the last when that alone is what collides, since the
+// last is the year a reader looks for. Width not known yet: everything.
+function labelledIndices(count: number, axisWidth: number | null, labelWidth: number): boolean[] {
   if (count <= 0) return [];
-  const show = new Array<boolean>(count).fill(false);
-  if (count <= max) show.fill(true);
-  else if (Math.ceil(count / 2) <= max) for (let i = 0; i < count; i += 2) show[i] = true;
-  show[0] = true;
-  show[count - 1] = true;
-  return show;
+  if (count === 1) return [true];
+  if (axisWidth === null || axisWidth <= 0) return new Array<boolean>(count).fill(true);
+  const last = count - 1;
+  const box = (i: number): [number, number] => {
+    const x = (i / last) * axisWidth;
+    if (i === 0) return [0, labelWidth];
+    if (i === last) return [axisWidth - labelWidth, axisWidth];
+    return [x - labelWidth / 2, x + labelWidth / 2];
+  };
+  const clear = (idx: number[]) => idx.every((i, k) => k === 0 || box(idx[k - 1])[1] + LABEL_GAP <= box(i)[0]);
+  for (let step = 1; step < last; step++) {
+    const idx: number[] = [];
+    for (let i = 0; i < last; i += step) idx.push(i);
+    idx.push(last);
+    if (!clear(idx) && idx.length > 2) idx.splice(idx.length - 2, 1);
+    if (clear(idx)) return Array.from({ length: count }, (_, i) => idx.includes(i));
+  }
+  // Only the two ends are left. If even they meet, the latest year alone.
+  return Array.from({ length: count }, (_, i) => i === last || (i === 0 && clear([0, last])));
+}
+
+// The x axis, positioned over the same 0-100% the plot spans. It measures itself (and one
+// label) so the thinning above works from real pixels: synchronously on mount, before the
+// first paint, then on every resize of the card, the accordion or the fullscreen modal.
+function XAxis({ periods }: { periods: number[] }) {
+  const axis = useRef<HTMLDivElement | null>(null);
+  const probe = useRef<HTMLSpanElement | null>(null);
+  const [size, setSize] = useState<{ axis: number; label: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = axis.current;
+    if (!el) return;
+    const measure = () =>
+      setSize({ axis: el.getBoundingClientRect().width, label: probe.current?.getBoundingClientRect().width ?? 0 });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const show = labelledIndices(periods.length, size?.axis ?? null, size?.label ?? 0);
+  const xPercent = (i: number) => (periods.length > 1 ? (i / (periods.length - 1)) * 100 : 50);
+  const labelClass = "whitespace-nowrap text-[9.5px] tabular-nums text-[var(--muted)]";
+  return (
+    <div className="flex shrink-0 gap-2">
+      <div className="w-8 shrink-0" />
+      <div ref={axis} className="relative h-4 flex-grow" aria-hidden="true">
+        {/* An invisible copy of the widest label, for its real rendered width. */}
+        <span ref={probe} className={`invisible absolute left-0 top-0 ${labelClass}`}>
+          {academicYearLabel(periods.reduce((a, b) => (academicYearLabel(b).length > academicYearLabel(a).length ? b : a), periods[0]))}
+        </span>
+        {periods.map((p, i) => (
+          <span key={p} className="absolute top-0" style={{ left: `${xPercent(i)}%` }}>
+            <span className="absolute left-0 top-0 h-1 w-px bg-[var(--panel-border2)]" />
+            {show[i] && (
+              // The last label hangs left from its tick with `right-0` alone. It used to add
+              // an inline translateX(-100%) as well, meant to override the class's
+              // transform -- but Tailwind v4's translate-x-* sets the separate `translate`
+              // property, so both applied and the label sat a whole label-width short of its
+              // tick, on top of the one before it. That, more than the tick spacing, is what
+              // put "2024/25" over "2023/24" on a phone.
+              <span
+                className={`absolute top-1.5 ${labelClass} ${
+                  i === 0 ? "left-0" : i === periods.length - 1 ? "right-0" : "-translate-x-1/2"
+                }`}
+              >
+                {academicYearLabel(p)}
+              </span>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // Contiguous runs of real values, so each unbroken stretch is its own polyline and a gap
@@ -112,9 +188,7 @@ export function TrendChart({
   // The same y in per-cent of the plot's height, for the HTML axis beside it.
   const yPercent = (v: number) => (yFor(v) / H) * 100;
   const xFor = (i: number) => (periods.length > 1 ? (i / (periods.length - 1)) * W : W / 2);
-  const xPercent = (i: number) => (periods.length > 1 ? (i / (periods.length - 1)) * 100 : 50);
 
-  const show = labelledIndices(periods.length, fullscreen ? periods.length : 4);
   // The focus line draws last so it sits above the dashed comparison line -- and, with a
   // focusKey, above every other solid line too.
   const focus = (focusKey ? series.find((s) => s.key === focusKey) : undefined) ?? series.find((s) => !s.comparison) ?? series[0];
@@ -238,27 +312,7 @@ export function TrendChart({
         </svg>
       </div>
 
-      {/* The x axis, positioned over the same 0-100% the plot spans. */}
-      <div className="flex shrink-0 gap-2">
-        <div className="w-8 shrink-0" />
-        <div className="relative h-4 flex-grow" aria-hidden="true">
-          {periods.map((p, i) => (
-            <span key={p} className="absolute top-0" style={{ left: `${xPercent(i)}%` }}>
-              <span className="absolute left-0 top-0 h-1 w-px bg-[var(--panel-border2)]" />
-              {show[i] && (
-                <span
-                  className={`absolute top-1.5 whitespace-nowrap text-[9.5px] tabular-nums text-[var(--muted)] ${
-                    i === 0 ? "left-0" : i === periods.length - 1 ? "right-0 translate-x-0" : "-translate-x-1/2"
-                  }`}
-                  style={i === periods.length - 1 ? { transform: "translateX(-100%)" } : undefined}
-                >
-                  {academicYearLabel(p)}
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
-      </div>
+      <XAxis periods={periods} />
       <p className="mt-3 pl-10 text-center text-[9.5px] uppercase tracking-[0.04em] text-[var(--muted3)]">Academic year</p>
 
       {(series.length > 1 || band || reference) && (
