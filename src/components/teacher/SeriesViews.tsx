@@ -6,8 +6,8 @@
 //
 //   MultiTrend  -- Trend's chart. Option H's ranked bars (each series' change in the
 //                  measure's own units) below TREND_LINE_MIN_YEARS real years; Option D2 (one line each, indexed to
-//                  its own first year = 100 for headcounts) from there; Option K (focus +
-//                  top movers as lines, the rest one min-max band) when the list is long.
+//                  its own first year = 100 for headcounts) from there. (Option K's
+//                  curated focus + top movers + band went with snagging round 1 Part 3.)
 //   ChangeList  -- Option H: a change (% by default) as a ranked, diverging list, the group average a
 //                  dashed reference line rather than a competing bar.
 //   YearTable   -- Options E and I: one column per year (first and last on the card,
@@ -21,13 +21,11 @@ import { periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type 
 import {
   DIRECTION_FILL,
   DIRECTION_TEXT,
-  bandOf,
   changeOver,
   directionOf,
   indexTo100,
   shouldIndex,
   signed,
-  topMovers,
 } from "@/lib/teacher-view-trend-styles";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { TrendChart } from "./TrendChart";
@@ -57,8 +55,6 @@ export function MultiTrend({
   data,
   measure,
   focusKey,
-  curated = false,
-  restLabel = "rest",
   showFit = false,
   fullscreen = false,
   index,
@@ -68,17 +64,11 @@ export function MultiTrend({
   data: PanelData;
   measure: Measure;
   focusKey: string | null;
-  // Option K: focus + top movers as lines, everyone else folded into one band.
-  curated?: boolean;
-  // What the band is called: "rest of school", "rest of the set".
-  restLabel?: string;
   showFit?: boolean;
   fullscreen?: boolean;
   // Col 1 / Trend actual-numbers round: whether to draw the index. Absent = the measure's
   // own rule (shouldIndex: headcounts indexed, points and rates real). false = the "Actual"
   // view -- the same lines at their real values, the numbers the index is built from.
-  // Curation needs no special case: topMovers ranks by % change, which is the same on
-  // real and indexed values, so both views pick the same standout lines.
   index?: boolean;
   // Passed to TrendChart: false when the caller draws the series legend itself.
   seriesLegend?: boolean;
@@ -103,22 +93,14 @@ export function MultiTrend({
   // A series marked as a comparison (Context's card: the group average beside the focus)
   // keeps its dashed line; everything else is drawn solid, as before.
   const series: PanelSeries[] = data.series.map((s) => ({ ...s, comparison: s.comparison ?? false, values: indexed ? indexTo100(s.values) : s.values }));
-  let lines = series;
-  let band: { min: (number | null)[]; max: (number | null)[]; label: string } | undefined;
-  if (curated) {
-    const m = topMovers(series, focusKey);
-    lines = [...m.standouts, ...(m.focus ? [m.focus] : [])];
-    if (m.rest.length) band = { ...bandOf(m.rest, data.periods.length), label: `${restLabel} (${m.rest.length})` };
-  }
   return (
     <TrendChart
-      data={{ periods: data.periods, series: lines }}
+      data={{ periods: data.periods, series }}
       measure={indexed ? INDEX_MEASURE : measure}
       showFit={showFit}
       fullscreen={fullscreen}
       focusKey={focusKey ?? undefined}
       reference={indexed ? { value: 100, label: "100 = first year shown" } : undefined}
-      band={band}
       seriesLegend={seriesLegend}
     />
   );
@@ -243,16 +225,11 @@ type SortKey = "given" | "name" | "rank" | "change" | number;
 // hides behind an index, and the base that tells a big move on 8 candidates from one on
 // 230. The card shows the first and last year only, so a row still fits a card's width;
 // fullscreen opens every year between.
-//
-// `curate` is Option K's table: on the card, only the rows the chart draws individually
-// (focus + top movers) plus one "rest" row giving a min-max range -- read from the same
-// topMovers result the chart used, never a subset picked here. Fullscreen shows every row.
 export function YearTable({
   data,
   measure,
   focusKey,
   fullscreen = false,
-  curate,
   nameHeading = "Subject",
   showRank = true,
   leadingRank = false,
@@ -262,7 +239,6 @@ export function YearTable({
   measure: Measure;
   focusKey: string | null;
   fullscreen?: boolean;
-  curate?: { keys: string[]; restLabel: string };
   nameHeading?: string;
   // Off where a rank means nothing -- Part 5's geography rows (England is always "1st").
   showRank?: boolean;
@@ -294,13 +270,10 @@ export function YearTable({
   const rankOf = rankByValue(rows.map((r) => ({ key: r.s.key, value: leadingRank ? r.change?.percent ?? null : r.last })));
   const ranked = rankOf.size;
 
-  const curating = !!curate && !fullscreen;
-  const shown = curating ? rows.filter((r) => curate!.keys.includes(r.s.key)) : rows;
-  const rest = curating ? rows.filter((r) => !curate!.keys.includes(r.s.key)) : [];
 
   const valueFor = (r: (typeof rows)[number], key: SortKey): number | string | null =>
     key === "given" ? 0 : key === "name" ? r.s.label : key === "rank" ? rankOf.get(r.s.key) ?? null : key === "change" ? r.change?.percent ?? null : r.s.values[key];
-  const sorted = [...shown].sort((a, b) => {
+  const sorted = [...rows].sort((a, b) => {
     const av = valueFor(a, sort.key);
     const bv = valueFor(b, sort.key);
     if (av === null && bv === null) return 0;
@@ -327,11 +300,6 @@ export function YearTable({
       )}
     </th>
   );
-
-  const range = (vals: (number | null)[]) => {
-    const real = vals.filter((v): v is number => v !== null);
-    return real.length ? `${measure.format(Math.min(...real))}–${measure.format(Math.max(...real))}` : "—";
-  };
 
   return (
     <table className={`w-full border-collapse tabular-nums ${fullscreen ? "text-[13px]" : leadingRank ? "text-[11px]" : "text-[11.5px]"}`}>
@@ -397,27 +365,7 @@ export function YearTable({
             </tr>
           );
         })}
-        {rest.length > 0 && (
-          <tr className="text-[var(--muted2)]">
-            <td className="px-1.5 py-[5px] text-left italic">{curate!.restLabel} ({rest.length})</td>
-            {leadingRank && <td />}
-            {fullscreen && showRank && !leadingRank && <td />}
-            {yearIdx.map((i) => (
-              <td key={periods[i]} className="whitespace-nowrap px-1.5 text-right">{range(rest.map((r) => r.s.values[i]))}</td>
-            ))}
-            <td className="whitespace-nowrap px-1.5 text-right text-[10px]">range, not summed</td>
-          </tr>
-        )}
       </tbody>
     </table>
   );
-}
-
-// The curated keys Option K's chart draws, for YearTable's `curate` -- the same topMovers
-// call on the same (indexed where the chart indexes) values, so the two cannot disagree.
-export function curatedKeys(data: PanelData, measure: Measure, focusKey: string | null): string[] {
-  const indexed = shouldIndex(measure.aggregate);
-  const series = data.series.map((s) => ({ ...s, values: indexed ? indexTo100(s.values) : s.values }));
-  const m = topMovers(series, focusKey);
-  return [...(m.focus ? [m.focus.key] : []), ...m.standouts.map((s) => s.key)];
 }

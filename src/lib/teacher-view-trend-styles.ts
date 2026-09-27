@@ -4,7 +4,6 @@
 //
 // One module so Column 1, Context and Comparisons all draw "each subject (or school)
 // individually" the same way. The charts render these; none of them re-derive them.
-import { type PanelSeries } from "./teacher-view-panels";
 
 // ------------------------------------------------------------------ grey tints
 
@@ -134,47 +133,3 @@ export const DIRECTION_FILL: Record<Direction, string> = { up: "#14b8a6", down: 
 export function signed(n: number, format: (v: number) => string): string {
   return `${n > 0 ? "+" : n < 0 ? "−" : "±"}${format(Math.abs(n))}`;
 }
-
-// ------------------------------------------------------ top movers (Option K)
-
-// Option K: past a handful of series, one chart of every line is noise. The focus plus the
-// two that rose most and the two that fell most are drawn as lines; everyone else is one
-// min-max band. The table's curated card rows read THIS result, never a subset of their
-// own, so chart and table can never pick different "movers".
-export const TOP_MOVERS_EACH_WAY = 2;
-
-export type Movers = { focus: PanelSeries | null; standouts: PanelSeries[]; rest: PanelSeries[] };
-
-export function topMovers(series: PanelSeries[], focusKey: string | null): Movers {
-  const focus = series.find((s) => s.key === focusKey) ?? null;
-  const others = series
-    .filter((s) => s.key !== focusKey)
-    .map((s) => ({ s, pct: changeOver(s.values)?.percent ?? null }))
-    .filter((r) => r.pct !== null)
-    .sort((a, b) => b.pct! - a.pct!);
-  const risers = others.slice(0, TOP_MOVERS_EACH_WAY).filter((r) => r.pct! > 0);
-  const decliners = others
-    .slice(-TOP_MOVERS_EACH_WAY)
-    .filter((r) => r.pct! < 0 && !risers.includes(r))
-    .reverse();
-  const standouts = [...risers, ...decliners].map((r) => r.s);
-  const rest = series.filter((s) => s.key !== focusKey && !standouts.includes(s));
-  return { focus, standouts, rest };
-}
-
-// The rest band: per period, the lowest and highest value among `rest`.
-export function bandOf(rest: PanelSeries[], periodCount: number): { min: (number | null)[]; max: (number | null)[] } {
-  const min: (number | null)[] = [];
-  const max: (number | null)[] = [];
-  for (let i = 0; i < periodCount; i++) {
-    const vals = rest.map((s) => s.values[i]).filter((v): v is number => v !== null);
-    min.push(vals.length ? Math.min(...vals) : null);
-    max.push(vals.length ? Math.max(...vals) : null);
-  }
-  return { min, max };
-}
-
-// Where the individual-series view hands over to Option K. A named constant rather than a
-// hard-coded ~10: today's comparator sets are 5-10 schools, but the comparator-set chooser
-// (a separate pass) will change what "large" means.
-export const INDIVIDUAL_SERIES_MAX = 10;
