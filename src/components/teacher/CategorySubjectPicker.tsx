@@ -18,6 +18,16 @@
 // Its own component rather than a TickList mode: tabs, grouping and per-row colour are a
 // different shape of list, and bending TickList to them would complicate the three
 // simpler pickers that share it.
+//
+// Combined round §4: one picker wherever the dashboard asks for subjects, with options
+// rather than parallel copies --
+//   - `tabs={false}`: one implicit qualification family, no tab row (Context's comparison
+//     set, which is always within the focused subject's qualification);
+//   - `onSetTicked`: whole-category tick/untick on each category's header row, next to its
+//     "N of M ticked" (a bulk change is one write, not one per subject);
+//   - `showAllToggle`: a global Select all / Deselect all over every subject offered;
+//   - `defaultExpanded`: category ids open on first render.
+// Changes still apply live: there is no Apply step, as before.
 import { useState } from "react";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
 import type { QualificationFamily } from "@/lib/teacher-view-theme";
@@ -37,18 +47,43 @@ export function CategorySubjectPicker({
   items,
   ticked,
   onToggle,
+  onSetTicked,
   theme,
+  tabs: showTabs = true,
+  showAllToggle = false,
+  defaultExpanded = [],
 }: {
   families: QualificationFamily[]; // already filtered to the step-1 selection, in order
   items: PickerItem[];
   ticked: string[];
   onToggle: (key: string) => void;
+  // The whole next selection, for bulk changes. Absent = no bulk controls.
+  onSetTicked?: (next: string[]) => void;
   theme: "dark" | "light";
+  tabs?: boolean;
+  showAllToggle?: boolean;
+  defaultExpanded?: string[];
 }) {
-  const tabs = families.filter((f) => items.some((i) => i.familyId === f.id));
+  // Without tabs every item sits under one implicit family: the first given, or a
+  // placeholder when the caller has already narrowed the items itself.
+  const implicit: QualificationFamily = families[0] ?? { id: "_all", label: "Subjects", hex: "var(--muted)", rgb: "128,128,128", description: "" };
+  const tabs = showTabs ? families.filter((f) => items.some((i) => i.familyId === f.id)) : items.length ? [implicit] : [];
+  const familyOfItem = (i: PickerItem) => (showTabs ? i.familyId : implicit.id);
   const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(defaultExpanded.map((id) => [`${showTabs ? families[0]?.id : implicit.id}:${id}`, true])),
+  );
   const active = tabs.find((t) => t.id === activeTab) ?? tabs[0];
+  // Tick or untick a whole set of subjects in one write.
+  const setAll = (keys: string[], on: boolean) => {
+    if (!onSetTicked) return;
+    const set = new Set(ticked);
+    for (const k of keys) {
+      if (on) set.add(k);
+      else set.delete(k);
+    }
+    onSetTicked(Array.from(set));
+  };
 
   // The category's own colour in the current theme: the saturated half of the pair.
   const catColour = (id: string) => {
@@ -59,17 +94,32 @@ export function CategorySubjectPicker({
 
   if (!active) return <p className="text-sm text-[var(--muted)]">No subject entries under the qualifications you ticked.</p>;
 
-  const inTab = items.filter((i) => i.familyId === active.id);
+  const inTab = items.filter((i) => familyOfItem(i) === active.id);
+  const allKeys = items.map((i) => i.key);
+  const nAll = allKeys.filter((k) => ticked.includes(k)).length;
+  const linkClass = "text-[12.5px] font-semibold text-[var(--accent,var(--fg))] disabled:text-[var(--muted3)]";
   const categories = Array.from(new Map(inTab.map((i) => [catOf(i).id, catOf(i)])).values()).sort((a, b) =>
     a.id === UNCATEGORISED.id ? 1 : b.id === UNCATEGORISED.id ? -1 : a.label.localeCompare(b.label),
   );
 
   return (
     <div className="flex flex-col gap-4">
+      {showAllToggle && onSetTicked && (
+        <div className="flex items-center gap-4">
+          <button type="button" disabled={nAll === allKeys.length} onClick={() => setAll(allKeys, true)} className={linkClass}>
+            Select all
+          </button>
+          <button type="button" disabled={nAll === 0} onClick={() => setAll(allKeys, false)} className={linkClass}>
+            Deselect all
+          </button>
+          <span className="ml-auto text-[12.5px] text-[var(--muted2)]">{nAll} of {allKeys.length} ticked</span>
+        </div>
+      )}
+      {showTabs && (
       <div className="flex flex-wrap gap-2" role="tablist">
         {tabs.map((t) => {
           const on = t.id === active.id;
-          const n = items.filter((i) => i.familyId === t.id && ticked.includes(i.key)).length;
+          const n = items.filter((i) => familyOfItem(i) === t.id && ticked.includes(i.key)).length;
           return (
             <button
               key={t.id}
@@ -89,14 +139,15 @@ export function CategorySubjectPicker({
           );
         })}
       </div>
+      )}
 
       <div className="flex flex-col gap-2.5 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3.5">
         <p className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Selected so far</p>
         {tabs.map((t) => {
-          const chosen = items.filter((i) => i.familyId === t.id && ticked.includes(i.key));
+          const chosen = items.filter((i) => familyOfItem(i) === t.id && ticked.includes(i.key));
           return (
             <div key={t.id} className="flex flex-col gap-1.5">
-              <p className="text-xs font-bold text-[var(--muted2)]">{t.label}</p>
+              {showTabs && <p className="text-xs font-bold text-[var(--muted2)]">{t.label}</p>}
               {chosen.length === 0 ? (
                 <p className="text-[12.5px] italic text-[var(--muted3)]">Nothing ticked yet</p>
               ) : (
@@ -108,7 +159,7 @@ export function CategorySubjectPicker({
                         key={i.key}
                         type="button"
                         onClick={() => onToggle(i.key)}
-                        aria-label={`Remove ${i.label} (${t.label})`}
+                        aria-label={showTabs ? `Remove ${i.label} (${t.label})` : `Remove ${i.label}`}
                         className="rounded-full border px-2.5 py-[5px] text-[12.5px] font-semibold"
                         style={{ background: `${c}1F`, color: c, borderColor: `${c}59` }}
                       >
@@ -130,24 +181,44 @@ export function CategorySubjectPicker({
           const subjects = inTab.filter((i) => catOf(i).id === cat.id).sort((a, b) => a.label.localeCompare(b.label));
           const n = subjects.filter((i) => ticked.includes(i.key)).length;
           const c = catColour(cat.id);
+          const allOn = n === subjects.length;
           return (
             <div key={key} className="overflow-hidden rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)]">
-              <button
-                type="button"
-                aria-expanded={open}
-                onClick={() => setExpanded({ ...expanded, [key]: !open })}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-              >
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c }} />
-                <span className="flex-grow text-[14.5px] font-bold">{cat.label}</span>
-                <span className="text-[12.5px] text-[var(--muted2)]">{n} of {subjects.length} ticked</span>
-                <svg
-                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  className="shrink-0 text-[var(--muted3)] transition-transform" style={{ transform: open ? "rotate(180deg)" : "none" }} aria-hidden="true"
+              {/* The header is a row of two controls rather than one button: expanding the
+                  section and ticking all of it are different actions, and a button cannot
+                  hold another. */}
+              <div className="flex items-center gap-2 pr-4">
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  onClick={() => setExpanded({ ...expanded, [key]: !open })}
+                  className="flex min-w-0 flex-grow items-center gap-3 py-3.5 pl-4 text-left"
                 >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c }} />
+                  <span className="min-w-0 flex-grow text-[14.5px] font-bold">{cat.label}</span>
+                  {/* "ticked" drops on a phone, where it pushed the category name onto three lines. */}
+                  <span className="shrink-0 text-[12.5px] text-[var(--muted2)]">
+                    {n} of {subjects.length}<span className="hidden sm:inline"> ticked</span>
+                  </span>
+                  <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className="shrink-0 text-[var(--muted3)] transition-transform" style={{ transform: open ? "rotate(180deg)" : "none" }} aria-hidden="true"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                {onSetTicked && (
+                  <button
+                    type="button"
+                    onClick={() => setAll(subjects.map((i) => i.key), !allOn)}
+                    aria-label={`${allOn ? "Untick" : "Tick"} every subject in ${cat.label}`}
+                    className="shrink-0 rounded-md border px-2 py-1 text-[11.5px] font-semibold"
+                    style={{ borderColor: `${c}59`, color: c, background: allOn ? `${c}1F` : "transparent" }}
+                  >
+                    {allOn ? "Untick all" : "Tick all"}
+                  </button>
+                )}
+              </div>
               {open && (
                 <div className="flex flex-col gap-2 px-4 pb-3.5 pt-0.5">
                   {subjects.map((i) => {

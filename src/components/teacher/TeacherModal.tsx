@@ -7,7 +7,10 @@
 //   - Escape closes;
 //   - the page behind does not scroll under the wheel (the panel scrolls itself);
 //   - focus moves to the given control (the panel's close button) on open;
-//   - a floating panel at ~5% margin on desktop, 3% on a phone (round 5 brief).
+//   - a floating panel at ~5% margin on desktop, 3% on a phone (round 5 brief) -- or, at
+//     size "compact", a panel no wider than a phone, centred, for a picker: the full-size
+//     panel suits a chart, but spreads a checklist across a laptop screen. One shell, two
+//     sizes, rather than a second modal that would drift from this one.
 //
 // The caller renders it only while open (`{open && <TeacherModal … />}`), and renders it
 // INSIDE #teacher-root rather than through a portal: Teacher view's theme is an attribute
@@ -57,6 +60,7 @@ export function TeacherModal({
   onClose,
   initialFocusRef,
   printable = false,
+  size = "fullscreen",
   children,
 }: {
   label: string;
@@ -68,6 +72,7 @@ export function TeacherModal({
   // the page-level Export is to print the dashboard, not whatever happens to be open --
   // so a panel print opts back in and marks itself as the one thing to show.
   printable?: boolean;
+  size?: "fullscreen" | "compact";
   children: ReactNode;
 }) {
   // Held in a ref so a caller passing a fresh arrow each render does not re-run the
@@ -107,7 +112,15 @@ export function TeacherModal({
         onClick={() => onCloseRef.current()}
         className="absolute inset-0 h-full w-full cursor-default bg-neutral-900/40 backdrop-blur-sm dark:bg-black/60"
       />
-      <div className="absolute inset-[3%] flex flex-col gap-2.5 overflow-auto rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-[var(--fg)] shadow-2xl sm:inset-[5%] sm:p-6">
+      <div
+        className={`absolute flex flex-col gap-2.5 overflow-auto rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-[var(--fg)] shadow-2xl ${
+          size === "compact"
+            ? // 28rem wide at most, 12px clear of a phone's edges; as tall as its content up
+              // to 12px clear of the top and bottom, then it scrolls itself.
+              "left-1/2 top-1/2 max-h-[calc(100dvh-1.5rem)] w-[min(28rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 sm:p-5"
+            : "inset-[3%] sm:inset-[5%] sm:p-6"
+        }`}
+      >
         {children}
       </div>
     </div>

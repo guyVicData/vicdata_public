@@ -93,11 +93,11 @@ export const QUALIFICATION_FAMILIES: Record<"ks4" | "ks5", QualificationFamily[]
     { id: "other_vocational", label: "Other vocational", description: "Other Level 1/2 vocational qualifications, VRQ", hex: "#a1a1aa", rgb: "161,161,170" },
   ],
   ks5: [
-    { id: "alevel", label: KS5_BUCKET_LABEL.alevel, description: "A level, Advanced Extension Award", hex: "#f472b6", rgb: "244,114,182" },
+    { id: "alevel", label: KS5_BUCKET_LABEL.alevel, description: "A level", hex: "#f472b6", rgb: "244,114,182" },
     { id: "ib", label: KS5_BUCKET_LABEL.ib, description: "Higher & Standard level, Diploma Core", hex: "#38bdf8", rgb: "56,189,248" },
     { id: "btec_ocr", label: KS5_BUCKET_LABEL.btec_ocr, description: "Vocational and technical qualifications", hex: "#2dd4bf", rgb: "45,212,191" },
     { id: "tlevel", label: KS5_BUCKET_LABEL.tlevel, description: "2-year technical programmes, by pathway", hex: "#fb923c", rgb: "251,146,60" },
-    { id: "other", label: KS5_BUCKET_LABEL.other, description: "AS level, EPQ, Core Maths, Pre-U and similar", hex: "#a1a1aa", rgb: "161,161,170" },
+    { id: "other", label: KS5_BUCKET_LABEL.other, description: "AS level, AEA, EPQ, Core Maths, Pre-U and similar", hex: "#a1a1aa", rgb: "161,161,170" },
   ],
 };
 

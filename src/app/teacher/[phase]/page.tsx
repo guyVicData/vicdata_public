@@ -635,6 +635,7 @@ export default function TeacherPhaseDashboard() {
               items={toPickerItems(ph, items.filter((i) => selectedFamilies.includes(familyOf(i))))}
               ticked={ticked}
               onToggle={toggle}
+              onSetTicked={persist}
               theme={theme}
             />
           </>
@@ -1067,15 +1068,24 @@ export default function TeacherPhaseDashboard() {
       .map((i) => i.subject)
       .filter((n) => items.every((i) => i.subject !== n || isAsLevelOrAea(i.qualificationType))),
   );
+  //
+  // Combined round §4c: "Selected subjects" is chosen within the focused subject's own
+  // qualification family -- a comparison set is always with the same qualification -- so
+  // the picker offers only that family's subjects (contextOffer), and a key ticked earlier
+  // under another family (before this rule, or with a different subject focused) is left
+  // out of the group rather than counted invisibly.
+  const contextFamily = focusItem && phase !== "ks2" ? familyOfItem(phase, focusItem) : null;
+  const inContextFamily = (i: SubjectItem) => contextFamily === null || familyOfItem(phase as "ks4" | "ks5", i) === contextFamily;
+  const contextOffer = items.filter((i) => i.entries > 0 && inContextFamily(i));
   const contextMembers: string[] = (() => {
     const every = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
     if (contextAgainst === "selected") {
-      const names = new Set(items.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
+      const names = new Set(contextOffer.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
       // Nothing ticked yet falls back to the subjects this person teaches, which is the
       // most useful "not chosen yet" group and is one click from being narrowed.
       return names.size
         ? every.filter((n) => names.has(n))
-        : Array.from(new Set(tickedItems.map((i) => i.subject))).filter((n) => !asOrAeaOnly.has(n));
+        : Array.from(new Set(tickedItems.filter(inContextFamily).map((i) => i.subject))).filter((n) => !asOrAeaOnly.has(n));
     }
     return every;
   })();
@@ -1630,8 +1640,12 @@ export default function TeacherPhaseDashboard() {
                 <ContextPills
                   against={contextAgainst}
                   onAgainst={(id) => setColumnSetting(againstKey("context"), id)}
-                  // S8: only subjects with real entries at the school in the latest year.
-                  allSubjects={items.filter((i) => i.entries > 0).map((i) => ({ key: i.key, label: i.label, colour: colourOf(i) }))}
+                  // S8: only subjects with real entries at the school in the latest year;
+                  // §4c: only in the focused subject's qualification family.
+                  pickerItems={toPickerItems(phase as "ks4" | "ks5", contextOffer)}
+                  family={QUALIFICATION_FAMILIES[phase as "ks4" | "ks5"].find((f) => f.id === contextFamily) ?? null}
+                  focusCategory={focusItem ? familyFor(headline, focusItem.subject)?.id ?? null : null}
+                  theme={theme}
                   selected={contextSelected}
                   onSetSelected={(keys) => setColumnList(chosenKey("context"), keys)}
                   onToggleSelected={(key) =>
@@ -1751,6 +1765,8 @@ export default function TeacherPhaseDashboard() {
           backdropLabel="Close subject picker"
           onClose={() => setSubjectPickerOpen(false)}
           initialFocusRef={subjectPickerCloseRef}
+          // Combined round §4a: a picker, so the compact size, not the chart-sized panel.
+          size="compact"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -1817,6 +1833,10 @@ export default function TeacherPhaseDashboard() {
                     items={toPickerItems(ph, items.filter((i) => selected.includes(familyOfItem(ph, i))))}
                     ticked={ticked}
                     onToggle={toggleQuickSubject}
+                    onSetTicked={(next) => {
+                      if (quickFamilies === null) setQuickFamilies(derived);
+                      persist(next);
+                    }}
                     theme={theme}
                   />
                 )}
