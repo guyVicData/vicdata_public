@@ -34,6 +34,7 @@ import {
 import { trendBadge } from "@/lib/data-view-cards";
 import type { SetOption, RecipeOption, ViewKey } from "@/lib/data-view-types";
 import type { DefaultListEntry, SchoolTypeCategory, BoardingQuintileBand } from "@/lib/default-comparator-lists";
+import { resolveNearestOption } from "@/lib/nearest-option";
 import { describeActiveViewSentence } from "@/lib/data-view-summary";
 import type { RegionNationPoint, RegionNationRankResult, RegionNationRow } from "@/lib/region-nation-comparator";
 import type { AggregateTrends } from "@/lib/aggregate-trends";
@@ -168,39 +169,9 @@ function unpackRegionNationRow(r: RegionNationRow): { entry: DefaultListEntry; p
   };
 }
 
-// Compared-with panel round (2026-09-10), item 2: which SetOption "Nearest 10"
-// currently resolves to, for a genuine boarding target -- there is no longer a
-// separate Boarding schools button, so this single ordinary-vs-quintile choice is
-// what the one Nearest-10 button (and its +5/-5 stepper, ComparatorSidebar's own
-// concern) actually shows. Pure function of the already-fetched recipe data plus the
-// LIVE boarding filter mode, so it can be called identically both for the initial
-// landing selection (boardingMode null, filters start empty) and on every later
-// render as the member toggles the shared boarding filter (see the resolvedNearestOption
-// memo + switch-effect below, in the component body).
-//   - boardingBand "top_two": default is boardingRecipe (same-quintile match,
-//     unbounded catchment) -- switches to the ordinary list1 recipe when the member
-//     ticks Day pupils specifically (a day-pupil framing makes more sense than a
-//     boarding-population quintile for that reading).
-//   - boardingBand "bottom_three": default is the ordinary list1 recipe -- switches
-//     to boardingRecipe (nearest real boarding schools nationally, age/gender) when
-//     the member ticks Boarders specifically.
-//   - boardingBand null (not a genuine boarding school, or the fast-path recipe
-//     isn't precomputed yet for a top-two target -- see DefaultComparatorLists'
-//     own comment for why no slow fallback is attempted here): list1 always.
-function resolveNearestOption(
-  list1: RecipeOption | null,
-  boardingBand: BoardingQuintileBand | null,
-  boardingRecipe: RecipeOption | null,
-  boardingMode: "boarders" | "day" | "whole" | null,
-): RecipeOption | null {
-  if (boardingBand === "top_two") {
-    return boardingMode === "day" ? list1 : (boardingRecipe ?? list1);
-  }
-  if (boardingBand === "bottom_three") {
-    return boardingMode === "boarders" ? (boardingRecipe ?? list1) : list1;
-  }
-  return list1;
-}
+// Which list "Nearest 10" resolves to for a boarding target: resolveNearestOption, now
+// shared with Teacher view's comparator chooser (src/lib/nearest-option.ts, with its
+// full reasoning).
 
 export default function DataViewShell({ urn }: { urn: string }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);

@@ -10,7 +10,12 @@
 //   - a floating panel at ~5% margin on desktop, 3% on a phone (round 5 brief) -- or, at
 //     size "compact", a panel no wider than a phone, centred, for a picker: the full-size
 //     panel suits a chart, but spreads a checklist across a laptop screen. One shell, two
-//     sizes, rather than a second modal that would drift from this one.
+//     sizes, rather than a second modal that would drift from this one;
+//   - or, at size "chooser", the comparator chooser's own panel from its wireframe
+//     (docs/wireframes/comparator-chooser-v29): 390x736 centred over a flat
+//     rgba(20,20,19,0.45) backdrop, the same panel "laptop, tablet or phone" -- on a
+//     phone 12px clear of every edge. The chooser draws its own header, body and
+//     footer inside it, so this size adds no padding, border or background of its own.
 //
 // The caller renders it only while open (`{open && <TeacherModal … />}`), and renders it
 // INSIDE #teacher-root rather than through a portal: Teacher view's theme is an attribute
@@ -72,7 +77,7 @@ export function TeacherModal({
   // the page-level Export is to print the dashboard, not whatever happens to be open --
   // so a panel print opts back in and marks itself as the one thing to show.
   printable?: boolean;
-  size?: "fullscreen" | "compact";
+  size?: "fullscreen" | "compact" | "chooser";
   children: ReactNode;
 }) {
   // Held in a ref so a caller passing a fresh arrow each render does not re-run the
@@ -110,8 +115,15 @@ export function TeacherModal({
         aria-label={backdropLabel}
         tabIndex={-1}
         onClick={() => onCloseRef.current()}
-        className="absolute inset-0 h-full w-full cursor-default bg-neutral-900/40 backdrop-blur-sm dark:bg-black/60"
+        className={`absolute inset-0 h-full w-full cursor-default ${
+          size === "chooser" ? "bg-[rgba(20,20,19,0.45)]" : "bg-neutral-900/40 backdrop-blur-sm dark:bg-black/60"
+        }`}
       />
+      {size === "chooser" ? (
+        <div className="absolute left-1/2 top-1/2 flex h-[min(736px,calc(100dvh-24px))] w-[min(390px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 flex-col">
+          {children}
+        </div>
+      ) : (
       <div
         className={`absolute flex flex-col gap-2.5 overflow-auto rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-[var(--fg)] shadow-2xl ${
           size === "compact"
@@ -123,6 +135,7 @@ export function TeacherModal({
       >
         {children}
       </div>
+      )}
     </div>
   );
 }

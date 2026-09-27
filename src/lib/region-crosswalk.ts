@@ -59,7 +59,7 @@ export type Nation = "england" | "wales";
 // (E12000001-E12000009). Wales has no sub-region in this scheme; W92000004 is Wales's
 // own real ONS country-level GSS code, used here as nation-level pseudo-region code
 // so `school_region_nation.region_code` is never null for a real English/Welsh school.
-const REGION_NAME_TO_ONS_CODE: Record<string, string> = {
+export const REGION_NAME_TO_ONS_CODE: Record<string, string> = {
   "North East": "E12000001",
   "North West": "E12000002",
   "Yorkshire and The Humber": "E12000003",
