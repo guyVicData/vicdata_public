@@ -95,3 +95,25 @@ It takes its natural height, and the card scrolls vertically, as Ranked list doe
 2. On a phone, the same panel: horizontal rows with figures at the bar ends.
 3. "±": a compact centred panel, not a near-fullscreen one, with "Tick all" on category headers.
 4. Context → Compare against → Selected subjects: the compact modal, same-qualification subjects only, Select all / Deselect all, "Tick all" per category, and the donut and group changing as you tick.
+
+## Live check (after the push)
+
+**Pushed `091d448..53c02da` at 09:10:21 UTC. Live at 09:12:24 UTC**, about 2 minutes later, Render auto-deploy.
+
+- **JS:** the teacher chunk `29g-u_oxb9nnu.js` is served byte-identical to the build of `53c02da`. The previous round's chunk now returns 404.
+- **CSS:** new this time, and needed. My working-copy build's Tailwind CSS had a different filename, which the live site 404s. Tailwind v4 scans the whole project for class names, including untracked docs Render never sees, so a local build's CSS can differ from the deployed one while its JS matches.
+  - I built a **clean checkout of `53c02da`** (a `git worktree` with a copy-on-write clone of `node_modules`), as Render does. It produces the same JS chunk and `04a9-503yxk6p.css`.
+  - That CSS **is** live, byte-identical, and contains this round's new classes: the compact modal's width and height limits, `left-1/2`, the phone `sm:inline`, and `line-clamp-2`.
+  - **So what's deployed is exactly a clean build of `53c02da`, both JS and CSS.**
+- **The page itself** is behind the Basic Auth gate, which I don't cross. The visual checks are therefore the preview (real components, real data), re-shot against the **clean build's CSS**, so the screenshots match what's deployed.
+
+### Screenshots (committed): `docs/screenshots/chart_and_picker_combined_v1/`
+
+| File | What it shows |
+|---|---|
+| `laptop-candidates-trend.png` | The Chase Post-16: six even bars, 10px gaps, no fade; Trend axis figures in line with the bar axis. Also 130448's 13-subject Business & Law as horizontal bars. |
+| `phone-candidates-trend.png` | The same at 375px: The Chase's six bars as horizontal rows with figures at the bar ends. |
+| `laptop-quickedit.png`, `phone-quickedit.png` | "±" picker in the compact centred modal, with per-category "Tick all". |
+| `laptop-context.png` | Context → Compare against → Selected subjects, opened by the real clicks: compact modal, A-level subjects only, Select all / Deselect all, the focused category open. |
+| `phone-context-tickall.png` | The same on a phone after a real "Tick all" click on Sciences & Maths: 5 of 5, "Untick all", 5 of 22, chips updated. |
+| `laptop-ks4-trends.png`, `phone-ks4-trends.png` | **The owed §2 checks.** The Chase **GCSE** Maths (General) points Trend (2021/22–2024/25; axis 6.5/5.3/4.0) under a bars card, and a **5-year** GCSE entries Trend (2020/21–2024/25, 3-digit axis). On the laptop both axes line up with the bars above, with all five year labels shown and none touching. On the phone the 5-year chart thins to three labels (2020/21, 2022/23, 2024/25) without overlap. **Coverage gap closed.** |
