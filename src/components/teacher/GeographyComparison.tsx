@@ -19,7 +19,8 @@ import { FOCUS_COLOUR, paletteInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import type { Measure } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { MultiTrend, YearTable } from "./SeriesViews";
+import { MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
+import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 
 export type GeographyInput = {
   urn: string;
@@ -148,10 +149,15 @@ export function GeographyView({
   // The chart has no region line: its path runs almost on top of England's. The table
   // keeps all four rows. MultiTrend indexes entries to each line's own first year = 100;
   // average point scores share one scale and are drawn at their real levels.
+  const chartData = { periods: shown, series: series.filter((x) => x.key !== "area-region") };
+  // Entries are drawn indexed to their own first year (MultiTrend's rule for a headcount),
+  // so the chart carries the same title Trend's indexed chart does -- one explanation for
+  // every indexed-to-100 chart. Average point score is drawn at its real level: no title.
   return (
     <>
       {heading}
-      <MultiTrend data={{ periods: shown, series: series.filter((x) => x.key !== "area-region") }} measure={measure} focusKey="own" fullscreen={fullscreen} />
+      {shouldIndex(measure.aggregate) && multiTrendHasLine(chartData) && <TrendScaleTitle view="indexed" from={shown[0] ?? null} noun="entries" />}
+      <MultiTrend data={chartData} measure={measure} focusKey="own" fullscreen={fullscreen} />
     </>
   );
 }
