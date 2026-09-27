@@ -13,12 +13,19 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { Measure } from "@/lib/teacher-view-panels";
 
-// Under the baseline: the column's 4px gap plus up to two 12px label lines, plus the 6px
-// top inset every column starts with -- what the measured height must leave room for.
-// Always two lines, so every chart's baseline sits at the same height whether or not any
-// label actually wraps.
+// Under the baseline: the column's 4px gap plus up to two label lines, plus the 6px top
+// inset every column starts with, plus 6px of room under the second line -- what the
+// measured height must leave room for. Always two lines, so every chart's baseline sits
+// at the same height whether or not any label actually wraps. LABEL_LINE is the label's
+// real rendered line height: it is set explicitly on the label below (measured: one line
+// 12px, two lines 24px), not the ~15px the old default leading gave. BOTTOM_ROOM is the
+// headroom: without it a two-line label ended flush with the card's content edge.
 const LABEL_LINE = 12;
-const BELOW_AND_ABOVE = 6 + 4 + 2 * LABEL_LINE;
+const BOTTOM_ROOM = 6;
+const BELOW_AND_ABOVE = 6 + 4 + 2 * LABEL_LINE + BOTTOM_ROOM;
+
+// The widest a column (and so its label) may be before the label wraps: 4rem.
+const LABEL_MAX = 64;
 
 // The right-edge fade while more bars are scrolled out of view.
 const EDGE_FADE = "linear-gradient(to right, #000 calc(100% - 28px), transparent)";
@@ -42,6 +49,7 @@ export function VerticalBars({
   const fallback = fullscreen ? 220 : 90;
   const real = bars.map((b) => b.value).filter((v): v is number => v !== null);
   const hasData = real.length > 0;
+  const barW = bars.length > 5 ? 20 : 26;
   const box = useRef<HTMLDivElement | null>(null);
   const [measured, setMeasured] = useState<number | null>(null);
   // A layout effect, so the first measurement lands before the first paint (no frame of
@@ -83,6 +91,29 @@ export function VerticalBars({
     };
   }, [hasData]);
 
+  // Round 2: every column is ONE width -- the widest single WORD among this chart's
+  // labels, capped at LABEL_MAX and never narrower than a bar. The label used to set its
+  // own column's width under a max-width cap, so "Bio" made a 20px column and "Math Stud"
+  // a 46px one, and one constant gap between columns of six different widths read as
+  // irregular gaps driven by the label text. Sized to the widest word rather than the
+  // widest whole label, so "Math Stud" and "Fur Maths" wrap onto two lines at their space
+  // (the two-line room is always reserved anyway) instead of widening every column to
+  // fit them on one: on The Chase's six Sciences & Maths bars that is 30px columns in
+  // place of 48px. Not a flat 64px either: six of those would scroll on almost every
+  // card. Measured with the label's real font (canvas measureText) before the first paint.
+  const [colW, setColW] = useState<number | null>(null);
+  const labelKey = bars.map((b) => b.shortLabel).join("\u0000");
+  useLayoutEffect(() => {
+    const label = row.current?.querySelector<HTMLElement>("[data-bar-label]");
+    const ctx = label ? document.createElement("canvas").getContext("2d") : null;
+    if (!label || !ctx) return;
+    const cs = getComputedStyle(label);
+    ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const words = labelKey.split("\u0000").flatMap((t) => t.split(/\s+/)).filter(Boolean);
+    const widest = Math.max(0, ...words.map((w) => ctx.measureText(w).width));
+    setColW(Math.min(LABEL_MAX, Math.max(barW, Math.ceil(widest) + 2)));
+  }, [hasData, labelKey, barW]);
+
   if (!hasData) return <p className="text-xs text-[var(--muted)]">No published figures for these subjects yet.</p>;
 
   // Round 7 §5: the tallest real bar fills the chart. This used to round up to a "nice"
@@ -92,6 +123,7 @@ export function VerticalBars({
   const top = Math.max(...real);
   // bodyH is the bar area; the axis SVG (plot) is 16px taller, as before.
   const bodyH = Math.max(fallback, measured ?? 0) - BELOW_AND_ABOVE - edge.scrollbar;
+  const columnStyle = colW === null ? { maxWidth: LABEL_MAX } : { width: colW };
   const plot = bodyH + 16;
   const ticks = [1, 0.75, 0.5, 0.25, 0];
   // The axis is as wide as its widest figure needs, not a fixed 30px: this panel's
@@ -134,13 +166,14 @@ export function VerticalBars({
             <div
               key={b.key}
               className="flex shrink-0 flex-col items-center gap-1"
+              style={columnStyle}
               title={`${b.label}: ${b.value === null ? "no figure" : measure.format(b.value)}`}
             >
               <div className="flex items-end" style={{ height: bodyH }}>
                 <div
                   className="rounded-t"
                   style={{
-                    width: bars.length > 5 ? 20 : 26,
+                    width: barW,
                     height: b.value === null ? 0 : Math.max(2, (b.value / top) * bodyH),
                     background: b.colour,
                   }}
@@ -149,7 +182,8 @@ export function VerticalBars({
               {/* Two lines before an ellipsis, not one: the short labels ("Fur Maths") are
                   already abbreviated, so clipping them further lost the subject entirely. */}
               <span
-                className="line-clamp-2 max-w-[4rem] text-center text-[10px] break-words whitespace-normal text-[var(--muted3)]"
+                data-bar-label
+                className="line-clamp-2 w-full text-center text-[10px] break-words whitespace-normal text-[var(--muted3)]"
                 style={{ lineHeight: `${LABEL_LINE}px` }}
               >
                 {b.shortLabel}
