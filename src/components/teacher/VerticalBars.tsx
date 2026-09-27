@@ -13,9 +13,12 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { Measure } from "@/lib/teacher-view-panels";
 
-// Under the baseline: the column's 4px gap plus the ~15px label line, plus the 6px top
-// inset every column starts with -- what the measured height must leave room for.
-const BELOW_AND_ABOVE = 25;
+// Under the baseline: the column's 4px gap plus up to two 12px label lines, plus the 6px
+// top inset every column starts with -- what the measured height must leave room for.
+// Always two lines, so every chart's baseline sits at the same height whether or not any
+// label actually wraps.
+const LABEL_LINE = 12;
+const BELOW_AND_ABOVE = 6 + 4 + 2 * LABEL_LINE;
 
 // The right-edge fade while more bars are scrolled out of view.
 const EDGE_FADE = "linear-gradient(to right, #000 calc(100% - 28px), transparent)";
@@ -138,7 +141,14 @@ export function VerticalBars({
                   }}
                 />
               </div>
-              <span className="max-w-[4rem] truncate text-[10px] text-[var(--muted3)]">{b.shortLabel}</span>
+              {/* Two lines before an ellipsis, not one: the short labels ("Fur Maths") are
+                  already abbreviated, so clipping them further lost the subject entirely. */}
+              <span
+                className="line-clamp-2 max-w-[4rem] text-center text-[10px] break-words whitespace-normal text-[var(--muted3)]"
+                style={{ lineHeight: `${LABEL_LINE}px` }}
+              >
+                {b.shortLabel}
+              </span>
             </div>
           ))}
         </div>
