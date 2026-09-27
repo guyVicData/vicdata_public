@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Comparator schools — adjust (ranking, unfiltered)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/* sector palette — must match tag-colours.ts exactly: State #15803d, Independent #F37521, FE #86198f, Special Schools #b91c1c */
+/* gender palette — must match tag-colours.ts exactly: Girls #9d174d, Boys #155e75, Co-ed #4338ca */
+/* boarding % bands — endpoints (0% Day #075985, 80%+ Boarding #9a3324) are the real tag-colours.ts values; the 3 middle bands are a provisional ramp between them for this 5-band breakdown, not (yet) in tag-colours.ts */
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#e9eaec}
+.icon{display:block}
+.iconbtn{width:32px;height:32px;border-radius:50%;background:#f1f3f5;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 32px}
+.btn{border:none;border-radius:20px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer}
+.btn.primary{background:#141413;color:#fff}
+.statcard{border:1px solid #e3e5e9;border-radius:10px;padding:10px 8px;background:#f7f8f9;display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;text-align:center}
+.statcard .num{font-size:22px;font-weight:700;color:#141413;line-height:1.1}
+.statcard .lbl{font-size:10.5px;color:#767d87;line-height:1.25}
+.includebox{flex:1 1 auto;border:1px solid #e3e5e9;border-radius:10px;padding:9px 11px;background:#f7f8f9;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.includerow{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#5b6470;padding:2px 0}
+.filterlabel{font-size:10.5px;font-weight:700;color:#9aa0a8;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px}
+.chip{border:1px solid #d7dae0;border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;color:#5b6470;background:#fff;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center}
+.chip.sm{padding:4px 8px;font-size:11px}
+.chip.active{border-color:#141413;background:#141413;color:#fff}
+.chip.active.neutral{border-color:#141413;background:#141413;color:#fff}
+.chip.sm.active{border-color:#141413;background:#141413;color:#fff}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;flex:0 0 7px}
+/* sector */
+.chip.sector-state.active{background:#f0fdf4;border-color:#15803d;color:#15803d}
+.chip.sector-independent.active{background:#fef2e8;border-color:#F37521;color:#F37521}
+.chip.sector-fe.active{background:#fdf4ff;border-color:#86198f;color:#86198f}
+.chip.sector-special.active{background:#fef2f2;border-color:#b91c1c;color:#b91c1c}
+/* boarding % bands — 0% and 80%+ reuse the real Day/Boarding tag colours; the 3 in between are a derived ramp */
+.chip.board-0.active{background:#f0f9ff;border-color:#075985;color:#075985}
+.chip.board-b1.active{background:#fff8f5;border-color:#c2703f;color:#c2703f}
+.chip.board-b2.active{background:#fff1ea;border-color:#b1592f;color:#b1592f}
+.chip.board-b3.active{background:#ffe6db;border-color:#a03f28;color:#a03f28}
+.chip.board-b4.active{background:#fff1ee;border-color:#9a3324;color:#9a3324}
+/* gender */
+.chip.gender-girls.active{background:#fdf2f8;border-color:#9d174d;color:#9d174d}
+.chip.gender-boys.active{background:#ecfeff;border-color:#155e75;color:#155e75}
+.chip.gender-coed.active{background:#eef2ff;border-color:#4338ca;color:#4338ca}
+.hint{font-size:11px;color:#9aa0a8;margin-top:5px;padding:0 2px;line-height:1.4}
+.subtle{opacity:0.62;font-weight:500}
+.filterbox{border:1px solid #e3e5e9;border-radius:10px;padding:10px 10px;background:#f7f8f9}
+/* size badges — real SizeBadge system (age-band-distributions.ts / PhaseBreakdownCard.tsx
+   on the public pages): XS/S/M/L/XL are national quintiles of roll within one age band,
+   not fixed head-count thresholds. Same muted-square + gold-active convention as there. */
+.sizerow{display:flex;gap:4px}
+.sizesq{width:25px;height:25px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;background:#f0ece0;color:#b3ab99;cursor:pointer}
+.sizesq.active{background:#a97a1f;color:#fff}
+</style>
+</helmet>
+<div style="width: 390px; height: 760px; box-sizing: border-box; position: relative; background: #e9eaec; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif">
+  <div style="position: absolute; inset: 12px; background: #ffffff; border-radius: 14px; box-shadow: 0 12px 32px rgba(20,20,19,0.18); display: flex; flex-direction: column; overflow: hidden">
+
+    <div style="padding: 14px 14px 14px 8px; border-bottom: 1px solid #eef0f2; display: flex; align-items: center; gap: 4px; flex: 0 0 auto">
+      <button class="iconbtn" aria-label="Back" style="background: none">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <div style="flex: 1 1 auto">
+        <div style="font-size: 15px; font-weight: 600; color: #141413">Build a new ranking</div>
+        <div style="font-size: 11.5px; color: #767d87; margin-top: 1px">National — all England schools · same qualification &amp; phase</div>
+      </div>
+      <button class="iconbtn" aria-label="Close">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div style="flex: 1 1 auto; overflow-y: auto; padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 12px">
+
+        <div style="font-size: 10.5px; color: #9aa0a8; padding: 0 2px">This is a population, not a hand-picked list — it shows what's included, not individual schools.</div>
+
+        <div style="display: flex; gap: 10px; align-items: stretch">
+          <div class="statcard" style="flex: 0 0 100px">
+            <div class="num">3,842</div>
+            <div class="lbl">schools &amp; colleges</div>
+          </div>
+          <div class="includebox">
+            <div class="includerow"><svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>State, Independent, FE &amp; Special</div>
+            <div class="includerow"><svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Boarding &amp; day, all genders</div>
+            <div class="includerow"><svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Any size, all qualifications</div>
+            <div class="includerow"><svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>National — every region</div>
+          </div>
+        </div>
+
+        <div style="height: 1px; background: #eef0f2"></div>
+
+        <div style="font-size: 12px; font-weight: 600; color: #141413">Narrow this into your own ranking</div>
+
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 10px">
+            <div class="filterbox">
+              <div class="filterlabel">Sector</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px">
+                <div class="chip sm active neutral">All</div>
+                <div class="chip sm sector-state"><span class="dot" style="background:#15803d"></span>State</div>
+                <div class="chip sm sector-independent"><span class="dot" style="background:#F37521"></span>Independent</div>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                <div class="chip sm sector-fe"><span class="dot" style="background:#86198f"></span>FE</div>
+                <div class="chip sm sector-special"><span class="dot" style="background:#b91c1c"></span>Special</div>
+              </div>
+            </div>
+            <div class="filterbox">
+              <div class="filterlabel">Gender</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                <div class="chip sm active neutral">Any</div>
+                <div class="chip sm gender-girls"><span class="dot" style="background:#9d174d"></span>Girls</div>
+                <div class="chip sm gender-boys"><span class="dot" style="background:#155e75"></span>Boys</div>
+                <div class="chip sm gender-coed"><span class="dot" style="background:#4338ca"></span>Co-ed</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex: 1 1 0">
+            <div class="filterbox">
+              <div class="filterlabel">Boarding</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px">
+                <div class="chip sm active neutral">Any</div>
+                <div class="chip sm board-0"><span class="dot" style="background:#075985"></span>100% Day</div>
+              </div>
+              <div class="filterlabel">Boarding %</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px">
+                <div class="chip sm board-b1"><span class="dot" style="background:#c2703f"></span><span class="subtle">1–19%</span></div>
+                <div class="chip sm board-b2"><span class="dot" style="background:#b1592f"></span><span class="subtle">20–49%</span></div>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                <div class="chip sm board-b3"><span class="dot" style="background:#a03f28"></span><span class="subtle">50–79%</span></div>
+                <div class="chip sm board-b4"><span class="dot" style="background:#9a3324"></span><span class="subtle">80%+</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filterbox">
+          <div class="filterlabel">Qualification</div>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap">
+            <div class="chip sm active neutral">All</div>
+            <div class="chip sm">A-level</div>
+            <div class="chip sm">IB</div>
+            <div class="chip sm">BTEC/OCR/VRQ</div>
+            <div class="chip sm">T Level</div>
+          </div>
+        </div>
+
+        <div class="filterbox">
+          <div class="filterlabel">Scope</div>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+            <div class="chip sm active neutral">All England</div>
+            <div class="chip sm">South East</div>
+            <div class="chip sm" style="gap: 3px">
+              More
+              <svg class="icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="filterbox">
+          <div class="filterlabel">Size <span style="text-transform: none; font-weight: 500; color: #9aa0a8">— Sixth Form (Years 12–13)</span></div>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+            <div class="chip sm active neutral">Any</div>
+            <div class="sizerow">
+              <div class="sizesq">XS</div>
+              <div class="sizesq">S</div>
+              <div class="sizesq">M</div>
+              <div class="sizesq">L</div>
+              <div class="sizesq">XL</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hint">Changing any filter above turns this into a custom ranking, which you can save to reuse</div>
+
+    </div>
+
+    <div style="padding: 12px 18px; border-top: 1px solid #eef0f2; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto">
+      <div style="font-size: 13px; color: #5b6470">3,842 included</div>
+      <button class="btn primary">Done</button>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Comparator schools — adjust (nearest-N)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#e9eaec}
+.icon{display:block}
+.iconbtn{width:32px;height:32px;border-radius:50%;background:#f1f3f5;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 32px}
+.btn{border:none;border-radius:20px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer}
+.btn.primary{background:#141413;color:#fff}
+.rankrow{display:flex;align-items:center;gap:10px;padding:7px 2px}
+.rank{width:16px;font-size:12px;font-weight:700;color:#9aa0a8;text-align:center;flex:0 0 16px}
+/* sector palette — must match tag-colours.ts exactly: State #15803d, Independent #F37521, FE #86198f, Special Schools #b91c1c.
+   Icon inside the circle: university (default) or bed (has boarders) -- glyph shows boarding, fill colour shows sector. */
+.iconcircle{width:20px;height:20px;border-radius:50%;flex:0 0 20px;display:flex;align-items:center;justify-content:center}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:#767d87;padding:2px 2px 0}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legenddot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.stepper{display:flex;align-items:center;justify-content:center;gap:16px;padding:11px 10px;border:1px solid #e3e5e9;border-radius:10px;background:#f7f8f9}
+.stepbtn{width:30px;height:30px;border-radius:50%;border:1px solid #d7dae0;background:#fff;font-size:15px;font-weight:700;color:#141413;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.searchrow{display:flex;align-items:center;gap:8px;border:1px solid #e3e5e9;border-radius:10px;padding:9px 12px;background:#f7f8f9}
+.searchrow input{border:none;background:none;font-size:13px;color:#141413;outline:none;width:100%;font-family:inherit}
+.hint{font-size:11px;color:#9aa0a8;margin-top:5px;padding:0 2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 760px; box-sizing: border-box; position: relative; background: #e9eaec; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif">
+  <div style="position: absolute; inset: 12px; background: #ffffff; border-radius: 14px; box-shadow: 0 12px 32px rgba(20,20,19,0.18); display: flex; flex-direction: column; overflow: hidden">
+
+    <div style="padding: 14px 14px 14px 8px; border-bottom: 1px solid #eef0f2; display: flex; align-items: center; gap: 4px; flex: 0 0 auto">
+      <button class="iconbtn" aria-label="Back" style="background: none">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <div style="flex: 1 1 auto">
+        <div style="font-size: 15px; font-weight: 600; color: #141413">10 nearest schools</div>
+        <div style="font-size: 11.5px; color: #767d87; margin-top: 1px">Ordered by distance · same sector, phase &amp; qualification</div>
+      </div>
+      <button class="iconbtn" aria-label="Close">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div style="flex: 1 1 auto; overflow-y: auto; padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 4px">
+
+        <div style="font-size: 10.5px; color: #9aa0a8; padding: 0 2px 2px">Sector-matched to The Chase — state also draws on post-16/FE colleges; independent &amp; special stay within their own sector. Switch to county view for other sectors.</div>
+
+        <div class="legend">
+          <span><span class="legenddot" style="background:#15803d"></span>State</span>
+          <span><span class="legenddot" style="background:#86198f"></span>FE / post-16 college</span>
+          <span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#767d87" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>day</span>
+          <span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#767d87" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path></svg>has boarders</span>
+        </div>
+
+        <div class="rankrow">
+          <div class="rank">1</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Guildford County School</div>
+          <div style="font-size: 11px; color: #9aa0a8">2.1km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">2</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Reigate Grammar</div>
+          <div style="font-size: 11px; color: #9aa0a8">3.4km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">3</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Woking High</div>
+          <div style="font-size: 11px; color: #9aa0a8">5.0km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">4</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Tonbridge Grammar <span style="font-size:10px;color:#9aa0a8">· has boarders</span></div>
+          <div style="font-size: 11px; color: #9aa0a8">5.6km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">5</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Ashcombe School</div>
+          <div style="font-size: 11px; color: #9aa0a8">6.0km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">6</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Cranleigh Community School</div>
+          <div style="font-size: 11px; color: #9aa0a8">6.1km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">7</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Weyfield Academy</div>
+          <div style="font-size: 11px; color: #9aa0a8">6.2km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">8</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Farnham Heath End School</div>
+          <div style="font-size: 11px; color: #9aa0a8">6.3km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">9</div>
+          <div class="iconcircle" style="background: #86198f">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Godalming College</div>
+          <div style="font-size: 11px; color: #9aa0a8">6.35km</div>
+        </div>
+        <div class="rankrow">
+          <div class="rank">10</div>
+          <div class="iconcircle" style="background: #15803d">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 12 4 20 9"></polyline><line x1="3" y1="9" x2="21" y2="9"></line><line x1="6" y1="9" x2="6" y2="18"></line><line x1="10" y1="9" x2="10" y2="18"></line><line x1="14" y1="9" x2="14" y2="18"></line><line x1="18" y1="9" x2="18" y2="18"></line><line x1="3" y1="20" x2="21" y2="20"></line></svg>
+          </div>
+          <div style="font-size: 13px; color: #141413; flex: 1 1 auto">Hindhead School</div>
+          <div style="font-size: 11px; color: #9aa0a8">6.4km</div>
+        </div>
+
+        <div style="height: 1px; background: #eef0f2; margin: 10px 0 4px"></div>
+
+        <div class="stepper">
+          <button class="stepbtn" aria-label="Show 5 fewer">−5</button>
+          <div style="font-size: 14px; font-weight: 700; color: #141413">10 nearest schools</div>
+          <button class="stepbtn" aria-label="Show 5 more">+5</button>
+        </div>
+
+        <div style="margin-top: 10px">
+          <div class="searchrow">
+            <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa0a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" placeholder="Add a specific school by name" readonly>
+          </div>
+          <div class="hint">Adding a school by name turns this into a custom set</div>
+        </div>
+
+    </div>
+
+    <div style="padding: 12px 18px; border-top: 1px solid #eef0f2; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto">
+      <div style="font-size: 13px; color: #5b6470">10 schools selected</div>
+      <button class="btn primary">Done</button>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

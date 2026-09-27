@@ -7,6 +7,7 @@
 // create or edit what: anyone approved can make a personal set; only the account holder
 // or an admin can create or edit a shared one.
 import type { createBrowserSupabaseClient } from "@/lib/supabase";
+import type { RankingFilters } from "@/lib/comparator-chooser";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
@@ -102,5 +103,74 @@ export async function saveComparatorSet(
 
 export async function deleteComparatorSet(supabase: Supa, id: string): Promise<string | null> {
   const { error } = await supabase.from("saved_sets").delete().eq("id", id);
+  return error ? error.message : null;
+}
+
+// ------------------------------------------------------------------ saved rankings
+//
+// Comparator chooser (screens 3a/3b): a saved RANKING is a named population definition,
+// kept in its own table (20261102090000_saved_rankings) with saved_sets' ownership rules
+// verbatim -- personal to a member, or shared (owner null, account holder / admin only),
+// RLS deciding who may do what. Read straight from the table under the caller's session:
+// there are no members to rank, so no server step is needed to list them.
+export type SavedRanking = {
+  id: string;
+  name: string;
+  shared: boolean;
+  mine: boolean;
+  editable: boolean;
+  phase: "ks4" | "ks5";
+  filters: RankingFilters;
+};
+
+export const PERSONAL_RANKING_CAP = 8;
+
+export async function fetchSavedRankings(
+  supabase: Supa,
+  me: SavedSetsPayload["me"],
+  phase: "ks4" | "ks5",
+): Promise<SavedRanking[]> {
+  const { data } = await supabase
+    .from("saved_rankings")
+    .select("id, name, owner_membership_id, phase, filters")
+    .eq("school_account_id", me.schoolAccountId)
+    .eq("phase", phase)
+    .order("created_at", { ascending: true });
+  return ((data ?? []) as { id: string; name: string; owner_membership_id: string | null; phase: "ks4" | "ks5"; filters: RankingFilters }[]).map((r) => {
+    const shared = r.owner_membership_id === null;
+    const mine = r.owner_membership_id === me.membershipId;
+    return { id: r.id, name: r.name, shared, mine, editable: mine || (shared && me.canEditShared), phase: r.phase, filters: r.filters };
+  });
+}
+
+// Create (id null) or update. Save As is this with id null: always a new row.
+export async function saveRanking(
+  supabase: Supa,
+  args: { id: string | null; schoolAccountId: string; ownerMembershipId: string | null; name: string; phase: "ks4" | "ks5"; filters: RankingFilters },
+): Promise<{ id: string } | { error: string }> {
+  if (args.id === null) {
+    const { data, error } = await supabase
+      .from("saved_rankings")
+      .insert({
+        school_account_id: args.schoolAccountId,
+        owner_membership_id: args.ownerMembershipId,
+        name: args.name,
+        phase: args.phase,
+        filters: args.filters,
+      })
+      .select("id")
+      .single();
+    if (error || !data) return { error: error?.message ?? "Could not save the ranking." };
+    return { id: data.id as string };
+  }
+  const { error } = await supabase
+    .from("saved_rankings")
+    .update({ name: args.name, filters: args.filters, updated_at: new Date().toISOString() })
+    .eq("id", args.id);
+  return error ? { error: error.message } : { id: args.id };
+}
+
+export async function deleteRanking(supabase: Supa, id: string): Promise<string | null> {
+  const { error } = await supabase.from("saved_rankings").delete().eq("id", id);
   return error ? error.message : null;
 }

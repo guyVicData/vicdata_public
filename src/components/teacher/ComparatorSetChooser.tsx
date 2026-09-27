@@ -1,320 +1,671 @@
 "use client";
 
-// Teacher view, accordion round Part 3 (first draft): the comparator-school chooser.
+// Teacher view: the comparator-schools chooser, rebuilt to the v29 wireframe
+// (docs/wireframes/comparator-chooser-v29). A hub of starting points, then an "adjust"
+// screen for whichever was picked:
+//   hub (Main / MainSavedSets / MainSchoolSets / MainRankings)
+//     -> 10 nearest (2a)  -> adding a school by name forks it into a custom set (2c)
+//     -> Schools in {LA} (2b) -> the same fork (2c)
+//     -> My saved sets -> edit one (2c)
+//     -> The school's sets / Victoria Consultancy Sets -> Done (switch one on)
+//     -> Regional & national rankings -> a population (3a) -> narrowed, a custom ranking (3b)
 //
-// Built to the conventions of the real "which subjects do you teach" picker
-// (CategorySubjectPicker), as Guy asked, and to the wireframe that was rebuilt to match
-// it (artifact 8SLvLpLqFUHeaDoiv5yR2v v2):
-//   - a tab per SECTOR (state / independent) -- filled pill when active, outline when not,
-//     each with its ticked count. Sector stands in for qualification family: it is the one
-//     school grouping with a colour of its own;
-//   - a "Selected so far" panel of removable coloured chips, grouped the same way;
-//   - collapsible cards per LOCAL AUTHORITY (the category level): coloured dot, name,
-//     "N of M ticked", chevron; a checked row takes the sector colour as border and tint.
-// Candidates are the agreed scope, "ticked set plus nearby": the schools already in the
-// set, the nearest schools of this phase, and any school added by search.
-//
-// Saves to the real saved_sets / saved_set_members rows (see teacher-view-saved-sets.ts).
-// First draft, deliberately: no map pane and no "Add area" yet (see the build report).
-import { useMemo, useRef, useState } from "react";
-import SchoolSearch, { type SchoolSearchResult } from "@/components/SchoolSearch";
+// This component owns the state and every write; ./chooser/screens.tsx draws it. Every
+// population comes from the module that already owns it (see ./chooser/data.ts):
+// default-comparator-lists' list1 / boarding recipe / list2 / local16Plus through the
+// member Data View's own routes, the ranking population through region_nation_set.
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { isIndependent } from "@/lib/teacher-view-rankings";
+import type { SchoolSearchResult } from "@/components/SchoolSearch";
+import type { DefaultListEntry } from "@/lib/default-comparator-lists";
+import { resolveNearestOption } from "@/lib/nearest-option";
+import { REGION_NAME_TO_ONS_CODE } from "@/lib/region-crosswalk";
+import {
+  NATIONAL,
+  defaultRankingFilters,
+  describeRanking,
+  isCustomRanking,
+  matchesRanking,
+  sameScope,
+  type ChooserSchool,
+  type PopulationRow,
+  type RankingFilters,
+  type RankingScope,
+} from "@/lib/comparator-chooser";
 import {
   deleteComparatorSet,
+  deleteRanking,
+  fetchSavedRankings,
+  PERSONAL_RANKING_CAP,
   saveComparatorSet,
+  saveRanking,
   type SavedComparatorSet,
+  type SavedRanking,
   type SavedSetsPayload,
-  type SetMember,
 } from "@/lib/teacher-view-saved-sets";
-import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
-import { SECTOR, sectorOf, type SectorId } from "@/lib/school-sector";
+import { TeacherModal } from "./TeacherModal";
+import { Panel, PrimaryButton, SecondaryButton, DangerGhostButton, FooterCount, SaveBox } from "./chooser/ui";
+import { CustomScreen, HubScreen, LaScreen, NearestScreen, RankingScreen, plural, type GroupBy, type HubPick, type Theme } from "./chooser/screens";
+import {
+  fetchAdjacentLas,
+  fetchDefaultLists,
+  fetchLaSet,
+  fetchNearest,
+  fetchPopulation,
+  fetchSchoolDetails,
+  type DefaultListsPayload,
+  type SchoolDetail,
+} from "./chooser/data";
 
-// The sector palette is shared with the Comparisons ranking table (school-sector.ts).
+// What the chooser hands back when a teacher presses Done or saves: a saved set to switch
+// on, an unsaved list of schools, or a ranking.
+export type ChooserChoice =
+  | { kind: "saved"; id: string }
+  | { kind: "urns"; label: string; urns: string[] }
+  | { kind: "ranking"; label: string; filters: RankingFilters; rankingId: string | null };
 
-type Candidate = SetMember & { distanceKm: number | null };
+type Screen = "hub" | "nearest" | "la" | "custom" | "ranking";
+type CustomState = {
+  base: "nearest" | "la" | "set";
+  baseLabel: string;
+  coreUrns: string[]; // la / set bases (nearest reads the live nearest list)
+  added: string[];
+  removed: string[];
+  editing: SavedComparatorSet | null;
+};
+
+const NEAREST_DEFAULT = 10;
+const scopeKey = (s: RankingScope) => (s.kind === "nation" ? "nation" : s.code);
 
 export function ComparatorSetChooser({
   payload,
-  editing,
-  startingFrom,
+  phase,
+  theme,
   targetUrn,
   targetName,
+  initialEdit,
+  vc,
   onClose,
-  onSaved,
+  onDone,
+  onSetsChanged,
 }: {
   payload: SavedSetsPayload;
-  // An existing set to edit, or null to make a new one.
-  editing: SavedComparatorSet | null;
-  // What a NEW set starts from: the preset currently selected, so "Nearest 10, minus two,
-  // plus one" is two clicks rather than ten. Recorded in the set's config as provenance.
-  startingFrom: { label: string; urns: string[] } | null;
+  // KS2 has no exam population to rank within, so its chooser has no rankings row.
+  phase: "ks2" | "ks4" | "ks5";
+  theme: Theme;
   targetUrn: string;
   targetName: string;
+  // Open straight at the custom editor for this set ("Edit" beside a set in the pill).
+  initialEdit: SavedComparatorSet | null;
+  // Victoria Consultancy Sets, only when switched on for this school.
+  vc: { sets: SavedComparatorSet[] } | null;
   onClose: () => void;
-  onSaved: (id: string | null) => void;
+  onDone: (choice: ChooserChoice) => void | Promise<void>;
+  onSetsChanged: () => Promise<void>;
 }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const closeRef = useRef<HTMLButtonElement | null>(null);
-  const [name, setName] = useState(editing?.name ?? (startingFrom ? `My ${startingFrom.label.toLowerCase()}` : "My comparison schools"));
-  const [shared, setShared] = useState(editing?.shared ?? false);
-  const [ticked, setTicked] = useState<string[]>(
-    (editing ? editing.members.map((m) => m.urn) : startingFrom?.urns ?? []).filter((u) => u !== targetUrn),
+
+  // ------------------------------------------------------------------- shared data
+  const [lists, setLists] = useState<DefaultListsPayload | null>(null);
+  const [details, setDetails] = useState<Map<string, SchoolDetail>>(new Map());
+  const addDetails = useCallback(
+    async (urns: string[]) => {
+      const missing = urns.filter((u) => !details.has(u));
+      if (!missing.length) return;
+      const got = await fetchSchoolDetails(supabase, missing);
+      setDetails((d) => new Map([...d, ...got]));
+    },
+    [supabase, details],
   );
-  const [added, setAdded] = useState<Candidate[]>([]);
-  const [tab, setTab] = useState<SectorId>(payload.target.independent ? "independent" : "state");
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [filter, setFilter] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Every school the chooser knows about: the nearby candidates, the set's own members
-  // (which may be further away than the candidate list reaches), and search additions.
-  const known = useMemo(() => {
-    const out = new Map<string, Candidate>();
-    for (const c of payload.candidates) out.set(c.urn, { urn: c.urn, name: c.name, laName: c.laName ?? null, independent: c.independent, distanceKm: c.distanceKm });
-    for (const s of payload.sets) for (const m of s.members) if (!out.has(m.urn)) out.set(m.urn, { ...m, distanceKm: null });
-    for (const a of added) if (!out.has(a.urn)) out.set(a.urn, a);
-    out.delete(targetUrn);
-    return out;
-  }, [payload, added, targetUrn]);
-
-  const toggle = (urn: string) => setTicked((t) => (t.includes(urn) ? t.filter((u) => u !== urn) : [...t, urn]));
-  const tickedSchools = ticked.map((u) => known.get(u)).filter((c): c is Candidate => !!c);
-
-  const addNearest = (n: number) => {
-    const next = payload.candidates.filter((c) => c.urn !== targetUrn && !ticked.includes(c.urn)).slice(0, n).map((c) => c.urn);
-    setTicked((t) => [...t, ...next]);
-  };
-
-  // A school found by search is looked up for its LA and sector (schools is public-read),
-  // then ticked -- the reason it was searched for.
-  const addBySearch = async (school: SchoolSearchResult) => {
-    if (school.urn === targetUrn) return;
-    const { data } = await supabase.from("schools").select("la_name").eq("urn", school.urn).maybeSingle<{ la_name: string | null }>();
-    setAdded((a) => [
-      ...a,
-      { urn: school.urn, name: school.current_name, laName: data?.la_name ?? null, independent: isIndependent(school.establishment_type_group), distanceKm: null },
-    ]);
-    setTicked((t) => (t.includes(school.urn) ? t : [...t, school.urn]));
-  };
-
-  const inTab = Array.from(known.values()).filter(
-    (c) => sectorOf(c) === tab && (!filter.trim() || c.name.toLowerCase().includes(filter.trim().toLowerCase())),
-  );
-  // LA cards, nearest LA first (by its nearest school), unknown LA last.
-  const byLa = new Map<string, Candidate[]>();
-  for (const c of inTab) byLa.set(c.laName ?? "Other", [...(byLa.get(c.laName ?? "Other") ?? []), c]);
-  const laCards = Array.from(byLa.entries()).sort(([a, as], [b, bs]) => {
-    if (a === "Other") return 1;
-    if (b === "Other") return -1;
-    const near = (xs: Candidate[]) => Math.min(...xs.map((x) => x.distanceKm ?? Infinity));
-    return near(as) - near(bs) || a.localeCompare(b);
+  // Nearest: which recipe "10 nearest" is (resolveNearestOption, the Data View's own
+  // rule), and how many it currently shows.
+  const [nearest, setNearest] = useState<{ recipe: "list1" | "boarding"; count: number; entries: DefaultListEntry[] | null; busy: boolean }>({
+    recipe: "list1",
+    count: NEAREST_DEFAULT,
+    entries: null,
+    busy: false,
+  });
+  // LA: list2 plus the additive 16+ colleges (never merged into list2 upstream), plus any
+  // extra LA added here.
+  const [la, setLa] = useState<{ entries: DefaultListEntry[] | null; extraLas: string[]; unticked: string[]; groupBy: GroupBy; adjacent: string[] | null; adjacentOpen: boolean; busy: boolean }>({
+    entries: null,
+    extraLas: [],
+    unticked: [],
+    groupBy: "sector",
+    adjacent: null,
+    adjacentOpen: false,
+    busy: false,
   });
 
-  const isNew = editing === null;
-  const personalFull = isNew && !shared && payload.personalCount >= payload.cap;
-  const canSave = !!name.trim() && ticked.length > 0 && !saving && !personalFull;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const body = await fetchDefaultLists(supabase, targetUrn);
+      if (cancelled || !body) return;
+      setLists(body);
+      const chosen = resolveNearestOption(body.list1, body.boardingBand, body.boardingRecipe, null);
+      const recipe = chosen && body.boardingRecipe && chosen === body.boardingRecipe ? "boarding" : "list1";
+      const laEntries = [...(body.list2?.schools ?? [])];
+      for (const c of body.local16Plus?.schools ?? []) if (!laEntries.some((e) => e.urn === c.urn)) laEntries.push(c);
+      setNearest((n) => ({ ...n, recipe, entries: chosen?.schools ?? [] }));
+      setLa((l) => ({ ...l, entries: laEntries.filter((e) => e.urn !== targetUrn) }));
+      const urns = [targetUrn, ...(chosen?.schools ?? []).map((s) => s.urn), ...laEntries.map((s) => s.urn)];
+      const got = await fetchSchoolDetails(supabase, urns);
+      if (!cancelled) setDetails((d) => new Map([...d, ...got]));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, targetUrn]);
 
-  const save = async () => {
-    setSaving(true);
+  const target = details.get(targetUrn) ?? null;
+  const toSchool = useCallback(
+    (urn: string, distanceKm?: number | null): ChooserSchool => {
+      const d = details.get(urn);
+      let km = distanceKm ?? null;
+      if (km === null && d && target && d.easting !== null && d.northing !== null && target.easting !== null && target.northing !== null) {
+        km = Math.hypot(d.easting - target.easting, d.northing - target.northing) / 1000;
+      }
+      return { urn, name: d?.name ?? urn, distanceKm: km, sector: d?.sector ?? null, boarders: d?.boarders ?? false, laName: d?.laName ?? null };
+    },
+    [details, target],
+  );
+
+  const nearestSchools = (nearest.entries ?? []).filter((e) => e.urn !== targetUrn).map((e) => toSchool(e.urn, e.distanceKm));
+  const laSchools = (la.entries ?? []).map((e) => toSchool(e.urn, e.distanceKm));
+  const laTicked = new Set(laSchools.map((s) => s.urn).filter((u) => !la.unticked.includes(u)));
+  const laName = payload.target.laName;
+
+  const stepNearest = async (delta: number) => {
+    const count = Math.max(5, nearest.count + delta);
+    setNearest((n) => ({ ...n, busy: true }));
+    const entries = await fetchNearest(supabase, targetUrn, count, nearest.recipe);
+    if (entries) await addDetails(entries.map((e) => e.urn));
+    setNearest((n) => ({ ...n, busy: false, count: entries ? count : n.count, entries: entries ?? n.entries }));
+  };
+
+  const openAdjacent = async () => {
+    setLa((l) => ({ ...l, adjacentOpen: !l.adjacentOpen }));
+    if (la.adjacent === null) {
+      const names = await fetchAdjacentLas(supabase, targetUrn);
+      setLa((l) => ({ ...l, adjacent: names }));
+    }
+  };
+  const addLa = async (name: string) => {
+    setLa((l) => ({ ...l, busy: true }));
+    const entries = await fetchLaSet(supabase, targetUrn, [name]);
+    if (entries) await addDetails(entries.map((e) => e.urn));
+    setLa((l) => {
+      const merged = [...(l.entries ?? [])];
+      for (const e of entries ?? []) if (e.urn !== targetUrn && !merged.some((m) => m.urn === e.urn)) merged.push(e);
+      return { ...l, busy: false, entries: merged, extraLas: [...l.extraLas, name], adjacent: (l.adjacent ?? []).filter((n) => n !== name) };
+    });
+  };
+
+  // ------------------------------------------------------------------ navigation
+  const [screen, setScreen] = useState<Screen>(initialEdit ? "custom" : "hub");
+  const [pick, setPick] = useState<HubPick>(initialEdit ? "mine" : "nearest");
+  const [setSub, setSetSub] = useState<string | null>(initialEdit?.id ?? null);
+  const mine = payload.sets.filter((s) => s.mine);
+  const school = payload.sets.filter((s) => s.shared);
+  const listFor = (p: HubPick) => (p === "mine" ? mine : p === "school" ? school : p === "vc" ? vc?.sets ?? [] : []);
+  const choosePick = (p: HubPick) => {
+    setPick(p);
+    const list = listFor(p);
+    if (list.length && !list.some((s) => s.id === setSub)) setSetSub(list[0].id);
+  };
+
+  // ------------------------------------------------------------------ custom (2c)
+  const [custom, setCustom] = useState<CustomState | null>(
+    initialEdit ? { base: "set", baseLabel: initialEdit.name, coreUrns: initialEdit.members.map((m) => m.urn), added: [], removed: [], editing: initialEdit } : null,
+  );
+  const [name, setName] = useState(initialEdit?.name ?? "");
+  const [shared, setShared] = useState(initialEdit?.shared ?? false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialEdit) return;
+    (async () => {
+      await addDetails(initialEdit.members.map((m) => m.urn));
+    })();
+    // Once, for the set the chooser was opened on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const forkWith = async (from: "nearest" | "la", school: SchoolSearchResult) => {
+    if (school.urn === targetUrn) return;
+    await addDetails([school.urn]);
+    setCustom({
+      base: from,
+      baseLabel: from === "nearest" ? `${nearest.count} nearest schools` : `Schools in ${laName ?? "your LA"}`,
+      coreUrns: from === "la" ? laSchools.filter((s) => laTicked.has(s.urn)).map((s) => s.urn) : [],
+      added: [school.urn],
+      removed: [],
+      editing: null,
+    });
+    setName("");
+    setShared(false);
+    setError(null);
+    setScreen("custom");
+  };
+  const editSet = async (set: SavedComparatorSet) => {
+    await addDetails(set.members.map((m) => m.urn));
+    setCustom({ base: "set", baseLabel: set.name, coreUrns: set.members.map((m) => m.urn), added: [], removed: [], editing: set });
+    setName(set.name);
+    setShared(set.shared);
+    setError(null);
+    setScreen("custom");
+  };
+
+  const customCore: ChooserSchool[] = !custom
+    ? []
+    : custom.base === "nearest"
+      ? nearestSchools
+      : custom.coreUrns
+          .filter((u) => u !== targetUrn && !custom.removed.includes(u))
+          .map((u) => toSchool(u, (la.entries ?? []).find((e) => e.urn === u)?.distanceKm))
+          .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+  const customAdded = (custom?.added ?? []).filter((u) => !customCore.some((c) => c.urn === u)).map((u) => toSchool(u));
+  const customUrns = [...customCore, ...customAdded].map((s) => s.urn);
+
+  const me = payload.me;
+  const personalFull = payload.personalCount >= payload.cap;
+  const editingSet = custom?.editing ?? null;
+  const willBePersonal = (asNew: boolean) => (asNew || !editingSet ? !shared || !me.canEditShared : !editingSet.shared);
+  const capBlocks = (asNew: boolean) => (asNew || !editingSet) && willBePersonal(asNew) && personalFull;
+
+  const persistSet = async (asNew: boolean) => {
+    if (!custom) return;
+    setBusy(true);
     setError(null);
     const result = await saveComparatorSet(supabase, {
-      id: editing?.id ?? null,
-      schoolAccountId: payload.me.schoolAccountId,
-      ownerMembershipId: shared ? null : editing && !editing.mine ? null : payload.me.membershipId,
+      id: asNew ? null : editingSet && editingSet.editable ? editingSet.id : null,
+      schoolAccountId: me.schoolAccountId,
+      ownerMembershipId: willBePersonal(asNew) ? me.membershipId : null,
       name: name.trim(),
-      urns: ticked,
-      config: { ...(editing?.config ?? {}), ...(startingFrom && isNew ? { startedFrom: startingFrom.label } : {}) },
+      urns: customUrns,
+      config: asNew || !editingSet ? { startedFrom: custom.baseLabel } : editingSet.config,
     });
-    setSaving(false);
-    if ("error" in result) setError(result.error);
-    else onSaved(result.id);
+    if ("error" in result) {
+      setBusy(false);
+      setError(result.error);
+      return;
+    }
+    await onSetsChanged();
+    setBusy(false);
+    await onDone({ kind: "saved", id: result.id });
+  };
+  const removeSet = async (set: SavedComparatorSet) => {
+    setBusy(true);
+    const err = await deleteComparatorSet(supabase, set.id);
+    if (err) {
+      setBusy(false);
+      setError(err);
+      return;
+    }
+    await onSetsChanged();
+    setBusy(false);
+    setCustom(null);
+    setSetSub(null);
+    setScreen("hub");
+    setPick("mine");
   };
 
-  const remove = async () => {
-    if (!editing) return;
-    setSaving(true);
-    const err = await deleteComparatorSet(supabase, editing.id);
-    setSaving(false);
+  // ---------------------------------------------------------------- rankings (3a/3b)
+  const [populations, setPopulations] = useState<Record<string, PopulationRow[] | "error">>({});
+  const [ownRegion, setOwnRegion] = useState<RankingScope | null>(null);
+  const [savedRankings, setSavedRankings] = useState<SavedRanking[]>([]);
+  const [rankingSub, setRankingSub] = useState<string | null>("national");
+  const [filters, setFilters] = useState<RankingFilters>(defaultRankingFilters(NATIONAL));
+  const [editingRanking, setEditingRanking] = useState<SavedRanking | null>(null);
+
+  const rankPhase = phase === "ks2" ? null : phase;
+  const reloadRankings = useCallback(async () => {
+    if (rankPhase) setSavedRankings(await fetchSavedRankings(supabase, me, rankPhase));
+  }, [supabase, me, rankPhase]);
+  useEffect(() => {
+    if (!rankPhase) return;
+    let cancelled = false;
+    (async () => {
+      const got = await fetchSavedRankings(supabase, me, rankPhase);
+      if (!cancelled) setSavedRankings(got);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, me, rankPhase]);
+
+  // Which scopes have been asked for, so each is fetched once. A ref, not state: a
+  // population not yet in `populations` simply reads as loading.
+  const requested = useRef(new Set<string>());
+  const ensurePopulation = useCallback(
+    async (scope: RankingScope) => {
+      const key = scopeKey(scope);
+      if (requested.current.has(key) || !rankPhase) return;
+      requested.current.add(key);
+      const body = await fetchPopulation(supabase, targetUrn, rankPhase, scope);
+      setPopulations((p) => ({ ...p, [key]: body ? body.rows : "error" }));
+      if (body?.ownRegion) setOwnRegion((r) => r ?? { kind: "region", code: body.ownRegion!.code, name: body.ownRegion!.name });
+    },
+    [supabase, targetUrn, rankPhase],
+  );
+  // Opening the rankings row loads the whole nation and (once it names it) the school's
+  // own region, for the two default rows' counts.
+  useEffect(() => {
+    if (pick !== "rankings" && screen !== "ranking") return;
+    (async () => {
+      await Promise.all([ensurePopulation(NATIONAL), ownRegion ? ensurePopulation(ownRegion) : Promise.resolve()]);
+    })();
+  }, [pick, screen, ownRegion, ensurePopulation]);
+  useEffect(() => {
+    if (screen !== "ranking") return;
+    (async () => {
+      await ensurePopulation(filters.scope);
+    })();
+  }, [screen, filters.scope, ensurePopulation]);
+
+  const rowsFor = (scope: RankingScope) => {
+    const p = populations[scopeKey(scope)];
+    return Array.isArray(p) ? p : null;
+  };
+  const matchedCount = (f: RankingFilters) => {
+    const rows = rowsFor(f.scope);
+    return rows ? rows.filter((r) => matchesRanking(r, f)).length : null;
+  };
+
+  const openRanking = (f: RankingFilters, editing: SavedRanking | null) => {
+    setFilters(f);
+    setEditingRanking(editing);
+    setName(editing?.name ?? "");
+    setShared(editing?.shared ?? false);
+    setError(null);
+    setScreen("ranking");
+  };
+  const rankingIsCustom = isCustomRanking(filters, ownRegion) || editingRanking !== null;
+  const personalRankings = savedRankings.filter((r) => r.mine).length;
+  const rankingPersonal = (asNew: boolean) => (asNew || !editingRanking ? !shared || !me.canEditShared : !editingRanking.shared);
+  const rankingCapBlocks = (asNew: boolean) => (asNew || !editingRanking) && rankingPersonal(asNew) && personalRankings >= PERSONAL_RANKING_CAP;
+
+  const persistRanking = async (asNew: boolean) => {
+    setBusy(true);
+    setError(null);
+    if (!rankPhase) return;
+    const result = await saveRanking(supabase, {
+      id: asNew ? null : editingRanking && editingRanking.editable ? editingRanking.id : null,
+      schoolAccountId: me.schoolAccountId,
+      ownerMembershipId: rankingPersonal(asNew) ? me.membershipId : null,
+      name: name.trim(),
+      phase: rankPhase,
+      filters,
+    });
+    if ("error" in result) {
+      setBusy(false);
+      setError(result.error);
+      return;
+    }
+    await reloadRankings();
+    setBusy(false);
+    await onDone({ kind: "ranking", label: name.trim(), filters, rankingId: result.id });
+  };
+  const removeRanking = async (r: SavedRanking) => {
+    setBusy(true);
+    const err = await deleteRanking(supabase, r.id);
+    await reloadRankings();
+    setBusy(false);
     if (err) setError(err);
-    else onSaved(null);
+    setEditingRanking(null);
+    setRankingSub("national");
+    setScreen("hub");
+    setPick("rankings");
   };
 
-  const count = (s: SectorId) => tickedSchools.filter((c) => sectorOf(c) === s).length;
+  const otherRegions = Object.entries(REGION_NAME_TO_ONS_CODE)
+    .filter(([n, code]) => n !== "Wales" && !(ownRegion && ownRegion.kind === "region" && ownRegion.code === code))
+    .map(([n, code]) => ({ code, name: n }));
+
+  // --------------------------------------------------------------------- hub footer
+  const nationalRows = rowsFor(NATIONAL);
+  const regionalRows = ownRegion ? rowsFor(ownRegion) : null;
+  const pickedRanking = savedRankings.find((r) => r.id === rankingSub) ?? null;
+  const pickedSet = listFor(pick).find((s) => s.id === setSub) ?? null;
+  const hubCount = (): string => {
+    if (pick === "nearest") return `${plural(nearestSchools.length, "school")} selected`;
+    if (pick === "la") return `${plural(laTicked.size, "school")} selected`;
+    if (pick === "rankings") {
+      const n =
+        rankingSub === "national" ? nationalRows?.length ?? null : rankingSub === "regional" ? regionalRows?.length ?? null : pickedRanking ? matchedCount(pickedRanking.filters) : null;
+      return n === null ? "… schools & colleges" : `${n.toLocaleString()} schools & colleges`;
+    }
+    return `${plural(pickedSet?.members.length ?? 0, "school")} selected`;
+  };
+  const hubAction = (): { label: "Next" | "Done"; disabled: boolean; onClick: () => void } => {
+    if (pick === "nearest") return { label: "Next", disabled: nearest.entries === null, onClick: () => setScreen("nearest") };
+    if (pick === "la") return { label: "Next", disabled: la.entries === null, onClick: () => setScreen("la") };
+    if (pick === "rankings")
+      return {
+        label: "Next",
+        disabled: !rankingSub,
+        onClick: () => {
+          if (rankingSub === "national") openRanking(defaultRankingFilters(NATIONAL), null);
+          else if (rankingSub === "regional" && ownRegion) openRanking(defaultRankingFilters(ownRegion), null);
+          else if (pickedRanking) openRanking(pickedRanking.filters, pickedRanking);
+        },
+      };
+    if (pick === "mine") return { label: "Next", disabled: !pickedSet, onClick: () => pickedSet && void editSet(pickedSet) };
+    // The school's own sets and Victoria Consultancy Sets are switched on, not edited.
+    return { label: "Done", disabled: !pickedSet, onClick: () => pickedSet && void onDone({ kind: "saved", id: pickedSet.id }) };
+  };
+
+  // ----------------------------------------------------------------------- render
+  let content: React.ReactNode;
+  if (screen === "nearest") {
+    content = (
+      <NearestScreen
+        targetName={targetName}
+        schools={nearestSchools}
+        count={nearest.count}
+        loading={nearest.busy || nearest.entries === null}
+        onLess={() => void stepNearest(-5)}
+        onMore={() => void stepNearest(5)}
+        onAdd={(s) => void forkWith("nearest", s)}
+        onBack={() => setScreen("hub")}
+        onClose={onClose}
+        onDone={() => void onDone({ kind: "urns", label: `${nearest.count} nearest schools`, urns: nearestSchools.map((s) => s.urn) })}
+      />
+    );
+  } else if (screen === "la") {
+    const laLabel = la.extraLas.length ? `${laName ?? "your LA"} + ${la.extraLas.length} more` : laName ?? "your LA";
+    content = (
+      <LaScreen
+        laLabel={laLabel}
+        schools={laSchools}
+        extra={
+          lists?.local16Plus
+            ? { label: lists.local16Plus.label, urns: new Set(lists.local16Plus.schools.map((c) => c.urn).filter((u) => !(lists.list2?.schools ?? []).some((e) => e.urn === u))) }
+            : null
+        }
+        ticked={laTicked}
+        onToggle={(urn) => setLa((l) => ({ ...l, unticked: l.unticked.includes(urn) ? l.unticked.filter((u) => u !== urn) : [...l.unticked, urn] }))}
+        onToggleMany={(urns, on) => setLa((l) => ({ ...l, unticked: on ? l.unticked.filter((u) => !urns.includes(u)) : Array.from(new Set([...l.unticked, ...urns])) }))}
+        groupBy={la.groupBy}
+        onGroupBy={(g) => setLa((l) => ({ ...l, groupBy: g }))}
+        adjacent={{ names: la.adjacent ?? [], open: la.adjacentOpen, onOpen: () => void openAdjacent(), loaded: la.adjacent !== null }}
+        onAddLa={(n) => void addLa(n)}
+        laBusy={la.busy}
+        onAdd={(s) => void forkWith("la", s)}
+        onBack={() => setScreen("hub")}
+        onClose={onClose}
+        onDone={() => void onDone({ kind: "urns", label: `Schools in ${laLabel}`, urns: laSchools.filter((s) => laTicked.has(s.urn)).map((s) => s.urn) })}
+      />
+    );
+  } else if (screen === "custom" && custom) {
+    const isEditing = custom.base === "set" && editingSet !== null;
+    const canShare = me.canEditShared && !isEditing;
+    const saveNote = capBlocks(true)
+      ? `You have ${payload.personalCount} of ${payload.cap} personal sets.${me.canEditShared ? " Delete one, or save this for the whole school." : " Delete one to save another."}`
+      : !isEditing && willBePersonal(true)
+        ? `${payload.personalCount} of ${payload.cap} personal sets used`
+        : null;
+    const emptyOrUnnamed = !name.trim() || customUrns.length === 0;
+    content = (
+      <CustomScreen
+        theme={theme}
+        title={custom.base === "nearest" ? `${nearest.count} nearest schools` : custom.base === "la" ? custom.baseLabel : custom.baseLabel}
+        subtitle={
+          isEditing
+            ? `${plural(customUrns.length, "school")} · ${editingSet!.shared ? "shared school-wide" : "your saved set"}`
+            : `${plural(customUrns.length, "school")} · started from "${custom.baseLabel}"`
+        }
+        forked={custom.base !== "set"}
+        core={customCore}
+        added={customAdded}
+        onRemoveCore={custom.base === "set" ? (urn) => setCustom({ ...custom, removed: [...custom.removed, urn] }) : null}
+        onRemoveAdded={(urn) => setCustom({ ...custom, added: custom.added.filter((u) => u !== urn) })}
+        stepper={
+          custom.base === "nearest"
+            ? { label: `${nearest.count} nearest schools`, onLess: () => void stepNearest(-5), onMore: () => void stepNearest(5), lessDisabled: nearest.count <= 5, busy: nearest.busy }
+            : null
+        }
+        onAdd={(s) => {
+          if (s.urn === targetUrn) return;
+          void addDetails([s.urn]);
+          setCustom({ ...custom, added: [...custom.added, s.urn], removed: custom.removed.filter((u) => u !== s.urn) });
+        }}
+        name={name}
+        onName={setName}
+        canShare={canShare}
+        shared={shared}
+        onShared={setShared}
+        saveNote={saveNote}
+        canDelete={isEditing && editingSet!.editable}
+        onDelete={() => editingSet && void removeSet(editingSet)}
+        onSaveAs={() => void persistSet(true)}
+        onSave={() => void persistSet(false)}
+        saveDisabled={emptyOrUnnamed || capBlocks(false) || (isEditing && !editingSet!.editable)}
+        saveAsDisabled={emptyOrUnnamed || capBlocks(true)}
+        busy={busy}
+        error={error}
+        onBack={() => {
+          setScreen(custom.base === "nearest" ? "nearest" : custom.base === "la" ? "la" : "hub");
+          if (custom.base === "set") setCustom(null);
+        }}
+        onClose={onClose}
+      />
+    );
+  } else if (screen === "ranking" && rankPhase) {
+    const total = rowsFor(filters.scope)?.length ?? null;
+    const matched = matchedCount(filters);
+    const readOnly = editingRanking !== null && !editingRanking.editable;
+    const emptyOrUnnamed = !name.trim();
+    const canShareRanking = me.canEditShared && !editingRanking;
+    const rankingNote = rankingCapBlocks(true)
+      ? `You have ${personalRankings} of ${PERSONAL_RANKING_CAP} personal rankings.${me.canEditShared ? " Delete one, or save this for the whole school." : " Delete one to save another."}`
+      : null;
+    const defaultLabel = filters.scope.kind === "nation" ? "National — all England schools & colleges" : `Regional — all ${filters.scope.name} schools & colleges`;
+    content = (
+      <RankingScreen
+        theme={theme}
+        phase={rankPhase}
+        title={editingRanking?.name ?? "Build a new ranking"}
+        subtitle={describeRanking(filters, ownRegion)}
+        filters={filters}
+        onFilters={setFilters}
+        ownRegion={ownRegion}
+        otherRegions={otherRegions}
+        count={{ matched, total }}
+        custom={rankingIsCustom}
+        save={
+          rankingIsCustom ? (
+            <>
+              <SaveBox title="Name this ranking" name={name} onName={setName} placeholder="e.g. Independent girls' boarding schools" canShare={canShareRanking} shared={shared} onShared={setShared} note={rankingNote} />
+              {error && <div role="alert" style={{ fontSize: 12, color: "var(--cc-danger)" }}>{error}</div>}
+            </>
+          ) : null
+        }
+        footer={
+          !rankingIsCustom ? (
+            <>
+              <FooterCount>{total === null ? "… included" : `${total.toLocaleString()} included`}</FooterCount>
+              <PrimaryButton disabled={total === null} onClick={() => void onDone({ kind: "ranking", label: defaultLabel, filters, rankingId: null })}>Done</PrimaryButton>
+            </>
+          ) : readOnly ? (
+            <>
+              <SecondaryButton onClick={() => void persistRanking(true)} disabled={emptyOrUnnamed || rankingCapBlocks(true) || busy}>Save as</SecondaryButton>
+              <PrimaryButton onClick={() => void onDone({ kind: "ranking", label: editingRanking!.name, filters, rankingId: editingRanking!.id })}>Done</PrimaryButton>
+            </>
+          ) : (
+            <>
+              {editingRanking?.editable ? <DangerGhostButton onClick={() => void removeRanking(editingRanking)} disabled={busy}>Delete</DangerGhostButton> : <span />}
+              <div style={{ display: "flex", gap: 8 }}>
+                <SecondaryButton onClick={() => void persistRanking(true)} disabled={emptyOrUnnamed || rankingCapBlocks(true) || busy}>Save as</SecondaryButton>
+                <PrimaryButton onClick={() => void persistRanking(false)} disabled={emptyOrUnnamed || rankingCapBlocks(false) || busy}>Save</PrimaryButton>
+              </div>
+            </>
+          )
+        }
+        onBack={() => {
+          setScreen("hub");
+          setPick("rankings");
+        }}
+        onClose={onClose}
+      />
+    );
+  } else {
+    content = (
+      <HubScreen
+        targetName={targetName}
+        closeRef={closeRef}
+        onClose={onClose}
+        pick={pick}
+        onPick={choosePick}
+        nearest={{
+          title: `${nearest.count} nearest schools`,
+          count: nearest.entries === null ? null : nearestSchools.length,
+          radiusKm: nearestSchools.length ? Math.max(...nearestSchools.map((s) => s.distanceKm ?? 0)) : null,
+        }}
+        la={
+          laName
+            ? {
+                laName,
+                count: la.entries === null ? null : laSchools.length,
+                spanKm: laSchools.length ? Math.max(...laSchools.map((s) => s.distanceKm ?? 0)) : null,
+                includesColleges: (lists?.local16Plus?.schools.length ?? 0) > 0,
+              }
+            : null
+        }
+        rankings={rankPhase === null ? null : {
+          sub: rankingSub,
+          onSub: setRankingSub,
+          national: nationalRows?.length ?? null,
+          regional: ownRegion && ownRegion.kind === "region" ? { name: ownRegion.name, count: regionalRows?.length ?? null } : null,
+          saved: savedRankings.map((r) => ({ ...r, count: matchedCount(r.filters) })),
+          onEdit: (r) => openRanking(r.filters, r),
+          onDelete: (r) => void removeRanking(r),
+          onBuild: () => openRanking(defaultRankingFilters(NATIONAL), null),
+        }}
+        mine={mine}
+        school={school}
+        schoolLabel={`${targetName} sets`}
+        setSub={setSub}
+        onSetSub={setSetSub}
+        onEditSet={(s) => void editSet(s)}
+        onDeleteSet={(s) => void removeSet(s)}
+        vc={vc && vc.sets.length ? vc : null}
+        count={hubCount()}
+        action={hubAction()}
+      />
+    );
+  }
 
   return (
-    <TeacherModal label="Choose comparison schools" backdropLabel="Close the school chooser" onClose={onClose} initialFocusRef={closeRef}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className="text-base font-bold">{isNew ? "New comparison set" : `Editing: ${editing!.name}`}</h2>
-          <p className="mt-1 text-xs text-[var(--muted2)]">
-            Which schools should {targetName} be compared against?
-            {editing?.config.startedFrom ? ` Started from ${editing.config.startedFrom}.` : startingFrom && isNew ? ` Starting from ${startingFrom.label}.` : ""}
-          </p>
-        </div>
-        <button ref={closeRef} type="button" onClick={onClose} aria-label="Close the school chooser" title="Close" className={`shrink-0 ${MODAL_CLOSE_BUTTON_CLASS}`}>
-          <ExpandIcon expanded />
-        </button>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-4 overflow-y-auto">
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => addNearest(5)} className="rounded-md bg-[var(--accent,#2563eb)] px-3 py-1.5 text-[12.5px] font-semibold text-[#06120c]">
-            + 5 nearest
-          </button>
-          <div className="min-w-[14rem] flex-1">
-            <SchoolSearch onSelect={addBySearch} placeholder="Add a school…" />
-          </div>
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter this list…"
-            className="w-40 rounded-md border border-[var(--panel-border2)] bg-transparent px-2.5 py-1.5 text-[12.5px]"
-          />
-        </div>
-
-        {/* "Selected so far": every ticked school, grouped by sector, as removable chips. */}
-        <div className="flex flex-col gap-2.5 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3.5">
-          <p className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Selected so far</p>
-          {(Object.keys(SECTOR) as SectorId[]).map((s) => {
-            const chosen = tickedSchools.filter((c) => sectorOf(c) === s);
-            const c = SECTOR[s].hex;
-            return (
-              <div key={s} className="flex flex-col gap-1.5">
-                <p className="text-xs font-bold text-[var(--muted2)]">{SECTOR[s].label}</p>
-                {chosen.length === 0 ? (
-                  <p className="text-[12.5px] italic text-[var(--muted3)]">None yet</p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {chosen.map((m) => (
-                      <button
-                        key={m.urn}
-                        type="button"
-                        onClick={() => toggle(m.urn)}
-                        aria-label={`Remove ${m.name}`}
-                        className="rounded-full border px-2.5 py-[5px] text-[12.5px] font-semibold"
-                        style={{ background: `${c}1F`, color: c, borderColor: `${c}59` }}
-                      >
-                        {m.name} &times;
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Sector tabs, styled exactly like the subject picker's family tabs. */}
-        <div className="flex flex-wrap gap-2" role="tablist">
-          {(Object.keys(SECTOR) as SectorId[]).map((s) => {
-            const on = s === tab;
-            const hex = SECTOR[s].hex;
-            return (
-              <button
-                key={s}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                onClick={() => setTab(s)}
-                className="rounded-full px-3.5 py-2 text-[13px] font-bold"
-                style={on ? { background: hex, color: "#fff", border: `1.5px solid ${hex}` } : { background: "transparent", color: hex, border: `1.5px solid ${hex}80` }}
-              >
-                {SECTOR[s].label} &middot; {count(s)}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-col gap-2.5">
-          {laCards.length === 0 && <p className="text-sm text-[var(--muted)]">No {SECTOR[tab].label.toLowerCase()} schools nearby{filter ? " match that filter" : ""}. Add one by search above.</p>}
-          {laCards.map(([la, schools]) => {
-            const n = schools.filter((c) => ticked.includes(c.urn)).length;
-            const open = expanded[`${tab}:${la}`] ?? n > 0;
-            const c = SECTOR[tab].hex;
-            return (
-              <div key={la} className="overflow-hidden rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)]">
-                <button
-                  type="button"
-                  aria-expanded={open}
-                  onClick={() => setExpanded({ ...expanded, [`${tab}:${la}`]: !open })}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                >
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c }} />
-                  <span className="flex-grow text-[14px] font-bold">{la}</span>
-                  <span className="text-[12.5px] text-[var(--muted2)]">{n} of {schools.length} ticked</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--muted3)] transition-transform" style={{ transform: open ? "rotate(180deg)" : "none" }} aria-hidden="true">
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </button>
-                {open && (
-                  <div className="flex flex-col gap-2 px-4 pb-3 pt-0.5">
-                    {[...schools]
-                      .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) || a.name.localeCompare(b.name))
-                      .map((s) => {
-                        const on = ticked.includes(s.urn);
-                        return (
-                          <label
-                            key={s.urn}
-                            className="flex cursor-pointer items-center gap-3 rounded-[9px] border px-3 py-2.5"
-                            style={{ borderColor: on ? c : "var(--panel-border)", background: on ? `${c}14` : "var(--box-bg)" }}
-                          >
-                            <input type="checkbox" checked={on} onChange={() => toggle(s.urn)} className="h-[17px] w-[17px] shrink-0" style={{ accentColor: c }} />
-                            <span className="flex-grow text-[13.5px] font-semibold">{s.name}</span>
-                            {payload.excludedUrns.includes(s.urn) && (
-                              <span className="shrink-0 text-[11px] text-[var(--muted3)]" title="IGCSE-heavy independent: left out of GCSE comparison">not compared at GCSE</span>
-                            )}
-                            <span className="w-14 shrink-0 text-right text-xs tabular-nums text-[var(--muted2)]">
-                              {s.distanceKm === null ? "—" : `${s.distanceKm.toFixed(1)} km`}
-                            </span>
-                          </label>
-                        );
-                      })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[var(--panel-border)] pt-3 text-[12.5px]">
-        <span className="text-[var(--muted)]">Your school + {ticked.length} comparator{ticked.length === 1 ? "" : "s"}</span>
-        <span className="ml-auto flex flex-wrap items-center gap-3">
-          {isNew ? (
-            <span className="flex items-center gap-3" role="radiogroup" aria-label="Who can see this set">
-              <label className="flex items-center gap-1.5">
-                <input type="radio" checked={!shared} onChange={() => setShared(false)} /> Personal
-              </label>
-              <label className={`flex items-center gap-1.5 ${payload.me.canEditShared ? "" : "opacity-50"}`} title={payload.me.canEditShared ? undefined : "Only the account holder or an admin can make a school set"}>
-                <input type="radio" checked={shared} disabled={!payload.me.canEditShared} onChange={() => setShared(true)} /> School (admin)
-              </label>
-            </span>
-          ) : (
-            <span className="text-[var(--muted2)]">{editing!.shared ? "School set" : "Personal set"}</span>
-          )}
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            aria-label="Set name"
-            className="w-44 rounded-md border border-[var(--panel-border2)] bg-transparent px-2.5 py-1.5"
-          />
-          {!isNew && editing!.editable && (
-            <button type="button" onClick={remove} disabled={saving} className="text-[var(--muted)] hover:text-[var(--fg)] disabled:opacity-50">
-              Delete
-            </button>
-          )}
-          <button type="button" onClick={save} disabled={!canSave} className="rounded-md bg-[var(--accent,#2563eb)] px-3 py-1.5 font-semibold text-[#06120c] disabled:opacity-40">
-            {saving ? "Saving…" : "Save set"}
-          </button>
-          <span className="text-[11px] text-[var(--muted2)]">
-            {payload.personalCount} / {payload.cap} personal sets used
-          </span>
-        </span>
-        {personalFull && <p className="w-full text-[11.5px] text-[#b45309]">You have {payload.cap} personal sets already. Delete one to make another.</p>}
-        {error && <p className="w-full text-[11.5px] text-[#b45309]">{error}</p>}
-      </div>
+    <TeacherModal label="Comparator schools" backdropLabel="Close the comparator chooser" onClose={onClose} initialFocusRef={closeRef} size="chooser">
+      <Panel>{content}</Panel>
     </TeacherModal>
   );
 }
+
+// Re-exported for the page's own use.
+export { sameScope };

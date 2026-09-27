@@ -20,7 +20,7 @@ import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries, type SetOption } from "@/components/teacher/ComparisonsPanels";
-import { ComparatorSetChooser } from "@/components/teacher/ComparatorSetChooser";
+import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
@@ -45,6 +45,24 @@ import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile
 // "someone might teach AS Maths but not Statistics". So an item is a (subject,
 // qualification) pair, not a subject.
 type SubjectItem = { key: string; subject: string; qualificationType: string; label: string; entries: number };
+
+// Comparator chooser round: the Comparisons column's unsaved chooser choice. CHOOSER_KEY
+// holds it (JSON) among the column settings; CHOOSER_SET_ID is the id it takes in the
+// "Compared against" pill beside the presets and saved sets.
+const CHOOSER_KEY = "chooser:rankings";
+const CHOOSER_SET_ID = "chooser";
+
+function parseChooserChoice(raw: string | undefined): ChooserChoice | null {
+  if (!raw) return null;
+  try {
+    const c = JSON.parse(raw) as ChooserChoice;
+    if (c.kind === "urns" && Array.isArray(c.urns)) return c;
+    if (c.kind === "ranking" && c.filters && typeof c.filters === "object") return c;
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 function buildSubjectItems(entries: SubjectEntry[]): SubjectItem[] {
   const latest = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
@@ -113,7 +131,12 @@ export default function TeacherPhaseDashboard() {
   // into the same comparator-set map as the four presets, keyed "saved:<id>", so the
   // pill, the validity check and the per-subject map fetch all treat them alike.
   const [savedSets, setSavedSets] = useState<SavedSetsPayload | null>(null);
-  const [chooser, setChooser] = useState<{ editing: SavedComparatorSet | null; startingFrom: { label: string; urns: string[] } | null } | null>(null);
+  const [chooser, setChooser] = useState<{ editing: SavedComparatorSet | null } | null>(null);
+  // Comparator chooser round: an unsaved choice made in the chooser (a list of schools, or
+  // a ranking), and the rows and series /api/teacher/chooser-set resolved for it. The
+  // choice itself is saved as a column setting (CHOOSER_KEY) so it survives a reload; the
+  // rows are re-fetched from it rather than stored.
+  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null } | null>(null);
   const [setInfo, setSetInfo] = useState<{ targetIndependent: boolean; targetCohortSize: number | null } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route: the subject
   // itself at GCSE; at Post-16 the subject in its exact qualification, with no fallback.
@@ -231,17 +254,47 @@ export default function TeacherPhaseDashboard() {
   // they now have to cover whichever set the "Compared against" pill is on. Same call,
   // same route, a longer urn list -- the dashboard route already resolves this same union
   // server-side, so it is a set that is known to be a sane size.
+  // The chooser's unsaved choice (see chooserSet) joins as CHOOSER_SET_ID: an empty list
+  // while it loads, so the pill stays on it rather than falling back to the first preset.
+  const chooserRaw = readSetting(columns, CHOOSER_KEY);
   const allComparatorSets = useMemo<Record<string, ComparatorSchool[] | undefined>>(
     () => ({
       ...comparatorSets,
       ...Object.fromEntries((savedSets?.sets ?? []).map((set) => [savedSetKey(set.id), set.rows])),
+      ...(chooserRaw ? { [CHOOSER_SET_ID]: chooserSet?.key === chooserRaw ? chooserSet.rows : [] } : {}),
     }),
-    [comparatorSets, savedSets],
+    [comparatorSets, savedSets, chooserRaw, chooserSet],
   );
   const comparatorUrns = useMemo(
     () => Array.from(new Set(Object.values(allComparatorSets).flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
     [allComparatorSets],
   );
+
+  // Resolve the chooser's unsaved choice whenever it changes (and once on load).
+  useEffect(() => {
+    if (!chooserRaw || !schoolUrn || !phase) return;
+    const choice = parseChooserChoice(chooserRaw);
+    if (!choice || choice.kind === "saved") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      const res = await fetch("/api/teacher/chooser-set", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          urn: schoolUrn,
+          phase,
+          set: choice.kind === "urns" ? { kind: "urns", urns: choice.urns } : { kind: "ranking", filters: choice.filters },
+        }),
+      });
+      if (cancelled || !res.ok) return;
+      const body = (await res.json()) as { rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null };
+      if (!cancelled) setChooserSet({ key: chooserRaw, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note });
+    })();
+    return () => { cancelled = true; };
+  }, [chooserRaw, schoolUrn, phase, supabase]);
 
   const reloadSavedSets = useCallback(async () => {
     if (!schoolUrn || !phase) return;
@@ -328,6 +381,20 @@ export default function TeacherPhaseDashboard() {
   // Context the comparison group too. Saved alongside the panels, because coming back to
   // a card showing a DIFFERENT NUMBER from the one you left is disorienting in a way that
   // coming back to the same number drawn differently is not.
+  // Several settings in ONE write: setColumnSetting reads `columns` from its closure, so
+  // two calls in a row would lose the first.
+  const setColumnSettings = useCallback(
+    async (pairs: [string, string | null][]) => {
+      const next = pairs.reduce((acc, [k, v]) => writeSetting(acc, k, v), columns);
+      setColumns(next);
+      if (schoolUrn && phase) {
+        const prefs = await fetchPreferences(supabase, schoolUrn, phase);
+        await savePreferences(supabase, schoolUrn, phase, { ...prefs, columns: next });
+      }
+    },
+    [columns, schoolUrn, phase, supabase],
+  );
+
   const setColumnSetting = useCallback(
     async (key: string, value: string | null) => {
       const next = writeSetting(columns, key, value);
@@ -1184,6 +1251,11 @@ export default function TeacherPhaseDashboard() {
   )
     .filter((o) => comparatorSets[o.id] !== undefined)
     .map((o) => ({ ...o, group: "preset" as const }));
+  // The chooser's unsaved choice sits with the starting points, under its own name.
+  const chooserChoice = parseChooserChoice(chooserRaw);
+  if (chooserChoice && chooserChoice.kind !== "saved") {
+    presetOptions.unshift({ id: CHOOSER_SET_ID, label: chooserChoice.label, group: "preset" });
+  }
   // Accordion round Part 3: saved sets join the same list, in the wireframe's groups --
   // the teacher's own, then the school's shared ones.
   const savedOptions: SetOption[] = (savedSets?.sets ?? []).map((set) => ({
@@ -1238,7 +1310,11 @@ export default function TeacherPhaseDashboard() {
   // Each set's own caveat, kept from round 5 -- the reason a set is what it is belongs
   // beside the set, not in a tooltip.
   const comparatorSetNote =
-    comparisonsSet === "same_sector" && setInfo
+    comparisonsSet === CHOOSER_SET_ID
+      ? chooserSet && chooserSet.key === chooserRaw
+        ? chooserSet.note ?? undefined
+        : "Loading these schools…"
+      : comparisonsSet === "same_sector" && setInfo
       ? setInfo.targetIndependent ? "Independent schools only" : "State schools only"
       : comparisonsSet === "similar_size" && setInfo?.targetCohortSize
         ? `This school: ${Math.round(setInfo.targetCohortSize).toLocaleString()} pupils in the exam cohort`
@@ -1730,18 +1806,15 @@ export default function TeacherPhaseDashboard() {
             setLabel={activeSetLabel}
             setNote={comparatorSetNote}
             schools={allComparatorSets[comparisonsSet] ?? []}
-            seriesByUrn={activeMapChip ? comparatorSubjectSeries : { ...seriesByUrn, ...(savedSets?.seriesByUrn ?? {}) }}
+            seriesByUrn={activeMapChip ? comparatorSubjectSeries : { ...seriesByUrn, ...(savedSets?.seriesByUrn ?? {}), ...(chooserSet?.seriesByUrn ?? {}) }}
             // Part 3: "Choose schools…" / "Edit" open the chooser. A new set starts from
             // whichever set is selected now.
+            // Comparator chooser round: "Choose schools…" opens the chooser's hub; "Edit" beside
+            // a set opens it straight at that set's editor.
             onManageSet={(id) => {
               if (!savedSets) return;
               const editing = id ? savedSets.sets.find((set) => savedSetKey(set.id) === id) ?? null : null;
-              setChooser({
-                editing,
-                startingFrom: editing
-                  ? null
-                  : { label: activeSetLabel, urns: (allComparatorSets[comparisonsSet] ?? []).filter((r) => !r.isTarget).map((r) => r.urn) },
-              });
+              setChooser({ editing });
             }}
             personalSetsNote={savedSets ? `${savedSets.personalCount} / ${savedSets.cap}` : undefined}
             subjectLabel={activeMapChip?.legend ?? null}
@@ -1863,18 +1936,23 @@ export default function TeacherPhaseDashboard() {
       {chooser && savedSets && schoolUrn && (
         <ComparatorSetChooser
           payload={savedSets}
-          editing={chooser.editing}
-          startingFrom={chooser.startingFrom}
+          phase={phase}
+          theme={theme}
           targetUrn={schoolUrn}
-          targetName={schoolName ?? "this school"}
+          targetName={schoolName ?? "This school"}
+          initialEdit={chooser.editing}
+          vc={null}
           onClose={() => setChooser(null)}
-          onSaved={async (id) => {
+          onSetsChanged={reloadSavedSets}
+          onDone={async (choice) => {
             setChooser(null);
-            await reloadSavedSets();
-            // A saved set becomes the one Comparisons reads; a deleted one that was
-            // selected falls back to the first preset.
-            if (id) await setColumnSetting(setKey("rankings"), savedSetKey(id));
-            else if (activeSavedSet && activeSavedSet.id === chooser.editing?.id) await setColumnSetting(setKey("rankings"), null);
+            // A saved set is switched on by its own id; anything else is kept as the
+            // chooser's own choice, which the column resolves and shows by name.
+            if (choice.kind === "saved") {
+              await setColumnSettings([[setKey("rankings"), savedSetKey(choice.id)], [CHOOSER_KEY, null]]);
+            } else {
+              await setColumnSettings([[CHOOSER_KEY, JSON.stringify(choice)], [setKey("rankings"), CHOOSER_SET_ID]]);
+            }
           }}
         />
       )}
