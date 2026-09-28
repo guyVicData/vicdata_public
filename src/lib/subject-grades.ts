@@ -83,11 +83,11 @@ export const BOTTOM_RANK: Record<string, number> = { Fail: 900, U: 901, Unclassi
 // so a distribution is not padded with rows that cannot be compared between schools.
 export const NON_GRADE_VALUES = new Set(["Suppressed", "No result", "No result / X", "X", "Covid impacted", "Not Awarded", "Awarded"]);
 
-export function gradeOrderFrom(...gradeSets: Iterable<string>[]): string[] {
-  const present = new Set<string>();
-  for (const set of gradeSets) for (const g of set) if (!NON_GRADE_VALUES.has(g)) present.add(g);
-  const graded = Array.from(present).filter((g) => !(g in BOTTOM_RANK));
-
+// The GRADE_SCALES entry that best covers these grades (the same array object, so a caller
+// can test scale identity), or [] when none covers any of them. Shared by gradeOrderFrom
+// and the grade-bands range below, so "which scale is this subject on" has one answer.
+export function bestScale(grades: Iterable<string>): string[] {
+  const graded = Array.from(new Set(grades)).filter((g) => !NON_GRADE_VALUES.has(g) && !(g in BOTTOM_RANK));
   // Pick the scale covering the most of what is actually here. Ties go to the shorter
   // scale, which is the more specific match for the same coverage.
   let best: string[] = [];
@@ -99,13 +99,22 @@ export function gradeOrderFrom(...gradeSets: Iterable<string>[]): string[] {
       bestHits = hits;
     }
   }
+  return best;
+}
 
-  const rank = (g: string) => {
-    if (g in BOTTOM_RANK) return BOTTOM_RANK[g];
-    const i = best.indexOf(g);
-    return i === -1 ? 800 : i; // unrecognised grades still render, just after the known ones
-  };
-  return Array.from(present).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+// A grade's position on a scale, best first: its index, BOTTOM_RANK's 900s for Fail/U/
+// Unclassified, and 800 for a grade the scale does not know (it still sorts, after them).
+function rankOn(scale: string[], g: string): number {
+  if (g in BOTTOM_RANK) return BOTTOM_RANK[g];
+  const i = scale.indexOf(g);
+  return i === -1 ? 800 : i;
+}
+
+export function gradeOrderFrom(...gradeSets: Iterable<string>[]): string[] {
+  const present = new Set<string>();
+  for (const set of gradeSets) for (const g of set) if (!NON_GRADE_VALUES.has(g)) present.add(g);
+  const best = bestScale(present);
+  return Array.from(present).sort((a, b) => rankOn(best, a) - rankOn(best, b) || a.localeCompare(b));
 }
 
 // ---------------------------------------------------------------------------
@@ -168,4 +177,65 @@ export function thresholdRate(rows: SubjectGradeCount[], phase: TeacherPhase): T
 
   const met = graded.filter((r) => meets(r.grade)).reduce((a, r) => a + r.entries, 0);
   return { rate: (met / total) * 100, entries: total };
+}
+
+// ---------------------------------------------------------------------------
+// Grade bands (docs/vicdata_phase3_grade_bands_frontend_claude_code_prompt_v1.md)
+// ---------------------------------------------------------------------------
+//
+// The threshold measure above, generalised from its one fixed bar to any contiguous span a
+// teacher picks on the subject's OWN scale -- "grades 7-9", "Distinction* to Merit".
+// `top` is the better end, `bottom` the worse; both are inclusive. `scale` is the
+// GRADE_SCALES entry the span was picked on (by identity), so a subject on a different
+// scale -- a Double Award beside GCSE, IB beside A level -- is never scored against a span
+// it was never on: it gets no figure, as thresholdRate gives a vocational scale none.
+export type GradeRange = { scale: string[]; top: string; bottom: string };
+
+// Presets only where there is a real, established convention: GCSE 9-1's "grade 4 or
+// above" (the standard pass this module's threshold measure already uses) and 7-9, the
+// strong-pass band. No other scale gets presets -- nothing in this codebase or DfE's
+// headline measures establishes one for A level, IB, vocational, Pre-U or T Level, and
+// inventing "Merit or above" would be exactly the kind of made-up convention the
+// threshold measure declines. Those scales are custom-range only.
+export const GCSE_SCALE = GRADE_SCALES[0];
+export const BAND_PRESETS: { id: string; label: string; scale: string[]; top: string; bottom: string }[] = [
+  { id: "4-9", label: "4–9", scale: GCSE_SCALE, top: "9", bottom: "4" },
+  { id: "7-9", label: "7–9", scale: GCSE_SCALE, top: "9", bottom: "7" },
+];
+export const presetsFor = (scale: string[]) => BAND_PRESETS.filter((p) => p.scale === scale);
+
+// "Grades 7–9" on GCSE's numbers, "Distinction* to Merit" on a named scale, one grade alone.
+export function rangeLabel(range: GradeRange): string {
+  if (range.top === range.bottom) return range.scale === GCSE_SCALE ? `Grade ${range.top}` : range.top;
+  return range.scale === GCSE_SCALE ? `Grades ${range.bottom}–${range.top}` : `${range.top} to ${range.bottom}`;
+}
+
+// The two-click range: the first click is a one-grade span; the second makes the span
+// between the two clicks, in scale order whichever was clicked first.
+export function spanBetween(scale: string[], a: string, b: string): { top: string; bottom: string } {
+  return rankOn(scale, a) <= rankOn(scale, b) ? { top: a, bottom: b } : { top: b, bottom: a };
+}
+
+export function inRange(range: GradeRange, grade: string): boolean {
+  const r = rankOn(range.scale, grade);
+  return r >= rankOn(range.scale, range.top) && r <= rankOn(range.scale, range.bottom);
+}
+
+export type BandOutcome = { rate: number; met: number; entries: number } | null;
+
+// The share of this subject's graded entries inside the range -- ONE function for the
+// school's own rows, a comparator school's, and the LA/region/England per-grade rows
+// (academic_subject_grade_geography_lookup), so the rate is computed the same way on every
+// side. `rows` must be one subject, one exact qualification and one period. Non-grades are
+// excluded from both sides, as in thresholdRate. null when there are no graded entries, or
+// when these rows are on a different scale from the one the range was picked on.
+export function bandRate(rows: { grade: string; entries: number }[], range: GradeRange): BandOutcome {
+  const graded = rows.filter((r) => !NON_GRADE_VALUES.has(r.grade));
+  const total = graded.reduce((a, r) => a + r.entries, 0);
+  if (total === 0) return null;
+  // The range's own ends count toward choosing the scale, so a small cohort with only
+  // grades 7-4 still reads as GCSE (not IB's 7-1) when the span was picked on GCSE.
+  if (bestScale([...graded.map((r) => r.grade), range.top, range.bottom]) !== range.scale) return null;
+  const met = graded.filter((r) => inRange(range, r.grade)).reduce((a, r) => a + r.entries, 0);
+  return { rate: (met / total) * 100, met, entries: total };
 }

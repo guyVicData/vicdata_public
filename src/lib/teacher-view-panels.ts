@@ -61,7 +61,11 @@ export function togglePanel(open: PanelId[], id: PanelId): PanelId[] {
 // (§4.1). One descriptor carries everything the panels need to render it, so adding a
 // measure never means editing four columns.
 
-export type MeasureId = "entries" | "points" | "threshold";
+// "bands": the share of entries inside a teacher-chosen grade range (a rate, like
+// threshold, once a range is picked). "counts": the whole grade distribution -- no single
+// figure, so the panels that plot one number never receive it; Column 1 draws it with its
+// own distribution views (GradeCountsPanels), and Context and Comparisons fall back.
+export type MeasureId = "entries" | "points" | "threshold" | "bands" | "counts";
 
 export type Measure = {
   id: MeasureId;
@@ -122,7 +126,32 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     noun: thresholdLabel(phase).toLowerCase(),
     barScaleMax: 100,
   };
-  return [points, threshold];
+  // Grade bands and counts (grade bands frontend round): the range and its label are
+  // chosen on the dashboard, which narrows `noun` to the span ("share of entries at grades
+  // 7–9"); these are the measures as the switcher lists them.
+  const bands: Measure = {
+    id: "bands",
+    label: "Grade bands",
+    changeLabel: "% change in the share at the chosen grades",
+    format: (v) => `${Math.round(v)}%`,
+    formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}pp`,
+    axisStep: 5,
+    aggregate: "mean",
+    noun: "share of entries at the chosen grades",
+    barScaleMax: 100,
+  };
+  const counts: Measure = {
+    id: "counts",
+    label: "Grade counts",
+    changeLabel: "change in entries at each grade",
+    format: (v) => Math.round(v).toLocaleString(),
+    formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d)).toLocaleString()}`,
+    axisStep: 10,
+    aggregate: "sum",
+    noun: "entries at each grade",
+    barScaleMax: null,
+  };
+  return [points, threshold, bands, counts];
 }
 
 export const ENTRIES_MEASURE: Measure = {
@@ -137,14 +166,10 @@ export const ENTRIES_MEASURE: Measure = {
   barScaleMax: null,
 };
 
-// The two measures the switcher shows but cannot select (§4.1). Present rather than
-// hidden, so their absence reads as a known gap rather than an omission nobody noticed
-// -- both need a distribution per subject, not one number, which is its own design
-// problem once the data exists.
-export const COMING_SOON_MEASURES: { id: string; label: string }[] = [
-  { id: "bands", label: "Grade bands" },
-  { id: "counts", label: "Grade counts" },
-];
+// Measures the switcher shows but cannot select yet (§4.1), greyed and tagged. Empty since
+// the grade bands frontend round made Grade bands and Grade counts real; kept so the next
+// not-yet-real measure has a place to go.
+export const COMING_SOON_MEASURES: { id: string; label: string }[] = [];
 
 // Comparisons compares SCHOOLS, so its measure is the phase's whole-school headline
 // (Attainment 8 at KS4, A-level points per entry at Post-16, the expected-standard

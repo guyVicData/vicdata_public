@@ -583,6 +583,63 @@ export async function lookupAcademicSubjectQualificationGeography(params: {
   return rows;
 }
 
+// Grade bands frontend round: the grade-grain geography (vicdata's
+// academic_subject_grade_geography_aggregate, via academic_subject_grade_geography_lookup):
+// entries per EXACT grade, subject and qualification type, per LA / region / England and
+// year. p_grade null returns every grade's own row (never pre-summed); a band is a
+// client-side sum over them (subject-grades.ts bandRate). Rows from fewer than 5 schools
+// are suppressed by the RPC -- this function never lowers that.
+export type AcademicSubjectGradeGeographyRow = {
+  grouping_type: "la" | "region" | "national";
+  grouping_key: string;
+  ks_stage: KsStage;
+  subject: string;
+  qualification_type: string;
+  grade: string;
+  family_id: string | null;
+  period: number;
+  entries_total: number | string;
+  school_count: number;
+};
+
+export async function lookupAcademicSubjectGradeGeography(params: {
+  ksStage: KsStage;
+  groupingType?: "la" | "region" | "national";
+  groupingKeys?: string[];
+  subject?: string;
+  qualificationType?: string;
+  grades?: string[];
+  periodMin?: number;
+  periodMax?: number;
+  signal?: AbortSignal;
+}): Promise<AcademicSubjectGradeGeographyRow[]> {
+  const rows: AcademicSubjectGradeGeographyRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const batch = (await fetchPage(
+      "academic_subject_grade_geography_lookup",
+      {
+        p_ks_stage: params.ksStage,
+        p_grouping_type: params.groupingType ?? null,
+        p_grouping_keys: params.groupingKeys ?? null,
+        p_subject: params.subject ?? null,
+        p_qualification_type: params.qualificationType ?? null,
+        p_grade: params.grades ?? null,
+        p_family_id: null,
+        p_period_min: params.periodMin ?? null,
+        p_period_max: params.periodMax ?? null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+        // The RPC's own minimum (5 schools) always: a thin row reads as not shown.
+        p_min_school_count: null,
+      },
+      params.signal,
+    )) as AcademicSubjectGradeGeographyRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
 export async function lookupAcademicGeography(params: {
   ksStage: KsStage;
   measure?: string;
