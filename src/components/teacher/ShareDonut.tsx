@@ -23,6 +23,7 @@ export function ShareDonut({
   groupValueLabel,
   colour,
   fullscreen = false,
+  otherLabel = "All other entries",
 }: {
   percent: number;
   label: string;
@@ -31,6 +32,8 @@ export function ShareDonut({
   groupValueLabel: string;
   colour: string;
   fullscreen?: boolean;
+  // The second legend line's words (Grade bands: "All other grades").
+  otherLabel?: string;
 }) {
   // Live review Part C: the circle fills the space the panel gives it, measured (the same
   // fix as VerticalBars, c3716e4), rather than a fixed 104px sitting small in a 384px
@@ -94,7 +97,7 @@ export function ShareDonut({
         <div className="flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--panel-border)]" />
           {/* Live review Part C: the same words whichever set is being compared against. */}
-          <span className="text-[12.5px] text-[var(--muted)]">All other entries — {groupValueLabel}</span>
+          <span className="text-[12.5px] text-[var(--muted)]">{otherLabel} — {groupValueLabel}</span>
         </div>
       </div>
     </div>

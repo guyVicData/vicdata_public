@@ -92,6 +92,16 @@ export const TilesIcon = (
   </Glyph>
 );
 
+// Grade bands frontend round: the per-grade distribution view (and its range picker).
+export const GradesIcon = (
+  <Glyph fill>
+    <rect x="3" y="3.5" width="14" height="2.4" rx="1" />
+    <rect x="3" y="7.4" width="10" height="2.4" rx="1" />
+    <rect x="3" y="11.3" width="12" height="2.4" rx="1" />
+    <rect x="3" y="15.2" width="5" height="2.4" rx="1" />
+  </Glyph>
+);
+
 // The tiles' own glyphs, one per kind of figure: a rank within a group (podium), within
 // the school (building), a change over time (arrow), an average (a bar at the mean) and
 // the England comparison (flag).

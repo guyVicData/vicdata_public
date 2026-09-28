@@ -26,9 +26,10 @@ import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/C
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
+import { GradeCountsPanels } from "@/components/teacher/GradeCountsPanels";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
-import { thresholdRate } from "@/lib/subject-grades";
+import { BOTTOM_RANK, bandRate, bestScale, presetsFor, rangeLabel, spanBetween, thresholdRate, type GradeRange } from "@/lib/subject-grades";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
@@ -190,6 +191,8 @@ export default function TeacherPhaseDashboard() {
   // The map's own rank for this school on the subject it is plotting (reported by
   // AcademicMapView), so the "N of M" line can match the map once a chip is active.
   const [mapRank, setMapRank] = useState<{ rank: number; total: number } | null>(null);
+  // Grade bands: the first click of a two-click range, waiting for its second.
+  const [bandPending, setBandPending] = useState<string | null>(null);
   // The subject picker is a popup opened by the chip header's "±", not a permanent
   // section of the dashboard.
   // Round 8 §3: ONE focus subject for the whole dashboard. Content round S5 killed "All":
@@ -984,8 +987,55 @@ export default function TeacherPhaseDashboard() {
   const resultsMeasure = measureById(phase, readSetting(columns, measureKey("results")) ?? resultsMeasures[0].id);
   const usingThreshold = resultsMeasure.id === "threshold";
 
+  // Grade bands frontend round: the share of a subject's graded entries inside a range the
+  // teacher picks on the FOCUSED subject's own scale. One range, saved like the measure
+  // (BAND_RANGE_KEY), read by Column 1, Comparisons and Context alike. It is kept only
+  // while both ends are grades on the focused subject's scale; otherwise the scale's
+  // preset (7-9, GCSE 9-1 only) or no range at all -- never an invented default band.
+  const usingBands = resultsMeasure.id === "bands";
+  const usingGradeRate = usingThreshold || usingBands;
+  const BAND_RANGE_KEY = "band:range";
+  const focusGradeRows = focusItem
+    ? gradeRows.filter((g) => g.subject === focusItem.subject && g.qualificationType === focusItem.qualificationType)
+    : [];
+  const focusScale = bestScale(focusGradeRows.map((g) => g.grade));
+  const onFocusScale = (g: string) => focusScale.includes(g) || g in BOTTOM_RANK;
+  const bandPresets = presetsFor(focusScale);
+  const bandRange: GradeRange | null = (() => {
+    if (bandPending && onFocusScale(bandPending)) return { scale: focusScale, top: bandPending, bottom: bandPending };
+    try {
+      const saved = JSON.parse(readSetting(columns, BAND_RANGE_KEY) ?? "null") as { top: string; bottom: string } | null;
+      if (saved && onFocusScale(saved.top) && onFocusScale(saved.bottom)) return { scale: focusScale, top: saved.top, bottom: saved.bottom };
+    } catch {
+      // an unreadable saved range reads as none
+    }
+    const preset = bandPresets.find((p) => p.id === "7-9");
+    return preset ? { scale: focusScale, top: preset.top, bottom: preset.bottom } : null;
+  })();
+  const bandLabel = bandRange ? rangeLabel(bandRange) : null;
+  const saveBand = (top: string, bottom: string) => {
+    setBandPending(null);
+    void setColumnSetting(BAND_RANGE_KEY, JSON.stringify({ top, bottom }));
+  };
+  const clickBandGrade = (grade: string) => {
+    if (bandPending && onFocusScale(bandPending)) {
+      const span = spanBetween(focusScale, bandPending, grade);
+      saveBand(span.top, span.bottom);
+    } else {
+      setBandPending(grade);
+    }
+  };
+  const gradeRowsFor = (subject: string, qualificationType: string, period: number) =>
+    gradeRows.filter((g) => g.subject === subject && g.qualificationType === qualificationType && g.period === period);
+  const bandAt = (i: SubjectItem, period: number): number | null =>
+    bandRange ? bandRate(gradeRowsFor(i.subject, i.qualificationType, period), bandRange)?.rate ?? null : null;
+  // Grade rows exist from 2023/24 only; on Grade bands the axis is the years that have them.
+  const hasGrades = (i: SubjectItem, period: number) => gradeRows.some((g) => g.subject === i.subject && g.qualificationType === i.qualificationType && g.period === period);
+  // The measure as Grade bands' panels read it: its noun narrowed to the span.
+  const resultsMeasureShown = usingBands && bandLabel ? { ...resultsMeasure, noun: `share of entries at ${bandLabel.toLowerCase()}` } : resultsMeasure;
+
   const valueForResults = (i: SubjectItem, period: number) =>
-    usingThreshold ? thresholdAt(i, period) : pointsAt(i, period);
+    usingThreshold ? thresholdAt(i, period) : usingBands ? bandAt(i, period) : pointsAt(i, period);
 
   // ------------------------------------------ Column 1's category (content round S6-S7)
   //
@@ -1061,7 +1111,9 @@ export default function TeacherPhaseDashboard() {
   // periods they are indexed against are always the same list.
   const resultsPeriods = usingThreshold
     ? categoryPeriods.filter((p) => categoryItems.some((i) => thresholdAt(i, p) !== null))
-    : categoryPeriods;
+    : usingBands
+      ? categoryPeriods.filter((p) => categoryItems.some((i) => hasGrades(i, p)))
+      : categoryPeriods;
 
   // The threshold measure has no published England figure to sit against -- the national
   // anchor this app holds is points per entry, per subject. So its bars carry no marker
@@ -1080,7 +1132,8 @@ export default function TeacherPhaseDashboard() {
       shortLabel: categoryShort.get(i.key) ?? i.subject,
       colour: categoryColour(i),
       values: resultsPeriods.map((p) => valueForResults(i, p)),
-      benchmark: usingThreshold ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
+      // Grade bands: SubjectPanels sets the focused subject's own England rate on the span.
+      benchmark: usingGradeRate ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
     }))
     // A peer with no figure at all on this measure (at GCSE, a BTEC or Cambridge National
     // on points) says nothing about the category, so it is left out rather than drawn
@@ -1097,7 +1150,7 @@ export default function TeacherPhaseDashboard() {
       ? []
       : [
           { label: `${focusFamilyLabel} average`, values: resultsPeriods.map((_, pi) => meanOf(resultsSeries.map((r) => r.values[pi]))) },
-          ...(!usingThreshold
+          ...(!usingGradeRate
             ? [{
                 label: `England ${focusFamilyLabel} average`,
                 colour: ENGLAND_COLOUR,
@@ -1115,7 +1168,11 @@ export default function TeacherPhaseDashboard() {
   // -- one global toggle replaces two independent per-column ones. On Results it follows
   // Column 1's sub-measure too, so "Results" means the same figure in both columns rather
   // than two columns both claiming to show results while showing different ones.
-  const contextMeasure = showingResults ? resultsMeasure : ENTRIES_MEASURE;
+  // Grade bands frontend round: Context reads Grade bands on the same range as Column 1.
+  // Grade counts has no single figure to compare subjects on, and Grade bands has none
+  // until a range is picked, so both fall back to average point score here (and say so).
+  const contextFallsBack = showingResults && (resultsMeasure.id === "counts" || (usingBands && !bandRange));
+  const contextMeasure = !showingResults ? ENTRIES_MEASURE : contextFallsBack ? measuresFor(phase)[0] : resultsMeasureShown;
   // S8: "area" is no longer an option here (Column 1 owns the category comparison now), so
   // a saved "area" from before reads as the default rather than as a third state.
   const contextAgainst: CompareAgainstId = readSetting(columns, againstKey("context")) === "selected" ? "selected" : "whole";
@@ -1170,8 +1227,12 @@ export default function TeacherPhaseDashboard() {
           .map((g) => g.qualificationType),
       ),
     );
+    // Grade bands: the same per-qualification mean on the chosen range (bandRate, which
+    // gives no figure for a qualification on a different scale).
+    const rateOf = (rows: typeof gradeRows) =>
+      contextMeasure.id === "bands" && bandRange ? bandRate(rows, bandRange)?.rate : thresholdRate(rows, phase)?.rate;
     const rates = quals
-      .map((qt) => thresholdRate(gradeRows.filter((g) => g.subject === subject && g.qualificationType === qt && g.period === period), phase)?.rate)
+      .map((qt) => rateOf(gradeRows.filter((g) => g.subject === subject && g.qualificationType === qt && g.period === period)))
       .filter((v): v is number => v !== undefined && v !== null);
     return rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : null;
   };
@@ -1237,13 +1298,37 @@ export default function TeacherPhaseDashboard() {
   const contextValueFor = (i: SubjectItem, period: number): number | null => {
     if (contextMeasure.id === "entries") return entriesAt(i, period);
     if (contextMeasure.id === "points") return pointsAt(i, period);
+    if (contextMeasure.id === "bands") return bandAt(i, period);
     return thresholdAt(i, period);
   };
 
   const contextPeriods =
     contextMeasure.id === "threshold"
       ? subjectPeriods.filter((p) => tickedItems.some((i) => thresholdAt(i, p) !== null))
-      : subjectPeriods;
+      : contextMeasure.id === "bands"
+        ? subjectPeriods.filter((p) => tickedItems.some((i) => hasGrades(i, p)))
+        : subjectPeriods;
+
+  // Grade bands: Context's donut is the group's own entries inside the range, of all its
+  // graded entries -- the whole school's (or the selected subjects') "share at grades 7-9"
+  // -- per (subject, qualification) through bandRate, so a qualification on another scale
+  // adds to neither side. Self-inclusive, as the group always is.
+  const contextBandShare = (period: number): { met: number; entries: number } | null => {
+    if (!bandRange) return null;
+    let met = 0;
+    let entries = 0;
+    for (const subject of contextMembers) {
+      const quals = new Set(gradeRows.filter((g) => g.subject === subject && g.period === period && inGroup(g.qualificationType)).map((g) => g.qualificationType));
+      for (const qt of quals) {
+        const r = bandRate(gradeRowsFor(subject, qt, period), bandRange);
+        if (r) {
+          met += r.met;
+          entries += r.entries;
+        }
+      }
+    }
+    return entries > 0 ? { met, entries } : null;
+  };
   const atContextPeriod = (values: (number | null)[]) =>
     contextPeriods.map((p) => values[subjectPeriods.indexOf(p)] ?? null);
 
@@ -1329,10 +1414,16 @@ export default function TeacherPhaseDashboard() {
   // subject's own figure on Results' chosen measure -- points per entry, or the Grade 4+ /
   // A*-E rate, which ComparisonsPanels scores per school from each one's grade counts
   // (its `threshold` prop) -- otherwise the whole-school headline.
+  // Grade bands frontend round: Grade bands scores every comparator on the same range,
+  // through the same per-school grade counts the threshold measure uses (ComparisonsPanels'
+  // `threshold` prop, scored by bandRate) -- one ranking mechanism, not a second. Grade
+  // counts has no single figure to rank schools by, and Grade bands none until a range is
+  // picked: both compare on average point score here.
+  const comparisonsOnBands = usingBands && !!bandRange;
   const comparisonsMeasure = showingResults
     ? activeMapChip
-      ? usingThreshold
-        ? resultsMeasure
+      ? usingThreshold || comparisonsOnBands
+        ? resultsMeasureShown
         : measuresFor(phase)[0]
       : headlineMeasure(phase, headlineLabel)
     : ENTRIES_MEASURE;
@@ -1566,6 +1657,28 @@ export default function TeacherPhaseDashboard() {
                 </p>
               )}
             </CardBox>
+          ) : showingResults && resultsMeasure.id === "counts" && focusItem ? (
+            // Grade bands frontend round: Grade counts is a whole distribution with no single
+            // figure, so Column 1 draws it with its own three panels (GradeCountsPanels).
+            <GradeCountsPanels
+              columnId={COL1}
+              subjectLabel={phase === "ks5" ? focusItem.label : focusItem.subject}
+              ownRows={focusGradeRows}
+              geography={schoolUrn ? { urn: schoolUrn, subject: focusItem.subject, qualificationType: focusItem.qualificationType, phase } : null}
+              colour={colourOf(focusItem)}
+              panels={panelsOf(COL1)}
+              onPanelsChange={(next) => setPanels(COL1, next)}
+              notes={notesFor(COL1)}
+              question={q.howWell}
+              source={panelSource}
+              controls={
+                <MeasurePicker
+                  measures={resultsMeasures}
+                  active={resultsMeasure}
+                  onChange={(id) => setColumnSetting(measureKey("results"), id)}
+                />
+              }
+            />
           ) : showingResults ? (
             <SubjectPanels
               columnId={COL1}
@@ -1627,7 +1740,24 @@ export default function TeacherPhaseDashboard() {
                     }
                   : undefined
               }
-              measure={resultsMeasure}
+              measure={resultsMeasureShown}
+              gradeBand={
+                usingBands && focusItem
+                  ? {
+                      range: bandRange,
+                      rangeLabel: bandLabel,
+                      presets: bandPresets,
+                      onPreset: saveBand,
+                      pending: bandPending && onFocusScale(bandPending) ? bandPending : null,
+                      onGradeClick: clickBandGrade,
+                      colour: colourOf(focusItem),
+                      ownRows: focusGradeRows,
+                      geography: schoolUrn
+                        ? { urn: schoolUrn, subject: focusItem.subject, qualificationType: focusItem.qualificationType, phase }
+                        : null,
+                    }
+                  : undefined
+              }
               controls={
                 // §3's row-alignment fix: the Results sub-measure pill sits under this
                 // column's own heading, the same slot Context's and Comparisons' pills
@@ -1643,6 +1773,8 @@ export default function TeacherPhaseDashboard() {
               benchmarkNoun={
                 usingThreshold
                   ? undefined
+                  : usingBands
+                    ? `England's share at ${(bandLabel ?? "the chosen grades").toLowerCase()} for the same subject and qualification`
                   : englandAvg?.basis === "subject"
                     ? "the England GCSE average for the subject"
                     : "the England average for the same subject and qualification"
@@ -1650,7 +1782,9 @@ export default function TeacherPhaseDashboard() {
               note={
                 usingThreshold
                   ? `${resultsMeasure.label} is published per grade only from 2023/24, so this covers fewer years than average point score. Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
-                  : undefined
+                  : usingBands
+                    ? "Grades are published per subject only from 2023/24, so this covers fewer years than average point score. A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish."
+                    : undefined
               }
               questions={{
                 current: q.howWell,
@@ -1665,7 +1799,7 @@ export default function TeacherPhaseDashboard() {
               // Content round S3 (Redesign.dc.html v27): on average point score the Current
               // tag says what the figure is -- "Av. Points 2024/25" -- while the column
               // heading stays "Results". The threshold measure keeps its existing tag.
-              currentLabel={resultsMeasure.id === "points" ? "Av. Points" : COLUMN_TITLE.results}
+              currentLabel={resultsMeasure.id === "points" ? "Av. Points" : usingBands && bandLabel ? bandLabel : COLUMN_TITLE.results}
             />
           ) : (
             <CandidatesPanels
@@ -1802,14 +1936,26 @@ export default function TeacherPhaseDashboard() {
               donut={{
                 // §4.2: a share of an average point score is not a meaningful percentage,
                 // so the donut is genuinely inert for a Results measure, not just greyed.
-                enabled: contextMeasure.id === "entries",
+                enabled: contextMeasure.id === "entries" || (contextMeasure.id === "bands" && !!bandRange),
+                share:
+                  contextMeasure.id === "bands" && bandLabel
+                    ? {
+                        values: contextPeriods.map((p) => contextBandShare(p)?.met ?? null),
+                        totals: contextPeriods.map((p) => contextBandShare(p)?.entries ?? null),
+                        label: bandLabel,
+                        otherLabel: "All other grades",
+                        format: (v: number) => Math.round(v).toLocaleString(),
+                      }
+                    : undefined,
                 groupLabel: contextGroupLabel,
                 groupTotals: atContextPeriod(contextGroupTotals),
                 // Round 2 §3: the sentence names the school. The share is of ENTRIES (a
                 // pupil sits several subjects), so it says "student entries" rather than
                 // "students" -- see the round 2 build report.
                 shareOf:
-                  contextAgainst === "selected"
+                  contextMeasure.id === "bands"
+                    ? `graded entries in ${contextAgainst === "selected" ? "the subjects you selected" : "all subjects"} at ${schoolName ?? "your school"}`
+                    : contextAgainst === "selected"
                     ? `entries in the subjects you selected at ${schoolName ?? "your school"}`
                     : `all student entries at ${schoolName ?? "your school"}`,
               }}
@@ -1829,7 +1975,13 @@ export default function TeacherPhaseDashboard() {
               note={
                 contextMeasure.id === "threshold"
                   ? `${contextMeasure.label} is published per grade only from 2023/24, so this covers fewer years than the other measures.`
-                  : undefined
+                  : contextMeasure.id === "bands"
+                    ? "Grades are published per subject only from 2023/24, so this covers fewer years than the other measures. Subjects on a different grade scale from the range's are left out."
+                    : contextFallsBack
+                      ? resultsMeasure.id === "counts"
+                        ? "Grade counts has no single figure to compare subjects on, so Context shows average point score."
+                        : "Pick a grade range in Results to compare subjects on it; until then Context shows average point score."
+                      : undefined
               }
             />
           )}
@@ -1870,8 +2022,14 @@ export default function TeacherPhaseDashboard() {
             // Results on a grade threshold with a subject in focus: the column fetches every
             // comparator's grade counts for it and scores them as thresholdAt() scores ours.
             threshold={
-              showingResults && usingThreshold && activeMapChip && focusItem && phase !== "ks2"
-                ? { subject: focusItem.subject, qualificationType: focusItem.qualificationType, rateOf: (rows) => thresholdRate(rows, phase)?.rate ?? null }
+              showingResults && (usingThreshold || comparisonsOnBands) && activeMapChip && focusItem && phase !== "ks2"
+                ? {
+                    subject: focusItem.subject,
+                    qualificationType: focusItem.qualificationType,
+                    // Scored every render from the rows already fetched, so a new range
+                    // re-scores the set without fetching again.
+                    rateOf: (rows) => (comparisonsOnBands && bandRange ? bandRate(rows, bandRange)?.rate ?? null : thresholdRate(rows, phase)?.rate ?? null),
+                  }
                 : null
             }
             schoolUrn={schoolUrn}
