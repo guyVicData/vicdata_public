@@ -6,6 +6,8 @@
 // section -- it is the column the cross-column panel mechanism was designed against, so
 // it gets the wireframe's full treatment here: Current as bars or a ranked list, Trend as
 // one focused line with a chip row, % change as every taught subject side by side.
+// (Current panel rework round 1: Current is the number tiles alone now -- its bars and
+// ranked list moved to Context.)
 //
 // Every figure is the school's own real entries, from the same `entries` rows the card
 // already counted before this round -- grouped by period rather than collapsed to the
@@ -28,17 +30,16 @@ import {
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
-import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
-import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, RankListIcon, SchoolIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, SchoolIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
 import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
-import { VerticalBars } from "./VerticalBars";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
 // `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
@@ -103,8 +104,6 @@ export function CandidatesPanels({
   // Context's All subjects reads, one entry per subject as Column 1 counts them.
   schoolSubjects?: { key: string; values: (number | null)[] }[];
 }) {
-  // Snagging round 1 Part 2: the number tiles are the new default view.
-  const [view, setView] = useState<"tiles" | "bars" | "list">("tiles");
   // Step 6: Trend and % change each gain a table beside their chart.
   // "chart" is the indexed chart (the default, as before); "actual" draws the same lines at
   // their real values.
@@ -220,39 +219,24 @@ export function CandidatesPanels({
     }
   }
 
+  // Current panel rework round 1: the tag is the fixed word "Current" and the year follows
+  // it as plain text. Current is the number tiles alone -- no view rail -- since its Bar
+  // chart and Ranked list moved to Context, fed by Context's compare-against set. The
+  // title names the focused subject, the column (currentLabel, "Candidates") and the year.
   const current: PanelRender = {
-    tag: currentLabel
-      ? `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim()
-      : `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
+    tag: "Current",
+    afterTag: latest === null ? undefined : <DataDate>{academicYearLabel(latest)}</DataDate>,
     question,
-    actions: (
-      <>
-        <IconButton label="Number tiles" active={view === "tiles"} onClick={() => setView("tiles")}>{TilesIcon}</IconButton>
-        <IconButton label="Bar chart" active={view === "bars"} onClick={() => setView("bars")}>{VerticalBarsIcon}</IconButton>
-        <IconButton label="Ranked list" active={view === "list"} onClick={() => setView("list")}>{RankListIcon}</IconButton>
-      </>
-    ),
     body: (fullscreen) =>
       currentRows.length === 0 ? (
         <p className="text-sm text-[var(--muted)]">Pick a subject to see its entries.</p>
-      ) : view === "tiles" ? (
-        <NumberTiles main={tilesMain} tiles={tiles} fullscreen={fullscreen} />
-      ) : view === "bars" ? (
-        <VerticalBars
-          bars={currentRows.map((r) => ({ key: r.key, label: r.label, shortLabel: r.shortLabel, value: r.value, colour: colourOf(r.key) }))}
-          measure={measure}
-          fullscreen={fullscreen}
-        />
       ) : (
-        <ol className="flex flex-col gap-1.5 px-0.5 text-[12.5px] text-[var(--muted2)]">
-          {currentRows.map((r, i) => (
-            <li key={r.key}>
-              <span className="tabular-nums">{i + 1}</span>&nbsp;&nbsp;
-              <span className="font-medium text-[var(--fg)]">{r.label}</span> —{" "}
-              {r.value === null ? "no published figure" : `${measure.format(r.value)} candidates`}
-            </li>
-          ))}
-        </ol>
+        <>
+          {focused && latest !== null && (
+            <ViewTitle>{`${focused.label} ${currentLabel ?? "Candidates"}: ${academicYearLabel(latest)}`}</ViewTitle>
+          )}
+          <NumberTiles main={tilesMain} tiles={tiles} fullscreen={fullscreen} />
+        </>
       ),
     summary: biggest && smallest && biggest.key !== smallest.key ? (
       <PanelSummary>
@@ -476,33 +460,15 @@ export function CandidatesPanels({
   // subject. The dashboard renders its own single box for that phase instead.
   if (phase === "ks2") return null;
 
-  // Live review Part 2: every panel names the category it is comparing within, above the
-  // chart or table, whichever view is showing. Only when there IS a comparison (the
-  // category average exists, i.e. more than one subject); a lone subject has nothing to
-  // name, so no title rather than an empty-feeling one.
-  const titled = (panel: PanelRender): PanelRender =>
-    group && categoryLabel
-      ? {
-          ...panel,
-          body: (fullscreen) => (
-            <>
-              <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">Entries in {categoryLabel}</p>
-              {panel.body(fullscreen)}
-            </>
-          ),
-        }
-      : panel;
-
   return (
     <ColumnPanels
       columnId="candidates"
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}
-      // The number tiles name the category in their own rank tile, so they take no title.
-      // Trends titles each of its views itself (ViewTitle); the geography views carry
-      // their own heading, as before.
-      render={{ current: view === "tiles" ? current : titled(current), trend }}
+      // Current titles its one view itself (ViewTitle), as Trends titles each of its views;
+      // the geography views carry their own heading, as before.
+      render={{ current, trend }}
     />
   );
 }

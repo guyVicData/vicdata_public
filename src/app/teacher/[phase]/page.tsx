@@ -1173,9 +1173,11 @@ export default function TeacherPhaseDashboard() {
   // until a range is picked, so both fall back to average point score here (and say so).
   const contextFallsBack = showingResults && (resultsMeasure.id === "counts" || (usingBands && !bandRange));
   const contextMeasure = !showingResults ? ENTRIES_MEASURE : contextFallsBack ? measuresFor(phase)[0] : resultsMeasureShown;
-  // S8: "area" is no longer an option here (Column 1 owns the category comparison now), so
-  // a saved "area" from before reads as the default rather than as a third state.
-  const contextAgainst: CompareAgainstId = readSetting(columns, againstKey("context")) === "selected" ? "selected" : "whole";
+  // Current panel rework round 1: three groups, and "category" (the focused subject's own
+  // subject category) is the default -- nothing saved, or a saved "area" from before S8
+  // (which was this same comparison), reads as it. An explicit All or Selected choice stays.
+  const savedAgainst = readSetting(columns, againstKey("context"));
+  const contextAgainst: CompareAgainstId = savedAgainst === "selected" ? "selected" : savedAgainst === "whole" ? "whole" : "category";
   const contextSelected = readList(columns, chosenKey("context"));
 
 
@@ -1263,6 +1265,9 @@ export default function TeacherPhaseDashboard() {
   const schoolSubjectNames = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
   const contextMembers: string[] = (() => {
     const every = schoolSubjectNames;
+    // Current panel rework round 1: the category is Column 1's own list (candidateItems),
+    // by subject name, as the group totals and averages below address members.
+    if (contextAgainst === "category") return Array.from(new Set(candidateItems.map((i) => i.subject)));
     if (contextAgainst === "selected") {
       const names = new Set(contextOffer.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
       // Snagging round 1 Part 1: the group is self-inclusive (§4.2, above) in this mode too.
@@ -1281,7 +1286,12 @@ export default function TeacherPhaseDashboard() {
 
   // Live review Part B: shown as "All subjects" (the id stays "whole"). This one label feeds
   // the panel tag, the Trend/% change sentences, the benchmark and the donut.
-  const contextGroupLabel = contextAgainst === "selected" ? "Selected subjects" : "All subjects";
+  const contextGroupLabel =
+    contextAgainst === "category" ? focusFamilyLabel ?? "Subject category" : contextAgainst === "selected" ? "Selected subjects" : "All subjects";
+  // Current panel rework round 1: the same group as a title reads it (the brief's own
+  // phrases): the category's name, "all subjects" or "your selected subjects".
+  const contextGroupPhrase =
+    contextAgainst === "category" ? focusFamilyLabel ?? "its subject category" : contextAgainst === "selected" ? "your selected subjects" : "all subjects";
 
   // Two different group figures, and they are not interchangeable:
   //   - the TOTAL, which the donut's share is a share of;
@@ -1342,8 +1352,13 @@ export default function TeacherPhaseDashboard() {
   // selected set (the same contextMembers its group average is built from), plus the
   // focused subject -- a bounded, hand-picked list, drawn like Column 1's category. With
   // "Whole school" they are every subject the school has (round 2 part 5).
-  const contextItems = focusItem
-    ? [
+  // Current panel rework round 1: with "Subject category" the subjects are exactly the list
+  // Column 1 draws -- candidateItems, focused subject first -- not a second derivation.
+  const contextItems = !focusItem
+    ? []
+    : contextAgainst === "category"
+      ? candidateItems
+      : [
         focusItem,
         ...items.filter(
           (i) =>
@@ -1352,8 +1367,7 @@ export default function TeacherPhaseDashboard() {
             comparablePeer(i) &&
             (contextAgainst !== "selected" || contextMembers.includes(i.subject)),
         ),
-      ]
-    : [];
+      ];
   const contextShort = shortLabelsFor(contextItems);
   const contextSeries: SubjectSeries[] = contextItems
     .map((i) => ({
@@ -1904,9 +1918,12 @@ export default function TeacherPhaseDashboard() {
               // table and in fullscreen, with the rail's show/hide legend -- and its card graph
               // is the focused subject against the All subjects average.
               changeScope="individual"
-              cardTrend={contextAgainst === "selected" ? undefined : "focusVsGroup"}
+              // Subject category is a bounded list too, drawn the same way as Selected.
+              cardTrend={contextAgainst === "whole" ? "focusVsGroup" : undefined}
               deltaHeading="vs average"
               rankedTable
+              rankedViews
+              compareAgainstLabel={contextGroupPhrase}
               theme={theme}
               accentHex={accent?.hex ?? null}
               yearControl
@@ -1931,7 +1948,7 @@ export default function TeacherPhaseDashboard() {
                 />
               }
               benchmarkLabel={contextGroupLabel}
-              benchmarkNoun={`the ${contextGroupLabel.toLowerCase()} average`}
+              benchmarkNoun={contextAgainst === "category" ? `the ${contextGroupLabel} average` : `the ${contextGroupLabel.toLowerCase()} average`}
               groups={[{ label: `${contextGroupLabel} average`, values: atContextPeriod(contextGroupAverage) }]}
               donut={{
                 // §4.2: a share of an average point score is not a meaningful percentage,
@@ -1954,9 +1971,11 @@ export default function TeacherPhaseDashboard() {
                 // "students" -- see the round 2 build report.
                 shareOf:
                   contextMeasure.id === "bands"
-                    ? `graded entries in ${contextAgainst === "selected" ? "the subjects you selected" : "all subjects"} at ${schoolName ?? "your school"}`
+                    ? `graded entries in ${contextAgainst === "category" ? contextGroupLabel : contextAgainst === "selected" ? "the subjects you selected" : "all subjects"} at ${schoolName ?? "your school"}`
                     : contextAgainst === "selected"
                     ? `entries in the subjects you selected at ${schoolName ?? "your school"}`
+                    : contextAgainst === "category"
+                    ? `entries in ${contextGroupLabel} at ${schoolName ?? "your school"}`
                     : `all student entries at ${schoolName ?? "your school"}`,
               }}
               questions={{

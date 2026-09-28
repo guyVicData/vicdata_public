@@ -21,6 +21,10 @@
 // third, "Other subjects in <category>", moved to Column 1, which now always reads the
 // focused subject against its own category (S6) -- so offering it here too would have been
 // the same comparison in two places.
+// Current panel rework round 1: it is back, as "Subject category" and the default. Column
+// 1's Current is the number tiles alone now, and its bar chart and ranked list of the
+// category moved here -- so the category is Context's to offer again, read from the same
+// subject list Column 1 draws (the page's candidateItems), not a second derivation.
 // Combined round §4b: the "Selected subjects" checklist moved out of the dropdown into the
 // dashboard's one subject picker (CategorySubjectPicker), in the compact TeacherModal --
 // categories, per-category tick/untick and a global Select all / Deselect all, instead of
@@ -34,7 +38,7 @@ import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherMod
 import { CategorySubjectPicker, type PickerItem } from "./CategorySubjectPicker";
 import type { QualificationFamily } from "@/lib/teacher-view-theme";
 
-export type CompareAgainstId = "whole" | "selected";
+export type CompareAgainstId = "whole" | "selected" | "category";
 
 export function ContextPills({
   against,
@@ -63,7 +67,7 @@ export function ContextPills({
   onSetSelected: (keys: string[]) => void;
 }) {
   // Live review Part B: "All subjects" on screen; the id stays "whole".
-  const againstLabel = against === "selected" ? "Selected subjects" : "All subjects";
+  const againstLabel = against === "selected" ? "Selected subjects" : against === "category" ? "Subject category" : "All subjects";
   const [pickerOpen, setPickerOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const offered = new Set(pickerItems.map((i) => i.key));
@@ -75,6 +79,11 @@ export function ContextPills({
         {(close) => (
           <>
             <MenuHeading>Compare against</MenuHeading>
+            <MenuRow
+              label="Subject category"
+              selected={against === "category"}
+              onClick={() => { onAgainst("category"); close(); }}
+            />
             <MenuRow
               label="All subjects"
               selected={against === "whole"}

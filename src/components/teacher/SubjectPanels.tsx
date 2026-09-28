@@ -35,11 +35,11 @@ import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
-import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
+import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { GradeDistribution, type GradeRow } from "./GradeDistribution";
 import { NON_GRADE_VALUES, bandRate, gradeOrderFrom, type GradeRange } from "@/lib/subject-grades";
 import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
@@ -50,6 +50,8 @@ import { ShareDonut } from "./ShareDonut";
 import { SortTable, nextSort, type SortRow, type SortState } from "./SortTable";
 import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
+import { VerticalBars } from "./VerticalBars";
+import { RankedList } from "./RankedList";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -84,7 +86,6 @@ export function SubjectPanels({
   notes,
   emptyText,
   note,
-  currentLabel,
   changeScope = "all",
   theme = "dark",
   accentHex = null,
@@ -97,6 +98,8 @@ export function SubjectPanels({
   tiles,
   cardTrend,
   gradeBand,
+  rankedViews = false,
+  compareAgainstLabel,
 }: {
   columnId: string;
   periods: number[];
@@ -159,6 +162,8 @@ export function SubjectPanels({
   // "Context 2024/25") rather than the generic "Current", so a panel read on its own --
   // fullscreen, or printed -- still says which card it came from. Absent falls back to
   // the old wording, which is what any caller that has not been given a name wants.
+  // Current panel rework round 1: the tag is "Current" now, so nothing here reads this;
+  // callers keep passing it as the column's name for the per-view titles to come.
   currentLabel?: string;
   // Round 2 §5: which subjects % change draws a bar for. "all" = every subject handed in
   // (Column 1's category); "focus" = the focused subject and the groups only, for Context,
@@ -227,6 +232,15 @@ export function SubjectPanels({
     // distribution's ticks. null = no benchmark to fetch.
     geography: GradeGeographyInput | null;
   };
+  // Current panel rework round 1: Context's Current draws Column 1's old Bar chart
+  // (VerticalBars) and Ranked list in place of the horizontal bars, over whichever subjects
+  // its compare-against pill resolves to, with the bar chart as its default view. Results
+  // does not pass it and keeps its own Bar chart and Sortable table.
+  rankedViews?: boolean;
+  // Current panel rework round 1: the compare-against group as a title reads it -- the
+  // category ("Sciences & Maths"), "all subjects" or "the subjects you selected" -- for
+  // the titles over Context's donut, bar chart, ranked list and table. Absent = no title.
+  compareAgainstLabel?: string;
   trendMap?: {
     profiles: AcademicSchoolProfile[] | null;
     targetUrn: string;
@@ -238,7 +252,8 @@ export function SubjectPanels({
     accentHex: string | null;
   };
 }) {
-  const [view, setView] = useState<"tiles" | "grades" | "donut" | "bar" | "table">(tiles ? "tiles" : donut ? "donut" : "bar");
+  // Current panel rework round 1: Context (rankedViews) opens on its bar chart.
+  const [view, setView] = useState<"tiles" | "grades" | "donut" | "bar" | "list" | "table">(tiles ? "tiles" : donut && !rankedViews ? "donut" : "bar");
   // A ranked table opens in rank order (value, largest first), so its numbers read 1, 2, 3.
   const [sort, setSort] = useState<SortState>(rankedTable ? { key: "value", dir: "desc" } : { key: "delta", dir: "desc" });
   const [yearIdx, setYearIdx] = useState<number | null>(null);
@@ -279,7 +294,7 @@ export function SubjectPanels({
 
   // The donut is Candidates-only, so a measure switch has to fall back rather than leave
   // the panel on a view it can no longer draw.
-  const effectiveView = (view === "donut" && !donut?.enabled) || (view === "tiles" && !tiles) || (view === "grades" && !gradeBand) ? "bar" : view;
+  const effectiveView = (view === "donut" && !donut?.enabled) || (view === "tiles" && !tiles) || (view === "grades" && !gradeBand) || (view === "list" && !rankedViews) ? "bar" : view;
 
   // The source line with the caveat after it -- what every panel's "i" opens.
   const sourceWithNote = (span?: string) => {
@@ -471,22 +486,38 @@ export function SubjectPanels({
     </div>
   ) : undefined;
 
+  // Current panel rework round 1: a title over each of Context's Current views. The donut's
+  // wording is Guy's; the bar chart / ranked list / table one is provisional. On Grade
+  // bands the donut is the group's entries in the range, not the focused subject's.
+  const scopeNounCurrent = measure.id === "entries" ? "Entries" : "Results";
+  const currentTitle: string | null = !compareAgainstLabel
+    ? null
+    : effectiveView === "donut"
+      ? donutShare
+        ? `Entries at ${donutShare.label.toLowerCase()} as a proportion of graded entries in ${compareAgainstLabel}`
+        : `Entries in ${focusedSubject?.label ?? "this subject"} as a proportion of ${compareAgainstLabel}`
+      : effectiveView === "bar" || effectiveView === "list" || effectiveView === "table"
+        ? `${scopeNounCurrent} by subject in ${compareAgainstLabel}`
+        : null;
+
   const current: PanelRender = {
     controls: bandControls,
-    tag:
-      yearControl && realIdx.length > 1 && currentLabel
-        ? currentLabel
-        : currentLabel
-          ? `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim()
-          : `Current — ${latest === null ? "no year" : academicYearLabel(latest)}`,
+    // Current panel rework round 1: the tag is the fixed word "Current" in every column, and
+    // the year follows it as plain text ("Data 2024/25"). currentLabel no longer builds the
+    // tag; it stays a prop as the column's own name for titles.
+    tag: "Current",
     question: questions.current,
     // Round 2 §4: Context's year choice is the same dropdown Trends and % Change use, in
     // its one-year mode, beside the tag -- replacing a prev/next chevron pair whose
-    // usually-disabled left chevron read as a stray "back" button. The year leaves the
-    // tag text, since the menu beside it now says it.
+    // usually-disabled left chevron read as a stray "back" button. It is the year in the
+    // "Data {year}" line.
     afterTag: yearControl && realIdx.length > 1 ? (
-      <FromYearMenu mode="year" periods={realIdx.map((i) => periods[i])} from={latest} onChange={(p) => setYearIdx(periods.indexOf(p))} />
-    ) : undefined,
+      <DataDate>
+        <FromYearMenu mode="year" periods={realIdx.map((i) => periods[i])} from={latest} onChange={(p) => setYearIdx(periods.indexOf(p))} />
+      </DataDate>
+    ) : latest === null ? undefined : (
+      <DataDate>{academicYearLabel(latest)}</DataDate>
+    ),
     actions: (
       <>
         {tiles && <IconButton label="Number tiles" active={effectiveView === "tiles"} onClick={() => setView("tiles")}>{TilesIcon}</IconButton>}
@@ -501,8 +532,9 @@ export function SubjectPanels({
             {DonutIcon}
           </IconButton>
         )}
-        <IconButton label="Bar chart" active={effectiveView === "bar"} onClick={() => setView("bar")}>{HorizontalBarsIcon}</IconButton>
-        <IconButton label="Sortable table" active={effectiveView === "table"} onClick={() => setView("table")}>{RankListIcon}</IconButton>
+        <IconButton label="Bar chart" active={effectiveView === "bar"} onClick={() => setView("bar")}>{rankedViews ? VerticalBarsIcon : HorizontalBarsIcon}</IconButton>
+        {rankedViews && <IconButton label="Ranked list" active={effectiveView === "list"} onClick={() => setView("list")}>{RankListIcon}</IconButton>}
+        <IconButton label="Sortable table" active={effectiveView === "table"} onClick={() => setView("table")}>{rankedViews ? TableIcon : RankListIcon}</IconButton>
       </>
     ),
     body: (fullscreen) =>
@@ -510,6 +542,7 @@ export function SubjectPanels({
         <p className="text-sm text-[var(--muted)]">{emptyText}</p>
       ) : (
         <>
+          {currentTitle && <ViewTitle>{currentTitle}</ViewTitle>}
           {effectiveView === "grades" && gradeBand ? (
             bandOwnTotal > 0 ? (
               <CentredOnTarget watch={`grades:${focusedKey}`}>
@@ -559,6 +592,18 @@ export function SubjectPanels({
                 fullscreen={fullscreen}
               />
             )
+          ) : effectiveView === "bar" && rankedViews ? (
+            // Current panel rework round 1: Column 1's old bar chart, the same component,
+            // over this column's subjects in Current's order and grey ramp.
+            <VerticalBars
+              bars={barRows.map((r) => ({ key: r.s.key, label: r.s.label, shortLabel: r.s.shortLabel, value: r.value, colour: colourFor(r.s) }))}
+              measure={measure}
+              fullscreen={fullscreen}
+            />
+          ) : effectiveView === "list" ? (
+            <CentredOnTarget watch={`list:${focusedKey}:${barRows.map((r) => r.s.key).join(",")}`}>
+              <RankedList rows={barRows.map((r) => ({ key: r.s.key, label: r.s.label, value: r.value }))} measure={measure} focusKey={focusedKey} />
+            </CentredOnTarget>
           ) : effectiveView === "bar" ? (
             // Round 2 §5: with a long list (Context's whole school) the bars scroll inside
             // the panel, starting with the focused subject in view.

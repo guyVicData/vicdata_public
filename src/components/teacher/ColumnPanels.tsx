@@ -151,6 +151,17 @@ export function ColumnPanels({
   );
 }
 
+// Current panel rework round 1: every Current tag is the fixed word "Current", and the year
+// its figures are for sits after it as plain, regular-weight text ("Data 2024/25") -- the
+// panel's afterTag. `children` is the year: a formatted label, or Context's year menu.
+export function DataDate({ children }: { children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-1 text-[13px] font-normal text-[var(--muted2)]">
+      Data {children}
+    </span>
+  );
+}
+
 // The summary strip under a panel's figure -- the wireframe's own grey box. Trend's
 // variant leads with a coloured direction word and arrow; everything else is one
 // sentence. Shared so all four columns phrase their conclusion in the same shape.

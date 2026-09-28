@@ -40,7 +40,7 @@ import {
   type PanelData,
   type PanelId,
 } from "@/lib/teacher-view-panels";
-import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { FromYearMenu } from "./FromYearMenu";
 import { ChangeList, ViewTitle, YearTable, type ChangeRow } from "./SeriesViews";
@@ -116,7 +116,6 @@ export function ComparisonsPanels({
   seriesLoading: profilesLoading,
   emptyText,
   targetName,
-  currentLabel,
   onManageSet,
   threshold,
   rankingSet = null,
@@ -156,6 +155,8 @@ export function ComparisonsPanels({
   targetName: string;
   // S11: the Current tag names what is compared and against whom, e.g. "Candidates at the
   // Nearest 10 Schools 2024/25" -- built by the page from the live set label.
+  // Current panel rework round 1: no longer the tag (that is "Current"); kept as the
+  // column's name for the per-view titles to come.
   currentLabel: string;
   // Part 3: open the comparator chooser -- a set's id to edit it, null for a new set.
   onManageSet?: (setId: string | null) => void;
@@ -308,8 +309,30 @@ export function ComparisonsPanels({
     isTarget: r.isTarget,
   }));
 
+  // Current panel rework round 1: one title over each view (all four wordings provisional).
+  // What each figure is: the chip's subject on the column's measure ("Maths entries"), or
+  // the phase headline with no chip; the set as the Trends titles name it ("the 10
+  // nearest schools").
+  const titleOn = subjectLabel ? `${subjectLabel} ${measure.id === "entries" ? "entries" : measure.label.toLowerCase()}` : headlineLabel;
+  const titleSet = `the ${setLabel.toLowerCase()}`;
+  const currentTitle =
+    view === "tiles" && rankingSet
+      ? // The tiles are on the ranking's own measure, whatever the chip, so they name it.
+        `${targetName}'s rank in ${titleSet}: ${rankingSet.measureName}`
+      : view === "map"
+        ? `${titleOn} by school, on the map`
+        : view === "graph"
+          ? onRankingMeasure
+            ? `${titleOn}: ${targetName} against ${titleSet}'s average`
+            : `${measure.id === "entries" ? "Entries" : "Results"} by school in ${titleSet}`
+          : `Schools ranked by ${titleOn} in ${titleSet}`;
+
+  // Current panel rework round 1: the tag is the fixed word "Current" and the year follows
+  // it as plain text. currentLabel ("Candidates at the 10 Nearest Schools") no longer builds
+  // the tag; the titles above name the set instead.
   const current: PanelRender = {
-    tag: `${currentLabel} ${latest === null ? "" : academicYearLabel(latest)}`.trim(),
+    tag: "Current",
+    afterTag: latest === null ? undefined : <DataDate>{academicYearLabel(latest)}</DataDate>,
     question,
     actions: (
       <>
@@ -334,11 +357,14 @@ export function ComparisonsPanels({
         const avg = (rs.target ? rankingAverageAt(rs.target.period) : null) ?? rs.averageLatest;
         if (avg !== null) tiles.push({ key: "average", icon: AverageIcon, figure: rs.measure.format(avg), detail: "average across this set" });
         return (
+          <>
+          <ViewTitle>{currentTitle}</ViewTitle>
           <NumberTiles
             main={rs.target ? { figure: rs.measure.format(rs.target.value), label: `${targetName} ${rs.measureName} in ${academicYearLabel(rs.target.period)}` } : null}
             tiles={tiles}
             fullscreen={fullscreen}
           />
+          </>
         );
       }
       if (schools.length === 0) return <p className="text-sm text-[var(--muted)]">{emptyText}</p>;
@@ -350,6 +376,7 @@ export function ComparisonsPanels({
           // does. (Map is now the default view on screen, Column 3 round Part 1.) On the
           // card it fills whatever height the panel leaves it rather than a fixed 288px.
           <div className={fullscreen ? "print:hidden" : "flex min-h-0 flex-1 flex-col print:hidden"}>
+            <ViewTitle>{currentTitle}</ViewTitle>
             <RankingsMap
               profiles={mapProfiles}
               targetUrn={schoolUrn}
@@ -378,6 +405,8 @@ export function ComparisonsPanels({
         // Part 4: the school against its set's average, not against the sample's schools.
         const avg = rankingAverageAt(latest);
         return (
+          <>
+          <ViewTitle>{currentTitle}</ViewTitle>
           <ViewChart
             layout="row"
             unit=""
@@ -390,10 +419,13 @@ export function ComparisonsPanels({
               ],
             }}
           />
+          </>
         );
       }
       if (view === "graph") {
         return (
+          <>
+          <ViewTitle>{currentTitle}</ViewTitle>
           <ViewChart
             layout="row"
             unit=""
@@ -411,12 +443,15 @@ export function ComparisonsPanels({
               })),
             }}
           />
+          </>
         );
       }
+      // Round 8 §4: a comparator set longer than the panel scrolls within its own box.
+      // The panel's height is fixed now, so without this a 10-school set would either
+      // overflow it or push the footer off the bottom.
       return (
-        // Round 8 §4: a comparator set longer than the panel scrolls within its own box.
-        // The panel's height is fixed now, so without this a 10-school set would either
-        // overflow it or push the footer off the bottom.
+        <>
+        <ViewTitle>{currentTitle}</ViewTitle>
         <CentredOnTarget watch={rankingRows.map((r) => r.key).join(",")}>
           <SchoolRankingTable
             rows={rankingRows}
@@ -425,6 +460,7 @@ export function ComparisonsPanels({
             fullscreen={fullscreen}
           />
         </CentredOnTarget>
+        </>
       );
     },
     summary: seriesLoading ? undefined : shownRank ? (
