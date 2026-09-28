@@ -15,7 +15,7 @@
 //
 // Colours come from the caller (greys in Current's order, the focus in the accent), so
 // the same subject is the same colour in every view.
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
 import {
@@ -115,12 +115,20 @@ export function MultiTrend({
 // so every indexed-to-100 chart explains itself the same way.
 export function TrendScaleTitle({ view, from, noun }: { view: "indexed" | "actual"; from: number | null; noun: string }) {
   return (
-    <p className="mb-1 shrink-0 text-[12px] font-semibold leading-snug text-[var(--muted2)]">
+    <ViewTitle>
       {view === "indexed"
         ? `Change since ${from === null ? "the first year shown" : academicYearLabel(from)}: each line starts at 100 (no change); 110 = 10% more ${noun}, 90 = 10% fewer.`
         : `${noun.charAt(0).toUpperCase() + noun.slice(1)} each year, real numbers: one scale for every subject, so small ones sit low.`}
-    </p>
+    </ViewTitle>
   );
+}
+
+// Trends row merge round: the one title line every view in a Trends panel carries, directly
+// above its chart, table, list or map -- TrendScaleTitle's own style, generalised. With
+// Trend's and % change's views behind one rail, the title is what tells a screenshot of the
+// body alone which view it is.
+export function ViewTitle({ children }: { children: ReactNode }) {
+  return <p className="mb-1 shrink-0 text-[12px] font-semibold leading-snug text-[var(--muted2)]">{children}</p>;
 }
 
 // ----------------------------------------------------------------- ChangeList

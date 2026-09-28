@@ -43,7 +43,7 @@ import {
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { FromYearMenu } from "./FromYearMenu";
-import { ChangeList, YearTable, type ChangeRow } from "./SeriesViews";
+import { ChangeList, ViewTitle, YearTable, type ChangeRow } from "./SeriesViews";
 import { DIRECTION_COLOUR, changeOver } from "@/lib/teacher-view-trend-styles";
 import { TrendLineToggle } from "./PanelFooter";
 import { AverageIcon, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
@@ -225,9 +225,16 @@ export function ComparisonsPanels({
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
   // Column 3 round Part 3: a table view beside Trend's chart.
-  const [trendView, setTrendView] = useState<"chart" | "table" | "map">("chart");
+  // Trends row merge round: Trend's and % change's views share one Trends panel, so one view
+  // state spans both halves -- Trend's (chart, table, map) then % change's (ranked bars,
+  // table, map).
+  const [trendsView, setTrendsView] = useState<"chart" | "table" | "map" | "changeChart" | "changeTable" | "changeMap">("chart");
+  const isChange = trendsView === "changeChart" || trendsView === "changeTable" || trendsView === "changeMap";
+  const trendView: "chart" | "table" | "map" = isChange ? "chart" : (trendsView as "chart" | "table" | "map");
+  const setTrendView = (v: "chart" | "table" | "map") => setTrendsView(v);
   // Part 4: and one beside % change's bars.
-  const [changeView, setChangeView] = useState<"chart" | "table" | "map">("chart");
+  const changeView: "chart" | "table" | "map" = trendsView === "changeTable" ? "table" : trendsView === "changeMap" ? "map" : "chart";
+  const setChangeView = (v: "chart" | "table" | "map") => setTrendsView(v === "table" ? "changeTable" : v === "map" ? "changeMap" : "changeChart");
 
   const versusRef = useDismiss(versusOpen, () => setVersusOpen(false));
 
@@ -572,7 +579,11 @@ export function ComparisonsPanels({
   const trendMapOk = !rankingSet && !!schoolUrn && trendTable.periods.length >= 2;
   const trendShows = trendView === "map" && trendMapOk ? "map" : trendView === "table" || !hasTrendLine ? "table" : "chart";
 
-  const trend: PanelRender = {
+  // The one title line over every view (ViewTitle): what is compared, over which schools,
+  // in which shape -- so a screenshot of the body alone says which view it is.
+  const setNoun = setLabel.toLowerCase();
+  const trendFrom = trendTable.periods.length ? academicYearLabel(trendTable.periods[0]) : "the first year";
+  const trendHalf: PanelRender = {
     // S11: one uniform title, with the span's start as its own dropdown beside it.
     tag: "Trends",
     afterTag: <FromYearMenu periods={realPeriods} from={trendData.periods[0] ?? null} onChange={setTrendStart} />,
@@ -590,18 +601,20 @@ export function ComparisonsPanels({
       </span>
     ) : undefined,
     footerLead: hasTrendLine ? (
-      <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={trendShows !== "chart"} />
+      <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={isChange || trendShows !== "chart"} />
     ) : undefined,
     // Column 3 round Part 3: a table beside the chart, as Columns 1 and 2 have -- only once
     // there is a line to show; before that the table is the one view (with the map
     // beside it where there is one), so no Chart button.
-    actions: hasTrendLine || trendMapOk ? (
+    // Trends row merge round: always a rail now -- with % change's views beside Trend's, the
+    // Trend table needs its own button to come back to, even when it is Trend's only view.
+    actions: (
       <>
-        {hasTrendLine && <IconButton label="Chart" active={trendShows === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>}
-        <IconButton label="Table" active={trendShows === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
-        {trendMapOk && <IconButton label="Map" active={trendShows === "map"} onClick={() => setTrendView("map")}>{MapPinIcon}</IconButton>}
+        {hasTrendLine && <IconButton label="Chart" active={!isChange && trendShows === "chart"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>}
+        <IconButton label="Trend table" active={!isChange && trendShows === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+        {trendMapOk && <IconButton label="Trend map" active={!isChange && trendShows === "map"} onClick={() => setTrendView("map")}>{MapPinIcon}</IconButton>}
       </>
-    ) : undefined,
+    ),
     suggestFullscreen: trendShows === "map",
 
     body: (fullscreen) =>
@@ -610,20 +623,29 @@ export function ComparisonsPanels({
       ) : trendShows === "map" ? (
         // Each school coloured by its absolute change over this panel's span (red fell,
         // orange about level, green rose), scaled to this set's own real range.
-        changeMap(fullscreen, "trend_absolute", {
-          byUrn: changeMapFor(trendTable, (v) => changeOver(v)?.delta ?? null),
-          format: measure.formatDelta,
-          label: `change since ${trendTable.periods.length ? academicYearLabel(trendTable.periods[0]) : "the first year"}`,
-        })
+        <>
+          <ViewTitle>Change in {comparedOn} since {trendFrom}, coloured by school</ViewTitle>
+          {changeMap(fullscreen, "trend_absolute", {
+            byUrn: changeMapFor(trendTable, (v) => changeOver(v)?.delta ?? null),
+            format: measure.formatDelta,
+            label: `change since ${trendFrom}`,
+          })}
+        </>
       ) : trendShows === "table" ? (
         // Every school in the set, ranked on the latest year (sortable), the school's own
         // row scrolled into view. Also the only view while the span is too short for a
         // line, whatever trendView was left on.
-        <CentredOnTarget watch={`trend-table:${trendTable.periods.join(",")}:${trendTable.series.length}`}>
-          <YearTable data={trendTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" />
-        </CentredOnTarget>
+        <>
+          <ViewTitle>Every school in the {setNoun}: {comparedOn}, year by year</ViewTitle>
+          <CentredOnTarget watch={`trend-table:${trendTable.periods.join(",")}:${trendTable.series.length}`}>
+            <YearTable data={trendTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" />
+          </CentredOnTarget>
+        </>
       ) : (
-        <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} focusKey="own" />
+        <>
+          <ViewTitle>This school&rsquo;s {comparedOn} against {versusLabel.charAt(0).toLowerCase() + versusLabel.slice(1)}, year by year</ViewTitle>
+          <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} focusKey="own" />
+        </>
       ),
     summary: seriesLoading ? undefined : trendSaid ? (
       <PanelSummary lead={`${DIRECTION_ARROW[trendSaid.direction]} ${DIRECTION_WORD[trendSaid.direction]}:`} leadColour={DIRECTION_COLOUR[trendSaid.direction]}>
@@ -655,7 +677,7 @@ export function ComparisonsPanels({
   const changeMapOk = !rankingSet && !!schoolUrn && changeTable.periods.length >= 2;
   const changeShows = changeView === "map" && !changeMapOk ? "chart" : changeView;
 
-  const change: PanelRender = {
+  const changeHalf: PanelRender = {
     tag: "% Change",
     afterTag: <FromYearMenu periods={realPeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: "How much has this school moved, against its comparators?",
@@ -663,9 +685,9 @@ export function ComparisonsPanels({
     // change table (ranked by change, bare rank first, no sorting).
     actions: (
       <>
-        <IconButton label="Ranked bars" active={changeShows === "chart"} onClick={() => setChangeView("chart")}>{HorizontalBarsIcon}</IconButton>
-        <IconButton label="Table" active={changeShows === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
-        {changeMapOk && <IconButton label="Map" active={changeShows === "map"} onClick={() => setChangeView("map")}>{MapPinIcon}</IconButton>}
+        <IconButton label="Ranked bars" active={isChange && changeShows === "chart"} onClick={() => setChangeView("chart")}>{HorizontalBarsIcon}</IconButton>
+        <IconButton label="Change table" active={isChange && changeShows === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
+        {changeMapOk && <IconButton label="Change map" active={isChange && changeShows === "map"} onClick={() => setChangeView("map")}>{MapPinIcon}</IconButton>}
       </>
     ),
     suggestFullscreen: changeShows === "map",
@@ -675,17 +697,26 @@ export function ComparisonsPanels({
       ) : changeShows === "map" ? (
         // The map that was Current's "Trends" mode, here on the panel it is about: each
         // school's % change over this panel's span, the same figures as the ranked bars.
-        changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTable, percentChange), format: signedPct, label: `% change since ${changeSince}` })
+        <>
+          <ViewTitle>% change in {comparedOn} since {changeSince}, coloured by school</ViewTitle>
+          {changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTable, percentChange), format: signedPct, label: `% change since ${changeSince}` })}
+        </>
       ) : changeShows === "table" ? (
-        <CentredOnTarget watch={`change-table:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
-          <YearTable data={changeTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" leadingRank />
-        </CentredOnTarget>
+        <>
+          <ViewTitle>Every school in the {setNoun}: {changeSince} against the latest year, ranked by change</ViewTitle>
+          <CentredOnTarget watch={`change-table:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
+            <YearTable data={changeTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" leadingRank />
+          </CentredOnTarget>
+        </>
       ) : (
         // Option H, as Candidates and Context draw their % change: every school ranked by
         // its change, the school itself picked out, the set's average a dashed line.
-        <CentredOnTarget watch={`change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
-          <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averagePct }} />
-        </CentredOnTarget>
+        <>
+          <ViewTitle>% change in {comparedOn} since {changeSince}, ranked against the {setNoun}</ViewTitle>
+          <CentredOnTarget watch={`change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
+            <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averagePct }} />
+          </CentredOnTarget>
+        </>
       ),
     summary:
       seriesLoading ? undefined : ownPct === null ? (
@@ -700,6 +731,28 @@ export function ComparisonsPanels({
       ),
     source: source(spanLabel(changeData.periods)),
     headline: seriesLoading ? undefined : ownPct === null || ownPct === undefined ? undefined : `${ownPct >= 0 ? "+" : "−"}${Math.abs(Math.round(ownPct))}%`,
+  };
+
+  // Trends row merge round: the one Trends panel -- Trend's views then % change's in one
+  // rail. The "From" menu, question, summary, source and full-screen invitation follow the
+  // half the view on screen belongs to; the "vs:" pill belongs to Trend's chart, so it
+  // shows only on Trend's views. The tag, direction flag, Trend-line toggle and collapsed
+  // figure are Trend's.
+  const trend: PanelRender = {
+    ...trendHalf,
+    afterTag: isChange ? changeHalf.afterTag : trendHalf.afterTag,
+    question: isChange ? changeHalf.question : trendHalf.question,
+    controls: isChange ? undefined : trendHalf.controls,
+    actions: (
+      <>
+        {trendHalf.actions}
+        {changeHalf.actions}
+      </>
+    ),
+    suggestFullscreen: isChange ? changeHalf.suggestFullscreen : trendHalf.suggestFullscreen,
+    body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
+    summary: isChange ? changeHalf.summary : trendHalf.summary,
+    source: isChange ? changeHalf.source : trendHalf.source,
   };
 
   // On a rate, a school that publishes no grades for the subject drops out of the lists as
@@ -754,7 +807,7 @@ export function ComparisonsPanels({
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }
-      render={unavailableNote ? { current: notAvailable(current), trend: notAvailable(trend), change: notAvailable(change) } : { current, trend, change }}
+      render={unavailableNote ? { current: notAvailable(current), trend: notAvailable(trend) } : { current, trend }}
     />
   );
 }

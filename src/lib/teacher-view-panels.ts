@@ -14,10 +14,14 @@ import type { TeacherPhase } from "./teacher-view-phases";
 
 // ---------------------------------------------------------------- the panels
 
-export type PanelId = "current" | "trend" | "change";
+// Trends row merge round (Guy's two-row reorg): Trend and % change are one "Trends" panel
+// now -- every table, chart, list and map from both behind one view rail -- so a column has
+// two panels, Current above Trends. A saved "change" id (an old open % change panel) is
+// simply dropped by panelsFrom's filter; that panel's views now live in "trend".
+export type PanelId = "current" | "trend";
 
 // Render order on the card -- the wireframe's own order (Main.dc.html), not alphabetical.
-export const PANEL_ORDER: readonly PanelId[] = ["current", "trend", "change"] as const;
+export const PANEL_ORDER: readonly PanelId[] = ["current", "trend"] as const;
 
 // Content round S10: every column always has all three panels, each OPEN or collapsed to a
 // header bar ("so teacher builds complexity"). The accordion round made them a standard

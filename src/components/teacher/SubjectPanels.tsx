@@ -32,7 +32,7 @@ import {
 import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
-import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
@@ -248,13 +248,20 @@ export function SubjectPanels({
   // Steps 9-10: Context's Trend and % change gain a table beside their chart.
   // "chart" is the default chart -- indexed for a headcount measure; "actual" (headcounts
   // only) the same lines at their real values.
-  const [trendViewChosen, setTrendView] = useState<"chart" | "actual" | "table" | "map">("chart");
+  // Trends row merge round: Trend's and % change's views share one Trends panel, so one view
+  // state spans both halves -- Trend's (chart, actual, table, map) then % change's
+  // (ranked change or the geography chart, and its table).
+  const [trendsView, setTrendsView] = useState<"chart" | "actual" | "table" | "map" | "changeChart" | "changeTable">("chart");
+  const isChange = trendsView === "changeChart" || trendsView === "changeTable";
+  const trendViewChosen = isChange ? null : trendsView;
+  const setTrendView = (v: "chart" | "actual" | "table" | "map") => setTrendsView(v);
   // A Map choice falls back to the chart when the focus moves to a subject with no map.
   const trendView = trendViewChosen === "map" && !trendMap ? "chart" : trendViewChosen;
   // Trend map/legend round Part 1: the subjects the fullscreen legend has switched off,
   // stamped with the focus and scope they were chosen under (hiddenKeys, below, reads it).
   const [hidden, setHidden] = useState<{ scope: string; keys: Set<string> }>({ scope: "", keys: new Set() });
-  const [changeView, setChangeView] = useState<"chart" | "table">("chart");
+  const changeView: "chart" | "table" = trendsView === "changeTable" ? "table" : "chart";
+  const setChangeView = (v: "chart" | "table") => setTrendsView(v === "table" ? "changeTable" : "changeChart");
   const geo = useSubjectGeography(geography);
   // Grade bands: England's per-grade rows for the focused subject, every year, one fetch.
   const gradeGeo = useSubjectGradeGeography(gradeBand?.geography ?? null);
@@ -706,7 +713,19 @@ export function SubjectPanels({
   // Whether this panel's Trend is an index (a headcount measure: Context on Candidates);
   // Results' points and rates never are.
   const indexedTrend = shouldIndex(measure.aggregate);
-  const trend: PanelRender = {
+  // Trends row merge round: the one title line over every view (ViewTitle) -- the scope
+  // (Results' category, as Candidates names its own: "Results in Humanities & Social
+  // Sciences"; Context's group: "Entries in all subjects") plus the view's shape, so each
+  // view reads as itself with the rail out of sight.
+  const scopeNoun = measure.id === "entries" ? "Entries" : "Results";
+  const scope = subjects.length > 1
+    ? categoryLabel
+      ? `${scopeNoun} in ${categoryLabel}`
+      : benchmarkLabel && benchmarkLabel !== "National"
+        ? `${scopeNoun} in ${benchmarkLabel.toLowerCase()}`
+        : null
+    : null;
+  const trendHalf: PanelRender = {
     // S11: one uniform title, with the span's start as its own dropdown beside it.
     tag: "Trends",
     afterTag: <FromYearMenu periods={trendPeriods} from={trendData.periods[0] ?? null} onChange={setTrendStart} />,
@@ -722,7 +741,7 @@ export function SubjectPanels({
       <TrendLineToggle
         on={showFit}
         onToggle={() => setShowFit(!showFit)}
-        disabled={redesigned ? trendView === "table" || trendView === "map" || !multiTrendHasLine(trendData) : trendChartKind(trendData) === "bars"}
+        disabled={redesigned ? trendView === null || trendView === "table" || trendView === "map" || !multiTrendHasLine(trendData) : trendView === null || trendChartKind(trendData) === "bars"}
       />
     ),
     actions: redesigned ? (
@@ -732,23 +751,30 @@ export function SubjectPanels({
         <>
           <IconButton label="Indexed" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{IndexedLineIcon}</IconButton>
           <IconButton label="Actual" active={trendView === "actual"} disabled={!multiTrendHasLine(trendData)} onClick={() => setTrendView("actual")}>{TrendLineIcon}</IconButton>
-          <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+          <IconButton label="Trend table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
           {trendMap && <IconButton label="Map" active={trendView === "map"} onClick={() => setTrendView("map")}>{MapPinIcon}</IconButton>}
         </>
       ) : (
         <>
           <IconButton label="Chart" active={trendView === "chart" || trendView === "actual"} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
-          <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+          <IconButton label="Trend table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
           {trendMap && <IconButton label="Map" active={trendView === "map"} onClick={() => setTrendView("map")}>{MapPinIcon}</IconButton>}
         </>
       )
-    ) : undefined,
-    legend: railLegend && trendView !== "map" ? (
+    ) : (
+      // The classic path (changeScope "all", no caller today) had no rail: with two views
+      // in one panel it needs one to reach the second.
+      <IconButton label="Trend chart" active={trendView !== null} onClick={() => setTrendView("chart")}>{TrendLineIcon}</IconButton>
+    ),
+    legend: railLegend && trendView !== null && trendView !== "map" ? (
       <SubjectsShown series={trendData.series} focusKey={focusedKey} hidden={hiddenKeys} onToggle={toggleHidden} />
     ) : undefined,
     body: (fullscreen) =>
       !redesigned ? (
-        <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
+        <>
+          {scope && <ViewTitle>{scope}, year by year</ViewTitle>}
+          <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
+        </>
       ) : trendView === "map" && trendMap ? (
         // Part 3: the same map as Comparisons', mounted the same way -- dense on the card,
         // the full legend stack in fullscreen -- but on the focused subject alone. The
@@ -757,6 +783,9 @@ export function SubjectPanels({
         // Fullscreen fills the chart's own flex area rather than Comparisons' fixed 70vh,
         // which overflowed it here and covered the summary line beneath.
         <div className="flex min-h-0 flex-1 flex-col print:hidden">
+          {/* What the map plots: the focused subject at each comparator school (the map's
+              own Grade band / Trends toggle picks the colour), not a change figure. */}
+          <ViewTitle>{trendMap.subjectLabel} at each comparator school, on the map</ViewTitle>
           <RankingsMap
             profiles={trendMap.profiles}
             targetUrn={trendMap.targetUrn}
@@ -774,16 +803,22 @@ export function SubjectPanels({
       ) : trendView === "table" ? (
         // Every subject's row, on the card and in fullscreen (the card's list scrolls,
         // starting at the focused row).
-        <CentredOnTarget watch={`trend-table:${focusedKey}:${trendData.periods.join(",")}`}>
-          <YearTable
-            data={trendShown(fullscreen)}
-            measure={measure}
-            focusKey={focusedKey}
-            fullscreen={fullscreen}
-          />
-        </CentredOnTarget>
+        <>
+          <ViewTitle>{scope ? `${scope}, year by year` : `${focusedSubject?.label ?? scopeNoun}, year by year`}</ViewTitle>
+          <CentredOnTarget watch={`trend-table:${focusedKey}:${trendData.periods.join(",")}`}>
+            <YearTable
+              data={trendShown(fullscreen)}
+              measure={measure}
+              focusKey={focusedKey}
+              fullscreen={fullscreen}
+            />
+          </CentredOnTarget>
+        </>
       ) : (
         <>
+          {/* The indexed and actual charts keep TrendScaleTitle's own sentence; the scope
+              line above it names what the lines are (a points chart has only this line). */}
+          {scope ? <ViewTitle>{indexedTrend ? scope : `${scope}: each subject's line`}</ViewTitle> : !indexedTrend && <ViewTitle>{focusedSubject?.label ?? scopeNoun}, each year</ViewTitle>}
           {indexedTrend && multiTrendHasLine(trendData) && (
             <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}
@@ -842,22 +877,27 @@ export function SubjectPanels({
   const worstChange = rankedChange[rankedChange.length - 1];
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
 
-  const change: PanelRender = {
+  const changeHalf: PanelRender = {
     tag: "% Change",
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: geography ? `How has ${geography.label} moved, against its LA, region and England?` : questions.change,
     actions: redesigned ? (
       <>
         {/* With the geography comparison the chart is a line chart, so its icon says so. */}
-        <IconButton label={geography ? "Chart" : "Ranked change"} active={changeView === "chart"} onClick={() => setChangeView("chart")}>
+        <IconButton label={geography ? "Area chart" : "Ranked change"} active={isChange && changeView === "chart"} onClick={() => setChangeView("chart")}>
           {geography ? TrendLineIcon : HorizontalBarsIcon}
         </IconButton>
-        <IconButton label="Table" active={changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
+        <IconButton label="Change table" active={isChange && changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
       </>
-    ) : undefined,
+    ) : (
+      <IconButton label="Change chart" active={isChange} onClick={() => setChangeView("chart")}>{HorizontalBarsIcon}</IconButton>
+    ),
     body: (fullscreen) =>
       !redesigned ? (
-        <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+        <>
+          <ViewTitle>{scope ? `${scope}: % change since ${changeSince}` : `% change since ${changeSince}`}</ViewTitle>
+          <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+        </>
       ) : geography ? (
         <GeographyView
           geography={geography}
@@ -872,18 +912,25 @@ export function SubjectPanels({
           fullscreen={fullscreen}
         />
       ) : changeView === "table" ? (
-        <CentredOnTarget watch={`change-table:${focusedKey}:${changeData.periods.join(",")}`}>
-          <YearTable
-            data={{ periods: changeData.periods, series: changeData.series.filter((x) => !x.key.startsWith("group-")) }}
-            measure={measure}
-            focusKey={focusedKey}
-            fullscreen={fullscreen}
-            // Live review Part E: ranked by change, bare rank first, no sorting.
-            leadingRank
-          />
-        </CentredOnTarget>
+        <>
+          <ViewTitle>
+            {scope ? `${scope}: ${changeSince} against the latest year, ranked by change` : `${scopeNoun} by year, since ${changeSince}`}
+          </ViewTitle>
+          <CentredOnTarget watch={`change-table:${focusedKey}:${changeData.periods.join(",")}`}>
+            <YearTable
+              data={{ periods: changeData.periods, series: changeData.series.filter((x) => !x.key.startsWith("group-")) }}
+              measure={measure}
+              focusKey={focusedKey}
+              fullscreen={fullscreen}
+              // Live review Part E: ranked by change, bare rank first, no sorting.
+              leadingRank
+            />
+          </CentredOnTarget>
+        </>
       ) : (
         // Option H over every subject -- a list, so twenty rows just scroll.
+        <>
+        <ViewTitle>{scope ? `${scope}: % change since ${changeSince}, ranked` : `${scopeNoun}: % change since ${changeSince}`}</ViewTitle>
         <CentredOnTarget watch={`change-list:${focusedKey}:${changeData.periods.join(",")}`}>
           <ChangeList
             rows={changeBars.filter((b) => !b.key.startsWith("group-")).map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.percent }))}
@@ -895,6 +942,7 @@ export function SubjectPanels({
             }
           />
         </CentredOnTarget>
+        </>
       ),
     summary:
       bestChange && worstChange && bestChange.key !== worstChange.key ? (
@@ -913,6 +961,25 @@ export function SubjectPanels({
       const p = changeBars.find((b) => b.key === focusedSubject?.key)?.percent ?? null;
       return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;
     })(),
+  };
+
+  // Trends row merge round: the one Trends panel -- Trend's views then % change's in one
+  // rail; the "From" menu, question, summary and source follow the half the view on screen
+  // belongs to, so neither panel's sentences are lost. The tag, direction flag, Trend-line
+  // toggle, legend and collapsed figure are Trend's.
+  const trend: PanelRender = {
+    ...trendHalf,
+    afterTag: isChange ? changeHalf.afterTag : trendHalf.afterTag,
+    question: isChange ? changeHalf.question : trendHalf.question,
+    actions: (
+      <>
+        {trendHalf.actions}
+        {changeHalf.actions}
+      </>
+    ),
+    body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
+    summary: isChange ? changeHalf.summary : trendHalf.summary,
+    source: isChange ? changeHalf.source : trendHalf.source,
   };
 
   return (
@@ -941,7 +1008,6 @@ export function SubjectPanels({
               }
             : current,
         trend,
-        change,
       }}
     />
   );

@@ -22,8 +22,8 @@ import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teache
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { GradeDistribution, type GradeRow } from "./GradeDistribution";
-import { Pill } from "./PanelIcons";
-import { YearTable } from "./SeriesViews";
+import { GradesIcon, IconButton, Pill, TableIcon } from "./PanelIcons";
+import { ViewTitle, YearTable } from "./SeriesViews";
 
 type OwnRow = { period: number; grade: string; entries: number };
 
@@ -59,6 +59,10 @@ export function GradeCountsPanels({
   const earlier = periods.slice(0, -1);
   const [compareFrom, setCompareFrom] = useState<number | null>(null);
   const [changeFrom, setChangeFrom] = useState<number | null>(null);
+  // Trends row merge round: this year's spread against an earlier year, and each grade's
+  // change, are two views of one Trends panel.
+  const [trendsView, setTrendsView] = useState<"spread" | "changeTable">("spread");
+  const isChange = trendsView === "changeTable";
   const cmpYear = compareFrom !== null && earlier.includes(compareFrom) ? compareFrom : earlier[earlier.length - 1] ?? null;
   const chgYear = changeFrom !== null && earlier.includes(changeFrom) ? changeFrom : earlier[0] ?? null;
 
@@ -134,7 +138,7 @@ export function GradeCountsPanels({
     headline: ownTotal > 0 ? ownTotal.toLocaleString() : undefined,
   };
 
-  const trend: PanelRender = {
+  const trendHalf: PanelRender = {
     tag: "Trends",
     afterTag: earlier.length ? <FromYearMenu mode="year" periods={earlier} from={cmpYear} onChange={setCompareFrom} /> : undefined,
     question: `How has ${subjectLabel}'s spread of grades moved?`,
@@ -142,6 +146,8 @@ export function GradeCountsPanels({
       cmpYear === null || ownTotal === 0 ? (
         <p className="text-sm text-[var(--muted)]">Only one year of published grades so far, so there is no earlier spread to compare.</p>
       ) : (
+        <>
+        <ViewTitle>{subjectLabel}&rsquo;s spread of grades: {yearText} against {academicYearLabel(cmpYear)}, grade by grade</ViewTitle>
         <div className="min-h-0 flex-1 overflow-y-auto">
         <GradeDistribution
           rows={rowsFor(true)}
@@ -155,6 +161,7 @@ export function GradeCountsPanels({
           fullscreen={fullscreen}
         />
         </div>
+        </>
       ),
     summary: cmpYear === null ? oneYearOnly : undefined,
     source: source(cmpYear === null ? yearText : `${academicYearLabel(cmpYear)}–${yearText}`),
@@ -170,7 +177,7 @@ export function GradeCountsPanels({
       values: chgYear === null || latest === null ? [] : [countAt(inYear(graded, chgYear), g), countAt(own, g)],
     })),
   };
-  const change: PanelRender = {
+  const changeHalf: PanelRender = {
     tag: "% Change",
     afterTag: earlier.length ? <FromYearMenu periods={[...earlier, ...(latest === null ? [] : [latest])]} from={chgYear} onChange={setChangeFrom} /> : undefined,
     question: `Which of ${subjectLabel}'s grades have moved most?`,
@@ -178,11 +185,33 @@ export function GradeCountsPanels({
       chgYear === null ? (
         <p className="text-sm text-[var(--muted)]">Only one year of published grades so far, so there is nothing to measure a change against.</p>
       ) : (
-        <YearTable data={changeData} measure={ENTRIES_MEASURE} focusKey={null} fullscreen={fullscreen} nameHeading="Grade" showRank={false} />
+        <>
+          <ViewTitle>
+            {subjectLabel}&rsquo;s entries at each grade: {academicYearLabel(chgYear)} against {yearText}, with the change
+          </ViewTitle>
+          <YearTable data={changeData} measure={ENTRIES_MEASURE} focusKey={null} fullscreen={fullscreen} nameHeading="Grade" showRank={false} />
+        </>
       ),
     summary: chgYear === null ? oneYearOnly : undefined,
     source: source(chgYear === null ? yearText : `${academicYearLabel(chgYear)}–${yearText}`),
   };
 
-  return <ColumnPanels columnId={columnId} panels={panels} onPanelsChange={onPanelsChange} notes={notes} controls={controls} render={{ current, trend, change }} />;
+  // The one Trends panel: the spread comparison then the change table, each half's "From"
+  // menu, question, summary and source following the view on screen.
+  const trend: PanelRender = {
+    ...trendHalf,
+    afterTag: isChange ? changeHalf.afterTag : trendHalf.afterTag,
+    question: isChange ? changeHalf.question : trendHalf.question,
+    actions: (
+      <>
+        <IconButton label="Spread by year" active={!isChange} onClick={() => setTrendsView("spread")}>{GradesIcon}</IconButton>
+        <IconButton label="Change table" active={isChange} onClick={() => setTrendsView("changeTable")}>{TableIcon}</IconButton>
+      </>
+    ),
+    body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
+    summary: isChange ? changeHalf.summary : trendHalf.summary,
+    source: isChange ? changeHalf.source : trendHalf.source,
+  };
+
+  return <ColumnPanels columnId={columnId} panels={panels} onPanelsChange={onPanelsChange} notes={notes} controls={controls} render={{ current, trend }} />;
 }

@@ -4,10 +4,11 @@
 // its Add/remove pair with an open/shut toggle per panel.
 //
 // Rules this component owns, so no column can implement them differently:
-//   1. PANEL_ORDER is the render order, and all three panels are always there -- there is
-//      nothing to add back, so there is no "+ Add" and no remove "x".
+//   1. PANEL_ORDER is the render order, and every panel is always there -- there is
+//      nothing to add back, so there is no "+ Add" and no remove "x". Two since the Trends
+//      row merge round: Current, then Trends (Trend's and % change's views in one rail).
 //   2. A standard accordion (accordion round, revising S10's independent toggles):
-//      opening a panel closes the other two, and closing the open one leaves all three
+//      opening a panel closes the other, and closing the open one leaves both
 //      collapsed. The one open panel gets the room -- see PANEL_HEIGHT. A collapsed panel
 //      is a one-line header bar carrying the panel's own headline figure, not a bare title.
 //   3. The open set is what the page persists, under the key the present set used to use
@@ -22,7 +23,7 @@ import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
 
 // What each panel is called in its toggle's label.
-const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends", change: "% change" };
+const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
 
 // Round 8 §6: one private note per person per panel. The page owns the school and the
 // Supabase client, so it supplies the reader and the writer and this only routes them.

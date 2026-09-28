@@ -35,7 +35,7 @@ import { type ChangeBar } from "./ChangeChart";
 import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, RankListIcon, SchoolIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { ChangeList, MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { VerticalBars } from "./VerticalBars";
@@ -108,8 +108,15 @@ export function CandidatesPanels({
   // Step 6: Trend and % change each gain a table beside their chart.
   // "chart" is the indexed chart (the default, as before); "actual" draws the same lines at
   // their real values.
-  const [trendView, setTrendView] = useState<"chart" | "actual" | "table">("chart");
-  const [changeView, setChangeView] = useState<"chart" | "table">("chart");
+  // Trends row merge round: Trend's and % change's views are one Trends panel, so one view
+  // state spans both halves -- the Trend half (indexed chart, actual chart, table) then the
+  // % change half (ranked change or the geography chart, and its table).
+  const [trendsView, setTrendsView] = useState<"chart" | "actual" | "table" | "changeChart" | "changeTable">("chart");
+  const isChange = trendsView === "changeChart" || trendsView === "changeTable";
+  const trendView = isChange ? null : trendsView;
+  const changeView: "chart" | "table" = trendsView === "changeTable" ? "table" : "chart";
+  const setTrendView = (v: "chart" | "actual" | "table") => setTrendsView(v);
+  const setChangeView = (v: "chart" | "table") => setTrendsView(v === "table" ? "changeTable" : "changeChart");
   // Part 5: the geography figures, fetched once per subject when the comparison applies.
   const geo = useSubjectGeography(geography);
   const [trendStart, setTrendStart] = useState<number | null>(null);
@@ -272,7 +279,12 @@ export function CandidatesPanels({
     startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
   });
 
-  const trend: PanelRender = {
+  // One title line over every view (ViewTitle): the category these subjects are compared
+  // within, as this column has always named it ("Entries in {category}"), plus the view's
+  // own shape, so each view reads as itself with the rail out of sight. A lone subject has
+  // no category to name, so its views name the shape alone.
+  const inCategory = group && categoryLabel ? `Entries in ${categoryLabel}` : null;
+  const trendHalf: PanelRender = {
     // S11: one uniform title, with the span's start as its own dropdown beside it.
     tag: "Trends",
     afterTag: <FromYearMenu periods={trendPeriods} from={trendData.periods[0] ?? null} onChange={setTrendStart} />,
@@ -285,7 +297,7 @@ export function CandidatesPanels({
       </span>
     ) : undefined,
     footerLead: (
-      <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={trendView === "table" || !multiTrendHasLine(trendData)} />
+      <TrendLineToggle on={showFit} onToggle={() => setShowFit(!showFit)} disabled={trendView === null || trendView === "table" || !multiTrendHasLine(trendData)} />
     ),
     actions: (
       <>
@@ -294,18 +306,22 @@ export function CandidatesPanels({
             short-span fallback (ranked change bars) is the same in both. */}
         <IconButton label="Indexed" active={trendView === "chart"} onClick={() => setTrendView("chart")}>{IndexedLineIcon}</IconButton>
         <IconButton label="Actual" active={trendView === "actual"} disabled={!multiTrendHasLine(trendData)} onClick={() => setTrendView("actual")}>{TrendLineIcon}</IconButton>
-        <IconButton label="Table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
+        <IconButton label="Trend table" active={trendView === "table"} onClick={() => setTrendView("table")}>{TableIcon}</IconButton>
       </>
     ),
     body: (fullscreen) =>
       trendView === "table" ? (
         // Option E: the real headcounts the indexed chart hides -- first and last year on
         // the card, every year in fullscreen.
-        <CentredOnTarget watch={`trend-table:${focused?.key}:${trendData.periods.join(",")}`}>
-          <YearTable data={trendData} measure={measure} focusKey={focused?.key ?? null} fullscreen={fullscreen} />
-        </CentredOnTarget>
+        <>
+          <ViewTitle>{inCategory ? `${inCategory}, year by year` : `${focused?.label ?? "Entries"}, year by year`}</ViewTitle>
+          <CentredOnTarget watch={`trend-table:${focused?.key}:${trendData.periods.join(",")}`}>
+            <YearTable data={trendData} measure={measure} focusKey={focused?.key ?? null} fullscreen={fullscreen} />
+          </CentredOnTarget>
+        </>
       ) : (
         <>
+          {inCategory && <ViewTitle>{inCategory}</ViewTitle>}
           {multiTrendHasLine(trendData) && (
             <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}
@@ -370,7 +386,7 @@ export function CandidatesPanels({
   const pointsEligibleCaveat =
     "All rows count GCSE points-eligible entries (full-course GCSE), so they can differ from the Candidates totals elsewhere on this card.";
 
-  const change: PanelRender = {
+  const changeHalf: PanelRender = {
     tag: "% Change",
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     // The fullscreen heading follows what the panel now shows: at GCSE both % Change views
@@ -381,10 +397,10 @@ export function CandidatesPanels({
     actions: (
       <>
         {/* With the geography view the chart is a line chart, so its icon says so. */}
-        <IconButton label={geography ? "Chart" : "Ranked change"} active={changeView === "chart"} onClick={() => setChangeView("chart")}>
+        <IconButton label={geography ? "Area chart" : "Ranked change"} active={isChange && changeView === "chart"} onClick={() => setChangeView("chart")}>
           {geography ? TrendLineIcon : HorizontalBarsIcon}
         </IconButton>
-        <IconButton label="Table" active={changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
+        <IconButton label="Change table" active={isChange && changeView === "table"} onClick={() => setChangeView("table")}>{TableIcon}</IconButton>
       </>
     ),
     body: (fullscreen) =>
@@ -393,12 +409,19 @@ export function CandidatesPanels({
       ) : changeView === "table" ? (
         // Option I: the base year and the latest beside the change, so a big % on a
         // handful of candidates reads as what it is.
-        <CentredOnTarget watch={`change-table:${focused?.key}:${changeData.periods.join(",")}`}>
-          <YearTable data={changeSubjectsData} measure={measure} focusKey={focused?.key ?? null} fullscreen={fullscreen} />
-        </CentredOnTarget>
+        <>
+          <ViewTitle>
+            {inCategory ? `${inCategory}: ${changeSince} against the latest year, with the change` : `Entries by year, since ${changeSince}`}
+          </ViewTitle>
+          <CentredOnTarget watch={`change-table:${focused?.key}:${changeData.periods.join(",")}`}>
+            <YearTable data={changeSubjectsData} measure={measure} focusKey={focused?.key ?? null} fullscreen={fullscreen} />
+          </CentredOnTarget>
+        </>
       ) : (
         // Step 7, Option H: ranked by % change, the category average a dashed line
         // through the rows rather than an eighth bar competing with the subjects.
+        <>
+        <ViewTitle>{inCategory ? `${inCategory}: % change since ${changeSince}, ranked` : `Entries: % change since ${changeSince}`}</ViewTitle>
         <CentredOnTarget watch={`change-list:${focused?.key}:${changeData.periods.join(",")}`}>
           <ChangeList
             rows={changeBars.filter((b) => b.key !== "group").map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.percent }))}
@@ -406,6 +429,7 @@ export function CandidatesPanels({
             group={group ? { label: group.label, value: percentChange(changeData.series.find((s) => s.key === "group")?.values ?? []) } : undefined}
           />
         </CentredOnTarget>
+        </>
       ),
     // With the geography views the caption is their caveat (the category's biggest and
     // smallest movers are not what either view shows at GCSE any more).
@@ -427,6 +451,25 @@ export function CandidatesPanels({
       const p = changeBars.find((b) => b.key === focused?.key)?.percent ?? null;
       return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;
     })(),
+  };
+
+  // Trends row merge round: the one Trends panel. Its view rail is Trend's views then %
+  // change's; the "From" menu, question, summary and source follow whichever half the view
+  // on screen belongs to, so neither panel's sentences are lost. The tag, the direction
+  // flag, the Trend-line toggle and the collapsed bar's figure are Trend's.
+  const trend: PanelRender = {
+    ...trendHalf,
+    afterTag: isChange ? changeHalf.afterTag : trendHalf.afterTag,
+    question: isChange ? changeHalf.question : trendHalf.question,
+    actions: (
+      <>
+        {trendHalf.actions}
+        {changeHalf.actions}
+      </>
+    ),
+    body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
+    summary: isChange ? changeHalf.summary : trendHalf.summary,
+    source: isChange ? changeHalf.source : trendHalf.source,
   };
 
   // KS2 never reaches here: it has no subject picker, so there is nothing to plot per
@@ -456,9 +499,10 @@ export function CandidatesPanels({
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}
-      // The geography views carry their own heading: they are not about the category.
       // The number tiles name the category in their own rank tile, so they take no title.
-      render={{ current: view === "tiles" ? current : titled(current), trend: titled(trend), change: geography ? change : titled(change) }}
+      // Trends titles each of its views itself (ViewTitle); the geography views carry
+      // their own heading, as before.
+      render={{ current: view === "tiles" ? current : titled(current), trend }}
     />
   );
 }
