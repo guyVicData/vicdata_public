@@ -1,15 +1,24 @@
 "use client";
 
+"use client";
+
 // The chooser's preview of a view: a data-free drawing of its look, at the panel unit's
 // real shape (351 x 384, PANEL_UNIT). One component, so night 2's editor can swap in a
 // live render without touching the cards that hold it.
+// 0.6 E: pass `live` (a school context) and the same box draws the real view instead
+// (LiveViewPreview, loaded on demand); without it, the data-free drawing as before.
 //
 // Marks follow the boards' thumbnails (Ch3Pick, PickEither): muted marks plus one in the
 // phase accent (PHASE_ACCENT -- the board's #34d399 is GCSE's accent). The frame is the
 // panel's own theme colours, not the board's always-dark thumb: a preview stands for a
 // panel, and a panel in the light theme is light (logged in OPEN_QUESTIONS).
+import dynamic from "next/dynamic";
 import type { Dataview, NumberType, ViewType } from "@/catalogue/types";
 import { L, thumbWidth } from "./layout";
+import type { LivePreviewContext } from "./LiveViewPreview";
+
+// Loaded only when a live preview is asked for, so the chooser's own bundle stays small.
+const LiveViewPreview = dynamic(() => import("./LiveViewPreview").then((m) => m.LiveViewPreview), { ssr: false });
 
 const W = 88;
 const H = 96;
@@ -114,6 +123,7 @@ export function PickPreview({
   numberType,
   accent,
   height = L.thumbHeight,
+  live = null,
 }: {
   dataview?: Dataview | null;
   // Override the dataview's own look (Customise).
@@ -121,6 +131,9 @@ export function PickPreview({
   numberType?: NumberType;
   accent: string;
   height?: number;
+  // A school context: draw the real view live in this box (not with a `look` override,
+  // which Customise uses for shapes no registered view has yet).
+  live?: LivePreviewContext | null;
 }) {
   const v = look ?? dataview?.supports.viewType ?? "graph";
   const n = numberType ?? dataview?.supports.numberType[0];
@@ -131,12 +144,16 @@ export function PickPreview({
       data-preview={v}
       style={{ width, height, flex: `0 0 ${width}px`, borderRadius: L.thumbRadius, background: "var(--av-thumb-bg)", border: "1px solid var(--av-thumb-border)", display: "flex", overflow: "hidden", boxSizing: "border-box" }}
     >
+      {live && dataview && !look ? (
+        <LiveViewPreview dataview={dataview} context={live} width={width - 2} height={height - 2} />
+      ) : (
       <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
         {/* The panel's title line and its rail, as on every panel. */}
         <rect x="9" y="11" width="44" height="5" rx="2" fill="var(--av-thumb-mark)" />
         <rect x="9" y="20" width="28" height="3" rx="1.5" fill="var(--av-thumb-mark)" opacity="0.6" />
         <Marks look={v} numberType={n} accent={accent} />
       </svg>
+      )}
     </span>
   );
 }
