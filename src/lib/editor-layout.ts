@@ -27,7 +27,8 @@ export const EDITOR = {
   railIcon: 20,
   railGlyph: 12,
   // Menus: the board's 236px panel menu, the 400px structure picker.
-  panelMenuWidth: 236,
+  // 236 on the board at 12px; MenuRow is 13px, so 264 keeps "Change data / compared to…" whole.
+  panelMenuWidth: 264,
   structureMenuWidth: 400,
   // History panel width (History.dc.html).
   historyWidth: 380,

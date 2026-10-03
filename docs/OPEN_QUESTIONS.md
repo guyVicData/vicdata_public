@@ -997,3 +997,35 @@ Boards: Main, HomeSMT, Icon, CopyTo, CopyToMeeting. Each was screenshotted at 39
 - **To a meeting:** the slides are listed latest first, as the board draws them. The pre-picked slide is the last one with room. A new meeting asks for a name and date inline; the view goes on its first slide.
 - **Entry point.** "Copy this view…" replaces the two disabled Export options only under a dashboard plan or on `/dashboards/*`, and only when the host provides `CopyViewSourceContext`. Everywhere else the two disabled options stay exactly as they were. The dialog is lazy-loaded, so hand-coded pages don't carry it.
 - **Not built here:** the linked-dashboard switcher in the top bar (the renderer's, /dashboards/[id]).
+
+## 2026-10-03 — VicData 0.6 night 2, S5 (Dashboard editor): judgement calls logged, build carried on
+
+Routes: `/dashboards/new` (New 1-4) and `/dashboards/[id]/edit` (super-admin only via `is_platform_admin`, plain 404 otherwise). Ops: `src/lib/editor-ops.ts` (tests: `npx -y tsx --test src/lib/editor-ops.test.ts`). No new migration: S2 + S4's tables cover everything.
+
+### Board vs code convention (board's layout/copy followed, real token/shell used)
+- **Panel size:** the boards draw 230 / 190 / 150px-tall panels in 24px-gap grids; the editor uses the real panel unit (351 × 384, whole-unit tracks 385 + 38 apart), so three columns are 1231px and the Editor board's two rows no longer fit in 1120px.
+- **Colours:** edit amber = `ATTENTION_ACCENT`; "inherits" blue = the chooser's `--cc-blue`; ready green / danger red = `DELTA_POSITIVE` / `DELTA_NEGATIVE`; planned gold = `--cc-gold` light hex. New 1's colour swatches are the real tokens per meaning (phase accents, the chooser's Rolls/Social data-family hues, the home page's Rose/Amber feature accents, grey).
+- **Menus:** the panel ··· menu is `PanelMenu` + `MenuRow` (13px, not the board's 12px), widened 236 → 264 so "Change data / compared to…" isn't truncated. The + Add row structure picker is its own popover (PanelMenu caps width at 320px; the board's is 400).
+- **Dialogs:** RowSettings, ColumnChange, SpanAsk, Assign and the rest are `TeacherModal` "chooser" size with the comparator chooser's Panel / Body / Footer / buttons (backdrop 0.45, not SpanAsk's 0.35).
+- **Column icons:** a column's icon is one of the four `COLUMN_ICON_PATHS` (config type), so New 3/4 show the people / pie / rosette icons, not the board's building / pin glyphs for Rolls and Births.
+- **New dashboard frame:** the onboarding tour's frame lives inline in `src/app/teacher/[phase]/page.tsx` (not S5's to edit), so `TourFrame` in `NewDashboard.tsx` is a class-for-class copy. Suggest extracting both to one component.
+
+### Calls the boards didn't settle
+- **"Save" is labelled "Publish"** (the prompt) in the edit bar; the History board's "Publish as version 13" is the Publish dialog's title. A label is optional at publish.
+- **Undo** is in the edit bar (History board); redo is ⇧⌘Z (no room for a second button on the Editor board's bar). **Export planned views** appears in the bar only when the dashboard has placeholders (Skeleton board).
+- **Save state** folds into the status line (red "Saving needs the database update" while S2 isn't applied; "saving…" while writing) rather than a separate chip.
+- **Empty panels** are allowed in a draft; **Publish is held** until each is filled or deleted, so a published config always passes the catalogue's `validateConfig`.
+- **Panel menu adds "Remove this view"** (not on the board; removing a view had no home). Rail views reorder by drag; spans drag on the panel's right edge (or ←/→ when the handle has focus), snapping to whole columns, and ask F3's question when the spanned columns differ.
+- **Row structures** offer that dashboard's own compositions (3 columns: one wide, 2+1, 1+2, three). The boards' "2 equal" and "4" on a 3-column dashboard can't snap to whole columns.
+- **RowSettings copy:** "needs 4+ years for a trend line" (decision 9), not the board's 3+.
+- **Empty panel copy:** "Opens Add a view", not "Opens the 6-step chooser" (the chooser now opens on Pick).
+- **F5 "Keep as override" belongs to the panel** (an override is per panel): keeping one view keeps its panel's other misfits too; the dialog links them. Panels with their own overrides are skipped (C17). "Swap" is disabled when no live view of the same date mode fits.
+- **Adding an overridden view** (from Browse or a loosening) to a panel that already has views overrides the whole panel; the badge says so.
+- **Placeholders** now store `context` (catalogue terms) and `shape: null` = "Not sure" (`types.ts`, additive). Ready to swap in matches `draft` views against that context.
+- **Export planned views** lists ALL open/planned `view_requests` (they're the backlog), each with where it was asked from; placeholders only while the table is absent.
+- **Linked groups** are stored in the config (`config.group`); `dashboards.group_id` isn't written (no store call for `dashboard_groups` yet).
+- **Assign:** VicData → roles + live/copy + Key toggle (`is_key` on each role row); school → that school's teams, always live; personal → "your dashboards only". The board's dashed "School-Admin sees this instead" note is a wireframe annotation, not built.
+- **New dashboard:** any signed-in user can open it; a super-admin also picks "Save to: VicData / My dashboards" (not on the board). Non-admins land on the live view, admins in the editor. Academic main data starts Teacher's pattern (column 1 vs category, 2 vs the Context pill, 3 vs 10 nearest), because a no-comparison academic column has no views. While S2 isn't applied, Done opens the editor in memory.
+- **History preview** is at full opacity (the board's 0.55 is kept for the draft behind an open History panel) and scaled with CSS `zoom` to fit beside the panel.
+- **UpdatedNotice** records a first-ever visit silently (no "Updated" line for newcomers); `upgradeUserState` (`src/lib/editor-upgrade.ts`) applies carryUserState to the viewer's own state row on their visit (RLS: nobody can rewrite other people's state at publish).
+- **No school in the editor:** titles resolve with neutral words ("This subject"), and "Choose other schools…" stays off in Steps 1-2 (relative "10 nearest", G5).
