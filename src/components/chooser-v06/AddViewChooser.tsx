@@ -24,11 +24,13 @@ import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/C
 import { TeacherModal } from "@/components/teacher/TeacherModal";
 import { Panel } from "@/components/teacher/chooser/ui";
 import type { SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
+import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import { AvStyles } from "./bits";
 import { CustomiseScreen } from "./CustomiseScreen";
 import { EmptyScreen, type EmptyDraft, type Relaxation } from "./EmptyScreen";
 import { PickScreen, type BrowsePick, type PickTab } from "./PickScreen";
 import { logViewRequest } from "./requests";
+import { ChooserWordsContext, COLUMN_WORDS, SLOT_WORDS } from "./words";
 import { AreaStep, DataStep, FocusStep, SubjectStep, focusOptions, type SubjectSource } from "./StepScreens";
 
 export type AddViewChooserProps = {
@@ -43,7 +45,9 @@ export type AddViewChooserProps = {
   // `override` is set when the pick doesn't follow the panel's own context (changed via
   // Steps 1-2, a loosening, or a view taken from Browse). It is a PanelOverride, plus
   // `time` when a loosening changed the row's Time.
-  onAdd: (instance: DataviewInstance, override?: PanelOverride) => void;
+  // `ctx` (0.6 integration): the context the pick was made in, already resolved -- what a
+  // meeting pins from.
+  onAdd: (instance: DataviewInstance, override?: PanelOverride, ctx?: PickPanelContext) => void;
   onPlaceholder?: (p: PlaceholderRequest) => void;
   // Called after "Ask for this view" (the request is also written to view_requests).
   onAsk?: (context: PickPanelContext) => void;
@@ -52,12 +56,17 @@ export type AddViewChooserProps = {
   theme?: "dark" | "light";
   // C16: a column with no data yet opens at Step 1.
   startAt?: "pick" | "data";
+  // 0.6 integration: no column to inherit from (a meeting slot, scope brief §7.5).
+  columnless?: boolean;
   // The school's subjects per phase, for 2a / 2b (absent: those screens say so).
   subjects?: Partial<Record<"ks4" | "ks5", SubjectSource>>;
   // The comparator chooser's inputs (absent: "Choose other schools…" is disabled).
   comparators?: { payload: SavedSetsPayload; targetUrn: string; targetName: string; onSetsChanged: () => Promise<void> };
   // Write "Ask for this view" to view_requests (default true).
   persistAsk?: boolean;
+  // 0.6 integration: a school to draw Pick's previews live for (LiveViewPreview); absent,
+  // the previews stay data-free.
+  school?: PinSchool;
 };
 
 type Screen = "pick" | "customise" | "data" | "focus" | "subject" | "area";
@@ -72,7 +81,7 @@ function readTheme(): "dark" | "light" {
   return document.getElementById("teacher-root")?.getAttribute("data-theme") === "light" ? "light" : "dark";
 }
 
-function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, onAsk, theme: themeProp, startAt, subjects, comparators, persistAsk = true }: AddViewChooserProps) {
+function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, onAsk, theme: themeProp, startAt, subjects, comparators, persistAsk = true, school = null, columnless = false }: AddViewChooserProps) {
   const [theme] = useState<"dark" | "light">(() => themeProp ?? readTheme());
   const original = context;
   const opts = useMemo(() => ({ palette, superAdmin }), [palette, superAdmin]);
@@ -98,7 +107,11 @@ function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, 
   const relax = useMemo(() => relaxationsOf(DATAVIEWS, toPickContext(working, opts), DASHBOARDS) as Relaxation[], [working, opts]);
   const reason = (how: string) => `${how} in Add a view (${original.labels.dashboard}, ${original.labels.column} · ${original.labels.row})`;
 
-  const add = (instance: DataviewInstance, ctx: PickPanelContext, how: string) => onAdd(instance, overrideBetween(original, ctx, reason(how)));
+  const add = (instance: DataviewInstance, ctx: PickPanelContext, how: string) => onAdd(instance, overrideBetween(original, ctx, reason(how)), ctx);
+  const liveFor = useMemo(
+    () => (school ? (dv: Dataview, ctx: PickPanelContext) => ({ ...pinFromContext(ctx, dv, school), schoolUrn: school.urn }) : undefined),
+    [school],
+  );
 
   const startChange = () => {
     setDraft(working);
@@ -179,7 +192,7 @@ function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, 
   if (screen === "customise" && selectedDv) {
     body = <CustomiseScreen ctx={working} base={selectedDv} candidates={customiseCandidates(working, opts)} onBack={() => setScreen("pick")} onClose={onClose} onAdd={addCustom} />;
   } else if (screen === "data") {
-    body = <DataStep draft={draft} original={original} palette={palette} superAdmin={superAdmin} theme={theme} onDraft={setDraft} onBack={() => setScreen("pick")} onClose={onClose} onNext={toFocus} />;
+    body = <DataStep draft={draft} original={original} palette={palette} superAdmin={superAdmin} theme={theme} onDraft={setDraft} onBack={() => setScreen("pick")} onClose={onClose} onNext={toFocus} columnless={columnless} />;
   } else if (screen === "focus") {
     body = (
       <FocusStep
@@ -283,6 +296,7 @@ function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, 
         onClose={onClose}
         onCustomise={() => selectedDv && setScreen("customise")}
         onAdd={addFromPick}
+        liveFor={liveFor}
       />
     );
   }
@@ -293,7 +307,7 @@ function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, 
         <Panel>
           <div className="av-root" style={{ display: "contents" }}>
             <AvStyles />
-            {body}
+            <ChooserWordsContext.Provider value={columnless ? SLOT_WORDS : COLUMN_WORDS}>{body}</ChooserWordsContext.Provider>
           </div>
         </Panel>
       </TeacherModal>

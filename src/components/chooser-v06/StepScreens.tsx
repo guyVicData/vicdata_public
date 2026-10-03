@@ -126,6 +126,7 @@ export function DataStep({
   onBack,
   onClose,
   onNext,
+  columnless = false,
 }: {
   draft: PickPanelContext;
   original: PickPanelContext;
@@ -136,6 +137,9 @@ export function DataStep({
   onBack: () => void;
   onClose: () => void;
   onNext: () => void;
+  // 0.6 integration: opened with no column to inherit from (a meeting slot): "Choose
+  // data", and no "From this column" tag.
+  columnless?: boolean;
 }) {
   const allowed = (d: DataId) => !palette || palette.includes(d);
   const families = (["academic", "rolls", "social"] as FamilyId[]).filter((f) =>
@@ -151,11 +155,11 @@ export function DataStep({
   const n = (p: Parameters<typeof countViews>[0]) => countViews(p, superAdmin);
   return (
     <>
-      <AvHeader title="Change data" subtitle={headerLine(original)} segs={1} onBack={onBack} onClose={onClose} />
+      <AvHeader title={columnless ? "Choose data" : "Change data"} subtitle={headerLine(original)} segs={1} onBack={onBack} onClose={onClose} />
       <Body gap={10}>
         <StepLabel>Step 1 of 3 &middot; What data?</StepLabel>
         {families.map((f) => (
-          <FamilyCard key={f} id={f} open={f === fam} fromColumn={f === familyOf(original.data)} theme={theme} onOpen={() => openFamily(f)}>
+          <FamilyCard key={f} id={f} open={f === fam} fromColumn={!columnless && f === familyOf(original.data)} theme={theme} onOpen={() => openFamily(f)}>
             {f === "academic" ? (
               <>
                 <Sec>

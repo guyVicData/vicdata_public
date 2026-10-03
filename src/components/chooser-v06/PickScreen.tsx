@@ -11,7 +11,9 @@ import type { Dataview } from "@/catalogue/types";
 import { Body, Footer, PrimaryButton } from "@/components/teacher/chooser/ui";
 import { AvHeader, ContextBox, GroupHeading, Seg2, StepLabel, ViewCard, WarnTag, railGlyph } from "./bits";
 import { PickPreview } from "./PickPreview";
+import type { LivePreviewContext } from "./LiveViewPreview";
 import { L, PANEL_ASPECT } from "./layout";
+import { useChooserWords } from "./words";
 
 export type PickTab = "suggested" | "browse";
 export type BrowsePick = { cell: BrowseCell; dv: Dataview; fits: boolean; badge: string | null; title: string };
@@ -70,6 +72,7 @@ export function PickScreen({
   onClose,
   onCustomise,
   onAdd,
+  liveFor,
 }: {
   ctx: PickPanelContext;
   results: PickResult[];
@@ -84,7 +87,10 @@ export function PickScreen({
   onClose: () => void;
   onCustomise: () => void;
   onAdd: () => void;
+  // 0.6 integration: with a school context, each card's preview draws the real view.
+  liveFor?: (dv: Dataview, ctx: PickPanelContext) => LivePreviewContext | null;
 }) {
+  const words = useChooserWords();
   const accent = accentFor(ctx);
   const card = (r: PickResult) => (
     <ViewCard
@@ -94,7 +100,7 @@ export function PickScreen({
       meta={metaLine(r, ctx)}
       tags={<Tags r={r} />}
       icon={r.dataview.railIcon}
-      preview={<PickPreview dataview={r.dataview} accent={accent} />}
+      preview={<PickPreview dataview={r.dataview} accent={accent} live={liveFor?.(r.dataview, ctx) ?? null} />}
       onClick={() => onSelect(r.dataview.id)}
     />
   );
@@ -129,7 +135,7 @@ export function PickScreen({
     <>
       <AvHeader title="Add a view" subtitle={headerLine(ctx)} segs={3} onBack={onBack} onClose={onClose} />
       <Body gap={10}>
-        <ContextBox label="From this column" line={summaryLine(ctx)} onChange={onChange} />
+        <ContextBox label={words.from} line={summaryLine(ctx)} onChange={onChange} />
         <StepLabel top={2}>Step 3 of 3 &middot; Pick a view</StepLabel>
         <Seg2
           ariaLabel="Where to pick from"
@@ -147,14 +153,14 @@ export function PickScreen({
             <CustomiseLink onClick={onCustomise} />
           </>
         ) : (
-          <BrowseTab ctx={ctx} pick={browse} onPick={onBrowse} />
+          <BrowseTab ctx={ctx} pick={browse} onPick={onBrowse} liveFor={liveFor} />
         )}
       </Body>
       <Footer>
         <div style={{ fontSize: 12, color: "var(--cc-label)" }}>
           {tab === "suggested" ? `${results.length} ${results.length === 1 ? "view fits" : "views fit"}` : browse ? (browse.fits ? "Fits this column" : "Comes in overridden") : "Pick any view"}
         </div>
-        <PrimaryButton onClick={onAdd} disabled={!canAdd}>Add to panel</PrimaryButton>
+        <PrimaryButton onClick={onAdd} disabled={!canAdd}>{words.add}</PrimaryButton>
       </Footer>
     </>
   );
@@ -162,7 +168,7 @@ export function PickScreen({
 
 // ------------------------------------------------------------------ Browse VicData dashboards
 
-function BrowseTab({ ctx, pick, onPick }: { ctx: PickPanelContext; pick: BrowsePick | null; onPick: (cell: BrowseCell, dv: Dataview) => void }) {
+function BrowseTab({ ctx, pick, onPick, liveFor }: { ctx: PickPanelContext; pick: BrowsePick | null; onPick: (cell: BrowseCell, dv: Dataview) => void; liveFor?: (dv: Dataview, ctx: PickPanelContext) => LivePreviewContext | null }) {
   const map = browseMap();
   return (
     <>
@@ -180,7 +186,7 @@ function BrowseTab({ ctx, pick, onPick }: { ctx: PickPanelContext; pick: BrowseP
             ) : null
           }
           icon={pick.dv.railIcon}
-          preview={<PickPreview dataview={pick.dv} accent={accentFor(ctx)} />}
+          preview={<PickPreview dataview={pick.dv} accent={accentFor(ctx)} live={liveFor?.(pick.dv, ctx) ?? null} />}
           onClick={() => {}}
         />
       )}

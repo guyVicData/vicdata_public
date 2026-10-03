@@ -32,6 +32,7 @@ import { AvHeader, BoardChip, Toggle } from "./bits";
 import { PickPreview } from "./PickPreview";
 import { accentFor } from "./PickScreen";
 import { L } from "./layout";
+import { useChooserWords } from "./words";
 
 type State = { dv: Dataview; numberType: NumberType; dateMode: DateMode; look: ViewType; fromYear: string | null; rollForward: boolean; title: string; titleEdited: boolean };
 
@@ -99,6 +100,7 @@ export function CustomiseScreen({
   onClose: () => void;
   onAdd: (dv: Dataview, params: CustomViewParams | null) => void;
 }) {
+  const words = useChooserWords();
   const [s, setS] = useState<State>(() => initial(base, ctx));
   const [forked, setForked] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -263,7 +265,7 @@ export function CustomiseScreen({
         >
           Back to ready-made
         </SecondaryButton>
-        <PrimaryButton onClick={() => onAdd(s.dv, forked ? params : null)}>Add to panel</PrimaryButton>
+        <PrimaryButton onClick={() => onAdd(s.dv, forked ? params : null)}>{words.add}</PrimaryButton>
       </Footer>
     </>
   );

@@ -9,6 +9,7 @@ import { headerLine, summaryLine, VIEW_TYPE_LABEL } from "@/catalogue/pick";
 import type { ViewType } from "@/catalogue/types";
 import { Body, Footer, PrimaryButton, SecondaryButton } from "@/components/teacher/chooser/ui";
 import { AvHeader, BoardChip, ContextBox, CountBadge, StepLabel, fieldStyle } from "./bits";
+import { useChooserWords } from "./words";
 
 export type Relaxation = { id: "no-compare" | "over-time" | "latest"; label: string; count: number };
 
@@ -68,11 +69,12 @@ export function EmptyScreen({
   onClose: () => void;
   onSubmit: () => void;
 }) {
+  const words = useChooserWords();
   return (
     <>
       <AvHeader title="Add a view" subtitle={headerLine(ctx)} segs={null} onBack={onBack} onClose={onClose} />
       <Body gap={10}>
-        <ContextBox label="From this column" line={summaryLine(ctx, true)} />
+        <ContextBox label={words.from} line={summaryLine(ctx, true)} />
         <div style={{ textAlign: "center", padding: "8px 10px 2px" }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--cc-ink)" }}>Nothing built for this yet</div>
           <div style={{ fontSize: 12.5, color: "var(--cc-sub)", marginTop: 4, lineHeight: 1.45 }}>Try loosening one choice, or {superAdmin ? "plan the view you want" : "ask for the view you want"}.</div>
