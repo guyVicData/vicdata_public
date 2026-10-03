@@ -480,3 +480,23 @@ describe("dashboard config", () => {
     assert.equal(out.version, "2");
   });
 });
+
+describe("notes and preferences resolve through legacy keys (S3)", () => {
+  it("every seeded panel's first note key is the key the page reads today", async () => {
+    const { readFileSync } = await import("node:fs");
+    const data = readFileSync(new URL("../src/lib/teacher-view-data.ts", import.meta.url), "utf8");
+    // The page's own key shape; if it changes, this test must change with it.
+    assert.match(data, /export const panelNoteKey = \(phase: string, columnId: string, panelId: string\) => `\$\{phase\}:\$\{columnId\}:\$\{panelId\}`;/);
+    const page = readFileSync(new URL("../src/app/teacher/[phase]/page.tsx", import.meta.url), "utf8");
+    for (const d of await seededDashboards()) {
+      const phase = d.columns[0].data.phase;
+      for (const p of d.panels) {
+        assert.ok(p.legacy, `${p.id} has legacy keys`);
+        assert.equal(p.legacy!.noteKeys[0], `${phase}:${p.legacy!.columnKey}:${p.legacy!.panelId}`);
+        // The column key is one the page actually passes to its hosts (open panels, notes).
+        const key = p.legacy!.columnKey;
+        assert.ok(key === "candidates" ? /const COL1 = "candidates"/.test(page) : page.includes(`notesFor("${key}")`), `${p.id}: page uses column key ${key}`);
+      }
+    }
+  });
+});

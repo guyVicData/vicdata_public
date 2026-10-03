@@ -8,6 +8,7 @@
 // dashboard. There is deliberately no third locked/teaser state.
 //
 // §14: every heading is the real question it answers, not a label.
+import { confirmLookAs, readLookAs } from "@/lib/look-as";
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
@@ -34,6 +35,7 @@ export default function TeacherHomePage() {
   const [onboarded, setOnboarded] = useState<TeacherPhase[]>([]);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lookAsQuery, setLookAsQuery] = useState("");
   // Same hook and storage key as every dashboard; since the top-nav completion round the
   // toggle itself is in TeacherNav here too.
   const [theme, setTheme] = useTeacherTheme();
@@ -57,15 +59,27 @@ export default function TeacherHomePage() {
           .maybeSingle<{ email: string | null; full_name: string | null }>();
         setDisplayName(profile?.full_name || profile?.email || user.email || null);
       }
-      const { data: membership } = await supabase
-        .from("school_memberships")
-        .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
-        .eq("status", "approved")
-        .maybeSingle<Membership>();
+      // VicData 0.6 S1: Platform's read-only "Look at it as…" lands here; a platform admin
+      // previews that school, and the phase tiles carry the preview on.
+      const requestedLookAs = readLookAs(new URLSearchParams(window.location.search));
+      let urn: string | null;
+      if (requestedLookAs && (await confirmLookAs(supabase, requestedLookAs))) {
+        const { data: school } = await supabase.from("schools").select("current_name").eq("urn", requestedLookAs.urn).maybeSingle<{ current_name: string }>();
+        urn = requestedLookAs.urn;
+        setLookAsQuery(`?lookAs=${encodeURIComponent(requestedLookAs.urn)}&as=${encodeURIComponent(requestedLookAs.role)}`);
+        setSchoolUrn(urn);
+        setSchoolName(school?.current_name ?? null);
+      } else {
+        const { data: membership } = await supabase
+          .from("school_memberships")
+          .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
+          .eq("status", "approved")
+          .maybeSingle<Membership>();
 
-      const urn = membership?.school_accounts?.school_urn ?? null;
-      setSchoolUrn(urn);
-      setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);
+        urn = membership?.school_accounts?.school_urn ?? null;
+        setSchoolUrn(urn);
+        setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);
+      }
       if (!urn) {
         setError("Teacher view is available to verified school staff.");
         setLoading(false);
@@ -111,7 +125,7 @@ export default function TeacherHomePage() {
             return (
               <HomeCard
                 key={phase}
-                href={`/teacher/${phase}`}
+                href={`/teacher/${phase}${lookAsQuery}`}
                 colour={PHASE_ACCENT[phase] ?? NEUTRAL_TILE}
                 icon={<PhaseGlyph phase={phase} />}
                 title={PHASE_LABELS[phase]}

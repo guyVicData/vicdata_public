@@ -17,7 +17,11 @@ import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrom
 import { PhoneNav, TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
-import { DashboardGrid } from "@/components/teacher/DashboardGrid";
+import { DashboardFrame, GroupSwitcher } from "@/components/dashboard-config/ConfigDashboard";
+import { configRendererRequested } from "@/components/dashboard-config/plan";
+import { groupOf, teacherDashboardFor } from "@/catalogue/dashboards";
+import { confirmLookAs, readLookAs, type LookAs } from "@/lib/look-as";
+import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
@@ -134,6 +138,12 @@ export default function TeacherPhaseDashboard() {
   // TeacherNav only renders past the error screen, so a signed-out visitor needs a Login
   // link on the error screen itself or they have no way to sign in from here.
   const [signedOut, setSignedOut] = useState(false);
+  // VicData 0.6: ?renderer=config draws the dashboard from its config (S2/S3); ?lookAs= is
+  // the Platform screen's read-only preview of another school (S1). Both are off unless
+  // the URL asks, and look-as only for a platform admin (confirmLookAs).
+  const [configMode, setConfigMode] = useState(false);
+  const [superAdmin, setSuperAdmin] = useState(false);
+  const [lookAs, setLookAs] = useState<LookAs | null>(null);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string | null>(null);
   const [entries, setEntries] = useState<SubjectEntry[]>([]);
@@ -226,14 +236,31 @@ export default function TeacherPhaseDashboard() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) { setSignedOut(true); setError("Sign in to see this dashboard."); setLoading(false); return; }
-      const { data: membership } = await supabase
-        .from("school_memberships")
-        .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
-        .eq("status", "approved")
-        .maybeSingle<{ school_accounts: { school_urn: string; schools: { current_name: string } | null } | null }>();
-      const urn = membership?.school_accounts?.school_urn ?? null;
-      setSchoolUrn(urn);
-      setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);
+      const search = new URLSearchParams(window.location.search);
+      const requestedLookAs = readLookAs(search);
+      const lookAsOk = requestedLookAs ? await confirmLookAs(supabase, requestedLookAs) : false;
+      if (configRendererRequested(search)) {
+        setConfigMode(true);
+        const { data: admin } = await supabase.rpc("is_platform_admin");
+        setSuperAdmin(admin === true);
+      }
+      let urn: string | null;
+      if (lookAsOk && requestedLookAs) {
+        setLookAs(requestedLookAs);
+        const { data: school } = await supabase.from("schools").select("current_name").eq("urn", requestedLookAs.urn).maybeSingle<{ current_name: string }>();
+        urn = requestedLookAs.urn;
+        setSchoolUrn(urn);
+        setSchoolName(school?.current_name ?? null);
+      } else {
+        const { data: membership } = await supabase
+          .from("school_memberships")
+          .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
+          .eq("status", "approved")
+          .maybeSingle<{ school_accounts: { school_urn: string; schools: { current_name: string } | null } | null }>();
+        urn = membership?.school_accounts?.school_urn ?? null;
+        setSchoolUrn(urn);
+        setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);
+      }
       if (!urn) { setError("Teacher view is available to verified school staff."); setLoading(false); return; }
 
       const res = await fetch(`/api/teacher/dashboard?urn=${encodeURIComponent(urn)}&phase=${phase}`, {
@@ -1349,6 +1376,10 @@ export default function TeacherPhaseDashboard() {
     colour: colourOf(i),
   }));
   const onSharedMeasure = (next: SharedMeasure) => setColumnSetting(SHARED_MEASURE_KEY, next);
+  // S3: under the flag, the dashboard is one of the four VicData configs, picked by the
+  // same Candidates/Results state the toggle writes -- so the group switcher and today's
+  // toggle read and write one setting, and a flag flip loses nobody's choice.
+  const dashboardConfig = configMode && (phase === "ks4" || phase === "ks5") ? teacherDashboardFor(phase, sharedMeasure) : null;
 
   // Each column's question once a subject is focused: a full question naming the subject,
   // its qualification and the school, after the column's plain one-word title (COLUMN_TITLE,
@@ -1433,10 +1464,24 @@ export default function TeacherPhaseDashboard() {
           // Top-nav round: Export alone. The theme toggle moved up into TeacherNav, and
           // "All dashboards" went with it -- the nav's Home link is the same way back.
           chrome={<ExportButton />}
+          switcher={
+            dashboardConfig ? (
+              <GroupSwitcher
+                dashboards={groupOf(dashboardConfig)}
+                activeId={dashboardConfig.id}
+                onSwitch={(d) => onSharedMeasure(d.id.endsWith(".results") ? "results" : "candidates")}
+              />
+            ) : undefined
+          }
         />
       </div>
 
       {/* §13's banner. States what actually changed and when, rather than just shouting. */}
+      {lookAs && (
+        <p className="mt-3 rounded-md border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 py-2 text-sm text-[var(--muted2)] print:hidden">
+          Looking at {schoolName ?? lookAs.urn} as {VISIBLE_ROLE_LABELS[lookAs.role as VisibleRoleId] ?? lookAs.role}: a read-only preview from Platform, logged. School-shared sets and other people&rsquo;s notes aren&rsquo;t shown.
+        </p>
+      )}
       {newDataPeriod !== null && (
         <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 print:hidden dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200">
           <span className="mr-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
@@ -1450,7 +1495,7 @@ export default function TeacherPhaseDashboard() {
       </p>
 
       {/* The laptop board's four-column row, with its dividers -- see DashboardGrid. */}
-      <DashboardGrid>
+      <DashboardFrame config={dashboardConfig} superAdmin={superAdmin}>
         {/* COLUMN 1, round 8 §2: Candidates and Results merged. One column, one Add
             control, one set of three panels, and the shared toggle decides which measure
             they are about. They used to be two columns with two pin sets; they now share
@@ -1909,7 +1954,7 @@ export default function TeacherPhaseDashboard() {
             }
           />
         </DashboardColumn>
-      </DashboardGrid>
+      </DashboardFrame>
 
       {/* The subject picker, as a popup from "±" rather than a permanent section of the
           page. Same modal shell as a card's fullscreen (TeacherModal: backdrop click,
