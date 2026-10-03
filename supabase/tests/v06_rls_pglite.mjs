@@ -26,6 +26,9 @@ alter table public.school_memberships enable row level security;
 create policy school_memberships_delete_admin_or_holder on public.school_memberships for delete using (is_admin_of_school_account(school_account_id));
 create policy school_memberships_insert_own on public.school_memberships for insert with check (profile_id = auth.uid());
 create policy school_memberships_select_own_or_school on public.school_memberships for select using ((profile_id = auth.uid()) or is_member_of_school_account(school_account_id));
+alter table public.school_accounts enable row level security;
+create policy school_accounts_select_all on public.school_accounts for select using (true);
+create policy school_accounts_insert_authenticated on public.school_accounts for insert with check (auth.uid() is not null);
 create policy school_memberships_update_admin_or_holder on public.school_memberships for update using (is_admin_of_school_account(school_account_id));
 grant usage on schema public, auth to authenticated, anon;
 alter default privileges in schema public grant all on tables to authenticated, anon;
@@ -35,7 +38,8 @@ insert into public.profiles (id, full_name) values
  ('52a08818-9132-48a0-8665-8362361eff11','Guy'),
  ('00000000-0000-0000-0000-00000000000a','Teacher A'),
  ('00000000-0000-0000-0000-00000000000b','Admin B'),
- ('00000000-0000-0000-0000-00000000000c','Other C');
+ ('00000000-0000-0000-0000-00000000000c','Other C'),
+ ('00000000-0000-0000-0000-00000000000d','Joiner D');
 insert into public.schools values ('100053','Acland Burghley School','Local authority maintained schools','Community school','https://www.aclandburghley.camden.sch.uk'), ('117037','The King''s School','Independent schools','Other independent school','https://ksw.org.uk');
 insert into public.school_accounts (id, school_urn) values ('11111111-1111-1111-1111-111111111111','100053'), ('22222222-2222-2222-2222-222222222222','117037');
 insert into public.school_memberships (school_account_id, profile_id, status, is_admin, role) values
@@ -131,4 +135,22 @@ check("teacher can't assign", await throws(() => as(A, () => q(`insert into dash
 const pd = (await as(GUY, () => q(`insert into dashboards (owner_scope, owner_profile_id, name) values ('user','${GUY}','retain') returning id`))).rows[0].id;
 for (let i = 0; i < 33; i++) await as(GUY, () => q(`select publish_dashboard('${pd}', '{"schema_version":1}'::jsonb)`));
 check("personal keeps last 30", (await q(`select count(*)::int n from dashboard_versions where dashboard_id='${pd}'`)).rows[0].n === 30);
+// S3b fix 1: the membership INSERT hole, before and after the hardening migration.
+const D = "00000000-0000-0000-0000-00000000000d";
+const S1 = "11111111-1111-1111-1111-111111111111";
+const holeOpen = !(await throws(() => as(D, () => q(`insert into school_memberships (school_account_id, profile_id, status, is_admin) values ('${S1}','${D}','approved', true)`))));
+check("before hardening: the hole is real (direct approved admin insert succeeds)", holeOpen);
+await q(`delete from school_memberships where profile_id='${D}'`);
+await ex(readFileSync(repo + "20261104090000_v06_membership_insert_hardening.sql", "utf8"));
+console.log("applied 20261104090000_v06_membership_insert_hardening.sql");
+check("after: direct approved insert refused", await throws(() => as(D, () => q(`insert into school_memberships (school_account_id, profile_id, status) values ('${S1}','${D}','approved')`))));
+check("after: direct admin insert refused", await throws(() => as(D, () => q(`insert into school_memberships (school_account_id, profile_id, status, is_admin) values ('${S1}','${D}','pending_approval', true)`))));
+check("after: direct insert for someone else refused", await throws(() => as(D, () => q(`insert into school_memberships (school_account_id, profile_id, status) values ('${S1}','${C}','pending_approval')`))));
+check("after: own pending request still allowed", !(await throws(() => as(D, () => q(`insert into school_memberships (school_account_id, profile_id, status) values ('${S1}','${D}','pending_approval')`)))));
+await q(`delete from school_memberships where profile_id='${D}'`);
+const joined = await as(D, () => q(`select * from join_school('100053', 'smt')`));
+check("after: join_school still works (later joiner -> pending)", joined.rows[0]?.membership_status === "pending_approval", JSON.stringify(joined.rows[0]));
+check("after: join_school ignores the client's role", (await q(`select roles from school_memberships where profile_id='${D}'`)).rows[0].roles.join() === "teacher");
+check("after: account insert with a holder refused", await throws(() => as(D, () => q(`insert into school_accounts (school_urn, account_holder_membership_id) values ('999999', gen_random_uuid())`))));
+check("after: plain account insert allowed", !(await throws(() => as(D, () => q(`insert into school_accounts (school_urn) values ('999998')`)))));
 console.log(fails ? `${fails} FAILED` : "ALL PASS");
