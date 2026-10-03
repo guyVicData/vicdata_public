@@ -862,3 +862,87 @@ Build prompt: `docs/vicdata_phase3_teacher_view_comparator_chooser_build_claude_
 **The LA list says "mainstream" but isn't.** `list2` for The Chase ("In Worcestershire (all sectors)", upstream) includes special schools and alternative provision, while the wireframe's copy says "mainstream sectors". The copy is kept as designed. `local16Plus` stays additive: its 36 schools beyond list2 are their own group on screen 2b, under its real label ("Schools and FE colleges, 16+, in Worcestershire").
 
 **Migration history.** Both new migrations were applied surgically (`supabase db query --linked -f`) and recorded individually (`supabase migration repair --status applied <version>`). A plain `supabase db push` would have replayed three older local migrations that the remote history shows as unapplied, including `teacher_view_persistence`, which the live site already relies on (so it was presumably applied by other means). Those three are untouched and still need their own reconciliation.
+
+---
+
+## 2026-10-03 — VicData 0.6 night 1 (S0–S3): judgement calls logged, build carried on
+
+Night 1 prompt: `docs/v0.6/vicdata_0_6_night1_claude_code_prompt_v1.md`. Audit: `docs/v0.6/audit_v1.md`. Build report: `docs/v0.6/night1_build_report_v1.md`. All recommended defaults in the design docs were treated as decided; the calls below are the ones the docs didn't settle, or where the code contradicted them.
+
+### For Guy first
+
+1. **Pre-existing security hole, not fixed (a stop condition).** `school_memberships_insert_own` checks only `profile_id = auth.uid()`, so any signed-in user can insert an `approved`, `is_admin = true` membership in any school straight through PostgREST. `school_accounts_insert_authenticated` likewise lets anyone create accounts with holder fields set. The fix is written in `docs/v0.6/proposed_sql/membership_insert_hardening.sql`. It removes no legitimate path: joins go through `join_school`, and the testing routes use the service role. It is an RLS change on memberships, so it waits for you. S1 already closes the role half: a trigger forces `roles = {teacher}` on any non-service insert.
+2. **The S2 migration is written but NOT applied.** S1's migration was applied live and recorded. After that, the session's permission classifier blocked further live-database actions, even a read-only check. `20261103100000_v06_s2_dashboards.sql` is tested on local Postgres (PGlite) instead: 39 RLS, cap, immutability and publish checks, plus the seed run twice. The apply and seed commands are in the migration's header. Until it's applied, the flagged renderer uses the configs seeded in code (the same JSON).
+3. **Three live behaviours break rules the catalogue states, and were kept as they are**, because fixing any of them changes a figure on a live dashboard:
+   - Post-16 Context blends a subject's A level, BTEC and IB points into one figure, and "All subjects" has no qualification-family filter (R-POINTS-SAME-QUAL; test case Croydon College 130432, Computer Science 7.0).
+   - "% change" is offered on points and rates (catalogue §3 says Change in points / Change in pp).
+   - An AS-only focused subject is left out of its own Context group.
+
+   Each is moved verbatim into the lib, with an `openIssue` on its rule card.
+4. **R-IB-NONSUBJECT fails its real-data test.** Sevenoaks (118952) raw facts for 2024/25 list "Baccalaureate", "Learning Skills" and "Study Skills" (IB Core) at 244 entries each, and 225 each in 2023/24. The rollups exclude them, but the Teacher subject list is built from raw facts. Not checked: whether the subject picker shows them. Filtering would change a live list, so it is left for you.
+5. **The panel unit is 351 × 384, not 385 × 256.** The column track is 385, inside the 1280 cap. Panels are 12px apart, and columns 18 + 2 + 18px. The accordion round raised the height to 384. So a 3 × 2 meeting slide is 1231 × 780 and **doesn't fit 1280 × 720**. That's a night-2 decision: scale slides down, or a meeting-specific unit. The renderer's `PANEL_UNIT` uses the real numbers, and a test pins it to `PANEL_HEIGHT`.
+
+### S0 (audit)
+
+- **Notes and preferences:** a key-mapping layer, not a `chart_key` migration. Each seeded panel carries its legacy keys (`{phase}:{column}:{panel}`), and a unit test pins that shape to the page's own `panelNoteKey`. The 3 live notes are on pre-merge keys and already show nowhere. They are left alone, and the old `change` key is listed on each Trends panel for a later notes hub.
+- **R-TREND-3YR is superseded by R-TREND-LINE-4YR** (the live code's 4-year threshold). The 3-year constant survives only on the meetings page.
+- **Pre-existing bug, logged not fixed:** `/teacher` and `/teacher/meetings` load the membership without filtering to the signed-in user. RLS returns every colleague's approved row, so `.maybeSingle()` fails at a school with 2+ approved members. `/teacher/[phase]` has the same query. The S1 screens filter to the user.
+- **The join page was broken before 0.6:** it offered old role values that fail the live CHECK, and no Teacher option. It now offers Teacher only.
+
+### S1 (roles)
+
+- **School-Admin stays `is_admin` plus the account holder**, not a member of `roles[]`. That keeps every existing RLS helper exactly equivalent. The School-Admin chip can only be switched by the account holder, which is the existing trigger, and the holder is locked on.
+- **Roles are `text[]` with a CHECK constraint**, like every other "enum" in this schema. `role` is kept, synced to the most senior role, because `/account` and scripts still read it.
+- **Guy is seeded as the platform admin by profile id** (the mac.com profile, not the preview user). Nothing matches on email.
+- **The VC Sets switch turns all VC sets on or off for one school**, keeping the per-set visibility model. It is disabled with "No VC sets yet" while there are none (live has 0). `scripts/vc-sets.ts` still works.
+- **Platform's "Last active" comes from `sign_in_events`.** The board shows it, and the screen is platform-only. G13's "no screen" is about School-Admins, who still have no read path at all (the table has no SELECT policy).
+- **Look at it as… is read-only and logged.**
+  - The Teacher data routes (dashboard, chooser-set, phases, comparator-grades, ranking-population, subject-geography, subject-grade-geography) now also admit a platform admin, after the member check.
+  - Those routes serve school-level public data only. Saved sets, notes and preferences are not opened.
+  - So a look-as view doesn't show the school's shared saved sets (that would need an RLS grant on saved sets: a stop).
+  - Your own preferences and onboarding for that school are used and written. They are your rows.
+  - The role is shown in the banner but changes nothing yet: nothing gates on role until the role homes (night 2).
+- **The old testing school switcher is now platform-admin only** (403 otherwise), and its UI on `/account` is hidden for everyone else. It is still the destructive path (it deletes the caller's memberships and personal saved sets). Suggest retiring it now that look-as exists.
+- **Invite copies the school's join link** (`/join/{urn}`). There is no invite-email system.
+- **The S1 screens' own calls** (from the build, all visual or copy):
+  - **Light-theme text:** role and amber text mixes the accent towards `--fg`. Raw accent hex is too faint on white.
+  - **New tokens:** `ROLE_ACCENT`; `ATTENTION_ACCENT` for "needs attention" amber, separate from School-Admin; and the derived variables `--chip-fg` and `--edge-strong` for the board's #c9c9ce and #3a3a40. Teacher and SMT share hexes with the KS4 and KS5 phase accents, as the board draws them.
+  - **Font:** the app's Arial, not the board's system font.
+  - **Platform sizes:** the side panel is 374 and search 282, the board's rendered sizes.
+  - **People:**
+    - the Waiting chip is hidden at 0 and covers both pending statuses;
+    - approving sets roles to Teacher only;
+    - "school email matched" uses `join_school`'s own domain check;
+    - a person's last role can't be switched off unless they're School-Admin;
+    - job title saves on Enter or blur, and the card shows the email when there's none.
+  - **Teams:**
+    - "+ New team" creates "New team" (numbered if taken) and selects the name;
+    - automatic teams add a people count;
+    - collapsed teams show up to 6 avatars, then +n;
+    - the "+ Add people" picker is a tick list.
+  - **Site nav:** `/platform` keeps the site NavBar, and People/Teams hide it.
+
+### S2 (engine)
+
+- **Rule lift:** 21 must-lift rules moved verbatim into `src/lib` (new `teacher-view-measures`, `teacher-view-populations` and `teacher-view-comparisons`, plus existing libs). 30,888 scenarios are deep-equal before and after (harness in `docs/v0.6/audit_scripts/lift_equality`). R-SINGLE-BUCKET-100 is Data View only, so it is tagged, not lifted. Every Teacher-view rule ID is tagged at its enforcement points, and `docs/catalogue/rules.md` lists them from a grep, so they can't go stale.
+- **The matching rule's compare subset:** I read it strictly. A column that compares offers only views that compare, with every kind among those chosen. A non-comparing view is not offered in a comparing column. The doc's "all among those chosen" could also be read as allowing them.
+- **The renderer composes through the existing column hosts** (CandidatesPanels, SubjectPanels/GradeCountsPanels, ComparisonsPanels).
+  - The config decides columns, rows (order, names, time), accordion behaviour, error boundaries, placeholders and phone tabs.
+  - The hosts keep their data and view state, and CardBox still attaches title, source, note, export and fullscreen.
+  - Not yet: showing a *subset* or *reorder* of a panel's rail, cells spanning columns, and moving one view to another panel. Each needs a small `views` prop on the hosts, and lands with the editor (night 2).
+- **Override badges are not shown** to users: out of edit mode the dashboard looks as it does today. They are in the config (`data-override` on the panel) and on the Catalogue page, and the editor shows them (night 2).
+- **One batched fetch per dashboard: partly.** The dashboard route already returns the core payload in one call, and closed panels render nothing until opened. The client de-duplication layer for per-panel geography and grade fetches was **not built**: reading those fetchers was blocked mid-session. The audit's duplication list (B §2–4) is the to-do.
+- **Per-user state:** a sibling table, `dashboard_user_state`, keyed by dashboard, school and stable panel/view ids. It is not an extension of `teacher_view_preferences`, which the hand-coded path keeps using untouched. The four Teacher dashboards write through their legacy keys.
+- **Versions:** immutable by trigger. Personal dashboards keep their last 30 through `publish_dashboard` (a transaction-local flag lets that one prune through).
+- **No "alignment spacer" exists** in today's code. The column alignment comes from the pills' placement plus the fixed panel height. The config carries `features.alignmentSpacer` as a marker only.
+
+### S3 (Teacher dashboards as config)
+
+- **Marked overrides where the hand-built placement doesn't match its column:**
+  - Column 1 Trends against LA, region and England (F2);
+  - Results Trends also carries the comparator map and Grade counts' two railless views;
+  - Comparisons Current's headline Number tiles (whole-school focus).
+
+  Column 1 Results declares `subjects + averages (England)` as its compare, because it really shows England markers. The unit tests fail on any unmarked mismatch.
+- **The group switcher reads and writes the same Candidates/Results setting as today's toggle.** Flipping the flag loses no one's choice. The phone nav's toggle is unchanged.
+- **Catalogue page:** a parity check of each view in isolation isn't possible yet, because views render through their hosts. So the page shows the two whole dashboards side by side (hand-coded vs `?renderer=config`) through look-as, plus every card. The isolated live preview arrives with the chooser.
