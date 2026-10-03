@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@/lib/teacher-route-access";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     .eq("school_accounts.school_urn", urn)
     .maybeSingle();
   if (membershipError) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  if (!membership) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+  if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
   // The school's own LA, for the size-band lookup (see buildRankingPopulation).
   const { data: target } = await supabase.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>();

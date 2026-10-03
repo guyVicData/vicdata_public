@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@/lib/teacher-route-access";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveDefaultNearest, resolveFixedSet, resolveRankingSet } from "@/lib/chooser-sets";
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     .eq("school_accounts.school_urn", body.urn)
     .maybeSingle();
   if (membershipError) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  if (!membership) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+  if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
   try {
     if (body.set.kind === "nearest") return NextResponse.json(await resolveDefaultNearest(body.urn, body.phase));

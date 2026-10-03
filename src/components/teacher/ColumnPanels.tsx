@@ -21,6 +21,8 @@ import { CardBox } from "./CardBox";
 import { ChevronDown, IconButton } from "./PanelIcons";
 import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
+import { usePlanColumn } from "@/components/dashboard-config/plan";
+import { PanelBoundary, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -87,15 +89,15 @@ export function ColumnPanels({
   notes?: PanelNotes;
   render: Partial<Record<PanelId, PanelRender>>;
 }) {
-  return (
-    <div>
-      {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
+  // VicData 0.6: under ?renderer=config the dashboard's config decides the rows -- their
+  // order, which of them this column draws, the accordion behaviour -- and each panel
+  // gets its own error boundary. With no plan (every unflagged page) this is skipped and
+  // the column renders exactly as before.
+  const planned = usePlanColumn(columnId);
 
-      {PANEL_ORDER.map((id) => {
-        const panel = render[id];
-        if (!panel) return null;
+  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void) => {
         const open = panels.includes(id);
-        const toggle = () => onPanelsChange(togglePanel(panels, id));
+        const toggle = toggleOverride ?? (() => onPanelsChange(togglePanel(panels, id)));
         return (
           <CardBox
             key={`${columnId}-${id}`}
@@ -146,6 +148,45 @@ export function ColumnPanels({
             {({ fullscreen }) => panel.body(fullscreen)}
           </CardBox>
         );
+  };
+
+  if (planned) {
+    const { plan, column } = planned;
+    // D10: per layout. auto-close is today's standard accordion (togglePanel);
+    // independent opens and closes each panel on its own.
+    const independent = plan.config.layout.accordion === "independent";
+    return (
+      <div>
+        {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
+        {column.rows.map(({ row, panel: cfg }) => {
+          if (!cfg) return null;
+          if (cfg.dataviews.every((v) => v.kind === "placeholder")) return plan.superAdmin ? <PlannedPanel key={cfg.id} panel={cfg} /> : null;
+          const id = cfg.legacy?.panelId ?? row.legacyPanelId;
+          const panel = id ? render[id] : undefined;
+          if (!id || !panel) return null;
+          const toggle = independent
+            ? () => onPanelsChange(panels.includes(id) ? panels.filter((p) => p !== id) : [...panels, id])
+            : undefined;
+          return (
+            <div key={cfg.id} data-panel-id={cfg.id} data-row-time={row.time} data-override={cfg.override?.badge}>
+              <PanelBoundary panelId={cfg.id} title={panel.tag}>
+                {card(id, panel, toggle)}
+              </PanelBoundary>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
+
+      {PANEL_ORDER.map((id) => {
+        const panel = render[id];
+        if (!panel) return null;
+        return card(id, panel);
       })}
     </div>
   );

@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@/lib/teacher-route-access";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
     .eq("status", "approved")
     .eq("school_accounts.school_urn", urn)
     .maybeSingle();
-  if (!membership) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+  if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
   const { data: school } = await supabase.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>();
   const regionName = (await resolveTargetRegionNation(urn))?.regionName ?? null;

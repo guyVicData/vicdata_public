@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@/lib/teacher-route-access";
 import { NextRequest, NextResponse } from "next/server";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
@@ -102,7 +103,7 @@ export async function GET(request: NextRequest) {
   if (membershipError) {
     return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
   }
-  if (!approvedMembership) {
+  if (!approvedMembership && !(await isPlatformAdmin(supabase))) {
     return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
   }
 

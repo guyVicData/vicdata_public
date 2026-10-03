@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@/lib/teacher-route-access";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchAcademicProfiles } from "@/lib/academic-data-view";
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     console.error("[teacher/phases] membership check failed:", membershipError);
     return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
   }
-  if (!approvedMembership) {
+  if (!approvedMembership && !(await isPlatformAdmin(supabase))) {
     return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
   }
 
