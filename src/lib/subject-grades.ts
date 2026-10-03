@@ -81,6 +81,7 @@ export const BOTTOM_RANK: Record<string, number> = { Fail: 900, U: 901, Unclassi
 
 // Not attainment bands: DfE suppression and non-results. Excluded from the chart's axis
 // so a distribution is not padded with rows that cannot be compared between schools.
+// R-NON-GRADES-EXCL: never counted on either side of a grade rate or distribution.
 export const NON_GRADE_VALUES = new Set(["Suppressed", "No result", "No result / X", "X", "Covid impacted", "Not Awarded", "Awarded"]);
 
 // The GRADE_SCALES entry that best covers these grades (the same array object, so a caller
@@ -152,6 +153,7 @@ export type ThresholdOutcome = { rate: number; entries: number } | null;
 // Non-grades (suppression, "No result", "Covid impacted") are excluded from BOTH sides:
 // they are not attainment, so counting them in the denominator would depress a real rate
 // by however much of the cohort DfE chose not to publish.
+// R-GRADE-SCALE-MATCH, R-NON-GRADES-EXCL
 export function thresholdRate(rows: SubjectGradeCount[], phase: TeacherPhase): ThresholdOutcome {
   const graded = rows.filter((r) => !NON_GRADE_VALUES.has(r.grade));
   const total = graded.reduce((a, r) => a + r.entries, 0);

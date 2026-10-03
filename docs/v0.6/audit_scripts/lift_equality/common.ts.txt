@@ -1,0 +1,54 @@
+// Shared harness plumbing: data loading, scenario shape, item building (copied verbatim
+// from page.tsx buildSubjectItems, which is not being lifted) and output normalising.
+import { readFileSync } from "node:fs";
+
+export type SubjectItem = { key: string; subject: string; qualificationType: string; label: string; entries: number };
+
+export function buildSubjectItems(entries: any[]): SubjectItem[] {
+  const latest = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
+  if (latest === null) return [];
+  const byKey = new Map<string, SubjectItem>();
+  for (const e of entries) {
+    if (e.period !== latest) continue;
+    const key = `${e.subject}::${e.qualificationType}`;
+    const existing = byKey.get(key);
+    if (existing) existing.entries += e.entries;
+    else byKey.set(key, { key, subject: e.subject, qualificationType: e.qualificationType, label: e.subject, entries: e.entries });
+  }
+  const qualsPerSubject = new Map<string, Set<string>>();
+  for (const it of byKey.values()) {
+    const set = qualsPerSubject.get(it.subject) ?? new Set<string>();
+    set.add(it.qualificationType);
+    qualsPerSubject.set(it.subject, set);
+  }
+  for (const it of byKey.values()) {
+    if ((qualsPerSubject.get(it.subject)?.size ?? 0) > 1) it.label = `${it.subject} (${it.qualificationType})`;
+  }
+  return Array.from(byKey.values()).sort((a, b) => b.entries - a.entries);
+}
+
+export type Scenario = {
+  ticked: string[];
+  chosenFocusKey: string | null;
+  shared: "candidates" | "results";
+  resultsMeasureId: string;
+  savedAgainst: string | undefined;
+  contextSelected: string[];
+  bandSaved: string | undefined; // raw JSON as stored
+  bandPending: string | null;
+};
+
+export function loadData(urn: string, phase: string) {
+  return JSON.parse(readFileSync(`${import.meta.dirname}/data_${urn}_${phase}.json`, "utf8"));
+}
+
+// Functions (Measure.format etc.) are compared by what they print for a few values.
+export function normalise(v: any): any {
+  if (typeof v === "function") return `fn:${[0, 1.234, -5.6, 42, 1234.5].map((x) => { try { return String(v(x)); } catch { return "!"; } }).join("|")}`;
+  if (v instanceof Map) return { __map: Array.from(v.entries()).map(([k, x]) => [k, normalise(x)]) };
+  if (v instanceof Set) return { __set: Array.from(v).map(normalise) };
+  if (Array.isArray(v)) return v.map(normalise);
+  if (v && typeof v === "object") return Object.fromEntries(Object.keys(v).sort().map((k) => [k, normalise(v[k])]));
+  if (typeof v === "number" && Number.isNaN(v)) return "NaN";
+  return v;
+}

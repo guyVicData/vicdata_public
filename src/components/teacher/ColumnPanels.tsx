@@ -16,11 +16,19 @@
 //
 // Each column supplies its own panel contents through `render`; this file knows nothing
 // about measures, subjects or schools.
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { CardBox } from "./CardBox";
 import { ChevronDown, IconButton } from "./PanelIcons";
 import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
+import { usePlanColumn } from "@/components/dashboard-config/plan";
+import { PanelBoundary, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
+import { configuredRail, defaultEntry, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
+import { DATAVIEWS } from "@/catalogue/dataviews";
+import type { DashboardConfig, HostId, PanelConfig } from "@/catalogue/types";
+import { useDashboardRuntime, type DashboardRuntime } from "@/components/dashboard-config/runtime";
+import { CopyViewSourceContext, type CopyViewSourceValue } from "@/components/copy-view/CopyViewSourceContext";
+import { copySourceFor } from "@/lib/pin-context";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -70,6 +78,7 @@ export type PanelRender = {
 
 export function ColumnPanels({
   columnId,
+  host,
   panels,
   onPanelsChange,
   controls,
@@ -77,6 +86,9 @@ export function ColumnPanels({
   render,
 }: {
   columnId: string;
+  // VicData 0.6 E: which registered column host is drawing (catalogue HostId), so under a
+  // config each rail entry maps to its dataview id (rail.tsx). Unused without a plan.
+  host?: HostId;
   panels: PanelId[];
   onPanelsChange: (next: PanelId[]) => void;
   // The column's own data controls -- Results' measure pill, Context's and Comparisons'
@@ -87,15 +99,44 @@ export function ColumnPanels({
   notes?: PanelNotes;
   render: Partial<Record<PanelId, PanelRender>>;
 }) {
-  return (
-    <div>
-      {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
+  // VicData 0.6: under ?renderer=config the dashboard's config decides the rows -- their
+  // order, which of them this column draws, the accordion behaviour -- and each panel
+  // gets its own error boundary. With no plan (every unflagged page) this is skipped and
+  // the column renders exactly as before.
+  const planned = usePlanColumn(columnId);
+  // VicData 0.6 integration: the dashboard's runtime state (school, focus, measure, sets),
+  // provided only under a plan -- each panel tells its Export menu what to copy.
+  const runtime = useDashboardRuntime();
 
-      {PANEL_ORDER.map((id) => {
-        const panel = render[id];
-        if (!panel) return null;
+  // VicData 0.6 E: under a config, each panel's rail is the config's views in config
+  // order, and the panel opens on its defaultView -- switched to once, on first show, by
+  // the host's own rail button (so the host keeps owning its view state). Seeded Teacher
+  // configs list today's full rails with today's defaults, so nothing is switched there.
+  const pendingDefaults: { cfg: PanelConfig; entry: RailEntry }[] = [];
+  if (planned && host) {
+    const seen = new Set<PanelId>();
+    for (const { row, panel: cfg } of planned.column.rows) {
+      if (!cfg || cfg.dataviews.every((v) => v.kind === "placeholder")) continue;
+      const id = cfg.legacy?.panelId ?? row.legacyPanelId ?? hostPanelOf(cfg);
+      const raw = id ? render[id] : undefined;
+      if (!id || !raw || seen.has(id)) continue;
+      seen.add(id);
+      const first = defaultEntry(railEntries(raw.actions, host, id), cfg);
+      if (first) pendingDefaults.push({ cfg, entry: first });
+    }
+  }
+  const applied = useRef(new Set<string>());
+  useEffect(() => {
+    for (const { cfg, entry } of pendingDefaults) {
+      if (applied.current.has(cfg.id)) continue;
+      applied.current.add(cfg.id);
+      entry.onClick?.();
+    }
+  });
+
+  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void) => {
         const open = panels.includes(id);
-        const toggle = () => onPanelsChange(togglePanel(panels, id));
+        const toggle = toggleOverride ?? (() => onPanelsChange(togglePanel(panels, id)));
         return (
           <CardBox
             key={`${columnId}-${id}`}
@@ -146,9 +187,89 @@ export function ColumnPanels({
             {({ fullscreen }) => panel.body(fullscreen)}
           </CardBox>
         );
+  };
+
+  if (planned) {
+    const { plan, column } = planned;
+    // D10: per layout. auto-close is today's standard accordion (togglePanel);
+    // independent opens and closes each panel on its own.
+    const independent = plan.config.layout.accordion === "independent";
+    const embed = plan.embed;
+    const drawn = new Set<PanelId>();
+    const panelsShown = column.rows.map(({ row, panel: cfg }) => {
+          if (!cfg) return null;
+          if (cfg.dataviews.every((v) => v.kind === "placeholder")) return plan.superAdmin ? <PlannedPanel key={cfg.id} panel={cfg} /> : null;
+          // A config written by the editor need not carry today's legacy ids: the panel is
+          // whichever of the host's two panels its views are registered under.
+          const id = cfg.legacy?.panelId ?? row.legacyPanelId ?? hostPanelOf(cfg);
+          const raw = id ? render[id] : undefined;
+          if (!id || !raw) return null;
+          // Each host draws one Current and one Trends panel per column (0.6 limitation).
+          if (drawn.has(id)) return <PanelLimitNote key={cfg.id} panelId={cfg.id} text="This column already shows this panel. For now a column can show each of its Current and Trends panels once." />;
+          drawn.add(id);
+          let panel = raw;
+          if (host) {
+            panel = { ...raw, actions: configuredRail(railEntries(raw.actions, host, id), cfg) };
+          }
+          if (embed?.frame === "figure") {
+            // A meeting slot (or another frame that brings its own card): the figure alone,
+            // filling the room it is given. Title, source, note and export are the slot's.
+            return (
+              <div key={cfg.id} data-panel-id={cfg.id} data-embed="figure" className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto">
+                <PanelBoundary panelId={cfg.id} title={panel.tag}>
+                  {panel.body(embed.fullscreen)}
+                </PanelBoundary>
+              </div>
+            );
+          }
+          const toggle = independent
+            ? () => onPanelsChange(panels.includes(id) ? panels.filter((p) => p !== id) : [...panels, id])
+            : undefined;
+          const copy = runtime && host ? copyValueFor(plan.config, cfg, railEntries(raw.actions, host, id), runtime) : null;
+          return (
+            <div key={cfg.id} data-panel-id={cfg.id} data-row-time={row.time} data-override={cfg.override?.badge}>
+              <PanelBoundary panelId={cfg.id} title={panel.tag}>
+                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle)}</CopyViewSourceContext.Provider> : card(id, panel, toggle)}
+              </PanelBoundary>
+            </div>
+          );
+        });
+    if (embed?.frame === "figure") return <>{panelsShown}</>;
+    return (
+      <div>
+        {/* An embedded view's settings are pinned, so the column's own pills stay off. */}
+        {controls && !embed && <div className="mt-2.5 print:hidden">{controls}</div>}
+        {panelsShown}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
+
+      {PANEL_ORDER.map((id) => {
+        const panel = render[id];
+        if (!panel) return null;
+        return card(id, panel);
       })}
     </div>
   );
+}
+
+// VicData 0.6 integration: what "Copy this view…" copies from a configured panel -- the
+// view its rail has selected (else its default view), in the panel's context resolved
+// with the page's real labels, pinned from the dashboard's runtime state.
+function copyValueFor(config: DashboardConfig, cfg: PanelConfig, entries: RailEntry[], runtime: DashboardRuntime): CopyViewSourceValue | null {
+  const views = cfg.dataviews.flatMap((v) => (v.kind === "view" ? [v] : []));
+  const active = entries.find((e) => e.active)?.dataview;
+  const instance = views.find((v) => v.dataview === active) ?? views.find((v) => v.id === cfg.defaultView) ?? views[0];
+  if (!instance) return null;
+  try {
+    return { source: copySourceFor(config, cfg.id, instance, runtime), superAdmin: runtime.superAdmin };
+  } catch {
+    return null;
+  }
 }
 
 // Current panel rework round 1: every Current tag is the fixed word "Current", and the year
@@ -171,5 +292,30 @@ export function PanelSummary({ lead, leadColour, children }: { lead?: string; le
       {lead && <span className="font-bold whitespace-nowrap" style={{ color: leadColour }}>{lead}</span>}
       <span>{children}</span>
     </span>
+  );
+}
+
+// Which of a host's two panels (Current, Trends) a configured panel is: the panel its
+// first registered view is drawn in.
+function hostPanelOf(cfg: PanelConfig): PanelId | undefined {
+  for (const v of cfg.dataviews) {
+    if (v.kind !== "view") continue;
+    const dv = DATAVIEWS.find((d) => d.id === v.dataview);
+    if (dv) return dv.host.panel;
+  }
+  return undefined;
+}
+
+// A clear note where a config asks for something the 0.6 renderer can't draw yet, at the
+// panel's own size.
+export function PanelLimitNote({ panelId, text }: { panelId: string; text: string }) {
+  return (
+    <div
+      data-panel-id={panelId}
+      data-panel-limit=""
+      className="mt-3 flex items-center justify-center rounded-[10px] border border-dashed border-[var(--panel-border2)] p-4 text-center text-[12.5px] leading-relaxed text-[var(--muted2)]"
+    >
+      {text}
+    </div>
   );
 }

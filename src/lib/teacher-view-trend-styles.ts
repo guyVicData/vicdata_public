@@ -99,6 +99,7 @@ export function indexTo100(values: (number | null)[]): (number | null)[] {
 // Indexing answers "how much has each moved", which is what a headcount comparison needs.
 // A points or rate measure is already on one shared scale -- a GCSE 5.2 and a 6.1 mean the
 // same thing in every subject -- so it is drawn as it is and keeps its real levels.
+// R-INDEX-HEADCOUNTS
 export function shouldIndex(aggregate: "sum" | "mean"): boolean {
   return aggregate === "sum";
 }

@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@/lib/teacher-route-access";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
@@ -45,8 +46,10 @@ export async function GET(request: NextRequest) {
     .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
     .eq("status", "approved")
     .eq("school_accounts.school_urn", urn)
+    // Any approved row at this school proves membership: RLS shows colleagues only to members.
+    .limit(1)
     .maybeSingle();
-  if (!membership) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+  if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
   const { data: school } = await supabase.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>();
   const regionName = (await resolveTargetRegionNation(urn))?.regionName ?? null;
@@ -56,6 +59,7 @@ export async function GET(request: NextRequest) {
   const fetchRows = async (groupingType: "la" | "region" | "national", key: string | null) => {
     if (!key) return null;
     // LA and region keep the backend's minimum of 5 schools; England takes every real row.
+    // R-MIN-SCHOOLS (England exempt), R-KS5-ENGLAND-EXACT (exact qualification at Post-16)
     const minSchoolCount = groupingType === "national" ? 1 : undefined;
     const query = { measure: "avg_point_score", groupingType, groupingKeys: [key], subject, minSchoolCount };
     const rows =

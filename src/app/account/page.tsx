@@ -4,15 +4,14 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import SchoolSearch from "@/components/SchoolSearch";
+import { VISIBLE_ROLE_LABELS, visibleRolesOf } from "@/lib/roles";
 
-const ROLE_LABELS: Record<string, string> = {
-  head_governor: "Head / Governor",
-  admissions: "Admissions",
-  finance: "Finance",
-  director_of_studies: "Director of Studies",
-  head_of_department: "Head of Department",
-};
+// 0.6 S1: a member's roles are a set (school_memberships.roles), labelled from roles.ts;
+// School-Admin is is_admin or the account holder. HOD and Finance are hidden in 0.6.
+function rolesText(m: { roles?: string[] | null; role?: string | null; is_admin?: boolean | null; isAccountHolder?: boolean }): string {
+  const list = visibleRolesOf(m).map((r) => VISIBLE_ROLE_LABELS[r]);
+  return list.length ? list.join(", ") : "No role set";
+}
 
 const STATUS_LABELS: Record<string, string> = {
   approved: "Approved",
@@ -25,6 +24,7 @@ type Membership = {
   id: string;
   status: string;
   role: string | null;
+  roles: string[] | null;
   is_admin: boolean;
   individual_tier_active: boolean;
   school_account_id: string;
@@ -42,6 +42,7 @@ type Colleague = {
   id: string;
   status: string;
   role: string | null;
+  roles: string[] | null;
   is_admin: boolean;
   profiles: { email: string; full_name: string | null } | null;
 };
@@ -72,7 +73,7 @@ export default function AccountPage() {
     const { data, error } = await supabase
       .from("school_memberships")
       .select(
-        "id, status, role, is_admin, individual_tier_active, school_account_id, school_accounts!school_memberships_school_account_id_fkey(id, school_urn, tier, account_holder_membership_id, pending_account_holder_membership_id, schools(current_name))",
+        "id, status, role, roles, is_admin, individual_tier_active, school_account_id, school_accounts!school_memberships_school_account_id_fkey(id, school_urn, tier, account_holder_membership_id, pending_account_holder_membership_id, schools(current_name))",
       )
       .eq("profile_id", uid);
     if (error) console.error("Failed to load school memberships:", error);
@@ -82,7 +83,7 @@ export default function AccountPage() {
   }, []);
 
   useEffect(() => {
-    load();
+    (async () => { await load(); })();
   }, [load]);
 
   if (loading) return <main className="px-6 py-24 text-center text-sm text-neutral-500">Loading…</main>;
@@ -126,71 +127,7 @@ export default function AccountPage() {
       {memberships.map((m) => (
         <MembershipCard key={m.id} membership={m} userId={userId} onChange={load} />
       ))}
-
-      <TestingSchoolSwitcher />
     </main>
-  );
-}
-
-// Testing-only convenience (2026-09-05, per direct request) -- lets Guy's own account
-// jump between schools to exercise the Data View from many different school-type
-// angles without a separate real membership per school. Not a member-facing feature:
-// gated behind NEXT_PUBLIC_ENABLE_TESTING_SCHOOL_SWITCHER (unset/false in every real
-// environment -- the picker doesn't even render, let alone the API route it calls
-// doing anything, unless this is deliberately turned on) and labelled obviously as
-// testing-only rather than restricted to one hardcoded email -- see
-// docs/vicdata_data_view_open_questions.md for the full reasoning (an env flag avoids
-// baking a personal email into source, and this being a client-visible flag is fine
-// since the actual write is still profile-scoped server-side, not a real access gate
-// being weakened). Reuses SchoolSearch, the same picker the public home page and the
-// Data View's own "search to add" already use -- no new search UI.
-function TestingSchoolSwitcher() {
-  // Hooks called unconditionally, per the Rules of Hooks, even though this env check
-  // is really build-time-constant -- the enabled check below runs after them instead.
-  const supabase = createBrowserSupabaseClient();
-  const router = useRouter();
-  const [switching, setSwitching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const enabled = process.env.NEXT_PUBLIC_ENABLE_TESTING_SCHOOL_SWITCHER === "true";
-  if (!enabled) return null;
-
-  async function handleSelect(school: { urn: string; current_name: string }) {
-    setSwitching(true);
-    setError(null);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) {
-      setError("Not logged in.");
-      setSwitching(false);
-      return;
-    }
-    const res = await fetch("/api/testing/switch-school", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ urn: school.urn }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Could not switch schools.");
-      setSwitching(false);
-      return;
-    }
-    const body = (await res.json()) as { urn: string };
-    router.push(`/schools/${body.urn}/data`);
-  }
-
-  return (
-    <section className="mt-10 rounded-md border border-dashed border-amber-400 bg-amber-50 p-5 dark:border-amber-700 dark:bg-amber-950/30">
-      <h2 className="mb-1 text-xs font-bold uppercase tracking-wide text-amber-700 dark:text-amber-500">
-        Testing only — not a real feature
-      </h2>
-      <p className="mb-3 text-sm text-amber-800 dark:text-amber-400">
-        Switch which school your account is an approved member of, to test the Data View from a different school&rsquo;s point of
-        view. This replaces your current membership — it doesn&rsquo;t add a second one.
-      </p>
-      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-      {switching ? <p className="text-sm text-amber-700 dark:text-amber-500">Switching…</p> : <SchoolSearch onSelect={handleSelect} placeholder="Search for a school to switch to…" />}
-    </section>
   );
 }
 
@@ -244,8 +181,7 @@ function MembershipCard({
         <span className="text-xs text-neutral-500">{STATUS_LABELS[membership.status]}</span>
       </div>
       <p className="mt-1 text-sm text-neutral-500">
-        {membership.role ? ROLE_LABELS[membership.role] : "No role set"}
-        {membership.is_admin && " · Admin"}
+        {rolesText({ ...membership, isAccountHolder })}
         {isAccountHolder && " · Account holder"}
       </p>
 
@@ -313,14 +249,14 @@ function ManagementPanel({
   const loadColleagues = useCallback(async () => {
     const { data } = await supabase
       .from("school_memberships")
-      .select("id, status, role, is_admin, profiles(email, full_name)")
+      .select("id, status, role, roles, is_admin, profiles(email, full_name)")
       .eq("school_account_id", schoolAccountId);
     setColleagues((data as unknown as Colleague[]) ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolAccountId]);
 
   useEffect(() => {
-    loadColleagues();
+    (async () => { await loadColleagues(); })();
   }, [loadColleagues]);
 
   async function approve(membershipId: string) {
@@ -364,11 +300,10 @@ function ManagementPanel({
           <li key={c.id} className="flex items-center justify-between text-sm">
             <span>
               {c.profiles?.full_name || c.profiles?.email || "Member"}
-              {c.role && ` — ${ROLE_LABELS[c.role]}`}
+              {` — ${rolesText(c)}`}
               {c.status !== "approved" && (
                 <span className="ml-2 text-xs text-neutral-500">({STATUS_LABELS[c.status]})</span>
               )}
-              {c.is_admin && <span className="ml-2 text-xs text-neutral-500">Admin</span>}
             </span>
             <span className="flex gap-2">
               {c.status !== "approved" && (

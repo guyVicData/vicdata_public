@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-// The membership half of /api/testing/switch-school, factored out so the preview-session
+// The membership grant the retired /api/testing/switch-school used (removed in 0.6 S3b fix 5); the preview-session
 // route can reuse it rather than growing a second copy.
 //
 // The hard-won part of this logic is the FK cleanup, and it is hard-won literally: the

@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
     .eq("status", "approved")
     .eq("profile_id", userId)
     .eq("school_accounts.school_urn", urn)
+    // Any approved row at this school proves membership: RLS shows colleagues only to members.
+    .limit(1)
     .maybeSingle<{
       id: string;
       is_admin: boolean | null;

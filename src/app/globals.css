@@ -36,18 +36,25 @@
   /* The dashboard's column dividers. An alias, not a new colour: it follows
      --panel-border2 in each theme because it is declared on the same element. */
   --divider: var(--panel-border2);
+  /* 0.6 S1: how far accentText() (teacher-view-theme.ts) mixes an accent toward --fg. */
+  --accent-text-mix: 50%;
+  /* 0.6 S1 admin screens (People, Teams, Platform). Aliases derived from the tokens
+     above, so they follow either theme: the boards' secondary text (#c9c9ce on dark) and
+     their stronger edge for an open card or a dashed "off" chip (#3a3a40 on dark). */
+  --chip-fg: color-mix(in srgb, var(--fg) 82%, var(--bg));
+  --edge-strong: color-mix(in srgb, var(--panel-border2) 92%, var(--fg));
 }
 @media (prefers-color-scheme: dark) {
   #teacher-root:not([data-theme="light"]) {
     --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
     --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
-    --box-bg: #0e0e10; --source: #5c5c62;
+    --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
   }
 }
 #teacher-root[data-theme="dark"] {
   --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
   --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
-  --box-bg: #0e0e10; --source: #5c5c62;
+  --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
 }
 
 :root {
@@ -75,6 +82,23 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* 0.6 S3b fix 6: on a Teacher view page the body behind #teacher-root follows the page's
+   own theme, not the OS scheme -- otherwise a light dashboard on a dark-OS machine (or the
+   reverse) shows a band of the other colour below short content and beside the 1280px
+   column. The values are #teacher-root's own --bg pair (a parent can't read a child's
+   variable), and the selectors mirror its theme rules exactly. */
+body:has(#teacher-root) {
+  background: #f7f7f8;
+}
+@media (prefers-color-scheme: dark) {
+  body:has(#teacher-root:not([data-theme="light"])) {
+    background: #0a0a0b;
+  }
+}
+body:has(#teacher-root[data-theme="dark"]) {
+  background: #0a0a0b;
+}
+
 /* Member Data View PDF export (build brief v1, §9) -- window.print() + this
    stylesheet, no PDF-generation dependency, nothing rendered server-side. The site
    nav means nothing on a printed page; everything else that should hide (sidebar
@@ -88,7 +112,8 @@ body {
   nav {
     display: none !important;
   }
-  body {
+  body,
+  body:has(#teacher-root) {
     background: #ffffff;
     color: #000000;
   }

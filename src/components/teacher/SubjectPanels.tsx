@@ -18,7 +18,11 @@ import { academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
-  percentChange,
+  currentRowsWithDelta,
+  changeOf,
+  changePhrase,
+  changeTitle,
+  formatChange,
   rankByValue,
   periodsWithData,
   sliceFrom,
@@ -42,7 +46,7 @@ import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { GradeDistribution, type GradeRow } from "./GradeDistribution";
 import { NON_GRADE_VALUES, bandRate, gradeOrderFrom, type GradeRange } from "@/lib/subject-grades";
-import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
+import { useSubjectGradeGeography, withEnglandBandBenchmark, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { RankingsMap } from "./RankingsMap";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
@@ -77,6 +81,7 @@ export function SubjectPanels({
   groups = [],
   donut,
   yearControl = false,
+  pinnedYear = null,
   focus,
   controls,
   questions,
@@ -143,6 +148,9 @@ export function SubjectPanels({
   // Only the years the active measure really has (§6.3); absent elsewhere, matching the
   // wireframe, which draws it on Context alone.
   yearControl?: boolean;
+  // VicData 0.6 E: an embedded view pinned to a year (a meeting slot "as of 2023/24")
+  // opens the year control there instead of on the latest year. Only with yearControl.
+  pinnedYear?: number | null;
   // The dashboard's one focus subject (the shared control bar's chips). Content round S5
   // removed "All", so Trend and the donut always follow a single subject: this one, or
   // the first subject when it is not among `subjects`.
@@ -256,7 +264,9 @@ export function SubjectPanels({
   const [view, setView] = useState<"tiles" | "grades" | "donut" | "bar" | "list" | "table">(tiles ? "tiles" : donut && !rankedViews ? "donut" : "bar");
   // A ranked table opens in rank order (value, largest first), so its numbers read 1, 2, 3.
   const [sort, setSort] = useState<SortState>(rankedTable ? { key: "value", dir: "desc" } : { key: "delta", dir: "desc" });
-  const [yearIdx, setYearIdx] = useState<number | null>(null);
+  const [yearIdx, setYearIdx] = useState<number | null>(() =>
+    yearControl && pinnedYear !== null && periods.includes(pinnedYear) ? periods.indexOf(pinnedYear) : null,
+  );
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
@@ -281,19 +291,18 @@ export function SubjectPanels({
   // Grade bands: England's per-grade rows for the focused subject, every year, one fetch.
   const gradeGeo = useSubjectGradeGeography(gradeBand?.geography ?? null);
   const englandGradeRows = gradeGeo?.data?.national?.rows ?? [];
-  const englandBandRate = (period: number): number | null =>
-    gradeBand?.range ? bandRate(englandGradeRows.filter((r) => r.period === period), gradeBand.range)?.rate ?? null : null;
   // On Grade bands the focused subject's benchmark is England's rate on the same span (the
   // bars' marker, the table's "vs National", the tiles' gap); peers have no fetched
-  // England rows, so they carry none, as on the threshold measure.
-  const focusKeyIn = (subjectsIn.find((x) => x.key === focus) ?? subjectsIn[0])?.key ?? null;
+  // England rows, so they carry none, as on the threshold measure (R-BANDS-ENGLAND-BENCH,
+  // in the grade geography lib).
   const subjects: SubjectSeries[] = gradeBand
-    ? subjectsIn.map((x) => (x.key === focusKeyIn ? { ...x, benchmark: periods.map(englandBandRate) } : x))
+    ? withEnglandBandBenchmark(subjectsIn, focus, periods, englandGradeRows, gradeBand.range)
     : subjectsIn;
   const redesigned = changeScope !== "all";
 
   // The donut is Candidates-only, so a measure switch has to fall back rather than leave
-  // the panel on a view it can no longer draw.
+  // the panel on a view it can no longer draw. (R-DONUT-COUNTS-ONLY is decided by the
+  // caller through shareApplies(), teacher-view-measures.ts; this only honours it.)
   const effectiveView = (view === "donut" && !donut?.enabled) || (view === "tiles" && !tiles) || (view === "grades" && !gradeBand) || (view === "list" && !rankedViews) ? "bar" : view;
 
   // The source line with the caveat after it -- what every panel's "i" opens.
@@ -323,27 +332,16 @@ export function SubjectPanels({
   const latestIdx = yearIdx !== null && realIdx.includes(yearIdx) ? yearIdx : defaultIdx;
   const latest = latestIdx >= 0 ? periods[latestIdx] : null;
 
-  // The third column. Against a benchmark where there is one; otherwise against this
-  // subject's own previous published year, which is the other real comparison available
-  // -- never a column of dashes. Results' threshold measure is the case that needs it:
-  // the national anchor this app holds is points per entry, so a Grade 4+ rate has no
-  // published England figure to sit against.
-  const previousValue = (s: SubjectSeries): number | null => {
-    for (let i = latestIdx - 1; i >= 0; i--) if (s.values[i] !== null) return s.values[i];
-    return null;
-  };
-
   // The focused subject's key, resolved once -- highlighted in the bars and table, and
   // the one Trend and the donut follow.
   const focusedKey = (subjects.find((s) => s.key === focus) ?? subjects[0])?.key ?? null;
 
-  const rows = subjects.map((s) => {
-    const value = latestIdx >= 0 ? s.values[latestIdx] : null;
-    const bench = latestIdx >= 0 ? s.benchmark?.[latestIdx] ?? null : null;
-    const against = benchmarkLabel ? bench : previousValue(s);
-    const delta = value !== null && against !== null ? value - against : null;
-    return { s, value, bench, delta };
-  });
+  // The third column. Against a benchmark where there is one; otherwise against this
+  // subject's own previous published year, which is the other real comparison available
+  // -- never a column of dashes. Results' threshold measure is the case that needs it:
+  // the national anchor this app holds is points per entry, so a Grade 4+ rate has no
+  // published England figure to sit against (R-PREV-YEAR-FALLBACK, in the panels lib).
+  const rows = currentRowsWithDelta(subjects, latestIdx, !!benchmarkLabel);
 
   const barRows = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
   // Steps 9-10: in Context's modes every subject is tinted in Current's own order -- the
@@ -525,6 +523,7 @@ export function SubjectPanels({
         {donut && (
           <IconButton
             label={donut.enabled ? "Share (donut)" : "Share is only meaningful for candidate numbers"}
+            railLabel="Share (donut)"
             active={effectiveView === "donut"}
             disabled={!donut.enabled}
             onClick={() => setView("donut")}
@@ -895,7 +894,10 @@ export function SubjectPanels({
     ) : undefined,
   };
 
-  // -------------------------------------------------------------- % change
+  // -------------------------------------------------------------- change
+  // R-NUMBER-TYPE-HONESTY (S3b): every figure in this half is the measure's honest change --
+  // % for Context on Candidates (entries), points on average point score, percentage
+  // points on a rate -- and every title and sentence says which.
   const changeFull: PanelData = trimToData({
     periods,
     series: [
@@ -912,18 +914,19 @@ export function SubjectPanels({
     label: s.label,
     shortLabel: subjects.find((x) => x.key === s.key)?.shortLabel ?? s.label,
     colour: s.colour,
-    percent: percentChange(s.values),
+    value: changeOf(measure, s.values),
   }));
   // In Context's modes the group is a reference line, not a ranked peer (Option H).
   const rankedChange = changeBars
-    .filter((b) => b.percent !== null && !(redesigned && b.key.startsWith("group-")))
-    .sort((a, b) => b.percent! - a.percent!);
+    .filter((b) => b.value !== null && !(redesigned && b.key.startsWith("group-")))
+    .sort((a, b) => b.value! - a.value!);
+  const fmtChange = (v: number) => formatChange(measure, v);
   const bestChange = rankedChange[0];
   const worstChange = rankedChange[rankedChange.length - 1];
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
 
   const changeHalf: PanelRender = {
-    tag: "% Change",
+    tag: changeTitle(measure),
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: geography ? `How has ${geography.label} moved, against its LA, region and England?` : questions.change,
     actions: redesigned ? (
@@ -940,8 +943,8 @@ export function SubjectPanels({
     body: (fullscreen) =>
       !redesigned ? (
         <>
-          <ViewTitle>{scope ? `${scope}: % change since ${changeSince}` : `% change since ${changeSince}`}</ViewTitle>
-          <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+          <ViewTitle>{scope ? `${scope}: ${changePhrase(measure)} since ${changeSince}` : `${changeTitle(measure)} since ${changeSince}`}</ViewTitle>
+          <ChangeChart bars={changeBars} fullscreen={fullscreen} format={fmtChange} percent={measure.changeKind === "percent"} />
         </>
       ) : geography ? (
         <GeographyView
@@ -975,16 +978,17 @@ export function SubjectPanels({
       ) : (
         // Option H over every subject -- a list, so twenty rows just scroll.
         <>
-        <ViewTitle>{scope ? `${scope}: % change since ${changeSince}, ranked` : `${scopeNoun}: % change since ${changeSince}`}</ViewTitle>
+        <ViewTitle>{scope ? `${scope}: ${changePhrase(measure)} since ${changeSince}, ranked` : `${scopeNoun}: ${changePhrase(measure)} since ${changeSince}`}</ViewTitle>
         <CentredOnTarget watch={`change-list:${focusedKey}:${changeData.periods.join(",")}`}>
           <ChangeList
-            rows={changeBars.filter((b) => !b.key.startsWith("group-")).map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.percent }))}
+            rows={changeBars.filter((b) => !b.key.startsWith("group-")).map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.value }))}
             focusKey={focusedKey}
             group={
               groups[0]
-                ? { label: groups[0].label, value: percentChange(changeData.series.find((x) => x.key === "group-0")?.values ?? []) }
+                ? { label: groups[0].label, value: changeOf(measure, changeData.series.find((x) => x.key === "group-0")?.values ?? []) }
                 : undefined
             }
+            formatValue={measure.changeKind === "percent" ? undefined : fmtChange}
           />
         </CentredOnTarget>
         </>
@@ -992,19 +996,16 @@ export function SubjectPanels({
     summary:
       bestChange && worstChange && bestChange.key !== worstChange.key ? (
         <PanelSummary>
-          {bestChange.label} has grown the most ({bestChange.percent! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(bestChange.percent!))}%); {worstChange.label}{" "}
-          {worstChange.percent! < 0 ? "has declined the most" : "has grown the least"} (
-          {worstChange.percent! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(worstChange.percent!))}%) since {changeSince}.
+          {bestChange.label} has grown the most ({fmtChange(bestChange.value!)}); {worstChange.label}{" "}
+          {worstChange.value! < 0 ? "has declined the most" : "has grown the least"} ({fmtChange(worstChange.value!)}) since {changeSince}.
         </PanelSummary>
       ) : (
         <PanelSummary>Not enough published years yet to compare on change.</PanelSummary>
       ),
     source: sourceWithNote(spanLabel(changeData.periods)),
     headline: (() => {
-      const p = changeBars.find((b) => b.key === focusedSubject?.key)?.percent ?? null;
-      return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;
+      const p = changeBars.find((b) => b.key === focusedSubject?.key)?.value ?? null;
+      return p === null || p === undefined ? undefined : fmtChange(p);
     })(),
   };
 
@@ -1030,6 +1031,7 @@ export function SubjectPanels({
   return (
     <ColumnPanels
       columnId={columnId}
+      host={columnId === "context" ? "teacher.c2.context" : "teacher.c1.results"}
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}

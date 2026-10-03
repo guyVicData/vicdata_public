@@ -8,6 +8,7 @@
 // or an admin can create or edit a shared one.
 import type { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { RankingFilters } from "@/lib/comparator-chooser";
+import { cachedFetchJson } from "@/lib/fetch-cache";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
@@ -47,14 +48,13 @@ export type SavedSetsPayload = {
   target: { laName: string | null; independent: boolean };
 };
 
-export async function fetchSavedSets(supabase: Supa, urn: string, phase: string): Promise<SavedSetsPayload | null> {
+// Shared for 5 minutes (fetch-cache.ts, decision 10); `fresh` re-reads after a write.
+export async function fetchSavedSets(supabase: Supa, urn: string, phase: string, opts: { fresh?: boolean } = {}): Promise<SavedSetsPayload | null> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) return null;
-  const res = await fetch(`/api/teacher/saved-comparator-sets?urn=${encodeURIComponent(urn)}&phase=${phase}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.ok ? ((await res.json()) as SavedSetsPayload) : null;
+  const res = await cachedFetchJson<SavedSetsPayload>(`/api/teacher/saved-comparator-sets?urn=${encodeURIComponent(urn)}&phase=${phase}`, { token, fresh: opts.fresh });
+  return res.ok ? res.body : null;
 }
 
 // Create (id null) or update a set, then replace its members. Returns the set's id, or an

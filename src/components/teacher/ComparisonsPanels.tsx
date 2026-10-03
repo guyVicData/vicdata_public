@@ -23,7 +23,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage, SubjectGradeCount } from "@/lib/academic-data-view";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
+import { fetchComparatorGrades, rateSeriesByUrn } from "@/lib/teacher-view-comparator-grades";
+import { comparisonSchools, comparisonsCurrentView, onRankingMeasure as isOnRankingMeasure, rankedComparisons, sampleAllowsMap } from "@/lib/teacher-view-comparisons";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
@@ -31,6 +32,12 @@ import {
   meanOf,
   rankByValue,
   percentChange,
+  changeInTitle,
+  changeMagnitude,
+  changeOf,
+  changePhrase,
+  changeTitle,
+  formatChange,
   periodsWithData,
   sliceFrom,
   trimToData,
@@ -195,22 +202,16 @@ export function ComparisonsPanels({
   const seriesLoading = profilesLoading || (!!gradesKey && !gradesLoaded);
   // Each school's rate per year: its rows for this subject AND this qualification type
   // (a GCSE and a Cambridge National in one subject are scored apart), as the page does.
-  const rateSeries: Record<string, { period: number; value: number }[]> = {};
-  if (threshold && gradesLoaded && grades?.rows) {
-    for (const [urn, rows] of Object.entries(grades.rows)) {
-      const mine = rows.filter((g) => g.subject === threshold.subject && g.qualificationType === threshold.qualificationType);
-      rateSeries[urn] = Array.from(new Set(mine.map((g) => g.period)))
-        .sort((a, b) => a - b)
-        .map((period) => ({ period, value: threshold.rateOf(mine.filter((g) => g.period === period)) }))
-        .filter((r): r is { period: number; value: number } => r.value !== null);
-    }
-  }
+  const rateSeries: Record<string, { period: number; value: number }[]> =
+    threshold && gradesLoaded && grades?.rows
+      ? rateSeriesByUrn(grades.rows, threshold.subject, threshold.qualificationType, threshold.rateOf)
+      : {};
 
   // Column 3 round Part 1: Map is the default view, and first in the icon rail to match.
   const [viewChosen, setView] = useState<"tiles" | "graph" | "map" | "ranking">("map");
   // Part 4: a ranking has no Map -- its default is the tiles view -- and a list of schools
   // has no tiles view; whichever was chosen falls back to the other's default.
-  const view = rankingSet ? (viewChosen === "map" ? "tiles" : viewChosen) : viewChosen === "tiles" ? "map" : viewChosen;
+  const view = comparisonsCurrentView(rankingSet, viewChosen);
   // The card map's "Dot size / Colour" line, handed up by the map (onCaption) so it can
   // sit behind the caption button rather than over the map.
   const [mapCaption, setMapCaption] = useState<string | null>(null);
@@ -251,7 +252,7 @@ export function ComparisonsPanels({
   // measure: the same school reappears for any subject it does have figures for. Not
   // applied while the per-subject rows are still loading, when "no data yet" is not "no
   // data". The school itself always stays.
-  const schools = seriesLoading ? allSchools : allSchools.filter((s) => s.isTarget || seriesFor(s.urn).length > 0);
+  const schools = comparisonSchools(allSchools, seriesFor, seriesLoading);
   const target = schools.find((s) => s.isTarget) ?? null;
   const others = schools.filter((s) => !s.isTarget);
 
@@ -271,10 +272,7 @@ export function ComparisonsPanels({
   // ------------------------------------------------------------------ Current
   // A comparator with history but nothing in the latest year is left out of the ranking
   // for the same reason: a row of dashes is not a position.
-  const ranked = [...schools]
-    .map((s) => ({ ...s, value: valueAt(s.urn) }))
-    .filter((r) => r.isTarget || r.value !== null)
-    .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  const ranked = rankedComparisons(schools, valueAt);
   const placed = ranked.filter((r) => r.value !== null);
   const rankOfUrn = rankByValue(ranked.map((r) => ({ key: r.urn, value: r.value })));
   const targetRank = target ? rankOfUrn.get(target.urn) ?? null : null;
@@ -284,7 +282,7 @@ export function ComparisonsPanels({
   // Not on a rate: the map is still coloured and ranked by average point score.
   // Part 4: on a ranking, compared on the ranking's own measure (the headline, no subject
   // chip, not entries), the rank is the one in the WHOLE population, not in the sample.
-  const onRankingMeasure = !!rankingSet && !subjectLabel && !threshold && measure.id !== "entries";
+  const onRankingMeasure = isOnRankingMeasure(rankingSet, subjectLabel, threshold, measure.id);
   const setRank = rankingSet?.targetRank ? { rank: rankingSet.targetRank, total: rankingSet.ranked } : null;
   const shownRank =
     (onRankingMeasure || view === "tiles") && setRank
@@ -612,7 +610,7 @@ export function ComparisonsPanels({
   // Below TREND_LINE_MIN_YEARS real years TrendChart could only draw bars per year, which
   // is not a trend line: the panel is the table alone until the span supports a line.
   const hasTrendLine = trendChartKind(trendData) === "line";
-  const trendMapOk = !rankingSet && !!schoolUrn && trendTable.periods.length >= 2;
+  const trendMapOk = sampleAllowsMap(rankingSet) && !!schoolUrn && trendTable.periods.length >= 2;
   const trendShows = trendView === "map" && trendMapOk ? "map" : trendView === "table" || !hasTrendLine ? "table" : "chart";
 
   // The one title line over every view (ViewTitle): what is compared, over which schools,
@@ -698,23 +696,28 @@ export function ComparisonsPanels({
     ),
   };
 
-  // ---------------------------------------------------------------- % change
+  // ---------------------------------------------------------------- change
+  // R-NUMBER-TYPE-HONESTY (S3b): % change on candidates (a count); on an average point score
+  // or a rate the change in points or percentage points -- values, titles and sentences.
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
-  const ownPct = percentChange(changeData.series[0]?.values ?? []);
-  // Every school's % change over the span, as the table ranks them, and the set's average
+  const ownChange = changeOf(measure, changeData.series[0]?.values ?? []);
+  // Every school's change over the span, as the table ranks them, and the set's average
   // (the mean figure per year over the schools that have one, as Trend's "Average across"
   // line) as the reference -- not whichever school Trend's "vs:" points at.
-  const changeRows: ChangeRow[] = changeTable.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: percentChange(s.values) }));
+  const changeRows: ChangeRow[] = changeTable.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOf(measure, s.values) }));
   const averageLabel = `Average across ${setLabel.toLowerCase()}`;
-  const averagePct = percentChange(
+  const averageChange = changeOf(
+    measure,
     changeTable.periods.map((_, i) => meanOf(changeTable.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
   );
+  const fmtChange = (v: number) => formatChange(measure, v);
+  const changeOnPercent = measure.changeKind === "percent";
 
-  const changeMapOk = !rankingSet && !!schoolUrn && changeTable.periods.length >= 2;
+  const changeMapOk = sampleAllowsMap(rankingSet) && !!schoolUrn && changeTable.periods.length >= 2;
   const changeShows = changeView === "map" && !changeMapOk ? "chart" : changeView;
 
   const changeHalf: PanelRender = {
-    tag: "% Change",
+    tag: changeTitle(measure),
     afterTag: <FromYearMenu periods={realPeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: "How much has this school moved, against its comparators?",
     // Column 3 round Part 4: a table beside the chart, in the same format as Context's %
@@ -732,10 +735,18 @@ export function ComparisonsPanels({
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
       ) : changeShows === "map" ? (
         // The map that was Current's "Trends" mode, here on the panel it is about: each
-        // school's % change over this panel's span, the same figures as the ranked bars.
+        // school's change over this panel's span, the same figures as the ranked bars. A %
+        // change (a count) keeps the fixed ±% scale; points and percentage points take the
+        // absolute scale around the set's own real range, as Trend's map does.
         <>
-          <ViewTitle>% change in {comparedOn} since {changeSince}, coloured by school</ViewTitle>
-          {changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTable, percentChange), format: signedPct, label: `% change since ${changeSince}` })}
+          <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, coloured by school</ViewTitle>
+          {changeOnPercent
+            ? changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTable, percentChange), format: signedPct, label: `% change since ${changeSince}` })
+            : changeMap(fullscreen, "trend_absolute", {
+                byUrn: changeMapFor(changeTable, (v) => changeOf(measure, v)),
+                format: fmtChange,
+                label: `${changePhrase(measure)} since ${changeSince}`,
+              })}
         </>
       ) : changeShows === "table" ? (
         <>
@@ -748,25 +759,25 @@ export function ComparisonsPanels({
         // Option H, as Candidates and Context draw their % change: every school ranked by
         // its change, the school itself picked out, the set's average a dashed line.
         <>
-          <ViewTitle>% change in {comparedOn} since {changeSince}, ranked against the {setNoun}</ViewTitle>
+          <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, ranked against the {setNoun}</ViewTitle>
           <CentredOnTarget watch={`change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
-            <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averagePct }} />
+            <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averageChange }} formatValue={changeOnPercent ? undefined : fmtChange} />
           </CentredOnTarget>
         </>
       ),
     summary:
-      seriesLoading ? undefined : ownPct === null ? (
+      seriesLoading ? undefined : ownChange === null ? (
         <PanelSummary>Not enough published years yet to measure a change.</PanelSummary>
       ) : (
         <PanelSummary>
-          This school&rsquo;s {comparedOn} has {ownPct >= 0 ? "risen" : "fallen"} {Math.abs(Math.round(ownPct))}% since {changeSince}
-          {averagePct === null
+          This school&rsquo;s {comparedOn} has {ownChange >= 0 ? "risen" : "fallen"} {changeMagnitude(measure, ownChange)} since {changeSince}
+          {averageChange === null
             ? "."
-            : `, against ${averagePct >= 0 ? "a rise" : "a fall"} of ${Math.abs(Math.round(averagePct))}% for the ${averageLabel.toLowerCase()}.`}
+            : `, against ${averageChange >= 0 ? "a rise" : "a fall"} of ${changeMagnitude(measure, averageChange)} for the ${averageLabel.toLowerCase()}.`}
         </PanelSummary>
       ),
     source: source(spanLabel(changeData.periods)),
-    headline: seriesLoading ? undefined : ownPct === null || ownPct === undefined ? undefined : `${ownPct >= 0 ? "+" : "−"}${Math.abs(Math.round(ownPct))}%`,
+    headline: seriesLoading ? undefined : ownChange === null || ownChange === undefined ? undefined : fmtChange(ownChange),
   };
 
   // Trends row merge round: the one Trends panel -- Trend's views then % change's in one
@@ -818,6 +829,7 @@ export function ComparisonsPanels({
   return (
     <ColumnPanels
       columnId="rankings"
+      host="teacher.c3.comparisons"
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}

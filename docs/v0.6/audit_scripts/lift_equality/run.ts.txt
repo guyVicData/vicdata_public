@@ -1,0 +1,68 @@
+// node run.ts snapshot  -> writes snapshot.json of OLD outputs (hash per scenario)
+// node run.ts compare   -> OLD (live) vs NEW (lib calls) per scenario, and OLD vs snapshot
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { isDeepStrictEqual } from "node:util";
+import { buildSubjectItems, loadData, normalise, type Scenario } from "./common";
+import { computeOld } from "./old";
+
+const mode = process.argv[2] ?? "compare";
+const SCHOOLS = ["100053", "117037"];
+const PHASES = ["ks4", "ks5"] as const;
+
+async function main() {
+  const computeNew = mode === "compare" ? (await import("./new")).computeNew : null;
+  const snapPath = `${import.meta.dirname}/snapshot.json`;
+  const snap: Record<string, string> = mode === "compare" && existsSync(snapPath) ? JSON.parse(readFileSync(snapPath, "utf8")) : {};
+  const out: Record<string, string> = {};
+  const summary: Record<string, { scenarios: number; equal: number; snapEqual: number; firstDiff?: string }> = {};
+  for (const urn of SCHOOLS) {
+    for (const phase of PHASES) {
+      const data = loadData(urn, phase);
+      const items = buildSubjectItems(data.dashboard.subjectData.entries);
+      const allKeys = items.map((i) => i.key);
+      const bandCustom = phase === "ks5" ? JSON.stringify({ top: "A*", bottom: "B" }) : JSON.stringify({ top: "9", bottom: "4" });
+      const sel = allKeys.filter((_, i) => i % 3 === 1).slice(0, 4);
+      const s = (summary[`${urn}/${phase}`] = { scenarios: 0, equal: 0, snapEqual: 0 } as any);
+      for (const focus of allKeys) {
+        const tickedSets = [allKeys, Array.from(new Set([...allKeys.slice(0, 5), focus]))];
+        for (const [ti, ticked] of tickedSets.entries()) {
+          const combos: Omit<Scenario, "ticked" | "chosenFocusKey">[] = [];
+          for (const savedAgainst of [undefined, "area", "whole", "selected"]) {
+            for (const contextSelected of savedAgainst === "selected" ? [[], sel, [focus]] : [[]]) {
+              combos.push({ shared: "candidates", resultsMeasureId: "points", savedAgainst, contextSelected, bandSaved: undefined, bandPending: null });
+              for (const m of ["points", "threshold", "bands", "counts", "bogus"]) {
+                for (const bandSaved of m === "bands" || m === "counts" ? [undefined, bandCustom, "{bad json"] : [undefined]) {
+                  combos.push({ shared: "results", resultsMeasureId: m, savedAgainst, contextSelected, bandSaved, bandPending: null });
+                }
+              }
+              combos.push({ shared: "results", resultsMeasureId: "bands", savedAgainst, contextSelected, bandSaved: undefined, bandPending: phase === "ks5" ? "B" : "6" });
+            }
+          }
+          for (const [ci, c] of combos.entries()) {
+            for (const rk of [false, true]) {
+              const sc: Scenario = { ...c, ticked, chosenFocusKey: focus };
+              const id = `${urn}/${phase}/${focus}/t${ti}/c${ci}/r${rk ? 1 : 0}`;
+              const o = normalise(computeOld(data, phase, sc, rk));
+              const h = createHash("sha1").update(JSON.stringify(o)).digest("hex");
+              out[id] = h;
+              s.scenarios++;
+              if (computeNew) {
+                const n = normalise(computeNew(data, phase, sc, rk));
+                if (isDeepStrictEqual(o, n)) s.equal++;
+                else if (!s.firstDiff) {
+                  const keys = Object.keys(o).filter((k) => !isDeepStrictEqual(o[k], n[k]));
+                  s.firstDiff = `${id}: ${keys.join(",")}`;
+                }
+                if (snap[id] === h) s.snapEqual++;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (mode === "snapshot") writeFileSync(snapPath, JSON.stringify(out));
+  console.log(JSON.stringify(summary, null, 1));
+}
+main();

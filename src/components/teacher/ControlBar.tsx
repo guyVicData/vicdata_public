@@ -70,6 +70,7 @@ export function ControlBar({
   onFocus,
   onEditSubjects,
   chrome,
+  switcher,
 }: {
   // Content round S1: the badge draws the phase's own PhaseGlyph -- the one the Teacher
   // home tiles and the nav's phase switcher use -- not a separate mortarboard.
@@ -86,6 +87,9 @@ export function ControlBar({
   onEditSubjects: () => void;
   // The theme toggle and export, which belong to the page rather than to this bar.
   chrome?: ReactNode;
+  // 0.6, ?renderer=config only: the linked-dashboard switcher drawn in the toggle's place
+  // (GroupSwitcher). Absent = the Candidates/Results toggle, as before.
+  switcher?: ReactNode;
 }) {
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3">
@@ -100,7 +104,7 @@ export function ControlBar({
           </p>
         </div>
 
-        <MeasureToggle measure={measure} onMeasure={onMeasure} />
+        {switcher ?? <MeasureToggle measure={measure} onMeasure={onMeasure} />}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 print:hidden">

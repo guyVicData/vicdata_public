@@ -171,6 +171,10 @@ export function IconButton({
   active?: boolean;
   disabled?: boolean;
   onClick?: () => void;
+  // VicData 0.6 E: the rail label the catalogue registers this button's view under
+  // (Dataview.host.rail), where the visible label varies -- e.g. Context's disabled donut,
+  // whose tooltip explains why. Identification only; never rendered.
+  railLabel?: string;
   children: ReactNode;
 }) {
   return (

@@ -1,0 +1,38 @@
+// S3b fix 3b sweep: every scenario's CHANGE figures, as the change views print them, through
+// whichever lib the tsconfig maps @/ to. Before the fix the lib has no changeOf, so the
+// views' own percentChange is used -- exactly what they printed. Writes chg_<label>.json.
+import { createHash } from "node:crypto";
+import { writeFileSync } from "node:fs";
+import * as T from "@/lib/teacher-view-panels";
+import { loadData } from "./common";
+import { compute } from "./h";
+import { SETS, scenarios } from "./runh";
+const L: any = T;
+const label = process.argv[2];
+const signedPct = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v))}%`;
+const fullMeasure = (phase: "ks4" | "ks5", m: { id: string; label: string }, headlineLabel?: string) =>
+  headlineLabel && m.label === headlineLabel ? T.headlineMeasure(phase, m.label) : T.measureById(phase, m.id);
+const chg = (m: any, v: (number | null)[]) => (L.changeOf ? L.changeOf(m, v) : T.percentChange(v));
+const fmt = (m: any, v: number | null) => (v === null ? "—" : L.formatChange ? L.formatChange(m, v) : signedPct(v));
+export function changeFigures(data: any, phase: "ks4" | "ks5", o: any) {
+  const cm = fullMeasure(phase, o.contextMeasure);
+  const ctx = o.contextSeries.map((s: any) => [s.key, fmt(cm, chg(cm, s.values))]);
+  const ctxGroup = fmt(cm, chg(cm, o.groupsCtx));
+  const focus = o.contextSeries.find((s: any) => s.key === o.focusKey);
+  const sentence = focus ? T.trendSentence({ subjectClause: "X", values: focus.values, measure: cm, startLabel: "Y" })?.sentence ?? null : null;
+  const xm = fullMeasure(phase, o.comparisonsMeasure, o.comparisonsMeasure.label === "Attainment 8" || (phase === "ks5" && o.comparisonsMeasure.id === "points" && !o.threshold) ? o.comparisonsMeasure.label : undefined);
+  const xp = o.xpValues.map(([u, v]: any) => [u, fmt(xm, chg(xm, v))]);
+  return { kind: { ctx: o.contextMeasure.id, xp: o.comparisonsMeasure.id }, ctx, ctxGroup, sentence, xp };
+}
+if (label) {
+  const out: Record<string, string> = {};
+  for (const [urn, phase] of SETS) {
+    const data = loadData(urn, phase);
+    for (const [id, sc, rk] of scenarios(data, phase)) {
+      const f = changeFigures(data, phase, compute(data, phase, sc, rk));
+      out[`${urn}/${phase}/${id}`] = [f.kind.ctx, f.kind.xp, ...["ctx", "ctxGroup", "sentence", "xp"].map((k) => createHash("sha1").update(JSON.stringify((f as any)[k])).digest("hex").slice(0, 10))].join(",");
+    }
+  }
+  writeFileSync(`${import.meta.dirname}/chg_${label}.json`, JSON.stringify(out));
+  console.log(label, Object.keys(out).length);
+}

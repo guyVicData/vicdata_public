@@ -7,8 +7,15 @@
 // (the citation), a link under the whole column rather than the panel (the note), or
 // page-level only (print). Grouped here so a panel's metadata and its actions sit
 // together, out of the way of the figure.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { DashboardPlanContext } from "@/components/dashboard-config/plan";
+import { CopyViewSourceContext } from "@/components/copy-view/CopyViewSourceContext";
 import { MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
+
+// VicData 0.6 S6: loaded only when someone opens it, so pages that never can (every
+// hand-coded dashboard) don't carry the dialog.
+const CopyViewDialog = lazy(() => import("@/components/copy-view/CopyViewDialog").then((m) => ({ default: m.CopyViewDialog })));
 
 // ---------------------------------------------------------------- source (§4)
 
@@ -193,9 +200,20 @@ export const ExportIcon = (
 // turned out to be wrong -- see the build report). Both are SHOWN and visibly disabled,
 // the house pattern round 6 §5 set for the greyed Grade-bands/counts measures: absence
 // reads as a known gap rather than an omission nobody noticed.
+//
+// VicData 0.6 S6 (scope brief §7.4): the two disabled options become one "Copy this view…"
+// -- but only where 0.6 is drawing: under a dashboard plan (the config renderer, flag on)
+// or on /dashboards/*. Everywhere else (every live, hand-coded dashboard) the menu is
+// exactly as it was. The panel's host provides what to copy (CopyViewSourceContext); with
+// no source the item is hidden.
 export function PanelExport({ onPrint }: { onPrint: () => void }) {
   const [open, setOpen] = useState(false);
+  const [copying, setCopying] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
+  const plan = useContext(DashboardPlanContext);
+  const pathname = usePathname();
+  const copy = useContext(CopyViewSourceContext);
+  const v06 = plan !== null || !!pathname?.startsWith("/dashboards");
   return (
     <span className="relative" ref={ref}>
       <button
@@ -213,10 +231,21 @@ export function PanelExport({ onPrint }: { onPrint: () => void }) {
         <span className="absolute bottom-6 left-0 z-30 block">
           <PanelMenu label="Export" width={212}>
             <MenuRow label="Print this graph" onClick={() => { setOpen(false); onPrint(); }} />
-            <MenuRow label="Copy to custom dashboard" tag="Coming soon" disabled onClick={() => {}} />
-            <MenuRow label="Copy to a presentation" tag="Coming soon" disabled onClick={() => {}} />
+            {v06 ? (
+              copy && <MenuRow label="Copy this view…" onClick={() => { setOpen(false); setCopying(true); }} />
+            ) : (
+              <>
+                <MenuRow label="Copy to custom dashboard" tag="Coming soon" disabled onClick={() => {}} />
+                <MenuRow label="Copy to a presentation" tag="Coming soon" disabled onClick={() => {}} />
+              </>
+            )}
           </PanelMenu>
         </span>
+      )}
+      {copying && copy && (
+        <Suspense fallback={null}>
+          <CopyViewDialog open source={copy.source} superAdmin={copy.superAdmin} onCopied={copy.onCopied} onClose={() => setCopying(false)} />
+        </Suspense>
       )}
     </span>
   );

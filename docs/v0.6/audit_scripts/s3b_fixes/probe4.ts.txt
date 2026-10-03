@@ -1,0 +1,29 @@
+// The Teacher subject list at IB schools, 2024/25, and what it feeds.
+import { loadData } from "./common";
+import { compute, itemsOf } from "./h";
+const CASES: [string, string, string][] = [
+  ["118952", "Sevenoaks School", "Chemistry::IBO Higher level component"],
+  ["100369", "The Godolphin and Latymer School", "Chemistry::IBO Higher level component"],
+];
+const out: any[] = [];
+for (const [urn, name, focus] of CASES) {
+  const data = loadData(urn, "ks5");
+  const items = itemsOf(data.dashboard.subjectData.entries);
+  const ib = items.filter((i) => /^IBO |^International Baccalaureate/.test(i.qualificationType));
+  const nonSubj = items.filter((i) => /^(Baccalaureate|Learning Skills|Study Skills|Self Development)$/.test(i.subject) && /Baccalaureate|Diploma Programme Core/.test(i.qualificationType));
+  const run = (shared: "candidates" | "results", m: string, against: string) =>
+    compute(data, "ks5", { ticked: items.map((i) => i.key), chosenFocusKey: focus, shared, resultsMeasureId: m, savedAgainst: against, contextSelected: [], bandSaved: undefined, bandPending: null }, false) as any;
+  const cand = run("candidates", "points", "whole");
+  const li = cand.contextPeriods.length - 1;
+  const thr = run("results", "threshold", "whole");
+  out.push({
+    urn, name,
+    listed: items.length, ibTab: ib.length, nonSubject: nonSubj.map((i) => `${i.subject} ${i.entries}`).join(", ") || "none",
+    top3: items.slice(0, 3).map((i) => i.subject).join(", "),
+    allSubjectsEntriesTotal: cand.donut.groupTotals[li], allSubjectsDrawn: cand.contextSeries.length,
+    focusShare: (100 * cand.contextSeries.find((s: any) => s.key === focus).values[li] / cand.donut.groupTotals[li]).toFixed(1) + "%",
+    rankOfN: cand.schoolSubjects.length,
+    thresholdYears: thr.contextPeriods.length, thresholdAllSubjectsAvg: thr.contextGroupAverage.filter((v: any) => v !== null).map((v: number) => v.toFixed(1)).join(" ") || "none",
+  });
+}
+console.log(JSON.stringify(out, null, 1));

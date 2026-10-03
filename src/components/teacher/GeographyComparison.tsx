@@ -87,7 +87,7 @@ export function GeographyView({
   view: "chart" | "table";
   fullscreen: boolean;
 }) {
-  const noun = metric === "entries" ? "entries" : "average point score";
+  const noun = metric === "entries" ? "entries" : "average points";
   const heading = <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{geography.label} against the wider system</p>;
   const note = (text: string) => (
     <>

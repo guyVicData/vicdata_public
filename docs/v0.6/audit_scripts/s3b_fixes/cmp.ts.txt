@@ -1,0 +1,24 @@
+// node cmp.ts <before> <after>: per school/phase, scenarios equal / differing, and which output keys differ.
+import { readFileSync } from "node:fs";
+const [a, b] = process.argv.slice(2).map((l) => JSON.parse(readFileSync(`${import.meta.dirname}/out_${l}.json`, "utf8")));
+const keys: string[] = a.__keys;
+if (JSON.stringify(keys) !== JSON.stringify(b.__keys)) console.log("KEY SETS DIFFER", keys, b.__keys);
+const sets = new Map<string, { both: number; equal: number; onlyBefore: number; onlyAfter: number; keyDiffs: Record<string, number>; byMeasure?: Record<string, number> }>();
+const setOf = (id: string) => id.split("/").slice(0, 2).join("/");
+const row = (s: string) => sets.get(s) ?? (sets.set(s, { both: 0, equal: 0, onlyBefore: 0, onlyAfter: 0, keyDiffs: {} }), sets.get(s)!);
+for (const id of Object.keys(a)) {
+  if (id === "__keys" || id.split("/").length < 3) continue;
+  const r = row(setOf(id));
+  if (!(id in b)) { r.onlyBefore++; continue; }
+  r.both++;
+  if (a[id] === b[id]) { r.equal++; continue; }
+  const [pa, ta] = a[id].split("|"), [pb] = b[id].split("|");
+  const ha = pa.split(","), hb = pb.split(",");
+  r.byMeasure ??= {}; r.byMeasure[ta] = (r.byMeasure[ta] ?? 0) + 1;
+  keys.forEach((k, i) => { if (ha[i] !== hb[i]) r.keyDiffs[k] = (r.keyDiffs[k] ?? 0) + 1; });
+}
+for (const id of Object.keys(b)) if (id !== "__keys" && id.split("/").length >= 3 && !(id in a)) row(setOf(id)).onlyAfter++;
+let tot = { both: 0, equal: 0 };
+for (const [s, r] of sets) { tot.both += r.both; tot.equal += r.equal; console.log(s, JSON.stringify(r)); }
+for (const s of sets.keys()) { const ia = a[s] ?? [], ib = b[s] ?? []; const gone = ia.filter((k: string) => !ib.includes(k)); if (gone.length || ia.length !== ib.length) console.log(s, "items", ia.length, "->", ib.length, "removed:", gone.join(" | ")); }
+console.log("TOTAL scenarios in both", tot.both, "fully equal", tot.equal);

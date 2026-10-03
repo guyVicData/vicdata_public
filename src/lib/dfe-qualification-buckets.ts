@@ -100,6 +100,17 @@ export function ks5BucketEntriesKey(bucket: Ks5Bucket): string {
   return `bucket:${bucket}::entries`;
 }
 
+// R-KS4-POINTS-GCSE-FULL, R-ENTRIES-NOT-POINTS: the one qualification type per stage that
+// actually carries a points-based score. Confirmed live against ingested data: only these
+// two feed avg_point_score into the rollup, so only their row can honestly claim the
+// headline-derived `results` figure. Every other qualification type at the same stage has
+// real entries and no score. (Moved here from SubjectAreaSection.tsx in 0.6 S2, unchanged.)
+export const POINTS_BEARING_QUALIFICATION: Record<"ks2" | "ks4" | "ks5", string | null> = {
+  ks2: null,
+  ks4: "GCSE (9-1) Full Course",
+  ks5: "GCE A level",
+};
+
 // T Level is now its own real bucket on DfE's own published points. It previously fell
 // to "other" because the points practical guide has no table for it and still says only
 // "T Level Points for 16-19 performance tables will be shared in due course". Re-checking
@@ -135,9 +146,39 @@ export function displayBucketFor(qualificationType: string): Ks5Bucket {
 // those lists compute, while keeping them selectable in the picker. Deliberately narrower
 // than displayBucketFor() === "other": EPQ, Core Maths, Pre-U and the rest of Other are
 // genuine qualifications in their own right and stay in those lists as before.
+// R-KS5-ASAEA-EXCL: the predicate every Teacher view population applies (see
+// teacher-view-populations.ts); never applied to the focused item's own figure.
 export function isAsLevelOrAea(qualificationType: string): boolean {
   const q = qualificationType || "";
   return q.startsWith("GCE AS level") || q === "Advanced Extension Award";
+}
+
+// R-IB-NONSUBJECT: rows that are NOT subject choices -- the IB Diploma's own total score
+// ("Baccalaureate", also the Combined Certificate's award) and the three mandatory IB Core
+// components ("Learning Skills" = Theory of knowledge, "Study Skills" = Extended essay,
+// "Self Development" = Reflective project). Keyed on (qualification, subject), never on
+// subject text alone: "Study Skills" is also DfE's name for the EPQ, a real subject.
+// A PORT, not a second list: the exact set of vicdata's
+// ingest/academic_aggregates.py:_NON_SUBJECT_ROWS (sibling repo /Users/guy/dev/vicdata),
+// which keeps them out of every rollup. Change it there first, then copy it here verbatim.
+// (The IB Core components still carry points into the IB bucket's figure there; that is
+// the rollup's business, not the subject list's.)
+export const NON_SUBJECT_ROWS: ReadonlySet<string> = new Set(
+  [
+    ["International Baccalaureate", "Baccalaureate"],
+    ["International Baccalaureate Combined Certificate", "Baccalaureate"],
+    ["Other academic", "Baccalaureate"],
+    ["IBO Diploma Programme Core", "Learning Skills"],
+    ["IBO Diploma Programme Core", "Study Skills"],
+    ["IBO Diploma Programme Core", "Self Development"],
+    ["Other academic", "Learning Skills"],
+    ["Other academic", "Self Development"],
+  ].map(([qualification, subject]) => `${qualification}::${subject}`),
+);
+
+// R-IB-NONSUBJECT: is_non_subject_row() in academic_aggregates.py, same arguments.
+export function isNonSubjectRow(qualification: string, subject: string): boolean {
+  return NON_SUBJECT_ROWS.has(`${qualification}::${subject}`);
 }
 
 // Table 2a. `*` is the SAME GRADE as `A*`, just DfE's label for it in the 2021-2023
@@ -253,6 +294,7 @@ export function challengeFor(qualificationType: string, size: number | null, gra
       const p = table[grade];
       return p === undefined ? null : p / size;
     }
+    // R-IB-NONSUBJECT
     // The whole Diploma ("International Baccalaureate", size 5, grades 24-45) and the
     // Combined Certificate (size 0) are AGGREGATES of the same students' own HL/SL/Core
     // results. Scoring them alongside the components counts the same work twice and

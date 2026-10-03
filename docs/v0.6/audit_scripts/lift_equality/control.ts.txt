@@ -1,0 +1,14 @@
+// Negative control: the comparison must notice a one-rule change. Monkeypatch one lib
+// function's result (AS/AEA exclusion off) and confirm the outputs then differ.
+import { isDeepStrictEqual } from "node:util";
+import { buildSubjectItems, loadData, normalise } from "./common";
+import { computeOld } from "./old";
+import * as P from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-populations";
+import { computeNew } from "./new_mut";
+const data = loadData("100053", "ks5");
+const keys = buildSubjectItems(data.dashboard.subjectData.entries).map((i) => i.key);
+const sc = { ticked: keys, chosenFocusKey: keys[0], shared: "candidates" as const, resultsMeasureId: "points", savedAgainst: "whole", contextSelected: [], bandSaved: undefined, bandPending: null };
+console.log("mutated (AS/AEA rows kept) equal:", isDeepStrictEqual(normalise(computeOld(data, "ks5", sc, false)), normalise(computeNew(data, "ks5", sc, false))));
+
+
+

@@ -1,0 +1,56 @@
+// node runh.ts <label>  -> out_<label>.json: per scenario, a short hash of each output key.
+// Run once against each lib root (tsx --tsconfig <root>/tsconfig.json); cmp.ts compares.
+import { createHash } from "node:crypto";
+import { writeFileSync } from "node:fs";
+import { loadData, normalise, type Scenario } from "./common";
+import { compute, itemsOf } from "./h";
+
+const label = process.argv[2];
+export const SETS: [string, "ks4" | "ks5"][] = [
+  ["100053", "ks4"], ["100053", "ks5"], ["117037", "ks4"], ["117037", "ks5"],
+  ["130432", "ks5"], ["118952", "ks5"], ["100369", "ks5"], ["130448", "ks5"],
+];
+export function* scenarios(data: any, phase: "ks4" | "ks5"): Generator<[string, Scenario, boolean]> {
+  const items = itemsOf(data.dashboard.subjectData.entries);
+  const allKeys = items.map((i) => i.key);
+  const bandCustom = phase === "ks5" ? JSON.stringify({ top: "A*", bottom: "B" }) : JSON.stringify({ top: "9", bottom: "4" });
+  const sel = allKeys.filter((_, i) => i % 3 === 1).slice(0, 4);
+  // Big colleges: every 2nd focus plus every AS/AEA item, to keep the run tractable.
+  const focuses = allKeys.length > 80 ? allKeys.filter((k, i) => i % 2 === 0 || /AS level|Advanced Extension/.test(k)) : allKeys;
+  for (const focus of focuses) {
+    const tickedSets = [allKeys, Array.from(new Set([...allKeys.slice(0, 5), focus]))];
+    for (const [ti, ticked] of tickedSets.entries()) {
+      const combos: Omit<Scenario, "ticked" | "chosenFocusKey">[] = [];
+      for (const savedAgainst of [undefined, "area", "whole", "selected"]) {
+        for (const contextSelected of savedAgainst === "selected" ? [[], sel, [focus]] : [[]]) {
+          combos.push({ shared: "candidates", resultsMeasureId: "points", savedAgainst, contextSelected, bandSaved: undefined, bandPending: null });
+          for (const m of ["points", "threshold", "bands", "counts", "bogus"]) {
+            for (const bandSaved of m === "bands" || m === "counts" ? [undefined, bandCustom, "{bad json"] : [undefined]) {
+              combos.push({ shared: "results", resultsMeasureId: m, savedAgainst, contextSelected, bandSaved, bandPending: null });
+            }
+          }
+          combos.push({ shared: "results", resultsMeasureId: "bands", savedAgainst, contextSelected, bandSaved: undefined, bandPending: phase === "ks5" ? "B" : "6" });
+        }
+      }
+      for (const [ci, c] of combos.entries()) for (const rk of [false, true]) yield [`${focus}/t${ti}/c${ci}/r${rk ? 1 : 0}`, { ...c, ticked, chosenFocusKey: focus }, rk];
+    }
+  }
+}
+if (label) {
+  const out: Record<string, any> = { __keys: null };
+  let n = 0;
+  const t0 = Date.now();
+  for (const [urn, phase] of SETS) {
+    const data = loadData(urn, phase);
+    out[`${urn}/${phase}`] = itemsOf(data.dashboard.subjectData.entries).map((i) => i.key);
+    for (const [id, sc, rk] of scenarios(data, phase)) {
+      const o = normalise(compute(data, phase, sc, rk));
+      out.__keys ??= Object.keys(o);
+      out[`${urn}/${phase}/${id}`] = out.__keys.map((k: string) => createHash("sha1").update(JSON.stringify(o[k]) ?? "u").digest("hex").slice(0, 10)).join(",") + "|" + o.contextMeasure.id;
+      n++;
+    }
+    console.error(urn, phase, n, Math.round((Date.now() - t0) / 1000) + "s");
+  }
+  writeFileSync(`${import.meta.dirname}/out_${label}.json`, JSON.stringify(out));
+  console.log(label, "scenarios", n);
+}

@@ -1,6 +1,6 @@
 "use client";
 
-// Teacher view, round 6: the % change panel's diverging bar chart (round-6 wireframe,
+// Teacher view, round 6: the change panel's diverging bar chart (round-6 wireframe,
 // all four boards; brief §4.1-§4.3).
 //
 // Every subject at once, no selector -- "comparing subjects against each other is the
@@ -18,19 +18,37 @@ export type ChangeBar = {
   label: string;
   shortLabel: string;
   colour: string;
-  // null where the span has no two real figures to compare -- rendered as a gap with a
-  // dash, never as 0%, which would read as "measured, and it did not move".
-  percent: number | null;
+  // The change in the measure's honest type (R-NUMBER-TYPE-HONESTY, S3b): a % change for a
+  // count, points or percentage points otherwise -- `format` prints it. null where the
+  // span has no two real figures to compare -- rendered as a gap with a dash, never as 0,
+  // which would read as "measured, and it did not move".
+  value: number | null;
 };
 
-export function ChangeChart({ bars, fullscreen = false }: { bars: ChangeBar[]; fullscreen?: boolean }) {
-  const real = bars.filter((b) => b.percent !== null);
+const signedPercent = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v))}%`;
+
+export function ChangeChart({
+  bars,
+  fullscreen = false,
+  format = signedPercent,
+  percent = true,
+}: {
+  bars: ChangeBar[];
+  fullscreen?: boolean;
+  // How a value prints, sign included. Absent = a rounded % change (a count's).
+  format?: (v: number) => string;
+  // Whether the values are % changes (10% axis steps) or the measure's own units.
+  percent?: boolean;
+}) {
+  const real = bars.filter((b) => b.value !== null);
   if (real.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No two years of published figures to compare yet.</p>;
   }
   // Round out to a 10% step with headroom, so the tallest bar never touches the axis top
   // and the scale reads as a scale rather than as whatever the maximum happened to be.
-  const axisMax = Math.max(10, Math.ceil((Math.max(...real.map((b) => Math.abs(b.percent!))) * 1.3) / 10) * 10);
+  // Points and percentage points round out to a whole unit instead.
+  const top = Math.max(...real.map((b) => Math.abs(b.value!))) * 1.3;
+  const axisMax = percent ? Math.max(10, Math.ceil(top / 10) * 10) : Math.max(1, Math.ceil(top));
   const lane = fullscreen ? LANE * 2 : LANE;
   const barWidth = bars.length > 5 ? 20 : 26;
 
@@ -40,9 +58,9 @@ export function ChangeChart({ bars, fullscreen = false }: { bars: ChangeBar[]; f
         <svg width="34" height={lane * 2 + 12} viewBox={`0 0 34 ${lane * 2 + 12}`} aria-hidden="true" className="shrink-0">
           <line x1="32" y1="6" x2="32" y2={lane * 2 + 6} stroke="var(--panel-border2)" strokeWidth="1" />
           {[
-            { y: 6, label: `+${axisMax}%` },
+            { y: 6, label: format(axisMax) },
             { y: lane + 6, label: "0" },
-            { y: lane * 2 + 6, label: `−${axisMax}%` },
+            { y: lane * 2 + 6, label: format(-axisMax) },
           ].map((t) => (
             <g key={t.label}>
               <line x1="28" y1={t.y} x2="32" y2={t.y} stroke="var(--muted3)" strokeWidth="1" />
@@ -54,21 +72,21 @@ export function ChangeChart({ bars, fullscreen = false }: { bars: ChangeBar[]; f
           <div className="absolute inset-x-0 h-px bg-[var(--panel-border2)]" style={{ top: lane + 6 }} />
           <div className="flex h-full items-center justify-center gap-3 overflow-x-auto px-1">
             {bars.map((b) => {
-              const pct = b.percent ?? 0;
-              const up = b.percent === null ? 0 : Math.max(0, Math.round((pct / axisMax) * lane));
-              const down = b.percent === null ? 0 : Math.max(0, Math.round((-pct / axisMax) * lane));
+              const v = b.value ?? 0;
+              const up = b.value === null ? 0 : Math.max(0, Math.round((v / axisMax) * lane));
+              const down = b.value === null ? 0 : Math.max(0, Math.round((-v / axisMax) * lane));
               return (
-                <div key={b.key} className="flex shrink-0 flex-col items-center" title={`${b.label}: ${b.percent === null ? "no figure" : `${pct >= 0 ? "+" : "−"}${Math.abs(Math.round(pct))}%`}`}>
+                <div key={b.key} className="flex shrink-0 flex-col items-center" title={`${b.label}: ${b.value === null ? "no figure" : format(v)}`}>
                   <div className="flex items-end" style={{ height: lane + 6 }}>
                     <div
                       className="rounded-t"
-                      style={{ width: barWidth, height: Math.max(b.percent === null ? 0 : 3, up), background: b.colour }}
+                      style={{ width: barWidth, height: Math.max(b.value === null ? 0 : 3, up), background: b.colour }}
                     />
                   </div>
                   <div className="flex items-start" style={{ height: lane + 6 }}>
                     <div
                       className="rounded-b"
-                      style={{ width: barWidth, height: Math.max(b.percent === null ? 0 : 3, down), background: b.colour }}
+                      style={{ width: barWidth, height: Math.max(b.value === null ? 0 : 3, down), background: b.colour }}
                     />
                   </div>
                 </div>
@@ -83,8 +101,8 @@ export function ChangeChart({ bars, fullscreen = false }: { bars: ChangeBar[]; f
           {bars.map((b) => (
             <div key={b.key} className="flex shrink-0 flex-col items-center gap-px" style={{ width: barWidth }}>
               <span className="truncate text-[10px] text-[var(--muted3)]">{b.shortLabel}</span>
-              <span className="text-[10px] font-bold tabular-nums" style={{ color: b.percent === null ? "var(--muted3)" : b.colour }}>
-                {b.percent === null ? "—" : `${b.percent >= 0 ? "+" : "−"}${Math.abs(Math.round(b.percent))}%`}
+              <span className="text-[10px] font-bold tabular-nums" style={{ color: b.value === null ? "var(--muted3)" : b.colour }}>
+                {b.value === null ? "—" : format(b.value)}
               </span>
             </div>
           ))}

@@ -862,3 +862,278 @@ Build prompt: `docs/vicdata_phase3_teacher_view_comparator_chooser_build_claude_
 **The LA list says "mainstream" but isn't.** `list2` for The Chase ("In Worcestershire (all sectors)", upstream) includes special schools and alternative provision, while the wireframe's copy says "mainstream sectors". The copy is kept as designed. `local16Plus` stays additive: its 36 schools beyond list2 are their own group on screen 2b, under its real label ("Schools and FE colleges, 16+, in Worcestershire").
 
 **Migration history.** Both new migrations were applied surgically (`supabase db query --linked -f`) and recorded individually (`supabase migration repair --status applied <version>`). A plain `supabase db push` would have replayed three older local migrations that the remote history shows as unapplied, including `teacher_view_persistence`, which the live site already relies on (so it was presumably applied by other means). Those three are untouched and still need their own reconciliation.
+
+---
+
+## 2026-10-03 — VicData 0.6 night 1 (S0–S3): judgement calls logged, build carried on
+
+Night 1 prompt: `docs/v0.6/vicdata_0_6_night1_claude_code_prompt_v1.md`. Audit: `docs/v0.6/audit_v1.md`. Build report: `docs/v0.6/night1_build_report_v1.md`. All recommended defaults in the design docs were treated as decided; the calls below are the ones the docs didn't settle, or where the code contradicted them.
+
+### For Guy first
+
+1. **Pre-existing security hole, not fixed (a stop condition).** `school_memberships_insert_own` checks only `profile_id = auth.uid()`, so any signed-in user can insert an `approved`, `is_admin = true` membership in any school straight through PostgREST. `school_accounts_insert_authenticated` likewise lets anyone create accounts with holder fields set. The fix is written in `docs/v0.6/proposed_sql/membership_insert_hardening.sql`. It removes no legitimate path: joins go through `join_school`, and the testing routes use the service role. It is an RLS change on memberships, so it waits for you. S1 already closes the role half: a trigger forces `roles = {teacher}` on any non-service insert.
+2. **The S2 migration is written but NOT applied.** S1's migration was applied live and recorded. After that, the session's permission classifier blocked further live-database actions, even a read-only check. `20261103100000_v06_s2_dashboards.sql` is tested on local Postgres (PGlite) instead: 39 RLS, cap, immutability and publish checks, plus the seed run twice. The apply and seed commands are in the migration's header. Until it's applied, the flagged renderer uses the configs seeded in code (the same JSON).
+3. **Three live behaviours break rules the catalogue states, and were kept as they are**, because fixing any of them changes a figure on a live dashboard:
+   - Post-16 Context blends a subject's A level, BTEC and IB points into one figure, and "All subjects" has no qualification-family filter (R-POINTS-SAME-QUAL; test case Croydon College 130432, Computer Science 7.0).
+   - "% change" is offered on points and rates (catalogue §3 says Change in points / Change in pp).
+   - An AS-only focused subject is left out of its own Context group.
+
+   Each is moved verbatim into the lib, with an `openIssue` on its rule card.
+4. **R-IB-NONSUBJECT fails its real-data test.** Sevenoaks (118952) raw facts for 2024/25 list "Baccalaureate", "Learning Skills" and "Study Skills" (IB Core) at 244 entries each, and 225 each in 2023/24. The rollups exclude them, but the Teacher subject list is built from raw facts. Not checked: whether the subject picker shows them. Filtering would change a live list, so it is left for you.
+5. **The panel unit is 351 × 384, not 385 × 256.** The column track is 385, inside the 1280 cap. Panels are 12px apart, and columns 18 + 2 + 18px. The accordion round raised the height to 384. So a 3 × 2 meeting slide is 1231 × 780 and **doesn't fit 1280 × 720**. That's a night-2 decision: scale slides down, or a meeting-specific unit. The renderer's `PANEL_UNIT` uses the real numbers, and a test pins it to `PANEL_HEIGHT`.
+
+### S0 (audit)
+
+- **Notes and preferences:** a key-mapping layer, not a `chart_key` migration. Each seeded panel carries its legacy keys (`{phase}:{column}:{panel}`), and a unit test pins that shape to the page's own `panelNoteKey`. The 3 live notes are on pre-merge keys and already show nowhere. They are left alone, and the old `change` key is listed on each Trends panel for a later notes hub.
+- **R-TREND-3YR is superseded by R-TREND-LINE-4YR** (the live code's 4-year threshold). The 3-year constant survives only on the meetings page.
+- **Pre-existing bug, logged not fixed:** `/teacher` and `/teacher/meetings` load the membership without filtering to the signed-in user. RLS returns every colleague's approved row, so `.maybeSingle()` fails at a school with 2+ approved members. `/teacher/[phase]` has the same query. The S1 screens filter to the user.
+- **The join page was broken before 0.6:** it offered old role values that fail the live CHECK, and no Teacher option. It now offers Teacher only.
+
+### S1 (roles)
+
+- **School-Admin stays `is_admin` plus the account holder**, not a member of `roles[]`. That keeps every existing RLS helper exactly equivalent. The School-Admin chip can only be switched by the account holder, which is the existing trigger, and the holder is locked on.
+- **Roles are `text[]` with a CHECK constraint**, like every other "enum" in this schema. `role` is kept, synced to the most senior role, because `/account` and scripts still read it.
+- **Guy is seeded as the platform admin by profile id** (the mac.com profile, not the preview user). Nothing matches on email.
+- **The VC Sets switch turns all VC sets on or off for one school**, keeping the per-set visibility model. It is disabled with "No VC sets yet" while there are none (live has 0). `scripts/vc-sets.ts` still works.
+- **Platform's "Last active" comes from `sign_in_events`.** The board shows it, and the screen is platform-only. G13's "no screen" is about School-Admins, who still have no read path at all (the table has no SELECT policy).
+- **Look at it as… is read-only and logged.**
+  - The Teacher data routes (dashboard, chooser-set, phases, comparator-grades, ranking-population, subject-geography, subject-grade-geography) now also admit a platform admin, after the member check.
+  - Those routes serve school-level public data only. Saved sets, notes and preferences are not opened.
+  - So a look-as view doesn't show the school's shared saved sets (that would need an RLS grant on saved sets: a stop).
+  - Your own preferences and onboarding for that school are used and written. They are your rows.
+  - The role is shown in the banner but changes nothing yet: nothing gates on role until the role homes (night 2).
+- **The old testing school switcher is now platform-admin only** (403 otherwise), and its UI on `/account` is hidden for everyone else. It is still the destructive path (it deletes the caller's memberships and personal saved sets). Suggest retiring it now that look-as exists.
+- **Invite copies the school's join link** (`/join/{urn}`). There is no invite-email system.
+- **The S1 screens' own calls** (from the build, all visual or copy):
+  - **Light-theme text:** role and amber text mixes the accent towards `--fg`. Raw accent hex is too faint on white.
+  - **New tokens:** `ROLE_ACCENT`; `ATTENTION_ACCENT` for "needs attention" amber, separate from School-Admin; and the derived variables `--chip-fg` and `--edge-strong` for the board's #c9c9ce and #3a3a40. Teacher and SMT share hexes with the KS4 and KS5 phase accents, as the board draws them.
+  - **Font:** the app's Arial, not the board's system font.
+  - **Platform sizes:** the side panel is 374 and search 282, the board's rendered sizes.
+  - **People:**
+    - the Waiting chip is hidden at 0 and covers both pending statuses;
+    - approving sets roles to Teacher only;
+    - "school email matched" uses `join_school`'s own domain check;
+    - a person's last role can't be switched off unless they're School-Admin;
+    - job title saves on Enter or blur, and the card shows the email when there's none.
+  - **Teams:**
+    - "+ New team" creates "New team" (numbered if taken) and selects the name;
+    - automatic teams add a people count;
+    - collapsed teams show up to 6 avatars, then +n;
+    - the "+ Add people" picker is a tick list.
+  - **Site nav:** `/platform` keeps the site NavBar, and People/Teams hide it.
+
+### S2 (engine)
+
+- **Rule lift:** 21 must-lift rules moved verbatim into `src/lib` (new `teacher-view-measures`, `teacher-view-populations` and `teacher-view-comparisons`, plus existing libs). 30,888 scenarios are deep-equal before and after (harness in `docs/v0.6/audit_scripts/lift_equality`). R-SINGLE-BUCKET-100 is Data View only, so it is tagged, not lifted. Every Teacher-view rule ID is tagged at its enforcement points, and `docs/catalogue/rules.md` lists them from a grep, so they can't go stale.
+- **The matching rule's compare subset:** I read it strictly. A column that compares offers only views that compare, with every kind among those chosen. A non-comparing view is not offered in a comparing column. The doc's "all among those chosen" could also be read as allowing them.
+- **The renderer composes through the existing column hosts** (CandidatesPanels, SubjectPanels/GradeCountsPanels, ComparisonsPanels).
+  - The config decides columns, rows (order, names, time), accordion behaviour, error boundaries, placeholders and phone tabs.
+  - The hosts keep their data and view state, and CardBox still attaches title, source, note, export and fullscreen.
+  - Not yet: showing a *subset* or *reorder* of a panel's rail, cells spanning columns, and moving one view to another panel. Each needs a small `views` prop on the hosts, and lands with the editor (night 2).
+- **Override badges are not shown** to users: out of edit mode the dashboard looks as it does today. They are in the config (`data-override` on the panel) and on the Catalogue page, and the editor shows them (night 2).
+- **One batched fetch per dashboard: partly.** The dashboard route already returns the core payload in one call, and closed panels render nothing until opened. The client de-duplication layer for per-panel geography and grade fetches was **not built**: reading those fetchers was blocked mid-session. The audit's duplication list (B §2–4) is the to-do.
+- **Per-user state:** a sibling table, `dashboard_user_state`, keyed by dashboard, school and stable panel/view ids. It is not an extension of `teacher_view_preferences`, which the hand-coded path keeps using untouched. The four Teacher dashboards write through their legacy keys.
+- **Versions:** immutable by trigger. Personal dashboards keep their last 30 through `publish_dashboard` (a transaction-local flag lets that one prune through).
+- **No "alignment spacer" exists** in today's code. The column alignment comes from the pills' placement plus the fixed panel height. The config carries `features.alignmentSpacer` as a marker only.
+
+### S3 (Teacher dashboards as config)
+
+- **Marked overrides where the hand-built placement doesn't match its column:**
+  - Column 1 Trends against LA, region and England (F2);
+  - Results Trends also carries the comparator map and Grade counts' two railless views;
+  - Comparisons Current's headline Number tiles (whole-school focus).
+
+  Column 1 Results declares `subjects + averages (England)` as its compare, because it really shows England markers. The unit tests fail on any unmarked mismatch.
+- **The group switcher reads and writes the same Candidates/Results setting as today's toggle.** Flipping the flag loses no one's choice. The phone nav's toggle is unchanged.
+- **Catalogue page:** a parity check of each view in isolation isn't possible yet, because views render through their hosts. So the page shows the two whole dashboards side by side (hand-coded vs `?renderer=config`) through look-as, plus every card. The isolated live preview arrives with the chooser.
+
+## 2026-10-03 — Guy's decisions after night 1 (read before night 2; these win over the design docs)
+
+Guy reviewed `docs/v0.6/night1_build_report_v1.md` and the night-1 entries above. **All the fixes below fold into night 2**, as a new first stage, **S3b — Fixes**, before S4. Each fix is its own commit. Where a fix deliberately changes a live figure, the commit message and the night-2 report carry a before/after table for named real schools. These fixes live in the shared lib, so the hand-coded and config renderers change together, and flag-off vs flag-on parity must still hold afterwards.
+
+### Before night 2 starts (Guy, by hand)
+- Guy applies the S2 migration and seed with the three commands in the night-1 report.
+
+### S3b — Fixes (do first)
+1. **Membership insert hardening.** Approved, as written in `docs/v0.6/proposed_sql/membership_insert_hardening.sql`. Not urgent (Guy is the only user), but in scope. Turn it into a proper migration file, test it locally (PGlite) with join_school and a direct-PostgREST insert attempt, and **leave it for Guy to apply**, as with S2. Don't apply it live.
+2. **The `.maybeSingle()` membership bug** on `/teacher`, `/teacher/meetings` and `/teacher/[phase]`: filter to the signed-in user, as the S1 screens do. Test at a school with 2+ approved members.
+3. **Rule conformance: three deliberate figure changes.**
+   - **R-POINTS-SAME-QUAL:** Post-16 Context must not blend A level, BTEC and IB points into one figure. Points are shown per qualification family, and "All subjects" gets the same family filter. Where a blended figure is all there is, it's suppressed with the usual wording, never fabricated. Test case: Croydon College 130432, Computer Science.
+   - **Honest number types:** wherever "% change" is offered on **points**, it becomes **Change in points**. On **rates** it becomes **Change in percentage points**. Labels, values and titles all change. Counts keep % change.
+   - **R-FOCUS-NEVER-FILTERED:** an AS-only focused subject counts itself into its own Context group (Part D decision 1).
+4. **R-IB-NONSUBJECT:** filter "Baccalaureate" and the IB Core rows ("Learning Skills", "Study Skills", "Self Development") out of the Teacher subject list. Use the existing qualification-keyed exclusion list the rollups use. Don't create a second list. Check first whether the subject picker showed them at Sevenoaks 118952, and report it. The rule test must then pass.
+5. **Retire the old testing school switcher**: remove the route and its `/account` UI. "Look at it as…" replaces it.
+6. **The light-theme dark band** below short content on `#teacher-root`: fix it before the flag ever flips.
+
+### Decisions for the rest of night 2
+7. **Meeting slides scale as a whole.**
+   - Lay a slide out at the real panel unit (351 × 384, 12 px gaps).
+   - A logical 16:9 slide canvas is sized to hold a title plus 3 × 2 units (about 1530 × 860; take exact numbers from `PANEL_UNIT`).
+   - Scale the whole slide uniformly to fit the screen, in the editor, Present, Grid and PDF.
+   - **No separate meeting panel size.** Panels stay identical to the dashboard's.
+   - MeetingPlay's 289 × 192 cells were drawn at 0.75 of the old assumed unit. Follow its *behaviour*, and use the real unit for sizes.
+8. **The compare-subset rule stays strict.** A comparing column only offers comparing views. "Browse VicData dashboards" is the deliberate way to mix.
+9. **Trend threshold:** the code's 4 years (R-TREND-LINE-4YR) wins over the docs' 3, everywhere, including the meetings page constant.
+10. **Fetch de-duplication** (audit B §2–4): build it after S7 if time allows. Otherwise log it as the first post-0.6 item.
+11. **Database:** expect the same live-database block. Write each night-2 migration (including any for meetings), test it locally, and list the apply commands in the report for Guy. Don't stop over it.
+
+## 2026-10-03 — VicData 0.6 night 2, S6 (library, role homes, icons, Copy this view): judgement calls
+
+Boards: Main, HomeSMT, Icon, CopyTo, CopyToMeeting. Each was screenshotted at 390 wide in both themes beside its board (headless harness, scratchpad `s6/cmp-*.png`).
+
+- **Flag.** The role-home additions on `/teacher` (Dashboards tile, role switch, SMT/Admissions homes, "Next: …" on Meetings) show only with the 0.6 flag on (`configRendererRequested`: `?renderer=config` or the env flag). Flag off, `/teacher` is pixel-identical to before (diffed, both themes), and its membership query is unchanged. `/dashboards` is a new route, linked only from the flagged home.
+- **Single-role Teacher, flag on: two visible changes.** The additive Dashboards tile (between Post-16 and Recruitment) and the Meetings line reading "Next: {meeting}, {date}" when one is coming up. Both are what the spec asks for.
+- **A single-role SMT or Admissions user, flag on, no longer sees the GCSE/Post-16 tiles.** Their home shows the empty key-dashboards tile, as §4.10 says ("can't reach other roles' homes"). Today they get the Teacher home. Worth a look before the flag flips.
+- **Default lens** for a multi-role person: the last one they picked (localStorage), else the most senior (SMT, then Teacher, then Admissions). HomeSMT draws SMT on. Look-as: the previewed role is the only lens, and School-Admin previews the Teacher home.
+- **Board copy treated as annotation, not UI:** HomeSMT's footnote ("Teacher home: GCSE and Post-16. SMT reaches…") is left out. The role switch's hint is shortened to "Shown because a School-Admin gave you more than one role. Each has its own home." Main's footnote ("GCSE and Post-16 also stay on Home…") is kept, because it tells a user something. Admissions' empty tile reads "Coming after 0.6: rolls, births and how you compare with nearby schools" (no board).
+- **New token: `LIBRARY_ACCENT` (#22d3ee)** for the Dashboards tile. No token meant "the library" before. The board's cyan is the same hex as Rolls and the Admissions role.
+- **"+ New dashboard" shows to super-admin only**, because the editor is super-admin's in 0.6 (§8). The Main board draws it for an ordinary user.
+- **The library for super-admin** lists VicData's dashboards, their own school's and their own. RLS would return every school's and every person's.
+- **Icons.** "From a view" draws the view's standard rail glyph (PanelIcons), not the board's bespoke bars, line and donut. The icon set is the phase glyphs, the column icons, the school mark, recruitment, meetings and the library glyph: one per meaning. The six swatches are real tokens (PHASE_ACCENT ×2, the chooser's Rolls and Social hues, FEATURE_ACCENT ×2), stored as `colour.override` keys. A dashboard without an icon uses its first column's icon, which matches the Main board's cards.
+- **Uploads** go to a public `dashboard-icons` bucket: PNG and SVG only, 512 KB, writes by super-admin only. Migration `20261104130000_v06_s6_dashboard_icons.sql` is written and PGlite-tested (with a storage stub), **not applied**. SVGs are only ever drawn through `<img>`.
+- **Copy this view: the slot map's slots are the board's 44px**, not the panel unit's aspect. A unit-shaped 2-column map is ~400px tall at 390 wide and pushes the fit check below the fold. One constant switches it (`COPY_UI.slotShape = "unit"`). The meeting slide thumbnails *do* use the real unit arrangement (`thumbRects`).
+- **Fit check on an existing panel's rail.** A panel is one context, so a view that doesn't fit the panel's column can't join its rail. The dialog says so, and offers an empty slot or a new row, where the new panel carries the PanelOverride ("overridden: …"). A new row goes in column 1, and its Time comes from the view.
+- **Where copies go.** Into a personal dashboard, the copy is published straight away (there's no audience to protect). Into a school or VicData dashboard, it goes to the draft only, and the dialog says "Publish from the editor". A new dashboard from a view is personal ("Mine"), named after the focused subject (numbered if taken), with its icon set from the view.
+- **To a meeting:** the slides are listed latest first, as the board draws them. The pre-picked slide is the last one with room. A new meeting asks for a name and date inline; the view goes on its first slide.
+- **Entry point.** "Copy this view…" replaces the two disabled Export options only under a dashboard plan or on `/dashboards/*`, and only when the host provides `CopyViewSourceContext`. Everywhere else the two disabled options stay exactly as they were. The dialog is lazy-loaded, so hand-coded pages don't carry it.
+- **Not built here:** the linked-dashboard switcher in the top bar (the renderer's, /dashboards/[id]).
+
+## 2026-10-03 — VicData 0.6 night 2, S5 (Dashboard editor): judgement calls logged, build carried on
+
+Routes: `/dashboards/new` (New 1-4) and `/dashboards/[id]/edit` (super-admin only via `is_platform_admin`, plain 404 otherwise). Ops: `src/lib/editor-ops.ts` (tests: `npx -y tsx --test src/lib/editor-ops.test.ts`). No new migration: S2 + S4's tables cover everything.
+
+### Board vs code convention (board's layout/copy followed, real token/shell used)
+- **Panel size:** the boards draw 230 / 190 / 150px-tall panels in 24px-gap grids; the editor uses the real panel unit (351 × 384, whole-unit tracks 385 + 38 apart), so three columns are 1231px and the Editor board's two rows no longer fit in 1120px.
+- **Colours:** edit amber = `ATTENTION_ACCENT`; "inherits" blue = the chooser's `--cc-blue`; ready green / danger red = `DELTA_POSITIVE` / `DELTA_NEGATIVE`; planned gold = `--cc-gold` light hex. New 1's colour swatches are the real tokens per meaning (phase accents, the chooser's Rolls/Social data-family hues, the home page's Rose/Amber feature accents, grey).
+- **Menus:** the panel ··· menu is `PanelMenu` + `MenuRow` (13px, not the board's 12px), widened 236 → 264 so "Change data / compared to…" isn't truncated. The + Add row structure picker is its own popover (PanelMenu caps width at 320px; the board's is 400).
+- **Dialogs:** RowSettings, ColumnChange, SpanAsk, Assign and the rest are `TeacherModal` "chooser" size with the comparator chooser's Panel / Body / Footer / buttons (backdrop 0.45, not SpanAsk's 0.35).
+- **Column icons:** a column's icon is one of the four `COLUMN_ICON_PATHS` (config type), so New 3/4 show the people / pie / rosette icons, not the board's building / pin glyphs for Rolls and Births.
+- **New dashboard frame:** the onboarding tour's frame lives inline in `src/app/teacher/[phase]/page.tsx` (not S5's to edit), so `TourFrame` in `NewDashboard.tsx` is a class-for-class copy. Suggest extracting both to one component.
+
+### Calls the boards didn't settle
+- **"Save" is labelled "Publish"** (the prompt) in the edit bar; the History board's "Publish as version 13" is the Publish dialog's title. A label is optional at publish.
+- **Undo** is in the edit bar (History board); redo is ⇧⌘Z (no room for a second button on the Editor board's bar). **Export planned views** appears in the bar only when the dashboard has placeholders (Skeleton board).
+- **Save state** folds into the status line (red "Saving needs the database update" while S2 isn't applied; "saving…" while writing) rather than a separate chip.
+- **Empty panels** are allowed in a draft; **Publish is held** until each is filled or deleted, so a published config always passes the catalogue's `validateConfig`.
+- **Panel menu adds "Remove this view"** (not on the board; removing a view had no home). Rail views reorder by drag; spans drag on the panel's right edge (or ←/→ when the handle has focus), snapping to whole columns, and ask F3's question when the spanned columns differ.
+- **Row structures** offer that dashboard's own compositions (3 columns: one wide, 2+1, 1+2, three). The boards' "2 equal" and "4" on a 3-column dashboard can't snap to whole columns.
+- **RowSettings copy:** "needs 4+ years for a trend line" (decision 9), not the board's 3+.
+- **Empty panel copy:** "Opens Add a view", not "Opens the 6-step chooser" (the chooser now opens on Pick).
+- **F5 "Keep as override" belongs to the panel** (an override is per panel): keeping one view keeps its panel's other misfits too; the dialog links them. Panels with their own overrides are skipped (C17). "Swap" is disabled when no live view of the same date mode fits.
+- **Adding an overridden view** (from Browse or a loosening) to a panel that already has views overrides the whole panel; the badge says so.
+- **Placeholders** now store `context` (catalogue terms) and `shape: null` = "Not sure" (`types.ts`, additive). Ready to swap in matches `draft` views against that context.
+- **Export planned views** lists ALL open/planned `view_requests` (they're the backlog), each with where it was asked from; placeholders only while the table is absent.
+- **Linked groups** are stored in the config (`config.group`); `dashboards.group_id` isn't written (no store call for `dashboard_groups` yet).
+- **Assign:** VicData → roles + live/copy + Key toggle (`is_key` on each role row); school → that school's teams, always live; personal → "your dashboards only". The board's dashed "School-Admin sees this instead" note is a wireframe annotation, not built.
+- **New dashboard:** any signed-in user can open it; a super-admin also picks "Save to: VicData / My dashboards" (not on the board). Non-admins land on the live view, admins in the editor. Academic main data starts Teacher's pattern (column 1 vs category, 2 vs the Context pill, 3 vs 10 nearest), because a no-comparison academic column has no views. While S2 isn't applied, Done opens the editor in memory.
+- **History preview** is at full opacity (the board's 0.55 is kept for the draft behind an open History panel) and scaled with CSS `zoom` to fit beside the panel.
+- **UpdatedNotice** records a first-ever visit silently (no "Updated" line for newcomers); `upgradeUserState` (`src/lib/editor-upgrade.ts`) applies carryUserState to the viewer's own state row on their visit (RLS: nobody can rewrite other people's state at publish).
+- **No school in the editor:** titles resolve with neutral words ("This subject"), and "Choose other schools…" stays off in Steps 1-2 (relative "10 nearest", G5).
+
+## 2026-10-03 — VicData 0.6 night 2, integration pass: judgement calls
+
+The stages' contracts wired together (commits "Integrate: …"). Flag off, every Teacher page renders as before (harness: 32/32 identical vs 2c84a1a; flag on vs off at 1280, non-admin, 16/16).
+
+- **Copy this view from a live panel copies the rail's active view**, else the panel's default view, in the panel's context resolved with the page's real labels. Context's pill-following column copies the group it is on *now* ("All subjects" pins `against: whole`). The pin's years are the page's real ones (first/latest period in the payload), not the measure card's.
+- **One resolver for pins** (`src/lib/pin-context.ts`): a view compares one way, so a pin carries the first of the view's own compare kinds the context has. "10 nearest" is always pinned as "10 nearest schools" (the name the embed reads as the default set).
+- **Super-admin sees "Edit" on the flagged Teacher page** (control bar, beside Export) and on `/dashboards/[id]`. That is the one visible flag-on difference for super-admin; non-admins see none.
+- **A meeting's Add a view starts at GCSE Candidates, one subject, against its category**, not "no comparison": every registered view compares something (the strict compare rule), so "no comparison" opened on an empty Pick. Step 2 changes it. In this columnless mode Step 1 is "Choose data" (no "From this column"), the context box "Your choices", the button "Add to slide". Step 2 still offers "Follow the subject chips" (meaningless on a slide; pinning resolves it to the chosen subject or none) — worth a look.
+- **Pinned for a meeting:** the latest year pinned unless the view was customised with roll-forward on (a ready-made view has no roll-forward, so it is pinned; Keep live stays a per-slot toggle in the meeting).
+- **Live previews in Pick draw every card live** (one embed per card, sharing the cached dashboard route). Fine at 13 cards in the harness; if it feels slow on a real school, limit live to the selected card.
+- **The editor's live preview is the whole panel card scaled** (E's LiveViewPreview), so it shows the panel's own header inside the editor panel's frame. A figure-only frame would look cleaner; left as E built it.
+- **The editor's school:** look-as school (`?lookAs=…&as=…`, confirmed platform admin), else the super-admin's membership school; no school → the data-free previews and S5's copy-within stub. The flagged Teacher page's Edit link carries look-as along.
+- **Linked-dashboard switcher on `/dashboards/[id]`:** seeded VicData groups from the catalogue; a stored group is read from the person's listing by `config.group.id` (S5 doesn't write `dashboards.group_id`).
+- **Icon in the editor's Settings:** an Icon row opens S6's Icon dialog; the icon and its colour apply with Settings' Done.
+- **Not done here:** "Choose other schools…" in a meeting's or the editor's chooser stays off (it needs the saved-sets payload in those screens); the CopyViewDialog has no dimming backdrop in the harness shots (S6's dialog, unchanged).
+
+---
+
+## 2026-10-04 — VicData 0.6 night 2: S3b, S4, S7, the renderer (E), titles — judgement calls logged, build carried on
+
+S5, S6 and the integration pass have their own entries above. Everything here was decided without Guy and can be changed. Report: `docs/v0.6/night2_build_report_v1.md`.
+
+### S3b fixes
+
+- **Fix 2 went wider than the three pages named.** The same unfiltered `.maybeSingle()` sat in every membership-gated API route (31: Teacher view and Data View), on `/teacher/recruitment` and in the Data View shell. At a school with two approved members, each route would have answered 502.
+  - Routes take `.limit(1)`. Any approved row visible at the school proves membership, because RLS shows colleagues only to members.
+  - Pages filter to the signed-in person.
+  - PGlite proves both, and that a non-member still sees nothing.
+- **Fix 3a, R-POINTS-SAME-QUAL:**
+  - The family filter applies to points only. Entries still add up across families, and rates are already scored on their own grade scale.
+  - A row with no qualification type is never counted.
+  - The Context panel says why: "Points are on a different scale for each qualification type, so only {family} subjects are compared."
+- **Fix 3b, honest number types:**
+  - **Formatting:** the codebase's own per-measure formatter is used: points "+0.4", rates "+3pp" (whole numbers; the brief wrote "+3.1 pp"). Summary sentences spell out "points" and "percentage points", and a change that rounds to zero prints "0.0".
+  - **Direction words** (Growing, Broadly stable, Declining) still use R-TREND-FLAT-4PCT's ±4% relative band. Only the printed number changed.
+  - **Not changed:** the Data View's own map "Trends" toggle, which Column 1 Results' Trend map also uses, still colours by growth %. It's a shared Data View component, noted on the rule card.
+- **Fix 3c** applies to any AS or AEA focus, not only AS-only subjects. An AS Psychology focus next to A-level Psychology also counts its own entries (100053: group 19 → 20).
+- **Fix 4:**
+  - The non-subject list existed only in the ingest repo (`ingest/academic_aggregates.py:_NON_SUBJECT_ROWS`). Its 8 (qualification, subject) pairs are now `NON_SUBJECT_ROWS` in `src/lib/dfe-qualification-buckets.ts`, pointing back to the Python, so there is still one list. The EPQ's "Study Skills" stays, as it does there.
+  - **Sevenoaks (118952)'s picker did show the rows:** "Learning Skills", "Study Skills" and "Baccalaureate", 244 entries each, as the top three items. Godolphin and Latymer (100369) showed them too, 26 each.
+  - **Knock-on:** Sevenoaks' Context on A*–E now covers 0 years instead of 2, because only the IB Core rows had A–E grades.
+- **Fix 5:** `ENABLE_TESTING_SCHOOL_SWITCHER` and `NEXT_PUBLIC_ENABLE_TESTING_SCHOOL_SWITCHER` can come out of the deploy's env.
+- **Fix 6:** `body:has(#teacher-root)` repeats `#teacher-root`'s two `--bg` values, because a parent can't read a child's variable.
+- **The "Average points" rename (C3)** was decided for 0.6 and hadn't been done. It's done now, as a wording-only change on the live dashboards; the before/after strings are in the commit. The Post-16 whole-school headline keeps DfE's own name, "Average point score".
+
+### S4 (Add a view)
+
+1. **Previews use the real panel shape** (351 × 384): thumbnails are 44 × 48, not the board's 72 × 48. Customise's preview is panel-shaped at 100px tall.
+2. **Preview frames use the panel's theme colours**, not the board's always-dark thumbnail. The highlight is the phase accent.
+3. **Each card's rail badge is the PanelIcons glyph** on the active-rail look.
+4. **PickEither uses Ch3Pick's frame** and adds only the Latest year / Over time grouping.
+5. **Steps 1–2 hide options that lead to no view.** Super-admin also sees the unbuilt focus and compare options, to plan placeholders, so Custom area (2b) is unreachable for others today.
+6. **Area focus follows the measure's keying.** Live births is area-keyed and gets the area chips. Rolls is school-keyed in the registry, so it gets "Whole school"; the brief said both get the area set.
+7. **Grade bands and Grade counts are shown as live**, because they have views; the board marks them "soon". Averages chips are gated by measure geography, so Grade 4+ gets none.
+8. **Board annotation lines are dropped.** The Pick footer says "N views fit". Rolls has 0 views, so its empty state offers only "Change data…".
+9. **2a and 2b reuse the onboarding picker's sizes** (14.5px against the board's 13.5). In 2b, "Selected so far" sits below the tabs. "Save to reuse" is disabled, because there is no saved-areas table.
+10. **New colour tokens** for the data families (Academic, Rolls, Social), which had none.
+11. **`requires` warnings show in full**, with rule IDs stripped.
+12. **Requests and placeholders:**
+    - "Ask" inserts without RETURNING, because the asker can't read the row back.
+    - Placeholders go only into the dashboard config.
+    - `CategorySubjectPicker` gained additive `single` and `search` props.
+
+### S7 (Meetings)
+
+1. **The canvas is 1536 × 864**, an exact 16:9: pad 16 + title 44 + gap 12 + the 3 × 2 grid's 780 + pad 12. The grid is 1197 × 780. One uniform scale applies everywhere: the editor caps it at 1 and Present at 2, and PDF is A4 landscape with a 10mm margin (scale 0.68).
+2. **One view on a slide shows as one unit, centred**, as in MeetingPlay, not stretched to fill the slide.
+3. **Layouts:** Auto plus the board's five manual layouts. Text cells take text only, and the span takes a view only. A layout the slots overflow falls back to Auto.
+4. **Empty cells:** the first offers "+ Add a view" and the rest "+ Text box".
+5. **Additions not on the boards:**
+   - Undo/Redo in the header;
+   - Delete slide;
+   - Delete on upcoming meeting cards, because the cap of 5 could otherwise block someone;
+   - a confirm button in the Reuse panel;
+   - Assign/share shown but disabled, because RLS forbids assignments on personal dashboards.
+6. **The library uses the house TeacherNav.** Every archive card says "Reuse for next meeting".
+7. **Tokens:**
+   - the slide is `--box-bg` and slots `--panel-bg`;
+   - board greys map to `--edge-strong` / `--panel-border2` / `--chip-fg`;
+   - rose is `FEATURE_ACCENT.meetings`, and Remove is `DELTA_NEGATIVE`.
+8. **A slot's fullscreen inside a scaled slide:** the canvas drops its transform while a slot is fullscreen, because CardBox's fixed-position modal breaks under a transform. Needs a live check.
+9. **Versions:** edits autosave to the draft. A version is published at create, and at Present, Grid view, Export PDF or leaving the editor, if anything changed. Loading prefers the draft.
+10. **Slot notes** use `teacher_view_notes` with key `meeting:{dashboardId}:{viewInstanceId}`.
+11. **Migration:**
+    - Round-5 slide keys map to registry views (table in commit 4e147c0). An unparseable key becomes a text slot that keeps its caption, so the one live slide is a text slot.
+    - Every migrated view stays live.
+    - A null date takes `created_at`'s date.
+    - The school is set only when the owner has exactly one membership.
+    - The cap trigger is suspended inside the migration's transaction only.
+    - The old tables are untouched.
+12. **`TREND_MIN_YEARS = 3`** (`teacher-view-catalogue.ts`) has no callers now (decision 9).
+
+### E (views outside the page)
+
+- **One of Candidates or Results per dashboard, as well as one phase.** The page's derivation reads one shared Candidates/Results setting for every column, so a custom dashboard can't mix them yet. Lifting it means deriving per column.
+- **A custom dashboard has no subject picker.** Its focus subject is the person's first ticked subject on their Teacher dashboard.
+- **A pinned year is honoured only on Context's Current panel**, the only host with a year control. Every other pinned slot shows the latest data and logs a `[meetings]` console note.
+- **The fetch cache** is keyed by method + URL + body + JWT `sub`, kept 5 minutes, errors not cached, with `fresh` after the chooser saves. On a three-slot slide of one school, each route is called once. Decision 10 is done.
+
+### Titles (lead)
+
+- **The three change-view templates were unreadable.** Fix 3b had written their count/points/rate wordings as an inline `[a|b|c]`, so meeting slots printed the brackets. Both resolvers now fill `[change-word]` and `[change-of-measure]` from one helper, `src/catalogue/titles.ts`.
+- **Meeting slots now:**
+  - take the measure from the pinned data family, so a Results slot no longer says "candidates";
+  - fill `[versus]`;
+  - start trend titles at their first year.
+- **A unit test** resolves every title for entries, points and rates and fails if any bracket is left.

@@ -1,0 +1,11 @@
+import { buildSubjectItems, loadData } from "./common";
+import { computeOld } from "./old";
+for (const [urn, phase] of [["100053","ks4"],["117037","ks5"]] as const) {
+  const data = loadData(urn, phase);
+  const items = buildSubjectItems(data.dashboard.subjectData.entries);
+  const keys = items.map(i=>i.key);
+  for (const m of ["points","threshold","bands"]) {
+    const o: any = computeOld(data, phase, { ticked: keys, chosenFocusKey: keys[0], shared: "results", resultsMeasureId: m, savedAgainst: "whole", contextSelected: [], bandSaved: undefined, bandPending: null }, false);
+    console.log(urn, phase, m, o.focusKey, "cat", o.categoryItems.length, "periods", o.resultsPeriods, "focusVals", JSON.stringify(o.resultsSeries[0]), "ctxMembers", o.contextMembers.length, "ctxAvg", JSON.stringify(o.contextGroupAverage.map((v:any)=>v&&+v.toFixed(2))), "xp schools", o.xp.schools.length, "ranked", JSON.stringify(o.xp.ranked.slice(0,3)), "spRes bench", JSON.stringify(o.spResults.rows[0]));
+  }
+}
