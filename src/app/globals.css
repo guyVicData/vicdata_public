@@ -82,6 +82,23 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* 0.6 S3b fix 6: on a Teacher view page the body behind #teacher-root follows the page's
+   own theme, not the OS scheme -- otherwise a light dashboard on a dark-OS machine (or the
+   reverse) shows a band of the other colour below short content and beside the 1280px
+   column. The values are #teacher-root's own --bg pair (a parent can't read a child's
+   variable), and the selectors mirror its theme rules exactly. */
+body:has(#teacher-root) {
+  background: #f7f7f8;
+}
+@media (prefers-color-scheme: dark) {
+  body:has(#teacher-root:not([data-theme="light"])) {
+    background: #0a0a0b;
+  }
+}
+body:has(#teacher-root[data-theme="dark"]) {
+  background: #0a0a0b;
+}
+
 /* Member Data View PDF export (build brief v1, §9) -- window.print() + this
    stylesheet, no PDF-generation dependency, nothing rendered server-side. The site
    nav means nothing on a printed page; everything else that should hide (sidebar
@@ -95,7 +112,8 @@ body {
   nav {
     display: none !important;
   }
-  body {
+  body,
+  body:has(#teacher-root) {
     background: #ffffff;
     color: #000000;
   }
