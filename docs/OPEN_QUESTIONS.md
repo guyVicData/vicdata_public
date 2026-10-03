@@ -1045,3 +1045,95 @@ The stages' contracts wired together (commits "Integrate: …"). Flag off, every
 - **Linked-dashboard switcher on `/dashboards/[id]`:** seeded VicData groups from the catalogue; a stored group is read from the person's listing by `config.group.id` (S5 doesn't write `dashboards.group_id`).
 - **Icon in the editor's Settings:** an Icon row opens S6's Icon dialog; the icon and its colour apply with Settings' Done.
 - **Not done here:** "Choose other schools…" in a meeting's or the editor's chooser stays off (it needs the saved-sets payload in those screens); the CopyViewDialog has no dimming backdrop in the harness shots (S6's dialog, unchanged).
+
+---
+
+## 2026-10-04 — VicData 0.6 night 2: S3b, S4, S7, the renderer (E), titles — judgement calls logged, build carried on
+
+S5, S6 and the integration pass have their own entries above. Everything here was decided without Guy and can be changed. Report: `docs/v0.6/night2_build_report_v1.md`.
+
+### S3b fixes
+
+- **Fix 2 went wider than the three pages named.** The same unfiltered `.maybeSingle()` sat in every membership-gated API route (31: Teacher view and Data View), on `/teacher/recruitment` and in the Data View shell. At a school with two approved members, each route would have answered 502.
+  - Routes take `.limit(1)`. Any approved row visible at the school proves membership, because RLS shows colleagues only to members.
+  - Pages filter to the signed-in person.
+  - PGlite proves both, and that a non-member still sees nothing.
+- **Fix 3a, R-POINTS-SAME-QUAL:**
+  - The family filter applies to points only. Entries still add up across families, and rates are already scored on their own grade scale.
+  - A row with no qualification type is never counted.
+  - The Context panel says why: "Points are on a different scale for each qualification type, so only {family} subjects are compared."
+- **Fix 3b, honest number types:**
+  - **Formatting:** the codebase's own per-measure formatter is used: points "+0.4", rates "+3pp" (whole numbers; the brief wrote "+3.1 pp"). Summary sentences spell out "points" and "percentage points", and a change that rounds to zero prints "0.0".
+  - **Direction words** (Growing, Broadly stable, Declining) still use R-TREND-FLAT-4PCT's ±4% relative band. Only the printed number changed.
+  - **Not changed:** the Data View's own map "Trends" toggle, which Column 1 Results' Trend map also uses, still colours by growth %. It's a shared Data View component, noted on the rule card.
+- **Fix 3c** applies to any AS or AEA focus, not only AS-only subjects. An AS Psychology focus next to A-level Psychology also counts its own entries (100053: group 19 → 20).
+- **Fix 4:**
+  - The non-subject list existed only in the ingest repo (`ingest/academic_aggregates.py:_NON_SUBJECT_ROWS`). Its 8 (qualification, subject) pairs are now `NON_SUBJECT_ROWS` in `src/lib/dfe-qualification-buckets.ts`, pointing back to the Python, so there is still one list. The EPQ's "Study Skills" stays, as it does there.
+  - **Sevenoaks (118952)'s picker did show the rows:** "Learning Skills", "Study Skills" and "Baccalaureate", 244 entries each, as the top three items. Godolphin and Latymer (100369) showed them too, 26 each.
+  - **Knock-on:** Sevenoaks' Context on A*–E now covers 0 years instead of 2, because only the IB Core rows had A–E grades.
+- **Fix 5:** `ENABLE_TESTING_SCHOOL_SWITCHER` and `NEXT_PUBLIC_ENABLE_TESTING_SCHOOL_SWITCHER` can come out of the deploy's env.
+- **Fix 6:** `body:has(#teacher-root)` repeats `#teacher-root`'s two `--bg` values, because a parent can't read a child's variable.
+- **The "Average points" rename (C3)** was decided for 0.6 and hadn't been done. It's done now, as a wording-only change on the live dashboards; the before/after strings are in the commit. The Post-16 whole-school headline keeps DfE's own name, "Average point score".
+
+### S4 (Add a view)
+
+1. **Previews use the real panel shape** (351 × 384): thumbnails are 44 × 48, not the board's 72 × 48. Customise's preview is panel-shaped at 100px tall.
+2. **Preview frames use the panel's theme colours**, not the board's always-dark thumbnail. The highlight is the phase accent.
+3. **Each card's rail badge is the PanelIcons glyph** on the active-rail look.
+4. **PickEither uses Ch3Pick's frame** and adds only the Latest year / Over time grouping.
+5. **Steps 1–2 hide options that lead to no view.** Super-admin also sees the unbuilt focus and compare options, to plan placeholders, so Custom area (2b) is unreachable for others today.
+6. **Area focus follows the measure's keying.** Live births is area-keyed and gets the area chips. Rolls is school-keyed in the registry, so it gets "Whole school"; the brief said both get the area set.
+7. **Grade bands and Grade counts are shown as live**, because they have views; the board marks them "soon". Averages chips are gated by measure geography, so Grade 4+ gets none.
+8. **Board annotation lines are dropped.** The Pick footer says "N views fit". Rolls has 0 views, so its empty state offers only "Change data…".
+9. **2a and 2b reuse the onboarding picker's sizes** (14.5px against the board's 13.5). In 2b, "Selected so far" sits below the tabs. "Save to reuse" is disabled, because there is no saved-areas table.
+10. **New colour tokens** for the data families (Academic, Rolls, Social), which had none.
+11. **`requires` warnings show in full**, with rule IDs stripped.
+12. **Requests and placeholders:**
+    - "Ask" inserts without RETURNING, because the asker can't read the row back.
+    - Placeholders go only into the dashboard config.
+    - `CategorySubjectPicker` gained additive `single` and `search` props.
+
+### S7 (Meetings)
+
+1. **The canvas is 1536 × 864**, an exact 16:9: pad 16 + title 44 + gap 12 + the 3 × 2 grid's 780 + pad 12. The grid is 1197 × 780. One uniform scale applies everywhere: the editor caps it at 1 and Present at 2, and PDF is A4 landscape with a 10mm margin (scale 0.68).
+2. **One view on a slide shows as one unit, centred**, as in MeetingPlay, not stretched to fill the slide.
+3. **Layouts:** Auto plus the board's five manual layouts. Text cells take text only, and the span takes a view only. A layout the slots overflow falls back to Auto.
+4. **Empty cells:** the first offers "+ Add a view" and the rest "+ Text box".
+5. **Additions not on the boards:**
+   - Undo/Redo in the header;
+   - Delete slide;
+   - Delete on upcoming meeting cards, because the cap of 5 could otherwise block someone;
+   - a confirm button in the Reuse panel;
+   - Assign/share shown but disabled, because RLS forbids assignments on personal dashboards.
+6. **The library uses the house TeacherNav.** Every archive card says "Reuse for next meeting".
+7. **Tokens:**
+   - the slide is `--box-bg` and slots `--panel-bg`;
+   - board greys map to `--edge-strong` / `--panel-border2` / `--chip-fg`;
+   - rose is `FEATURE_ACCENT.meetings`, and Remove is `DELTA_NEGATIVE`.
+8. **A slot's fullscreen inside a scaled slide:** the canvas drops its transform while a slot is fullscreen, because CardBox's fixed-position modal breaks under a transform. Needs a live check.
+9. **Versions:** edits autosave to the draft. A version is published at create, and at Present, Grid view, Export PDF or leaving the editor, if anything changed. Loading prefers the draft.
+10. **Slot notes** use `teacher_view_notes` with key `meeting:{dashboardId}:{viewInstanceId}`.
+11. **Migration:**
+    - Round-5 slide keys map to registry views (table in commit 4e147c0). An unparseable key becomes a text slot that keeps its caption, so the one live slide is a text slot.
+    - Every migrated view stays live.
+    - A null date takes `created_at`'s date.
+    - The school is set only when the owner has exactly one membership.
+    - The cap trigger is suspended inside the migration's transaction only.
+    - The old tables are untouched.
+12. **`TREND_MIN_YEARS = 3`** (`teacher-view-catalogue.ts`) has no callers now (decision 9).
+
+### E (views outside the page)
+
+- **One of Candidates or Results per dashboard, as well as one phase.** The page's derivation reads one shared Candidates/Results setting for every column, so a custom dashboard can't mix them yet. Lifting it means deriving per column.
+- **A custom dashboard has no subject picker.** Its focus subject is the person's first ticked subject on their Teacher dashboard.
+- **A pinned year is honoured only on Context's Current panel**, the only host with a year control. Every other pinned slot shows the latest data and logs a `[meetings]` console note.
+- **The fetch cache** is keyed by method + URL + body + JWT `sub`, kept 5 minutes, errors not cached, with `fresh` after the chooser saves. On a three-slot slide of one school, each route is called once. Decision 10 is done.
+
+### Titles (lead)
+
+- **The three change-view templates were unreadable.** Fix 3b had written their count/points/rate wordings as an inline `[a|b|c]`, so meeting slots printed the brackets. Both resolvers now fill `[change-word]` and `[change-of-measure]` from one helper, `src/catalogue/titles.ts`.
+- **Meeting slots now:**
+  - take the measure from the pinned data family, so a Results slot no longer says "candidates";
+  - fill `[versus]`;
+  - start trend titles at their first year.
+- **A unit test** resolves every title for entries, points and rates and fails if any bracket is left.
