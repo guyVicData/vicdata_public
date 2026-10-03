@@ -813,8 +813,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       {
         heading: "How well do they do?",
         intro: ph === "ks4"
-          ? "Average point score per entry for what you ticked, against the England GCSE average for each subject. Each qualification is shown on its own — never blended into one."
-          : "Average point score per entry for what you ticked, against the England average for the same qualification. Each qualification is shown on its own — never blended into one.",
+          ? "Average points per entry for what you ticked, against the England GCSE average for each subject. Each qualification is shown on its own — never blended into one."
+          : "Average points per entry for what you ticked, against the England average for the same qualification. Each qualification is shown on its own — never blended into one.",
         next: "Next — the views you'll get",
       },
       { heading: "Here's what you can look at", intro: "For every subject you ticked, four ways to see it.", next: `Done — take me to ${PHASE_LABELS[phase]}` },
@@ -1638,8 +1638,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
                 own: resultsSeries.find((r) => r.key === focusItem.key)?.values ?? [],
                 notApplicableText:
                   resultsMeasure.id !== "points"
-                    ? `LA, regional and national figures are published for average point score only, not ${resultsMeasure.label.toLowerCase()}. Switch Results to average point score to compare ${phase === "ks5" ? focusItem.label : focusItem.subject} with the wider system.`
-                    : `LA, regional and national figures cover GCSE (full course) average point scores only, and this school's ${focusItem.subject} entries are in a qualification outside that.`,
+                    ? `LA, regional and national figures are published for average points only, not ${resultsMeasure.label.toLowerCase()}. Switch Results to Average points to compare ${phase === "ks5" ? focusItem.label : focusItem.subject} with the wider system.`
+                    : `LA, regional and national figures cover GCSE (full course) average points only, and this school's ${focusItem.subject} entries are in a qualification outside that.`,
               }
             : undefined
         }
@@ -1703,9 +1703,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         }
         note={
           usingThreshold
-            ? `${resultsMeasure.label} is published per grade only from 2023/24, so this covers fewer years than average point score. Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
+            ? `${resultsMeasure.label} is published per grade only from 2023/24, so this covers fewer years than average points. Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
             : usingBands
-              ? "Grades are published per subject only from 2023/24, so this covers fewer years than average point score. A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish."
+              ? "Grades are published per subject only from 2023/24, so this covers fewer years than average points. A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish."
               : undefined
         }
         questions={{
@@ -1897,8 +1897,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               : [
                   contextFallsBack
                     ? resultsMeasure.id === "counts"
-                      ? "Grade counts has no single figure to compare subjects on, so Context shows average point score."
-                      : "Pick a grade range in Results to compare subjects on it; until then Context shows average point score."
+                      ? "Grade counts has no single figure to compare subjects on, so Context shows average points."
+                      : "Pick a grade range in Results to compare subjects on it; until then Context shows average points."
                     : null,
                   // R-POINTS-SAME-QUAL (S3b): say why other qualification types are missing.
                   contextKeepsFamily && contextFamilyLabel

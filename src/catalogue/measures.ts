@@ -217,7 +217,7 @@ export const MEASURES: Measure[] = [
     ],
     fetchedBy: [`${DASHBOARD_ROUTE} -> ${SUBJECT_HEADLINE} (route.ts:172); England via englandAverages (route.ts:46-74)`, SUBJECT_GEO, PROFILES],
     knownGaps: [
-      "Rename 'Average point score' -> 'Average points' decided (C3), not yet done (teacher-view-panels.ts:113).",
+      "Rename 'Average point score' -> 'Average points' (C3) done in 0.6 night 2 (teacher-view-panels.ts measuresFor); the Post-16 whole-school headline keeps DfE's own name.",
       "Change is shown in points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind \"points\", changeOf, formatChange).",
     ],
     briefing: GCSE_BRIEFING,

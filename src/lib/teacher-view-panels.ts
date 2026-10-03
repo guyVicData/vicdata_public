@@ -118,14 +118,16 @@ export function thresholdLabel(phase: TeacherPhase): string {
 export function measuresFor(phase: TeacherPhase): Measure[] {
   const points: Measure = {
     id: "points",
-    label: "Average point score",
-    changeLabel: "change in average point score, in points",
+    // C3 (catalogue doc §3, decided): one term, "points" -- the switcher says "Average
+    // points", and so does every title built from this label.
+    label: "Average points",
+    changeLabel: "change in average points, in points",
     changeKind: "points",
     format: (v) => v.toFixed(1),
     formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(1)}`,
     axisStep: phase === "ks4" ? 0.5 : 5,
     aggregate: "mean",
-    noun: "average point score",
+    noun: "average points",
     barScaleMax: pointsScaleMax(phase),
   };
   const threshold: Measure = {

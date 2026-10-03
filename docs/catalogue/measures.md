@@ -67,7 +67,7 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Honest number types | points, change_points, rank |
 | Rules | R-ENTRIES-NOT-POINTS, R-KS4-POINTS-GCSE-FULL, R-POINTS-SAME-QUAL, R-MIN-SCHOOLS, R-SAME-YEAR-BENCH, R-GEO-APPLIES, R-FOCUS-NEVER-FILTERED, R-KS4-SUBJECT-DEDUP, R-QUAL-FAMILY-MATCH, R-IGCSE-EXCL, R-COMPARATOR-NO-FIGURE, R-TREND-LINE-4YR, R-PERIOD-TRIM, R-NUMBER-TYPE-HONESTY |
 | Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools (route.ts:172); England via englandAverages (route.ts:46-74)<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles |
-| Known gaps | - Rename 'Average point score' -> 'Average points' decided (C3), not yet done (teacher-view-panels.ts:113).<br>- Change is shown in points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "points", changeOf, formatChange). |
+| Known gaps | - Rename 'Average point score' -> 'Average points' (C3) done in 0.6 night 2 (teacher-view-panels.ts measuresFor); the Post-16 whole-school headline keeps DfE's own name.<br>- Change is shown in points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "points", changeOf, formatChange). |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
 
