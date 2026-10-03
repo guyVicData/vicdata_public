@@ -946,3 +946,33 @@ Night 1 prompt: `docs/v0.6/vicdata_0_6_night1_claude_code_prompt_v1.md`. Audit: 
   Column 1 Results declares `subjects + averages (England)` as its compare, because it really shows England markers. The unit tests fail on any unmarked mismatch.
 - **The group switcher reads and writes the same Candidates/Results setting as today's toggle.** Flipping the flag loses no one's choice. The phone nav's toggle is unchanged.
 - **Catalogue page:** a parity check of each view in isolation isn't possible yet, because views render through their hosts. So the page shows the two whole dashboards side by side (hand-coded vs `?renderer=config`) through look-as, plus every card. The isolated live preview arrives with the chooser.
+
+## 2026-10-03 — Guy's decisions after night 1 (read before night 2; these win over the design docs)
+
+Guy reviewed `docs/v0.6/night1_build_report_v1.md` and the night-1 entries above. **All the fixes below fold into night 2**, as a new first stage, **S3b — Fixes**, before S4. Each fix is its own commit. Where a fix deliberately changes a live figure, the commit message and the night-2 report carry a before/after table for named real schools. These fixes live in the shared lib, so the hand-coded and config renderers change together, and flag-off vs flag-on parity must still hold afterwards.
+
+### Before night 2 starts (Guy, by hand)
+- Guy applies the S2 migration and seed with the three commands in the night-1 report.
+
+### S3b — Fixes (do first)
+1. **Membership insert hardening.** Approved, as written in `docs/v0.6/proposed_sql/membership_insert_hardening.sql`. Not urgent (Guy is the only user), but in scope. Turn it into a proper migration file, test it locally (PGlite) with join_school and a direct-PostgREST insert attempt, and **leave it for Guy to apply**, as with S2. Don't apply it live.
+2. **The `.maybeSingle()` membership bug** on `/teacher`, `/teacher/meetings` and `/teacher/[phase]`: filter to the signed-in user, as the S1 screens do. Test at a school with 2+ approved members.
+3. **Rule conformance: three deliberate figure changes.**
+   - **R-POINTS-SAME-QUAL:** Post-16 Context must not blend A level, BTEC and IB points into one figure. Points are shown per qualification family, and "All subjects" gets the same family filter. Where a blended figure is all there is, it's suppressed with the usual wording, never fabricated. Test case: Croydon College 130432, Computer Science.
+   - **Honest number types:** wherever "% change" is offered on **points**, it becomes **Change in points**. On **rates** it becomes **Change in percentage points**. Labels, values and titles all change. Counts keep % change.
+   - **R-FOCUS-NEVER-FILTERED:** an AS-only focused subject counts itself into its own Context group (Part D decision 1).
+4. **R-IB-NONSUBJECT:** filter "Baccalaureate" and the IB Core rows ("Learning Skills", "Study Skills", "Self Development") out of the Teacher subject list. Use the existing qualification-keyed exclusion list the rollups use. Don't create a second list. Check first whether the subject picker showed them at Sevenoaks 118952, and report it. The rule test must then pass.
+5. **Retire the old testing school switcher**: remove the route and its `/account` UI. "Look at it as…" replaces it.
+6. **The light-theme dark band** below short content on `#teacher-root`: fix it before the flag ever flips.
+
+### Decisions for the rest of night 2
+7. **Meeting slides scale as a whole.**
+   - Lay a slide out at the real panel unit (351 × 384, 12 px gaps).
+   - A logical 16:9 slide canvas is sized to hold a title plus 3 × 2 units (about 1530 × 860; take exact numbers from `PANEL_UNIT`).
+   - Scale the whole slide uniformly to fit the screen, in the editor, Present, Grid and PDF.
+   - **No separate meeting panel size.** Panels stay identical to the dashboard's.
+   - MeetingPlay's 289 × 192 cells were drawn at 0.75 of the old assumed unit. Follow its *behaviour*, and use the real unit for sizes.
+8. **The compare-subset rule stays strict.** A comparing column only offers comparing views. "Browse VicData dashboards" is the deliberate way to mix.
+9. **Trend threshold:** the code's 4 years (R-TREND-LINE-4YR) wins over the docs' 3, everywhere, including the meetings page constant.
+10. **Fetch de-duplication** (audit B §2–4): build it after S7 if time allows. Otherwise log it as the first post-0.6 item.
+11. **Database:** expect the same live-database block. Write each night-2 migration (including any for meetings), test it locally, and list the apply commands in the report for Guy. Don't stop over it.
