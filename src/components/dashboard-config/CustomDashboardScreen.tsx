@@ -14,11 +14,20 @@
 // What 0.6 can't draw yet is said plainly where it would be (embed.ts): one phase per
 // dashboard; each kind of column once; one of Candidates or Results; Rolls and Live
 // births are placeholders only.
+//
+// 0.6 integration: the top bar carries the linked-dashboard switcher (GroupSwitcher) for
+// grouped dashboards and, for super-admin, an Edit link to /dashboards/[id]/edit; a
+// VicData dashboard shows "Updated — what's changed" and carries per-panel state across a
+// new version (DashboardUpdates).
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { groupOf } from "@/catalogue/dashboards";
 import type { DashboardConfig } from "@/catalogue/types";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { loadDashboard } from "@/lib/dashboards-store";
+import { listDashboards, loadDashboard, type DashboardRow, type VersionRow } from "@/lib/dashboards-store";
+import { configsFor, dashboardHref } from "@/components/library/data";
+import { DashboardUpdates } from "@/components/editor/DashboardUpdates";
 import { mySchool } from "@/lib/meeting-store";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, type TeacherPhase } from "@/lib/teacher-view-phases";
@@ -26,6 +35,7 @@ import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { useTeacherTheme, type Theme } from "@/components/teacher/TeacherChrome";
 import { TeacherNav } from "@/components/teacher/TeacherNav";
 import { TeacherDashboard } from "./TeacherDashboard";
+import { GroupSwitcher } from "./ConfigDashboard";
 import { dashboardPhase } from "./embed";
 
 type School = { urn: string; name: string };
@@ -36,7 +46,36 @@ type State =
   | { status: "missing" }
   | { status: "no-school" }
   | { status: "error"; message: string }
-  | { status: "ready"; config: DashboardConfig; school: School; saved: boolean; phases: TeacherPhase[] };
+  | { status: "ready"; config: DashboardConfig; school: School; saved: boolean; phases: TeacherPhase[]; extras: ScreenExtras };
+
+// What the top bar adds around the drawn dashboard (all optional, so a harness can draw
+// the view alone).
+export type ScreenExtras = {
+  // The dashboard's id or slug as routed (for the Edit link).
+  routeId?: string;
+  row?: DashboardRow | null;
+  version?: VersionRow | null;
+  superAdmin?: boolean;
+  // The linked dashboards, in group order, with where each opens.
+  group?: { config: DashboardConfig; href: string }[];
+};
+
+// The group's dashboards: the seeded VicData groups from the catalogue; a stored group
+// from the person's own listing (published or draft configs carrying the same group id).
+async function linkedDashboards(supabase: ReturnType<typeof createBrowserSupabaseClient>, config: DashboardConfig, saved: boolean): Promise<{ config: DashboardConfig; href: string }[]> {
+  if (!config.group) return [];
+  const seeded = groupOf(config);
+  if (seeded.length > 1) return seeded.map((d) => ({ config: d, href: `/dashboards/${encodeURIComponent(d.id)}` }));
+  if (!saved) return [];
+  const { rows } = await listDashboards(supabase, { kind: "dashboard" });
+  const configs = await configsFor(supabase, rows);
+  const out: { config: DashboardConfig; href: string; order: number }[] = [];
+  for (const row of rows) {
+    const c = configs.get(row.id);
+    if (c?.group?.id === config.group.id) out.push({ config: { ...c, id: row.slug ?? row.id }, href: dashboardHref(row), order: c.group.order });
+  }
+  return out.sort((a, b) => a.order - b.order).map(({ config: c, href }) => ({ config: c, href }));
+}
 
 export function CustomDashboardScreen({ id }: { id: string }) {
   const [theme, setTheme] = useTeacherTheme();
@@ -51,8 +90,19 @@ export function CustomDashboardScreen({ id }: { id: string }) {
         const [loaded, school] = await Promise.all([loadDashboard(supabase, id), mySchool(supabase)]);
         if (!loaded) return setState({ status: "missing" });
         if (!school) return setState({ status: "no-school" });
-        const phases = await fetchOnboardedPhases(supabase, school.urn);
-        setState({ status: "ready", config: loaded.config, school, saved: loaded.available, phases });
+        const [phases, admin, group] = await Promise.all([
+          fetchOnboardedPhases(supabase, school.urn),
+          supabase.rpc("is_platform_admin").then(({ data: a }) => a === true, () => false),
+          linkedDashboards(supabase, loaded.config, loaded.available).catch(() => []),
+        ]);
+        setState({
+          status: "ready",
+          config: loaded.config,
+          school,
+          saved: loaded.available,
+          phases,
+          extras: { routeId: id, row: loaded.available ? loaded.row : null, version: loaded.version, superAdmin: admin, group },
+        });
       } catch (e) {
         setState({ status: "error", message: e instanceof Error ? e.message : "Couldn't load this dashboard." });
       }
@@ -80,7 +130,7 @@ export function CustomDashboardScreen({ id }: { id: string }) {
       </main>
     );
   }
-  return <CustomDashboardView config={state.config} school={state.school} saved={state.saved} phases={state.phases} theme={theme} onTheme={setTheme} />;
+  return <CustomDashboardView config={state.config} school={state.school} saved={state.saved} phases={state.phases} theme={theme} onTheme={setTheme} extras={state.extras} />;
 }
 
 // The drawn dashboard, given its config and school (also what a harness renders).
@@ -91,6 +141,7 @@ export function CustomDashboardView({
   phases,
   theme,
   onTheme,
+  extras = {},
 }: {
   config: DashboardConfig;
   school: School;
@@ -99,7 +150,9 @@ export function CustomDashboardView({
   phases: TeacherPhase[];
   theme: Theme;
   onTheme: (t: Theme) => void;
+  extras?: ScreenExtras;
 }) {
+  const router = useRouter();
   const phase = dashboardPhase(config);
   const accent = PHASE_ACCENT[phase];
   const [labelsOn, setLabelsOn] = useState(true);
@@ -118,7 +171,34 @@ export function CustomDashboardView({
           {PHASE_LABELS[phase]} &middot; {school.name}
           {!saved && " · seeded in code (dashboards not saved yet)"}
         </p>
+        {(extras.group?.length ?? 0) > 1 || extras.superAdmin ? (
+          <div className="ml-auto flex items-center gap-2 self-center">
+            {extras.group && extras.group.length > 1 && (
+              <GroupSwitcher
+                dashboards={extras.group.map((g) => g.config)}
+                activeId={extras.group.find((g) => g.config.id === config.id || g.config.id === extras.row?.slug || g.config.id === extras.routeId)?.config.id ?? config.id}
+                onSwitch={(d) => {
+                  const hit = extras.group?.find((g) => g.config.id === d.id);
+                  if (hit) router.push(hit.href);
+                }}
+              />
+            )}
+            {extras.superAdmin && (
+              <Link
+                href={`/dashboards/${encodeURIComponent(extras.routeId ?? config.id)}/edit`}
+                className="rounded-full border border-[var(--panel-border2)] px-3.5 py-1.5 text-[12.5px] font-bold text-[var(--muted)] hover:text-[var(--fg)] print:hidden"
+              >
+                Edit
+              </Link>
+            )}
+          </div>
+        ) : null}
       </header>
+      {extras.row?.owner_scope === "vicdata" && extras.version && (
+        <div className="print:hidden [&:not(:empty)]:mt-3">
+          <DashboardUpdates dashboardId={extras.row.id} version={extras.version} schoolUrn={school.urn} />
+        </div>
+      )}
       <TeacherDashboard mode="embed" phase={phase} school={school.urn} config={config} settingsFrom="saved" />
     </main>
   );
