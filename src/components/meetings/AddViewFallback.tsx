@@ -1,8 +1,9 @@
 "use client";
 
-// VicData 0.6 S7: the stand-in for "Add a view" until S4's chooser is wired to
-// MeetingEditor's `openAddView` prop. A short form over the live registry: pick a phase
-// and a view, name the subject and comparison, pin the year or keep it live.
+// VicData 0.6 S7: the stand-in for "Add a view" when MeetingEditor is drawn without an
+// `openAddView` (the meeting route now wires S4's chooser: MeetingScreenWithChooser). A
+// short form over the live registry: pick a phase and a view, name the subject and
+// comparison, pin the year or keep it live.
 import { useMemo, useRef, useState } from "react";
 import { DATAVIEWS } from "@/catalogue";
 import type { CompareKind, DataId, DataviewInstance, Phase } from "@/catalogue/types";
