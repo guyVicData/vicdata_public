@@ -36,18 +36,25 @@
   /* The dashboard's column dividers. An alias, not a new colour: it follows
      --panel-border2 in each theme because it is declared on the same element. */
   --divider: var(--panel-border2);
+  /* 0.6 S1: how far accentText() (teacher-view-theme.ts) mixes an accent toward --fg. */
+  --accent-text-mix: 50%;
+  /* 0.6 S1 admin screens (People, Teams, Platform). Aliases derived from the tokens
+     above, so they follow either theme: the boards' secondary text (#c9c9ce on dark) and
+     their stronger edge for an open card or a dashed "off" chip (#3a3a40 on dark). */
+  --chip-fg: color-mix(in srgb, var(--fg) 82%, var(--bg));
+  --edge-strong: color-mix(in srgb, var(--panel-border2) 92%, var(--fg));
 }
 @media (prefers-color-scheme: dark) {
   #teacher-root:not([data-theme="light"]) {
     --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
     --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
-    --box-bg: #0e0e10; --source: #5c5c62;
+    --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
   }
 }
 #teacher-root[data-theme="dark"] {
   --bg: #0a0a0b; --fg: #f2f2f3; --muted: #8a8a90; --muted2: #9a9aa0; --muted3: #6a6a70;
   --border: #1c1c1f; --panel-bg: #131315; --panel-border: #1e1e22; --panel-border2: #2a2a2e;
-  --box-bg: #0e0e10; --source: #5c5c62;
+  --box-bg: #0e0e10; --source: #5c5c62; --accent-text-mix: 65%;
 }
 
 :root {

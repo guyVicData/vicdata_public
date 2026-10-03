@@ -2,14 +2,10 @@
 
 import { use, useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { DEFAULT_ROLE } from "@/lib/roles";
 
-const ROLES = [
-  { value: "head_governor", label: "Head / Governor" },
-  { value: "admissions", label: "Admissions" },
-  { value: "finance", label: "Finance" },
-  { value: "director_of_studies", label: "Director of Studies" },
-  { value: "head_of_department", label: "Head of Department" },
-];
+// 0.6 S1: Teacher is the only self-select role; SMT, Admissions and School-Admin are
+// granted by the School-Admin on People. join_school sets Teacher whatever it is sent.
 
 type JoinResult = {
   branch: "first_member" | "request_to_join";
@@ -31,7 +27,6 @@ export default function JoinSchoolPage({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState(ROLES[0].value);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -75,7 +70,7 @@ export default function JoinSchoolPage({
 
     const { data: joinData, error: joinError } = await supabase.rpc("join_school", {
       p_urn: urn,
-      p_role: role,
+      p_role: DEFAULT_ROLE,
     });
     setSubmitting(false);
 
@@ -132,17 +127,7 @@ export default function JoinSchoolPage({
           placeholder="Full name"
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
         />
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-        >
-          {ROLES.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
+        <p className="text-sm text-neutral-500">You&rsquo;ll join as Teacher. Your School-Admin can add other roles.</p>
 
         {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}
 

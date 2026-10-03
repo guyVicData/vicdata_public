@@ -5,13 +5,14 @@
 // read it to decide what anyone saw; `is_admin` was the only real gate. So "role drives
 // the view" is something this build establishes rather than something it confirms.
 //
-// The live database constraint still carries the OLD vocabulary
-// ('head_governor','admissions','finance','director_of_studies','head_of_department').
-// The migration that moves it to the vocabulary below is written and committed at
-// supabase/migrations/20261101090000_teacher_view_role_vocabulary.sql but has NOT been
-// applied -- applying DDL was blocked during this build. Everything here is written
-// against the post-migration vocabulary; `normaliseRole` below bridges the old values in
-// the meantime so nothing breaks while the constraint is still the old one.
+// 0.6 S1 (supabase/migrations/20261103090000_v06_s1_roles_teams_platform.sql, applied
+// live): roles are a SET per membership, `school_memberships.roles text[]`, constrained to
+// the vocabulary below. The single `role` column is kept and synced by trigger to the most
+// senior role in the set, for old readers. School-Admin is NOT a member of `roles`: it is
+// the existing `is_admin` boolean (plus the account holder, who is always School-Admin),
+// and only the account holder can change it (enforced by trigger). `normaliseRole` still
+// bridges the pre-vocabulary values ('head_governor', 'director_of_studies',
+// 'head_of_department') wherever an old row or the single `role` column is read.
 
 export const TEACHER_VIEW_ROLES = ["teacher", "hod", "smt", "finance", "admissions"] as const;
 export type TeacherViewRole = (typeof TEACHER_VIEW_ROLES)[number];
@@ -66,6 +67,43 @@ const ROLE_LABELS: Record<TeacherViewRole, string> = {
 
 export function roleLabel(role: TeacherViewRole, sector?: RoleSector | null): string {
   return (sector && SECTOR_ROLE_LABELS[sector]?.[role]) ?? ROLE_LABELS[role];
+}
+
+// 0.6's visible roles, in the order People.dc.html draws its chips (SMT, Teacher,
+// Admissions, School-Admin). HOD and Finance stay in the vocabulary and the database but
+// are hidden in the 0.6 UI. "school_admin" is a UI id only: it reads and writes
+// `is_admin`, never `roles`.
+export type VisibleRoleId = "smt" | "teacher" | "admissions" | "school_admin";
+export const VISIBLE_ROLES: VisibleRoleId[] = ["smt", "teacher", "admissions", "school_admin"];
+// The order a list of roles reads in prose (Platform's "Roles in use": "Teacher, SMT,
+// Admissions, School-Admin") -- the base role first, then the granted ones.
+export const VISIBLE_ROLES_PROSE_ORDER: VisibleRoleId[] = ["teacher", "smt", "admissions", "school_admin"];
+export const HIDDEN_ROLES: TeacherViewRole[] = ["hod", "finance"];
+
+export const VISIBLE_ROLE_LABELS: Record<VisibleRoleId, string> = {
+  smt: "SMT",
+  teacher: "Teacher",
+  admissions: "Admissions",
+  school_admin: "School-Admin",
+};
+
+// A membership's roles as the set the UI shows: the `roles` array (legacy values folded
+// through normaliseRole, hidden roles dropped) plus School-Admin when is_admin or the
+// account holder. Falls back to the single `role` column for a row read without `roles`.
+export function visibleRolesOf(m: {
+  roles?: string[] | null;
+  role?: string | null;
+  is_admin?: boolean | null;
+  isAccountHolder?: boolean;
+}): VisibleRoleId[] {
+  const raw = m.roles && m.roles.length ? m.roles : m.role ? [m.role] : [];
+  const set = new Set<VisibleRoleId>();
+  for (const r of raw) {
+    const n = normaliseRole(r);
+    if (n === "teacher" || n === "smt" || n === "admissions") set.add(n);
+  }
+  if (m.is_admin || m.isAccountHolder) set.add("school_admin");
+  return VISIBLE_ROLES.filter((r) => set.has(r));
 }
 
 // One resolver the rest of the build gates on, rather than role checks scattered across

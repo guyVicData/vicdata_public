@@ -3,7 +3,25 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+
+// 0.6 S1 (brief G13): one sign-in event per sign-in, via record_sign_in(), which writes a
+// row per approved membership. supabase-js also fires SIGNED_IN when a tab regains focus
+// or a stored session is picked up, so sessionStorage remembers which session (its access
+// token) this tab has already recorded. Fire-and-forget: a failure here must never touch
+// signing in.
+function recordSignIn(supabase: SupabaseClient, userId: string, accessToken: string) {
+  const key = "vicdata.signInRecorded";
+  const marker = `${userId}:${accessToken.slice(-16)}`;
+  try {
+    if (window.sessionStorage.getItem(key) === marker) return;
+    window.sessionStorage.setItem(key, marker);
+  } catch {
+    // Storage blocked: record anyway; a duplicate row is better than none.
+  }
+  void Promise.resolve(supabase.rpc("record_sign_in")).catch(() => {});
+}
 
 export default function NavBar() {
   const supabase = createBrowserSupabaseClient();
@@ -12,8 +30,9 @@ export default function NavBar() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setLoggedIn(Boolean(data.user)));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setLoggedIn(Boolean(session?.user));
+      if (event === "SIGNED_IN" && session?.user) recordSignIn(supabase, session.user.id, session.access_token);
     });
     return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -25,7 +44,8 @@ export default function NavBar() {
   // second Account link stacked directly above it. Exactly those six routes; everywhere
   // else keeps this bar, Sets included. Spelt out rather than importing TEACHER_PHASES,
   // whose module drags the academic data layer into every page's bundle for one list.
-  if (pathname && /^\/teacher(\/(ks2|ks4|ks5|recruitment|meetings))?\/?$/.test(pathname)) return null;
+  // 0.6 S1: People and Teams carry their own header (People.dc.html, Teams.dc.html) too.
+  if (pathname && /^\/teacher(\/(ks2|ks4|ks5|recruitment|meetings|people|teams))?\/?$/.test(pathname)) return null;
 
   return (
     <header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 text-sm dark:border-neutral-800">

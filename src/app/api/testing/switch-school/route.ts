@@ -58,6 +58,13 @@ export async function POST(request: NextRequest) {
   }
   const profileId = userData.user.id;
 
+  // 0.6 S1: platform admins only, on top of the env flag. Asked as the caller (their own
+  // token on the anon client), so is_platform_admin() reads their auth.uid().
+  const { data: isPlatformAdmin, error: adminError } = await callerClient.rpc("is_platform_admin");
+  if (adminError || isPlatformAdmin !== true) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // The membership work -- including the four-foreign-key cleanup documented above, found
   // by live testing rather than code review -- now lives in one place, shared with
   // /api/testing/preview-session, which needs exactly the same thing. It was extracted

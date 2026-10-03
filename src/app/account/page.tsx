@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import SchoolSearch from "@/components/SchoolSearch";
+import { VISIBLE_ROLE_LABELS, visibleRolesOf } from "@/lib/roles";
 
-const ROLE_LABELS: Record<string, string> = {
-  head_governor: "Head / Governor",
-  admissions: "Admissions",
-  finance: "Finance",
-  director_of_studies: "Director of Studies",
-  head_of_department: "Head of Department",
-};
+// 0.6 S1: a member's roles are a set (school_memberships.roles), labelled from roles.ts;
+// School-Admin is is_admin or the account holder. HOD and Finance are hidden in 0.6.
+function rolesText(m: { roles?: string[] | null; role?: string | null; is_admin?: boolean | null; isAccountHolder?: boolean }): string {
+  const list = visibleRolesOf(m).map((r) => VISIBLE_ROLE_LABELS[r]);
+  return list.length ? list.join(", ") : "No role set";
+}
 
 const STATUS_LABELS: Record<string, string> = {
   approved: "Approved",
@@ -25,6 +25,7 @@ type Membership = {
   id: string;
   status: string;
   role: string | null;
+  roles: string[] | null;
   is_admin: boolean;
   individual_tier_active: boolean;
   school_account_id: string;
@@ -42,6 +43,7 @@ type Colleague = {
   id: string;
   status: string;
   role: string | null;
+  roles: string[] | null;
   is_admin: boolean;
   profiles: { email: string; full_name: string | null } | null;
 };
@@ -72,7 +74,7 @@ export default function AccountPage() {
     const { data, error } = await supabase
       .from("school_memberships")
       .select(
-        "id, status, role, is_admin, individual_tier_active, school_account_id, school_accounts!school_memberships_school_account_id_fkey(id, school_urn, tier, account_holder_membership_id, pending_account_holder_membership_id, schools(current_name))",
+        "id, status, role, roles, is_admin, individual_tier_active, school_account_id, school_accounts!school_memberships_school_account_id_fkey(id, school_urn, tier, account_holder_membership_id, pending_account_holder_membership_id, schools(current_name))",
       )
       .eq("profile_id", uid);
     if (error) console.error("Failed to load school memberships:", error);
@@ -82,7 +84,7 @@ export default function AccountPage() {
   }, []);
 
   useEffect(() => {
-    load();
+    (async () => { await load(); })();
   }, [load]);
 
   if (loading) return <main className="px-6 py-24 text-center text-sm text-neutral-500">Loading…</main>;
@@ -151,8 +153,18 @@ function TestingSchoolSwitcher() {
   const router = useRouter();
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 0.6 S1: platform admins only, on top of the env flag (the route checks the same).
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const enabled = process.env.NEXT_PUBLIC_ENABLE_TESTING_SCHOOL_SWITCHER === "true";
-  if (!enabled) return null;
+  useEffect(() => {
+    if (!enabled) return;
+    (async () => {
+      const { data, error: e } = await supabase.rpc("is_platform_admin");
+      setIsPlatformAdmin(!e && data === true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled]);
+  if (!enabled || !isPlatformAdmin) return null;
 
   async function handleSelect(school: { urn: string; current_name: string }) {
     setSwitching(true);
@@ -244,8 +256,7 @@ function MembershipCard({
         <span className="text-xs text-neutral-500">{STATUS_LABELS[membership.status]}</span>
       </div>
       <p className="mt-1 text-sm text-neutral-500">
-        {membership.role ? ROLE_LABELS[membership.role] : "No role set"}
-        {membership.is_admin && " · Admin"}
+        {rolesText({ ...membership, isAccountHolder })}
         {isAccountHolder && " · Account holder"}
       </p>
 
@@ -313,14 +324,14 @@ function ManagementPanel({
   const loadColleagues = useCallback(async () => {
     const { data } = await supabase
       .from("school_memberships")
-      .select("id, status, role, is_admin, profiles(email, full_name)")
+      .select("id, status, role, roles, is_admin, profiles(email, full_name)")
       .eq("school_account_id", schoolAccountId);
     setColleagues((data as unknown as Colleague[]) ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolAccountId]);
 
   useEffect(() => {
-    loadColleagues();
+    (async () => { await loadColleagues(); })();
   }, [loadColleagues]);
 
   async function approve(membershipId: string) {
@@ -364,11 +375,10 @@ function ManagementPanel({
           <li key={c.id} className="flex items-center justify-between text-sm">
             <span>
               {c.profiles?.full_name || c.profiles?.email || "Member"}
-              {c.role && ` — ${ROLE_LABELS[c.role]}`}
+              {` — ${rolesText(c)}`}
               {c.status !== "approved" && (
                 <span className="ml-2 text-xs text-neutral-500">({STATUS_LABELS[c.status]})</span>
               )}
-              {c.is_admin && <span className="ml-2 text-xs text-neutral-500">Admin</span>}
             </span>
             <span className="flex gap-2">
               {c.status !== "approved" && (

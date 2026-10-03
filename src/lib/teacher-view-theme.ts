@@ -26,6 +26,43 @@ export const FEATURE_ACCENT = {
   meetings: { hex: "#fb7185", rgb: "251,113,133" },
 } as const;
 
+// 0.6 S1: the role colours, literal from People.dc.html (SMT violet, Teacher green,
+// Admissions cyan, School-Admin amber). Same shape as PHASE_ACCENT. HOD and Finance are
+// hidden in the 0.6 UI but keyed for completeness (blue and rose from the existing palette).
+// Teacher and SMT share their hexes with the KS4 and KS5 phase accents; that is the board's
+// choice, logged rather than changed.
+export const ROLE_ACCENT = {
+  teacher: { hex: "#34d399", rgb: "52,211,153" },
+  smt: { hex: "#a78bfa", rgb: "167,139,250" },
+  admissions: { hex: "#22d3ee", rgb: "34,211,238" },
+  school_admin: { hex: "#fbbf24", rgb: "251,191,36" },
+  hod: { hex: "#60a5fa", rgb: "96,165,250" },
+  finance: { hex: "#fb7185", rgb: "251,113,133" },
+} as const;
+
+// The admin screens' "needs your attention" amber (People's Waiting chip and cards,
+// Platform's SUPER-ADMIN badge and selected row). The boards draw it as the same #fbbf24
+// as School-Admin and Recruitment; named separately because it means something else.
+export const ATTENTION_ACCENT = { hex: "#fbbf24", rgb: "251,191,36" } as const;
+// Text on a solid amber fill (Approve as Teacher, SUPER-ADMIN), literal from the boards;
+// the fill is the same in both themes, so its ink is too.
+export const ATTENTION_INK = "#1a1300";
+
+// Readable text in an accent colour on either theme. The boards (drawn dark) print a
+// role's label in a lighter tint of its hex (#a78bfa -> #c4b5fd); the raw hex on the light
+// theme's white is too faint for 11px text (#fbbf24 on white is 1.7:1). So the text is the
+// accent mixed toward --fg: lighter on dark, darker on light, by a per-theme share
+// (--accent-text-mix in globals.css: 65% dark, 50% light).
+export function accentText(hex: string): string {
+  return `color-mix(in srgb, ${hex} var(--accent-text-mix, 65%), var(--fg))`;
+}
+
+// A surface or edge tinted toward an accent over the page background, as the boards draw
+// the Waiting card (#17140c = amber 6% over the page) and its border (#4a3b12 = 27%).
+export function accentOver(hex: string, pct: number, base = "var(--bg)"): string {
+  return `color-mix(in srgb, ${hex} ${pct}%, ${base})`;
+}
+
 // Subject-chip colours. In the mockups a colour belongs to a QUALIFICATION GROUP, not to
 // each subject: both GCSE subjects are green and the BTEC one blue, and the pie groups
 // its slices the same way ("Geography & Sports (GCSE) — 9%"). Post-16 starts further

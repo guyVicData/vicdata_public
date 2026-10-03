@@ -22,6 +22,7 @@ import { PanelMenu, MenuDivider, useDismiss } from "./PanelMenu";
 import { ChevronDown } from "./PanelIcons";
 import { MeasureToggle, type FocusSubject, type SharedMeasure } from "./ControlBar";
 import { ThemeToggle, type Theme } from "./TeacherChrome";
+import { loadAdminSchool } from "@/components/admin/AdminChrome";
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
@@ -197,10 +198,19 @@ function AccountMenu() {
   // visitor's only Log in link -- so the menu offers Log in when there is no session. A
   // local session read (no network), and null until known so neither set of rows flashes.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  // 0.6 S1: People and Teams for School-Admins, Platform for platform admins -- found here,
+  // in the one menu every Teacher view page carries.
+  const [canManage, setCanManage] = useState(false);
+  const [platformAdmin, setPlatformAdmin] = useState(false);
   useEffect(() => {
     (async () => {
-      const { data } = await createBrowserSupabaseClient().auth.getSession();
+      const supabase = createBrowserSupabaseClient();
+      const { data } = await supabase.auth.getSession();
       setSignedIn(Boolean(data.session));
+      if (!data.session) return;
+      const [school, admin] = await Promise.all([loadAdminSchool(), supabase.rpc("is_platform_admin")]);
+      setCanManage(school.status === "ready" && school.school.canManage);
+      setPlatformAdmin(!admin.error && admin.data === true);
     })();
   }, []);
 
@@ -232,6 +242,13 @@ function AccountMenu() {
           ) : (
             <>
               <Link href="/account" className={rowClass} onClick={() => setOpen(false)}>Your Account</Link>
+              {canManage && (
+                <>
+                  <Link href="/teacher/people" className={rowClass} onClick={() => setOpen(false)}>People</Link>
+                  <Link href="/teacher/teams" className={rowClass} onClick={() => setOpen(false)}>Teams</Link>
+                </>
+              )}
+              {platformAdmin && <Link href="/platform" className={rowClass} onClick={() => setOpen(false)}>Platform</Link>}
               <button type="button" onClick={logOut} disabled={loggingOut || signedIn === null} className={rowClass}>
                 {loggingOut ? "Logging out…" : "Log Out"}
               </button>
