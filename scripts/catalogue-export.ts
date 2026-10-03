@@ -102,6 +102,7 @@ function rulesMd() {
       ["Status", r.status === "superseded" ? `superseded by ${r.supersededBy}` : r.status],
       ["Must lift", r.lift ? `${r.lift.from} → ${r.lift.to} (${r.lift.lifted ? "lifted" : "not yet lifted"})${r.lift.note ? `. ${r.lift.note}` : ""}` : "—"],
       ["Open issue", r.openIssue ?? "—"],
+      ["Fixed", r.fixes?.length ? bullets(r.fixes) : "—"],
     ]),
   ).join("\n");
   write(

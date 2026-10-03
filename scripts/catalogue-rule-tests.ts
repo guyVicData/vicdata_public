@@ -30,6 +30,8 @@ const lib = async () => ({
   qb: await import("../src/lib/dfe-qualification-buckets"),
   agg: await import("../src/lib/academic-aggregate-trends"),
   tvp: await import("../src/lib/teacher-view-panels"),
+  tvm: await import("../src/lib/teacher-view-measures"),
+  pop: await import("../src/lib/teacher-view-populations"),
   sb: await import("../src/lib/supabase"),
 });
 type Lib = Awaited<ReturnType<typeof lib>>;
@@ -109,26 +111,41 @@ const RUNNERS: Record<string, Runner> = {
     return { pass: group === 591 && rawNonAs === 591, detail: fmt({ allQualifications: all, groupTotal: group, rawNonAsAea: rawNonAs }) };
   },
 
-  // R-POINTS-WEIGHTED: 130432 2024/25 Computer Science 7.0, Chemistry 24.3.
-  // Reproduces page.tsx groupValueFor (ks5 points branch) verbatim on the lib's rows.
-  async pointsWeighted({ adv, qb }) {
+  // R-POINTS-WEIGHTED: 130432 2024/25 Computer Science 7.0, Chemistry 24.3 on the A-level
+  // family's scale. Through the lib's own contextGroupRows + contextGroupValue (S3b: points
+  // keep to the focus's qualification family, R-POINTS-SAME-QUAL).
+  async pointsWeighted({ adv, tvm, pop }) {
     const urn = "130432";
-    const rows = ((await adv.fetchSubjectQualificationHeadlineForSchools([urn], "ks5")).get(urn) ?? []).filter(
-      (h) => h.period === 2024 && !qb.isAsLevelOrAea(h.qualificationType ?? ""),
-    );
-    const weighted = (subject: string) => {
-      let points = 0;
-      let weight = 0;
-      for (const h of rows.filter((r) => r.subject === subject)) {
-        if (h.avgPointScore === null || !h.pointsCoveragePercent) continue;
-        const eligible = (h.entriesTotal ?? 0) * (h.pointsCoveragePercent / 100);
-        points += h.avgPointScore * eligible;
-        weight += eligible;
-      }
-      return weight > 0 ? points / weight : null;
-    };
-    const v = { computerScience: round(weighted("Computer Science")), chemistry: round(weighted("Chemistry")) };
+    const qh = (await adv.fetchSubjectQualificationHeadlineForSchools([urn], "ks5")).get(urn) ?? [];
+    const groupRows = pop.contextGroupRows("ks5", [], qh);
+    const g = { phase: "ks5" as const, measureId: "points" as const, groupRows, gradeRows: [], bandRange: null, inGroup: () => true, focusFamily: "alevel" };
+    const v = { computerScience: round(tvm.contextGroupValue(g, "Computer Science", 2024)), chemistry: round(tvm.contextGroupValue(g, "Chemistry", 2024)) };
     return { pass: v.computerScience === 7 && v.chemistry === 24.3, detail: fmt(v) };
+  },
+
+  // R-POINTS-SAME-QUAL: Croydon College 130432, 2024/25. A subject the college runs as both
+  // A level and BTEC (Business Studies) has one Context group value per qualification
+  // family, never a blend: the A-level family's is the A-level row's own figure, and no
+  // BTEC row moves it. Post-16 points keep to the family; entries do not.
+  async pointsSameQual({ adv, tvm, pop }) {
+    const urn = "130432";
+    const qh = (await adv.fetchSubjectQualificationHeadlineForSchools([urn], "ks5")).get(urn) ?? [];
+    const groupRows = pop.contextGroupRows("ks5", [], qh);
+    const at = (focusFamily: string | null) =>
+      tvm.contextGroupValue({ phase: "ks5", measureId: "points", groupRows, gradeRows: [], bandRange: null, inGroup: () => true, focusFamily }, "Business Studies", 2024);
+    const aRow = qh.find((h) => h.subject === "Business Studies" && h.period === 2024 && h.qualificationType === "GCE A level")?.avgPointScore ?? null;
+    const btecRows = qh.filter((h) => h.subject === "Business Studies" && h.period === 2024 && (h.qualificationType ?? "").startsWith("BTEC"));
+    const v = {
+      aLevelFamily: round(at("alevel"), 2),
+      aLevelRow: aRow,
+      btecFamily: round(at("btec_ocr"), 2),
+      btecRows: btecRows.length,
+      noFocus: at(null),
+      keepsOnPoints: tvm.contextKeepsToFamily("ks5", "points"),
+      keepsOnEntries: tvm.contextKeepsToFamily("ks5", "entries"),
+    };
+    const pass = aRow !== null && v.aLevelFamily === round(aRow, 2) && v.btecRows > 0 && v.btecFamily !== null && v.btecFamily !== v.aLevelFamily && v.noFocus === null && v.keepsOnPoints && !v.keepsOnEntries;
+    return { pass, detail: fmt(v) };
   },
 
   // R-MIN-SCHOOLS: Camden (Acland Burghley's LA) GCSE points rows all have >= 5 schools by

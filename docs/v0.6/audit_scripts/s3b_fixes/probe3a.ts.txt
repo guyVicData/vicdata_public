@@ -1,0 +1,25 @@
+// Context on Results / Average point score, 2024/25: the figures a teacher reads.
+import { loadData } from "./common";
+import { compute, itemsOf } from "./h";
+const CASES: [string, string, string][] = [
+  ["130432", "Croydon College", "Computer Science::GCE A level"],
+  ["130432", "Croydon College", "Business Studies::BTEC National Extended Certificate L3 - Band F - P-D*"],
+  ["117037", "The King's School Worcester", "Mathematics::GCE A level"],
+  ["100369", "The Godolphin and Latymer School", "Chemistry::IBO Higher level component"],
+  ["100369", "The Godolphin and Latymer School", "Mathematics::GCE A level"],
+  ["130448", "(BTEC college 130448)", "Psychology::GCE A level"],
+];
+const r1 = (v: number | null | undefined) => (v === null || v === undefined ? "—" : (Math.round(v * 10) / 10).toFixed(1));
+const out: any[] = [];
+for (const [urn, name, focus] of CASES) {
+  const data = loadData(urn, "ks5");
+  const items = itemsOf(data.dashboard.subjectData.entries);
+  if (!items.some((i) => i.key === focus)) { out.push({ urn, focus, missing: true, near: items.filter((i) => i.key.startsWith(focus.split("::")[0])).map((i) => i.key) }); continue; }
+  for (const against of ["whole", "category"]) {
+    const o: any = compute(data, "ks5", { ticked: items.map((i) => i.key), chosenFocusKey: focus, shared: "results", resultsMeasureId: "points", savedAgainst: against, contextSelected: [], bandSaved: undefined, bandPending: null }, false);
+    const li = o.contextPeriods.length - 1;
+    const f = o.contextSeries.find((s: any) => s.key === focus);
+    out.push({ urn, name, focus, against, year: o.contextPeriods[li], focusValue: r1(f?.values[li]), groupAverage: r1(o.contextSeries[0]?.benchmark[li]), subjectsDrawn: o.contextSeries.length });
+  }
+}
+console.log(JSON.stringify(out));

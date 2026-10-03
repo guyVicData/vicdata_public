@@ -47,7 +47,7 @@ import { type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 // VicData 0.6 S2: the rules that decide each figure and each comparison population live in
 // these libs (every enforcement point tagged with its rule ID); this page only calls them.
-import { bandRangeFor, onGradeScale, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
+import { bandRangeFor, onGradeScale, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
 import { asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf } from "@/lib/teacher-view-populations";
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
@@ -1157,7 +1157,9 @@ export default function TeacherPhaseDashboard() {
   // name rather than by the ticked list's (subject, qualification) key.
   // Post-16: weighted by points-eligible entries; threshold/bands: per qualification, then
   // meaned (R-POINTS-WEIGHTED, R-KS5-ASAEA-EXCL -- see contextGroupValue).
-  const groupInputs = { phase, measureId: contextMeasure.id, groupRows, gradeRows, bandRange, inGroup };
+  // R-POINTS-SAME-QUAL (S3b): on Post-16 points each member's value keeps to the focused
+  // item's qualification family (focusQualFamily), never A level, BTEC and IB blended.
+  const groupInputs = { phase, measureId: contextMeasure.id, groupRows, gradeRows, bandRange, inGroup, focusFamily: focusQualFamily };
   const groupValueFor = (subject: string, period: number): number | null => contextGroupValue(groupInputs, subject, period);
 
   // §4.2: the group is SELF-INCLUSIVE -- it contains the subject being compared, matching
@@ -1176,6 +1178,7 @@ export default function TeacherPhaseDashboard() {
   // out of the group rather than counted invisibly. The same rule as Column 1's category
   // (focusQualFamily above).
   const contextFamily = focusQualFamily;
+  const contextFamilyLabel = phase === "ks5" ? QUALIFICATION_FAMILIES.ks5.find((f) => f.id === contextFamily)?.label ?? null : null;
   const inContextFamily = inFocusQualFamily;
   const contextOffer = contextOfferOf(items, inContextFamily);
   // Every subject at the school, by name -- Context's All subjects group.
@@ -1245,7 +1248,17 @@ export default function TeacherPhaseDashboard() {
   // "Whole school" they are every subject the school has (round 2 part 5).
   // Current panel rework round 1: with "Subject category" the subjects are exactly the list
   // Column 1 draws -- candidateItems, focused subject first -- not a second derivation.
-  const contextItems = contextItemsOf({ focusItem, against: contextAgainst, candidateItems, items, contextMembers });
+  // R-POINTS-SAME-QUAL (S3b): on Post-16 points, All subjects keeps to the focus's family too.
+  const contextKeepsFamily = contextKeepsToFamily(phase, contextMeasure.id);
+  const contextItems = contextItemsOf({
+    focusItem,
+    against: contextAgainst,
+    candidateItems,
+    items,
+    contextMembers,
+    inFamily: inContextFamily,
+    keepToFamily: contextKeepsFamily,
+  });
   const contextShort = shortLabelsFor(contextItems);
   const contextSeries: SubjectSeries[] = keepFocusOrFigured(contextItems
     .map((i) => ({
@@ -1877,11 +1890,17 @@ export default function TeacherPhaseDashboard() {
                   ? `${contextMeasure.label} is published per grade only from 2023/24, so this covers fewer years than the other measures.`
                   : contextMeasure.id === "bands"
                     ? "Grades are published per subject only from 2023/24, so this covers fewer years than the other measures. Subjects on a different grade scale from the range's are left out."
-                    : contextFallsBack
-                      ? resultsMeasure.id === "counts"
-                        ? "Grade counts has no single figure to compare subjects on, so Context shows average point score."
-                        : "Pick a grade range in Results to compare subjects on it; until then Context shows average point score."
-                      : undefined
+                    : [
+                        contextFallsBack
+                          ? resultsMeasure.id === "counts"
+                            ? "Grade counts has no single figure to compare subjects on, so Context shows average point score."
+                            : "Pick a grade range in Results to compare subjects on it; until then Context shows average point score."
+                          : null,
+                        // R-POINTS-SAME-QUAL (S3b): say why other qualification types are missing.
+                        contextKeepsFamily && contextFamilyLabel
+                          ? `Points are on a different scale for each qualification type, so only ${contextFamilyLabel} subjects are compared.`
+                          : null,
+                      ].filter(Boolean).join(" ") || undefined
               }
             />
           )}

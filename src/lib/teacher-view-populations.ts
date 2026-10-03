@@ -7,9 +7,9 @@
 // its population by accident (catalogue design doc §1). Pure and client-safe. Every
 // enforcement point carries its rule ID.
 //
-// Known gaps moved as they were, not fixed (logged for Guy): an AS-only focus is not added
-// to its own Selected group (contextMembers), and "All subjects" applies no qualification
-// family filter (R-POINTS-SAME-QUAL conflict).
+// Known gap moved as it was, not fixed (logged for Guy): an AS-only focus is not added to
+// its own Selected group (contextMembers). S3b: on Post-16 points "All subjects" keeps to
+// the focus's qualification family (R-POINTS-SAME-QUAL, contextItemsOf).
 import type { AcademicSubjectHeadlineEntry } from "./academic-data-view";
 import { isAsLevelOrAea } from "./dfe-qualification-buckets";
 import { familyFor } from "./teacher-view-catalogue";
@@ -188,6 +188,9 @@ export function contextMembersOf<T extends PopulationItem>(p: {
  * The subjects Context draws: Column 1's own list on "category"; otherwise the focus then
  * every other item with entries (Selected: only the members).
  * R-FOCUS-NEVER-FILTERED, R-KS5-ASAEA-EXCL.
+ * R-POINTS-SAME-QUAL: with `keepToFamily` (contextKeepsToFamily: Post-16 points) the peers
+ * are only the focus's qualification family on every group, All subjects included, so A
+ * level, BTEC and IB points never share one chart. (Category and Selected already are.)
  */
 export function contextItemsOf<T extends PopulationItem>(p: {
   focusItem: T | null;
@@ -195,6 +198,8 @@ export function contextItemsOf<T extends PopulationItem>(p: {
   candidateItems: T[];
   items: T[];
   contextMembers: string[];
+  inFamily?: (i: T) => boolean;
+  keepToFamily?: boolean;
 }): T[] {
   const { focusItem } = p;
   return !focusItem
@@ -208,6 +213,7 @@ export function contextItemsOf<T extends PopulationItem>(p: {
               i.key !== focusItem.key &&
               i.entries > 0 &&
               isComparablePeer(i) &&
+              (!p.keepToFamily || (p.inFamily?.(i) ?? false)) &&
               (p.against !== "selected" || p.contextMembers.includes(i.subject)),
           ),
         ];

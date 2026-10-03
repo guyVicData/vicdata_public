@@ -9,7 +9,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | ID | Status | Statement | Must lift | Test | Open issue |
 | --- | --- | --- | --- | --- | --- |
 | R-ENTRIES-NOT-POINTS | active | Entries count every qualification; points come only from qualifications with a real challenge table, and a row with no points of its own shows none rather than borrowing another's. | lifted | manual | — |
-| R-POINTS-SAME-QUAL | active | A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification). | lifted | manual | yes |
+| R-POINTS-SAME-QUAL | active | A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown. | lifted | auto: pointsSameQual | — |
 | R-KS4-POINTS-GCSE-FULL | active | KS4 points come only from GCSE (9-1) Full Course entries with a clean single grade. | lifted | manual | — |
 | R-KS5-ASAEA-EXCL | active | AS level and AEA are left out of comparison lists, group totals and averages at Post-16, never out of the focused item's own figure. | lifted | auto: asAeaGroupTotal | yes |
 | R-KS5-ENGLAND-EXACT | active | The Post-16 England figure is the exact subject × qualification figure or nothing; there is no bucket fallback. | no | auto: englandExact | — |
@@ -19,7 +19,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | R-FOCUS-NEVER-FILTERED | active | The focused item (a subject, or the school itself in Comparisons) is never filtered out of its own figures, only out of comparison lists. | lifted | manual | — |
 | R-TREND-3YR | superseded by R-TREND-LINE-4YR | Trend views need 3+ years; below that, show the table only. | no | none yet | — |
 | R-ZERO-CANDIDATE | active | A school with a stage row but no real candidate count and no real headline measure is not 'present' for that stage; special schools are matched only with special schools (and vice versa) in nearest and comparator pools. | no | manual | yes |
-| R-POINTS-WEIGHTED | active | A subject's points across several qualifications are weighted by points-eligible entries, not flat-averaged. | lifted | auto: pointsWeighted | — |
+| R-POINTS-WEIGHTED | active | A subject's points across several qualifications in one family are weighted by points-eligible entries, not flat-averaged. | lifted | auto: pointsWeighted | — |
 | R-TREND-LINE-4YR | active | A trend is drawn as a line only with 4 or more real years; below that: per-year bars (TrendChart), a ranked change-in-units list (MultiTrend), or the table alone (Comparisons Trend); the Actual and Trend-line toggles disable. | no | auto: trendLine | yes |
 | R-DONUT-COUNTS-ONLY | active | Share (donut) only for counts (entries), and for grade bands once a range is picked; never for averages or rates. | lifted | manual | — |
 | R-NO-GRADE-RATE-GEO | active | No LA, region or England benchmark for the Grade 4+ / A*-E rate; the geography comparison is points-only on Results (entries on Candidates). | lifted | manual | yes |
@@ -27,7 +27,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | R-GRADE-SCALE-MATCH | active | A rate is computed only on the scale it was defined on (threshold: GCSE 9-1 / Double Award at KS4, A-level A*-E at KS5; bands: the scale the range was picked on). Vocational, IB and Pre-U rows get no figure. | no | manual | — |
 | R-NON-GRADES-EXCL | active | Suppressed, No result, X, Covid impacted and other non-grades are excluded from both sides of every grade rate and distribution. | no | none yet | — |
 | R-THRESHOLD-PERIODS | active | Grade-based measures cover 2023/24 on at school level; the axis is shortened, never padded. | lifted | auto: thresholdPeriods | yes |
-| R-QUAL-FAMILY-MATCH | active | Column 1's category and Context's Selected set contain only the focus's qualification family (KS5 display bucket). Not applied to 'All subjects'. | lifted | manual | yes |
+| R-QUAL-FAMILY-MATCH | active | Column 1's category and Context's Selected set contain only the focus's qualification family (KS5 display bucket). 'All subjects' crosses families, except on Post-16 points, where it keeps to the focus's family too (R-POINTS-SAME-QUAL). | lifted | manual | — |
 | R-KS4-SUBJECT-DEDUP | active | At GCSE, one category row per subject (headline rows are per subject); at Post-16, none. | lifted | none yet | — |
 | R-SELF-INCLUSIVE-GROUP | active | Group totals and averages include the focused subject. | lifted | manual | yes |
 | R-SAME-YEAR-BENCH | active | A benchmark is read for the same year as the figure, or not at all. | lifted | none yet | — |
@@ -65,21 +65,23 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:pointsAt, resultsFor → src/lib/teacher-view-measures.ts:ownHeadlineRows, carriesOwnPoints, subjectPointsAt, subjectEntriesAt (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-POINTS-SAME-QUAL
 
 | Field | Content |
 | --- | --- |
-| Statement | A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification). |
+| Statement | A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown. |
 | Why | A-level, BTEC and IB points sit on different challenge tables; one bar chart or average across them compares unlike scales. |
 | Applies to | M-KS4-POINTS, M-KS5-POINTS; map chips, Column 1 category, Context |
-| Enforced in | - src/lib/teacher-view-catalogue.ts:comparabilityKey (124-127)<br>- src/app/api/teacher/dashboard/route.ts:englandAverages (56-72, exact qualification)<br>- src/app/teacher/[phase]/page.tsx:candidateItems (1063-1099, via R-QUAL-FAMILY-MATCH) |
-| Tagged at | - src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts |
-| Test case | Croydon College (130432), ks5, Computer Science, 2024/25: Context 'All subjects', Average points: Computer Science 7.0 (Part D report :57). Confirm whether a cross-qualification blend is intended. [manual] |
+| Enforced in | - src/lib/teacher-view-catalogue.ts:comparabilityKey (124-127)<br>- src/app/api/teacher/dashboard/route.ts:englandAverages (56-72, exact qualification)<br>- src/app/teacher/[phase]/page.tsx:candidateItems (1063-1099, via R-QUAL-FAMILY-MATCH)<br>- src/lib/teacher-view-measures.ts:contextKeepsToFamily, onFocusPointsScale, contextGroupValue (Post-16 points rows in the focus's family only)<br>- src/lib/teacher-view-populations.ts:contextItemsOf (keepToFamily: All subjects on Post-16 points) |
+| Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts |
+| Test case | Croydon College (130432), ks5, Business Studies, 2024/25: Context on Average point score: Business Studies (A level + five BTEC sizes) has one group value per family -- the A-level family's is the A-level row's own 26.36, the BTEC family's is the BTEC rows' weighted mean; no focus = no value. With A-level Computer Science focused, All subjects draws 20 A-level subjects (was 55 across every family) and its average is 25.6 (was a 24.7 blend). [runner: pointsSameQual] |
 | Origin | Academic Results phase; Post-16 Part C and Part D |
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:groupValueFor (1207-1216), contextItems (1361-1369) → src/lib/teacher-view-measures.ts:subjectPointsAt, latestOwnPoints; POINTS_BEARING_QUALIFICATION -> src/lib/dfe-qualification-buckets.ts (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
-| Open issue | Post-16 Context on points mixes qualifications: groupValueFor combines every non-AS qualification row of a subject (A level + BTEC + IB) into one weighted mean, and 'All subjects' has no qualification-family filter, so A-level and BTEC points share one bar chart and one group average (audit A §2, M9). |
+| Open issue | — |
+| Fixed | - S3b (Guy's decision 3, 3 Oct 2026): Post-16 Context on points no longer blends A level, BTEC and IB. contextGroupValue keeps each member's rows to the focused item's qualification family (display bucket), and contextItemsOf keeps All subjects' peers to it too (contextKeepsToFamily = Post-16 points; entries still add up across families). A row with no qualification type is never counted (suppressed, not blended); none occurred in the real data checked. The Context note says 'Points are on a different scale for each qualification type, so only <family> subjects are compared.' Before/after for 130432, 117037, 100369 and 130448 in the commit message. |
 
 ### R-KS4-POINTS-GCSE-FULL
 
@@ -95,6 +97,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/components/data-view/SubjectAreaSection.tsx:POINTS_BEARING_QUALIFICATION; page.tsx gates → src/lib/teacher-view-measures.ts:carriesOwnPoints (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-KS5-ASAEA-EXCL
 
@@ -110,6 +113,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx (the population filters listed under enforcedIn) → src/lib/teacher-view-populations.ts:isComparablePeer, contextGroupRows; src/lib/teacher-view-measures.ts:contextGroupValue (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | An AS-only focus is not added to its own group (page.tsx:1277 requires !asOrAeaOnly), so its share and benchmark are against a group it is not in (Part D open decision 1). |
+| Fixed | — |
 
 ### R-KS5-ENGLAND-EXACT
 
@@ -125,6 +129,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-MIN-SCHOOLS
 
@@ -140,6 +145,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-SINGLE-BUCKET-100
 
@@ -155,6 +161,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/components/data-view/SubjectAreaSection.tsx:singleScoredBucketFor, agreedScoredBucketFor → src/lib/academic-data-view.ts (not yet lifted). Deferred: needed only when Data View category measures are registered. No Teacher view path uses it. |
 | Open issue | — |
+| Fixed | — |
 
 ### R-IB-NONSUBJECT
 
@@ -170,6 +177,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | Enforced at ingest only. The raw-facts item list (academic-data-view.ts:parseSubjectEntries -> page.tsx:buildSubjectItems) has no filter, so a school whose raw facts carry 'Baccalaureate' rows lists it as a subject. Audit B said 2024/25 had none; the rule runner (3 Oct 2026) shows Sevenoaks (118952) lists 'Baccalaureate (International Baccalaureate)' and the IB Core 'Learning Skills' and 'Study Skills' (IBO Diploma Programme Core) as subjects in 2024/25, 244 entries each (225 each in 2023/24). Filtering them changes the subject list: a STOP item for Guy. |
+| Fixed | — |
 
 ### R-FOCUS-NEVER-FILTERED
 
@@ -185,6 +193,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx (focus-first population code); src/components/teacher/ComparisonsPanels.tsx:254,276 → src/lib/teacher-view-populations.ts:keepFocusOrFigured; src/lib/teacher-view-comparisons.ts:comparisonSchools (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-TREND-3YR
 
@@ -200,6 +209,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | superseded by R-TREND-LINE-4YR |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-ZERO-CANDIDATE
 
@@ -215,21 +225,23 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | Not applied to Teacher view comparator sets (rankFixedSets): a zero-candidate comparator with a 0-valued entries point is not excluded in Comparisons. Consider applying stagesPresent there. |
+| Fixed | — |
 
 ### R-POINTS-WEIGHTED
 
 | Field | Content |
 | --- | --- |
-| Statement | A subject's points across several qualifications are weighted by points-eligible entries, not flat-averaged. |
+| Statement | A subject's points across several qualifications in one family are weighted by points-eligible entries, not flat-averaged. |
 | Why | A flat mean of the 'all' row and each bucket row let one IB entry count as much as forty A-level ones. |
 | Applies to | M-KS5-POINTS (Context group values); rollups |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:groupValueFor (1207-1216)<br>- vicdata:ingest/academic_aggregates.py:285-288 |
 | Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/teacher-view-measures.ts |
-| Test case | Croydon College (130432), ks5, Computer Science, 2024/25: Computer Science 7.0 (was 13.1), Chemistry 24.3 (was 29.7) (Part D report :57). [runner: pointsWeighted] |
+| Test case | Croydon College (130432), ks5, Computer Science, 2024/25: On the A-level family's scale: Computer Science 7.0 (was 13.1), Chemistry 24.3 (was 29.7) (Part D report :57). Both are A-level-only in 2024/25 (Chemistry's AS row is excluded), so S3b's family filter leaves them unchanged. [runner: pointsWeighted] |
 | Origin | Post-16 Part D |
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:groupValueFor → src/lib/teacher-view-measures.ts:contextGroupValue (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-TREND-LINE-4YR
 
@@ -245,6 +257,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | Legacy TREND_MIN_YEARS = 3 (teacher-view-catalogue.ts:24) is still read by /teacher/meetings: retire it or document it. |
+| Fixed | — |
 
 ### R-DONUT-COUNTS-ONLY
 
@@ -260,6 +273,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1956; src/components/teacher/SubjectPanels.tsx:297, 525-534 → src/lib/teacher-view-measures.ts:shareApplies (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-NO-GRADE-RATE-GEO
 
@@ -275,6 +289,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1136, 1153, 1727-1734, 1786 → src/lib/teacher-view-measures.ts:hasEnglandPointsBenchmark (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | Audit B: the grade geography (academic_subject_grade_geography_aggregate, 2021-2024) would give an England Grade 4+ rate (the 9-4 band), so the gap is wiring, not data. |
+| Fixed | — |
 
 ### R-BANDS-ENGLAND-BENCH
 
@@ -290,6 +305,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/components/teacher/SubjectPanels.tsx:282-292 → src/lib/teacher-view-grade-geography.ts:withEnglandBandBenchmark (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-GRADE-SCALE-MATCH
 
@@ -305,6 +321,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-NON-GRADES-EXCL
 
@@ -320,6 +337,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-THRESHOLD-PERIODS
 
@@ -335,12 +353,13 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1112-1116, 1315-1320 → src/lib/teacher-view-measures.ts:periodsForMeasure (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | academic_subject_grade_rollup holds 2021/22-2024/25 for 4,864 KS4 and 2,893 KS5 schools and the app never reads it; reading it would lengthen grade measures from 2 to 4 years (audit B). |
+| Fixed | — |
 
 ### R-QUAL-FAMILY-MATCH
 
 | Field | Content |
 | --- | --- |
-| Statement | Column 1's category and Context's Selected set contain only the focus's qualification family (KS5 display bucket). Not applied to 'All subjects'. |
+| Statement | Column 1's category and Context's Selected set contain only the focus's qualification family (KS5 display bucket). 'All subjects' crosses families, except on Post-16 points, where it keeps to the focus's family too (R-POINTS-SAME-QUAL). |
 | Why | Core Maths beside A-level Maths in one category compared unlike qualifications. |
 | Applies to | Column 1 category, Context Selected |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1063-1065, 1076, 1261-1263, 1272, 1277, 1282 |
@@ -349,7 +368,8 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Origin | Column 1 qualification match round; combined round §4c |
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1063-1065, 1076, 1261-1283 → src/lib/teacher-view-populations.ts:focusQualificationFamily, categoryItemsOf, contextMembersOf (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
-| Open issue | 'All subjects' crosses qualification families (and points scales at Post-16): see R-POINTS-SAME-QUAL (audit A M9). |
+| Open issue | — |
+| Fixed | - S3b: on Post-16 points 'All subjects' keeps to the focus's qualification family (R-POINTS-SAME-QUAL). On entries and rates it still crosses families: counts add up, and rates are scored only on their own grade scale. |
 
 ### R-KS4-SUBJECT-DEDUP
 
@@ -365,6 +385,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1096-1099, 1839 → src/lib/teacher-view-populations.ts:candidateItemsOf (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-SELF-INCLUSIVE-GROUP
 
@@ -380,6 +401,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1152, 1270-1285; src/components/teacher/CandidatesPanels.tsx:157-160 → src/lib/teacher-view-populations.ts:contextMembersOf, inContextGroup (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | An AS-only focus is excluded from its own group at Post-16 (page.tsx:1277), contradicting this rule for that case (Part D follow-up). |
+| Fixed | — |
 
 ### R-SAME-YEAR-BENCH
 
@@ -395,6 +417,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:531-538, 963; src/components/teacher/SubjectPanels.tsx:342 → src/lib/teacher-view-measures.ts:englandIndexOf, englandValueAt (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-PREV-YEAR-FALLBACK
 
@@ -410,6 +433,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/components/teacher/SubjectPanels.tsx:326-345 → src/lib/teacher-view-panels.ts:currentRowsWithDelta (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-MEASURE-FALLBACK
 
@@ -425,6 +449,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1174-1175, 1436-1443 → src/lib/teacher-view-measures.ts:contextFallsBackFor, contextMeasureFor, comparisonsMeasureFor (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-GEO-APPLIES
 
@@ -440,6 +465,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1727-1734, 1857 → src/lib/teacher-view-geography.ts:candidatesGeographyApplies, resultsGeographyApplies (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-GEO-POINTS-ELIGIBLE
 
@@ -455,6 +481,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1859-1862 → src/lib/teacher-view-geography.ts:pointsEligibleEntriesByPeriod (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-IGCSE-EXCL
 
@@ -470,6 +497,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-COMPARATOR-NO-FIGURE
 
@@ -485,6 +513,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/components/teacher/ComparisonsPanels.tsx:254, 274-277 → src/lib/teacher-view-comparisons.ts:comparisonSchools, rankedComparisons (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-COMPARATOR-RATE-PER-QUAL
 
@@ -500,6 +529,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/components/teacher/ComparisonsPanels.tsx:199-207; src/app/teacher/[phase]/page.tsx:2043-2053 → src/lib/teacher-view-comparator-grades.ts:rateSeriesByUrn (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-RANKING-SAMPLE
 
@@ -515,6 +545,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | src/components/teacher/ComparisonsPanels.tsx:213, 287-297, 494-506, 615, 713 → src/lib/teacher-view-comparisons.ts:comparisonsCurrentView, onRankingMeasure, sampleAllowsMap (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
+| Fixed | — |
 
 ### R-PERIOD-TRIM
 
@@ -530,6 +561,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-INDEX-HEADCOUNTS
 
@@ -545,6 +577,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-RANK-TIES
 
@@ -560,6 +593,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-TREND-FLAT-4PCT
 
@@ -575,6 +609,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-NUMBER-TYPE-HONESTY
 
@@ -590,6 +625,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | Live code shows % change on points and rates in Context and Comparisons change lists, tables and summaries (SubjectPanels.tsx:910-916, 993-1000; ComparisonsPanels.tsx:703-711, 762-765), and labels '% change in average point score' / '% change in grade 4+ rate' (teacher-view-panels.ts:112-140); pp bars appear only in MultiTrend's <4-year fallback. Changing it changes displayed figures: a STOP item unless Guy decides. |
+| Fixed | — |
 
 ### R-ROLLS-HEADCOUNT
 
@@ -605,6 +641,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-ROLLS-MAINSTREAM-AGG
 
@@ -620,6 +657,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | roll_aggregates scope 'regional' means LA (a naming trap), and LA rolls exist for 2025 only, so there is no LA roll trend table (audit B). |
+| Fixed | — |
 
 ### R-BIRTHS-FULL-WINDOW
 
@@ -635,6 +673,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |
 
 ### R-BIRTHS-SHIRE-SUM
 
@@ -650,3 +689,4 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Status | active |
 | Must lift | — |
 | Open issue | — |
+| Fixed | — |

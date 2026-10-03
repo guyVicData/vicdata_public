@@ -47,27 +47,33 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-POINTS-SAME-QUAL",
-    statement: "A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification).",
+    statement:
+      "A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown.",
     why: "A-level, BTEC and IB points sit on different challenge tables; one bar chart or average across them compares unlike scales.",
     appliesTo: "M-KS4-POINTS, M-KS5-POINTS; map chips, Column 1 category, Context",
     enforcedIn: [
       "src/lib/teacher-view-catalogue.ts:comparabilityKey (124-127)",
       "src/app/api/teacher/dashboard/route.ts:englandAverages (56-72, exact qualification)",
       `${P}:candidateItems (1063-1099, via R-QUAL-FAMILY-MATCH)`,
+      "src/lib/teacher-view-measures.ts:contextKeepsToFamily, onFocusPointsScale, contextGroupValue (Post-16 points rows in the focus's family only)",
+      "src/lib/teacher-view-populations.ts:contextItemsOf (keepToFamily: All subjects on Post-16 points)",
     ],
     testCase: {
       urn: "130432",
       school: "Croydon College",
       phase: "ks5",
-      subject: "Computer Science",
+      subject: "Business Studies",
       year: "2024/25",
-      expect: "Context 'All subjects', Average points: Computer Science 7.0 (Part D report :57). Confirm whether a cross-qualification blend is intended.",
+      expect:
+        "Context on Average point score: Business Studies (A level + five BTEC sizes) has one group value per family -- the A-level family's is the A-level row's own 26.36, the BTEC family's is the BTEC rows' weighted mean; no focus = no value. With A-level Computer Science focused, All subjects draws 20 A-level subjects (was 55 across every family) and its average is 25.6 (was a 24.7 blend).",
+      check: "pointsSameQual",
     },
     origin: "Academic Results phase; Post-16 Part C and Part D",
     status: "active",
     lift: {from: `${P}:groupValueFor (1207-1216), contextItems (1361-1369)`, to: "src/lib/teacher-view-measures.ts:subjectPointsAt, latestOwnPoints; POINTS_BEARING_QUALIFICATION -> src/lib/dfe-qualification-buckets.ts", lifted: true, note: "S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality)" },
-    openIssue:
-      "Post-16 Context on points mixes qualifications: groupValueFor combines every non-AS qualification row of a subject (A level + BTEC + IB) into one weighted mean, and 'All subjects' has no qualification-family filter, so A-level and BTEC points share one bar chart and one group average (audit A §2, M9).",
+    fixes: [
+      "S3b (Guy's decision 3, 3 Oct 2026): Post-16 Context on points no longer blends A level, BTEC and IB. contextGroupValue keeps each member's rows to the focused item's qualification family (display bucket), and contextItemsOf keeps All subjects' peers to it too (contextKeepsToFamily = Post-16 points; entries still add up across families). A row with no qualification type is never counted (suppressed, not blended); none occurred in the real data checked. The Context note says 'Points are on a different scale for each qualification type, so only <family> subjects are compared.' Before/after for 130432, 117037, 100369 and 130448 in the commit message.",
+    ],
   },
   {
     id: "R-KS4-POINTS-GCSE-FULL",
@@ -263,7 +269,7 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-POINTS-WEIGHTED",
-    statement: "A subject's points across several qualifications are weighted by points-eligible entries, not flat-averaged.",
+    statement: "A subject's points across several qualifications in one family are weighted by points-eligible entries, not flat-averaged.",
     why: "A flat mean of the 'all' row and each bucket row let one IB entry count as much as forty A-level ones.",
     appliesTo: "M-KS5-POINTS (Context group values); rollups",
     enforcedIn: [`${P}:groupValueFor (1207-1216)`, "vicdata:ingest/academic_aggregates.py:285-288"],
@@ -273,7 +279,7 @@ export const RULES: Rule[] = [
       phase: "ks5",
       subject: "Computer Science",
       year: "2024/25",
-      expect: "Computer Science 7.0 (was 13.1), Chemistry 24.3 (was 29.7) (Part D report :57).",
+      expect: "On the A-level family's scale: Computer Science 7.0 (was 13.1), Chemistry 24.3 (was 29.7) (Part D report :57). Both are A-level-only in 2024/25 (Chemistry's AS row is excluded), so S3b's family filter leaves them unchanged.",
       check: "pointsWeighted",
     },
     origin: "Post-16 Part D",
@@ -410,7 +416,7 @@ export const RULES: Rule[] = [
   {
     id: "R-QUAL-FAMILY-MATCH",
     statement:
-      "Column 1's category and Context's Selected set contain only the focus's qualification family (KS5 display bucket). Not applied to 'All subjects'.",
+      "Column 1's category and Context's Selected set contain only the focus's qualification family (KS5 display bucket). 'All subjects' crosses families, except on Post-16 points, where it keeps to the focus's family too (R-POINTS-SAME-QUAL).",
     why: "Core Maths beside A-level Maths in one category compared unlike qualifications.",
     appliesTo: "Column 1 category, Context Selected",
     enforcedIn: [`${P}:1063-1065, 1076, 1261-1263, 1272, 1277, 1282`],
@@ -424,7 +430,7 @@ export const RULES: Rule[] = [
     origin: "Column 1 qualification match round; combined round §4c",
     status: "active",
     lift: {from: `${P}:1063-1065, 1076, 1261-1283`, to: "src/lib/teacher-view-populations.ts:focusQualificationFamily, categoryItemsOf, contextMembersOf", lifted: true, note: "S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality)" },
-    openIssue: "'All subjects' crosses qualification families (and points scales at Post-16): see R-POINTS-SAME-QUAL (audit A M9).",
+    fixes: ["S3b: on Post-16 points 'All subjects' keeps to the focus's qualification family (R-POINTS-SAME-QUAL). On entries and rates it still crosses families: counts add up, and rates are scored only on their own grade scale."],
   },
   {
     id: "R-KS4-SUBJECT-DEDUP",

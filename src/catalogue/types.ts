@@ -101,6 +101,9 @@ export type Rule = {
   lift?: { from: string; to: string; lifted: boolean; note?: string };
   // Known conflicts the code still carries, for Guy (logged in OPEN_QUESTIONS.md).
   openIssue?: string;
+  // Deliberate figure changes that resolved an openIssue (S3b on), newest last: what
+  // changed, where, and the commit's before/after evidence.
+  fixes?: string[];
 };
 
 // ---------------------------------------------------------------------------------
@@ -283,7 +286,8 @@ export type SlideConfig = {
   title: string;
   notes?: string;
   layout: "auto" | "1+text" | "2+text" | "3-across" | "3x2" | "2x2+1";
-  slots: { id: string; view: DataviewInstance & { pinned?: Record<string, unknown>; keepLive?: boolean } }[];
+  // A slot holds one pinned view, or (S7) a text box: `view` absent and `text` set.
+  slots: { id: string; view?: DataviewInstance & { pinned?: Record<string, unknown>; keepLive?: boolean }; text?: string }[];
 };
 
 export type DashboardConfig = {

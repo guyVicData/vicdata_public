@@ -7,11 +7,11 @@
 // client-safe: no fetching, no React. Every enforcement point carries its rule ID
 // (`grep -rn R-<ID> src` finds them all).
 //
-// Known flaws are moved as they were, not fixed (logged for Guy): Post-16 Context points
-// blend qualifications in contextGroupValue (R-POINTS-SAME-QUAL conflict), and % change is
-// still offered on points and rates elsewhere.
+// S3b (Guy's decisions after night 1) fixed the Post-16 Context points blend: points are
+// now compared within the focused item's qualification family only (contextKeepsToFamily,
+// contextGroupValue). % change on points and rates is still offered elsewhere.
 import type { AcademicSubjectHeadlineEntry, SubjectGradeCount } from "./academic-data-view";
-import { POINTS_BEARING_QUALIFICATION } from "./dfe-qualification-buckets";
+import { POINTS_BEARING_QUALIFICATION, displayBucketFor } from "./dfe-qualification-buckets";
 import { ENTRIES_MEASURE, headlineMeasure, measuresFor, type Measure, type MeasureId } from "./teacher-view-panels";
 import { BOTTOM_RANK, bandRate, presetsFor, thresholdRate, type GradeRange } from "./subject-grades";
 import type { TeacherPhase } from "./teacher-view-phases";
@@ -259,6 +259,29 @@ export function shareApplies(measureId: MeasureId, hasBandRange: boolean): boole
 
 // ------------------------------------------------------------------ Context's group
 
+/**
+ * R-POINTS-SAME-QUAL: whether Context keeps to the focused item's qualification family.
+ * At Post-16 average point score sits on a different challenge table per qualification
+ * (A level, BTEC, IB...), so on points every Context group -- All subjects included --
+ * compares only the focus's family: its subject list (contextItemsOf) and each member's
+ * group value (contextGroupValue). Entries are counts and add up across families; rates
+ * are already scored only on their own grade scale (R-GRADE-SCALE-MATCH). GCSE points
+ * come from GCSE (9-1) Full Course alone, so there is nothing to blend there.
+ */
+export function contextKeepsToFamily(phase: TeacherPhase, measureId: MeasureId): boolean {
+  return phase === "ks5" && measureId === "points";
+}
+
+/**
+ * R-POINTS-SAME-QUAL: whether a Post-16 row's points are on the focused item's family's
+ * scale. The family is the display bucket (qualificationFamilyOf at ks5, the same family
+ * Column 1's category and Context's Selected subjects use). A row with no qualification
+ * cannot be placed on a scale, so it never counts: a blend is suppressed, not shown.
+ */
+export function onFocusPointsScale(focusFamily: string | null | undefined, qualificationType: string | null | undefined): boolean {
+  return !!focusFamily && !!qualificationType && displayBucketFor(qualificationType) === focusFamily;
+}
+
 export type ContextGroupInputs = {
   phase: TeacherPhase;
   measureId: MeasureId;
@@ -268,6 +291,9 @@ export type ContextGroupInputs = {
   bandRange: GradeRange | null;
   // inContextGroup() (teacher-view-populations.ts), for the grade rows.
   inGroup: (qualificationType: string) => boolean;
+  // R-POINTS-SAME-QUAL: the focused item's qualification family (focusQualificationFamily),
+  // which a Post-16 points group value keeps to. Null = no focus: no points group value.
+  focusFamily?: string | null;
 };
 
 /**
@@ -276,8 +302,9 @@ export type ContextGroupInputs = {
  *
  * R-POINTS-WEIGHTED: at Post-16 a subject's points across its qualifications are weighted
  * by points-eligible entries, not flat-averaged.
- * R-POINTS-SAME-QUAL (known conflict, logged for Guy, NOT fixed): that weighted mean
- * combines every non-AS qualification of the subject -- A level, BTEC and IB alike.
+ * R-POINTS-SAME-QUAL (S3b fix): that weighted mean takes only the subject's rows in the
+ * focused item's qualification family, never A level, BTEC and IB together. A subject with
+ * no row in the family has no group value (it is not drawn as a blend).
  * R-KS5-ASAEA-EXCL: AS and AEA rows are out of `groupRows` and, through `inGroup`, out of
  * the grade rows. R-GRADE-SCALE-MATCH: rates are per qualification, then meaned.
  */
@@ -297,6 +324,7 @@ export function contextGroupValue(g: ContextGroupInputs, subject: string, period
       let points = 0;
       let weight = 0;
       for (const h of rows) {
+        if (!onFocusPointsScale(g.focusFamily, h.qualificationType)) continue;
         if (h.avgPointScore === null || !h.pointsCoveragePercent) continue;
         const eligible = (h.entriesTotal ?? 0) * (h.pointsCoveragePercent / 100);
         points += h.avgPointScore * eligible;

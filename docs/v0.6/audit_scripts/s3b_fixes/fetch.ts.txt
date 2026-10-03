@@ -1,0 +1,58 @@
+// Throwaway: fetch the real data the Teacher dashboard page receives, the way the
+// dashboard / chooser-set / academic-schools / comparator-grades / subject-grade-geography
+// routes build it (minus the membership checks). Writes data_{urn}_{phase}.json.
+import { writeFileSync } from "node:fs";
+const R = "/Users/guy/dev/vicdata_public/src/lib/";
+
+async function main() {
+  const urn = process.argv[2];
+  const phase = process.argv[3] as "ks4" | "ks5";
+  const adv = await import(R + "academic-data-view.ts");
+  const ref = await import(R + "vicdata-reference.ts");
+  const agg = await import(R + "academic-aggregate-trends.ts");
+  const chooser = await import(R + "chooser-sets.ts");
+
+  // dashboard route body
+  const { byUrn } = await adv.fetchSubjectLevelDataForSchools([urn], phase);
+  const headlineByUrn = await adv.fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined);
+  const qualificationHeadline = phase === "ks5" ? (await adv.fetchSubjectQualificationHeadlineForSchools([urn], phase)).get(urn) ?? [] : [];
+  let englandAverages;
+  if (phase === "ks5") {
+    const exact = await ref.lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", measure: "avg_point_score", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
+    englandAverages = { basis: "qualification", values: exact.filter((r: any) => r.avg_value !== null).map((r: any) => ({ key: `${r.subject}::${r.qualification_type}`, period: r.period, value: Number(r.avg_value) })) };
+  } else {
+    const rows = await ref.lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
+    englandAverages = { basis: "subject", values: rows.filter((r: any) => r.avg_value !== null).map((r: any) => ({ key: r.subject, period: r.period, value: Number(r.avg_value) })) };
+  }
+  const subjectData = byUrn.get(urn) ?? { entries: [], valueAdded: [], gradeDistribution: [] };
+  // JSON round trip, as the page receives it.
+  const dashboard = JSON.parse(JSON.stringify({ subjectData, headline: headlineByUrn.get(urn) ?? [], qualificationHeadline, englandAverages }));
+
+  // chooser-set default nearest (the Comparisons column's default set)
+  const nearest = JSON.parse(JSON.stringify(await chooser.resolveDefaultNearest(urn, phase)));
+  const union = Array.from(new Set([...nearest.rows.map((r: { urn: string }) => r.urn), urn])).sort();
+  // academic-schools?includeSubjects=1 (serialised, as the route sends it)
+  const profiles = (await adv.fetchAcademicProfiles(union, { includeSubjects: true })).map(adv.serializeAcademicProfile);
+  // comparator-grades: every school's grade rows (route filters by subject; harness does too)
+  const { byUrn: setGrades } = await adv.fetchSubjectLevelDataForSchools(union, phase);
+  const gradeRowsByUrn: Record<string, unknown[]> = {};
+  for (const [u, d] of setGrades) gradeRowsByUrn[u] = (d as { gradeDistribution: unknown[] }).gradeDistribution;
+
+  // subject-grade-geography (national) for the school's biggest items with grade rows
+  const grades = dashboard.subjectData.gradeDistribution as { subject: string; qualificationType: string; entries: number }[];
+  const sizes = new Map<string, number>();
+  for (const g of grades) sizes.set(`${g.subject}::${g.qualificationType}`, (sizes.get(`${g.subject}::${g.qualificationType}`) ?? 0) + g.entries);
+  const top = Array.from(sizes.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k]) => k);
+  const englandGrades: Record<string, unknown[]> = {};
+  for (const k of top) {
+    const [subject, qualificationType] = k.split("::");
+    const rows = await ref.lookupAcademicSubjectGradeGeography({ ksStage: phase, groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], subject, qualificationType });
+    englandGrades[k] = rows
+      .map((r: any) => ({ period: r.period, grade: r.grade, entries: Number(r.entries_total), schoolCount: r.school_count }))
+      .sort((a: any, b: any) => a.period - b.period);
+  }
+  const out = { urn, phase, dashboard, nearest, profiles, gradeRowsByUrn, englandGrades };
+  writeFileSync(`${import.meta.dirname}/data_${urn}_${phase}.json`, JSON.stringify(out));
+  console.log(urn, phase, "entries", dashboard.subjectData.entries.length, "grades", grades.length, "headline", dashboard.headline.length, "qualHeadline", qualificationHeadline.length, "england", englandAverages.values.length, "set", nearest.rows.length, "profiles", profiles.length, "engGrades", top.length);
+}
+main().catch((e) => { console.error(String(e?.message ?? e)); process.exit(1); });
