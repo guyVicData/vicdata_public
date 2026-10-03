@@ -744,9 +744,10 @@ export function presetFor(tracks: number[]): LayoutPreset {
 
 export function updateSettings(
   config: DashboardConfig,
-  patch: Partial<Pick<DashboardConfig, "name" | "colour" | "group" | "features">> & { accordion?: DashboardConfig["layout"]["accordion"] },
+  patch: Partial<Pick<DashboardConfig, "name" | "colour" | "group" | "features" | "icon">> & { accordion?: DashboardConfig["layout"]["accordion"] },
 ): DashboardConfig {
   const c = clone(config);
+  if (patch.icon) c.icon = clone(patch.icon);
   if (patch.name !== undefined) {
     if (!patch.name.trim()) fail("A dashboard needs a name.");
     c.name = patch.name.trim();

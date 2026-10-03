@@ -20,6 +20,8 @@ import type { Dataview, DataviewInstance, DashboardConfig, PanelOverride } from 
 import { contextFromPanel, settingsOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
 import { DASHBOARDS, groupOf } from "@/catalogue/dashboards";
 import { AddViewChooser } from "@/components/chooser-v06/AddViewChooser";
+import type { SubjectSource } from "@/components/chooser-v06/StepScreens";
+import type { PinSchool } from "@/lib/pin-context";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import {
@@ -60,6 +62,9 @@ export type DashboardEditorProps = {
   onCopyView?: CopyViewHandler;
   // Title labels when the host has a school ("[subject]" -> "Maths (General)").
   labels?: PanelLabels;
+  // 0.6 integration: the school Add a view previews live for, and its subjects (2a / 2b).
+  school?: PinSchool;
+  subjects?: Partial<Record<"ks4" | "ks5", SubjectSource>>;
 };
 
 type DialogState =
@@ -82,7 +87,7 @@ type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
 
 const OWNER_WORD = { vicdata: "VicData", school: "School", user: "Personal" } as const;
 
-export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels }: DashboardEditorProps) {
+export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels, school = null, subjects }: DashboardEditorProps) {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [theme] = useTeacherTheme();
@@ -281,7 +286,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
 
   const onSettings = (v: SettingsValue) => {
     apply((c) => {
-      let n = ops.updateSettings(c, { colour: v.colour, accordion: v.accordion, group: v.group ?? undefined });
+      let n = ops.updateSettings(c, { colour: v.colour, accordion: v.accordion, group: v.group ?? undefined, ...(v.icon ? { icon: v.icon } : {}) });
       while (n.columns.length < v.columns) {
         const last = n.columns[n.columns.length - 1];
         n = ops.addColumn(n, { title: `Column ${n.columns.length + 1}`, icon: last.icon, data: last.data, focus: last.focus, compare: last.compare });
@@ -525,6 +530,8 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           theme={theme}
           context={dialog.ctx}
           superAdmin={superAdmin}
+          school={school}
+          subjects={subjects}
           onClose={() => setDialog(null)}
           onAdd={(instance: DataviewInstance, override?: PanelOverride) => {
             const target = dialog.target;
@@ -657,6 +664,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
         <SettingsDialog
           config={config}
           groups={[...new Map(DASHBOARDS.filter((d) => d.group).map((d) => [d.group!.id, { id: d.group!.id, label: d.group!.label }])).values()]}
+          superAdmin={superAdmin}
           onClose={() => setDialog(null)}
           onDone={onSettings}
         />

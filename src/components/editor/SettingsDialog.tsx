@@ -8,16 +8,22 @@ import type { DashboardConfig } from "@/catalogue/types";
 import { PrimaryButton, SecondaryButton } from "@/components/teacher/chooser/ui";
 import { DASHBOARD_COLOURS, colourHex, colourValue } from "@/lib/editor-layout";
 import { DLabel, Dialog, Note, Segmented, inputStyle } from "./bits";
+import { DashboardIcon } from "@/components/library/DashboardIcon";
+import { IconDialog } from "@/components/library/IconDialog";
 
 export type SettingsValue = {
   colour: DashboardConfig["colour"];
   accordion: DashboardConfig["layout"]["accordion"];
   group: DashboardConfig["group"] | null;
   columns: number;
+  // 0.6 integration: the dashboard's icon (S6's Icon dialog); undefined = unchanged.
+  icon?: DashboardConfig["icon"];
 };
 
-export function SettingsDialog({ config, groups, onDone, onClose }: { config: DashboardConfig; groups: { id: string; label: string }[]; onDone: (v: SettingsValue) => void; onClose: () => void }) {
+export function SettingsDialog({ config, groups, superAdmin = true, onDone, onClose }: { config: DashboardConfig; groups: { id: string; label: string }[]; superAdmin?: boolean; onDone: (v: SettingsValue) => void; onClose: () => void }) {
   const [hex, setHex] = useState(colourHex(config.colour));
+  const [icon, setIcon] = useState<DashboardConfig["icon"]>(config.icon);
+  const [iconOpen, setIconOpen] = useState(false);
   const [accordion, setAccordion] = useState(config.layout.accordion);
   const [group, setGroup] = useState<{ id: string; label: string } | null>(config.group ? { id: config.group.id, label: config.group.label } : null);
   const [newGroup, setNewGroup] = useState<string | null>(null);
@@ -45,6 +51,7 @@ export function SettingsDialog({ config, groups, onDone, onClose }: { config: Da
                     ? { id: group.id, label: group.label, order: config.group?.id === group.id ? config.group.order : 99 }
                     : null,
                 columns,
+                icon,
               })
             }
           >
@@ -66,6 +73,23 @@ export function SettingsDialog({ config, groups, onDone, onClose }: { config: Da
           />
         ))}
       </div>
+
+      <DLabel top={6}>Icon</DLabel>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 auto" }}>
+        <DashboardIcon config={{ ...config, icon, colour: colourValue(hex) }} size={38} />
+        <SecondaryButton onClick={() => setIconOpen(true)}>Change icon&hellip;</SecondaryButton>
+      </div>
+      <IconDialog
+        open={iconOpen}
+        onClose={() => setIconOpen(false)}
+        dashboard={{ ...config, icon, colour: colourValue(hex) }}
+        superAdmin={superAdmin}
+        onUse={(spec, colour) => {
+          setIcon(spec);
+          setHex(colourHex(colour));
+          setIconOpen(false);
+        }}
+      />
 
       <DLabel top={6}>When a row opens</DLabel>
       <Segmented
