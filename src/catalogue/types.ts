@@ -252,9 +252,28 @@ export type DataviewInstance =
       id: string;
       kind: "placeholder";
       description: string;
-      shape: ViewType;
+      // null = "Not sure" (the chooser's last shape chip; Skeleton's "Shape: not sure").
+      shape: ViewType | null;
       notes?: string;
+      // S5: the panel's exact context when it was planned, in catalogue terms, so "Export
+      // planned views" can write it and "Ready to swap in" can match draft views to it.
+      context?: PlaceholderContext;
     };
+
+// The matching rule's inputs (matching.ts PickContext, minus palette/superAdmin) plus the
+// readable lines the export writes.
+export type PlaceholderContext = {
+  data: DataId;
+  phase: Phase;
+  results?: ResultsMeasure;
+  focus: FocusKind;
+  compare: CompareKind[];
+  time: RowTime;
+  // "Average points · Maths (General) · vs 10 nearest · over time"
+  summary?: string;
+  // "GCSE Results · Comparisons · Trends"
+  where?: string;
+};
 
 export type PanelOverride = {
   data?: ColumnHeader["data"];
