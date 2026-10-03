@@ -17,7 +17,9 @@ import { oneViewConfig, oneViewPinned } from "@/components/dashboard-config/embe
 // The school context a live preview needs: at least the school; the rest as pinned.
 export type LivePreviewContext = PinnedSettings & { schoolUrn: string };
 
-export function LiveViewPreview({ dataview, context, width, height }: { dataview: Dataview; context: LivePreviewContext; width: number; height: number }) {
+// `frame`: "card" (default) draws the whole panel, as a Pick card shows it; "figure" draws
+// the figure alone, for a caller that brings its own panel chrome (the editor).
+export function LiveViewPreview({ dataview, context, width, height, frame = "card" }: { dataview: Dataview; context: LivePreviewContext; width: number; height: number; frame?: "card" | "figure" }) {
   const key = JSON.stringify(context);
   const built = useMemo(() => {
     const p = JSON.parse(key) as LivePreviewContext;
@@ -41,7 +43,7 @@ export function LiveViewPreview({ dataview, context, width, height }: { dataview
           pointerEvents: "none",
         }}
       >
-        <TeacherDashboard mode="embed" phase={built.config.columns[0].data.phase} school={context.schoolUrn} config={built.config} pinned={built.pinned} frame="card" />
+        <TeacherDashboard mode="embed" phase={built.config.columns[0].data.phase} school={context.schoolUrn} config={built.config} pinned={built.pinned} frame={frame} />
       </div>
     </div>
   );
