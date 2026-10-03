@@ -484,7 +484,8 @@ describe("notes and preferences resolve through legacy keys (S3)", () => {
     const data = readFileSync(new URL("../src/lib/teacher-view-data.ts", import.meta.url), "utf8");
     // The page's own key shape; if it changes, this test must change with it.
     assert.match(data, /export const panelNoteKey = \(phase: string, columnId: string, panelId: string\) => `\$\{phase\}:\$\{columnId\}:\$\{panelId\}`;/);
-    const page = readFileSync(new URL("../src/app/teacher/[phase]/page.tsx", import.meta.url), "utf8");
+    // 0.6 E: the page's body (and its column keys) moved into TeacherDashboard.
+    const page = readFileSync(new URL("../src/components/dashboard-config/TeacherDashboard.tsx", import.meta.url), "utf8");
     for (const d of await seededDashboards()) {
       const phase = d.columns[0].data.phase;
       for (const p of d.panels) {
@@ -494,6 +495,145 @@ describe("notes and preferences resolve through legacy keys (S3)", () => {
         const key = p.legacy!.columnKey;
         assert.ok(key === "candidates" ? /const COL1 = "candidates"/.test(page) : page.includes(`notesFor("${key}")`), `${p.id}: page uses column key ${key}`);
       }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------------
+// 0.6 E: dataviews drawn outside the page
+
+describe("rail subsets: rail labels map to dataviews (E)", () => {
+  it("every railed dataview is the only one its host, panel and label select", async () => {
+    const { dataviewForRail } = await import("../src/catalogue/dataviews");
+    for (const d of DATAVIEWS) {
+      if (d.host.rail === null) continue;
+      assert.equal(dataviewForRail(d.host.id, d.host.panel, d.host.rail)?.id, d.id, `${d.id} via "${d.host.rail}"`);
+    }
+  });
+  it("each host's rail labels are written on its own buttons in the host file", async () => {
+    const { readFileSync } = await import("node:fs");
+    for (const d of DATAVIEWS) {
+      if (d.host.rail === null) continue;
+      const src = readFileSync(new URL(`../${d.host.file}`, import.meta.url), "utf8");
+      assert.ok(src.includes(`"${d.host.rail}"`), `${d.id}: "${d.host.rail}" appears in ${d.host.file}`);
+    }
+  });
+  it("seeded Teacher panels list views in today's rail order (so flag-on draws today's rails)", async () => {
+    for (const cfg of await seededDashboards()) {
+      for (const p of cfg.panels) {
+        const order = p.dataviews.flatMap((v) => (v.kind === "view" ? [DATAVIEWS.findIndex((d) => d.id === v.dataview)] : []));
+        assert.deepEqual(order, [...order].sort((a, b) => a - b), `${p.id} in catalogue (rail) order`);
+      }
+    }
+  });
+});
+
+describe("embedding a config (E)", () => {
+  const col = (over: Partial<DashboardConfig["columns"][number]>): DashboardConfig["columns"][number] => ({
+    id: "x",
+    title: "X",
+    icon: "context",
+    data: { data: "academic.candidates", phase: "ks4" },
+    focus: { kind: "subject" },
+    compare: null,
+    ...over,
+  });
+  const cfg = (columns: DashboardConfig["columns"]): DashboardConfig => ({
+    schema_version: CONFIG_SCHEMA_VERSION,
+    id: "custom",
+    name: "Custom",
+    kind: "dashboard",
+    owner: "user",
+    colour: { key: "ks4" },
+    layout: { preset: "custom", tracks: columns.map(() => 1), accordion: "auto-close" },
+    columns,
+    rows: [{ id: "r1", name: "Current", time: "latest", openByDefault: true }],
+    panels: columns.map((c) => ({ id: `${c.id}.r1`, row: "r1", column: c.id, dataviews: [{ id: `${c.id}.v`, kind: "view" as const, dataview: "DV-C2-CUR-BARS" as DataviewId }] })),
+  });
+  it("columns resolve to hosts by data and comparison, a named host winning", async () => {
+    const { hostForColumn } = await import("../src/components/dashboard-config/embed");
+    assert.equal(hostForColumn(col({})), "teacher.c1.candidates");
+    assert.equal(hostForColumn(col({ data: { data: "academic.results", phase: "ks4" } })), "teacher.c1.results");
+    assert.equal(hostForColumn(col({ compare: { kinds: ["subjects"], subjects: "whole" } })), "teacher.c2.context");
+    assert.equal(hostForColumn(col({ compare: { kinds: ["schools"], schools: "10-nearest" } })), "teacher.c3.comparisons");
+    assert.equal(hostForColumn(col({ host: "teacher.c1.counts" })), "teacher.c1.counts");
+    assert.equal(hostForColumn(col({ data: { data: "rolls", phase: "ks4" } })), null);
+    for (const d of await seededDashboards()) for (const c of d.columns) assert.equal(hostForColumn(c), c.host);
+  });
+  it("states the 0.6 limits: one phase, each host once, one of Candidates/Results; Rolls placeholder-only", async () => {
+    const { embedColumns } = await import("../src/components/dashboard-config/embed");
+    const out = embedColumns(
+      cfg([
+        col({ id: "a", compare: { kinds: ["subjects"] } }),
+        col({ id: "b", compare: { kinds: ["subjects"] } }),
+        col({ id: "c", data: { data: "academic.candidates", phase: "ks5" }, compare: { kinds: ["schools"] } }),
+        col({ id: "d", data: { data: "academic.results", phase: "ks4" }, compare: { kinds: ["schools"] } }),
+        col({ id: "e", data: { data: "rolls", phase: "ks4" } }),
+      ]),
+    );
+    assert.equal(out[0].problem, null);
+    assert.match(out[1].problem ?? "", /once per dashboard/);
+    assert.match(out[2].problem ?? "", /One phase per dashboard for now/);
+    assert.match(out[3].problem ?? "", /One of Candidates or Results per dashboard/);
+    assert.equal(out[4].placeholderOnly, true);
+    for (const d of await seededDashboards()) assert.ok(embedColumns(d).every((c) => c.problem === null), d.id);
+  });
+  it("a meeting slot's one-view config validates and opens its one panel", async () => {
+    const { validateConfig } = await import("../src/catalogue/config");
+    const { embedInitialColumns, oneViewConfig, oneViewPinned } = await import("../src/components/dashboard-config/embed");
+    const known = new Set(DATAVIEWS.map((d) => d.id));
+    for (const dv of DATAVIEWS) {
+      const c = oneViewConfig(dv, { schoolUrn: "100053", phase: "ks4", subject: "Mathematics" }, `slot.${dv.id}`);
+      assert.deepEqual(validateConfig(c, known), [], dv.id);
+      const cols = embedInitialColumns(c, oneViewPinned(dv, {}, false).pinned, {}, { chooserKey: "chooser:rankings", setKeyName: "set:rankings" });
+      const key = dv.host.id === "teacher.c2.context" ? "context" : dv.host.id === "teacher.c3.comparisons" ? "rankings" : "candidates";
+      assert.deepEqual(cols[key], [dv.host.panel], dv.id);
+    }
+    const trend = dataviewById("DV-C3-TR-CHART")!;
+    assert.match(oneViewPinned(trend, { year: "2023/24" }, false).yearNote ?? "", /no year control/);
+    assert.equal(oneViewPinned(dataviewById("DV-C2-CUR-BARS")!, { year: "2023/24" }, false).pinned.year, "2023/24");
+    assert.equal(oneViewPinned(dataviewById("DV-C2-CUR-BARS")!, { year: "2023/24" }, true).pinned.year, null);
+    assert.equal(oneViewConfig(dataviewById("DV-C1-CNT-TR-SPREAD")!, { results: "points" }, "s").columns[0].data.results, "counts");
+  });
+  it("pinned comparisons resolve: a set by name, else the 10 nearest; Context's group by name", async () => {
+    const { contextAgainstOf, pinnedSetName, savedSetByName } = await import("../src/components/dashboard-config/embed");
+    assert.equal(pinnedSetName({ compare: { kind: "schools", name: "10 nearest schools" } }), null);
+    assert.equal(pinnedSetName({ compare: { kind: "schools", name: "Camden rivals" } }), "Camden rivals");
+    assert.equal(savedSetByName([{ name: "Camden Rivals" }], "camden rivals")?.name, "Camden Rivals");
+    assert.equal(contextAgainstOf({ compare: { kind: "subjects", name: "All subjects" } }), "whole");
+    assert.equal(contextAgainstOf({ compare: { kind: "subjects", name: "Sciences & Maths" } }), "category");
+  });
+});
+
+describe("fetch de-duplication (decision 10)", () => {
+  it("shares one request per URL and subject, drops errors, and refetches when fresh", async () => {
+    const { cachedFetchJson } = await import("../src/lib/fetch-cache");
+    let calls = 0;
+    let fail = false;
+    const real = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      calls++;
+      await new Promise((r) => setTimeout(r, 5));
+      return new Response(JSON.stringify({ n: calls }), { status: fail ? 500 : 200 });
+    }) as typeof fetch;
+    try {
+      const jwt = (sub: string) => `x.${Buffer.from(JSON.stringify({ sub })).toString("base64url")}.y`;
+      const [a, b] = await Promise.all([cachedFetchJson("/api/t?1", { token: jwt("u1") }), cachedFetchJson("/api/t?1", { token: jwt("u1") })]);
+      assert.equal(calls, 1);
+      assert.deepEqual(a.body, b.body);
+      await cachedFetchJson("/api/t?1", { token: jwt("u2") });
+      assert.equal(calls, 2, "another person never shares a payload");
+      await cachedFetchJson("/api/t?1", { token: jwt("u1"), fresh: true });
+      assert.equal(calls, 3);
+      fail = true;
+      const bad = await cachedFetchJson("/api/t?2", { token: jwt("u1") });
+      assert.equal(bad.ok, false);
+      fail = false;
+      const good = await cachedFetchJson("/api/t?2", { token: jwt("u1") });
+      assert.equal(good.ok, true, "an error isn't cached");
+      assert.equal(calls, 5);
+    } finally {
+      globalThis.fetch = real;
     }
   });
 });

@@ -21,7 +21,10 @@ function ColumnDivider({ hidden }: { hidden: boolean }) {
   return <div aria-hidden="true" className={`hidden self-stretch bg-[var(--divider)] xl:block ${hidden ? "invisible" : ""}`} />;
 }
 
-export function DashboardGrid({ children }: { children: ReactNode }) {
+// `tracks` (VicData 0.6 E): a config's own column weights, for dashboards that aren't
+// today's three columns (a custom dashboard). Absent -- the Teacher page, flagged or not --
+// the grid is exactly as before.
+export function DashboardGrid({ children, tracks }: { children: ReactNode; tracks?: number[] }) {
   // How many boxes are fullscreen right now, reported by CardBox -- including pinned boxes
   // deep inside ColumnBuilder. A count, not a flag, so closing one box never clears
   // another's state.
@@ -30,7 +33,14 @@ export function DashboardGrid({ children }: { children: ReactNode }) {
   const columns = Children.toArray(children);
   return (
     <FullscreenReport.Provider value={report}>
-      <div className="mt-6 grid items-start gap-[18px] md:grid-cols-2 xl:grid-cols-[1fr_2px_1fr_2px_1fr]">
+      <div
+        className={
+          tracks
+            ? "mt-6 grid items-start gap-[18px] md:grid-cols-2 xl:grid-cols-[var(--dash-cols)]"
+            : "mt-6 grid items-start gap-[18px] md:grid-cols-2 xl:grid-cols-[1fr_2px_1fr_2px_1fr]"
+        }
+        style={tracks ? ({ "--dash-cols": tracks.map((t) => `minmax(0,${t}fr)`).join(" 2px ") } as React.CSSProperties) : undefined}
+      >
         {columns.map((col, i) => (
           <Fragment key={i}>
             {i > 0 && <ColumnDivider hidden={openFullscreens > 0} />}

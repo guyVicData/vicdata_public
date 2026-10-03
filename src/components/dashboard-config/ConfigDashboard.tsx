@@ -25,14 +25,19 @@ import { buildPlan, DashboardPlanContext } from "./plan";
 export function ConfigDashboard({
   config,
   superAdmin = false,
+  columnKeys,
   children,
 }: {
   config: DashboardConfig;
   superAdmin?: boolean;
+  // VicData 0.6 E: for a config whose columns don't carry today's legacy keys (a custom
+  // dashboard), the column key each one's host draws under, by column id. Given, the grid
+  // also takes the config's own track weights instead of today's three columns.
+  columnKeys?: Record<string, string>;
   // One element per config column, in config column order: the column hosts.
   children: ReactNode;
 }) {
-  const plan = useMemo(() => buildPlan(config, superAdmin), [config, superAdmin]);
+  const plan = useMemo(() => buildPlan(config, superAdmin, { columnKeys }), [config, superAdmin, columnKeys]);
   const columns = Children.toArray(children);
   const [tab, setTab] = useState(0);
   return (
@@ -61,7 +66,7 @@ export function ConfigDashboard({
             })}
           </div>
         )}
-        <DashboardGrid>
+        <DashboardGrid tracks={columnKeys ? config.layout.tracks : undefined}>
           {columns.map((col, i) => (
             <div key={config.columns[i]?.id ?? i} data-column-id={config.columns[i]?.id} className={i === tab ? "" : "hidden md:block"}>
               {col}
@@ -168,10 +173,20 @@ export function GroupSwitcher({
 
 // The page's grid: the hand-coded DashboardGrid, exactly as before, unless a config is
 // given (the flag is on), in which case the same column hosts render through the config.
-export function DashboardFrame({ config, superAdmin, children }: { config: DashboardConfig | null; superAdmin?: boolean; children: ReactNode }) {
+export function DashboardFrame({
+  config,
+  superAdmin,
+  columnKeys,
+  children,
+}: {
+  config: DashboardConfig | null;
+  superAdmin?: boolean;
+  columnKeys?: Record<string, string>;
+  children: ReactNode;
+}) {
   if (!config) return <DashboardGrid>{children}</DashboardGrid>;
   return (
-    <ConfigDashboard config={config} superAdmin={superAdmin}>
+    <ConfigDashboard config={config} superAdmin={superAdmin} columnKeys={columnKeys}>
       {children}
     </ConfigDashboard>
   );
