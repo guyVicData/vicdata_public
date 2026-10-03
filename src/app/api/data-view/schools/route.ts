@@ -32,6 +32,8 @@ export async function GET(request: NextRequest) {
     .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
     .eq("status", "approved")
     .eq("school_accounts.school_urn", anchorUrn)
+    // Any approved row at this school proves membership: RLS shows colleagues only to members.
+    .limit(1)
     .maybeSingle();
 
   // Real bug found live while verifying the Compared-with panel round 4-6 boarding

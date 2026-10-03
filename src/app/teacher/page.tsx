@@ -73,6 +73,9 @@ export default function TeacherHomePage() {
         const { data: membership } = await supabase
           .from("school_memberships")
           .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
+          // The signed-in person's own row: RLS also returns every approved colleague's, so
+          // without this a school with two members fails maybeSingle (S3b fix 2).
+          .eq("profile_id", user?.id ?? "")
           .eq("status", "approved")
           .maybeSingle<Membership>();
 

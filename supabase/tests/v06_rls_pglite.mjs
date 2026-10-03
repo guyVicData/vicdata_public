@@ -135,6 +135,17 @@ check("teacher can't assign", await throws(() => as(A, () => q(`insert into dash
 const pd = (await as(GUY, () => q(`insert into dashboards (owner_scope, owner_profile_id, name) values ('user','${GUY}','retain') returning id`))).rows[0].id;
 for (let i = 0; i < 33; i++) await as(GUY, () => q(`select publish_dashboard('${pd}', '{"schema_version":1}'::jsonb)`));
 check("personal keeps last 30", (await q(`select count(*)::int n from dashboard_versions where dashboard_id='${pd}'`)).rows[0].n === 30);
+// S3b fix 2: a school with two approved members (A and B at school 1). The pages' old query
+// (approved rows, no profile filter) returns both, so maybeSingle() errors; the fix filters
+// to the caller (pages) or takes any one row (routes: any visible approved row at the
+// school proves membership, because RLS only shows colleagues to members).
+const unfiltered = await as(A, () => q(`select m.id from school_memberships m where m.status = 'approved'`));
+check("fix 2: unfiltered approved rows at a 2-member school (the bug)", unfiltered.rows.length >= 2, `${unfiltered.rows.length} rows`);
+const own = await as(A, () => q(`select m.id from school_memberships m where m.status = 'approved' and m.profile_id = '${A}'`));
+check("fix 2: filtered to the caller -> exactly one", own.rows.length === 1);
+const outsider = await as(C, () => q(`select m.id from school_memberships m join school_accounts a on a.id = m.school_account_id where m.status = 'approved' and a.school_urn = '100053' limit 1`));
+check("fix 2: a non-member sees no approved row at the school (route gate still holds)", outsider.rows.length === 0);
+
 // S3b fix 1: the membership INSERT hole, before and after the hardening migration.
 const D = "00000000-0000-0000-0000-00000000000d";
 const S1 = "11111111-1111-1111-1111-111111111111";

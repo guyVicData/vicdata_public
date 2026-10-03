@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
     .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
     .eq("status", "approved")
     .eq("school_accounts.school_urn", body.urn)
+    // Any approved row at this school proves membership: RLS shows colleagues only to members.
+    .limit(1)
     .maybeSingle();
   if (membershipError) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
   if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });

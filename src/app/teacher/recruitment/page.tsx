@@ -250,9 +250,12 @@ export default function RecruitmentPage() {
 
   useEffect(() => {
     (async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
       const { data: membership } = await supabase
         .from("school_memberships")
         .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn)")
+        // The signed-in person's own row (S3b fix 2): RLS returns every approved colleague's too.
+        .eq("profile_id", sessionData.session?.user?.id ?? "")
         .eq("status", "approved")
         .maybeSingle<{ school_accounts: { school_urn: string } | null }>();
       const urn = membership?.school_accounts?.school_urn ?? null;

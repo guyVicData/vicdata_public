@@ -38,6 +38,8 @@ async function checkMembership(viewedUrn: string | null, authHeader: string | nu
     .select("id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
     .eq("status", "approved")
     .eq("school_accounts.school_urn", viewedUrn)
+    // Any approved row at this school proves membership: RLS shows colleagues only to members.
+    .limit(1)
     .maybeSingle();
   return !!data;
 }

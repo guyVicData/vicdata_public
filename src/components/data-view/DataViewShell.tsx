@@ -428,6 +428,8 @@ export default function DataViewShell({ urn }: { urn: string }) {
         const { data, error: membershipError } = await supabase
           .from("school_memberships")
           .select("id, school_account_id, school_accounts!school_memberships_school_account_id_fkey!inner(school_urn)")
+          // The signed-in person's own row (0.6 S3b fix 2): RLS returns every approved colleague's too.
+          .eq("profile_id", sessionData.session?.user?.id ?? "")
           .eq("status", "approved")
           .eq("school_accounts.school_urn", urn)
           .maybeSingle();
