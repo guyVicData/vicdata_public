@@ -12,7 +12,7 @@ export * from "./matching";
 export { RULES, RULE_IDS } from "./rules";
 export { MEASURES, ACADEMIC_CITATION } from "./measures";
 export { RENDERERS } from "./renderers";
-export { DATAVIEWS, DATAVIEW_IDS } from "./dataviews";
+export { DATAVIEWS, DATAVIEW_IDS, dataviewForRail } from "./dataviews";
 
 const index = <T extends { id: string }>(items: T[]) => new Map(items.map((i) => [i.id, i]));
 const RULE_BY_ID = index(RULES);

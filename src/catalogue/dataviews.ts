@@ -11,7 +11,7 @@
 // `averages` only (finding F2: the seeded Column 1 Trends panel carries an override);
 // Comparisons compares against a school set (`schools`), focused on a subject or, with no
 // subject chip, the school itself.
-import type { AudienceTag, CompareKind, Dataview, DataviewId, MeasureId, Phase, ResultsMeasure } from "./types";
+import type { AudienceTag, CompareKind, Dataview, DataviewId, HostId, MeasureId, Phase, ResultsMeasure } from "./types";
 
 const CP = "src/components/teacher/CandidatesPanels.tsx";
 const SP = "src/components/teacher/SubjectPanels.tsx";
@@ -1092,3 +1092,11 @@ export const DATAVIEWS: Dataview[] = [
 ];
 
 export const DATAVIEW_IDS: DataviewId[] = DATAVIEWS.map((d) => d.id);
+
+// The registered dataview a host's rail entry selects: the host, its panel and the label
+// on the host's own rail button (host.rail). The one mapping between a rail button and a
+// dataview id -- the config renderer reads it from here rather than keeping a second list
+// (0.6 E). Railless views (rail null) have no button to map.
+export function dataviewForRail(host: HostId, panel: "current" | "trend", label: string): Dataview | undefined {
+  return DATAVIEWS.find((d) => d.host.id === host && d.host.panel === panel && d.host.rail === label);
+}

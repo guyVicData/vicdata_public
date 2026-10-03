@@ -463,6 +463,7 @@ export function CandidatesPanels({
   return (
     <ColumnPanels
       columnId="candidates"
+      host="teacher.c1.candidates"
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}

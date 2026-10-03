@@ -829,6 +829,7 @@ export function ComparisonsPanels({
   return (
     <ColumnPanels
       columnId="rankings"
+      host="teacher.c3.comparisons"
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}

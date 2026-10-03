@@ -213,5 +213,5 @@ export function GradeCountsPanels({
     source: isChange ? changeHalf.source : trendHalf.source,
   };
 
-  return <ColumnPanels columnId={columnId} panels={panels} onPanelsChange={onPanelsChange} notes={notes} controls={controls} render={{ current, trend }} />;
+  return <ColumnPanels columnId={columnId} host="teacher.c1.counts" panels={panels} onPanelsChange={onPanelsChange} notes={notes} controls={controls} render={{ current, trend }} />;
 }

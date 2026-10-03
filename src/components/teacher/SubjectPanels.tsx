@@ -81,6 +81,7 @@ export function SubjectPanels({
   groups = [],
   donut,
   yearControl = false,
+  pinnedYear = null,
   focus,
   controls,
   questions,
@@ -147,6 +148,9 @@ export function SubjectPanels({
   // Only the years the active measure really has (§6.3); absent elsewhere, matching the
   // wireframe, which draws it on Context alone.
   yearControl?: boolean;
+  // VicData 0.6 E: an embedded view pinned to a year (a meeting slot "as of 2023/24")
+  // opens the year control there instead of on the latest year. Only with yearControl.
+  pinnedYear?: number | null;
   // The dashboard's one focus subject (the shared control bar's chips). Content round S5
   // removed "All", so Trend and the donut always follow a single subject: this one, or
   // the first subject when it is not among `subjects`.
@@ -260,7 +264,9 @@ export function SubjectPanels({
   const [view, setView] = useState<"tiles" | "grades" | "donut" | "bar" | "list" | "table">(tiles ? "tiles" : donut && !rankedViews ? "donut" : "bar");
   // A ranked table opens in rank order (value, largest first), so its numbers read 1, 2, 3.
   const [sort, setSort] = useState<SortState>(rankedTable ? { key: "value", dir: "desc" } : { key: "delta", dir: "desc" });
-  const [yearIdx, setYearIdx] = useState<number | null>(null);
+  const [yearIdx, setYearIdx] = useState<number | null>(() =>
+    yearControl && pinnedYear !== null && periods.includes(pinnedYear) ? periods.indexOf(pinnedYear) : null,
+  );
   const [trendStart, setTrendStart] = useState<number | null>(null);
   const [changeStart, setChangeStart] = useState<number | null>(null);
   const [showFit, setShowFit] = useState(false);
@@ -517,6 +523,7 @@ export function SubjectPanels({
         {donut && (
           <IconButton
             label={donut.enabled ? "Share (donut)" : "Share is only meaningful for candidate numbers"}
+            railLabel="Share (donut)"
             active={effectiveView === "donut"}
             disabled={!donut.enabled}
             onClick={() => setView("donut")}
@@ -1024,6 +1031,7 @@ export function SubjectPanels({
   return (
     <ColumnPanels
       columnId={columnId}
+      host={columnId === "context" ? "teacher.c2.context" : "teacher.c1.results"}
       panels={panels}
       onPanelsChange={onPanelsChange}
       notes={notes}
