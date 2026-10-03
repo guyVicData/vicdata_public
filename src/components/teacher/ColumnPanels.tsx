@@ -25,7 +25,10 @@ import { usePlanColumn } from "@/components/dashboard-config/plan";
 import { PanelBoundary, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
 import { configuredRail, defaultEntry, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
 import { DATAVIEWS } from "@/catalogue/dataviews";
-import type { HostId, PanelConfig } from "@/catalogue/types";
+import type { DashboardConfig, HostId, PanelConfig } from "@/catalogue/types";
+import { useDashboardRuntime, type DashboardRuntime } from "@/components/dashboard-config/runtime";
+import { CopyViewSourceContext, type CopyViewSourceValue } from "@/components/copy-view/CopyViewSourceContext";
+import { copySourceFor } from "@/lib/pin-context";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -101,6 +104,9 @@ export function ColumnPanels({
   // gets its own error boundary. With no plan (every unflagged page) this is skipped and
   // the column renders exactly as before.
   const planned = usePlanColumn(columnId);
+  // VicData 0.6 integration: the dashboard's runtime state (school, focus, measure, sets),
+  // provided only under a plan -- each panel tells its Export menu what to copy.
+  const runtime = useDashboardRuntime();
 
   // VicData 0.6 E: under a config, each panel's rail is the config's views in config
   // order, and the panel opens on its defaultView -- switched to once, on first show, by
@@ -219,10 +225,11 @@ export function ColumnPanels({
           const toggle = independent
             ? () => onPanelsChange(panels.includes(id) ? panels.filter((p) => p !== id) : [...panels, id])
             : undefined;
+          const copy = runtime && host ? copyValueFor(plan.config, cfg, railEntries(raw.actions, host, id), runtime) : null;
           return (
             <div key={cfg.id} data-panel-id={cfg.id} data-row-time={row.time} data-override={cfg.override?.badge}>
               <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                {card(id, panel, toggle)}
+                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle)}</CopyViewSourceContext.Provider> : card(id, panel, toggle)}
               </PanelBoundary>
             </div>
           );
@@ -248,6 +255,21 @@ export function ColumnPanels({
       })}
     </div>
   );
+}
+
+// VicData 0.6 integration: what "Copy this view…" copies from a configured panel -- the
+// view its rail has selected (else its default view), in the panel's context resolved
+// with the page's real labels, pinned from the dashboard's runtime state.
+function copyValueFor(config: DashboardConfig, cfg: PanelConfig, entries: RailEntry[], runtime: DashboardRuntime): CopyViewSourceValue | null {
+  const views = cfg.dataviews.flatMap((v) => (v.kind === "view" ? [v] : []));
+  const active = entries.find((e) => e.active)?.dataview;
+  const instance = views.find((v) => v.dataview === active) ?? views.find((v) => v.id === cfg.defaultView) ?? views[0];
+  if (!instance) return null;
+  try {
+    return { source: copySourceFor(config, cfg.id, instance, runtime), superAdmin: runtime.superAdmin };
+  } catch {
+    return null;
+  }
 }
 
 // Current panel rework round 1: every Current tag is the fixed word "Current", and the year

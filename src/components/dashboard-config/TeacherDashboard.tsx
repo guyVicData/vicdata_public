@@ -34,6 +34,9 @@ import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardFrame, GroupSwitcher, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
 import { buildPlan, configRendererRequested, DashboardPlanContext, type PlanEmbed } from "@/components/dashboard-config/plan";
+import { DashboardRuntimeContext, type DashboardRuntime } from "@/components/dashboard-config/runtime";
+import { VicDataUpdatesBySlug } from "@/components/editor/DashboardUpdates";
+import type { ResultsMeasure as ResultsMeasureId } from "@/catalogue/types";
 import { PanelLimitNote } from "@/components/teacher/ColumnPanels";
 import { groupOf, teacherDashboardFor } from "@/catalogue/dashboards";
 import type { DashboardConfig } from "@/catalogue/types";
@@ -283,8 +286,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const lookAsOk = requestedLookAs ? await confirmLookAs(supabase, requestedLookAs) : false;
       if (embed ? !!embedConfig : configRendererRequested(search)) {
         setConfigMode(true);
-        // Super-admin sees placeholder panels; an embed asks only when it has one.
-        if (!embed || embedConfig?.panels.some((p) => p.dataviews.every((v) => v.kind === "placeholder"))) {
+        // Super-admin sees placeholder panels; an embed asks only when it has one, or when
+        // it is a whole dashboard (Copy this view lets super-admin copy into VicData's).
+        if (!embed || (embedConfig?.panels.length ?? 0) > 1 || embedConfig?.panels.some((p) => p.dataviews.every((v) => v.kind === "placeholder"))) {
           const { data: admin } = await supabase.rpc("is_platform_admin");
           setSuperAdmin(admin === true);
         }
@@ -2011,6 +2015,30 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     </DashboardColumn>
   );
 
+  // VicData 0.6 integration: the runtime state a configured panel needs to say what
+  // "Copy this view…" copies (DashboardRuntimeContext). Provided only under a plan.
+  const periodsShown = entries.map((e) => e.period);
+  const runtime: DashboardRuntime | null =
+    phase === "ks4" || phase === "ks5"
+      ? {
+          phase,
+          school: schoolUrn ? { urn: schoolUrn, name: schoolName ?? schoolUrn } : null,
+          measure: sharedMeasure,
+          results: resultsMeasure.id as ResultsMeasureId,
+          focus: focusItem ? { key: focusItem.key, label: phase === "ks5" ? focusItem.label : focusItem.subject } : null,
+          focusSubject: focusItem ? { subject: focusItem.subject, qualificationType: focusItem.qualificationType } : null,
+          category: focusFamilyLabel,
+          contextAgainst,
+          contextGroupLabel,
+          setId: comparisonsSet ?? null,
+          setLabel: activeSetLabel,
+          latestYear: latestPeriod === null ? null : academicYearLabel(latestPeriod),
+          firstYear: periodsShown.length ? academicYearLabel(Math.min(...periodsShown)) : null,
+          superAdmin,
+        }
+      : null;
+  const withRuntime = (node: React.ReactNode) => (runtime ? <DashboardRuntimeContext.Provider value={runtime}>{node}</DashboardRuntimeContext.Provider> : node);
+
   // ---------------------------------------------------------------- mode "embed" (0.6 E)
   if (embed) {
     const accentStyle = { ...directionCssVars(theme), ...(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) } as React.CSSProperties;
@@ -2031,7 +2059,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           style={accentStyle}
           className={props.frame === "figure" ? "flex h-full min-h-0 min-w-0 flex-col text-[var(--fg)]" : "text-[var(--fg)]"}
         >
-          <DashboardPlanContext.Provider value={plan}>{hostFor(only.key)}</DashboardPlanContext.Provider>
+          <DashboardPlanContext.Provider value={plan}>{withRuntime(hostFor(only.key))}</DashboardPlanContext.Provider>
         </div>
       );
     }
@@ -2040,6 +2068,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     const baseColumn = (key: string) => (key === "context" ? contextColumn : key === "rankings" ? comparisonsColumn : column1);
     return (
       <div data-renderer="embed" style={accentStyle} className="text-[var(--fg)]">
+        {withRuntime(
         <DashboardFrame config={embedConfig} superAdmin={superAdmin} columnKeys={columnKeys}>
           {cols.map((c) => {
             if (c.host && !c.problem) return cloneElement(baseColumn(c.key), { key: c.column.id, title: c.column.title });
@@ -2056,7 +2085,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               </DashboardColumn>
             );
           })}
-        </DashboardFrame>
+        </DashboardFrame>,
+        )}
       </div>
     );
   }
@@ -2117,7 +2147,22 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           onEditSubjects={openSubjectPicker}
           // Top-nav round: Export alone. The theme toggle moved up into TeacherNav, and
           // "All dashboards" went with it -- the nav's Home link is the same way back.
-          chrome={<ExportButton />}
+          chrome={
+            dashboardConfig && superAdmin ? (
+              <>
+                {/* 0.6 integration: super-admin edits this VicData dashboard (flag on only). */}
+                <Link
+                  href={`/dashboards/${encodeURIComponent(dashboardConfig.id)}/edit${lookAs ? `?lookAs=${encodeURIComponent(lookAs.urn)}&as=${encodeURIComponent(lookAs.role)}` : ""}`}
+                  className="flex h-[30px] shrink-0 items-center rounded-md border border-[var(--panel-border2)] px-2.5 text-xs font-bold text-[var(--muted)] hover:border-[var(--fg)] hover:text-[var(--fg)] print:hidden"
+                >
+                  Edit
+                </Link>
+                <ExportButton />
+              </>
+            ) : (
+              <ExportButton />
+            )
+          }
           switcher={
             dashboardConfig ? (
               <GroupSwitcher
@@ -2136,6 +2181,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           Looking at {schoolName ?? lookAs.urn} as {VISIBLE_ROLE_LABELS[lookAs.role as VisibleRoleId] ?? lookAs.role}: a read-only preview from Platform, logged. School-shared sets and other people&rsquo;s notes aren&rsquo;t shown.
         </p>
       )}
+      {/* 0.6 integration, flag on: "Updated — what's changed" once the VicData dashboard
+          has a newer published version (renders nothing otherwise). */}
+      {dashboardConfig && <VicDataUpdatesBySlug slug={dashboardConfig.id} schoolUrn={schoolUrn} className="print:hidden [&:not(:empty)]:mt-3" />}
       {newDataPeriod !== null && (
         <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 print:hidden dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200">
           <span className="mr-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
@@ -2149,11 +2197,17 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       </p>
 
       {/* The laptop board's four-column row, with its dividers -- see DashboardGrid. */}
-      <DashboardFrame config={dashboardConfig} superAdmin={superAdmin}>
-        {column1}
-        {contextColumn}
-        {comparisonsColumn}
-      </DashboardFrame>
+      {(() => {
+        const frame = (
+          <DashboardFrame config={dashboardConfig} superAdmin={superAdmin}>
+            {column1}
+            {contextColumn}
+            {comparisonsColumn}
+          </DashboardFrame>
+        );
+        // Flag off (no config): exactly the frame, no runtime context.
+        return dashboardConfig ? withRuntime(frame) : frame;
+      })()}
 
       {/* The subject picker, as a popup from "±" rather than a permanent section of the
           page. Same modal shell as a card's fullscreen (TeacherModal: backdrop click,
