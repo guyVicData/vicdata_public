@@ -1,0 +1,331 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-03T12:20:00Z"
+  },
+  "title": "VicData 0.6 — Dashboard editor & dataset chooser",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "0. Library — My dashboards (entry point, + New)"
+    },
+    "New1.dc.html": {
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "New dashboard · Step 1 — name, start from, main data, colour"
+    },
+    "New2.dc.html": {
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "New dashboard · Step 2 — layout, accordion, linked dashboards"
+    },
+    "New3.dc.html": {
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "New dashboard · Step 3 — columns: data + compared to"
+    },
+    "New4.dc.html": {
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "New dashboard · Step 4 — here's what you'll get"
+    },
+    "Ch3Pick.dc.html": {
+      "x": 0,
+      "y": 1240,
+      "w": 390,
+      "h": 760,
+      "title": "Add a view — opens here: ready-made views, pre-filled from the column"
+    },
+    "Ch3Adjust.dc.html": {
+      "x": 470,
+      "y": 1240,
+      "w": 390,
+      "h": 760,
+      "title": "Customise — numbers, years, look and title on one screen (forks to a custom view)"
+    },
+    "Ch1Data.dc.html": {
+      "x": 0,
+      "y": 2340,
+      "w": 390,
+      "h": 760,
+      "title": "Step 1 of 3 — Data: one family open, one decision per band"
+    },
+    "Ch2Focus.dc.html": {
+      "x": 470,
+      "y": 2340,
+      "w": 390,
+      "h": 760,
+      "title": "Step 2 of 3 — two numbered blocks: which part of school; compare with"
+    },
+    "Ch2Subject.dc.html": {
+      "x": 940,
+      "y": 2340,
+      "w": 390,
+      "h": 760,
+      "title": "2a — Subject picker (only if a different subject is picked)"
+    },
+    "Ch2Custom.dc.html": {
+      "x": 1410,
+      "y": 2340,
+      "w": 390,
+      "h": 760,
+      "title": "2b — Custom area (only if Custom area is picked)"
+    },
+    "Editor.dc.html": {
+      "x": 0,
+      "y": 3440,
+      "w": 1280,
+      "h": 1120,
+      "title": "Editor — super-admin edit mode on GCSE Candidates"
+    },
+    "Assign.dc.html": {
+      "x": 1360,
+      "y": 3440,
+      "w": 390,
+      "h": 760,
+      "title": "Assign / share — super-admin to roles (School-Admin: teams)"
+    },
+    "Icon.dc.html": {
+      "x": 1830,
+      "y": 3440,
+      "w": 390,
+      "h": 760,
+      "title": "Dashboard icon — from a view, icon set or upload"
+    },
+    "Ch3Empty.dc.html": {
+      "x": 940,
+      "y": 1240,
+      "w": 390,
+      "h": 760,
+      "title": "Nothing built yet — loosen a choice, or (super-admin) add a placeholder"
+    },
+    "Skeleton.dc.html": {
+      "x": 0,
+      "y": 4800,
+      "w": 1280,
+      "h": 760,
+      "title": "Skeleton dashboard — planned panels, one ready to swap in"
+    },
+    "CopyTo.dc.html": {
+      "x": 2300,
+      "y": 3440,
+      "w": 390,
+      "h": 760,
+      "title": "Copy a view — to a dashboard (or new one) or a meeting, then pick the slot"
+    },
+    "Meeting.dc.html": {
+      "x": 0,
+      "y": 5800,
+      "w": 1600,
+      "h": 980,
+      "title": "Meeting — a 16:9 non-scrolling dashboard per slide, same 385×256 panels (3×2 fits exactly)"
+    },
+    "CopyToMeeting.dc.html": {
+      "x": 1680,
+      "y": 5800,
+      "w": 390,
+      "h": 760,
+      "title": "Copy to a meeting — pick a slide; it re-arranges (1 → 2 across → 3 → 3×2)"
+    },
+    "MeetingPlay.dc.html": {
+      "x": 0,
+      "y": 6900,
+      "w": 1440,
+      "h": 900,
+      "title": "Meeting playground — working prototype: swap, move between slides, layouts, titles, undo",
+      "is_interactive": true
+    },
+    "HomeSMT.dc.html": {
+      "x": 0,
+      "y": 8280,
+      "w": 390,
+      "h": 844,
+      "title": "Role home — SMT (switch shows only for people given several roles, e.g. SMT + Teacher)"
+    },
+    "People.dc.html": {
+      "x": 470,
+      "y": 8280,
+      "w": 390,
+      "h": 844,
+      "title": "School-Admin — People: roles as a set, approvals"
+    },
+    "Teams.dc.html": {
+      "x": 940,
+      "y": 8280,
+      "w": 390,
+      "h": 844,
+      "title": "School-Admin — Teams: automatic from roles + made by you"
+    },
+    "MeetingsArchive.dc.html": {
+      "x": 1410,
+      "y": 8280,
+      "w": 390,
+      "h": 844,
+      "title": "Meetings — Archive tab, Reuse for next meeting"
+    },
+    "PhoneDash.dc.html": {
+      "x": 1880,
+      "y": 8280,
+      "w": 390,
+      "h": 844,
+      "title": "Custom dashboard on a phone — columns as tabs"
+    },
+    "PickEither.dc.html": {
+      "x": 0,
+      "y": 9467,
+      "w": 390,
+      "h": 760,
+      "title": "Add a view — row time 'Either': grouped, with a data-gap warning tag"
+    },
+    "RowSettings.dc.html": {
+      "x": 470,
+      "y": 9467,
+      "w": 390,
+      "h": 760,
+      "title": "Row settings — name, Time, panels, open by default"
+    },
+    "ColumnChange.dc.html": {
+      "x": 940,
+      "y": 9467,
+      "w": 390,
+      "h": 760,
+      "title": "Column data changed — keep / remove / swap each view that no longer fits"
+    },
+    "SpanAsk.dc.html": {
+      "x": 1410,
+      "y": 9467,
+      "w": 390,
+      "h": 760,
+      "title": "Spanning panel over mismatched columns — asked once"
+    },
+    "Platform.dc.html": {
+      "x": 0,
+      "y": 10530,
+      "w": 1280,
+      "h": 760,
+      "title": "Super-admin — schools, per-school switches, look-as-role"
+    },
+    "History.dc.html": {
+      "x": 1360,
+      "y": 10530,
+      "w": 1280,
+      "h": 760,
+      "title": "Editor — draft vs live, History panel: preview, restore, compare"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "New1.dc.html",
+    "New2.dc.html",
+    "New3.dc.html",
+    "New4.dc.html",
+    "Ch3Pick.dc.html",
+    "Ch3Adjust.dc.html",
+    "Ch3Empty.dc.html",
+    "Ch1Data.dc.html",
+    "Ch2Focus.dc.html",
+    "Ch2Subject.dc.html",
+    "Ch2Custom.dc.html",
+    "Editor.dc.html",
+    "Assign.dc.html",
+    "Icon.dc.html",
+    "Skeleton.dc.html",
+    "CopyTo.dc.html",
+    "Meeting.dc.html",
+    "CopyToMeeting.dc.html",
+    "MeetingPlay.dc.html",
+    "HomeSMT.dc.html",
+    "People.dc.html",
+    "Teams.dc.html",
+    "MeetingsArchive.dc.html",
+    "PhoneDash.dc.html",
+    "PickEither.dc.html",
+    "RowSettings.dc.html",
+    "ColumnChange.dc.html",
+    "SpanAsk.dc.html",
+    "Platform.dc.html",
+    "History.dc.html"
+  ],
+  "notes": {
+    "t1": {
+      "kind": "title1",
+      "x": 0,
+      "y": -260,
+      "maxW": 2270,
+      "text": "Start a dashboard — the 4-step tour, re-used"
+    },
+    "t2": {
+      "kind": "title1",
+      "x": 0,
+      "y": 1000,
+      "maxW": 1330,
+      "text": "Add a view — usually one step"
+    },
+    "t3": {
+      "kind": "title1",
+      "x": 0,
+      "y": 2100,
+      "maxW": 1800,
+      "text": "Steps 1–2 — only when you press Change"
+    },
+    "t4": {
+      "kind": "title1",
+      "x": 0,
+      "y": 3200,
+      "maxW": 2690,
+      "text": "Edit, share and icon"
+    },
+    "t5": {
+      "kind": "title1",
+      "x": 0,
+      "y": 4560,
+      "maxW": 1280,
+      "text": "Skeleton in the builder, build views in code, refine"
+    },
+    "t6": {
+      "kind": "title1",
+      "x": 0,
+      "y": 5560,
+      "maxW": 2070,
+      "text": "Meetings — a different-shaped dashboard, slide by slide"
+    },
+    "t7": {
+      "kind": "title1",
+      "x": 0,
+      "y": 8040,
+      "maxW": 2270,
+      "text": "Homes, people, teams, archive, phone"
+    },
+    "t8": {
+      "kind": "title1",
+      "x": 0,
+      "y": 9227,
+      "maxW": 1800,
+      "text": "Rows, column changes and spans"
+    },
+    "t9": {
+      "kind": "title1",
+      "x": 0,
+      "y": 10290,
+      "maxW": 2640,
+      "text": "Super-admin: schools and history"
+    }
+  },
+  "designSystems": []
+}

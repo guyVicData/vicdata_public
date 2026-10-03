@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add a view — customise</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#e9eaec}
+button{font-family:inherit}
+.icon{display:block}
+.btn{border:none;border-radius:20px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer}
+.btn.primary{background:#141413;color:#fff}
+.btn.secondary{background:#fff;color:#141413;border:1px solid #d7dae0}
+.iconbtn{width:32px;height:32px;border-radius:50%;background:#f1f3f5;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 32px}
+.filterbox{border:1px solid #e3e5e9;border-radius:10px;padding:10px;background:#f7f8f9;display:flex;flex-direction:column;gap:7px}
+.filterlabel{font-size:10.5px;font-weight:700;color:#767d87;text-transform:uppercase;letter-spacing:0.4px}
+.chip{border:1px solid #d7dae0;border-radius:20px;padding:4px 9px;font-size:11.5px;font-weight:600;color:#5b6470;background:#fff;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.chip.active{border-color:#141413;background:#141413;color:#fff}
+.chip.off{border-style:dashed;color:#9aa0a8;background:transparent}
+.banner{display:flex;align-items:flex-start;gap:8px;background:#fff3d6;border:1px solid #f1d896;border-radius:10px;padding:9px 12px;font-size:12px;color:#7a4f00;line-height:1.4}
+.tok{display:inline-flex;align-items:center;border-radius:6px;background:#dbeafe;color:#1d4ed8;font-size:12px;font-weight:700;padding:1px 6px}
+.toggle{width:34px;height:20px;border-radius:999px;background:#141413;position:relative;flex:0 0 34px}
+.toggle span{position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+</style>
+</helmet>
+<div style="width: 390px; height: 760px; box-sizing: border-box; position: relative; background: #e9eaec;">
+  <div style="position: absolute; inset: 12px; background: #ffffff; border-radius: 14px; box-shadow: 0 12px 32px rgba(20,20,19,0.18); display: flex; flex-direction: column; overflow: hidden">
+
+    <div style="padding: 14px 14px 14px 8px; border-bottom: 1px solid #eef0f2; display: flex; align-items: center; gap: 4px; flex: 0 0 auto">
+      <a href="Ch3Pick.dc.html" class="iconbtn" aria-label="Back" style="background: none">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </a>
+      <div style="flex: 1 1 auto">
+        <div style="font-size: 15px; font-weight: 600; color: #141413">Customise view</div>
+        <div style="font-size: 11.5px; color: #767d87; margin-top: 1px">Change in points &middot; 2021/22 &rarr; latest &middot; Graph</div>
+      </div>
+      <button class="iconbtn" aria-label="Close">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div style="flex: 1 1 auto; overflow-y: auto; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 10px">
+
+      <div style="background: #141414; border: 1px solid #232323; border-radius: 10px; padding: 8px 10px; height: 92px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 10.5px; font-weight: 600; color: #a3a3a3">Live preview &middot; The Chase</div>
+        <svg width="100%" height="64" viewBox="0 0 320 64" preserveAspectRatio="none" aria-label="Preview"><line x1="0" y1="60" x2="320" y2="60" stroke="#2a2a2a"></line><polyline points="0,38 106,34 212,32 320,28" fill="none" stroke="#3f3f46" stroke-width="1.5"></polyline><polyline points="0,30 106,34 212,36 320,34" fill="none" stroke="#3f3f46" stroke-width="1.5"></polyline><polyline points="0,44 106,32 212,22 320,12" fill="none" stroke="#34d399" stroke-width="2.4"></polyline></svg>
+      </div>
+
+      <div class="banner">
+        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7a4f00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 auto; margin-top: 1px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <div>Change anything below and this becomes your own custom view. The ready-made one stays as it was.</div>
+      </div>
+
+      <div class="filterbox">
+        <div class="filterlabel">Numbers</div>
+        <div style="display: flex; gap: 5px; flex-wrap: wrap">
+          <span class="chip">Points</span>
+          <span class="chip active">Change in points</span>
+          <span class="chip off">Totals</span>
+          <span class="chip off">% change</span>
+          <span class="chip off">Market share</span>
+          <span class="chip off">Indexed</span>
+        </div>
+        <div style="font-size: 11px; color: #9aa0a8">Dotted: count-only options, not offered for an average.</div>
+      </div>
+
+      <div class="filterbox">
+        <div class="filterlabel">Years</div>
+        <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center">
+          <span class="chip">Single year</span>
+          <span class="chip active">Trend</span>
+          <span style="width: 1px; height: 18px; background: #d7dae0"></span>
+          <span style="font-size: 11.5px; color: #5b6470">from</span>
+          <span class="chip active">2021/22</span>
+          <span class="chip">2022/23</span>
+          <span style="font-size: 11.5px; color: #5b6470">&rarr; latest</span>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #5b6470">
+          <span class="toggle" role="switch" aria-checked="true" aria-label="Roll forward"><span></span></span>
+          Roll forward to the newest year when new data lands
+        </label>
+      </div>
+
+      <div class="filterbox">
+        <div class="filterlabel">Look</div>
+        <div style="display: flex; gap: 5px; flex-wrap: wrap">
+          <span class="chip active">Graph</span>
+          <span class="chip">Ranking</span>
+          <span class="chip">Map</span>
+          <span class="chip">Table</span>
+          <span class="chip off">Donut</span>
+          <span class="chip off">Numerical</span>
+        </div>
+      </div>
+
+      <div class="filterbox" style="background: #fff">
+        <div class="filterlabel">Title</div>
+        <div style="font-size: 12.5px; color: #141413; line-height: 1.8; border: 1px solid #d7dae0; border-radius: 8px; padding: 6px 9px; background: #fff"><span class="tok">[subject]</span> points against <span class="tok">[comparison-set]</span>, since <span class="tok">[from-year]</span></div>
+        <div style="font-size: 11px; color: #2563eb; font-weight: 600">+ Insert placeholder</div>
+      </div>
+
+    </div>
+
+    <div style="padding: 12px 18px; border-top: 1px solid #eef0f2; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto">
+      <a href="Ch3Pick.dc.html" class="btn secondary" style="text-decoration: none">Back to ready-made</a>
+      <a href="Editor.dc.html" class="btn primary" style="text-decoration: none">Add to panel</a>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

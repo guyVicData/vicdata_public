@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>School-Admin — People</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #0a0a0b; }
+  button, input { font: inherit; }
+  .chip { border: 1px solid #2a2a2e; background: transparent; color: #c9c9ce; border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; }
+  .chip.on { border-color: #f2f2f3; background: #f2f2f3; color: #0a0a0b; }
+  .role { border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
+  .person { border-radius: 12px; border: 1px solid #1e1e22; background: #131315; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .av { width: 32px; height: 32px; border-radius: 50%; background: #26262a; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #c9c9ce; flex-shrink: 0; }
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0a0a0b; color: #f2f2f3; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #1c1c1f;">
+    <div style="font-weight: 700; font-size: 15px; letter-spacing: 0.02em;">VicData</div>
+    <div style="display: flex; gap: 6px; background: #131315; border: 1px solid #1e1e22; border-radius: 999px; padding: 3px;">
+      <span style="border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; background: #f2f2f3; color: #0a0a0b;">People</span>
+      <a href="Teams.dc.html" style="border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #8a8a90; text-decoration: none;">Teams</a>
+    </div>
+  </div>
+
+  <div style="padding: 18px 20px 28px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+      <div>
+        <div style="font-size: 20px; font-weight: 700;">People at The Chase</div>
+        <div style="font-size: 12.5px; color: #8a8a90; margin-top: 3px;">School-Admin: you set roles and teams</div>
+      </div>
+      <button type="button" style="border: none; border-radius: 999px; background: #f2f2f3; color: #0a0a0b; padding: 8px 14px; font-size: 13px; font-weight: 700;">Invite</button>
+    </div>
+
+    <label style="display: flex; align-items: center; gap: 8px; background: #131315; border: 1px solid #2a2a2e; border-radius: 10px; padding: 9px 12px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6a6a70" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" placeholder="Search people" aria-label="Search people" style="background: transparent; border: none; outline: none; color: #f2f2f3; font-size: 13px; flex-grow: 1;">
+    </label>
+
+    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <button type="button" class="chip on">All</button>
+      <button type="button" class="chip">SMT</button>
+      <button type="button" class="chip">Teacher</button>
+      <button type="button" class="chip">Admissions</button>
+      <button type="button" class="chip">School-Admin</button>
+      <button type="button" class="chip" style="border-color: #fbbf24; color: #fbbf24;">Waiting &middot; 1</button>
+    </div>
+
+    <div class="person" style="border-color: #4a3b12; background: #17140c;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="av">[ ]</span>
+        <div style="flex-grow: 1;"><div style="font-size: 14px; font-weight: 700;">[Name]</div><div style="font-size: 12px; color: #8a8a90;">Asked to join &middot; school email matched</div></div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" style="border: none; border-radius: 999px; background: #fbbf24; color: #1a1300; padding: 6px 14px; font-size: 12px; font-weight: 700;">Approve as Teacher</button>
+        <button type="button" style="border: 1px solid #3a3a40; border-radius: 999px; background: transparent; color: #c9c9ce; padding: 6px 14px; font-size: 12px; font-weight: 600;">Decline</button>
+      </div>
+    </div>
+
+    <div class="person" style="border-color: #3a3a40;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="av">[ ]</span>
+        <div style="flex-grow: 1;"><div style="font-size: 14px; font-weight: 700;">[Name]</div><div style="font-size: 12px; color: #8a8a90;">Deputy Head &middot; also teaches Maths</div></div>
+        <span style="font-size: 11px; color: #8a8a90;">Editing</span>
+      </div>
+      <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6a6a70;">Roles &mdash; tap to switch on or off</div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button type="button" class="role" style="border: 1px solid #a78bfa; background: rgba(167,139,250,0.16); color: #c4b5fd;">SMT &#10003;</button>
+        <button type="button" class="role" style="border: 1px solid #34d399; background: rgba(52,211,153,0.14); color: #6ee7b7;">Teacher &#10003;</button>
+        <button type="button" class="role" style="border: 1px dashed #3a3a40; background: transparent; color: #8a8a90;">Admissions</button>
+        <button type="button" class="role" style="border: 1px dashed #3a3a40; background: transparent; color: #8a8a90;">School-Admin</button>
+      </div>
+      <div style="font-size: 11.5px; color: #6a6a70;">Teams: SMT (automatic), Maths department</div>
+    </div>
+
+    <div class="person">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="av">[ ]</span>
+        <div style="flex-grow: 1;"><div style="font-size: 14px; font-weight: 700;">[Name]</div><div style="font-size: 12px; color: #8a8a90;">Registrar</div></div>
+        <span class="role" style="background: rgba(34,211,238,0.14); color: #67e8f9;">Admissions</span>
+      </div>
+    </div>
+    <div class="person">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="av">[ ]</span>
+        <div style="flex-grow: 1;"><div style="font-size: 14px; font-weight: 700;">[Name]</div><div style="font-size: 12px; color: #8a8a90;">Bursar</div></div>
+        <span class="role" style="background: rgba(251,191,36,0.14); color: #fcd34d;">School-Admin</span>
+        <span class="role" style="background: rgba(167,139,250,0.16); color: #c4b5fd;">SMT</span>
+      </div>
+    </div>
+    <div class="person">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="av">[ ]</span>
+        <div style="flex-grow: 1;"><div style="font-size: 14px; font-weight: 700;">[Name]</div><div style="font-size: 12px; color: #8a8a90;">Teacher of History</div></div>
+        <span class="role" style="background: rgba(52,211,153,0.14); color: #6ee7b7;">Teacher</span>
+      </div>
+    </div>
+
+    <div style="font-size: 11.5px; color: #5c5c62; line-height: 1.45;">Job title is free text and only for display. Roles decide what people see. HOD and Finance stay in the system but are hidden for now.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

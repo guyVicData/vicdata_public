@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Editor — history panel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  button { font-family: inherit; }
+  .muted { color: #9a9a9a; }
+  .ebtn { border: 1px solid #3a3a3a; background: #1a1a1a; color: #e5e5e5; border-radius: 8px; padding: 6px 11px; font-size: 12px; font-weight: 600; }
+  .ebtn.primary { background: #fbbf24; border-color: #fbbf24; color: #1a1300; }
+  .ebtn.on { border-color: #fbbf24; color: #fbbf24; }
+  .ver { border: 1px solid #262626; border-radius: 10px; padding: 11px 12px; display: flex; flex-direction: column; gap: 6px; background: #141414; }
+  .ver.sel { border-color: #fbbf24; background: #17140c; }
+  .act { border: none; background: transparent; color: #fbbf24; font-size: 11.5px; font-weight: 700; padding: 0; }
+  .ghost { height: 150px; border-radius: 12px; background: #141414; border: 1px solid #232323; }
+</style>
+</helmet>
+<div style="width: 1280px; height: 760px; box-sizing: border-box; background: #0a0a0a; color: #f2f2f2; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;">
+
+  <div style="display: flex; align-items: center; gap: 10px; background: #17140c; border: 1px solid #4a3b12; border-radius: 12px; padding: 9px 12px;">
+    <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; color: #1a1300; background: #fbbf24; border-radius: 999px; padding: 3px 9px;">EDITING</span>
+    <span style="font-size: 13px; font-weight: 700;">GCSE Candidates</span>
+    <span style="font-size: 11px; font-weight: 700; color: #fbbf24; border: 1px solid #4a3b12; border-radius: 999px; padding: 2px 8px;">Draft &middot; autosaved</span>
+    <span class="muted" style="font-size: 12px;">Teachers and SMT still see version 12</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" class="ebtn">Undo</button>
+    <button type="button" class="ebtn on">History</button>
+    <button type="button" class="ebtn">Assign</button>
+    <button type="button" class="ebtn primary">Publish as version 13</button>
+  </div>
+
+  <div style="display: flex; gap: 20px; flex-grow: 1; min-height: 0;">
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px; opacity: 0.55;">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;"><div class="ghost"></div><div class="ghost"></div><div class="ghost"></div></div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;"><div class="ghost" style="grid-column: span 2;"></div><div class="ghost"></div></div>
+      <div class="muted" style="font-size: 12px; opacity: 1;">Previewing version 11, read-only, with real data for The Chase</div>
+    </div>
+
+    <div style="width: 380px; flex-shrink: 0; background: #101010; border: 1px solid #232323; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size: 15px; font-weight: 700;">History</div>
+        <button type="button" class="act" style="color: #9a9a9a;">Close</button>
+      </div>
+
+      <div class="ver" style="border-style: dashed;">
+        <div style="display: flex; justify-content: space-between;"><span style="font-size: 13px; font-weight: 700; color: #fbbf24;">Draft</span><span class="muted" style="font-size: 11px;">autosaved just now</span></div>
+        <div style="font-size: 12px; color: #c9c9c9; line-height: 1.45;">Since v12: added a view to Comparisons &middot; Trends; renamed row &ldquo;Trends&rdquo; to &ldquo;Over time&rdquo;.</div>
+        <div style="display: flex; gap: 14px;"><button type="button" class="act">Publish</button><button type="button" class="act" style="color: #f87171;">Discard draft</button></div>
+      </div>
+
+      <div class="ver">
+        <div style="display: flex; justify-content: space-between;"><span style="font-size: 13px; font-weight: 700;">Version 12 &middot; live</span><span class="muted" style="font-size: 11px;">3 Oct, 14:20</span></div>
+        <div style="font-size: 12px; font-weight: 600; color: #e5e5e5;">&ldquo;before Trends pass&rdquo;</div>
+        <div style="font-size: 12px; color: #9a9a9a; line-height: 1.45;">Moved &ldquo;against the wider system&rdquo; views to their own panel.</div>
+        <div style="display: flex; gap: 14px;"><button type="button" class="act">Preview</button><button type="button" class="act">Compare with draft</button></div>
+      </div>
+
+      <div class="ver sel">
+        <div style="display: flex; justify-content: space-between;"><span style="font-size: 13px; font-weight: 700;">Version 11</span><span class="muted" style="font-size: 11px;">29 Sep, 18:02</span></div>
+        <div style="font-size: 12px; color: #9a9a9a; line-height: 1.45;">Current panel: number tiles made the default; bar chart and ranked list moved to Context.</div>
+        <div style="display: flex; gap: 14px;"><button type="button" class="act">Previewing</button><button type="button" class="act">Restore</button><button type="button" class="act">Compare</button></div>
+        <div class="muted" style="font-size: 11px;">Restore makes a new draft from this version, so it can be undone.</div>
+      </div>
+
+      <div class="ver">
+        <div style="display: flex; justify-content: space-between;"><span style="font-size: 13px; font-weight: 700;">Version 10</span><span class="muted" style="font-size: 11px;">28 Sep, 09:15</span></div>
+        <div style="font-size: 12px; color: #9a9a9a; line-height: 1.45;">Trend and % change merged into one Trends row.</div>
+      </div>
+
+      <div style="font-size: 11px; color: #6a6a70; line-height: 1.45;">Publishing a VicData dashboard is an upgrade for everyone using it: notes and open rows carry over where panels survive; changed panels open at their new default.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

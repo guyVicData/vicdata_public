@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Meeting playground</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  button, input { font-family: inherit; }
+  .muted { color: #9a9a9a; }
+  .tb { border: 1px solid #3a3a3a; background: #1a1a1a; color: #e5e5e5; border-radius: 8px; padding: 6px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .tb.rose { background: #fb7185; border-color: #fb7185; color: #2a0a10; }
+  .slot { width: 289px; height: 192px; box-sizing: border-box; background: #141414; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; text-align: left; color: #f2f2f2; cursor: pointer; }
+  .thumbbtn { width: 168px; box-sizing: border-box; background: #141414; border-radius: 8px; padding: 7px; display: flex; flex-direction: column; gap: 5px; text-align: left; color: #f2f2f2; cursor: pointer; }
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; background: #0a0a0a; color: #f2f2f2; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-bottom: 1px solid #1c1c1c;">
+    <span style="width: 32px; height: 32px; border-radius: 9px; background: rgba(251,113,133,0.14); color: #fb7185; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></svg></span>
+    <div>
+      <div style="font-size: 15px; font-weight: 700;">Governors' curriculum committee</div>
+      <div class="muted" style="font-size: 11.5px;">Playground: click a view, then click another to swap. Move it between slides with the arrows.</div>
+    </div>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" class="tb" onClick="{{undo}}">Undo{{undoCount}}</button>
+    <button type="button" class="tb rose">Present</button>
+  </div>
+
+  <div style="display: flex; flex-grow: 1; min-height: 0;">
+
+    <div style="width: 216px; flex-shrink: 0; border-right: 1px solid #1c1c1c; padding: 16px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
+      <sc-for list="{{thumbs}}" as="t" hint-placeholder-count="3">
+        <button type="button" class="thumbbtn" onClick="{{t.onClick}}" style="{{t.style}}">
+          <span style="display: flex; gap: 6px; align-items: baseline;"><span style="font-size: 11px; font-weight: 700; color: #fb7185;">{{t.num}}</span><span style="font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{t.title}}</span></span>
+          <span style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; height: 40px; align-content: start;">
+            <sc-for list="{{t.blocks}}" as="b" hint-placeholder-count="2"><span style="height: 18px; border-radius: 3px; background: {{b.bg}};"></span></sc-for>
+          </span>
+          <span class="muted" style="font-size: 10.5px;">{{t.count}}</span>
+        </button>
+      </sc-for>
+      <button type="button" onClick="{{addSlide}}" style="width: 168px; border: 1px dashed #3a3a3a; background: transparent; color: #c9c9c9; border-radius: 8px; padding: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">+ Add slide</button>
+    </div>
+
+    <div style="flex-grow: 1; padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        <span class="muted" style="font-size: 11.5px; font-weight: 600; margin-right: 4px;">Layout</span>
+        <sc-for list="{{layouts}}" as="l" hint-placeholder-count="5">
+          <button type="button" onClick="{{l.onClick}}" style="{{l.style}} border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer;">{{l.label}}</button>
+        </sc-for>
+        <span style="width: 1px; height: 18px; background: #262626; margin: 0 6px;"></span>
+        <button type="button" class="tb" onClick="{{suggestTitle}}">Suggest a title</button>
+        <button type="button" class="tb" onClick="{{shuffle}}">Shuffle order</button>
+        <span class="muted" style="font-size: 11px; margin-left: 6px;">{{layoutNote}}</span>
+      </div>
+
+      <div style="width: 960px; height: 540px; box-sizing: border-box; background: #0f0f0f; border: 1px solid #262626; border-radius: 10px; padding: 18px 26px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <input type="text" value="{{slideTitle}}" onChange="{{onTitle}}" placeholder="Type a slide title" aria-label="Slide title" style="flex-grow: 1; background: transparent; border: none; border-bottom: 1px dashed #3a3a3a; color: #f2f2f2; font-size: 22px; font-weight: 700; outline: none; padding: 4px 0;">
+          <span class="muted" style="font-size: 12px;">{{slidePos}}</span>
+        </div>
+        <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+          <div style="display: grid; gap: 18px; {{gridStyle}}">
+            <sc-for list="{{slots}}" as="s" hint-placeholder-count="2">
+              <button type="button" class="slot" onClick="{{s.onClick}}" style="{{s.style}}">
+                <span class="muted" style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">{{s.kindLabel}} &middot; pinned</span>
+                <span style="font-size: 12px; font-weight: 600; color: #d4d4d4; line-height: 1.3;">{{s.title}}</span>
+                <span style="flex-grow: 1; display: flex; align-items: center; justify-content: center; min-height: 0;">
+                  <sc-if value="{{s.isGraph}}" hint-placeholder-val="{{true}}"><svg width="230" height="90" viewBox="0 0 230 90" aria-hidden="true"><polyline points="0,64 76,60 152,56 230,52" fill="none" stroke="#3f3f46" stroke-width="1.5"></polyline><polyline points="0,50 76,56 152,52 230,58" fill="none" stroke="#3f3f46" stroke-width="1.5"></polyline><polyline points="0,72 76,52 152,36 230,18" fill="none" stroke="#34d399" stroke-width="2.6"></polyline></svg></sc-if>
+                  <sc-if value="{{s.isMap}}" hint-placeholder-val="{{false}}"><svg width="230" height="90" viewBox="0 0 230 90" aria-hidden="true"><rect x="0" y="0" width="230" height="90" rx="6" fill="#1b1d1f"></rect><circle cx="90" cy="40" r="9" fill="#34d399"></circle><circle cx="140" cy="56" r="7" fill="#52525b"></circle><circle cx="60" cy="66" r="6" fill="#52525b"></circle><circle cx="170" cy="24" r="5" fill="#52525b"></circle><circle cx="120" cy="20" r="6" fill="#52525b"></circle></svg></sc-if>
+                  <sc-if value="{{s.isRank}}" hint-placeholder-val="{{false}}"><svg width="230" height="90" viewBox="0 0 230 90" aria-hidden="true"><rect x="0" y="4" width="210" height="10" rx="3" fill="#3f3f46"></rect><rect x="0" y="22" width="180" height="10" rx="3" fill="#34d399"></rect><rect x="0" y="40" width="150" height="10" rx="3" fill="#3f3f46"></rect><rect x="0" y="58" width="120" height="10" rx="3" fill="#3f3f46"></rect><rect x="0" y="76" width="80" height="10" rx="3" fill="#3f3f46"></rect></svg></sc-if>
+                  <sc-if value="{{s.isDonut}}" hint-placeholder-val="{{false}}"><svg width="90" height="90" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="13" fill="none" stroke="#262626" stroke-width="7"></circle><circle cx="18" cy="18" r="13" fill="none" stroke="#34d399" stroke-width="7" stroke-dasharray="26 82" transform="rotate(-90 18 18)"></circle></svg></sc-if>
+                  <sc-if value="{{s.isTiles}}" hint-placeholder-val="{{false}}"><span style="display: flex; gap: 10px;"><span style="width: 100px; height: 70px; border: 1px solid #262626; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #34d399;">[n]</span><span style="width: 100px; height: 70px; border: 1px solid #262626; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800;">[rank]</span></span></sc-if>
+                  <sc-if value="{{s.isBar}}" hint-placeholder-val="{{false}}"><svg width="230" height="90" viewBox="0 0 230 90" aria-hidden="true"><rect x="20" y="20" width="36" height="70" fill="#34d399"></rect><rect x="74" y="34" width="36" height="56" fill="#3f3f46"></rect><rect x="128" y="28" width="36" height="62" fill="#3f3f46"></rect><rect x="182" y="40" width="36" height="50" fill="#3f3f46"></rect></svg></sc-if>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; min-height: 34px;">
+        <sc-if value="{{hasSel}}" hint-placeholder-val="{{false}}">
+          <span style="font-size: 12.5px; color: #fb7185; font-weight: 700;">Selected:</span>
+          <span style="font-size: 12.5px; color: #d4d4d4; max-width: 360px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{selTitle}}</span>
+          <button type="button" class="tb" onClick="{{prevSlide}}">&larr; To previous slide</button>
+          <button type="button" class="tb" onClick="{{nextSlide}}">To next slide &rarr;</button>
+          <button type="button" class="tb" onClick="{{removeSel}}" style="color: #f87171;">Remove</button>
+          <button type="button" class="tb" onClick="{{deselect}}">Done</button>
+          <span class="muted" style="font-size: 11.5px;">Click another view to swap. Or go to another slide and press &ldquo;Move here&rdquo;.</span>
+        </sc-if>
+        <sc-if value="{{noSel}}" hint-placeholder-val="{{true}}">
+          <span class="muted" style="font-size: 12px;">Click a view to pick it up.</span>
+        </sc-if>
+        <span style="flex-grow: 1;"></span>
+        <button type="button" onClick="{{addHere}}" style="border: 1px dashed #fb7185; background: transparent; color: #fb7185; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;">{{addLabel}}</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+const VIEWS = {
+  v1: { kind: "graph", title: "Maths (General) points against 10 nearest schools, since 2021/22" },
+  v2: { kind: "map", title: "Change in Maths (General) points by school, on the map" },
+  v3: { kind: "rank", title: "Maths (General) entries ranked against 10 nearest schools" },
+  v4: { kind: "donut", title: "Entries in Maths (General) as a proportion of Sciences & Maths" },
+  v5: { kind: "tiles", title: "Maths (General) candidates, 2024/25" },
+  v6: { kind: "bar", title: "Maths (General) points against Surrey, South East and England" },
+  v7: { kind: "graph", title: "Maths (General) entries since 2021/22, indexed" },
+  v8: { kind: "rank", title: "Maths (General) points ranked against 10 nearest schools" }
+};
+const KIND = { graph: "Graph", map: "Map", rank: "Ranking", donut: "Donut", tiles: "Numbers", bar: "Bar chart" };
+const CAP = { "1": 1, "2": 2, "3": 3, "6": 6 };
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+
+class Component extends DCLogic {
+  state = {
+    slides: [
+      { title: "Where Maths stands", layout: "auto", views: ["v5", "v3"] },
+      { title: "", layout: "auto", views: ["v1"] },
+      { title: "Against other schools", layout: "auto", views: ["v2", "v6", "v4"] }
+    ],
+    cur: 0,
+    sel: null,
+    hist: []
+  };
+
+  commit(S, extra) {
+    const hist = this.state.hist.concat([this.state.slides]).slice(-30);
+    this.setState(Object.assign({ slides: S, hist: hist }, extra || {}));
+  }
+
+  clickSlot(i) {
+    const sel = this.state.sel, cur = this.state.cur;
+    if (!sel) { this.setState({ sel: { slide: cur, idx: i } }); return; }
+    if (sel.slide === cur && sel.idx === i) { this.setState({ sel: null }); return; }
+    this.moveTo(cur, i);
+  }
+
+  moveTo(ts, ti) {
+    const sel = this.state.sel;
+    if (!sel) return;
+    const S = clone(this.state.slides);
+    const v = S[sel.slide].views[sel.idx];
+    const tgt = S[ts].views;
+    if (ts === sel.slide) {
+      if (ti < tgt.length) { const t = tgt[ti]; tgt[ti] = v; tgt[sel.idx] = t; }
+      else { tgt.splice(sel.idx, 1); tgt.push(v); }
+    } else if (ti < tgt.length) {
+      const t = tgt[ti]; tgt[ti] = v; S[sel.slide].views[sel.idx] = t;
+    } else {
+      if (tgt.length >= 6) return;
+      S[sel.slide].views.splice(sel.idx, 1); tgt.push(v);
+    }
+    this.commit(S, { sel: null });
+  }
+
+  nudge(d) {
+    const sel = this.state.sel;
+    if (!sel) return;
+    const t = sel.slide + d;
+    if (t < 0) return;
+    const S = clone(this.state.slides);
+    if (t >= S.length) S.push({ title: "", layout: "auto", views: [] });
+    if (S[t].views.length >= 6) return;
+    const v = S[sel.slide].views.splice(sel.idx, 1)[0];
+    S[t].views.push(v);
+    this.commit(S, { cur: t, sel: { slide: t, idx: S[t].views.length - 1 } });
+  }
+
+  addHere() {
+    const st = this.state;
+    const n = st.slides[st.cur].views.length;
+    if (n >= 6) return;
+    if (st.sel) { this.moveTo(st.cur, n); return; }
+    const used = {};
+    st.slides.forEach((s) => s.views.forEach((id) => { used[id] = true; }));
+    const free = Object.keys(VIEWS).filter((id) => !used[id]);
+    const id = free.length ? free[0] : "v1";
+    const S = clone(st.slides);
+    S[st.cur].views.push(id);
+    this.commit(S, {});
+  }
+
+  renderVals() {
+    const st = this.state;
+    const s = st.slides[st.cur];
+    const n = s.views.length;
+    const autoMode = n <= 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : 6;
+    const tooMany = s.layout !== "auto" && n > CAP[s.layout];
+    const mode = s.layout === "auto" || tooMany ? autoMode : CAP[s.layout];
+    const cols = mode === 6 ? 3 : mode;
+    const rows = mode === 6 ? 2 : 1;
+
+    const slots = s.views.map((id, i) => {
+      const v = VIEWS[id];
+      const isSel = st.sel && st.sel.slide === st.cur && st.sel.idx === i;
+      return {
+        title: v.title,
+        kindLabel: KIND[v.kind],
+        isGraph: v.kind === "graph", isMap: v.kind === "map", isRank: v.kind === "rank",
+        isDonut: v.kind === "donut", isTiles: v.kind === "tiles", isBar: v.kind === "bar",
+        style: isSel ? "border: 2px solid #fb7185; box-shadow: 0 0 0 4px rgba(251,113,133,0.18);" : "border: 1px solid #232323;",
+        onClick: () => this.clickSlot(i)
+      };
+    });
+
+    const thumbs = st.slides.map((sl, i) => ({
+      num: String(i + 1),
+      title: sl.title || "Untitled slide",
+      count: sl.views.length === 1 ? "1 view" : sl.views.length + " views",
+      blocks: sl.views.map((id, j) => ({ bg: st.sel && st.sel.slide === i && st.sel.idx === j ? "#fb7185" : "#2a2a2a" })),
+      style: i === st.cur ? "border: 2px solid #fb7185;" : "border: 1px solid #262626;",
+      onClick: () => this.setState({ cur: i })
+    }));
+
+    const layouts = ["auto", "1", "2", "3", "6"].map((l) => ({
+      label: l === "auto" ? "Auto" : l === "6" ? "3 × 2" : l === "1" ? "One" : l + " across",
+      style: s.layout === l ? "border: 1px solid #fb7185; background: #2a1219; color: #fb7185;" : "border: 1px solid #2a2a2a; background: #141414; color: #c9c9c9;",
+      onClick: () => { const S = clone(st.slides); S[st.cur].layout = l; this.commit(S, {}); }
+    }));
+
+    const selTitle = st.sel ? VIEWS[st.slides[st.sel.slide].views[st.sel.idx]].title : "";
+    let addLabel = "+ Add a view";
+    if (n >= 6) addLabel = "Slide full";
+    else if (st.sel && st.sel.slide !== st.cur) addLabel = "Move here";
+    else if (st.sel) addLabel = "Move to the end";
+
+    return {
+      thumbs, slots, layouts,
+      gridStyle: "grid-template-columns: repeat(" + cols + ", 289px); grid-template-rows: repeat(" + rows + ", 192px);",
+      layoutNote: tooMany ? "Too many views for that layout, so Auto is used" : s.layout === "auto" ? "Auto: 1, then 2 across, 3 across, 3 × 2" : "",
+      slideTitle: s.title,
+      slidePos: (st.cur + 1) + " / " + st.slides.length,
+      hasSel: !!st.sel, noSel: !st.sel, selTitle, addLabel,
+      undoCount: st.hist.length ? " (" + st.hist.length + ")" : "",
+      onTitle: (e) => { const S = clone(st.slides); S[st.cur].title = e.target.value; this.setState({ slides: S }); },
+      suggestTitle: () => {
+        if (!n) return;
+        const kinds = [];
+        s.views.forEach((id) => { const k = KIND[VIEWS[id].kind].toLowerCase(); if (kinds.indexOf(k) < 0) kinds.push(k); });
+        const list = kinds.length === 1 ? kinds[0] : kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1];
+        const S = clone(st.slides); S[st.cur].title = "Maths (General): " + list; this.commit(S, {});
+      },
+      shuffle: () => { if (n < 2) return; const S = clone(st.slides); S[st.cur].views.push(S[st.cur].views.shift()); this.commit(S, { sel: null }); },
+      addSlide: () => { const S = clone(st.slides); S.push({ title: "", layout: "auto", views: [] }); this.commit(S, { cur: S.length - 1 }); },
+      undo: () => {
+        const h = st.hist; if (!h.length) return;
+        const prev = h[h.length - 1];
+        this.setState({ slides: prev, hist: h.slice(0, -1), sel: null, cur: Math.min(st.cur, prev.length - 1) });
+      },
+      prevSlide: () => this.nudge(-1),
+      nextSlide: () => this.nudge(1),
+      removeSel: () => {
+        if (!st.sel) return;
+        const S = clone(st.slides); S[st.sel.slide].views.splice(st.sel.idx, 1); this.commit(S, { sel: null });
+      },
+      deselect: () => this.setState({ sel: null }),
+      addHere: () => this.addHere()
+    };
+  }
+}
+</script>
+</body>
+</html>

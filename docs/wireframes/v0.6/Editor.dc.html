@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Editor — super-admin edit mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  button { font-family: inherit; cursor: pointer; }
+  .muted { color: #9a9a9a; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #9a9a9a; padding: 0; flex-shrink: 0; }
+  .icon-btn.active { background: #262626; color: #ffffff; }
+  .chip { border: 1px solid #2a2a2a; background: #141414; color: #d4d4d4; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip.active { border-color: #34d399; background: #16241d; color: #fff; }
+  .ebtn { border: 1px solid #3a3a3a; background: #1a1a1a; color: #e5e5e5; border-radius: 8px; padding: 6px 11px; font-size: 12px; font-weight: 600; }
+  .ebtn.primary { background: #fbbf24; border-color: #fbbf24; color: #1a1300; }
+  .panel { box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 12px 14px 36px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; height: 230px; }
+  .panel.edit { outline: 1px dashed #fbbf24; outline-offset: 3px; }
+  .tag { font-size: 11.5px; font-weight: 600; color: #d4d4d4; }
+  .inh { font-size: 10px; font-weight: 600; color: #93c5fd; background: #172033; border-radius: 999px; padding: 2px 7px; }
+  .ovr { font-size: 10px; font-weight: 600; color: #fbbf24; background: #2a2210; border-radius: 999px; padding: 2px 7px; }
+  .view-rail { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; padding: 1px 9px 2px 0; border-right: 1px solid #232323; margin-right: 9px; }
+  .view-rail .icon-btn { width: 20px; height: 20px; border-radius: 5px; }
+  .addv { width: 20px; height: 20px; border-radius: 5px; border: 1px dashed #fbbf24; color: #fbbf24; display: inline-flex; align-items: center; justify-content: center; background: transparent; padding: 0; }
+  .bottom-row { position: absolute; left: 14px; right: 14px; bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .src { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; border: 1px solid #2a2a2a; color: #7a7a7a; font-size: 9.5px; font-style: italic; font-weight: 700; }
+  .rowhead { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px dashed #3a3a3a; border-radius: 9px; font-size: 12.5px; font-weight: 700; color: #e5e5e5; }
+  .menu { position: absolute; background: #1a1a1a; border: 1px solid #2f2f2f; border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,0.45); padding: 6px; display: flex; flex-direction: column; gap: 2px; z-index: 30; }
+  .mrow { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 8px; border-radius: 7px; border: none; background: transparent; color: #e5e5e5; font-size: 12px; font-weight: 500; }
+  .mrow.hl { background: #262626; }
+  .mrow.danger { color: #f87171; }
+  .struct { border: 1px solid #2a2a2a; border-radius: 8px; background: #141414; padding: 8px; display: flex; gap: 3px; width: 64px; height: 30px; box-sizing: content-box; }
+  .struct span { border-radius: 3px; background: #3a3a3a; }
+</style>
+</helmet>
+<div style="width: 1280px; height: 1120px; box-sizing: border-box; background: #0a0a0a; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; color: #f2f2f2; position: relative;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+    <div style="font-weight: 700; letter-spacing: 0.02em;">VicData</div>
+    <div style="display: flex; align-items: center; gap: 10px; color: #7a7a7a;">
+      <span style="display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 12px; font-weight: 700;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Home</span>
+      <span style="width: 1px; height: 16px; background: #262626;"></span>
+      <span style="display: flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 9px; background: #16241d; color: #34d399; font-size: 12px; font-weight: 700;">GCSE</span>
+      <span style="display: flex; align-items: center; height: 30px; padding: 0 10px; font-size: 12px; font-weight: 700;">Post-16</span>
+      <span style="width: 1px; height: 16px; background: #262626;"></span>
+      <span style="width: 26px; height: 26px; border-radius: 50%; background: #1c1c1c; display: inline-block;"></span>
+    </div>
+  </div>
+  <div style="height: 1px; background: #1c1c1c;"></div>
+
+  <div style="display: flex; align-items: center; gap: 10px; background: #17140c; border: 1px solid #4a3b12; border-radius: 12px; padding: 9px 12px;">
+    <button type="button" class="icon-btn" aria-label="Collapse editor bar" style="color: #fbbf24;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+    <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; color: #1a1300; background: #fbbf24; border-radius: 999px; padding: 3px 9px;">EDITING</span>
+    <span style="font-size: 13px; font-weight: 700;">GCSE Candidates</span>
+    <span class="muted" style="font-size: 12px;">VicData dashboard &middot; assigned to Teacher, SMT &middot; draft: teachers still see version 12</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" class="ebtn">History</button>
+    <button type="button" class="ebtn">Settings</button>
+    <button type="button" class="ebtn">Rename</button>
+    <a href="Assign.dc.html" class="ebtn" style="text-decoration: none;">Assign</a>
+    <button type="button" class="ebtn">Save as</button>
+    <button type="button" class="ebtn primary">Save</button>
+    <button type="button" class="ebtn">Exit</button>
+  </div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #101010; border: 1px solid #232323; border-radius: 14px; padding: 10px 16px;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="width: 36px; height: 36px; border-radius: 10px; background: #1c2e26; color: #34d399; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px;">G</span>
+      <div style="font-size: 16px; font-weight: 700;">GCSE <span class="muted" style="font-size: 13px; font-weight: 500;">&mdash; The Chase</span></div>
+      <div style="display: inline-flex; border: 1px solid #2a2a2a; border-radius: 999px; padding: 3px; background: #101010; gap: 2px;">
+        <span style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: #34d399; color: #06120c;">Candidates</span>
+        <span style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #9a9a9a;">Results</span>
+      </div>
+      <span class="muted" style="font-size: 11px;">&larr; now a linked-dashboard switcher</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="chip active">Maths (General)</span>
+      <span class="chip">Statistics</span>
+      <span class="chip">Physics</span>
+      <span class="icon-btn" style="border: 1px solid #2a2a2a; border-radius: 999px;">&plusmn;</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+    <div style="display: flex; align-items: flex-start; gap: 8px;">
+      <span style="width: 30px; height: 30px; border-radius: 8px; background: #1c2e26; color: #34d399; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="6" r="3.2"></circle><path d="M3 17c0-3.9 3.1-7 7-7s7 3.1 7 7"></path></svg></span>
+      <div style="flex-grow: 1;">
+        <div style="font-size: 15px; font-weight: 700;">Candidates</div>
+        <div class="muted" style="font-size: 11px; margin-top: 2px;">Data: Candidates &middot; subject &middot; Compared to: nothing</div>
+      </div>
+      <button type="button" class="ebtn" style="padding: 4px 8px; font-size: 11px;">Edit column</button>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 8px;">
+      <span style="width: 30px; height: 30px; border-radius: 8px; background: #1c2e26; color: #34d399; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></span>
+      <div style="flex-grow: 1;">
+        <div style="font-size: 15px; font-weight: 700;">Context</div>
+        <div class="muted" style="font-size: 11px; margin-top: 2px;">Data: Candidates &middot; subject &middot; Compared to: subject category</div>
+      </div>
+      <button type="button" class="ebtn" style="padding: 4px 8px; font-size: 11px;">Edit column</button>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 8px;">
+      <span style="width: 30px; height: 30px; border-radius: 8px; background: #1c2e26; color: #34d399; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="6"></circle><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path></svg></span>
+      <div style="flex-grow: 1;">
+        <div style="font-size: 15px; font-weight: 700;">Comparisons</div>
+        <div class="muted" style="font-size: 11px; margin-top: 2px;">Data: Candidates &middot; subject &middot; Compared to: 10 nearest</div>
+      </div>
+      <button type="button" class="ebtn" style="padding: 4px 8px; font-size: 11px;">Edit column</button>
+    </div>
+  </div>
+
+  <div class="rowhead">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    Current
+    <span class="muted" style="font-size: 11px; font-weight: 500;">&middot; latest year &middot; 3 panels &middot; opens by default</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" class="icon-btn" aria-label="Rename row" title="Rename"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></button>
+    <button type="button" class="icon-btn" aria-label="Copy row" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg></button>
+    <button type="button" class="icon-btn" aria-label="Move row down" title="Move down"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg></button>
+    <button type="button" class="icon-btn" aria-label="Delete row" title="Delete" style="color: #f87171;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg></button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+    <div class="panel edit">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tag">Current</span><span class="muted" style="font-size: 11.5px;">Data 2024/25</span>
+        <span class="inh">inherits column</span>
+        <span style="flex-grow: 1;"></span>
+        <button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button>
+      </div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active" style="font-size: 11px; font-weight: 800;">#</span>
+          <button type="button" class="addv" aria-label="Add a view"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+        </div>
+        <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+          <div style="border: 1px solid #232323; border-radius: 8px; padding: 8px;"><div class="muted" style="font-size: 10px;">Entries</div><div style="font-size: 20px; font-weight: 800; color: #34d399;">[n]</div></div>
+          <div style="border: 1px solid #232323; border-radius: 8px; padding: 8px;"><div class="muted" style="font-size: 10px;">Rank in category</div><div style="font-size: 20px; font-weight: 800;">[r]</div></div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span style="display: inline-flex; color: #7a7a7a;" title="Private note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span style="display: inline-flex; color: #7a7a7a;" title="Export / copy this view"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"></path><path d="M3.5 14.5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2"></path></svg></span><span style="flex-grow: 1;"></span><span style="display: inline-flex; color: #7a7a7a;" title="Fullscreen"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline></svg></span></div>
+    </div>
+
+    <div class="panel edit" style="z-index: 5;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tag">Current</span><span class="muted" style="font-size: 11.5px;">Data 2024/25</span>
+        <span class="inh">inherits column</span>
+        <span style="flex-grow: 1;"></span>
+        <button type="button" class="icon-btn active" aria-label="Panel menu">&middot;&middot;&middot;</button>
+      </div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="10" width="3" height="7"></rect><rect x="8.5" y="5" width="3" height="12"></rect><rect x="14" y="8" width="3" height="9"></rect></svg></span>
+          <span class="icon-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></span>
+          <button type="button" class="addv" aria-label="Add a view"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+        </div>
+        <div style="flex-grow: 1; display: flex; align-items: flex-end; gap: 6px; padding-bottom: 4px;">
+          <span style="flex: 1 1 0; height: 40%; background: #34d399; border-radius: 4px 4px 0 0;"></span>
+          <span style="flex: 1 1 0; height: 75%; background: #3f3f46; border-radius: 4px 4px 0 0;"></span>
+          <span style="flex: 1 1 0; height: 60%; background: #3f3f46; border-radius: 4px 4px 0 0;"></span>
+          <span style="flex: 1 1 0; height: 30%; background: #3f3f46; border-radius: 4px 4px 0 0;"></span>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span style="display: inline-flex; color: #7a7a7a;" title="Private note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span style="display: inline-flex; color: #7a7a7a;" title="Export / copy this view"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"></path><path d="M3.5 14.5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2"></path></svg></span><span style="flex-grow: 1;"></span><span style="display: inline-flex; color: #7a7a7a;" title="Fullscreen"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline></svg></span></div>
+      <div class="menu" style="right: 8px; top: 36px; width: 236px;">
+        <button type="button" class="mrow">Rename panel</button>
+        <button type="button" class="mrow">Change data / compared to&hellip; <span class="muted" style="margin-left: auto; font-size: 10.5px;">override</span></button>
+        <button type="button" class="mrow hl">Move this view to another panel&hellip;</button>
+        <button type="button" class="mrow">Copy this view to a dashboard&hellip;</button>
+        <button type="button" class="mrow">Move panel</button>
+        <button type="button" class="mrow danger">Delete panel</button>
+      </div>
+    </div>
+
+    <div class="panel edit">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tag">Current</span><span class="muted" style="font-size: 11.5px;">Data 2024/25</span>
+        <span class="ovr">overridden: Schools in Surrey</span>
+        <span style="flex-grow: 1;"></span>
+        <button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button>
+      </div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg></span>
+          <span class="icon-btn"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><circle cx="3" cy="5" r="1.3"></circle><rect x="6" y="4.3" width="11" height="1.6"></rect><circle cx="3" cy="10" r="1.3"></circle><rect x="6" y="9.3" width="8" height="1.6"></rect><circle cx="3" cy="15" r="1.3"></circle><rect x="6" y="14.3" width="5" height="1.6"></rect></svg></span>
+          <button type="button" class="addv" aria-label="Add a view"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+        </div>
+        <div style="flex-grow: 1; border-radius: 8px; background: #1b1d1f; border: 1px solid #232323; position: relative;">
+          <span style="position: absolute; left: 30%; top: 35%; width: 12px; height: 12px; border-radius: 50%; background: #34d399;"></span>
+          <span style="position: absolute; left: 55%; top: 50%; width: 9px; height: 9px; border-radius: 50%; background: #52525b;"></span>
+          <span style="position: absolute; left: 70%; top: 28%; width: 7px; height: 7px; border-radius: 50%; background: #52525b;"></span>
+          <span style="position: absolute; left: 42%; top: 66%; width: 10px; height: 10px; border-radius: 50%; background: #52525b;"></span>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span style="display: inline-flex; color: #7a7a7a;" title="Private note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span style="display: inline-flex; color: #7a7a7a;" title="Export / copy this view"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"></path><path d="M3.5 14.5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2"></path></svg></span><span style="flex-grow: 1;"></span><span style="display: inline-flex; color: #7a7a7a;" title="Fullscreen"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline></svg></span></div>
+    </div>
+  </div>
+
+  <div class="rowhead">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    Trends
+    <span class="muted" style="font-size: 11px; font-weight: 500;">&middot; over time &middot; 2 panels, first spans 2 columns</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" class="icon-btn" aria-label="Rename row"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></button>
+    <button type="button" class="icon-btn" aria-label="Copy row"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg></button>
+    <button type="button" class="icon-btn" aria-label="Move row up"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+    <button type="button" class="icon-btn" aria-label="Delete row" style="color: #f87171;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path></svg></button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+    <div class="panel edit" style="grid-column: span 2;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tag">Trends</span><span class="muted" style="font-size: 11.5px;">from 2021/22</span>
+        <span class="inh">inherits Candidates (left-most column)</span>
+        <span style="flex-grow: 1;"></span>
+        <button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button>
+      </div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+          <button type="button" class="addv" aria-label="Add a view"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+        </div>
+        <svg width="100%" height="130" viewBox="0 0 700 130" preserveAspectRatio="none" aria-label="Trend line placeholder">
+          <line x1="0" y1="125" x2="700" y2="125" stroke="#2a2a2a"></line>
+          <polyline points="0,90 233,80 466,70 700,60" fill="none" stroke="#3f3f46" stroke-width="1.5"></polyline>
+          <polyline points="0,70 233,76 466,64 700,72" fill="none" stroke="#3f3f46" stroke-width="1.5"></polyline>
+          <polyline points="0,96 233,70 466,52 700,34" fill="none" stroke="#34d399" stroke-width="2.6"></polyline>
+        </svg>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span style="display: inline-flex; color: #7a7a7a;" title="Private note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span style="display: inline-flex; color: #7a7a7a;" title="Export / copy this view"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"></path><path d="M3.5 14.5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2"></path></svg></span><span style="flex-grow: 1;"></span><span style="display: inline-flex; color: #7a7a7a;" title="Fullscreen"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline></svg></span></div>
+    </div>
+    <div class="panel edit" style="align-items: center; justify-content: center; border-style: dashed;">
+      <div class="muted" style="font-size: 12px; text-align: center;">Empty panel</div>
+      <button type="button" style="border: 1px solid #fbbf24; background: transparent; color: #fbbf24; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700;">+ Add a view</button>
+      <div class="muted" style="font-size: 10.5px;">Opens the 6-step chooser</div>
+    </div>
+  </div>
+
+  <div style="position: relative;">
+    <button type="button" style="width: 100%; border: 1px dashed #4a3b12; background: #120f08; color: #fbbf24; border-radius: 10px; padding: 9px; font-size: 12.5px; font-weight: 700;">+ Add row</button>
+    <div class="menu" style="left: 50%; margin-left: -200px; bottom: 46px; width: 400px; padding: 12px; gap: 10px;">
+      <div style="font-size: 11px; font-weight: 700; color: #9a9a9a; text-transform: uppercase; letter-spacing: 0.05em;">New row &mdash; pick a structure</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <div class="struct"><span style="flex: 1 1 0;"></span></div>
+        <div class="struct"><span style="flex: 1 1 0;"></span><span style="flex: 1 1 0;"></span></div>
+        <div class="struct" style="outline: 1.5px solid #fbbf24;"><span style="flex: 1 1 0; background: #fbbf24;"></span><span style="flex: 1 1 0; background: #fbbf24;"></span><span style="flex: 1 1 0; background: #fbbf24;"></span></div>
+        <div class="struct"><span style="flex: 1 1 0;"></span><span style="flex: 1 1 0;"></span><span style="flex: 1 1 0;"></span><span style="flex: 1 1 0;"></span></div>
+        <div class="struct"><span style="flex: 2 1 0;"></span><span style="flex: 1 1 0;"></span></div>
+        <div class="struct"><span style="flex: 1 1 0;"></span><span style="flex: 2 1 0;"></span></div>
+      </div>
+      <div class="muted" style="font-size: 11px;">Spans snap to this dashboard's 3 columns. A spanning panel inherits from its left-most column.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1120}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

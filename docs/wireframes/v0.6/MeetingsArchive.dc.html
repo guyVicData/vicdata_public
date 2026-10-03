@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Meetings — archive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #0a0a0b; }
+  button { font: inherit; }
+  .card { border-radius: 14px; border: 1.5px solid #1e1e22; background: #131315; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .btn { border: 1px solid #3a3a40; background: transparent; color: #e5e5e5; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600; }
+  .btn.rose { border-color: #fb7185; color: #fb7185; }
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0a0a0b; color: #f2f2f3; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #1c1c1f;">
+    <div style="font-weight: 700; font-size: 15px; letter-spacing: 0.02em;">VicData</div>
+    <div style="display: flex; align-items: center; gap: 18px; font-size: 13px; color: #8a8a90;"><span>Home</span></div>
+  </div>
+
+  <div style="padding: 18px 20px 28px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+      <div style="font-size: 20px; font-weight: 700;">Meetings</div>
+      <button type="button" style="border: none; border-radius: 999px; background: #fb7185; color: #2a0a10; padding: 8px 14px; font-size: 13px; font-weight: 700;">+ New meeting</button>
+    </div>
+
+    <div style="display: flex; gap: 6px; background: #131315; border: 1px solid #1e1e22; border-radius: 999px; padding: 3px; width: fit-content;">
+      <button type="button" style="border: none; border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 700; background: transparent; color: #8a8a90;">Upcoming &middot; 2</button>
+      <button type="button" style="border: none; border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 700; background: #f2f2f3; color: #0a0a0b;">Archive</button>
+    </div>
+    <div style="font-size: 12px; color: #6a6a70; line-height: 1.45; margin-top: -4px;">Meetings move here the day after they happen. The archive has no limit; only upcoming meetings count towards yours (2 of 5).</div>
+
+    <div class="card">
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <div style="flex-grow: 1;">
+          <div style="font-size: 14.5px; font-weight: 700;">Governors' curriculum committee</div>
+          <div style="font-size: 12px; color: #8a8a90; margin-top: 2px;">Met 12 Mar &middot; 5 slides &middot; data as of 2024/25</div>
+        </div>
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8a8a90; background: #1a1a1d; border-radius: 999px; padding: 2px 8px;">Read-only</span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn">Present</button>
+        <button type="button" class="btn">PDF</button>
+        <button type="button" class="btn rose">Reuse for next meeting</button>
+      </div>
+      <div style="border-top: 1px solid #1e1e22; padding-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 12px; font-weight: 700; color: #fb7185;">Reuse for next meeting</div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><span style="color: #8a8a90; width: 60px;">Date</span><span style="border: 1px solid #2a2a2e; border-radius: 8px; padding: 6px 10px;">14 Nov</span></div>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #c9c9ce;">
+          <span style="width: 34px; height: 20px; border-radius: 999px; background: #fb7185; position: relative; flex-shrink: 0;"><span style="position: absolute; top: 3px; right: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff;"></span></span>
+          Move every view on to the latest data
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <div style="flex-grow: 1;">
+          <div style="font-size: 14.5px; font-weight: 700;">Maths department review</div>
+          <div style="font-size: 12px; color: #8a8a90; margin-top: 2px;">Met 2 Jun &middot; 3 slides</div>
+        </div>
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8a8a90; background: #1a1a1d; border-radius: 999px; padding: 2px 8px;">Read-only</span>
+      </div>
+      <div style="display: flex; gap: 8px;"><button type="button" class="btn">Present</button><button type="button" class="btn">PDF</button><button type="button" class="btn rose">Reuse</button></div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

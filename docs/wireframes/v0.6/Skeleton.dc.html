@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Skeleton dashboard with planned panels</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  button { font-family: inherit; }
+  .muted { color: #9a9a9a; }
+  .ebtn { border: 1px solid #3a3a3a; background: #1a1a1a; color: #e5e5e5; border-radius: 8px; padding: 6px 11px; font-size: 12px; font-weight: 600; }
+  .ebtn.primary { background: #fbbf24; border-color: #fbbf24; color: #1a1300; }
+  .panel { box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; height: 190px; }
+  .planned { background: repeating-linear-gradient(135deg, #141414 0 10px, #17150f 10px 20px); border: 1.5px dashed #a97a1f; }
+  .ready { border: 1.5px solid #34d399; }
+  .pill { font-size: 10px; font-weight: 800; letter-spacing: 0.06em; border-radius: 999px; padding: 2px 8px; width: fit-content; }
+  .rowhead { font-size: 12.5px; font-weight: 700; color: #e5e5e5; padding: 4px 2px; }
+</style>
+</helmet>
+<div style="width: 1280px; height: 760px; box-sizing: border-box; background: #0a0a0a; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; color: #f2f2f2;">
+
+  <div style="display: flex; align-items: center; gap: 10px; background: #17140c; border: 1px solid #4a3b12; border-radius: 12px; padding: 9px 12px;">
+    <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; color: #1a1300; background: #fbbf24; border-radius: 999px; padding: 3px 9px;">EDITING</span>
+    <span style="font-size: 13px; font-weight: 700;">Admissions overview</span>
+    <span class="muted" style="font-size: 12px;">Draft &middot; not assigned &middot; 4 planned views, 1 ready to swap in</span>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" class="ebtn">Export planned views</button>
+    <button type="button" class="ebtn">Assign</button>
+    <button type="button" class="ebtn primary">Save</button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+    <div><div style="font-size: 15px; font-weight: 700;">Our roll</div><div class="muted" style="font-size: 11px;">Rolls &middot; whole school</div></div>
+    <div><div style="font-size: 15px; font-weight: 700;">Our area</div><div class="muted" style="font-size: 11px;">Births &middot; around the school &middot; vs South East, England</div></div>
+    <div><div style="font-size: 15px; font-weight: 700;">Local schools</div><div class="muted" style="font-size: 11px;">Rolls &middot; whole school &middot; vs 10 nearest</div></div>
+  </div>
+
+  <div class="rowhead">Current &middot; latest year</div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+    <div class="panel">
+      <span class="pill" style="background: #16241d; color: #34d399;">LIVE VIEW</span>
+      <div style="font-size: 12.5px; font-weight: 600;">Pupils by year group, 2024/25</div>
+      <div style="flex-grow: 1; display: flex; align-items: flex-end; gap: 5px;">
+        <span style="flex: 1 1 0; height: 55%; background: #22d3ee; border-radius: 3px 3px 0 0;"></span><span style="flex: 1 1 0; height: 62%; background: #22d3ee; border-radius: 3px 3px 0 0;"></span><span style="flex: 1 1 0; height: 60%; background: #22d3ee; border-radius: 3px 3px 0 0;"></span><span style="flex: 1 1 0; height: 58%; background: #22d3ee; border-radius: 3px 3px 0 0;"></span><span style="flex: 1 1 0; height: 64%; background: #22d3ee; border-radius: 3px 3px 0 0;"></span><span style="flex: 1 1 0; height: 40%; background: #22d3ee; border-radius: 3px 3px 0 0;"></span><span style="flex: 1 1 0; height: 36%; background: #22d3ee; border-radius: 3px 3px 0 0;"></span>
+      </div>
+    </div>
+    <div class="panel planned">
+      <span class="pill" style="background: #a97a1f; color: #fff;">PLANNED</span>
+      <div style="font-size: 12.5px; font-weight: 600;">Live births around the school vs South East and England</div>
+      <div class="muted" style="font-size: 11.5px; line-height: 1.4;">Shape: numerical &middot; &ldquo;Show the trend arrow next to the figure&rdquo;</div>
+      <div style="flex-grow: 1;"></div>
+      <div class="muted" style="font-size: 10.5px;">Teachers never see this. It's hidden until a real view replaces it.</div>
+    </div>
+    <div class="panel ready">
+      <span class="pill" style="background: #34d399; color: #06120c;">READY TO SWAP IN</span>
+      <div style="font-size: 12.5px; font-weight: 600;">Our roll ranked against the 10 nearest</div>
+      <div class="muted" style="font-size: 11.5px; line-height: 1.4;">A new draft view matches this placeholder's context exactly.</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="ebtn primary">Preview and swap in</button>
+        <button type="button" class="ebtn">Keep planning</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rowhead">Trends &middot; over time</div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+    <div class="panel planned">
+      <span class="pill" style="background: #a97a1f; color: #fff;">PLANNED</span>
+      <div style="font-size: 12.5px; font-weight: 600;">Roll by year group against 10 nearest, since 2019</div>
+      <div class="muted" style="font-size: 11.5px;">Shape: graph &middot; &ldquo;Index to 100&hellip;&rdquo;</div>
+    </div>
+    <div class="panel planned">
+      <span class="pill" style="background: #a97a1f; color: #fff;">PLANNED</span>
+      <div style="font-size: 12.5px; font-weight: 600;">Births trend, LA vs region</div>
+      <div class="muted" style="font-size: 11.5px;">Shape: graph</div>
+    </div>
+    <div class="panel planned">
+      <span class="pill" style="background: #a97a1f; color: #fff;">PLANNED</span>
+      <div style="font-size: 12.5px; font-weight: 600;">Market share of Y7 intake, local schools</div>
+      <div class="muted" style="font-size: 11.5px;">Shape: not sure</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

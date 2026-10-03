@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New dashboard — step 2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #0a0a0b; }
+  a { text-decoration: none; color: inherit; }
+  button { font: inherit; }
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0a0a0b; color: #f2f2f3; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #1c1c1f;">
+    <div style="font-weight: 700; font-size: 15px; letter-spacing: 0.02em;">VicData</div>
+    <div style="display: flex; align-items: center; gap: 18px; font-size: 13px; color: #8a8a90;">
+      <span>Home</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </div>
+  </div>
+
+  <div style="padding: 20px 20px 28px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 16px;">
+
+    <a href="New1.dc.html" style="font-size: 12.5px; color: #8a8a90;">&larr; Back</a>
+
+    <div>
+      <div style="font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #22d3ee;">New dashboard &middot; Step 2 of 4</div>
+      <div style="font-size: 20px; font-weight: 700; margin-top: 6px; line-height: 1.25;">How should it be laid out?</div>
+      <div style="font-size: 13px; color: #9a9aa0; margin-top: 8px; line-height: 1.45;">Columns run down the page, each with its own data. You can add rows, and change any of this later.</div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+      <button type="button" aria-label="1 column" style="border-radius: 10px; border: 1px solid #1e1e22; background: #131315; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #9a9aa0;">
+        <span style="display: flex; gap: 3px; width: 52px; height: 34px;"><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span></span>
+        <span style="font-size: 11px; font-weight: 600;">1</span>
+      </button>
+      <button type="button" aria-label="2 columns" style="border-radius: 10px; border: 1px solid #1e1e22; background: #131315; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #9a9aa0;">
+        <span style="display: flex; gap: 3px; width: 52px; height: 34px;"><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span></span>
+        <span style="font-size: 11px; font-weight: 600;">2</span>
+      </button>
+      <button type="button" aria-label="3 columns, selected" style="border-radius: 10px; border: 1.5px solid #22d3ee; background: rgba(34,211,238,0.10); padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #22d3ee;">
+        <span style="display: flex; gap: 3px; width: 52px; height: 34px;"><span style="flex: 1 1 0; border-radius: 3px; background: #22d3ee;"></span><span style="flex: 1 1 0; border-radius: 3px; background: #22d3ee;"></span><span style="flex: 1 1 0; border-radius: 3px; background: #22d3ee;"></span></span>
+        <span style="font-size: 11px; font-weight: 700;">3 &middot; today's</span>
+      </button>
+      <button type="button" aria-label="4 columns" style="border-radius: 10px; border: 1px solid #1e1e22; background: #131315; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #9a9aa0;">
+        <span style="display: flex; gap: 3px; width: 52px; height: 34px;"><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span></span>
+        <span style="font-size: 11px; font-weight: 600;">4</span>
+      </button>
+      <button type="button" aria-label="2 to 1" style="border-radius: 10px; border: 1px solid #1e1e22; background: #131315; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #9a9aa0;">
+        <span style="display: flex; gap: 3px; width: 52px; height: 34px;"><span style="flex: 2 1 0; border-radius: 3px; background: #3a3a40;"></span><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span></span>
+        <span style="font-size: 11px; font-weight: 600;">2 : 1</span>
+      </button>
+      <button type="button" aria-label="1 to 2" style="border-radius: 10px; border: 1px solid #1e1e22; background: #131315; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #9a9aa0;">
+        <span style="display: flex; gap: 3px; width: 52px; height: 34px;"><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span><span style="flex: 2 1 0; border-radius: 3px; background: #3a3a40;"></span></span>
+        <span style="font-size: 11px; font-weight: 600;">1 : 2</span>
+      </button>
+      <button type="button" aria-label="1 to 1 to 2" style="border-radius: 10px; border: 1px solid #1e1e22; background: #131315; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #9a9aa0;">
+        <span style="display: flex; gap: 3px; width: 52px; height: 34px;"><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span><span style="flex: 1 1 0; border-radius: 3px; background: #3a3a40;"></span><span style="flex: 2 1 0; border-radius: 3px; background: #3a3a40;"></span></span>
+        <span style="font-size: 11px; font-weight: 600;">1 : 1 : 2</span>
+      </button>
+      <button type="button" aria-label="Custom" style="border-radius: 10px; border: 1px dashed #3a3a40; background: transparent; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #9a9aa0;">
+        <span style="display: flex; align-items: center; justify-content: center; width: 52px; height: 34px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </span>
+        <span style="font-size: 11px; font-weight: 600;">Custom</span>
+      </button>
+    </div>
+
+    <div style="border-radius: 12px; border: 1px solid #1e1e22; background: #131315; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6a6a70;">Custom &mdash; columns, then rows</div>
+      <div style="display: flex; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">Columns
+          <span style="display: inline-flex; align-items: center; border: 1px solid #2a2a2e; border-radius: 999px;">
+            <button type="button" aria-label="Fewer columns" style="width: 28px; height: 28px; border: none; background: none; color: #9a9aa0;">&minus;</button>
+            <span style="font-weight: 700; min-width: 14px; text-align: center;">3</span>
+            <button type="button" aria-label="More columns" style="width: 28px; height: 28px; border: none; background: none; color: #9a9aa0;">+</button>
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">Rows
+          <span style="display: inline-flex; align-items: center; border: 1px solid #2a2a2e; border-radius: 999px;">
+            <button type="button" aria-label="Fewer rows" style="width: 28px; height: 28px; border: none; background: none; color: #9a9aa0;">&minus;</button>
+            <span style="font-weight: 700; min-width: 14px; text-align: center;">2</span>
+            <button type="button" aria-label="More rows" style="width: 28px; height: 28px; border: none; background: none; color: #9a9aa0;">+</button>
+          </span>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #6a6a70;">Max 4 columns. Rows can later span columns, like an email editor.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6a6a70;">When a row opens</div>
+      <div style="display: flex; border: 1px solid #2a2a2e; border-radius: 10px; overflow: hidden;">
+        <button type="button" style="flex: 1 1 0; border: none; background: #f2f2f3; color: #0a0a0b; padding: 9px 8px; font-size: 12.5px; font-weight: 700;">Close the others</button>
+        <button type="button" style="flex: 1 1 0; border: none; background: transparent; color: #9a9aa0; padding: 9px 8px; font-size: 12.5px; font-weight: 600;">Leave them open</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6a6a70;">Link with other dashboards</div>
+      <div style="border-radius: 12px; border: 1px solid #1e1e22; background: #131315; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 13px; color: #c9c9ce; line-height: 1.4;">Linked dashboards share a switcher in the top bar, like Candidates&nbsp;&#8644;&nbsp;Results.</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" style="border: 1px solid #f2f2f3; background: #f2f2f3; color: #0a0a0b; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700;">On its own</button>
+          <button type="button" style="border: 1px solid #2a2a2e; background: transparent; color: #c9c9ce; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600;">Join &ldquo;Admissions&rdquo;</button>
+          <button type="button" style="border: 1px solid #2a2a2e; background: transparent; color: #c9c9ce; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600;">+ New group</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+
+    <a href="New3.dc.html" style="display: block; text-align: center; background: #22d3ee; color: #062a30; border-radius: 10px; padding: 13px; font-size: 14.5px; font-weight: 700;">Next &mdash; set up your columns</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

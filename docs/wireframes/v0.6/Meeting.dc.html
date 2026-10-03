@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Meeting editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  button, input, textarea { font-family: inherit; }
+  .muted { color: #9a9a9a; }
+  .ebtn { border: 1px solid #3a3a3a; background: #1a1a1a; color: #e5e5e5; border-radius: 8px; padding: 6px 11px; font-size: 12px; font-weight: 600; }
+  .ebtn.primary { background: #fb7185; border-color: #fb7185; color: #2a0a10; }
+  .thumb { width: 168px; height: 94px; border-radius: 7px; background: #141414; border: 1px solid #262626; padding: 6px; box-sizing: border-box; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: 10px 1fr 1fr; gap: 3px; }
+  .thumb.on { border: 2px solid #fb7185; }
+  .thumb i { background: #232323; border-radius: 2px; }
+  .lay { width: 46px; height: 26px; border-radius: 6px; border: 1px solid #2a2a2a; background: #141414; padding: 4px; box-sizing: border-box; display: grid; gap: 2px; }
+  .lay i { background: #3a3a3a; border-radius: 2px; }
+  .lay.on { border-color: #fb7185; }
+  .lay.on i { background: #fb7185; }
+  .panel { width: 385px; height: 256px; box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .panel.empty { border: 1.5px dashed #3a3a3a; background: transparent; align-items: center; justify-content: center; padding: 12px; }
+  .tag { font-size: 11.5px; font-weight: 600; color: #d4d4d4; }
+  .rail { display: flex; flex-direction: column; gap: 3px; padding-right: 9px; border-right: 1px solid #232323; margin-right: 9px; }
+  .rail span { width: 20px; height: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #9a9a9a; }
+  .rail span.on { background: #262626; color: #fff; }
+</style>
+</helmet>
+<div style="width: 1600px; height: 980px; box-sizing: border-box; background: #0a0a0a; color: #f2f2f2; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-bottom: 1px solid #1c1c1c;">
+    <span style="width: 32px; height: 32px; border-radius: 9px; background: rgba(251,113,133,0.14); color: #fb7185; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></svg></span>
+    <div>
+      <div style="font-size: 15px; font-weight: 700;">Governors' curriculum committee</div>
+      <div class="muted" style="font-size: 11.5px;">Meeting 14 Nov &middot; archives automatically on 15 Nov &middot; 4 slides &middot; shared with SMT</div>
+    </div>
+    <span style="flex-grow: 1;"></span>
+    <button type="button" class="ebtn">Grid view</button>
+    <button type="button" class="ebtn">Assign / share</button>
+    <button type="button" class="ebtn">Export PDF</button>
+    <button type="button" class="ebtn primary">Present</button>
+  </div>
+
+  <div style="display: flex; flex-grow: 1; min-height: 0;">
+
+    <div style="width: 216px; flex-shrink: 0; border-right: 1px solid #1c1c1c; padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+      <div style="display: flex; gap: 8px; align-items: flex-start;"><span class="muted" style="font-size: 11px; width: 10px;">1</span><div class="thumb"><i style="grid-column: span 3;"></i><i style="grid-column: span 3; grid-row: span 2;"></i></div></div>
+      <div style="display: flex; gap: 8px; align-items: flex-start;"><span style="font-size: 11px; width: 10px; color: #fb7185; font-weight: 700;">2</span><div class="thumb on"><i style="grid-column: span 3;"></i><i></i><i></i><i></i><i></i><i style="background: transparent; border: 1px dashed #3a3a3a;"></i><i style="background: transparent; border: 1px dashed #3a3a3a;"></i></div></div>
+      <div style="display: flex; gap: 8px; align-items: flex-start;"><span class="muted" style="font-size: 11px; width: 10px;">3</span><div class="thumb"><i style="grid-column: span 3;"></i><i style="grid-column: span 2; grid-row: span 2;"></i><i style="grid-row: span 2;"></i></div></div>
+      <div style="display: flex; gap: 8px; align-items: flex-start;"><span class="muted" style="font-size: 11px; width: 10px;">4</span><div class="thumb"><i style="grid-column: span 3;"></i><i></i><i style="grid-column: span 2; grid-row: span 2; background: #1c1c1c;"></i><i></i></div></div>
+      <button type="button" style="margin-left: 18px; width: 168px; border: 1px dashed #3a3a3a; background: transparent; color: #c9c9c9; border-radius: 7px; padding: 8px; font-size: 12px; font-weight: 600;">+ Add slide</button>
+    </div>
+
+    <div style="flex-grow: 1; padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="muted" style="font-size: 11.5px; font-weight: 600; margin-right: 4px;">Slide layout</span>
+        <span class="lay" style="grid-template-columns: 1fr 2fr;"><i></i><i style="background: #262626;"></i></span>
+        <span class="lay" style="grid-template-columns: 1fr 1fr 1fr;"><i></i><i></i><i style="background: #262626;"></i></span>
+        <span class="lay" style="grid-template-columns: 1fr 1fr 1fr;"><i></i><i></i><i></i></span>
+        <span class="lay on" style="grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr;"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="lay" style="grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr;"><i style="grid-row: span 2;"></i><i></i><i style="background: #262626;"></i></span>
+        <span class="muted" style="font-size: 11px; margin-left: 6px;">Slots are the standard panel size. Each holds one specific view: no columns, rows or rail. Darker = a text box</span>
+      </div>
+
+      <div style="width: 1280px; height: 720px; box-sizing: border-box; background: #0f0f0f; border: 1px solid #262626; border-radius: 10px; padding: 24px 38px; display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; align-items: baseline; gap: 12px; height: 52px;">
+          <input type="text" value="Maths: entries and points against our 10 nearest" aria-label="Slide title" style="flex-grow: 1; background: transparent; border: none; border-bottom: 1px dashed #3a3a3a; color: #f2f2f2; font-size: 26px; font-weight: 700; outline: none; padding: 4px 0;">
+          <span class="muted" style="font-size: 12px;">2 / 4</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 385px); grid-template-rows: repeat(2, 256px); gap: 24px;">
+          <div class="panel">
+            <div class="muted" style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;">Pinned &middot; as of 2024/25</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: #a3a3a3;">Maths (General) candidates</div>
+            <div style="display: flex; flex-grow: 1;">
+              <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;"><div style="border: 1px solid #232323; border-radius: 8px;"></div><div style="border: 1px solid #232323; border-radius: 8px;"></div></div></div>
+          </div>
+          <div class="panel">
+            <div class="muted" style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;">Pinned &middot; as of 2024/25</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: #a3a3a3;">Maths (General) entries ranked against 10 nearest</div>
+            <div style="display: flex; flex-grow: 1;">
+              <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 7px; justify-content: center;"><span style="height: 7px; width: 92%; background: #3f3f46; border-radius: 3px;"></span><span style="height: 7px; width: 80%; background: #34d399; border-radius: 3px;"></span><span style="height: 7px; width: 66%; background: #3f3f46; border-radius: 3px;"></span><span style="height: 7px; width: 52%; background: #3f3f46; border-radius: 3px;"></span><span style="height: 7px; width: 40%; background: #3f3f46; border-radius: 3px;"></span></div></div>
+          </div>
+          <div class="panel">
+            <div class="muted" style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;">Pinned &middot; 2021/22 to 2024/25</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: #a3a3a3;">Maths (General) points against 10 nearest schools, since 2021/22</div>
+            <div style="display: flex; flex-grow: 1;">
+              <svg width="100%" height="140" viewBox="0 0 300 140" preserveAspectRatio="none" aria-label="Trend placeholder"><polyline points="0,90 100,84 200,80 300,76" fill="none" stroke="#3f3f46" stroke-width="1.5"></polyline><polyline points="0,70 100,76 200,72 300,80" fill="none" stroke="#3f3f46" stroke-width="1.5"></polyline><polyline points="0,100 100,78 200,58 300,36" fill="none" stroke="#34d399" stroke-width="2.6"></polyline></svg></div>
+          </div>
+          <div class="panel">
+            <div class="muted" style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;">Pinned &middot; as of 2024/25</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: #a3a3a3;">Entries in Maths (General) as a proportion of Sciences &amp; Maths</div>
+            <div style="display: flex; flex-grow: 1; align-items: center;">
+              <svg width="110" height="110" viewBox="0 0 36 36"><circle cx="18" cy="18" r="13" fill="none" stroke="#262626" stroke-width="7"></circle><circle cx="18" cy="18" r="13" fill="none" stroke="#34d399" stroke-width="7" stroke-dasharray="26 82" transform="rotate(-90 18 18)"></circle></svg></div>
+          </div>
+          <div class="panel empty">
+            <div class="muted" style="font-size: 12px;">Empty slot</div>
+            <button type="button" style="border: 1px solid #fb7185; background: transparent; color: #fb7185; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700;">+ Add a view</button>
+            <div class="muted" style="font-size: 10.5px; text-align: center;">Pick from your dashboards, or build one view.<br>Or &ldquo;Copy to meeting&rdquo; from any panel.</div>
+          </div>
+          <div class="panel empty">
+            <div class="muted" style="font-size: 12px;">Empty slot</div>
+            <button type="button" style="border: 1px solid #3a3a3a; background: transparent; color: #c9c9c9; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700;">+ Text box</button>
+          </div>
+        </div>
+      </div>
+
+      <textarea aria-label="Speaker notes" rows="2" style="width: 1280px; box-sizing: border-box; background: #141414; border: 1px solid #262626; border-radius: 8px; color: #c9c9c9; font-size: 12.5px; padding: 9px 12px; resize: none;">[Speaker notes — only you see these when presenting]</textarea>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super-admin — schools</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  button, input { font-family: inherit; }
+  .muted { color: #9a9a9a; }
+  th { text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #7a7a7a; padding: 8px 10px; border-bottom: 1px solid #232323; }
+  td { font-size: 13px; padding: 10px; border-bottom: 1px solid #1a1a1a; }
+  tr.sel td { background: #17140c; }
+  .pill { font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+  .tog { width: 34px; height: 20px; border-radius: 999px; position: relative; display: inline-block; vertical-align: middle; }
+  .tog i { position: absolute; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .ebtn { border: 1px solid #3a3a3a; background: #1a1a1a; color: #e5e5e5; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 600; }
+</style>
+</helmet>
+<div style="width: 1280px; height: 760px; box-sizing: border-box; background: #0a0a0a; color: #f2f2f2; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; color: #1a1300; background: #fbbf24; border-radius: 999px; padding: 3px 9px;">SUPER-ADMIN</span>
+    <div style="font-size: 18px; font-weight: 700;">Schools</div>
+    <span style="flex-grow: 1;"></span>
+    <label style="display: flex; align-items: center; gap: 8px; background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 7px 10px; width: 260px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7a7a7a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" placeholder="Search schools" aria-label="Search schools" style="background: transparent; border: none; outline: none; color: #f2f2f2; font-size: 13px; flex-grow: 1;">
+    </label>
+    <button type="button" class="ebtn">Catalogue</button>
+    <button type="button" class="ebtn">Planned views &amp; requests</button>
+  </div>
+
+  <div style="display: flex; gap: 20px; flex-grow: 1; min-height: 0;">
+    <div style="flex-grow: 1; background: #101010; border: 1px solid #232323; border-radius: 12px; overflow: hidden;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead><tr><th>School</th><th>Sector</th><th>Members</th><th>Roles in use</th><th>VC sets</th><th>Last active</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td style="font-weight: 700;">The Chase</td><td><span class="pill" style="background: #2a1a0f; color: #f59e5b;">Independent</span></td><td>[n]</td><td class="muted">Teacher, SMT, Admissions, School-Admin</td><td><span class="tog" style="background: #34d399;"><i style="right: 3px;"></i></span></td><td class="muted">[date]</td></tr>
+          <tr><td style="font-weight: 700;">Leighton Park School</td><td><span class="pill" style="background: #2a1a0f; color: #f59e5b;">Independent</span></td><td>[n]</td><td class="muted">Teacher, SMT</td><td><span class="tog" style="background: #34d399;"><i style="right: 3px;"></i></span></td><td class="muted">[date]</td></tr>
+          <tr><td style="font-weight: 700;">Woldingham School</td><td><span class="pill" style="background: #2a1a0f; color: #f59e5b;">Independent</span></td><td>[n]</td><td class="muted">Teacher</td><td><span class="tog" style="background: #3a3a3a;"><i style="left: 3px;"></i></span></td><td class="muted">[date]</td></tr>
+          <tr><td style="font-weight: 700;">Acland Burghley School</td><td><span class="pill" style="background: #0f2a18; color: #4ade80;">State</span></td><td>[n]</td><td class="muted">Teacher</td><td><span class="tog" style="background: #3a3a3a;"><i style="left: 3px;"></i></span></td><td class="muted">[date]</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="width: 340px; flex-shrink: 0; background: #101010; border: 1px solid #4a3b12; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 16px; font-weight: 700;">The Chase</div>
+      <div class="muted" style="font-size: 12px;">School-Admin: [name]</div>
+
+      <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #7a7a7a;">Switches for this school</div>
+      <label style="display: flex; align-items: center; gap: 10px; font-size: 13px;"><span class="tog" style="background: #34d399;"><i style="right: 3px;"></i></span>Victoria Consultancy sets visible</label>
+
+      <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #7a7a7a; margin-top: 4px;">Look at it as&hellip;</div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button type="button" class="ebtn">Teacher</button>
+        <button type="button" class="ebtn">SMT</button>
+        <button type="button" class="ebtn">Admissions</button>
+        <button type="button" class="ebtn">School-Admin</button>
+      </div>
+      <div class="muted" style="font-size: 11.5px; line-height: 1.45;">Read-only preview, logged. This replaces the old school/role switcher and runs on the new platform-admin check.</div>
+
+      <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #7a7a7a; margin-top: 4px;">Dashboards here</div>
+      <div style="font-size: 12.5px; line-height: 1.6;">VicData: 4 &middot; School-shared: [n] &middot; Personal: [n]</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
