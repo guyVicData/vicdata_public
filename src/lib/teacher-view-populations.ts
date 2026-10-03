@@ -10,8 +10,8 @@
 // S3b fixes: on Post-16 points "All subjects" keeps to the focus's qualification family
 // (R-POINTS-SAME-QUAL, contextItemsOf), and a focused AS or AEA item counts itself into
 // its own Context group (R-FOCUS-NEVER-FILTERED, R-SELF-INCLUSIVE-GROUP; Part D decision 1).
-import type { AcademicSubjectHeadlineEntry } from "./academic-data-view";
-import { isAsLevelOrAea } from "./dfe-qualification-buckets";
+import type { AcademicSubjectHeadlineEntry, SubjectEntry } from "./academic-data-view";
+import { isAsLevelOrAea, isNonSubjectRow } from "./dfe-qualification-buckets";
 import { familyFor } from "./teacher-view-catalogue";
 import { meanOf } from "./teacher-view-panels";
 import type { TeacherPhase } from "./teacher-view-phases";
@@ -19,6 +19,44 @@ import { qualificationFamilyOf } from "./teacher-view-theme";
 
 // The page's SubjectItem, structurally: one (subject, qualification) this school runs.
 export type PopulationItem = { key: string; subject: string; qualificationType: string; entries: number };
+
+// The page's SubjectItem: one (subject, qualification) row of the subject picker.
+export type SubjectItem = PopulationItem & { label: string };
+
+/**
+ * The Teacher view's subject list -- every picker, tick list, focus and population starts
+ * here: one item per (subject, qualification) the school entered in its latest year, by
+ * entries, labelled by subject alone unless the school runs that subject under more than
+ * one qualification. (Moved from page.tsx:buildSubjectItems in S3b.)
+ * R-IB-NONSUBJECT (S3b): the raw facts carry rows that are not subject choices -- the IB
+ * Diploma total ("Baccalaureate") and IB Core components -- which the rollups already
+ * exclude (isNonSubjectRow, the port of the ingest's own list). They are never listed.
+ */
+export function subjectItemsOf(entries: SubjectEntry[]): SubjectItem[] {
+  const subjectEntries = entries.filter((e) => !isNonSubjectRow(e.qualificationType, e.subject));
+  const latest = subjectEntries.length ? Math.max(...subjectEntries.map((e) => e.period)) : null;
+  if (latest === null) return [];
+  const byKey = new Map<string, SubjectItem>();
+  for (const e of subjectEntries) {
+    if (e.period !== latest) continue;
+    const key = `${e.subject}::${e.qualificationType}`;
+    const existing = byKey.get(key);
+    if (existing) existing.entries += e.entries;
+    else byKey.set(key, { key, subject: e.subject, qualificationType: e.qualificationType, label: e.subject, entries: e.entries });
+  }
+  // Only disambiguate where this school really runs the same subject under more than one
+  // qualification -- otherwise every row carries a noisy suffix it does not need.
+  const qualsPerSubject = new Map<string, Set<string>>();
+  for (const it of byKey.values()) {
+    const set = qualsPerSubject.get(it.subject) ?? new Set<string>();
+    set.add(it.qualificationType);
+    qualsPerSubject.set(it.subject, set);
+  }
+  for (const it of byKey.values()) {
+    if ((qualsPerSubject.get(it.subject)?.size ?? 0) > 1) it.label = `${it.subject} (${it.qualificationType})`;
+  }
+  return Array.from(byKey.values()).sort((a, b) => b.entries - a.entries);
+}
 
 /**
  * R-KS5-ASAEA-EXCL: AS level and AEA are left out of comparison lists, group totals and

@@ -197,19 +197,22 @@ export const RULES: Rule[] = [
       "vicdata:ingest/academic_aggregates.py:_NON_SUBJECT_ROWS (103-135), skip (270), points kept (446-455)",
       "vicdata:supabase/migrations/20260918160000_remove_ib_non_subject_rows.sql",
       `${QB}:challengeFor (246-262, the TS twin)`,
+      `${QB}:NON_SUBJECT_ROWS, isNonSubjectRow (the port of _NON_SUBJECT_ROWS, S3b)`,
+      "src/lib/teacher-view-populations.ts:subjectItemsOf (the Teacher subject list, S3b)",
     ],
     testCase: {
       urn: "118952",
       school: "Sevenoaks School",
       phase: "ks5",
       year: "2024/25",
-      expect: "The exact-qualification rollup has no Baccalaureate / IB Core subject rows; the raw-facts subject list (the Teacher view's item list) should carry none either.",
+      expect: "The exact-qualification rollup has no Baccalaureate / IB Core subject rows, and the Teacher view's subject list (subjectItemsOf over the raw facts) carries none either: 29 items in 2024/25, not 32. The raw facts themselves still carry Baccalaureate, Learning Skills and Study Skills (244 each).",
       check: "ibNonSubject",
     },
     origin: "IB ingest round (vicdata), Post-16 points",
     status: "active",
-    openIssue:
-      "Enforced at ingest only. The raw-facts item list (academic-data-view.ts:parseSubjectEntries -> page.tsx:buildSubjectItems) has no filter, so a school whose raw facts carry 'Baccalaureate' rows lists it as a subject. Audit B said 2024/25 had none; the rule runner (3 Oct 2026) shows Sevenoaks (118952) lists 'Baccalaureate (International Baccalaureate)' and the IB Core 'Learning Skills' and 'Study Skills' (IBO Diploma Programme Core) as subjects in 2024/25, 244 entries each (225 each in 2023/24). Filtering them changes the subject list: a STOP item for Guy.",
+    fixes: [
+      "S3b (Guy's decision 4, 3 Oct 2026): the Teacher subject list leaves them out. page.tsx:buildSubjectItems moved to src/lib/teacher-view-populations.ts:subjectItemsOf, which drops every raw-facts row isNonSubjectRow matches; NON_SUBJECT_ROWS is an exact port of vicdata ingest/academic_aggregates.py:_NON_SUBJECT_ROWS (one list, pointing at its source). Before the fix the picker DID show them at Sevenoaks (118952): 'Learning Skills', 'Study Skills' and 'Baccalaureate', 244 entries each, top of the IB tab and of the list (Learning Skills and Baccalaureate under 'Other subjects', Study Skills under 'Enterprise & Applied Studies'); also at Godolphin and Latymer (100369), 26 each. Before/after in the commit message.",
+    ],
   },
   {
     id: "R-FOCUS-NEVER-FILTERED",

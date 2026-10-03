@@ -153,6 +153,34 @@ export function isAsLevelOrAea(qualificationType: string): boolean {
   return q.startsWith("GCE AS level") || q === "Advanced Extension Award";
 }
 
+// R-IB-NONSUBJECT: rows that are NOT subject choices -- the IB Diploma's own total score
+// ("Baccalaureate", also the Combined Certificate's award) and the three mandatory IB Core
+// components ("Learning Skills" = Theory of knowledge, "Study Skills" = Extended essay,
+// "Self Development" = Reflective project). Keyed on (qualification, subject), never on
+// subject text alone: "Study Skills" is also DfE's name for the EPQ, a real subject.
+// A PORT, not a second list: the exact set of vicdata's
+// ingest/academic_aggregates.py:_NON_SUBJECT_ROWS (sibling repo /Users/guy/dev/vicdata),
+// which keeps them out of every rollup. Change it there first, then copy it here verbatim.
+// (The IB Core components still carry points into the IB bucket's figure there; that is
+// the rollup's business, not the subject list's.)
+export const NON_SUBJECT_ROWS: ReadonlySet<string> = new Set(
+  [
+    ["International Baccalaureate", "Baccalaureate"],
+    ["International Baccalaureate Combined Certificate", "Baccalaureate"],
+    ["Other academic", "Baccalaureate"],
+    ["IBO Diploma Programme Core", "Learning Skills"],
+    ["IBO Diploma Programme Core", "Study Skills"],
+    ["IBO Diploma Programme Core", "Self Development"],
+    ["Other academic", "Learning Skills"],
+    ["Other academic", "Self Development"],
+  ].map(([qualification, subject]) => `${qualification}::${subject}`),
+);
+
+// R-IB-NONSUBJECT: is_non_subject_row() in academic_aggregates.py, same arguments.
+export function isNonSubjectRow(qualification: string, subject: string): boolean {
+  return NON_SUBJECT_ROWS.has(`${qualification}::${subject}`);
+}
+
 // Table 2a. `*` is the SAME GRADE as `A*`, just DfE's label for it in the 2021-2023
 // sources: confirmed in the real data, where the two labels never co-occur in one
 // period. Omitting it silently drops every top A-level grade in the historic years.

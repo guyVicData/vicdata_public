@@ -162,24 +162,25 @@ const RUNNERS: Record<string, Runner> = {
   },
 
   // R-IB-NONSUBJECT: Sevenoaks 118952. The rollup must carry no Baccalaureate / IB Core
-  // subject rows; nor should the raw-facts item list the Teacher view builds its subjects from.
-  async ibNonSubject({ adv }) {
+  // subject rows, and nor may the Teacher view's subject list (subjectItemsOf, which every
+  // picker, tick list and population starts from). The raw facts still carry them; that is
+  // reported, not failed: the list is where the rule applies.
+  async ibNonSubject({ adv, pop, qb }) {
     const urn = "118952";
     const nonSubject = (subject: string, qual: string) => /baccalaureate|diploma programme core/i.test(`${subject} ${qual}`) && !/component/i.test(qual);
     const rollup = (await adv.fetchSubjectQualificationHeadlineForSchools([urn], "ks5")).get(urn) ?? [];
     const rollupBad = rollup.filter((h) => nonSubject(h.subject, h.qualificationType ?? ""));
     const raw = (await adv.fetchSubjectLevelDataForSchools([urn], "ks5")).byUrn.get(urn)?.entries ?? [];
     const latest = Math.max(...raw.map((e) => e.period));
-    const rawBad = raw.filter((e) => nonSubject(e.subject, e.qualificationType));
-    const items = new Map<string, number>();
-    for (const e of rawBad.filter((r) => r.period === latest)) items.set(`${e.subject} (${e.qualificationType})`, (items.get(`${e.subject} (${e.qualificationType})`) ?? 0) + e.entries);
-    const earlier = [...new Set(rawBad.filter((e) => e.period !== latest).map((e) => e.period))].sort();
+    const rawBad = raw.filter((e) => e.period === latest && nonSubject(e.subject, e.qualificationType));
+    const items = pop.subjectItemsOf(raw);
+    const listed = items.filter((i) => nonSubject(i.subject, i.qualificationType) || qb.isNonSubjectRow(i.qualificationType, i.subject));
     return {
-      pass: rollupBad.length === 0 && items.size === 0,
+      pass: rollupBad.length === 0 && listed.length === 0 && items.length > 0,
       detail: fmt({
         rollupNonSubjectRows: rollupBad.length,
-        [`latestYearItemList(${latest}/${String(latest + 1).slice(2)})`]: [...items].map(([k, n]) => `${k}: ${n}`).join("; ") || "none",
-        alsoIn: earlier.join(" ") || "none",
+        [`teacherSubjectList(${latest}/${String(latest + 1).slice(2)})`]: `${items.length} items, non-subject: ${listed.map((i) => i.label).join("; ") || "none"}`,
+        rawFactsStillCarry: [...new Set(rawBad.map((e) => e.subject))].join(", ") || "none",
       }),
     };
   },

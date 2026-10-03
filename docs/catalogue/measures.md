@@ -34,7 +34,7 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Grain | Raw: school × subject × qualification type × year. Rollup: school × subject × year, qualifications summed. |
 | Sources | dfe_ks4_subject_entries, dfe_ks4_subject_entries_historic |
 | Keying | urn |
-| Years | 2020/21 → 2024/25. Rollup entries 5 years. The subject list comes from raw facts, latest year only (page.tsx:buildSubjectItems). Area (points-eligible) entries 2021/22-2024/25. |
+| Years | 2020/21 → 2024/25. Rollup entries 5 years. The subject list comes from raw facts, latest year only, without the IB Diploma total and IB Core rows (teacher-view-populations.ts:subjectItemsOf, R-IB-NONSUBJECT). Area (points-eligible) entries 2021/22-2024/25. |
 | School | ✓ |
 | Subject area | ✓ academic_subject_family_rollup 2020-2024; share-of-family fields on headline rows |
 | Set | ✓ fetchAcademicProfiles(..., {includeSubjects}) -> ks4Subjects.entriesTotal |

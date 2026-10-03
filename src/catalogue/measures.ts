@@ -138,7 +138,7 @@ export const MEASURES: Measure[] = [
     years: {
       from: "2020/21",
       to: "2024/25",
-      note: "Rollup entries 5 years. The subject list comes from raw facts, latest year only (page.tsx:buildSubjectItems). Area (points-eligible) entries 2021/22-2024/25.",
+      note: "Rollup entries 5 years. The subject list comes from raw facts, latest year only, without the IB Diploma total and IB Core rows (teacher-view-populations.ts:subjectItemsOf, R-IB-NONSUBJECT). Area (points-eligible) entries 2021/22-2024/25.",
     },
     keying: "urn",
     geographies: geos({

@@ -48,14 +48,14 @@ import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from
 // VicData 0.6 S2: the rules that decide each figure and each comparison population live in
 // these libs (every enforcement point tagged with its rule ID); this page only calls them.
 import { bandRangeFor, onGradeScale, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
-import { asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf } from "@/lib/teacher-view-populations";
+import { type SubjectItem as LibSubjectItem, asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf, subjectItemsOf } from "@/lib/teacher-view-populations";
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
 
 // §3: the picker works at real taught-qualification level, not subject-family level --
 // "someone might teach AS Maths but not Statistics". So an item is a (subject,
 // qualification) pair, not a subject.
-type SubjectItem = { key: string; subject: string; qualificationType: string; label: string; entries: number };
+type SubjectItem = LibSubjectItem;
 
 // Comparator chooser round: the Comparisons column's unsaved chooser choice. CHOOSER_KEY
 // holds it (JSON) among the column settings; CHOOSER_SET_ID is the id it takes in the
@@ -95,31 +95,6 @@ function parseChooserChoice(raw: string | undefined): ChooserChoice | null {
   } catch {
     return null;
   }
-}
-
-function buildSubjectItems(entries: SubjectEntry[]): SubjectItem[] {
-  const latest = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
-  if (latest === null) return [];
-  const byKey = new Map<string, SubjectItem>();
-  for (const e of entries) {
-    if (e.period !== latest) continue;
-    const key = `${e.subject}::${e.qualificationType}`;
-    const existing = byKey.get(key);
-    if (existing) existing.entries += e.entries;
-    else byKey.set(key, { key, subject: e.subject, qualificationType: e.qualificationType, label: e.subject, entries: e.entries });
-  }
-  // Only disambiguate where this school really runs the same subject under more than one
-  // qualification -- otherwise every row carries a noisy suffix it does not need.
-  const qualsPerSubject = new Map<string, Set<string>>();
-  for (const it of byKey.values()) {
-    const set = qualsPerSubject.get(it.subject) ?? new Set<string>();
-    set.add(it.qualificationType);
-    qualsPerSubject.set(it.subject, set);
-  }
-  for (const it of byKey.values()) {
-    if ((qualsPerSubject.get(it.subject)?.size ?? 0) > 1) it.label = `${it.subject} (${it.qualificationType})`;
-  }
-  return Array.from(byKey.values()).sort((a, b) => b.entries - a.entries);
 }
 
 // The onboarding steps only ever run for GCSE and Post-16, which always have an accent.
@@ -408,7 +383,8 @@ export default function TeacherPhaseDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolUrn, onboarded, comparatorUrns]);
 
-  const items = useMemo(() => buildSubjectItems(entries), [entries]);
+  // R-IB-NONSUBJECT (S3b): subjectItemsOf leaves the IB Diploma total and IB Core rows out.
+  const items = useMemo(() => subjectItemsOf(entries), [entries]);
   const tickedItems = useMemo(() => items.filter((i) => ticked.includes(i.key)), [items, ticked]);
   // The live count §6 and §14 both single out: ticking a subject moves this immediately.
   const liveCount = useMemo(() => tickedItems.reduce((sum, i) => sum + i.entries, 0), [tickedItems]);

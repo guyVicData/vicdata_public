@@ -15,7 +15,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | R-KS5-ENGLAND-EXACT | active | The Post-16 England figure is the exact subject × qualification figure or nothing; there is no bucket fallback. | no | auto: englandExact | — |
 | R-MIN-SCHOOLS | active | An LA or region benchmark row is suppressed below 5 schools. England is exempt (minimum 1) for points and entries geography and the England anchor, but not for grade-grain geography, where every grade row needs 5 schools. | no | auto: minSchools | — |
 | R-SINGLE-BUCKET-100 | active | The unfiltered (Type = All) category view shows points only when the category's scoreable entries are 100% one scored bucket, and the comparator side agrees on the bucket. No tolerance band. | yes, not yet lifted | none yet | — |
-| R-IB-NONSUBJECT | active | Baccalaureate (Diploma total, Combined Certificate) and IB Core rows are excluded from subject entries; IB Core components are included in IB bucket points; the Diploma total is never scored. | no | auto: ibNonSubject | yes |
+| R-IB-NONSUBJECT | active | Baccalaureate (Diploma total, Combined Certificate) and IB Core rows are excluded from subject entries; IB Core components are included in IB bucket points; the Diploma total is never scored. | no | auto: ibNonSubject | — |
 | R-FOCUS-NEVER-FILTERED | active | The focused item (a subject, or the school itself in Comparisons) is never filtered out of its own figures, only out of comparison lists. | lifted | manual | — |
 | R-TREND-3YR | superseded by R-TREND-LINE-4YR | Trend views need 3+ years; below that, show the table only. | no | none yet | — |
 | R-ZERO-CANDIDATE | active | A school with a stage row but no real candidate count and no real headline measure is not 'present' for that stage; special schools are matched only with special schools (and vice versa) in nearest and comparator pools. | no | manual | yes |
@@ -170,14 +170,14 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Statement | Baccalaureate (Diploma total, Combined Certificate) and IB Core rows are excluded from subject entries; IB Core components are included in IB bucket points; the Diploma total is never scored. |
 | Why | Including the Diploma total pushed 100369's IB average to 60.2, above the HL maximum of 60. |
 | Applies to | M-KS5-ENTRIES, M-KS5-POINTS |
-| Enforced in | - vicdata:ingest/academic_aggregates.py:_NON_SUBJECT_ROWS (103-135), skip (270), points kept (446-455)<br>- vicdata:supabase/migrations/20260918160000_remove_ib_non_subject_rows.sql<br>- src/lib/dfe-qualification-buckets.ts:challengeFor (246-262, the TS twin) |
-| Tagged at | - src/lib/dfe-qualification-buckets.ts |
-| Test case | Sevenoaks School (118952), ks5, 2024/25: The exact-qualification rollup has no Baccalaureate / IB Core subject rows; the raw-facts subject list (the Teacher view's item list) should carry none either. [runner: ibNonSubject] |
+| Enforced in | - vicdata:ingest/academic_aggregates.py:_NON_SUBJECT_ROWS (103-135), skip (270), points kept (446-455)<br>- vicdata:supabase/migrations/20260918160000_remove_ib_non_subject_rows.sql<br>- src/lib/dfe-qualification-buckets.ts:challengeFor (246-262, the TS twin)<br>- src/lib/dfe-qualification-buckets.ts:NON_SUBJECT_ROWS, isNonSubjectRow (the port of _NON_SUBJECT_ROWS, S3b)<br>- src/lib/teacher-view-populations.ts:subjectItemsOf (the Teacher subject list, S3b) |
+| Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-populations.ts |
+| Test case | Sevenoaks School (118952), ks5, 2024/25: The exact-qualification rollup has no Baccalaureate / IB Core subject rows, and the Teacher view's subject list (subjectItemsOf over the raw facts) carries none either: 29 items in 2024/25, not 32. The raw facts themselves still carry Baccalaureate, Learning Skills and Study Skills (244 each). [runner: ibNonSubject] |
 | Origin | IB ingest round (vicdata), Post-16 points |
 | Status | active |
 | Must lift | — |
-| Open issue | Enforced at ingest only. The raw-facts item list (academic-data-view.ts:parseSubjectEntries -> page.tsx:buildSubjectItems) has no filter, so a school whose raw facts carry 'Baccalaureate' rows lists it as a subject. Audit B said 2024/25 had none; the rule runner (3 Oct 2026) shows Sevenoaks (118952) lists 'Baccalaureate (International Baccalaureate)' and the IB Core 'Learning Skills' and 'Study Skills' (IBO Diploma Programme Core) as subjects in 2024/25, 244 entries each (225 each in 2023/24). Filtering them changes the subject list: a STOP item for Guy. |
-| Fixed | — |
+| Open issue | — |
+| Fixed | - S3b (Guy's decision 4, 3 Oct 2026): the Teacher subject list leaves them out. page.tsx:buildSubjectItems moved to src/lib/teacher-view-populations.ts:subjectItemsOf, which drops every raw-facts row isNonSubjectRow matches; NON_SUBJECT_ROWS is an exact port of vicdata ingest/academic_aggregates.py:_NON_SUBJECT_ROWS (one list, pointing at its source). Before the fix the picker DID show them at Sevenoaks (118952): 'Learning Skills', 'Study Skills' and 'Baccalaureate', 244 entries each, top of the IB tab and of the list (Learning Skills and Baccalaureate under 'Other subjects', Study Skills under 'Enterprise & Applied Studies'); also at Godolphin and Latymer (100369), 26 each. Before/after in the commit message. |
 
 ### R-FOCUS-NEVER-FILTERED
 
