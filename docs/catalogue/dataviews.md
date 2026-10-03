@@ -849,7 +849,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | ranking |
 | Renderer | RD-CHANGE-LIST |
-| Title template | [Entries\|Results] in [comparison-group]: [% change\|change in points\|change in percentage points] since [year], ranked |
+| Title template | [Entries\|Results] in [comparison-group]: [change-word] since [year], ranked |
 | Title fallback | [Entries\|Results]: [% change\|change in points\|change in percentage points] since [year] |
 | Requires (card warning) | — |
 | Params | changeStart, against:context |
@@ -1101,7 +1101,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | ranking |
 | Renderer | RD-CHANGE-LIST |
-| Title template | [% change in [measure] since [year]\|Change in [measure] since [year], in points\|…, in percentage points], ranked against the [set] |
+| Title template | [change-of-measure] since [year], ranked against the [set] |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | changeStart, set:rankings |
@@ -1157,7 +1157,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | map |
 | Renderer | RD-RANKINGS-MAP |
-| Title template | [% change in [measure] since [year]\|Change in [measure] since [year], in points\|…, in percentage points], coloured by school |
+| Title template | [change-of-measure] since [year], coloured by school |
 | Title fallback | — |
 | Requires (card warning) | Not for ranking sets; needs the school's location and 2 or more years. |
 | Params | changeStart, set:rankings |

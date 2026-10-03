@@ -5,6 +5,7 @@
 // A slot holds ONE specific view, literally (scope brief §7.5): every setting resolved
 // ("[subject]" -> "Maths (General)", the compare set -> its name), the year pinned to the
 // moment it was added ("as of 2024/25") unless the view is kept live.
+import { changeKind, changeOfMeasure, changeWord } from "@/catalogue/titles";
 import { dataviewById, measureById } from "@/catalogue";
 import type { CompareKind, DataId, Dataview, DataviewInstance, Phase, ResultsMeasure, SlideConfig, ViewType } from "@/catalogue/types";
 
@@ -50,16 +51,23 @@ export function dataviewOf(slot: SlideConfig["slots"][number]): Dataview | undef
 
 // The measure behind a view at the pinned phase (first of the view's measures that
 // matches it), for its citation, name and latest year.
-export function measureOf(dv: Dataview | undefined, phase: Phase | undefined) {
+// The measure a pinned view is about: same phase, then the pinned data family (Candidates
+// or Results) and Results sub-measure, so a Results slot never borrows the candidates card.
+export function measureOf(dv: Dataview | undefined, phase: Phase | undefined, data?: PinnedSettings["data"], results?: PinnedSettings["results"]) {
   if (!dv) return undefined;
   const ms = dv.measures.map((id) => measureById(id)).filter((m): m is NonNullable<typeof m> => !!m);
-  return ms.find((m) => !phase || !m.phase || m.phase === phase) ?? ms[0];
+  const inPhase = ms.filter((m) => !phase || !m.phase || m.phase === phase);
+  const pool = inPhase.length ? inPhase : ms;
+  const byData = data ? pool.filter((m) => m.data === data) : pool;
+  const byResults = results ? byData.filter((m) => !m.results || m.results === results) : byData;
+  return byResults[0] ?? byData[0] ?? pool[0];
 }
 
 // G7: the source citation, from the measure card.
 export function citationOf(slot: SlideConfig["slots"][number]): string | null {
   const dv = dataviewOf(slot);
-  return measureOf(dv, pinnedOf(slot).phase)?.citation ?? null;
+  const p = pinnedOf(slot);
+  return measureOf(dv, p.phase, p.data, p.results)?.citation ?? null;
 }
 
 // The latest year the registry has for this view's measure ("2024/25").
@@ -92,25 +100,36 @@ export function slotTitle(slot: SlideConfig["slots"][number]): string {
 }
 
 export function resolveTemplate(dv: Dataview, p: PinnedSettings): string {
-  const measure = measureOf(dv, p.phase);
+  const measure = measureOf(dv, p.phase, p.data, p.results);
   const subject = p.subjectLabel || p.subject || "the subject";
   const group = p.compare?.name || "its category";
+  const set = p.compare?.name || "the comparison set";
+  const measureName = measure ? measure.name.replace(/^(GCSE|Post-16) /, "") : dv.label;
   const fill: Record<string, string> = {
+    // The same words pick.ts's resolveTitle uses, so a slot reads like its Pick card.
+    versus: set,
+    "comparison-set": set,
+    n: "",
+    "change-word": changeWord(changeKind(p.data ?? "academic.candidates", p.results)),
+    "change-of-measure": changeOfMeasure(changeKind(p.data ?? "academic.candidates", p.results), measureName.toLowerCase().replace(/^grade/, "Grade")),
     subject,
-    year: p.year || measure?.years.to || "",
+    // A trend view's [year] is where it starts ("since 2021/22"); a single-year view's is
+    // the year it shows.
+    year: dv.supports.dateMode === "trend" ? p.yearRange?.from || measure?.years.from || "" : p.year || measure?.years.to || "",
     category: group,
     "comparison-group": group,
-    set: p.compare?.name || "comparison set",
+    set,
     school: p.schoolName || "Your school",
-    measure: measure?.name ?? dv.label,
+    measure: measureName.toLowerCase().replace(/^grade/, "Grade"),
     headline: measure?.name ?? dv.label,
     "Entries|Results": p.data === "academic.results" ? "Results" : "Entries",
     range: "the range picked",
   };
-  return dv.titleTemplate
+  const out = dv.titleTemplate
     .replace(/\[([^\]]+)\]/g, (_, key: string) => fill[key] ?? key)
     .replace(/\s+/g, " ")
     .trim();
+  return out.charAt(0).toUpperCase() + out.slice(1);
 }
 
 // The small uppercase line above a slot's title (Meeting.dc.html: "Pinned · as of 2024/25").

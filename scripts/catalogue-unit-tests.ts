@@ -637,3 +637,16 @@ describe("fetch de-duplication (decision 10)", () => {
     }
   });
 });
+
+describe("title templates resolve completely", () => {
+  it("every dataview title resolves with no bracket left, in Pick and in a meeting slot", async () => {
+    const { resolveTemplate } = await import("../src/lib/meeting-views");
+    const pinned = { schoolUrn: "100053", schoolName: "Acland Burghley School", phase: "ks4", subject: "Maths (General)", subjectLabel: "Maths (General)", compare: { kind: "schools", name: "10 nearest schools" } };
+    for (const dv of DATAVIEWS) {
+      for (const [data, results] of [["academic.candidates", undefined], ["academic.results", "points"], ["academic.results", "threshold"]] as const) {
+        const title = resolveTemplate(dv, { ...pinned, data, results } as never);
+        assert.ok(!/[[\]]/.test(title), `${dv.id} (${results ?? "entries"}): ${title}`);
+      }
+    }
+  });
+});

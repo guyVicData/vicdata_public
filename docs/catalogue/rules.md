@@ -75,7 +75,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A-level, BTEC and IB points sit on different challenge tables; one bar chart or average across them compares unlike scales. |
 | Applies to | M-KS4-POINTS, M-KS5-POINTS; map chips, Column 1 category, Context |
 | Enforced in | - src/lib/teacher-view-catalogue.ts:comparabilityKey (124-127)<br>- src/app/api/teacher/dashboard/route.ts:englandAverages (56-72, exact qualification)<br>- src/app/teacher/[phase]/page.tsx:candidateItems (1063-1099, via R-QUAL-FAMILY-MATCH)<br>- src/lib/teacher-view-measures.ts:contextKeepsToFamily, onFocusPointsScale, contextGroupValue (Post-16 points rows in the focus's family only)<br>- src/lib/teacher-view-populations.ts:contextItemsOf (keepToFamily: All subjects on Post-16 points) |
-| Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts |
 | Test case | Croydon College (130432), ks5, Business Studies, 2024/25: Context on Average point score: Business Studies (A level + five BTEC sizes) has one group value per family -- the A-level family's is the A-level row's own 26.36, the BTEC family's is the BTEC rows' weighted mean; no focus = no value. With A-level Computer Science focused, All subjects draws 20 A-level subjects (was 55 across every family) and its average is 25.6 (was a 24.7 blend). [runner: pointsSameQual] |
 | Origin | Academic Results phase; Post-16 Part C and Part D |
 | Status | active |
@@ -107,7 +107,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | AS entries double-counted beside A level and inflated group totals: 102239's 'All subjects' total was 2,480 against 591 real non-AS entries. |
 | Applies to | M-KS5-ENTRIES, M-KS5-POINTS, M-KS5-THRESHOLD, M-KS5-BANDS; Column 1 category, Context |
 | Enforced in | - src/lib/dfe-qualification-buckets.ts:isAsLevelOrAea (138-141)<br>- src/app/teacher/[phase]/page.tsx:comparablePeer (1055)<br>- src/app/teacher/[phase]/page.tsx:candidateItems (1075)<br>- src/app/teacher/[phase]/page.tsx:groupRows, inGroup (1190-1191)<br>- src/app/teacher/[phase]/page.tsx:threshold group (1228), asOrAeaOnly (1249-1253), selected (1265,1277,1282), band share (1331), contextItems (1367), schoolSubjects (1837) |
-| Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts |
 | Test case | Whitmore High School (102239), ks5, 2024/25: Context 'All subjects' entries group total 591 (was 2,480 with AS/AEA and the doubled bucket rows). [runner: asAeaGroupTotal] |
 | Origin | Post-16 Part C1 (..._post16_category_context_exclude_as_aea_build_report_v1.md); Part D |
 | Status | active |
@@ -171,7 +171,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Including the Diploma total pushed 100369's IB average to 60.2, above the HL maximum of 60. |
 | Applies to | M-KS5-ENTRIES, M-KS5-POINTS |
 | Enforced in | - vicdata:ingest/academic_aggregates.py:_NON_SUBJECT_ROWS (103-135), skip (270), points kept (446-455)<br>- vicdata:supabase/migrations/20260918160000_remove_ib_non_subject_rows.sql<br>- src/lib/dfe-qualification-buckets.ts:challengeFor (246-262, the TS twin)<br>- src/lib/dfe-qualification-buckets.ts:NON_SUBJECT_ROWS, isNonSubjectRow (the port of _NON_SUBJECT_ROWS, S3b)<br>- src/lib/teacher-view-populations.ts:subjectItemsOf (the Teacher subject list, S3b) |
-| Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-populations.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-populations.ts |
 | Test case | Sevenoaks School (118952), ks5, 2024/25: The exact-qualification rollup has no Baccalaureate / IB Core subject rows, and the Teacher view's subject list (subjectItemsOf over the raw facts) carries none either: 29 items in 2024/25, not 32. The raw facts themselves still carry Baccalaureate, Learning Skills and Study Skills (244 each). [runner: ibNonSubject] |
 | Origin | IB ingest round (vicdata), Post-16 points |
 | Status | active |
@@ -187,7 +187,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Exclusion rules written for comparison populations would otherwise blank the very subject a teacher picked (e.g. an AS Psychology focus). |
 | Applies to | Every measure; Column 1, Context, Comparisons |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:candidateItems (1068-1070, focus first)<br>- src/app/teacher/[phase]/page.tsx:1141, 1362, 1381 (r.key === focusKey \|\|), 1837<br>- src/components/teacher/ComparisonsPanels.tsx:254, 276 (s.isTarget \|\|)<br>- src/lib/teacher-view-populations.ts:contextGroupRows, inContextGroup, asOrAeaOnlySubjects (the focused AS/AEA item's own rows count into its group, S3b)<br>- src/lib/teacher-view-comparator-series.ts:143 (target never dropped), 186 (target kept in fixed sets, flagged igcseExcluded) |
-| Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/teacher-view-populations.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/teacher-view-populations.ts |
 | Test case | Whitmore High School (102239), ks5, Psychology (AS): Focus an AS item (AS Psychology in the AS/AEA report :19,38, which named no school; 102239 is a heavy-AS school): its own Column 1 panels still render with its own figures. [manual] |
 | Origin | Post-16 Part C1 (AS/AEA); content round S4 |
 | Status | active |
@@ -235,7 +235,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A flat mean of the 'all' row and each bucket row let one IB entry count as much as forty A-level ones. |
 | Applies to | M-KS5-POINTS (Context group values); rollups |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:groupValueFor (1207-1216)<br>- vicdata:ingest/academic_aggregates.py:285-288 |
-| Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/teacher-view-measures.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-measures.ts |
 | Test case | Croydon College (130432), ks5, Computer Science, 2024/25: On the A-level family's scale: Computer Science 7.0 (was 13.1), Chemistry 24.3 (was 29.7) (Part D report :57). Both are A-level-only in 2024/25 (Chemistry's AS row is excluded), so S3b's family filter leaves them unchanged. [runner: pointsWeighted] |
 | Origin | Post-16 Part D |
 | Status | active |

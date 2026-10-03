@@ -4,6 +4,7 @@
 //
 // Everything here is a structural filter over the registry, never a data check (F9): what
 // a chooser step offers is decided by which registered dataviews exist, not by this school.
+import { changeKind, changeOfMeasure, changeWord } from "./titles";
 import { DATAVIEWS, MEASURES } from "./index";
 import { compareMatches, matchDataviews, placements, whyNot, type PickContext, type PickResult } from "./matching";
 import { DASHBOARDS } from "./dashboards";
@@ -315,6 +316,10 @@ export function resolveTitle(template: string, dv: Dataview | null, ctx: PickPan
       case "compare year":
       case "change year":
         return latest;
+      case "change-word":
+        return changeWord(changeKind(ctx.data, ctx.results));
+      case "change-of-measure":
+        return changeOfMeasure(changeKind(ctx.data, ctx.results), measureLabel(ctx).toLowerCase().replace(/^grade/, "Grade"));
       case "Entries|Results":
         return ctx.data === "academic.candidates" ? "Entries" : ctx.data === "academic.results" ? "Results" : DATA_LABEL[ctx.data];
       default:
