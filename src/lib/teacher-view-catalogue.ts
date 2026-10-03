@@ -21,6 +21,7 @@ export type ColumnId = "candidates" | "results" | "context" | "rankings";
 // §9: "a trend history option in the expanded view once 3+ years of data exist". Not 2,
 // and not "whatever we have" -- two points is a line, not a trend, and the brief is
 // explicit about the number.
+// R-TREND-3YR (superseded by R-TREND-LINE-4YR; meetings slide picker only)
 export const TREND_MIN_YEARS = 3;
 
 // §8's five axes, in the brief's own order and wording. Axis 4 is the only one that needs
@@ -121,6 +122,7 @@ export type SubjectRef = { key: string; subject: string; qualificationType: stri
 // grain. Deliberately reuses bucketFor rather than restating the rule -- the Python and
 // TypeScript twins of that rule are already kept in step, and a third copy here would be
 // a third thing to drift.
+// R-POINTS-SAME-QUAL
 export function comparabilityKey(phase: TeacherPhase, qualificationType: string): string {
   if (phase !== "ks5") return qualificationType;
   return bucketFor(qualificationType) ?? "other";

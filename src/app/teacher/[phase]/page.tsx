@@ -28,10 +28,10 @@ import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { GradeCountsPanels } from "@/components/teacher/GradeCountsPanels";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
-import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
-import { BOTTOM_RANK, bandRate, bestScale, presetsFor, rangeLabel, spanBetween, thresholdRate, type GradeRange } from "@/lib/subject-grades";
+import { combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
+import { bestScale, presetsFor, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
-import { POINTS_BEARING_QUALIFICATION, shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
+import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
@@ -41,7 +41,11 @@ import { COLUMN_TITLE, defaultBoxTitle } from "@/lib/teacher-view-catalogue";
 import { candidatesMoved, resultsMoved } from "@/lib/teacher-view-this-moved";
 import { type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
-import { isAsLevelOrAea } from "@/lib/dfe-qualification-buckets";
+// VicData 0.6 S2: the rules that decide each figure and each comparison population live in
+// these libs (every enforcement point tagged with its rule ID); this page only calls them.
+import { bandRangeFor, onGradeScale, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
+import { asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf } from "@/lib/teacher-view-populations";
+import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
 
 // §3: the picker works at real taught-qualification level, not subject-family level --
@@ -487,31 +491,18 @@ export default function TeacherPhaseDashboard() {
   // rows, so nothing the bucket had is lost: where a bucket row has no exact row for this
   // item, that row belonged to a sibling qualification. At GCSE, the subject's rows.
   const ownRowsFor = useCallback(
-    (item: SubjectItem): AcademicSubjectHeadlineEntry[] =>
-      phase === "ks5"
-        ? qualificationHeadline.filter((h) => h.subject === item.subject && h.qualificationType === item.qualificationType)
-        : headline.filter((h) => h.subject === item.subject),
+    (item: SubjectItem): AcademicSubjectHeadlineEntry[] => ownHeadlineRows(phase, item, headline, qualificationHeadline),
     [headline, qualificationHeadline, phase],
   );
 
   const resultsFor = useCallback(
-    (item: SubjectItem): { value: number; period: number } | null => {
-      if (phase === "ks4" && item.qualificationType !== POINTS_BEARING_QUALIFICATION.ks4) return null;
-      const rows = ownRowsFor(item)
-        .filter((h) => h.avgPointScore !== null)
-        .sort((a, b) => a.period - b.period);
-      const last = rows[rows.length - 1];
-      return last ? { value: last.avgPointScore as number, period: last.period } : null;
-    },
+    (item: SubjectItem): { value: number; period: number } | null => latestOwnPoints(phase, item, ownRowsFor(item)),
     [ownRowsFor, phase],
   );
 
   // The England figures keyed for lookup, "{key}@{period}": key is the subject at GCSE and
   // "{subject}::{qualificationType}" at Post-16.
-  const englandIndex = useMemo(
-    () => new Map((englandAvg?.values ?? []).map((v) => [`${v.key}@${v.period}`, v.value])),
-    [englandAvg],
-  );
+  const englandIndex = useMemo(() => englandIndexOf(englandAvg), [englandAvg]);
 
   // One item's England figure for one year. Post-16: the same subject in the same exact
   // qualification, or nothing. Part D: no bucket fallback -- where England has no figure
@@ -519,12 +510,7 @@ export default function TeacherPhaseDashboard() {
   // than a blend of other qualifications. The real data showed the fallback only ever sat
   // beside an empty bar anyway: the school's own figure was null every time it fired.
   const englandValue = useCallback(
-    (item: SubjectItem, period: number): number | null => {
-      if (!englandAvg || !phase || phase === "ks2") return null;
-      // GCSE rows are keyed by subject, spelt as the headline rows spell it.
-      const key = englandAvg.basis === "subject" ? item.subject : `${item.subject}::${item.qualificationType}`;
-      return englandIndex.get(`${key}@${period}`) ?? null;
-    },
+    (item: SubjectItem, period: number): number | null => englandValueAt(englandAvg, englandIndex, phase, item, period),
     [englandAvg, englandIndex, phase],
   );
 
@@ -932,16 +918,9 @@ export default function TeacherPhaseDashboard() {
   // At KS4 only "GCSE (9-1) Full Course" carries points, and headline rows there are keyed
   // by subject alone -- so without this gate an OCR or BTEC row for the same subject shows
   // the GCSE score as its own. The same guard resultsFor already applies.
-  const pointsAt = (i: SubjectItem, period: number): number | null => {
-    if (phase === "ks4" && i.qualificationType !== POINTS_BEARING_QUALIFICATION.ks4) return null;
-    const vals = headlineRowsFor(i, period).map((h) => h.avgPointScore).filter((v): v is number => v !== null);
-    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  };
+  const pointsAt = (i: SubjectItem, period: number): number | null => subjectPointsAt(phase, i, headlineRowsFor(i, period));
 
-  const entriesAt = (i: SubjectItem, period: number): number | null => {
-    const rows = headlineRowsFor(i, period);
-    return rows.length ? rows.reduce((a, h) => a + (h.entriesTotal ?? 0), 0) : null;
-  };
+  const entriesAt = (i: SubjectItem, period: number): number | null => subjectEntriesAt(headlineRowsFor(i, period));
 
   // Every period any ticked subject has a headline row for, ascending -- the real range
   // §6.3 requires, not a constant.
@@ -974,12 +953,7 @@ export default function TeacherPhaseDashboard() {
   // payload. Scoped to this subject AND this qualification type -- the grade rows carry
   // their own qualificationType, so a GCSE and a Cambridge National in the same subject
   // are scored separately rather than pooled into a rate belonging to neither.
-  const thresholdAt = (i: SubjectItem, period: number): number | null => {
-    const rows = gradeRows.filter(
-      (g) => g.subject === i.subject && g.qualificationType === i.qualificationType && g.period === period,
-    );
-    return thresholdRate(rows, phase)?.rate ?? null;
-  };
+  const thresholdAt = (i: SubjectItem, period: number): number | null => subjectThresholdAt(gradeRows, i, period, phase);
 
   // Which measure Results' three panels are pointed at. Persisted per column, so the card
   // comes back showing the figure it was left showing.
@@ -993,25 +967,14 @@ export default function TeacherPhaseDashboard() {
   // while both ends are grades on the focused subject's scale; otherwise the scale's
   // preset (7-9, GCSE 9-1 only) or no range at all -- never an invented default band.
   const usingBands = resultsMeasure.id === "bands";
-  const usingGradeRate = usingThreshold || usingBands;
   const BAND_RANGE_KEY = "band:range";
   const focusGradeRows = focusItem
     ? gradeRows.filter((g) => g.subject === focusItem.subject && g.qualificationType === focusItem.qualificationType)
     : [];
   const focusScale = bestScale(focusGradeRows.map((g) => g.grade));
-  const onFocusScale = (g: string) => focusScale.includes(g) || g in BOTTOM_RANK;
+  const onFocusScale = (g: string) => onGradeScale(focusScale, g);
   const bandPresets = presetsFor(focusScale);
-  const bandRange: GradeRange | null = (() => {
-    if (bandPending && onFocusScale(bandPending)) return { scale: focusScale, top: bandPending, bottom: bandPending };
-    try {
-      const saved = JSON.parse(readSetting(columns, BAND_RANGE_KEY) ?? "null") as { top: string; bottom: string } | null;
-      if (saved && onFocusScale(saved.top) && onFocusScale(saved.bottom)) return { scale: focusScale, top: saved.top, bottom: saved.bottom };
-    } catch {
-      // an unreadable saved range reads as none
-    }
-    const preset = bandPresets.find((p) => p.id === "7-9");
-    return preset ? { scale: focusScale, top: preset.top, bottom: preset.bottom } : null;
-  })();
+  const bandRange: GradeRange | null = bandRangeFor(focusScale, bandPending, readSetting(columns, BAND_RANGE_KEY));
   const bandLabel = bandRange ? rangeLabel(bandRange) : null;
   const saveBand = (top: string, bottom: string) => {
     setBandPending(null);
@@ -1025,12 +988,9 @@ export default function TeacherPhaseDashboard() {
       setBandPending(grade);
     }
   };
-  const gradeRowsFor = (subject: string, qualificationType: string, period: number) =>
-    gradeRows.filter((g) => g.subject === subject && g.qualificationType === qualificationType && g.period === period);
-  const bandAt = (i: SubjectItem, period: number): number | null =>
-    bandRange ? bandRate(gradeRowsFor(i.subject, i.qualificationType, period), bandRange)?.rate ?? null : null;
+  const bandAt = (i: SubjectItem, period: number): number | null => subjectBandAt(gradeRows, i, period, bandRange);
   // Grade rows exist from 2023/24 only; on Grade bands the axis is the years that have them.
-  const hasGrades = (i: SubjectItem, period: number) => gradeRows.some((g) => g.subject === i.subject && g.qualificationType === i.qualificationType && g.period === period);
+  const hasGrades = (i: SubjectItem, period: number) => hasGradesAt(gradeRows, i, period);
   // The measure as Grade bands' panels read it: its noun narrowed to the span.
   const resultsMeasureShown = usingBands && bandLabel ? { ...resultsMeasure, noun: `share of entries at ${bandLabel.toLowerCase()}` } : resultsMeasure;
 
@@ -1051,8 +1011,7 @@ export default function TeacherPhaseDashboard() {
   // A-level entry is deduped into, never needs a "(GCE AS level)" suffix to tell it from
   // its A level, and never feeds the category's own average line. They stay selectable in
   // the picker, and a teacher who focuses one directly still gets its own panels: the
-  // focused item is never filtered.
-  const comparablePeer = (i: SubjectItem) => !isAsLevelOrAea(i.qualificationType);
+  // focused item is never filtered. (R-KS5-ASAEA-EXCL, R-FOCUS-NEVER-FILTERED: categoryItemsOf.)
   // Column 1 qualification match: a peer is also in the focused subject's own qualification
   // family (qualificationFamilyOf -- at Post-16 the display bucket, so A level with A level,
   // never with Core Maths, EPQ or Pre-U in Other). The one rule Column 1's category and
@@ -1060,26 +1019,9 @@ export default function TeacherPhaseDashboard() {
   // what counts as the same qualification. Before this, Results left Other-bucket peers
   // out only by accident (they have no points figure) while Candidates drew them. KS2 has
   // no qualifications, so everything matches there.
-  const focusQualFamily = focusItem && phase !== "ks2" ? familyOfItem(phase, focusItem) : null;
-  const inFocusQualFamily = (i: SubjectItem) =>
-    focusQualFamily === null || familyOfItem(phase as "ks4" | "ks5", i) === focusQualFamily;
-  const focusFamilyId = focusItem ? familyFor(headline, focusItem.subject)?.id ?? null : null;
+  const { focusQualFamily, inFocusQualFamily } = focusQualificationFamily(phase, focusItem);
   const focusFamilyLabel = focusItem ? familyLabelFor(headline, focusItem.subject) ?? "its category" : null;
-  const categoryItems: SubjectItem[] = focusItem
-    ? [
-        focusItem,
-        ...items
-          .filter(
-            (i) =>
-              i.key !== focusItem.key &&
-              comparablePeer(i) &&
-              inFocusQualFamily(i) &&
-              focusFamilyId !== null &&
-              familyFor(headline, i.subject)?.id === focusFamilyId,
-          )
-          .sort((a, b) => b.entries - a.entries),
-      ]
-    : [];
+  const categoryItems: SubjectItem[] = categoryItemsOf(focusItem, items, headline, inFocusQualFamily);
   // The peers are context, not the teacher's own subjects, so they take one muted colour
   // and the focused subject keeps its qualification colour.
   const PEER_COLOUR = "var(--muted3)";
@@ -1093,10 +1035,7 @@ export default function TeacherPhaseDashboard() {
   // otherwise both show Art's whole total, so the category is taken once per row here,
   // focused subject first. Post-16 Part C: there every item has its own exact-qualification
   // row, so nothing is merged -- IB Higher and Standard level Biology are two real bars.
-  const candidateItems = categoryItems.filter(
-    (i, idx) =>
-      phase === "ks5" || categoryItems.findIndex((o) => o.subject === i.subject) === idx,
-  );
+  const candidateItems = candidateItemsOf(categoryItems, phase);
   const candidateShort = shortLabelsFor(candidateItems);
 
   // Every period any category member has a headline row for.
@@ -1109,11 +1048,7 @@ export default function TeacherPhaseDashboard() {
   // it shortens the axis rather than drawing four empty years -- §6.5's "state that in the
   // UI rather than padding the range". Computed BEFORE the series, so the values and the
   // periods they are indexed against are always the same list.
-  const resultsPeriods = usingThreshold
-    ? categoryPeriods.filter((p) => categoryItems.some((i) => thresholdAt(i, p) !== null))
-    : usingBands
-      ? categoryPeriods.filter((p) => categoryItems.some((i) => hasGrades(i, p)))
-      : categoryPeriods;
+  const resultsPeriods = periodsForMeasure(resultsMeasure.id, categoryPeriods, categoryItems, thresholdAt, hasGrades);
 
   // The threshold measure has no published England figure to sit against -- the national
   // anchor this app holds is points per entry, per subject. So its bars carry no marker
@@ -1125,7 +1060,7 @@ export default function TeacherPhaseDashboard() {
   // against England's A-level Chemistry. A qualification with no published points (VRQ,
   // AEA, EPQ and the rest of Other) has no row, so its marker is simply absent.
   const categoryShort = shortLabelsFor(categoryItems);
-  const resultsSeries: SubjectSeries[] = categoryItems
+  const resultsSeries: SubjectSeries[] = keepFocusOrFigured(categoryItems
     .map((i) => ({
       key: i.key,
       label: i.label,
@@ -1133,12 +1068,12 @@ export default function TeacherPhaseDashboard() {
       colour: categoryColour(i),
       values: resultsPeriods.map((p) => valueForResults(i, p)),
       // Grade bands: SubjectPanels sets the focused subject's own England rate on the span.
-      benchmark: usingGradeRate ? undefined : resultsPeriods.map((p) => englandAt(i, p)),
-    }))
+      benchmark: hasEnglandPointsBenchmark(resultsMeasure.id) ? resultsPeriods.map((p) => englandAt(i, p)) : undefined,
+    })),
     // A peer with no figure at all on this measure (at GCSE, a BTEC or Cambridge National
     // on points) says nothing about the category, so it is left out rather than drawn
     // as an empty row. The focused subject always stays.
-    .filter((r) => r.key === focusKey || r.values.some((v) => v !== null));
+    focusKey);
 
   // S6: the category's own per-subject average, self-inclusive (the convention Context's
   // group and the comparator-set averages already use). S7, points only (both phases since
@@ -1149,8 +1084,8 @@ export default function TeacherPhaseDashboard() {
     resultsSeries.length < 2
       ? []
       : [
-          { label: `${focusFamilyLabel} average`, values: resultsPeriods.map((_, pi) => meanOf(resultsSeries.map((r) => r.values[pi]))) },
-          ...(!usingGradeRate
+          { label: `${focusFamilyLabel} average`, values: memberMeans(resultsPeriods, resultsSeries) },
+          ...(hasEnglandPointsBenchmark(resultsMeasure.id)
             ? [{
                 label: `England ${focusFamilyLabel} average`,
                 colour: ENGLAND_COLOUR,
@@ -1171,8 +1106,8 @@ export default function TeacherPhaseDashboard() {
   // Grade bands frontend round: Context reads Grade bands on the same range as Column 1.
   // Grade counts has no single figure to compare subjects on, and Grade bands has none
   // until a range is picked, so both fall back to average point score here (and say so).
-  const contextFallsBack = showingResults && (resultsMeasure.id === "counts" || (usingBands && !bandRange));
-  const contextMeasure = !showingResults ? ENTRIES_MEASURE : contextFallsBack ? measuresFor(phase)[0] : resultsMeasureShown;
+  const contextFallsBack = contextFallsBackFor(showingResults, resultsMeasure.id, !!bandRange);
+  const contextMeasure = contextMeasureFor(phase, showingResults, contextFallsBack, resultsMeasureShown);
   // Current panel rework round 1: three groups, and "category" (the focused subject's own
   // subject category) is the default -- nothing saved, or a saved "area" from before S8
   // (which was this same comparison), reads as it. An explicit All or Selected choice stays.
@@ -1187,57 +1122,16 @@ export default function TeacherPhaseDashboard() {
   // whole-subject "all" row beside each bucket's row, so every total was doubled) and
   // which had AS baked into the A-level figure. C1 left AS/AEA out of the subject list;
   // this leaves them out of the figures too.
-  const groupRows = phase === "ks5" ? qualificationHeadline.filter((h) => !isAsLevelOrAea(h.qualificationType ?? "")) : headline;
-  const inGroup = (qualificationType: string) => phase !== "ks5" || !isAsLevelOrAea(qualificationType);
+  const groupRows = contextGroupRows(phase, headline, qualificationHeadline);
+  const inGroup = (qualificationType: string) => inContextGroup(phase, qualificationType);
 
   // One value per SUBJECT NAME per period, for whichever measure is active. Group members
   // are subjects of the whole school, not just the ticked ones, so they are addressed by
   // name rather than by the ticked list's (subject, qualification) key.
-  const groupValueFor = (subject: string, period: number): number | null => {
-    const rows = groupRows.filter((h) => h.subject === subject && h.period === period);
-    if (rows.length === 0) return null;
-    if (contextMeasure.id === "entries") {
-      return rows.reduce((a, h) => a + (h.entriesTotal ?? 0), 0);
-    }
-    if (contextMeasure.id === "points") {
-      // Post-16: one figure per subject from its qualifications' figures, each weighted by
-      // its points-eligible entries -- the nearest this data gets to the whole-subject row
-      // it replaces (DfE weights by size), and without letting one IB entry count as much
-      // as forty A-level ones. GCSE has one row per subject, so it is read as it was.
-      if (phase === "ks5") {
-        let points = 0;
-        let weight = 0;
-        for (const h of rows) {
-          if (h.avgPointScore === null || !h.pointsCoveragePercent) continue;
-          const eligible = (h.entriesTotal ?? 0) * (h.pointsCoveragePercent / 100);
-          points += h.avgPointScore * eligible;
-          weight += eligible;
-        }
-        return weight > 0 ? points / weight : null;
-      }
-      const vals = rows.map((h) => h.avgPointScore).filter((v): v is number => v !== null);
-      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-    }
-    // Threshold: rate per qualification type, then the mean of the ones that have a bar.
-    // Pooling every grade row for a subject would mix scales -- a GCSE 9-1 row beside a
-    // vocational Pass -- and score them against a bar only one of them is on. AS and AEA
-    // are left out at Post-16, as in the other two measures.
-    const quals = Array.from(
-      new Set(
-        gradeRows
-          .filter((g) => g.subject === subject && g.period === period && inGroup(g.qualificationType))
-          .map((g) => g.qualificationType),
-      ),
-    );
-    // Grade bands: the same per-qualification mean on the chosen range (bandRate, which
-    // gives no figure for a qualification on a different scale).
-    const rateOf = (rows: typeof gradeRows) =>
-      contextMeasure.id === "bands" && bandRange ? bandRate(rows, bandRange)?.rate : thresholdRate(rows, phase)?.rate;
-    const rates = quals
-      .map((qt) => rateOf(gradeRows.filter((g) => g.subject === subject && g.qualificationType === qt && g.period === period)))
-      .filter((v): v is number => v !== undefined && v !== null);
-    return rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : null;
-  };
+  // Post-16: weighted by points-eligible entries; threshold/bands: per qualification, then
+  // meaned (R-POINTS-WEIGHTED, R-KS5-ASAEA-EXCL -- see contextGroupValue).
+  const groupInputs = { phase, measureId: contextMeasure.id, groupRows, gradeRows, bandRange, inGroup };
+  const groupValueFor = (subject: string, period: number): number | null => contextGroupValue(groupInputs, subject, period);
 
   // §4.2: the group is SELF-INCLUSIVE -- it contains the subject being compared, matching
   // the convention the comparator-set averages already use elsewhere.
@@ -1246,11 +1140,7 @@ export default function TeacherPhaseDashboard() {
   // is not a member. Part D: at Post-16 that now follows from groupRows, which has no
   // AS/AEA rows; asOrAeaOnly still guards the "nothing selected yet" fallback below, which
   // starts from the ticked items rather than from the rows.
-  const asOrAeaOnly = new Set(
-    items
-      .map((i) => i.subject)
-      .filter((n) => items.every((i) => i.subject !== n || isAsLevelOrAea(i.qualificationType))),
-  );
+  const asOrAeaOnly = asOrAeaOnlySubjects(items);
   //
   // Combined round §4c: "Selected subjects" is chosen within the focused subject's own
   // qualification family -- a comparison set is always with the same qualification -- so
@@ -1260,29 +1150,22 @@ export default function TeacherPhaseDashboard() {
   // (focusQualFamily above).
   const contextFamily = focusQualFamily;
   const inContextFamily = inFocusQualFamily;
-  const contextOffer = items.filter((i) => i.entries > 0 && inContextFamily(i));
+  const contextOffer = contextOfferOf(items, inContextFamily);
   // Every subject at the school, by name -- Context's All subjects group.
-  const schoolSubjectNames = Array.from(new Set(groupRows.map((h) => h.subject))).filter((n) => !asOrAeaOnly.has(n));
-  const contextMembers: string[] = (() => {
-    const every = schoolSubjectNames;
-    // Current panel rework round 1: the category is Column 1's own list (candidateItems),
-    // by subject name, as the group totals and averages below address members.
-    if (contextAgainst === "category") return Array.from(new Set(candidateItems.map((i) => i.subject)));
-    if (contextAgainst === "selected") {
-      const names = new Set(contextOffer.filter((i) => contextSelected.includes(i.key)).map((i) => i.subject));
-      // Snagging round 1 Part 1: the group is self-inclusive (§4.2, above) in this mode too.
-      // It used to be exactly the ticked set, so a focus subject not ticked in the picker
-      // was divided by a group it wasn't in -- a "share" that could pass 100% (the donut
-      // clamps it) and a "Selected subjects average" the focus took no part in.
-      if (names.size && focusItem && inContextFamily(focusItem) && !asOrAeaOnly.has(focusItem.subject)) names.add(focusItem.subject);
-      // Nothing ticked yet falls back to the subjects this person teaches, which is the
-      // most useful "not chosen yet" group and is one click from being narrowed.
-      return names.size
-        ? every.filter((n) => names.has(n))
-        : Array.from(new Set(tickedItems.filter(inContextFamily).map((i) => i.subject))).filter((n) => !asOrAeaOnly.has(n));
-    }
-    return every;
-  })();
+  const schoolSubjectNames = schoolSubjectNamesOf(groupRows, asOrAeaOnly);
+  // Snagging round 1 Part 1: the group is self-inclusive in Selected mode too; nothing
+  // ticked yet falls back to the subjects this person teaches (contextMembersOf).
+  const contextMembers: string[] = contextMembersOf({
+    against: contextAgainst,
+    schoolSubjectNames,
+    candidateItems,
+    contextOffer,
+    selected: contextSelected,
+    focusItem,
+    inFamily: inContextFamily,
+    asOrAeaOnly,
+    tickedItems,
+  });
 
   // Live review Part B: shown as "All subjects" (the id stays "whole"). This one label feeds
   // the panel tag, the Trend/% change sentences, the benchmark and the donut.
@@ -1312,33 +1195,14 @@ export default function TeacherPhaseDashboard() {
     return thresholdAt(i, period);
   };
 
-  const contextPeriods =
-    contextMeasure.id === "threshold"
-      ? subjectPeriods.filter((p) => tickedItems.some((i) => thresholdAt(i, p) !== null))
-      : contextMeasure.id === "bands"
-        ? subjectPeriods.filter((p) => tickedItems.some((i) => hasGrades(i, p)))
-        : subjectPeriods;
+  const contextPeriods = periodsForMeasure(contextMeasure.id, subjectPeriods, tickedItems, thresholdAt, hasGrades);
 
   // Grade bands: Context's donut is the group's own entries inside the range, of all its
   // graded entries -- the whole school's (or the selected subjects') "share at grades 7-9"
   // -- per (subject, qualification) through bandRate, so a qualification on another scale
   // adds to neither side. Self-inclusive, as the group always is.
-  const contextBandShare = (period: number): { met: number; entries: number } | null => {
-    if (!bandRange) return null;
-    let met = 0;
-    let entries = 0;
-    for (const subject of contextMembers) {
-      const quals = new Set(gradeRows.filter((g) => g.subject === subject && g.period === period && inGroup(g.qualificationType)).map((g) => g.qualificationType));
-      for (const qt of quals) {
-        const r = bandRate(gradeRowsFor(subject, qt, period), bandRange);
-        if (r) {
-          met += r.met;
-          entries += r.entries;
-        }
-      }
-    }
-    return entries > 0 ? { met, entries } : null;
-  };
+  const contextBandShare = (period: number): { met: number; entries: number } | null =>
+    contextBandShareAt(contextMembers, gradeRows, period, bandRange, inGroup);
   const atContextPeriod = (values: (number | null)[]) =>
     contextPeriods.map((p) => values[subjectPeriods.indexOf(p)] ?? null);
 
@@ -1354,22 +1218,9 @@ export default function TeacherPhaseDashboard() {
   // "Whole school" they are every subject the school has (round 2 part 5).
   // Current panel rework round 1: with "Subject category" the subjects are exactly the list
   // Column 1 draws -- candidateItems, focused subject first -- not a second derivation.
-  const contextItems = !focusItem
-    ? []
-    : contextAgainst === "category"
-      ? candidateItems
-      : [
-        focusItem,
-        ...items.filter(
-          (i) =>
-            i.key !== focusItem.key &&
-            i.entries > 0 &&
-            comparablePeer(i) &&
-            (contextAgainst !== "selected" || contextMembers.includes(i.subject)),
-        ),
-      ];
+  const contextItems = contextItemsOf({ focusItem, against: contextAgainst, candidateItems, items, contextMembers });
   const contextShort = shortLabelsFor(contextItems);
-  const contextSeries: SubjectSeries[] = contextItems
+  const contextSeries: SubjectSeries[] = keepFocusOrFigured(contextItems
     .map((i) => ({
       key: i.key,
       label: i.label,
@@ -1377,8 +1228,7 @@ export default function TeacherPhaseDashboard() {
       colour: i.key === focusKey ? colourOf(i) : PEER_COLOUR,
       values: contextPeriods.map((p) => contextValueFor(i, p)),
       benchmark: atContextPeriod(contextGroupAverage),
-    }))
-    .filter((r) => r.key === focusKey || r.values.some((v) => v !== null));
+    })), focusKey);
 
   // ------------------------------------------------------------- Comparisons (§4.3)
   //
@@ -1434,13 +1284,7 @@ export default function TeacherPhaseDashboard() {
   // counts has no single figure to rank schools by, and Grade bands none until a range is
   // picked: both compare on average point score here.
   const comparisonsOnBands = usingBands && !!bandRange;
-  const comparisonsMeasure = showingResults
-    ? activeMapChip
-      ? usingThreshold || comparisonsOnBands
-        ? resultsMeasureShown
-        : measuresFor(phase)[0]
-      : headlineMeasure(phase, headlineLabel)
-    : ENTRIES_MEASURE;
+  const comparisonsMeasure = comparisonsMeasureFor(phase, showingResults, !!activeMapChip, usingThreshold, comparisonsOnBands, resultsMeasureShown, headlineLabel);
 
   // Each set's own caveat, kept from round 5 -- the reason a set is what it is belongs
   // beside the set, not in a tooltip.
@@ -1724,9 +1568,7 @@ export default function TeacherPhaseDashboard() {
                       subject: focusItem.subject,
                       qualificationType: phase === "ks5" ? focusItem.qualificationType : undefined,
                       label: phase === "ks5" ? focusItem.label : focusItem.subject,
-                      applies:
-                        resultsMeasure.id === "points" &&
-                        (phase === "ks5" || focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4),
+                      applies: resultsGeographyApplies(phase, resultsMeasure.id, focusItem),
                       own: resultsSeries.find((r) => r.key === focusItem.key)?.values ?? [],
                       notApplicableText:
                         resultsMeasure.id !== "points"
@@ -1833,10 +1675,7 @@ export default function TeacherPhaseDashboard() {
               // Snagging round 1 Part 2: the "rank in all subjects at school" population --
               // every comparable subject with entries, focused subject first and one entry
               // per subject at GCSE, exactly as candidateItems counts its category.
-              schoolSubjects={items
-                .filter((i) => focusItem !== null && (i.key === focusItem.key || (i.entries > 0 && comparablePeer(i))))
-                .sort((a, b) => (a.key === focusKey ? -1 : b.key === focusKey ? 1 : 0))
-                .filter((i, idx, all) => phase === "ks5" || all.findIndex((o) => o.subject === i.subject) === idx)
+              schoolSubjects={schoolSubjectsOf(items, focusItem, focusKey, phase)
                 .map((i) => ({ key: i.key, values: categoryPeriods.map((p) => entriesAt(i, p)) }))}
               groupLabel={`${focusFamilyLabel} average`}
               categoryLabel={focusFamilyLabel ?? undefined}
@@ -1854,12 +1693,9 @@ export default function TeacherPhaseDashboard() {
                       subject: focusItem.subject,
                       qualificationType: phase === "ks5" ? focusItem.qualificationType : undefined,
                       label: phase === "ks5" ? focusItem.label : focusItem.subject,
-                      applies: phase === "ks5" || focusItem.qualificationType === POINTS_BEARING_QUALIFICATION.ks4,
+                      applies: candidatesGeographyApplies(phase, focusItem),
                       notApplicableText: `LA, regional and national entries figures aren't available for ${focusItem.subject}: they count GCSE (points-eligible) entries only, and this school's ${focusItem.subject} entries are in a qualification outside that.`,
-                      own: categoryPeriods.map((p) => {
-                        const rows = headlineRowsFor(focusItem, p).filter((h) => h.pointsCoveragePercent !== null);
-                        return rows.length ? Math.round(rows.reduce((a, h) => a + (h.entriesTotal ?? 0) * (h.pointsCoveragePercent! / 100), 0)) : null;
-                      }),
+                      own: pointsEligibleEntriesByPeriod(categoryPeriods, (p) => headlineRowsFor(focusItem, p)),
                     }
                   : undefined
               }
@@ -1953,7 +1789,7 @@ export default function TeacherPhaseDashboard() {
               donut={{
                 // §4.2: a share of an average point score is not a meaningful percentage,
                 // so the donut is genuinely inert for a Results measure, not just greyed.
-                enabled: contextMeasure.id === "entries" || (contextMeasure.id === "bands" && !!bandRange),
+                enabled: shareApplies(contextMeasure.id, !!bandRange),
                 share:
                   contextMeasure.id === "bands" && bandLabel
                     ? {
@@ -2047,7 +1883,7 @@ export default function TeacherPhaseDashboard() {
                     qualificationType: focusItem.qualificationType,
                     // Scored every render from the rows already fetched, so a new range
                     // re-scores the set without fetching again.
-                    rateOf: (rows) => (comparisonsOnBands && bandRange ? bandRate(rows, bandRange)?.rate ?? null : thresholdRate(rows, phase)?.rate ?? null),
+                    rateOf: gradeRateScorer(comparisonsOnBands, bandRange, phase),
                   }
                 : null
             }

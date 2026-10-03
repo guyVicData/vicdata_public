@@ -1,0 +1,286 @@
+// NEW: the same computation through the lifted lib functions, called exactly as page.tsx /
+// SubjectPanels / ComparisonsPanels / CandidatesPanels now call them.
+// (was OLD: the inline logic exactly as it stood in page.tsx / SubjectPanels / ComparisonsPanels /
+// CandidatesPanels at v0.6 HEAD (5597757), copied verbatim, parameterised by the page's
+// state. Only pre-existing lib functions are imported.
+import { ENTRIES_MEASURE, combine, headlineMeasure, measureById, measuresFor, meanOf, rankByValue } from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-panels";
+import { BOTTOM_RANK, bandRate, bestScale, presetsFor, rangeLabel, thresholdRate, type GradeRange } from "/Users/guy/dev/vicdata_public/src/lib/subject-grades";
+import { qualificationFamilyOf } from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-theme";
+import { comparabilityKey, familyFor, familyLabelFor } from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-catalogue";
+import { isAsLevelOrAea } from "/Users/guy/dev/vicdata_public/src/lib/dfe-qualification-buckets";
+import { deserializeAcademicProfile, subjectYearsFor } from "/Users/guy/dev/vicdata_public/src/lib/academic-data-view";
+import * as M from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-measures";
+import * as P from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-populations";
+import * as G from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-geography";
+import { withEnglandBandBenchmark } from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-grade-geography";
+import { rateSeriesByUrn } from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-comparator-grades";
+import * as X from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-comparisons";
+import { currentRowsWithDelta } from "/Users/guy/dev/vicdata_public/src/lib/teacher-view-panels";
+import { buildSubjectItems, type Scenario, type SubjectItem } from "./common";
+
+// Frozen copy of the constant as it was (SubjectAreaSection.tsx:151-155).
+const POINTS_BEARING_QUALIFICATION = { ks2: null, ks4: "GCSE (9-1) Full Course", ks5: "GCE A level" } as const;
+
+export function computeNew(data: any, phase: "ks4" | "ks5", sc: Scenario, rankingSetFlag: boolean) {
+  const entries = data.dashboard.subjectData.entries;
+  const gradeRows: any[] = data.dashboard.subjectData.gradeDistribution;
+  const headline: any[] = data.dashboard.headline;
+  const qualificationHeadline: any[] = data.dashboard.qualificationHeadline;
+  const englandAvg = data.dashboard.englandAverages;
+  const items = buildSubjectItems(entries);
+  const tickedItems = items.filter((i) => sc.ticked.includes(i.key));
+  const focusKey = tickedItems.some((i) => i.key === sc.chosenFocusKey) ? sc.chosenFocusKey : tickedItems[0]?.key ?? null;
+  const familyOfItem = (ph: "ks4" | "ks5", i: SubjectItem) => qualificationFamilyOf(ph, i.qualificationType);
+
+  // P:489-538
+  const ownRowsFor = (item: SubjectItem): any[] => M.ownHeadlineRows(phase, item, headline, qualificationHeadline);
+  const resultsFor = (item: SubjectItem): { value: number; period: number } | null => M.latestOwnPoints(phase, item, ownRowsFor(item));
+  const englandIndex = M.englandIndexOf(englandAvg);
+  const englandValue = (item: SubjectItem, period: number): number | null => M.englandValueAt(englandAvg, englandIndex, phase, item, period);
+  const englandFor = (item: SubjectItem, score: { period: number }): number | null => englandValue(item, score.period);
+
+  // P:876-913 (not lifted; shared shape)
+  const mapChips: any[] = [];
+  {
+    const ph = phase;
+    for (const i of tickedItems) {
+      const bucket = ph === "ks5" ? comparabilityKey(ph, i.qualificationType) : null;
+      const key = `${i.subject}|${bucket ?? "all"}`;
+      const existing = mapChips.find((c) => c.key === key);
+      if (existing) continue;
+      mapChips.push({ key, subject: i.subject, bucket, legend: i.subject });
+    }
+  }
+  const focusItem = tickedItems.find((i) => i.key === focusKey) ?? null;
+  const activeMapChip = focusItem
+    ? mapChips.find((c) => c.subject === focusItem.subject && (phase !== "ks5" || c.bucket === comparabilityKey(phase, focusItem.qualificationType))) ?? null
+    : null;
+
+  // P:930-963
+  const headlineRowsFor = (i: SubjectItem, period: number) => ownRowsFor(i).filter((h) => h.period === period);
+  const pointsAt = (i: SubjectItem, period: number): number | null => M.subjectPointsAt(phase, i, headlineRowsFor(i, period));
+  const entriesAt = (i: SubjectItem, period: number): number | null => M.subjectEntriesAt(headlineRowsFor(i, period));
+  const subjectPeriods = Array.from(new Set(headline.filter((h) => tickedItems.some((i) => i.subject === h.subject)).map((h) => h.period as number))).sort((a, b) => a - b);
+  const englandAt = (i: SubjectItem, period: number): number | null => englandValue(i, period);
+  const showingResults = sc.shared === "results";
+
+  // P:977-1038
+  const thresholdAt = (i: SubjectItem, period: number): number | null => M.subjectThresholdAt(gradeRows, i, period, phase);
+  const resultsMeasures = measuresFor(phase);
+  const resultsMeasure = measureById(phase, sc.resultsMeasureId ?? resultsMeasures[0].id);
+  const usingThreshold = resultsMeasure.id === "threshold";
+  const usingBands = resultsMeasure.id === "bands";
+  const usingGradeRate = usingThreshold || usingBands;
+  const bandPending = sc.bandPending;
+  const focusGradeRows = focusItem ? gradeRows.filter((g) => g.subject === focusItem.subject && g.qualificationType === focusItem.qualificationType) : [];
+  const focusScale = bestScale(focusGradeRows.map((g) => g.grade));
+  const bandRange: GradeRange | null = M.bandRangeFor(focusScale, bandPending, sc.bandSaved);
+  const bandLabel = bandRange ? rangeLabel(bandRange) : null;
+  const gradeRowsFor = (subject: string, qualificationType: string, period: number) =>
+    gradeRows.filter((g) => g.subject === subject && g.qualificationType === qualificationType && g.period === period);
+  const bandAt = (i: SubjectItem, period: number): number | null => M.subjectBandAt(gradeRows, i, period, bandRange);
+  const hasGrades = (i: SubjectItem, period: number) => M.hasGradesAt(gradeRows, i, period);
+  const resultsMeasureShown = usingBands && bandLabel ? { ...resultsMeasure, noun: `share of entries at ${bandLabel.toLowerCase()}` } : resultsMeasure;
+  const valueForResults = (i: SubjectItem, period: number) =>
+    usingThreshold ? thresholdAt(i, period) : usingBands ? bandAt(i, period) : pointsAt(i, period);
+
+  // P:1055-1160
+  const { inFocusQualFamily } = P.focusQualificationFamily(phase, focusItem);
+  const focusFamilyLabel = focusItem ? familyLabelFor(headline, focusItem.subject) ?? "its category" : null;
+  const categoryItems: SubjectItem[] = P.categoryItemsOf(focusItem, items, headline, inFocusQualFamily);
+  const candidateItems = P.candidateItemsOf(categoryItems, phase);
+  const categoryPeriods = Array.from(new Set(headline.filter((h) => categoryItems.some((i) => i.subject === h.subject)).map((h) => h.period as number))).sort((a, b) => a - b);
+  const resultsPeriods = M.periodsForMeasure(resultsMeasure.id, categoryPeriods, categoryItems, thresholdAt, hasGrades);
+  const resultsSeries = P.keepFocusOrFigured(categoryItems
+    .map((i) => ({
+      key: i.key,
+      values: resultsPeriods.map((p) => valueForResults(i, p)),
+      benchmark: M.hasEnglandPointsBenchmark(resultsMeasure.id) ? resultsPeriods.map((p) => englandAt(i, p)) : undefined,
+    })), focusKey);
+  const resultsGroups =
+    resultsSeries.length < 2
+      ? []
+      : [
+          { label: `${focusFamilyLabel} average`, values: P.memberMeans(resultsPeriods, resultsSeries) },
+          ...(M.hasEnglandPointsBenchmark(resultsMeasure.id)
+            ? [{ label: `England ${focusFamilyLabel} average`, values: resultsPeriods.map((_, pi) => meanOf(resultsSeries.map((r) => r.benchmark?.[pi] ?? null))) }]
+            : []),
+        ];
+
+  // P:1174-1381
+  const contextFallsBack = M.contextFallsBackFor(showingResults, resultsMeasure.id, !!bandRange);
+  const contextMeasure = M.contextMeasureFor(phase, showingResults, contextFallsBack, resultsMeasureShown);
+  const savedAgainst = sc.savedAgainst;
+  const contextAgainst = savedAgainst === "selected" ? "selected" : savedAgainst === "whole" ? "whole" : "category";
+  const contextSelected = sc.contextSelected;
+  const groupRows = P.contextGroupRows(phase, headline, qualificationHeadline);
+  const inGroup = (qualificationType: string) => P.inContextGroup(phase, qualificationType);
+  const groupInputs = { phase, measureId: contextMeasure.id, groupRows, gradeRows, bandRange, inGroup };
+  const groupValueFor = (subject: string, period: number): number | null => M.contextGroupValue(groupInputs, subject, period);
+  const asOrAeaOnly = P.asOrAeaOnlySubjects(items);
+  const inContextFamily = inFocusQualFamily;
+  const contextOffer = P.contextOfferOf(items, inContextFamily);
+  const schoolSubjectNames = P.schoolSubjectNamesOf(groupRows, asOrAeaOnly);
+  const contextMembers: string[] = P.contextMembersOf({ against: contextAgainst, schoolSubjectNames, candidateItems, contextOffer, selected: contextSelected, focusItem, inFamily: inContextFamily, asOrAeaOnly, tickedItems });
+  const contextGroupTotals = subjectPeriods.map((p) => combine(contextMembers.map((n) => groupValueFor(n, p)), contextMeasure.aggregate));
+  const contextGroupAverage = subjectPeriods.map((p) => meanOf(contextMembers.map((n) => groupValueFor(n, p))));
+  const contextValueFor = (i: SubjectItem, period: number): number | null => {
+    if (contextMeasure.id === "entries") return entriesAt(i, period);
+    if (contextMeasure.id === "points") return pointsAt(i, period);
+    if (contextMeasure.id === "bands") return bandAt(i, period);
+    return thresholdAt(i, period);
+  };
+  const contextPeriods = M.periodsForMeasure(contextMeasure.id, subjectPeriods, tickedItems, thresholdAt, hasGrades);
+  const contextBandShare = (period: number): { met: number; entries: number } | null => M.contextBandShareAt(contextMembers, gradeRows, period, bandRange, inGroup);
+  const atContextPeriod = (values: (number | null)[]) => contextPeriods.map((p) => values[subjectPeriods.indexOf(p)] ?? null);
+  const contextItems = P.contextItemsOf({ focusItem, against: contextAgainst, candidateItems, items, contextMembers });
+  const contextSeries = P.keepFocusOrFigured(contextItems
+    .map((i) => ({ key: i.key, values: contextPeriods.map((p) => contextValueFor(i, p)), benchmark: atContextPeriod(contextGroupAverage) })), focusKey);
+
+  // P:1411-1443 Comparisons
+  const profiles = (data.__profiles ??= data.profiles.map(deserializeAcademicProfile));
+  const comparatorSubjectSeries: Record<string, any> = {};
+  if (activeMapChip && profiles) {
+    for (const profile of profiles) {
+      const rows = subjectYearsFor(profile, phase, activeMapChip.subject, activeMapChip.bucket);
+      comparatorSubjectSeries[profile.urn] = {
+        results: rows.filter((r) => r.avgPointScore !== null).map((r) => ({ period: r.period, value: r.avgPointScore as number })),
+        candidates: rows.filter((r) => r.entriesTotal !== null && r.entriesTotal !== undefined).map((r) => ({ period: r.period, value: r.entriesTotal })),
+      };
+    }
+  }
+  const comparisonsOnBands = usingBands && !!bandRange;
+  const comparisonsMeasure = M.comparisonsMeasureFor(phase, showingResults, !!activeMapChip, usingThreshold, comparisonsOnBands, resultsMeasureShown, "HEADLINE");
+
+  // P:1720-1737, 1850-1865: geography props
+  const resultsGeo = focusItem
+    ? {
+        applies: G.resultsGeographyApplies(phase, resultsMeasure.id, focusItem),
+        own: resultsSeries.find((r) => r.key === focusItem.key)?.values ?? [],
+        notApplicableIsPointsOnly: resultsMeasure.id !== "points",
+      }
+    : undefined;
+  const candidatesGeo = focusItem
+    ? {
+        applies: G.candidatesGeographyApplies(phase, focusItem),
+        own: G.pointsEligibleEntriesByPeriod(categoryPeriods, (p) => headlineRowsFor(focusItem, p)),
+      }
+    : undefined;
+  // P:1824-1840 Candidates props
+  const candSubjects = candidateItems.map((i) => ({ key: i.key, values: categoryPeriods.map((p) => entriesAt(i, p)) }));
+  const schoolSubjects = P.schoolSubjectsOf(items, focusItem, focusKey, phase)
+    .map((i) => ({ key: i.key, values: categoryPeriods.map((p) => entriesAt(i, p)) }));
+  // P:1953-1968 donut
+  const donut = {
+    enabled: M.shareApplies(contextMeasure.id, !!bandRange),
+    share:
+      contextMeasure.id === "bands" && bandLabel
+        ? { values: contextPeriods.map((p) => contextBandShare(p)?.met ?? null), totals: contextPeriods.map((p) => contextBandShare(p)?.entries ?? null) }
+        : undefined,
+    groupTotals: atContextPeriod(contextGroupTotals),
+  };
+  const groupsCtx = atContextPeriod(contextGroupAverage);
+  // P:2043-2053 threshold prop
+  const threshold =
+    showingResults && (usingThreshold || comparisonsOnBands) && activeMapChip && focusItem
+      ? {
+          subject: focusItem.subject,
+          qualificationType: focusItem.qualificationType,
+          rateOf: M.gradeRateScorer(comparisonsOnBands, bandRange, phase),
+        }
+      : null;
+
+  // ---------------- SubjectPanels (Column 1 Results, with gradeBand; and Context) SP:282-346
+  const spFor = (subjectsIn: any[], periods: number[], focus: string | null, gradeBand: any, benchmarkLabel: string | undefined) => {
+    const englandGradeRows: any[] = gradeBand ? data.englandGrades[`${gradeBand.subject}::${gradeBand.qualificationType}`] ?? [] : [];
+    const subjects = gradeBand ? withEnglandBandBenchmark(subjectsIn, focus, periods, englandGradeRows, gradeBand.range) : subjectsIn;
+    const yearIdx: number | null = null;
+    const realIdx = periods.map((_, i) => i).filter((i) => subjects.some((s) => s.values[i] !== null));
+    const defaultIdx = realIdx.length ? realIdx[realIdx.length - 1] : -1;
+    const latestIdx = yearIdx !== null && realIdx.includes(yearIdx) ? yearIdx : defaultIdx;
+    const rows = currentRowsWithDelta(subjects, latestIdx, !!benchmarkLabel).map((r) => ({ key: r.s.key, value: r.value, bench: r.bench, delta: r.delta }));
+    return { subjects: subjects.map((s) => ({ key: s.key, benchmark: s.benchmark })), rows };
+  };
+  const spResults = spFor(
+    resultsSeries,
+    resultsPeriods,
+    focusKey,
+    usingBands && focusItem ? { range: bandRange, subject: focusItem.subject, qualificationType: focusItem.qualificationType } : undefined,
+    usingThreshold ? undefined : "National",
+  );
+  const spContext = spFor(contextSeries, contextPeriods, focusKey, undefined, "ctx");
+  const spNoBench = spFor(resultsSeries, resultsPeriods, focusKey, undefined, undefined);
+  // SP:297 effectiveView, for every view x enabled combination
+  const views = ["tiles", "grades", "donut", "bar", "list", "table"];
+  const effective = (view: string, donutEnabled: boolean | undefined, tiles: boolean, gradeBand: boolean, rankedViews: boolean) =>
+    (view === "donut" && !donutEnabled) || (view === "tiles" && !tiles) || (view === "grades" && !gradeBand) || (view === "list" && !rankedViews) ? "bar" : view;
+  const effTable: string[] = [];
+  for (const v of views) for (const d of [undefined, false, true]) for (const t of [false, true]) for (const g of [false, true]) for (const r of [false, true]) effTable.push(effective(v, d, t, g, r));
+
+  // ---------------- CandidatesPanels group CP:157-160
+  const cpGroupValues = candidateItems.length > 1 ? P.memberMeans(categoryPeriods, candSubjects) : null;
+
+  // ---------------- ComparisonsPanels XP:196-310
+  const allSchools: any[] = data.nearest.rows;
+  const seriesByUrn = activeMapChip ? comparatorSubjectSeries : data.nearest.seriesByUrn;
+  const measure = comparisonsMeasure;
+  const subjectLabel = activeMapChip?.legend ?? null;
+  const rankingSet = rankingSetFlag ? { targetRank: 3, ranked: 100, average: [] } : null;
+  const gradeRowsByUrn: Record<string, any[]> | null = threshold
+    ? Object.fromEntries(Object.entries(data.gradeRowsByUrn as Record<string, any[]>).map(([u, rs]) => [u, rs.filter((g) => g.subject === threshold.subject)]))
+    : null;
+  const seriesLoading = false;
+  const rateSeries: Record<string, { period: number; value: number }[]> = threshold && gradeRowsByUrn ? rateSeriesByUrn(gradeRowsByUrn, threshold.subject, threshold.qualificationType, threshold.rateOf) : {};
+  const xpViews: string[] = [];
+  for (const vc of ["tiles", "graph", "map", "ranking"]) xpViews.push(X.comparisonsCurrentView(rankingSet, vc));
+  const seriesKey = measure.id === "entries" ? "candidates" : "results";
+  const seriesFor = (urn: string) => (threshold ? rateSeries[urn] ?? [] : seriesByUrn[urn]?.[seriesKey] ?? []);
+  const schools = X.comparisonSchools(allSchools, seriesFor, seriesLoading);
+  const target = schools.find((s) => s.isTarget) ?? null;
+  const periods = Array.from(new Set(schools.flatMap((s) => seriesFor(s.urn).map((r: any) => r.period as number)))).sort((a, b) => a - b);
+  const valuesFor = (urn: string) => periods.map((p) => seriesFor(urn).find((r: any) => r.period === p)?.value ?? null);
+  const latestIdx = (() => {
+    for (let i = periods.length - 1; i >= 0; i--) if (schools.some((s) => valuesFor(s.urn)[i] !== null)) return i;
+    return -1;
+  })();
+  const valueAt = (urn: string) => (latestIdx >= 0 ? valuesFor(urn)[latestIdx] : null);
+  const ranked = X.rankedComparisons(schools, valueAt);
+  const rankOfUrn = rankByValue(ranked.map((r) => ({ key: r.urn, value: r.value })));
+  const onRankingMeasure = X.onRankingMeasure(rankingSet, subjectLabel, threshold, measure.id);
+
+  return {
+    focusKey,
+    resultsFor: items.map((i) => resultsFor(i)),
+    englandFor: items.map((i) => { const s = resultsFor(i); return s ? englandFor(i, s) : null; }),
+    categoryItems: categoryItems.map((i) => i.key),
+    candidateItems: candidateItems.map((i) => i.key),
+    categoryPeriods,
+    resultsPeriods,
+    resultsSeries,
+    resultsGroups,
+    contextFallsBack,
+    contextMeasure: { id: contextMeasure.id, label: contextMeasure.label, noun: contextMeasure.noun, format: contextMeasure.format },
+    contextAgainst,
+    contextOffer: contextOffer.map((i) => i.key),
+    contextMembers,
+    contextGroupTotals,
+    contextGroupAverage,
+    contextPeriods,
+    contextItems: contextItems.map((i) => i.key),
+    contextSeries,
+    comparisonsMeasure: { id: comparisonsMeasure.id, label: comparisonsMeasure.label, noun: comparisonsMeasure.noun, format: comparisonsMeasure.format },
+    resultsGeo,
+    candidatesGeo,
+    candSubjects,
+    schoolSubjects,
+    donut,
+    groupsCtx,
+    threshold: threshold ? { subject: threshold.subject, qualificationType: threshold.qualificationType } : null,
+    spResults,
+    spContext,
+    spNoBench,
+    effTable,
+    cpGroupValues,
+    xp: { rateSeries, xpViews, schools: schools.map((s) => s.urn), target: target?.urn ?? null, periods, ranked: ranked.map((r) => [r.urn, r.value]), rankOfUrn, onRankingMeasure },
+  };
+}

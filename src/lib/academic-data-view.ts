@@ -171,6 +171,7 @@ export function availableFamilies(profiles: AcademicSchoolProfile[], stage: KsSt
     .sort((a, b) => a.familyLabel.localeCompare(b.familyLabel));
 }
 
+// R-ZERO-CANDIDATE (Data View and dashboard card; not Teacher view comparator sets)
 export function stagesPresent(profile: AcademicSchoolProfile): KsStage[] {
   return (["ks2", "ks4", "ks5"] as KsStage[]).filter((s) => stageHasUsableData(profile, s));
 }

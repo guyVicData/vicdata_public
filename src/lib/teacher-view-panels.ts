@@ -266,6 +266,7 @@ export function periodsWithData(data: PanelData): number[] {
 // through this, so the tag, the pill, the axis and the sentence cannot disagree about
 // where a series starts. Interior gaps are LEFT ALONE -- a missing middle year is real
 // and TrendChart draws it as a break in the line.
+// R-PERIOD-TRIM
 export function trimToData(data: PanelData): PanelData {
   const real = data.periods.map((_, i) => data.series.some((s) => s.values[i] !== null));
   const first = real.indexOf(true);
@@ -308,6 +309,7 @@ export function sliceFrom(data: PanelData, start: number | null): PanelData {
 // average point score genuinely has four years (2021/22 on, since DfE published no point
 // scores for the teacher-assessed 2020/21 cohort), while the threshold measure genuinely
 // has two (2023/24 on). Same column, same card, two different DfE datasets.
+// R-TREND-LINE-4YR
 export const TREND_LINE_MIN_YEARS = 4;
 
 export function trendChartKind(data: PanelData): "bars" | "line" {
@@ -322,6 +324,7 @@ export function trendChartKind(data: PanelData): "bars" | "line" {
 // Ties share a position and the next rank skips accordingly -- two schools 3rd means the
 // next is 5th -- because the alternative is telling two identical schools that one of
 // them is better.
+// R-RANK-TIES, R-COMPARATOR-NO-FIGURE (never ranked last).
 export function rankByValue(rows: { key: string; value: number | null }[]): Map<string, number> {
   const placed = rows.filter((r) => r.value !== null).sort((a, b) => b.value! - a.value!);
   const ranks = new Map<string, number>();
@@ -330,6 +333,29 @@ export function rankByValue(rows: { key: string; value: number | null }[]): Map<
     ranks.set(r.key, previous && previous.value === r.value ? ranks.get(previous.key)! : i + 1);
   });
   return ranks;
+}
+
+// R-PREV-YEAR-FALLBACK, R-SAME-YEAR-BENCH: Current's rows for the year at `latestIdx`, each
+// with its delta. Against the benchmark for the SAME year where the measure has one
+// (`hasBenchmark`); otherwise against the subject's own previous published year, which is
+// the other real comparison available -- never a column of dashes. (Lifted verbatim from
+// SubjectPanels in 0.6 S2.)
+export function currentRowsWithDelta<S extends { values: (number | null)[]; benchmark?: (number | null)[] }>(
+  subjects: S[],
+  latestIdx: number,
+  hasBenchmark: boolean,
+): { s: S; value: number | null; bench: number | null; delta: number | null }[] {
+  const previousValue = (s: S): number | null => {
+    for (let i = latestIdx - 1; i >= 0; i--) if (s.values[i] !== null) return s.values[i];
+    return null;
+  };
+  return subjects.map((s) => {
+    const value = latestIdx >= 0 ? s.values[latestIdx] : null;
+    const bench = latestIdx >= 0 ? s.benchmark?.[latestIdx] ?? null : null;
+    const against = hasBenchmark ? bench : previousValue(s);
+    const delta = value !== null && against !== null ? value - against : null;
+    return { s, value, bench, delta };
+  });
 }
 
 // ------------------------------------------------------------- trend arithmetic
@@ -350,6 +376,7 @@ export type Direction = "up" | "down" | "flat";
 
 // ±4% is the wireframe's own threshold for calling a trend rather than reading noise as
 // one, kept as-is rather than re-invented here.
+// R-TREND-FLAT-4PCT
 const FLAT_BAND_PERCENT = 4;
 
 export function classifyChange(percent: number | null): Direction {

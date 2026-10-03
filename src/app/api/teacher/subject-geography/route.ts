@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
   const fetchRows = async (groupingType: "la" | "region" | "national", key: string | null) => {
     if (!key) return null;
     // LA and region keep the backend's minimum of 5 schools; England takes every real row.
+    // R-MIN-SCHOOLS (England exempt), R-KS5-ENGLAND-EXACT (exact qualification at Post-16)
     const minSchoolCount = groupingType === "national" ? 1 : undefined;
     const query = { measure: "avg_point_score", groupingType, groupingKeys: [key], subject, minSchoolCount };
     const rows =

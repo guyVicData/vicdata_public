@@ -86,7 +86,7 @@ export function RankingsMap({
         untitledSizeLegend={untitledSizeLegend}
         forcedColourMode={forcedColourMode}
         changeValues={changeValues}
-        // Same GCSE exclusion the advanced dashboard's map applies, with its own note.
+        // Same GCSE exclusion the advanced dashboard's map applies, with its own note. R-IGCSE-EXCL (the predicate is lib's igcseExclusionLikely).
         ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}
       />
     </div>

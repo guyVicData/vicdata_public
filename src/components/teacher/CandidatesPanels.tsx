@@ -20,7 +20,6 @@ import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
   ENTRIES_MEASURE,
-  meanOf,
   percentChange,
   rankByValue,
   periodsWithData,
@@ -40,6 +39,7 @@ import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
+import { memberMeans } from "@/lib/teacher-view-populations";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
 // `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
@@ -156,7 +156,7 @@ export function CandidatesPanels({
   // subject is comparable with; the category's total would dwarf it.
   const group =
     groupLabel && subjects.length > 1
-      ? { key: "group", label: groupLabel, colour: "var(--muted3)", values: periods.map((_, i) => meanOf(subjectSeries.map((s) => s.values[i]))) }
+      ? { key: "group", label: groupLabel, colour: "var(--muted3)", values: memberMeans(periods, subjectSeries) }
       : null;
   // Steps 2, 4, 5: Trend draws EVERY subject in the category individually -- the same
   // series % change already used -- not the focused subject against one category-average

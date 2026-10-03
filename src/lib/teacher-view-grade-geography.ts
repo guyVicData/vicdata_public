@@ -6,6 +6,7 @@
 // grouping is one the RPC suppressed (fewer than 5 schools), not a zero.
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { bandRate, type GradeRange } from "@/lib/subject-grades";
 
 export type GradeGeographyRow = { period: number; grade: string; entries: number; schoolCount: number };
 type Area = { name: string; rows: GradeGeographyRow[] } | null;
@@ -40,4 +41,25 @@ export function useSubjectGradeGeography(input: GradeGeographyInput | null): { i
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, geo?.id]);
   return geo && geo.id === id ? geo : null;
+}
+
+/**
+ * R-BANDS-ENGLAND-BENCH, R-SAME-YEAR-BENCH, R-MIN-SCHOOLS: on Grade bands the focused
+ * subject's benchmark is England's rate on the SAME span for the same year, from its
+ * national grade rows (a grade England suppressed below 5 schools is simply absent).
+ * Peers have no fetched England rows, so they carry none, as on the threshold measure.
+ * The focused series is `focus`, or the first one when `focus` is not among them.
+ * (Lifted verbatim from SubjectPanels in 0.6 S2.)
+ */
+export function withEnglandBandBenchmark<S extends { key: string; benchmark?: (number | null)[] }>(
+  subjects: S[],
+  focus: string | null,
+  periods: number[],
+  englandRows: GradeGeographyRow[],
+  range: GradeRange | null,
+): S[] {
+  const englandBandRate = (period: number): number | null =>
+    range ? bandRate(englandRows.filter((r) => r.period === period), range)?.rate ?? null : null;
+  const focusKey = (subjects.find((x) => x.key === focus) ?? subjects[0])?.key ?? null;
+  return subjects.map((x) => (x.key === focusKey ? { ...x, benchmark: periods.map(englandBandRate) } : x));
 }

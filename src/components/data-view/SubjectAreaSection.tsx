@@ -25,7 +25,7 @@
 // before this round.
 import { useCallback, useMemo, useState } from "react";
 import { stageFamilies, familyYearsFor, type AcademicFamilyYear, type AcademicSchoolProfile, type KsStage, type SubjectEntry, type SubjectValueAdded, type AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
-import { bucketFor, ks5BucketHasPointsFigure, KS5_BUCKET_LABEL, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
+import { bucketFor, ks5BucketHasPointsFigure, KS5_BUCKET_LABEL, POINTS_BEARING_QUALIFICATION, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
 import { academicYearLabel } from "./TrendPill";
 import SubjectAreaBarChart from "./SubjectAreaBarChart";
@@ -77,6 +77,7 @@ export type SubjectRow = {
 // all of those needlessly.
 const SCORED_BUCKETS: Ks5Bucket[] = ["alevel", "ib", "btec_ocr", "tlevel"];
 
+// R-SINGLE-BUCKET-100 (Data View only; to be lifted when Data View measures are registered).
 function singleScoredBucketFor(profile: AcademicSchoolProfile, familyId: string): Ks5Bucket | null {
   const present = SCORED_BUCKETS.filter((b) =>
     (profile.ks5FamiliesByBucket?.[b] ?? []).some((y) => y.familyId === familyId && y.avgPointScore !== null),
@@ -144,15 +145,10 @@ export function buildCategoryRows(
   });
 }
 
-// The one qualification type per stage that actually carries a points-based score.
-// Confirmed live against ingested data: only these two feed avg_point_score into the
-// rollup, so only their row can honestly claim the headline-derived `results` figure.
-// Every other qualification type at the same stage has real entries and no score.
-export const POINTS_BEARING_QUALIFICATION: Record<KsStage, string | null> = {
-  ks2: null,
-  ks4: "GCSE (9-1) Full Course",
-  ks5: "GCE A level",
-};
+// The one qualification type per stage that actually carries a points-based score. Moved
+// to the data layer (dfe-qualification-buckets.ts, R-KS4-POINTS-GCSE-FULL) in 0.6 S2 and
+// re-exported here so existing imports keep working.
+export { POINTS_BEARING_QUALIFICATION };
 
 // Trims the DfE band/grade-structure suffix off a qualification label so a
 // disambiguating row label stays readable: "BTEC National Foundation Diploma L3 -

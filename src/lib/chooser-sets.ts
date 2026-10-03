@@ -47,6 +47,7 @@ export async function resolveFixedSet(targetUrn: string, phase: KsStage, urns: s
 // map -- the school's rank in the WHOLE population and that population's true average,
 // both on the ranking's own measure (HEADLINE_MEASURE). The rows above are a deliberately
 // skewed sample (the top and the school's neighbours), so no average is taken from them.
+// R-RANKING-SAMPLE: rank and average from the whole population, never from the sample.
 export type RankingFigures = {
   matched: number;
   ranked: number;

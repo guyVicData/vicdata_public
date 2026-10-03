@@ -630,6 +630,7 @@ export async function lookupAcademicSubjectGradeGeography(params: {
         p_limit: PAGE_SIZE,
         p_offset: page * PAGE_SIZE,
         // The RPC's own minimum (5 schools) always: a thin row reads as not shown.
+        // R-MIN-SCHOOLS: grade-grain geography keeps the RPC's 5-school minimum, England included.
         p_min_school_count: null,
       },
       params.signal,

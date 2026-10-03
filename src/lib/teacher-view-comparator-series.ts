@@ -127,6 +127,7 @@ export async function rankSets(
 }> {
   const byUrn = new Map<string, AcademicSchoolProfile>();
   const fetched = new Set<string>();
+  // R-IGCSE-EXCL, R-FOCUS-NEVER-FILTERED (target kept, flagged)
   const excluded = (u: string) => phase === "ks4" && !!byUrn.get(u) && igcseExclusionLikely(byUrn.get(u)!);
   let usable = pool;
   let sets = buildSets(usable);
@@ -192,6 +193,7 @@ export async function rankFixedSets(
   const union = Array.from(new Set([targetUrn, ...sets.flatMap((s) => s.urns)]));
   const profiles = union.length ? await fetchAcademicProfiles(union, { includePopulation: false }) : [];
   const byUrn = new Map<string, AcademicSchoolProfile>(profiles.map((p) => [p.urn, p]));
+  // R-IGCSE-EXCL, R-FOCUS-NEVER-FILTERED (target kept in a fixed set, flagged igcseExcluded)
   const excluded = (u: string) => phase === "ks4" && !!byUrn.get(u) && igcseExclusionLikely(byUrn.get(u)!);
   const valueFor = (u: string): number | null => {
     const prof = byUrn.get(u);

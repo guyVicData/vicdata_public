@@ -23,7 +23,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage, SubjectGradeCount } from "@/lib/academic-data-view";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
+import { fetchComparatorGrades, rateSeriesByUrn } from "@/lib/teacher-view-comparator-grades";
+import { comparisonSchools, comparisonsCurrentView, onRankingMeasure as isOnRankingMeasure, rankedComparisons, sampleAllowsMap } from "@/lib/teacher-view-comparisons";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
@@ -195,22 +196,16 @@ export function ComparisonsPanels({
   const seriesLoading = profilesLoading || (!!gradesKey && !gradesLoaded);
   // Each school's rate per year: its rows for this subject AND this qualification type
   // (a GCSE and a Cambridge National in one subject are scored apart), as the page does.
-  const rateSeries: Record<string, { period: number; value: number }[]> = {};
-  if (threshold && gradesLoaded && grades?.rows) {
-    for (const [urn, rows] of Object.entries(grades.rows)) {
-      const mine = rows.filter((g) => g.subject === threshold.subject && g.qualificationType === threshold.qualificationType);
-      rateSeries[urn] = Array.from(new Set(mine.map((g) => g.period)))
-        .sort((a, b) => a - b)
-        .map((period) => ({ period, value: threshold.rateOf(mine.filter((g) => g.period === period)) }))
-        .filter((r): r is { period: number; value: number } => r.value !== null);
-    }
-  }
+  const rateSeries: Record<string, { period: number; value: number }[]> =
+    threshold && gradesLoaded && grades?.rows
+      ? rateSeriesByUrn(grades.rows, threshold.subject, threshold.qualificationType, threshold.rateOf)
+      : {};
 
   // Column 3 round Part 1: Map is the default view, and first in the icon rail to match.
   const [viewChosen, setView] = useState<"tiles" | "graph" | "map" | "ranking">("map");
   // Part 4: a ranking has no Map -- its default is the tiles view -- and a list of schools
   // has no tiles view; whichever was chosen falls back to the other's default.
-  const view = rankingSet ? (viewChosen === "map" ? "tiles" : viewChosen) : viewChosen === "tiles" ? "map" : viewChosen;
+  const view = comparisonsCurrentView(rankingSet, viewChosen);
   // The card map's "Dot size / Colour" line, handed up by the map (onCaption) so it can
   // sit behind the caption button rather than over the map.
   const [mapCaption, setMapCaption] = useState<string | null>(null);
@@ -251,7 +246,7 @@ export function ComparisonsPanels({
   // measure: the same school reappears for any subject it does have figures for. Not
   // applied while the per-subject rows are still loading, when "no data yet" is not "no
   // data". The school itself always stays.
-  const schools = seriesLoading ? allSchools : allSchools.filter((s) => s.isTarget || seriesFor(s.urn).length > 0);
+  const schools = comparisonSchools(allSchools, seriesFor, seriesLoading);
   const target = schools.find((s) => s.isTarget) ?? null;
   const others = schools.filter((s) => !s.isTarget);
 
@@ -271,10 +266,7 @@ export function ComparisonsPanels({
   // ------------------------------------------------------------------ Current
   // A comparator with history but nothing in the latest year is left out of the ranking
   // for the same reason: a row of dashes is not a position.
-  const ranked = [...schools]
-    .map((s) => ({ ...s, value: valueAt(s.urn) }))
-    .filter((r) => r.isTarget || r.value !== null)
-    .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  const ranked = rankedComparisons(schools, valueAt);
   const placed = ranked.filter((r) => r.value !== null);
   const rankOfUrn = rankByValue(ranked.map((r) => ({ key: r.urn, value: r.value })));
   const targetRank = target ? rankOfUrn.get(target.urn) ?? null : null;
@@ -284,7 +276,7 @@ export function ComparisonsPanels({
   // Not on a rate: the map is still coloured and ranked by average point score.
   // Part 4: on a ranking, compared on the ranking's own measure (the headline, no subject
   // chip, not entries), the rank is the one in the WHOLE population, not in the sample.
-  const onRankingMeasure = !!rankingSet && !subjectLabel && !threshold && measure.id !== "entries";
+  const onRankingMeasure = isOnRankingMeasure(rankingSet, subjectLabel, threshold, measure.id);
   const setRank = rankingSet?.targetRank ? { rank: rankingSet.targetRank, total: rankingSet.ranked } : null;
   const shownRank =
     (onRankingMeasure || view === "tiles") && setRank
@@ -612,7 +604,7 @@ export function ComparisonsPanels({
   // Below TREND_LINE_MIN_YEARS real years TrendChart could only draw bars per year, which
   // is not a trend line: the panel is the table alone until the span supports a line.
   const hasTrendLine = trendChartKind(trendData) === "line";
-  const trendMapOk = !rankingSet && !!schoolUrn && trendTable.periods.length >= 2;
+  const trendMapOk = sampleAllowsMap(rankingSet) && !!schoolUrn && trendTable.periods.length >= 2;
   const trendShows = trendView === "map" && trendMapOk ? "map" : trendView === "table" || !hasTrendLine ? "table" : "chart";
 
   // The one title line over every view (ViewTitle): what is compared, over which schools,
@@ -710,7 +702,7 @@ export function ComparisonsPanels({
     changeTable.periods.map((_, i) => meanOf(changeTable.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
   );
 
-  const changeMapOk = !rankingSet && !!schoolUrn && changeTable.periods.length >= 2;
+  const changeMapOk = sampleAllowsMap(rankingSet) && !!schoolUrn && changeTable.periods.length >= 2;
   const changeShows = changeView === "map" && !changeMapOk ? "chart" : changeView;
 
   const changeHalf: PanelRender = {

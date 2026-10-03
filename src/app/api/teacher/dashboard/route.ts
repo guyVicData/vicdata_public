@@ -53,6 +53,7 @@ import {
 //     England average) of exactly the kind the exact figures replace.
 type EnglandAverage = { key: string; period: number; value: number };
 
+// R-KS5-ENGLAND-EXACT, R-MIN-SCHOOLS (national: min 1)
 async function englandAverages(phase: "ks4" | "ks5"): Promise<{ basis: "qualification" | "subject"; values: EnglandAverage[] }> {
   if (phase === "ks5") {
     // One unfiltered national call, keyed here. National only, so every real row
