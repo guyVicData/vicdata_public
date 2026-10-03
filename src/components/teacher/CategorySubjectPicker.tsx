@@ -27,6 +27,11 @@
 //     "N of M ticked" (a bulk change is one write, not one per subject);
 //   - `showAllToggle`: a global Select all / Deselect all over every subject offered;
 //   - `defaultExpanded`: category ids open on first render.
+//   - `single` (0.6 S4, Add a view's 2a "Choose a subject", Ch2Subject.dc.html): pick one --
+//     radio rows, no "Selected so far" panel (the chooser's footer names the pick), and a
+//     category says "1 picked" instead of "N of M ticked". `onToggle` receives the key.
+//   - `search`: a "Search subjects" box between the tabs and the categories (Ch2Subject),
+//     narrowing the categories and opening every one that still has a match.
 // Changes still apply live: there is no Apply step, as before.
 import { useState } from "react";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
@@ -52,6 +57,8 @@ export function CategorySubjectPicker({
   tabs: showTabs = true,
   showAllToggle = false,
   defaultExpanded = [],
+  single = false,
+  search = false,
 }: {
   families: QualificationFamily[]; // already filtered to the step-1 selection, in order
   items: PickerItem[];
@@ -63,6 +70,8 @@ export function CategorySubjectPicker({
   tabs?: boolean;
   showAllToggle?: boolean;
   defaultExpanded?: string[];
+  single?: boolean;
+  search?: boolean;
 }) {
   // Without tabs every item sits under one implicit family: the first given, or a
   // placeholder when the caller has already narrowed the items itself.
@@ -70,6 +79,7 @@ export function CategorySubjectPicker({
   const tabs = showTabs ? families.filter((f) => items.some((i) => i.familyId === f.id)) : items.length ? [implicit] : [];
   const familyOfItem = (i: PickerItem) => (showTabs ? i.familyId : implicit.id);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(defaultExpanded.map((id) => [`${showTabs ? families[0]?.id : implicit.id}:${id}`, true])),
   );
@@ -94,7 +104,8 @@ export function CategorySubjectPicker({
 
   if (!active) return <p className="text-sm text-[var(--muted)]">No subject entries under the qualifications you ticked.</p>;
 
-  const inTab = items.filter((i) => familyOfItem(i) === active.id);
+  const q = query.trim().toLowerCase();
+  const inTab = items.filter((i) => familyOfItem(i) === active.id && (!q || i.label.toLowerCase().includes(q)));
   const allKeys = items.map((i) => i.key);
   const nAll = allKeys.filter((k) => ticked.includes(k)).length;
   const linkClass = "text-[12.5px] font-semibold text-[var(--accent,var(--fg))] disabled:text-[var(--muted3)]";
@@ -119,7 +130,8 @@ export function CategorySubjectPicker({
       <div className="flex flex-wrap gap-2" role="tablist">
         {tabs.map((t) => {
           const on = t.id === active.id;
-          const n = items.filter((i) => familyOfItem(i) === t.id && ticked.includes(i.key)).length;
+          // Pick-one: the tab says how many subjects it holds (Ch2Subject's "GCSE · 21").
+          const n = items.filter((i) => familyOfItem(i) === t.id && (single || ticked.includes(i.key))).length;
           return (
             <button
               key={t.id}
@@ -141,6 +153,24 @@ export function CategorySubjectPicker({
       </div>
       )}
 
+      {search && (
+        <label className="flex items-center gap-2 rounded-lg border border-[var(--panel-border2)] px-2.5 py-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 text-[var(--muted3)]" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search subjects"
+            aria-label="Search subjects"
+            className="min-w-0 flex-grow bg-transparent text-[13px] outline-none placeholder:text-[var(--muted3)]"
+          />
+        </label>
+      )}
+
+      {!single && (
       <div className="flex flex-col gap-2.5 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3.5">
         <p className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Selected so far</p>
         {tabs.map((t) => {
@@ -173,11 +203,12 @@ export function CategorySubjectPicker({
           );
         })}
       </div>
+      )}
 
       <div className="flex flex-col gap-2.5">
         {categories.map((cat) => {
           const key = `${active.id}:${cat.id}`;
-          const open = !!expanded[key];
+          const open = !!expanded[key] || (!!q && !!search);
           const subjects = inTab.filter((i) => catOf(i).id === cat.id).sort((a, b) => a.label.localeCompare(b.label));
           const n = subjects.filter((i) => ticked.includes(i.key)).length;
           const c = catColour(cat.id);
@@ -197,9 +228,13 @@ export function CategorySubjectPicker({
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c }} />
                   <span className="min-w-0 flex-grow text-[14.5px] font-bold">{cat.label}</span>
                   {/* "ticked" drops on a phone, where it pushed the category name onto three lines. */}
+                  {single ? (
+                    <span className={`shrink-0 text-[12.5px] ${n ? "font-semibold text-[var(--accent,var(--fg))]" : "text-[var(--muted2)]"}`}>{n ? `${n} picked` : subjects.length}</span>
+                  ) : (
                   <span className="shrink-0 text-[12.5px] text-[var(--muted2)]">
                     {n} of {subjects.length}<span className="hidden sm:inline"> ticked</span>
                   </span>
+                  )}
                   <svg
                     width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     className="shrink-0 text-[var(--muted3)] transition-transform" style={{ transform: open ? "rotate(180deg)" : "none" }} aria-hidden="true"
@@ -207,7 +242,7 @@ export function CategorySubjectPicker({
                     <path d="M6 9l6 6 6-6" />
                   </svg>
                 </button>
-                {onSetTicked && (
+                {onSetTicked && !single && (
                   <button
                     type="button"
                     onClick={() => setAll(subjects.map((i) => i.key), !allOn)}
@@ -229,7 +264,7 @@ export function CategorySubjectPicker({
                         className="flex cursor-pointer items-center gap-3 rounded-[9px] border px-3 py-[11px]"
                         style={{ borderColor: on ? c : "var(--panel-border)", background: on ? `${c}14` : "var(--box-bg)" }}
                       >
-                        <input type="checkbox" checked={on} onChange={() => onToggle(i.key)} className="h-[18px] w-[18px] shrink-0" style={{ accentColor: c }} />
+                        <input type={single ? "radio" : "checkbox"} name={single ? "category-subject-picker" : undefined} checked={on} onChange={() => onToggle(i.key)} className="h-[18px] w-[18px] shrink-0" style={{ accentColor: c }} />
                         <span className="flex-grow text-sm font-semibold">{i.label}</span>
                         {/* §14: say how big a thing is while you pick it. */}
                         <span className="shrink-0 text-xs tabular-nums text-[var(--muted2)]">{i.entries.toLocaleString()}</span>
