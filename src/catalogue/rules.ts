@@ -99,7 +99,7 @@ export const RULES: Rule[] = [
   {
     id: "R-KS5-ASAEA-EXCL",
     statement:
-      "AS level and AEA are left out of comparison lists, group totals and averages at Post-16, never out of the focused item's own figure.",
+      "AS level and AEA are left out of comparison lists, group totals and averages at Post-16, never out of the focused item's own figure -- and a focused AS/AEA item counts itself into its own group.",
     why: "AS entries double-counted beside A level and inflated group totals: 102239's 'All subjects' total was 2,480 against 591 real non-AS entries.",
     appliesTo: "M-KS5-ENTRIES, M-KS5-POINTS, M-KS5-THRESHOLD, M-KS5-BANDS; Column 1 category, Context",
     enforcedIn: [
@@ -120,8 +120,9 @@ export const RULES: Rule[] = [
     origin: "Post-16 Part C1 (..._post16_category_context_exclude_as_aea_build_report_v1.md); Part D",
     status: "active",
     lift: {from: `${P} (the population filters listed under enforcedIn)`, to: "src/lib/teacher-view-populations.ts:isComparablePeer, contextGroupRows; src/lib/teacher-view-measures.ts:contextGroupValue", lifted: true, note: "S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality)" },
-    openIssue:
-      "An AS-only focus is not added to its own group (page.tsx:1277 requires !asOrAeaOnly), so its share and benchmark are against a group it is not in (Part D open decision 1).",
+    fixes: [
+      "S3b (Guy's decision 3, Part D decision 1): a focused AS or AEA item counts itself into its own Context group. contextGroupRows and inContextGroup keep the focused item's own exact-qualification rows (headline and grade), and asOrAeaOnlySubjects no longer holds the focus's subject, so an AS-only focus is a member of All subjects and Selected, and its share and benchmark are of a group it is in. Every other AS/AEA row stays out. Applied to any AS/AEA focus, not only AS-only subjects (an AS Psychology focus beside A-level Psychology now adds its own AS entries too). Before/after (130432 Law and Economics AS, 130448 Further Maths AS, 100053 Psychology AS) in the commit message.",
+    ],
   },
   {
     id: "R-KS5-ENGLAND-EXACT",
@@ -220,6 +221,7 @@ export const RULES: Rule[] = [
       `${P}:candidateItems (1068-1070, focus first)`,
       `${P}:1141, 1362, 1381 (r.key === focusKey ||), 1837`,
       `${XP}:254, 276 (s.isTarget ||)`,
+      "src/lib/teacher-view-populations.ts:contextGroupRows, inContextGroup, asOrAeaOnlySubjects (the focused AS/AEA item's own rows count into its group, S3b)",
       `${CSER}:143 (target never dropped), 186 (target kept in fixed sets, flagged igcseExcluded)`,
     ],
     testCase: {
@@ -233,6 +235,7 @@ export const RULES: Rule[] = [
     origin: "Post-16 Part C1 (AS/AEA); content round S4",
     status: "active",
     lift: {from: `${P} (focus-first population code); ${XP}:254,276`, to: "src/lib/teacher-view-populations.ts:keepFocusOrFigured; src/lib/teacher-view-comparisons.ts:comparisonSchools", lifted: true, note: "S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality)" },
+    fixes: ["S3b (Guy's decision 3, Part D decision 1): a focused AS or AEA item counts itself into its own Context group. contextGroupRows and inContextGroup keep the focused item's own exact-qualification rows (headline and grade), and asOrAeaOnlySubjects no longer holds the focus's subject, so an AS-only focus is a member of All subjects and Selected, and its share and benchmark are of a group it is in. Every other AS/AEA row stays out. Applied to any AS/AEA focus, not only AS-only subjects (an AS Psychology focus beside A-level Psychology now adds its own AS entries too). Before/after (130432 Law and Economics AS, 130448 Further Maths AS, 100053 Psychology AS) in the commit message."],
   },
   {
     id: "R-TREND-3YR",
@@ -458,7 +461,7 @@ export const RULES: Rule[] = [
     origin: "Teacher view round 6 §4.2; snagging round 1 Part 1",
     status: "active",
     lift: {from: `${P}:1152, 1270-1285; ${CP}:157-160`, to: "src/lib/teacher-view-populations.ts:contextMembersOf, inContextGroup", lifted: true, note: "S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality)" },
-    openIssue: "An AS-only focus is excluded from its own group at Post-16 (page.tsx:1277), contradicting this rule for that case (Part D follow-up).",
+    fixes: ["S3b (Guy's decision 3, Part D decision 1): a focused AS or AEA item counts itself into its own Context group. contextGroupRows and inContextGroup keep the focused item's own exact-qualification rows (headline and grade), and asOrAeaOnlySubjects no longer holds the focus's subject, so an AS-only focus is a member of All subjects and Selected, and its share and benchmark are of a group it is in. Every other AS/AEA row stays out. Applied to any AS/AEA focus, not only AS-only subjects (an AS Psychology focus beside A-level Psychology now adds its own AS entries too). Before/after (130432 Law and Economics AS, 130448 Further Maths AS, 100053 Psychology AS) in the commit message."],
   },
   {
     id: "R-SAME-YEAR-BENCH",

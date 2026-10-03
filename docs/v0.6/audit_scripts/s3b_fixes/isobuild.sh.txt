@@ -1,0 +1,8 @@
+#!/bin/zsh
+# isobuild.sh <files...>: next build of HEAD + the working-tree diff of just these files, in a scratch copy.
+S=/private/tmp/claude-501/-Users-guy-dev-vicdata-public/22f4c365-7069-4ac9-ab6f-8e923021fb87/scratchpad/s3b; B=$S/buildtree
+cd /Users/guy/dev/vicdata_public
+rm -rf $B/src $B/scripts $B/.next
+git archive HEAD src scripts | tar -x -C $B
+git diff HEAD -- "$@" | (cd $B && git apply) || exit 1
+cd $B && npx next build 2>&1 | grep -E "Compiled|error|Error|Failed|✓ Generating|Type error" | head -20

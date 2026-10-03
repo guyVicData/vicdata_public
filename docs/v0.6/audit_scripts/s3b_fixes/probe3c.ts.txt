@@ -1,0 +1,23 @@
+// Context with an AS-level focus, 2024/25: does the group count the focus itself?
+import { loadData } from "./common";
+import { compute, itemsOf } from "./h";
+const CASES: [string, string, string][] = [
+  ["130432", "Croydon College", "Law::GCE AS level"],
+  ["130432", "Croydon College", "Economics::GCE AS level"],
+  ["130448", "South Thames Colleges Group", "Mathematics (Further)::GCE AS level"],
+  ["100053", "Acland Burghley School", "Psychology::GCE AS level"],
+];
+const r1 = (v: number | null | undefined, dp = 1) => (v === null || v === undefined ? "—" : v.toFixed(dp));
+const out: any[] = [];
+for (const [urn, name, focus] of CASES) {
+  const data = loadData(urn, "ks5");
+  const items = itemsOf(data.dashboard.subjectData.entries);
+  for (const [shared, against] of [["candidates", "whole"], ["candidates", "category"], ["results", "whole"]] as const) {
+    const o: any = compute(data, "ks5", { ticked: items.map((i) => i.key), chosenFocusKey: focus, shared, resultsMeasureId: "points", savedAgainst: against, contextSelected: [], bandSaved: undefined, bandPending: null }, false);
+    const li = o.contextPeriods.length - 1;
+    const f = o.contextSeries.find((s: any) => s.key === focus);
+    const total = o.donut.groupTotals[li];
+    out.push({ urn, name, focus, shared, against, year: o.contextPeriods[li], inGroup: o.contextMembers.includes(focus.split("::")[0]), focusValue: r1(f?.values[li], shared === "candidates" ? 0 : 1), groupTotal: r1(total, 0), share: shared === "candidates" && f?.values[li] != null && total ? r1((100 * f.values[li]) / total) + "%" : "—", groupAverage: r1(o.contextSeries[0]?.benchmark[li]) });
+  }
+}
+console.log(JSON.stringify(out));

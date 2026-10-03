@@ -11,7 +11,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | R-ENTRIES-NOT-POINTS | active | Entries count every qualification; points come only from qualifications with a real challenge table, and a row with no points of its own shows none rather than borrowing another's. | lifted | manual | — |
 | R-POINTS-SAME-QUAL | active | A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown. | lifted | auto: pointsSameQual | — |
 | R-KS4-POINTS-GCSE-FULL | active | KS4 points come only from GCSE (9-1) Full Course entries with a clean single grade. | lifted | manual | — |
-| R-KS5-ASAEA-EXCL | active | AS level and AEA are left out of comparison lists, group totals and averages at Post-16, never out of the focused item's own figure. | lifted | auto: asAeaGroupTotal | yes |
+| R-KS5-ASAEA-EXCL | active | AS level and AEA are left out of comparison lists, group totals and averages at Post-16, never out of the focused item's own figure -- and a focused AS/AEA item counts itself into its own group. | lifted | auto: asAeaGroupTotal | — |
 | R-KS5-ENGLAND-EXACT | active | The Post-16 England figure is the exact subject × qualification figure or nothing; there is no bucket fallback. | no | auto: englandExact | — |
 | R-MIN-SCHOOLS | active | An LA or region benchmark row is suppressed below 5 schools. England is exempt (minimum 1) for points and entries geography and the England anchor, but not for grade-grain geography, where every grade row needs 5 schools. | no | auto: minSchools | — |
 | R-SINGLE-BUCKET-100 | active | The unfiltered (Type = All) category view shows points only when the category's scoreable entries are 100% one scored bucket, and the comparator side agrees on the bucket. No tolerance band. | yes, not yet lifted | none yet | — |
@@ -29,7 +29,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | R-THRESHOLD-PERIODS | active | Grade-based measures cover 2023/24 on at school level; the axis is shortened, never padded. | lifted | auto: thresholdPeriods | yes |
 | R-QUAL-FAMILY-MATCH | active | Column 1's category and Context's Selected set contain only the focus's qualification family (KS5 display bucket). 'All subjects' crosses families, except on Post-16 points, where it keeps to the focus's family too (R-POINTS-SAME-QUAL). | lifted | manual | — |
 | R-KS4-SUBJECT-DEDUP | active | At GCSE, one category row per subject (headline rows are per subject); at Post-16, none. | lifted | none yet | — |
-| R-SELF-INCLUSIVE-GROUP | active | Group totals and averages include the focused subject. | lifted | manual | yes |
+| R-SELF-INCLUSIVE-GROUP | active | Group totals and averages include the focused subject. | lifted | manual | — |
 | R-SAME-YEAR-BENCH | active | A benchmark is read for the same year as the figure, or not at all. | lifted | none yet | — |
 | R-PREV-YEAR-FALLBACK | active | With no benchmark, the delta is against the subject's own previous published year ('vs last year'). | lifted | manual | — |
 | R-MEASURE-FALLBACK | active | Context falls back to points when Results is on Grade counts or on bands without a range; Comparisons falls back to points (with a subject chip) or the headline (without). | lifted | manual | — |
@@ -103,7 +103,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 
 | Field | Content |
 | --- | --- |
-| Statement | AS level and AEA are left out of comparison lists, group totals and averages at Post-16, never out of the focused item's own figure. |
+| Statement | AS level and AEA are left out of comparison lists, group totals and averages at Post-16, never out of the focused item's own figure -- and a focused AS/AEA item counts itself into its own group. |
 | Why | AS entries double-counted beside A level and inflated group totals: 102239's 'All subjects' total was 2,480 against 591 real non-AS entries. |
 | Applies to | M-KS5-ENTRIES, M-KS5-POINTS, M-KS5-THRESHOLD, M-KS5-BANDS; Column 1 category, Context |
 | Enforced in | - src/lib/dfe-qualification-buckets.ts:isAsLevelOrAea (138-141)<br>- src/app/teacher/[phase]/page.tsx:comparablePeer (1055)<br>- src/app/teacher/[phase]/page.tsx:candidateItems (1075)<br>- src/app/teacher/[phase]/page.tsx:groupRows, inGroup (1190-1191)<br>- src/app/teacher/[phase]/page.tsx:threshold group (1228), asOrAeaOnly (1249-1253), selected (1265,1277,1282), band share (1331), contextItems (1367), schoolSubjects (1837) |
@@ -112,8 +112,8 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Origin | Post-16 Part C1 (..._post16_category_context_exclude_as_aea_build_report_v1.md); Part D |
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx (the population filters listed under enforcedIn) → src/lib/teacher-view-populations.ts:isComparablePeer, contextGroupRows; src/lib/teacher-view-measures.ts:contextGroupValue (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
-| Open issue | An AS-only focus is not added to its own group (page.tsx:1277 requires !asOrAeaOnly), so its share and benchmark are against a group it is not in (Part D open decision 1). |
-| Fixed | — |
+| Open issue | — |
+| Fixed | - S3b (Guy's decision 3, Part D decision 1): a focused AS or AEA item counts itself into its own Context group. contextGroupRows and inContextGroup keep the focused item's own exact-qualification rows (headline and grade), and asOrAeaOnlySubjects no longer holds the focus's subject, so an AS-only focus is a member of All subjects and Selected, and its share and benchmark are of a group it is in. Every other AS/AEA row stays out. Applied to any AS/AEA focus, not only AS-only subjects (an AS Psychology focus beside A-level Psychology now adds its own AS entries too). Before/after (130432 Law and Economics AS, 130448 Further Maths AS, 100053 Psychology AS) in the commit message. |
 
 ### R-KS5-ENGLAND-EXACT
 
@@ -186,14 +186,14 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Statement | The focused item (a subject, or the school itself in Comparisons) is never filtered out of its own figures, only out of comparison lists. |
 | Why | Exclusion rules written for comparison populations would otherwise blank the very subject a teacher picked (e.g. an AS Psychology focus). |
 | Applies to | Every measure; Column 1, Context, Comparisons |
-| Enforced in | - src/app/teacher/[phase]/page.tsx:candidateItems (1068-1070, focus first)<br>- src/app/teacher/[phase]/page.tsx:1141, 1362, 1381 (r.key === focusKey \|\|), 1837<br>- src/components/teacher/ComparisonsPanels.tsx:254, 276 (s.isTarget \|\|)<br>- src/lib/teacher-view-comparator-series.ts:143 (target never dropped), 186 (target kept in fixed sets, flagged igcseExcluded) |
+| Enforced in | - src/app/teacher/[phase]/page.tsx:candidateItems (1068-1070, focus first)<br>- src/app/teacher/[phase]/page.tsx:1141, 1362, 1381 (r.key === focusKey \|\|), 1837<br>- src/components/teacher/ComparisonsPanels.tsx:254, 276 (s.isTarget \|\|)<br>- src/lib/teacher-view-populations.ts:contextGroupRows, inContextGroup, asOrAeaOnlySubjects (the focused AS/AEA item's own rows count into its group, S3b)<br>- src/lib/teacher-view-comparator-series.ts:143 (target never dropped), 186 (target kept in fixed sets, flagged igcseExcluded) |
 | Tagged at | - src/app/teacher/[phase]/page.tsx<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/teacher-view-populations.ts |
 | Test case | Whitmore High School (102239), ks5, Psychology (AS): Focus an AS item (AS Psychology in the AS/AEA report :19,38, which named no school; 102239 is a heavy-AS school): its own Column 1 panels still render with its own figures. [manual] |
 | Origin | Post-16 Part C1 (AS/AEA); content round S4 |
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx (focus-first population code); src/components/teacher/ComparisonsPanels.tsx:254,276 → src/lib/teacher-view-populations.ts:keepFocusOrFigured; src/lib/teacher-view-comparisons.ts:comparisonSchools (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
 | Open issue | — |
-| Fixed | — |
+| Fixed | - S3b (Guy's decision 3, Part D decision 1): a focused AS or AEA item counts itself into its own Context group. contextGroupRows and inContextGroup keep the focused item's own exact-qualification rows (headline and grade), and asOrAeaOnlySubjects no longer holds the focus's subject, so an AS-only focus is a member of All subjects and Selected, and its share and benchmark are of a group it is in. Every other AS/AEA row stays out. Applied to any AS/AEA focus, not only AS-only subjects (an AS Psychology focus beside A-level Psychology now adds its own AS entries too). Before/after (130432 Law and Economics AS, 130448 Further Maths AS, 100053 Psychology AS) in the commit message. |
 
 ### R-TREND-3YR
 
@@ -400,8 +400,8 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Origin | Teacher view round 6 §4.2; snagging round 1 Part 1 |
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1152, 1270-1285; src/components/teacher/CandidatesPanels.tsx:157-160 → src/lib/teacher-view-populations.ts:contextMembersOf, inContextGroup (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
-| Open issue | An AS-only focus is excluded from its own group at Post-16 (page.tsx:1277), contradicting this rule for that case (Part D follow-up). |
-| Fixed | — |
+| Open issue | — |
+| Fixed | - S3b (Guy's decision 3, Part D decision 1): a focused AS or AEA item counts itself into its own Context group. contextGroupRows and inContextGroup keep the focused item's own exact-qualification rows (headline and grade), and asOrAeaOnlySubjects no longer holds the focus's subject, so an AS-only focus is a member of All subjects and Selected, and its share and benchmark are of a group it is in. Every other AS/AEA row stays out. Applied to any AS/AEA focus, not only AS-only subjects (an AS Psychology focus beside A-level Psychology now adds its own AS entries too). Before/after (130432 Law and Economics AS, 130448 Further Maths AS, 100053 Psychology AS) in the commit message. |
 
 ### R-SAME-YEAR-BENCH
 

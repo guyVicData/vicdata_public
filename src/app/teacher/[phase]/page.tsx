@@ -1149,8 +1149,9 @@ export default function TeacherPhaseDashboard() {
   // whole-subject "all" row beside each bucket's row, so every total was doubled) and
   // which had AS baked into the A-level figure. C1 left AS/AEA out of the subject list;
   // this leaves them out of the figures too.
-  const groupRows = contextGroupRows(phase, headline, qualificationHeadline);
-  const inGroup = (qualificationType: string) => inContextGroup(phase, qualificationType);
+  // S3b (Part D decision 1): a focused AS or AEA item counts itself into its own group.
+  const groupRows = contextGroupRows(phase, headline, qualificationHeadline, focusItem);
+  const inGroup = (qualificationType: string, subject: string) => inContextGroup(phase, qualificationType, subject, focusItem);
 
   // One value per SUBJECT NAME per period, for whichever measure is active. Group members
   // are subjects of the whole school, not just the ticked ones, so they are addressed by
@@ -1168,8 +1169,9 @@ export default function TeacherPhaseDashboard() {
   // Post-16 Part C1: a subject this school runs ONLY as AS level or Advanced Extension Award
   // is not a member. Part D: at Post-16 that now follows from groupRows, which has no
   // AS/AEA rows; asOrAeaOnly still guards the "nothing selected yet" fallback below, which
-  // starts from the ticked items rather than from the rows.
-  const asOrAeaOnly = asOrAeaOnlySubjects(items);
+  // starts from the ticked items rather than from the rows. S3b (Part D decision 1): the
+  // focused item is the exception -- an AS-only focus counts itself into its own group.
+  const asOrAeaOnly = asOrAeaOnlySubjects(items, focusItem);
   //
   // Combined round §4c: "Selected subjects" is chosen within the focused subject's own
   // qualification family -- a comparison set is always with the same qualification -- so

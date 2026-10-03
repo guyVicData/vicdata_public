@@ -285,12 +285,13 @@ export function onFocusPointsScale(focusFamily: string | null | undefined, quali
 export type ContextGroupInputs = {
   phase: TeacherPhase;
   measureId: MeasureId;
-  // contextGroupRows() (teacher-view-populations.ts): AS/AEA rows already left out at Post-16.
+  // contextGroupRows() (teacher-view-populations.ts): AS/AEA rows already left out at
+  // Post-16, except the focused item's own.
   groupRows: AcademicSubjectHeadlineEntry[];
   gradeRows: SubjectGradeCount[];
   bandRange: GradeRange | null;
   // inContextGroup() (teacher-view-populations.ts), for the grade rows.
-  inGroup: (qualificationType: string) => boolean;
+  inGroup: (qualificationType: string, subject: string) => boolean;
   // R-POINTS-SAME-QUAL: the focused item's qualification family (focusQualificationFamily),
   // which a Post-16 points group value keeps to. Null = no focus: no points group value.
   focusFamily?: string | null;
@@ -342,7 +343,7 @@ export function contextGroupValue(g: ContextGroupInputs, subject: string, period
   const quals = Array.from(
     new Set(
       gradeRows
-        .filter((r) => r.subject === subject && r.period === period && inGroup(r.qualificationType))
+        .filter((r) => r.subject === subject && r.period === period && inGroup(r.qualificationType, subject))
         .map((r) => r.qualificationType),
     ),
   );
@@ -367,13 +368,13 @@ export function contextBandShareAt(
   gradeRows: SubjectGradeCount[],
   period: number,
   range: GradeRange | null,
-  inGroup: (qualificationType: string) => boolean,
+  inGroup: (qualificationType: string, subject: string) => boolean,
 ): { met: number; entries: number } | null {
   if (!range) return null;
   let met = 0;
   let entries = 0;
   for (const subject of members) {
-    const quals = new Set(gradeRows.filter((g) => g.subject === subject && g.period === period && inGroup(g.qualificationType)).map((g) => g.qualificationType));
+    const quals = new Set(gradeRows.filter((g) => g.subject === subject && g.period === period && inGroup(g.qualificationType, subject)).map((g) => g.qualificationType));
     for (const qt of quals) {
       const r = bandRate(gradeRowsAt(gradeRows, subject, qt, period), range);
       if (r) {

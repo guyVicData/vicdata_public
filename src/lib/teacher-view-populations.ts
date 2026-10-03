@@ -7,9 +7,9 @@
 // its population by accident (catalogue design doc §1). Pure and client-safe. Every
 // enforcement point carries its rule ID.
 //
-// Known gap moved as it was, not fixed (logged for Guy): an AS-only focus is not added to
-// its own Selected group (contextMembers). S3b: on Post-16 points "All subjects" keeps to
-// the focus's qualification family (R-POINTS-SAME-QUAL, contextItemsOf).
+// S3b fixes: on Post-16 points "All subjects" keeps to the focus's qualification family
+// (R-POINTS-SAME-QUAL, contextItemsOf), and a focused AS or AEA item counts itself into
+// its own Context group (R-FOCUS-NEVER-FILTERED, R-SELF-INCLUSIVE-GROUP; Part D decision 1).
 import type { AcademicSubjectHeadlineEntry } from "./academic-data-view";
 import { isAsLevelOrAea } from "./dfe-qualification-buckets";
 import { familyFor } from "./teacher-view-catalogue";
@@ -112,30 +112,53 @@ export function memberMeans(periods: unknown[], series: { values: (number | null
 
 // ------------------------------------------------------------------ Context
 
+// The focused item, structurally: the one (subject, qualification) Context compares.
+type FocusRef = { subject: string; qualificationType: string } | null | undefined;
+
+/**
+ * R-FOCUS-NEVER-FILTERED, R-SELF-INCLUSIVE-GROUP (S3b, Part D decision 1): whether a
+ * (subject, qualification) is the focused item itself -- which always counts into its own
+ * group, even as AS level or AEA.
+ */
+function isFocusQualification(focus: FocusRef, subject: string | undefined, qualificationType: string | null | undefined): boolean {
+  return !!focus && subject === focus.subject && (qualificationType ?? "") === focus.qualificationType;
+}
+
 /**
  * R-KS5-ASAEA-EXCL: the rows Context's group figures are built from. GCSE: the subject
  * rows. Post-16: the exact-qualification rows without AS level and AEA (not the bucket
- * rows, which double-counted and had AS baked into A level).
+ * rows, which double-counted and had AS baked into A level) -- except the focused item's
+ * own row: an AS or AEA focus counts itself into its own group (R-FOCUS-NEVER-FILTERED,
+ * R-SELF-INCLUSIVE-GROUP, S3b).
  */
 export function contextGroupRows(
   phase: TeacherPhase,
   headline: AcademicSubjectHeadlineEntry[],
   qualificationHeadline: AcademicSubjectHeadlineEntry[],
+  focus?: FocusRef,
 ): AcademicSubjectHeadlineEntry[] {
-  return phase === "ks5" ? qualificationHeadline.filter((h) => !isAsLevelOrAea(h.qualificationType ?? "")) : headline;
+  return phase === "ks5"
+    ? qualificationHeadline.filter((h) => !isAsLevelOrAea(h.qualificationType ?? "") || isFocusQualification(focus, h.subject, h.qualificationType))
+    : headline;
 }
 
-/** R-KS5-ASAEA-EXCL: whether a qualification's grade rows count towards Context's group. */
-export function inContextGroup(phase: TeacherPhase, qualificationType: string): boolean {
-  return phase !== "ks5" || !isAsLevelOrAea(qualificationType);
+/**
+ * R-KS5-ASAEA-EXCL: whether a qualification's grade rows count towards Context's group.
+ * R-FOCUS-NEVER-FILTERED (S3b): the focused item's own rows always do.
+ */
+export function inContextGroup(phase: TeacherPhase, qualificationType: string, subject?: string, focus?: FocusRef): boolean {
+  return phase !== "ks5" || !isAsLevelOrAea(qualificationType) || isFocusQualification(focus, subject, qualificationType);
 }
 
-/** R-KS5-ASAEA-EXCL: subjects this school runs ONLY as AS level or AEA -- never group members. */
-export function asOrAeaOnlySubjects(items: PopulationItem[]): Set<string> {
+/**
+ * R-KS5-ASAEA-EXCL: subjects this school runs ONLY as AS level or AEA -- never group
+ * members, except the focused item's own subject (R-FOCUS-NEVER-FILTERED, S3b).
+ */
+export function asOrAeaOnlySubjects(items: PopulationItem[], focus?: FocusRef): Set<string> {
   return new Set(
     items
       .map((i) => i.subject)
-      .filter((n) => items.every((i) => i.subject !== n || isAsLevelOrAea(i.qualificationType))),
+      .filter((n) => n !== focus?.subject && items.every((i) => i.subject !== n || isAsLevelOrAea(i.qualificationType))),
   );
 }
 
@@ -155,7 +178,8 @@ export type ContextAgainst = "category" | "whole" | "selected";
  * Context's group members, by subject name.
  * R-SELF-INCLUSIVE-GROUP: the group contains the subject being compared (Selected adds the
  * focus to a non-empty selection). R-KS5-ASAEA-EXCL: AS/AEA-only subjects are never
- * members -- including an AS-only focus (known gap, logged, not fixed).
+ * members -- except an AS-only focus, which `asOrAeaOnly` (asOrAeaOnlySubjects with the
+ * focus) no longer holds, so it counts itself in (R-FOCUS-NEVER-FILTERED, S3b).
  * R-QUAL-FAMILY-MATCH: Selected is within the focus's family; All subjects is not.
  * Category is Column 1's own list (candidateItems), by name.
  */
