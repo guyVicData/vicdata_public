@@ -1029,3 +1029,19 @@ Routes: `/dashboards/new` (New 1-4) and `/dashboards/[id]/edit` (super-admin onl
 - **History preview** is at full opacity (the board's 0.55 is kept for the draft behind an open History panel) and scaled with CSS `zoom` to fit beside the panel.
 - **UpdatedNotice** records a first-ever visit silently (no "Updated" line for newcomers); `upgradeUserState` (`src/lib/editor-upgrade.ts`) applies carryUserState to the viewer's own state row on their visit (RLS: nobody can rewrite other people's state at publish).
 - **No school in the editor:** titles resolve with neutral words ("This subject"), and "Choose other schools…" stays off in Steps 1-2 (relative "10 nearest", G5).
+
+## 2026-10-03 — VicData 0.6 night 2, integration pass: judgement calls
+
+The stages' contracts wired together (commits "Integrate: …"). Flag off, every Teacher page renders as before (harness: 32/32 identical vs 2c84a1a; flag on vs off at 1280, non-admin, 16/16).
+
+- **Copy this view from a live panel copies the rail's active view**, else the panel's default view, in the panel's context resolved with the page's real labels. Context's pill-following column copies the group it is on *now* ("All subjects" pins `against: whole`). The pin's years are the page's real ones (first/latest period in the payload), not the measure card's.
+- **One resolver for pins** (`src/lib/pin-context.ts`): a view compares one way, so a pin carries the first of the view's own compare kinds the context has. "10 nearest" is always pinned as "10 nearest schools" (the name the embed reads as the default set).
+- **Super-admin sees "Edit" on the flagged Teacher page** (control bar, beside Export) and on `/dashboards/[id]`. That is the one visible flag-on difference for super-admin; non-admins see none.
+- **A meeting's Add a view starts at GCSE Candidates, one subject, against its category**, not "no comparison": every registered view compares something (the strict compare rule), so "no comparison" opened on an empty Pick. Step 2 changes it. In this columnless mode Step 1 is "Choose data" (no "From this column"), the context box "Your choices", the button "Add to slide". Step 2 still offers "Follow the subject chips" (meaningless on a slide; pinning resolves it to the chosen subject or none) — worth a look.
+- **Pinned for a meeting:** the latest year pinned unless the view was customised with roll-forward on (a ready-made view has no roll-forward, so it is pinned; Keep live stays a per-slot toggle in the meeting).
+- **Live previews in Pick draw every card live** (one embed per card, sharing the cached dashboard route). Fine at 13 cards in the harness; if it feels slow on a real school, limit live to the selected card.
+- **The editor's live preview is the whole panel card scaled** (E's LiveViewPreview), so it shows the panel's own header inside the editor panel's frame. A figure-only frame would look cleaner; left as E built it.
+- **The editor's school:** look-as school (`?lookAs=…&as=…`, confirmed platform admin), else the super-admin's membership school; no school → the data-free previews and S5's copy-within stub. The flagged Teacher page's Edit link carries look-as along.
+- **Linked-dashboard switcher on `/dashboards/[id]`:** seeded VicData groups from the catalogue; a stored group is read from the person's listing by `config.group.id` (S5 doesn't write `dashboards.group_id`).
+- **Icon in the editor's Settings:** an Icon row opens S6's Icon dialog; the icon and its colour apply with Settings' Done.
+- **Not done here:** "Choose other schools…" in a meeting's or the editor's chooser stays off (it needs the saved-sets payload in those screens); the CopyViewDialog has no dimming backdrop in the harness shots (S6's dialog, unchanged).
