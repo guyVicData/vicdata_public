@@ -290,5 +290,7 @@ export function compute(data: any, phase: "ks4" | "ks5", sc: Scenario, rankingSe
     effTable,
     cpGroupValues,
     xp: { rateSeries, xpViews, schools: schools.map((s) => s.urn), target: target?.urn ?? null, periods, ranked: ranked.map((r) => [r.urn, r.value]), rankOfUrn, onRankingMeasure },
+    // S3b: each comparator school's values over the periods (what the change views measure).
+    xpValues: schools.map((s) => [s.urn, valuesFor(s.urn)]),
   };
 }

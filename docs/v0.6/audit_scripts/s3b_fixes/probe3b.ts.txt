@@ -1,0 +1,28 @@
+// S3b fix 3b: the change figures a teacher reads, before (old lib) and after.
+import * as T from "@/lib/teacher-view-panels";
+import { loadData } from "./common";
+import { compute, itemsOf } from "./h";
+import { changeFigures } from "./chg";
+const L: any = T;
+const CASES: [string, "ks4" | "ks5", string, string, "candidates" | "results", string, string][] = [
+  ["100053", "ks4", "Acland Burghley School", "Maths (General)::GCSE (9-1) Full Course", "results", "points", "category"],
+  ["100053", "ks4", "Acland Burghley School", "Maths (General)::GCSE (9-1) Full Course", "results", "threshold", "category"],
+  ["100053", "ks4", "Acland Burghley School", "Maths (General)::GCSE (9-1) Full Course", "candidates", "points", "category"],
+  ["117037", "ks5", "The King's School Worcester", "Mathematics::GCE A level", "results", "points", "whole"],
+  ["130432", "ks5", "Croydon College", "Sociology::GCE A level", "results", "points", "whole"],
+  ["117037", "ks4", "The King's School Worcester", "Maths (General)::GCSE (9-1) Full Course", "results", "threshold", "category"],
+];
+const out: any[] = [];
+for (const [urn, phase, name, focus, shared, m, against] of CASES) {
+  const data = loadData(urn, phase);
+  const items = itemsOf(data.dashboard.subjectData.entries);
+  const fk = items.find((i) => i.key === focus)?.key ?? items.find((i) => i.key.startsWith(focus.split("::")[0]))?.key;
+  const o: any = compute(data, phase, { ticked: items.map((i) => i.key), chosenFocusKey: fk!, shared, resultsMeasureId: m, savedAgainst: against, contextSelected: [], bandSaved: undefined, bandPending: null }, false);
+  const f = changeFigures(data, phase, o);
+  const since = o.contextPeriods.length ? `${o.contextPeriods[0]}/${String(o.contextPeriods[0] + 1).slice(2)}` : "?";
+  const cm = T.measureById(phase, o.contextMeasure.id);
+  const title = L.changePhrase ? L.changePhrase(cm) : "% change";
+  const own = f.xp.find(([u]: any) => u === urn)?.[1];
+  out.push({ name, urn, phase, focus: fk, measure: o.contextMeasure.label, against, since, title, focusChange: f.ctx.find(([k]: any) => k === fk)?.[1], group: f.ctxGroup, sentence: f.sentence, xpMeasure: o.comparisonsMeasure.label, xpOwn: own });
+}
+console.log(JSON.stringify(out));

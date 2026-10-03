@@ -389,12 +389,9 @@ describe("catalogue integrity", () => {
   it("number types are honest: a view offers only types one of its measures declares", () => {
     for (const d of DATAVIEWS) {
       const declared = new Set(d.measures.flatMap((m) => measureById(m)!.numberTypes));
-      for (const n of d.supports.numberType) {
-        // R-NUMBER-TYPE-HONESTY's open issue: % change on points/rates is live today and
-        // recorded rather than hidden; every other type must be declared.
-        if (n === "pct_change") continue;
-        assert.ok(declared.has(n), `${d.id}: ${n}`);
-      }
+      // R-NUMBER-TYPE-HONESTY (S3b): no exemption any more -- % change only where a count
+      // measure declares it, change in points / pp where an average / rate does.
+      for (const n of d.supports.numberType) assert.ok(declared.has(n), `${d.id}: ${n}`);
     }
   });
   it("market share only on count measures (R-DONUT-COUNTS-ONLY)", () => {

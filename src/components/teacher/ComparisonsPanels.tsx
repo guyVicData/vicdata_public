@@ -32,6 +32,12 @@ import {
   meanOf,
   rankByValue,
   percentChange,
+  changeInTitle,
+  changeMagnitude,
+  changeOf,
+  changePhrase,
+  changeTitle,
+  formatChange,
   periodsWithData,
   sliceFrom,
   trimToData,
@@ -690,23 +696,28 @@ export function ComparisonsPanels({
     ),
   };
 
-  // ---------------------------------------------------------------- % change
+  // ---------------------------------------------------------------- change
+  // R-NUMBER-TYPE-HONESTY (S3b): % change on candidates (a count); on an average point score
+  // or a rate the change in points or percentage points -- values, titles and sentences.
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
-  const ownPct = percentChange(changeData.series[0]?.values ?? []);
-  // Every school's % change over the span, as the table ranks them, and the set's average
+  const ownChange = changeOf(measure, changeData.series[0]?.values ?? []);
+  // Every school's change over the span, as the table ranks them, and the set's average
   // (the mean figure per year over the schools that have one, as Trend's "Average across"
   // line) as the reference -- not whichever school Trend's "vs:" points at.
-  const changeRows: ChangeRow[] = changeTable.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: percentChange(s.values) }));
+  const changeRows: ChangeRow[] = changeTable.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOf(measure, s.values) }));
   const averageLabel = `Average across ${setLabel.toLowerCase()}`;
-  const averagePct = percentChange(
+  const averageChange = changeOf(
+    measure,
     changeTable.periods.map((_, i) => meanOf(changeTable.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
   );
+  const fmtChange = (v: number) => formatChange(measure, v);
+  const changeOnPercent = measure.changeKind === "percent";
 
   const changeMapOk = sampleAllowsMap(rankingSet) && !!schoolUrn && changeTable.periods.length >= 2;
   const changeShows = changeView === "map" && !changeMapOk ? "chart" : changeView;
 
   const changeHalf: PanelRender = {
-    tag: "% Change",
+    tag: changeTitle(measure),
     afterTag: <FromYearMenu periods={realPeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: "How much has this school moved, against its comparators?",
     // Column 3 round Part 4: a table beside the chart, in the same format as Context's %
@@ -724,10 +735,18 @@ export function ComparisonsPanels({
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
       ) : changeShows === "map" ? (
         // The map that was Current's "Trends" mode, here on the panel it is about: each
-        // school's % change over this panel's span, the same figures as the ranked bars.
+        // school's change over this panel's span, the same figures as the ranked bars. A %
+        // change (a count) keeps the fixed ±% scale; points and percentage points take the
+        // absolute scale around the set's own real range, as Trend's map does.
         <>
-          <ViewTitle>% change in {comparedOn} since {changeSince}, coloured by school</ViewTitle>
-          {changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTable, percentChange), format: signedPct, label: `% change since ${changeSince}` })}
+          <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, coloured by school</ViewTitle>
+          {changeOnPercent
+            ? changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTable, percentChange), format: signedPct, label: `% change since ${changeSince}` })
+            : changeMap(fullscreen, "trend_absolute", {
+                byUrn: changeMapFor(changeTable, (v) => changeOf(measure, v)),
+                format: fmtChange,
+                label: `${changePhrase(measure)} since ${changeSince}`,
+              })}
         </>
       ) : changeShows === "table" ? (
         <>
@@ -740,25 +759,25 @@ export function ComparisonsPanels({
         // Option H, as Candidates and Context draw their % change: every school ranked by
         // its change, the school itself picked out, the set's average a dashed line.
         <>
-          <ViewTitle>% change in {comparedOn} since {changeSince}, ranked against the {setNoun}</ViewTitle>
+          <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, ranked against the {setNoun}</ViewTitle>
           <CentredOnTarget watch={`change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
-            <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averagePct }} />
+            <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averageChange }} formatValue={changeOnPercent ? undefined : fmtChange} />
           </CentredOnTarget>
         </>
       ),
     summary:
-      seriesLoading ? undefined : ownPct === null ? (
+      seriesLoading ? undefined : ownChange === null ? (
         <PanelSummary>Not enough published years yet to measure a change.</PanelSummary>
       ) : (
         <PanelSummary>
-          This school&rsquo;s {comparedOn} has {ownPct >= 0 ? "risen" : "fallen"} {Math.abs(Math.round(ownPct))}% since {changeSince}
-          {averagePct === null
+          This school&rsquo;s {comparedOn} has {ownChange >= 0 ? "risen" : "fallen"} {changeMagnitude(measure, ownChange)} since {changeSince}
+          {averageChange === null
             ? "."
-            : `, against ${averagePct >= 0 ? "a rise" : "a fall"} of ${Math.abs(Math.round(averagePct))}% for the ${averageLabel.toLowerCase()}.`}
+            : `, against ${averageChange >= 0 ? "a rise" : "a fall"} of ${changeMagnitude(measure, averageChange)} for the ${averageLabel.toLowerCase()}.`}
         </PanelSummary>
       ),
     source: source(spanLabel(changeData.periods)),
-    headline: seriesLoading ? undefined : ownPct === null || ownPct === undefined ? undefined : `${ownPct >= 0 ? "+" : "−"}${Math.abs(Math.round(ownPct))}%`,
+    headline: seriesLoading ? undefined : ownChange === null || ownChange === undefined ? undefined : fmtChange(ownChange),
   };
 
   // Trends row merge round: the one Trends panel -- Trend's views then % change's in one

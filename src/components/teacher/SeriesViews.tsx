@@ -35,6 +35,7 @@ const INDEX_MEASURE: Measure = {
   id: "entries",
   label: "Index (first year = 100)",
   changeLabel: "% change",
+  changeKind: "percent",
   format: (v) => `${Math.round(v)}`,
   formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}`,
   axisStep: 10,
@@ -135,7 +136,8 @@ export function ViewTitle({ children }: { children: ReactNode }) {
 
 export type ChangeRow = { key: string; label: string; colour: string; value: number | null };
 
-// A % change, rounded, with its sign: ChangeList's default formatting.
+// A % change, rounded, with its sign: ChangeList's default formatting (a count's change).
+// Points and rates pass their own (formatChange / the measure's formatDelta).
 const signedPercent = (v: number) => signed(Math.round(v), (x) => `${x}%`);
 
 // Option H. Ranked by change (a % change unless the caller formats something else, as
@@ -251,7 +253,8 @@ export function YearTable({
   // Off where a rank means nothing -- Part 5's geography rows (England is always "1st").
   showRank?: boolean;
   // Live review Part E (the % change table): a ranked list rather than a sortable table.
-  // Rows are ranked by % CHANGE -- the order the ranked list beside it uses -- and stay in
+  // Rows are ranked by CHANGE (% for a count; points or percentage points otherwise,
+  // R-NUMBER-TYPE-HONESTY) -- the order the ranked list beside it uses -- and stay in
   // that order (headers are not clickable); the rank is a bare number in an unheaded first
   // column, shown on the card as well as fullscreen; padding and type tighten so name,
   // rank, both years and Change fit a card without scrolling sideways.
@@ -272,15 +275,21 @@ export function YearTable({
   const yearIdx = fullscreen || periods.length <= 2 ? periods.map((_, i) => i) : [0, periods.length - 1];
   const lastIdx = periods.length - 1;
 
-  const rows = series.map((s) => ({ s, change: changeOver(s.values), last: s.values[lastIdx] }));
+  // R-NUMBER-TYPE-HONESTY (S3b): the change a row is ranked and sorted by is the measure's
+  // honest one -- % for a count, the difference in points or percentage points otherwise.
+  const percentKind = measure.changeKind === "percent";
+  const rows = series.map((s) => {
+    const change = changeOver(s.values);
+    return { s, change, honest: change ? (percentKind ? change.percent : change.delta) : null, last: s.values[lastIdx] };
+  });
   // The one shared ranking rule (teacher-view-panels' rankByValue: largest first, ties
   // share a rank) -- the Current number tiles and Column 3's ranking read it too.
-  const rankOf = rankByValue(rows.map((r) => ({ key: r.s.key, value: leadingRank ? r.change?.percent ?? null : r.last })));
+  const rankOf = rankByValue(rows.map((r) => ({ key: r.s.key, value: leadingRank ? r.honest : r.last })));
   const ranked = rankOf.size;
 
 
   const valueFor = (r: (typeof rows)[number], key: SortKey): number | string | null =>
-    key === "given" ? 0 : key === "name" ? r.s.label : key === "rank" ? rankOf.get(r.s.key) ?? null : key === "change" ? r.change?.percent ?? null : r.s.values[key];
+    key === "given" ? 0 : key === "name" ? r.s.label : key === "rank" ? rankOf.get(r.s.key) ?? null : key === "change" ? r.honest : r.s.values[key];
   const sorted = [...rows].sort((a, b) => {
     const av = valueFor(a, sort.key);
     const bv = valueFor(b, sort.key);
@@ -354,7 +363,10 @@ export function YearTable({
                 </td>
               ))}
               <td className={`whitespace-nowrap ${pad} text-right leading-tight`}>
-                {changeEmphasis === "percent" ? (
+                {!percentKind ? (
+                  // Points and rates: the difference alone (R-NUMBER-TYPE-HONESTY), never a %.
+                  <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? measure.formatDelta(r.change.delta) : "—"}</span>
+                ) : changeEmphasis === "percent" ? (
                   <>
                     <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>
                       {r.change?.percent !== null && r.change?.percent !== undefined ? signed(Math.round(r.change.percent), (v) => `${v}%`) : "—"}

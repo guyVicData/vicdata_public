@@ -43,7 +43,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | R-INDEX-HEADCOUNTS | active | Only sum measures (entries) are indexed to 100; points and rates are drawn at real levels. | no | none yet | — |
 | R-RANK-TIES | active | Ties share a rank; the next rank skips; a null is unranked. | no | none yet | — |
 | R-TREND-FLAT-4PCT | active | A trend is 'Broadly stable' within ±4%. | no | none yet | — |
-| R-NUMBER-TYPE-HONESTY | active | A measure is shown only in its honest number types (catalogue §3): counts as totals, % change, share or index; averages as points and change in points; rates as rate and change in percentage points. | no | none yet | yes |
+| R-NUMBER-TYPE-HONESTY | active | A measure is shown only in its honest number types (catalogue §3): counts as totals, % change, share or index; averages as points and change in points; rates as rate and change in percentage points. | no | none yet | — |
 | R-ROLLS-HEADCOUNT | active | Rolls are census headcounts, not FTE; part-time pupils count as one. | no | none yet | — |
 | R-ROLLS-MAINSTREAM-AGG | active | LA, region and England roll aggregates count mainstream schools only. | no | none yet | yes |
 | R-BIRTHS-FULL-WINDOW | active | The births trend is shown only when all five years (2021-2025) exist for the area; otherwise nothing. | no | none yet | — |
@@ -618,14 +618,14 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Statement | A measure is shown only in its honest number types (catalogue §3): counts as totals, % change, share or index; averages as points and change in points; rates as rate and change in percentage points. |
 | Why | A % change of an average or a rate misleads: 60% -> 66% is +6pp, not +10%. |
 | Applies to | Every view on M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-HEADLINE |
-| Enforced in | - src/catalogue/measures.ts (numberTypes)<br>- src/catalogue/matching.ts (offer filter, via dataview supports.numberType) |
-| Tagged at | — |
+| Enforced in | - src/catalogue/measures.ts (numberTypes)<br>- src/catalogue/matching.ts (offer filter, via dataview supports.numberType)<br>- src/lib/teacher-view-panels.ts:ChangeKind, Measure.changeKind, changeOf, formatChange, changeMagnitude, changeTitle, changeInTitle, trendSentence<br>- src/components/teacher/SeriesViews.tsx:YearTable (Change column, ranked by the honest change)<br>- src/components/teacher/ChangeChart.tsx (format, axis units)<br>- src/components/teacher/SubjectPanels.tsx:change half (ChangeList, titles, summary, headline)<br>- src/components/teacher/ComparisonsPanels.tsx:change half (ChangeList, change map trend vs trend_absolute, titles, summary, headline) |
+| Tagged at | - src/components/teacher/ChangeChart.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-panels.ts |
 | Test case | — |
 | Origin | Catalogue doc §3; decision C3 |
 | Status | active |
 | Must lift | — |
-| Open issue | Live code shows % change on points and rates in Context and Comparisons change lists, tables and summaries (SubjectPanels.tsx:910-916, 993-1000; ComparisonsPanels.tsx:703-711, 762-765), and labels '% change in average point score' / '% change in grade 4+ rate' (teacher-view-panels.ts:112-140); pp bars appear only in MultiTrend's <4-year fallback. Changing it changes displayed figures: a STOP item unless Guy decides. |
-| Fixed | — |
+| Open issue | — |
+| Fixed | - S3b (Guy's decision 3, 3 Oct 2026): % change is no longer offered on points or rates in the Teacher view. Measure.changeKind ('percent' for entries and grade counts, 'points' for average point score and the GCSE/Post-16 headline, 'pp' for Grade 4+ / A*-E, grade bands and KS2's expected standard) drives every change view through changeOf / formatChange: Context's and Comparisons' ranked change lists and change tables (YearTable ranks and sorts by the honest change and drops the % beneath on points and rates; the Results geography table shows the change in points alone), the classic ChangeChart, Comparisons' change map (points and rates colour by absolute change, trend_absolute, keyed 'Change', instead of the ±% scale), every title ('Change in points' / 'Change in percentage points', changeInTitle), the summaries ('risen 0.4 points', 'fallen 3 percentage points'), the collapsed headline figure and trendSentence's tail. Counts keep % change. Direction words (Growing / Broadly stable / Declining) still use R-TREND-FLAT-4PCT's ±4% relative band: only the number printed changed. Not changed: the Data View's own map 'Trends' toggle (AcademicMapView, growth %) that Column 1 Results' Trend map shows, which is shared with the Data View. |
 
 ### R-ROLLS-HEADCOUNT
 

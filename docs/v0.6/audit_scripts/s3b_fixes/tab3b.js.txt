@@ -1,0 +1,6 @@
+const a=require("./p3b_before.json"),b=require("./p3b_after.json");
+const ph=p=>p==="ks4"?"GCSE":"Post-16"; const g=x=>({category:"Subject category",whole:"All subjects"})[x.against];
+a.forEach((x,i)=>{const y=b[i];const subj=x.focus.split("::")[0]+(x.phase==="ks5"?" (A level)":"");
+console.log(`| ${x.name} | ${x.urn} | ${ph(x.phase)} | ${subj} | Context, ${g(x)}, ${x.measure}: change list title; focus; group | ${x.title}; ${x.focusChange}; ${x.group} | ${y.title}; ${y.focusChange}; ${y.group} |`);
+console.log(`| ${x.name} | ${x.urn} | ${ph(x.phase)} | ${subj} | Comparisons, ${x.xpMeasure}: this school's change | ${x.xpOwn} | ${y.xpOwn} |`);
+if (x.sentence && x.sentence!==y.sentence) console.log(`| ${x.name} | ${x.urn} | ${ph(x.phase)} | ${subj} | Context Trend summary | ...${x.sentence.split("; ")[1].replace(" since Y.","")} | ...${y.sentence.split("; ")[1].replace(" since Y.","")} |`);});

@@ -86,7 +86,7 @@ function gradeMeasures(phase: "ks4" | "ks5"): Measure[] {
       rules: ["R-GRADE-SCALE-MATCH", "R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-NO-GRADE-RATE-GEO", "R-FOCUS-NEVER-FILTERED", "R-COMPARATOR-RATE-PER-QUAL", "R-NUMBER-TYPE-HONESTY", "R-TREND-LINE-4YR", ...(ks4 ? [] : (["R-KS5-ASAEA-EXCL"] as const))],
       knownGaps: [
         ...commonGaps,
-        `Code labels the change '% change in ${ks4 ? "grade 4+" : "A*-E"} rate' (teacher-view-panels.ts:125) though formatDelta prints pp; change lists show % change (R-NUMBER-TYPE-HONESTY).`,
+        `Change is shown in percentage points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "pp", changeOf, formatChange).`,
         "No area benchmark is wired although the grade geography would give one.",
       ],
     },
@@ -218,7 +218,7 @@ export const MEASURES: Measure[] = [
     fetchedBy: [`${DASHBOARD_ROUTE} -> ${SUBJECT_HEADLINE} (route.ts:172); England via englandAverages (route.ts:46-74)`, SUBJECT_GEO, PROFILES],
     knownGaps: [
       "Rename 'Average point score' -> 'Average points' decided (C3), not yet done (teacher-view-panels.ts:113).",
-      "Code offers '% change in average point score' (teacher-view-panels.ts:112-121): R-NUMBER-TYPE-HONESTY.",
+      "Change is shown in points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind \"points\", changeOf, formatChange).",
     ],
     briefing: GCSE_BRIEFING,
     citation: SOURCE_NAME.ks4,
@@ -343,7 +343,7 @@ export const MEASURES: Measure[] = [
     knownGaps: [
       "The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).",
       "Context 'All subjects' blends qualifications (R-POINTS-SAME-QUAL open issue).",
-      "Same '% change' label issue as GCSE (teacher-view-panels.ts:114).",
+      "Change is shown in points everywhere, as at GCSE (S3b, R-NUMBER-TYPE-HONESTY).",
     ],
     briefing: POST16_BRIEFING,
     citation: SOURCE_NAME.ks5,

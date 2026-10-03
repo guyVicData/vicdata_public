@@ -67,7 +67,7 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Honest number types | points, change_points, rank |
 | Rules | R-ENTRIES-NOT-POINTS, R-KS4-POINTS-GCSE-FULL, R-POINTS-SAME-QUAL, R-MIN-SCHOOLS, R-SAME-YEAR-BENCH, R-GEO-APPLIES, R-FOCUS-NEVER-FILTERED, R-KS4-SUBJECT-DEDUP, R-QUAL-FAMILY-MATCH, R-IGCSE-EXCL, R-COMPARATOR-NO-FIGURE, R-TREND-LINE-4YR, R-PERIOD-TRIM, R-NUMBER-TYPE-HONESTY |
 | Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/academic-data-view.ts:fetchSubjectHeadlineForSchools (route.ts:172); England via englandAverages (route.ts:46-74)<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles |
-| Known gaps | - Rename 'Average point score' -> 'Average points' decided (C3), not yet done (teacher-view-panels.ts:113).<br>- Code offers '% change in average point score' (teacher-view-panels.ts:112-121): R-NUMBER-TYPE-HONESTY. |
+| Known gaps | - Rename 'Average point score' -> 'Average points' decided (C3), not yet done (teacher-view-panels.ts:113).<br>- Change is shown in points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "points", changeOf, formatChange). |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
 
@@ -113,7 +113,7 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Honest number types | rate, change_pp, rank |
 | Rules | R-GRADE-SCALE-MATCH, R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-NO-GRADE-RATE-GEO, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-RATE-PER-QUAL, R-NUMBER-TYPE-HONESTY, R-TREND-LINE-4YR |
 | Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools)<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
-| Known gaps | - School years (2) are shorter than area years (4): the grade rollup is not read.<br>- comparator-grades pulls every subject and grade for the whole set, then filters to one subject (audit B §2).<br>- Code labels the change '% change in grade 4+ rate' (teacher-view-panels.ts:125) though formatDelta prints pp; change lists show % change (R-NUMBER-TYPE-HONESTY).<br>- No area benchmark is wired although the grade geography would give one. |
+| Known gaps | - School years (2) are shorter than area years (4): the grade rollup is not read.<br>- comparator-grades pulls every subject and grade for the whole set, then filters to one subject (audit B §2).<br>- Change is shown in percentage points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "pp", changeOf, formatChange).<br>- No area benchmark is wired although the grade geography would give one. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
 
@@ -205,7 +205,7 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Honest number types | points, change_points, rank |
 | Rules | R-ENTRIES-NOT-POINTS, R-POINTS-SAME-QUAL, R-KS5-ENGLAND-EXACT, R-KS5-ASAEA-EXCL, R-SINGLE-BUCKET-100, R-POINTS-WEIGHTED, R-IB-NONSUBJECT, R-MIN-SCHOOLS, R-SAME-YEAR-BENCH, R-GEO-APPLIES, R-FOCUS-NEVER-FILTERED, R-QUAL-FAMILY-MATCH, R-COMPARATOR-NO-FIGURE, R-TREND-LINE-4YR, R-PERIOD-TRIM, R-NUMBER-TYPE-HONESTY |
 | Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/academic-data-view.ts:fetchSubjectQualificationHeadlineForSchools (route.ts:176); England via englandAverages (route.ts:46-63)<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles |
-| Known gaps | - The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).<br>- Context 'All subjects' blends qualifications (R-POINTS-SAME-QUAL open issue).<br>- Same '% change' label issue as GCSE (teacher-view-panels.ts:114). |
+| Known gaps | - The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).<br>- Context 'All subjects' blends qualifications (R-POINTS-SAME-QUAL open issue).<br>- Change is shown in points everywhere, as at GCSE (S3b, R-NUMBER-TYPE-HONESTY). |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
 
@@ -251,7 +251,7 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Honest number types | rate, change_pp, rank |
 | Rules | R-GRADE-SCALE-MATCH, R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-NO-GRADE-RATE-GEO, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-RATE-PER-QUAL, R-NUMBER-TYPE-HONESTY, R-TREND-LINE-4YR, R-KS5-ASAEA-EXCL |
 | Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools)<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
-| Known gaps | - School years (2) are shorter than area years (4): the grade rollup is not read.<br>- comparator-grades pulls every subject and grade for the whole set, then filters to one subject (audit B §2).<br>- Code labels the change '% change in A*-E rate' (teacher-view-panels.ts:125) though formatDelta prints pp; change lists show % change (R-NUMBER-TYPE-HONESTY).<br>- No area benchmark is wired although the grade geography would give one. |
+| Known gaps | - School years (2) are shorter than area years (4): the grade rollup is not read.<br>- comparator-grades pulls every subject and grade for the whole set, then filters to one subject (audit B §2).<br>- Change is shown in percentage points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "pp", changeOf, formatChange).<br>- No area benchmark is wired although the grade geography would give one. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
 

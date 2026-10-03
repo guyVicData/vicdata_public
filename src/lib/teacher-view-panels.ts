@@ -71,11 +71,19 @@ export function togglePanel(open: PanelId[], id: PanelId): PanelId[] {
 // own distribution views (GradeCountsPanels), and Context and Comparisons fall back.
 export type MeasureId = "entries" | "points" | "threshold" | "bands" | "counts";
 
+// R-NUMBER-TYPE-HONESTY (catalogue §3; S3b, Guy's decision 3): how a change over time is
+// honestly stated for a measure. Counts (entries, grade counts) change by a PERCENTAGE;
+// an average point score changes by POINTS; a rate (Grade 4+ / A*-E, a grade band, KS2's
+// expected standard) by PERCENTAGE POINTS -- 60% -> 66% is +6pp, not +10%.
+export type ChangeKind = "percent" | "points" | "pp";
+
 export type Measure = {
   id: MeasureId;
   label: string;
-  // "% change in average point score" -- the measure's own change phrase.
+  // "change in average point score, in points" -- the measure's own change phrase.
   changeLabel: string;
+  // R-NUMBER-TYPE-HONESTY: the only change this measure is shown in (changeOf, formatChange).
+  changeKind: ChangeKind;
   format: (value: number) => string;
   // Deltas carry their own unit: a point score differs by points, a rate by percentage
   // POINTS, which is a different statement from a percentage and reads wrong as one.
@@ -111,7 +119,8 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
   const points: Measure = {
     id: "points",
     label: "Average point score",
-    changeLabel: "% change in average point score",
+    changeLabel: "change in average point score, in points",
+    changeKind: "points",
     format: (v) => v.toFixed(1),
     formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(1)}`,
     axisStep: phase === "ks4" ? 0.5 : 5,
@@ -122,7 +131,8 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
   const threshold: Measure = {
     id: "threshold",
     label: thresholdLabel(phase),
-    changeLabel: `% change in ${thresholdLabel(phase).toLowerCase()}`,
+    changeLabel: `change in ${thresholdLabel(phase).toLowerCase()}, in percentage points`,
+    changeKind: "pp",
     format: (v) => `${Math.round(v)}%`,
     formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}pp`,
     axisStep: 5,
@@ -136,7 +146,8 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
   const bands: Measure = {
     id: "bands",
     label: "Grade bands",
-    changeLabel: "% change in the share at the chosen grades",
+    changeLabel: "change in the share at the chosen grades, in percentage points",
+    changeKind: "pp",
     format: (v) => `${Math.round(v)}%`,
     formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}pp`,
     axisStep: 5,
@@ -147,7 +158,8 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
   const counts: Measure = {
     id: "counts",
     label: "Grade counts",
-    changeLabel: "change in entries at each grade",
+    changeLabel: "% change in entries at each grade",
+    changeKind: "percent",
     format: (v) => Math.round(v).toLocaleString(),
     formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d)).toLocaleString()}`,
     axisStep: 10,
@@ -162,6 +174,7 @@ export const ENTRIES_MEASURE: Measure = {
   id: "entries",
   label: "Candidates",
   changeLabel: "% change in candidate numbers",
+  changeKind: "percent",
   format: (v) => Math.round(v).toLocaleString(),
   formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d)).toLocaleString()}`,
   axisStep: 10,
@@ -184,7 +197,8 @@ export function headlineMeasure(phase: TeacherPhase, label: string): Measure {
   return {
     id: "points",
     label: isPercent ? "Expected standard" : phase === "ks4" ? "Attainment 8" : "Average point score",
-    changeLabel: `% change in ${label}`,
+    changeLabel: isPercent ? `change in ${label}, in percentage points` : `change in ${label}, in points`,
+    changeKind: isPercent ? "pp" : "points",
     format: (v) => (isPercent ? `${Math.round(v)}%` : v.toFixed(1)),
     formatDelta: (d) => `${d >= 0 ? "+" : "−"}${isPercent ? `${Math.abs(Math.round(d))}pp` : Math.abs(d).toFixed(1)}`,
     axisStep: 5,
@@ -399,6 +413,60 @@ export function percentChange(values: (number | null)[]): number | null {
   return ((ends.last - ends.first) / ends.first) * 100;
 }
 
+// ------------------------------------------------- honest change (R-NUMBER-TYPE-HONESTY)
+//
+// S3b (Guy's decision 3): every change view -- ranked change lists, change tables, change
+// maps, their titles and summaries -- states a change in the measure's own honest type.
+// Counts keep % change; points and rates show the absolute difference first -> last.
+
+/** R-NUMBER-TYPE-HONESTY: the change over a span, first to last REAL value, in the measure's honest type. */
+export function changeOf(measure: Pick<Measure, "changeKind">, values: (number | null)[]): number | null {
+  if (measure.changeKind === "percent") return percentChange(values);
+  const ends = endpoints(values);
+  return ends ? ends.last - ends.first : null;
+}
+
+/**
+ * R-NUMBER-TYPE-HONESTY: a change printed with its sign, in the measure's own delta format:
+ * "+5%" (a count, exactly as the % views always printed it), "+0.4" (points), "+3pp" (a
+ * rate). A points or pp change that rounds to nothing prints unsigned ("0.0", "0pp"),
+ * never "−0.0".
+ */
+export function formatChange(measure: Pick<Measure, "changeKind" | "formatDelta">, value: number): string {
+  if (measure.changeKind === "percent") return `${value >= 0 ? "+" : "−"}${Math.abs(Math.round(value))}%`;
+  const printed = measure.formatDelta(value);
+  return /^[+−]0(\.0+)?(pp)?$/.test(printed) ? printed.slice(1) : printed;
+}
+
+/** R-NUMBER-TYPE-HONESTY: a change's size in words, unsigned: "5%", "0.4 points", "3 percentage points". */
+export function changeMagnitude(measure: Pick<Measure, "changeKind">, value: number): string {
+  const v = Math.abs(value);
+  if (measure.changeKind === "percent") return `${Math.round(v)}%`;
+  if (measure.changeKind === "points") return `${v.toFixed(1)} ${v.toFixed(1) === "1.0" ? "point" : "points"}`;
+  return `${Math.round(v)} ${Math.round(v) === 1 ? "percentage point" : "percentage points"}`;
+}
+
+/** R-NUMBER-TYPE-HONESTY: what a change view is titled: "% change", "Change in points", "Change in percentage points". */
+export function changeTitle(measure: Pick<Measure, "changeKind">): string {
+  return measure.changeKind === "percent" ? "% change" : measure.changeKind === "points" ? "Change in points" : "Change in percentage points";
+}
+
+/**
+ * R-NUMBER-TYPE-HONESTY: a change view's title over one named figure: "% change in
+ * entries since 2021/22"; "Change in Attainment 8 since 2021/22, in points"; "Change in
+ * grade 4+ rate since 2023/24, in percentage points".
+ */
+export function changeInTitle(measure: Pick<Measure, "changeKind">, what: string, since: string): string {
+  if (measure.changeKind === "percent") return `% change in ${what} since ${since}`;
+  return `Change in ${what} since ${since}, in ${measure.changeKind === "points" ? "points" : "percentage points"}`;
+}
+
+/** changeTitle mid-sentence: "% change", "change in points", "change in percentage points". */
+export function changePhrase(measure: Pick<Measure, "changeKind">): string {
+  const t = changeTitle(measure);
+  return t.charAt(0).toLowerCase() + t.slice(1);
+}
+
 export const DIRECTION_WORD: Record<Direction, string> = { up: "Growing", down: "Declining", flat: "Broadly stable" };
 export const DIRECTION_ARROW: Record<Direction, string> = { up: "↑", down: "↓", flat: "→" };
 export const DIRECTION_VERB: Record<Direction, string> = { up: "grown", down: "fallen", flat: "stayed roughly level" };
@@ -412,7 +480,8 @@ export function article(n: number): string {
 }
 
 // The Trend panel's sentence, built once here so all four columns phrase it identically:
-// "<subject clause> has <verb> from X to Y; a Z% <noun> since <year>."
+// "<subject clause> has <verb> from X to Y; a Z% <noun> since <year>." -- on points and
+// rates "...; a <noun> of 0.4 points / 3 percentage points since <year>." (S3b).
 export function trendSentence({
   subjectClause,
   values,
@@ -427,9 +496,14 @@ export function trendSentence({
   const ends = endpoints(values);
   if (!ends) return null;
   const percent = percentChange(values);
+  // The direction word keeps R-TREND-FLAT-4PCT's ±4% band on the relative change; the
+  // figure printed is the measure's honest change (R-NUMBER-TYPE-HONESTY, S3b).
   const direction = classifyChange(percent);
   const pct = percent === null ? null : Math.abs(Math.round(percent));
-  const tail = pct === null ? "" : `; ${article(pct)} ${pct}% ${DIRECTION_NOUN[direction]} since ${startLabel}`;
+  const tail =
+    measure.changeKind === "percent"
+      ? pct === null ? "" : `; ${article(pct)} ${pct}% ${DIRECTION_NOUN[direction]} since ${startLabel}`
+      : `; a ${DIRECTION_NOUN[direction]} of ${changeMagnitude(measure, ends.last - ends.first)} since ${startLabel}`;
   return {
     direction,
     sentence: `${subjectClause} has ${DIRECTION_VERB[direction]} from ${measure.format(ends.first)} to ${measure.format(ends.last)}${tail}.`,

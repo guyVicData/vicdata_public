@@ -340,9 +340,9 @@ export function CandidatesPanels({
     label: s.label,
     shortLabel: subjects.find((x) => x.key === s.key)?.shortLabel ?? s.label,
     colour: s.colour,
-    percent: percentChange(s.values),
+    value: percentChange(s.values),
   }));
-  const ranked = changeBars.filter((b) => b.key !== "group" && b.percent !== null).sort((a, b) => b.percent! - a.percent!);
+  const ranked = changeBars.filter((b) => b.key !== "group" && b.value !== null).sort((a, b) => b.value! - a.value!);
   const best = ranked[0];
   const worst = ranked[ranked.length - 1];
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
@@ -408,7 +408,7 @@ export function CandidatesPanels({
         <ViewTitle>{inCategory ? `${inCategory}: % change since ${changeSince}, ranked` : `Entries: % change since ${changeSince}`}</ViewTitle>
         <CentredOnTarget watch={`change-list:${focused?.key}:${changeData.periods.join(",")}`}>
           <ChangeList
-            rows={changeBars.filter((b) => b.key !== "group").map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.percent }))}
+            rows={changeBars.filter((b) => b.key !== "group").map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.value }))}
             focusKey={focused?.key ?? null}
             group={group ? { label: group.label, value: percentChange(changeData.series.find((s) => s.key === "group")?.values ?? []) } : undefined}
           />
@@ -422,17 +422,17 @@ export function CandidatesPanels({
     ) :
       best && worst && best.key !== worst.key ? (
         <PanelSummary>
-          {best.label} has grown the most ({best.percent! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(best.percent!))}%); {worst.label}{" "}
-          {worst.percent! < 0 ? "has declined the most" : "has grown the least"} ({worst.percent! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(worst.percent!))}%) since {changeSince}.
+          {best.label} has grown the most ({best.value! >= 0 ? "+" : "−"}
+          {Math.abs(Math.round(best.value!))}%); {worst.label}{" "}
+          {worst.value! < 0 ? "has declined the most" : "has grown the least"} ({worst.value! >= 0 ? "+" : "−"}
+          {Math.abs(Math.round(worst.value!))}%) since {changeSince}.
         </PanelSummary>
       ) : (
         <PanelSummary>Not enough published years yet to compare subjects on change.</PanelSummary>
       ),
     source: source(spanLabel(changeData)),
     headline: (() => {
-      const p = changeBars.find((b) => b.key === focused?.key)?.percent ?? null;
+      const p = changeBars.find((b) => b.key === focused?.key)?.value ?? null;
       return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;
     })(),
   };

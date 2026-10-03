@@ -645,12 +645,22 @@ export const RULES: Rule[] = [
       "A measure is shown only in its honest number types (catalogue §3): counts as totals, % change, share or index; averages as points and change in points; rates as rate and change in percentage points.",
     why: "A % change of an average or a rate misleads: 60% -> 66% is +6pp, not +10%.",
     appliesTo: "Every view on M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-HEADLINE",
-    enforcedIn: ["src/catalogue/measures.ts (numberTypes)", "src/catalogue/matching.ts (offer filter, via dataview supports.numberType)"],
+    enforcedIn: [
+      "src/catalogue/measures.ts (numberTypes)",
+      "src/catalogue/matching.ts (offer filter, via dataview supports.numberType)",
+      `${TVP}:ChangeKind, Measure.changeKind, changeOf, formatChange, changeMagnitude, changeTitle, changeInTitle, trendSentence`,
+      `${SV}:YearTable (Change column, ranked by the honest change)`,
+      "src/components/teacher/ChangeChart.tsx (format, axis units)",
+      `${SP}:change half (ChangeList, titles, summary, headline)`,
+      `${XP}:change half (ChangeList, change map trend vs trend_absolute, titles, summary, headline)`,
+    ],
     testCase: null,
     origin: "Catalogue doc §3; decision C3",
     status: "active",
-    openIssue:
-      "Live code shows % change on points and rates in Context and Comparisons change lists, tables and summaries (SubjectPanels.tsx:910-916, 993-1000; ComparisonsPanels.tsx:703-711, 762-765), and labels '% change in average point score' / '% change in grade 4+ rate' (teacher-view-panels.ts:112-140); pp bars appear only in MultiTrend's <4-year fallback. Changing it changes displayed figures: a STOP item unless Guy decides.",
+    fixes: [
+      "S3b (Guy's decision 3, 3 Oct 2026): % change is no longer offered on points or rates in the Teacher view. Measure.changeKind ('percent' for entries and grade counts, 'points' for average point score and the GCSE/Post-16 headline, 'pp' for Grade 4+ / A*-E, grade bands and KS2's expected standard) drives every change view through changeOf / formatChange: Context's and Comparisons' ranked change lists and change tables (YearTable ranks and sorts by the honest change and drops the % beneath on points and rates; the Results geography table shows the change in points alone), the classic ChangeChart, Comparisons' change map (points and rates colour by absolute change, trend_absolute, keyed 'Change', instead of the ±% scale), every title ('Change in points' / 'Change in percentage points', changeInTitle), the summaries ('risen 0.4 points', 'fallen 3 percentage points'), the collapsed headline figure and trendSentence's tail. Counts keep % change. Direction words (Growing / Broadly stable / Declining) still use R-TREND-FLAT-4PCT's ±4% relative band: only the number printed changed. Not changed: the Data View's own map 'Trends' toggle (AcademicMapView, growth %) that Column 1 Results' Trend map shows, which is shared with the Data View.",
+    ],
+
   },
 
   // ------------------------------------------------------------------ Rolls and births (audit B)

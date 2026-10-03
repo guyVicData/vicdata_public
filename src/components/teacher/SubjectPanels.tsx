@@ -19,7 +19,10 @@ import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
   currentRowsWithDelta,
-  percentChange,
+  changeOf,
+  changePhrase,
+  changeTitle,
+  formatChange,
   rankByValue,
   periodsWithData,
   sliceFrom,
@@ -884,7 +887,10 @@ export function SubjectPanels({
     ) : undefined,
   };
 
-  // -------------------------------------------------------------- % change
+  // -------------------------------------------------------------- change
+  // R-NUMBER-TYPE-HONESTY (S3b): every figure in this half is the measure's honest change --
+  // % for Context on Candidates (entries), points on average point score, percentage
+  // points on a rate -- and every title and sentence says which.
   const changeFull: PanelData = trimToData({
     periods,
     series: [
@@ -901,18 +907,19 @@ export function SubjectPanels({
     label: s.label,
     shortLabel: subjects.find((x) => x.key === s.key)?.shortLabel ?? s.label,
     colour: s.colour,
-    percent: percentChange(s.values),
+    value: changeOf(measure, s.values),
   }));
   // In Context's modes the group is a reference line, not a ranked peer (Option H).
   const rankedChange = changeBars
-    .filter((b) => b.percent !== null && !(redesigned && b.key.startsWith("group-")))
-    .sort((a, b) => b.percent! - a.percent!);
+    .filter((b) => b.value !== null && !(redesigned && b.key.startsWith("group-")))
+    .sort((a, b) => b.value! - a.value!);
+  const fmtChange = (v: number) => formatChange(measure, v);
   const bestChange = rankedChange[0];
   const worstChange = rankedChange[rankedChange.length - 1];
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
 
   const changeHalf: PanelRender = {
-    tag: "% Change",
+    tag: changeTitle(measure),
     afterTag: <FromYearMenu periods={changePeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: geography ? `How has ${geography.label} moved, against its LA, region and England?` : questions.change,
     actions: redesigned ? (
@@ -929,8 +936,8 @@ export function SubjectPanels({
     body: (fullscreen) =>
       !redesigned ? (
         <>
-          <ViewTitle>{scope ? `${scope}: % change since ${changeSince}` : `% change since ${changeSince}`}</ViewTitle>
-          <ChangeChart bars={changeBars} fullscreen={fullscreen} />
+          <ViewTitle>{scope ? `${scope}: ${changePhrase(measure)} since ${changeSince}` : `${changeTitle(measure)} since ${changeSince}`}</ViewTitle>
+          <ChangeChart bars={changeBars} fullscreen={fullscreen} format={fmtChange} percent={measure.changeKind === "percent"} />
         </>
       ) : geography ? (
         <GeographyView
@@ -964,16 +971,17 @@ export function SubjectPanels({
       ) : (
         // Option H over every subject -- a list, so twenty rows just scroll.
         <>
-        <ViewTitle>{scope ? `${scope}: % change since ${changeSince}, ranked` : `${scopeNoun}: % change since ${changeSince}`}</ViewTitle>
+        <ViewTitle>{scope ? `${scope}: ${changePhrase(measure)} since ${changeSince}, ranked` : `${scopeNoun}: ${changePhrase(measure)} since ${changeSince}`}</ViewTitle>
         <CentredOnTarget watch={`change-list:${focusedKey}:${changeData.periods.join(",")}`}>
           <ChangeList
-            rows={changeBars.filter((b) => !b.key.startsWith("group-")).map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.percent }))}
+            rows={changeBars.filter((b) => !b.key.startsWith("group-")).map((b) => ({ key: b.key, label: b.label, colour: b.colour, value: b.value }))}
             focusKey={focusedKey}
             group={
               groups[0]
-                ? { label: groups[0].label, value: percentChange(changeData.series.find((x) => x.key === "group-0")?.values ?? []) }
+                ? { label: groups[0].label, value: changeOf(measure, changeData.series.find((x) => x.key === "group-0")?.values ?? []) }
                 : undefined
             }
+            formatValue={measure.changeKind === "percent" ? undefined : fmtChange}
           />
         </CentredOnTarget>
         </>
@@ -981,19 +989,16 @@ export function SubjectPanels({
     summary:
       bestChange && worstChange && bestChange.key !== worstChange.key ? (
         <PanelSummary>
-          {bestChange.label} has grown the most ({bestChange.percent! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(bestChange.percent!))}%); {worstChange.label}{" "}
-          {worstChange.percent! < 0 ? "has declined the most" : "has grown the least"} (
-          {worstChange.percent! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(worstChange.percent!))}%) since {changeSince}.
+          {bestChange.label} has grown the most ({fmtChange(bestChange.value!)}); {worstChange.label}{" "}
+          {worstChange.value! < 0 ? "has declined the most" : "has grown the least"} ({fmtChange(worstChange.value!)}) since {changeSince}.
         </PanelSummary>
       ) : (
         <PanelSummary>Not enough published years yet to compare on change.</PanelSummary>
       ),
     source: sourceWithNote(spanLabel(changeData.periods)),
     headline: (() => {
-      const p = changeBars.find((b) => b.key === focusedSubject?.key)?.percent ?? null;
-      return p === null || p === undefined ? undefined : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p))}%`;
+      const p = changeBars.find((b) => b.key === focusedSubject?.key)?.value ?? null;
+      return p === null || p === undefined ? undefined : fmtChange(p);
     })(),
   };
 

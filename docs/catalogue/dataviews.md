@@ -36,8 +36,8 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-C2-TR-CHART | live | teacher.c2.context · trend · Chart | academic.results (points, threshold, bands) | subject | subjects | points, rate, change_points, change_pp | trend | graph | RD-MULTI-TREND |
 | DV-C2-TR-ACTUAL | live | teacher.c2.context · trend · Actual | academic.candidates | subject | subjects | totals | trend | graph | RD-MULTI-TREND |
 | DV-C2-TR-TABLE | live | teacher.c2.context · trend · Trend table | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | totals, points, rate | trend | table | RD-YEAR-TABLE |
-| DV-C2-TR-CHANGELIST | live | teacher.c2.context · trend · Ranked change | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | pct_change | trend | ranking | RD-CHANGE-LIST |
-| DV-C2-TR-CHANGETABLE | live | teacher.c2.context · trend · Change table | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | totals, points, rate, pct_change | trend | table | RD-YEAR-TABLE |
+| DV-C2-TR-CHANGELIST | live | teacher.c2.context · trend · Ranked change | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | pct_change, change_points, change_pp | trend | ranking | RD-CHANGE-LIST |
+| DV-C2-TR-CHANGETABLE | live | teacher.c2.context · trend · Change table | academic.candidates, academic.results (points, threshold, bands) | subject | subjects | totals, points, rate, pct_change, change_points, change_pp | trend | table | RD-YEAR-TABLE |
 | DV-C3-CUR-TILES | live | teacher.c3.comparisons · current · Number tiles | academic.candidates, academic.results (points, threshold, bands, counts) | school | schools | points, rank | single | numerical | RD-NUMBER-TILES |
 | DV-C3-CUR-MAP | live | teacher.c3.comparisons · current · Map | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, totals | single | map | RD-RANKINGS-MAP |
 | DV-C3-CUR-BAR | live | teacher.c3.comparisons · current · Bar chart | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, rate, totals | single | ranking | RD-VIEW-CHART |
@@ -45,9 +45,9 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-C3-TR-CHART | live | teacher.c3.comparisons · trend · Chart | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | points, rate, totals | trend | graph | RD-TREND-CHART |
 | DV-C3-TR-TABLE | live | teacher.c3.comparisons · trend · Trend table | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | totals, points, rate | trend | table | RD-YEAR-TABLE |
 | DV-C3-TR-MAP | live | teacher.c3.comparisons · trend · Trend map | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | change_points, change_pp, totals | trend | map | RD-RANKINGS-MAP |
-| DV-C3-TR-CHANGELIST | live | teacher.c3.comparisons · trend · Ranked bars | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | pct_change | trend | ranking | RD-CHANGE-LIST |
-| DV-C3-TR-CHANGETABLE | live | teacher.c3.comparisons · trend · Change table | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | totals, points, rate, pct_change | trend | table | RD-YEAR-TABLE |
-| DV-C3-TR-CHANGEMAP | live | teacher.c3.comparisons · trend · Change map | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | pct_change | trend | map | RD-RANKINGS-MAP |
+| DV-C3-TR-CHANGELIST | live | teacher.c3.comparisons · trend · Ranked bars | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | pct_change, change_points, change_pp | trend | ranking | RD-CHANGE-LIST |
+| DV-C3-TR-CHANGETABLE | live | teacher.c3.comparisons · trend · Change table | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | totals, points, rate, pct_change, change_points, change_pp | trend | table | RD-YEAR-TABLE |
+| DV-C3-TR-CHANGEMAP | live | teacher.c3.comparisons · trend · Change map | academic.candidates, academic.results (points, threshold, bands) | subject, school | schools | pct_change, change_points, change_pp | trend | map | RD-RANKINGS-MAP |
 
 ## Cards
 
@@ -525,7 +525,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Origin | Candidates live review Part 5; Post-16 Part C |
 | Rules | R-NO-GRADE-RATE-GEO, R-KS4-POINTS-GCSE-FULL, R-KS5-ENGLAND-EXACT, R-MIN-SCHOOLS, R-GEO-APPLIES |
 | Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
-| Note | Placement mismatch F2 (as Area chart). The table emphasises % change (changeEmphasis: percent): R-NUMBER-TYPE-HONESTY. |
+| Note | Placement mismatch F2 (as Area chart). S3b: the Change column shows the change in points alone, not a % (R-NUMBER-TYPE-HONESTY). |
 
 ### DV-C1-CNT-CUR-DIST — Grade distribution
 
@@ -845,12 +845,12 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Phases | ks4, ks5 |
 | Focus | subject |
 | Compare | subjects |
-| Number types | pct_change |
+| Number types | pct_change, change_points, change_pp |
 | Date mode | trend |
 | View type | ranking |
 | Renderer | RD-CHANGE-LIST |
-| Title template | [Entries\|Results] in [comparison-group]: % change since [year], ranked |
-| Title fallback | [Entries\|Results]: % change since [year] |
+| Title template | [Entries\|Results] in [comparison-group]: [% change\|change in points\|change in percentage points] since [year], ranked |
+| Title fallback | [Entries\|Results]: [% change\|change in points\|change in percentage points] since [year] |
 | Requires (card warning) | — |
 | Params | changeStart, against:context |
 | Rail icon | HorizontalBarsIcon |
@@ -861,7 +861,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Origin | Trend & % change redesign (option H) |
 | Rules | R-NUMBER-TYPE-HONESTY, R-KS5-ASAEA-EXCL, R-MEASURE-FALLBACK |
 | Used on | GCSE Candidates › Context › Trends, GCSE Results › Context › Trends, Post-16 Candidates › Context › Trends, Post-16 Results › Context › Trends |
-| Note | Shows % change on points and rates too (R-NUMBER-TYPE-HONESTY open issue). |
+| Note | S3b: % change on entries; change in points on average point score; change in percentage points on rates (R-NUMBER-TYPE-HONESTY). |
 
 ### DV-C2-TR-CHANGETABLE — Change table
 
@@ -873,7 +873,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Phases | ks4, ks5 |
 | Focus | subject |
 | Compare | subjects |
-| Number types | totals, points, rate, pct_change |
+| Number types | totals, points, rate, pct_change, change_points, change_pp |
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-YEAR-TABLE |
@@ -1097,11 +1097,11 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Phases | ks4, ks5 |
 | Focus | subject, school |
 | Compare | schools |
-| Number types | pct_change |
+| Number types | pct_change, change_points, change_pp |
 | Date mode | trend |
 | View type | ranking |
 | Renderer | RD-CHANGE-LIST |
-| Title template | % change in [measure] since [year], ranked against the [set] |
+| Title template | [% change in [measure] since [year]\|Change in [measure] since [year], in points\|…, in percentage points], ranked against the [set] |
 | Title fallback | — |
 | Requires (card warning) | — |
 | Params | changeStart, set:rankings |
@@ -1113,7 +1113,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Origin | Trend & % change redesign (option H) |
 | Rules | R-NUMBER-TYPE-HONESTY, R-COMPARATOR-NO-FIGURE, R-IGCSE-EXCL, R-MEASURE-FALLBACK |
 | Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
-| Note | Shows % change on points and rates too (R-NUMBER-TYPE-HONESTY open issue). |
+| Note | S3b: % change on entries; change in points on average point score; change in percentage points on rates (R-NUMBER-TYPE-HONESTY). |
 
 ### DV-C3-TR-CHANGETABLE — Change table
 
@@ -1125,7 +1125,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Phases | ks4, ks5 |
 | Focus | subject, school |
 | Compare | schools |
-| Number types | totals, points, rate, pct_change |
+| Number types | totals, points, rate, pct_change, change_points, change_pp |
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-YEAR-TABLE |
@@ -1153,11 +1153,11 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Phases | ks4, ks5 |
 | Focus | subject, school |
 | Compare | schools |
-| Number types | pct_change |
+| Number types | pct_change, change_points, change_pp |
 | Date mode | trend |
 | View type | map |
 | Renderer | RD-RANKINGS-MAP |
-| Title template | % change in [measure] since [year], coloured by school |
+| Title template | [% change in [measure] since [year]\|Change in [measure] since [year], in points\|…, in percentage points], coloured by school |
 | Title fallback | — |
 | Requires (card warning) | Not for ranking sets; needs the school's location and 2 or more years. |
 | Params | changeStart, set:rankings |
@@ -1169,4 +1169,4 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Origin | Comparisons change map colour scale round |
 | Rules | R-NUMBER-TYPE-HONESTY, R-RANKING-SAMPLE, R-IGCSE-EXCL, R-MEASURE-FALLBACK |
 | Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
-| Note | — |
+| Note | S3b: a count keeps the fixed ±% scale (forcedColourMode trend); points and rates colour by the absolute change on the set's own range (trend_absolute), keyed 'Change' (R-NUMBER-TYPE-HONESTY). |
