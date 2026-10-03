@@ -11,6 +11,7 @@ import type { AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
 import { POINTS_BEARING_QUALIFICATION } from "@/lib/dfe-qualification-buckets";
 import type { MeasureId } from "@/lib/teacher-view-panels";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
+import { cachedFetchJson } from "@/lib/fetch-cache";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
@@ -39,10 +40,9 @@ export async function fetchSubjectGeography(
     params.set("phase", "ks5");
     params.set("qualificationType", qualificationType);
   }
-  const res = await fetch(`/api/teacher/subject-geography?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.ok ? ((await res.json()) as GeographyPayload) : null;
+  // Shared across panels and embedded views for 5 minutes (fetch-cache.ts, decision 10).
+  const res = await cachedFetchJson<GeographyPayload>(`/api/teacher/subject-geography?${params.toString()}`, { token });
+  return res.ok ? res.body : null;
 }
 
 // ------------------------------------------------ which comparisons apply (0.6 S2)

@@ -3,6 +3,7 @@
 // / A*-E rate is scored the same way as the school's own. Client-safe.
 import type { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { KsStage, SubjectGradeCount } from "@/lib/academic-data-view";
+import { cachedFetchJson } from "@/lib/fetch-cache";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
@@ -19,10 +20,10 @@ export async function fetchComparatorGrades(
   const token = data.session?.access_token;
   if (!token) return null;
   const params = new URLSearchParams({ anchorUrn, urns: urns.join(","), stage, subject });
-  const res = await fetch(`/api/teacher/comparator-grades?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+  // Shared across panels and embedded views for 5 minutes (fetch-cache.ts, decision 10).
+  const res = await cachedFetchJson<{ gradeRowsByUrn?: Record<string, SubjectGradeCount[]> }>(`/api/teacher/comparator-grades?${params}`, { token });
   if (!res.ok) return null;
-  const body = (await res.json()) as { gradeRowsByUrn?: Record<string, SubjectGradeCount[]> };
-  return body.gradeRowsByUrn ?? {};
+  return res.body?.gradeRowsByUrn ?? {};
 }
 
 /**

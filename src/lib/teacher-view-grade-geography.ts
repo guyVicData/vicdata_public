@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { bandRate, type GradeRange } from "@/lib/subject-grades";
+import { cachedFetchJson } from "@/lib/fetch-cache";
 
 export type GradeGeographyRow = { period: number; grade: string; entries: number; schoolCount: number };
 type Area = { name: string; rows: GradeGeographyRow[] } | null;
@@ -20,8 +21,9 @@ export async function fetchSubjectGradeGeography(input: GradeGeographyInput): Pr
   const token = data.session?.access_token;
   if (!token) return null;
   const params = new URLSearchParams({ urn: input.urn, subject: input.subject, qualificationType: input.qualificationType, phase: input.phase });
-  const res = await fetch(`/api/teacher/subject-grade-geography?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
-  return res.ok ? ((await res.json()) as GradeGeographyPayload) : null;
+  // Shared across panels and embedded views for 5 minutes (fetch-cache.ts, decision 10).
+  const res = await cachedFetchJson<GradeGeographyPayload>(`/api/teacher/subject-grade-geography?${params.toString()}`, { token });
+  return res.ok ? res.body : null;
 }
 
 // Fetched once per (school, subject, qualification): the payload covers every year and
