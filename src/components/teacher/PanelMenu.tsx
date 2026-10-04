@@ -14,7 +14,9 @@
 // only closes by clicking itself again is the thing people report as "stuck".
 import { useEffect, useRef, type ReactNode } from "react";
 
-export function useDismiss(open: boolean, onClose: () => void) {
+// `alsoInside` (0.6 snag 1): a second element that counts as inside -- a menu drawn in a
+// portal, outside the anchor's own subtree (PanelExport).
+export function useDismiss(open: boolean, onClose: () => void, alsoInside?: { current: HTMLElement | null }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!open) return;
@@ -22,7 +24,9 @@ export function useDismiss(open: boolean, onClose: () => void) {
     // Pointerdown rather than click: a click listener fires after the button's own
     // handler has already toggled the menu back open, so the menu never closed.
     const onDown = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      const t = e.target as Node;
+      if (alsoInside?.current?.contains(t)) return;
+      if (ref.current && !ref.current.contains(t)) onClose();
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown);
@@ -30,7 +34,7 @@ export function useDismiss(open: boolean, onClose: () => void) {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onDown);
     };
-  }, [open, onClose]);
+  }, [open, onClose, alsoInside]);
   return ref;
 }
 
@@ -39,11 +43,14 @@ export function useDismiss(open: boolean, onClose: () => void) {
 export function PanelMenu({
   label,
   align = "left",
+  placement = "below",
   width,
   children,
 }: {
   label: string;
   align?: "left" | "right";
+  // 0.6 snag 1: "above" opens upward from its anchor (a footer control); default below.
+  placement?: "below" | "above";
   width: number;
   children: ReactNode;
 }) {
@@ -54,7 +61,8 @@ export function PanelMenu({
       // max-h + overflow so a long list (Context's subject checklist, Comparisons' named
       // schools) scrolls inside the popover rather than running off the card.
       className={[
-        "absolute top-full z-30 mt-1.5 flex max-h-[22rem] flex-col gap-0.5 overflow-y-auto rounded-[14px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-2.5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]",
+        "absolute z-30 flex max-h-[22rem] flex-col gap-0.5 overflow-y-auto rounded-[14px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-2.5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]",
+        placement === "above" ? "bottom-full mb-1.5" : "top-full mt-1.5",
         align === "right" ? "right-0" : "left-0",
       ].join(" ")}
       // Width is the wireframe's per-menu figure; capped so it can never be wider than a
