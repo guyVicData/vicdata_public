@@ -207,9 +207,11 @@ export function ColumnPanels({
           // Each host draws one Current and one Trends panel per column (0.6 limitation).
           if (drawn.has(id)) return <PanelLimitNote key={cfg.id} panelId={cfg.id} text="This column already shows this panel. For now a column can show each of its Current and Trends panels once." />;
           drawn.add(id);
-          let panel = raw;
+          // Snag 1 item 00: a panel renamed in the editor shows its name in place of the
+          // host's own tag. Seeded configs carry no name, so they draw the host's tag as before.
+          let panel = cfg.name ? { ...raw, tag: cfg.name } : raw;
           if (host) {
-            panel = { ...raw, actions: configuredRail(railEntries(raw.actions, host, id), cfg) };
+            panel = { ...panel, actions: configuredRail(railEntries(raw.actions, host, id), cfg) };
           }
           if (embed?.frame === "figure") {
             // A meeting slot (or another frame that brings its own card): the figure alone,
