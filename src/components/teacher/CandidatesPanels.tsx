@@ -41,6 +41,7 @@ import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { memberMeans } from "@/lib/teacher-view-populations";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
+import type { CandidatesFrame } from "@/lib/view-series/frames";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
 // `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
@@ -464,6 +465,20 @@ export function CandidatesPanels({
   // subject. The dashboard renders its own single box for that phase instead.
   if (phase === "ks2") return null;
 
+  // 0.6.1 S3: what the config-driven view renderer draws from (under `views=v2` only).
+  const frame: CandidatesFrame = {
+    kind: "candidates",
+    periods,
+    subjects: subjects.map((s) => ({ key: s.key, label: s.label, shortLabel: s.shortLabel, values: s.values })),
+    focus,
+    groupLabel,
+    categoryLabel,
+    theme,
+    accentHex: PHASE_ACCENT[phase]?.hex ?? null,
+    hasGeography: !!geography,
+    state: { trendStart, changeStart, showFit },
+  };
+
   return (
     <ColumnPanels
       columnId="candidates"
@@ -473,7 +488,7 @@ export function CandidatesPanels({
       notes={notes}
       // Current titles its one view itself (ViewTitle), as Trends titles each of its views;
       // the geography views carry their own heading, as before.
-      render={{ current, trend }}
+      render={{ current: { ...current, frame }, trend: { ...trend, frame } }}
     />
   );
 }

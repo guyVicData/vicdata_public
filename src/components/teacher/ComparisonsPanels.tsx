@@ -62,6 +62,8 @@ import { RankingsMap } from "./RankingsMap";
 import { SchoolRankingTable, type SchoolRankingRow } from "./SchoolRankingTable";
 import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
+import type { ComparisonsFrame } from "@/lib/view-series/frames";
+import { SAVED_SET_PREFIX } from "@/lib/teacher-view-saved-sets";
 
 export type MapChip = {
   key: string;
@@ -829,6 +831,33 @@ export function ComparisonsPanels({
     ),
   });
 
+  // 0.6.1 S3: what the config-driven view renderer draws from (under `views=v2` only): the
+  // set's schools with a figure, each one's values over the set's years (and the entries
+  // behind them, where the page has them), and the members' own settings.
+  const frame: ComparisonsFrame = {
+    kind: "comparisons",
+    periods,
+    schools: schools.map((s) => ({
+      urn: s.urn,
+      name: s.name,
+      isTarget: s.isTarget,
+      ...(s.igcseExcluded ? { igcseExcluded: true } : {}),
+      values: valuesFor(s.urn),
+      ...(threshold ? {} : { counts: periods.map((p) => seriesByUrn[s.urn]?.candidates.find((r) => r.period === p)?.value ?? null) }),
+    })),
+    measure,
+    targetName,
+    setLabel,
+    comparedOn,
+    titleOn,
+    versus: { urn: versusSchool ? versusSchool.urn : "average", label: versusLabel },
+    onRankingMeasure,
+    ranking: rankingSet ? { averageAt: rankingAverageAt } : null,
+    setKind: setId.startsWith(SAVED_SET_PREFIX) ? "savedSet" : "nearest",
+    blocked: seriesLoading || schools.length === 0,
+    state: { trendStart, changeStart, showFit },
+  };
+
   return (
     <ColumnPanels
       columnId="rankings"
@@ -858,7 +887,7 @@ export function ComparisonsPanels({
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }
-      render={unavailableNote ? { current: notAvailable(current), trend: notAvailable(trend) } : { current, trend }}
+      render={unavailableNote ? { current: notAvailable(current), trend: notAvailable(trend) } : { current: { ...current, frame }, trend: { ...trend, frame } }}
     />
   );
 }

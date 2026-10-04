@@ -57,6 +57,7 @@ import { ViewChart } from "./ViewChart";
 import { VerticalBars } from "./VerticalBars";
 import { RankedList } from "./RankedList";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
+import type { SubjectsFrame } from "@/lib/view-series/frames";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -1040,6 +1041,35 @@ export function SubjectPanels({
     source: isChange ? changeHalf.source : trendHalf.source,
   };
 
+  // 0.6.1 S3: what the config-driven view renderer draws from (under `views=v2` only): the
+  // props this host was handed, as the page derived them, and the members' own settings.
+  const groupKind = columnId === "context" ? (runtime?.contextAgainst === "whole" ? "allSubjects" : runtime?.contextAgainst === "selected" ? "selectedSubjects" : "category") : "category";
+  const frame: SubjectsFrame = {
+    kind: "subjects",
+    host: columnId === "context" ? "teacher.c2.context" : "teacher.c1.results",
+    periods,
+    subjects,
+    measure,
+    focus,
+    groups,
+    groupKind,
+    benchmarkKind: benchmarkLabel ? (columnId === "context" ? groupKind : "england") : null,
+    benchmarkLabel,
+    deltaHeading,
+    rankedTable,
+    rankedViews,
+    spaciousBars,
+    categoryLabel,
+    compareAgainstLabel,
+    changeScope,
+    cardTrend,
+    theme,
+    accentHex,
+    currentBlocked: subjects.length === 0 || (!!gradeBand && !gradeBand.range),
+    hasGeography: !!geography,
+    state: { trendStart, changeStart, showFit, latestIdx, hiddenKeys, sort, onSort: (key) => setSort(nextSort(sort, key)) },
+  };
+
   return (
     <ColumnPanels
       columnId={columnId}
@@ -1064,9 +1094,10 @@ export function SubjectPanels({
                     {current.body(fullscreen)}
                   </>
                 ),
+                frame,
               }
-            : current,
-        trend,
+            : { ...current, frame },
+        trend: { ...trend, frame },
       }}
     />
   );
