@@ -1137,3 +1137,51 @@ S5, S6 and the integration pass have their own entries above. Everything here wa
   - fill `[versus]`;
   - start trend titles at their first year.
 - **A unit test** resolves every title for entries, points and rates and fails if any bracket is left.
+
+---
+
+## 2026-10-04 — 0.6 snagging round 1: judgement calls logged, build carried on
+
+Prompt: `docs/v0.6/vicdata_0_6_snagging_round1_claude_code_prompt_v1.md`. Report: `docs/v0.6/snag1_report_v1.md`.
+
+### 00 — the Teacher page draws the published dashboard
+
+- **It waits for the stored config rather than swapping it in.** The load starts alongside the school's data and is awaited just before the page first paints, so there's no flash or swap. The cost is one extra parallel round trip, hidden behind the existing loads.
+- **The drawn config always carries the slug as its id** (`vicdata.ks4.candidates`), whatever id the editor wrote into the JSON. The Edit link, the Updated line and the legacy keys depend on it.
+- **"Unusable" means any of:** no row, no published version, a different `schema_version`, a config that fails `validateConfig`, missing tables, or a load error. Each falls back to the copy in code with a `[dashboards]` console warning.
+- **A panel renamed in the editor now shows its name** in place of the host's tag. Without this, "Rename panel" wouldn't reach the page. Seeded configs carry no name, so they draw exactly as before. Renaming a *row* still doesn't show on the Teacher page, because the panels' tags come from the hosts.
+- **A column the editor adds without a legacy key** isn't drawn on the Teacher page, which still renders through the three Teacher hosts; `/dashboards/[id]` draws it. Fine for refining the four, but worth knowing before structural edits.
+
+### 01 — the Export menu
+
+- **The cause wasn't the one the prompt assumed.** PanelMenu opens *below* its anchor (`top-full`), so the Export menu ran down past the panel's bottom edge, which the fixed-height CardBox clips.
+- **The menu is left-aligned to its button, not right-aligned.** Export sits in the footer's left-hand cluster, so a `right-0` menu would have run past the panel's *left* edge. It flips to right-aligned only when it would run off the screen.
+- **It's drawn in a portal** (into `#teacher-root`, the pattern CopyViewDialog uses), at the button's position, at z-1600 so it sits above the fullscreen modal (z-1500). Scroll or resize closes it.
+- **"Same look as Notes":** PanelMenu's own border, radius and shadow are kept, as they were (14px radius, Notes has 10px). The prompt also said "PanelMenu contents unchanged", so I didn't restyle it.
+- **Shared components gained two additive options:** `PanelMenu` has `placement: "above"`, and `useDismiss` takes an optional second "inside" element, for menus drawn in a portal.
+
+### 02 — Compare against names the category
+
+- **The existing `focusCategory` prop is the family id, not its name**, so ContextPills gained `focusCategoryLabel` (`familyFor().label`, the name the picker shows).
+- **PillMenu gained `title`, plus `max-w-full` / `min-w-0`**, so a long value truncates instead of overflowing. This is invisible for pills that fit, which is all of them today; the parity run confirms it.
+- **"Subject category" strings left alone:**
+  - Context's group label and phrase: they already name the category, and use "Subject category" only as the same no-focus fallback;
+  - the editor's column summary ("Compared to: subject category", `editor-ops.ts`): item 03 says touch nothing else in the editor;
+  - Data View copy and code comments: they mean something else.
+
+### 03 — a menu for each view on its rail icon
+
+1. **Instance ids:** "Edit" and "Swap" keep the instance id only when the dataview stays the same (or both are placeholders). A different view gets a fresh id, as Add a view would give it. The opening view follows the replacement.
+2. **Editing a placeholder** reuses the empty state's placeholder form, pre-filled. It changes only the description, shape and notes; the placeholder's saved context is kept.
+3. **There was no "today's reason" text** for a disabled copy of a placeholder, so the disabled row's tag reads "Planned".
+4. **Chooser buttons:** "Save view" when editing, "Swap in" when swapping. The Pick header still says "Add a view".
+5. **The view menu is 300px wide** (`EDITOR.viewMenuWidth`). At 264px, "Copy to another dashboard or meeting…" was cut off.
+6. **The `···` tab** is centred on the rail divider, with a 2.5px invisible lead-in so the pointer can cross from the icon to the tab.
+   - It's always in the Tab order, and shows on keyboard focus, on hover (`hover: hover`) and on the active icon on touch (`hover: none`).
+   - Esc closes the menu and returns focus to the tab.
+7. **Additive changes outside the editor**, needed for Edit and Swap:
+   - AddViewChooser's `startAt` also takes "customise" and "placeholder", and it gains `editing` and `addLabel`;
+   - CustomiseScreen gains `initialParams`;
+   - EmptyScreen gains `editing`.
+
+   Nothing else in the editor changed.
