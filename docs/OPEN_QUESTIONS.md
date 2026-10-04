@@ -1261,3 +1261,57 @@ Prompt: `docs/v0.6/vicdata_0_6_snagging_round3_claude_code_prompt_v1.md`. Report
 8. **The change summary** prefixes a measure's name whenever a view isn't on all four measures ("Grade counts: removed Spread by year from Results · Trends"). It now also reports default-view changes.
 9. **Pick already filtered by measure;** it now also puts views drawn on the current pill first. That makes no visible difference with today's catalogue.
 10. **`schema_version` stays 1.** Configs without the new fields behave exactly as before, and no data migration is needed.
+
+---
+
+## 2026-10-04 — 0.6 snagging round 4: judgement calls logged, build carried on
+
+Prompt: `docs/v0.6/vicdata_0_6_snagging_round4_claude_code_prompt_v1.md`. Report: `docs/v0.6/snag4_report_v1.md`.
+
+### A, B, C — one "View as"
+
+- **Root cause of Comparisons breaking in a trial at The Chase:**
+  - `/api/data-view/academic-schools` and `/api/teacher/saved-comparator-sets` admitted approved members only, with no platform-admin fallback (the `teacher/*` routes have had one since S1).
+  - In view-as Guy isn't a member, so both answered 403. The page then had no comparator profiles: the map found no location for the school, and the graph and ranking had no figures.
+  - "10 nearest" still resolved through `chooser-set`, which explains the title. The URN, the 10-nearest list and the location data were all fine.
+  - The membership-gated routes the chooser, Comparisons and Recruitment call now let a platform admin in after the member check, like the `teacher/*` routes.
+- **The brief's grounding, corrected:** live, Guy's platform-admin profile has one approved membership (Acland Burghley 100053). The Chase's only member is another profile, so "as Guy, The Chase works" must have been that other login. The two-membership case was tested anyway (10/10). Before the fix it showed "Teacher view is available to verified school staff", a real member-facing bug, now fixed. The school shown is `?school=URN` (remembered), else the earliest approved membership; there's no switcher UI yet.
+- **Across tabs:** a session cookie (`vicdata_view_as`), because the data routes need it too. Pages and routes re-confirm platform admin every time. View as ends when the browser closes. A tab that comes back into view after View as changed elsewhere reloads.
+- **Start and Back to me** do a full page load to `/teacher`, so no cached data crosses over.
+- **One Edit setting:** the Edit switch is now one localStorage setting in both modes. Round 2 kept a separate per-tab one for a trial.
+- **Pill and wording:** the pill shows ▾ at rest too. "Recently tried" is renamed "Recently viewed as". "Trying VicData as" became "Viewing as", and "Exit" became "Back to me".
+- **A trial's own comparator sets and rankings** are stored as Guy's own `teacher_view_notes` rows under `{urn}~trial~{role}~sets`, one row per set, so only Guy can read them and they are never shared with the school. `teacher_view_preferences` couldn't hold them, because of a CHECK on phase. A proper table would be cleaner long-term, but it would have meant a migration and a stopped merge. Worth doing later.
+- **School-Admin in View as:**
+  - It reports `canEditShared` as true, so pages draw identically, but every save to shared sets, rankings, People or Teams is refused with "View as: read-only".
+  - People and Teams read through a new route, `/api/teacher/view-as-people` (service role, after confirming platform admin and a School-Admin View as). Invite (copy link) still works.
+- **Start fresh** keeps the trial's own sets, as it keeps its dashboards, meetings and jobs.
+- **Meeting cap:** View as uses the viewed role's meeting cap (20 for School-Admin, 5 otherwise), so it behaves like the member.
+- **Scope:** View as covers the Teacher and dashboard pages. `/account`, `/sets` and `/platform` stay Guy's own, and the pill shows the mode there.
+- **One module:** `trial.ts`, `look-as.ts` and `teacher-route-access.ts` are folded into `src/lib/view-as.ts`. TryAsCard became one ViewAs component, used by both the nav pill and `/account`.
+  - The bare `?lookAs=&as=` pair no longer starts anything.
+  - `?peek=1` stays, for the Catalogue's frames only.
+- **Logs:** the action is `view_as` with `{role, fresh}`. The `via` field is dropped, and old `try_as` rows are untouched.
+- **The naming gap stays:** `trial_contexts`, `trial_key`, `reset_trial` and the `~trial~` in keys, so no migration was needed.
+
+### 01 — view titles and the Customise audit
+
+1. **What counts as a title override:** only a title that differs from the dataview's template. Customise always saves the template, so an untouched title changes nothing.
+2. **A trend's `[year]`** is where its honest series starts, as the panel and Customise's preview start it. It doesn't follow the reader's own "From" menu.
+3. **The Trend scale sentence above indexed charts keeps its words;** the geography heading takes the override.
+4. **A meeting slot's figure takes the override only from Customise's own title**, so existing slots don't change.
+5. **On a dashboard, Customise moves only among views that panel can draw.** Before, switching a Current panel's view to a trend view was saved and then silently dropped. The other single/trend choice is dotted with "Coming soon".
+6. **"Coming soon" fields:** the "from" year everywhere, and Roll forward on dashboards (a dashboard always shows the latest year; it's saved as on). Roll forward works in meetings.
+7. **Numbers acts as a view picker:** a view showing several number types (the tiles) still shows them all.
+
+### 02 — Context's rail and Compare against
+
+- **The pre-0.6 page never varied Context's rail by Compare against** (verified at 5597757: only the data, the labels, and the Trend card's "focus vs group" for All subjects changed). So this is new behaviour, with defaults that change nothing.
+- **Round 3's Results filtering is now one variant mechanism** (`src/catalogue/variants.ts`), with three axes:
+  - `results`;
+  - `compareAgainst` (Context);
+  - `comparator` (Comparisons' schools vs ranking set).
+- **The comparator axis is included because the host already varies by it:** Number tiles show for a ranking set only, and the three maps for chosen schools only. It has no editor pill, because the band had no room for a third; it follows the page, and Show all views reveals the other kind's views.
+- **A view added in the editor is tagged only for the current Results measure,** never for a Compare against set. Context always has a set on, so tagging would silently narrow every new view.
+- **Defaults per state:** with two or more axes the editor writes `defaultViewByState`; Results alone still writes round 3's `defaultViewByResults`, and a round-3 per-measure default still applies under any Compare against set. `schema_version` stays 1.
+- **Copies:** a copy into a meeting drops every axis; a copy to a dashboard keeps them.
+- **The editor's live preview on "Selected subjects"** uses the page's selected subjects.
