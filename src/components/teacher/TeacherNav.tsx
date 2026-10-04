@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { getActiveTrial } from "@/lib/trial";
 import { fetchNavLabels, saveNavLabels } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
@@ -208,6 +209,9 @@ function AccountMenu() {
       const { data } = await supabase.auth.getSession();
       setSignedIn(Boolean(data.session));
       if (!data.session) return;
+      // 0.6 snag 2: in a "Try VicData as…" trial the menu is the member's: no People, Teams
+      // (the admin's own school's) or Platform. The banner's Change/Exit are the way out.
+      if (getActiveTrial()) return;
       const [school, admin] = await Promise.all([loadAdminSchool(), supabase.rpc("is_platform_admin")]);
       setCanManage(school.status === "ready" && school.school.canManage);
       setPlatformAdmin(!admin.error && admin.data === true);

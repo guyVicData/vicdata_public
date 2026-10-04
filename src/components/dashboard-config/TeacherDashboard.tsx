@@ -22,7 +22,9 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
-import { loadPublishedVicData } from "@/lib/published-vicdata";
+import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
+import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
+import { EditorScreen, type InPlaceHost } from "@/components/editor/EditorScreen";
 import type { RankingFigures } from "@/lib/chooser-sets";
 import { directionCssVars } from "@/lib/trend-colours";
 import { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -45,6 +47,8 @@ import { cachedFetchJson } from "@/lib/fetch-cache";
 import type { PinnedSettings } from "@/lib/meeting-views";
 import { embedColumns, embedInitialColumns, embedSubjectKey, pinnedSetName, placeholderOnlyNote, savedSetByName, yearPeriodOf } from "./embed";
 import { confirmLookAs, readLookAs, type LookAs } from "@/lib/look-as";
+import { resolveTrial } from "@/lib/trial";
+import { TrialBanner } from "@/components/trial/TrialBanner";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
@@ -164,6 +168,10 @@ export type TeacherDashboardProps = {
   // for a frame that brings its own card (a meeting slot), drawn at `fullscreen`.
   frame?: "card" | "figure";
   fullscreen?: boolean;
+  // Embed, 0.6 snag 2 (B): draw as a member sees it (no super-admin placeholders or
+  // copy-into-VicData chrome) even for a platform admin -- a VicData dashboard on
+  // /dashboards/[id], whose admin surface is the Edit switch's editor.
+  memberView?: boolean;
 };
 
 export function TeacherDashboard(props: TeacherDashboardProps) {
@@ -191,6 +199,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Results), from the dashboards store, keyed by slug. Null until loaded or when the page
   // isn't under the flag; each falls back to the copy in code (published-vicdata.ts).
   const [storedConfigs, setStoredConfigs] = useState<Record<string, DashboardConfig> | null>(null);
+  // 0.6 snag 2 (B), "Preview draft" (Guy, in a trial): the group's drafts, drawn instead of
+  // the published versions in this tab only. Null when off or not loaded.
+  const [draftConfigs, setDraftConfigs] = useState<Record<string, DashboardConfig> | null>(null);
   const [superAdmin, setSuperAdmin] = useState(false);
   const [lookAs, setLookAs] = useState<LookAs | null>(null);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
@@ -287,12 +298,17 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       if (!token) { setSignedOut(true); setError("Sign in to see this dashboard."); setLoading(false); return; }
       const search = new URLSearchParams(window.location.search);
       // Embed: no look-as and no URL flag -- the school and the config are the caller's.
-      const requestedLookAs = embed ? null : readLookAs(search);
+      // 0.6 snag 2: the look-as pair (or this tab's active trial) is a "Try VicData as…"
+      // trial (src/lib/trial.ts): that school as a member with that one role, saving to the
+      // trial's own state (teacher-view-data.ts keys it), on the config renderer whatever
+      // the flag. Only `&peek=1` (Catalogue's frames) is still the old read-only look.
+      const trial = embed ? null : await resolveTrial(supabase);
+      const requestedLookAs = embed || trial || search.get("peek") !== "1" ? null : readLookAs(search);
       const lookAsOk = requestedLookAs ? await confirmLookAs(supabase, requestedLookAs) : false;
       // Started here so it runs alongside the school's data; awaited just before the page
       // first paints, so the stored config is drawn from the start (no swap, no flash).
       let publishedLoad: Promise<Record<string, DashboardConfig>> | null = null;
-      if (embed ? !!embedConfig : configRendererRequested(search)) {
+      if (embed ? !!embedConfig : configRendererRequested(search) || !!trial) {
         setConfigMode(true);
         if (!embed && (phase === "ks4" || phase === "ks5")) {
           const group = [teacherDashboardFor(phase, "candidates"), teacherDashboardFor(phase, "results")];
@@ -300,9 +316,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
             Object.fromEntries(loads.map((l) => [l.config.id, l.config])),
           );
         }
-        // Super-admin sees placeholder panels; an embed asks only when it has one, or when
-        // it is a whole dashboard (Copy this view lets super-admin copy into VicData's).
-        if (!embed || (embedConfig?.panels.length ?? 0) > 1 || embedConfig?.panels.some((p) => p.dataviews.every((v) => v.kind === "placeholder"))) {
+        // Super-admin sees placeholder panels in an embed that has one, or in a whole
+        // dashboard (Copy this view lets super-admin copy into VicData's). 0.6 snag 2 (B):
+        // the Teacher page itself is always the member's view -- Guy's admin surface there
+        // is the Edit switch's editor -- and so is an embed asked for `memberView`.
+        if (embed && !props.memberView && ((embedConfig?.panels.length ?? 0) > 1 || embedConfig?.panels.some((p) => p.dataviews.every((v) => v.kind === "placeholder")))) {
           const { data: admin } = await supabase.rpc("is_platform_admin");
           setSuperAdmin(admin === true);
         }
@@ -315,6 +333,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           const { data: school } = await supabase.from("schools").select("current_name").eq("urn", urn).maybeSingle<{ current_name: string }>();
           setSchoolName(school?.current_name ?? embedPinned.schoolName ?? null);
         }
+      } else if (trial) {
+        urn = trial.urn;
+        setSchoolUrn(urn);
+        setSchoolName(trial.schoolName);
       } else if (lookAsOk && requestedLookAs) {
         setLookAs(requestedLookAs);
         const { data: school } = await supabase.from("schools").select("current_name").eq("urn", requestedLookAs.urn).maybeSingle<{ current_name: string }>();
@@ -672,6 +694,36 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     [englandValue],
   );
 
+  // 0.6 snag 2 (B): the Edit switch. The page registers the VicData dashboard it draws
+  // (config renderer, past the walkthrough) so the footer and the trial banner offer the
+  // switch; while it is on, the editor is drawn in place of the page (below), on the same
+  // dashboard, with this school and subject as its live preview.
+  const vicDataSlug =
+    !embed && configMode && !loading && !error && onboarded && (phase === "ks4" || phase === "ks5")
+      ? teacherDashboardFor(phase, readSetting(columns, measureKey("shared")) === "results" ? "results" : "candidates").id
+      : null;
+  const inPlace = useInPlaceEdit(supabase, vicDataSlug);
+  const reloadPhase = !embed && configMode && (phase === "ks4" || phase === "ks5") ? phase : null;
+  // After editing (a Publish shows straight away), and for Preview draft: re-read the
+  // group's published versions / drafts. The first load is the loader's own.
+  useEffect(() => {
+    if (!reloadPhase || (inPlace.reloadTick === 0 && !inPlace.previewDraft)) return;
+    let live = true;
+    (async () => {
+      await editorWritesSettled();
+      const group = [teacherDashboardFor(reloadPhase, "candidates"), teacherDashboardFor(reloadPhase, "results")];
+      const byId = (loads: { config: DashboardConfig }[]) => Object.fromEntries(loads.map((l) => [l.config.id, l.config]));
+      const published = inPlace.reloadTick > 0 ? byId(await Promise.all(group.map((d) => loadPublishedVicData(supabase, d.id, d)))) : null;
+      const drafts = inPlace.previewDraft ? byId(await Promise.all(group.map((d) => loadDraftVicData(supabase, d.id, d)))) : null;
+      if (!live) return;
+      if (published) setStoredConfigs(published);
+      setDraftConfigs(drafts);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [reloadPhase, inPlace.reloadTick, inPlace.previewDraft, supabase]);
+
   if (loading) return embed ? <EmbedStatus text="Loading…" /> : <main className="mx-auto max-w-4xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
   if (embed && (error || !phase)) return <EmbedStatus text={error ?? "Unknown phase."} />;
   if (error || !phase) {
@@ -847,6 +899,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // its content; this pins onboarding to the screen width instead.
         className="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
       >
+        <TrialBanner className="" />
         {step === 0 ? (
           <Link href="/teacher" className="w-fit text-[12.5px] text-[var(--muted)]">&larr; Back</Link>
         ) : (
@@ -1520,7 +1573,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Snag 1 item 00: the published version from the store when there is one, else the copy
   // in code (same structure for every school and role; the hosts still decide per school).
   const codeConfig = configMode && (phase === "ks4" || phase === "ks5") ? teacherDashboardFor(phase, sharedMeasure) : null;
-  const dashboardConfig = codeConfig ? (storedConfigs?.[codeConfig.id] ?? codeConfig) : null;
+  const dashboardConfig = codeConfig ? ((inPlace.previewDraft ? draftConfigs?.[codeConfig.id] : undefined) ?? storedConfigs?.[codeConfig.id] ?? codeConfig) : null;
+  const editing = inPlace.editing && !!dashboardConfig;
 
   // Each column's question once a subject is focused: a full question naming the subject,
   // its qualification and the school, after the column's plain one-word title (COLUMN_TITLE,
@@ -2110,11 +2164,30 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     );
   }
 
+  // 0.6 snag 2 (B): with Edit on, the page stays mounted but hidden (its open rows, focused
+  // subject, ticked subjects and scroll come back as they were when Edit goes off) and
+  // gives up the #teacher-root id to the editor drawn in its place.
+  const editorHost: InPlaceHost | null = editing
+    ? {
+        school: schoolUrn ? { urn: schoolUrn, name: schoolName ?? schoolUrn } : null,
+        labels: {
+          results: resultsMeasure.id as ResultsMeasureId,
+          subject: focusItem ? { label: phase === "ks5" ? focusItem.label : focusItem.subject, key: focusItem.key } : null,
+          ...(focusFamilyLabel ? { category: focusFamilyLabel } : {}),
+        },
+        top: <TrialBanner className="" />,
+        onExit: () => setEditOn(false),
+      }
+    : null;
+
   return (
-    // §7: the theme attribute is scoped to Teacher view, never to <html> -- see
-    // TeacherChrome.tsx for why, and Q15.
+    <>
+    {editorHost && dashboardConfig && <InPlaceEditor slug={dashboardConfig.id} host={editorHost} />}
+    {/* §7: the theme attribute is scoped to Teacher view, never to <html> -- see
+        TeacherChrome.tsx for why, and Q15. */}
     <main
-      id="teacher-root"
+      id={editing ? undefined : "teacher-root"}
+      hidden={editing}
       data-theme={theme}
       // The phase accent reaches every card and box as a custom property, so the shared
       // components never carry a phase-specific hex of their own. So does the one change
@@ -2123,6 +2196,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
+      {!embed && <TrialBanner />}
       {/* Top-nav completion part 3: below `sm` the phone nav (NavPhone.dc.html) replaces
           TeacherNav + ControlBar. A CSS swap, so there is no viewport check to hydrate
           wrongly -- and both read the same state, so switching phase, subject or measure
@@ -2166,26 +2240,13 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           onEditSubjects={openSubjectPicker}
           // Top-nav round: Export alone. The theme toggle moved up into TeacherNav, and
           // "All dashboards" went with it -- the nav's Home link is the same way back.
-          chrome={
-            dashboardConfig && superAdmin ? (
-              <>
-                {/* 0.6 integration: super-admin edits this VicData dashboard (flag on only). */}
-                <Link
-                  href={`/dashboards/${encodeURIComponent(dashboardConfig.id)}/edit${lookAs ? `?lookAs=${encodeURIComponent(lookAs.urn)}&as=${encodeURIComponent(lookAs.role)}` : ""}`}
-                  className="flex h-[30px] shrink-0 items-center rounded-md border border-[var(--panel-border2)] px-2.5 text-xs font-bold text-[var(--muted)] hover:border-[var(--fg)] hover:text-[var(--fg)] print:hidden"
-                >
-                  Edit
-                </Link>
-                <ExportButton />
-              </>
-            ) : (
-              <ExportButton />
-            )
-          }
+          // 0.6 snag 2 (B): no super-admin Edit link here any more -- the footer's Edit
+          // switch opens the editor in place, and with it off the page is the member's.
+          chrome={<ExportButton />}
           switcher={
             dashboardConfig ? (
               <GroupSwitcher
-                dashboards={groupOf(teacherDashboardFor(phase as "ks4" | "ks5", sharedMeasure)).map((d) => storedConfigs?.[d.id] ?? d)}
+                dashboards={groupOf(teacherDashboardFor(phase as "ks4" | "ks5", sharedMeasure)).map((d) => (inPlace.previewDraft ? draftConfigs?.[d.id] : undefined) ?? storedConfigs?.[d.id] ?? d)}
                 activeId={dashboardConfig.id}
                 onSwitch={(d) => onSharedMeasure(d.id.endsWith(".results") ? "results" : "candidates")}
               />
@@ -2197,12 +2258,12 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       {/* §13's banner. States what actually changed and when, rather than just shouting. */}
       {lookAs && (
         <p className="mt-3 rounded-md border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 py-2 text-sm text-[var(--muted2)] print:hidden">
-          Looking at {schoolName ?? lookAs.urn} as {VISIBLE_ROLE_LABELS[lookAs.role as VisibleRoleId] ?? lookAs.role}: a read-only preview from Platform, logged. School-shared sets and other people&rsquo;s notes aren&rsquo;t shown.
+          Looking at {schoolName ?? lookAs.urn} as {VISIBLE_ROLE_LABELS[lookAs.role as VisibleRoleId] ?? lookAs.role}: the Catalogue&rsquo;s read-only look. School-shared sets and other people&rsquo;s notes aren&rsquo;t shown.
         </p>
       )}
       {/* 0.6 integration, flag on: "Updated — what's changed" once the VicData dashboard
           has a newer published version (renders nothing otherwise). */}
-      {dashboardConfig && <VicDataUpdatesBySlug slug={dashboardConfig.id} schoolUrn={schoolUrn} className="print:hidden [&:not(:empty)]:mt-3" />}
+      {dashboardConfig && <VicDataUpdatesBySlug key={inPlace.reloadTick} slug={dashboardConfig.id} schoolUrn={schoolUrn} className="print:hidden [&:not(:empty)]:mt-3" />}
       {newDataPeriod !== null && (
         <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 print:hidden dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200">
           <span className="mr-2 rounded-sm bg-blue-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">New</span>
@@ -2341,7 +2402,23 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         />
       )}
     </main>
+    </>
   );
+}
+
+// 0.6 snag 2 (B): the editor drawn in place of the Teacher page. The host object is
+// rebuilt each render, so the school is held stable here (the editor reloads the school's
+// subjects when it changes). The linked-dashboard switcher moves the editor between
+// Candidates and Results here, without touching the page's own (saved) choice.
+function InPlaceEditor({ slug: pageSlug, host }: { slug: string; host: InPlaceHost }) {
+  const [slug, setSlug] = useState(pageSlug);
+  const urn = host.school?.urn ?? null;
+  const name = host.school?.name ?? null;
+  const school = useMemo(() => (urn ? { urn, name: name ?? urn } : null), [urn, name]);
+  const labelsKey = JSON.stringify(host.labels ?? {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const labels = useMemo(() => host.labels, [labelsKey]);
+  return <EditorScreen id={slug} host={{ ...host, school, labels, onSwitch: setSlug }} />;
 }
 
 // An embedded view's loading and error states, at whatever size its frame gives it.

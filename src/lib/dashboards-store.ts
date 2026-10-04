@@ -10,6 +10,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardConfig } from "@/catalogue/types";
 import { DASHBOARDS } from "@/catalogue/dashboards";
+import { getActiveTrial, isMissingColumn, stateUrn, TRIAL_NEEDS_UPDATE } from "./trial";
 
 export type OwnerScope = "vicdata" | "school" | "user";
 
@@ -80,13 +81,32 @@ function seededRow(config: DashboardConfig): DashboardRow {
   };
 }
 
+// 0.6 snag 2: personal rows made in a "Try VicData as…" trial carry trial_key (the trial's
+// state key, src/lib/trial.ts). Normally they are left out (trial_key is null); in a
+// trial, the person's personal rows are only that trial's, while VicData and school rows
+// (never trial-keyed) list as usual. Before the trials migration is applied the column
+// doesn't exist: outside a trial the list is read unfiltered, inside one without
+// personal rows (none of them can be the trial's).
 export async function listDashboards(
   supabase: SupabaseClient,
   opts: { kind?: "dashboard" | "presentation" } = {},
 ): Promise<{ available: boolean; rows: DashboardRow[] }> {
-  let q = supabase.from("dashboards").select(ROW_COLUMNS).order("group_order").order("name");
-  if (opts.kind) q = q.eq("kind", opts.kind);
-  const { data, error } = await q;
+  const trial = getActiveTrial();
+  const base = () => {
+    let q = supabase.from("dashboards").select(ROW_COLUMNS).order("group_order").order("name");
+    if (opts.kind) q = q.eq("kind", opts.kind);
+    return q;
+  };
+  // A platform admin's RLS returns every person's rows, so a trial's own are also pinned to
+  // the signed-in person.
+  const uid = trial ? (await supabase.auth.getSession()).data.session?.user.id ?? "" : "";
+  let { data, error } = await (trial
+    ? base().or(`owner_scope.neq.user,and(trial_key.eq."${trial.stateKey}",owner_profile_id.eq.${uid})`)
+    : base().is("trial_key", null));
+  if (error && isMissingColumn(error)) {
+    ({ data, error } = await base());
+    if (!error && trial) data = ((data ?? []) as DashboardRow[]).filter((r) => r.owner_scope !== "user");
+  }
   if (isMissingTable(error)) {
     return { available: false, rows: DASHBOARDS.filter((d) => !opts.kind || d.kind === opts.kind).map(seededRow) };
   }
@@ -132,9 +152,18 @@ export async function createDashboard(
     meeting_date?: string | null;
     config: DashboardConfig;
   },
+  // 0.6 snag 2 (B): the editor opened from the Edit switch saves as the signed-in person
+  // (Guy) even inside a trial -- never trial-keyed.
+  opts: { asSelf?: boolean } = {},
 ): Promise<DashboardRow> {
   const { config, ...cols } = input;
-  const { data, error } = await supabase.from("dashboards").insert(cols).select(ROW_COLUMNS).single<DashboardRow>();
+  // In a trial a personal dashboard or meeting is the trial's (trial_key), never attached to
+  // the school's account; a school dashboard can't be made from a trial at all.
+  const trial = opts.asSelf ? null : getActiveTrial();
+  if (trial && cols.owner_scope === "school") throw new Error("A trial can't create school dashboards.");
+  const row = trial && cols.owner_scope === "user" ? { ...cols, school_account_id: null, trial_key: trial.stateKey } : cols;
+  const { data, error } = await supabase.from("dashboards").insert(row).select(ROW_COLUMNS).single<DashboardRow>();
+  if (error && trial && isMissingColumn(error)) throw new Error(TRIAL_NEEDS_UPDATE);
   if (error) throw error;
   // A new dashboard starts as a draft whose config carries its row id.
   await saveDraft(supabase, data.id, { ...config, id: data.id });
@@ -207,7 +236,14 @@ export async function setAssignments(
   if (error) throw error;
 }
 
-// The per-user state layer (G1): keyed by dashboard, school and stable panel/view ids.
+// The per-user state layer (G1): keyed by dashboard, school and stable panel/view ids. In a
+// trial the school is the trial's state key, and the school-less "" key (UpdatedNotice's
+// seen version) becomes it too, so the trial has its own "what's changed" state.
+function userStateUrn(schoolUrn: string): string {
+  const trial = getActiveTrial();
+  return schoolUrn === "" ? trial?.stateKey ?? "" : stateUrn(schoolUrn);
+}
+
 export async function loadUserState(supabase: SupabaseClient, dashboardId: string, schoolUrn: string) {
   const { data: session } = await supabase.auth.getSession();
   const uid = session.session?.user.id;
@@ -217,7 +253,7 @@ export async function loadUserState(supabase: SupabaseClient, dashboardId: strin
     .select("seen_version, state")
     .eq("profile_id", uid)
     .eq("dashboard_id", dashboardId)
-    .eq("school_urn", schoolUrn)
+    .eq("school_urn", userStateUrn(schoolUrn))
     .maybeSingle<{ seen_version: number | null; state: Record<string, unknown> }>();
   if (isMissingTable(error)) return null;
   if (error) throw error;
@@ -230,6 +266,6 @@ export async function saveUserState(supabase: SupabaseClient, dashboardId: strin
   if (!uid) return;
   const { error } = await supabase
     .from("dashboard_user_state")
-    .upsert({ profile_id: uid, dashboard_id: dashboardId, school_urn: schoolUrn, ...patch, updated_at: new Date().toISOString() });
+    .upsert({ profile_id: uid, dashboard_id: dashboardId, school_urn: userStateUrn(schoolUrn), ...patch, updated_at: new Date().toISOString() });
   if (error && !isMissingTable(error)) throw error;
 }

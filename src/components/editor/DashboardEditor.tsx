@@ -15,7 +15,7 @@
 // it all works in memory and says "Saving needs the database update".
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Dataview, DataviewInstance, DashboardConfig, PanelOverride } from "@/catalogue/types";
 import { contextFromPanel, settingsOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
 import { DASHBOARDS, groupOf } from "@/catalogue/dashboards";
@@ -24,6 +24,7 @@ import type { SubjectSource } from "@/components/chooser-v06/StepScreens";
 import type { PinSchool } from "@/lib/pin-context";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { trackEditorWrite } from "@/lib/edit-mode";
 import {
   createDashboard,
   discardDraft,
@@ -65,6 +66,15 @@ export type DashboardEditorProps = {
   // 0.6 integration: the school Add a view previews live for, and its subjects (2a / 2b).
   school?: PinSchool;
   subjects?: Partial<Record<"ks4" | "ks5", SubjectSource>>;
+  // 0.6 snag 2 (B), the editor shown in place on a VicData dashboard page (the footer's
+  // or the trial banner's Edit switch): `top` above the edit bar (the trial banner),
+  // `onExit` for Exit (the switch goes off) and `onSwitch` for the linked-dashboard
+  // switcher (stays on the page). Save as then always saves as the signed-in person
+  // (`writeAsSelf`), never into a trial.
+  top?: ReactNode;
+  onExit?: () => void;
+  onSwitch?: (id: string) => void;
+  writeAsSelf?: boolean;
 };
 
 type DialogState =
@@ -105,7 +115,7 @@ const RAIL_MENU_CSS =
 
 const OWNER_WORD = { vicdata: "VicData", school: "School", user: "Personal" } as const;
 
-export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels, school = null, subjects }: DashboardEditorProps) {
+export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels, school = null, subjects, top, onExit, onSwitch, writeAsSelf = false }: DashboardEditorProps) {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [theme] = useTeacherTheme();
@@ -172,18 +182,24 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     return () => window.clearTimeout(t);
   }, [toast]);
 
-  // Autosave the draft after the last edit.
+  // Autosave the draft after the last edit. An edit still waiting when the editor closes
+  // (Exit, or the Edit switch going off) is saved then, so nothing is lost.
   const first = useRef(true);
+  const unsaved = useRef<{ id: string; config: DashboardConfig; base: string | null } | null>(null);
   useEffect(() => {
     if (first.current) {
       first.current = false;
       return;
     }
     if (!available) return;
+    unsaved.current = { id: row.id, config, base: published.version?.id ?? null };
     const t = window.setTimeout(async () => {
+      unsaved.current = null;
       setSave({ state: "saving", at: null });
       try {
-        await saveDraft(supabase, row.id, config, published.version?.id ?? null);
+        const p = saveDraft(supabase, row.id, config, published.version?.id ?? null);
+        trackEditorWrite(p);
+        await p;
         setSave({ state: "saved", at: Date.now() });
       } catch {
         setSave({ state: "error", at: null });
@@ -191,6 +207,13 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     }, EDITOR.autosaveMs);
     return () => window.clearTimeout(t);
   }, [config, available, supabase, row.id, published.version?.id]);
+  useEffect(
+    () => () => {
+      const u = unsaved.current;
+      if (u) trackEditorWrite(saveDraft(supabase, u.id, u.config, u.base).catch(() => undefined));
+    },
+    [supabase],
+  );
 
   // Undo / redo from the keyboard (not while typing).
   useEffect(() => {
@@ -340,6 +363,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     setDialogError(null);
     try {
       const id = await publish(supabase, row.id, config, label || undefined, summary);
+      unsaved.current = null;
       if (config.name !== row.name) {
         await updateDashboardRow(supabase, row.id, { name: config.name });
         setRow({ ...row, name: config.name });
@@ -367,7 +391,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       const uid = session.session?.user.id ?? null;
       const tempId = `${owner}.${Date.now().toString(36)}`;
       const copy = ops.copyAsNew(config, tempId, name, owner);
-      const created = await createDashboard(supabase, { kind: "dashboard", owner_scope: owner, name: copy.name, owner_profile_id: owner === "user" ? uid : null, config: copy });
+      const created = await createDashboard(supabase, { kind: "dashboard", owner_scope: owner, name: copy.name, owner_profile_id: owner === "user" ? uid : null, config: copy }, { asSelf: writeAsSelf });
       router.push(`/dashboards/${created.id}/edit`);
     } catch (e) {
       setDialogError(friendlyCreateError(e));
@@ -422,6 +446,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       style={{ ...accentVars(hex), padding: EDITOR.pagePad, gap: EDITOR.bandGap, fontFamily: "inherit" }}
       className="flex min-h-dvh w-full flex-col bg-[var(--bg)] leading-[1.2] text-[var(--fg)]"
     >
+      {top}
       <style>{`.ed-rail svg{width:${EDITOR.railGlyph}px;height:${EDITOR.railGlyph}px;display:block}.ed-preview-glyph svg{width:20px;height:20px;display:block}${RAIL_MENU_CSS}`}</style>
 
       {/* Edit bar */}
@@ -475,9 +500,13 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
             <EBtn primary onClick={() => { setDialogError(null); setDialog({ kind: "publish" }); }}>
               Publish
             </EBtn>
-            <Link href={`/dashboards/${row.slug ?? row.id}`} style={{ textDecoration: "none" }}>
-              <EBtn>Exit</EBtn>
-            </Link>
+            {onExit ? (
+              <EBtn onClick={onExit}>Exit</EBtn>
+            ) : (
+              <Link href={`/dashboards/${row.slug ?? row.id}`} style={{ textDecoration: "none" }}>
+                <EBtn>Exit</EBtn>
+              </Link>
+            )}
           </>
         )}
       </div>
@@ -501,7 +530,12 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
                     {label}
                   </span>
                 ) : (
-                  <Link key={d.id} href={`/dashboards/${d.id}/edit`} style={{ borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 700, color: "var(--muted2)", textDecoration: "none" }}>
+                  <Link
+                    key={d.id}
+                    href={`/dashboards/${d.id}/edit`}
+                    onClick={onSwitch ? (e) => { e.preventDefault(); onSwitch(d.id); } : undefined}
+                    style={{ borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 700, color: "var(--muted2)", textDecoration: "none" }}
+                  >
                     {label}
                   </Link>
                 );

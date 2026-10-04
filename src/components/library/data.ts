@@ -11,6 +11,7 @@ import { isMissingTable, listDashboards, type AssignmentRow, type DashboardRow }
 import { shapeLine, type Me } from "@/lib/copy-view";
 import { canEditRow } from "@/lib/copy-view";
 import { visibleRolesOf, VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
+import { getActiveTrial, trialSchool, trialVisibleRoles, type Trial } from "@/lib/trial";
 
 export type MyMembership = {
   id: string;
@@ -25,12 +26,18 @@ export type Viewer = Me & {
   // The signed-in person's school (their approved membership), if any.
   school: { urn: string; name: string; accountId: string } | null;
   roles: VisibleRoleId[];
+  // 0.6 snag 2: the "Try VicData as…" trial this viewer is in, if any (src/lib/trial.ts).
+  trial?: Trial | null;
 };
 
 export async function loadViewer(supabase: SupabaseClient): Promise<Viewer> {
   const { data: s } = await supabase.auth.getSession();
   const uid = s.session?.user.id ?? null;
   if (!uid) return { uid: null, superAdmin: false, adminAccountIds: [], school: null, roles: [] };
+  // In a trial the viewer is a single-role member of the trial's school: no super-admin
+  // powers, no school-admin powers (a trial never writes the school's shared data).
+  const trial = getActiveTrial();
+  if (trial) return { uid, superAdmin: false, adminAccountIds: [], school: await trialSchool(supabase, trial), roles: [trial.role], trial };
   const [{ data: admin }, { data: ms }] = await Promise.all([
     supabase.rpc("is_platform_admin"),
     supabase
@@ -118,9 +125,13 @@ export async function loadLibrary(supabase: SupabaseClient, viewer: Viewer): Pro
   const { available, rows: all } = await listDashboards(supabase, { kind: "dashboard" });
   // Super-admin's RLS returns every school's and every person's dashboards; the library
   // shows them VicData's, their own school's and their own (Main.dc.html's three owners).
-  const rows = viewer.superAdmin
-    ? all.filter((r) => r.owner_scope === "vicdata" || (r.owner_scope === "user" && r.owner_profile_id === viewer.uid) || (r.owner_scope === "school" && r.school_account_id === viewer.school?.accountId))
-    : all;
+  // A trial is a platform admin too, so it narrows the same rows to what a member with
+  // the trial's one role would be offered (trialRows).
+  const rows = viewer.trial
+    ? available ? await trialRows(supabase, viewer, all) : all
+    : viewer.superAdmin
+      ? all.filter((r) => r.owner_scope === "vicdata" || (r.owner_scope === "user" && r.owner_profile_id === viewer.uid) || (r.owner_scope === "school" && r.school_account_id === viewer.school?.accountId))
+      : all;
   const configs = available ? await configsFor(supabase, rows) : new Map(rows.map((r) => [r.id, DASHBOARDS.find((d) => d.id === r.id)!] as const));
   const assignments = available ? await assignmentsFor(supabase, rows.map((r) => r.id)) : [];
   const withConfig = rows.filter((r) => configs.get(r.id)).map((row) => ({ row, config: configs.get(row.id)! }));
@@ -149,6 +160,19 @@ export async function loadLibrary(supabase: SupabaseClient, viewer: Viewer): Pro
       a.config.name.localeCompare(b.config.name),
   );
   return { available, entries };
+}
+
+// What a single-role member of the trial's school would see: VicData dashboards assigned to
+// the role, the school's dashboards shared with the role (all of them for School-Admin),
+// and the trial's own personal ones (listDashboards has already narrowed those).
+async function trialRows(supabase: SupabaseClient, viewer: Viewer, all: DashboardRow[]): Promise<DashboardRow[]> {
+  const trial = viewer.trial!;
+  const roles = trialVisibleRoles(trial) as string[];
+  const accountId = viewer.school?.accountId ?? "";
+  const candidates = all.filter((r) => r.owner_scope === "vicdata" || r.owner_scope === "user" || (r.owner_scope === "school" && !!accountId && r.school_account_id === accountId));
+  const assigned = await assignmentsFor(supabase, candidates.filter((r) => r.owner_scope !== "user").map((r) => r.id));
+  const toRole = (r: DashboardRow) => assigned.some((a) => a.dashboard_id === r.id && a.target_kind === "role" && !!a.role && roles.includes(a.role));
+  return candidates.filter((r) => r.owner_scope === "user" || toRole(r) || (r.owner_scope === "school" && trial.role === "school_admin"));
 }
 
 // The key dashboards of one role (scope brief §4.10): VicData dashboards assigned to that

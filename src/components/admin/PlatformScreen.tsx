@@ -13,7 +13,8 @@ import { ATTENTION_ACCENT, ATTENTION_INK, DELTA_NEGATIVE, accentOver, accentText
 import { TAG_COLOURS } from "@/lib/tag-colours";
 import { sectorTag } from "@/lib/typology";
 import { VISIBLE_ROLES_PROSE_ORDER, VISIBLE_ROLE_LABELS, normaliseRole, type VisibleRoleId } from "@/lib/roles";
-import { LOOK_AS_ROLES, lookAsHref } from "@/lib/look-as";
+import { LOOK_AS_ROLES } from "@/lib/look-as";
+import { startTrial, trialHref, type TrialRole } from "@/lib/trial";
 import { useTeacherTheme, type Theme } from "@/components/teacher/TeacherChrome";
 import { SearchBox, Switch } from "./AdminChrome";
 
@@ -130,14 +131,17 @@ export function Platform() {
     setBusy(false);
   }
 
+  // 0.6 snag 2: "Look at it as…" starts a "Try VicData as…" trial (src/lib/trial.ts) --
+  // the one mechanism -- continuing the trial's saved state; /account's card offers Start
+  // fresh. Logged as try_as (it was look_as).
   async function lookAs(row: SchoolOverviewRow, role: VisibleRoleId) {
     setError(null);
-    const { error: e } = await supabase.rpc("log_platform_action", { p_action: "look_as", p_school_urn: row.school_urn, p_detail: { role } });
-    if (e) {
-      setError(`Could not start the preview: ${e.message}`);
+    const r = await startTrial(supabase, { urn: row.school_urn, role: role as TrialRole, fresh: false, schoolName: row.school_name ?? undefined, via: "platform" });
+    if (!r.ok) {
+      setError(r.error);
       return;
     }
-    router.push(lookAsHref({ urn: row.school_urn, role }));
+    router.push(trialHref(r.trial));
   }
 
   return (
@@ -240,7 +244,7 @@ export function Platform() {
               ))}
             </div>
             <div className="text-[11.5px] leading-[1.45] text-[var(--muted2)]">
-              Read-only preview, logged. This replaces the old school/role switcher and runs on the new platform-admin check.
+              Opens their home page as a member with that one role (a trial: it saves as that member, never as you, and is logged). Start fresh and Recently tried are on Your Account.
             </div>
 
             <div className={`${HEADING} mt-1`}>Dashboards here</div>

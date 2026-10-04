@@ -24,6 +24,7 @@ import {
 } from "./dashboards-store";
 import { changeSummary, isArchived, localToday, newMeetingConfig, reuseSlides } from "./meeting-ops";
 import { dataAsOf } from "./meeting-views";
+import { getActiveTrial, trialSchool } from "./trial";
 
 export type MeetingSummary = {
   id: string;
@@ -197,11 +198,13 @@ export async function meetingCap(supabase: SupabaseClient): Promise<number | nul
 }
 
 // The signed-in person's school (for pinning new views and keeping slot notes), from
-// their own approved membership.
+// their own approved membership -- or, in a "Try VicData as…" trial, the trial's school.
 export async function mySchool(supabase: SupabaseClient): Promise<{ urn: string; name: string; accountId: string } | null> {
   const { data: session } = await supabase.auth.getSession();
   const uid = session.session?.user.id;
   if (!uid) return null;
+  const trial = getActiveTrial();
+  if (trial) return trialSchool(supabase, trial);
   const { data } = await supabase
     .from("school_memberships")
     .select("school_account_id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")

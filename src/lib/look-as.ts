@@ -4,6 +4,12 @@
 // /teacher?lookAs={urn}&as={role}; the Teacher pages read the pair with readLookAs and
 // must call confirmLookAs before honouring it, so a hand-typed URL does nothing for
 // anyone who is not a platform admin.
+//
+// 0.6 snag 2: the pair now starts or continues a "Try VicData as…" TRIAL (src/lib/trial.ts)
+// -- the same URL and the same confirmLookAs, now writing to the trial's own state rather
+// than read-only. Platform's buttons start one (log_platform_action('try_as', …) replaces
+// 'look_as'). `&peek=1` keeps the old read-only look for the Catalogue's side-by-side
+// frames, which must not become a trial (they compare the two renderers).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { VisibleRoleId } from "./roles";
 

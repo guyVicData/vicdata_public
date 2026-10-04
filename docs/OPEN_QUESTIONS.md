@@ -1186,3 +1186,40 @@ Prompt: `docs/v0.6/vicdata_0_6_snagging_round1_claude_code_prompt_v1.md`. Report
    - EmptyScreen gains `editing`.
 
    Nothing else in the editor changed.
+
+---
+
+## 2026-10-04 — 0.6 snagging round 2: judgement calls logged, build carried on
+
+Prompt: `docs/v0.6/vicdata_0_6_snagging_round2_claude_code_prompt_v1.md`. Report: `docs/v0.6/snag2_report_v1.md`.
+
+### A — "Try VicData as…"
+
+- **The school search Guy used before** was Platform's own search box. It filters `platform_school_overview()`, so it lists only schools that already have an account. The card uses the site's `SchoolSearch` instead (the `search_schools` RPC, every open school), so a school with no account, such as Croydon College, can be tried. It gained two optional props: `byUrn`, so a 5–7 digit query looks up the URN; and `allowRequest={false}`, which hides the "Can't find your school?" form. Its three existing lint errors are fixed.
+- **One mechanism.** Look-as's URL pair now starts or continues a trial, so Platform's "Look at it as…" buttons land in the same mode, without Start fresh. The log action `look_as` is replaced by `try_as` with `{role, fresh, via}`, where `via` is account, platform, banner or url.
+- **`&peek=1` keeps the old read-only look-as**, for the Catalogue page's side-by-side parity frames only. Otherwise those frames would force the config renderer and take over the tab's trial.
+- **How a trial is keyed:** state key `{urn}~trial~{role}`.
+  - `teacher_view_preferences`, `_notes`, `_onboarding` and `dashboard_user_state` put it in their existing `school_urn` text column, through `stateUrn()` inside the libs. No schema change, and none of those tables' existing rows or RLS are touched.
+  - Personal dashboards, meetings and recruitment jobs have no school column, so they get a new nullable `trial_key`. On `dashboards` a CHECK allows it only on personal rows.
+- **New table `trial_contexts`:** RLS is `profile_id = auth.uid() and is_platform_admin()`. It feeds "Recently tried" and the Start-fresh default; until the migration is applied, those fall back to localStorage.
+- **Start fresh** clears the walkthrough and saved state (preferences, notes, onboarding, per-dashboard state) through `reset_trial`. It keeps the trial's own dashboards, meetings and recruitment jobs.
+- **A trial has no super-admin chrome:** no Edit link, no placeholder panels, and no People, Teams or Platform in the menu. Item B brings Edit back through the banner.
+- **A School-Admin trial** gets the Teacher home and Teacher's VicData dashboards, and can only read the school's own dashboards. Managing People or Teams, or creating school dashboards, would write the school's shared data.
+- **A trial can't save comparator sets**, which need a real membership, as with look-as before. The unsaved chooser choice is kept with the trial's other settings.
+- **The trial lives in sessionStorage for that tab**, and signing out clears it. Links also carry the URL pair.
+- **A trial dashboard or meeting is never attached to the school account.** The trial uses Guy's platform-admin meeting limit (none), not a member's 5.
+- **No sign-in event is recorded while a trial is active.** No membership, team or join request is created.
+- **The card uses `/account`'s own neutral styling** and the OS theme, as the rest of that page does. People's `RoleChip` is reused, with its tokens mapped onto `/account`'s `--foreground`/`--background` (aliases, no new colours).
+
+### B — the Edit switch in the footer
+
+1. **The editor opens in place, not by a hop to another page.** With Edit on, the page draws the same editor as `/dashboards/[id]/edit` where the dashboard was, at the same URL. The page underneath stays mounted but hidden, so the focused subject, open rows and the trial's state come back with no carrying across a navigation; scroll is restored from sessionStorage. Exit turns the switch off. While editing, the Candidates/Results switcher moves the editor between the two without changing the page's saved choice.
+2. **The Teacher page now shows no super-admin chrome to Guy either:** the top-bar Edit link and placeholder panels are gone, and the footer switch is the way in. A VicData `/dashboards/[id]` is likewise drawn as a member sees it. Non-VicData dashboards keep their Edit link.
+3. **The switch appears only under the config renderer, and after the walkthrough.** With the flag off, the page isn't drawn from a config, so there's nothing to edit in place.
+4. **Preview draft is trial-only**, because it lives in the banner. It works whether Edit is on or off, and only for that tab.
+5. **The editor now saves any pending autosave when it closes**; Exit could previously lose up to 1.2s of edits.
+6. **Save as from the in-place editor never makes a trial-keyed dashboard.** All editor writes are drafts and versions as Guy (`created_by` / `updated_by` = his profile).
+7. **The trial's role feeds only the preview** (school, subject). Add a view in the editor still offers every view, as for super-admin, because edits reach all schools.
+8. **On `/dashboards/[id]` the live preview gets the school but not the focused subject.**
+9. **After Publish, the editor's autosave writes a draft identical to the new version.** Left alone.
+10. **On first viewing a newly published version,** the trial records `seen_version` under its own trial key, as a member's visit would. Editing itself writes no trial state.

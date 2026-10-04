@@ -8,6 +8,7 @@
 //   4. here's what you'll get -> createDashboard -> the editor
 // Owner: a super-admin saves to VicData dashboards or their own; everyone else to their
 // own (the database's cap trigger enforces G9 and its error is shown).
+import { getActiveTrial } from "@/lib/trial";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -139,7 +140,8 @@ export function NewDashboardScreen() {
         </p>
       </main>
     );
-  return <NewDashboard superAdmin={admin} theme={theme} />;
+  // In a "Try VicData as…" trial this is the member's New dashboard: personal only.
+  return <NewDashboard superAdmin={admin && !getActiveTrial()} theme={theme} />;
 }
 
 export function NewDashboard({ superAdmin, theme, initialStep = 0, initial }: { superAdmin: boolean; theme: "dark" | "light"; initialStep?: number; initial?: { name?: string; main?: ops.MainData } }) {

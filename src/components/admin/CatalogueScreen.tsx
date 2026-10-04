@@ -106,7 +106,9 @@ function Parity() {
   const [urn, setUrn] = useState(PARITY_SCHOOLS[0].urn);
   const [phase, setPhase] = useState<"ks4" | "ks5">("ks4");
   const [scale, setScale] = useState(0.5);
-  const base = `/teacher/${phase}?lookAs=${encodeURIComponent(urn)}&as=teacher`;
+  // peek=1: the read-only look, not a trial (a trial would force the config renderer and
+  // take over this tab's session).
+  const base = `/teacher/${phase}?lookAs=${encodeURIComponent(urn)}&as=teacher&peek=1`;
   const frames = [
     { title: "Hand-coded (today)", src: base },
     { title: "Config renderer (?renderer=config)", src: `${base}&renderer=config` },
