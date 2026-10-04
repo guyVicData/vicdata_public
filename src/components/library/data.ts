@@ -11,8 +11,7 @@ import { isMissingTable, listDashboards, type AssignmentRow, type DashboardRow }
 import { shapeLine, type Me } from "@/lib/copy-view";
 import { canEditRow } from "@/lib/copy-view";
 import { visibleRolesOf, VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
-import { getActiveTrial, trialSchool, type Trial } from "@/lib/trial";
-import { pickMembership, viewAsMembership } from "@/lib/view-as";
+import { getActiveViewAs, pickMembership, viewAsMembership, viewAsSchool, type ViewAs } from "@/lib/view-as";
 
 export type MyMembership = {
   id: string;
@@ -28,19 +27,19 @@ export type Viewer = Me & {
   // The signed-in person's school (their approved membership), if any.
   school: { urn: string; name: string; accountId: string } | null;
   roles: VisibleRoleId[];
-  // 0.6 snag 2: the "Try VicData as…" trial this viewer is in, if any (src/lib/trial.ts).
-  trial?: Trial | null;
+  // 0.6 snag 2/4: the View as this viewer is in, if any (src/lib/view-as.ts).
+  trial?: ViewAs | null;
 };
 
 export async function loadViewer(supabase: SupabaseClient): Promise<Viewer> {
   const { data: s } = await supabase.auth.getSession();
   const uid = s.session?.user.id ?? null;
   if (!uid) return { uid: null, superAdmin: false, adminAccountIds: [], school: null, roles: [] };
-  // In a trial the viewer is a single-role member of the trial's school: no super-admin
-  // powers, no school-admin powers (a trial never writes the school's shared data).
-  const trial = getActiveTrial();
+  // In View as the viewer is a single-membership member of the viewed school and role: no
+  // super-admin powers, no school-admin powers (View as never writes the school's data).
+  const trial = getActiveViewAs();
   // Its roles are a real single-membership member's (School-Admin holds Teacher too).
-  if (trial) return { uid, superAdmin: false, adminAccountIds: [], school: await trialSchool(supabase, trial), roles: visibleRolesOf(viewAsMembership(trial.role)), trial };
+  if (trial) return { uid, superAdmin: false, adminAccountIds: [], school: await viewAsSchool(supabase, trial), roles: visibleRolesOf(viewAsMembership(trial.role)), trial };
   const [{ data: admin }, { data: ms }] = await Promise.all([
     supabase.rpc("is_platform_admin"),
     supabase

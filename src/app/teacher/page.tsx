@@ -16,11 +16,11 @@
 // a role switch only for people holding more than one role. Flag off, the page is exactly
 // what it was: the same query, the same tiles.
 //
-// 0.6 snag 2: in a "Try VicData as…" trial (src/lib/trial.ts; Platform's "Look at it as…"
-// lands here too) this is the role home exactly as a member holding only that role at that
-// school lands on it: config renderer whatever the flag, that role's lens, no role switch.
-import { resolveTrial, trialHref } from "@/lib/trial";
-import { TrialBanner } from "@/components/trial/TrialBanner";
+// 0.6 snag 2/4: in View as (src/lib/view-as.ts) this is the role home exactly as a real
+// single-membership member of that role at that school lands on it: config renderer
+// whatever the flag, that member's lens, no role switch.
+import { resolveViewAs } from "@/lib/view-as";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { pickMembership, viewAsMembership } from "@/lib/view-as";
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -74,7 +74,6 @@ export default function TeacherHomePage() {
   const [onboarded, setOnboarded] = useState<TeacherPhase[]>([]);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [lookAsQuery, setLookAsQuery] = useState("");
   // Same hook and storage key as every dashboard; since the top-nav completion round the
   // toggle itself is in TeacherNav here too.
   const [theme, setTheme] = useTeacherTheme();
@@ -111,7 +110,7 @@ export default function TeacherHomePage() {
       // VicData 0.6: a confirmed trial (the look-as pair, or this tab's active trial) is
       // that school as that one role, and the phase tiles carry it on.
       const search = new URLSearchParams(window.location.search);
-      const trial = await resolveTrial(supabase);
+      const trial = await resolveViewAs(supabase);
       // A trial always uses the config renderer: role homes exist only there.
       const on = configRendererRequested(search) || !!trial;
       setV06(on);
@@ -120,7 +119,6 @@ export default function TeacherHomePage() {
       let lookingAs: Lens | null = null;
       if (trial) {
         urn = trial.urn;
-        setLookAsQuery(trialHref(trial, ""));
         // The lens a real single-membership member of the role gets (one: no role switch).
         lookingAs = lensesOf(viewAsMembership(trial.role))[0];
         setSchoolUrn(urn);
@@ -187,11 +185,11 @@ export default function TeacherHomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) return <main className="mx-auto max-w-3xl p-6"><TrialBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
+  if (loading) return <main className="mx-auto max-w-3xl p-6"><ViewAsBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6">
-      <TrialBanner />
+      <ViewAsBanner />
       {/* No phase switcher here (phases={[]}): the tile list below already is the phase
           picker, and a richer one than the nav's. */}
       <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
@@ -248,7 +246,7 @@ export default function TeacherHomePage() {
             return (
               <HomeCard
                 key={phase}
-                href={`/teacher/${phase}${lookAsQuery}`}
+                href={`/teacher/${phase}`}
                 colour={PHASE_ACCENT[phase] ?? NEUTRAL_TILE}
                 icon={<PhaseGlyph phase={phase} />}
                 title={PHASE_LABELS[phase]}

@@ -1,7 +1,7 @@
 "use client";
 
 // 0.6 snagging round 2, item A: the thin banner every Teacher page shows while Guy is
-// viewing VicData as a member (src/lib/trial.ts). The old look-as line's style (it lived
+// viewing VicData as a member (View as, src/lib/view-as.ts). The old look-as line's style (it lived
 // in TeacherDashboard), moved here so every page draws the same one:
 //
 //   Viewing as SMT at Croydon College · Change · Start fresh · Back to me
@@ -26,38 +26,38 @@
 import { Fragment, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { VISIBLE_ROLE_LABELS } from "@/lib/roles";
-import { startTrial, useViewAsNow, type Trial } from "@/lib/trial";
+import { startViewAs, type ViewAs } from "@/lib/view-as";
 import { setEditOn, setPreviewDraft, useEditSwitch } from "@/lib/edit-mode";
 import { SwitchButton } from "@/components/edit-mode/EditSwitch";
-import { backToMe, openViewAs } from "@/components/view-as/ViewAs";
+import { backToMe, openViewAs, useViewAsNow } from "./ViewAs";
 
-export const trialRoleLabel = (t: Pick<Trial, "role">) => VISIBLE_ROLE_LABELS[t.role];
+const roleLabel = (t: Pick<ViewAs, "role">) => VISIBLE_ROLE_LABELS[t.role];
 
 const ACTION = "font-semibold text-[var(--fg)] underline-offset-2 hover:underline disabled:opacity-50";
 
-export function TrialBanner({
+export function ViewAsBanner({
   actions,
   headline,
   className = "mb-3",
   plain = false,
 }: {
   actions?: ReactNode[];
-  headline?: (t: Trial) => ReactNode;
+  headline?: (t: ViewAs) => ReactNode;
   className?: string;
   // Outside #teacher-root (a page's loading screen): neutral classes for the same shape.
   plain?: boolean;
 }) {
   const supabase = createBrowserSupabaseClient();
-  const trial = useViewAsNow();
+  const viewAs = useViewAsNow();
   const edit = useEditSwitch(supabase);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (!trial) return null;
+  if (!viewAs) return null;
 
-  async function startFresh(t: Trial) {
+  async function startFresh(t: ViewAs) {
     setBusy(true);
     setError(null);
-    const r = await startTrial(supabase, { urn: t.urn, role: t.role, fresh: true, schoolName: t.schoolName, via: "banner" });
+    const r = await startViewAs(supabase, { urn: t.urn, role: t.role, fresh: true, schoolName: t.schoolName });
     if (!r.ok) {
       setError(r.error);
       setBusy(false);
@@ -69,18 +69,18 @@ export function TrialBanner({
   const editItems: ReactNode[] = edit.shown
     ? [
         <SwitchButton key="edit" on={edit.on} onChange={setEditOn} className={ACTION}>
-          <span data-trial-edit="">Edit</span>
+          <span data-view-as-edit="">Edit</span>
         </SwitchButton>,
         <SwitchButton key="draft" on={edit.previewDraft} onChange={setPreviewDraft} className={ACTION}>
-          <span data-trial-preview-draft="">Preview draft</span>
+          <span data-view-as-preview-draft="">Preview draft</span>
         </SwitchButton>,
       ]
     : [];
   const items: ReactNode[] = [
     ...editItems,
     ...(actions ?? []),
-    <button key="change" type="button" onClick={() => openViewAs({ urn: trial.urn, name: trial.schoolName, role: trial.role })} className={ACTION}>Change</button>,
-    <button key="fresh" type="button" onClick={() => startFresh(trial)} disabled={busy} className={ACTION}>
+    <button key="change" type="button" onClick={() => openViewAs({ urn: viewAs.urn, name: viewAs.schoolName, role: viewAs.role })} className={ACTION}>Change</button>,
+    <button key="fresh" type="button" onClick={() => startFresh(viewAs)} disabled={busy} className={ACTION}>
       {busy ? "Starting fresh…" : "Start fresh"}
     </button>,
     <button key="back" type="button" onClick={backToMe} className={ACTION}>Back to me</button>,
@@ -88,7 +88,7 @@ export function TrialBanner({
   return (
     <div
       role="status"
-      data-trial-banner=""
+      data-view-as-banner=""
       className={
         plain
           ? `flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 print:hidden ${className}`
@@ -97,11 +97,11 @@ export function TrialBanner({
     >
       <span className={plain ? "font-semibold text-neutral-900 dark:text-neutral-100" : "font-semibold text-[var(--fg)]"}>
         {headline ? (
-          headline(trial)
+          headline(viewAs)
         ) : edit.on ? (
-          <>Editing the VicData dashboard for all schools · previewing as {trialRoleLabel(trial)} at {trial.schoolName}</>
+          <>Editing the VicData dashboard for all schools · previewing as {roleLabel(viewAs)} at {viewAs.schoolName}</>
         ) : (
-          <>Viewing as {trialRoleLabel(trial)} at {trial.schoolName}</>
+          <>Viewing as {roleLabel(viewAs)} at {viewAs.schoolName}</>
         )}
       </span>
       {items.map((item, i) => (

@@ -1,8 +1,8 @@
 "use client";
 
 // 0.6 snagging round 4, item A: "View as", the one way Guy (a platform admin, and nobody
-// else) sees and edits VicData as any role at any school. Built on round 2's trial
-// (src/lib/trial.ts): a View as IS a trial, now lasting across tabs.
+// else) sees and edits VicData as any role at any school. Built on round 2's trial; the
+// mechanism itself is src/lib/view-as.ts (item C), lasting across tabs.
 //
 // One component, two places (one source of truth):
 //   * ViewAsPill: the compact pill in the top nav, before the account link -- "Viewing as:
@@ -16,7 +16,7 @@
 // the OS theme elsewhere. People's role chips draw with the Teacher-view token names, so
 // outside #teacher-root (`site`) the panel maps those names onto the site's own
 // --foreground/--background (SITE_TOKENS) -- aliases, no new colours.
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import SchoolSearch from "@/components/SchoolSearch";
 import { RoleChip, roleTint } from "@/components/admin/AdminChrome";
@@ -26,17 +26,19 @@ import { VISIBLE_ROLE_LABELS } from "@/lib/roles";
 import { ROLE_ACCENT, accentText } from "@/lib/teacher-view-theme";
 import { isPlatformAdminCached } from "@/lib/edit-mode";
 import {
-  exitTrial,
+  exitViewAs,
   followViewAsAcrossTabs,
-  hasTried,
-  listRecentTrials,
-  startTrial,
-  TRIAL_ROLES,
-  useViewAsNow,
-  type RecentTrial,
-  type Trial,
-  type TrialRole,
-} from "@/lib/trial";
+  hasViewedAs,
+  listRecentViewAs,
+  startViewAs,
+  VIEW_AS_ROLES,
+  toViewAs,
+  VIEW_AS_EVENT,
+  viewAsSnapshot,
+  type RecentViewAs,
+  type ViewAs,
+  type ViewAsRole,
+} from "@/lib/view-as";
 
 export const SITE_TOKENS = {
   "--fg": "var(--foreground)",
@@ -52,7 +54,7 @@ export const SITE_TOKENS = {
 
 // ------------------------------------------------------------------ opening it from elsewhere
 
-export type ViewAsPrefill = { urn: string; name: string; role?: TrialRole };
+export type ViewAsPrefill = { urn: string; name: string; role?: ViewAsRole };
 const OPEN_EVENT = "vicdata:view-as-open";
 
 // Opens the nav pill's popover, optionally with a school and role filled in (Platform's
@@ -65,13 +67,31 @@ export function openViewAs(prefill?: ViewAsPrefill) {
 // nothing drawn as one person (state, caches) carries into the other.
 const HOME = "/teacher";
 
-export const viewAsLabel = (t: Pick<Trial, "role" | "schoolName">) => `${VISIBLE_ROLE_LABELS[t.role]} · ${t.schoolName}`;
+export const viewAsLabel = (t: Pick<ViewAs, "role" | "schoolName">) => `${VISIBLE_ROLE_LABELS[t.role]} · ${t.schoolName}`;
 
 export function backToMe() {
-  exitTrial();
+  exitViewAs();
   // A full load on purpose (see HOME), not a client-side push.
   // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign(HOME);
+}
+
+// ------------------------------------------------------------------ hooks
+
+// This page's View as as the cookie gives it, before the platform-admin check comes back:
+// what the banner and the pill draw from, so a new tab shows the banner straight away.
+// null on the server and in the first (hydrating) render; resolveViewAs clears it for
+// anyone who isn't a platform admin, which re-renders this to null.
+export function useViewAsNow(): ViewAs | null {
+  const v = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener(VIEW_AS_EVENT, cb);
+      return () => window.removeEventListener(VIEW_AS_EVENT, cb);
+    },
+    viewAsSnapshot,
+    () => null,
+  );
+  return useMemo(() => (v ? toViewAs(v) : null), [v]);
 }
 
 // ------------------------------------------------------------------ the panel
@@ -85,14 +105,14 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
   const supabase = createBrowserSupabaseClient();
   const current = useViewAsNow();
   const [school, setSchool] = useState<{ urn: string; name: string } | null>(prefill ? { urn: prefill.urn, name: prefill.name } : null);
-  const [role, setRole] = useState<TrialRole>(prefill?.role ?? "teacher");
+  const [role, setRole] = useState<ViewAsRole>(prefill?.role ?? "teacher");
   const [fresh, setFresh] = useState(true);
-  const [recent, setRecent] = useState<RecentTrial[]>([]);
+  const [recent, setRecent] = useState<RecentViewAs[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadRecent = useCallback(async () => {
-    setRecent(await listRecentTrials(supabase, 5).catch(() => []));
+    setRecent(await listRecentViewAs(supabase, 5).catch(() => []));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -104,17 +124,17 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
     if (!school) return;
     let cancelled = false;
     (async () => {
-      const tried = await hasTried(supabase, school.urn, role).catch(() => false);
+      const tried = await hasViewedAs(supabase, school.urn, role).catch(() => false);
       if (!cancelled) setFresh(!tried);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [school?.urn, role]);
 
-  async function open(t: { urn: string; role: TrialRole; name?: string }, startFresh: boolean, key: string) {
+  async function open(t: { urn: string; role: ViewAsRole; name?: string }, startFresh: boolean, key: string) {
     setBusy(key);
     setError(null);
-    const r = await startTrial(supabase, { urn: t.urn, role: t.role, fresh: startFresh, schoolName: t.name, via: compact ? "nav" : "account" });
+    const r = await startViewAs(supabase, { urn: t.urn, role: t.role, fresh: startFresh, schoolName: t.name });
     if (!r.ok) {
       setError(r.error);
       setBusy(null);
@@ -152,7 +172,7 @@ export function ViewAsPanel({ compact, prefill }: { compact: boolean; prefill?: 
 
       <h3 className={heading}>Role</h3>
       <div role="group" aria-label="Role" className={`flex flex-wrap gap-1.5 ${compact ? "px-1" : ""}`}>
-        {TRIAL_ROLES.map((r) => (
+        {VIEW_AS_ROLES.map((r) => (
           <RoleChip key={r} role={r} on={role === r} onToggle={() => setRole(r)} />
         ))}
       </div>

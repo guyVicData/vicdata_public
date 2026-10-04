@@ -10,7 +10,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardConfig } from "@/catalogue/types";
 import { DASHBOARDS } from "@/catalogue/dashboards";
-import { getActiveTrial, isMissingColumn, stateUrn, TRIAL_NEEDS_UPDATE } from "./trial";
+import { getActiveViewAs, isMissingColumn, stateUrn, VIEW_AS_NEEDS_UPDATE } from "./view-as";
 
 export type OwnerScope = "vicdata" | "school" | "user";
 
@@ -81,8 +81,8 @@ function seededRow(config: DashboardConfig): DashboardRow {
   };
 }
 
-// 0.6 snag 2: personal rows made in a "Try VicData as…" trial carry trial_key (the trial's
-// state key, src/lib/trial.ts). Normally they are left out (trial_key is null); in a
+// 0.6 snag 2/4: personal rows made in View as carry trial_key (its state key,
+// src/lib/view-as.ts). Normally they are left out (trial_key is null); in a
 // trial, the person's personal rows are only that trial's, while VicData and school rows
 // (never trial-keyed) list as usual. Before the trials migration is applied the column
 // doesn't exist: outside a trial the list is read unfiltered, inside one without
@@ -91,7 +91,7 @@ export async function listDashboards(
   supabase: SupabaseClient,
   opts: { kind?: "dashboard" | "presentation" } = {},
 ): Promise<{ available: boolean; rows: DashboardRow[] }> {
-  const trial = getActiveTrial();
+  const trial = getActiveViewAs();
   const base = () => {
     let q = supabase.from("dashboards").select(ROW_COLUMNS).order("group_order").order("name");
     if (opts.kind) q = q.eq("kind", opts.kind);
@@ -159,11 +159,11 @@ export async function createDashboard(
   const { config, ...cols } = input;
   // In a trial a personal dashboard or meeting is the trial's (trial_key), never attached to
   // the school's account; a school dashboard can't be made from a trial at all.
-  const trial = opts.asSelf ? null : getActiveTrial();
+  const trial = opts.asSelf ? null : getActiveViewAs();
   if (trial && cols.owner_scope === "school") throw new Error("View as can't create school dashboards.");
   const row = trial && cols.owner_scope === "user" ? { ...cols, school_account_id: null, trial_key: trial.stateKey } : cols;
   const { data, error } = await supabase.from("dashboards").insert(row).select(ROW_COLUMNS).single<DashboardRow>();
-  if (error && trial && isMissingColumn(error)) throw new Error(TRIAL_NEEDS_UPDATE);
+  if (error && trial && isMissingColumn(error)) throw new Error(VIEW_AS_NEEDS_UPDATE);
   if (error) throw error;
   // A new dashboard starts as a draft whose config carries its row id.
   await saveDraft(supabase, data.id, { ...config, id: data.id });
@@ -240,7 +240,7 @@ export async function setAssignments(
 // trial the school is the trial's state key, and the school-less "" key (UpdatedNotice's
 // seen version) becomes it too, so the trial has its own "what's changed" state.
 function userStateUrn(schoolUrn: string): string {
-  const trial = getActiveTrial();
+  const trial = getActiveViewAs();
   return schoolUrn === "" ? trial?.stateKey ?? "" : stateUrn(schoolUrn);
 }
 

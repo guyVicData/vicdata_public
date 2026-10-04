@@ -12,8 +12,7 @@ import { ATTENTION_ACCENT, ATTENTION_INK, DELTA_NEGATIVE, accentOver, accentText
 import { TAG_COLOURS } from "@/lib/tag-colours";
 import { sectorTag } from "@/lib/typology";
 import { VISIBLE_ROLES_PROSE_ORDER, VISIBLE_ROLE_LABELS, normaliseRole, type VisibleRoleId } from "@/lib/roles";
-import { LOOK_AS_ROLES } from "@/lib/look-as";
-import type { TrialRole } from "@/lib/trial";
+import { VIEW_AS_ROLES, type ViewAsRole } from "@/lib/view-as";
 import { openViewAs } from "@/components/view-as/ViewAs";
 import { useTeacherTheme, type Theme } from "@/components/teacher/TeacherChrome";
 import { SearchBox, Switch } from "./AdminChrome";
@@ -134,7 +133,7 @@ export function Platform() {
   // school and role filled in -- the one mechanism; Start fresh and Open are there.
   function lookAs(row: SchoolOverviewRow, role: VisibleRoleId) {
     setError(null);
-    openViewAs({ urn: row.school_urn, name: row.school_name ?? row.school_urn, role: role as TrialRole });
+    openViewAs({ urn: row.school_urn, name: row.school_name ?? row.school_urn, role: role as ViewAsRole });
   }
 
   return (
@@ -230,7 +229,7 @@ export function Platform() {
 
             <div className={`${HEADING} mt-1`}>Look at it as&hellip;</div>
             <div className="flex flex-wrap gap-1.5">
-              {LOOK_AS_ROLES.map((role) => (
+              {VIEW_AS_ROLES.map((role) => (
                 <button key={role} type="button" onClick={() => lookAs(selected, role)} className={EBTN}>
                   {VISIBLE_ROLE_LABELS[role]}
                 </button>

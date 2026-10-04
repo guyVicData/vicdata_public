@@ -25,7 +25,7 @@ function describeSchool(r: SearchResult): string {
   return [parts.join(", "), tag].filter(Boolean).join(" — ");
 }
 
-// byUrn (0.6 snag 2, /account's "Try VicData as…"): a query that is a URN also finds that
+// byUrn (0.6 snag 2, View as): a query that is a URN also finds that
 // school directly (search_schools matches names, towns and postcodes only).
 // allowRequest false drops the "Can't find your school?" request form.
 export default function SchoolSearch({

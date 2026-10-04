@@ -14,7 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { DELTA_POSITIVE, ROLE_ACCENT, accentText } from "@/lib/teacher-view-theme";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
-import { getActiveTrial } from "@/lib/trial";
+import { getActiveViewAs } from "@/lib/view-as";
 import { pickMembership, viewAsMembership } from "@/lib/view-as";
 
 // ---------------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ export async function loadAdminSchool(): Promise<AdminSchoolState> {
   const { data: sessionData } = await supabase.auth.getSession();
   const user = sessionData.session?.user;
   if (!user) return { status: "signed-out" };
-  const viewAs = getActiveTrial();
+  const viewAs = getActiveViewAs();
   if (viewAs) {
     const { data: account } = await supabase
       .from("school_accounts")

@@ -24,7 +24,7 @@ import {
 } from "./dashboards-store";
 import { changeSummary, isArchived, localToday, newMeetingConfig, reuseSlides } from "./meeting-ops";
 import { dataAsOf } from "./meeting-views";
-import { getActiveTrial, trialSchool } from "./trial";
+import { getActiveViewAs, viewAsSchool } from "./view-as";
 import { pickMembership } from "./view-as";
 
 export type MeetingSummary = {
@@ -194,7 +194,7 @@ export async function meetingCap(supabase: SupabaseClient): Promise<number | nul
   if (!uid) return 5;
   // View as: the cap of the member being viewed (School-Admin 20, everyone else 5), not
   // Guy's own (none).
-  const viewAs = getActiveTrial();
+  const viewAs = getActiveViewAs();
   if (viewAs) return viewAs.role === "school_admin" ? 20 : 5;
   const { data: admin } = await supabase.rpc("is_platform_admin");
   if (admin === true) return null;
@@ -208,13 +208,13 @@ export async function meetingCap(supabase: SupabaseClient): Promise<number | nul
 }
 
 // The signed-in person's school (for pinning new views and keeping slot notes), from
-// their own approved membership -- or, in a "Try VicData as…" trial, the trial's school.
+// their own approved membership -- or, in View as, the viewed school.
 export async function mySchool(supabase: SupabaseClient): Promise<{ urn: string; name: string; accountId: string } | null> {
   const { data: session } = await supabase.auth.getSession();
   const uid = session.session?.user.id;
   if (!uid) return null;
-  const trial = getActiveTrial();
-  if (trial) return trialSchool(supabase, trial);
+  const trial = getActiveViewAs();
+  if (trial) return viewAsSchool(supabase, trial);
   // 0.6 snag 4: the school shown (pickMembership), never "the first row".
   const { data: rows } = await supabase
     .from("school_memberships")

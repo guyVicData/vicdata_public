@@ -118,3 +118,80 @@ test("outside View as, sets still go to saved_sets as before", async () => {
   await saveComparatorSet(supabase, { id: null, schoolAccountId: "acc", ownerMembershipId: "m1", name: "Rivals", urns: [], config: {} });
   assert.equal(writes[0].table, "saved_sets");
 });
+
+// ------------------------------------------------------------------ the client side (item C)
+
+// A browser just big enough for the View as module: a cookie jar, a location, storage.
+function fakeBrowser() {
+  const jar = new Map<string, string>();
+  const store = new Map<string, string>();
+  const g = globalThis as unknown as Record<string, unknown>;
+  g.document = {
+    get cookie() {
+      return [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
+    },
+    set cookie(line: string) {
+      const [pair, ...attrs] = line.split(";");
+      const i = pair.indexOf("=");
+      const k = pair.slice(0, i).trim();
+      if (attrs.some((a) => /max-age=0/i.test(a.trim()))) jar.delete(k);
+      else jar.set(k, pair.slice(i + 1).trim());
+    },
+  };
+  g.window = {
+    location: { search: "", protocol: "https:" },
+    dispatchEvent: () => true,
+    localStorage: { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v), removeItem: (k: string) => void store.delete(k) },
+  };
+  return jar;
+}
+
+test("only a platform admin can enter View as, and it logs view_as {role, fresh}", async () => {
+  const jar = fakeBrowser();
+  const { startViewAs, exitViewAs, getActiveViewAs, stateUrn } = await import("./view-as");
+  const calls: { name: string; args: unknown }[] = [];
+  const supa = (admin: boolean) =>
+    ({
+      rpc: async (name: string, args: unknown) => {
+        calls.push({ name, args });
+        return name === "is_platform_admin" ? { data: admin, error: null } : { data: null, error: null };
+      },
+      from: () => {
+        const b: Record<string, unknown> = {};
+        for (const m of ["select", "eq", "upsert", "delete", "order", "limit", "in", "maybeSingle"]) b[m] = () => b;
+        b.then = (res: (r: unknown) => unknown) => Promise.resolve({ data: null, error: null }).then(res);
+        return b;
+      },
+      auth: { getSession: async () => ({ data: { session: { user: { id: "guy" } } } }) },
+    }) as unknown as SupabaseClient;
+
+  const refused = await startViewAs(supa(false), { urn: "137625", role: "teacher", fresh: true, schoolName: "The Chase" });
+  assert.equal(refused.ok, false);
+  assert.ok(!calls.some((c) => c.name === "log_platform_action"), "nothing logged for a non-admin");
+  assert.equal(jar.size, 0, "no cookie for a non-admin");
+  assert.equal(getActiveViewAs(), null);
+  assert.equal(stateUrn("137625"), "137625", "a non-admin's state stays their own");
+
+  const ok = await startViewAs(supa(true), { urn: "137625", role: "teacher", fresh: true, schoolName: "The Chase" });
+  assert.equal(ok.ok, true);
+  const log = calls.find((c) => c.name === "log_platform_action");
+  assert.deepEqual(log?.args, { p_action: "view_as", p_school_urn: "137625", p_detail: { role: "teacher", fresh: true } });
+  assert.ok(calls.some((c) => c.name === "reset_trial"), "Start fresh resets its state");
+  assert.ok(jar.has("vicdata_view_as"));
+  assert.equal(getActiveViewAs()?.stateKey, "137625~trial~teacher");
+  // Where personal state goes: under the key for the viewed school, never Guy's own URN.
+  assert.equal(stateUrn("137625"), "137625~trial~teacher");
+  assert.equal(stateUrn("100053"), "100053", "another school's state is untouched");
+
+  exitViewAs();
+  assert.equal(jar.size, 0, "Back to me clears the cookie");
+  assert.equal(getActiveViewAs(), null);
+  assert.equal(stateUrn("137625"), "137625");
+});
+
+test("peek is only the Catalogue's ?peek=1 frames", async () => {
+  const { readPeek } = await import("./view-as");
+  assert.deepEqual(readPeek(new URLSearchParams("lookAs=100053&as=teacher&peek=1")), { urn: "100053", role: "teacher" });
+  assert.equal(readPeek(new URLSearchParams("lookAs=100053&as=teacher")), null, "the bare pair no longer means anything");
+  assert.equal(readPeek(new URLSearchParams("lookAs=100053&as=finance&peek=1")), null);
+});

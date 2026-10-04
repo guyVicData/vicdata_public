@@ -7,7 +7,7 @@
 //
 // This file is the one shared store those pieces meet in:
 //   * a page REGISTERS the VicData dashboard it is showing (useRegisterVicDataDashboard);
-//     the site-wide Footer and the TrialBanner render their switch only while one is
+//     the site-wide Footer and the ViewAsBanner render their switch only while one is
 //     registered, so everywhere else it isn't there at all;
 //   * the switch's on/off (default off), kept in localStorage. 0.6 snag 4 (A): ONE setting
 //     whether Guy is viewing as someone or not, so the Edit switch and the banner's Edit
@@ -22,7 +22,7 @@
 // trial's stateUrn / trial_key. The trial's school and role only feed the live preview.
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getActiveTrial, TRIAL_EVENT } from "./trial";
+import { getActiveViewAs, VIEW_AS_EVENT } from "./view-as";
 
 const EDIT_EVENT = "vicdata:edit-mode";
 const LOCAL_KEY = "vicdata.editMode";
@@ -39,10 +39,10 @@ function emit() {
 
 function subscribe(cb: () => void) {
   window.addEventListener(EDIT_EVENT, cb);
-  window.addEventListener(TRIAL_EVENT, cb);
+  window.addEventListener(VIEW_AS_EVENT, cb);
   return () => {
     window.removeEventListener(EDIT_EVENT, cb);
-    window.removeEventListener(TRIAL_EVENT, cb);
+    window.removeEventListener(VIEW_AS_EVENT, cb);
   };
 }
 
@@ -77,7 +77,7 @@ function readEditOn(): boolean {
 }
 
 function readPreviewDraft(): boolean {
-  const t = getActiveTrial();
+  const t = getActiveViewAs();
   if (!t) return false;
   const key = DRAFT_KEY(t.stateKey);
   return memory.get(key) ?? read("session", key);
@@ -99,7 +99,7 @@ export function setEditOn(on: boolean) {
 }
 
 export function setPreviewDraft(on: boolean) {
-  const t = getActiveTrial();
+  const t = getActiveViewAs();
   if (!t) return;
   const key = DRAFT_KEY(t.stateKey);
   memory.set(key, on);

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { exitTrial, getActiveTrial } from "@/lib/trial";
+import { exitViewAs, getActiveViewAs } from "@/lib/view-as";
 import { ViewAsPill } from "@/components/view-as/ViewAs";
 
 // 0.6 S1 (brief G13): one sign-in event per sign-in, via record_sign_in(), which writes a
@@ -13,10 +13,10 @@ import { ViewAsPill } from "@/components/view-as/ViewAs";
 // or a stored session is picked up, so sessionStorage remembers which session (its access
 // token) this tab has already recorded. Fire-and-forget: a failure here must never touch
 // signing in.
-// 0.6 snag 2: none while viewing as a member (View as, src/lib/trial.ts) -- it is
+// 0.6 snag 2: none while viewing as a member (View as, src/lib/view-as.ts) -- it is
 // invisible to the school, sign-in events included.
 function recordSignIn(supabase: SupabaseClient, userId: string, accessToken: string) {
-  if (getActiveTrial()) return;
+  if (getActiveViewAs()) return;
   const key = "vicdata.signInRecorded";
   const marker = `${userId}:${accessToken.slice(-16)}`;
   try {
@@ -39,7 +39,7 @@ export default function NavBar() {
       setLoggedIn(Boolean(session?.user));
       if (event === "SIGNED_IN" && session?.user) recordSignIn(supabase, session.user.id, session.access_token);
       // A trial belongs to the signed-in platform admin; signing out ends it.
-      if (event === "SIGNED_OUT") exitTrial();
+      if (event === "SIGNED_OUT") exitViewAs();
     });
     return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -4,7 +4,7 @@
 // gets the plain 404, as on /platform. Loads the dashboard with its draft through
 // dashboards-store; while the S2 tables aren't there it opens the seeded config in memory.
 //
-// 0.6 integration: with a school context (super-admin's look-as school from ?lookAs=, else
+// 0.6 integration: with a school context (the View as school while viewing as someone, else
 // their own membership school) panels preview live (LivePanelPreview), titles resolve with
 // the school's name, Add a view draws Pick's previews live with the school's subjects, and
 // the panel menu's "Copy view…" opens S6's Copy this view dialog. With no school: the
@@ -21,7 +21,6 @@ import { dataviewById } from "@/catalogue";
 import { contextFromPanel, viewTitle } from "@/catalogue/pick";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { loadDashboard, type Loaded } from "@/lib/dashboards-store";
-import { confirmLookAs, readLookAs } from "@/lib/look-as";
 import { mySchool } from "@/lib/meeting-store";
 import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import type { CopyViewSource } from "@/lib/copy-view";
@@ -60,8 +59,9 @@ export function usePlatformAdmin(): boolean | null {
   return allowed;
 }
 
-// The school the editor previews for: look-as (confirmed platform admin), else the
-// person's own membership school; null = none (data-free).
+// The school the editor previews for: the viewed school while Guy is viewing as someone
+// (View as, src/lib/view-as.ts -- mySchool answers it), else his own membership school
+// (the one shown); null = none (data-free).
 export function useEditorSchool(enabled: boolean): PinSchool {
   const [school, setSchool] = useState<PinSchool>(null);
   useEffect(() => {
@@ -69,12 +69,6 @@ export function useEditorSchool(enabled: boolean): PinSchool {
     (async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const lookAs = readLookAs(new URLSearchParams(window.location.search));
-        if (lookAs && (await confirmLookAs(supabase, lookAs))) {
-          const { data } = await supabase.from("schools").select("current_name").eq("urn", lookAs.urn).maybeSingle<{ current_name: string }>();
-          setSchool({ urn: lookAs.urn, name: data?.current_name ?? lookAs.urn });
-          return;
-        }
         const mine = await mySchool(supabase);
         if (mine) setSchool({ urn: mine.urn, name: mine.name });
       } catch {

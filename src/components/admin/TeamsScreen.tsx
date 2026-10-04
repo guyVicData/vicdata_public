@@ -18,7 +18,7 @@ import {
   AdminBody, AdminHeader, AdminState, AdminTitle, Avatar, Footnote, PRIMARY_BUTTON, SectionLabel,
   VIEW_AS_READ_ONLY, displayNameOf, loadViewAsPeople, useAdminSchool, type AdminSchool,
 } from "./AdminChrome";
-import { TrialBanner } from "@/components/trial/TrialBanner";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 
 type MemberRow = {
   id: string;
@@ -64,7 +64,7 @@ export function TeamsScreen() {
   return (
     <main id="teacher-root" data-theme={theme} className="leading-[1.2] w-full flex-grow bg-[var(--bg)] text-[var(--fg)]">
       {/* 0.6 snag 4: View as shows Teams read-only to a School-Admin View as. */}
-      <TrialBanner className="mx-4 mt-3" />
+      <ViewAsBanner className="mx-4 mt-3" />
       <AdminHeader active="teams" />
       {state.status === "loading" && <AdminBody><AdminState>Loading…</AdminState></AdminBody>}
       {state.status === "signed-out" && <AdminBody><AdminState>Sign in to manage your school&rsquo;s teams.</AdminState></AdminBody>}

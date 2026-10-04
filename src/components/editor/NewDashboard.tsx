@@ -8,8 +8,8 @@
 //   4. here's what you'll get -> createDashboard -> the editor
 // Owner: a super-admin saves to VicData dashboards or their own; everyone else to their
 // own (the database's cap trigger enforces G9 and its error is shown).
-import { getActiveTrial } from "@/lib/trial";
-import { TrialBanner } from "@/components/trial/TrialBanner";
+import { getActiveViewAs } from "@/lib/view-as";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -60,7 +60,7 @@ export function TourFrame({
   return (
     <main id="teacher-root" data-theme={theme} style={accentVars(accent)} className="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6">
       {/* 0.6 snag 4: View as makes this the member's New dashboard, so it says so. */}
-      <TrialBanner className="" />
+      <ViewAsBanner className="" />
       {"href" in back ? (
         <Link href={back.href} className="w-fit text-[12.5px] text-[var(--muted)]">
           &larr; Back
@@ -144,7 +144,7 @@ export function NewDashboardScreen() {
       </main>
     );
   // Viewing as a member (View as), this is the member's New dashboard: personal only.
-  return <NewDashboard superAdmin={admin && !getActiveTrial()} theme={theme} />;
+  return <NewDashboard superAdmin={admin && !getActiveViewAs()} theme={theme} />;
 }
 
 export function NewDashboard({ superAdmin, theme, initialStep = 0, initial }: { superAdmin: boolean; theme: "dark" | "light"; initialStep?: number; initial?: { name?: string; main?: ops.MainData } }) {

@@ -49,11 +49,6 @@ export function storeLens(lens: Lens): void {
   }
 }
 
-// Look at it as… (?as=role): the previewed role picks the lens; School-Admin previews the
-// Teacher home (an admin, not a lens).
-export function lensForLookAs(role: string): Lens {
-  return role === "smt" || role === "admissions" ? role : "teacher";
-}
 
 export function LensSwitch({ lenses, lens, onLens }: { lenses: Lens[]; lens: Lens; onLens: (l: Lens) => void }) {
   return (
