@@ -13,7 +13,7 @@
 import { createContext, useContext, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { dataviewById } from "@/catalogue";
 import { RESULTS_MEASURES, dataviewResults, effectiveResults, showsOn, viewsOnResults } from "@/catalogue/results";
-import { contextFromPanel, latestYear, defaultFromYear, resolveTitle, viewTitle, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
+import { contextFromPanel, latestYear, defaultFromYear, instanceTitle, titleOverrideOf, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
 import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig, ResultsMeasure } from "@/catalogue/types";
 import { railGlyph } from "@/components/chooser-v06/bits";
 import { MenuDivider, MenuHeading, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
@@ -203,6 +203,7 @@ export function EditorPanel({
               <RailButton
                 key={v.id}
                 v={v}
+                label={railTooltip(config, panel, v, labels)}
                 active={v.id === view?.id}
                 ready={!!ready[v.id]}
                 dimmed={off}
@@ -336,18 +337,25 @@ function units(config: DashboardConfig, p: PanelConfig): number {
   return config.layout.tracks.slice(start, start + spanOf(p)).reduce((a, b) => a + b, 0) || 1;
 }
 
-// The view's resolved title, for the view menu's heading.
+// The view's resolved title, for the view menu's heading: its own (Customise's) title when
+// it has one, else its dataview's (0.6 snag 4 / 01: one resolver, pick.ts instanceTitle).
 function viewLabel(config: DashboardConfig, panel: PanelConfig, v: DataviewInstance, labels?: PanelLabels): string {
   if (v.kind === "placeholder") return v.description;
   const dv = dataviewById(v.dataview);
   if (!dv) return v.title ?? v.dataview;
   try {
-    const ctx = contextFromPanel(config, panel.id, labels);
-    const fromYear = typeof v.params?.fromYear === "string" ? v.params.fromYear : null;
-    return v.title ? resolveTitle(v.title, dv, ctx, { fromYear }) : viewTitle(dv, ctx);
+    return instanceTitle(v, contextFromPanel(config, panel.id, labels));
   } catch {
-    return v.title ?? dv.label;
+    return dv.label;
   }
+}
+
+// The rail icon's tooltip: the view's own title when it has one (resolved), else the
+// dataview's short label, as before.
+function railTooltip(config: DashboardConfig, panel: PanelConfig, v: DataviewInstance, labels?: PanelLabels): string {
+  if (v.kind === "placeholder") return `Planned: ${v.description}`;
+  const dv = dataviewById(v.dataview);
+  return titleOverrideOf(v) ? viewLabel(config, panel, v, labels) : (dv?.label ?? v.dataview);
 }
 
 type RailMenu = {
@@ -366,9 +374,8 @@ type RailMenu = {
 
 // One rail icon. In edit mode it sits in .ed-rv with its "···" tab and view menu; the hover,
 // focus and touch states are CSS in DashboardEditor's style block (.ed-rv).
-function RailButton({ v, active, ready, dimmed = false, draggable, menu, onClick, onDragStart, onDrop }: { v: DataviewInstance; active: boolean; ready: boolean; dimmed?: boolean; draggable: boolean; menu: RailMenu | null; onClick: () => void; onDragStart: () => void; onDrop: () => void }) {
+function RailButton({ v, label, active, ready, dimmed = false, draggable, menu, onClick, onDragStart, onDrop }: { v: DataviewInstance; label: string; active: boolean; ready: boolean; dimmed?: boolean; draggable: boolean; menu: RailMenu | null; onClick: () => void; onDragStart: () => void; onDrop: () => void }) {
   const dv = v.kind === "view" ? dataviewById(v.dataview) : undefined;
-  const label = v.kind === "view" ? (v.title ?? dv?.label ?? v.dataview) : `Planned: ${v.description}`;
   const planned = v.kind === "placeholder";
   const open = !!menu?.open;
   // The menu's second page: the "Show on…" checklist.

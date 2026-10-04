@@ -243,9 +243,7 @@ export function CandidatesPanels({
         <p className="text-sm text-[var(--muted)]">Pick a subject to see its entries.</p>
       ) : (
         <>
-          {focused && latest !== null && (
-            <ViewTitle>{`${focused.label} ${currentLabel ?? "Candidates"}: ${academicYearLabel(latest)}`}</ViewTitle>
-          )}
+          <ViewTitle>{focused && latest !== null ? `${focused.label} ${currentLabel ?? "Candidates"}: ${academicYearLabel(latest)}` : null}</ViewTitle>
           <NumberTiles main={tilesMain} tiles={tilesShown} fullscreen={fullscreen} />
         </>
       ),
@@ -316,7 +314,7 @@ export function CandidatesPanels({
         </>
       ) : (
         <>
-          {inCategory && <ViewTitle>{inCategory}</ViewTitle>}
+          <ViewTitle>{inCategory}</ViewTitle>
           {multiTrendHasLine(trendData) && (
             <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}

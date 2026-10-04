@@ -29,7 +29,8 @@ import { DATAVIEWS } from "@/catalogue/dataviews";
 import type { DashboardConfig, HostId, PanelConfig } from "@/catalogue/types";
 import { useDashboardRuntime, type DashboardRuntime } from "@/components/dashboard-config/runtime";
 import { CopyViewSourceContext, type CopyViewSourceValue } from "@/components/copy-view/CopyViewSourceContext";
-import { copySourceFor } from "@/lib/pin-context";
+import { copySourceFor, panelTitleOverride } from "@/lib/pin-context";
+import { ViewTitleOverrideContext } from "./SeriesViews";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -145,7 +146,9 @@ export function ColumnPanels({
     }
   });
 
-  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void) => {
+  // 0.6 snag 4 / 01: `title`, the view's own title (resolved), replaces the host's view
+  // title in the body wherever it is drawn -- card, fullscreen, print. null = as before.
+  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null) => {
         const open = panels.includes(id);
         const toggle = toggleOverride ?? (() => onPanelsChange(togglePanel(panels, id)));
         return (
@@ -195,7 +198,7 @@ export function ColumnPanels({
             // 3x3 grid rather than three ragged stacks.
             fixedHeight
           >
-            {({ fullscreen }) => panel.body(fullscreen)}
+            {({ fullscreen }) => (title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(fullscreen))}
           </CardBox>
         );
   };
@@ -224,13 +227,14 @@ export function ColumnPanels({
           if (host) {
             panel = { ...panel, actions: configuredRail(railEntries(raw.actions, host, id), cfg, results) };
           }
+          const title = runtime && host ? titleOverrideFor(plan.config, cfg, railEntries(raw.actions, host, id), runtime) : null;
           if (embed?.frame === "figure") {
             // A meeting slot (or another frame that brings its own card): the figure alone,
             // filling the room it is given. Title, source, note and export are the slot's.
             return (
               <div key={cfg.id} data-panel-id={cfg.id} data-embed="figure" className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto">
                 <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                  {panel.body(embed.fullscreen)}
+                  {title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(embed.fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(embed.fullscreen)}
                 </PanelBoundary>
               </div>
             );
@@ -242,7 +246,7 @@ export function ColumnPanels({
           return (
             <div key={cfg.id} data-panel-id={cfg.id} data-row-time={row.time} data-override={cfg.override?.badge}>
               <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle)}</CopyViewSourceContext.Provider> : card(id, panel, toggle)}
+                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title)}
               </PanelBoundary>
             </div>
           );
@@ -274,15 +278,27 @@ export function ColumnPanels({
 // view its rail has selected (else its default view), in the panel's context resolved
 // with the page's real labels, pinned from the dashboard's runtime state.
 function copyValueFor(config: DashboardConfig, cfg: PanelConfig, entries: RailEntry[], runtime: DashboardRuntime): CopyViewSourceValue | null {
-  const views = cfg.dataviews.flatMap((v) => (v.kind === "view" ? [v] : []));
-  const active = entries.find((e) => e.active)?.dataview;
-  const instance = views.find((v) => v.dataview === active) ?? views.find((v) => v.id === cfg.defaultView) ?? views[0];
+  const instance = activeInstance(cfg, entries);
   if (!instance) return null;
   try {
     return { source: copySourceFor(config, cfg.id, instance, runtime), superAdmin: runtime.superAdmin };
   } catch {
     return null;
   }
+}
+
+// The view instance a configured panel is showing: the one its rail has selected, else its
+// default (or first) view.
+function activeInstance(cfg: PanelConfig, entries: RailEntry[]) {
+  const views = cfg.dataviews.flatMap((v) => (v.kind === "view" ? [v] : []));
+  const active = entries.find((e) => e.active)?.dataview;
+  return views.find((v) => v.dataview === active) ?? views.find((v) => v.id === cfg.defaultView) ?? views[0];
+}
+
+// 0.6 snag 4 / 01: the title the panel's showing view carries in place of its host's.
+function titleOverrideFor(config: DashboardConfig, cfg: PanelConfig, entries: RailEntry[], runtime: DashboardRuntime): string | null {
+  const instance = activeInstance(cfg, entries);
+  return instance ? panelTitleOverride(config, cfg.id, instance, runtime) : null;
 }
 
 // Current panel rework round 1: every Current tag is the fixed word "Current", and the year

@@ -23,7 +23,7 @@ import { measuresFor } from "@/lib/teacher-view-panels";
 import { PillMenu } from "@/components/teacher/PillMenu";
 import { MenuHeading, MenuRow } from "@/components/teacher/PanelMenu";
 import { SwitchButton } from "@/components/edit-mode/EditSwitch";
-import { contextFromPanel, settingsOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
+import { contextFromPanel, settingsOf, titleOverrideOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
 import { DASHBOARDS, groupOf } from "@/catalogue/dashboards";
 import { AddViewChooser } from "@/components/chooser-v06/AddViewChooser";
 import type { SubjectSource } from "@/components/chooser-v06/StepScreens";
@@ -259,7 +259,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           const inst = config.panels.flatMap((p) => p.dataviews).find((v) => v.id === instanceId);
           apply((c) => ops.setViewResults(c, instanceId, measures));
           if (inst && showsOn(inst, pill) && !measures.includes(pill) && !showAll) {
-            const name = inst.kind === "view" ? (inst.title ?? dataviewById(inst.dataview)?.label ?? inst.dataview) : inst.description;
+            const name = inst.kind === "view" ? (titleOverrideOf(inst) ?? dataviewById(inst.dataview)?.label ?? inst.dataview) : inst.description;
             const text = `${name} no longer shows on ${pillLabels[pill]}.`;
             setUndoFor(text);
             setToast(text);

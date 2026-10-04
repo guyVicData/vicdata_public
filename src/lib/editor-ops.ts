@@ -27,6 +27,7 @@ import {
   readyMadeInstance,
   settingsOf,
   summaryLine,
+  titleOverrideOf,
   toPickContext,
   type PanelLabels,
   type PickPanelContext,
@@ -897,9 +898,15 @@ export function redo(h: History): History {
 // The change summary (§4.8): "Added *Maths points vs 10 nearest* to Comparisons · Trends;
 // renamed row “Trends” to “Over time”".
 
+// 0.6 snag 4 / 01: its own title as written (placeholders and all) when it has one, else
+// its dataview's label -- never Customise's unedited template.
 function viewName(v: DataviewInstance): string {
   if (v.kind === "placeholder") return v.description;
-  return v.title ?? dataviewById(v.dataview)?.label ?? v.dataview;
+  return titleOverrideOf(v) ?? dataviewById(v.dataview)?.label ?? v.dataview;
+}
+
+function dataviewLabel(v: DataviewInstance): string {
+  return v.kind === "placeholder" ? v.description : (dataviewById(v.dataview)?.label ?? v.dataview);
 }
 
 function placeOf(c: DashboardConfig, p: PanelConfig): string {
@@ -1007,6 +1014,11 @@ export function diffConfigs(prev: DashboardConfig, next: DashboardConfig): strin
       else if (v.kind === "placeholder") head.push(`planned *${viewName(v)}* in ${where(p)}`);
       else head.push(`${tagged(v)}added *${viewName(v)}* to ${where(p)}`);
     } else if (was.p.id !== p.id) head.push(`moved *${viewName(v)}* to ${where(p)}`);
+    // 0.6 snag 4 / 01: a view's own title, set, changed or cleared.
+    if (was && (titleOverrideOf(was.v) ?? "") !== (titleOverrideOf(v) ?? "")) {
+      const t = titleOverrideOf(v);
+      out.push(t ? `retitled *${dataviewLabel(v)}* “${t}” in ${where(p)}` : `*${dataviewLabel(v)}* in ${where(p)} has its own title again`);
+    }
   }
   for (const [id, { v, p }] of prevView) {
     if (nextView.has(id)) continue;

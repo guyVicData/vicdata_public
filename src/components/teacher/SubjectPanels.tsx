@@ -559,7 +559,7 @@ export function SubjectPanels({
         <p className="text-sm text-[var(--muted)]">{emptyText}</p>
       ) : (
         <>
-          {currentTitle && <ViewTitle>{currentTitle}</ViewTitle>}
+          <ViewTitle>{currentTitle}</ViewTitle>
           {effectiveView === "grades" && gradeBand ? (
             bandOwnTotal > 0 ? (
               <CentredOnTarget watch={`grades:${focusedKey}`}>
@@ -834,7 +834,7 @@ export function SubjectPanels({
     body: (fullscreen) =>
       !redesigned ? (
         <>
-          {scope && <ViewTitle>{scope}, year by year</ViewTitle>}
+          <ViewTitle>{scope ? `${scope}, year by year` : null}</ViewTitle>
           <TrendChart data={trendData} measure={measure} showFit={showFit} fullscreen={fullscreen} />
         </>
       ) : trendView === "map" && trendMap ? (
@@ -880,7 +880,7 @@ export function SubjectPanels({
         <>
           {/* The indexed and actual charts keep TrendScaleTitle's own sentence; the scope
               line above it names what the lines are (a points chart has only this line). */}
-          {scope ? <ViewTitle>{indexedTrend ? scope : `${scope}: each subject's line`}</ViewTitle> : !indexedTrend && <ViewTitle>{focusedSubject?.label ?? scopeNoun}, each year</ViewTitle>}
+          <ViewTitle>{scope ? (indexedTrend ? scope : `${scope}: each subject's line`) : !indexedTrend ? `${focusedSubject?.label ?? scopeNoun}, each year` : null}</ViewTitle>
           {indexedTrend && multiTrendHasLine(trendData) && (
             <TrendScaleTitle view={trendView === "actual" ? "actual" : "indexed"} from={trendData.periods[0] ?? null} noun="entries" />
           )}

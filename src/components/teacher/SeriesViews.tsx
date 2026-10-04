@@ -15,7 +15,7 @@
 //
 // Colours come from the caller (greys in Current's order, the focus in the accent), so
 // the same subject is the same colour in every view.
-import { useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
 import {
@@ -115,12 +115,14 @@ export function MultiTrend({
 // of what the chart is, not a footnote under it. Also used over Geography's indexed chart,
 // so every indexed-to-100 chart explains itself the same way.
 export function TrendScaleTitle({ view, from, noun }: { view: "indexed" | "actual"; from: number | null; noun: string }) {
+  // The scale's own sentence, never replaced by a view's title override (0.6 snag 4 / 01):
+  // it explains the chart under whatever title the view carries.
   return (
-    <ViewTitle>
+    <ViewTitleLine>
       {view === "indexed"
         ? `Change since ${from === null ? "the first year shown" : academicYearLabel(from)}: each line starts at 100 (no change); 110 = 10% more ${noun}, 90 = 10% fewer.`
         : `${noun.charAt(0).toUpperCase() + noun.slice(1)} each year, real numbers: one scale for every subject, so small ones sit low.`}
-    </ViewTitle>
+    </ViewTitleLine>
   );
 }
 
@@ -128,9 +130,25 @@ export function TrendScaleTitle({ view, from, noun }: { view: "indexed" | "actua
 // above its chart, table, list or map -- TrendScaleTitle's own style, generalised. With
 // Trend's and % change's views behind one rail, the title is what tells a screenshot of the
 // body alone which view it is.
-export function ViewTitle({ children }: { children: ReactNode }) {
+//
+// 0.6 snag 4 / 01: a view instance's own title (Customise's Title, resolved for the page's
+// school, subject, year and sets) replaces the host's words here, wherever the body is drawn
+// -- the card, fullscreen, the print, a meeting slot's figure. A host passes no children
+// where it draws no title today; with no override that still draws nothing.
+export function ViewTitle({ children }: { children?: ReactNode }) {
+  const override = useContext(ViewTitleOverrideContext);
+  const text = override ?? children;
+  if (text === null || text === undefined || text === false) return null;
+  return <ViewTitleLine>{text}</ViewTitleLine>;
+}
+
+function ViewTitleLine({ children }: { children: ReactNode }) {
   return <p className="mb-1 shrink-0 text-[12px] font-semibold leading-snug text-[var(--muted2)]">{children}</p>;
 }
+
+// The resolved override for the view a panel is showing; null = the host's own titles.
+// Provided by ColumnPanels (src/components/teacher/ColumnPanels.tsx) under a plan only.
+export const ViewTitleOverrideContext = createContext<string | null>(null);
 
 // ----------------------------------------------------------------- ChangeList
 

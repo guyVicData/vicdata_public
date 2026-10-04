@@ -234,8 +234,9 @@ function resultsFor(dv: Dataview, pinned: PinnedSettings): ResultsMeasure | unde
 // The one-view config a meeting slot or a preview is drawn with: one column (the view's
 // own host), one row, one panel, one view.
 // `params` (0.6 snag 3 / 01): the view instance's own settings, carried onto the one view
-// so its host draws with them (the editor's live preview of a tiles view).
-export function oneViewConfig(dv: Dataview, pinned: PinnedSettings, id: string, params?: Record<string, unknown>): DashboardConfig {
+// so its host draws with them (the editor's live preview of a tiles view, a meeting slot).
+// `title` (0.6 snag 4 / 01): the instance's own title, so the figure shows it as the page does.
+export function oneViewConfig(dv: Dataview, pinned: PinnedSettings, id: string, params?: Record<string, unknown>, title?: string): DashboardConfig {
   const phase: Phase = pinned.phase && dv.supports.phases.includes(pinned.phase) ? pinned.phase : dv.supports.phases[0];
   const data = pinned.data && dv.supports.data.includes(pinned.data) ? pinned.data : dv.supports.data[0];
   const results = data === "academic.results" ? resultsFor(dv, pinned) : undefined;
@@ -261,7 +262,7 @@ export function oneViewConfig(dv: Dataview, pinned: PinnedSettings, id: string, 
       },
     ],
     rows: [{ id: rowId, name: panelId === "current" ? "Current" : "Trends", time: panelId === "current" ? "latest" : "over_time", openByDefault: true, legacyPanelId: panelId }],
-    panels: [{ id: `${id}.panel`, row: rowId, column: "c1", dataviews: [{ id: `${id}/${dv.id}`, kind: "view", dataview: dv.id, ...(params ? { params } : {}) }], defaultView: `${id}/${dv.id}` }],
+    panels: [{ id: `${id}.panel`, row: rowId, column: "c1", dataviews: [{ id: `${id}/${dv.id}`, kind: "view", dataview: dv.id, ...(params ? { params } : {}), ...(title ? { title } : {}) }], defaultView: `${id}/${dv.id}` }],
   };
 }
 

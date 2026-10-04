@@ -27,7 +27,7 @@ export function LivePanelPreview(props: PanelPreviewProps) {
   }
   return (
     <div data-preview="live" style={{ width: props.width, height: props.height, borderRadius: 8, overflow: "hidden" }}>
-      <LiveViewPreview dataview={dv} context={{ ...pinned, schoolUrn: school.urn }} width={props.width} height={props.height} frame="figure" params={props.view.params} />
+      <LiveViewPreview dataview={dv} context={{ ...pinned, schoolUrn: school.urn }} width={props.width} height={props.height} frame="figure" params={props.view.params} title={props.view.title} />
     </div>
   );
 }

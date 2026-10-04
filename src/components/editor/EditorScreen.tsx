@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { PanelLabels } from "@/catalogue/pick";
 import { dataviewById } from "@/catalogue";
-import { contextFromPanel, viewTitle } from "@/catalogue/pick";
+import { contextFromPanel, instanceTitle } from "@/catalogue/pick";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { loadDashboard, type Loaded } from "@/lib/dashboards-store";
 import { mySchool } from "@/lib/meeting-store";
@@ -109,7 +109,7 @@ export function EditorScreen({ id, Preview, onCopyView, host }: { id: string; Pr
       if (instance.kind !== "view") return;
       const dv = dataviewById(instance.dataview);
       const context = contextFromPanel(config, panelId, labels);
-      setCopying({ instance, context, pinned: pinFromContext(context, dv, school), title: instance.title ?? (dv ? viewTitle(dv, context) : instance.dataview) });
+      setCopying({ instance, context, pinned: pinFromContext(context, dv, school), title: dv ? instanceTitle(instance, context) : (instance.title ?? instance.dataview) });
     },
     [labels, school],
   );

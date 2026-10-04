@@ -7,7 +7,7 @@
 // renderer for one view) drops in with the same props.
 import type { ComponentType } from "react";
 import { dataviewById } from "@/catalogue";
-import { contextFromPanel, viewTitle, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
+import { contextFromPanel, instanceTitle, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
 import type { DashboardConfig, DataviewInstance, PanelConfig } from "@/catalogue/types";
 import { railGlyph } from "@/components/chooser-v06/bits";
 
@@ -28,10 +28,11 @@ export type PanelPreviewComponent = ComponentType<PanelPreviewProps>;
 
 export function DataFreePreview({ config, panel, view, width, height, labels }: PanelPreviewProps) {
   const dv = dataviewById(view.dataview);
-  let title = view.title ?? dv?.label ?? view.dataview;
-  if (dv && !view.title) {
+  // 0.6 snag 4 / 01: the view's own title (resolved) when it has one, else its dataview's.
+  let title = dv?.label ?? view.dataview;
+  if (dv) {
     try {
-      title = viewTitle(dv, contextFromPanel(config, panel.id, labels));
+      title = instanceTitle(view, contextFromPanel(config, panel.id, labels));
     } catch {
       title = dv.label;
     }

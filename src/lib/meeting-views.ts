@@ -93,13 +93,17 @@ export function slotTitle(slot: SlideConfig["slots"][number]): string {
   const v = slot.view;
   if (!v) return "Text box";
   if (v.kind === "placeholder") return v.description;
-  if (v.title) return v.title;
   const dv = dataviewById(v.dataview);
+  // 0.6 snag 4 / 01: a title added with its placeholders (Customise's, from Add a view) is
+  // filled from the pinned settings, never shown bracketed.
+  if (v.title) return dv && /\[[^\]]+\]/.test(v.title) ? resolveTemplate(dv, pinnedOf(slot), v.title) : v.title;
   if (!dv) return "View no longer available";
   return resolveTemplate(dv, pinnedOf(slot));
 }
 
-export function resolveTemplate(dv: Dataview, p: PinnedSettings): string {
+// `template`: the dataview's own by default; a view's own title (0.6 snag 4 / 01) fills the
+// same placeholders.
+export function resolveTemplate(dv: Dataview, p: PinnedSettings, template: string = dv.titleTemplate): string {
   const measure = measureOf(dv, p.phase, p.data, p.results);
   const subject = p.subjectLabel || p.subject || "the subject";
   const group = p.compare?.name || "its category";
@@ -116,6 +120,7 @@ export function resolveTemplate(dv: Dataview, p: PinnedSettings): string {
     // A trend view's [year] is where it starts ("since 2021/22"); a single-year view's is
     // the year it shows.
     year: dv.supports.dateMode === "trend" ? p.yearRange?.from || measure?.years.from || "" : p.year || measure?.years.to || "",
+    "from-year": p.yearRange?.from || measure?.years.from || "",
     category: group,
     "comparison-group": group,
     set,
@@ -125,7 +130,7 @@ export function resolveTemplate(dv: Dataview, p: PinnedSettings): string {
     "Entries|Results": p.data === "academic.results" ? "Results" : "Entries",
     range: "the range picked",
   };
-  const out = dv.titleTemplate
+  const out = template
     .replace(/\[([^\]]+)\]/g, (_, key: string) => fill[key] ?? key)
     .replace(/\s+/g, " ")
     .trim();

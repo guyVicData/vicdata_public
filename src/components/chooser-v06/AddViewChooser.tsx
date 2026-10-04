@@ -208,6 +208,7 @@ function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, 
         base={customBase}
         initialParams={initialParams}
         candidates={customiseCandidates(working, opts)}
+        where={columnless ? "meeting" : "dashboard"}
         onBack={() => { setEditBase(null); setScreen("pick"); }}
         onClose={onClose}
         onAdd={addCustom}
