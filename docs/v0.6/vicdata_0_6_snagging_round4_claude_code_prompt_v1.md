@@ -1,61 +1,137 @@
-# VicData 0.6, snagging round 4: view titles that don't stick, Context's rail and its compare set, broken Comparisons
+# VicData 0.6, snagging round 4: one "View as" mechanism (fixes Comparisons in trials), view titles that stick, Context's rail follows its compare set
 
-Claude Code build prompt. Three problems from Guy reviewing GCSE History at The Chase (URN 137625), Average points, on live.
+Claude Code build prompt. This replaces the earlier separate round 4 and round 5 prompts: one round, five commits.
 
-**Process, as round 3:**
-1. Make a branch `v0.6-snag4` from `main`, one commit per item (01, 02, 03), with tsc, eslint, `next build` and all tests clean on each.
+**Process:**
+1. Make a branch `v0.6-snag4` from `main`, one commit per item, **in this order: A, B, C, 01, 02**, with tsc, eslint, `next build` and all tests clean on each.
 2. When every check passes, **merge into `main` and push** (Render deploys).
-3. Stop before merging only if a database migration is needed, and leave it for Guy.
+3. Stop before merging only if a database migration is needed. Write it, test it on PGlite, and leave it for Guy.
 
 Ground rules as in 0.6:
 - **Pixel-perfect**, existing components and tokens, **both themes**.
 - **Log judgement calls** under "2026-10-04 — 0.6 snagging round 4" in `docs/OPEN_QUESTIONS.md`.
 - **Members' pages must not change** apart from what an item says. Run the parity harness before merging.
 
-**Do item 03 first:** it's a live bug.
+**Guy:** *"Can we shift to a single change-view mechanism? The trial mechanism is more powerful for editing different roles."*
 
----
+## The live bug that started this (Guy confirmed the cause)
 
-## 03 — Comparisons is broken at The Chase (do this first)
+At **The Chase (137625), GCSE · History · Average points**, Comparisons was broken **only inside a "Try VicData as Teacher at The Chase" trial**:
 
-**What Guy sees**, GCSE · History · The Chase (137625) · Average points · Comparisons:
-
-| View | What it shows |
+| View | What it showed |
 |---|---|
 | Map | "No location is recorded for this school, so there is no map to draw." |
 | Graph | "Results by school in the 10 nearest schools — No published figures for this comparison." |
-| Ranking | No other schools listed, and no result for The Chase itself. |
+| Ranking | No schools, and no result for The Chase. |
 
-**The data isn't the problem:** I checked the live database. `schools` has 137625 open, with easting, northing and `location_point` all set.
+As Guy's own account, the same page draws correctly. `schools` has 137625 with easting, northing and `location_point` set, so the data is fine.
 
-**Things that are unusual about Guy's setup** (check each one):
-- **Two approved memberships, one profile:** Guy is a member of both **Acland Burghley (100053)** and **The Chase (137625)**. The S3b fix 2 made pages and 31 API routes load "the signed-in person's own membership". With two, check which one each Comparisons fetch resolves to:
-  - the URN sent to the comparisons, rankings, location and nearest-schools routes;
-  - the comparator set (10 nearest) resolved for which school;
-  - whether any route answers for 100053 while the page shows 137625, or rejects the request.
+**Suspects:**
+- how a trial resolves Comparisons' comparator set: round 2's "no comparator-set saving in a trial" may leave "10 nearest" empty or unresolved;
+- any Comparisons request sent `stateUrn()` / the trial key, or an empty URN, instead of the real one.
 
-  The code even says this would be wrong "the day multi-school membership exists". That day is here, at least for Guy.
-- **Trial mode:** his most recent Teacher-view state is `137625~trial~teacher`, so he may have been in a "Try VicData as Teacher at The Chase" trial. Check that no data fetch is sent `stateUrn()` / a trial key instead of the real URN. Also check that Comparisons' saved comparator set (the round 2 trial rule: "no comparator-set saving in a trial") doesn't leave the set empty or unresolved in a trial.
-- **A round 3 regression:** the Results-pill filtering and the host now obeying the config. Check that Comparisons' views, defaults and data requests are unchanged for points.
+**Find the root cause, and record it in the report.** Then item B makes this whole class of bug impossible.
 
-**Steps:**
-1. **Reproduce** headless against live data in four contexts:
-   - Guy's own account at 137625;
-   - Guy's own account at 100053 (Acland, which should work);
-   - a trial at 137625 as Teacher;
-   - a single-membership test user at 137625.
+**Also check:** Guy has two approved memberships (Acland Burghley 100053 and The Chase 137625). Every page and route must resolve membership by the school being shown, never "the first row". It isn't the cause of what he saw, but test it.
 
-   Record every Comparisons request and response.
-2. **Fix the root cause**, not just the symptom.
-3. **The general rule** wherever a page or route resolves "my membership":
-   - the school being shown decides which membership is used, and it must be one of the caller's approved memberships;
-   - a platform admin in a trial or look-as uses the trial's school, with the admin's platform rights;
-   - never "the first row".
-4. **Regression tests:**
-   - two memberships, showing either school;
-   - a trial at a school Guy isn't a member of (e.g. Croydon College 130432): every Comparisons view at both schools draws.
+---
 
-**Check across all four columns, not just Comparisons:** at 137625 History, every panel in Column 1 Results, Context and Comparisons, Current and Trends, must draw for Average points, Grade 4+, Grade bands and Grade counts. Do the same for one Post-16 subject.
+## Background: today there are four ways for Guy to see a school as someone
+
+1. His own memberships: he's a member of Acland Burghley (100053) and The Chase (137625).
+2. Platform's "Look at it as…", which round 2 made start a trial, plus `&peek=1` read-only for the Catalogue.
+3. The **Try VicData as…** card on `/account`.
+4. The Edit switch, which works in either.
+
+They behave differently: Comparisons broke only inside a trial (above).
+
+## Goal
+
+**One mechanism, "View as"**, built on the round 2 trial. It's how Guy sees and edits VicData as any role at any school.
+
+---
+
+## A — One "View as" control, always to hand (platform admin only)
+
+**The pill:**
+- A compact **View as** pill in the top nav bar, before the account link, for platform admins only.
+- **At rest** it reads **"Viewing as: you"**.
+- **During a trial** it reads **"Teacher · The Chase ▾"**, with the role chip colour from People.
+- **Clicking it** opens a popover (the existing `PillMenu`/popover shell) with exactly what the `/account` card has today:
+  - school search (site-wide; name or URN);
+  - role chips (Teacher · SMT · Admissions · School-Admin);
+  - Start fresh;
+  - Recently tried (last 5, one click each);
+  - **Back to me**.
+
+**Where else it appears:**
+- **On `/account`,** the card stays as the same component (one source of truth) for anyone who goes there.
+- **Platform's "Look at it as…"** opens View as with that school and role filled in.
+- **`peek`** stays internal to the Catalogue's parity frames only and is never offered in the UI.
+
+**The banner** stays as it is: *Viewing as Teacher at The Chase · Edit · Preview draft · Change · Start fresh · Back to me*. Rename "Trying VicData as" to **"Viewing as"** and "Exit" to **"Back to me"** everywhere, including logs and the round 2 strings.
+
+**Across tabs:**
+- View as **lasts across tabs in this browser** until Back to me. Today it lives in one tab only, and Guy wants to work across tabs. Keep the choice in sessionStorage or a cookie, whichever fits the existing trial plumbing, and log which you chose.
+- A tab opened while viewing as someone shows the banner straight away. There must never be a page in view-as mode without the banner.
+
+**Edit:** the Edit switch and banner Edit work identically in view-as mode and as Guy. Edits are always made as Guy, with the view-as school and role as the preview, as in round 2.
+
+---
+
+## B — A trial behaves exactly like a real member (full fidelity)
+
+Fix the Comparisons bug above at its root, then make it impossible for the two to drift apart.
+
+**One rule:** in view-as mode, the page and every data route get **the same inputs a real single-membership member of that school and role would get**:
+- the real URN;
+- the same default comparator lists, such as 10 nearest;
+- the same phase gating;
+- the same role offers and the same home page.
+
+The only things that differ:
+- **Where personal state is saved:** under the trial key.
+- **No school-wide writes:** nothing touches People, Teams, school dashboards, shared sets, sign-in events or counts.
+
+**Lift the round 2 limits that make a trial less real:**
+- **Comparator sets:** a trial can **save its own comparator sets**, stored under the trial key and never shared with the school. Round 2 disallowed this.
+- **A School-Admin trial** can open People and Teams **read-only**, with a clear "View as: read-only" note on save buttons. It still can't write the school's data.
+
+**Fidelity test** (headless, live data):
+- **Compare** view-as against a real single-membership test user with the same school and role. Every panel, every Results measure and every Compare-against set should be **pixel-identical**.
+- **Pages:** the role home page, GCSE and Post-16 dashboards, Meetings and Recruitment.
+- **Schools:** The Chase (137625) as Teacher and SMT, Croydon College (130432) as Admissions, and Acland Burghley (100053) as School-Admin.
+
+**Two memberships:** Guy's real memberships at two schools must also resolve by the school being shown. Add a test.
+
+---
+
+## C — Tidy up so there's only one path
+
+- **Remove the separate code paths** for look-as and trial where they duplicate each other. One `viewAs` module (built from `src/lib/trial.ts` and `src/lib/look-as.ts`) answers three questions:
+  - Which school and role is this page for?
+  - Where does personal state go?
+  - Is this caller allowed?
+
+  Confirm platform admin server-side, as now.
+- **Logging:** keep `log_platform_action('view_as', urn, {role, fresh})`, renamed from `try_as`. Old log rows stay as they are.
+- **Database:** if it's only a rename, keep the existing tables and columns (`trial_contexts`, `trial_key`) rather than migrating. Log the naming gap.
+
+---
+
+### View as: checks
+
+- **Unit and PGlite tests:**
+  - only a platform admin can enter view-as;
+  - view-as state never lands in Guy's own rows or the school's;
+  - comparator sets saved in view-as are invisible to the school and to Guy-as-himself.
+- **The fidelity test above.**
+- **Parity for members:** unchanged.
+- **Screenshots:**
+  - the nav pill at rest and in view-as mode;
+  - the popover;
+  - the banner;
+  - a second tab opened during view-as.
 
 ---
 
@@ -126,14 +202,22 @@ The Context pill offers three sets: **[Category] subjects** (`category`), **All 
 ## Finish
 
 1. Write `docs/v0.6/snag4_report_v1.md`, with:
-   - **item 03:** the root cause, which contexts were broken, and the fix;
-   - **item 01:** the Customise audit table;
-   - **item 02:** what the pre-0.6 page did, and the axis/state table;
+   - the trial Comparisons root cause;
+   - what was merged and removed for View as;
+   - the fidelity results;
+   - the Customise audit table (01);
+   - what the pre-0.6 page did with Context's rail, and the axis/state table (02);
    - parity results;
    - screenshots in `docs/v0.6/snag4_screenshots/`;
-   - a short click-through for Guy that starts with GCSE History at The Chase, Average points, every Comparisons view.
-2. Merge and push:
+   - logged calls.
+2. Include a click-through for Guy:
+   1. In the nav pill, pick **The Chase as Teacher**, then GCSE · History · Average points · every Comparisons view.
+   2. Switch to SMT, and open a second tab.
+   3. Turn Edit on, change a view's title, Preview draft, Publish. With Edit off, the title shows.
+   4. In Context, switch Compare against and watch the rail.
+   5. Choose Back to me, and restore the original from History.
+3. Merge and push:
    ```
    git checkout main && git pull && git merge --no-ff v0.6-snag4 -m "0.6 snagging round 4" && npm run build && git push
    ```
-3. Tell Guy to wait for Render's "Deploy live".
+4. Tell Guy to wait for Render's "Deploy live".
