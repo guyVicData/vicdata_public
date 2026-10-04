@@ -11,3 +11,7 @@ All recommended defaults in the design docs are accepted. Log judgement calls to
 Continue VicData 0.6, night 2 (stages S4–S7), on branch `v0.6`. Read `docs/v0.6/night1_build_report_v1.md`, Guy's notes in `docs/OPEN_QUESTIONS.md`, and then `docs/v0.6/vicdata_0_6_night2_claude_code_prompt_v1.md` in full, and follow it.
 
 Same ground rules as night 1. Follow the wireframe files in `docs/wireframes/v0.6/` tightly: they win over prose for anything visual. Stick to the existing design conventions. Pixel-perfect is key to trust. See the prompt's "Pixel-perfect" section. Finish with `docs/v0.6/night2_build_report_v1.md`, including a click-through list keyed to wireframe board names. Do not merge.
+
+## Snagging round 1 (after the 0.6 merge)
+
+Read `docs/v0.6/vicdata_0_6_snagging_round1_claude_code_prompt_v1.md` in full and follow it: three items (01 Export menu clipping, 02 Compare-against wording, 03 a menu for each view on its editor rail icon) on a new branch `v0.6-snag1` from `main`, one commit per item. Item 03 is one change only. Don't touch anything else in the editor. Same ground rules as 0.6: pixel-perfect, existing components and tokens, both themes, log judgement calls. Push the branch, don't merge, and finish with `docs/v0.6/snag1_report_v1.md`.
