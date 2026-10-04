@@ -29,6 +29,8 @@ export const EDITOR = {
   // Menus: the board's 236px panel menu, the 400px structure picker.
   // 236 on the board at 12px; MenuRow is 13px, so 264 keeps "Change data / compared to…" whole.
   panelMenuWidth: 264,
+  // Snag 1 / 03: a rail icon's view menu; 300 keeps "Copy to another dashboard or meeting…" whole.
+  viewMenuWidth: 300,
   structureMenuWidth: 400,
   // History panel width (History.dc.html).
   historyWidth: 380,

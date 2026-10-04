@@ -54,8 +54,13 @@ export type AddViewChooserProps = {
   // --- optional extras ---
   // Theme for the reused pickers; default: #teacher-root's data-theme.
   theme?: "dark" | "light";
-  // C16: a column with no data yet opens at Step 1.
-  startAt?: "pick" | "data";
+  // C16: a column with no data yet opens at Step 1. Snag 1 / 03: the editor's view menu
+  // opens "Edit this view…" on Customise, or a placeholder's form ("placeholder"), for
+  // the instance in `editing`, pre-filled with its current choices.
+  startAt?: "pick" | "data" | "customise" | "placeholder";
+  editing?: DataviewInstance;
+  // The primary button's words (default "Add to panel" / "Add to slide").
+  addLabel?: string;
   // 0.6 integration: no column to inherit from (a meeting slot, scope brief §7.5).
   columnless?: boolean;
   // The school's subjects per phase, for 2a / 2b (absent: those screens say so).
@@ -69,7 +74,7 @@ export type AddViewChooserProps = {
   school?: PinSchool;
 };
 
-type Screen = "pick" | "customise" | "data" | "focus" | "subject" | "area";
+type Screen = "pick" | "customise" | "data" | "focus" | "subject" | "area" | "placeholder";
 
 export function AddViewChooser(props: AddViewChooserProps) {
   if (!props.open) return null;
@@ -81,19 +86,24 @@ function readTheme(): "dark" | "light" {
   return document.getElementById("teacher-root")?.getAttribute("data-theme") === "light" ? "light" : "dark";
 }
 
-function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, onAsk, theme: themeProp, startAt, subjects, comparators, persistAsk = true, school = null, columnless = false }: AddViewChooserProps) {
+function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, onAsk, theme: themeProp, startAt, subjects, comparators, persistAsk = true, school = null, columnless = false, editing, addLabel }: AddViewChooserProps) {
   const [theme] = useState<"dark" | "light">(() => themeProp ?? readTheme());
   const original = context;
   const opts = useMemo(() => ({ palette, superAdmin }), [palette, superAdmin]);
 
-  const [screen, setScreen] = useState<Screen>(startAt === "data" ? "data" : "pick");
+  const editDv = editing?.kind === "view" ? DATAVIEWS.find((d) => d.id === editing.dataview) : undefined;
+  const [screen, setScreen] = useState<Screen>(startAt === "data" ? "data" : startAt === "placeholder" && editing?.kind === "placeholder" ? "placeholder" : startAt === "customise" && editDv ? "customise" : "pick");
+  // Editing a view: Customise starts on that view, whether or not Pick would list it.
+  const [editBase, setEditBase] = useState<Dataview | null>(startAt === "customise" ? (editDv ?? null) : null);
   const [working, setWorking] = useState<PickPanelContext>(context);
   const [draft, setDraft] = useState<PickPanelContext>(context);
   const [compareOn, setCompareOn] = useState(context.compare.kinds.length > 0);
   const [tab, setTab] = useState<PickTab>("suggested");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(editDv?.id ?? null);
   const [browse, setBrowse] = useState<BrowsePick | null>(null);
-  const [emptyDraft, setEmptyDraft] = useState<EmptyDraft>({ description: "", shape: "graph", notes: "" });
+  const [emptyDraft, setEmptyDraft] = useState<EmptyDraft>(
+    editing?.kind === "placeholder" ? { description: editing.description, shape: editing.shape, notes: editing.notes ?? "" } : { description: "", shape: "graph", notes: "" },
+  );
   const [asked, setAsked] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -189,8 +199,39 @@ function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, 
   };
 
   let body;
-  if (screen === "customise" && selectedDv) {
-    body = <CustomiseScreen ctx={working} base={selectedDv} candidates={customiseCandidates(working, opts)} onBack={() => setScreen("pick")} onClose={onClose} onAdd={addCustom} />;
+  const customBase = editBase ?? selectedDv;
+  if (screen === "customise" && customBase) {
+    const initialParams = editBase && editing?.kind === "view" && editing.params && "numberType" in editing.params ? (editing.params as CustomViewParams) : null;
+    body = (
+      <CustomiseScreen
+        ctx={working}
+        base={customBase}
+        initialParams={initialParams}
+        candidates={customiseCandidates(working, opts)}
+        onBack={() => { setEditBase(null); setScreen("pick"); }}
+        onClose={onClose}
+        onAdd={addCustom}
+      />
+    );
+  } else if (screen === "placeholder") {
+    body = (
+      <EmptyScreen
+        ctx={working}
+        superAdmin={superAdmin}
+        relaxations={[]}
+        draft={emptyDraft}
+        onDraft={setEmptyDraft}
+        asked={false}
+        askError={null}
+        busy={false}
+        onRelax={onRelax}
+        onChangeData={startChange}
+        onBack={onClose}
+        onClose={onClose}
+        onSubmit={submitEmpty}
+        editing
+      />
+    );
   } else if (screen === "data") {
     body = <DataStep draft={draft} original={original} palette={palette} superAdmin={superAdmin} theme={theme} onDraft={setDraft} onBack={() => setScreen("pick")} onClose={onClose} onNext={toFocus} columnless={columnless} />;
   } else if (screen === "focus") {
@@ -307,7 +348,7 @@ function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, 
         <Panel>
           <div className="av-root" style={{ display: "contents" }}>
             <AvStyles />
-            <ChooserWordsContext.Provider value={columnless ? SLOT_WORDS : COLUMN_WORDS}>{body}</ChooserWordsContext.Provider>
+            <ChooserWordsContext.Provider value={addLabel ? { ...(columnless ? SLOT_WORDS : COLUMN_WORDS), add: addLabel } : columnless ? SLOT_WORDS : COLUMN_WORDS}>{body}</ChooserWordsContext.Provider>
           </div>
         </Panel>
       </TeacherModal>

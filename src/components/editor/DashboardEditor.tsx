@@ -70,6 +70,9 @@ export type DashboardEditorProps = {
 type DialogState =
   | null
   | { kind: "add"; target: ops.Target; ctx: PickPanelContext }
+  // Snag 1 / 03: the view menu's "Edit this view…" (Customise, or a placeholder's form) and
+  // "Swap for another view…" (Pick): the chooser's pick replaces the instance in place.
+  | { kind: "replace"; mode: "edit" | "swap"; instance: DataviewInstance; ctx: PickPanelContext }
   | { kind: "row"; rowId: string }
   | { kind: "column"; columnId: string; ctx: PickPanelContext }
   | { kind: "column-change"; columnId: string; patch: ops.ColumnPatch; impact: ops.ColumnImpact }
@@ -84,6 +87,21 @@ type DialogState =
   | { kind: "export"; markdown: string | null; note: string | null };
 
 type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
+
+// Snag 1 / 03: a rail icon's hover / focus / open state (amber, with the "···" tab on its
+// right edge centred on the rail divider) and, with no hover (touch), the tab always on the
+// active icon. The tab is in the DOM (and the Tab order) whenever the rail is editable.
+const AMBER_ICON = `color:${EC.amberText}!important;border:1px solid ${EC.amber}!important`;
+const TAB_ON = "opacity:1;pointer-events:auto";
+const RAIL_MENU_CSS =
+  `.ed-rv{position:relative;display:flex;width:${EDITOR.railIcon}px;height:${EDITOR.railIcon}px}` +
+  // 2.5px of transparent lead-in so the pointer can cross from the icon to the tab.
+  `.ed-rv-tab{position:absolute;left:${EDITOR.railIcon}px;top:0;height:${EDITOR.railIcon}px;width:16.5px;padding:0 0 0 2.5px;margin:0;border:0;background:transparent;display:flex;align-items:center;cursor:pointer;opacity:0;pointer-events:none;z-index:2}` +
+  `.ed-rv-tab>span{width:14px;height:14px;border-radius:4px;background:${EC.amber};color:${EC.amberInk};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;line-height:1;letter-spacing:-0.5px}` +
+  `.ed-rv[data-open] .ed-rv-icon,.ed-rv:has(:focus-visible) .ed-rv-icon{${AMBER_ICON}}` +
+  `.ed-rv[data-open] .ed-rv-tab,.ed-rv:has(:focus-visible) .ed-rv-tab{${TAB_ON}}` +
+  `@media (hover:hover){.ed-rv:hover .ed-rv-icon{${AMBER_ICON}}.ed-rv:hover .ed-rv-tab{${TAB_ON}}}` +
+  `@media (hover:none){.ed-rv[data-active] .ed-rv-tab{${TAB_ON}}}`;
 
 const OWNER_WORD = { vicdata: "VicData", school: "School", user: "Personal" } as const;
 
@@ -240,13 +258,33 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     if (a === "move-panel") return setDialog({ kind: "slot", mode: "move-panel", panelId, instanceId });
     if (a === "delete-panel") return apply((c) => ops.deletePanel(c, panelId));
     if (!instanceId) return;
+    const inst = config.panels.find((p) => p.id === panelId)?.dataviews.find((v) => v.id === instanceId);
+    if (!inst) return;
+    if (a === "edit-view" || a === "swap-view") return setDialog({ kind: "replace", mode: a === "edit-view" ? "edit" : "swap", instance: inst, ctx: contextFromPanel(config, panelId, labels) });
     if (a === "remove-view") return apply((c) => ops.removeView(c, instanceId));
+    if (a === "make-default") return apply((c) => ops.setDefaultView(c, panelId, instanceId));
+    if (a === "view-up" || a === "view-down") return apply((c) => ops.moveViewWithinPanel(c, instanceId, a === "view-up" ? -1 : 1));
     if (a === "move-view") return setDialog({ kind: "slot", mode: "move-view", panelId, instanceId });
-    if (a === "copy-view") {
-      const inst = config.panels.find((p) => p.id === panelId)?.dataviews.find((v) => v.id === instanceId);
-      if (onCopyView && inst) return onCopyView({ config, panelId, instance: inst });
+    if (a === "copy-view") return setDialog({ kind: "slot", mode: "copy-view", panelId, instanceId });
+    if (a === "copy-view-out") {
+      if (onCopyView && inst.kind === "view") return onCopyView({ config, panelId, instance: inst });
       return setDialog({ kind: "slot", mode: "copy-view", panelId, instanceId });
     }
+  };
+
+  // Replace an instance in place and keep it selected in its rail.
+  const replaceWith = (instanceId: string, instance: DataviewInstance, override?: PanelOverride) => {
+    setHistory((h) => {
+      try {
+        const r = ops.replaceView(h.present, instanceId, instance, override);
+        setSelected((s) => ({ ...s, [r.panelId]: r.instanceId }));
+        return ops.record(h, r.config);
+      } catch (e) {
+        if (e instanceof ops.EditorError) setToast(e.message);
+        return h;
+      }
+    });
+    setDialog(null);
   };
 
   const handlers: CanvasHandlers = {
@@ -384,7 +422,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       style={{ ...accentVars(hex), padding: EDITOR.pagePad, gap: EDITOR.bandGap, fontFamily: "inherit" }}
       className="flex min-h-dvh w-full flex-col bg-[var(--bg)] leading-[1.2] text-[var(--fg)]"
     >
-      <style>{`.ed-rail svg{width:${EDITOR.railGlyph}px;height:${EDITOR.railGlyph}px;display:block}.ed-preview-glyph svg{width:20px;height:20px;display:block}`}</style>
+      <style>{`.ed-rail svg{width:${EDITOR.railGlyph}px;height:${EDITOR.railGlyph}px;display:block}.ed-preview-glyph svg{width:20px;height:20px;display:block}${RAIL_MENU_CSS}`}</style>
 
       {/* Edit bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, background: EC.barBg, border: `1px solid ${EC.barBorder}`, borderRadius: 12, padding: "9px 12px", minWidth: Math.min(width, 1232) }}>
@@ -555,6 +593,28 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           persistAsk={false}
         />
       )}
+      {dialog?.kind === "replace" && (
+        <AddViewChooser
+          open
+          theme={theme}
+          context={dialog.ctx}
+          superAdmin={superAdmin}
+          school={school}
+          subjects={subjects}
+          startAt={dialog.mode === "swap" ? "pick" : dialog.instance.kind === "placeholder" ? "placeholder" : "customise"}
+          editing={dialog.mode === "edit" ? dialog.instance : undefined}
+          addLabel={dialog.mode === "swap" ? "Swap in" : "Save view"}
+          onClose={() => setDialog(null)}
+          onAdd={(instance: DataviewInstance, override?: PanelOverride) => replaceWith(dialog.instance.id, instance, override)}
+          onPlaceholder={(p: PlaceholderRequest) => {
+            const old = dialog.instance;
+            // Editing a placeholder changes its words and shape; its saved context stays.
+            const next = ops.placeholderInstance(p);
+            replaceWith(old.id, old.kind === "placeholder" && dialog.mode === "edit" && next.kind === "placeholder" ? { ...next, context: old.context } : next);
+          }}
+          persistAsk={false}
+        />
+      )}
       {dialog?.kind === "row" && (
         <RowSettingsDialog
           config={config}
@@ -648,7 +708,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           mode={dialog.mode === "move-panel" ? "panel" : "view"}
           allowGaps
           title={dialog.mode === "move-panel" ? "Move panel" : dialog.mode === "move-view" ? "Move this view to another panel" : "Copy this view"}
-          sub={dialog.mode === "copy-view" ? "Copying to another dashboard comes with Copy this view; for now, a panel here." : config.name}
+          sub={dialog.mode === "copy-view" && !onCopyView ? "Copying to another dashboard comes with Copy this view; for now, a panel here." : config.name}
           onClose={() => setDialog(null)}
           onPick={(t) => {
             const { panelId, instanceId, mode } = dialog;

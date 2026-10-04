@@ -6,18 +6,38 @@
 // the standard elements, and a right-edge handle that drags the span in whole columns.
 // Planned panels (Skeleton.dc.html) are dashed and striped; one whose placeholder matches a
 // draft view shows "Ready to swap in".
-import { useRef, useState, type ReactNode } from "react";
+//
+// Snag 1 / 03: each rail icon has its own view menu. Hovering an icon (edit mode) turns it
+// amber and shows a small amber "···" tab on its right edge, over the rail divider; the tab,
+// a right-click or the keyboard opens the menu. The panel's ··· menu is panel-only.
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { dataviewById } from "@/catalogue";
-import { contextFromPanel, latestYear, defaultFromYear, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
+import { contextFromPanel, latestYear, defaultFromYear, resolveTitle, viewTitle, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
 import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig } from "@/catalogue/types";
 import { railGlyph } from "@/components/chooser-v06/bits";
-import { MenuDivider, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
+import { MenuDivider, MenuHeading, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { EC, EDITOR, panelWidth } from "@/lib/editor-layout";
 import { spanOf } from "@/lib/editor-ops";
 import { EBtn, InheritBadge, OverrideBadge, PlusIcon, StandardElements, StatePill } from "./bits";
 import type { PanelPreviewComponent } from "./PanelPreview";
 
-export type PanelAction = "rename" | "override" | "move-view" | "copy-view" | "move-panel" | "remove-view" | "delete-panel";
+// Panel menu: rename, override, move-panel, delete-panel. View menu (snag 1 / 03): the rest,
+// each for one instance. "copy-view" copies to a panel on this dashboard; "copy-view-out"
+// is Copy to another dashboard or meeting (S6's CopyViewDialog).
+export type PanelAction =
+  | "rename"
+  | "override"
+  | "move-panel"
+  | "delete-panel"
+  | "edit-view"
+  | "swap-view"
+  | "move-view"
+  | "copy-view"
+  | "copy-view-out"
+  | "make-default"
+  | "view-up"
+  | "view-down"
+  | "remove-view";
 
 const HEADER = 22;
 
@@ -49,7 +69,7 @@ export function EditorPanel({
   maxSpan: number;
   onSelect: (instanceId: string) => void;
   onAddView: () => void;
-  onAction: (a: PanelAction) => void;
+  onAction: (a: PanelAction, instanceId?: string) => void;
   onReorder: (from: number, to: number) => void;
   onSwapIn: (instanceId: string, dataview: Dataview) => void;
   onSpan: (cols: number) => void;
@@ -61,6 +81,8 @@ export function EditorPanel({
   const readyHits = view && view.kind === "placeholder" ? ready[view.id] : undefined;
   const [menu, setMenu] = useState(false);
   const menuRef = useDismiss(menu, () => setMenu(false));
+  // The rail icon whose view menu is open.
+  const [viewMenu, setViewMenu] = useState<string | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [kept, setKept] = useState<Set<string>>(new Set());
   const [previewing, setPreviewing] = useState<string | null>(null);
@@ -106,7 +128,7 @@ export function EditorPanel({
     border: showReady && planned ? `1.5px solid ${EC.ready}` : planned ? `1.5px dashed ${EC.gold}` : "1px solid var(--panel-border)",
     outline: readOnly ? "none" : `1px dashed ${EC.amber}`,
     outlineOffset: 3,
-    zIndex: menu ? 20 : undefined,
+    zIndex: menu || viewMenu ? 20 : undefined,
   } as const;
 
   return (
@@ -131,17 +153,14 @@ export function EditorPanel({
               <PanelMenu label="Panel menu" align="right" width={EDITOR.panelMenuWidth}>
                 {(
                   [
-                    ["rename", "Rename panel", false, undefined],
-                    ["override", "Change data / compared to…", false, "override"],
-                    ["move-view", "Move this view to another panel…", !view, undefined],
-                    ["copy-view", "Copy this view to a dashboard…", !view || view.kind !== "view", undefined],
-                    ["move-panel", "Move panel", false, undefined],
-                  ] as [PanelAction, string, boolean, string | undefined][]
-                ).map(([id, label, disabled, tag]) => (
-                  <MenuRow key={id} label={label} tag={tag} disabled={disabled} onClick={() => { setMenu(false); onAction(id); }} />
+                    ["rename", "Rename panel", undefined],
+                    ["override", "Change data / compared to…", "override"],
+                    ["move-panel", "Move panel", undefined],
+                  ] as [PanelAction, string, string | undefined][]
+                ).map(([id, label, tag]) => (
+                  <MenuRow key={id} label={label} tag={tag} onClick={() => { setMenu(false); onAction(id); }} />
                 ))}
                 <MenuDivider />
-                {view && <MenuRow label="Remove this view" onClick={() => { setMenu(false); onAction("remove-view"); }} />}
                 <button
                   type="button"
                   onClick={() => { setMenu(false); onAction("delete-panel"); }}
@@ -165,6 +184,25 @@ export function EditorPanel({
               active={v.id === view?.id}
               ready={!!ready[v.id]}
               draggable={!readOnly}
+              menu={
+                readOnly
+                  ? null
+                  : {
+                      open: viewMenu === v.id,
+                      title: viewLabel(config, panel, v, labels),
+                      index: i,
+                      count: panel.dataviews.length,
+                      opening: (panel.dataviews.some((x) => x.id === panel.defaultView) ? panel.defaultView : panel.dataviews[0]?.id) === v.id,
+                      onOpen: (open) => {
+                        setViewMenu(open ? v.id : null);
+                        if (open) onSelect(v.id);
+                      },
+                      onAction: (a) => {
+                        setViewMenu(null);
+                        onAction(a, v.id);
+                      },
+                    }
+              }
               onClick={() => onSelect(v.id)}
               onDragStart={() => setDragFrom(i)}
               onDrop={() => {
@@ -252,18 +290,56 @@ function units(config: DashboardConfig, p: PanelConfig): number {
   return config.layout.tracks.slice(start, start + spanOf(p)).reduce((a, b) => a + b, 0) || 1;
 }
 
-function RailButton({ v, active, ready, draggable, onClick, onDragStart, onDrop }: { v: DataviewInstance; active: boolean; ready: boolean; draggable: boolean; onClick: () => void; onDragStart: () => void; onDrop: () => void }) {
+// The view's resolved title, for the view menu's heading.
+function viewLabel(config: DashboardConfig, panel: PanelConfig, v: DataviewInstance, labels?: PanelLabels): string {
+  if (v.kind === "placeholder") return v.description;
+  const dv = dataviewById(v.dataview);
+  if (!dv) return v.title ?? v.dataview;
+  try {
+    const ctx = contextFromPanel(config, panel.id, labels);
+    const fromYear = typeof v.params?.fromYear === "string" ? v.params.fromYear : null;
+    return v.title ? resolveTitle(v.title, dv, ctx, { fromYear }) : viewTitle(dv, ctx);
+  } catch {
+    return v.title ?? dv.label;
+  }
+}
+
+type RailMenu = {
+  open: boolean;
+  title: string;
+  index: number;
+  count: number;
+  opening: boolean;
+  onOpen: (open: boolean) => void;
+  onAction: (a: PanelAction) => void;
+};
+
+// One rail icon. In edit mode it sits in .ed-rv with its "···" tab and view menu; the hover,
+// focus and touch states are CSS in DashboardEditor's style block (.ed-rv).
+function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, onDrop }: { v: DataviewInstance; active: boolean; ready: boolean; draggable: boolean; menu: RailMenu | null; onClick: () => void; onDragStart: () => void; onDrop: () => void }) {
   const dv = v.kind === "view" ? dataviewById(v.dataview) : undefined;
   const label = v.kind === "view" ? (v.title ?? dv?.label ?? v.dataview) : `Planned: ${v.description}`;
   const planned = v.kind === "placeholder";
-  return (
+  const open = !!menu?.open;
+  const wrapRef = useDismiss(open, () => menu?.onOpen(false));
+  const tabRef = useRef<HTMLButtonElement | null>(null);
+  const icon = (
     <button
       type="button"
+      className="ed-rv-icon"
       aria-label={label}
       aria-pressed={active}
       title={label}
       draggable={draggable}
       onClick={onClick}
+      onContextMenu={
+        menu
+          ? (e) => {
+              e.preventDefault();
+              menu.onOpen(true);
+            }
+          : undefined
+      }
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
         onDragStart();
@@ -291,6 +367,60 @@ function RailButton({ v, active, ready, draggable, onClick, onDragStart, onDrop 
     >
       {planned ? "?" : railGlyph(dv?.railIcon ?? "TilesIcon")}
     </button>
+  );
+  if (!menu) return icon;
+
+  const row = (a: PanelAction, text: string, opts: { disabled?: boolean; tag?: string } = {}) => <MenuRow label={text} disabled={opts.disabled} tag={opts.tag} onClick={() => menu.onAction(a)} />;
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape" && open) tabRef.current?.focus();
+  };
+  return (
+    <div ref={wrapRef} className="ed-rv" data-open={open || undefined} data-active={active || undefined} onKeyDown={onKeyDown}>
+      {icon}
+      <button
+        ref={tabRef}
+        type="button"
+        className="ed-rv-tab"
+        title="View options"
+        aria-label={`Options for ${menu.title}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => menu.onOpen(!open)}
+      >
+        <span aria-hidden="true">···</span>
+      </button>
+      {open && (
+        <div style={{ position: "absolute", left: EDITOR.railIcon + 20, top: -6, height: 0 }}>
+          <PanelMenu label={`Options for ${menu.title}`} width={EDITOR.viewMenuWidth}>
+            <MenuHeading>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                <span title={menu.title} style={{ minWidth: 0, flex: "1 1 auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {menu.title}
+                </span>
+                {menu.opening && <span className="shrink-0 rounded-full bg-[var(--box-bg)] px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-[var(--muted3)]">Opens first</span>}
+              </span>
+            </MenuHeading>
+            {row("edit-view", "Edit this view…")}
+            {row("swap-view", "Swap for another view…")}
+            {row("move-view", "Move to another panel…")}
+            {row("copy-view", "Copy to another panel…")}
+            {row("copy-view-out", "Copy to another dashboard or meeting…", planned ? { disabled: true, tag: "Planned" } : {})}
+            {!menu.opening && row("make-default", "Make this the opening view")}
+            {menu.index > 0 && row("view-up", "Move up")}
+            {menu.index < menu.count - 1 && row("view-down", "Move down")}
+            <MenuDivider />
+            <button
+              type="button"
+              onClick={() => menu.onAction("remove-view")}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-[7px] text-left text-[13px] font-medium hover:bg-[var(--box-bg)]"
+              style={{ color: EC.danger }}
+            >
+              Remove this view
+            </button>
+          </PanelMenu>
+        </div>
+      )}
+    </div>
   );
 }
 

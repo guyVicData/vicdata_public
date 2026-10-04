@@ -54,6 +54,7 @@ export function EmptyScreen({
   onBack,
   onClose,
   onSubmit,
+  editing = false,
 }: {
   ctx: PickPanelContext;
   superAdmin: boolean;
@@ -68,32 +69,38 @@ export function EmptyScreen({
   onBack: () => void;
   onClose: () => void;
   onSubmit: () => void;
+  // Snag 1 / 03: the editor's "Edit this view…" on a placeholder: just its form.
+  editing?: boolean;
 }) {
   const words = useChooserWords();
   return (
     <>
-      <AvHeader title="Add a view" subtitle={headerLine(ctx)} segs={null} onBack={onBack} onClose={onClose} />
+      <AvHeader title={editing ? "Edit placeholder" : "Add a view"} subtitle={headerLine(ctx)} segs={null} onBack={onBack} onClose={onClose} />
       <Body gap={10}>
         <ContextBox label={words.from} line={summaryLine(ctx, true)} />
-        <div style={{ textAlign: "center", padding: "8px 10px 2px" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--cc-ink)" }}>Nothing built for this yet</div>
-          <div style={{ fontSize: 12.5, color: "var(--cc-sub)", marginTop: 4, lineHeight: 1.45 }}>Try loosening one choice, or {superAdmin ? "plan the view you want" : "ask for the view you want"}.</div>
-        </div>
-        {relaxations.map((r) => (
-          <button key={r.id} type="button" onClick={() => onRelax(r.id)} style={relaxStyle}>
-            {RELAX_LABEL[r.id]}
-            <CountBadge n={r.count} />
-          </button>
-        ))}
-        <button type="button" onClick={onChangeData} style={relaxStyle}>
-          Change data&hellip;
-        </button>
+        {!editing && (
+          <>
+            <div style={{ textAlign: "center", padding: "8px 10px 2px" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--cc-ink)" }}>Nothing built for this yet</div>
+              <div style={{ fontSize: 12.5, color: "var(--cc-sub)", marginTop: 4, lineHeight: 1.45 }}>Try loosening one choice, or {superAdmin ? "plan the view you want" : "ask for the view you want"}.</div>
+            </div>
+            {relaxations.map((r) => (
+              <button key={r.id} type="button" onClick={() => onRelax(r.id)} style={relaxStyle}>
+                {RELAX_LABEL[r.id]}
+                <CountBadge n={r.count} />
+              </button>
+            ))}
+            <button type="button" onClick={onChangeData} style={relaxStyle}>
+              Change data&hellip;
+            </button>
+          </>
+        )}
 
         {superAdmin ? (
           <div style={{ border: "1.5px dashed var(--cc-gold)", borderRadius: 12, padding: 12, background: "var(--av-plan-bg)", display: "flex", flexDirection: "column", gap: 9, marginTop: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", color: "#ffffff", background: "var(--cc-gold)", borderRadius: 999, padding: "2px 8px" }}>SUPER-ADMIN</span>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--cc-ink)" }}>Add a placeholder</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--cc-ink)" }}>{editing ? "Placeholder" : "Add a placeholder"}</span>
             </div>
             <input
               type="text"
@@ -154,7 +161,7 @@ export function EmptyScreen({
         <SecondaryButton onClick={onClose}>{asked ? "Close" : "Cancel"}</SecondaryButton>
         {!asked && (
           <PrimaryButton onClick={onSubmit} disabled={busy || (superAdmin && !draft.description.trim())}>
-            {superAdmin ? "Add placeholder" : busy ? "Sending…" : "Ask for this view"}
+            {superAdmin ? (editing ? "Save placeholder" : "Add placeholder") : busy ? "Sending…" : "Ask for this view"}
           </PrimaryButton>
         )}
       </Footer>
