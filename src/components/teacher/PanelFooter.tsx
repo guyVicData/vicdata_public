@@ -9,6 +9,7 @@
 // together, out of the way of the figure.
 import { lazy, Suspense, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { createPortal } from "react-dom";
 import { DashboardPlanContext } from "@/components/dashboard-config/plan";
 import { CopyViewSourceContext } from "@/components/copy-view/CopyViewSourceContext";
 import { MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
@@ -206,10 +207,49 @@ export const ExportIcon = (
 // or on /dashboards/*. Everywhere else (every live, hand-coded dashboard) the menu is
 // exactly as it was. The panel's host provides what to copy (CopyViewSourceContext); with
 // no source the item is hidden.
+// 0.6 snag 1 item 01: the menu used to be cut off by the panel. PanelMenu opens below its
+// anchor (`top-full`), so from the footer it ran down past the panel's bottom edge, which a
+// fixed-height CardBox clips (`overflow-hidden`); a scaled meeting slide clips it too. It
+// now opens ABOVE the button, drawn in a portal into #teacher-root (where the theme lives)
+// at the button's own position, so no panel, card or slide transform can clip it. It is
+// left-aligned to the button, like the Notes popover beside it, and right-aligned instead
+// when that would run off the screen. Scrolling or resizing closes it.
+const EXPORT_MENU_WIDTH = 212;
+
+// Into #teacher-root, so the theme variables still apply (Q15: the theme is an attribute on
+// that element, not on <html>); the body only if a page has none.
+function portalTo(node: ReactNode) {
+  if (typeof document === "undefined") return null;
+  return createPortal(node, document.getElementById("teacher-root") ?? document.body);
+}
+const EXPORT_MENU_GAP = 6; // px between the button's top and the menu (Notes' bottom-6 sits the same)
+
 export function PanelExport({ onPrint }: { onPrint: () => void }) {
   const [open, setOpen] = useState(false);
   const [copying, setCopying] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [anchor, setAnchor] = useState<{ left: number; top: number; align: "left" | "right" } | null>(null);
+  const ref = useDismiss(open, () => setOpen(false), menuRef);
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+  const toggle = () => {
+    if (open) return setOpen(false);
+    const r = buttonRef.current?.getBoundingClientRect();
+    if (r) {
+      const fitsLeft = r.left + EXPORT_MENU_WIDTH <= window.innerWidth - 8;
+      setAnchor({ left: fitsLeft ? r.left : r.right, top: r.top - EXPORT_MENU_GAP, align: fitsLeft ? "left" : "right" });
+    }
+    setOpen(true);
+  };
   const plan = useContext(DashboardPlanContext);
   const pathname = usePathname();
   const copy = useContext(CopyViewSourceContext);
@@ -217,8 +257,9 @@ export function PanelExport({ onPrint }: { onPrint: () => void }) {
   return (
     <span className="relative" ref={ref}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggle}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Export this panel"
@@ -227,9 +268,9 @@ export function PanelExport({ onPrint }: { onPrint: () => void }) {
       >
         {ExportIcon}
       </button>
-      {open && (
-        <span className="absolute bottom-6 left-0 z-30 block">
-          <PanelMenu label="Export" width={212}>
+      {open && anchor && portalTo(
+        <div ref={menuRef} className="fixed z-[1600] h-0 w-0" style={{ left: anchor.left, top: anchor.top }}>
+          <PanelMenu label="Export" width={EXPORT_MENU_WIDTH} placement="above" align={anchor.align}>
             <MenuRow label="Print this graph" onClick={() => { setOpen(false); onPrint(); }} />
             {v06 ? (
               copy && <MenuRow label="Copy this view…" onClick={() => { setOpen(false); setCopying(true); }} />
@@ -240,7 +281,7 @@ export function PanelExport({ onPrint }: { onPrint: () => void }) {
               </>
             )}
           </PanelMenu>
-        </span>
+        </div>,
       )}
       {copying && copy && (
         <Suspense fallback={null}>

@@ -51,6 +51,11 @@ function initial(base: Dataview, ctx: PickPanelContext): State {
   };
 }
 
+// Snag 1 / 03: "Edit this view…" re-opens a custom view with the choices it was saved with.
+function fromParams(base: Dataview, ctx: PickPanelContext, p: CustomViewParams): State {
+  return { ...initial(base, ctx), numberType: p.numberType, dateMode: p.fromYear ? "trend" : base.supports.dateMode, look: p.look, fromYear: p.fromYear ?? defaultFromYear(ctx), rollForward: p.rollForward, title: p.title, titleEdited: p.title !== templateOf(base) };
+}
+
 // The matching view closest to the wanted choices, with `strict` held exactly.
 function nearest(candidates: Dataview[], want: { numberType: NumberType; dateMode: DateMode; look: ViewType }, strict: "numberType" | "dateMode" | "look", prefer: Dataview): Dataview | null {
   const ok = candidates.filter((dv) =>
@@ -88,6 +93,7 @@ function TitleTokens({ template }: { template: string }) {
 export function CustomiseScreen({
   ctx,
   base,
+  initialParams = null,
   candidates,
   onBack,
   onClose,
@@ -95,14 +101,15 @@ export function CustomiseScreen({
 }: {
   ctx: PickPanelContext;
   base: Dataview;
+  initialParams?: CustomViewParams | null;
   candidates: Dataview[];
   onBack: () => void;
   onClose: () => void;
   onAdd: (dv: Dataview, params: CustomViewParams | null) => void;
 }) {
   const words = useChooserWords();
-  const [s, setS] = useState<State>(() => initial(base, ctx));
-  const [forked, setForked] = useState(false);
+  const [s, setS] = useState<State>(() => (initialParams ? fromParams(base, ctx, initialParams) : initial(base, ctx)));
+  const [forked, setForked] = useState(!!initialParams);
   const [editingTitle, setEditingTitle] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useDismiss(menuOpen, () => setMenuOpen(false));

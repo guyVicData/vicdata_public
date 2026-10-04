@@ -21,6 +21,7 @@ export function PillMenu({
   menuLabel,
   width = 220,
   align = "left",
+  title,
   children,
 }: {
   // The fixed prefix ("Compare against", "Measure"), so the pill says what it changes
@@ -30,6 +31,8 @@ export function PillMenu({
   menuLabel?: string;
   width?: number;
   align?: "left" | "right";
+  // 0.6 snag 1: the pill's full text as a tooltip, for a value long enough to truncate.
+  title?: string;
   // Given `close`, so a row can dismiss the popover after choosing -- but a checklist row
   // can choose not to.
   children: (close: () => void) => ReactNode;
@@ -38,15 +41,18 @@ export function PillMenu({
   const ref = useDismiss(open, () => setOpen(false));
 
   return (
-    <div className="relative" ref={ref}>
+    // max-w-full + the span's min-w-0 (snag 1 item 02): a value too long for the column now
+    // truncates with an ellipsis instead of running past it. Pills that fit are unchanged.
+    <div className="relative max-w-full" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-haspopup="menu"
+        title={title}
         className="inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--muted2)] hover:border-[var(--fg)]"
       >
-        <span className="truncate">
+        <span className="min-w-0 truncate">
           {label}: <span className="text-[var(--fg)]">{value}</span>
         </span>
         <span className="shrink-0">{ChevronDown}</span>

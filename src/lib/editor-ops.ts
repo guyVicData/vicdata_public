@@ -638,8 +638,9 @@ export function addView(config: DashboardConfig, target: Target, instance: Datav
   return { config: checked(c), panelId: p.id, instanceId: id };
 }
 
-export function addPlaceholder(config: DashboardConfig, target: Target, req: PlaceholderRequest): { config: DashboardConfig; panelId: string; instanceId: string } {
-  const inst: DataviewInstance = {
+// The placeholder instance the chooser's "Add placeholder" form describes.
+export function placeholderInstance(req: PlaceholderRequest): DataviewInstance {
+  return {
     id: "planned",
     kind: "placeholder",
     description: req.description.trim() || "Planned view",
@@ -647,7 +648,10 @@ export function addPlaceholder(config: DashboardConfig, target: Target, req: Pla
     ...(req.notes.trim() ? { notes: req.notes.trim() } : {}),
     context: placeholderContextOf(req.context),
   };
-  return addView(config, target, inst);
+}
+
+export function addPlaceholder(config: DashboardConfig, target: Target, req: PlaceholderRequest): { config: DashboardConfig; panelId: string; instanceId: string } {
+  return addView(config, target, placeholderInstance(req));
 }
 
 const findView = (c: DashboardConfig, instanceId: string) => {
@@ -678,6 +682,34 @@ export function setDefaultView(config: DashboardConfig, panelId: string, instanc
   if (!p.dataviews.some((v) => v.id === instanceId)) fail("That view has gone.");
   p.defaultView = instanceId;
   return c;
+}
+
+// Snag 1 / 03: the view menu's "Move up" / "Move down" (the rail's order).
+export function moveViewWithinPanel(config: DashboardConfig, instanceId: string, dir: -1 | 1): DashboardConfig {
+  const { panel, index } = findView(config, instanceId);
+  return reorderView(config, panel.id, index, index + dir);
+}
+
+// Snag 1 / 03: "Edit this view…" and "Swap for another view…" replace an instance in place:
+// same rail position, the panel's opening view following it. The instance id is kept when
+// the replacement is the same dataview (or both are placeholders), so per-user state keyed
+// on it survives (G1); a different dataview gets a fresh id, as Add a view would give it.
+// An override is the panel's, exactly as addView sets it.
+export function replaceView(config: DashboardConfig, instanceId: string, instance: DataviewInstance, override?: PanelOverride): { config: DashboardConfig; panelId: string; instanceId: string } {
+  const c = clone(config);
+  const { panel, index } = findView(c, instanceId);
+  const old = panel.dataviews[index];
+  const same = old.kind === instance.kind && (old.kind === "placeholder" || (instance.kind === "view" && old.dataview === instance.dataview));
+  let id = instanceId;
+  if (!same) {
+    const taken = allIds(c);
+    taken.delete(instanceId);
+    id = freeId(c, `${panel.id}/${instance.kind === "view" ? instance.dataview : "planned"}`, taken);
+  }
+  panel.dataviews[index] = { ...clone(instance), id };
+  if (panel.defaultView === instanceId) panel.defaultView = id;
+  if (override) panel.override = clone(override);
+  return { config: checked(c), panelId: panel.id, instanceId: id };
 }
 
 export function moveView(config: DashboardConfig, instanceId: string, target: Target): { config: DashboardConfig; panelId: string; instanceId: string } {

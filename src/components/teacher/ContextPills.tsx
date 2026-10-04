@@ -46,6 +46,7 @@ export function ContextPills({
   pickerItems,
   family,
   focusCategory,
+  focusCategoryLabel = null,
   theme,
   selected,
   onToggleSelected,
@@ -60,6 +61,9 @@ export function ContextPills({
   family: QualificationFamily | null;
   // The focused subject's category, opened first in the picker.
   focusCategory: string | null;
+  // 0.6 snag 1 item 02: the focused subject's category NAME, exactly as the subject picker
+  // shows it (focusCategory is its id). Absent = no focus or no category.
+  focusCategoryLabel?: string | null;
   theme: "dark" | "light";
   selected: string[];
   onToggleSelected: (key: string) => void;
@@ -67,7 +71,11 @@ export function ContextPills({
   onSetSelected: (keys: string[]) => void;
 }) {
   // Live review Part B: "All subjects" on screen; the id stays "whole".
-  const againstLabel = against === "selected" ? "Selected subjects" : against === "category" ? "Subject category" : "All subjects";
+  // Snag 1 item 02: option 1 names the category ("Arts, Media & Design subjects"), falling
+  // back to "Subject category" when there's no focused subject or category. The id stays
+  // "category", so saved preferences are untouched.
+  const categoryOption = focusCategoryLabel ? `${focusCategoryLabel} subjects` : "Subject category";
+  const againstLabel = against === "selected" ? "Selected subjects" : against === "category" ? categoryOption : "All subjects";
   const [pickerOpen, setPickerOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const offered = new Set(pickerItems.map((i) => i.key));
@@ -75,12 +83,15 @@ export function ContextPills({
 
   return (
     <div className="flex flex-col items-start gap-1.5">
-      <PillMenu label="Compare against" value={againstLabel} width={264}>
+      {/* 320, not 264 (snag 1 item 02): the longest category's row, "Technology, Engineering
+          & Construction subjects", needs ~282px of text and MenuRow truncates; 320 is
+          PanelMenu's own cap (min(90vw, 20rem)). */}
+      <PillMenu label="Compare against" value={againstLabel} width={320} title={`Compare against: ${againstLabel}`}>
         {(close) => (
           <>
             <MenuHeading>Compare against</MenuHeading>
             <MenuRow
-              label="Subject category"
+              label={categoryOption}
               selected={against === "category"}
               onClick={() => { onAgainst("category"); close(); }}
             />

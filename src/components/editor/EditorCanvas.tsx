@@ -172,7 +172,7 @@ export function EditorCanvas({
                           maxSpan={maxSpan}
                           onSelect={(id) => onSelect(cell.panel!.id, id)}
                           onAddView={() => h?.addView(cell.panel!.id)}
-                          onAction={(a) => h?.panelAction(cell.panel!.id, a, selected[cell.panel!.id] ?? cell.panel!.defaultView ?? cell.panel!.dataviews[0]?.id ?? null)}
+                          onAction={(a, instanceId) => h?.panelAction(cell.panel!.id, a, instanceId ?? selected[cell.panel!.id] ?? cell.panel!.defaultView ?? cell.panel!.dataviews[0]?.id ?? null)}
                           onReorder={(from, to) => h?.reorder(cell.panel!.id, from, to)}
                           onSwapIn={(id, dv) => h?.swapIn(id, dv)}
                           onSpan={(cols) => h?.span(cell.panel!.id, cols)}

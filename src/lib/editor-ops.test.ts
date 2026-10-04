@@ -274,3 +274,73 @@ test("G1: per-user state survives where its panel survives", async () => {
   assert.equal(carried.version, "2");
   assert.deepEqual(carryStateJson(prev, next, null, 2).panels, {});
 });
+
+// Snag 1 / 03: the rail icon's view menu.
+const C2 = "vicdata.ks4.candidates.c2.current";
+const ids = (c: DashboardConfig, pid: string) => c.panels.find((p) => p.id === pid)!.dataviews.map((v) => v.id);
+
+test("view menu: edit in place keeps the rail position, and the instance id for the same dataview", () => {
+  const before = ids(gcse(), C2);
+  const target = before[2];
+  const old = gcse().panels.find((p) => p.id === C2)!.dataviews[2];
+  if (old.kind !== "view") throw new Error("expected a view");
+  const dataview = old.dataview;
+  // Customised: same dataview, new params and a chooser-made id -> id kept, position kept.
+  const edited = ops.replaceView(gcse(), target, { id: `${C2}/${dataview}~x1`, kind: "view", dataview, params: { numberType: "percent", fromYear: null, look: "list", title: "[subject] mine", rollForward: true }, title: "[subject] mine" });
+  assert.deepEqual(ids(edited.config, C2), before);
+  assert.equal(edited.instanceId, target);
+  const inst = edited.config.panels.find((p) => p.id === C2)!.dataviews[2];
+  assert.equal(inst.kind === "view" && inst.title, "[subject] mine");
+  // Swapped for a different dataview: same position, a fresh id, the opening view follows.
+  const opening = gcse().panels.find((p) => p.id === C2)!.defaultView!;
+  const other = DATAVIEWS.find((d) => !before.some((id) => id.endsWith(`/${d.id}`)))!;
+  const swapped = ops.replaceView(gcse(), opening, { id: "x", kind: "view", dataview: other.id });
+  const after = ids(swapped.config, C2);
+  const at = before.indexOf(opening);
+  assert.equal(after.length, before.length);
+  assert.equal(after[at], `${C2}/${other.id}`);
+  assert.equal(swapped.config.panels.find((p) => p.id === C2)!.defaultView, `${C2}/${other.id}`);
+  assert.equal(JSON.stringify(gcse()), frozen);
+});
+
+test("view menu: a placeholder edited in place keeps its id and context", () => {
+  const ctx = contextFromPanel(gcse(), C2);
+  const r = ops.addPlaceholder(gcse(), C2, { description: "Old", shape: "graph", notes: "", context: ctx });
+  const old = r.config.panels.find((p) => p.id === C2)!.dataviews.find((v) => v.id === r.instanceId)!;
+  assert.equal(old.kind, "placeholder");
+  const e = ops.replaceView(r.config, r.instanceId, { ...old, description: "New", shape: null, notes: "n" } as typeof old);
+  const v = e.config.panels.find((p) => p.id === C2)!.dataviews.at(-1)!;
+  assert.equal(e.instanceId, r.instanceId);
+  assert.equal(v.kind === "placeholder" && v.description, "New");
+  assert.deepEqual(v.kind === "placeholder" && v.context, old.kind === "placeholder" && old.context);
+});
+
+test("view menu: make this the opening view", () => {
+  const last = ids(gcse(), C2).at(-1)!;
+  const c = ops.setDefaultView(gcse(), C2, last);
+  assert.equal(c.panels.find((p) => p.id === C2)!.defaultView, last);
+  assert.throws(() => ops.setDefaultView(gcse(), C2, `${C2}/nope`), ops.EditorError);
+});
+
+test("view menu: move up and move down", () => {
+  const before = ids(gcse(), C2);
+  const down = ops.moveViewWithinPanel(gcse(), before[0], 1);
+  assert.deepEqual(ids(down, C2), [before[1], before[0], ...before.slice(2)]);
+  const up = ops.moveViewWithinPanel(gcse(), before[3], -1);
+  assert.deepEqual(ids(up, C2), [before[0], before[1], before[3], before[2]]);
+  // Off either end: unchanged (the menu hides those rows).
+  assert.deepEqual(ids(ops.moveViewWithinPanel(gcse(), before[0], -1), C2), before);
+  assert.deepEqual(ids(ops.moveViewWithinPanel(gcse(), before.at(-1)!, 1), C2), before);
+});
+
+test("view menu: removing the last view leaves an empty panel, never deletes it", () => {
+  const C1 = "vicdata.ks4.candidates.c1.current";
+  const only = ids(gcse(), C1);
+  assert.equal(only.length, 1);
+  const c = ops.removeView(gcse(), only[0]);
+  const p = c.panels.find((x) => x.id === C1);
+  assert.ok(p, "the panel is still there");
+  assert.deepEqual(p!.dataviews, []);
+  assert.equal(p!.defaultView, undefined);
+  assert.ok(ops.validateConfig(c).empty.includes(C1), "it shows as the empty + Add a view panel");
+});

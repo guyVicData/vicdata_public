@@ -22,6 +22,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
+import { loadPublishedVicData } from "@/lib/published-vicdata";
 import type { RankingFigures } from "@/lib/chooser-sets";
 import { directionCssVars } from "@/lib/trend-colours";
 import { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -186,6 +187,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // the Platform screen's read-only preview of another school (S1). Both are off unless
   // the URL asks, and look-as only for a platform admin (confirmLookAs).
   const [configMode, setConfigMode] = useState(false);
+  // Snag 1 item 00: the published VicData configs for this phase's group (Candidates and
+  // Results), from the dashboards store, keyed by slug. Null until loaded or when the page
+  // isn't under the flag; each falls back to the copy in code (published-vicdata.ts).
+  const [storedConfigs, setStoredConfigs] = useState<Record<string, DashboardConfig> | null>(null);
   const [superAdmin, setSuperAdmin] = useState(false);
   const [lookAs, setLookAs] = useState<LookAs | null>(null);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
@@ -284,8 +289,17 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // Embed: no look-as and no URL flag -- the school and the config are the caller's.
       const requestedLookAs = embed ? null : readLookAs(search);
       const lookAsOk = requestedLookAs ? await confirmLookAs(supabase, requestedLookAs) : false;
+      // Started here so it runs alongside the school's data; awaited just before the page
+      // first paints, so the stored config is drawn from the start (no swap, no flash).
+      let publishedLoad: Promise<Record<string, DashboardConfig>> | null = null;
       if (embed ? !!embedConfig : configRendererRequested(search)) {
         setConfigMode(true);
+        if (!embed && (phase === "ks4" || phase === "ks5")) {
+          const group = [teacherDashboardFor(phase, "candidates"), teacherDashboardFor(phase, "results")];
+          publishedLoad = Promise.all(group.map((d) => loadPublishedVicData(supabase, d.id, d))).then((loads) =>
+            Object.fromEntries(loads.map((l) => [l.config.id, l.config])),
+          );
+        }
         // Super-admin sees placeholder panels; an embed asks only when it has one, or when
         // it is a whole dashboard (Copy this view lets super-admin copy into VicData's).
         if (!embed || (embedConfig?.panels.length ?? 0) > 1 || embedConfig?.panels.some((p) => p.dataviews.every((v) => v.kind === "placeholder"))) {
@@ -381,6 +395,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const latestPeriod = periods.length ? Math.max(...periods) : null;
       if (hasNewData(latestPeriod, prefs.lastSeenPeriod)) setNewDataPeriod(latestPeriod);
       await markPeriodSeen(supabase, urn, phase, latestPeriod);
+      if (publishedLoad) setStoredConfigs(await publishedLoad);
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1502,7 +1517,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // S3: under the flag, the dashboard is one of the four VicData configs, picked by the
   // same Candidates/Results state the toggle writes -- so the group switcher and today's
   // toggle read and write one setting, and a flag flip loses nobody's choice.
-  const dashboardConfig = configMode && (phase === "ks4" || phase === "ks5") ? teacherDashboardFor(phase, sharedMeasure) : null;
+  // Snag 1 item 00: the published version from the store when there is one, else the copy
+  // in code (same structure for every school and role; the hosts still decide per school).
+  const codeConfig = configMode && (phase === "ks4" || phase === "ks5") ? teacherDashboardFor(phase, sharedMeasure) : null;
+  const dashboardConfig = codeConfig ? (storedConfigs?.[codeConfig.id] ?? codeConfig) : null;
 
   // Each column's question once a subject is focused: a full question naming the subject,
   // its qualification and the school, after the column's plain one-word title (COLUMN_TITLE,
@@ -1834,6 +1852,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
             pickerItems={toPickerItems(phase as "ks4" | "ks5", contextOffer)}
             family={QUALIFICATION_FAMILIES[phase as "ks4" | "ks5"].find((f) => f.id === contextFamily) ?? null}
             focusCategory={focusItem ? familyFor(headline, focusItem.subject)?.id ?? null : null}
+            focusCategoryLabel={focusItem ? familyFor(headline, focusItem.subject)?.label ?? null : null}
             theme={theme}
             selected={contextSelected}
             onSetSelected={(keys) => setColumnList(chosenKey("context"), keys)}
@@ -2166,7 +2185,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           switcher={
             dashboardConfig ? (
               <GroupSwitcher
-                dashboards={groupOf(dashboardConfig)}
+                dashboards={groupOf(teacherDashboardFor(phase as "ks4" | "ks5", sharedMeasure)).map((d) => storedConfigs?.[d.id] ?? d)}
                 activeId={dashboardConfig.id}
                 onSwitch={(d) => onSharedMeasure(d.id.endsWith(".results") ? "results" : "candidates")}
               />
