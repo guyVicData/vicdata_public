@@ -73,7 +73,8 @@ export function HistoryPanel({
         </div>
         <div style={{ fontSize: 12, color: "var(--chip-fg)", lineHeight: 1.45 }}>
           {live ? `Since v${live.version}: ` : ""}
-          {plainSummary(changeSummary(live?.config ?? null, draft)).replace(/^./, (c) => (live ? c.toLowerCase() : c))}
+          {/* A summary led by a Results measure's name ("Grade counts: …", 0.6 snag 3 / 03) keeps its capital. */}
+          {plainSummary(changeSummary(live?.config ?? null, draft)).replace(/^./, (c) => (live && !/^(Average points|Grade 4\+ rate|A\*–E rate|Grade bands|Grade counts):/.test(changeSummary(live.config, draft)) ? c.toLowerCase() : c))}
         </div>
         <div style={{ display: "flex", gap: 14 }}>
           {previewing !== null && <Act onClick={() => onPreview(null)}>Back to draft</Act>}

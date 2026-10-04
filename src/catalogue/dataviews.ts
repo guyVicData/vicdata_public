@@ -21,6 +21,13 @@ const GP = "src/components/teacher/GradeCountsPanels.tsx";
 const PHASES: Phase[] = ["ks4", "ks5"];
 const BOTH_DATA = ["academic.candidates", "academic.results"] as Dataview["supports"]["data"];
 const RATE_RESULTS: ResultsMeasure[] = ["points", "threshold", "bands"];
+// 0.6 snag 3 / 03: the Results pill states a view is offered on (Dataview.resultsMeasures),
+// read from the hosts as they are: Column 1 draws SubjectPanels on points / threshold /
+// bands and GradeCountsPanels on counts, so its views split by host; Context and
+// Comparisons draw every view on all four (falling back to points / the headline on
+// counts), so theirs are unset. Data-dependent gaps (Grades needs bands' range control,
+// Comparisons' Chart needs 4 years, the donut's R-DONUT-COUNTS-ONLY) stay host rules.
+const SUBJECT_PANELS_RESULTS: ResultsMeasure[] = ["points", "threshold", "bands"];
 
 const ENTRIES: MeasureId[] = ["M-KS4-ENTRIES", "M-KS5-ENTRIES"];
 const POINTS: MeasureId[] = ["M-KS4-POINTS", "M-KS5-POINTS"];
@@ -260,6 +267,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-CUR-TILES",
     label: "Number tiles",
     railIcon: "TilesIcon",
+    resultsMeasures: SUBJECT_PANELS_RESULTS,
     measures: RESULTS,
     supports: {
       data: ["academic.results"],
@@ -287,6 +295,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-CUR-GRADES",
     label: "Grades (pick a range)",
     railIcon: "GradesIcon",
+    resultsMeasures: ["bands"],
     measures: BANDS,
     supports: {
       data: ["academic.results"],
@@ -314,6 +323,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-CUR-BAR",
     label: "Bar chart",
     railIcon: "HorizontalBarsIcon",
+    resultsMeasures: SUBJECT_PANELS_RESULTS,
     measures: RESULTS,
     supports: {
       data: ["academic.results"],
@@ -340,6 +350,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-CUR-TABLE",
     label: "Sortable table",
     railIcon: "RankListIcon",
+    resultsMeasures: SUBJECT_PANELS_RESULTS,
     measures: RESULTS,
     supports: {
       data: ["academic.results"],
@@ -366,6 +377,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-TR-CHART",
     label: "Chart",
     railIcon: "TrendLineIcon",
+    resultsMeasures: SUBJECT_PANELS_RESULTS,
     measures: RESULTS,
     supports: {
       data: ["academic.results"],
@@ -393,6 +405,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-TR-TABLE",
     label: "Trend table",
     railIcon: "TableIcon",
+    resultsMeasures: SUBJECT_PANELS_RESULTS,
     measures: RESULTS,
     supports: {
       data: ["academic.results"],
@@ -418,6 +431,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-TR-MAP",
     label: "Map",
     railIcon: "MapPinIcon",
+    resultsMeasures: SUBJECT_PANELS_RESULTS,
     measures: [...POINTS, ...BANDS],
     supports: {
       data: ["academic.results"],
@@ -444,6 +458,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-TR-GEO-CHART",
     label: "Area chart",
     railIcon: "TrendLineIcon",
+    resultsMeasures: SUBJECT_PANELS_RESULTS,
     measures: POINTS,
     supports: {
       data: ["academic.results"],
@@ -471,6 +486,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-RES-TR-GEO-TABLE",
     label: "Change table",
     railIcon: "TableIcon",
+    resultsMeasures: SUBJECT_PANELS_RESULTS,
     measures: POINTS,
     supports: {
       data: ["academic.results"],
@@ -499,6 +515,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-CNT-CUR-DIST",
     label: "Grade distribution",
     railIcon: "GradesIcon",
+    resultsMeasures: ["counts"],
     measures: COUNTS,
     supports: {
       data: ["academic.results"],
@@ -526,6 +543,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-CNT-TR-SPREAD",
     label: "Spread by year",
     railIcon: "GradesIcon",
+    resultsMeasures: ["counts"],
     measures: COUNTS,
     supports: {
       data: ["academic.results"],
@@ -551,6 +569,7 @@ export const DATAVIEWS: Dataview[] = [
     id: "DV-C1-CNT-TR-CHANGETABLE",
     label: "Change table",
     railIcon: "TableIcon",
+    resultsMeasures: ["counts"],
     measures: COUNTS,
     supports: {
       data: ["academic.results"],

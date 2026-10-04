@@ -165,6 +165,9 @@ export type Dataview = {
   id: DataviewId;
   label: string;
   railIcon: string;
+  // 0.6 snag 3 / 03: the Results pill states this view is offered on, and the most it can
+  // be drawn on (src/catalogue/results.ts). Absent = all four, or not a Results view.
+  resultsMeasures?: ResultsMeasure[];
   measures: MeasureId[];
   supports: {
     data: DataId[];
@@ -239,13 +242,25 @@ export type RowConfig = {
   legacyPanelId?: "current" | "trend";
 };
 
+// 0.6 snagging round 3 / 01: a number-tiles view's figures, saved on the view instance
+// (`params.tiles`, `params.mainLabel`; see src/lib/tile-figures.ts). `tiles` is the small
+// tiles in the order drawn, each one of the figures its host builds (TILE_FIGURES), with
+// an optional scope line (title placeholders allowed) and a hidden flag. Unset = the host's
+// own tiles, exactly as before.
+export type TileFigureSpec = { figure: string; label?: string; hidden?: boolean };
+export type NumberTilesParams = { tiles?: TileFigureSpec[]; mainLabel?: string };
+
 export type DataviewInstance =
   | {
       id: string;
       kind: "view";
       dataview: DataviewId;
+      // Customise's choices (CustomViewParams), plus NumberTilesParams on a tiles view.
       params?: Record<string, unknown>;
       title?: string;
+      // 0.6 snag 3 / 03: on a Results dashboard, the pill states this view shows on,
+      // overriding its dataview's default (never wider than the dataview can draw).
+      resultsMeasures?: ResultsMeasure[];
     }
   | {
       // Super-admin's planned view (scope brief §4.6a): shown dashed, "Planned".
@@ -295,6 +310,9 @@ export type PanelConfig = {
   override?: PanelOverride;
   dataviews: DataviewInstance[];
   defaultView?: string;
+  // 0.6 snag 3 / 03: on a Results dashboard, the view the panel opens on per pill state
+  // (instance ids). A measure with no entry falls back to defaultView, as before.
+  defaultViewByResults?: Partial<Record<ResultsMeasure, string>>;
   // Legacy keys this panel's notes and open state resolve through (audit §6.3).
   legacy?: { columnKey: string; panelId: "current" | "trend"; noteKeys: string[] };
 };

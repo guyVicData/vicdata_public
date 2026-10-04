@@ -8,6 +8,7 @@
 // with different figures, one visual language.
 import type { ReactNode } from "react";
 import { DIRECTION_TEXT, type Direction } from "@/lib/teacher-view-trend-styles";
+import type { TileVars } from "@/lib/tile-figures";
 
 export type NumberTile = {
   key: string;
@@ -16,6 +17,9 @@ export type NumberTile = {
   detail: string;
   // Colours the figure in the app's direction tones (a change, a gap to England).
   direction?: Direction;
+  // 0.6 snag 3 / 01: this tile's own placeholder values ([total], [from-year]...), for a
+  // scope line relabelled in the view's settings (src/lib/tile-figures.ts). Not drawn.
+  vars?: TileVars;
 };
 
 // 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd".

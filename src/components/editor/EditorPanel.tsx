@@ -10,14 +10,15 @@
 // Snag 1 / 03: each rail icon has its own view menu. Hovering an icon (edit mode) turns it
 // amber and shows a small amber "···" tab on its right edge, over the rail divider; the tab,
 // a right-click or the keyboard opens the menu. The panel's ··· menu is panel-only.
-import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useContext, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { dataviewById } from "@/catalogue";
+import { RESULTS_MEASURES, dataviewResults, effectiveResults, showsOn, viewsOnResults } from "@/catalogue/results";
 import { contextFromPanel, latestYear, defaultFromYear, resolveTitle, viewTitle, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
-import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig } from "@/catalogue/types";
+import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig, ResultsMeasure } from "@/catalogue/types";
 import { railGlyph } from "@/components/chooser-v06/bits";
 import { MenuDivider, MenuHeading, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { EC, EDITOR, panelWidth } from "@/lib/editor-layout";
-import { spanOf } from "@/lib/editor-ops";
+import { isDefaultView, spanOf } from "@/lib/editor-ops";
 import { EBtn, InheritBadge, OverrideBadge, PlusIcon, StandardElements, StatePill } from "./bits";
 import type { PanelPreviewComponent } from "./PanelPreview";
 
@@ -40,6 +41,17 @@ export type PanelAction =
   | "remove-view";
 
 const HEADER = 22;
+
+// 0.6 snag 3 / 03: the edit bar's Results pill, on a Results dashboard. Rails show the
+// views on `measure` (all of them, off-measure ones dimmed, with `showAll`), the panel
+// body previews it, and the view menu's default and "Show on…" rows follow it.
+export type EditorResults = {
+  measure: ResultsMeasure;
+  labels: Record<ResultsMeasure, string>;
+  showAll: boolean;
+  onShowOn: (panelId: string, instanceId: string, measures: ResultsMeasure[]) => void;
+};
+export const EditorResultsContext = createContext<EditorResults | null>(null);
 
 export function EditorPanel({
   config,
@@ -76,7 +88,13 @@ export function EditorPanel({
 }) {
   const span = spanOf(panel);
   const width = panelWidth(units(config, panel));
-  const view = panel.dataviews.find((v) => v.id === selected) ?? panel.dataviews.find((v) => v.id === panel.defaultView) ?? panel.dataviews[0];
+  const results = useContext(EditorResultsContext);
+  const pill = results?.measure ?? null;
+  // The rail: on a Results pill, the views shown on it (or every view, off-pill ones
+  // dimmed, with Show all views).
+  const railViews = pill && !results?.showAll ? viewsOnResults(panel, pill) : panel.dataviews;
+  const defaultId = railViews.find((v) => isDefaultView(panel, v.id, pill))?.id;
+  const view = railViews.find((v) => v.id === selected) ?? railViews.find((v) => v.id === defaultId) ?? railViews[0];
   const allPlanned = panel.dataviews.length > 0 && panel.dataviews.every((v) => v.kind === "placeholder");
   const readyHits = view && view.kind === "placeholder" ? ready[view.id] : undefined;
   const [menu, setMenu] = useState(false);
@@ -177,40 +195,62 @@ export function EditorPanel({
 
       <div style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>
         <div className="ed-rail" style={{ display: "flex", flexDirection: "column", gap: 3, flexShrink: 0, padding: "1px 9px 2px 0", borderRight: "1px solid var(--panel-border)", marginRight: 9 }}>
-          {panel.dataviews.map((v, i) => (
-            <RailButton
-              key={v.id}
-              v={v}
-              active={v.id === view?.id}
-              ready={!!ready[v.id]}
-              draggable={!readOnly}
-              menu={
-                readOnly
-                  ? null
-                  : {
-                      open: viewMenu === v.id,
-                      title: viewLabel(config, panel, v, labels),
-                      index: i,
-                      count: panel.dataviews.length,
-                      opening: (panel.dataviews.some((x) => x.id === panel.defaultView) ? panel.defaultView : panel.dataviews[0]?.id) === v.id,
-                      onOpen: (open) => {
-                        setViewMenu(open ? v.id : null);
-                        if (open) onSelect(v.id);
-                      },
-                      onAction: (a) => {
-                        setViewMenu(null);
-                        onAction(a, v.id);
-                      },
-                    }
-              }
-              onClick={() => onSelect(v.id)}
-              onDragStart={() => setDragFrom(i)}
-              onDrop={() => {
-                if (dragFrom !== null && dragFrom !== i) onReorder(dragFrom, i);
-                setDragFrom(null);
-              }}
-            />
-          ))}
+          {railViews.map((v, i) => {
+            // Indices into the panel's own list (the rail may be a pill's subset).
+            const full = (j: number) => panel.dataviews.indexOf(railViews[j]);
+            const off = !!pill && !showsOn(v, pill);
+            return (
+              <RailButton
+                key={v.id}
+                v={v}
+                active={v.id === view?.id}
+                ready={!!ready[v.id]}
+                dimmed={off}
+                draggable={!readOnly}
+                menu={
+                  readOnly
+                    ? null
+                    : {
+                        open: viewMenu === v.id,
+                        title: viewLabel(config, panel, v, labels),
+                        index: i,
+                        count: railViews.length,
+                        opening: v.id === defaultId && !off,
+                        pill: results && pill ? { label: results.labels[pill], off } : null,
+                        showOn:
+                          results && v.kind === "view"
+                            ? {
+                                labels: results.labels,
+                                can: dataviewResults(dataviewById(v.dataview)),
+                                on: effectiveResults(v),
+                                onChange: (ms) => results.onShowOn(panel.id, v.id, ms),
+                              }
+                            : null,
+                        onOpen: (open) => {
+                          setViewMenu(open ? v.id : null);
+                          if (open) onSelect(v.id);
+                        },
+                        onAction: (a) => {
+                          setViewMenu(null);
+                          // Move up / down step past views the pill's rail doesn't show.
+                          if (a === "view-up" || a === "view-down") {
+                            const to = i + (a === "view-up" ? -1 : 1);
+                            if (to >= 0 && to < railViews.length) onReorder(full(i), full(to));
+                            return;
+                          }
+                          onAction(a, v.id);
+                        },
+                      }
+                }
+                onClick={() => onSelect(v.id)}
+                onDragStart={() => setDragFrom(i)}
+                onDrop={() => {
+                  if (dragFrom !== null && dragFrom !== i) onReorder(full(dragFrom), full(i));
+                  setDragFrom(null);
+                }}
+              />
+            );
+          })}
           {!readOnly && (
             <button
               type="button"
@@ -224,7 +264,13 @@ export function EditorPanel({
           )}
         </div>
         <div style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          {!view ? null : view.kind === "placeholder" ? (
+          {!view ? (
+            pill && results ? (
+              <div data-no-views-on={pill} style={{ fontSize: 12, color: "var(--muted2)", lineHeight: 1.45, padding: "4px 2px" }}>
+                No views on {results.labels[pill]} in this panel. Add one with +, or turn on Show all views.
+              </div>
+            ) : null
+          ) : view.kind === "placeholder" ? (
             previewing && readyHits ? (
               <SwapPreview
                 Preview={Preview}
@@ -310,19 +356,32 @@ type RailMenu = {
   index: number;
   count: number;
   opening: boolean;
+  // 0.6 snag 3 / 03: on a Results dashboard, the edit bar's pill (`off`: this view isn't
+  // shown on it) and the "Show on…" checklist.
+  pill: { label: string; off: boolean } | null;
+  showOn: { labels: Record<ResultsMeasure, string>; can: ResultsMeasure[]; on: ResultsMeasure[]; onChange: (measures: ResultsMeasure[]) => void } | null;
   onOpen: (open: boolean) => void;
   onAction: (a: PanelAction) => void;
 };
 
 // One rail icon. In edit mode it sits in .ed-rv with its "···" tab and view menu; the hover,
 // focus and touch states are CSS in DashboardEditor's style block (.ed-rv).
-function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, onDrop }: { v: DataviewInstance; active: boolean; ready: boolean; draggable: boolean; menu: RailMenu | null; onClick: () => void; onDragStart: () => void; onDrop: () => void }) {
+function RailButton({ v, active, ready, dimmed = false, draggable, menu, onClick, onDragStart, onDrop }: { v: DataviewInstance; active: boolean; ready: boolean; dimmed?: boolean; draggable: boolean; menu: RailMenu | null; onClick: () => void; onDragStart: () => void; onDrop: () => void }) {
   const dv = v.kind === "view" ? dataviewById(v.dataview) : undefined;
   const label = v.kind === "view" ? (v.title ?? dv?.label ?? v.dataview) : `Planned: ${v.description}`;
   const planned = v.kind === "placeholder";
   const open = !!menu?.open;
-  const wrapRef = useDismiss(open, () => menu?.onOpen(false));
+  // The menu's second page: the "Show on…" checklist.
+  const [page, setPage] = useState<"menu" | "show-on">("menu");
+  const wrapRef = useDismiss(open, () => {
+    setPage("menu");
+    menu?.onOpen(false);
+  });
   const tabRef = useRef<HTMLButtonElement | null>(null);
+  const openMenu = (o: boolean) => {
+    setPage("menu");
+    menu?.onOpen(o);
+  };
   const icon = (
     <button
       type="button"
@@ -336,7 +395,7 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
         menu
           ? (e) => {
               e.preventDefault();
-              menu.onOpen(true);
+              openMenu(true);
             }
           : undefined
       }
@@ -363,7 +422,10 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
         cursor: draggable ? "grab" : "pointer",
         fontSize: 11,
         fontWeight: 800,
+        // 0.6 snag 3 / 03: Show all views -- a view not on the current pill, dimmed.
+        opacity: dimmed ? 0.4 : undefined,
       }}
+      data-off-pill={dimmed || undefined}
     >
       {planned ? "?" : railGlyph(dv?.railIcon ?? "TilesIcon")}
     </button>
@@ -377,6 +439,8 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
   return (
     <div ref={wrapRef} className="ed-rv" data-open={open || undefined} data-active={active || undefined} onKeyDown={onKeyDown}>
       {icon}
+      {/* Snag 3 / 02: the default view's marker, edit mode only (a read-only rail has no menu). */}
+      {menu.opening && <span aria-hidden="true" data-default-dot="" style={{ position: "absolute", right: 1, bottom: 1, width: 4, height: 4, borderRadius: 999, background: EC.amber, pointerEvents: "none" }} />}
       <button
         ref={tabRef}
         type="button"
@@ -385,7 +449,7 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
         aria-label={`Options for ${menu.title}`}
         aria-haspopup="true"
         aria-expanded={open}
-        onClick={() => menu.onOpen(!open)}
+        onClick={() => openMenu(!open)}
       >
         <span aria-hidden="true">···</span>
       </button>
@@ -397,15 +461,28 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
                 <span title={menu.title} style={{ minWidth: 0, flex: "1 1 auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {menu.title}
                 </span>
-                {menu.opening && <span className="shrink-0 rounded-full bg-[var(--box-bg)] px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-[var(--muted3)]">Opens first</span>}
+                {menu.opening && <span className="shrink-0 rounded-full bg-[var(--box-bg)] px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-[var(--muted3)]">Default</span>}
               </span>
             </MenuHeading>
+            {page === "show-on" && menu.showOn ? (
+              <ShowOnList {...menu.showOn} onBack={() => setPage("menu")} />
+            ) : (
+              <>
             {row("edit-view", "Edit this view…")}
             {row("swap-view", "Swap for another view…")}
             {row("move-view", "Move to another panel…")}
             {row("copy-view", "Copy to another panel…")}
             {row("copy-view-out", "Copy to another dashboard or meeting…", planned ? { disabled: true, tag: "Planned" } : {})}
-            {!menu.opening && row("make-default", "Make this the opening view")}
+            {/* Snag 3 / 02: always there; on the default view it is ticked and inert. 03: on a
+                Results dashboard, the default for the edit bar's pill. */}
+            {menu.pill
+              ? menu.opening
+                ? row("make-default", `Default for ${menu.pill.label} ✓`, { disabled: true })
+                : row("make-default", `Make this the default for ${menu.pill.label}`, menu.pill.off ? { disabled: true, tag: "Not shown" } : {})
+              : menu.opening
+                ? row("make-default", "Default view ✓", { disabled: true })
+                : row("make-default", "Make this the default view")}
+            {menu.showOn && <MenuRow label="Show on…" onClick={() => setPage("show-on")} />}
             {menu.index > 0 && row("view-up", "Move up")}
             {menu.index < menu.count - 1 && row("view-down", "Move down")}
             <MenuDivider />
@@ -417,9 +494,39 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
             >
               Remove this view
             </button>
+              </>
+            )}
           </PanelMenu>
         </div>
       )}
+    </div>
+  );
+}
+
+// 0.6 snag 3 / 03: the view menu's "Show on…" page. Ticked = the pill states this view
+// shows on; a state its dataview can't draw is dotted and can't be picked, and the last
+// ticked one can't be cleared.
+function ShowOnList({ labels, can, on, onChange, onBack }: { labels: Record<ResultsMeasure, string>; can: ResultsMeasure[]; on: ResultsMeasure[]; onChange: (measures: ResultsMeasure[]) => void; onBack: () => void }) {
+  return (
+    <div data-show-on="">
+      <MenuRow label="‹ Show on" onClick={onBack} />
+      <MenuDivider />
+      {RESULTS_MEASURES.map((m) => {
+        const drawable = can.includes(m);
+        const ticked = on.includes(m);
+        return (
+          <MenuRow
+            key={m}
+            label={labels[m]}
+            checkbox
+            dotted={!drawable}
+            selected={ticked}
+            tag={drawable ? undefined : "Can't draw"}
+            disabled={!drawable || (ticked && on.length === 1)}
+            onClick={() => onChange(ticked ? on.filter((x) => x !== m) : RESULTS_MEASURES.filter((x) => x === m || on.includes(x)))}
+          />
+        );
+      })}
     </div>
   );
 }

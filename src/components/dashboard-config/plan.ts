@@ -4,7 +4,9 @@
 // ColumnPanels) when a dashboard is drawn from config (?renderer=config). With no plan in
 // context -- every unflagged page -- those shells render exactly as before.
 import { createContext, useContext } from "react";
-import type { ColumnHeader, DashboardConfig, PanelConfig, RowConfig } from "@/catalogue/types";
+import type { ColumnHeader, DashboardConfig, DataviewId, PanelConfig, RowConfig } from "@/catalogue/types";
+import { followsResultsPill, showsOn } from "@/catalogue/results";
+import { useDashboardRuntime } from "./runtime";
 
 export type PlanRow = { row: RowConfig; panel: PanelConfig | undefined };
 export type PlanColumn = { column: ColumnHeader; rows: PlanRow[] };
@@ -41,6 +43,23 @@ export function usePlanColumn(columnKey: string): { plan: DashboardPlan; column:
   const plan = useContext(DashboardPlanContext);
   const column = plan?.byColumnKey.get(columnKey);
   return plan && column ? { plan, column } : null;
+}
+
+// 0.6 snagging round 3 / 01: a view's own settings (DataviewInstance.params) as the
+// column's config holds them -- the first instance of `dataview` in the column, in row and
+// rail order. null with no plan (every unflagged page) or no such view, so a host reading
+// it draws exactly as before.
+//
+// 0.6 snag 3 / 03: on a Results dashboard, the first instance shown on the current pill
+// (so a view kept per measure draws each measure's own settings), else the first.
+export function usePlanViewParams(columnKey: string, dataview: DataviewId): Record<string, unknown> | null {
+  const planned = usePlanColumn(columnKey);
+  const runtime = useDashboardRuntime();
+  if (!planned) return null;
+  const all = planned.column.rows.flatMap(({ panel }) => (panel?.dataviews ?? []).filter((v) => v.kind === "view" && v.dataview === dataview));
+  const pill = runtime && followsResultsPill(planned.plan.config) ? runtime.results : null;
+  const pick = (pill ? all.find((v) => showsOn(v, pill)) : undefined) ?? all[0];
+  return pick?.kind === "view" ? (pick.params ?? null) : null;
 }
 
 // Is the config renderer switched on? `?renderer=config` on the URL, or the build-time

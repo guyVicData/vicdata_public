@@ -17,6 +17,7 @@
 //   onCopied    told where the view went.
 // The pure rules are src/lib/copy-view.ts; the shell is the comparator chooser's (Panel,
 // Body, Footer in TeacherModal "chooser"), as Add a view uses.
+import { withoutResults } from "@/catalogue/results";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -247,7 +248,7 @@ function Dialog({ onClose, source, superAdmin = false, onCopied }: CopyViewDialo
     const slides = loaded.config.presentation?.slides ?? [];
     // A new meeting starts with one empty slide: the view goes on it.
     const slideId = created ? (slides[0]?.id ?? "new") : slide;
-    const r = addViewToMeeting(loaded.config, slideId, { ...source.instance, id: newId("view"), title: source.title }, source.pinned);
+    const r = addViewToMeeting(loaded.config, slideId, { ...withoutResults(source.instance), id: newId("view"), title: source.title }, source.pinned);
     if (!r.ok) throw new Error(r.reason === "slide-full" ? "That slide is full. Pick another, or a new slide." : "That slide isn't there any more.");
     await saveMeeting(supabase, id, r.config, loaded.version?.id ?? null);
     return { kind: "meeting", meetingId: id, href: `/teacher/meetings/${id}`, name: loaded.row.name, slideId: r.slideId, arrangement: r.arrangement, created };

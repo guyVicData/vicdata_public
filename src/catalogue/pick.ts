@@ -4,6 +4,7 @@
 //
 // Everything here is a structural filter over the registry, never a data check (F9): what
 // a chooser step offers is decided by which registered dataviews exist, not by this school.
+import { dataviewResults } from "./results";
 import { changeKind, changeOfMeasure, changeWord } from "./titles";
 import { DATAVIEWS, MEASURES } from "./index";
 import { compareMatches, matchDataviews, placements, whyNot, type PickContext, type PickResult } from "./matching";
@@ -18,6 +19,7 @@ import type {
   DataviewInstance,
   FocusKind,
   Measure,
+  NumberTilesParams,
   NumberType,
   PanelConfig,
   PanelOverride,
@@ -88,7 +90,7 @@ export type CustomViewParams = {
   look: ViewType;
   title: string;
   rollForward: boolean;
-};
+} & NumberTilesParams;
 
 // ---------------------------------------------------------------------------------
 // Vocabulary
@@ -233,8 +235,14 @@ export function toPickContext(ctx: PickPanelContext, opts: { palette?: DataId[];
   };
 }
 
+// 0.6 snag 3 / 03: on a Results pill state, the views drawn on it (dataviewResults) come
+// first; otherwise the matching order (tier, then rail order) is kept.
 export function pickResults(ctx: PickPanelContext, opts: { palette?: DataId[]; superAdmin?: boolean } = {}): PickResult[] {
-  return matchDataviews(DATAVIEWS, toPickContext(ctx, opts), DASHBOARDS);
+  const out = matchDataviews(DATAVIEWS, toPickContext(ctx, opts), DASHBOARDS);
+  const m = ctx.data === "academic.results" ? ctx.results : undefined;
+  if (!m) return out;
+  const draws = (r: PickResult) => (dataviewResults(r.dataview).includes(m) ? 0 : 1);
+  return out.map((r, i) => ({ r, i })).sort((a, b) => draws(a.r) - draws(b.r) || a.i - b.i).map((x) => x.r);
 }
 
 // How many registered views a partial context leads to, ignoring the dimensions not yet

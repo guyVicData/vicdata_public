@@ -16,7 +16,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { Dataview, DataviewInstance, DashboardConfig, PanelOverride } from "@/catalogue/types";
+import type { Dataview, DataviewInstance, DashboardConfig, PanelOverride, ResultsMeasure } from "@/catalogue/types";
+import { dataviewById } from "@/catalogue";
+import { followsResultsPill, showsOn, tagForPill } from "@/catalogue/results";
+import { measuresFor } from "@/lib/teacher-view-panels";
+import { PillMenu } from "@/components/teacher/PillMenu";
+import { MenuHeading, MenuRow } from "@/components/teacher/PanelMenu";
+import { SwitchButton } from "@/components/edit-mode/EditSwitch";
 import { contextFromPanel, settingsOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
 import { DASHBOARDS, groupOf } from "@/catalogue/dashboards";
 import { AddViewChooser } from "@/components/chooser-v06/AddViewChooser";
@@ -46,7 +52,7 @@ import { ChevronDown, ChevronUp, EBtn } from "./bits";
 import { ContextStepsDialog, contextFromColumn } from "./ContextSteps";
 import { ColumnChangeDialog, ExportDialog, PublishDialog, RowSettingsDialog, SaveAsDialog, SlotMapDialog, SpanAskDialog, TextDialog } from "./Dialogs";
 import { EditorCanvas, canvasWidth, type CanvasHandlers } from "./EditorCanvas";
-import type { PanelAction } from "./EditorPanel";
+import { EditorResultsContext, type EditorResults, type PanelAction } from "./EditorPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import { DataFreePreview, type PanelPreviewComponent } from "./PanelPreview";
 import { SettingsDialog, type SettingsValue } from "./SettingsDialog";
@@ -115,7 +121,7 @@ const RAIL_MENU_CSS =
 
 const OWNER_WORD = { vicdata: "VicData", school: "School", user: "Personal" } as const;
 
-export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels, school = null, subjects, top, onExit, onSwitch, writeAsSelf = false }: DashboardEditorProps) {
+export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels: hostLabels, school = null, subjects, top, onExit, onSwitch, writeAsSelf = false }: DashboardEditorProps) {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [theme] = useTeacherTheme();
@@ -134,6 +140,14 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [renaming, setRenaming] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // 0.6 snag 3 / 03: a toast that offers Undo (a view leaving the pill's rail).
+  // The toast text that offers it; any other toast doesn't.
+  const [undoFor, setUndoFor] = useState<string | null>(null);
+  const toastUndo = !!toast && toast === undoFor;
+  // 0.6 snag 3 / 03: the Results pill (on a Results dashboard): the page's pill when the
+  // editor opens in place, else Average points. Rails, previews and the view menu follow it.
+  const [pill, setPill] = useState<ResultsMeasure>(hostLabels?.results ?? "points");
+  const [showAll, setShowAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
 
@@ -178,9 +192,9 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
 
   useEffect(() => {
     if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 4000);
+    const t = window.setTimeout(() => setToast(null), toastUndo ? 6000 : 4000);
     return () => window.clearTimeout(t);
-  }, [toast]);
+  }, [toast, toastUndo]);
 
   // Autosave the draft after the last edit. An edit still waiting when the editor closes
   // (Exit, or the Edit switch going off) is saved then, so nothing is lost.
@@ -229,6 +243,30 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   }, []);
 
   // ----------------------------------------------------------------- derived
+
+  const resultsPill = followsResultsPill(config);
+  const pillMeasures = measuresFor(config.columns[0]?.data.phase ?? "ks4");
+  const pillLabels = Object.fromEntries(pillMeasures.map((m) => [m.id, m.label])) as Record<ResultsMeasure, string>;
+  const pillOn = resultsPill ? pill : null;
+  // Titles and previews read the editor's pill, not the page's.
+  const labels = useMemo(() => (resultsPill ? { ...hostLabels, results: pill } : hostLabels), [resultsPill, hostLabels, pill]);
+  const resultsCtx: EditorResults | null = resultsPill
+    ? {
+        measure: pill,
+        labels: pillLabels,
+        showAll,
+        onShowOn: (_panelId, instanceId, measures) => {
+          const inst = config.panels.flatMap((p) => p.dataviews).find((v) => v.id === instanceId);
+          apply((c) => ops.setViewResults(c, instanceId, measures));
+          if (inst && showsOn(inst, pill) && !measures.includes(pill) && !showAll) {
+            const name = inst.kind === "view" ? (inst.title ?? dataviewById(inst.dataview)?.label ?? inst.dataview) : inst.description;
+            const text = `${name} no longer shows on ${pillLabels[pill]}.`;
+            setUndoFor(text);
+            setToast(text);
+          }
+        },
+      }
+    : null;
 
   const ready = useMemo(() => ops.readyToSwap(config), [config]);
   const planned = useMemo(() => ops.plannedCount(config), [config]);
@@ -285,7 +323,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     if (!inst) return;
     if (a === "edit-view" || a === "swap-view") return setDialog({ kind: "replace", mode: a === "edit-view" ? "edit" : "swap", instance: inst, ctx: contextFromPanel(config, panelId, labels) });
     if (a === "remove-view") return apply((c) => ops.removeView(c, instanceId));
-    if (a === "make-default") return apply((c) => ops.setDefaultView(c, panelId, instanceId));
+    if (a === "make-default") return apply((c) => ops.setDefaultView(c, panelId, instanceId, pillOn));
     if (a === "view-up" || a === "view-down") return apply((c) => ops.moveViewWithinPanel(c, instanceId, a === "view-up" ? -1 : 1));
     if (a === "move-view") return setDialog({ kind: "slot", mode: "move-view", panelId, instanceId });
     if (a === "copy-view") return setDialog({ kind: "slot", mode: "copy-view", panelId, instanceId });
@@ -543,9 +581,29 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
             </nav>
           )}
         </div>
-        {config.features?.subjectChips && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ border: "1px dashed var(--panel-border2)", color: "var(--muted2)", borderRadius: 999, padding: "5px 12px", fontSize: 12, fontWeight: 600 }}>Subject chips: the viewer&apos;s own subjects</span>
+        {(config.features?.subjectChips || resultsPill) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {resultsPill && (
+              <div data-editor-pill="" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {/* 0.6 snag 3 / 03: the page's own Results pill, for the editor's rails. */}
+                <PillMenu label="Results" value={pillLabels[pill]} menuLabel="Switch measure" width={236} align="right">
+                  {(close) => (
+                    <>
+                      <MenuHeading>Switch measure</MenuHeading>
+                      {pillMeasures.map((m) => (
+                        <MenuRow key={m.id} label={m.label} selected={m.id === pill} onClick={() => { setPill(m.id as ResultsMeasure); close(); }} />
+                      ))}
+                    </>
+                  )}
+                </PillMenu>
+                <SwitchButton on={showAll} onChange={setShowAll} className="text-[12px] font-semibold text-[var(--muted2)] hover:text-[var(--fg)]">
+                  Show all views
+                </SwitchButton>
+              </div>
+            )}
+            {config.features?.subjectChips && (
+              <span style={{ border: "1px dashed var(--panel-border2)", color: "var(--muted2)", borderRadius: 999, padding: "5px 12px", fontSize: 12, fontWeight: 600 }}>Subject chips: the viewer&apos;s own subjects</span>
+            )}
           </div>
         )}
       </div>
@@ -554,6 +612,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
           <div style={{ zoom, opacity: historyOpen && !previewing ? 0.55 : 1 }}>
+            <EditorResultsContext.Provider value={resultsCtx}>
             <EditorCanvas
               config={shown}
               readOnly={!!previewing || historyOpen}
@@ -564,6 +623,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
               ready={previewing ? {} : ready}
               handlers={previewing || historyOpen ? undefined : handlers}
             />
+            </EditorResultsContext.Provider>
           </div>
           {previewing && <div style={{ fontSize: 12, color: "var(--muted2)" }}>Previewing version {previewing.version}, read-only.</div>}
         </div>
@@ -592,6 +652,15 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       {toast && (
         <div role="status" style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", background: "var(--fg)", color: "var(--bg)", borderRadius: 10, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, zIndex: 1600, boxShadow: "0 10px 24px rgba(0,0,0,0.3)" }}>
           {toast}
+          {toastUndo && (
+            <button
+              type="button"
+              onClick={() => { setHistory(ops.undo); setToast(null); }}
+              style={{ marginLeft: 12, border: "none", background: "transparent", color: "inherit", textDecoration: "underline", fontWeight: 700, fontSize: 12.5, cursor: "pointer", padding: 0, fontFamily: "inherit" }}
+            >
+              Undo
+            </button>
+          )}
         </div>
       )}
 
@@ -605,8 +674,11 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           school={school}
           subjects={subjects}
           onClose={() => setDialog(null)}
-          onAdd={(instance: DataviewInstance, override?: PanelOverride) => {
+          onAdd={(added: DataviewInstance, override?: PanelOverride) => {
             const target = dialog.target;
+            // 0.6 snag 3 / 03: added under a pill, the view shows on that measure only.
+            const instance = pillOn ? tagForPill(added, pillOn) : added;
+            if (pillOn && !showsOn(instance, pillOn)) setToast(`${instance.kind === "view" ? (dataviewById(instance.dataview)?.label ?? instance.dataview) : "That view"} isn't drawn on ${pillLabels[pillOn]}; it shows on the other measures.`);
             setHistory((h) => {
               try {
                 const r = ops.addView(h.present, target, instance, override);
