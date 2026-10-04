@@ -9,7 +9,7 @@ import { DATAVIEWS, dataviewForRail } from "@/catalogue";
 import { TEACHER_DASHBOARDS, teacherDashboardFor } from "@/catalogue/dashboards";
 import { RESULTS_MEASURES, followsResultsPill } from "@/catalogue/results";
 import type { DashboardConfig, DataviewInstance, HostId, PanelConfig } from "@/catalogue/types";
-import { configViewIds, offRailEntry, type RailEntry } from "@/components/dashboard-config/rail";
+import { configViewIds, offRailEntry, onDefault, type RailEntry } from "@/components/dashboard-config/rail";
 import * as ops from "./editor-ops";
 import { memberSummary, neutralWords } from "./change-summary";
 
@@ -130,4 +130,11 @@ test("a view not in the config never draws: every removal moves the host to a co
   const g = teacherDashboardFor("ks4", "results");
   const cfg = g.panels.find((p) => p.id === "vicdata.ks4.results.c1.trends")!;
   assert.equal(offRailEntry(hostEntries("teacher.c1.results", "trend", "DV-C1-RES-TR-TABLE"), cfg, { results: "points" }), null);
+});
+
+test("a panel already on its default counts as shown, so the first click away isn't undone", () => {
+  const g = teacherDashboardFor("ks4", "results");
+  const cfg = g.panels.find((p) => p.id === "vicdata.ks4.results.c1.trends")!;
+  assert.equal(onDefault(hostEntries("teacher.c1.results", "trend", "DV-C1-RES-TR-CHART"), cfg, { results: "points" }), true);
+  assert.equal(onDefault(hostEntries("teacher.c1.results", "trend", "DV-C1-RES-TR-TABLE"), cfg, { results: "points" }), false);
 });

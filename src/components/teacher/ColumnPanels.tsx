@@ -23,7 +23,7 @@ import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
 import { usePlanColumn } from "@/components/dashboard-config/plan";
 import { PanelBoundary, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
-import { configuredRail, defaultEntry, offRailEntry, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
+import { configuredRail, defaultEntry, offRailEntry, onDefault, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
 import { followsResultsPill, panelState, stateDefault, stateKey, viewsOnState, type VariantState } from "@/catalogue/variants";
 import { DATAVIEWS } from "@/catalogue/dataviews";
 import type { DashboardConfig, HostId, PanelConfig } from "@/catalogue/types";
@@ -122,7 +122,7 @@ export function ColumnPanels({
   // the Results pill, Context's Compare against, Comparisons' comparator kind.
   const page = planned ? runtimeState(runtime, followsResultsPill(planned.plan.config)) : null;
   const stateOf = (cfg: PanelConfig): VariantState | null => (planned && page ? panelState(planned.plan.config, cfg, page) : null);
-  const pendingDefaults: { key: string; first: RailEntry | null; off: RailEntry | null }[] = [];
+  const pendingDefaults: { key: string; first: RailEntry | null; off: RailEntry | null; settled: boolean }[] = [];
   if (planned && host) {
     const seen = new Set<PanelId>();
     for (const { row, panel: cfg } of planned.column.rows) {
@@ -135,12 +135,16 @@ export function ColumnPanels({
       const state = stateOf(cfg);
       // A state with its own default opens on it the first time that state shows.
       const ownKey = state && stateDefault(cfg, state) ? `${cfg.id}:${stateKey(state)}` : cfg.id;
-      pendingDefaults.push({ key: ownKey, first: defaultEntry(entries, cfg, state), off: offRailEntry(entries, cfg, state) });
+      const first = defaultEntry(entries, cfg, state);
+      pendingDefaults.push({ key: ownKey, first, off: offRailEntry(entries, cfg, state), settled: !first && onDefault(entries, cfg, state) });
     }
   }
   const applied = useRef(new Set<string>());
   useEffect(() => {
-    for (const { key, first, off } of pendingDefaults) {
+    for (const { key, first, off, settled } of pendingDefaults) {
+      // 0.6.1 S1: already on its default when it first shows -- that counts as applied, so
+      // the member's first click to another view isn't switched back.
+      if (settled) applied.current.add(key);
       if (first && !applied.current.has(key)) {
         applied.current.add(key);
         first.onClick?.();

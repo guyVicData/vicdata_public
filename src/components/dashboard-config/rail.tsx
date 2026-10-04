@@ -94,6 +94,16 @@ export function defaultEntry(entries: RailEntry[], cfg: PanelConfig, state: Pane
   return first && !first.active ? first : null;
 }
 
+// 0.6.1 S1: whether the host already shows the panel's default for this state, so its
+// first show has nothing to switch. The renderer then counts the default as applied: a
+// member's first rail click away from it is theirs, not undone by a late "first show".
+export function onDefault(entries: RailEntry[], cfg: PanelConfig, state: PanelStateArg = null): boolean {
+  const st = asState(state);
+  const wantedId = configuredDefaultFor(cfg, st);
+  const def = cfg.dataviews.find((v) => v.id === wantedId && v.kind === "view" && showsOnState(v, st));
+  return !!def && def.kind === "view" && entries.some((e) => e.active && e.dataview === def.dataview);
+}
+
 // 0.6 snag 3 / 03 (every axis since snag 4 / 02): when the host is showing a view the
 // current state's rail doesn't list (its instance was taken off this state), the entry to
 // move it to: the state's default, else its first offered view. null = nothing to do.
