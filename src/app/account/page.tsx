@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { VISIBLE_ROLE_LABELS, visibleRolesOf } from "@/lib/roles";
+import { TryAsCard } from "@/components/trial/TryAsCard";
 
 // 0.6 S1: a member's roles are a set (school_memberships.roles), labelled from roles.ts;
 // School-Admin is is_admin or the account holder. HOD and Finance are hidden in 0.6.
@@ -115,6 +116,8 @@ export default function AccountPage() {
             guaranteed to be able to reach (via NavBar's own "Account" link). */}
         <LogoutButton />
       </div>
+      {/* 0.6 snag 2: platform admins only (renders nothing for anyone else). */}
+      <TryAsCard />
       {memberships.length === 0 && (
         <p className="text-sm text-neutral-500">
           No memberships yet.{" "}

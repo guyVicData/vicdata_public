@@ -15,7 +15,12 @@
 // path), Dashboards (the library), Recruitment and Meetings (showing the next one), and
 // a role switch only for people holding more than one role. Flag off, the page is exactly
 // what it was: the same query, the same tiles.
-import { confirmLookAs, readLookAs } from "@/lib/look-as";
+//
+// 0.6 snag 2: in a "Try VicData as…" trial (src/lib/trial.ts; Platform's "Look at it as…"
+// lands here too) this is the role home exactly as a member holding only that role at that
+// school lands on it: config renderer whatever the flag, that role's lens, no role switch.
+import { resolveTrial, trialHref } from "@/lib/trial";
+import { TrialBanner } from "@/components/trial/TrialBanner";
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
@@ -103,22 +108,22 @@ export default function TeacherHomePage() {
           .maybeSingle<{ email: string | null; full_name: string | null }>();
         setDisplayName(profile?.full_name || profile?.email || user.email || null);
       }
-      // VicData 0.6 S1: Platform's read-only "Look at it as…" lands here; a platform admin
-      // previews that school, and the phase tiles carry the preview on.
+      // VicData 0.6: a confirmed trial (the look-as pair, or this tab's active trial) is
+      // that school as that one role, and the phase tiles carry it on.
       const search = new URLSearchParams(window.location.search);
-      const on = configRendererRequested(search);
+      const trial = await resolveTrial(supabase);
+      // A trial always uses the config renderer: role homes exist only there.
+      const on = configRendererRequested(search) || !!trial;
       setV06(on);
-      const requestedLookAs = readLookAs(search);
       let urn: string | null;
       let myLenses: Lens[] = ["teacher"];
       let lookingAs: Lens | null = null;
-      if (requestedLookAs && (await confirmLookAs(supabase, requestedLookAs))) {
-        const { data: school } = await supabase.from("schools").select("current_name").eq("urn", requestedLookAs.urn).maybeSingle<{ current_name: string }>();
-        urn = requestedLookAs.urn;
-        setLookAsQuery(`?lookAs=${encodeURIComponent(requestedLookAs.urn)}&as=${encodeURIComponent(requestedLookAs.role)}`);
-        lookingAs = lensForLookAs(requestedLookAs.role);
+      if (trial) {
+        urn = trial.urn;
+        setLookAsQuery(trialHref(trial, ""));
+        lookingAs = lensForLookAs(trial.role);
         setSchoolUrn(urn);
-        setSchoolName(school?.current_name ?? null);
+        setSchoolName(trial.schoolName);
       } else {
         const { data: membership } = await supabase
           .from("school_memberships")
@@ -145,7 +150,7 @@ export default function TeacherHomePage() {
           });
       }
       if (on) {
-        // Look at it as…: the previewed role is the only lens. Otherwise the person's own.
+        // A trial: its role is the only lens (no role switch). Otherwise the person's own.
         const ls = lookingAs ? [lookingAs] : myLenses;
         setLenses(ls);
         setLensState(lookingAs ?? initialLens(ls, readStoredLens()));
@@ -184,6 +189,7 @@ export default function TeacherHomePage() {
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-3xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6">
+      <TrialBanner />
       {/* No phase switcher here (phases={[]}): the tile list below already is the phase
           picker, and a richer one than the nav's. */}
       <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />

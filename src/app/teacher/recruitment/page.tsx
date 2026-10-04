@@ -25,6 +25,8 @@ import {
 import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
+import { resolveTrial } from "@/lib/trial";
+import { TrialBanner } from "@/components/trial/TrialBanner";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 
 type Comparison = {
@@ -247,11 +249,15 @@ export default function RecruitmentPage() {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [deleteBy, setDeleteBy] = useState(defaultDeleteBy());
+  const [jobError, setJobError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data: sessionData } = await supabase.auth.getSession();
-      const { data: membership } = await supabase
+      // 0.6 snag 2: in a "Try VicData as…" trial the anchor school is the trial's, and the
+      // jobs listed and created are the trial's own (teacher-view-data.ts, trial_key).
+      const trial = await resolveTrial(supabase);
+      const { data: membership } = trial ? { data: { school_accounts: { school_urn: trial.urn } } } : await supabase
         .from("school_memberships")
         .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn)")
         // The signed-in person's own row (S3b fix 2): RLS returns every approved colleague's too.
@@ -271,6 +277,7 @@ export default function RecruitmentPage() {
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-2xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">
+      <TrialBanner />
       <TeacherNav phase={null} phases={onboardedPhases} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
       <div className="mt-6 flex items-baseline justify-between gap-3">
         {/* §14: named as the question it answers, not "Recruitment". */}
@@ -318,12 +325,13 @@ export default function RecruitmentPage() {
             type="button"
             disabled={!title.trim() || !deleteBy}
             onClick={async () => {
+              setJobError(null);
               const job = await createJob(supabase, {
                 title: title.trim(),
                 subject: subject.trim() || null,
                 ksStage: null,
                 deleteBy,
-              });
+              }).catch((e: Error) => { setJobError(e.message); return null; });
               if (job) { setJobs([job, ...jobs]); setTitle(""); setSubject(""); setDeleteBy(defaultDeleteBy()); }
             }}
             className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
@@ -331,6 +339,7 @@ export default function RecruitmentPage() {
             Create job
           </button>
         </div>
+        {jobError && <p role="alert" className="mt-2 text-sm text-amber-700 dark:text-amber-400">{jobError}</p>}
       </section>
     </main>
   );

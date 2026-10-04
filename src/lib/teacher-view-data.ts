@@ -1,11 +1,18 @@
 // Teacher view persistence layer (design brief v2 §§5, 7, 10, 11, 12).
 //
 // Everything here is creator-only by RLS (profile_id = auth.uid()), so these helpers
-// never take an owner argument -- the database decides, not the caller. That is
+// never take an owner argument -- the database decides, not the caller.
+//
+// 0.6 snag 2 (Try VicData as…): every school_urn written or read here goes through
+// stateUrn(), which is the trial's state key while a platform admin is trying this school
+// as a role (src/lib/trial.ts), else the URN itself -- so a trial's walkthrough, ticked
+// subjects, notes and last-seen never touch the person's own rows. Recruitment jobs carry
+// trial_key instead (they have no school column). That is
 // deliberate: §10's candidate names and §12's private notes must not be able to leak by a
 // caller passing the wrong id.
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { TeacherPhase } from "./teacher-view-phases";
+import { getActiveTrial, isMissingColumn, stateUrn, TRIAL_NEEDS_UPDATE } from "./trial";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
@@ -23,7 +30,7 @@ export async function fetchOnboardedPhases(supabase: Supa, schoolUrn: string): P
   const { data, error } = await supabase
     .from("teacher_view_onboarding")
     .select("phase")
-    .eq("school_urn", schoolUrn);
+    .eq("school_urn", stateUrn(schoolUrn));
   if (error || !data) return [];
   return data.map((r: { phase: string }) => r.phase as TeacherPhase);
 }
@@ -34,7 +41,7 @@ export async function completeOnboarding(supabase: Supa, schoolUrn: string, phas
   const { error } = await supabase
     .from("teacher_view_onboarding")
     .upsert(
-      { profile_id: userData.user.id, school_urn: schoolUrn, phase },
+      { profile_id: userData.user.id, school_urn: stateUrn(schoolUrn), phase },
       { onConflict: "profile_id,school_urn,phase" },
     );
   return !error;
@@ -57,7 +64,7 @@ export async function fetchPreferences(
   const { data, error } = await supabase
     .from("teacher_view_preferences")
     .select("subjects, columns, last_seen_period")
-    .eq("school_urn", schoolUrn)
+    .eq("school_urn", stateUrn(schoolUrn))
     .eq("phase", phase)
     .maybeSingle();
   if (error || !data) return EMPTY_PREFERENCES;
@@ -79,7 +86,7 @@ export async function savePreferences(
   const { error } = await supabase.from("teacher_view_preferences").upsert(
     {
       profile_id: userData.user.id,
-      school_urn: schoolUrn,
+      school_urn: stateUrn(schoolUrn),
       phase,
       subjects: prefs.subjects,
       columns: prefs.columns,
@@ -198,7 +205,7 @@ export async function fetchNotes(supabase: Supa, schoolUrn: string): Promise<Rec
   const { data, error } = await supabase
     .from("teacher_view_notes")
     .select("chart_key, body")
-    .eq("school_urn", schoolUrn);
+    .eq("school_urn", stateUrn(schoolUrn));
   if (error || !data) return {};
   const out: Record<string, string> = {};
   for (const row of data as { chart_key: string; body: string }[]) out[row.chart_key] = row.body;
@@ -215,12 +222,12 @@ export async function saveNote(supabase: Supa, schoolUrn: string, chartKey: stri
     const { error } = await supabase
       .from("teacher_view_notes")
       .delete()
-      .eq("school_urn", schoolUrn)
+      .eq("school_urn", stateUrn(schoolUrn))
       .eq("chart_key", chartKey);
     return !error;
   }
   const { error } = await supabase.from("teacher_view_notes").upsert(
-    { profile_id: userData.user.id, school_urn: schoolUrn, chart_key: chartKey, body, updated_at: new Date().toISOString() },
+    { profile_id: userData.user.id, school_urn: stateUrn(schoolUrn), chart_key: chartKey, body, updated_at: new Date().toISOString() },
     { onConflict: "profile_id,school_urn,chart_key" },
   );
   return !error;
@@ -245,11 +252,17 @@ export type RecruitmentCandidate = {
   interview_at: string | null;
 };
 
+// Normally the person's own jobs (trial_key null); in a trial, that trial's. Before the
+// trials migration is applied the column doesn't exist: outside a trial the list is read
+// unfiltered (every job is a normal one then), inside a trial it is empty.
 export async function fetchJobs(supabase: Supa): Promise<RecruitmentJob[]> {
-  const { data, error } = await supabase
-    .from("recruitment_jobs")
-    .select("id, title, subject, ks_stage, delete_by, created_at")
-    .order("created_at", { ascending: false });
+  const trial = getActiveTrial();
+  const base = () => supabase.from("recruitment_jobs").select("id, title, subject, ks_stage, delete_by, created_at").order("created_at", { ascending: false });
+  let { data, error } = await (trial ? base().eq("trial_key", trial.stateKey) : base().is("trial_key", null));
+  if (error && isMissingColumn(error)) {
+    if (trial) return [];
+    ({ data, error } = await base());
+  }
   return error || !data ? [] : (data as RecruitmentJob[]);
 }
 
@@ -259,6 +272,7 @@ export async function createJob(
 ): Promise<RecruitmentJob | null> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return null;
+  const trial = getActiveTrial();
   const { data, error } = await supabase
     .from("recruitment_jobs")
     .insert({
@@ -267,9 +281,12 @@ export async function createJob(
       subject: job.subject,
       ks_stage: job.ksStage,
       delete_by: job.deleteBy,
+      ...(trial ? { trial_key: trial.stateKey } : {}),
     })
     .select("id, title, subject, ks_stage, delete_by, created_at")
     .single();
+  // In a trial, never fall back to an untagged row (it would land in the person's own list).
+  if (error && trial && isMissingColumn(error)) throw new Error(TRIAL_NEEDS_UPDATE);
   return error || !data ? null : (data as RecruitmentJob);
 }
 
@@ -380,7 +397,7 @@ export async function markPeriodSeen(
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return false;
   const { error } = await supabase.from("teacher_view_preferences").upsert(
-    { profile_id: userData.user.id, school_urn: schoolUrn, phase, last_seen_period: period, updated_at: new Date().toISOString() },
+    { profile_id: userData.user.id, school_urn: stateUrn(schoolUrn), phase, last_seen_period: period, updated_at: new Date().toISOString() },
     { onConflict: "profile_id,school_urn,phase" },
   );
   return !error;

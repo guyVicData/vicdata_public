@@ -6,6 +6,7 @@
 // suggested titles, shuffle, undo/redo (G8), plus drag-and-drop between slots and
 // slides. Present (1-up fullscreen), Grid view and Export PDF. An archived meeting is
 // read-only but can still be presented and exported.
+import { TrialBanner } from "@/components/trial/TrialBanner";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { DashboardConfig, DataviewInstance, SlideConfig } from "@/catalogue/types";
@@ -51,6 +52,8 @@ export function MeetingEditorScreen({ id, openAddView }: { id: string; openAddVi
 
   return (
     <main id="teacher-root" data-theme={theme} style={ROSE_ROOT_STYLE} className="flex min-h-dvh w-full flex-col bg-[var(--bg)] leading-[1.2] text-[var(--fg)]">
+      {/* Only while trying VicData as a member (renders nothing otherwise). */}
+      <TrialBanner className="mx-4 mt-3" />
       {state.status === "ready" ? (
         <MeetingEditor meeting={state.meeting} school={state.school} openAddView={openAddView} />
       ) : (

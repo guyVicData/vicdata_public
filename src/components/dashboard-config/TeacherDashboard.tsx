@@ -45,6 +45,8 @@ import { cachedFetchJson } from "@/lib/fetch-cache";
 import type { PinnedSettings } from "@/lib/meeting-views";
 import { embedColumns, embedInitialColumns, embedSubjectKey, pinnedSetName, placeholderOnlyNote, savedSetByName, yearPeriodOf } from "./embed";
 import { confirmLookAs, readLookAs, type LookAs } from "@/lib/look-as";
+import { resolveTrial } from "@/lib/trial";
+import { TrialBanner } from "@/components/trial/TrialBanner";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
@@ -287,12 +289,17 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       if (!token) { setSignedOut(true); setError("Sign in to see this dashboard."); setLoading(false); return; }
       const search = new URLSearchParams(window.location.search);
       // Embed: no look-as and no URL flag -- the school and the config are the caller's.
-      const requestedLookAs = embed ? null : readLookAs(search);
+      // 0.6 snag 2: the look-as pair (or this tab's active trial) is a "Try VicData as…"
+      // trial (src/lib/trial.ts): that school as a member with that one role, saving to the
+      // trial's own state (teacher-view-data.ts keys it), on the config renderer whatever
+      // the flag. Only `&peek=1` (Catalogue's frames) is still the old read-only look.
+      const trial = embed ? null : await resolveTrial(supabase);
+      const requestedLookAs = embed || trial || search.get("peek") !== "1" ? null : readLookAs(search);
       const lookAsOk = requestedLookAs ? await confirmLookAs(supabase, requestedLookAs) : false;
       // Started here so it runs alongside the school's data; awaited just before the page
       // first paints, so the stored config is drawn from the start (no swap, no flash).
       let publishedLoad: Promise<Record<string, DashboardConfig>> | null = null;
-      if (embed ? !!embedConfig : configRendererRequested(search)) {
+      if (embed ? !!embedConfig : configRendererRequested(search) || !!trial) {
         setConfigMode(true);
         if (!embed && (phase === "ks4" || phase === "ks5")) {
           const group = [teacherDashboardFor(phase, "candidates"), teacherDashboardFor(phase, "results")];
@@ -303,8 +310,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // Super-admin sees placeholder panels; an embed asks only when it has one, or when
         // it is a whole dashboard (Copy this view lets super-admin copy into VicData's).
         if (!embed || (embedConfig?.panels.length ?? 0) > 1 || embedConfig?.panels.some((p) => p.dataviews.every((v) => v.kind === "placeholder"))) {
+          // A trial is the member's view: no super-admin chrome or placeholder panels.
           const { data: admin } = await supabase.rpc("is_platform_admin");
-          setSuperAdmin(admin === true);
+          setSuperAdmin(admin === true && !trial);
         }
       }
       let urn: string | null;
@@ -315,6 +323,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           const { data: school } = await supabase.from("schools").select("current_name").eq("urn", urn).maybeSingle<{ current_name: string }>();
           setSchoolName(school?.current_name ?? embedPinned.schoolName ?? null);
         }
+      } else if (trial) {
+        urn = trial.urn;
+        setSchoolUrn(urn);
+        setSchoolName(trial.schoolName);
       } else if (lookAsOk && requestedLookAs) {
         setLookAs(requestedLookAs);
         const { data: school } = await supabase.from("schools").select("current_name").eq("urn", requestedLookAs.urn).maybeSingle<{ current_name: string }>();
@@ -847,6 +859,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // its content; this pins onboarding to the screen width instead.
         className="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
       >
+        <TrialBanner className="" />
         {step === 0 ? (
           <Link href="/teacher" className="w-fit text-[12.5px] text-[var(--muted)]">&larr; Back</Link>
         ) : (
@@ -2123,6 +2136,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
+      {!embed && <TrialBanner />}
       {/* Top-nav completion part 3: below `sm` the phone nav (NavPhone.dc.html) replaces
           TeacherNav + ControlBar. A CSS swap, so there is no viewport check to hydrate
           wrongly -- and both read the same state, so switching phase, subject or measure
@@ -2197,7 +2211,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       {/* §13's banner. States what actually changed and when, rather than just shouting. */}
       {lookAs && (
         <p className="mt-3 rounded-md border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 py-2 text-sm text-[var(--muted2)] print:hidden">
-          Looking at {schoolName ?? lookAs.urn} as {VISIBLE_ROLE_LABELS[lookAs.role as VisibleRoleId] ?? lookAs.role}: a read-only preview from Platform, logged. School-shared sets and other people&rsquo;s notes aren&rsquo;t shown.
+          Looking at {schoolName ?? lookAs.urn} as {VISIBLE_ROLE_LABELS[lookAs.role as VisibleRoleId] ?? lookAs.role}: the Catalogue&rsquo;s read-only look. School-shared sets and other people&rsquo;s notes aren&rsquo;t shown.
         </p>
       )}
       {/* 0.6 integration, flag on: "Updated — what's changed" once the VicData dashboard

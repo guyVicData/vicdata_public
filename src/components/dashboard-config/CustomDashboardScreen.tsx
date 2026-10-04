@@ -19,6 +19,8 @@
 // grouped dashboards and, for super-admin, an Edit link to /dashboards/[id]/edit; a
 // VicData dashboard shows "Updated — what's changed" and carries per-panel state across a
 // new version (DashboardUpdates).
+import { TrialBanner } from "@/components/trial/TrialBanner";
+import { getActiveTrial } from "@/lib/trial";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -92,7 +94,8 @@ export function CustomDashboardScreen({ id }: { id: string }) {
         if (!school) return setState({ status: "no-school" });
         const [phases, admin, group] = await Promise.all([
           fetchOnboardedPhases(supabase, school.urn),
-          supabase.rpc("is_platform_admin").then(({ data: a }) => a === true, () => false),
+          // In a "Try VicData as…" trial the page is the member's: no super-admin chrome.
+          supabase.rpc("is_platform_admin").then(({ data: a }) => a === true && !getActiveTrial(), () => false),
           linkedDashboards(supabase, loaded.config, loaded.available).catch(() => []),
         ]);
         setState({
@@ -112,6 +115,7 @@ export function CustomDashboardScreen({ id }: { id: string }) {
   if (state.status !== "ready") {
     return (
       <main id="teacher-root" data-theme={theme} className="mx-auto w-full max-w-3xl bg-[var(--bg)] p-6 text-[var(--fg)]">
+        <TrialBanner />
         <p className="text-sm text-[var(--muted)]">
           {state.status === "loading" && "Loading…"}
           {state.status === "signed-out" && "Sign in to see this dashboard."}
@@ -164,6 +168,7 @@ export function CustomDashboardView({
       style={(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as React.CSSProperties}
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
+      <TrialBanner />
       <TeacherNav phase={phase} phases={navPhases} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={onTheme} />
       <header data-dashboard-header="" className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-[var(--panel-border)] pb-3">
         <h1 className="text-[17px] font-bold leading-tight">{config.name}</h1>

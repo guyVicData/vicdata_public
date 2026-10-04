@@ -25,12 +25,19 @@ function describeSchool(r: SearchResult): string {
   return [parts.join(", "), tag].filter(Boolean).join(" — ");
 }
 
+// byUrn (0.6 snag 2, /account's "Try VicData as…"): a query that is a URN also finds that
+// school directly (search_schools matches names, towns and postcodes only).
+// allowRequest false drops the "Can't find your school?" request form.
 export default function SchoolSearch({
   onSelect,
   placeholder,
+  byUrn = false,
+  allowRequest = true,
 }: {
   onSelect?: (school: SchoolSearchResult) => void;
   placeholder?: string;
+  byUrn?: boolean;
+  allowRequest?: boolean;
 } = {}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -39,26 +46,33 @@ export default function SchoolSearch({
   const [showFallback, setShowFallback] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
-  const supabase = useRef(createBrowserSupabaseClient()).current;
+  // The client is a singleton (supabase.ts), so no ref is needed to keep it stable.
+  const supabase = createBrowserSupabaseClient();
+  // Below MIN_CHARS the dropdown is simply not drawn (rather than cleared from the effect).
+  const short = query.trim().length < MIN_CHARS;
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (query.trim().length < MIN_CHARS) {
-      setResults([]);
-      setOpen(false);
-      return;
-    }
+    if (query.trim().length < MIN_CHARS) return;
 
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
-      const { data, error } = await supabase.rpc("search_schools", {
-        p_query: query.trim(),
-        p_limit: 20,
-      });
+      const q = query.trim();
+      const [{ data, error }, exact] = await Promise.all([
+        supabase.rpc("search_schools", { p_query: q, p_limit: 20 }),
+        byUrn && /^\d{5,7}$/.test(q)
+          ? supabase
+              .from("schools")
+              .select("urn, current_name, town, postcode, establishment_type_group, phase, boarding_establishment")
+              .eq("urn", q)
+              .maybeSingle<SearchResult>()
+          : Promise.resolve({ data: null }),
+      ]);
       setLoading(false);
       if (!error && data) {
-        setResults(data as SearchResult[]);
+        const hit = exact.data;
+        setResults(hit ? [hit, ...(data as SearchResult[]).filter((r) => r.urn !== hit.urn)] : (data as SearchResult[]));
         setOpen(true);
       }
     }, DEBOUNCE_MS);
@@ -66,7 +80,7 @@ export default function SchoolSearch({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, supabase]);
+  }, [query, supabase, byUrn]);
 
   return (
     <div className="relative w-full max-w-xl">
@@ -80,7 +94,7 @@ export default function SchoolSearch({
         aria-label="Search for a school"
       />
 
-      {open && (
+      {open && !short && (
         <div className="absolute z-10 mt-1 w-full rounded-md border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900">
           {loading && (
             <div className="px-4 py-3 text-sm text-neutral-500">Searching…</div>
@@ -109,7 +123,7 @@ export default function SchoolSearch({
               </button>
             ))}
 
-          {!loading && (
+          {!loading && allowRequest && (
             <button
               type="button"
               className="block w-full px-4 py-3 text-left text-sm text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800"
