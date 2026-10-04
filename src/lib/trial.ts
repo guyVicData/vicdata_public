@@ -17,14 +17,15 @@
 // Nothing creates a membership, so the trial never appears in People, Teams, join
 // requests, member counts or caps; NavBar records no sign-in event while one is active.
 //
-// The active trial lives in sessionStorage (this tab only), and only once confirmed.
+// 0.6 snag 4: "View as" is this mechanism's name now (the nav pill, the banner, /account).
+// The active one lives in a session cookie (every tab in this browser), pinned per page.
 //
 // Contract for item B (the footer/banner Edit switch): `useTrial()` gives the confirmed
 // trial (school, role, name) for the live preview; edits made from a trial are Guy's own
 // (platform-admin identity) and must not go through stateUrn/trial_key -- VicData
 // dashboards are never trial state (a CHECK keeps trial_key on personal rows only).
-// Client-only (sessionStorage, hooks): import it from client components.
-import { useEffect, useState } from "react";
+// Client-only (document.cookie, hooks): import it from client components.
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { confirmLookAs, readLookAs, type LookAs } from "./look-as";
 
@@ -35,31 +36,73 @@ export const TRIAL_ROLES: TrialRole[] = ["teacher", "smt", "admissions", "school
 
 export const trialStateKey = (urn: string, role: string) => `${urn}~trial~${role}`;
 
-const STORAGE_KEY = "vicdata.trial";
-// Fired on window whenever the active trial changes in this tab (start, exit).
+// 0.6 snag 4 (A): View as lasts across tabs in this browser until Back to me, so it lives in
+// a session COOKIE rather than this tab's sessionStorage. A cookie because the data routes
+// need it too (item B): every same-origin request carries it, and a route re-confirms the
+// caller is a platform admin before reading anything as the viewed member. It is written
+// only after confirmLookAs said yes; a planted one does nothing (pages and routes both
+// re-confirm). A session cookie: closing the browser also ends View as.
+export const VIEW_AS_COOKIE = "vicdata_view_as";
+// Fired on window whenever this tab starts or ends View as.
 export const TRIAL_EVENT = "vicdata:trial";
 
-type Stored = { urn: string; role: TrialRole; schoolName: string; confirmed: boolean };
+type Stored = { urn: string; role: TrialRole; schoolName: string };
 
-function readStored(): Stored | null {
+// Pure: the View as pair in a Cookie header (or document.cookie), or null. Shared with the
+// data routes' access check.
+export function parseViewAsCookie(cookieHeader: string | null | undefined): Stored | null {
+  if (!cookieHeader) return null;
+  for (const part of cookieHeader.split(";")) {
+    const i = part.indexOf("=");
+    if (i < 0 || part.slice(0, i).trim() !== VIEW_AS_COOKIE) continue;
+    try {
+      const s = JSON.parse(decodeURIComponent(part.slice(i + 1).trim())) as { u?: unknown; r?: unknown; n?: unknown };
+      if (typeof s.u !== "string" || !/^[A-Za-z0-9-]{1,20}$/.test(s.u)) return null;
+      if (typeof s.r !== "string" || !(TRIAL_ROLES as string[]).includes(s.r)) return null;
+      return { urn: s.u, role: s.r as TrialRole, schoolName: typeof s.n === "string" && s.n ? s.n : s.u };
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function readCookie(): Stored | null {
   try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw) as Partial<Stored>;
-    if (!s || typeof s.urn !== "string" || !(TRIAL_ROLES as string[]).includes(s.role ?? "")) return null;
-    return { urn: s.urn, role: s.role as TrialRole, schoolName: typeof s.schoolName === "string" ? s.schoolName : s.urn, confirmed: s.confirmed === true };
+    return parseViewAsCookie(document.cookie);
   } catch {
     return null;
   }
 }
 
-function writeStored(s: Stored | null) {
+function writeCookie(s: Stored | null) {
   try {
-    if (s) window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-    else window.sessionStorage.removeItem(STORAGE_KEY);
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = s
+      ? `${VIEW_AS_COOKIE}=${encodeURIComponent(JSON.stringify({ u: s.urn, r: s.role, n: s.schoolName }))}; Path=/; SameSite=Lax${secure}`
+      : `${VIEW_AS_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
   } catch {
-    // Storage blocked: the trial still runs on pages that carry the URL pair.
+    // Not in a browser.
   }
+}
+
+// The View as THIS PAGE is in, fixed when the page first asks. Another tab starting or
+// ending View as changes the cookie, never this page's state: a page drawn as a member
+// keeps saving as that member (and a page drawn as Guy as Guy) until it reloads --
+// followViewAsAcrossTabs reloads it when the tab is next looked at.
+let pinned: { value: Stored | null } | null = null;
+
+// `?peek=1` (the Catalogue's side-by-side frames, which share this browser's cookies) is
+// never in View as: those frames draw a school read-only as it is.
+function readStored(): Stored | null {
+  if (typeof window === "undefined") return null;
+  if (!pinned) pinned = { value: new URLSearchParams(window.location.search).get("peek") === "1" ? null : readCookie() };
+  return pinned.value;
+}
+
+function writeStored(s: Stored | null) {
+  writeCookie(s);
+  pinned = { value: s };
   try {
     window.dispatchEvent(new Event(TRIAL_EVENT));
   } catch {
@@ -67,14 +110,31 @@ function writeStored(s: Stored | null) {
   }
 }
 
+const sameStored = (a: Stored | null, b: Stored | null) => (a?.urn ?? "") === (b?.urn ?? "") && (a?.role ?? "") === (b?.role ?? "");
+
+// Cross-tab: when this tab comes back into view and View as changed in another tab (a new
+// school or role, or Back to me), reload, so no page ever shows one state under the other's
+// banner (or none). Returns the unsubscribe.
+export function followViewAsAcrossTabs(): () => void {
+  const check = () => {
+    if (document.visibilityState === "hidden") return;
+    if (!sameStored(readStored(), readCookie())) window.location.reload();
+  };
+  window.addEventListener("focus", check);
+  document.addEventListener("visibilitychange", check);
+  return () => {
+    window.removeEventListener("focus", check);
+    document.removeEventListener("visibilitychange", check);
+  };
+}
+
 const toTrial = (s: { urn: string; role: TrialRole; schoolName: string }): Trial => ({ urn: s.urn, role: s.role, schoolName: s.schoolName, stateKey: trialStateKey(s.urn, s.role) });
 
-// The confirmed trial active in this tab, or null. Synchronous, for the persistence
-// helpers; pages decide with resolveTrial()/useTrial(), which re-confirm.
+// The View as this page is in, or null. Synchronous, for the persistence helpers; pages
+// decide with resolveTrial()/useTrial(), which re-confirm platform admin.
 export function getActiveTrial(): Trial | null {
-  if (typeof window === "undefined") return null;
   const s = readStored();
-  return s?.confirmed ? toTrial(s) : null;
+  return s ? toTrial(s) : null;
 }
 
 // The school_urn to write per-user state under: the trial's state key when a confirmed
@@ -92,7 +152,7 @@ export function isMissingColumn(error: { code?: string; message?: string } | nul
 }
 
 // What a trial says when it can't save something without the migration.
-export const TRIAL_NEEDS_UPDATE = "Saving this in a trial needs the database update (20261105090000_v06_snag2_trials).";
+export const TRIAL_NEEDS_UPDATE = "Saving this in View as needs the database update (20261105090000_v06_snag2_trials).";
 
 async function schoolNameOf(supabase: SupabaseClient, urn: string): Promise<string> {
   const { data } = await supabase.from("schools").select("current_name").eq("urn", urn).maybeSingle<{ current_name: string }>();
@@ -137,13 +197,13 @@ export async function startTrial(
   supabase: SupabaseClient,
   input: { urn: string; role: TrialRole; fresh: boolean; schoolName?: string; via?: string },
 ): Promise<{ ok: true; trial: Trial } | { ok: false; error: string }> {
-  if (!(await confirmLookAs(supabase, { urn: input.urn, role: input.role }))) return { ok: false, error: "Only platform admins can try VicData as a member." };
+  if (!(await confirmLookAs(supabase, { urn: input.urn, role: input.role }))) return { ok: false, error: "Only platform admins can view VicData as a member." };
   const { error: logError } = await supabase.rpc("log_platform_action", {
     p_action: "try_as",
     p_school_urn: input.urn,
     p_detail: { role: input.role, fresh: input.fresh, ...(input.via ? { via: input.via } : {}) },
   });
-  if (logError) return { ok: false, error: `Could not start the trial: ${logError.message}` };
+  if (logError) return { ok: false, error: `Could not start View as: ${logError.message}` };
   try {
     if (input.fresh) await resetTrialState(supabase, input.urn, input.role);
   } catch (e) {
@@ -151,7 +211,7 @@ export async function startTrial(
   }
   await touchContext(supabase, input.urn, input.role);
   const schoolName = input.schoolName ?? (await schoolNameOf(supabase, input.urn));
-  writeStored({ urn: input.urn, role: input.role, schoolName, confirmed: true });
+  writeStored({ urn: input.urn, role: input.role, schoolName });
   resolved = null;
   return { ok: true, trial: toTrial({ urn: input.urn, role: input.role, schoolName }) };
 }
@@ -183,20 +243,36 @@ export function resolveTrial(supabase: SupabaseClient): Promise<Trial | null> {
     const stored = readStored();
     if (fromUrl) {
       if (!(await confirmLookAs(supabase, fromUrl))) return null;
-      if (stored?.confirmed && stored.urn === fromUrl.urn && stored.role === fromUrl.role) return toTrial(stored);
+      if (stored && stored.urn === fromUrl.urn && stored.role === fromUrl.role) return toTrial(stored);
       const r = await startTrial(supabase, { urn: fromUrl.urn, role: fromUrl.role as TrialRole, fresh: false, via: "url" });
       return r.ok ? r.trial : null;
     }
     if (!stored) return null;
+    // Re-confirmed on every page load: anyone not a platform admin loses it here.
     if (!(await confirmLookAs(supabase, stored))) {
       writeStored(null);
       return null;
     }
-    if (!stored.confirmed) writeStored({ ...stored, confirmed: true });
     return toTrial(stored);
   })();
   resolved = { search, promise };
   return promise;
+}
+
+// This page's View as as the cookie gives it, before the platform-admin check comes back:
+// what the banner and the nav pill draw from, so a new tab shows the banner straight away.
+// null on the server and in the first (hydrating) render. resolveTrial clears it for
+// anyone who isn't a platform admin, which re-renders this to null.
+export function useViewAsNow(): Trial | null {
+  const stored = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener(TRIAL_EVENT, cb);
+      return () => window.removeEventListener(TRIAL_EVENT, cb);
+    },
+    readStored,
+    () => null,
+  );
+  return useMemo(() => (stored ? toTrial(stored) : null), [stored]);
 }
 
 // The page's trial: null until known (`confirmed` false), then the confirmed trial or null.

@@ -6,7 +6,6 @@
 // power here runs through a SECURITY DEFINER RPC that re-checks is_platform_admin() and
 // writes the audit log, so the client-side check only decides what is drawn.
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { ATTENTION_ACCENT, ATTENTION_INK, DELTA_NEGATIVE, accentOver, accentText } from "@/lib/teacher-view-theme";
@@ -14,7 +13,8 @@ import { TAG_COLOURS } from "@/lib/tag-colours";
 import { sectorTag } from "@/lib/typology";
 import { VISIBLE_ROLES_PROSE_ORDER, VISIBLE_ROLE_LABELS, normaliseRole, type VisibleRoleId } from "@/lib/roles";
 import { LOOK_AS_ROLES } from "@/lib/look-as";
-import { startTrial, trialHref, type TrialRole } from "@/lib/trial";
+import type { TrialRole } from "@/lib/trial";
+import { openViewAs } from "@/components/view-as/ViewAs";
 import { useTeacherTheme, type Theme } from "@/components/teacher/TeacherChrome";
 import { SearchBox, Switch } from "./AdminChrome";
 
@@ -96,7 +96,6 @@ export function PlatformScreen() {
 
 export function Platform() {
   const supabase = createBrowserSupabaseClient();
-  const router = useRouter();
   const [theme] = useTeacherTheme();
   const [rows, setRows] = useState<SchoolOverviewRow[] | null>(null);
   const [query, setQuery] = useState("");
@@ -131,17 +130,11 @@ export function Platform() {
     setBusy(false);
   }
 
-  // 0.6 snag 2: "Look at it as…" starts a "Try VicData as…" trial (src/lib/trial.ts) --
-  // the one mechanism -- continuing the trial's saved state; /account's card offers Start
-  // fresh. Logged as try_as (it was look_as).
-  async function lookAs(row: SchoolOverviewRow, role: VisibleRoleId) {
+  // 0.6 snag 4 (A): "Look at it as…" opens View as (the nav pill's popover) with this
+  // school and role filled in -- the one mechanism; Start fresh and Open are there.
+  function lookAs(row: SchoolOverviewRow, role: VisibleRoleId) {
     setError(null);
-    const r = await startTrial(supabase, { urn: row.school_urn, role: role as TrialRole, fresh: false, schoolName: row.school_name ?? undefined, via: "platform" });
-    if (!r.ok) {
-      setError(r.error);
-      return;
-    }
-    router.push(trialHref(r.trial));
+    openViewAs({ urn: row.school_urn, name: row.school_name ?? row.school_urn, role: role as TrialRole });
   }
 
   return (
@@ -244,7 +237,7 @@ export function Platform() {
               ))}
             </div>
             <div className="text-[11.5px] leading-[1.45] text-[var(--muted2)]">
-              Opens their home page as a member with that one role (a trial: it saves as that member, never as you, and is logged). Start fresh and Recently tried are on Your Account.
+              Opens View as with this school and role filled in: their home page as a member with that one role. It saves as that member, never as you, and is logged.
             </div>
 
             <div className={`${HEADING} mt-1`}>Dashboards here</div>

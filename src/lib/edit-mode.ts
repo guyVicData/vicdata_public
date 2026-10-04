@@ -9,9 +9,9 @@
 //   * a page REGISTERS the VicData dashboard it is showing (useRegisterVicDataDashboard);
 //     the site-wide Footer and the TrialBanner render their switch only while one is
 //     registered, so everywhere else it isn't there at all;
-//   * the switch's on/off (default off): kept in localStorage for Guy's own pages; inside a
-//     trial in sessionStorage under the trial's state key, so every trial starts off and
-//     Guy's own setting never leaks into one;
+//   * the switch's on/off (default off), kept in localStorage. 0.6 snag 4 (A): ONE setting
+//     whether Guy is viewing as someone or not, so the Edit switch and the banner's Edit
+//     behave identically in both (round 2 kept a separate per-tab one for each trial);
 //   * "Preview draft" (trial only): this tab draws the editor's draft instead of the
 //     published version -- client-side only, so what members see never changes;
 //   * the page side (useInPlaceEdit): whether to show the editor now, the scroll position
@@ -26,7 +26,6 @@ import { getActiveTrial, TRIAL_EVENT } from "./trial";
 
 const EDIT_EVENT = "vicdata:edit-mode";
 const LOCAL_KEY = "vicdata.editMode";
-const TRIAL_KEY = (stateKey: string) => `vicdata.editMode.trial:${stateKey}`;
 const DRAFT_KEY = (stateKey: string) => `vicdata.previewDraft:${stateKey}`;
 const SCROLL_KEY = "vicdata.editMode.scroll";
 
@@ -69,8 +68,7 @@ function write(storage: "local" | "session", key: string, on: boolean) {
 const memory = new Map<string, boolean>();
 
 function editKey(): { storage: "local" | "session"; key: string } {
-  const t = getActiveTrial();
-  return t ? { storage: "session", key: TRIAL_KEY(t.stateKey) } : { storage: "local", key: LOCAL_KEY };
+  return { storage: "local", key: LOCAL_KEY };
 }
 
 function readEditOn(): boolean {

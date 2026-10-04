@@ -160,7 +160,7 @@ export async function createDashboard(
   // In a trial a personal dashboard or meeting is the trial's (trial_key), never attached to
   // the school's account; a school dashboard can't be made from a trial at all.
   const trial = opts.asSelf ? null : getActiveTrial();
-  if (trial && cols.owner_scope === "school") throw new Error("A trial can't create school dashboards.");
+  if (trial && cols.owner_scope === "school") throw new Error("View as can't create school dashboards.");
   const row = trial && cols.owner_scope === "user" ? { ...cols, school_account_id: null, trial_key: trial.stateKey } : cols;
   const { data, error } = await supabase.from("dashboards").insert(row).select(ROW_COLUMNS).single<DashboardRow>();
   if (error && trial && isMissingColumn(error)) throw new Error(TRIAL_NEEDS_UPDATE);

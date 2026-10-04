@@ -273,7 +273,7 @@ export default function RecruitmentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) return <main className="mx-auto max-w-2xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
+  if (loading) return <main className="mx-auto max-w-2xl p-6"><TrialBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-2xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">

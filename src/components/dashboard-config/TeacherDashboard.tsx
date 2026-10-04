@@ -724,7 +724,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   }, [reloadPhase, inPlace.reloadTick, inPlace.previewDraft, supabase]);
 
-  if (loading) return embed ? <EmbedStatus text="Loading…" /> : <main className="mx-auto max-w-4xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
+  if (loading) return embed ? <EmbedStatus text="Loading…" /> : <main className="mx-auto max-w-4xl p-6"><TrialBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
   if (embed && (error || !phase)) return <EmbedStatus text={error ?? "Unknown phase."} />;
   if (error || !phase) {
     return (

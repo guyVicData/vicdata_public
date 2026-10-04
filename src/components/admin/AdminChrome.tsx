@@ -232,7 +232,7 @@ export function Avatar({
 }
 
 // The board tints SMT at 0.16 and the others at 0.14.
-function roleTint(role: VisibleRoleId): string {
+export function roleTint(role: VisibleRoleId): string {
   return `rgba(${ROLE_ACCENT[role].rgb},${role === "smt" ? 0.16 : 0.14})`;
 }
 

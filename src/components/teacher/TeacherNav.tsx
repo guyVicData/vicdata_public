@@ -24,6 +24,7 @@ import { ChevronDown } from "./PanelIcons";
 import { MeasureToggle, type FocusSubject, type SharedMeasure } from "./ControlBar";
 import { ThemeToggle, type Theme } from "./TeacherChrome";
 import { loadAdminSchool } from "@/components/admin/AdminChrome";
+import { ViewAsPill } from "@/components/view-as/ViewAs";
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
@@ -103,6 +104,8 @@ export function TeacherNav({
         </div>
         <Divider />
         <div className="flex items-center gap-2.5">
+          {/* 0.6 snag 4 (A): platform admins only; nothing at all for anyone else. */}
+          <ViewAsPill tone="teacher" />
           <AccountMenu />
           <ThemeToggle theme={theme} onTheme={onTheme} />
         </div>
@@ -308,6 +311,7 @@ export function PhoneNav({
           <Link href="/teacher" aria-label="Home" title="Home" className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]">
             {HOME_ICON}
           </Link>
+          <ViewAsPill tone="teacher" />
           <AccountMenu />
           <ThemeToggle theme={theme} onTheme={onTheme} />
         </div>
