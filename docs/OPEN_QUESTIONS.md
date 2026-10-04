@@ -1163,6 +1163,7 @@ Prompt: `docs/v0.6/vicdata_0_6_snagging_round1_claude_code_prompt_v1.md`. Report
 ### 02 — Compare against names the category
 
 - **The existing `focusCategory` prop is the family id, not its name**, so ContextPills gained `focusCategoryLabel` (`familyFor().label`, the name the picker shows).
+- **The Compare against menu is now 320px wide, not 264.** The longest real category row, "Technology, Engineering & Construction subjects", needs about 282px of text, and MenuRow truncates labels. 320 is PanelMenu's own cap (`min(90vw, 20rem)`); at 264 that row read "Technology, Engineering & Construct…".
 - **PillMenu gained `title`, plus `max-w-full` / `min-w-0`**, so a long value truncates instead of overflowing. This is invisible for pills that fit, which is all of them today; the parity run confirms it.
 - **"Subject category" strings left alone:**
   - Context's group label and phrase: they already name the category, and use "Subject category" only as the same no-focus fallback;
