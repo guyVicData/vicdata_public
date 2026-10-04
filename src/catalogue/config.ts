@@ -7,6 +7,7 @@
 // docs' "about 385 x 256, 24px gaps" predates the accordion round, which raised the
 // height to 384.
 import { CONFIG_SCHEMA_VERSION, type DashboardConfig, type DataviewId } from "./types";
+import { presetOf } from "./viewspec";
 
 export const PANEL_UNIT = {
   columnTrack: 385,
@@ -77,6 +78,9 @@ export function validateConfig(config: DashboardConfig, knownDataviews: Set<Data
     panel.dataviews.forEach((v, j) => {
       unique(v.id, `${path}.dataviews[${j}]`);
       if (v.kind === "view" && !knownDataviews.has(v.dataview)) p(`${path}.dataviews[${j}]`, `unknown dataview ${v.dataview}`);
+      // 0.6.1 S2: a view carries its spec, made from its own dataview's preset.
+      if (v.kind === "view" && !v.spec) p(`${path}.dataviews[${j}]`, "a view needs its spec (schema_version 2)");
+      else if (v.kind === "view" && v.spec.preset !== undefined && v.spec.preset !== v.dataview) p(`${path}.dataviews[${j}]`, `spec.preset ${v.spec.preset} isn't its dataview ${v.dataview}`);
     });
     if (panel.defaultView && !panel.dataviews.some((v) => v.id === panel.defaultView)) p(`${path}.defaultView`, `not one of the panel's dataviews`);
     for (const [m, id] of Object.entries(panel.defaultViewByResults ?? {}))
@@ -98,7 +102,10 @@ export type DashboardUserState = { version: string; panels: Record<string, Panel
 export function panelSignature(config: DashboardConfig, panelId: string): string {
   const panel = config.panels.find((p) => p.id === panelId);
   if (!panel) return "";
-  return JSON.stringify([panel.row, panel.column, panel.span ?? null, panel.dataviews.map((v) => (v.kind === "view" ? v.dataview : v.id))]);
+  // 0.6.1 S2 (D10): built from each view's preset -- which is its old dataview id -- so the
+  // re-seed into schema_version 2 (same ids, same presets) keeps every member's state, and a
+  // version-1 config read raw (no spec) signs the same way.
+  return JSON.stringify([panel.row, panel.column, panel.span ?? null, panel.dataviews.map((v) => presetOf(v))]);
 }
 
 // G1's upgrade rule: keep a panel's state only when the panel still exists with the same

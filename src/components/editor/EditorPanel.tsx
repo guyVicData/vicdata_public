@@ -21,6 +21,7 @@ import { EC, EDITOR, panelWidth } from "@/lib/editor-layout";
 import { isDefaultView, spanOf } from "@/lib/editor-ops";
 import { EBtn, InheritBadge, OverrideBadge, PlusIcon, StandardElements, StatePill } from "./bits";
 import type { PanelPreviewComponent } from "./PanelPreview";
+import { viewInstance } from "@/catalogue/viewspec";
 
 // Panel menu: rename, override, move-panel, delete-panel. View menu (snag 1 / 03): the rest,
 // each for one instance. "copy-view" copies to a panel on this dashboard; "copy-view-out"
@@ -592,7 +593,7 @@ function PlannedBody({ v, ready, onPreview, onKeep }: { v: Extract<DataviewInsta
 function SwapPreview({ Preview, config, panel, dv, width, height, onSwap, onCancel, labels }: { Preview: PanelPreviewComponent; config: DashboardConfig; panel: PanelConfig; dv: Dataview; width: number; height: number; onSwap: (dv: Dataview) => void; onCancel: () => void; labels?: PanelLabels }): ReactNode {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <Preview config={config} panel={panel} view={{ id: `${panel.id}/${dv.id}`, kind: "view", dataview: dv.id }} width={width} height={height} labels={labels} />
+      <Preview config={config} panel={panel} view={viewInstance(`${panel.id}/${dv.id}`, dv.id)} width={width} height={height} labels={labels} />
       <div style={{ display: "flex", gap: 8 }}>
         <EBtn primary onClick={() => onSwap(dv)}>Swap in</EBtn>
         <EBtn onClick={onCancel}>Cancel</EBtn>

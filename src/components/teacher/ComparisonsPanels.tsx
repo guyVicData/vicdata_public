@@ -54,7 +54,7 @@ import { ChangeList, ViewTitle, YearTable, type ChangeRow } from "./SeriesViews"
 import { DIRECTION_COLOUR, changeOver } from "@/lib/teacher-view-trend-styles";
 import { TrendLineToggle } from "./PanelFooter";
 import { AverageIcon, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
-import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import type { RankingFigures } from "@/lib/chooser-sets";
 import { PillMenu } from "./PillMenu";
 import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
@@ -62,8 +62,6 @@ import { RankingsMap } from "./RankingsMap";
 import { SchoolRankingTable, type SchoolRankingRow } from "./SchoolRankingTable";
 import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
-import { usePlanViewParams } from "@/components/dashboard-config/plan";
-import { applyMainLabel, applyTileFigures, readTileParams } from "@/lib/tile-figures";
 
 export type MapChip = {
   key: string;
@@ -214,8 +212,6 @@ export function ComparisonsPanels({
   // Part 4: a ranking has no Map -- its default is the tiles view -- and a list of schools
   // has no tiles view; whichever was chosen falls back to the other's default.
   const view = comparisonsCurrentView(rankingSet, viewChosen);
-  // 0.6 snag 3 / 01: the tiles view's own figure settings, under a config (else none).
-  const tileParams = readTileParams(usePlanViewParams("rankings", "DV-C3-CUR-TILES"));
   // The card map's "Dot size / Colour" line, handed up by the map (onCaption) so it can
   // sit behind the caption button rather than over the map.
   const [mapCaption, setMapCaption] = useState<string | null>(null);
@@ -363,9 +359,10 @@ export function ComparisonsPanels({
         return (
           <>
           <ViewTitle>{currentTitle}</ViewTitle>
-          <NumberTiles
-            main={applyMainLabel(rs.target ? { figure: rs.measure.format(rs.target.value), label: `${targetName} ${rs.measureName} in ${academicYearLabel(rs.target.period)}` } : null, tileParams, tileVars)}
-            tiles={applyTileFigures(tiles, tileParams, tileVars)}
+          <ConfiguredNumberTiles
+            main={rs.target ? { figure: rs.measure.format(rs.target.value), label: `${targetName} ${rs.measureName} in ${academicYearLabel(rs.target.period)}` } : null}
+            tiles={tiles}
+            vars={tileVars}
             fullscreen={fullscreen}
           />
           </>

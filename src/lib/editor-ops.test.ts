@@ -7,6 +7,7 @@ import type { DashboardConfig, Dataview } from "@/catalogue/types";
 import { DATAVIEWS } from "@/catalogue";
 import * as ops from "./editor-ops";
 import { plannedMarkdown } from "./editor-export";
+import { viewInstance } from "@/catalogue/viewspec";
 
 const gcse = () => DASHBOARDS.find((d) => d.id === "vicdata.ks4.candidates")!;
 const frozen = JSON.stringify(gcse());
@@ -124,7 +125,7 @@ test("F3: the span question asks once, left-most first, only when columns differ
 
 test("views: add (chooser output + override), reorder, default, move, copy, remove", () => {
   const pid = "vicdata.ks4.candidates.c2.current";
-  let r = ops.addView(gcse(), pid, { id: `${pid}/DV-C2-TR-INDEXED`, kind: "view", dataview: "DV-C2-TR-INDEXED" }, { badge: "overridden: over time", reason: "test" });
+  let r = ops.addView(gcse(), pid, viewInstance(`${pid}/DV-C2-TR-INDEXED`, "DV-C2-TR-INDEXED"), { badge: "overridden: over time", reason: "test" });
   let c = r.config;
   const p = ops.panelAt(c, pid)!;
   assert.equal(p.dataviews.at(-1)!.id, r.instanceId);
@@ -147,7 +148,7 @@ test("views: add (chooser output + override), reorder, default, move, copy, remo
 
 test("adding into a gap creates the panel", () => {
   const g = ops.deletePanel(gcse(), "vicdata.ks4.candidates.c3.current");
-  const r = ops.addView(g, { row: "current", column: "c3" }, { id: "x", kind: "view", dataview: "DV-C3-CUR-MAP" });
+  const r = ops.addView(g, { row: "current", column: "c3" }, viewInstance("x", "DV-C3-CUR-MAP"));
   assert.equal(ops.panelAt(r.config, { row: "current", column: "c3" })!.dataviews.length, 1);
 });
 
@@ -226,7 +227,7 @@ test("G8: undo/redo keeps the last 30 actions and coalesces typing", () => {
 
 test("change summary reads like the board", () => {
   const g = gcse();
-  let c = ops.addView(g, "vicdata.ks4.candidates.c3.trends", { id: "x", kind: "view", dataview: "DV-C3-TR-CHANGELIST", title: "Maths points vs 10 nearest" }).config;
+  let c = ops.addView(g, "vicdata.ks4.candidates.c3.trends", viewInstance("x", "DV-C3-TR-CHANGELIST", { title: "Maths points vs 10 nearest" })).config;
   c = ops.updateRow(c, "trends", { name: "Over time" });
   assert.equal(ops.changeSummary(g, c), "Added *Maths points vs 10 nearest* to Comparisons · Trends; renamed row “Trends” to “Over time”.");
   assert.equal(ops.changeSummary(g, g), "No changes.");
@@ -267,7 +268,7 @@ test("export planned views: placeholders and asks in catalogue terms", () => {
 test("G1: per-user state survives where its panel survives", async () => {
   const { carryStateJson } = await import("./editor-upgrade");
   const prev = gcse();
-  const next = ops.addView(prev, "vicdata.ks4.candidates.c3.trends", { id: "x", kind: "view", dataview: "DV-C3-TR-CHANGELIST" }).config;
+  const next = ops.addView(prev, "vicdata.ks4.candidates.c3.trends", viewInstance("x", "DV-C3-TR-CHANGELIST")).config;
   const state = { version: "1", panels: { "vicdata.ks4.candidates.c1.current": { open: true }, "vicdata.ks4.candidates.c3.trends": { view: "y" } } };
   const carried = carryStateJson(prev, next, state, 2);
   assert.deepEqual(Object.keys(carried.panels), ["vicdata.ks4.candidates.c1.current"]);
@@ -286,7 +287,7 @@ test("view menu: edit in place keeps the rail position, and the instance id for 
   if (old.kind !== "view") throw new Error("expected a view");
   const dataview = old.dataview;
   // Customised: same dataview, new params and a chooser-made id -> id kept, position kept.
-  const edited = ops.replaceView(gcse(), target, { id: `${C2}/${dataview}~x1`, kind: "view", dataview, params: { numberType: "percent", fromYear: null, look: "list", title: "[subject] mine", rollForward: true }, title: "[subject] mine" });
+  const edited = ops.replaceView(gcse(), target, viewInstance(`${C2}/${dataview}~x1`, dataview, { params: { numberType: "percent", fromYear: null, look: "list", title: "[subject] mine", rollForward: true }, title: "[subject] mine" }));
   assert.deepEqual(ids(edited.config, C2), before);
   assert.equal(edited.instanceId, target);
   const inst = edited.config.panels.find((p) => p.id === C2)!.dataviews[2];
@@ -294,7 +295,7 @@ test("view menu: edit in place keeps the rail position, and the instance id for 
   // Swapped for a different dataview: same position, a fresh id, the opening view follows.
   const opening = gcse().panels.find((p) => p.id === C2)!.defaultView!;
   const other = DATAVIEWS.find((d) => !before.some((id) => id.endsWith(`/${d.id}`)))!;
-  const swapped = ops.replaceView(gcse(), opening, { id: "x", kind: "view", dataview: other.id });
+  const swapped = ops.replaceView(gcse(), opening, viewInstance("x", other.id));
   const after = ids(swapped.config, C2);
   const at = before.indexOf(opening);
   assert.equal(after.length, before.length);

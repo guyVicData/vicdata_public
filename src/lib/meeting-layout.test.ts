@@ -20,8 +20,9 @@ import {
   ROW_PITCH,
   type SlideSlot,
 } from "./meeting-layout";
+import { viewInstance } from "@/catalogue/viewspec";
 
-const view = (id: string): SlideSlot => ({ id, view: { id: `v-${id}`, kind: "view", dataview: "DV-C2-CUR-BARS" } });
+const view = (id: string): SlideSlot => ({ id, view: viewInstance(`v-${id}`, "DV-C2-CUR-BARS") });
 const text = (id: string): SlideSlot => ({ id, text: "" });
 
 test("canvas is 16:9 and built from the real panel unit", () => {

@@ -28,6 +28,7 @@ import type {
   RowTime,
   ViewType,
 } from "./types";
+import { viewInstance } from "./viewspec";
 
 // ---------------------------------------------------------------------------------
 // The context a panel hands the chooser: column + row + override, resolved for display.
@@ -621,5 +622,5 @@ export function newInstanceId(ctx: PickPanelContext, dvId: string, custom: boole
 }
 
 export function readyMadeInstance(dv: Dataview, ctx: PickPanelContext): DataviewInstance {
-  return { id: newInstanceId(ctx, dv.id, false), kind: "view", dataview: dv.id };
+  return viewInstance(newInstanceId(ctx, dv.id, false), dv.id);
 }

@@ -10,6 +10,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardConfig } from "@/catalogue/types";
 import { DASHBOARDS } from "@/catalogue/dashboards";
+import { upgradeConfig } from "@/catalogue/viewspec";
 import { getActiveViewAs, isMissingColumn, stateUrn, VIEW_AS_NEEDS_UPDATE } from "./view-as";
 
 export type OwnerScope = "vicdata" | "school" | "user";
@@ -128,12 +129,12 @@ export async function loadDashboard(supabase: SupabaseClient, idOrSlug: string, 
   let version: VersionRow | null = null;
   if (row.published_version_id) {
     const { data } = await supabase.from("dashboard_versions").select("*").eq("id", row.published_version_id).maybeSingle<VersionRow>();
-    version = data ?? null;
+    version = data ? readVersion(data) : null;
   }
   let draft: DashboardConfig | null = null;
   if (withDraft) {
     const { data } = await supabase.from("dashboard_drafts").select("config").eq("dashboard_id", row.id).maybeSingle<{ config: DashboardConfig }>();
-    draft = data?.config ?? null;
+    draft = data?.config ? upgradeConfig(data.config) : null;
   }
   const seed = row.slug ? DASHBOARDS.find((d) => d.id === row.slug) : undefined;
   const config = version?.config ?? draft ?? seed;
@@ -201,7 +202,16 @@ export async function publish(supabase: SupabaseClient, dashboardId: string, con
 export async function listVersions(supabase: SupabaseClient, dashboardId: string): Promise<VersionRow[]> {
   const { data, error } = await supabase.from("dashboard_versions").select("*").eq("dashboard_id", dashboardId).order("version", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as VersionRow[];
+  return ((data ?? []) as VersionRow[]).map(readVersion);
+}
+
+// 0.6.1 S2: every config read from the store comes back in the current shape. A
+// schema_version 1 config (a meeting or custom dashboard saved before 0.6.1, or a VicData
+// version from before the re-seed) is converted on read: each view gains its preset's spec,
+// nothing else changes. Members' VicData pages don't read through here (published-vicdata.ts
+// draws the code copy for a v1 version, D9).
+function readVersion(v: VersionRow): VersionRow {
+  return v.config ? { ...v, config: upgradeConfig(v.config) } : v;
 }
 
 export async function updateDashboardRow(

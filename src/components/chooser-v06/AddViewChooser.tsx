@@ -32,6 +32,7 @@ import { PickScreen, type BrowsePick, type PickTab } from "./PickScreen";
 import { logViewRequest } from "./requests";
 import { ChooserWordsContext, COLUMN_WORDS, SLOT_WORDS } from "./words";
 import { AreaStep, DataStep, FocusStep, SubjectStep, focusOptions, type SubjectSource } from "./StepScreens";
+import { viewInstance } from "@/catalogue/viewspec";
 
 export type AddViewChooserProps = {
   open: boolean;
@@ -163,7 +164,7 @@ function Chooser({ onClose, context, superAdmin, palette, onAdd, onPlaceholder, 
 
   const addCustom = (dv: Dataview, params: CustomViewParams | null) => {
     const instance: DataviewInstance = params
-      ? { id: newInstanceId(working, dv.id, true), kind: "view", dataview: dv.id, params: { ...params }, title: params.title }
+      ? viewInstance(newInstanceId(working, dv.id, true), dv.id, { params: { ...params }, title: params.title })
       : readyMadeInstance(dv, working);
     add(instance, working, params ? "Customised" : "Picked");
   };

@@ -34,15 +34,13 @@ import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
 import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, SchoolIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
-import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { memberMeans } from "@/lib/teacher-view-populations";
-import { usePlanViewParams } from "@/components/dashboard-config/plan";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
-import { applyMainLabel, applyTileFigures, readTileParams } from "@/lib/tile-figures";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
 // `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
@@ -126,8 +124,6 @@ export function CandidatesPanels({
   const [showFit, setShowFit] = useState(false);
 
   const measure = ENTRIES_MEASURE;
-  // 0.6 snag 3 / 01: the tiles view's own figure settings, under a config (else none).
-  const tileParams = readTileParams(usePlanViewParams("candidates", "DV-C1-CAND-CUR-TILES"));
   const runtime = useDashboardRuntime();
 
   const valueAt = (s: CandidateSubject, period: number): number | null => s.values[periods.indexOf(period)] ?? null;
@@ -225,10 +221,9 @@ export function CandidatesPanels({
       });
     }
   }
-  // Pick, order, relabel and hide per the view's settings; unset = the tiles above, as built.
+  // Pick, order, relabel and hide per the showing view's settings (ConfiguredNumberTiles);
+  // unset = the tiles above, as built.
   const tileVars = { subject: focused?.label, category: categoryLabel, school: runtime?.school?.name, year: latest === null ? undefined : academicYearLabel(latest) };
-  const tilesMain = applyMainLabel(tilesMainBuilt, tileParams, tileVars);
-  const tilesShown = applyTileFigures(tiles, tileParams, tileVars);
 
   // Current panel rework round 1: the tag is the fixed word "Current" and the year follows
   // it as plain text. Current is the number tiles alone -- no view rail -- since its Bar
@@ -244,7 +239,7 @@ export function CandidatesPanels({
       ) : (
         <>
           <ViewTitle>{focused && latest !== null ? `${focused.label} ${currentLabel ?? "Candidates"}: ${academicYearLabel(latest)}` : null}</ViewTitle>
-          <NumberTiles main={tilesMain} tiles={tilesShown} fullscreen={fullscreen} />
+          <ConfiguredNumberTiles main={tilesMainBuilt} tiles={tiles} vars={tileVars} fullscreen={fullscreen} />
         </>
       ),
     summary: biggest && smallest && biggest.key !== smallest.key ? (

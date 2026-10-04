@@ -24,8 +24,9 @@ import {
 import type { DashboardConfig, DataviewId, DataviewInstance } from "@/catalogue/types";
 import { configViewIds } from "@/components/dashboard-config/rail";
 import * as ops from "./editor-ops";
+import { viewInstance } from "@/catalogue/viewspec";
 
-const view = (dataview: string, extra: Partial<Extract<DataviewInstance, { kind: "view" }>> = {}): DataviewInstance => ({ id: `x/${dataview}`, kind: "view", dataview: dataview as DataviewId, ...extra });
+const view = (dataview: string, extra: Partial<Extract<DataviewInstance, { kind: "view" }>> = {}): DataviewInstance => (viewInstance(`x/${dataview}`, dataview as DataviewId, { ...extra }));
 const panel = (c: DashboardConfig, id: string) => c.panels.find((p) => p.id === id)!;
 const ids = (vs: DataviewInstance[]) => vs.map((v) => (v.kind === "view" ? v.dataview : v.id));
 const gcse = () => teacherDashboardFor("ks4", "results");

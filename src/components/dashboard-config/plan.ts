@@ -4,9 +4,7 @@
 // ColumnPanels) when a dashboard is drawn from config (?renderer=config). With no plan in
 // context -- every unflagged page -- those shells render exactly as before.
 import { createContext, useContext } from "react";
-import type { ColumnHeader, DashboardConfig, DataviewId, PanelConfig, RowConfig } from "@/catalogue/types";
-import { followsResultsPill, panelState, showsOnState } from "@/catalogue/variants";
-import { runtimeState, useDashboardRuntime } from "./runtime";
+import type { ColumnHeader, DashboardConfig, PanelConfig, RowConfig } from "@/catalogue/types";
 
 export type PlanRow = { row: RowConfig; panel: PanelConfig | undefined };
 export type PlanColumn = { column: ColumnHeader; rows: PlanRow[] };
@@ -45,23 +43,32 @@ export function usePlanColumn(columnKey: string): { plan: DashboardPlan; column:
   return plan && column ? { plan, column } : null;
 }
 
-// 0.6 snagging round 3 / 01: a view's own settings (DataviewInstance.params) as the
-// column's config holds them -- the first instance of `dataview` in the column, in row and
-// rail order. null with no plan (every unflagged page) or no such view, so a host reading
-// it draws exactly as before.
-//
-// 0.6 snag 3 / 03: on a Results dashboard, the first instance shown on the current pill
-// (so a view kept per measure draws each measure's own settings), else the first. Snag 4 /
-// 02: shown in the panel's current state on every axis it varies by.
-export function usePlanViewParams(columnKey: string, dataview: DataviewId): Record<string, unknown> | null {
-  const planned = usePlanColumn(columnKey);
-  const runtime = useDashboardRuntime();
-  if (!planned) return null;
-  const config = planned.plan.config;
-  const page = runtimeState(runtime, followsResultsPill(config));
-  const all = planned.column.rows.flatMap(({ panel }) => (panel?.dataviews ?? []).filter((v) => v.kind === "view" && v.dataview === dataview).map((v) => ({ v, panel: panel! })));
-  const pick = (page ? all.find(({ v, panel }) => showsOnState(v, panelState(config, panel, page))) : undefined) ?? all[0];
-  return pick?.v.kind === "view" ? (pick.v.params ?? null) : null;
+// 0.6 snagging round 3 / 01: a view's own settings (DataviewInstance.params) as the config
+// holds them. 0.6.1 S2 (D10): looked up by INSTANCE id -- the view the panel is showing,
+// which ColumnPanels provides (ActiveViewContext) -- not by (column, dataview), so two views
+// on the same renderer never share Figures. null with no plan (every unflagged page) or no
+// such instance, so a host reading it draws exactly as before.
+export function viewParamsFor(config: DashboardConfig, instanceId: string | null | undefined): Record<string, unknown> | null {
+  if (!instanceId) return null;
+  for (const panel of config.panels) {
+    const v = panel.dataviews.find((x) => x.id === instanceId);
+    if (v) return v.kind === "view" ? (v.params ?? null) : null;
+  }
+  return null;
+}
+
+export function usePlanViewParams(instanceId: string | null | undefined): Record<string, unknown> | null {
+  const plan = useContext(DashboardPlanContext);
+  return plan ? viewParamsFor(plan.config, instanceId) : null;
+}
+
+// The instance id of the view a configured panel is showing, provided by ColumnPanels around
+// the panel's body (null outside a plan).
+export const ActiveViewContext = createContext<string | null>(null);
+
+// The showing view's own params, for a leaf drawn inside a panel body (ConfiguredNumberTiles).
+export function useActiveViewParams(): Record<string, unknown> | null {
+  return usePlanViewParams(useContext(ActiveViewContext));
 }
 
 // Is the config renderer switched on? `?renderer=config` on the URL, or the build-time

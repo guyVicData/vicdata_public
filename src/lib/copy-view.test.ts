@@ -23,6 +23,7 @@ import {
   writeLastUsed,
   type CopyViewSource,
 } from "./copy-view";
+import { viewInstance } from "@/catalogue/viewspec";
 
 const results = teacherDashboardFor("ks4", "results");
 const labels = { results: "points" as const, subject: { label: "Maths (General)", key: "Maths" }, school: "The Chase", category: "Sciences & Maths", setLabel: "10 nearest" };
@@ -31,7 +32,7 @@ const labels = { results: "points" as const, subject: { label: "Maths (General)"
 function sourceFrom(config: DashboardConfig, panelId: string, dataview: string): CopyViewSource {
   const context = contextFromPanel(config, panelId, labels);
   return {
-    instance: { id: `${panelId}/${dataview}`, kind: "view", dataview: dataview as `DV-${string}` },
+    instance: viewInstance(`${panelId}/${dataview}`, dataview as `DV-${string}`),
     context,
     pinned: { phase: "ks4", subject: "Maths", subjectLabel: "Maths (General)", compare: { kind: "schools", name: "10 nearest" }, yearRange: { from: "2021/22", to: "2024/25" } },
     title: "Maths (General) points against 10 nearest, since 2021/22",
@@ -53,9 +54,9 @@ function watchlist(): DashboardConfig {
       { id: "trends", name: "Trends", time: "over_time", openByDefault: true },
     ],
     panels: [
-      { id: "mine-1.c1.current", row: "current", column: "c1", dataviews: [{ id: "a", kind: "view", dataview: "DV-C3-CUR-TILES" }] },
-      { id: "mine-1.c2.current", row: "current", column: "c2", dataviews: [{ id: "b", kind: "view", dataview: "DV-C3-CUR-RANKING" }] },
-      { id: "mine-1.c1.trends", row: "trends", column: "c1", dataviews: [{ id: "c", kind: "view", dataview: "DV-C3-TR-CHART" }] },
+      { id: "mine-1.c1.current", row: "current", column: "c1", dataviews: [viewInstance("a", "DV-C3-CUR-TILES")] },
+      { id: "mine-1.c2.current", row: "current", column: "c2", dataviews: [viewInstance("b", "DV-C3-CUR-RANKING")] },
+      { id: "mine-1.c1.trends", row: "trends", column: "c1", dataviews: [viewInstance("c", "DV-C3-TR-CHART")] },
     ],
   };
 }
@@ -196,7 +197,7 @@ function meetingWith(counts: number[]): DashboardConfig {
     id: `s${i + 1}`,
     title: "",
     layout: "auto",
-    slots: Array.from({ length: n }, (_, j) => ({ id: `s${i + 1}-${j}`, view: { id: `v${i}${j}`, kind: "view" as const, dataview: "DV-C3-TR-CHART" as const } })),
+    slots: Array.from({ length: n }, (_, j) => ({ id: `s${i + 1}-${j}`, view: viewInstance(`v${i}${j}`, "DV-C3-TR-CHART" as const) })),
   }));
   return { ...m, presentation: { meetingDate: "2026-11-14", slides } };
 }

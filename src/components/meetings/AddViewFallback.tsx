@@ -11,6 +11,7 @@ import { TeacherModal } from "@/components/teacher/TeacherModal";
 import { measureOf, type PinInput } from "@/lib/meeting-views";
 import { newId } from "@/lib/meeting-ops";
 import { EBtn } from "./MeetingChrome";
+import { viewInstance } from "@/catalogue/viewspec";
 
 const HOST_LABEL: Record<string, string> = {
   "teacher.c1.candidates": "Candidates",
@@ -58,7 +59,7 @@ export function AddViewFallback({
       ...(dv.supports.dateMode === "trend" && latest ? { yearRange: { from: measure?.years.from ?? latest, to: latest } } : { year: latest }),
       keepLive,
     };
-    onAdd({ id: newId("view"), kind: "view", dataview: dv.id }, pin);
+    onAdd(viewInstance(newId("view"), dv.id), pin);
   };
 
   return (

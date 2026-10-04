@@ -2,10 +2,11 @@
 // which column host draws each config column, what the 0.6 renderer can't draw yet (said
 // plainly, never silently dropped), and the settings an embedded view starts from.
 // Pure, so scripts/catalogue-unit-tests.ts can pin it.
-import type { ColumnHeader, DashboardConfig, Dataview, HostId, PanelConfig, Phase, ResultsMeasure } from "@/catalogue/types";
+import { CONFIG_SCHEMA_VERSION, type ColumnHeader, type DashboardConfig, type Dataview, type HostId, type PanelConfig, type Phase, type ResultsMeasure } from "@/catalogue/types";
 import { DATAVIEWS } from "@/catalogue/dataviews";
 import { againstKey, chosenKey, measureKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import type { PinnedSettings } from "@/lib/meeting-views";
+import { viewInstance } from "@/catalogue/viewspec";
 
 export type DashboardMeasure = "candidates" | "results";
 
@@ -243,7 +244,7 @@ export function oneViewConfig(dv: Dataview, pinned: PinnedSettings, id: string, 
   const panelId = dv.host.panel;
   const rowId = panelId === "current" ? "current" : "trends";
   return {
-    schema_version: 1,
+    schema_version: CONFIG_SCHEMA_VERSION,
     id,
     name: dv.label,
     kind: "dashboard",
@@ -262,7 +263,7 @@ export function oneViewConfig(dv: Dataview, pinned: PinnedSettings, id: string, 
       },
     ],
     rows: [{ id: rowId, name: panelId === "current" ? "Current" : "Trends", time: panelId === "current" ? "latest" : "over_time", openByDefault: true, legacyPanelId: panelId }],
-    panels: [{ id: `${id}.panel`, row: rowId, column: "c1", dataviews: [{ id: `${id}/${dv.id}`, kind: "view", dataview: dv.id, ...(params ? { params } : {}), ...(title ? { title } : {}) }], defaultView: `${id}/${dv.id}` }],
+    panels: [{ id: `${id}.panel`, row: rowId, column: "c1", dataviews: [viewInstance(`${id}/${dv.id}`, dv.id, { ...(params ? { params } : {}), ...(title ? { title } : {}) })], defaultView: `${id}/${dv.id}` }],
   };
 }
 

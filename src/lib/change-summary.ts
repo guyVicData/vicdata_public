@@ -17,6 +17,7 @@ import { DATAVIEWS } from "@/catalogue/dataviews";
 import { contextFromPanel, instanceTitle, titleTemplateOf, VIEW_TYPE_LABEL } from "@/catalogue/pick";
 import { effectiveResults, followsResultsPill } from "@/catalogue/results";
 import type { DashboardConfig, Dataview, DataviewInstance, HostId, PanelConfig, ResultsMeasure } from "@/catalogue/types";
+import { viewInstance } from "@/catalogue/viewspec";
 
 // Plain words for a placeholder no context can fill (as resolveTitle and fillTileLabel
 // fall back) -- never a bracketed token.
@@ -123,7 +124,7 @@ function nameFor(config: DashboardConfig | null, name: string, clause: string): 
     const row = config.rows.find((r) => r.id === panel.row);
     const which = row?.legacyPanelId ?? (row?.time === "latest" ? "current" : "trend");
     const dv: Dataview | undefined = DATAVIEWS.find((d) => hostsOf(host).includes(d.host.id) && d.host.panel === which && d.label === name);
-    if (dv) return summaryViewName(config, panel, { id: `${panel.id}/${dv.id}`, kind: "view", dataview: dv.id }, results);
+    if (dv) return summaryViewName(config, panel, viewInstance(`${panel.id}/${dv.id}`, dv.id), results);
   }
   return plainForLabel(name);
 }

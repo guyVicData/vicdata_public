@@ -47,7 +47,7 @@ import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconB
 import { GradeDistribution, type GradeRow } from "./GradeDistribution";
 import { NON_GRADE_VALUES, bandRate, gradeOrderFrom, type GradeRange } from "@/lib/subject-grades";
 import { useSubjectGradeGeography, withEnglandBandBenchmark, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
-import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { RankingsMap } from "./RankingsMap";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { ShareDonut } from "./ShareDonut";
@@ -56,9 +56,7 @@ import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
 import { VerticalBars } from "./VerticalBars";
 import { RankedList } from "./RankedList";
-import { usePlanViewParams } from "@/components/dashboard-config/plan";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
-import { applyMainLabel, applyTileFigures, readTileParams } from "@/lib/tile-figures";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -291,8 +289,6 @@ export function SubjectPanels({
   const changeView: "chart" | "table" = trendsView === "changeTable" ? "table" : "chart";
   const setChangeView = (v: "chart" | "table") => setTrendsView(v === "table" ? "changeTable" : "changeChart");
   const geo = useSubjectGeography(geography);
-  // 0.6 snag 3 / 01: the tiles view's own figure settings, under a config (else none).
-  const tileParams = readTileParams(usePlanViewParams(columnId, "DV-C1-RES-CUR-TILES"));
   const runtime = useDashboardRuntime();
   // Grade bands: England's per-grade rows for the focused subject, every year, one fetch.
   const gradeGeo = useSubjectGradeGeography(gradeBand?.geography ?? null);
@@ -463,8 +459,6 @@ export function SubjectPanels({
     measure: measure.noun,
     range: gradeBand?.rangeLabel?.toLowerCase(),
   };
-  const tilesMain = applyMainLabel(tilesMainBuilt, tileParams, tileVars);
-  const tilesShown = applyTileFigures(tileRow, tileParams, tileVars);
 
   // Grade bands: the focused subject's distribution in the year Current shows, with
   // England's share at each grade (no tick where England's row was suppressed), and its
@@ -587,7 +581,7 @@ export function SubjectPanels({
               </button>
             </div>
           ) : effectiveView === "tiles" ? (
-            <NumberTiles main={tilesMain} tiles={tilesShown} fullscreen={fullscreen} />
+            <ConfiguredNumberTiles main={tilesMainBuilt} tiles={tileRow} vars={tileVars} fullscreen={fullscreen} />
           ) : effectiveView === "donut" && donut ? (
             donutPercent === null ? (
               <p className="text-xs text-[var(--muted)]">

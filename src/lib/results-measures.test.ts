@@ -21,12 +21,13 @@ import type { DashboardConfig, DataviewId, DataviewInstance, ResultsMeasure } fr
 import { configViewIds } from "@/components/dashboard-config/rail";
 import * as ops from "./editor-ops";
 import { copyToDashboard, newDashboardFromView, type CopyViewSource } from "./copy-view";
+import { viewInstance } from "@/catalogue/viewspec";
 
 const gcse = () => teacherDashboardFor("ks4", "results");
 const C1T = "vicdata.ks4.results.c1.trends";
 const C1C = "vicdata.ks4.results.c1.current";
 const C2T = "vicdata.ks4.results.c2.trends";
-const view = (dataview: string, extra: Partial<DataviewInstance> = {}): DataviewInstance => ({ id: `x/${dataview}`, kind: "view", dataview: dataview as DataviewId, ...extra }) as DataviewInstance;
+const view = (dataview: string, extra: Partial<DataviewInstance> = {}): DataviewInstance => ({ ...viewInstance(`x/${dataview}`, dataview as DataviewId), ...extra }) as DataviewInstance;
 const panel = (c: DashboardConfig, id: string) => c.panels.find((p) => p.id === id)!;
 const dvs = (c: DashboardConfig, id: string, m: ResultsMeasure) => viewsOnResults(panel(c, id), m).map((v) => (v.kind === "view" ? v.dataview : v.id));
 
@@ -129,7 +130,7 @@ test("move, copy and swap keep the measures; a copy to a non-Results dashboard d
   const swapped = ops.replaceView(c0, `${C2T}/DV-C2-TR-TABLE`, view("DV-C2-TR-CHANGETABLE"));
   assert.deepEqual(effectiveResults(panel(swapped.config, C2T).dataviews.find((v) => v.id === swapped.instanceId)!), ["counts"]);
 
-  const inst = { id: `${C2T}/DV-C2-TR-TABLE`, kind: "view" as const, dataview: "DV-C2-TR-TABLE" as const, resultsMeasures: ["counts" as const] };
+  const inst = viewInstance(`${C2T}/DV-C2-TR-TABLE`, "DV-C2-TR-TABLE" as const, { resultsMeasures: ["counts" as const] });
   const source: CopyViewSource = { instance: inst, context: contextFromPanel(c0, C2T, { results: "points" }), pinned: { phase: "ks4" }, title: "Trend table" };
   const fresh = newDashboardFromView(source, { id: "mine", name: "Mine" });
   assert.equal(followsResultsPill(fresh), false);

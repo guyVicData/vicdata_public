@@ -67,6 +67,7 @@ import {
   type VariantState,
 } from "@/catalogue/variants";
 import { measuresFor } from "./teacher-view-panels";
+import { viewInstance } from "@/catalogue/viewspec";
 
 export class EditorError extends Error {}
 
@@ -453,7 +454,7 @@ export function applyColumnChange(
     if (choice(m) === "swap" && m.nearest) {
       const id = freeId(c, `${p.id}/${m.nearest}`);
       if (p.defaultView === m.instanceId) p.defaultView = id;
-      p.dataviews[i] = { id, kind: "view", dataview: m.nearest };
+      p.dataviews[i] = viewInstance(id, m.nearest);
     } else {
       p.dataviews.splice(i, 1);
       if (p.defaultView === m.instanceId) delete p.defaultView;
@@ -843,7 +844,7 @@ export function swapInPlaceholder(config: DashboardConfig, instanceId: string, d
   const { panel, index } = findView(c, instanceId);
   if (panel.dataviews[index].kind !== "placeholder") fail("That isn't a planned view.");
   const id = freeId(c, `${panel.id}/${dataview}`);
-  panel.dataviews[index] = { id, kind: "view", dataview };
+  panel.dataviews[index] = viewInstance(id, dataview);
   if (panel.defaultView === instanceId) panel.defaultView = id;
   remapStateDefaults(panel, (x) => (x === instanceId ? id : x));
   return checked(c);

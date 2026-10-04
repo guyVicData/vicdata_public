@@ -11,9 +11,10 @@ import { copySourceFor, panelTitleOverride, type RuntimeLabels } from "./pin-con
 import { slotTitle } from "./meeting-views";
 import { changeSummary } from "./editor-ops";
 import { oneViewConfig } from "@/components/dashboard-config/embed";
+import { viewInstance } from "@/catalogue/viewspec";
 
 type View = Extract<DataviewInstance, { kind: "view" }>;
-const view = (dataview: string, extra: Partial<View> = {}): View => ({ id: `x/${dataview}`, kind: "view", dataview: dataview as DataviewId, ...extra });
+const view = (dataview: string, extra: Partial<View> = {}): View => (viewInstance(`x/${dataview}`, dataview as DataviewId, { ...extra }));
 const rt: RuntimeLabels = {
   school: { urn: "100053", name: "Acland Burghley School" },
   results: "points",
@@ -72,7 +73,7 @@ test("instanceTitle: the override resolved, else the dataview's title", () => {
 test("meeting slots: a title with placeholders is filled from the pin; a plain one stays", () => {
   const s = (title?: string): SlideConfig["slots"][number] => ({
     id: "s",
-    view: { id: "v", kind: "view", dataview: "DV-C2-CUR-BARS", ...(title ? { title } : {}), pinned: { phase: "ks4", data: "academic.candidates", subjectLabel: "History", schoolName: "Acland Burghley School", compare: { kind: "subjects", name: "Humanities" }, year: "2024/25" }, keepLive: false },
+    view: { ...viewInstance("v", "DV-C2-CUR-BARS"), ...(title ? { title } : {}), pinned: { phase: "ks4", data: "academic.candidates", subjectLabel: "History", schoolName: "Acland Burghley School", compare: { kind: "subjects", name: "Humanities" }, year: "2024/25" }, keepLive: false },
   });
   assert.equal(slotTitle(s("[subject] at [school], [year]")), "History at Acland Burghley School, 2024/25");
   assert.equal(slotTitle(s("Our history entries")), "Our history entries");

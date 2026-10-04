@@ -5,6 +5,7 @@ import { dataviewById } from "@/catalogue";
 import { teacherDashboardFor } from "@/catalogue/dashboards";
 import { contextFromPanel, pickResults } from "@/catalogue/pick";
 import { againstOfScope, copySourceFor, meetingChooserContext, meetingPin, pinFromContext, pinnedCompare, rollsForward, subjectOfKey, type RuntimeLabels } from "./pin-context";
+import { viewInstance } from "@/catalogue/viewspec";
 
 const school = { urn: "100053", name: "Acland Burghley School" };
 const rt: RuntimeLabels = {
@@ -74,7 +75,7 @@ test("meeting: Add a view starts at no column, and the pick is pinned for the sc
   assert.ok(pickResults(base).length > 0, "the meeting's start context offers views");
   assert.equal(base.labels.school, "Acland Burghley School");
   const ctx = { ...base, focus: { kind: "subject" as const, subject: { mode: "always" as const, label: "Maths (General)", key: "Maths (General)::GCSE (9-1) Full Course" } } };
-  const instance = { id: "v1", kind: "view" as const, dataview: "DV-C3-CUR-BAR" as const };
+  const instance = viewInstance("v1", "DV-C3-CUR-BAR" as const);
   assert.ok(dataviewById(instance.dataview), "a registered view");
   const pin = meetingPin(instance, ctx, school);
   assert.equal(pin.schoolUrn, "100053");

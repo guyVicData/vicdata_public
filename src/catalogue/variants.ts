@@ -20,7 +20,8 @@
 // unchanged), else defaultView.
 //
 // The Results axis keeps round 3's storage (resultsMeasures, defaultViewByResults), so
-// configs already published read exactly as they did; schema_version stays 1. Pure, so the
+// configs already published read exactly as they did (schema_version 2 since 0.6.1 S2 only
+// added each view's spec). Pure, so the
 // hosts, the editor and the tests share it.
 import { DATAVIEWS } from "./dataviews";
 import type { ComparatorState, CompareAgainstState, DashboardConfig, Dataview, DataviewInstance, HostId, PanelConfig, ResultsMeasure, VariantSets } from "./types";

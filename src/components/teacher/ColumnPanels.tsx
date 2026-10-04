@@ -21,7 +21,7 @@ import { CardBox } from "./CardBox";
 import { ChevronDown, IconButton } from "./PanelIcons";
 import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
-import { usePlanColumn } from "@/components/dashboard-config/plan";
+import { ActiveViewContext, usePlanColumn } from "@/components/dashboard-config/plan";
 import { PanelBoundary, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
 import { configuredRail, defaultEntry, offRailEntry, onDefault, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
 import { followsResultsPill, panelState, stateDefault, stateKey, viewsOnState, type VariantState } from "@/catalogue/variants";
@@ -157,7 +157,10 @@ export function ColumnPanels({
 
   // 0.6 snag 4 / 01: `title`, the view's own title (resolved), replaces the host's view
   // title in the body wherever it is drawn -- card, fullscreen, print. null = as before.
-  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null) => {
+  // 0.6.1 S2 (D10): `activeId`, the instance the panel is showing, so the body's leaves read
+  // that view's own params (ActiveViewContext; null = no plan, as before).
+  const withView = (activeId: string | null, body: ReactNode) => (activeId ? <ActiveViewContext.Provider value={activeId}>{body}</ActiveViewContext.Provider> : body);
+  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null, activeId: string | null = null) => {
         const open = panels.includes(id);
         const toggle = toggleOverride ?? (() => onPanelsChange(togglePanel(panels, id)));
         return (
@@ -207,7 +210,7 @@ export function ColumnPanels({
             // 3x3 grid rather than three ragged stacks.
             fixedHeight
           >
-            {({ fullscreen }) => (title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(fullscreen))}
+            {({ fullscreen }) => withView(activeId, title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(fullscreen))}
           </CardBox>
         );
   };
@@ -238,13 +241,14 @@ export function ColumnPanels({
             panel = { ...panel, actions: configuredRail(railEntries(raw.actions, host, id), cfg, state) };
           }
           const title = runtime && host ? titleOverrideFor(plan.config, cfg, railEntries(raw.actions, host, id), runtime, state) : null;
+          const activeId = activeInstance(cfg, host ? railEntries(raw.actions, host, id) : [], state)?.id ?? null;
           if (embed?.frame === "figure") {
             // A meeting slot (or another frame that brings its own card): the figure alone,
             // filling the room it is given. Title, source, note and export are the slot's.
             return (
               <div key={cfg.id} data-panel-id={cfg.id} data-embed="figure" className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto">
                 <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                  {title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(embed.fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(embed.fullscreen)}
+                  {withView(activeId, title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(embed.fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(embed.fullscreen))}
                 </PanelBoundary>
               </div>
             );
@@ -256,7 +260,7 @@ export function ColumnPanels({
           return (
             <div key={cfg.id} data-panel-id={cfg.id} data-row-time={row.time} data-override={cfg.override?.badge}>
               <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title)}
+                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title, activeId)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title, activeId)}
               </PanelBoundary>
             </div>
           );

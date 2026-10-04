@@ -6,7 +6,7 @@
 // "Change data / compared to…" and New 3's Change / Add. No school here, so "Choose other
 // schools…" stays off and the comparison set is the relative "10 nearest" (G5).
 import { useState } from "react";
-import type { DashboardConfig, ColumnHeader, RowTime } from "@/catalogue/types";
+import { CONFIG_SCHEMA_VERSION, type DashboardConfig, type ColumnHeader, type RowTime } from "@/catalogue/types";
 import { contextFromPanel, type PanelLabels, type PickPanelContext } from "@/catalogue/pick";
 import { AvStyles } from "@/components/chooser-v06/bits";
 import { AreaStep, DataStep, FocusStep, SubjectStep, focusOptions } from "@/components/chooser-v06/StepScreens";
@@ -20,7 +20,7 @@ export function contextFromColumn(
   opts: { dashboard: string; row?: string; time?: RowTime; labels?: PanelLabels } = { dashboard: "New dashboard" },
 ): PickPanelContext {
   const cfg: DashboardConfig = {
-    schema_version: 1,
+    schema_version: CONFIG_SCHEMA_VERSION,
     id: "__ctx",
     name: opts.dashboard,
     kind: "dashboard",

@@ -38,6 +38,8 @@ export async function loadPublishedVicData(supabase: SupabaseClient, slug: strin
       .maybeSingle<{ version: number; schema_version: number; config: DashboardConfig }>();
     if (vError) return fall(`load error: ${vError.message}`);
     if (!version) return fall("published version not readable");
+    // 0.6.1 S2 (D9): any other version -- the v1 seed live holds until the re-seed is applied,
+    // or one from a later build -- draws the code copy (schema_version 2). Never upgraded here.
     if (version.schema_version !== CONFIG_SCHEMA_VERSION || version.config?.schema_version !== CONFIG_SCHEMA_VERSION) {
       return fall(`schema_version ${version.config?.schema_version ?? version.schema_version} isn't one this renderer reads`);
     }

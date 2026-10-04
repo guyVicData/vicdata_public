@@ -5,7 +5,8 @@ import assert from "node:assert/strict";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadPublishedVicData } from "./published-vicdata";
 import { teacherDashboardFor } from "../catalogue/dashboards";
-import type { DashboardConfig } from "../catalogue/types";
+import { viewInstance } from "../catalogue/viewspec";
+import { CONFIG_SCHEMA_VERSION, type DashboardConfig } from "../catalogue/types";
 
 type Tables = { dashboards: Record<string, unknown>[]; dashboard_versions: Record<string, unknown>[] };
 
@@ -31,7 +32,7 @@ function fakeClient(tables: Tables | "missing"): SupabaseClient {
 const code = teacherDashboardFor("ks4", "candidates");
 // The seed script stores JSON.stringify(config): the stored copy is the code copy, JSON round-tripped.
 const seeded = (): DashboardConfig => JSON.parse(JSON.stringify(code));
-const tablesWith = (config: DashboardConfig | null, schema = 1): Tables => ({
+const tablesWith = (config: DashboardConfig | null, schema: number = CONFIG_SCHEMA_VERSION): Tables => ({
   dashboards: [{ id: "d1", slug: code.id, owner_scope: "vicdata", published_version_id: config ? "v1" : null }],
   dashboard_versions: config ? [{ id: "v1", version: 3, schema_version: schema, config }] : [],
 });
@@ -68,8 +69,10 @@ describe("loadPublishedVicData (snag 1 item 00)", () => {
   for (const [name, tables] of [
     ["no stored row", { dashboards: [], dashboard_versions: [] } as Tables],
     ["no published version (removed)", tablesWith(null)],
-    ["a schema_version it can't read", tablesWith({ ...seeded(), schema_version: 2 as never }, 2)],
-    ["an invalid config", tablesWith({ ...seeded(), panels: [{ ...seeded().panels[0], dataviews: [{ id: "x", kind: "view", dataview: "DV-NOPE" }] }] })],
+    // 0.6.1 S2 (D9): a v1 published version (live before the re-seed) draws the code copy.
+    ["a schema_version it can't read (v1, before the re-seed)", tablesWith({ ...seeded(), schema_version: 1 as never }, 1)],
+    ["a schema_version from the future", tablesWith({ ...seeded(), schema_version: 3 as never }, 3)],
+    ["an invalid config", tablesWith({ ...seeded(), panels: [{ ...seeded().panels[0], dataviews: [{ ...viewInstance("x", "DV-C2-CUR-BARS"), dataview: "DV-NOPE" }] }] })],
     ["the tables not there yet", "missing" as const],
   ] as const) {
     it(`falls back to the copy in code, with a warning: ${name}`, async () => {
