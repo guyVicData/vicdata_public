@@ -148,8 +148,8 @@ test("swap keeps the instance's states; History names them", () => {
   const c0 = ops.setViewStates(gcse(), `${C2T}/DV-C2-TR-TABLE`, "compareAgainst", ["whole"]);
   const sw = ops.replaceView(c0, `${C2T}/DV-C2-TR-TABLE`, view("DV-C2-TR-CHANGETABLE"));
   assert.deepEqual(effectiveStates(panel(sw.config, C2T).dataviews.find((v) => v.id === sw.instanceId)!, "compareAgainst"), ["whole"]);
-  assert.match(ops.changeSummary(gcse(), c0), /Subject category, Selected subjects: removed \*Trend table\* from Context · Trends/);
+  assert.match(ops.changeSummary(gcse(), c0), /Subject category, Selected subjects: removed \*Results in its category, year by year\* from Context · Trends/);
   const d = ops.setDefaultView(gcse(), C2T, `${C2T}/DV-C2-TR-TABLE`, { results: "counts", compareAgainst: "selected" });
-  assert.match(ops.changeSummary(gcse(), d), /Grade counts · Selected subjects: \*Trend table\* is now the default in Context · Trends/);
+  assert.match(ops.changeSummary(gcse(), d), /Grade counts · Selected subjects: \*Results in its category, year by year\* is now the default in Context · Trends/);
   assert.equal(ops.stateLabel({ results: "counts", compareAgainst: "category" }, "ks4", "Sciences & Maths"), "Grade counts · Sciences & Maths subjects");
 });

@@ -24,6 +24,7 @@ import {
   type Structure,
   type Target,
 } from "@/lib/editor-ops";
+import { EC } from "@/lib/editor-layout";
 import { DLabel, Dialog, ErrorLine, Note, Opt, Segmented, StructIcon, SwitchRow, inputStyle } from "./bits";
 
 // ------------------------------------------------------------------- RowSettings
@@ -332,8 +333,9 @@ export function SlotMapDialog({
                     gridColumn: `${cell.start + 1} / span ${cell.span}`,
                     minHeight: 54,
                     borderRadius: 8,
-                    border: `1.5px ${empty ? "dashed" : "solid"} ${on ? "var(--cc-blue)" : "var(--cc-border2)"}`,
-                    background: on ? "var(--cc-blue-tint)" : isFrom ? "var(--cc-soft)" : "var(--cc-panel)",
+                    // 0.6.1 S1 (pinch point 4): where it sits now, in the boards' amber.
+                    border: `1.5px ${empty ? "dashed" : "solid"} ${on ? "var(--cc-blue)" : isFrom ? EC.amber : "var(--cc-border2)"}`,
+                    background: on ? "var(--cc-blue-tint)" : isFrom ? `color-mix(in srgb, ${EC.amber} 12%, var(--cc-panel))` : "var(--cc-panel)",
                     color: "var(--cc-ink)",
                     padding: "6px 8px",
                     textAlign: "left",
@@ -344,7 +346,7 @@ export function SlotMapDialog({
                   }}
                 >
                   <span style={{ display: "block", fontSize: 10, color: "var(--cc-sub)", fontWeight: 700 }}>{config.columns[cell.start].title}</span>
-                  {isFrom ? "Here now" : label}
+                  {isFrom ? <span data-slot-here style={{ color: EC.amberText, fontWeight: 700 }}>Here now</span> : label}
                 </button>
               );
             })}

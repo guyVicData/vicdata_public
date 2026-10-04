@@ -145,10 +145,10 @@ test("move, copy and swap keep the measures; a copy to a non-Results dashboard d
 
 test("history compare says measure changes in plain words", () => {
   const added = ops.addView(gcse(), C2T, tagForPill(view("DV-C2-TR-TABLE"), "counts")).config;
-  assert.match(ops.changeSummary(gcse(), added), /^Grade counts: added \*Trend table\* to Context · Trends/);
+  assert.match(ops.changeSummary(gcse(), added), /^Grade counts: added \*Results in its category, year by year\* to Context · Trends/);
   const off = ops.setViewResults(gcse(), `${C2T}/DV-C2-TR-TABLE`, ["points", "threshold"]);
-  assert.match(ops.changeSummary(gcse(), off), /Grade bands, Grade counts: removed \*Trend table\* from Context · Trends/);
+  assert.match(ops.changeSummary(gcse(), off), /Grade bands, Grade counts: removed \*Results in its category, year by year\* from Context · Trends/);
   const def = ops.setDefaultView(gcse(), C1T, `${C1T}/DV-C1-CNT-TR-CHANGETABLE`, "counts");
-  assert.match(ops.changeSummary(gcse(), def), /Grade counts: \*Change table\* is now the default in Results · Trends/);
-  assert.match(ops.changeSummary(gcse(), ops.removeView(gcse(), `${C1T}/DV-C1-CNT-TR-SPREAD`)), /^Grade counts: removed \*Spread by year\*/);
+  assert.match(ops.changeSummary(gcse(), def), /Grade counts: \*This subject's entries at each grade: .* against .*, with the change\* is now the default in Results · Trends/);
+  assert.match(ops.changeSummary(gcse(), ops.removeView(gcse(), `${C1T}/DV-C1-CNT-TR-SPREAD`)), /^Grade counts: removed \*This subject's spread of grades: /);
 });

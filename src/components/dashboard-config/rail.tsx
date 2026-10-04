@@ -96,16 +96,18 @@ export function defaultEntry(entries: RailEntry[], cfg: PanelConfig, state: Pane
 
 // 0.6 snag 3 / 03 (every axis since snag 4 / 02): when the host is showing a view the
 // current state's rail doesn't list (its instance was taken off this state), the entry to
-// move it to: the state's default, else its first offered view. null = nothing to do --
-// always so for a config without the new fields, whose rails are exactly what the hosts
-// offer.
+// move it to: the state's default, else its first offered view. null = nothing to do.
+// 0.6.1 S1 (pinch point 2): the same when the host is on a view the config doesn't list at
+// all -- a view removed from the panel that was its remembered open view, or the view an
+// embed (the editor's live preview) was last drawing -- in any state, none included. A
+// view that isn't in the config is never drawn. A host button with no registered dataview
+// is left alone, as before.
 export function offRailEntry(entries: RailEntry[], cfg: PanelConfig, state: PanelStateArg): RailEntry | null {
   const st = asState(state);
-  if (!Object.keys(st).length) return null;
   const active = entries.find((e) => e.active);
   if (!active || !active.dataview) return null;
   const ids = configViewIds(cfg, st);
-  if (ids.includes(active.dataview) || !configViewIds(cfg).includes(active.dataview)) return null;
+  if (ids.includes(active.dataview)) return null;
   const usable = (e: RailEntry | undefined) => (e && !e.disabled && e.onClick ? e : null);
   const def = cfg.dataviews.find((v) => v.id === configuredDefaultFor(cfg, st));
   const wanted = def && def.kind === "view" && ids.includes(def.dataview) ? usable(entries.find((e) => e.dataview === def.dataview)) : null;

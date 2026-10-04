@@ -39,7 +39,7 @@ export function DashboardUpdates({ dashboardId, version, schoolUrn }: { dashboar
       live = false;
     };
   }, [dashboardId, version, schoolUrn]);
-  return <UpdatedNotice dashboardId={dashboardId} version={version.version} summary={version.change_summary} />;
+  return <UpdatedNotice dashboardId={dashboardId} version={version.version} summary={version.change_summary} config={version.config} />;
 }
 
 // The same for a VicData dashboard known by its slug (the flagged Teacher page, which draws

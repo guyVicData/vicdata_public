@@ -94,6 +94,7 @@ test("History's change summary says when a view's title changes", () => {
   const p = next.panels.find((x) => x.column === "c2" && x.row === "current")!;
   const i = p.dataviews.findIndex((v) => v.kind === "view" && v.dataview === "DV-C2-CUR-BARS");
   p.dataviews[i] = { ...(p.dataviews[i] as View), title: "[subject] beside the rest", params: { title: "[subject] beside the rest" } };
-  assert.match(changeSummary(prev, next), /Retitled \*Bar chart\* “\[subject\] beside the rest” in /);
-  assert.match(changeSummary(next, prev), /\*Bar chart\* in .* has its own title again/);
+  // 0.6.1 S1: named by its resolved titles, never a placeholder or the internal "Bar chart".
+  assert.match(changeSummary(prev, next), /Retitled \*Results by subject in its category\* “This subject beside the rest” in /);
+  assert.match(changeSummary(next, prev), /\*This subject beside the rest\* in .* is called “Results by subject in its category” again/);
 });
