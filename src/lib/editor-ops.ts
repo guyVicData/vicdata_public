@@ -803,6 +803,18 @@ export function replaceView(config: DashboardConfig, instanceId: string, instanc
   return { config: checked(c), panelId: panel.id, instanceId: id };
 }
 
+// 0.6.1 S4: Edit view's Save -- the instance's new recipe in place, keeping its id (D10:
+// members' open rows and chosen views key on it) even when the host preset it is drawn by
+// changes. The defaults that pointed at it stay on it where it still shows on their state.
+export function updateView(config: DashboardConfig, instanceId: string, instance: Extract<DataviewInstance, { kind: "view" }>): { config: DashboardConfig; panelId: string; instanceId: string } {
+  const c = clone(config);
+  const { panel, index } = findView(c, instanceId);
+  const next: DataviewInstance = { ...clone(instance), id: instanceId };
+  panel.dataviews[index] = next;
+  remapStateDefaults(panel, (x, st) => (x === instanceId ? (showsOnState(next, st) ? x : undefined) : x));
+  return { config: checked(c), panelId: panel.id, instanceId };
+}
+
 export function moveView(config: DashboardConfig, instanceId: string, target: Target): { config: DashboardConfig; panelId: string; instanceId: string } {
   const c = clone(config);
   const { panel, index } = findView(c, instanceId);

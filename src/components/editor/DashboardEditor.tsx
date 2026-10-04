@@ -27,6 +27,9 @@ import { SwitchButton } from "@/components/edit-mode/EditSwitch";
 import { contextFromPanel, settingsOf, titleOverrideOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
 import { DASHBOARDS, groupOf } from "@/catalogue/dashboards";
 import { AddViewChooser } from "@/components/chooser-v06/AddViewChooser";
+import { ViewEditor } from "@/components/view-editor/ViewEditor";
+import { columnHostOf, sideOf, type EditorEnv, type ViewInstance } from "@/components/view-editor/model";
+import { effectiveResults } from "@/catalogue/results";
 import type { SubjectSource } from "@/components/chooser-v06/StepScreens";
 import type { PinSchool } from "@/lib/pin-context";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
@@ -91,6 +94,11 @@ export type DashboardEditorProps = {
 type DialogState =
   | null
   | { kind: "add"; target: ops.Target; ctx: PickPanelContext }
+  // 0.6.1 S4: Add a view / Edit view (AddView1-3, EditView, EditWide). The 0.6 chooser
+  // stays for planned views (its placeholder form, from "Something else? Plan it" and a
+  // placeholder's own Edit), Swap, and columns with no host (Rolls, Live births).
+  | { kind: "view-editor"; mode: "add" | "edit"; target: ops.Target; env: EditorEnv; instance?: ViewInstance }
+  | { kind: "plan"; target: ops.Target; ctx: PickPanelContext }
   // Snag 1 / 03: the view menu's "Edit this view…" (Customise, or a placeholder's form) and
   // "Swap for another view…" (Pick): the chooser's pick replaces the instance in place.
   | { kind: "replace"; mode: "edit" | "swap"; instance: DataviewInstance; ctx: PickPanelContext }
@@ -347,6 +355,22 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     [config, labels],
   );
 
+  // 0.6.1 S4: where a view goes, for the Add a view / Edit view screens: the column's host,
+  // the panel's half, and the measure (the editor's pill; an instance not shown on it opens
+  // on the first measure it shows on). null = a column with no host: the 0.6 chooser.
+  const editorEnv = (target: ops.Target, inst?: ViewInstance): EditorEnv | null => {
+    const host = columnHostOf(config, target);
+    if (!host) return null;
+    const ctx = panelCtx(target);
+    const results = ctx.data === "academic.results";
+    let measure: EditorEnv["measure"] = results ? pill : "entries";
+    if (results && inst) {
+      const on = effectiveResults(inst);
+      if (on.length && !on.includes(pill)) measure = on[0];
+    }
+    return { phase: ctx.phase, columnHost: host, side: sideOf(config, target), measure, followsPill: !!resultsPill && results, ctx: results ? { ...ctx, results: measure as ResultsMeasure } : ctx };
+  };
+
   const panelAction = (panelId: string, a: PanelAction, instanceId: string | null) => {
     if (a === "rename") return setDialog({ kind: "rename-panel", panelId });
     if (a === "override") return setDialog({ kind: "override", panelId, ctx: contextFromPanel(config, panelId, labels) });
@@ -355,6 +379,10 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     if (!instanceId) return;
     const inst = config.panels.find((p) => p.id === panelId)?.dataviews.find((v) => v.id === instanceId);
     if (!inst) return;
+    if (a === "edit-view" && inst.kind === "view") {
+      const env = editorEnv(panelId, inst);
+      if (env) return setDialog({ kind: "view-editor", mode: "edit", target: panelId, env, instance: inst });
+    }
     if (a === "edit-view" || a === "swap-view") return setDialog({ kind: "replace", mode: a === "edit-view" ? "edit" : "swap", instance: inst, ctx: contextFromPanel(config, panelId, labels) });
     if (a === "remove-view") return apply((c) => ops.removeView(c, instanceId));
     if (a === "make-default") return apply((c) => ops.setDefaultView(c, panelId, instanceId, stateOfPanel(panelId)));
@@ -392,7 +420,10 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     copyRow: (rowId) => apply((c) => ops.copyRow(c, rowId)),
     moveRow: (rowId, dir) => apply((c) => ops.moveRow(c, rowId, dir)),
     deleteRow: (rowId) => apply((c) => ops.deleteRow(c, rowId)),
-    addView: (target) => setDialog({ kind: "add", target, ctx: panelCtx(target) }),
+    addView: (target) => {
+      const env = editorEnv(target);
+      setDialog(env ? { kind: "view-editor", mode: "add", target, env } : { kind: "add", target, ctx: panelCtx(target) });
+    },
     panelAction,
     reorder: (panelId, from, to) => apply((c) => ops.reorderView(c, panelId, from, to)),
     swapIn: (instanceId: string, dv: Dataview) => apply((c) => ops.swapInPlaceholder(c, instanceId, dv.id)),
@@ -716,6 +747,52 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       )}
 
       {/* Dialogs */}
+      {dialog?.kind === "view-editor" && (
+        <ViewEditor
+          mode={dialog.mode}
+          env={dialog.env}
+          instance={dialog.instance}
+          school={school}
+          subjects={subjects}
+          theme={theme}
+          contextState={{ against, selected: hostStates?.selected }}
+          onClose={() => setDialog(null)}
+          onPlan={() => setDialog({ kind: "plan", target: dialog.target, ctx: dialog.env.ctx })}
+          onSave={(instance) => {
+            const { target, mode } = dialog;
+            setHistory((h) => {
+              try {
+                const r = mode === "edit" && dialog.instance ? ops.updateView(h.present, dialog.instance.id, instance) : ops.addView(h.present, target, instance);
+                setSelected((s) => ({ ...s, [r.panelId]: r.instanceId }));
+                return ops.record(h, r.config);
+              } catch (e) {
+                if (e instanceof ops.EditorError) setToast(e.message);
+                return h;
+              }
+            });
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog?.kind === "plan" && (
+        <AddViewChooser
+          open
+          theme={theme}
+          context={dialog.ctx}
+          superAdmin={superAdmin}
+          school={school}
+          subjects={subjects}
+          startAt="placeholder"
+          onClose={() => setDialog(null)}
+          onAdd={() => setDialog(null)}
+          onPlaceholder={(p: PlaceholderRequest) => {
+            const target = dialog.target;
+            apply((c) => ops.addPlaceholder(c, target, p).config);
+            setDialog(null);
+          }}
+          persistAsk={false}
+        />
+      )}
       {dialog?.kind === "add" && (
         <AddViewChooser
           open

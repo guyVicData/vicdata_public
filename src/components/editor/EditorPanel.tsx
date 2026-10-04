@@ -15,7 +15,7 @@ import { dataviewById } from "@/catalogue";
 import { AXIS_STATES, dataviewStates, effectiveStates, panelState, showsOnState, viewsOnState, type VariantAxis, type VariantState } from "@/catalogue/variants";
 import { contextFromPanel, latestYear, defaultFromYear, instanceTitle, titleOverrideOf, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
 import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig } from "@/catalogue/types";
-import { railGlyph } from "@/components/chooser-v06/bits";
+import { glyph } from "@/components/view-editor/bits";
 import { MenuDivider, MenuHeading, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { EC, EDITOR, panelWidth } from "@/lib/editor-layout";
 import { isDefaultView, spanOf } from "@/lib/editor-ops";
@@ -450,7 +450,7 @@ function RailButton({ v, label, active, ready, dimmed = false, draggable, menu, 
       }}
       data-off-pill={dimmed || undefined}
     >
-      {planned ? "?" : railGlyph(dv?.railIcon ?? "TilesIcon")}
+      {planned ? "?" : glyph(v.kind === "view" && v.spec?.icon ? v.spec.icon : (dv?.railIcon ?? "TilesIcon"))}
     </button>
   );
   if (!menu) return icon;

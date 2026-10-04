@@ -77,7 +77,10 @@ export function TeacherModal({
   // the page-level Export is to print the dashboard, not whatever happens to be open --
   // so a panel print opts back in and marks itself as the one thing to show.
   printable?: boolean;
-  size?: "fullscreen" | "compact" | "chooser";
+  // 0.6.1 S4: "wide" -- Edit view's desktop panel (docs/wireframes/v0.6/EditWide): 1080x700
+  // centred, 12px clear of a smaller window's edges, over the chooser's flat backdrop; like
+  // "chooser" it draws its own header, body and footer.
+  size?: "fullscreen" | "compact" | "chooser" | "wide";
   children: ReactNode;
 }) {
   // Held in a ref so a caller passing a fresh arrow each render does not re-run the
@@ -116,11 +119,15 @@ export function TeacherModal({
         tabIndex={-1}
         onClick={() => onCloseRef.current()}
         className={`absolute inset-0 h-full w-full cursor-default ${
-          size === "chooser" ? "bg-[rgba(20,20,19,0.45)]" : "bg-neutral-900/40 backdrop-blur-sm dark:bg-black/60"
+          size === "chooser" || size === "wide" ? "bg-[rgba(20,20,19,0.45)]" : "bg-neutral-900/40 backdrop-blur-sm dark:bg-black/60"
         }`}
       />
       {size === "chooser" ? (
         <div className="absolute left-1/2 top-1/2 flex h-[min(736px,calc(100dvh-24px))] w-[min(390px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 flex-col">
+          {children}
+        </div>
+      ) : size === "wide" ? (
+        <div className="absolute left-1/2 top-1/2 flex h-[min(700px,calc(100dvh-24px))] w-[min(1080px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 flex-col">
           {children}
         </div>
       ) : (
