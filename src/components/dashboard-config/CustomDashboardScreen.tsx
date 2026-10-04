@@ -19,9 +19,17 @@
 // grouped dashboards and, for super-admin, an Edit link to /dashboards/[id]/edit; a
 // VicData dashboard shows "Updated — what's changed" and carries per-panel state across a
 // new version (DashboardUpdates).
+//
+// 0.6 snag 2 (B): on a VicData-owned dashboard the super-admin Edit link gives way to the
+// footer's (and the trial banner's) Edit switch: off, the page is exactly the member's
+// (no Edit link, no placeholder panels); on, the editor is drawn in place on this
+// dashboard with this school as its live preview, and the page comes back as it was when
+// it goes off, re-read so a Publish shows straight away. Other dashboards keep the link.
 import { TrialBanner } from "@/components/trial/TrialBanner";
 import { getActiveTrial } from "@/lib/trial";
 import { useEffect, useMemo, useState } from "react";
+import { setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
+import { EditorScreen } from "@/components/editor/EditorScreen";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { groupOf } from "@/catalogue/dashboards";
@@ -60,6 +68,8 @@ export type ScreenExtras = {
   superAdmin?: boolean;
   // The linked dashboards, in group order, with where each opens.
   group?: { config: DashboardConfig; href: string }[];
+  // VicData owns it: the Edit switch's page (no Edit link; drawn as the member sees it).
+  vicData?: boolean;
 };
 
 // The group's dashboards: the seeded VicData groups from the catalogue; a stored group
@@ -82,6 +92,10 @@ async function linkedDashboards(supabase: ReturnType<typeof createBrowserSupabas
 export function CustomDashboardScreen({ id }: { id: string }) {
   const [theme, setTheme] = useTeacherTheme();
   const [state, setState] = useState<State>({ status: "loading" });
+  const supabaseClient = useMemo(() => createBrowserSupabaseClient(), []);
+  const vicDataSlug = state.status === "ready" && state.extras.vicData ? id : null;
+  const inPlace = useInPlaceEdit(supabaseClient, vicDataSlug);
+  const previewDraft = inPlace.previewDraft;
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
@@ -89,28 +103,35 @@ export function CustomDashboardScreen({ id }: { id: string }) {
       try {
         const { data } = await supabase.auth.getSession();
         if (!data.session) return setState({ status: "signed-out" });
-        const [loaded, school] = await Promise.all([loadDashboard(supabase, id), mySchool(supabase)]);
+        // Preview draft (Guy, in a trial): a VicData dashboard's draft, this tab only.
+        const [loaded, school] = await Promise.all([loadDashboard(supabase, id, previewDraft), mySchool(supabase)]);
         if (!loaded) return setState({ status: "missing" });
+        const vicData = (loaded.available ? loaded.row.owner_scope : loaded.config.owner) === "vicdata";
+        const config = previewDraft && vicData && loaded.draft ? loaded.draft : loaded.config;
         if (!school) return setState({ status: "no-school" });
         const [phases, admin, group] = await Promise.all([
           fetchOnboardedPhases(supabase, school.urn),
           // In a "Try VicData as…" trial the page is the member's: no super-admin chrome.
           supabase.rpc("is_platform_admin").then(({ data: a }) => a === true && !getActiveTrial(), () => false),
-          linkedDashboards(supabase, loaded.config, loaded.available).catch(() => []),
+          linkedDashboards(supabase, config, loaded.available).catch(() => []),
         ]);
         setState({
           status: "ready",
-          config: loaded.config,
+          config,
           school,
           saved: loaded.available,
           phases,
-          extras: { routeId: id, row: loaded.available ? loaded.row : null, version: loaded.version, superAdmin: admin, group },
+          extras: { routeId: id, row: loaded.available ? loaded.row : null, version: loaded.version, superAdmin: admin, group, vicData },
         });
       } catch (e) {
         setState({ status: "error", message: e instanceof Error ? e.message : "Couldn't load this dashboard." });
       }
     })();
-  }, [id]);
+    // Re-read after editing (reloadTick) and when Preview draft flips.
+  }, [id, inPlace.reloadTick, previewDraft]);
+
+  const school = state.status === "ready" ? state.school : null;
+  const editorSchool = useMemo(() => (school ? { urn: school.urn, name: school.name } : null), [school]);
 
   if (state.status !== "ready") {
     return (
@@ -134,7 +155,12 @@ export function CustomDashboardScreen({ id }: { id: string }) {
       </main>
     );
   }
-  return <CustomDashboardView config={state.config} school={state.school} saved={state.saved} phases={state.phases} theme={theme} onTheme={setTheme} extras={state.extras} />;
+  return (
+    <>
+      {inPlace.editing && <EditorScreen id={id} host={{ school: editorSchool, top: <TrialBanner className="" />, onExit: () => setEditOn(false) }} />}
+      <CustomDashboardView config={state.config} school={state.school} saved={state.saved} phases={state.phases} theme={theme} onTheme={setTheme} extras={state.extras} hidden={inPlace.editing} reloadKey={inPlace.reloadTick} />
+    </>
+  );
 }
 
 // The drawn dashboard, given its config and school (also what a harness renders).
@@ -146,6 +172,8 @@ export function CustomDashboardView({
   theme,
   onTheme,
   extras = {},
+  hidden = false,
+  reloadKey = 0,
 }: {
   config: DashboardConfig;
   school: School;
@@ -155,6 +183,10 @@ export function CustomDashboardView({
   theme: Theme;
   onTheme: (t: Theme) => void;
   extras?: ScreenExtras;
+  // The Edit switch's editor is drawn in its place: stay mounted, hidden, without the id.
+  hidden?: boolean;
+  // Bumped after editing, so "Updated — what's changed" re-reads.
+  reloadKey?: number;
 }) {
   const router = useRouter();
   const phase = dashboardPhase(config);
@@ -163,7 +195,8 @@ export function CustomDashboardView({
   const navPhases = useMemo(() => (["ks4", "ks5"] as TeacherPhase[]).filter((p) => p === phase || phases.includes(p)), [phase, phases]);
   return (
     <main
-      id="teacher-root"
+      id={hidden ? undefined : "teacher-root"}
+      hidden={hidden}
       data-theme={theme}
       style={(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as React.CSSProperties}
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
@@ -176,7 +209,7 @@ export function CustomDashboardView({
           {PHASE_LABELS[phase]} &middot; {school.name}
           {!saved && " · seeded in code (dashboards not saved yet)"}
         </p>
-        {(extras.group?.length ?? 0) > 1 || extras.superAdmin ? (
+        {(extras.group?.length ?? 0) > 1 || (extras.superAdmin && !extras.vicData) ? (
           <div className="ml-auto flex items-center gap-2 self-center">
             {extras.group && extras.group.length > 1 && (
               <GroupSwitcher
@@ -188,7 +221,7 @@ export function CustomDashboardView({
                 }}
               />
             )}
-            {extras.superAdmin && (
+            {extras.superAdmin && !extras.vicData && (
               <Link
                 href={`/dashboards/${encodeURIComponent(extras.routeId ?? config.id)}/edit`}
                 className="rounded-full border border-[var(--panel-border2)] px-3.5 py-1.5 text-[12.5px] font-bold text-[var(--muted)] hover:text-[var(--fg)] print:hidden"
@@ -201,10 +234,10 @@ export function CustomDashboardView({
       </header>
       {extras.row?.owner_scope === "vicdata" && extras.version && (
         <div className="print:hidden [&:not(:empty)]:mt-3">
-          <DashboardUpdates dashboardId={extras.row.id} version={extras.version} schoolUrn={school.urn} />
+          <DashboardUpdates key={reloadKey} dashboardId={extras.row.id} version={extras.version} schoolUrn={school.urn} />
         </div>
       )}
-      <TeacherDashboard mode="embed" phase={phase} school={school.urn} config={config} settingsFrom="saved" />
+      <TeacherDashboard mode="embed" phase={phase} school={school.urn} config={config} settingsFrom="saved" memberView={!!extras.vicData} />
     </main>
   );
 }

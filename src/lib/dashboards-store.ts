@@ -152,11 +152,14 @@ export async function createDashboard(
     meeting_date?: string | null;
     config: DashboardConfig;
   },
+  // 0.6 snag 2 (B): the editor opened from the Edit switch saves as the signed-in person
+  // (Guy) even inside a trial -- never trial-keyed.
+  opts: { asSelf?: boolean } = {},
 ): Promise<DashboardRow> {
   const { config, ...cols } = input;
   // In a trial a personal dashboard or meeting is the trial's (trial_key), never attached to
   // the school's account; a school dashboard can't be made from a trial at all.
-  const trial = getActiveTrial();
+  const trial = opts.asSelf ? null : getActiveTrial();
   if (trial && cols.owner_scope === "school") throw new Error("A trial can't create school dashboards.");
   const row = trial && cols.owner_scope === "user" ? { ...cols, school_account_id: null, trial_key: trial.stateKey } : cols;
   const { data, error } = await supabase.from("dashboards").insert(row).select(ROW_COLUMNS).single<DashboardRow>();

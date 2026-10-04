@@ -51,3 +51,24 @@ export async function loadPublishedVicData(supabase: SupabaseClient, slug: strin
     return fall(`load error: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
+
+// 0.6 snag 2 (B), "Preview draft": the editor's draft of a VicData dashboard, checked the
+// same way, for Guy's tab only (RLS returns drafts to editors alone; nothing is written).
+// No draft, or one this renderer can't draw: the published version as above.
+export async function loadDraftVicData(supabase: SupabaseClient, slug: string, fallback: DashboardConfig): Promise<PublishedLoad> {
+  try {
+    const { data: row, error } = await supabase
+      .from("dashboards")
+      .select("id, owner_scope")
+      .eq("slug", slug)
+      .maybeSingle<{ id: string; owner_scope: string }>();
+    if (error || !row || row.owner_scope !== "vicdata") return loadPublishedVicData(supabase, slug, fallback);
+    const { data: draft } = await supabase.from("dashboard_drafts").select("config").eq("dashboard_id", row.id).maybeSingle<{ config: DashboardConfig }>();
+    if (!draft?.config || draft.config.schema_version !== CONFIG_SCHEMA_VERSION) return loadPublishedVicData(supabase, slug, fallback);
+    const config: DashboardConfig = { ...draft.config, id: slug };
+    if (validateConfig(config, KNOWN).length) return loadPublishedVicData(supabase, slug, fallback);
+    return { config, source: "store", version: null, reason: "draft" };
+  } catch {
+    return loadPublishedVicData(supabase, slug, fallback);
+  }
+}

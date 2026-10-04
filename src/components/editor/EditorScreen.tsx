@@ -9,8 +9,14 @@
 // the school's name, Add a view draws Pick's previews live with the school's subjects, and
 // the panel menu's "Copy view…" opens S6's Copy this view dialog. With no school: the
 // data-free previews, and the editor's own copy-within stub.
+//
+// 0.6 snag 2 (B): `host` opens the same editor IN PLACE on a page showing a VicData
+// dashboard (the footer's / trial banner's Edit switch): the page gives the school and the
+// subject in focus for the live preview (a trial's school when trying VicData as a member),
+// the banner to show on top, and what Exit and the linked-dashboard switcher do.
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import type { PanelLabels } from "@/catalogue/pick";
 import { dataviewById } from "@/catalogue";
 import { contextFromPanel, viewTitle } from "@/catalogue/pick";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -79,13 +85,24 @@ export function useEditorSchool(enabled: boolean): PinSchool {
   return school;
 }
 
-export function EditorScreen({ id, Preview, onCopyView }: { id: string; Preview?: PanelPreviewComponent; onCopyView?: CopyViewHandler }) {
+export type InPlaceHost = {
+  school: PinSchool;
+  // The page's live labels: the subject in focus, the Results pill, its category.
+  labels?: Omit<PanelLabels, "school">;
+  top?: ReactNode;
+  onExit: () => void;
+  onSwitch?: (id: string) => void;
+};
+
+export function EditorScreen({ id, Preview, onCopyView, host }: { id: string; Preview?: PanelPreviewComponent; onCopyView?: CopyViewHandler; host?: InPlaceHost }) {
   const allowed = usePlatformAdmin();
   const [theme] = useTeacherTheme();
-  const school = useEditorSchool(allowed === true);
+  const ownSchool = useEditorSchool(allowed === true && !host);
+  const school = host ? host.school : ownSchool;
   const [subjects, setSubjects] = useState<Partial<Record<"ks4" | "ks5", SubjectSource>> | undefined>(undefined);
   const [copying, setCopying] = useState<CopyViewSource | null>(null);
-  const labels = useMemo(() => (school ? { school: school.name } : undefined), [school]);
+  const hostLabels = host?.labels;
+  const labels = useMemo<PanelLabels | undefined>(() => (school ? { ...hostLabels, school: school.name } : hostLabels), [school, hostLabels]);
 
   useEffect(() => {
     if (!school) return;
@@ -117,11 +134,16 @@ export function EditorScreen({ id, Preview, onCopyView }: { id: string; Preview?
   }, [allowed, id]);
 
   if (allowed === null) return <main className="flex-grow" />;
-  if (!allowed) return <NotFound />;
+  if (!allowed) return host ? null : <NotFound />;
   if (state.status === "ready")
     return (
       <EditorSchoolContext.Provider value={school}>
         <DashboardEditor
+          key={state.loaded.row.id}
+          top={host?.top}
+          onExit={host?.onExit}
+          onSwitch={host?.onSwitch}
+          writeAsSelf={!!host}
           loaded={state.loaded}
           superAdmin
           Preview={Preview ?? (school ? LivePanelPreview : undefined)}
@@ -135,9 +157,13 @@ export function EditorScreen({ id, Preview, onCopyView }: { id: string; Preview?
     );
   return (
     <main id="teacher-root" data-theme={theme} className="flex min-h-dvh w-full flex-col bg-[var(--bg)] p-6 text-[var(--fg)]">
-      <Link href="/dashboards/new" className="text-[12px] font-semibold text-[var(--muted)] hover:text-[var(--fg)]">
-        ← New dashboard
-      </Link>
+      {host ? (
+        host.top
+      ) : (
+        <Link href="/dashboards/new" className="text-[12px] font-semibold text-[var(--muted)] hover:text-[var(--fg)]">
+          ← New dashboard
+        </Link>
+      )}
       <p className="mt-4 text-[14px] text-[var(--muted)]">
         {state.status === "loading" && "Loading…"}
         {state.status === "missing" && "This dashboard isn't there, or isn't yours to edit."}
