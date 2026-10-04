@@ -1223,3 +1223,41 @@ Prompt: `docs/v0.6/vicdata_0_6_snagging_round2_claude_code_prompt_v1.md`. Report
 8. **On `/dashboards/[id]` the live preview gets the school but not the focused subject.**
 9. **After Publish, the editor's autosave writes a draft identical to the new version.** Left alone.
 10. **On first viewing a newly published version,** the trial records `seen_version` under its own trial key, as a member's visit would. Editing itself writes no trial state.
+
+---
+
+## 2026-10-04 — 0.6 snagging round 3: judgement calls logged, build carried on
+
+Prompt: `docs/v0.6/vicdata_0_6_snagging_round3_claude_code_prompt_v1.md`. Report: `docs/v0.6/snag3_report_v1.md`.
+
+### 01 — the number tiles' small figures
+
+- **What "editable" meant before:** nothing on the panel itself. Customise's Numbers/Years/Look/Title choices were saved on the view instance (`params`, `title`), but no host read them when drawing. The big number only looked editable: its Numbers chip changed the Customise sketch, never the tile on the page or the editor's live preview. Hosts now read the new tile settings, and the editor's live preview carries the instance's params.
+- **The main figure itself stays the host's headline;** only its label can be edited. Each small tile can be chosen, relabelled, shown or hidden, reordered, added or removed. The choices are stored as `params.tiles` (in order) and `params.mainLabel`, and only what differs from the default is written.
+- **Tile-specific placeholders** keep the moving parts of each scope line: `[total]`, `[from-year]`, `[range]`, `[direction]` (above / below / level with), and `[measure]` on the main label. They sit alongside subject, category, school and year. Scope lines aren't capitalised, unlike titles, and a placeholder that can't be filled falls back to plain words.
+- **Results has one list across its measures**, giving each measure today's order: category rank (points and Grade 4+ only), range count (bands only), England's figure, gap. A figure that doesn't exist on the current pill keeps its place but isn't listed, and up/down skips over it.
+- **Honesty is checked against the column's measure.** Comparisons' tiles are checked against their headline measure.
+- **Editing figures forks the view into a custom one**, as any Customise change does. The id is kept, so the default view is unaffected.
+- **Hidden tiles stay in the list,** dimmed with the toggle off; removing one takes it out, and "+ Add a figure" brings it back.
+- **The Customise preview stays the data-free sketch.** The edits show in the editor's live preview and on the page.
+
+### 02 — "Make this the default view"
+
+- **The ticked row** reads "Default view ✓", or "Default for {pill} ✓" on Results dashboards. On a view dimmed by "Show all views", the row is disabled and tagged "Not shown".
+- **`MenuRow` has a new optional `dotted` prop.** When it isn't set, the row renders exactly as before.
+
+### 03 — the editor follows the Results pill
+
+1. **A dataview's default `resultsMeasures` is derived from main's live rails** at each pill state (table in the report), and it is also the most that view can be drawn on. "Show on…" can narrow or restore a view's measures, but never add one its host can't draw.
+2. **Adding a view under a pill tags it with that measure only,** unless the dataview is already that measure alone. A dataview that can't draw the pill keeps its default, and a toast says so.
+3. **The editor's Results pill and the "Show all views" switch** sit at the right of the linked-dashboard band. The edit bar has no live-preview school for them to sit beside.
+4. **On a Results dashboard, "Make this the default for {pill}"** writes only `defaultViewByResults`; the panel's own `defaultView` is untouched. A pill with no entry falls back to `defaultView`, and when that view isn't on the pill's rail, to the rail's first view.
+5. **"Show on…" won't untick the last measure.** A per-measure default is dropped when its view leaves that measure.
+6. **Page behaviour:**
+   - a pill's own default is applied once per pill state;
+   - with no entry, the reader's view choice is kept across pill switches, as today;
+   - "exactly one view → no rail" still counts the panel's views on every measure, so today's Grade counts rails don't change.
+7. **Tile settings** (item 01) come from the first instance shown on the current pill, else the first instance.
+8. **The change summary** prefixes a measure's name whenever a view isn't on all four measures ("Grade counts: removed Spread by year from Results · Trends"). It now also reports default-view changes.
+9. **Pick already filtered by measure;** it now also puts views drawn on the current pill first. That makes no visible difference with today's catalogue.
+10. **`schema_version` stays 1.** Configs without the new fields behave exactly as before, and no data migration is needed.
