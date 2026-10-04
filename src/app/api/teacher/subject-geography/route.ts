@@ -1,4 +1,4 @@
-import { isPlatformAdmin } from "@/lib/teacher-route-access";
+import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";

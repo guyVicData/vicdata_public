@@ -11,10 +11,11 @@ import { isMissingTable, listDashboards, type AssignmentRow, type DashboardRow }
 import { shapeLine, type Me } from "@/lib/copy-view";
 import { canEditRow } from "@/lib/copy-view";
 import { visibleRolesOf, VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
-import { getActiveTrial, trialSchool, trialVisibleRoles, type Trial } from "@/lib/trial";
+import { getActiveViewAs, pickMembership, viewAsMembership, viewAsSchool, type ViewAs } from "@/lib/view-as";
 
 export type MyMembership = {
   id: string;
+  approved_at?: string | null;
   school_account_id: string;
   is_admin: boolean;
   roles: string[] | null;
@@ -26,28 +27,30 @@ export type Viewer = Me & {
   // The signed-in person's school (their approved membership), if any.
   school: { urn: string; name: string; accountId: string } | null;
   roles: VisibleRoleId[];
-  // 0.6 snag 2: the "Try VicData as…" trial this viewer is in, if any (src/lib/trial.ts).
-  trial?: Trial | null;
+  // 0.6 snag 2/4: the View as this viewer is in, if any (src/lib/view-as.ts).
+  trial?: ViewAs | null;
 };
 
 export async function loadViewer(supabase: SupabaseClient): Promise<Viewer> {
   const { data: s } = await supabase.auth.getSession();
   const uid = s.session?.user.id ?? null;
   if (!uid) return { uid: null, superAdmin: false, adminAccountIds: [], school: null, roles: [] };
-  // In a trial the viewer is a single-role member of the trial's school: no super-admin
-  // powers, no school-admin powers (a trial never writes the school's shared data).
-  const trial = getActiveTrial();
-  if (trial) return { uid, superAdmin: false, adminAccountIds: [], school: await trialSchool(supabase, trial), roles: [trial.role], trial };
+  // In View as the viewer is a single-membership member of the viewed school and role: no
+  // super-admin powers, no school-admin powers (View as never writes the school's data).
+  const trial = getActiveViewAs();
+  // Its roles are a real single-membership member's (School-Admin holds Teacher too).
+  if (trial) return { uid, superAdmin: false, adminAccountIds: [], school: await viewAsSchool(supabase, trial), roles: visibleRolesOf(viewAsMembership(trial.role)), trial };
   const [{ data: admin }, { data: ms }] = await Promise.all([
     supabase.rpc("is_platform_admin"),
     supabase
       .from("school_memberships")
-      .select("id, school_account_id, is_admin, roles, role, school_accounts!school_memberships_school_account_id_fkey(school_urn, account_holder_membership_id, schools(current_name))")
+      .select("id, school_account_id, is_admin, roles, role, approved_at, school_accounts!school_memberships_school_account_id_fkey(school_urn, account_holder_membership_id, schools(current_name))")
       .eq("profile_id", uid)
       .eq("status", "approved"),
   ]);
   const mine = (ms ?? []) as unknown as MyMembership[];
-  const first = mine[0];
+  // 0.6 snag 4: the school shown (pickMembership), never "the first row".
+  const first = pickMembership(mine);
   const holder = (m: MyMembership) => m.school_accounts?.account_holder_membership_id === m.id;
   return {
     uid,
@@ -167,7 +170,7 @@ export async function loadLibrary(supabase: SupabaseClient, viewer: Viewer): Pro
 // and the trial's own personal ones (listDashboards has already narrowed those).
 async function trialRows(supabase: SupabaseClient, viewer: Viewer, all: DashboardRow[]): Promise<DashboardRow[]> {
   const trial = viewer.trial!;
-  const roles = trialVisibleRoles(trial) as string[];
+  const roles = visibleRolesOf(viewAsMembership(trial.role)) as string[];
   const accountId = viewer.school?.accountId ?? "";
   const candidates = all.filter((r) => r.owner_scope === "vicdata" || r.owner_scope === "user" || (r.owner_scope === "school" && !!accountId && r.school_account_id === accountId));
   const assigned = await assignmentsFor(supabase, candidates.filter((r) => r.owner_scope !== "user").map((r) => r.id));

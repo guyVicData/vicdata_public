@@ -12,6 +12,7 @@
 // its column host, so parity is checked panel by panel in the two frames rather than as
 // isolated tiles (logged in OPEN_QUESTIONS.md; the chooser's isolated live preview is
 // night 2).
+import { peekHref } from "@/lib/view-as";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ATTENTION_ACCENT, ATTENTION_INK } from "@/lib/teacher-view-theme";
@@ -106,9 +107,9 @@ function Parity() {
   const [urn, setUrn] = useState(PARITY_SCHOOLS[0].urn);
   const [phase, setPhase] = useState<"ks4" | "ks5">("ks4");
   const [scale, setScale] = useState(0.5);
-  // peek=1: the read-only look, not a trial (a trial would force the config renderer and
-  // take over this tab's session).
-  const base = `/teacher/${phase}?lookAs=${encodeURIComponent(urn)}&as=teacher&peek=1`;
+  // The read-only peek (src/lib/view-as.ts readPeek), never View as: View as would force
+  // the config renderer and is the whole browser's, not one frame's.
+  const base = peekHref(urn, phase);
   const frames = [
     { title: "Hand-coded (today)", src: base },
     { title: "Config renderer (?renderer=config)", src: `${base}&renderer=config` },

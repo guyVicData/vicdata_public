@@ -3,16 +3,16 @@
 // Everything here is creator-only by RLS (profile_id = auth.uid()), so these helpers
 // never take an owner argument -- the database decides, not the caller.
 //
-// 0.6 snag 2 (Try VicData as…): every school_urn written or read here goes through
-// stateUrn(), which is the trial's state key while a platform admin is trying this school
-// as a role (src/lib/trial.ts), else the URN itself -- so a trial's walkthrough, ticked
+// 0.6 snag 2/4 (View as): every school_urn written or read here goes through stateUrn(),
+// which is the View as state key while a platform admin views this school as a role
+// (src/lib/view-as.ts), else the URN itself -- so a trial's walkthrough, ticked
 // subjects, notes and last-seen never touch the person's own rows. Recruitment jobs carry
 // trial_key instead (they have no school column). That is
 // deliberate: §10's candidate names and §12's private notes must not be able to leak by a
 // caller passing the wrong id.
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { TeacherPhase } from "./teacher-view-phases";
-import { getActiveTrial, isMissingColumn, stateUrn, TRIAL_NEEDS_UPDATE } from "./trial";
+import { getActiveViewAs, isMissingColumn, stateUrn, VIEW_AS_NEEDS_UPDATE } from "./view-as";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
@@ -256,7 +256,7 @@ export type RecruitmentCandidate = {
 // trials migration is applied the column doesn't exist: outside a trial the list is read
 // unfiltered (every job is a normal one then), inside a trial it is empty.
 export async function fetchJobs(supabase: Supa): Promise<RecruitmentJob[]> {
-  const trial = getActiveTrial();
+  const trial = getActiveViewAs();
   const base = () => supabase.from("recruitment_jobs").select("id, title, subject, ks_stage, delete_by, created_at").order("created_at", { ascending: false });
   let { data, error } = await (trial ? base().eq("trial_key", trial.stateKey) : base().is("trial_key", null));
   if (error && isMissingColumn(error)) {
@@ -272,7 +272,7 @@ export async function createJob(
 ): Promise<RecruitmentJob | null> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return null;
-  const trial = getActiveTrial();
+  const trial = getActiveViewAs();
   const { data, error } = await supabase
     .from("recruitment_jobs")
     .insert({
@@ -286,7 +286,7 @@ export async function createJob(
     .select("id, title, subject, ks_stage, delete_by, created_at")
     .single();
   // In a trial, never fall back to an untagged row (it would land in the person's own list).
-  if (error && trial && isMissingColumn(error)) throw new Error(TRIAL_NEEDS_UPDATE);
+  if (error && trial && isMissingColumn(error)) throw new Error(VIEW_AS_NEEDS_UPDATE);
   return error || !data ? null : (data as RecruitmentJob);
 }
 

@@ -5,17 +5,18 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { exitTrial, getActiveTrial } from "@/lib/trial";
+import { exitViewAs, getActiveViewAs } from "@/lib/view-as";
+import { ViewAsPill } from "@/components/view-as/ViewAs";
 
 // 0.6 S1 (brief G13): one sign-in event per sign-in, via record_sign_in(), which writes a
 // row per approved membership. supabase-js also fires SIGNED_IN when a tab regains focus
 // or a stored session is picked up, so sessionStorage remembers which session (its access
 // token) this tab has already recorded. Fire-and-forget: a failure here must never touch
 // signing in.
-// 0.6 snag 2: none while a "Try VicData as…" trial is active in this tab -- a trial is
+// 0.6 snag 2: none while viewing as a member (View as, src/lib/view-as.ts) -- it is
 // invisible to the school, sign-in events included.
 function recordSignIn(supabase: SupabaseClient, userId: string, accessToken: string) {
-  if (getActiveTrial()) return;
+  if (getActiveViewAs()) return;
   const key = "vicdata.signInRecorded";
   const marker = `${userId}:${accessToken.slice(-16)}`;
   try {
@@ -38,7 +39,7 @@ export default function NavBar() {
       setLoggedIn(Boolean(session?.user));
       if (event === "SIGNED_IN" && session?.user) recordSignIn(supabase, session.user.id, session.access_token);
       // A trial belongs to the signed-in platform admin; signing out ends it.
-      if (event === "SIGNED_OUT") exitTrial();
+      if (event === "SIGNED_OUT") exitViewAs();
     });
     return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,6 +71,8 @@ export default function NavBar() {
             <Link href="/member" className="hover:text-neutral-900 dark:hover:text-neutral-100">
               Home
             </Link>
+            {/* 0.6 snag 4 (A): platform admins only; nothing at all for anyone else. */}
+            <ViewAsPill tone="site" />
             <Link href="/account" className="hover:text-neutral-900 dark:hover:text-neutral-100">
               Account
             </Link>

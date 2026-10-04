@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { getActiveTrial } from "@/lib/trial";
+import { getActiveViewAs } from "@/lib/view-as";
 import { fetchNavLabels, saveNavLabels } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
@@ -24,6 +24,7 @@ import { ChevronDown } from "./PanelIcons";
 import { MeasureToggle, type FocusSubject, type SharedMeasure } from "./ControlBar";
 import { ThemeToggle, type Theme } from "./TeacherChrome";
 import { loadAdminSchool } from "@/components/admin/AdminChrome";
+import { ViewAsPill } from "@/components/view-as/ViewAs";
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
@@ -103,6 +104,8 @@ export function TeacherNav({
         </div>
         <Divider />
         <div className="flex items-center gap-2.5">
+          {/* 0.6 snag 4 (A): platform admins only; nothing at all for anyone else. */}
+          <ViewAsPill tone="teacher" />
           <AccountMenu />
           <ThemeToggle theme={theme} onTheme={onTheme} />
         </div>
@@ -209,10 +212,14 @@ function AccountMenu() {
       const { data } = await supabase.auth.getSession();
       setSignedIn(Boolean(data.session));
       if (!data.session) return;
-      // 0.6 snag 2: in a "Try VicData as…" trial the menu is the member's: no People, Teams
-      // (the admin's own school's) or Platform. The banner's Change/Exit are the way out.
-      if (getActiveTrial()) return;
-      const [school, admin] = await Promise.all([loadAdminSchool(), supabase.rpc("is_platform_admin")]);
+      // 0.6 snag 2/4: in View as the menu is the member's: People and Teams only for a
+      // School-Admin View as (read-only, of the viewed school), never Platform. The banner's
+      // Change and Back to me are the way out.
+      const viewAs = getActiveViewAs();
+      const [school, admin] = await Promise.all([
+        loadAdminSchool(),
+        viewAs ? Promise.resolve({ data: false, error: null }) : supabase.rpc("is_platform_admin"),
+      ]);
       setCanManage(school.status === "ready" && school.school.canManage);
       setPlatformAdmin(!admin.error && admin.data === true);
     })();
@@ -308,6 +315,7 @@ export function PhoneNav({
           <Link href="/teacher" aria-label="Home" title="Home" className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--muted)] hover:text-[var(--fg)]">
             {HOME_ICON}
           </Link>
+          <ViewAsPill tone="teacher" />
           <AccountMenu />
           <ThemeToggle theme={theme} onTheme={onTheme} />
         </div>

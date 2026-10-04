@@ -294,9 +294,11 @@ export const TITLE_PLACEHOLDERS = ["[subject]", "[category]", "[comparison-group
 
 // Fill a dataview's titleTemplate from the context. Placeholders the context can't fill
 // fall back to plain words, never to a bracketed token.
-export function resolveTitle(template: string, dv: Dataview | null, ctx: PickPanelContext, opts: { fromYear?: string | null } = {}): string {
+// `latest` (0.6 snag 4 / 01): the real latest year where the caller knows it (a live page);
+// otherwise the measure card's.
+export function resolveTitle(template: string, dv: Dataview | null, ctx: PickPanelContext, opts: { fromYear?: string | null; latest?: string | null } = {}): string {
   const from = opts.fromYear ?? defaultFromYear(ctx) ?? "the first year";
-  const latest = latestYear(ctx) ?? "the latest year";
+  const latest = opts.latest ?? latestYear(ctx) ?? "the latest year";
   const trend = dv ? dv.supports.dateMode === "trend" : ctx.time === "over_time";
   const subject = ctx.focus.kind === "subject" ? (ctx.focus.subject?.label ?? "This subject") : ctx.focus.kind === "custom_area" ? (ctx.focus.area?.name ?? "This area") : ctx.focus.kind === "school" ? (ctx.labels.school ?? "This school") : FOCUS_LABEL[ctx.focus.kind];
   const set = ctx.compare.schools?.label ?? "comparator schools";
@@ -341,8 +343,35 @@ export function resolveTitle(template: string, dv: Dataview | null, ctx: PickPan
 // A dataview's title under this context; registered views without a template read
 // "{label}: {subject}".
 export function viewTitle(dv: Dataview, ctx: PickPanelContext): string {
-  if (dv.titleTemplate) return resolveTitle(dv.titleTemplate, dv, ctx);
-  return resolveTitle(`[subject]: ${dv.label.toLowerCase()}`, dv, ctx);
+  return resolveTitle(titleTemplateOf(dv), dv, ctx);
+}
+
+// The template Customise's Title box starts from (and viewTitle resolves).
+export function titleTemplateOf(dv: Dataview): string {
+  return dv.titleTemplate || `[subject]: ${dv.label.toLowerCase()}`;
+}
+
+// 0.6 snag 4 / 01: a view instance's own title -- Customise's Title, placeholders and all
+// (`params.title`, which Customise also writes as the instance's `title`) -- when it differs
+// from its dataview's template. null = no override: the host draws its own title, with its
+// own fallbacks, exactly as before. Customise saves the template even when the title wasn't
+// touched, so an unedited title is not an override.
+export function titleOverrideOf(v: DataviewInstance): string | null {
+  if (v.kind !== "view") return null;
+  const dv = DATAVIEWS.find((d) => d.id === v.dataview);
+  const fromParams = v.params?.title;
+  const own = typeof fromParams === "string" ? fromParams : v.title;
+  if (!own || !own.trim() || !dv) return null;
+  return own.trim() === titleTemplateOf(dv).trim() ? null : own;
+}
+
+// The instance's title as a reader sees it: its override resolved for this context, else
+// the dataview's own (viewTitle).
+export function instanceTitle(v: Extract<DataviewInstance, { kind: "view" }>, ctx: PickPanelContext, opts: { fromYear?: string | null; latest?: string | null } = {}): string {
+  const dv = DATAVIEWS.find((d) => d.id === v.dataview) ?? null;
+  const own = titleOverrideOf(v);
+  if (own) return resolveTitle(own, dv, ctx, opts);
+  return dv ? resolveTitle(titleTemplateOf(dv), dv, ctx, opts) : (v.title ?? v.dataview);
 }
 
 const CHANGE_TYPES: NumberType[] = ["pct_change", "change_points", "change_pp"];

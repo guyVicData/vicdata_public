@@ -12,14 +12,14 @@
 // The years shown are those the area figures exist for (2021/22 on -- DfE published no GCSE
 // points for 2020/21) within the panel's From range, so every row and line covers the same
 // span.
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchSubjectGeography, type GeographyPayload, type GeographyRow } from "@/lib/teacher-view-geography";
 import { FOCUS_COLOUR, paletteInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import type { Measure } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { MultiTrend, TrendScaleTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
+import { MultiTrend, TrendScaleTitle, ViewTitleOverrideContext, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 
 export type GeographyInput = {
@@ -88,7 +88,9 @@ export function GeographyView({
   fullscreen: boolean;
 }) {
   const noun = metric === "entries" ? "entries" : "average points";
-  const heading = <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{geography.label} against the wider system</p>;
+  // 0.6 snag 4 / 01: a view's title override replaces the plain heading's words.
+  const override = useContext(ViewTitleOverrideContext);
+  const heading = <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{override ?? `${geography.label} against the wider system`}</p>;
   const note = (text: string) => (
     <>
       {heading}

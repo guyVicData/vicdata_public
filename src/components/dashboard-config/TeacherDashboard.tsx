@@ -46,9 +46,8 @@ import type { DashboardConfig } from "@/catalogue/types";
 import { cachedFetchJson } from "@/lib/fetch-cache";
 import type { PinnedSettings } from "@/lib/meeting-views";
 import { embedColumns, embedInitialColumns, embedSubjectKey, pinnedSetName, placeholderOnlyNote, savedSetByName, yearPeriodOf } from "./embed";
-import { confirmLookAs, readLookAs, type LookAs } from "@/lib/look-as";
-import { resolveTrial } from "@/lib/trial";
-import { TrialBanner } from "@/components/trial/TrialBanner";
+import { confirmPlatformAdmin, pickMembership, readPeek, resolveViewAs, type Peek } from "@/lib/view-as";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
@@ -191,9 +190,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // TeacherNav only renders past the error screen, so a signed-out visitor needs a Login
   // link on the error screen itself or they have no way to sign in from here.
   const [signedOut, setSignedOut] = useState(false);
-  // VicData 0.6: ?renderer=config draws the dashboard from its config (S2/S3); ?lookAs= is
-  // the Platform screen's read-only preview of another school (S1). Both are off unless
-  // the URL asks, and look-as only for a platform admin (confirmLookAs).
+  // VicData 0.6: ?renderer=config draws the dashboard from its config (S2/S3). The
+  // Catalogue's parity frames' read-only peek (readPeek) only for a platform admin.
   const [configMode, setConfigMode] = useState(false);
   // Snag 1 item 00: the published VicData configs for this phase's group (Candidates and
   // Results), from the dashboards store, keyed by slug. Null until loaded or when the page
@@ -203,7 +201,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // the published versions in this tab only. Null when off or not loaded.
   const [draftConfigs, setDraftConfigs] = useState<Record<string, DashboardConfig> | null>(null);
   const [superAdmin, setSuperAdmin] = useState(false);
-  const [lookAs, setLookAs] = useState<LookAs | null>(null);
+  const [peek, setPeek] = useState<Peek | null>(null);
   const [schoolUrn, setSchoolUrn] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string | null>(null);
   const [entries, setEntries] = useState<SubjectEntry[]>([]);
@@ -297,14 +295,14 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const token = sessionData.session?.access_token;
       if (!token) { setSignedOut(true); setError("Sign in to see this dashboard."); setLoading(false); return; }
       const search = new URLSearchParams(window.location.search);
-      // Embed: no look-as and no URL flag -- the school and the config are the caller's.
-      // 0.6 snag 2: the look-as pair (or this tab's active trial) is a "Try VicData as…"
-      // trial (src/lib/trial.ts): that school as a member with that one role, saving to the
-      // trial's own state (teacher-view-data.ts keys it), on the config renderer whatever
-      // the flag. Only `&peek=1` (Catalogue's frames) is still the old read-only look.
-      const trial = embed ? null : await resolveTrial(supabase);
-      const requestedLookAs = embed || trial || search.get("peek") !== "1" ? null : readLookAs(search);
-      const lookAsOk = requestedLookAs ? await confirmLookAs(supabase, requestedLookAs) : false;
+      // Embed: no View as or peek and no URL flag -- the school and config are the caller's.
+      // View as (src/lib/view-as.ts): that school as a member with that one role -- the
+      // same school, data and offers a real member gets -- saving to its own state
+      // (teacher-view-data.ts keys it), on the config renderer whatever the flag. Only the
+      // Catalogue's frames (readPeek) are the old read-only look.
+      const trial = embed ? null : await resolveViewAs(supabase);
+      const requestedPeek = embed || trial ? null : readPeek(search);
+      const peekOk = requestedPeek ? await confirmPlatformAdmin(supabase) : false;
       // Started here so it runs alongside the school's data; awaited just before the page
       // first paints, so the stored config is drawn from the start (no swap, no flash).
       let publishedLoad: Promise<Record<string, DashboardConfig>> | null = null;
@@ -337,21 +335,22 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         urn = trial.urn;
         setSchoolUrn(urn);
         setSchoolName(trial.schoolName);
-      } else if (lookAsOk && requestedLookAs) {
-        setLookAs(requestedLookAs);
-        const { data: school } = await supabase.from("schools").select("current_name").eq("urn", requestedLookAs.urn).maybeSingle<{ current_name: string }>();
-        urn = requestedLookAs.urn;
+      } else if (peekOk && requestedPeek) {
+        setPeek(requestedPeek);
+        const { data: school } = await supabase.from("schools").select("current_name").eq("urn", requestedPeek.urn).maybeSingle<{ current_name: string }>();
+        urn = requestedPeek.urn;
         setSchoolUrn(urn);
         setSchoolName(school?.current_name ?? null);
       } else {
-        const { data: membership } = await supabase
+        const { data: mine } = await supabase
           .from("school_memberships")
-          .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
-          // The signed-in person's own row (S3b fix 2): RLS also returns every approved
-          // colleague's, so a school with two members would fail maybeSingle.
+          .select("id, approved_at, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
+          // The signed-in person's own rows (S3b fix 2): RLS also returns every approved
+          // colleague's. 0.6 snag 4: more than one is fine -- the page shows ONE school,
+          // picked by pickMembership (never "the first row").
           .eq("profile_id", sessionData.session?.user?.id ?? "")
-          .eq("status", "approved")
-          .maybeSingle<{ school_accounts: { school_urn: string; schools: { current_name: string } | null } | null }>();
+          .eq("status", "approved");
+        const membership = pickMembership((mine ?? []) as unknown as { approved_at: string | null; school_accounts: { school_urn: string; schools: { current_name: string } | null } | null }[]);
         urn = membership?.school_accounts?.school_urn ?? null;
         setSchoolUrn(urn);
         setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);
@@ -724,7 +723,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   }, [reloadPhase, inPlace.reloadTick, inPlace.previewDraft, supabase]);
 
-  if (loading) return embed ? <EmbedStatus text="Loading…" /> : <main className="mx-auto max-w-4xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
+  if (loading) return embed ? <EmbedStatus text="Loading…" /> : <main className="mx-auto max-w-4xl p-6"><ViewAsBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
   if (embed && (error || !phase)) return <EmbedStatus text={error ?? "Unknown phase."} />;
   if (error || !phase) {
     return (
@@ -899,7 +898,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // its content; this pins onboarding to the screen width instead.
         className="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
       >
-        <TrialBanner className="" />
+        <ViewAsBanner className="" />
         {step === 0 ? (
           <Link href="/teacher" className="w-fit text-[12.5px] text-[var(--muted)]">&larr; Back</Link>
         ) : (
@@ -1981,6 +1980,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         }
       />
     );
+  // Snagging round 1 Part 4: a national/regional ranking is on (R-RANKING-SAMPLE). 0.6 snag
+  // 4 / 02: the same test is the page's comparator state (runtime.comparator).
+  const onRanking = !!(comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking" && chooserSet && chooserSet.key === activeChoiceKey && chooserSet.ranking);
   const comparisonsHost = (
       <ComparisonsPanels
         phase={phase}
@@ -2033,7 +2035,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // tiles view by default, and its whole population's average in the graphs. The
         // figures are on the ranking's own measure, the phase headline.
         rankingSet={
-          comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking" && chooserSet && chooserSet.key === activeChoiceKey && chooserSet.ranking
+          onRanking && chooserSet?.ranking
             ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure" }
             : null
         }
@@ -2104,6 +2106,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           contextAgainst,
           contextGroupLabel,
           setId: comparisonsSet ?? null,
+          comparator: onRanking ? "ranking" : "schools",
           setLabel: activeSetLabel,
           latestYear: latestPeriod === null ? null : academicYearLabel(latestPeriod),
           firstYear: periodsShown.length ? academicYearLabel(Math.min(...periodsShown)) : null,
@@ -2175,7 +2178,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           subject: focusItem ? { label: phase === "ks5" ? focusItem.label : focusItem.subject, key: focusItem.key } : null,
           ...(focusFamilyLabel ? { category: focusFamilyLabel } : {}),
         },
-        top: <TrialBanner className="" />,
+        states: { compareAgainst: contextAgainst, comparator: onRanking ? "ranking" : "schools", selected: contextSelected },
+        top: <ViewAsBanner className="" />,
         onExit: () => setEditOn(false),
       }
     : null;
@@ -2196,7 +2200,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
-      {!embed && <TrialBanner />}
+      {!embed && <ViewAsBanner />}
       {/* Top-nav completion part 3: below `sm` the phone nav (NavPhone.dc.html) replaces
           TeacherNav + ControlBar. A CSS swap, so there is no viewport check to hydrate
           wrongly -- and both read the same state, so switching phase, subject or measure
@@ -2256,9 +2260,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       </div>
 
       {/* §13's banner. States what actually changed and when, rather than just shouting. */}
-      {lookAs && (
+      {peek && (
         <p className="mt-3 rounded-md border border-[var(--panel-border2)] bg-[var(--box-bg)] px-3 py-2 text-sm text-[var(--muted2)] print:hidden">
-          Looking at {schoolName ?? lookAs.urn} as {VISIBLE_ROLE_LABELS[lookAs.role as VisibleRoleId] ?? lookAs.role}: the Catalogue&rsquo;s read-only look. School-shared sets and other people&rsquo;s notes aren&rsquo;t shown.
+          Looking at {schoolName ?? peek.urn} as {VISIBLE_ROLE_LABELS[peek.role as VisibleRoleId] ?? peek.role}: the Catalogue&rsquo;s read-only look. School-shared sets and other people&rsquo;s notes aren&rsquo;t shown.
         </p>
       )}
       {/* 0.6 integration, flag on: "Updated — what's changed" once the VicData dashboard

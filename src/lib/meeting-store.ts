@@ -24,7 +24,8 @@ import {
 } from "./dashboards-store";
 import { changeSummary, isArchived, localToday, newMeetingConfig, reuseSlides } from "./meeting-ops";
 import { dataAsOf } from "./meeting-views";
-import { getActiveTrial, trialSchool } from "./trial";
+import { getActiveViewAs, viewAsSchool } from "./view-as";
+import { pickMembership } from "./view-as";
 
 export type MeetingSummary = {
   id: string;
@@ -191,27 +192,36 @@ export async function meetingCap(supabase: SupabaseClient): Promise<number | nul
   const { data: session } = await supabase.auth.getSession();
   const uid = session.session?.user.id;
   if (!uid) return 5;
+  // View as: the cap of the member being viewed (School-Admin 20, everyone else 5), not
+  // Guy's own (none).
+  const viewAs = getActiveViewAs();
+  if (viewAs) return viewAs.role === "school_admin" ? 20 : 5;
   const { data: admin } = await supabase.rpc("is_platform_admin");
   if (admin === true) return null;
-  const { data } = await supabase.from("school_memberships").select("is_admin").eq("profile_id", uid).eq("status", "approved");
-  return (data ?? []).some((m: { is_admin: boolean }) => m.is_admin) ? 20 : 5;
+  // 0.6 snag 4: at the school shown (pickMembership), not any school.
+  const { data } = await supabase
+    .from("school_memberships")
+    .select("is_admin, approved_at, school_accounts!school_memberships_school_account_id_fkey(school_urn)")
+    .eq("profile_id", uid)
+    .eq("status", "approved");
+  return pickMembership((data ?? []) as unknown as { is_admin: boolean; approved_at: string | null; school_accounts: { school_urn: string } | null }[])?.is_admin ? 20 : 5;
 }
 
 // The signed-in person's school (for pinning new views and keeping slot notes), from
-// their own approved membership -- or, in a "Try VicData as…" trial, the trial's school.
+// their own approved membership -- or, in View as, the viewed school.
 export async function mySchool(supabase: SupabaseClient): Promise<{ urn: string; name: string; accountId: string } | null> {
   const { data: session } = await supabase.auth.getSession();
   const uid = session.session?.user.id;
   if (!uid) return null;
-  const trial = getActiveTrial();
-  if (trial) return trialSchool(supabase, trial);
-  const { data } = await supabase
+  const trial = getActiveViewAs();
+  if (trial) return viewAsSchool(supabase, trial);
+  // 0.6 snag 4: the school shown (pickMembership), never "the first row".
+  const { data: rows } = await supabase
     .from("school_memberships")
-    .select("school_account_id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
+    .select("school_account_id, approved_at, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
     .eq("profile_id", uid)
-    .eq("status", "approved")
-    .limit(1)
-    .maybeSingle<{ school_account_id: string; school_accounts: { school_urn: string; schools: { current_name: string } | null } | null }>();
+    .eq("status", "approved");
+  const data = pickMembership((rows ?? []) as unknown as { school_account_id: string; approved_at: string | null; school_accounts: { school_urn: string; schools: { current_name: string } | null } | null }[]);
   const a = data?.school_accounts;
   return a ? { urn: a.school_urn, name: a.schools?.current_name ?? a.school_urn, accountId: data!.school_account_id } : null;
 }

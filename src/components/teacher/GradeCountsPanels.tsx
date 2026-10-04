@@ -123,9 +123,13 @@ export function GradeCountsPanels({
     body: (fullscreen) =>
       ownTotal > 0 ? (
         // A long scale (Double Award's 17 pairs, IB Diploma's 22 points) scrolls in the card.
+        // No title of its own (the tag names it); a view's title override shows here.
+        <>
+        <ViewTitle />
         <div className="min-h-0 flex-1 overflow-y-auto">
           <GradeDistribution rows={rowsFor(false)} total={ownTotal} colour={colour} range={range} pending={pending} onGradeClick={click} benchLabel={englandLabel} fullscreen={fullscreen} />
         </div>
+        </>
       ) : (
         <p className="text-sm text-[var(--muted)]">No published grades for {subjectLabel} yet.</p>
       ),

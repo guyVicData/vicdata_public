@@ -6,6 +6,11 @@
 // the ready-made view into a custom one (the same banner as a ranking forking into a
 // custom ranking); "Back to ready-made" undoes it.
 //
+// 0.6 snag 4 / 01 (the Customise audit): a choice the page can't honour yet is shown dotted
+// and tagged "Coming soon", never saved and ignored. Years' "from" year isn't drawn anywhere
+// yet (the hosts' own From menus start each trend), and Roll forward is honoured in a
+// meeting slot (its pin) but not on a dashboard, which always shows the newest data.
+//
 // Every option is a structural filter over the registry: a Numbers type is offered only
 // when the measure declares it honest AND a matching view has it; a Look or Years choice
 // only when a matching view exists. The rest stay dotted. Picking moves to the matching
@@ -23,6 +28,7 @@ import {
   measureFor,
   numbersOptions,
   resolveTitle,
+  titleTemplateOf,
   yearsOf,
 } from "@/catalogue/pick";
 import type { Dataview, DateMode, NumberType, TileFigureSpec, ViewType } from "@/catalogue/types";
@@ -40,7 +46,16 @@ import { useChooserWords } from "./words";
 // builds them.
 type State = { dv: Dataview; numberType: NumberType; dateMode: DateMode; look: ViewType; fromYear: string | null; rollForward: boolean; title: string; titleEdited: boolean; tiles: TileFigureSpec[] | null; mainLabel: string | null };
 
-const templateOf = (dv: Dataview) => dv.titleTemplate || `[subject]: ${dv.label.toLowerCase()}`;
+const templateOf = titleTemplateOf;
+
+// The audit's tag for a choice that isn't wired yet.
+function ComingSoon() {
+  return (
+    <span data-coming-soon="" style={{ borderRadius: 999, border: "1px dashed var(--cc-border2)", color: "var(--cc-faint)", fontSize: 10.5, fontWeight: 600, padding: "1px 7px", whiteSpace: "nowrap" }}>
+      Coming soon
+    </span>
+  );
+}
 
 function initial(base: Dataview, ctx: PickPanelContext): State {
   return {
@@ -101,7 +116,8 @@ export function CustomiseScreen({
   ctx,
   base,
   initialParams = null,
-  candidates,
+  candidates: offered,
+  where = "dashboard",
   onBack,
   onClose,
   onAdd,
@@ -110,11 +126,19 @@ export function CustomiseScreen({
   base: Dataview;
   initialParams?: CustomViewParams | null;
   candidates: Dataview[];
+  // Where the view goes: Roll forward is honoured in a meeting slot only (0.6 snag 4 / 01).
+  where?: "dashboard" | "meeting";
   onBack: () => void;
   onClose: () => void;
   onAdd: (dv: Dataview, params: CustomViewParams | null) => void;
 }) {
   const words = useChooserWords();
+  // 0.6 snag 4 / 01: on a dashboard a panel's host draws its own views in its own panel
+  // (Current or Trends), so Numbers, Years and Look move only among those -- a choice that
+  // lands on a view the page can't draw there would be saved and ignored. A meeting slot
+  // draws any view by itself.
+  const candidates = where === "meeting" ? offered : offered.filter((dv) => dv.id === base.id || (dv.host.id === base.host.id && dv.host.panel === base.host.panel));
+  const otherMode = (m: DateMode) => where === "dashboard" && !candidates.some((dv) => dv.supports.dateMode === m) && offered.some((dv) => dv.supports.dateMode === m);
   const [s, setS] = useState<State>(() => (initialParams ? fromParams(base, ctx, initialParams) : initial(base, ctx)));
   const [forked, setForked] = useState(!!initialParams);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -155,7 +179,8 @@ export function CustomiseScreen({
     fromYear: trend ? s.fromYear : null,
     look: s.look,
     title: s.title,
-    rollForward: s.rollForward,
+    // A dashboard always rolls forward (its toggle is "Coming soon").
+    rollForward: where === "meeting" ? s.rollForward : true,
     // Only on a tiles view, and only what differs from the host's own tiles.
     ...(tileViewDef(s.dv.id) ? writeTileParams(s.dv.id, s.tiles, s.mainLabel) : {}),
   };
@@ -193,31 +218,46 @@ export function CustomiseScreen({
         <FilterBox>
           <FilterLabel>Years</FilterLabel>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginTop: 5 }}>
-            <BoardChip size="xs" active={!trend} off={!hasDate("single")} onClick={() => move("dateMode", { ...want, dateMode: "single" })}>
+            <BoardChip size="xs" active={!trend} off={!hasDate("single")} title={otherMode("single") ? "Coming soon" : undefined} onClick={() => move("dateMode", { ...want, dateMode: "single" })}>
               Single year
             </BoardChip>
-            <BoardChip size="xs" active={trend} off={!hasDate("trend")} onClick={() => move("dateMode", { ...want, dateMode: "trend" })}>
+            <BoardChip size="xs" active={trend} off={!hasDate("trend")} title={otherMode("trend") ? "Coming soon" : undefined} onClick={() => move("dateMode", { ...want, dateMode: "trend" })}>
               Trend
             </BoardChip>
             <span style={{ width: 1, height: 18, background: "var(--cc-border2)" }} />
             {trend ? (
               <>
-                <span style={{ fontSize: 11.5, color: "var(--cc-label)" }}>from</span>
+                {/* 0.6 snag 4 / 01: not drawn yet -- each trend starts where its panel's own
+                    From menu says -- so dotted, never saved as a choice. */}
+                <span style={{ fontSize: 11.5, color: "var(--cc-faint)" }}>from</span>
                 {fromChoices.map((y) => (
-                  <BoardChip key={y} size="xs" active={s.fromYear === y} onClick={() => fork({ ...s, fromYear: y })}>
+                  <BoardChip key={y} size="xs" off title="Coming soon">
                     {y}
                   </BoardChip>
                 ))}
-                <span style={{ fontSize: 11.5, color: "var(--cc-label)" }}>&rarr; latest</span>
+                <span style={{ fontSize: 11.5, color: "var(--cc-faint)" }}>&rarr; latest</span>
               </>
             ) : (
               <span style={{ fontSize: 11.5, color: "var(--cc-label)" }}>latest{latest ? ` (${latest})` : ""}</span>
             )}
+            {/* One tag for the row: a trend's "from" year, or (on a dashboard) a view of the
+                other kind in this panel, isn't drawn yet. */}
+            {(trend || otherMode("single") || otherMode("trend")) && <ComingSoon />}
           </div>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, color: "var(--cc-label)", marginTop: 7 }}>
-            <Toggle on={s.rollForward} onChange={(v) => fork({ ...s, rollForward: v })} label="Roll forward" />
-            {s.rollForward ? "Roll forward to the newest year when new data lands" : `Pinned to ${latest ?? "this year"}: new data won't move it`}
-          </label>
+          {where === "meeting" ? (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, color: "var(--cc-label)", marginTop: 7 }}>
+              <Toggle on={s.rollForward} onChange={(v) => fork({ ...s, rollForward: v })} label="Roll forward" />
+              {s.rollForward ? "Roll forward to the newest year when new data lands" : `Pinned to ${latest ?? "this year"}: new data won't move it`}
+            </label>
+          ) : (
+            // A dashboard always shows the newest data: pinning a view to a year isn't drawn
+            // there yet (0.6 snag 4 / 01).
+            <div data-roll-forward="coming-soon" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, color: "var(--cc-faint)", marginTop: 7 }}>
+              <Toggle on disabled onChange={() => {}} label="Roll forward" />
+              Roll forward to the newest year when new data lands
+              <ComingSoon />
+            </div>
+          )}
         </FilterBox>
 
         <FilterBox>

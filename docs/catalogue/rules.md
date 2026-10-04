@@ -539,7 +539,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A map of a sample of schools across England is not a local picture, and a rank within the sample is not the school's real rank. |
 | Applies to | Comparisons with a ranking set |
 | Enforced in | - src/components/teacher/ComparisonsPanels.tsx:213, 287-297, 494-506, 615, 713<br>- src/lib/chooser-sets.ts:46-61 |
-| Tagged at | - src/lib/chooser-sets.ts<br>- src/lib/teacher-view-comparisons.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/dashboard-config/runtime.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/teacher-view-comparisons.ts |
 | Test case | — |
 | Origin | Snagging round 1 Part 4 |
 | Status | active |

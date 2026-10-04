@@ -1,4 +1,4 @@
-import { isPlatformAdmin } from "@/lib/teacher-route-access";
+import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";

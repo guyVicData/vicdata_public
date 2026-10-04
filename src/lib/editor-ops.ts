@@ -27,6 +27,7 @@ import {
   readyMadeInstance,
   settingsOf,
   summaryLine,
+  titleOverrideOf,
   toPickContext,
   type PanelLabels,
   type PickPanelContext,
@@ -49,7 +50,21 @@ import type {
   RowTime,
 } from "@/catalogue/types";
 import { CONFIG_SCHEMA_VERSION, type ResultsMeasure } from "@/catalogue/types";
-import { RESULTS_MEASURES, defaultOnResults, effectiveResults, followsResultsPill, showsOn, withResults } from "@/catalogue/results";
+import { RESULTS_MEASURES, effectiveResults, followsResultsPill, withResults } from "@/catalogue/results";
+import {
+  VARIANT_AXES,
+  asState,
+  defaultOnState,
+  effectiveStates,
+  parseStateKey,
+  remapStateDefaults,
+  setStateDefault,
+  showsOnState,
+  withStates,
+  type AxisStateMap,
+  type VariantAxis,
+  type VariantState,
+} from "@/catalogue/variants";
 import { measuresFor } from "./teacher-view-panels";
 
 export class EditorError extends Error {}
@@ -231,8 +246,9 @@ export function copyRow(config: DashboardConfig, rowId: string): DashboardConfig
     if (p.name) copy.name = p.name;
     if (p.override) copy.override = clone(p.override);
     if (def) copy.defaultView = def;
-    const byResults = remapDefaults(p.defaultViewByResults, (id) => views[p.dataviews.findIndex((v) => v.id === id)]?.id);
-    if (byResults) copy.defaultViewByResults = byResults;
+    if (p.defaultViewByResults) copy.defaultViewByResults = { ...p.defaultViewByResults };
+    if (p.defaultViewByState) copy.defaultViewByState = { ...p.defaultViewByState };
+    remapStateDefaults(copy, (id) => views[p.dataviews.findIndex((v) => v.id === id)]?.id);
     c.panels.push(copy);
   }
   return checked(c);
@@ -681,32 +697,52 @@ export function reorderView(config: DashboardConfig, panelId: string, from: numb
   return c;
 }
 
-// `results` (0.6 snag 3 / 03): on a Results dashboard, the default for that pill state
-// only (defaultViewByResults); the panel's own defaultView is left as it is.
-export function setDefaultView(config: DashboardConfig, panelId: string, instanceId: string, results: ResultsMeasure | null = null): DashboardConfig {
+// `state` (0.6 snag 3 / 03; every axis since snag 4 / 02): the default for that state only
+// (defaultViewByResults on the Results pill alone, else defaultViewByState); the panel's
+// own defaultView is left as it is. Round 3's Results pill alone is still accepted.
+export function setDefaultView(config: DashboardConfig, panelId: string, instanceId: string, state: VariantState | ResultsMeasure | null = null): DashboardConfig {
   const c = clone(config);
   const p = panelOf(c, panelId);
   const v = p.dataviews.find((x) => x.id === instanceId) ?? fail("That view has gone.");
-  if (results) {
-    if (!showsOn(v, results)) fail(`That view isn't shown on ${resultsLabel(results, dashPhase(c))}.`);
-    p.defaultViewByResults = { ...(p.defaultViewByResults ?? {}), [results]: instanceId };
+  const st = asState(state);
+  if (Object.keys(st).length) {
+    if (!showsOnState(v, st)) fail(`That view isn't shown on ${stateLabel(st, dashPhase(c))}.`);
+    setStateDefault(p, st, instanceId);
   } else p.defaultView = instanceId;
   return c;
 }
 
 // 0.6 snag 3 / 03: "Show on…" -- the Results pill states an instance shows on, written as
 // its override (none when it matches the dataview's default). A state it leaves stops
-// opening on it.
+// opening on it. Snag 4 / 02: any axis (setViewStates); this is its Results name.
 export function setViewResults(config: DashboardConfig, instanceId: string, measures: ResultsMeasure[]): DashboardConfig {
+  return setViewStates(config, instanceId, "results", measures);
+}
+
+const AXIS_NOUN: Record<VariantAxis, string> = { results: "Results measure", compareAgainst: "Compare against set", comparator: "kind of comparison" };
+
+export function setViewStates<A extends VariantAxis>(config: DashboardConfig, instanceId: string, axis: A, states: AxisStateMap[A][]): DashboardConfig {
   const c = clone(config);
   const { panel, index } = findView(c, instanceId);
-  const next = withResults(panel.dataviews[index], measures);
-  const shown = effectiveResults(next);
-  if (!shown.length) fail("A view shows on at least one Results measure.");
+  const next = withStates(panel.dataviews[index], axis, states);
+  const shown = effectiveStates(next, axis) as string[];
+  if (!shown.length) fail(`A view shows on at least one ${AXIS_NOUN[axis]}.`);
   panel.dataviews[index] = next;
-  for (const m of RESULTS_MEASURES) if (panel.defaultViewByResults?.[m] === instanceId && !shown.includes(m)) delete panel.defaultViewByResults[m];
-  tidyDefaults(panel);
+  // A state the view leaves stops opening on it.
+  remapStateDefaults(panel, (id, st) => (id === instanceId && st[axis] !== undefined && !shown.includes(st[axis]!) ? undefined : id));
   return c;
+}
+
+// The states' names as the pills say them, joined: "Grade counts · Selected subjects".
+// `category` names Context's category option ("Arts, Media & Design subjects") when known.
+export function stateLabel(state: VariantState, phase: Phase, category?: string | null): string {
+  return VARIANT_AXES.flatMap((a) => (state[a] === undefined ? [] : [axisStateLabel(a, state[a]!, phase, category)])).join(" · ");
+}
+
+export function axisStateLabel(axis: VariantAxis, s: string, phase: Phase, category?: string | null): string {
+  if (axis === "results") return resultsLabel(s as ResultsMeasure, phase);
+  if (axis === "compareAgainst") return s === "category" ? (category ? `${category} subjects` : "Subject category") : s === "whole" ? "All subjects" : "Selected subjects";
+  return s === "ranking" ? "A ranking" : "A set of schools";
 }
 
 // The Results measures' names as the pill says them ("Grade 4+ rate" / "A*–E rate").
@@ -716,31 +752,16 @@ export function resultsLabel(m: ResultsMeasure, phase: Phase): string {
 
 const dashPhase = (c: DashboardConfig): Phase => c.columns[0]?.data.phase ?? "ks4";
 
-function remapDefaults(byResults: PanelConfig["defaultViewByResults"], map: (id: string) => string | undefined): PanelConfig["defaultViewByResults"] {
-  if (!byResults) return undefined;
-  const out: NonNullable<PanelConfig["defaultViewByResults"]> = {};
-  for (const m of RESULTS_MEASURES) {
-    const id = byResults[m] ? map(byResults[m]!) : undefined;
-    if (id) out[m] = id;
-  }
-  return Object.keys(out).length ? out : undefined;
-}
-
 function dropDefaults(panel: PanelConfig, instanceId: string) {
-  const next = remapDefaults(panel.defaultViewByResults, (id) => (id === instanceId ? undefined : id));
-  if (next) panel.defaultViewByResults = next;
-  else delete panel.defaultViewByResults;
-}
-
-function tidyDefaults(panel: PanelConfig) {
-  if (panel.defaultViewByResults && !Object.values(panel.defaultViewByResults).some(Boolean)) delete panel.defaultViewByResults;
+  remapStateDefaults(panel, (id) => (id === instanceId ? undefined : id));
 }
 
 // Snag 3 / 02: is this the panel's default view -- its defaultView, or (none set, or one
-// that has gone) its first view, which is what the page opens on. On a Results dashboard
-// (03), the default for that pill state, among the views shown on it.
-export function isDefaultView(panel: PanelConfig, instanceId: string, results: ResultsMeasure | null = null): boolean {
-  if (results) return defaultOnResults(panel, results) === instanceId;
+// that has gone) its first view, which is what the page opens on. In a state (03; every
+// axis since snag 4 / 02), the default for that state, among the views shown in it.
+export function isDefaultView(panel: PanelConfig, instanceId: string, state: VariantState | ResultsMeasure | null = null): boolean {
+  const st = asState(state);
+  if (Object.keys(st).length) return defaultOnState(panel, st) === instanceId;
   const def = panel.dataviews.some((v) => v.id === panel.defaultView) ? panel.defaultView : panel.dataviews[0]?.id;
   return def === instanceId;
 }
@@ -767,14 +788,15 @@ export function replaceView(config: DashboardConfig, instanceId: string, instanc
     taken.delete(instanceId);
     id = freeId(c, `${panel.id}/${instance.kind === "view" ? instance.dataview : "planned"}`, taken);
   }
-  // A swap or an edit keeps the instance's Results measures (within what the new view draws).
+  // A swap or an edit keeps the instance's states on every axis (within what the new view
+  // draws).
   let next: DataviewInstance = { ...clone(instance), id };
   if (old.kind === "view" && old.resultsMeasures && next.kind === "view" && !next.resultsMeasures) next = withResults(next, old.resultsMeasures);
+  if (old.kind === "view" && old.variants && next.kind === "view" && !next.variants)
+    for (const a of ["compareAgainst", "comparator"] as const) if (old.variants[a]) next = withStates(next, a, old.variants[a]!);
   panel.dataviews[index] = next;
   if (panel.defaultView === instanceId) panel.defaultView = id;
-  const byResults = remapDefaults(panel.defaultViewByResults, (x) => (x === instanceId ? (RESULTS_MEASURES.some((m) => panel.defaultViewByResults?.[m] === x && showsOn(next, m)) ? id : undefined) : x));
-  if (byResults) panel.defaultViewByResults = byResults;
-  else delete panel.defaultViewByResults;
+  remapStateDefaults(panel, (x, st) => (x === instanceId ? (showsOnState(next, st) ? id : undefined) : x));
   if (override) panel.override = clone(override);
   return { config: checked(c), panelId: panel.id, instanceId: id };
 }
@@ -822,8 +844,7 @@ export function swapInPlaceholder(config: DashboardConfig, instanceId: string, d
   const id = freeId(c, `${panel.id}/${dataview}`);
   panel.dataviews[index] = { id, kind: "view", dataview };
   if (panel.defaultView === instanceId) panel.defaultView = id;
-  const byResults = remapDefaults(panel.defaultViewByResults, (x) => (x === instanceId ? id : x));
-  if (byResults) panel.defaultViewByResults = byResults;
+  remapStateDefaults(panel, (x) => (x === instanceId ? id : x));
   return checked(c);
 }
 
@@ -897,9 +918,15 @@ export function redo(h: History): History {
 // The change summary (§4.8): "Added *Maths points vs 10 nearest* to Comparisons · Trends;
 // renamed row “Trends” to “Over time”".
 
+// 0.6 snag 4 / 01: its own title as written (placeholders and all) when it has one, else
+// its dataview's label -- never Customise's unedited template.
 function viewName(v: DataviewInstance): string {
   if (v.kind === "placeholder") return v.description;
-  return v.title ?? dataviewById(v.dataview)?.label ?? v.dataview;
+  return titleOverrideOf(v) ?? dataviewById(v.dataview)?.label ?? v.dataview;
+}
+
+function dataviewLabel(v: DataviewInstance): string {
+  return v.kind === "placeholder" ? v.description : (dataviewById(v.dataview)?.label ?? v.dataview);
 }
 
 function placeOf(c: DashboardConfig, p: PanelConfig): string {
@@ -972,7 +999,14 @@ export function diffConfigs(prev: DashboardConfig, next: DashboardConfig): strin
   const results = followsResultsPill(next);
   const phase = dashPhase(next);
   const names = (ms: ResultsMeasure[]) => ms.map((m) => resultsLabel(m, phase)).join(", ");
-  const tagged = (v: DataviewInstance) => (results && effectiveResults(v).length < RESULTS_MEASURES.length ? `${names(effectiveResults(v))}: ` : "");
+  // 0.6 snag 4 / 02: the other axes are named where a view has its own states on them.
+  const axisNames = (a: VariantAxis, ss: string[]) => ss.map((s) => axisStateLabel(a, s, phase)).join(", ");
+  const ownAxes = (v: DataviewInstance) => (v.kind === "view" ? (["compareAgainst", "comparator"] as const).filter((a) => v.variants?.[a]) : []);
+  const tagged = (v: DataviewInstance) =>
+    [
+      ...(results && effectiveResults(v).length < RESULTS_MEASURES.length ? [names(effectiveResults(v))] : []),
+      ...ownAxes(v).map((a) => axisNames(a, effectiveStates(v, a))),
+    ].map((t) => `${t}: `).join("");
   for (const p of next.panels) {
     const o = pp.get(p.id);
     if (!o) continue;
@@ -981,6 +1015,15 @@ export function diffConfigs(prev: DashboardConfig, next: DashboardConfig): strin
       return v ? viewName(v) : null;
     };
     if (o.defaultView !== p.defaultView && name(p.defaultView)) out.push(`*${name(p.defaultView)}* is now the default view in ${where(p)}`);
+    // 0.6 snag 4 / 02: a default for a state of several axes ("Grade counts · Selected subjects").
+    for (const k of new Set([...Object.keys(o.defaultViewByState ?? {}), ...Object.keys(p.defaultViewByState ?? {})])) {
+      const a = o.defaultViewByState?.[k];
+      const b = p.defaultViewByState?.[k];
+      if (a === b) continue;
+      const label = stateLabel(parseStateKey(k), phase);
+      if (b && name(b)) out.push(`${label}: *${name(b)}* is now the default in ${where(p)}`);
+      else if (!b) out.push(`${label}: ${where(p)} opens on its default view again`);
+    }
     if (!results) continue;
     for (const m of RESULTS_MEASURES) {
       const a = o.defaultViewByResults?.[m];
@@ -1000,6 +1043,15 @@ export function diffConfigs(prev: DashboardConfig, next: DashboardConfig): strin
       if (added.length) head.push(`${names(added)}: added *${viewName(v)}* to ${where(p)}`);
       if (gone.length) head.push(`${names(gone)}: removed *${viewName(v)}* from ${where(p)}`);
     }
+    if (was && was.p.id === p.id)
+      for (const a of ["compareAgainst", "comparator"] as const) {
+        const before = effectiveStates(was.v, a) as string[];
+        const after = effectiveStates(v, a) as string[];
+        const added = after.filter((s) => !before.includes(s));
+        const gone = before.filter((s) => !after.includes(s));
+        if (added.length) head.push(`${axisNames(a, added)}: added *${viewName(v)}* to ${where(p)}`);
+        if (gone.length) head.push(`${axisNames(a, gone)}: removed *${viewName(v)}* from ${where(p)}`);
+      }
     if (!was) {
       // A placeholder swapped for a view in the same slot reads as one change.
       const swapped = prev.panels.find((x) => x.id === p.id)?.dataviews.find((x) => x.kind === "placeholder" && !nextView.has(x.id));
@@ -1007,6 +1059,11 @@ export function diffConfigs(prev: DashboardConfig, next: DashboardConfig): strin
       else if (v.kind === "placeholder") head.push(`planned *${viewName(v)}* in ${where(p)}`);
       else head.push(`${tagged(v)}added *${viewName(v)}* to ${where(p)}`);
     } else if (was.p.id !== p.id) head.push(`moved *${viewName(v)}* to ${where(p)}`);
+    // 0.6 snag 4 / 01: a view's own title, set, changed or cleared.
+    if (was && (titleOverrideOf(was.v) ?? "") !== (titleOverrideOf(v) ?? "")) {
+      const t = titleOverrideOf(v);
+      out.push(t ? `retitled *${dataviewLabel(v)}* “${t}” in ${where(p)}` : `*${dataviewLabel(v)}* in ${where(p)} has its own title again`);
+    }
   }
   for (const [id, { v, p }] of prevView) {
     if (nextView.has(id)) continue;

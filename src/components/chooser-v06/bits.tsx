@@ -261,7 +261,8 @@ export function BoardChip({
   );
 }
 
-export function Toggle({ on, onChange, label, size = "sm" }: { on: boolean; onChange: (v: boolean) => void; label: string; size?: "sm" | "md" }) {
+// `disabled` (0.6 snag 4 / 01): shown, inert and faded -- a choice that's "Coming soon".
+export function Toggle({ on, onChange, label, size = "sm", disabled = false }: { on: boolean; onChange: (v: boolean) => void; label: string; size?: "sm" | "md"; disabled?: boolean }) {
   const t = size === "sm" ? L.toggleSm : L.toggleMd;
   return (
     <button
@@ -269,8 +270,9 @@ export function Toggle({ on, onChange, label, size = "sm" }: { on: boolean; onCh
       role="switch"
       aria-checked={on}
       aria-label={label}
-      onClick={() => onChange(!on)}
-      style={{ width: t.w, height: t.h, borderRadius: 999, background: on ? "var(--cc-primary)" : "var(--cc-border2)", position: "relative", flex: `0 0 ${t.w}px`, border: "none", cursor: "pointer", padding: 0 }}
+      disabled={disabled || undefined}
+      onClick={disabled ? undefined : () => onChange(!on)}
+      style={{ width: t.w, height: t.h, borderRadius: 999, background: on ? "var(--cc-primary)" : "var(--cc-border2)", position: "relative", flex: `0 0 ${t.w}px`, border: "none", cursor: disabled ? "default" : "pointer", padding: 0, ...(disabled ? { opacity: 0.4 } : {}) }}
     >
       <span style={{ position: "absolute", top: 3, left: on ? t.w - t.knob - 3 : 3, width: t.knob, height: t.knob, borderRadius: "50%", background: on ? "var(--cc-on-primary)" : "var(--cc-panel)" }} />
     </button>

@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchSubjectHeadlineForSchools, type KsStage } from "@/lib/academic-data-view";
@@ -65,7 +66,10 @@ export async function GET(request: NextRequest) {
   if (membershipError) {
     return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
   }
-  if (!membership) {
+  // 0.6 snag 4 (B): a platform admin too, after the member check (members' path
+  // unchanged) -- View as gets exactly what a member of this school gets (school-level
+  // data only; nothing personal or school-owned comes from this route).
+  if (!membership && !(await isPlatformAdmin(supabase))) {
     return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
   }
 

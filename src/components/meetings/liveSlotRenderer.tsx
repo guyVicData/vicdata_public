@@ -26,12 +26,17 @@ function LiveSlot({ input }: { input: SlotRenderInput }) {
   const { slot, dataview: dv, pinned, keepLive, width, height, fullscreen } = input;
   const instanceId = slot.view?.id ?? slot.id;
   const pinKey = JSON.stringify(pinned);
+  // 0.6 snag 4 / 01: the view's own settings (a tiles view's figures, Customise's title)
+  // draw in the slot as on the dashboard. The slot's own title is the card's (slotTitle).
+  const view = slot.view?.kind === "view" ? slot.view : null;
+  const paramsKey = view?.params ? JSON.stringify(view.params) : "";
   const built = useMemo(() => {
     if (!dv) return null;
     const p = JSON.parse(pinKey) as PinnedSettings;
     const { pinned: drawn, yearNote } = oneViewPinned(dv, p, keepLive);
-    return { config: oneViewConfig(dv, p, `slot.${instanceId}`), pinned: drawn, yearNote };
-  }, [dv, pinKey, keepLive, instanceId]);
+    const params = paramsKey ? (JSON.parse(paramsKey) as Record<string, unknown>) : undefined;
+    return { config: oneViewConfig(dv, p, `slot.${instanceId}`, params), pinned: drawn, yearNote };
+  }, [dv, pinKey, keepLive, instanceId, paramsKey]);
   if (!built || !dv) return null;
   if (built.yearNote && !logged.has(instanceId)) {
     logged.add(instanceId);

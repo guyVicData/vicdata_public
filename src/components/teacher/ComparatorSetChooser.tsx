@@ -16,6 +16,7 @@
 // member Data View's own routes, the ranking population through region_nation_set.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { VIEW_AS_READ_ONLY } from "@/lib/view-as";
 import type { SchoolSearchResult } from "@/components/SchoolSearch";
 import type { DefaultListEntry } from "@/lib/default-comparator-lists";
 import { resolveNearestOption } from "@/lib/nearest-option";
@@ -277,8 +278,16 @@ export function ComparatorSetChooser({
   const willBePersonal = (asNew: boolean) => (asNew || !editingSet ? !shared || !me.canEditShared : !editingSet.shared);
   const capBlocks = (asNew: boolean) => (asNew || !editingSet) && willBePersonal(asNew) && personalFull;
 
+  // 0.6 snag 4 (B): View as draws the chooser exactly as the viewed member has it (a
+  // School-Admin may share), but never writes the school's shared sets or rankings: those
+  // saves are refused, with the read-only note on their buttons.
+  const viewAsShared = (personal: boolean) => !!me.viewAs && !personal;
   const persistSet = async (asNew: boolean) => {
     if (!custom) return;
+    if (viewAsShared(willBePersonal(asNew))) {
+      setError(`${VIEW_AS_READ_ONLY}: shared sets aren't saved.`);
+      return;
+    }
     setBusy(true);
     setError(null);
     const result = await saveComparatorSet(supabase, {
@@ -288,6 +297,7 @@ export function ComparatorSetChooser({
       name: name.trim(),
       urns: customUrns,
       config: asNew || !editingSet ? { startedFrom: custom.baseLabel } : editingSet.config,
+      viewAs: me.viewAs ?? null,
     });
     if ("error" in result) {
       setBusy(false);
@@ -299,8 +309,12 @@ export function ComparatorSetChooser({
     await onDone({ kind: "saved", id: result.id });
   };
   const removeSet = async (set: SavedComparatorSet) => {
+    if (viewAsShared(!set.shared)) {
+      setError(`${VIEW_AS_READ_ONLY}: shared sets aren't changed.`);
+      return;
+    }
     setBusy(true);
-    const err = await deleteComparatorSet(supabase, set.id);
+    const err = await deleteComparatorSet(supabase, set.id, me.viewAs ?? null);
     if (err) {
       setBusy(false);
       setError(err);
@@ -390,6 +404,10 @@ export function ComparatorSetChooser({
   const rankingCapBlocks = (asNew: boolean) => (asNew || !editingRanking) && rankingPersonal(asNew) && personalRankings >= PERSONAL_RANKING_CAP;
 
   const persistRanking = async (asNew: boolean) => {
+    if (viewAsShared(rankingPersonal(asNew))) {
+      setError(`${VIEW_AS_READ_ONLY}: shared rankings aren't saved.`);
+      return;
+    }
     setBusy(true);
     setError(null);
     if (!rankPhase) return;
@@ -400,6 +418,7 @@ export function ComparatorSetChooser({
       name: name.trim(),
       phase: rankPhase,
       filters,
+      viewAs: me.viewAs ?? null,
     });
     if ("error" in result) {
       setBusy(false);
@@ -411,8 +430,12 @@ export function ComparatorSetChooser({
     await onDone({ kind: "ranking", label: name.trim(), filters, rankingId: result.id });
   };
   const removeRanking = async (r: SavedRanking) => {
+    if (viewAsShared(!r.shared)) {
+      setError(`${VIEW_AS_READ_ONLY}: shared rankings aren't changed.`);
+      return;
+    }
     setBusy(true);
-    const err = await deleteRanking(supabase, r.id);
+    const err = await deleteRanking(supabase, r.id, me.viewAs ?? null);
     await reloadRankings();
     setBusy(false);
     if (err) setError(err);
@@ -504,7 +527,9 @@ export function ComparatorSetChooser({
   } else if (screen === "custom" && custom) {
     const isEditing = custom.base === "set" && editingSet !== null;
     const canShare = me.canEditShared && !isEditing;
-    const saveNote = capBlocks(true)
+    const saveNote = viewAsShared(willBePersonal(true)) || (isEditing && viewAsShared(!editingSet!.shared))
+      ? `${VIEW_AS_READ_ONLY}: shared sets aren't saved.`
+      : capBlocks(true)
       ? `You have ${payload.personalCount} of ${payload.cap} personal sets.${me.canEditShared ? " Delete one, or save this for the whole school." : " Delete one to save another."}`
       : !isEditing && willBePersonal(true)
         ? `${payload.personalCount} of ${payload.cap} personal sets used`
@@ -540,12 +565,12 @@ export function ComparatorSetChooser({
         shared={shared}
         onShared={setShared}
         saveNote={saveNote}
-        canDelete={isEditing && editingSet!.editable}
+        canDelete={isEditing && editingSet!.editable && !viewAsShared(!editingSet!.shared)}
         onDelete={() => editingSet && void removeSet(editingSet)}
         onSaveAs={() => void persistSet(true)}
         onSave={() => void persistSet(false)}
-        saveDisabled={emptyOrUnnamed || capBlocks(false) || (isEditing && !editingSet!.editable)}
-        saveAsDisabled={emptyOrUnnamed || capBlocks(true)}
+        saveDisabled={emptyOrUnnamed || capBlocks(false) || (isEditing && !editingSet!.editable) || viewAsShared(willBePersonal(false))}
+        saveAsDisabled={emptyOrUnnamed || capBlocks(true) || viewAsShared(willBePersonal(true))}
         busy={busy}
         error={error}
         onBack={() => {
@@ -561,7 +586,9 @@ export function ComparatorSetChooser({
     const readOnly = editingRanking !== null && !editingRanking.editable;
     const emptyOrUnnamed = !name.trim();
     const canShareRanking = me.canEditShared && !editingRanking;
-    const rankingNote = rankingCapBlocks(true)
+    const rankingNote = viewAsShared(rankingPersonal(true)) || (editingRanking !== null && viewAsShared(!editingRanking.shared))
+      ? `${VIEW_AS_READ_ONLY}: shared rankings aren't saved.`
+      : rankingCapBlocks(true)
       ? `You have ${personalRankings} of ${PERSONAL_RANKING_CAP} personal rankings.${me.canEditShared ? " Delete one, or save this for the whole school." : " Delete one to save another."}`
       : null;
     const defaultLabel = filters.scope.kind === "nation" ? "National — all England schools & colleges" : `Regional — all ${filters.scope.name} schools & colleges`;
@@ -598,10 +625,10 @@ export function ComparatorSetChooser({
             </>
           ) : (
             <>
-              {editingRanking?.editable ? <DangerGhostButton onClick={() => void removeRanking(editingRanking)} disabled={busy}>Delete</DangerGhostButton> : <span />}
+              {editingRanking?.editable && !viewAsShared(!editingRanking.shared) ? <DangerGhostButton onClick={() => void removeRanking(editingRanking)} disabled={busy}>Delete</DangerGhostButton> : <span />}
               <div style={{ display: "flex", gap: 8 }}>
-                <SecondaryButton onClick={() => void persistRanking(true)} disabled={emptyOrUnnamed || rankingCapBlocks(true) || busy}>Save as</SecondaryButton>
-                <PrimaryButton onClick={() => void persistRanking(false)} disabled={emptyOrUnnamed || rankingCapBlocks(false) || busy}>Save</PrimaryButton>
+                <SecondaryButton onClick={() => void persistRanking(true)} disabled={emptyOrUnnamed || rankingCapBlocks(true) || busy || viewAsShared(rankingPersonal(true))}>Save as</SecondaryButton>
+                <PrimaryButton onClick={() => void persistRanking(false)} disabled={emptyOrUnnamed || rankingCapBlocks(false) || busy || viewAsShared(rankingPersonal(false))}>Save</PrimaryButton>
               </div>
             </>
           )

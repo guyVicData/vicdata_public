@@ -25,8 +25,9 @@ import {
 import { ExportButton, useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
-import { resolveTrial } from "@/lib/trial";
-import { TrialBanner } from "@/components/trial/TrialBanner";
+import { resolveViewAs } from "@/lib/view-as";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
+import { pickMembership } from "@/lib/view-as";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 
 type Comparison = {
@@ -254,16 +255,22 @@ export default function RecruitmentPage() {
   useEffect(() => {
     (async () => {
       const { data: sessionData } = await supabase.auth.getSession();
-      // 0.6 snag 2: in a "Try VicData as…" trial the anchor school is the trial's, and the
+      // 0.6 snag 2/4: in View as the anchor school is the viewed one, and the
       // jobs listed and created are the trial's own (teacher-view-data.ts, trial_key).
-      const trial = await resolveTrial(supabase);
-      const { data: membership } = trial ? { data: { school_accounts: { school_urn: trial.urn } } } : await supabase
-        .from("school_memberships")
-        .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn)")
-        // The signed-in person's own row (S3b fix 2): RLS returns every approved colleague's too.
-        .eq("profile_id", sessionData.session?.user?.id ?? "")
-        .eq("status", "approved")
-        .maybeSingle<{ school_accounts: { school_urn: string } | null }>();
+      const trial = await resolveViewAs(supabase);
+      const membership = trial
+        ? { school_accounts: { school_urn: trial.urn } }
+        : pickMembership(
+            ((
+              await supabase
+                .from("school_memberships")
+                .select("id, approved_at, school_accounts!school_memberships_school_account_id_fkey(school_urn)")
+                // The signed-in person's own rows (S3b fix 2): RLS returns every approved
+                // colleague's too. 0.6 snag 4: one school shown, never "the first row".
+                .eq("profile_id", sessionData.session?.user?.id ?? "")
+                .eq("status", "approved")
+            ).data ?? []) as unknown as { approved_at: string | null; school_accounts: { school_urn: string } | null }[],
+          );
       const urn = membership?.school_accounts?.school_urn ?? null;
       setAnchorUrn(urn);
       if (urn) setOnboardedPhases(await fetchOnboardedPhases(supabase, urn));
@@ -273,11 +280,11 @@ export default function RecruitmentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) return <main className="mx-auto max-w-2xl p-6"><p className="text-sm text-neutral-500">Loading…</p></main>;
+  if (loading) return <main className="mx-auto max-w-2xl p-6"><ViewAsBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
 
   return (
     <main id="teacher-root" data-theme={theme} className="mx-auto max-w-2xl bg-white p-4 text-neutral-900 sm:p-6 dark:bg-neutral-950 dark:text-neutral-100">
-      <TrialBanner />
+      <ViewAsBanner />
       <TeacherNav phase={null} phases={onboardedPhases} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
       <div className="mt-6 flex items-baseline justify-between gap-3">
         {/* §14: named as the question it answers, not "Recruitment". */}

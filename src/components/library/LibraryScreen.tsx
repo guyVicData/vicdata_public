@@ -9,7 +9,7 @@
 // --panel-bg, #1e1e22 --panel-border, #2a2a2e --panel-border2, #3a3a40 --edge-strong,
 // #c9c9ce --chip-fg, #8a8a90 --muted, #9a9aa0 --muted2, #6a6a70 --muted3, #5c5c62
 // --source) and the real accent tokens for every tile.
-import { TrialBanner } from "@/components/trial/TrialBanner";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -68,7 +68,7 @@ export function LibraryScreen() {
   return (
     <main id="teacher-root" data-theme={theme} className="min-h-dvh w-full bg-[var(--bg)] text-[var(--fg)]">
       <div className="mx-auto max-w-3xl px-5 pb-7 pt-[18px] sm:p-6">
-        <TrialBanner />
+        <ViewAsBanner />
         <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
 
         <div className="mt-5 flex flex-col" style={{ gap: LIB.gap }}>

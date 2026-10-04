@@ -5,7 +5,7 @@
 // same way (scope brief §7.5: "every setting is resolved", "the year is pinned to the
 // moment it was added", with a per-view keep-live option).
 import { dataviewById } from "@/catalogue";
-import { averagesLabel, contextFromPanel, defaultFromYear, latestYear, viewTitle, type PanelLabels, type PickPanelContext } from "@/catalogue/pick";
+import { averagesLabel, contextFromPanel, defaultFromYear, latestYear, resolveTitle, titleOverrideOf, viewTitle, type PanelLabels, type PickPanelContext } from "@/catalogue/pick";
 import type { CompareKind, DashboardConfig, Dataview, DataviewInstance, ResultsMeasure } from "@/catalogue/types";
 import type { CopyViewSource } from "./copy-view";
 import type { PinInput } from "./meeting-views";
@@ -120,8 +120,25 @@ export function copySourceFor(config: DashboardConfig, panelId: string, instance
       ? { ...base, compare: { ...base.compare, subjects: { scope: SCOPE_OF_AGAINST[rt.contextAgainst], label: rt.contextGroupLabel } } }
       : base;
   const pinned = pinFromContext(context, dv, rt.school, { latest: rt.latestYear, from: rt.firstYear });
-  const title = instance.title ?? (dv ? viewTitle(dv, context) : instance.dataview);
+  // 0.6 snag 4 / 01: the view's own title (Customise's) resolved as the panel shows it; else
+  // the dataview's title for this context. Never a raw template with its placeholders. A
+  // trend's [year] is where its honest series starts (defaultFromYear, as the trend panels
+  // and Customise's preview start), a single year's the page's real latest.
+  const own = titleOverrideOf(instance);
+  const title = own ? resolveTitle(own, dv ?? null, context, { latest: rt.latestYear }) : dv ? viewTitle(dv, context) : (instance.title ?? instance.dataview);
   return { instance, context, pinned, title };
+}
+
+// 0.6 snag 4 / 01: the title a configured panel's view shows in place of its host's own --
+// the instance's override resolved for the page's school, subject, Results measure, Context
+// group, comparison set and real years. null = no override (the host's titles, as before).
+export function panelTitleOverride(config: DashboardConfig, panelId: string, instance: Extract<DataviewInstance, { kind: "view" }>, rt: RuntimeLabels): string | null {
+  if (!titleOverrideOf(instance)) return null;
+  try {
+    return copySourceFor(config, panelId, instance, rt).title;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------------

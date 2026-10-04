@@ -13,8 +13,9 @@ import { VISIBLE_ROLES, VISIBLE_ROLE_LABELS, normaliseRole, visibleRolesOf, type
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import {
   AdminBody, AdminHeader, AdminState, AdminTitle, Avatar, Footnote, PRIMARY_BUTTON, RoleChip, RolePill,
-  SearchBox, SectionLabel, displayNameOf, useAdminSchool, type AdminSchool,
+  SearchBox, SectionLabel, VIEW_AS_READ_ONLY, displayNameOf, loadViewAsPeople, useAdminSchool, type AdminSchool,
 } from "./AdminChrome";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 
 type MemberRow = {
   id: string;
@@ -46,6 +47,8 @@ export function PeopleScreen() {
   const state = useAdminSchool();
   return (
     <main id="teacher-root" data-theme={theme} className="leading-[1.2] w-full flex-grow bg-[var(--bg)] text-[var(--fg)]">
+      {/* 0.6 snag 4: View as shows People read-only to a School-Admin View as. */}
+      <ViewAsBanner className="mx-4 mt-3" />
       <AdminHeader active="people" />
       {state.status === "loading" && <AdminBody><AdminState>Loading…</AdminState></AdminBody>}
       {state.status === "signed-out" && <AdminBody><AdminState>Sign in to manage your school&rsquo;s people.</AdminState></AdminBody>}
@@ -67,7 +70,15 @@ export function People({ school }: { school: AdminSchool }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const readOnly = !!school.readOnly;
   const load = useCallback(async () => {
+    if (school.readOnly) {
+      const got = await loadViewAsPeople(school);
+      if (!got) setError("Could not load this school's people. Try again.");
+      setMembers((got?.members as MemberRow[]) ?? []);
+      setTeams((got?.teams as TeamRow[]) ?? []);
+      return;
+    }
     const [m, t] = await Promise.all([
       supabase
         .from("school_memberships")
@@ -111,6 +122,11 @@ export function People({ school }: { school: AdminSchool }) {
     filter === "waiting" ? [] : approved.filter((m) => matches(m) && (filter === "all" || rolesOf(m).includes(filter))).sort(byName);
 
   async function run(p: PromiseLike<{ error: { message: string } | null }>) {
+    // View as never writes the school's people (the query is never sent: it runs on await).
+    if (readOnly) {
+      setError(`${VIEW_AS_READ_ONLY}: nothing here is saved.`);
+      return;
+    }
     setError(null);
     const { error: e } = await p;
     if (e) setError(e.message);
@@ -182,7 +198,7 @@ export function People({ school }: { school: AdminSchool }) {
     <AdminBody>
       <AdminTitle
         title={`People at ${school.schoolName}`}
-        subtitle="School-Admin: you set roles and teams"
+        subtitle={readOnly ? `School-Admin view · ${VIEW_AS_READ_ONLY}: you can look, but nothing here is saved` : "School-Admin: you set roles and teams"}
         action={
           <button type="button" onClick={invite} className={PRIMARY_BUTTON} title="Copy your school's join link">
             {copied ? "Link copied" : "Invite"}
@@ -228,7 +244,9 @@ export function People({ school }: { school: AdminSchool }) {
               <button
                 type="button"
                 onClick={() => approve(m.id)}
-                className="rounded-full border-none px-3.5 py-1.5 text-[12px] font-bold"
+                disabled={readOnly}
+                title={readOnly ? VIEW_AS_READ_ONLY : undefined}
+                className="rounded-full border-none px-3.5 py-1.5 text-[12px] font-bold disabled:opacity-60"
                 style={{ background: ATTENTION_ACCENT.hex, color: ATTENTION_INK }}
               >
                 Approve as Teacher
@@ -236,10 +254,13 @@ export function People({ school }: { school: AdminSchool }) {
               <button
                 type="button"
                 onClick={() => decline(m.id)}
-                className="rounded-full border border-[var(--edge-strong)] bg-transparent px-3.5 py-1.5 text-[12px] font-semibold text-[var(--chip-fg)]"
+                disabled={readOnly}
+                title={readOnly ? VIEW_AS_READ_ONLY : undefined}
+                className="rounded-full border border-[var(--edge-strong)] bg-transparent px-3.5 py-1.5 text-[12px] font-semibold text-[var(--chip-fg)] disabled:opacity-60"
               >
                 Decline
               </button>
+              {readOnly && <span className="self-center text-[11.5px] text-[var(--muted)]">{VIEW_AS_READ_ONLY}</span>}
             </div>
           </div>
         );
@@ -272,7 +293,11 @@ export function People({ school }: { school: AdminSchool }) {
                   {displayNameOf(m.profiles?.full_name, email)}
                 </button>
                 {editing ? (
-                  <JobTitleInput key={m.job_title ?? ""} value={m.job_title ?? ""} onSave={(v) => saveJobTitle(m, v)} />
+                  readOnly ? (
+                    <div className="truncate text-[12px] text-[var(--muted)]" title={VIEW_AS_READ_ONLY}>{sub}</div>
+                  ) : (
+                    <JobTitleInput key={m.job_title ?? ""} value={m.job_title ?? ""} onSave={(v) => saveJobTitle(m, v)} />
+                  )
                 ) : (
                   sub && <div className="truncate text-[12px] text-[var(--muted)]">{sub}</div>
                 )}
@@ -285,12 +310,14 @@ export function People({ school }: { school: AdminSchool }) {
             </div>
             {editing && (
               <>
-                <SectionLabel>Roles &mdash; tap to switch on or off</SectionLabel>
+                <SectionLabel>{readOnly ? <>Roles &mdash; {VIEW_AS_READ_ONLY}</> : <>Roles &mdash; tap to switch on or off</>}</SectionLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {VISIBLE_ROLES.map((r) => {
                     const adminChip = r === "school_admin";
-                    const disabled = adminChip && (!school.isAccountHolder || isHolder);
-                    const title = !adminChip
+                    const disabled = readOnly || (adminChip && (!school.isAccountHolder || isHolder));
+                    const title = readOnly
+                      ? VIEW_AS_READ_ONLY
+                      : !adminChip
                       ? undefined
                       : isHolder
                         ? "The account holder is always School-Admin"

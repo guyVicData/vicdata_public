@@ -28,6 +28,11 @@ const RATE_RESULTS: ResultsMeasure[] = ["points", "threshold", "bands"];
 // counts), so theirs are unset. Data-dependent gaps (Grades needs bands' range control,
 // Comparisons' Chart needs 4 years, the donut's R-DONUT-COUNTS-ONLY) stay host rules.
 const SUBJECT_PANELS_RESULTS: ResultsMeasure[] = ["points", "threshold", "bands"];
+// 0.6 snag 4 / 02: the other axes (Dataview.variants), read from the hosts the same way.
+// Context draws every view on each Compare against set (the pre-0.6 page did not vary its
+// rail by it), so theirs are unset. Comparisons varies by its comparator kind
+// (R-RANKING-SAMPLE, ComparisonsPanels): Number tiles only for a ranking, the maps only for
+// a set of schools.
 
 const ENTRIES: MeasureId[] = ["M-KS4-ENTRIES", "M-KS5-ENTRIES"];
 const POINTS: MeasureId[] = ["M-KS4-POINTS", "M-KS5-POINTS"];
@@ -854,6 +859,7 @@ export const DATAVIEWS: Dataview[] = [
   // ================================================================ Column 3, Comparisons (ComparisonsPanels)
   {
     id: "DV-C3-CUR-TILES",
+    variants: { comparator: ["ranking"] },
     label: "Number tiles",
     railIcon: "TilesIcon",
     measures: HEADLINE,
@@ -881,6 +887,7 @@ export const DATAVIEWS: Dataview[] = [
   },
   {
     id: "DV-C3-CUR-MAP",
+    variants: { comparator: ["schools"] },
     label: "Map",
     railIcon: "MapPinIcon",
     measures: [...ENTRIES, ...POINTS, ...HEADLINE],
@@ -1009,6 +1016,7 @@ export const DATAVIEWS: Dataview[] = [
   },
   {
     id: "DV-C3-TR-MAP",
+    variants: { comparator: ["schools"] },
     label: "Trend map",
     railIcon: "MapPinIcon",
     measures: [...ENTRIES, ...RESULTS, ...HEADLINE],
@@ -1084,6 +1092,7 @@ export const DATAVIEWS: Dataview[] = [
   },
   {
     id: "DV-C3-TR-CHANGEMAP",
+    variants: { comparator: ["schools"] },
     label: "Change map",
     railIcon: "MapPinIcon",
     measures: [...ENTRIES, ...RESULTS, ...HEADLINE],

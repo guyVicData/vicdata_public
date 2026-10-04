@@ -8,7 +8,7 @@
 //
 // Before the S2 tables exist (dashboards-store says available: false) the page says so
 // plainly and lists the meetings on the old tables, read-only.
-import { TrialBanner } from "@/components/trial/TrialBanner";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -70,7 +70,7 @@ export function MeetingsLibrary() {
   return (
     <main id="teacher-root" data-theme={theme} style={ROSE_ROOT_STYLE} className="min-h-dvh w-full bg-[var(--bg)] leading-[1.2] text-[var(--fg)]">
       <div className="mx-auto max-w-3xl px-5 pb-7 pt-[18px] sm:p-6">
-        <TrialBanner />
+        <ViewAsBanner />
         <TeacherNav phase={null} phases={[]} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={setTheme} />
 
         <div className="mt-[18px] flex flex-col gap-3.5">

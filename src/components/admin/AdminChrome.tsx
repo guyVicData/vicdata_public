@@ -14,6 +14,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { DELTA_POSITIVE, ROLE_ACCENT, accentText } from "@/lib/teacher-view-theme";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
+import { getActiveViewAs } from "@/lib/view-as";
+import { pickMembership, viewAsMembership } from "@/lib/view-as";
 
 // ---------------------------------------------------------------------------------------
 // Who is looking, at which school, and may they manage it.
@@ -28,6 +30,9 @@ export type AdminSchool = {
   isAccountHolder: boolean;
   // School-Admin: an approved member with is_admin, or the account holder.
   canManage: boolean;
+  // 0.6 snag 4 (B): a platform admin viewing the school as its School-Admin (View as):
+  // People and Teams show, read from /api/teacher/view-as-people, with every save off.
+  readOnly?: boolean;
 };
 
 type MembershipRow = {
@@ -48,22 +53,46 @@ export type AdminSchoolState =
   | { status: "no-school" }
   | { status: "ready"; school: AdminSchool };
 
-// One approved membership per user, as every Teacher page assumes (.maybeSingle()).
-// Filtered to the caller's own profile: the select policy also returns every colleague's
-// approved row, so an unfiltered maybeSingle errors at any school with two members.
+// The signed-in person's school. Filtered to their own profile: the select policy also
+// returns every colleague's approved row. 0.6 snag 4: with more than one membership, the
+// school shown (pickMembership), never "the first row"; in View as, the viewed school as
+// that role would have it -- read-only.
 export async function loadAdminSchool(): Promise<AdminSchoolState> {
   const supabase = createBrowserSupabaseClient();
   const { data: sessionData } = await supabase.auth.getSession();
   const user = sessionData.session?.user;
   if (!user) return { status: "signed-out" };
-  const { data } = await supabase
+  const viewAs = getActiveViewAs();
+  if (viewAs) {
+    const { data: account } = await supabase
+      .from("school_accounts")
+      .select("id, account_holder_membership_id")
+      .eq("school_urn", viewAs.urn)
+      .maybeSingle<{ id: string; account_holder_membership_id: string | null }>();
+    if (!account) return { status: "no-school" };
+    return {
+      status: "ready",
+      school: {
+        userId: user.id,
+        membershipId: "",
+        schoolAccountId: account.id,
+        schoolUrn: viewAs.urn,
+        schoolName: viewAs.schoolName,
+        accountHolderMembershipId: account.account_holder_membership_id,
+        isAccountHolder: false,
+        canManage: viewAsMembership(viewAs.role).is_admin,
+        readOnly: true,
+      },
+    };
+  }
+  const { data: rows } = await supabase
     .from("school_memberships")
     .select(
-      "id, is_admin, school_account_id, school_accounts!school_memberships_school_account_id_fkey(id, school_urn, account_holder_membership_id, schools(current_name))",
+      "id, is_admin, school_account_id, approved_at, school_accounts!school_memberships_school_account_id_fkey(id, school_urn, account_holder_membership_id, schools(current_name))",
     )
     .eq("profile_id", user.id)
-    .eq("status", "approved")
-    .maybeSingle<MembershipRow>();
+    .eq("status", "approved");
+  const data = pickMembership((rows ?? []) as unknown as (MembershipRow & { approved_at: string | null })[]);
   const account = data?.school_accounts;
   if (!data || !account) return { status: "no-school" };
   const isAccountHolder = account.account_holder_membership_id === data.id;
@@ -81,6 +110,19 @@ export async function loadAdminSchool(): Promise<AdminSchoolState> {
     },
   };
 }
+
+// View as (readOnly): what the School-Admin's own People/Teams queries read, from the
+// route (Guy's RLS can't read another school's people).
+export async function loadViewAsPeople(school: AdminSchool): Promise<{ members: unknown[]; teams: unknown[] } | null> {
+  const supabase = createBrowserSupabaseClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return null;
+  const res = await fetch(`/api/teacher/view-as-people?urn=${encodeURIComponent(school.schoolUrn)}`, { headers: { Authorization: `Bearer ${token}` } });
+  return res.ok ? ((await res.json()) as { members: unknown[]; teams: unknown[] }) : null;
+}
+
+export { VIEW_AS_READ_ONLY } from "@/lib/view-as";
 
 export function useAdminSchool(): AdminSchoolState {
   const [state, setState] = useState<AdminSchoolState>({ status: "loading" });
@@ -232,7 +274,7 @@ export function Avatar({
 }
 
 // The board tints SMT at 0.16 and the others at 0.14.
-function roleTint(role: VisibleRoleId): string {
+export function roleTint(role: VisibleRoleId): string {
   return `rgba(${ROLE_ACCENT[role].rgb},${role === "smt" ? 0.16 : 0.14})`;
 }
 

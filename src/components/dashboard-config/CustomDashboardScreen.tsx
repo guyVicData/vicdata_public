@@ -25,8 +25,8 @@
 // (no Edit link, no placeholder panels); on, the editor is drawn in place on this
 // dashboard with this school as its live preview, and the page comes back as it was when
 // it goes off, re-read so a Publish shows straight away. Other dashboards keep the link.
-import { TrialBanner } from "@/components/trial/TrialBanner";
-import { getActiveTrial } from "@/lib/trial";
+import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
+import { getActiveViewAs } from "@/lib/view-as";
 import { useEffect, useMemo, useState } from "react";
 import { setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { EditorScreen } from "@/components/editor/EditorScreen";
@@ -111,8 +111,8 @@ export function CustomDashboardScreen({ id }: { id: string }) {
         if (!school) return setState({ status: "no-school" });
         const [phases, admin, group] = await Promise.all([
           fetchOnboardedPhases(supabase, school.urn),
-          // In a "Try VicData as…" trial the page is the member's: no super-admin chrome.
-          supabase.rpc("is_platform_admin").then(({ data: a }) => a === true && !getActiveTrial(), () => false),
+          // In View as the page is the member's: no super-admin chrome.
+          supabase.rpc("is_platform_admin").then(({ data: a }) => a === true && !getActiveViewAs(), () => false),
           linkedDashboards(supabase, config, loaded.available).catch(() => []),
         ]);
         setState({
@@ -136,7 +136,7 @@ export function CustomDashboardScreen({ id }: { id: string }) {
   if (state.status !== "ready") {
     return (
       <main id="teacher-root" data-theme={theme} className="mx-auto w-full max-w-3xl bg-[var(--bg)] p-6 text-[var(--fg)]">
-        <TrialBanner />
+        <ViewAsBanner />
         <p className="text-sm text-[var(--muted)]">
           {state.status === "loading" && "Loading…"}
           {state.status === "signed-out" && "Sign in to see this dashboard."}
@@ -157,7 +157,7 @@ export function CustomDashboardScreen({ id }: { id: string }) {
   }
   return (
     <>
-      {inPlace.editing && <EditorScreen id={id} host={{ school: editorSchool, top: <TrialBanner className="" />, onExit: () => setEditOn(false) }} />}
+      {inPlace.editing && <EditorScreen id={id} host={{ school: editorSchool, top: <ViewAsBanner className="" />, onExit: () => setEditOn(false) }} />}
       <CustomDashboardView config={state.config} school={state.school} saved={state.saved} phases={state.phases} theme={theme} onTheme={setTheme} extras={state.extras} hidden={inPlace.editing} reloadKey={inPlace.reloadTick} />
     </>
   );
@@ -201,7 +201,7 @@ export function CustomDashboardView({
       style={(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as React.CSSProperties}
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
-      <TrialBanner />
+      <ViewAsBanner />
       <TeacherNav phase={phase} phases={navPhases} labelsOn={labelsOn} onLabelsOn={setLabelsOn} theme={theme} onTheme={onTheme} />
       <header data-dashboard-header="" className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-[var(--panel-border)] pb-3">
         <h1 className="text-[17px] font-bold leading-tight">{config.name}</h1>
