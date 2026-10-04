@@ -56,6 +56,9 @@ import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
 import { VerticalBars } from "./VerticalBars";
 import { RankedList } from "./RankedList";
+import { usePlanViewParams } from "@/components/dashboard-config/plan";
+import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
+import { applyMainLabel, applyTileFigures, readTileParams } from "@/lib/tile-figures";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -288,6 +291,9 @@ export function SubjectPanels({
   const changeView: "chart" | "table" = trendsView === "changeTable" ? "table" : "chart";
   const setChangeView = (v: "chart" | "table") => setTrendsView(v === "table" ? "changeTable" : "changeChart");
   const geo = useSubjectGeography(geography);
+  // 0.6 snag 3 / 01: the tiles view's own figure settings, under a config (else none).
+  const tileParams = readTileParams(usePlanViewParams(columnId, "DV-C1-RES-CUR-TILES"));
+  const runtime = useDashboardRuntime();
   // Grade bands: England's per-grade rows for the focused subject, every year, one fetch.
   const gradeGeo = useSubjectGradeGeography(gradeBand?.geography ?? null);
   const englandGradeRows = gradeGeo?.data?.national?.rows ?? [];
@@ -405,7 +411,7 @@ export function SubjectPanels({
   // ALL its subjects on the same measure, and the gap to England (the same England anchor
   // the bars' marker and the table's "vs National" column read).
   const tileFocus = rows.find((r) => r.s.key === focusedKey) ?? null;
-  const tilesMain =
+  const tilesMainBuilt =
     tiles && tileFocus && latest !== null
       ? { figure: tileFocus.value === null ? "—" : measure.format(tileFocus.value), label: `${tileFocus.s.label} ${measure.noun} in ${academicYearLabel(latest)}` }
       : null;
@@ -415,19 +421,19 @@ export function SubjectPanels({
     // the same span, and the gap -- per the grade bands prompt, in place of the rank.
     const inBand = latest !== null && gradeBand.range ? bandRate(gradeBand.ownRows.filter((r) => r.period === latest), gradeBand.range) : null;
     if (inBand) {
-      tileRow.push({ key: "count", icon: GradesIcon, figure: inBand.met.toLocaleString(), detail: `of ${inBand.entries.toLocaleString()} graded entries at ${(gradeBand.rangeLabel ?? "").toLowerCase()}` });
+      tileRow.push({ key: "count", icon: GradesIcon, figure: inBand.met.toLocaleString(), detail: `of ${inBand.entries.toLocaleString()} graded entries at ${(gradeBand.rangeLabel ?? "").toLowerCase()}`, vars: { total: inBand.entries } });
     }
     if (tileFocus.bench !== null) {
       tileRow.push({ key: "england-average", icon: AverageIcon, figure: measure.format(tileFocus.bench), detail: `England, ${(gradeBand.rangeLabel ?? "").toLowerCase()}` });
       const gap = tileFocus.value - tileFocus.bench;
       const dir = measure.formatDelta(gap).replace("−", "+") === measure.formatDelta(0) ? "flat" : directionOf(gap);
-      tileRow.push({ key: "england", icon: FlagIcon, figure: measure.formatDelta(gap), detail: dir === "flat" ? "level with England" : `${dir === "up" ? "above" : "below"} England`, direction: dir });
+      tileRow.push({ key: "england", icon: FlagIcon, figure: measure.formatDelta(gap), detail: dir === "flat" ? "level with England" : `${dir === "up" ? "above" : "below"} England`, direction: dir, vars: { direction: dir === "flat" ? "level with" : dir === "up" ? "above" : "below" } });
     }
   } else if (tiles && tileFocus && tileFocus.value !== null) {
     const inCategory = rankByValue(rows.map((r) => ({ key: r.s.key, value: r.value })));
     const rank = inCategory.get(tileFocus.s.key);
     if (rank && inCategory.size > 1) {
-      tileRow.push({ key: "category", icon: PodiumIcon, figure: ordinal(rank), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}` });
+      tileRow.push({ key: "category", icon: PodiumIcon, figure: ordinal(rank), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
     }
     // The middle tile: England's own figure for this subject, a benchmark beside the main
     // one -- the same England anchor the next tile's gap is taken from.
@@ -444,9 +450,21 @@ export function SubjectPanels({
         figure: measure.formatDelta(gap),
         detail: dir === "flat" ? "level with the England average" : `${dir === "up" ? "above" : "below"} the England average`,
         direction: dir,
+        vars: { direction: dir === "flat" ? "level with" : dir === "up" ? "above" : "below" },
       });
     }
   }
+  // Pick, order, relabel and hide per the view's settings; unset = the tiles above, as built.
+  const tileVars = {
+    subject: tileFocus?.s.label,
+    category: categoryLabel,
+    school: runtime?.school?.name,
+    year: latest === null ? undefined : academicYearLabel(latest),
+    measure: measure.noun,
+    range: gradeBand?.rangeLabel?.toLowerCase(),
+  };
+  const tilesMain = applyMainLabel(tilesMainBuilt, tileParams, tileVars);
+  const tilesShown = applyTileFigures(tileRow, tileParams, tileVars);
 
   // Grade bands: the focused subject's distribution in the year Current shows, with
   // England's share at each grade (no tick where England's row was suppressed), and its
@@ -569,7 +587,7 @@ export function SubjectPanels({
               </button>
             </div>
           ) : effectiveView === "tiles" ? (
-            <NumberTiles main={tilesMain} tiles={tileRow} fullscreen={fullscreen} />
+            <NumberTiles main={tilesMain} tiles={tilesShown} fullscreen={fullscreen} />
           ) : effectiveView === "donut" && donut ? (
             donutPercent === null ? (
               <p className="text-xs text-[var(--muted)]">

@@ -40,6 +40,9 @@ import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTre
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { memberMeans } from "@/lib/teacher-view-populations";
+import { usePlanViewParams } from "@/components/dashboard-config/plan";
+import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
+import { applyMainLabel, applyTileFigures, readTileParams } from "@/lib/tile-figures";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
 // `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
@@ -123,6 +126,9 @@ export function CandidatesPanels({
   const [showFit, setShowFit] = useState(false);
 
   const measure = ENTRIES_MEASURE;
+  // 0.6 snag 3 / 01: the tiles view's own figure settings, under a config (else none).
+  const tileParams = readTileParams(usePlanViewParams("candidates", "DV-C1-CAND-CUR-TILES"));
+  const runtime = useDashboardRuntime();
 
   const valueAt = (s: CandidateSubject, period: number): number | null => s.values[periods.indexOf(period)] ?? null;
 
@@ -191,7 +197,7 @@ export function CandidatesPanels({
   // since the earliest published year (changeOver, as Trend's flag sentence reads it).
   const latestIdx = periods.length - 1;
   const focusedNow = focused && latest !== null ? valueAt(focused, latest) : null;
-  const tilesMain = focused && latest !== null
+  const tilesMainBuilt = focused && latest !== null
     ? { figure: focusedNow === null ? "—" : measure.format(focusedNow), label: `${focused.label} entries in ${academicYearLabel(latest)}` }
     : null;
   const tiles: NumberTile[] = [];
@@ -199,12 +205,12 @@ export function CandidatesPanels({
     const inCategory = rankByValue(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
     const r = inCategory.get(focused.key);
     if (r && inCategory.size > 1) {
-      tiles.push({ key: "category", icon: PodiumIcon, figure: ordinal(r), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}` });
+      tiles.push({ key: "category", icon: PodiumIcon, figure: ordinal(r), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
     }
     if (schoolSubjects?.length) {
       const inSchool = rankByValue(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
       const rs = inSchool.get(focused.key);
-      if (rs) tiles.push({ key: "school", icon: SchoolIcon, figure: ordinal(rs), detail: `of ${inSchool.size} subjects at school` });
+      if (rs) tiles.push({ key: "school", icon: SchoolIcon, figure: ordinal(rs), detail: `of ${inSchool.size} subjects at school`, vars: { total: inSchool.size } });
     }
     const change = changeOver(focused.values);
     const firstIdx = focused.values.findIndex((v) => v !== null);
@@ -215,9 +221,14 @@ export function CandidatesPanels({
         figure: signed(Math.round(change.percent), (v) => `${v}%`),
         detail: `since ${academicYearLabel(periods[firstIdx])}`,
         direction: directionOf(Math.round(change.percent)),
+        vars: { "from-year": academicYearLabel(periods[firstIdx]) },
       });
     }
   }
+  // Pick, order, relabel and hide per the view's settings; unset = the tiles above, as built.
+  const tileVars = { subject: focused?.label, category: categoryLabel, school: runtime?.school?.name, year: latest === null ? undefined : academicYearLabel(latest) };
+  const tilesMain = applyMainLabel(tilesMainBuilt, tileParams, tileVars);
+  const tilesShown = applyTileFigures(tiles, tileParams, tileVars);
 
   // Current panel rework round 1: the tag is the fixed word "Current" and the year follows
   // it as plain text. Current is the number tiles alone -- no view rail -- since its Bar
@@ -235,7 +246,7 @@ export function CandidatesPanels({
           {focused && latest !== null && (
             <ViewTitle>{`${focused.label} ${currentLabel ?? "Candidates"}: ${academicYearLabel(latest)}`}</ViewTitle>
           )}
-          <NumberTiles main={tilesMain} tiles={tiles} fullscreen={fullscreen} />
+          <NumberTiles main={tilesMain} tiles={tilesShown} fullscreen={fullscreen} />
         </>
       ),
     summary: biggest && smallest && biggest.key !== smallest.key ? (

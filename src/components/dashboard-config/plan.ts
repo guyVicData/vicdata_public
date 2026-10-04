@@ -4,7 +4,7 @@
 // ColumnPanels) when a dashboard is drawn from config (?renderer=config). With no plan in
 // context -- every unflagged page -- those shells render exactly as before.
 import { createContext, useContext } from "react";
-import type { ColumnHeader, DashboardConfig, PanelConfig, RowConfig } from "@/catalogue/types";
+import type { ColumnHeader, DashboardConfig, DataviewId, PanelConfig, RowConfig } from "@/catalogue/types";
 
 export type PlanRow = { row: RowConfig; panel: PanelConfig | undefined };
 export type PlanColumn = { column: ColumnHeader; rows: PlanRow[] };
@@ -41,6 +41,19 @@ export function usePlanColumn(columnKey: string): { plan: DashboardPlan; column:
   const plan = useContext(DashboardPlanContext);
   const column = plan?.byColumnKey.get(columnKey);
   return plan && column ? { plan, column } : null;
+}
+
+// 0.6 snagging round 3 / 01: a view's own settings (DataviewInstance.params) as the
+// column's config holds them -- the first instance of `dataview` in the column, in row and
+// rail order. null with no plan (every unflagged page) or no such view, so a host reading
+// it draws exactly as before.
+export function usePlanViewParams(columnKey: string, dataview: DataviewId): Record<string, unknown> | null {
+  const planned = usePlanColumn(columnKey);
+  if (!planned) return null;
+  for (const { panel } of planned.column.rows) {
+    for (const v of panel?.dataviews ?? []) if (v.kind === "view" && v.dataview === dataview) return v.params ?? null;
+  }
+  return null;
 }
 
 // Is the config renderer switched on? `?renderer=config` on the URL, or the build-time

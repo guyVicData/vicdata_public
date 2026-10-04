@@ -239,11 +239,20 @@ export type RowConfig = {
   legacyPanelId?: "current" | "trend";
 };
 
+// 0.6 snagging round 3 / 01: a number-tiles view's figures, saved on the view instance
+// (`params.tiles`, `params.mainLabel`; see src/lib/tile-figures.ts). `tiles` is the small
+// tiles in the order drawn, each one of the figures its host builds (TILE_FIGURES), with
+// an optional scope line (title placeholders allowed) and a hidden flag. Unset = the host's
+// own tiles, exactly as before.
+export type TileFigureSpec = { figure: string; label?: string; hidden?: boolean };
+export type NumberTilesParams = { tiles?: TileFigureSpec[]; mainLabel?: string };
+
 export type DataviewInstance =
   | {
       id: string;
       kind: "view";
       dataview: DataviewId;
+      // Customise's choices (CustomViewParams), plus NumberTilesParams on a tiles view.
       params?: Record<string, unknown>;
       title?: string;
     }

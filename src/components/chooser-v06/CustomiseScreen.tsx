@@ -25,7 +25,9 @@ import {
   resolveTitle,
   yearsOf,
 } from "@/catalogue/pick";
-import type { Dataview, DateMode, NumberType, ViewType } from "@/catalogue/types";
+import type { Dataview, DateMode, NumberType, TileFigureSpec, ViewType } from "@/catalogue/types";
+import { readTileParams, tileViewDef, writeTileParams } from "@/lib/tile-figures";
+import { FiguresBox } from "./FiguresBox";
 import { Banner, Body, FilterBox, FilterLabel, Footer, PrimaryButton, SecondaryButton } from "@/components/teacher/chooser/ui";
 import { MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { AvHeader, BoardChip, Toggle } from "./bits";
@@ -34,7 +36,9 @@ import { accentFor } from "./PickScreen";
 import { L } from "./layout";
 import { useChooserWords } from "./words";
 
-type State = { dv: Dataview; numberType: NumberType; dateMode: DateMode; look: ViewType; fromYear: string | null; rollForward: boolean; title: string; titleEdited: boolean };
+// `tiles` / `mainLabel` (snag 3 / 01): a number-tiles view's Figures; null = as the host
+// builds them.
+type State = { dv: Dataview; numberType: NumberType; dateMode: DateMode; look: ViewType; fromYear: string | null; rollForward: boolean; title: string; titleEdited: boolean; tiles: TileFigureSpec[] | null; mainLabel: string | null };
 
 const templateOf = (dv: Dataview) => dv.titleTemplate || `[subject]: ${dv.label.toLowerCase()}`;
 
@@ -48,12 +52,15 @@ function initial(base: Dataview, ctx: PickPanelContext): State {
     rollForward: true,
     title: templateOf(base),
     titleEdited: false,
+    tiles: null,
+    mainLabel: null,
   };
 }
 
 // Snag 1 / 03: "Edit this view…" re-opens a custom view with the choices it was saved with.
 function fromParams(base: Dataview, ctx: PickPanelContext, p: CustomViewParams): State {
-  return { ...initial(base, ctx), numberType: p.numberType, dateMode: p.fromYear ? "trend" : base.supports.dateMode, look: p.look, fromYear: p.fromYear ?? defaultFromYear(ctx), rollForward: p.rollForward, title: p.title, titleEdited: p.title !== templateOf(base) };
+  const t = readTileParams(p);
+  return { ...initial(base, ctx), numberType: p.numberType, dateMode: p.fromYear ? "trend" : base.supports.dateMode, look: p.look, fromYear: p.fromYear ?? defaultFromYear(ctx), rollForward: p.rollForward, title: p.title, titleEdited: p.title !== templateOf(base), tiles: t.tiles ?? null, mainLabel: t.mainLabel ?? null };
 }
 
 // The matching view closest to the wanted choices, with `strict` held exactly.
@@ -143,7 +150,15 @@ export function CustomiseScreen({
         : null;
 
   const subtitle = [NUMBER_TYPE_LABEL[s.numberType], trend ? `${s.fromYear ?? "first year"} → latest` : (latest ?? "latest"), VIEW_TYPE_LABEL[s.look]].join(" · ");
-  const params: CustomViewParams = { numberType: s.numberType, fromYear: trend ? s.fromYear : null, look: s.look, title: s.title, rollForward: s.rollForward };
+  const params: CustomViewParams = {
+    numberType: s.numberType,
+    fromYear: trend ? s.fromYear : null,
+    look: s.look,
+    title: s.title,
+    rollForward: s.rollForward,
+    // Only on a tiles view, and only what differs from the host's own tiles.
+    ...(tileViewDef(s.dv.id) ? writeTileParams(s.dv.id, s.tiles, s.mainLabel) : {}),
+  };
 
   return (
     <>
@@ -215,6 +230,8 @@ export function CustomiseScreen({
             ))}
           </div>
         </FilterBox>
+
+        {tileViewDef(s.dv.id) && <FiguresBox dv={s.dv} ctx={ctx} tiles={s.tiles} mainLabel={s.mainLabel} onChange={(tiles, mainLabel) => fork({ ...s, tiles, mainLabel })} />}
 
         <div style={{ border: "1px solid var(--cc-border)", borderRadius: 10, padding: 10, background: "var(--cc-panel)", display: "flex", flexDirection: "column", gap: 7 }}>
           <FilterLabel>Title</FilterLabel>

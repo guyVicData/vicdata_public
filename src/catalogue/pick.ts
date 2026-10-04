@@ -18,6 +18,7 @@ import type {
   DataviewInstance,
   FocusKind,
   Measure,
+  NumberTilesParams,
   NumberType,
   PanelConfig,
   PanelOverride,
@@ -88,7 +89,7 @@ export type CustomViewParams = {
   look: ViewType;
   title: string;
   rollForward: boolean;
-};
+} & NumberTilesParams;
 
 // ---------------------------------------------------------------------------------
 // Vocabulary

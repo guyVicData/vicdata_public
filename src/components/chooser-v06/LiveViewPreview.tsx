@@ -19,12 +19,15 @@ export type LivePreviewContext = PinnedSettings & { schoolUrn: string };
 
 // `frame`: "card" (default) draws the whole panel, as a Pick card shows it; "figure" draws
 // the figure alone, for a caller that brings its own panel chrome (the editor).
-export function LiveViewPreview({ dataview, context, width, height, frame = "card" }: { dataview: Dataview; context: LivePreviewContext; width: number; height: number; frame?: "card" | "figure" }) {
+// `params`: the view instance's own settings (a tiles view's figures), drawn as set.
+export function LiveViewPreview({ dataview, context, width, height, frame = "card", params }: { dataview: Dataview; context: LivePreviewContext; width: number; height: number; frame?: "card" | "figure"; params?: Record<string, unknown> }) {
   const key = JSON.stringify(context);
+  const paramsKey = params ? JSON.stringify(params) : "";
   const built = useMemo(() => {
     const p = JSON.parse(key) as LivePreviewContext;
-    return { config: oneViewConfig(dataview, p, `preview.${dataview.id}`), pinned: oneViewPinned(dataview, p, false).pinned };
-  }, [dataview, key]);
+    const viewParams = paramsKey ? (JSON.parse(paramsKey) as Record<string, unknown>) : undefined;
+    return { config: oneViewConfig(dataview, p, `preview.${dataview.id}`, viewParams), pinned: oneViewPinned(dataview, p, false).pinned };
+  }, [dataview, key, paramsKey]);
   // The panel unit plus CardBox's own 12px top margin.
   const unitHeight = PANEL_UNIT.height + 12;
   const scale = Math.min(width / PANEL_UNIT.width, height / unitHeight);
