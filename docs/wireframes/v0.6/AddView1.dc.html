@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add a view — 1 Data</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#e9eaec}
+button{font-family:inherit}
+.icon{display:block}
+.btn{border:none;border-radius:20px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
+.btn.primary{background:#141413;color:#fff}
+.btn.secondary{background:#fff;color:#141413;border:1px solid #d7dae0}
+.iconbtn{width:32px;height:32px;border-radius:50%;background:#f1f3f5;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 32px}
+.seg{flex:1 1 0;height:4px;border-radius:2px;background:#e3e5e9}
+.seg.done{background:#141413}
+.label{font-size:10.5px;font-weight:700;color:#767d87;text-transform:uppercase;letter-spacing:0.4px}
+.box{border:1px solid #e3e5e9;border-radius:10px;background:#f7f8f9;padding:10px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #e3e5e9;border-radius:8px;padding:7px 8px}
+.sw{width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,0.12);flex:0 0 18px;padding:0;cursor:pointer}
+.nm{font-size:12.5px;font-weight:600;color:#141413}
+.sub{font-size:11px;color:#767d87}
+.x{margin-left:auto;width:26px;height:26px;border-radius:50%;border:none;background:#f1f3f5;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 26px}
+.chip{border:1px solid #d7dae0;border-radius:20px;padding:4px 9px;font-size:11.5px;font-weight:600;color:#5b6470;background:#fff;white-space:nowrap;cursor:pointer}
+.chip.off{border-style:dashed;color:#9aa0a8;background:transparent}
+.fact{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#141413}
+.fact .k{width:64px;font-size:11px;color:#767d87;flex:0 0 64px}
+.link{margin-left:auto;font-size:11.5px;font-weight:600;color:#2563eb;background:none;border:none;cursor:pointer;padding:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 1000px; box-sizing: border-box; position: relative; background: #e9eaec;">
+  <div style="position: absolute; inset: 12px; background: #ffffff; border-radius: 14px; box-shadow: 0 12px 32px rgba(20,20,19,0.18); display: flex; flex-direction: column; overflow: hidden">
+
+    <div style="padding: 14px 14px 10px 18px; display: flex; align-items: center; gap: 8px; flex: 0 0 auto">
+      <div style="flex: 1 1 auto">
+        <div style="font-size: 15px; font-weight: 600; color: #141413">Add a view</div>
+        <div style="font-size: 11.5px; color: #767d87; margin-top: 1px">GCSE Results &middot; Results column &middot; Trends row</div>
+      </div>
+      <button class="iconbtn" aria-label="Close">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div style="padding: 0 18px 10px; border-bottom: 1px solid #eef0f2; display: flex; flex-direction: column; gap: 7px; flex: 0 0 auto">
+      <div style="display: flex; gap: 4px"><span class="seg done"></span><span class="seg"></span><span class="seg"></span></div>
+      <div style="font-size: 11px; font-weight: 700; color: #141413">1 Data &middot; <span style="color: #9aa0a8; font-weight: 600">2 View &middot; 3 Preview</span></div>
+    </div>
+
+    <div style="flex: 1 1 auto; overflow-y: auto; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px">
+
+      <div class="box">
+        <div class="label">The data</div>
+        <div class="fact"><span class="k">Data</span>GCSE &middot; Results<button class="link">Change</button></div>
+        <div class="fact"><span class="k">Subject</span>Follows the dashboard&rsquo;s subject <span class="sub">(History)</span></div>
+      </div>
+
+      <div class="box">
+        <div class="label">The numbers</div>
+        <div class="fact" style="align-items: flex-start"><span class="k" style="padding-top: 4px">One value per</span>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap"><button class="chip" style="background: #141413; color: #fff; border-color: #141413">Year</button><button class="chip">Subject</button><button class="chip">Grade</button><button class="chip">School</button></div>
+        </div>
+        <div class="fact" style="align-items: flex-start"><span class="k" style="padding-top: 4px">Shown as</span>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap"><button class="chip" style="background: #141413; color: #fff; border-color: #141413">Actual</button><button class="chip">Indexed</button><button class="chip">Change in points</button><button class="chip off" disabled>% change</button></div>
+        </div>
+        <div class="fact"><span class="k">Years</span>
+          <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap"><button class="chip" style="background: #141413; color: #fff; border-color: #141413">2021/22</button><button class="chip">2022/23</button><span class="sub">&rarr; latest &middot; rolls on</span></div>
+        </div>
+        <div style="font-size: 11px; color: #9aa0a8">Year is picked because this is the Trends row. On a Current row it starts on Subject, latest year.</div>
+      </div>
+
+      <div class="box">
+        <div class="label">Compared with</div>
+        <div class="row">
+          <button class="sw" style="background: #34d399" aria-label="Colour for This school"></button>
+          <div><div class="nm">This school</div><div class="sub">The Chase &middot; always shown</div></div>
+        </div>
+        <div class="row">
+          <button class="sw" style="background: #a3a3a3" aria-label="Colour for subject category"></button>
+          <div><div class="nm">Humanities &amp; Social Sciences</div><div class="sub">Category average at this school</div></div>
+          <button class="x" aria-label="Remove subject category"><svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        <div class="row">
+          <button class="sw" style="background: #60a5fa" aria-label="Colour for LA"></button>
+          <div><div class="nm">Worcestershire</div><div class="sub">Local authority</div></div>
+          <button class="x" aria-label="Remove local authority"><svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        <div class="row" style="flex-wrap: wrap">
+          <button class="sw" style="background: #f59e0b; outline: 2px solid #141413; outline-offset: 1px" aria-label="Colour for England, open"></button>
+          <div><div class="nm">England</div><div class="sub">National</div></div>
+          <button class="x" aria-label="Remove England"><svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+          <div style="flex: 1 0 100%; display: flex; gap: 6px; align-items: center; padding: 6px 0 1px 27px">
+            <span class="sub">Colour</span>
+            <button class="sw" style="background: #f59e0b" aria-label="Amber"></button>
+            <button class="sw" style="background: #f472b6" aria-label="Pink"></button>
+            <button class="sw" style="background: #a78bfa" aria-label="Violet"></button>
+            <button class="sw" style="background: #2dd4bf" aria-label="Teal"></button>
+            <button class="sw" style="background: #e5e5e5" aria-label="Pale grey"></button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 2px">
+          <div style="font-size: 11.5px; font-weight: 600; color: #141413">+ Add a place or a school</div>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap">
+            <button class="chip">Region</button>
+            <button class="chip">A chosen school&hellip;</button>
+            <button class="chip">Another subject here&hellip;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="box" style="gap: 7px">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #141413; cursor: pointer">
+          <input type="checkbox" checked style="width: 15px; height: 15px; accent-color: #141413; margin: 0">
+          Add an average
+          <span style="margin-left: auto; font-size: 11px; font-weight: 500; color: #9aa0a8">a line for something not drawn</span>
+        </label>
+        <div style="display: flex; flex-direction: column; gap: 7px; padding-left: 23px">
+          <div style="display: flex; border: 1px solid #d7dae0; border-radius: 8px; overflow: hidden; font-size: 11.5px; font-weight: 600">
+            <button style="flex: 1 1 0; border: none; padding: 6px 8px; background: #141413; color: #fff">At this school</button>
+            <button style="flex: 1 1 0; border: none; padding: 6px 8px; background: #fff; color: #5b6470">Across schools</button>
+          </div>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap">
+            <button class="chip" style="border-color: #141413; color: #141413">All subjects &#10003;</button>
+            <button class="chip">Selected subjects&hellip;</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #767d87">
+            <span>As a</span>
+            <button class="chip" style="padding: 3px 8px; border-color: #141413; color: #141413">mean</button>
+            <button class="chip" style="padding: 3px 8px">median</button>
+            <button class="chip" style="padding: 3px 8px">weighted by entries</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size: 11.5px; color: #767d87; line-height: 1.45">Started from the column: <b style="color: #5b6470">category + LA + England</b>. Removing or adding here changes this view only.</div>
+
+    </div>
+
+    <div style="padding: 12px 18px; border-top: 1px solid #eef0f2; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto">
+      <a href="Editor.dc.html" class="btn secondary">Cancel</a>
+      <a href="AddView2.dc.html" class="btn primary">Next: view</a>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

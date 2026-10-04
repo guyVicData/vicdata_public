@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add a view — 2 View</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#e9eaec}
+button{font-family:inherit}
+.icon{display:block}
+.btn{border:none;border-radius:20px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
+.btn.primary{background:#141413;color:#fff}
+.btn.secondary{background:#fff;color:#141413;border:1px solid #d7dae0}
+.iconbtn{width:32px;height:32px;border-radius:50%;background:#f1f3f5;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 32px}
+.seg{flex:1 1 0;height:4px;border-radius:2px;background:#e3e5e9}
+.seg.done{background:#141413}
+.label{font-size:10.5px;font-weight:700;color:#767d87;text-transform:uppercase;letter-spacing:0.4px}
+.box{border:1px solid #e3e5e9;border-radius:10px;background:#f7f8f9;padding:10px;display:flex;flex-direction:column;gap:8px}
+.kind{border:1px solid #e3e5e9;border-radius:10px;background:#fff;padding:9px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;font-size:11.5px;font-weight:600;color:#5b6470}
+.kind.on{border:1.5px solid #141413;color:#141413}
+.kind.off{border-style:dashed;background:transparent;color:#9aa0a8}
+.chip{border:1px solid #d7dae0;border-radius:20px;padding:4px 9px;font-size:11.5px;font-weight:600;color:#5b6470;background:#fff;white-space:nowrap}
+.chip.active{border-color:#141413;background:#141413;color:#fff}
+.chip.off{border-style:dashed;color:#9aa0a8;background:transparent}
+.toggle{width:34px;height:20px;border-radius:999px;background:#141413;position:relative;flex:0 0 34px;display:inline-block}
+.toggle span{position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+.toggle.offt{background:#d7dae0}
+.toggle.offt span{right:auto;left:3px}
+.opt{display:flex;align-items:center;gap:8px;font-size:12px;color:#5b6470}
+.k{width:62px;font-size:11px;color:#767d87;flex:0 0 62px}
+</style>
+</helmet>
+<div style="width: 390px; height: 800px; box-sizing: border-box; position: relative; background: #e9eaec;">
+  <div style="position: absolute; inset: 12px; background: #ffffff; border-radius: 14px; box-shadow: 0 12px 32px rgba(20,20,19,0.18); display: flex; flex-direction: column; overflow: hidden">
+
+    <div style="padding: 14px 14px 10px 8px; display: flex; align-items: center; gap: 4px; flex: 0 0 auto">
+      <a href="AddView1.dc.html" class="iconbtn" aria-label="Back" style="background: none">
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </a>
+      <div style="flex: 1 1 auto">
+        <div style="font-size: 15px; font-weight: 600; color: #141413">Add a view</div>
+        <div style="font-size: 11.5px; color: #767d87; margin-top: 1px">History &middot; this school + category + LA + England &middot; over time</div>
+      </div>
+      <button class="iconbtn" aria-label="Close">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5b6470" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div style="padding: 0 18px 10px; border-bottom: 1px solid #eef0f2; display: flex; flex-direction: column; gap: 7px; flex: 0 0 auto">
+      <div style="display: flex; gap: 4px"><span class="seg done"></span><span class="seg done"></span><span class="seg"></span></div>
+      <div style="font-size: 11px; font-weight: 700; color: #141413"><span style="color: #9aa0a8; font-weight: 600">1 Data &middot;</span> 2 View <span style="color: #9aa0a8; font-weight: 600">&middot; 3 Preview</span></div>
+    </div>
+
+    <div style="flex: 1 1 auto; overflow-y: auto; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px">
+
+      <div class="label">a &middot; Which view</div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px">
+        <button class="kind on">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg>Line graph</button>
+        <button class="kind">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="20" x2="6" y2="12"></line><line x1="12" y1="20" x2="12" y2="5"></line><line x1="18" y1="20" x2="18" y2="9"></line></svg>Bar chart</button>
+        <button class="kind">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="9" y1="10" x2="9" y2="20"></line></svg>Table</button>
+        <button class="kind">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="15" y2="12"></line><line x1="4" y1="18" x2="10" y2="18"></line></svg>Ranking</button>
+        <button class="kind">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="2"></rect><rect x="13" y="3" width="8" height="8" rx="2"></rect><rect x="3" y="13" width="8" height="8" rx="2"></rect><rect x="13" y="13" width="8" height="8" rx="2"></rect></svg>Numbers</button>
+        <button class="kind">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="5" x2="18" y2="5"></line><line x1="4" y1="10" x2="20" y2="10"></line><line x1="4" y1="15" x2="13" y2="15"></line><line x1="4" y1="20" x2="8" y2="20"></line></svg>Grade spread</button>
+        <button class="kind">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="7" x2="4" y2="19"></line><line x1="20" y1="7" x2="20" y2="13"></line><circle cx="4" cy="19" r="1.5"></circle><circle cx="20" cy="13" r="1.5"></circle></svg>Slope</button>
+        <button class="kind off" disabled title="Share of entries: counts only, and needs a group of subjects">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3.5"></circle></svg>Donut</button>
+        <button class="kind off" disabled title="Needs other schools: Comparisons column">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>Map</button>
+      </div>
+      <div style="font-size: 11px; color: #9aa0a8; margin-top: -4px; line-height: 1.4">Dotted, for this data: <b>Donut</b> needs entries (counts) across a group of subjects; <b>Map</b> needs a set of other schools. Hover for the reason.</div>
+
+      <div class="box">
+        <div class="label">b &middot; How the line graph looks</div>
+        <label class="opt"><span class="k">Trend line</span><span class="toggle offt" role="switch" aria-checked="false" aria-label="Trend line"><span></span></span><span style="font-size: 11px">a straight line of best fit</span></label>
+        <label class="opt"><span class="k">End labels</span><span class="toggle" role="switch" aria-checked="true" aria-label="End labels"><span></span></span><span style="font-size: 11px">latest value at the end of each line</span></label>
+        <label class="opt"><span class="k">From zero</span><span class="toggle offt" role="switch" aria-checked="false" aria-label="Axis from zero"><span></span></span><span style="font-size: 11px">start the axis at 0</span></label>
+        <div style="font-size: 11px; color: #767d87; line-height: 1.4; background: #fff; border: 1px dashed #d7dae0; border-radius: 8px; padding: 7px 9px">The lines, the numbers (actual / indexed / change) and the years all come from <b>1 &middot; Data</b>.</div>
+      </div>
+    </div>
+
+    <div style="padding: 12px 18px; border-top: 1px solid #eef0f2; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto">
+      <a href="AddView1.dc.html" class="btn secondary">Back</a>
+      <a href="AddView3.dc.html" class="btn primary">Next: preview</a>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

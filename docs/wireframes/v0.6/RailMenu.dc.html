@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rail icon menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#0b0b0b}
+button{font-family:inherit}
+.icon{display:block}
+.ri{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#a3a3a3;background:transparent;border:1px solid transparent;padding:0}
+.mrow{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;border:none;background:none;border-radius:7px;font-size:13px;font-weight:500;color:#e5e5e5;text-align:left;cursor:pointer}
+.mrow:hover{background:#262626}
+.mt{display:inline-flex;align-items:center;gap:4px;border:1px solid #3f3f46;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;color:#e5e5e5;background:#1f1f1f}
+.mt.on{border-color:#34d399;color:#34d399}
+.mt.no{border-style:dashed;color:#6b6b6b}
+.div{height:1px;background:#2a2a2a;margin:4px 0}
+</style>
+</helmet>
+<div style="width: 600px; height: 560px; box-sizing: border-box; padding: 28px; background: #0b0b0b; position: relative">
+  <div style="width: 351px; height: 384px; box-sizing: border-box; border: 1px dashed #d4a017; border-radius: 14px; background: #141414; padding: 12px; display: flex; gap: 9px">
+    <div style="display: flex; flex-direction: column; gap: 4px; padding-right: 9px; border-right: 1px solid #262626">
+      <button class="ri" style="color: #d4a017; border-color: #d4a017; position: relative" aria-label="Line graph, options open">
+        <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg>
+        <span style="position: absolute; right: -5px; bottom: -5px; width: 6px; height: 6px; border-radius: 50%; background: #d4a017"></span>
+      </button>
+      <button class="ri" aria-label="Trend table"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+      <button class="ri" aria-label="Ranking"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="15" y2="12"></line><line x1="4" y1="18" x2="10" y2="18"></line></svg></button>
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-size: 11px; color: #a3a3a3">Trends &middot; from 2021/22</div>
+      <div style="font-size: 12px; font-weight: 600; color: #f5f5f5">History results from 2021/22</div>
+      <svg width="100%" height="200" viewBox="0 0 260 200" preserveAspectRatio="none" aria-label="Line graph">
+        <line x1="0" y1="196" x2="260" y2="196" stroke="#2a2a2a"></line>
+        <polyline points="0,100 86,110 172,108 260,114" fill="none" stroke="#a3a3a3" stroke-width="1.5"></polyline>
+        <polyline points="0,60 86,90 172,94 260,104" fill="none" stroke="#34d399" stroke-width="2.4"></polyline>
+      </svg>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 76px; top: 52px; width: 300px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; box-shadow: 0 14px 34px rgba(0,0,0,0.5); padding: 6px; display: flex; flex-direction: column">
+    <div style="padding: 6px 9px 4px; display: flex; align-items: center; gap: 6px">
+      <span style="font-size: 11px; font-weight: 700; color: #a3a3a3; text-transform: uppercase; letter-spacing: 0.4px; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">History results from 2021/22</span>
+      <span style="font-size: 10px; font-weight: 700; color: #d4a017; background: rgba(212,160,23,0.14); border-radius: 999px; padding: 2px 7px">Default</span>
+    </div>
+    <div style="padding: 4px 9px 8px; display: flex; flex-direction: column; gap: 5px">
+      <span style="font-size: 11px; color: #a3a3a3">Shows for</span>
+      <div style="display: flex; gap: 4px; flex-wrap: wrap">
+        <button class="mt on">&#10003; Avg points</button>
+        <button class="mt on">&#10003; Grade 4+</button>
+        <button class="mt on">&#10003; Bands</button>
+        <button class="mt no" disabled>Counts</button>
+      </div>
+    </div>
+    <div class="div"></div>
+    <button class="mrow">Edit view&hellip; <span style="margin-left: auto; font-size: 11px; color: #737373">opens at Preview</span></button>
+    <button class="mrow" disabled style="color: #737373; cursor: default">&#10003; Default view for Average points</button>
+    <button class="mrow">Move up / down</button>
+    <button class="mrow">Move or copy to another panel&hellip;</button>
+    <button class="mrow">Copy to a dashboard or meeting&hellip;</button>
+    <div class="div"></div>
+    <button class="mrow">Take off Average points</button>
+    <button class="mrow" style="color: #f87171">Remove everywhere</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
