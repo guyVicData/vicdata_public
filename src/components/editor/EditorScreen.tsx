@@ -28,7 +28,7 @@ import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import { loadSubjectSources } from "@/components/chooser-v06/schoolSubjects";
 import type { SubjectSource } from "@/components/chooser-v06/StepScreens";
-import { DashboardEditor, type CopyViewHandler } from "./DashboardEditor";
+import { DashboardEditor, type CopyViewHandler, type DashboardEditorProps } from "./DashboardEditor";
 import { EditorSchoolContext, LivePanelPreview } from "./LivePanelPreview";
 import type { PanelPreviewComponent } from "./PanelPreview";
 
@@ -83,6 +83,8 @@ export type InPlaceHost = {
   school: PinSchool;
   // The page's live labels: the subject in focus, the Results pill, its category.
   labels?: Omit<PanelLabels, "school">;
+  // 0.6 snag 4 / 02: the page's Compare against and comparator kind (the editor's pills).
+  states?: DashboardEditorProps["states"];
   top?: ReactNode;
   onExit: () => void;
   onSwitch?: (id: string) => void;
@@ -138,6 +140,7 @@ export function EditorScreen({ id, Preview, onCopyView, host }: { id: string; Pr
           onExit={host?.onExit}
           onSwitch={host?.onSwitch}
           writeAsSelf={!!host}
+          states={host?.states}
           loaded={state.loaded}
           superAdmin
           Preview={Preview ?? (school ? LivePanelPreview : undefined)}

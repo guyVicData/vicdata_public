@@ -21,6 +21,15 @@ export type Phase = "ks4" | "ks5";
 // The Results sub-measure pill (MeasurePicker): APS / Grade 4+ / grade bands / grade counts.
 export type ResultsMeasure = "points" | "threshold" | "bands" | "counts";
 
+// 0.6 snag 4 / 02: the other page states a view can vary by (src/catalogue/variants.ts).
+// Context's Compare against pill (the ids ContextPills writes), and whether Comparisons is
+// comparing with a set of schools or a ranking (R-RANKING-SAMPLE).
+export type CompareAgainstState = "category" | "whole" | "selected";
+export type ComparatorState = "schools" | "ranking";
+// The states a view is offered on, per axis beyond Results (whose own field is
+// resultsMeasures, round 3's). Absent axis = every state.
+export type VariantSets = { compareAgainst?: CompareAgainstState[]; comparator?: ComparatorState[] };
+
 // Focus (scope brief §3). School-keyed data: school | subject_area | custom_area | subject |
 // my_subjects. Area-keyed data: around_school | la | region | national (combinations F7).
 export type FocusKind =
@@ -168,6 +177,9 @@ export type Dataview = {
   // 0.6 snag 3 / 03: the Results pill states this view is offered on, and the most it can
   // be drawn on (src/catalogue/results.ts). Absent = all four, or not a Results view.
   resultsMeasures?: ResultsMeasure[];
+  // 0.6 snag 4 / 02: the same, for the other axes (Context's Compare against, Comparisons'
+  // comparator kind): the catalogue default and the most the view can be drawn on.
+  variants?: VariantSets;
   measures: MeasureId[];
   supports: {
     data: DataId[];
@@ -261,6 +273,8 @@ export type DataviewInstance =
       // 0.6 snag 3 / 03: on a Results dashboard, the pill states this view shows on,
       // overriding its dataview's default (never wider than the dataview can draw).
       resultsMeasures?: ResultsMeasure[];
+      // 0.6 snag 4 / 02: the same for the other axes (variants.ts). Absent = the default.
+      variants?: VariantSets;
     }
   | {
       // Super-admin's planned view (scope brief §4.6a): shown dashed, "Planned".
@@ -313,6 +327,10 @@ export type PanelConfig = {
   // 0.6 snag 3 / 03: on a Results dashboard, the view the panel opens on per pill state
   // (instance ids). A measure with no entry falls back to defaultView, as before.
   defaultViewByResults?: Partial<Record<ResultsMeasure, string>>;
+  // 0.6 snag 4 / 02: the view a panel opens on in one state of every axis it varies by,
+  // when that is more than the Results pill alone (variants.ts stateKey: "results:counts|
+  // compareAgainst:selected"). A state with no entry falls back as before.
+  defaultViewByState?: Record<string, string>;
   // Legacy keys this panel's notes and open state resolve through (audit §6.3).
   legacy?: { columnKey: string; panelId: "current" | "trend"; noteKeys: string[] };
 };

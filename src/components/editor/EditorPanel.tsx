@@ -12,9 +12,9 @@
 // a right-click or the keyboard opens the menu. The panel's ··· menu is panel-only.
 import { createContext, useContext, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { dataviewById } from "@/catalogue";
-import { RESULTS_MEASURES, dataviewResults, effectiveResults, showsOn, viewsOnResults } from "@/catalogue/results";
+import { AXIS_STATES, dataviewStates, effectiveStates, panelState, showsOnState, viewsOnState, type VariantAxis, type VariantState } from "@/catalogue/variants";
 import { contextFromPanel, latestYear, defaultFromYear, instanceTitle, titleOverrideOf, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
-import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig, ResultsMeasure } from "@/catalogue/types";
+import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig } from "@/catalogue/types";
 import { railGlyph } from "@/components/chooser-v06/bits";
 import { MenuDivider, MenuHeading, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { EC, EDITOR, panelWidth } from "@/lib/editor-layout";
@@ -45,13 +45,20 @@ const HEADER = 22;
 // 0.6 snag 3 / 03: the edit bar's Results pill, on a Results dashboard. Rails show the
 // views on `measure` (all of them, off-measure ones dimmed, with `showAll`), the panel
 // body previews it, and the view menu's default and "Show on…" rows follow it.
-export type EditorResults = {
-  measure: ResultsMeasure;
-  labels: Record<ResultsMeasure, string>;
+// 0.6 snag 4 / 02: every variant axis the dashboard has (catalogue/variants.ts) -- the
+// Results pill, Context's Compare against, Comparisons' comparator kind -- each with its own
+// pill in the edit bar. Each panel reads the axes it varies by.
+export type EditorVariants = {
+  // The edit bar's pills, one state per axis the dashboard has.
+  state: VariantState;
+  // Each axis's name ("Results") and its states' names, as the pills say them.
+  axes: Partial<Record<VariantAxis, { name: string; labels: Record<string, string> }>>;
   showAll: boolean;
-  onShowOn: (panelId: string, instanceId: string, measures: ResultsMeasure[]) => void;
+  onShowOn: (panelId: string, instanceId: string, axis: VariantAxis, states: string[]) => void;
+  // The page's selected subjects, so a Context preview on "Selected subjects" draws them.
+  contextSelected?: string[];
 };
-export const EditorResultsContext = createContext<EditorResults | null>(null);
+export const EditorVariantsContext = createContext<EditorVariants | null>(null);
 
 export function EditorPanel({
   config,
@@ -88,12 +95,16 @@ export function EditorPanel({
 }) {
   const span = spanOf(panel);
   const width = panelWidth(units(config, panel));
-  const results = useContext(EditorResultsContext);
-  const pill = results?.measure ?? null;
-  // The rail: on a Results pill, the views shown on it (or every view, off-pill ones
-  // dimmed, with Show all views).
-  const railViews = pill && !results?.showAll ? viewsOnResults(panel, pill) : panel.dataviews;
-  const defaultId = railViews.find((v) => isDefaultView(panel, v.id, pill))?.id;
+  const variants = useContext(EditorVariantsContext);
+  // The panel's state: the edit bar's pills on the axes this panel varies by.
+  const st: VariantState = variants ? panelState(config, panel, variants.state) : {};
+  const stAxes = (Object.keys(st) as VariantAxis[]).filter((a) => variants?.axes[a]);
+  const stated = stAxes.length > 0;
+  const stateText = stAxes.map((a) => variants!.axes[a]!.labels[st[a]!]).join(" · ");
+  // The rail: the views shown in that state (or every view, the others dimmed, with Show
+  // all views).
+  const railViews = stated && !variants?.showAll ? viewsOnState(panel, st) : panel.dataviews;
+  const defaultId = railViews.find((v) => isDefaultView(panel, v.id, stated ? st : null))?.id;
   const view = railViews.find((v) => v.id === selected) ?? railViews.find((v) => v.id === defaultId) ?? railViews[0];
   const allPlanned = panel.dataviews.length > 0 && panel.dataviews.every((v) => v.kind === "placeholder");
   const readyHits = view && view.kind === "placeholder" ? ready[view.id] : undefined;
@@ -198,7 +209,7 @@ export function EditorPanel({
           {railViews.map((v, i) => {
             // Indices into the panel's own list (the rail may be a pill's subset).
             const full = (j: number) => panel.dataviews.indexOf(railViews[j]);
-            const off = !!pill && !showsOn(v, pill);
+            const off = stated && !showsOnState(v, st);
             return (
               <RailButton
                 key={v.id}
@@ -217,15 +228,18 @@ export function EditorPanel({
                         index: i,
                         count: railViews.length,
                         opening: v.id === defaultId && !off,
-                        pill: results && pill ? { label: results.labels[pill], off } : null,
+                        pill: stated ? { label: stateText, off } : null,
                         showOn:
-                          results && v.kind === "view"
-                            ? {
-                                labels: results.labels,
-                                can: dataviewResults(dataviewById(v.dataview)),
-                                on: effectiveResults(v),
-                                onChange: (ms) => results.onShowOn(panel.id, v.id, ms),
-                              }
+                          variants && stated && v.kind === "view"
+                            ? stAxes.map((a) => ({
+                                axis: a,
+                                name: variants.axes[a]!.name,
+                                labels: variants.axes[a]!.labels,
+                                all: AXIS_STATES[a] as string[],
+                                can: dataviewStates(dataviewById(v.dataview), a) as string[],
+                                on: effectiveStates(v, a) as string[],
+                                onChange: (ss: string[]) => variants.onShowOn(panel.id, v.id, a, ss),
+                              }))
                             : null,
                         onOpen: (open) => {
                           setViewMenu(open ? v.id : null);
@@ -266,9 +280,9 @@ export function EditorPanel({
         </div>
         <div style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           {!view ? (
-            pill && results ? (
-              <div data-no-views-on={pill} style={{ fontSize: 12, color: "var(--muted2)", lineHeight: 1.45, padding: "4px 2px" }}>
-                No views on {results.labels[pill]} in this panel. Add one with +, or turn on Show all views.
+            stated ? (
+              <div data-no-views-on={stateText} style={{ fontSize: 12, color: "var(--muted2)", lineHeight: 1.45, padding: "4px 2px" }}>
+                No views on {stateText} in this panel. Add one with +, or turn on Show all views.
               </div>
             ) : null
           ) : view.kind === "placeholder" ? (
@@ -365,9 +379,10 @@ type RailMenu = {
   count: number;
   opening: boolean;
   // 0.6 snag 3 / 03: on a Results dashboard, the edit bar's pill (`off`: this view isn't
-  // shown on it) and the "Show on…" checklist.
+  // shown on it) and the "Show on…" checklist. Snag 4 / 02: the panel's state on every axis
+  // it varies by ("Grade counts · Selected subjects"), and one checklist per axis.
   pill: { label: string; off: boolean } | null;
-  showOn: { labels: Record<ResultsMeasure, string>; can: ResultsMeasure[]; on: ResultsMeasure[]; onChange: (measures: ResultsMeasure[]) => void } | null;
+  showOn: ShowOnAxis[] | null;
   onOpen: (open: boolean) => void;
   onAction: (a: PanelAction) => void;
 };
@@ -472,7 +487,7 @@ function RailButton({ v, label, active, ready, dimmed = false, draggable, menu, 
               </span>
             </MenuHeading>
             {page === "show-on" && menu.showOn ? (
-              <ShowOnList {...menu.showOn} onBack={() => setPage("menu")} />
+              <ShowOnList axes={menu.showOn} onBack={() => setPage("menu")} />
             ) : (
               <>
             {row("edit-view", "Edit this view…")}
@@ -510,30 +525,38 @@ function RailButton({ v, label, active, ready, dimmed = false, draggable, menu, 
   );
 }
 
+type ShowOnAxis = { axis: VariantAxis; name: string; labels: Record<string, string>; all: string[]; can: string[]; on: string[]; onChange: (states: string[]) => void };
+
 // 0.6 snag 3 / 03: the view menu's "Show on…" page. Ticked = the pill states this view
 // shows on; a state its dataview can't draw is dotted and can't be picked, and the last
-// ticked one can't be cleared.
-function ShowOnList({ labels, can, on, onChange, onBack }: { labels: Record<ResultsMeasure, string>; can: ResultsMeasure[]; on: ResultsMeasure[]; onChange: (measures: ResultsMeasure[]) => void; onBack: () => void }) {
+// ticked one can't be cleared. Snag 4 / 02: one short checklist per axis the panel varies
+// by, each under its pill's name (only the list, with no heading, when there is one).
+function ShowOnList({ axes, onBack }: { axes: ShowOnAxis[]; onBack: () => void }) {
   return (
     <div data-show-on="">
       <MenuRow label="‹ Show on" onClick={onBack} />
-      <MenuDivider />
-      {RESULTS_MEASURES.map((m) => {
-        const drawable = can.includes(m);
-        const ticked = on.includes(m);
-        return (
-          <MenuRow
-            key={m}
-            label={labels[m]}
-            checkbox
-            dotted={!drawable}
-            selected={ticked}
-            tag={drawable ? undefined : "Can't draw"}
-            disabled={!drawable || (ticked && on.length === 1)}
-            onClick={() => onChange(ticked ? on.filter((x) => x !== m) : RESULTS_MEASURES.filter((x) => x === m || on.includes(x)))}
-          />
-        );
-      })}
+      {axes.map(({ axis, name, labels, all, can, on, onChange }) => (
+        <div key={axis} data-show-on-axis={axis}>
+          <MenuDivider />
+          {axes.length > 1 && <MenuHeading>{name}</MenuHeading>}
+          {all.map((m) => {
+            const drawable = can.includes(m);
+            const ticked = on.includes(m);
+            return (
+              <MenuRow
+                key={m}
+                label={labels[m] ?? m}
+                checkbox
+                dotted={!drawable}
+                selected={ticked}
+                tag={drawable ? undefined : "Can't draw"}
+                disabled={!drawable || (ticked && on.length === 1)}
+                onClick={() => onChange(ticked ? on.filter((x) => x !== m) : all.filter((x) => x === m || on.includes(x)))}
+              />
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

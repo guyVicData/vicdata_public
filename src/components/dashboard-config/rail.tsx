@@ -13,7 +13,7 @@
 import { Children, Fragment, isValidElement, type ComponentProps, type ReactElement, type ReactNode } from "react";
 import { dataviewForRail } from "@/catalogue/dataviews";
 import type { DataviewId, HostId, PanelConfig, ResultsMeasure } from "@/catalogue/types";
-import { configuredDefault, showsOn } from "@/catalogue/results";
+import { asState, configuredDefaultFor, showsOnState, type VariantState } from "@/catalogue/variants";
 import { IconButton } from "@/components/teacher/PanelIcons";
 
 type ButtonProps = ComponentProps<typeof IconButton>;
@@ -51,17 +51,22 @@ export function railEntries(actions: ReactNode, host: HostId, panel: "current" |
   return out;
 }
 
-// The panel's dataview ids in config order (placeholders left out). `results` (0.6 snag 3
-// / 03): on a Results dashboard, only the views shown on that pill state.
-export function configViewIds(cfg: PanelConfig, results: ResultsMeasure | null = null): DataviewId[] {
-  return cfg.dataviews.flatMap((v) => (v.kind === "view" && (!results || showsOn(v, results)) ? [v.dataview] : []));
+// The state a configured panel is drawn in: the current state of every axis it varies by
+// (0.6 snag 4 / 02, catalogue/variants.ts) -- round 3's Results pill alone is still accepted.
+type PanelStateArg = VariantState | ResultsMeasure | null;
+
+// The panel's dataview ids in config order (placeholders left out). `state` (0.6 snag 3 /
+// 03, generalised in snag 4 / 02): only the views shown in that state.
+export function configViewIds(cfg: PanelConfig, state: PanelStateArg = null): DataviewId[] {
+  const st = asState(state);
+  return cfg.dataviews.flatMap((v) => (v.kind === "view" && showsOnState(v, st) ? [v.dataview] : []));
 }
 
-// The rail a configured panel shows: only entries whose dataview the config lists (on a
-// Results dashboard, for the current pill), in the config's order. A panel with exactly
-// one view shows no rail at all.
-export function configuredRail(entries: RailEntry[], cfg: PanelConfig, results: ResultsMeasure | null = null): ReactNode {
-  const ids = configViewIds(cfg, results);
+// The rail a configured panel shows: only entries whose dataview the config lists (for the
+// panel's current state), in the config's order. A panel with exactly one view shows no
+// rail at all.
+export function configuredRail(entries: RailEntry[], cfg: PanelConfig, state: PanelStateArg = null): ReactNode {
+  const ids = configViewIds(cfg, state);
   if (cfg.dataviews.length === 1) return undefined;
   const kept = entries
     .filter((e) => e.dataview !== null && ids.includes(e.dataview))
@@ -73,13 +78,14 @@ export function configuredRail(entries: RailEntry[], cfg: PanelConfig, results: 
 // The entry to switch to when the panel first shows: its defaultView when the host offers
 // it, else (when what the host opened on isn't one of the config's views) the first of
 // the config's views it does offer. null = leave the host where it is.
-// On a Results dashboard (`results`), the pill state's own default when one is set, among
-// the views shown on it; when the host is on a view the pill's rail doesn't list, it moves.
-export function defaultEntry(entries: RailEntry[], cfg: PanelConfig, results: ResultsMeasure | null = null): RailEntry | null {
-  const ids = configViewIds(cfg, results);
+// In a state (`state`), the state's own default when one is set, among the views shown in
+// it; when the host is on a view the state's rail doesn't list, it moves.
+export function defaultEntry(entries: RailEntry[], cfg: PanelConfig, state: PanelStateArg = null): RailEntry | null {
+  const st = asState(state);
+  const ids = configViewIds(cfg, st);
   const usable = (e: RailEntry | undefined) => (e && !e.disabled && e.onClick ? e : null);
-  const wantedId = configuredDefault(cfg, results);
-  const defaultId = cfg.dataviews.find((v) => v.id === wantedId && v.kind === "view" && (!results || showsOn(v, results)));
+  const wantedId = configuredDefaultFor(cfg, st);
+  const defaultId = cfg.dataviews.find((v) => v.id === wantedId && v.kind === "view" && showsOnState(v, st));
   const wanted = defaultId && defaultId.kind === "view" ? usable(entries.find((e) => e.dataview === defaultId.dataview)) : null;
   if (wanted) return wanted.active ? null : wanted;
   const active = entries.find((e) => e.active);
@@ -88,18 +94,20 @@ export function defaultEntry(entries: RailEntry[], cfg: PanelConfig, results: Re
   return first && !first.active ? first : null;
 }
 
-// 0.6 snag 3 / 03: on a Results dashboard, when the host is showing a view the current
-// pill's rail doesn't list (its instance was taken off this measure), the entry to move it
-// to: the pill's default, else its first offered view. null = nothing to do -- always so for
-// a config without the new fields, whose rails are exactly what the hosts offer.
-export function offRailEntry(entries: RailEntry[], cfg: PanelConfig, results: ResultsMeasure | null): RailEntry | null {
-  if (!results) return null;
+// 0.6 snag 3 / 03 (every axis since snag 4 / 02): when the host is showing a view the
+// current state's rail doesn't list (its instance was taken off this state), the entry to
+// move it to: the state's default, else its first offered view. null = nothing to do --
+// always so for a config without the new fields, whose rails are exactly what the hosts
+// offer.
+export function offRailEntry(entries: RailEntry[], cfg: PanelConfig, state: PanelStateArg): RailEntry | null {
+  const st = asState(state);
+  if (!Object.keys(st).length) return null;
   const active = entries.find((e) => e.active);
   if (!active || !active.dataview) return null;
-  const ids = configViewIds(cfg, results);
+  const ids = configViewIds(cfg, st);
   if (ids.includes(active.dataview) || !configViewIds(cfg).includes(active.dataview)) return null;
   const usable = (e: RailEntry | undefined) => (e && !e.disabled && e.onClick ? e : null);
-  const def = cfg.dataviews.find((v) => v.id === configuredDefault(cfg, results));
+  const def = cfg.dataviews.find((v) => v.id === configuredDefaultFor(cfg, st));
   const wanted = def && def.kind === "view" && ids.includes(def.dataview) ? usable(entries.find((e) => e.dataview === def.dataview)) : null;
   return wanted ?? ids.map((id) => usable(entries.find((e) => e.dataview === id))).find((e) => e) ?? null;
 }

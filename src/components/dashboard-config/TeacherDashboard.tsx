@@ -1980,6 +1980,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         }
       />
     );
+  // Snagging round 1 Part 4: a national/regional ranking is on (R-RANKING-SAMPLE). 0.6 snag
+  // 4 / 02: the same test is the page's comparator state (runtime.comparator).
+  const onRanking = !!(comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking" && chooserSet && chooserSet.key === activeChoiceKey && chooserSet.ranking);
   const comparisonsHost = (
       <ComparisonsPanels
         phase={phase}
@@ -2032,7 +2035,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // tiles view by default, and its whole population's average in the graphs. The
         // figures are on the ranking's own measure, the phase headline.
         rankingSet={
-          comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking" && chooserSet && chooserSet.key === activeChoiceKey && chooserSet.ranking
+          onRanking && chooserSet?.ranking
             ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure" }
             : null
         }
@@ -2103,6 +2106,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           contextAgainst,
           contextGroupLabel,
           setId: comparisonsSet ?? null,
+          comparator: onRanking ? "ranking" : "schools",
           setLabel: activeSetLabel,
           latestYear: latestPeriod === null ? null : academicYearLabel(latestPeriod),
           firstYear: periodsShown.length ? academicYearLabel(Math.min(...periodsShown)) : null,
@@ -2174,6 +2178,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           subject: focusItem ? { label: phase === "ks5" ? focusItem.label : focusItem.subject, key: focusItem.key } : null,
           ...(focusFamilyLabel ? { category: focusFamilyLabel } : {}),
         },
+        states: { compareAgainst: contextAgainst, comparator: onRanking ? "ranking" : "schools", selected: contextSelected },
         top: <ViewAsBanner className="" />,
         onExit: () => setEditOn(false),
       }

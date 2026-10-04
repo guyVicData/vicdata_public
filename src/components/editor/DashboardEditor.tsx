@@ -16,9 +16,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { Dataview, DataviewInstance, DashboardConfig, PanelOverride, ResultsMeasure } from "@/catalogue/types";
+import type { ComparatorState, CompareAgainstState, Dataview, DataviewInstance, DashboardConfig, PanelOverride, ResultsMeasure } from "@/catalogue/types";
 import { dataviewById } from "@/catalogue";
 import { followsResultsPill, showsOn, tagForPill } from "@/catalogue/results";
+import { configAxes, panelState, showsOnState, type VariantAxis, type VariantState } from "@/catalogue/variants";
 import { measuresFor } from "@/lib/teacher-view-panels";
 import { PillMenu } from "@/components/teacher/PillMenu";
 import { MenuHeading, MenuRow } from "@/components/teacher/PanelMenu";
@@ -52,7 +53,7 @@ import { ChevronDown, ChevronUp, EBtn } from "./bits";
 import { ContextStepsDialog, contextFromColumn } from "./ContextSteps";
 import { ColumnChangeDialog, ExportDialog, PublishDialog, RowSettingsDialog, SaveAsDialog, SlotMapDialog, SpanAskDialog, TextDialog } from "./Dialogs";
 import { EditorCanvas, canvasWidth, type CanvasHandlers } from "./EditorCanvas";
-import { EditorResultsContext, type EditorResults, type PanelAction } from "./EditorPanel";
+import { EditorVariantsContext, type EditorVariants, type PanelAction } from "./EditorPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import { DataFreePreview, type PanelPreviewComponent } from "./PanelPreview";
 import { SettingsDialog, type SettingsValue } from "./SettingsDialog";
@@ -81,6 +82,10 @@ export type DashboardEditorProps = {
   onExit?: () => void;
   onSwitch?: (id: string) => void;
   writeAsSelf?: boolean;
+  // 0.6 snag 4 / 02: the page's own Compare against and comparator kind, so the editor's
+  // pills open on them (as the Results pill opens on labels.results).
+  // `selected`: Context's selected subjects, for live previews on "Selected subjects".
+  states?: { compareAgainst?: CompareAgainstState; comparator?: ComparatorState; selected?: string[] };
 };
 
 type DialogState =
@@ -121,7 +126,7 @@ const RAIL_MENU_CSS =
 
 const OWNER_WORD = { vicdata: "VicData", school: "School", user: "Personal" } as const;
 
-export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels: hostLabels, school = null, subjects, top, onExit, onSwitch, writeAsSelf = false }: DashboardEditorProps) {
+export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels: hostLabels, school = null, subjects, top, onExit, onSwitch, writeAsSelf = false, states: hostStates }: DashboardEditorProps) {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [theme] = useTeacherTheme();
@@ -147,6 +152,12 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   // 0.6 snag 3 / 03: the Results pill (on a Results dashboard): the page's pill when the
   // editor opens in place, else Average points. Rails, previews and the view menu follow it.
   const [pill, setPill] = useState<ResultsMeasure>(hostLabels?.results ?? "points");
+  // 0.6 snag 4 / 02: Context's Compare against and Comparisons' comparator kind, each with
+  // its own pill, opening on the page's state.
+  const [against, setAgainst] = useState<CompareAgainstState>(hostStates?.compareAgainst ?? "category");
+  // Comparisons' comparator kind has no pill of its own (the band has no room for a third):
+  // it is the page's, and Show all views reveals the views of the other kind.
+  const comparator: ComparatorState = hostStates?.comparator ?? "schools";
   const [showAll, setShowAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
@@ -250,17 +261,40 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   const pillOn = resultsPill ? pill : null;
   // Titles and previews read the editor's pill, not the page's.
   const labels = useMemo(() => (resultsPill ? { ...hostLabels, results: pill } : hostLabels), [resultsPill, hostLabels, pill]);
-  const resultsCtx: EditorResults | null = resultsPill
+  // 0.6 snag 4 / 02: one pill per variant axis the dashboard has (catalogue/variants.ts),
+  // with the page's own words: Context's category option names the category.
+  const axes = configAxes(config);
+  const againstLabels: Record<CompareAgainstState, string> = { category: hostLabels?.category ? `${hostLabels.category} subjects` : "Subject category", whole: "All subjects", selected: "Selected subjects" };
+  const comparatorLabels: Record<ComparatorState, string> = { schools: "A set of schools", ranking: "A ranking" };
+  const editorState: VariantState = {
+    ...(axes.includes("results") ? { results: pill } : {}),
+    ...(axes.includes("compareAgainst") ? { compareAgainst: against } : {}),
+    ...(axes.includes("comparator") ? { comparator } : {}),
+  };
+  const axisInfo: EditorVariants["axes"] = {
+    results: { name: "Results", labels: pillLabels },
+    compareAgainst: { name: "Compare against", labels: againstLabels },
+    comparator: { name: "Compared against", labels: comparatorLabels },
+  };
+  const stateOfPanel = (panelId: string): VariantState | null => {
+    const p = config.panels.find((x) => x.id === panelId);
+    const st = p ? panelState(config, p, editorState) : {};
+    return Object.keys(st).length ? st : null;
+  };
+  const variantsCtx: EditorVariants | null = axes.length
     ? {
-        measure: pill,
-        labels: pillLabels,
+        state: editorState,
+        axes: axisInfo,
+        contextSelected: hostStates?.selected,
         showAll,
-        onShowOn: (_panelId, instanceId, measures) => {
+        onShowOn: (panelId, instanceId, axis: VariantAxis, states) => {
           const inst = config.panels.flatMap((p) => p.dataviews).find((v) => v.id === instanceId);
-          apply((c) => ops.setViewResults(c, instanceId, measures));
-          if (inst && showsOn(inst, pill) && !measures.includes(pill) && !showAll) {
+          apply((c) => ops.setViewStates(c, instanceId, axis, states as never));
+          const now = editorState[axis];
+          const st = stateOfPanel(panelId);
+          if (inst && now && st && showsOnState(inst, st) && !states.includes(now) && !showAll) {
             const name = inst.kind === "view" ? (titleOverrideOf(inst) ?? dataviewById(inst.dataview)?.label ?? inst.dataview) : inst.description;
-            const text = `${name} no longer shows on ${pillLabels[pill]}.`;
+            const text = `${name} no longer shows on ${axisInfo[axis]!.labels[now]}.`;
             setUndoFor(text);
             setToast(text);
           }
@@ -323,7 +357,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     if (!inst) return;
     if (a === "edit-view" || a === "swap-view") return setDialog({ kind: "replace", mode: a === "edit-view" ? "edit" : "swap", instance: inst, ctx: contextFromPanel(config, panelId, labels) });
     if (a === "remove-view") return apply((c) => ops.removeView(c, instanceId));
-    if (a === "make-default") return apply((c) => ops.setDefaultView(c, panelId, instanceId, pillOn));
+    if (a === "make-default") return apply((c) => ops.setDefaultView(c, panelId, instanceId, stateOfPanel(panelId)));
     if (a === "view-up" || a === "view-down") return apply((c) => ops.moveViewWithinPanel(c, instanceId, a === "view-up" ? -1 : 1));
     if (a === "move-view") return setDialog({ kind: "slot", mode: "move-view", panelId, instanceId });
     if (a === "copy-view") return setDialog({ kind: "slot", mode: "copy-view", panelId, instanceId });
@@ -581,11 +615,12 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
             </nav>
           )}
         </div>
-        {(config.features?.subjectChips || resultsPill) && (
+        {(config.features?.subjectChips || axes.length > 0) && (
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {resultsPill && (
+            {axes.length > 0 && (
               <div data-editor-pill="" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {/* 0.6 snag 3 / 03: the page's own Results pill, for the editor's rails. */}
+                {resultsPill && (
                 <PillMenu label="Results" value={pillLabels[pill]} menuLabel="Switch measure" width={236} align="right">
                   {(close) => (
                     <>
@@ -596,6 +631,22 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
                     </>
                   )}
                 </PillMenu>
+                )}
+                {/* 0.6 snag 4 / 02: Context's own Compare against pill -- the page's words. */}
+                {axes.includes("compareAgainst") && (
+                  <span data-editor-axis="compareAgainst" style={{ display: "contents" }}>
+                    <PillMenu label="Compare against" value={againstLabels[against]} width={320} align="right" title={`Compare against: ${againstLabels[against]}`}>
+                      {(close) => (
+                        <>
+                          <MenuHeading>Compare against</MenuHeading>
+                          {(["category", "whole", "selected"] as const).map((id) => (
+                            <MenuRow key={id} label={againstLabels[id]} selected={id === against} onClick={() => { setAgainst(id); close(); }} />
+                          ))}
+                        </>
+                      )}
+                    </PillMenu>
+                  </span>
+                )}
                 <SwitchButton on={showAll} onChange={setShowAll} className="text-[12px] font-semibold text-[var(--muted2)] hover:text-[var(--fg)]">
                   Show all views
                 </SwitchButton>
@@ -612,7 +663,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
           <div style={{ zoom, opacity: historyOpen && !previewing ? 0.55 : 1 }}>
-            <EditorResultsContext.Provider value={resultsCtx}>
+            <EditorVariantsContext.Provider value={variantsCtx}>
             <EditorCanvas
               config={shown}
               readOnly={!!previewing || historyOpen}
@@ -623,7 +674,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
               ready={previewing ? {} : ready}
               handlers={previewing || historyOpen ? undefined : handlers}
             />
-            </EditorResultsContext.Provider>
+            </EditorVariantsContext.Provider>
           </div>
           {previewing && <div style={{ fontSize: 12, color: "var(--muted2)" }}>Previewing version {previewing.version}, read-only.</div>}
         </div>

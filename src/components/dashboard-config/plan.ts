@@ -5,8 +5,8 @@
 // context -- every unflagged page -- those shells render exactly as before.
 import { createContext, useContext } from "react";
 import type { ColumnHeader, DashboardConfig, DataviewId, PanelConfig, RowConfig } from "@/catalogue/types";
-import { followsResultsPill, showsOn } from "@/catalogue/results";
-import { useDashboardRuntime } from "./runtime";
+import { followsResultsPill, panelState, showsOnState } from "@/catalogue/variants";
+import { runtimeState, useDashboardRuntime } from "./runtime";
 
 export type PlanRow = { row: RowConfig; panel: PanelConfig | undefined };
 export type PlanColumn = { column: ColumnHeader; rows: PlanRow[] };
@@ -51,15 +51,17 @@ export function usePlanColumn(columnKey: string): { plan: DashboardPlan; column:
 // it draws exactly as before.
 //
 // 0.6 snag 3 / 03: on a Results dashboard, the first instance shown on the current pill
-// (so a view kept per measure draws each measure's own settings), else the first.
+// (so a view kept per measure draws each measure's own settings), else the first. Snag 4 /
+// 02: shown in the panel's current state on every axis it varies by.
 export function usePlanViewParams(columnKey: string, dataview: DataviewId): Record<string, unknown> | null {
   const planned = usePlanColumn(columnKey);
   const runtime = useDashboardRuntime();
   if (!planned) return null;
-  const all = planned.column.rows.flatMap(({ panel }) => (panel?.dataviews ?? []).filter((v) => v.kind === "view" && v.dataview === dataview));
-  const pill = runtime && followsResultsPill(planned.plan.config) ? runtime.results : null;
-  const pick = (pill ? all.find((v) => showsOn(v, pill)) : undefined) ?? all[0];
-  return pick?.kind === "view" ? (pick.params ?? null) : null;
+  const config = planned.plan.config;
+  const page = runtimeState(runtime, followsResultsPill(config));
+  const all = planned.column.rows.flatMap(({ panel }) => (panel?.dataviews ?? []).filter((v) => v.kind === "view" && v.dataview === dataview).map((v) => ({ v, panel: panel! })));
+  const pick = (page ? all.find(({ v, panel }) => showsOnState(v, panelState(config, panel, page))) : undefined) ?? all[0];
+  return pick?.v.kind === "view" ? (pick.v.params ?? null) : null;
 }
 
 // Is the config renderer switched on? `?renderer=config` on the URL, or the build-time

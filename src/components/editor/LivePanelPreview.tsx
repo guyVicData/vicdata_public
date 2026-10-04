@@ -10,6 +10,7 @@ import { dataviewById } from "@/catalogue";
 import { contextFromPanel } from "@/catalogue/pick";
 import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import { DataFreePreview, type PanelPreviewProps } from "./PanelPreview";
+import { EditorVariantsContext } from "./EditorPanel";
 
 const LiveViewPreview = dynamic(() => import("@/components/chooser-v06/LiveViewPreview").then((m) => m.LiveViewPreview), { ssr: false });
 
@@ -17,11 +18,16 @@ export const EditorSchoolContext = createContext<PinSchool>(null);
 
 export function LivePanelPreview(props: PanelPreviewProps) {
   const school = useContext(EditorSchoolContext);
+  const variants = useContext(EditorVariantsContext);
   const dv = dataviewById(props.view.dataview);
   if (!school || !dv) return <DataFreePreview {...props} />;
   let pinned;
   try {
     pinned = pinFromContext(contextFromPanel(props.config, props.panel.id, props.labels), dv, school);
+    // 0.6 snag 4 / 02: a Context view previews on the edit bar's Compare against set.
+    const against = variants?.state.compareAgainst;
+    if (against && dv.host.id === "teacher.c2.context")
+      pinned = { ...pinned, params: { ...(pinned.params ?? {}), against, ...(against === "selected" && variants?.contextSelected ? { selected: variants.contextSelected } : {}) } };
   } catch {
     return <DataFreePreview {...props} />;
   }
