@@ -177,7 +177,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against the wider system |
+| Title template | [subject] against its LA and England, year by year |
 | Title fallback | Plain heading (not ViewTitle), with TrendScaleTitle indexed under it. |
 | Requires (card warning) | GCSE (9-1) Full Course items only at GCSE (area entries are points-eligible entries); LA and England lines (region in the table). |
 | Params | trendStart |
@@ -205,7 +205,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against the wider system |
+| Title template | [subject]: change against its LA, region and England |
 | Title fallback | — |
 | Requires (card warning) | GCSE (9-1) Full Course items only at GCSE (area entries are points-eligible entries). |
 | Params | changeStart |
@@ -485,7 +485,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against the wider system |
+| Title template | [subject] against its LA and England, year by year |
 | Title fallback | Plain heading; no TrendScaleTitle (not indexed). |
 | Requires (card warning) | Average points only; at GCSE, GCSE (9-1) Full Course items only. |
 | Params | trendStart |
@@ -513,7 +513,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against the wider system |
+| Title template | [subject]: change against its LA, region and England |
 | Title fallback | — |
 | Requires (card warning) | Average points only; at GCSE, GCSE (9-1) Full Course items only. |
 | Params | changeStart |

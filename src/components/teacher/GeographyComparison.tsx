@@ -90,7 +90,14 @@ export function GeographyView({
   const noun = metric === "entries" ? "entries" : "average points";
   // 0.6 snag 4 / 01: a view's title override replaces the plain heading's words.
   const override = useContext(ViewTitleOverrideContext);
-  const heading = <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{override ?? `${geography.label} against the wider system`}</p>;
+  // 0.6.1 S1 (pinch point 3): each view its own words, so the two can be told apart -- the
+  // chart draws the LA and England lines (no region: it runs on top of England's), the
+  // table every area's figures with the change. Catalogue titleTemplates say the same.
+  const heading = (
+    <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">
+      {override ?? (view === "chart" ? `${geography.label} against its LA and England, year by year` : `${geography.label}: change against its LA, region and England`)}
+    </p>
+  );
   const note = (text: string) => (
     <>
       {heading}
