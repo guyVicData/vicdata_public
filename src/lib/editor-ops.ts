@@ -684,6 +684,13 @@ export function setDefaultView(config: DashboardConfig, panelId: string, instanc
   return c;
 }
 
+// Snag 3 / 02: is this the panel's default view -- its defaultView, or (none set, or one
+// that has gone) its first view, which is what the page opens on.
+export function isDefaultView(panel: PanelConfig, instanceId: string): boolean {
+  const def = panel.dataviews.some((v) => v.id === panel.defaultView) ? panel.defaultView : panel.dataviews[0]?.id;
+  return def === instanceId;
+}
+
 // Snag 1 / 03: the view menu's "Move up" / "Move down" (the rail's order).
 export function moveViewWithinPanel(config: DashboardConfig, instanceId: string, dir: -1 | 1): DashboardConfig {
   const { panel, index } = findView(config, instanceId);

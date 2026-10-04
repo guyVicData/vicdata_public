@@ -17,7 +17,7 @@ import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig } from "@
 import { railGlyph } from "@/components/chooser-v06/bits";
 import { MenuDivider, MenuHeading, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { EC, EDITOR, panelWidth } from "@/lib/editor-layout";
-import { spanOf } from "@/lib/editor-ops";
+import { isDefaultView, spanOf } from "@/lib/editor-ops";
 import { EBtn, InheritBadge, OverrideBadge, PlusIcon, StandardElements, StatePill } from "./bits";
 import type { PanelPreviewComponent } from "./PanelPreview";
 
@@ -192,7 +192,7 @@ export function EditorPanel({
                       title: viewLabel(config, panel, v, labels),
                       index: i,
                       count: panel.dataviews.length,
-                      opening: (panel.dataviews.some((x) => x.id === panel.defaultView) ? panel.defaultView : panel.dataviews[0]?.id) === v.id,
+                      opening: isDefaultView(panel, v.id),
                       onOpen: (open) => {
                         setViewMenu(open ? v.id : null);
                         if (open) onSelect(v.id);
@@ -377,6 +377,8 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
   return (
     <div ref={wrapRef} className="ed-rv" data-open={open || undefined} data-active={active || undefined} onKeyDown={onKeyDown}>
       {icon}
+      {/* Snag 3 / 02: the default view's marker, edit mode only (a read-only rail has no menu). */}
+      {menu.opening && <span aria-hidden="true" data-default-dot="" style={{ position: "absolute", right: 1, bottom: 1, width: 4, height: 4, borderRadius: 999, background: EC.amber, pointerEvents: "none" }} />}
       <button
         ref={tabRef}
         type="button"
@@ -397,7 +399,7 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
                 <span title={menu.title} style={{ minWidth: 0, flex: "1 1 auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {menu.title}
                 </span>
-                {menu.opening && <span className="shrink-0 rounded-full bg-[var(--box-bg)] px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-[var(--muted3)]">Opens first</span>}
+                {menu.opening && <span className="shrink-0 rounded-full bg-[var(--box-bg)] px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-[var(--muted3)]">Default</span>}
               </span>
             </MenuHeading>
             {row("edit-view", "Edit this view…")}
@@ -405,7 +407,8 @@ function RailButton({ v, active, ready, draggable, menu, onClick, onDragStart, o
             {row("move-view", "Move to another panel…")}
             {row("copy-view", "Copy to another panel…")}
             {row("copy-view-out", "Copy to another dashboard or meeting…", planned ? { disabled: true, tag: "Planned" } : {})}
-            {!menu.opening && row("make-default", "Make this the opening view")}
+            {/* Snag 3 / 02: always there; on the default view it is ticked and inert. */}
+            {menu.opening ? row("make-default", "Default view ✓", { disabled: true }) : row("make-default", "Make this the default view")}
             {menu.index > 0 && row("view-up", "Move up")}
             {menu.index < menu.count - 1 && row("view-down", "Move down")}
             <MenuDivider />

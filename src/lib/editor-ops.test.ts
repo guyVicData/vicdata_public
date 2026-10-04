@@ -315,10 +315,18 @@ test("view menu: a placeholder edited in place keeps its id and context", () => 
   assert.deepEqual(v.kind === "placeholder" && v.context, old.kind === "placeholder" && old.context);
 });
 
-test("view menu: make this the opening view", () => {
+test("view menu: make this the default view", () => {
   const last = ids(gcse(), C2).at(-1)!;
+  const seeded = gcse().panels.find((p) => p.id === C2)!;
+  assert.ok(!ops.isDefaultView(seeded, last));
+  assert.ok(ops.isDefaultView(seeded, seeded.defaultView!));
   const c = ops.setDefaultView(gcse(), C2, last);
-  assert.equal(c.panels.find((p) => p.id === C2)!.defaultView, last);
+  const p = c.panels.find((p) => p.id === C2)!;
+  assert.equal(p.defaultView, last);
+  assert.ok(ops.isDefaultView(p, last), "the row then reads Default view ✓");
+  // With no defaultView (or a stale one), the first view is the default.
+  const bare = { ...p, defaultView: undefined };
+  assert.ok(ops.isDefaultView(bare, bare.dataviews[0].id));
   assert.throws(() => ops.setDefaultView(gcse(), C2, `${C2}/nope`), ops.EditorError);
 });
 
