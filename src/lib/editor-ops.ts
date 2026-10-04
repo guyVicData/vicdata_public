@@ -735,6 +735,18 @@ export function setViewStates<A extends VariantAxis>(config: DashboardConfig, in
   return c;
 }
 
+// 0.6.1 S5 (RailMenu, pinch point 6): "Take off [measure]" -- untick one state, the view
+// stays on every other state it shows on (and in the config). Taking it off its last state
+// is refused: that is Remove everywhere (removeView), which deletes it from every state.
+export function takeOffState<A extends VariantAxis>(config: DashboardConfig, instanceId: string, axis: A, state: AxisStateMap[A]): DashboardConfig {
+  const { panel, index } = findView(config, instanceId);
+  const on = effectiveStates(panel.dataviews[index], axis) as AxisStateMap[A][];
+  if (!on.includes(state)) fail(`That view isn't shown on ${axisStateLabel(axis, state, dashPhase(config))}.`);
+  const rest = on.filter((s) => s !== state);
+  if (!rest.length) fail(`That view shows only on ${axisStateLabel(axis, state, dashPhase(config))}: use Remove everywhere to delete it.`);
+  return setViewStates(config, instanceId, axis, rest);
+}
+
 // The states' names as the pills say them, joined: "Grade counts · Selected subjects".
 // `category` names Context's category option ("Arts, Media & Design subjects") when known.
 export function stateLabel(state: VariantState, phase: Phase, category?: string | null): string {

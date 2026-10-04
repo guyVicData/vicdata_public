@@ -46,6 +46,7 @@ export function PanelMenu({
   placement = "below",
   width,
   tall = false,
+  tight = false,
   children,
 }: {
   label: string;
@@ -56,6 +57,8 @@ export function PanelMenu({
   // 0.6 snag 4: View as's popover holds a whole form (search, chips, recent list): it may
   // run to most of the viewport before it scrolls. Every other menu keeps 22rem.
   tall?: boolean;
+  // 0.6.1 S5: the editor's rail icon menu (RailMenu.dc.html): 6px padding, radius 12.
+  tight?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -65,7 +68,7 @@ export function PanelMenu({
       // max-h + overflow so a long list (Context's subject checklist, Comparisons' named
       // schools) scrolls inside the popover rather than running off the card.
       className={[
-        `absolute z-30 flex ${tall ? "max-h-[80vh]" : "max-h-[22rem]"} flex-col gap-0.5 overflow-y-auto rounded-[14px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-2.5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]`,
+        `absolute z-30 flex ${tall ? "max-h-[80vh]" : "max-h-[22rem]"} flex-col gap-0.5 overflow-y-auto ${tight ? "rounded-[12px] p-1.5" : "rounded-[14px] p-2.5"} border border-[var(--panel-border2)] bg-[var(--panel-bg)] shadow-[0_12px_28px_rgba(0,0,0,0.16)]`,
         placement === "above" ? "bottom-full mb-1.5" : "top-full mt-1.5",
         align === "right" ? "right-0" : "left-0",
       ].join(" ")}

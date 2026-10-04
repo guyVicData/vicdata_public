@@ -10,22 +10,28 @@
 // Snag 1 / 03: each rail icon has its own view menu. Hovering an icon (edit mode) turns it
 // amber and shows a small amber "···" tab on its right edge, over the rail divider; the tab,
 // a right-click or the keyboard opens the menu. The panel's ··· menu is panel-only.
+// 0.6.1 S5: the view menu is the RailMenu board: "Shows for" chips, Edit view…, the
+// default, Move up / down, Move or copy to another panel…, Copy to a dashboard or
+// meeting…, Take off [measure] and Remove everywhere.
 import { createContext, useContext, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { dataviewById } from "@/catalogue";
-import { AXIS_STATES, dataviewStates, effectiveStates, panelState, showsOnState, viewsOnState, type VariantAxis, type VariantState } from "@/catalogue/variants";
+import { effectiveStates, panelState, showsOnState, viewsOnState, type VariantAxis, type VariantState } from "@/catalogue/variants";
 import { contextFromPanel, latestYear, defaultFromYear, instanceTitle, titleOverrideOf, VIEW_TYPE_LABEL, type PanelLabels } from "@/catalogue/pick";
 import type { DashboardConfig, Dataview, DataviewInstance, PanelConfig } from "@/catalogue/types";
 import { glyph } from "@/components/view-editor/bits";
-import { MenuDivider, MenuHeading, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
+import { MenuDivider, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { EC, EDITOR, panelWidth } from "@/lib/editor-layout";
 import { isDefaultView, spanOf } from "@/lib/editor-ops";
 import { EBtn, InheritBadge, OverrideBadge, PlusIcon, StandardElements, StatePill } from "./bits";
 import type { PanelPreviewComponent } from "./PanelPreview";
 import { viewInstance } from "@/catalogue/viewspec";
+import { showsForRows, toggledStates, type ShowsForRow } from "@/lib/rail-menu";
 
 // Panel menu: rename, override, move-panel, delete-panel. View menu (snag 1 / 03): the rest,
 // each for one instance. "copy-view" copies to a panel on this dashboard; "copy-view-out"
-// is Copy to another dashboard or meeting (S6's CopyViewDialog).
+// is Copy to another dashboard or meeting (S6's CopyViewDialog). 0.6.1 S5: the rail menu
+// sends "move-or-copy-view" (one dialog, Move / Copy) and "take-off" (the pill's measure);
+// "swap-view", "move-view" and "copy-view" stay for callers outside it.
 export type PanelAction =
   | "rename"
   | "override"
@@ -36,6 +42,8 @@ export type PanelAction =
   | "move-view"
   | "copy-view"
   | "copy-view-out"
+  | "move-or-copy-view"
+  | "take-off"
   | "make-default"
   | "view-up"
   | "view-down"
@@ -45,7 +53,7 @@ const HEADER = 22;
 
 // 0.6 snag 3 / 03: the edit bar's Results pill, on a Results dashboard. Rails show the
 // views on `measure` (all of them, off-measure ones dimmed, with `showAll`), the panel
-// body previews it, and the view menu's default and "Show on…" rows follow it.
+// body previews it, and the view menu's default, "Shows for" and Take off rows follow it.
 // 0.6 snag 4 / 02: every variant axis the dashboard has (catalogue/variants.ts) -- the
 // Results pill, Context's Compare against, Comparisons' comparator kind -- each with its own
 // pill in the edit bar. Each panel reads the axes it varies by.
@@ -230,17 +238,15 @@ export function EditorPanel({
                         count: railViews.length,
                         opening: v.id === defaultId && !off,
                         pill: stated ? { label: stateText, off } : null,
-                        showOn:
-                          variants && stated && v.kind === "view"
-                            ? stAxes.map((a) => ({
-                                axis: a,
-                                name: variants.axes[a]!.name,
-                                labels: variants.axes[a]!.labels,
-                                all: AXIS_STATES[a] as string[],
-                                can: dataviewStates(dataviewById(v.dataview), a) as string[],
-                                on: effectiveStates(v, a) as string[],
-                                onChange: (ss: string[]) => variants.onShowOn(panel.id, v.id, a, ss),
-                              }))
+                        showsFor: variants && stated && v.kind === "view" ? showsForRows(config, panel, v, variants.axes) : null,
+                        onChips: (axis, states) => variants?.onShowOn(panel.id, v.id, axis, states),
+                        // Take off [measure]: the Results pill's state (pinch point 6).
+                        takeOff:
+                          variants && st.results && v.kind === "view"
+                            ? {
+                                label: variants.axes.results?.labels[st.results] ?? st.results,
+                                why: off ? "Not shown on it" : effectiveStates(v, "results").length <= 1 ? "Shows only here" : null,
+                              }
                             : null,
                         onOpen: (open) => {
                           setViewMenu(open ? v.id : null);
@@ -380,10 +386,14 @@ type RailMenu = {
   count: number;
   opening: boolean;
   // 0.6 snag 3 / 03: on a Results dashboard, the edit bar's pill (`off`: this view isn't
-  // shown on it) and the "Show on…" checklist. Snag 4 / 02: the panel's state on every axis
-  // it varies by ("Grade counts · Selected subjects"), and one checklist per axis.
+  // shown on it). Snag 4 / 02: the panel's state on every axis it varies by ("Grade counts ·
+  // Selected subjects").
   pill: { label: string; off: boolean } | null;
-  showOn: ShowOnAxis[] | null;
+  // 0.6.1 S5: the board's "Shows for" chips (lib/rail-menu.ts), one row per axis.
+  showsFor: ShowsForRow[] | null;
+  onChips: (axis: VariantAxis, states: string[]) => void;
+  // "Take off [measure]": `why` = why it can't be (off the pill; the view's only measure).
+  takeOff: { label: string; why: string | null } | null;
   onOpen: (open: boolean) => void;
   onAction: (a: PanelAction) => void;
 };
@@ -394,17 +404,9 @@ function RailButton({ v, label, active, ready, dimmed = false, draggable, menu, 
   const dv = v.kind === "view" ? dataviewById(v.dataview) : undefined;
   const planned = v.kind === "placeholder";
   const open = !!menu?.open;
-  // The menu's second page: the "Show on…" checklist.
-  const [page, setPage] = useState<"menu" | "show-on">("menu");
-  const wrapRef = useDismiss(open, () => {
-    setPage("menu");
-    menu?.onOpen(false);
-  });
+  const wrapRef = useDismiss(open, () => menu?.onOpen(false));
   const tabRef = useRef<HTMLButtonElement | null>(null);
-  const openMenu = (o: boolean) => {
-    setPage("menu");
-    menu?.onOpen(o);
-  };
+  const openMenu = (o: boolean) => menu?.onOpen(o);
   const icon = (
     <button
       type="button"
@@ -455,10 +457,10 @@ function RailButton({ v, label, active, ready, dimmed = false, draggable, menu, 
   );
   if (!menu) return icon;
 
-  const row = (a: PanelAction, text: string, opts: { disabled?: boolean; tag?: string } = {}) => <MenuRow label={text} disabled={opts.disabled} tag={opts.tag} onClick={() => menu.onAction(a)} />;
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Escape" && open) tabRef.current?.focus();
   };
+  const pillText = menu.pill?.label ?? null;
   return (
     <div ref={wrapRef} className="ed-rv" data-open={open || undefined} data-active={active || undefined} onKeyDown={onKeyDown}>
       {icon}
@@ -477,48 +479,46 @@ function RailButton({ v, label, active, ready, dimmed = false, draggable, menu, 
         <span aria-hidden="true">···</span>
       </button>
       {open && (
-        <div style={{ position: "absolute", left: EDITOR.railIcon + 20, top: -6, height: 0 }}>
-          <PanelMenu label={`Options for ${menu.title}`} width={EDITOR.viewMenuWidth}>
-            <MenuHeading>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                <span title={menu.title} style={{ minWidth: 0, flex: "1 1 auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        // RailMenu.dc.html: the menu's top-left 36px right of the icon and 12px below its top.
+        <div style={{ position: "absolute", left: 36, top: 6, height: 0 }}>
+          <PanelMenu label={`Options for ${menu.title}`} width={EDITOR.viewMenuWidth} tight>
+            <div data-rail-menu="" style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "6px 9px 4px", display: "flex", alignItems: "center", gap: 6 }}>
+                <span title={menu.title} style={{ fontSize: 11, fontWeight: 700, color: "var(--muted2)", textTransform: "uppercase", letterSpacing: 0.4, flex: "1 1 auto", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {menu.title}
                 </span>
-                {menu.opening && <span className="shrink-0 rounded-full bg-[var(--box-bg)] px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-[var(--muted3)]">Default</span>}
-              </span>
-            </MenuHeading>
-            {page === "show-on" && menu.showOn ? (
-              <ShowOnList axes={menu.showOn} onBack={() => setPage("menu")} />
-            ) : (
-              <>
-            {row("edit-view", "Edit this view…")}
-            {row("swap-view", "Swap for another view…")}
-            {row("move-view", "Move to another panel…")}
-            {row("copy-view", "Copy to another panel…")}
-            {row("copy-view-out", "Copy to another dashboard or meeting…", planned ? { disabled: true, tag: "Planned" } : {})}
-            {/* Snag 3 / 02: always there; on the default view it is ticked and inert. 03: on a
-                Results dashboard, the default for the edit bar's pill. */}
-            {menu.pill
-              ? menu.opening
-                ? row("make-default", `Default for ${menu.pill.label} ✓`, { disabled: true })
-                : row("make-default", `Make this the default for ${menu.pill.label}`, menu.pill.off ? { disabled: true, tag: "Not shown" } : {})
-              : menu.opening
-                ? row("make-default", "Default view ✓", { disabled: true })
-                : row("make-default", "Make this the default view")}
-            {menu.showOn && <MenuRow label="Show on…" onClick={() => setPage("show-on")} />}
-            {menu.index > 0 && row("view-up", "Move up")}
-            {menu.index < menu.count - 1 && row("view-down", "Move down")}
-            <MenuDivider />
-            <button
-              type="button"
-              onClick={() => menu.onAction("remove-view")}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-[7px] text-left text-[13px] font-medium hover:bg-[var(--box-bg)]"
-              style={{ color: EC.danger }}
-            >
-              Remove this view
-            </button>
-              </>
-            )}
+                {menu.opening && <span style={{ fontSize: 10, fontWeight: 700, color: EC.amberText, background: `color-mix(in srgb, ${EC.amber} 14%, transparent)`, borderRadius: 999, padding: "2px 7px", flexShrink: 0 }}>Default</span>}
+              </div>
+              {menu.showsFor && menu.showsFor.length > 0 && <ShowsFor rows={menu.showsFor} onChips={menu.onChips} />}
+              <MenuDivider />
+              <RailRow onClick={() => menu.onAction("edit-view")} hint={planned ? undefined : "opens at Preview"}>
+                Edit view&hellip;
+              </RailRow>
+              {menu.opening ? (
+                <RailRow disabled muted>
+                  <span aria-hidden="true" style={{ marginRight: 4 }}>&#10003;</span>
+                  Default view{pillText ? ` for ${pillText}` : ""}
+                </RailRow>
+              ) : (
+                <RailRow onClick={() => menu.onAction("make-default")} disabled={!!menu.pill?.off} hint={menu.pill?.off ? "Not shown" : undefined}>
+                  {pillText ? `Make this the default for ${pillText}` : "Make this the default view"}
+                </RailRow>
+              )}
+              <MoveRow index={menu.index} count={menu.count} onMove={(a) => menu.onAction(a)} />
+              <RailRow onClick={() => menu.onAction("move-or-copy-view")}>Move or copy to another panel&hellip;</RailRow>
+              <RailRow onClick={() => menu.onAction("copy-view-out")} disabled={planned} hint={planned ? "Planned" : undefined}>
+                Copy to a dashboard or meeting&hellip;
+              </RailRow>
+              <MenuDivider />
+              {menu.takeOff && (
+                <RailRow onClick={() => menu.onAction("take-off")} disabled={!!menu.takeOff.why} hint={menu.takeOff.why ?? undefined}>
+                  Take off {menu.takeOff.label}
+                </RailRow>
+              )}
+              <RailRow onClick={() => menu.onAction("remove-view")} danger>
+                {menu.showsFor?.some((r) => r.axis === "results") || menu.takeOff ? "Remove everywhere" : "Remove view"}
+              </RailRow>
+            </div>
           </PanelMenu>
         </div>
       )}
@@ -526,36 +526,110 @@ function RailButton({ v, label, active, ready, dimmed = false, draggable, menu, 
   );
 }
 
-type ShowOnAxis = { axis: VariantAxis; name: string; labels: Record<string, string>; all: string[]; can: string[]; on: string[]; onChange: (states: string[]) => void };
-
-// 0.6 snag 3 / 03: the view menu's "Show on…" page. Ticked = the pill states this view
-// shows on; a state its dataview can't draw is dotted and can't be picked, and the last
-// ticked one can't be cleared. Snag 4 / 02: one short checklist per axis the panel varies
-// by, each under its pill's name (only the list, with no heading, when there is one).
-function ShowOnList({ axes, onBack }: { axes: ShowOnAxis[]; onBack: () => void }) {
+// RailMenu.dc.html's .mrow: 7px 9px, 13px / 500, radius 7, a quiet hint on the right.
+function RailRow({ children, onClick, disabled = false, muted = false, danger = false, hint }: { children: ReactNode; onClick?: () => void; disabled?: boolean; muted?: boolean; danger?: boolean; hint?: string }) {
   return (
-    <div data-show-on="">
-      <MenuRow label="‹ Show on" onClick={onBack} />
-      {axes.map(({ axis, name, labels, all, can, on, onChange }) => (
-        <div key={axis} data-show-on-axis={axis}>
-          <MenuDivider />
-          {axes.length > 1 && <MenuHeading>{name}</MenuHeading>}
-          {all.map((m) => {
-            const drawable = can.includes(m);
-            const ticked = on.includes(m);
-            return (
-              <MenuRow
-                key={m}
-                label={labels[m] ?? m}
-                checkbox
-                dotted={!drawable}
-                selected={ticked}
-                tag={drawable ? undefined : "Can't draw"}
-                disabled={!drawable || (ticked && on.length === 1)}
-                onClick={() => onChange(ticked ? on.filter((x) => x !== m) : all.filter((x) => x === m || on.includes(x)))}
-              />
-            );
-          })}
+    <button
+      type="button"
+      className="ed-mrow"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        width: "100%",
+        padding: "7px 9px",
+        border: "none",
+        background: "none",
+        borderRadius: 7,
+        fontSize: 13,
+        fontWeight: 500,
+        textAlign: "left",
+        color: danger ? EC.danger : muted || disabled ? "var(--muted3)" : "var(--chip-fg)",
+        cursor: disabled ? "default" : "pointer",
+      }}
+    >
+      <span style={{ minWidth: 0, flex: "0 1 auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>
+      {hint && <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted3)", whiteSpace: "nowrap", flexShrink: 0 }}>{hint}</span>}
+    </button>
+  );
+}
+
+// "Move up / down": one row, as the board draws it; its two arrows step the view through
+// the rail (past views the pill's rail doesn't show).
+function MoveRow({ index, count, onMove }: { index: number; count: number; onMove: (a: "view-up" | "view-down") => void }) {
+  const arrow = (a: "view-up" | "view-down", can: boolean) => (
+    <button
+      type="button"
+      className="ed-mrow-arrow"
+      aria-label={a === "view-up" ? "Move up" : "Move down"}
+      title={a === "view-up" ? "Move up" : "Move down"}
+      disabled={!can}
+      onClick={() => onMove(a)}
+      style={{ width: 22, height: 20, borderRadius: 5, border: "1px solid var(--panel-border2)", background: "transparent", color: can ? "var(--chip-fg)" : "var(--muted3)", opacity: can ? 1 : 0.45, padding: 0, fontSize: 11, lineHeight: 1, cursor: can ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+    >
+      {a === "view-up" ? "↑" : "↓"}
+    </button>
+  );
+  const only = count < 2;
+  return (
+    <div data-move-row="" className="ed-mrow" style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 9px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: only ? "var(--muted3)" : "var(--chip-fg)" }}>
+      <span>Move up / down</span>
+      <span style={{ marginLeft: "auto", display: "inline-flex", gap: 4 }}>
+        {arrow("view-up", index > 0)}
+        {arrow("view-down", index < count - 1)}
+      </span>
+    </div>
+  );
+}
+
+// RailMenu.dc.html's "Shows for": a chip per Results measure (.mt; .on ticked in green;
+// .no dashed and greyed, its reason as the tooltip). A panel varying by another axis too
+// gets that axis's chips under its own name.
+function ShowsFor({ rows, onChips }: { rows: ShowsForRow[]; onChips: (axis: VariantAxis, states: string[]) => void }) {
+  return (
+    <div data-shows-for="" style={{ padding: "4px 9px 8px", display: "flex", flexDirection: "column", gap: 5 }}>
+      {rows.map((row, i) => (
+        <div key={row.axis} data-shows-for-axis={row.axis} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <span style={{ fontSize: 11, color: "var(--muted2)" }}>{i === 0 ? "Shows for" : `Shows for · ${row.name}`}</span>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {row.chips.map((c) => {
+              const next = toggledStates(row, c.state);
+              const no = !c.ok && !c.on;
+              const title = no ? `${c.name}: ${c.reason ?? "can't be drawn here"}` : c.last ? `Shows only on ${c.name}. To delete it, use Remove everywhere.` : c.note ? `${c.name}: ${c.note}` : c.name;
+              return (
+                <button
+                  key={c.state}
+                  type="button"
+                  className="ed-mt"
+                  aria-pressed={c.on}
+                  aria-disabled={!next || undefined}
+                  disabled={no}
+                  title={title}
+                  data-no={no || undefined}
+                  onClick={() => next && onChips(row.axis, next)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    border: `1px ${no ? "dashed" : "solid"} ${c.on ? EC.ready : "var(--edge-strong)"}`,
+                    borderRadius: 999,
+                    padding: "3px 8px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: c.on ? EC.ready : no ? "var(--muted3)" : "var(--chip-fg)",
+                    background: "color-mix(in srgb, var(--fg) 4%, var(--panel-bg))",
+                    cursor: next ? "pointer" : "default",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {c.on && <span aria-hidden="true">&#10003;</span>}
+                  <span>{c.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>

@@ -108,7 +108,7 @@ type DialogState =
   | { kind: "override"; panelId: string; ctx: PickPanelContext }
   | { kind: "span"; panelId: string; cols: number; options: ops.SpanOption[] }
   | { kind: "rename-panel"; panelId: string }
-  | { kind: "slot"; mode: "move-view" | "copy-view" | "move-panel"; panelId: string; instanceId: string | null }
+  | { kind: "slot"; mode: "move-view" | "copy-view" | "move-or-copy-view" | "move-panel"; panelId: string; instanceId: string | null }
   | { kind: "settings" }
   | { kind: "assign" }
   | { kind: "publish" }
@@ -130,7 +130,9 @@ const RAIL_MENU_CSS =
   `.ed-rv[data-open] .ed-rv-icon,.ed-rv:has(:focus-visible) .ed-rv-icon{${AMBER_ICON}}` +
   `.ed-rv[data-open] .ed-rv-tab,.ed-rv:has(:focus-visible) .ed-rv-tab{${TAB_ON}}` +
   `@media (hover:hover){.ed-rv:hover .ed-rv-icon{${AMBER_ICON}}.ed-rv:hover .ed-rv-tab{${TAB_ON}}}` +
-  `@media (hover:none){.ed-rv[data-active] .ed-rv-tab{${TAB_ON}}}`;
+  `@media (hover:none){.ed-rv[data-active] .ed-rv-tab{${TAB_ON}}}` +
+  // 0.6.1 S5 (RailMenu.dc.html): the menu's rows (.mrow:hover) and the arrows of Move up / down.
+  `button.ed-mrow:not(:disabled):hover,.ed-mrow-arrow:not(:disabled):hover{background:${EC.hover}}`;
 
 const OWNER_WORD = { vicdata: "VicData", school: "School", user: "Personal" } as const;
 
@@ -384,7 +386,26 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       if (env) return setDialog({ kind: "view-editor", mode: "edit", target: panelId, env, instance: inst });
     }
     if (a === "edit-view" || a === "swap-view") return setDialog({ kind: "replace", mode: a === "edit-view" ? "edit" : "swap", instance: inst, ctx: contextFromPanel(config, panelId, labels) });
+    // 0.6.1 S5 (RailMenu): Remove everywhere deletes the view from every measure; Take off
+    // [measure] unticks the edit bar's measure only (pinch point 6), with an Undo toast.
     if (a === "remove-view") return apply((c) => ops.removeView(c, instanceId));
+    if (a === "take-off") {
+      const m = stateOfPanel(panelId)?.results;
+      if (!m) return;
+      try {
+        ops.takeOffState(config, instanceId, "results", m);
+      } catch (e) {
+        if (e instanceof ops.EditorError) return setToast(e.message);
+        throw e;
+      }
+      apply((c) => ops.takeOffState(c, instanceId, "results", m));
+      const name = inst.kind === "view" ? (titleOverrideOf(inst) ?? dataviewById(inst.dataview)?.label ?? inst.dataview) : inst.description;
+      const text = `${name} no longer shows on ${pillLabels[m]}.`;
+      setUndoFor(text);
+      setToast(text);
+      return;
+    }
+    if (a === "move-or-copy-view") return setDialog({ kind: "slot", mode: "move-or-copy-view", panelId, instanceId });
     if (a === "make-default") return apply((c) => ops.setDefaultView(c, panelId, instanceId, stateOfPanel(panelId)));
     if (a === "view-up" || a === "view-down") return apply((c) => ops.moveViewWithinPanel(c, instanceId, a === "view-up" ? -1 : 1));
     if (a === "move-view") return setDialog({ kind: "slot", mode: "move-view", panelId, instanceId });
@@ -941,15 +962,19 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           from={dialog.panelId}
           mode={dialog.mode === "move-panel" ? "panel" : "view"}
           allowGaps
-          title={dialog.mode === "move-panel" ? "Move panel" : dialog.mode === "move-view" ? "Move this view to another panel" : "Copy this view"}
+          moveOrCopy={dialog.mode === "move-or-copy-view"}
+          title={dialog.mode === "move-panel" ? "Move panel" : dialog.mode === "move-or-copy-view" ? "Move or copy to another panel" : dialog.mode === "move-view" ? "Move this view to another panel" : "Copy this view"}
           sub={dialog.mode === "copy-view" && !onCopyView ? "Copying to another dashboard comes with Copy this view; for now, a panel here." : config.name}
           onClose={() => setDialog(null)}
-          onPick={(t) => {
+          onPick={(t, how) => {
             const { panelId, instanceId, mode } = dialog;
             if (mode === "move-panel") {
               const dest = typeof t === "string" ? config.panels.find((p) => p.id === t)! : null;
               apply((c) => ops.movePanel(c, panelId, dest ? dest.row : (t as { row: string }).row, dest ? dest.column : (t as { column: string }).column));
-            } else if (instanceId) apply((c) => (mode === "move-view" ? ops.moveView(c, instanceId, t) : ops.copyView(c, instanceId, t)).config);
+            } else if (instanceId) {
+              const move = mode === "move-view" || (mode === "move-or-copy-view" && how !== "copy");
+              apply((c) => (move ? ops.moveView(c, instanceId, t) : ops.copyView(c, instanceId, t)).config);
+            }
             setDialog(null);
           }}
         />
