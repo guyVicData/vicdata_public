@@ -842,6 +842,8 @@ export function ComparisonsPanels({
       name: s.name,
       isTarget: s.isTarget,
       ...(s.igcseExcluded ? { igcseExcluded: true } : {}),
+      ...(s.distanceKm !== undefined ? { distanceKm: s.distanceKm } : {}),
+      ...(s.independent !== undefined ? { independent: s.independent } : {}),
       values: valuesFor(s.urn),
       ...(threshold ? {} : { counts: periods.map((p) => seriesByUrn[s.urn]?.candidates.find((r) => r.period === p)?.value ?? null) }),
     })),
@@ -852,7 +854,13 @@ export function ComparisonsPanels({
     titleOn,
     versus: { urn: versusSchool ? versusSchool.urn : "average", label: versusLabel },
     onRankingMeasure,
-    ranking: rankingSet ? { averageAt: rankingAverageAt } : null,
+    ranking: rankingSet
+      ? {
+          averageAt: rankingAverageAt,
+          figures: { ranked: rankingSet.ranked, targetRank: rankingSet.targetRank, target: rankingSet.target, averageLatest: rankingSet.averageLatest, measure: rankingSet.measure, measureName: rankingSet.measureName },
+        }
+      : null,
+    subjectLabel,
     setKind: setId.startsWith(SAVED_SET_PREFIX) ? "savedSet" : "nearest",
     blocked: seriesLoading || schools.length === 0,
     state: { trendStart, changeStart, showFit },

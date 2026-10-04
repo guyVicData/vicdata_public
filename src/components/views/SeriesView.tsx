@@ -3,7 +3,8 @@
 // VicData 0.6.1 S3: draws a built series -- the title lines, then the leaf component with
 // the props the series builder worked out. Every leaf is the one the hosts draw today
 // (MultiTrend, TrendChart, YearTable, SortTable, ChangeList, ViewChart, VerticalBars), in
-// the same wrappers (CentredOnTarget where a list scrolls to its focused row).
+// the same wrappers (CentredOnTarget where a list scrolls to its focused row). S3b adds
+// NumberTiles, RankedList, SchoolRankingTable and the new SlopeChart.
 import { useState } from "react";
 import { formatChange } from "@/lib/teacher-view-panels";
 import type { LeafSeries, ViewSeries } from "@/lib/view-series";
@@ -13,6 +14,11 @@ import { SortTable, nextSort, type SortState } from "@/components/teacher/SortTa
 import { TrendChart } from "@/components/teacher/TrendChart";
 import { VerticalBars } from "@/components/teacher/VerticalBars";
 import { ViewChart } from "@/components/teacher/ViewChart";
+import { NumberTiles } from "@/components/teacher/NumberTiles";
+import * as Icons from "@/components/teacher/PanelIcons";
+import { RankedList } from "@/components/teacher/RankedList";
+import { SchoolRankingTable } from "@/components/teacher/SchoolRankingTable";
+import { SlopeChart } from "./SlopeChart";
 
 export function SeriesView({ series, fullscreen }: { series: ViewSeries; fullscreen: boolean }) {
   return (
@@ -96,6 +102,23 @@ function Leaf({ leaf, fullscreen }: { leaf: LeafSeries; fullscreen: boolean }) {
       );
       return leaf.centred ? <CentredOnTarget watch={leaf.centred}>{chart}</CentredOnTarget> : chart;
     }
+    case "numberTiles":
+      // The Figures are already applied (the series builder, from the instance's params).
+      return <NumberTiles main={leaf.main} tiles={leaf.tiles.map((t) => ({ ...t, icon: Icons[t.icon] }))} fullscreen={fullscreen} />;
+    case "rankedList":
+      return (
+        <CentredOnTarget watch={leaf.centred}>
+          <RankedList rows={leaf.rows} measure={leaf.measure} focusKey={leaf.focusKey} {...(leaf.columns ? { columns: leaf.columns } : {})} />
+        </CentredOnTarget>
+      );
+    case "schoolRanking":
+      return (
+        <CentredOnTarget watch={leaf.centred}>
+          <SchoolRankingTable rows={leaf.rows} valueHeading={leaf.valueHeading} targetName={leaf.targetName} fullscreen={fullscreen} {...(leaf.columns ? { columns: leaf.columns } : {})} />
+        </CentredOnTarget>
+      );
+    case "slope":
+      return <SlopeChart from={leaf.from} to={leaf.to} rows={leaf.rows} measure={leaf.measure} fullscreen={fullscreen} />;
     case "verticalBars":
       return <VerticalBars bars={leaf.bars} measure={leaf.measure} fullscreen={fullscreen} average={leaf.average} />;
   }

@@ -112,6 +112,10 @@ for (const [urn, phase] of [["100053", "ks4"], ["117037", "ks5"]] as const) {
         benchmarkLabel: usingThreshold ? undefined : "National",
         categoryLabel: family,
         currentBlocked: usingBands && !bandRange,
+        // S3b: the number tiles' Grade bands inputs (TeacherDashboard's focusGradeRows).
+        gradeBand: usingBands
+          ? { range: bandRange, rangeLabel: bandRange ? rangeLabel(bandRange) : null, ownRows: focusGrades.map((g: { period: number; grade: string; entries: number }) => ({ period: g.period, grade: g.grade, entries: g.entries })) }
+          : null,
       });
     }
 
@@ -177,6 +181,8 @@ for (const [urn, phase] of [["100053", "ks4"], ["117037", "ks5"]] as const) {
       focus: focusKey,
       groupLabel: `${family} average`,
       categoryLabel: family,
+      // S3b: the "rank among the school's subjects" population (TeacherDashboard's).
+      schoolSubjects: P.schoolSubjectsOf(items, focusItem, focusKey, phase).map((i: Item) => ({ key: i.key, values: categoryPeriods.map((p) => entriesAt(i, p)) })),
     });
 
     // -------------------------------------------------------------- Comparisons
@@ -193,7 +199,7 @@ for (const [urn, phase] of [["100053", "ks4"], ["117037", "ks5"]] as const) {
     for (const measureId of ["entries", "points"] as MeasureId[]) {
       const key = measureId === "entries" ? "candidates" : "results";
       const seriesFor = (u: string) => seriesByUrn[u]?.[key] ?? [];
-      const schools: { urn: string; name: string; isTarget: boolean }[] = X.comparisonSchools(data.nearest.rows as { urn: string; name: string; isTarget: boolean }[], seriesFor, false);
+      const schools: { urn: string; name: string; isTarget: boolean; distanceKm?: number | null; independent?: boolean | null }[] = X.comparisonSchools(data.nearest.rows as { urn: string; name: string; isTarget: boolean }[], seriesFor, false);
       const periods = [...new Set(schools.flatMap((s) => seriesFor(s.urn).map((r) => r.period)))].sort((a, b) => a - b);
       out.push({
         name: `${urn}/${phase} ${focusItem.subject} comparisons ${measureId}`,
@@ -205,6 +211,8 @@ for (const [urn, phase] of [["100053", "ks4"], ["117037", "ks5"]] as const) {
           urn: s.urn,
           name: s.name,
           isTarget: s.isTarget,
+          distanceKm: s.distanceKm ?? null,
+          independent: s.independent ?? null,
           values: periods.map((p) => seriesFor(s.urn).find((r) => r.period === p)?.value ?? null),
           counts: periods.map((p) => seriesByUrn[s.urn]?.candidates.find((r) => r.period === p)?.value ?? null),
         })),

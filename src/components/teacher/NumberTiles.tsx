@@ -23,12 +23,9 @@ export type NumberTile = {
   vars?: TileVars;
 };
 
-// 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd".
-export function ordinal(n: number): string {
-  const teen = n % 100 >= 11 && n % 100 <= 13;
-  const suffix = teen ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
-  return `${n.toLocaleString()}${suffix}`;
-}
+// 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd" (0.6.1 S3b: lives with the tiles'
+// series builder, which the hosts' tiles and the v2 renderer share).
+export { ordinal } from "@/lib/view-series/tiles";
 
 // 0.6 snag 3 / 01, 0.6.1 S2 (D10): the tiles as the showing view's own Figures set them --
 // that view's params, by instance id (useActiveViewParams), picked, ordered, relabelled and

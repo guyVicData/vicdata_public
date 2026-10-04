@@ -476,6 +476,9 @@ export function CandidatesPanels({
     theme,
     accentHex: PHASE_ACCENT[phase]?.hex ?? null,
     hasGeography: !!geography,
+    currentLabel,
+    schoolSubjects,
+    schoolName: runtime?.school?.name,
     state: { trendStart, changeStart, showFit },
   };
 

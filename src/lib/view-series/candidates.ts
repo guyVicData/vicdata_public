@@ -24,7 +24,7 @@ const hasLine = (d: PanelData) => periodsWithData(d).length >= TREND_LINE_MIN_YE
 
 // What CandidatesPanels works out before it draws: Current's order, the grey ramp, the line
 // palette, the focused subject and the category's per-subject average.
-function basics(f: CandidatesFrame, highlight = true) {
+export function basics(f: CandidatesFrame, highlight = true) {
   const { periods, subjects } = f;
   const valueAt = (s: CandidatesFrame["subjects"][number], period: number) => s.values[periods.indexOf(period)] ?? null;
   const latestPeriod = periods.length ? periods[periods.length - 1] : null;

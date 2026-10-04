@@ -279,7 +279,9 @@ export function ColumnPanels({
           if (v2 && instance) {
             const hostBody = panel.body;
             const spec = instance.spec;
-            panel = { ...panel, body: (fullscreen: boolean) => renderView(spec, raw.frame, { fullscreen }) ?? hostBody(fullscreen) };
+            // The instance's own settings (a numbers view's Figures), as viewParamsFor reads them.
+            const params = instance.params ?? null;
+            panel = { ...panel, body: (fullscreen: boolean) => renderView(spec, raw.frame, { fullscreen, params }) ?? hostBody(fullscreen) };
           }
           if (embed?.frame === "figure") {
             // A meeting slot (or another frame that brings its own card): the figure alone,

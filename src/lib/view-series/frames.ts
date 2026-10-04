@@ -16,6 +16,7 @@
 //   comparisons  each school's value per period in the page's comparison set (Comparisons)
 import type { CompareSeriesKind } from "@/catalogue/viewspec";
 import type { Measure } from "@/lib/teacher-view-panels";
+import type { GradeRange } from "@/lib/subject-grades";
 
 export type FrameSubject = {
   key: string;
@@ -75,6 +76,12 @@ export type SubjectsFrame = {
   currentBlocked: boolean;
   // Results' % change half is the geography comparison (its own fetch, a later part).
   hasGeography: boolean;
+  // S3b: Results' number tiles. `tiles` = the host offers them (Column 1 Results); on Grade
+  // bands, the range and the focused subject's own per-grade rows (bandRate's input).
+  tiles?: boolean;
+  gradeBand?: { range: GradeRange | null; rangeLabel: string | null; ownRows: { period: number; grade: string; entries: number }[] } | null;
+  // The school's name (a tile scope line's [school]).
+  schoolName?: string;
   state: FrameMemberState & {
     // The year Current shows (Context's year menu), as an index into `periods`.
     latestIdx: number;
@@ -97,6 +104,11 @@ export type CandidatesFrame = {
   theme: "dark" | "light";
   accentHex: string | null;
   hasGeography: boolean;
+  // S3b: the number tiles' inputs -- the column's word ("Candidates"), every comparable
+  // subject at the school (the "rank among the school's subjects" population), the school.
+  currentLabel?: string;
+  schoolSubjects?: { key: string; values: (number | null)[] }[];
+  schoolName?: string;
   state: FrameMemberState;
 };
 
@@ -109,6 +121,20 @@ export type FrameSchool = {
   // behind it -- a table's "n" and a weighted average's weights.
   values: (number | null)[];
   counts?: (number | null)[];
+  // S3b: the ranking table's sector icon and distance column.
+  distanceKm?: number | null;
+  independent?: boolean | null;
+};
+
+// S3b: a national / regional ranking's own figures (RankingFigures, as the chooser-set route
+// resolved them), on the ranking's own measure -- the tiles' rank and average.
+export type FrameRankingFigures = {
+  ranked: number;
+  targetRank: number | null;
+  target: { period: number; value: number } | null;
+  averageLatest: number | null;
+  measure: Measure;
+  measureName: string;
 };
 
 export type ComparisonsFrame = {
@@ -129,7 +155,9 @@ export type ComparisonsFrame = {
   // The set is a national / regional ranking, and the figure is its own measure: the
   // population's own average per period stands in for the sample's (R-RANKING-SAMPLE).
   onRankingMeasure: boolean;
-  ranking: { averageAt: (period: number | null) => number | null } | null;
+  ranking: { averageAt: (period: number | null) => number | null; figures?: FrameRankingFigures } | null;
+  // The chip's subject, if any (a tile scope line's [subject]).
+  subjectLabel?: string | null;
   setKind: "nearest" | "savedSet";
   // The per-subject rows are still loading, or the host draws a note (no schools).
   blocked: boolean;

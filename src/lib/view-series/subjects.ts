@@ -48,7 +48,7 @@ function basics(f: SubjectsFrame) {
 }
 
 // Current's rows, in Current's order, and the colours every view reads from it.
-function currentRows(f: SubjectsFrame, hasBenchmark: boolean, highlight = true) {
+export function currentRows(f: SubjectsFrame, hasBenchmark: boolean, highlight = true) {
   const b = basics(f);
   const rows = currentRowsWithDelta(f.subjects, f.state.latestIdx, hasBenchmark);
   const barRows = [...rows].sort((a, c) => (c.value ?? -Infinity) - (a.value ?? -Infinity));
@@ -81,9 +81,9 @@ export function buildSubjects(spec: ViewSpec, f: SubjectsFrame, ctx: BuildContex
 // ------------------------------------------------------------------------------ Current
 
 // "Results in {category}" over Results' Current bars and table (SubjectPanels' wrapper).
-const currentHeading = (f: SubjectsFrame) =>
+export const currentHeading = (f: SubjectsFrame) =>
   f.host === "teacher.c1.results" && f.categoryLabel && f.subjects.length > 1 ? [f.measure.id === "entries" ? "Entries" : "Results", " in ", f.categoryLabel] : null;
-const currentTitle = (f: SubjectsFrame) => (f.compareAgainstLabel ? `${f.measure.id === "entries" ? "Entries" : "Results"} by subject in ${f.compareAgainstLabel}` : null);
+export const currentTitle = (f: SubjectsFrame) => (f.compareAgainstLabel ? `${f.measure.id === "entries" ? "Entries" : "Results"} by subject in ${f.compareAgainstLabel}` : null);
 
 function currentBars(look: BarLook, f: SubjectsFrame, compare: CompareSeries[], allRows: boolean): ViewSeries | null {
   if (f.currentBlocked || f.subjects.length === 0) return null;

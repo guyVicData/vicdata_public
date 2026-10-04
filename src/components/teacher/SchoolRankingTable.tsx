@@ -35,7 +35,16 @@ export type SchoolRankingRow = {
   distanceKm: number | null;
   independent: boolean | null;
   isTarget: boolean;
+  // 0.6.1 S3b: the ranking look's extra columns (drawn only where `columns` asks).
+  change?: string | null;
+  n?: number | null;
+  share?: number | null;
 };
+
+// 0.6.1 S3b: the ranking look's columns. Absent = rank, sector, value, distance, exactly as
+// before. The school's name is always drawn.
+export type SchoolRankingColumn = "rank" | "sector" | "value" | "change" | "distance" | "n" | "bar";
+const HOST_COLUMNS: SchoolRankingColumn[] = ["rank", "sector", "value", "distance"];
 
 type Key = "rank" | "name" | "value" | "distance";
 
@@ -44,6 +53,7 @@ export function SchoolRankingTable({
   valueHeading,
   targetName,
   fullscreen = false,
+  columns,
 }: {
   rows: SchoolRankingRow[];
   // "Entries" for a candidate count, "Result" otherwise.
@@ -51,7 +61,9 @@ export function SchoolRankingTable({
   // For the distance column's own heading: distance from which school.
   targetName: string;
   fullscreen?: boolean;
+  columns?: SchoolRankingColumn[];
 }) {
+  const has = (c: SchoolRankingColumn) => (columns ?? HOST_COLUMNS).includes(c);
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: "rank", dir: 1 });
   const onSort = (key: Key) =>
     setSort((cur) => (cur.key === key ? { key, dir: cur.dir === 1 ? -1 : 1 } : { key, dir: key === "value" ? -1 : 1 }));
@@ -88,15 +100,18 @@ export function SchoolRankingTable({
       <thead className="border-b border-[var(--panel-border2)]">
         <tr>
           {/* Rank: no heading text, just the sort arrow. */}
-          {head("rank", "", "w-6 pr-1 text-right")}
+          {has("rank") && head("rank", "", "w-6 pr-1 text-right")}
           {head("name", "School", "px-1 text-left")}
-          {head("value", valueHeading, "w-14 px-1 text-right")}
-          {head("distance", "Distance", "w-[4.5rem] pl-1 text-right", `Distance from ${targetName}`)}
+          {has("value") && head("value", valueHeading, "w-14 px-1 text-right")}
+          {has("change") && <th className="w-14 px-1 pb-1.5 text-right text-[10px] font-semibold uppercase tracking-[0.02em] text-[var(--muted)]">Change</th>}
+          {has("n") && <th className="w-12 px-1 pb-1.5 text-right text-[10px] font-semibold uppercase tracking-[0.02em] text-[var(--muted)]">n</th>}
+          {has("bar") && <th className="w-16 px-1 pb-1.5" aria-label="Bar" />}
+          {has("distance") && head("distance", "Distance", "w-[4.5rem] pl-1 text-right", `Distance from ${targetName}`)}
         </tr>
       </thead>
       <tbody>
         {sorted.map((r) => {
-          const sectorId = r.independent === null ? null : sectorOf({ independent: r.independent });
+          const sectorId = r.independent === null || !has("sector") ? null : sectorOf({ independent: r.independent });
           const sector = sectorId === null ? null : { label: SECTOR[sectorId].label, style: sectorFill(sectorId) };
           return (
             <tr
@@ -105,8 +120,8 @@ export function SchoolRankingTable({
               className="border-b border-[var(--panel-border)] last:border-b-0"
               style={r.isTarget ? { background: "rgba(var(--accent-rgb,138,138,144),0.14)", color: "var(--accent,var(--fg))" } : undefined}
             >
-              <td className="w-6 py-[6px] pr-1 text-right text-[var(--muted3)]">{r.rank ?? ""}</td>
-              <td className="max-w-0 px-1">
+              {has("rank") && <td className="w-6 py-[6px] pr-1 text-right text-[var(--muted3)]">{r.rank ?? ""}</td>}
+              <td className={has("rank") ? "max-w-0 px-1" : "max-w-0 px-1 py-[6px]"}>
                 <span className="flex items-center gap-1.5">
                   <span className={`truncate ${r.isTarget ? "font-bold" : ""}`} title={r.name}>{r.name}</span>
                   {sector && (
@@ -127,10 +142,19 @@ export function SchoolRankingTable({
                   )}
                 </span>
               </td>
-              <td className={`w-14 px-1 text-right font-semibold ${r.value === null ? "font-normal text-[var(--muted3)]" : ""}`}>{r.valueLabel}</td>
-              <td className="w-[4.5rem] pl-1 text-right text-[var(--muted2)]">
-                {r.isTarget ? "—" : r.distanceKm === null ? "—" : `${r.distanceKm.toFixed(1)} km`}
-              </td>
+              {has("value") && <td className={`w-14 px-1 text-right font-semibold ${r.value === null ? "font-normal text-[var(--muted3)]" : ""}`}>{r.valueLabel}</td>}
+              {has("change") && <td className="w-14 px-1 text-right text-[var(--muted2)]">{r.change ?? "—"}</td>}
+              {has("n") && <td className="w-12 px-1 text-right text-[var(--muted2)]">{r.n === null || r.n === undefined ? "—" : Math.round(r.n).toLocaleString()}</td>}
+              {has("bar") && (
+                <td className="w-16 px-1">
+                  <span aria-hidden="true" className="block h-[5px] rounded-full bg-[var(--muted3)]" style={{ width: `${Math.round((r.share ?? 0) * 100)}%`, background: r.isTarget ? "var(--accent,var(--fg))" : undefined }} />
+                </td>
+              )}
+              {has("distance") && (
+                <td className="w-[4.5rem] pl-1 text-right text-[var(--muted2)]">
+                  {r.isTarget ? "—" : r.distanceKm === null ? "—" : `${r.distanceKm.toFixed(1)} km`}
+                </td>
+              )}
             </tr>
           );
         })}

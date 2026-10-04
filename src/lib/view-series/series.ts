@@ -101,12 +101,71 @@ export type LeafSeries =
       // null = no scroll box (Comparisons' graph).
       centred: string | null;
     }
+  // S3b: NumberTiles -- the main figure and the tiles, after the instance's Figures
+  // (params.tiles / mainLabel, src/lib/tile-figures.ts). Icons by PanelIcons glyph name.
+  | { leaf: "numberTiles"; main: { figure: string; label: string } | null; tiles: TileData[] }
+  // S3b: RankedList (Context's Ranked list). `columns` / rank set only off the default.
+  | {
+      leaf: "rankedList";
+      rows: RankRowData[];
+      measure: Measure;
+      focusKey: string | null;
+      columns?: RankColumnKey[];
+      centred: string;
+    }
+  // S3b: SchoolRankingTable (Comparisons' Ranking).
+  | {
+      leaf: "schoolRanking";
+      rows: SchoolRankRowData[];
+      valueHeading: string;
+      targetName: string;
+      columns?: RankColumnKey[];
+      centred: string;
+    }
+  // S3b: the two-year slope (no preset uses it yet).
+  | {
+      leaf: "slope";
+      from: number;
+      to: number;
+      rows: SlopeRowData[];
+      measure: Measure;
+    }
   | {
       leaf: "verticalBars";
       bars: { key: string; label: string; shortLabel: string; value: number | null; colour: string }[];
       measure: Measure;
       average?: AverageLine;
     };
+
+export type TileIconName = "PodiumIcon" | "SchoolIcon" | "ChangeArrowIcon" | "GradesIcon" | "AverageIcon" | "FlagIcon";
+export type TileData = {
+  key: string;
+  icon: TileIconName;
+  figure: string;
+  detail: string;
+  direction?: "up" | "down" | "flat";
+  vars?: Record<string, string | number | null | undefined>;
+};
+
+export type RankColumnKey = "rank" | "sector" | "value" | "change" | "distance" | "n" | "bar";
+// A ranked row: its true rank (rows a look leaves out keep the others' ranks), its figure,
+// and the extra columns' figures where the look asks for them.
+export type RankRowData = { key: string; label: string; value: number | null; rank?: number | null; change?: string | null; n?: number | null; share?: number | null };
+export type SchoolRankRowData = {
+  key: string;
+  name: string;
+  rank: number | null;
+  value: number | null;
+  valueLabel: string;
+  distanceKm: number | null;
+  independent: boolean | null;
+  isTarget: boolean;
+  change?: string | null;
+  n?: number | null;
+  share?: number | null;
+};
+
+export type SlopeRowData = { key: string; label: string; colour: string; from: number; to: number; emphasis: boolean; comparison?: boolean };
 
 // A title line, as one string or as its parts: the hosts write some titles as JSX with the
 // figures interpolated ("Every school in the {set}: …"), which the browser lays out as
@@ -122,4 +181,6 @@ export type ViewSeries = {
   leaf: LeafSeries;
 };
 
-export type BuildContext = { fullscreen: boolean };
+// `params`: the showing instance's own settings (round 3's Figures on a numbers view);
+// absent = none set, the host's own tiles.
+export type BuildContext = { fullscreen: boolean; params?: Record<string, unknown> | null };

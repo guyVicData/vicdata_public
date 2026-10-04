@@ -1067,6 +1067,9 @@ export function SubjectPanels({
     accentHex,
     currentBlocked: subjects.length === 0 || (!!gradeBand && !gradeBand.range),
     hasGeography: !!geography,
+    tiles: !!tiles,
+    gradeBand: gradeBand ? { range: gradeBand.range, rangeLabel: gradeBand.rangeLabel, ownRows: gradeBand.ownRows } : null,
+    schoolName: runtime?.school?.name,
     state: { trendStart, changeStart, showFit, latestIdx, hiddenKeys, sort, onSort: (key) => setSort(nextSort(sort, key)) },
   };
 

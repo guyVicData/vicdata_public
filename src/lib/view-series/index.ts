@@ -8,6 +8,9 @@
 //   subjects.ts     Column 1 Results and Context
 //   candidates.ts   Column 1 Candidates
 //   comparisons.ts  Comparisons
+//   ranking.ts      ranking (S3b): Context's Ranked list, Comparisons' Ranking (D5)
+//   tiles.ts        numbers (S3b): the number tiles, with the instance's Figures
+//   slope.ts        slope (S3b): two years, joined
 //
 // `buildSeries` returns null where the view isn't this builder's to draw (yet): a view type
 // a later part adds, a view that needs another fetch (the geography comparison), or a state
@@ -19,13 +22,25 @@ import { buildComparisons } from "./comparisons";
 import { needsGeography } from "./compare";
 import type { ViewFrame } from "./frames";
 import type { BuildContext, ViewSeries } from "./series";
+import { buildRanking } from "./ranking";
+import { buildSlope } from "./slope";
 import { buildSubjects } from "./subjects";
+import { buildNumbers } from "./tiles";
 
 export type { ViewFrame } from "./frames";
 export type { BuildContext, LeafSeries, ViewSeries } from "./series";
+export { ordinal } from "./tiles";
 
 export function buildSeries(spec: ViewSpec, frame: ViewFrame, ctx: BuildContext): ViewSeries | null {
   if (needsGeography(spec)) return null;
+  switch (spec.view.kind) {
+    case "ranking":
+      return buildRanking(spec, frame);
+    case "numbers":
+      return buildNumbers(frame, ctx);
+    case "slope":
+      return buildSlope(spec, frame);
+  }
   switch (frame.kind) {
     case "subjects":
       return buildSubjects(spec, frame, ctx);

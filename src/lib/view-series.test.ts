@@ -10,8 +10,9 @@ import { readFileSync } from "node:fs";
 import { presetSpec, type ViewSpec } from "@/catalogue/viewspec";
 import type { DataviewId } from "@/catalogue/types";
 import { DATAVIEWS } from "@/catalogue/dataviews";
-import { ENTRIES_MEASURE, measureById, trendChartKind, type Measure, type MeasureId, type PanelData } from "@/lib/teacher-view-panels";
+import { ENTRIES_MEASURE, formatChange, measureById, trendChartKind, type Measure, type MeasureId, type PanelData } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
+import { bestScale, NON_GRADE_VALUES } from "@/lib/subject-grades";
 import { buildSeries, type LeafSeries, type ViewFrame, type ViewSeries } from "./view-series";
 import { resolveCompare } from "./view-series/compare";
 import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame } from "./view-series/frames";
@@ -29,6 +30,10 @@ const latestIdxOf = (periods: number[], values: (number | null)[][]) => {
   for (let i = periods.length - 1; i >= 0; i--) if (values.some((v) => v[i] !== null)) return i;
   return -1;
 };
+
+function gradeBandOf(g: NonNullable<SubjectsFrame["gradeBand"]>): NonNullable<SubjectsFrame["gradeBand"]> {
+  return g.range ? { ...g, range: { ...g.range, scale: bestScale([...g.range.scale]) } } : g;
+}
 
 function frameOf(r: Raw): ViewFrame {
   if (r.kind === "subjects") {
@@ -57,6 +62,10 @@ function frameOf(r: Raw): ViewFrame {
       accentHex: null,
       currentBlocked: !!r.currentBlocked,
       hasGeography: false,
+      tiles: !ranked,
+      // The range's scale is one of subject-grades' own scales (bandRate compares by identity).
+      gradeBand: r.gradeBand ? gradeBandOf(r.gradeBand as NonNullable<SubjectsFrame["gradeBand"]>) : null,
+      schoolName: "Test School",
       state: {
         trendStart: null,
         changeStart: null,
@@ -79,6 +88,8 @@ function frameOf(r: Raw): ViewFrame {
       theme: "dark",
       accentHex: null,
       hasGeography: false,
+      schoolSubjects: r.schoolSubjects as CandidatesFrame["schoolSubjects"],
+      schoolName: "Test School",
       state: { trendStart: null, changeStart: null, showFit: false },
     };
   }
@@ -97,6 +108,7 @@ function frameOf(r: Raw): ViewFrame {
     onRankingMeasure: false,
     ranking: null,
     setKind: "nearest",
+    subjectLabel: r.subjectLabel as string,
     blocked: false,
     state: { trendStart: null, changeStart: null, showFit: false },
   };
@@ -414,7 +426,9 @@ test("look: a View choice never changes a figure (every look, every preset, same
             ? [...l.rows.map((r) => [r.key, r.value] as [string, number | null]), ["group", l.group?.value ?? null]]
             : l.leaf === "rowBars"
               ? l.rows.map((r) => [`${r.label}`, r.value] as [string, number | null])
-              : l.bars.map((b) => [b.key, b.value] as [string, number | null]);
+              : l.leaf === "verticalBars"
+                ? l.bars.map((b) => [b.key, b.value] as [string, number | null])
+                : [];
     return JSON.stringify(Object.fromEntries(pairs.sort((a, b) => a[0].localeCompare(b[0]))));
   };
   for (const { frame } of FRAMES)
@@ -529,4 +543,259 @@ test("looks.ts arithmetic", () => {
   assert.equal(averageOfShown("none", [1, 2], null, "x"), null);
   assert.equal(averageOfShown("weighted", [1, 2], null, "x"), null);
   assert.deepEqual(averageOfShown("mean", [1, 2, null], null, "schools"), { value: 1.5, label: "Average of the 2 schools shown" });
+});
+
+// =============================================================== S3b: ranking, numbers, slope
+
+const rankOf = (vals: (number | null)[], v: number) => 1 + real(vals).filter((x) => x > v).length;
+const ordinalOf = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
+const results = ofHost((r) => r.kind === "subjects" && r.host === "teacher.c1.results");
+const context = ofHost((r) => r.kind === "subjects" && r.host === "teacher.c2.context");
+const candidates = ofHost((r) => r.kind === "candidates");
+const comparisons = ofHost((r) => r.kind === "comparisons");
+
+test("every ranking / numbers preset is covered below", () => {
+  const ids = DATAVIEWS.filter((d) => ["ranking", "numbers", "slope"].includes(presetSpec(d.id).view.kind)).map((d) => d.id).sort();
+  assert.deepEqual(ids, ["DV-C1-CAND-CUR-TILES", "DV-C1-RES-CUR-TILES", "DV-C2-CUR-LIST", "DV-C3-CUR-RANKING", "DV-C3-CUR-TILES"]);
+});
+
+test("Results' number tiles: the focused subject's figure; rank in the category, England's figure and the gap (points); the range's own figures (bands); the rank only (Grade 4+)", () => {
+  let n = 0;
+  for (const { raw, frame } of results) {
+    const f = frame as SubjectsFrame;
+    const s = build("DV-C1-RES-CUR-TILES", f);
+    if (f.currentBlocked) {
+      assert.equal(s, null, raw.name);
+      continue;
+    }
+    const leaf = leafOf(s, "numberTiles");
+    assert.equal(s!.title, null);
+    const i = f.state.latestIdx;
+    const focus = f.subjects.find((x) => x.key === f.focus)!;
+    const v = focus.values[i];
+    assert.equal(leaf.main?.figure, v === null ? "—" : f.measure.format(v), raw.name);
+    assert.equal(leaf.main?.label, `${focus.label} ${f.measure.noun} in ${academicYearLabel(f.periods[i])}`);
+    if (v === null) {
+      assert.deepEqual(leaf.tiles, []);
+      continue;
+    }
+    const keys = leaf.tiles.map((t) => t.key);
+    const bench = focus.benchmark?.[i] ?? null;
+    if (raw.measureId === "bands") {
+      const rows = f.gradeBand!.ownRows.filter((r) => r.period === f.periods[i] && !NON_GRADE_VALUES.has(r.grade));
+      const scale = f.gradeBand!.range!.scale as string[];
+      const inRange = (g: string) => scale.indexOf(g) >= scale.indexOf(f.gradeBand!.range!.top) && scale.indexOf(g) <= scale.indexOf(f.gradeBand!.range!.bottom);
+      const met = rows.filter((r) => inRange(r.grade)).reduce((a, r) => a + r.entries, 0);
+      const count = leaf.tiles.find((t) => t.key === "count");
+      assert.equal(count?.figure, met.toLocaleString(), raw.name);
+      assert.equal(count?.detail, `of ${rows.reduce((a, r) => a + r.entries, 0).toLocaleString()} graded entries at ${String(raw.bandLabel).toLowerCase()}`);
+      assert.ok(!keys.includes("category"));
+    } else {
+      const vals = f.subjects.map((x) => x.values[i]);
+      if (real(vals).length > 1) assert.equal(leaf.tiles.find((t) => t.key === "category")?.figure, ordinalOf(rankOf(vals, v)), raw.name);
+    }
+    if (raw.measureId === "threshold") assert.ok(!keys.includes("england") && !keys.includes("england-average"), "no England on a rate (R-NO-GRADE-RATE-GEO)");
+    else if (bench !== null) {
+      assert.equal(leaf.tiles.find((t) => t.key === "england-average")?.figure, f.measure.format(bench));
+      assert.equal(leaf.tiles.find((t) => t.key === "england")?.figure, f.measure.formatDelta(v - bench));
+    }
+    n++;
+  }
+  assert.ok(n >= 10);
+});
+
+test("Candidates' number tiles: entries this year; rank in the category and among the school's subjects; % change since the first year", () => {
+  for (const { raw, frame } of candidates) {
+    const f = frame as CandidatesFrame;
+    const s = build("DV-C1-CAND-CUR-TILES", f);
+    const leaf = leafOf(s, "numberTiles");
+    const last = f.periods.length - 1;
+    const focus = f.subjects.find((x) => x.key === f.focus)!;
+    assert.equal(s!.title, `${focus.label} Candidates: ${academicYearLabel(f.periods[last])}`);
+    const v = focus.values[last]!;
+    assert.equal(leaf.main?.figure, Math.round(v).toLocaleString(), raw.name);
+    const cat = f.subjects.map((x) => x.values[last]);
+    assert.deepEqual(leaf.tiles.find((t) => t.key === "category"), { key: "category", icon: "PodiumIcon", figure: ordinalOf(rankOf(cat, v)), detail: `of ${real(cat).length} in ${f.categoryLabel}`, vars: { total: real(cat).length } });
+    const sch = f.schoolSubjects!.map((x) => x.values[last]);
+    assert.equal(leaf.tiles.find((t) => t.key === "school")?.figure, ordinalOf(rankOf(sch, v)));
+    const pct = Math.round(honest(ENTRIES_MEASURE, focus.values)!);
+    assert.equal(leaf.tiles.find((t) => t.key === "change")?.figure, `${pct > 0 ? "+" : pct < 0 ? "−" : "±"}${Math.abs(pct)}%`);
+    assert.deepEqual(leaf.tiles.map((t) => t.key), ["category", "school", "change"]);
+  }
+});
+
+const RANKING_FIGURES = { ranked: 2873, targetRank: 41, target: { period: 2024, value: 61.2 }, averageLatest: 46.1, measure: measureById("ks4", "points"), measureName: "Attainment 8" };
+const onRanking = (f: ComparisonsFrame): ComparisonsFrame => ({ ...f, setLabel: "National ranking", ranking: { averageAt: (p) => (p === 2024 ? 45.9 : null), figures: RANKING_FIGURES } });
+
+test("Comparisons' number tiles: a ranking set only -- the rank in its whole population and its average, on its own measure (R-RANKING-SAMPLE)", () => {
+  for (const { frame } of comparisons) {
+    const f = frame as ComparisonsFrame;
+    assert.equal(build("DV-C3-CUR-TILES", f), null, "a list of schools has no tiles");
+    const s = build("DV-C3-CUR-TILES", onRanking(f));
+    const leaf = leafOf(s, "numberTiles");
+    assert.equal(s!.title, "This school's rank in the national ranking: Attainment 8");
+    assert.deepEqual(leaf.main, { figure: RANKING_FIGURES.measure.format(61.2), label: `This school Attainment 8 in ${academicYearLabel(2024)}` });
+    assert.deepEqual(leaf.tiles.map((t) => [t.key, t.figure, t.detail]), [["rank", "41st", "of 2,873 in this set"], ["average", RANKING_FIGURES.measure.format(45.9), "average across this set"]]);
+    // Still drawn while the set's own schools are loading: the figures are the population's.
+    assert.ok(build("DV-C3-CUR-TILES", { ...onRanking(f), blocked: true }));
+  }
+});
+
+test("numbers: the instance's Figures pick, order, relabel and hide the tiles, and relabel the main figure (round 3); unset = the host's tiles", () => {
+  const f = candidates[0].frame as CandidatesFrame;
+  const spec = presetSpec("DV-C1-CAND-CUR-TILES");
+  const base = leafOf(buildSeries(spec, f, { fullscreen: false }), "numberTiles");
+  assert.deepEqual(leafOf(buildSeries(spec, f, { fullscreen: false, params: {} }), "numberTiles"), base);
+  const params = { tiles: [{ figure: "change" }, { figure: "category", label: "ranked against [total] [category] subjects" }, { figure: "school", hidden: true }], mainLabel: "[subject] at [school]" };
+  const leaf = leafOf(buildSeries(spec, f, { fullscreen: false, params }), "numberTiles");
+  assert.deepEqual(leaf.tiles.map((t) => t.key), ["change", "category"]);
+  const cat = base.tiles.find((t) => t.key === "category")!;
+  assert.equal(leaf.tiles[1].detail, `ranked against ${cat.vars!.total} ${f.categoryLabel} subjects`);
+  assert.equal(leaf.tiles[1].figure, cat.figure, "a relabel never changes the figure");
+  assert.equal(leaf.main?.label, `${(f.subjects.find((x) => x.key === f.focus) ?? f.subjects[0]).label} at Test School`);
+  assert.equal(leaf.main?.figure, base.main?.figure);
+  // A figure this host doesn't build here is dropped, as the host drops it.
+  assert.deepEqual(leafOf(buildSeries(spec, f, { fullscreen: false, params: { tiles: [{ figure: "england" }, { figure: "category" }] } }), "numberTiles").tiles.map((t) => t.key), ["category"]);
+});
+
+test("Context's Ranked list: the group's subjects, largest first, as the host lists them", () => {
+  for (const { raw, frame } of context) {
+    const f = frame as SubjectsFrame;
+    const leaf = leafOf(build("DV-C2-CUR-LIST", f), "rankedList");
+    const i = f.state.latestIdx;
+    const want = [...f.subjects].map((x) => ({ key: x.key, value: x.values[i] })).sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+    assert.deepEqual(leaf.rows.map((r) => [r.key, r.value]), want.map((r) => [r.key, r.value]), raw.name);
+    assert.ok(leaf.rows.every((r) => r.rank === undefined), "the host's own numbering");
+    assert.equal(leaf.columns, undefined, "the preset's columns are the host's");
+    assert.equal(leaf.focusKey, f.focus);
+  }
+});
+
+test("Comparisons' Ranking: the set's schools with a latest figure (the school always), ranked, with sector and distance", () => {
+  for (const { raw, frame } of comparisons) {
+    const f = frame as ComparisonsFrame;
+    const s = build("DV-C3-CUR-RANKING", f);
+    const leaf = leafOf(s, "schoolRanking");
+    assert.deepEqual(s!.title, `Schools ranked by ${f.titleOn} in the ${f.setLabel.toLowerCase()}`);
+    const li = latestIdxOf(f.periods, f.schools.map((x) => x.values));
+    const kept = f.schools.filter((x) => x.isTarget || x.values[li] !== null);
+    assert.equal(leaf.rows.length, kept.length, raw.name);
+    for (const r of leaf.rows) {
+      const school = f.schools.find((x) => x.urn === r.key)!;
+      assert.equal(r.value, school.values[li]);
+      if (r.value !== null) assert.equal(r.rank, rankOf(kept.map((x) => x.values[li]), r.value));
+      assert.equal(r.distanceKm, school.distanceKm ?? null);
+      assert.equal(r.independent, school.independent ?? null);
+    }
+    assert.equal(leaf.valueHeading, f.measure.id === "entries" ? "Entries" : "Result");
+    assert.equal(build("DV-C3-CUR-RANKING", { ...f, blocked: true }), null, "loading: the host's note");
+  }
+});
+
+test("look, ranking: columns, top 5 / all / around this school, always show this school -- never a figure or a rank changed", () => {
+  for (const { frame } of comparisons) {
+    const f = frame as ComparisonsFrame;
+    const all = leafOf(build("DV-C3-CUR-RANKING", f), "schoolRanking");
+    const byKey = new Map(all.rows.map((r) => [r.key, r]));
+    const self = all.rows.find((r) => r.isTarget)!;
+    const sorted = [...all.rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+    for (const look of [{ show: "top5" }, { show: "around" }, { show: "top5", alwaysSelf: false }, { columns: ["rank", "value", "change", "n", "bar"] }]) {
+      const leaf = leafOf(buildSeries(withLook("DV-C3-CUR-RANKING", look), f, { fullscreen: false }), "schoolRanking");
+      for (const r of leaf.rows) {
+        assert.equal(r.value, byKey.get(r.key)!.value);
+        assert.equal(r.rank, byKey.get(r.key)!.rank);
+      }
+      if (look.show === "top5") {
+        assert.deepEqual(leaf.rows.slice(0, 5).map((r) => r.key), sorted.slice(0, 5).map((r) => r.key));
+        assert.equal(leaf.rows.some((r) => r.isTarget), look.alwaysSelf !== false || sorted.slice(0, 5).includes(self));
+      }
+      if (look.show === "around") {
+        assert.equal(leaf.rows.length, Math.min(5, sorted.length));
+        assert.ok(leaf.rows.some((r) => r.isTarget));
+      }
+      if (look.columns) {
+        assert.deepEqual(leaf.columns, look.columns);
+        for (const r of leaf.rows) {
+          const school = f.schools.find((x) => x.urn === r.key)!;
+          const li = latestIdxOf(f.periods, f.schools.map((x) => x.values));
+          assert.equal(r.n, school.counts?.[li] ?? null);
+          const prev = [...school.values.slice(0, li)].reverse().find((x) => x !== null) ?? null;
+          const c = r.value === null || prev === null ? null : honest(f.measure, [prev, r.value]);
+          assert.equal(r.change, c === null ? null : formatChange(f.measure, c));
+          assert.ok(r.share === null || (r.share! >= 0 && r.share! <= 1));
+        }
+      } else assert.equal(leaf.columns, undefined);
+    }
+  }
+  // The list: a cut list numbers each row by its place in the whole list.
+  for (const { frame } of context) {
+    const f = frame as SubjectsFrame;
+    const all = leafOf(build("DV-C2-CUR-LIST", f), "rankedList");
+    if (all.rows.length <= 6) continue;
+    const top = leafOf(buildSeries(withLook("DV-C2-CUR-LIST", { show: "top5" }), f, { fullscreen: false }), "rankedList");
+    const at = all.rows.findIndex((r) => r.key === f.focus);
+    assert.deepEqual(top.rows.map((r) => r.rank), at >= 5 ? [1, 2, 3, 4, 5, at + 1] : [1, 2, 3, 4, 5]);
+    for (const r of top.rows) assert.equal(r.value, all.rows.find((x) => x.key === r.key)!.value);
+  }
+});
+
+const SLOPE: ViewSpec = {
+  data: { source: "follows-page", subject: "follows", per: "subject", rows: "follows-page", shownAs: "actual", years: { from: "first", rollOn: true, memberPick: true } },
+  compare: "follows-page",
+  view: { kind: "slope", look: {} },
+  icon: "TrendLineIcon",
+  title: "[subject]: then and now",
+};
+
+test("slope: a spec of its own renders from every frame -- each row's figure at the first year and the latest, unchanged", () => {
+  for (const { raw, frame } of FRAMES) {
+    const s = buildSeries(SLOPE, frame, { fullscreen: false });
+    if (!s) continue;
+    const leaf = leafOf(s, "slope");
+    assert.ok(leaf.from < leaf.to, raw.name);
+    const fi = frame.periods.indexOf(leaf.from);
+    const ti = frame.periods.indexOf(leaf.to);
+    const values = (key: string): (number | null)[] =>
+      frame.kind === "comparisons" ? frame.schools.find((x) => (x.isTarget ? "own" : x.urn) === key)!.values : frame.subjects.find((x) => x.key === key)!.values;
+    for (const r of leaf.rows) {
+      assert.equal(r.from, values(r.key)[fi], `${raw.name} ${r.key}`);
+      assert.equal(r.to, values(r.key)[ti]);
+    }
+    assert.ok(String(s.title).endsWith(`: ${academicYearLabel(leaf.from)} to ${academicYearLabel(leaf.to)}`), String(s.title));
+  }
+  // Results on points: every subject with a figure in both years, from the span's first year.
+  const f = results.find((x) => x.raw.measureId === "points")!.frame as SubjectsFrame;
+  const leaf = leafOf(buildSeries(SLOPE, f, { fullscreen: false }), "slope");
+  const span = trimmed(f.periods, f.subjects.map((x) => x.values));
+  assert.equal(leaf.from, span[0]);
+  assert.equal(leaf.to, f.periods[f.state.latestIdx]);
+  assert.deepEqual(leaf.rows.map((r) => r.key).sort(), f.subjects.filter((x) => x.values[f.periods.indexOf(leaf.from)] !== null && x.values[f.state.latestIdx] !== null).map((x) => x.key).sort());
+  assert.equal(leaf.rows.filter((r) => r.emphasis).length, 1);
+  // The members' From year moves the first year; { latest } is the year before Current's.
+  const later = leafOf(buildSeries(SLOPE, { ...f, state: { ...f.state, trendStart: span[1] } }, { fullscreen: false }), "slope");
+  assert.equal(later.from, span[1]);
+  const lastTwo = leafOf(buildSeries({ ...SLOPE, data: { ...SLOPE.data, years: { latest: true } } }, f, { fullscreen: false }), "slope");
+  assert.equal(lastTwo.to, f.periods[f.state.latestIdx]);
+  assert.equal(lastTwo.from, f.periods[f.state.latestIdx - 1]);
+  // The focused subject alone, against its category's average (a dashed comparison line).
+  const own = leafOf(buildSeries({ ...SLOPE, data: { ...SLOPE.data, rows: undefined }, compare: [{ kind: "category", colour: "muted" }] }, f, { fullscreen: false }), "slope");
+  assert.deepEqual(own.rows.map((r) => [r.key, !!r.comparison]), [[f.focus, false], ["group-0", true]]);
+  assert.equal(own.rows[1].to, f.groups[0].values[f.state.latestIdx]);
+  // One year only: nothing to slope; the host draws.
+  assert.equal(buildSeries(SLOPE, { ...f, periods: f.periods.slice(0, 1), subjects: f.subjects.map((x) => ({ ...x, values: x.values.slice(0, 1) })), state: { ...f.state, latestIdx: 0 } }, { fullscreen: false }), null);
+});
+
+test("the renderer draws them: a slope ViewSpec renders (SlopeChart); ranking and numbers presets render their host's leaf", async () => {
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { renderView } = await import("@/components/views");
+  const f = results.find((x) => x.raw.measureId === "points")!.frame as SubjectsFrame;
+  const slope = renderView(SLOPE, f, { fullscreen: false });
+  assert.ok(slope, "slope is registered and builds");
+  const html = renderToStaticMarkup(slope as React.ReactElement);
+  assert.match(html, /data-view="slope"/);
+  const leaf = leafOf(buildSeries(SLOPE, f, { fullscreen: false }), "slope");
+  for (const r of leaf.rows.filter((x) => x.emphasis)) assert.ok(html.includes(f.measure.format(r.from)) && html.includes(f.measure.format(r.to)));
+  assert.match(renderToStaticMarkup(renderView(presetSpec("DV-C1-RES-CUR-TILES"), f, { fullscreen: false }) as React.ReactElement), /text-\[80px\]/);
+  assert.match(renderToStaticMarkup(renderView(presetSpec("DV-C2-CUR-LIST"), context[0].frame, { fullscreen: false }) as React.ReactElement), /<ol/);
+  assert.match(renderToStaticMarkup(renderView(presetSpec("DV-C3-CUR-RANKING"), comparisons[0].frame, { fullscreen: false }) as React.ReactElement), /Distance/);
 });
