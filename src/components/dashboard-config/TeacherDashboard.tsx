@@ -1852,6 +1852,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
             pickerItems={toPickerItems(phase as "ks4" | "ks5", contextOffer)}
             family={QUALIFICATION_FAMILIES[phase as "ks4" | "ks5"].find((f) => f.id === contextFamily) ?? null}
             focusCategory={focusItem ? familyFor(headline, focusItem.subject)?.id ?? null : null}
+            focusCategoryLabel={focusItem ? familyFor(headline, focusItem.subject)?.label ?? null : null}
             theme={theme}
             selected={contextSelected}
             onSetSelected={(keys) => setColumnList(chosenKey("context"), keys)}
