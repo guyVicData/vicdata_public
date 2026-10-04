@@ -26,7 +26,7 @@ import {
   schoolSetHost,
   shownAsHonest,
 } from "@/catalogue/honest";
-import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
+import { compareColour } from "@/lib/view-series/colours";
 import { addLine, averageOf, defaultColour, honestCtx, removeLine, setAverage, setLine, setPer, setShownAs, type Draft, type EditorEnv } from "./model";
 import { Chip, Chips, CloseGlyph } from "./bits";
 
@@ -41,18 +41,9 @@ export type StepProps = {
 
 const PHASE = { ks4: "GCSE", ks5: "Post-16" } as const;
 
-// A compare series' colour token, drawn for the theme.
-export function swatchColour(token: string, theme: "dark" | "light"): string {
-  const pal = theme === "light" ? PALETTE_LIGHT : PALETTE_DARK;
-  if (token === "accent") return "var(--accent, var(--fg))";
-  if (token === "muted") return "var(--muted3)";
-  if (token === "fg") return "var(--fg)";
-  if (token === "england") return pal[3];
-  const m = /^palette:(\d)$/.exec(token);
-  if (m) return pal[Number(m[1])] ?? pal[0];
-  if (token === "palette") return pal[0];
-  return token;
-}
+// A compare series' colour token, drawn for the theme (the one mapping the series builder
+// draws lines with, src/lib/view-series/colours.ts).
+export const swatchColour = compareColour;
 const SWATCHES = ["palette:3", "palette:4", "palette:6", "palette:2", "palette:0", "palette:1", "palette:5", "muted"];
 
 const yearLabel = (period: number) => `${period}/${String((period + 1) % 100).padStart(2, "0")}`;

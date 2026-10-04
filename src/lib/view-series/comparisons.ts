@@ -5,6 +5,7 @@ import { changeInTitle, changeOf, meanOf, sliceFrom, trendChartKind, trimToData,
 import { rankedComparisons } from "@/lib/teacher-view-comparisons";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { onChangeHalf, resolveCompare } from "./compare";
+import { compareLinesFor, type CompareLine } from "./compare-lines";
 import type { ComparisonsFrame } from "./frames";
 import { averageOfShown, fitOn, orderRows, topTen } from "./looks";
 import type { ViewSeries } from "./series";
@@ -12,7 +13,7 @@ import type { ViewSeries } from "./series";
 const OWN = "var(--accent,var(--fg))";
 const OTHER = "var(--muted3)";
 
-function basics(f: ComparisonsFrame) {
+export function basics(f: ComparisonsFrame) {
   const target = f.schools.find((s) => s.isTarget) ?? null;
   const others = f.schools.filter((s) => !s.isTarget);
   const latestIdx = (() => {
@@ -35,15 +36,17 @@ function versusValues(f: ComparisonsFrame, b: ReturnType<typeof basics>): (numbe
 }
 
 // The school and its comparison over the set's years (ComparisonsPanels' `full`), and every
-// school's row over the same years.
-function series(f: ComparisonsFrame, compare: CompareSeries[]) {
+// school's row over the same years. `own`: a spec of its own's compare lines (S3c) in place
+// of the page's "vs:" line.
+export function series(f: ComparisonsFrame, compare: CompareSeries[], own?: CompareLine[]) {
   const b = basics(f);
-  const withVersus = compare.some((c) => (c.as ?? "line") === "line" && (c.kind === "chosenSchool" || c.kind === f.setKind || c.kind === "nearest" || c.kind === "savedSet"));
+  const withVersus = !own && compare.some((c) => (c.as ?? "line") === "line" && (c.kind === "chosenSchool" || c.kind === f.setKind || c.kind === "nearest" || c.kind === "savedSet"));
   const full = trimToData({
     periods: f.periods,
     series: [
       { key: "own", label: "Your school", colour: OWN, values: b.target ? b.target.values : [] },
       ...(withVersus ? [{ key: "versus", label: f.versus.label, colour: OTHER, values: versusValues(f, b) }] : []),
+      ...(own ?? []),
     ],
   });
   const everySchool: PanelData = {
@@ -60,7 +63,7 @@ function series(f: ComparisonsFrame, compare: CompareSeries[]) {
 
 // The page's own "vs:" line, which trims the set's years for every Trends view (the host's
 // `full`), whatever a view itself compares with.
-const pageVersus = (f: ComparisonsFrame): CompareSeries[] => [
+export const pageVersus = (f: ComparisonsFrame): CompareSeries[] => [
   f.versus.urn === "average" ? { kind: f.setKind, colour: "muted", as: "line", average: "mean" } : { kind: "chosenSchool", colour: "muted", as: "line" },
 ];
 
@@ -68,7 +71,7 @@ export function buildComparisons(spec: ViewSpec, f: ComparisonsFrame): ViewSerie
   if (f.blocked || f.schools.length === 0) return null;
   const compare = resolveCompare(spec, f);
   const allRows = !!spec.data.rows;
-  if (spec.view.kind === "line" && spec.data.per === "year") return line(spec.view.look, f, compare, allRows);
+  if (spec.view.kind === "line" && spec.data.per === "year") return line(spec.view.look, f, compare, allRows, spec.compare !== "follows-page");
   if (spec.view.kind === "table" && spec.data.per === "year") return table(spec, spec.view.look, f, compare, allRows);
   if (spec.view.kind === "bar" && spec.data.per === "school") {
     if (spec.data.shownAs === "change") return changeBars(spec.view.look, f, compare, allRows);
@@ -122,13 +125,18 @@ function currentBars(look: BarLook, f: ComparisonsFrame, allRows: boolean): View
   };
 }
 
-function line(look: LineLook, f: ComparisonsFrame, compare: CompareSeries[], allRows: boolean): ViewSeries {
-  const { full, everySchool, b } = series(f, compare);
+function line(look: LineLook, f: ComparisonsFrame, compare: CompareSeries[], allRows: boolean, explicit = false): ViewSeries {
+  // S3c: a spec of its own draws its own compare lines (the set's mean / median / weighted
+  // average, one named school -- compare-lines.ts); follows-page the page's "vs:" line.
+  const own = explicit ? compareLinesFor(f, compare, { focusedKey: "own", span: true, as: ["line"] }) : undefined;
+  const { full, everySchool, b } = series(f, compare, own);
   const trendData = sliceFrom(full, f.state.trendStart);
   // R-TREND-LINE-4YR, Comparisons' way: under four real years the panel is the table alone.
   if (look.shortSpan === "table" && trendChartKind(trendData) !== "line") return trendTable(f, everySchool, b.setNoun, {}, allRows);
-  const versus = trendData.series.find((s) => s.key === "versus");
-  const vs = f.versus.label.charAt(0).toLowerCase() + f.versus.label.slice(1);
+  const first = explicit ? trendData.series.find((s) => s.key !== "own") : trendData.series.find((s) => s.key === "versus");
+  const versus = first;
+  const vsLabel = explicit ? first?.label ?? "" : f.versus.label;
+  const vs = vsLabel.charAt(0).toLowerCase() + vsLabel.slice(1);
   return {
     kind: "line",
     heading: null,
@@ -166,8 +174,8 @@ function countsOf(f: ComparisonsFrame, data: PanelData): Record<string, number |
   return Object.fromEntries(f.schools.map((s) => [s.isTarget ? "own" : s.urn, at >= 0 ? s.counts?.[at] ?? null : null]));
 }
 
-function trendTable(f: ComparisonsFrame, everySchool: PanelData, setNoun: string, look: TableLook, allRows: boolean): ViewSeries {
-  const data = sliceFrom(allRows ? everySchool : { ...everySchool, series: everySchool.series.filter((s) => s.key === "own") }, f.state.trendStart);
+function trendTable(f: ComparisonsFrame, everySchool: PanelData, setNoun: string, look: TableLook, allRows: boolean, keep: string[] = []): ViewSeries {
+  const data = sliceFrom(allRows ? everySchool : { ...everySchool, series: everySchool.series.filter((s) => s.key === "own" || keep.includes(s.key)) }, f.state.trendStart);
   const counts = look.extra?.includes("n") ? countsOf(f, data) : undefined;
   return {
     kind: "table",
@@ -180,7 +188,17 @@ function trendTable(f: ComparisonsFrame, everySchool: PanelData, setNoun: string
 function table(spec: ViewSpec, look: TableLook, f: ComparisonsFrame, compare: CompareSeries[], allRows: boolean): ViewSeries {
   void compare;
   const { everySchool, b, full } = series(f, pageVersus(f));
-  if (!onChangeHalf(spec)) return trendTable(f, everySchool, b.setNoun, look, allRows);
+  if (!onChangeHalf(spec)) {
+    // S3c: a spec of its own adds its compare series as labelled rows (no rank).
+    const rows = spec.compare === "follows-page" ? [] : compareLinesFor(f, spec.compare, { focusedKey: "own", span: true });
+    if (!rows.length) return trendTable(f, everySchool, b.setNoun, look, allRows);
+    const withRows: PanelData = {
+      periods: everySchool.periods,
+      series: [...everySchool.series, ...rows.map((r) => ({ ...r, colour: OTHER, values: everySchool.periods.map((p) => r.values[f.periods.indexOf(p)] ?? null) }))],
+    };
+    const t = trendTable(f, withRows, b.setNoun, look, allRows, rows.map((r) => r.key));
+    return t.leaf.leaf === "yearTable" ? { ...t, leaf: { ...t.leaf, showRank: false } } : t;
+  }
   const changeTable = sliceFrom(allRows ? everySchool : { ...everySchool, series: everySchool.series.filter((s) => s.key === "own") }, f.state.changeStart);
   const changeData = sliceFrom(full, f.state.changeStart);
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";

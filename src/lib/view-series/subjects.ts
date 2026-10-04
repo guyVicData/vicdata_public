@@ -22,6 +22,7 @@ import {
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { FOCUS_COLOUR, paletteInOrder, shouldIndex, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { onChangeHalf, resolveCompare } from "./compare";
+import { compareLinesFor } from "./compare-lines";
 import type { SubjectsFrame } from "./frames";
 import { averageOfShown, fitOn, orderRows, topTen } from "./looks";
 import type { BuildContext, ViewSeries } from "./series";
@@ -72,7 +73,7 @@ export function buildSubjects(spec: ViewSpec, f: SubjectsFrame, ctx: BuildContex
     return null;
   }
   if (spec.view.kind === "bar" && spec.data.per === "subject") {
-    if (spec.data.shownAs === "change") return changeBars(spec.view.look, f, compare, allRows);
+    if (spec.data.shownAs === "change") return changeBars(spec.view.look, f, compare, allRows, spec.compare !== "follows-page");
     if ("latest" in spec.data.years) return currentBars(spec.view.look, f, compare, allRows);
   }
   return null;
@@ -188,25 +189,12 @@ function trendData(f: SubjectsFrame, allRows: boolean, extra: PanelSeries[]) {
   return { c, data: sliceFrom(full, f.state.trendStart) };
 }
 
-// The compare lines a frame can draw for a spec of its own: the group line, and England for
-// the focused subject (Results).
-function compareLines(f: SubjectsFrame, compare: CompareSeries[], focusedKey: string | null): PanelSeries[] {
-  const out: PanelSeries[] = [];
-  for (const cs of compare) {
-    if ((cs.as ?? "line") !== "line") continue;
-    if (cs.kind === f.groupKind && f.groups[0]) out.push({ key: "group-0", label: f.groups[0].label, colour: f.groups[0].colour ?? "var(--muted3)", values: f.groups[0].values, comparison: true });
-    else if (cs.kind === "england" && f.benchmarkKind === "england") {
-      const focus = f.subjects.find((s) => s.key === focusedKey);
-      if (focus?.benchmark) out.push({ key: "england", label: "England", colour: "var(--muted3)", values: focus.benchmark, comparison: true });
-    }
-  }
-  return out;
-}
-
 function line(spec: ViewSpec, look: LineLook, f: SubjectsFrame, compare: CompareSeries[], allRows: boolean, ctx: BuildContext): ViewSeries | null {
   if (f.subjects.length === 0) return null;
   const b = basics(f);
-  const extra = spec.compare === "follows-page" ? [] : compareLines(f, compare, b.focusedKey);
+  // A spec of its own: its compare lines (S3c: the group's mean or median, LA / region /
+  // England from the host's geography fetch, where the catalogue allows -- compare-lines.ts).
+  const extra = spec.compare === "follows-page" ? [] : compareLinesFor(f, compare, { focusedKey: b.focusedKey, span: true, as: ["line"] });
   const { c, data } = trendData(f, allRows, extra);
   const indexedTrend = shouldIndex(f.measure.aggregate);
   const wantIndex = spec.data.shownAs === "indexed";
@@ -301,10 +289,13 @@ function yearTable(spec: ViewSpec, look: TableLook, f: SubjectsFrame, allRows: b
       },
     };
   }
-  const { c, data } = trendData(f, allRows, []);
+  // S3c: a spec of its own adds its compare series as rows (the geography table's way: LA /
+  // region / England, or an average of the group, each a labelled row, no rank).
+  const rows = spec.compare === "follows-page" ? [] : compareLinesFor(f, spec.compare, { focusedKey: basics(f).focusedKey, span: true });
+  const { c, data } = trendData(f, allRows, rows.map((r) => ({ ...r, colour: "var(--muted3)" })));
   const railLegend = f.changeScope === "individual" && data.series.length > 1;
   const shown: PanelData =
-    railLegend && ctx.fullscreen ? { ...data, series: data.series.filter((x) => x.key === c.focusedKey || !f.state.hiddenKeys.has(x.key)) } : data;
+    railLegend && ctx.fullscreen ? { ...data, series: data.series.filter((x) => x.key === c.focusedKey || x.comparison || !f.state.hiddenKeys.has(x.key)) } : data;
   const scope = allRows ? c.scope : null;
   return {
     kind: "table",
@@ -316,6 +307,7 @@ function yearTable(spec: ViewSpec, look: TableLook, f: SubjectsFrame, allRows: b
       measure: f.measure,
       focusKey: c.focusedKey,
       ...(look.leadingRank ? { leadingRank: true } : {}),
+      ...(rows.length ? { showRank: false } : {}),
       ...tableLook(look),
       centred: `trend-table:${c.focusedKey}:${data.periods.join(",")}`,
     },
@@ -324,7 +316,7 @@ function yearTable(spec: ViewSpec, look: TableLook, f: SubjectsFrame, allRows: b
 
 // The % change half's data: each subject in Current's grey ramp, then the group lines (for
 // the trim, and the reference line), over the change half's span.
-function changeData(f: SubjectsFrame, allRows: boolean) {
+export function changeData(f: SubjectsFrame, allRows: boolean) {
   const c = currentRows(f, !!f.benchmarkLabel);
   const own = (c.redesigned ? c.barRows.map((r) => r.s) : f.subjects).filter((s) => allRows || s.key === c.focusedKey);
   const full = trimToData({
@@ -338,9 +330,12 @@ function changeData(f: SubjectsFrame, allRows: boolean) {
   return { c, data, changeSince: data.periods.length ? academicYearLabel(data.periods[0]) : "" };
 }
 
-function changeBars(look: BarLook, f: SubjectsFrame, compare: CompareSeries[], allRows: boolean): ViewSeries | null {
+function changeBars(look: BarLook, f: SubjectsFrame, compare: CompareSeries[], allRows: boolean, explicit = false): ViewSeries | null {
   if (f.subjects.length === 0) return null;
   const { c, data, changeSince } = changeData(f, allRows);
+  // S3c: a spec of its own reads its dashed reference from its own compare (the group's mean
+  // or median, an area), over the same span.
+  const ownRef = explicit ? compareLinesFor(f, compare, { focusedKey: c.focusedKey, span: true, as: ["reference", "line"] })[0] : undefined;
   const rows = data.series
     .filter((s) => !s.key.startsWith("group-"))
     .map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOf(f.measure, s.values) }));
@@ -356,7 +351,13 @@ function changeBars(look: BarLook, f: SubjectsFrame, compare: CompareSeries[], a
       leaf: "changeList",
       rows: shown,
       focusKey: look.highlight === false ? null : c.focusedKey,
-      ...(reference ? { group: { label: f.groups[0].label, value: changeOf(f.measure, data.series.find((x) => x.key === "group-0")?.values ?? []) } } : {}),
+      ...(explicit
+        ? ownRef
+          ? { group: { label: ownRef.label, value: changeOf(f.measure, data.periods.map((p) => ownRef.values[f.periods.indexOf(p)] ?? null)) } }
+          : {}
+        : reference
+          ? { group: { label: f.groups[0].label, value: changeOf(f.measure, data.series.find((x) => x.key === "group-0")?.values ?? []) } }
+          : {}),
       ...(average ? { average } : {}),
       format: f.measure.changeKind === "percent" ? "percent" : "change",
       measure: f.measure,

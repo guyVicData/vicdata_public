@@ -34,7 +34,7 @@ import {
   type PanelId,
 } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
+import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
@@ -57,7 +57,7 @@ import { ViewChart } from "./ViewChart";
 import { VerticalBars } from "./VerticalBars";
 import { RankedList } from "./RankedList";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
-import type { SubjectsFrame } from "@/lib/view-series/frames";
+import type { FrameSchoolGroup, FrameSet, SubjectsFrame } from "@/lib/view-series/frames";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -107,6 +107,8 @@ export function SubjectPanels({
   gradeBand,
   rankedViews = false,
   compareAgainstLabel,
+  schoolGroup,
+  schoolSet,
 }: {
   columnId: string;
   periods: number[];
@@ -251,6 +253,10 @@ export function SubjectPanels({
   // category ("Sciences & Maths"), "all subjects" or "the subjects you selected" -- for
   // the titles over Context's donut, bar chart, ranked list and table. Absent = no title.
   compareAgainstLabel?: string;
+  // 0.6.1 S3c: what a view of its own's "Add an average" reads (the page's groups of
+  // subjects, and its Compared against set), built on demand. Read only under views=v2.
+  schoolGroup?: FrameSchoolGroup;
+  schoolSet?: () => FrameSet | null;
   trendMap?: {
     profiles: AcademicSchoolProfile[] | null;
     targetUrn: string;
@@ -1070,6 +1076,24 @@ export function SubjectPanels({
     tiles: !!tiles,
     gradeBand: gradeBand ? { range: gradeBand.range, rangeLabel: gradeBand.rangeLabel, ownRows: gradeBand.ownRows } : null,
     schoolName: runtime?.school?.name,
+    // S3c: the phase (D7's honest options), Context's donut, Results' geography comparison
+    // (the fetch above, as fetched) and Results' Trend map.
+    phase: runtime?.phase,
+    donut: donut ?? null,
+    geography: frameGeography(geography, geo, "avgPointScore"),
+    trendMap: trendMap
+      ? {
+          profiles: trendMap.profiles,
+          targetUrn: trendMap.targetUrn,
+          stage: trendMap.stage,
+          chip: { subject: trendMap.subject, legend: trendMap.subjectLabel, bucket: trendMap.subjectBucket, familyId: trendMap.familyId },
+          accentHex: trendMap.accentHex,
+          allowed: true,
+          subjectLabel: trendMap.subjectLabel,
+        }
+      : null,
+    schoolGroup,
+    schoolSet,
     state: { trendStart, changeStart, showFit, latestIdx, hiddenKeys, sort, onSort: (key) => setSort(nextSort(sort, key)) },
   };
 

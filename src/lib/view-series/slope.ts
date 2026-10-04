@@ -12,22 +12,22 @@
 // series the frame can honestly supply ("follows-page" adds nothing: no host draws a slope).
 // Every figure is the frame's own value at that year, unchanged.
 import type { CompareSeries, ViewSpec } from "@/catalogue/viewspec";
-import { ENTRIES_MEASURE, meanOf, type Measure } from "@/lib/teacher-view-panels";
-import { memberMeans } from "@/lib/teacher-view-populations";
+import { ENTRIES_MEASURE, type Measure } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { basics as candidateBasics } from "./candidates";
 import { onChangeHalf, resolveCompare } from "./compare";
+import { compareLinesFor, type CompareLine } from "./compare-lines";
 import type { ViewFrame } from "./frames";
 import type { SlopeRowData, ViewSeries } from "./series";
 import { currentRows } from "./subjects";
 
 type Line = { key: string; label: string; colour: string; values: (number | null)[]; emphasis: boolean; comparison?: boolean };
 
-const COMPARISON = "var(--muted3)";
 const OWN = "var(--accent,var(--fg))";
 const OTHER = "var(--muted3)";
 
-const isLine = (c: CompareSeries) => (c.as ?? "line") === "line";
+// S3c: the compare lines (compare-lines.ts: the catalogue's honest ones, in their own colours).
+const asLines = (ls: CompareLine[]): Line[] => ls.map((l) => ({ key: l.key, label: l.label, colour: l.colour, values: l.values, emphasis: false, comparison: true }));
 
 // The frame's rows and compare lines, its measure, the year Current shows, and the title's
 // subject / scope words.
@@ -39,15 +39,7 @@ function linesOf(spec: ViewSpec, f: ViewFrame, compare: CompareSeries[], allRows
     const rows: Line[] = c.barRows
       .filter((r) => allRows || r.s.key === c.focusedKey)
       .map((r) => ({ key: r.s.key, label: r.s.label, colour: c.trendColours.get(r.s.key) ?? c.colourFor(r.s), values: r.s.values, emphasis: r.s.key === c.focusedKey }));
-    const extra: Line[] = [];
-    if (explicit)
-      for (const cs of compare.filter(isLine)) {
-        if (cs.kind === f.groupKind && f.groups[0]) extra.push({ key: "group-0", label: f.groups[0].label, colour: COMPARISON, values: f.groups[0].values, emphasis: false, comparison: true });
-        else if (cs.kind === "england" && f.benchmarkKind === "england") {
-          const focus = f.subjects.find((s) => s.key === c.focusedKey);
-          if (focus?.benchmark) extra.push({ key: "england", label: "England", colour: COMPARISON, values: focus.benchmark, emphasis: false, comparison: true });
-        }
-      }
+    const extra = explicit ? asLines(compareLinesFor(f, compare, { focusedKey: c.focusedKey, span: true, as: ["line"] })) : [];
     const latest = f.state.latestIdx >= 0 ? f.periods[f.state.latestIdx] : null;
     return { lines: [...rows, ...extra], measure: f.measure, latest, name: allRows ? c.scope ?? c.scopeNoun : c.focusedSubject?.label ?? c.scopeNoun };
   }
@@ -57,30 +49,15 @@ function linesOf(spec: ViewSpec, f: ViewFrame, compare: CompareSeries[], allRows
     const rows: Line[] = b.trendSubjectSeries
       .filter((s) => allRows || s.key === b.focused?.key)
       .map((s) => ({ ...s, emphasis: s.key === b.focused?.key }));
-    const extra: Line[] =
-      explicit && b.group && compare.some((cs) => cs.kind === "category" && isLine(cs))
-        ? [{ key: "group", label: b.group.label, colour: COMPARISON, values: memberMeans(f.periods, b.subjectSeries), emphasis: false, comparison: true }]
-        : [];
+    const extra = explicit ? asLines(compareLinesFor(f, compare, { focusedKey: b.focused?.key ?? null, span: true, as: ["line"] })) : [];
     return { lines: [...rows, ...extra], measure: ENTRIES_MEASURE as Measure, latest: null, name: allRows ? b.inCategory ?? "Entries" : b.focused?.label ?? "Entries" };
   }
   if (f.blocked || f.schools.length === 0) return null;
-  const others = f.schools.filter((s) => !s.isTarget);
   const rows: Line[] = f.schools
     .filter((s) => allRows || s.isTarget)
     .map((s) => ({ key: s.isTarget ? "own" : s.urn, label: s.isTarget ? f.targetName : s.name, colour: s.isTarget ? OWN : OTHER, values: s.values, emphasis: s.isTarget }));
-  const extra: Line[] = [];
-  if (explicit)
-    for (const cs of compare.filter(isLine)) {
-      if (cs.kind === "chosenSchool") {
-        const school = others.find((s) => s.urn === f.versus.urn);
-        if (school && !allRows) extra.push({ key: "versus", label: school.name, colour: COMPARISON, values: school.values, emphasis: false, comparison: true });
-      } else if (cs.kind === f.setKind || cs.kind === "nearest" || cs.kind === "savedSet") {
-        // The set's average over the other schools with a figure that year (a ranking's own
-        // population on its measure), as Trend's "vs:" line reads it.
-        const values = f.onRankingMeasure && f.ranking ? f.periods.map((p) => f.ranking!.averageAt(p)) : f.periods.map((_, i) => meanOf(others.map((s) => s.values[i])));
-        extra.push({ key: "versus", label: `Average across the ${f.setLabel.toLowerCase()}`, colour: COMPARISON, values, emphasis: false, comparison: true });
-      }
-    }
+  // One named school is already a row when every school is drawn.
+  const extra = explicit ? asLines(compareLinesFor(f, compare, { focusedKey: "own", span: true, as: ["line"] }).filter((l) => !(allRows && l.kind === "chosenSchool"))) : [];
   return { lines: [...rows, ...extra], measure: f.measure, latest: null, name: allRows ? `Every school in the ${f.setLabel.toLowerCase()}: ${f.comparedOn}` : `This school’s ${f.comparedOn}` };
 }
 

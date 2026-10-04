@@ -154,10 +154,11 @@ test("every line / table / bar preset is covered below (or left to its host)", (
     "DV-C1-CAND-TR-INDEXED", "DV-C1-CAND-TR-ACTUAL", "DV-C1-CAND-TR-TABLE", "DV-C1-CAND-TR-CHANGELIST", "DV-C1-CAND-TR-CHANGETABLE",
     "DV-C3-CUR-BAR", "DV-C3-TR-CHART", "DV-C3-TR-TABLE", "DV-C3-TR-CHANGELIST", "DV-C3-TR-CHANGETABLE",
   ]);
-  // Host-drawn in this part: the geography views (their own fetch) and Grade counts' table.
+  // The geography views draw from the host's fetch in the frame (S3c, below): without it
+  // (these fixtures carry none) the host draws. Grade counts' table is still its host's.
   const hosts = new Set(["DV-C1-CAND-TR-GEO-CHART", "DV-C1-CAND-TR-GEO-TABLE", "DV-C1-RES-TR-GEO-CHART", "DV-C1-RES-TR-GEO-TABLE", "DV-C1-CNT-TR-CHANGETABLE"]);
   for (const id of LTB) assert.ok(covered.has(id) || hosts.has(id), id);
-  for (const id of hosts) for (const { frame } of FRAMES) assert.equal(id === "DV-C1-CNT-TR-CHANGETABLE" ? null : build(id, frame), null, `${id} stays with its host`);
+  for (const id of hosts) for (const { frame } of FRAMES) assert.equal(id === "DV-C1-CNT-TR-CHANGETABLE" ? null : build(id, frame), null, `${id} stays with its host without a geography fetch`);
 });
 
 test("Results' Current bars: each subject's figure that year, largest first, England's marker on points", () => {
@@ -798,4 +799,374 @@ test("the renderer draws them: a slope ViewSpec renders (SlopeChart); ranking an
   assert.match(renderToStaticMarkup(renderView(presetSpec("DV-C1-RES-CUR-TILES"), f, { fullscreen: false }) as React.ReactElement), /text-\[80px\]/);
   assert.match(renderToStaticMarkup(renderView(presetSpec("DV-C2-CUR-LIST"), context[0].frame, { fullscreen: false }) as React.ReactElement), /<ol/);
   assert.match(renderToStaticMarkup(renderView(presetSpec("DV-C3-CUR-RANKING"), comparisons[0].frame, { fullscreen: false }) as React.ReactElement), /Distance/);
+});
+
+// =============================================================== S3c: donut, map, geography, compare
+
+import { PALETTE_DARK } from "@/lib/school-series-colours";
+import { changeOf as changeOfLib, percentChange as percentChangeLib, sliceFrom as sliceFromLib, trimToData as trimToDataLib } from "@/lib/teacher-view-panels";
+import { changeOver as changeOverLib, FOCUS_COLOUR as FOCUS, paletteInOrder as paletteLib } from "@/lib/teacher-view-trend-styles";
+import type { GeographyPayload } from "@/lib/teacher-view-geography";
+import type { FrameGeography, FrameMap } from "./view-series/frames";
+import { compareColour } from "./view-series/colours";
+
+type LeafOf<K extends LeafSeries["leaf"]> = Extract<LeafSeries, { leaf: K }>;
+const S3C_IDS = ["DV-C2-CUR-DONUT", "DV-C1-RES-TR-MAP", "DV-C3-CUR-MAP", "DV-C3-TR-MAP", "DV-C3-TR-CHANGEMAP", "DV-C1-CAND-TR-GEO-CHART", "DV-C1-CAND-TR-GEO-TABLE", "DV-C1-RES-TR-GEO-CHART", "DV-C1-RES-TR-GEO-TABLE"];
+
+test("S3c: the donut, map and geography presets are registered and drawn from their spec", async () => {
+  const { viewKindRegistered } = await import("@/components/views");
+  for (const kind of ["donut", "map", "line", "table"] as const) assert.ok(viewKindRegistered(kind), kind);
+  assert.equal(viewKindRegistered("spread"), false, "the grade spread is still its host's (S3d)");
+  for (const id of S3C_IDS) assert.ok(DATAVIEWS.some((d) => d.id === id), id);
+});
+
+// ------------------------------------------------------------------------------- donut
+
+// Context's donut, as the page hands it: the group's own totals per period.
+const totalsOf = (f: SubjectsFrame) => f.periods.map((_, i) => real(f.subjects.map((s) => s.values[i] ?? null)).reduce((a, b) => a + b, 0) || null);
+const withDonut = (f: SubjectsFrame, extra: Partial<NonNullable<SubjectsFrame["donut"]>> = {}): SubjectsFrame => ({
+  ...f,
+  donut: { enabled: true, groupLabel: "All subjects", groupTotals: totalsOf(f), shareOf: "all student entries", ...extra },
+});
+
+test("S3c donut: the focused subject's entries as a share of the group's total, the year Current shows", () => {
+  const ctxEntries = context.filter((x) => x.raw.measureId === "entries");
+  assert.ok(ctxEntries.length >= 6);
+  for (const { raw, frame } of ctxEntries) {
+    const f = withDonut(frame as SubjectsFrame);
+    const s = build("DV-C2-CUR-DONUT", f);
+    const i = f.state.latestIdx;
+    const focus = f.subjects.find((x) => x.key === f.focus) ?? f.subjects[0];
+    const value = focus.values[i]!;
+    const total = f.donut!.groupTotals[i]!;
+    const leaf: LeafOf<"donut"> = leafOf(s, "donut");
+    close(leaf.percent, (value / total) * 100, raw.name);
+    assert.equal(leaf.valueLabel, f.measure.format(value));
+    assert.equal(leaf.groupValueLabel, f.measure.format(total - value), "the rest of the group, not its whole");
+    assert.equal(leaf.label, focus.label);
+    assert.equal(leaf.colour, focus.colour);
+    assert.equal(leaf.otherLabel, undefined, "ShareDonut's own default words");
+    assert.equal(s!.title, f.compareAgainstLabel ? `Entries in ${focus.label} as a proportion of ${f.compareAgainstLabel}` : null);
+    // The year menu moves it.
+    const earlier: LeafOf<"donut"> = leafOf(build("DV-C2-CUR-DONUT", { ...f, state: { ...f.state, latestIdx: i - 1 } }), "donut");
+    close(earlier.percent, (focus.values[i - 1]! / f.donut!.groupTotals[i - 1]!) * 100);
+  }
+});
+
+test("S3c donut: Grade bands' share (the group's entries in the range); off, or a note state, is the host's", () => {
+  const { frame } = context.find((x) => x.raw.measureId === "entries")!;
+  const f = frame as SubjectsFrame;
+  const share = { values: f.periods.map(() => 40), totals: f.periods.map(() => 160), label: "Grades 7–9", otherLabel: "All other grades", format: (v: number) => v.toLocaleString() };
+  const s = build("DV-C2-CUR-DONUT", withDonut(f, { share }));
+  const leaf: LeafOf<"donut"> = leafOf(s, "donut");
+  close(leaf.percent, 25);
+  assert.equal(leaf.label, "Grades 7–9");
+  assert.equal(leaf.otherLabel, "All other grades");
+  assert.equal(leaf.groupValueLabel, "120");
+  assert.match(String(s!.title), /^Entries at grades 7–9 as a proportion of graded entries in /);
+  // R-DONUT-COUNTS-ONLY: disabled on a measure it can't honestly draw -- the host's.
+  assert.equal(build("DV-C2-CUR-DONUT", withDonut(f, { enabled: false })), null);
+  assert.equal(build("DV-C2-CUR-DONUT", f), null, "no donut handed over");
+  assert.equal(build("DV-C2-CUR-DONUT", { ...withDonut(f), state: { ...f.state, latestIdx: -1 } }), null, "no year: the host's note");
+  assert.equal(build("DV-C2-CUR-DONUT", { ...withDonut(f), currentBlocked: true }), null, "a band with no range: the host's note");
+  assert.equal(build("DV-C2-CUR-DONUT", withDonut(f, { groupTotals: f.periods.map(() => 0) })), null, "no group total: the host's note");
+});
+
+// ------------------------------------------------------------------------------- maps
+
+const PROFILES = (urns: string[]) => [...urns, "999999"].map((urn) => ({ urn }) as unknown as NonNullable<FrameMap["profiles"]>[number]);
+function withMap(f: ComparisonsFrame, extra: Partial<FrameMap> = {}): ComparisonsFrame {
+  const target = f.schools.find((s) => s.isTarget)!;
+  return {
+    ...f,
+    phase: "ks4",
+    map: { profiles: PROFILES(f.schools.map((s) => s.urn)), targetUrn: target.urn, stage: "ks4", chip: { subject: "History", legend: "History", bucket: null, familyId: "humanities" }, accentHex: "#123456", allowed: true, ...extra },
+  };
+}
+
+test("S3c map, Comparisons' Current: the set's schools coloured by value; never a ranking's sample", () => {
+  for (const { raw, frame } of comparisons) {
+    const f = withMap(frame as ComparisonsFrame);
+    const s = build("DV-C3-CUR-MAP", f);
+    const leaf: LeafOf<"map"> = leafOf(s, "map");
+    assert.equal(leaf.place, "current", raw.name);
+    assert.equal(leaf.forcedColourMode, "accent");
+    assert.equal(leaf.targetUrn, f.map!.targetUrn);
+    assert.equal(leaf.map.profiles!.length, f.schools.length + 1, "Current plots the page's profiles as they are");
+    assert.equal(s!.title, `${f.titleOn} by school, on the map`);
+  }
+  const f = withMap(comparisons[0].frame as ComparisonsFrame);
+  assert.equal(leafOf(build("DV-C3-CUR-MAP", { ...f, map: { ...f.map!, stage: "ks2" } }), "map").forcedColourMode, "grade_band");
+  assert.equal(build("DV-C3-CUR-MAP", { ...f, map: { ...f.map!, allowed: false } }), null, "R-RANKING-SAMPLE");
+  assert.equal(build("DV-C3-CUR-MAP", { ...f, map: { ...f.map!, targetUrn: null } }), null, "no location: the host's note");
+  assert.equal(build("DV-C3-CUR-MAP", { ...f, map: null }), null);
+  // The map draws its own loading state, as the host's does.
+  assert.ok(build("DV-C3-CUR-MAP", { ...f, blocked: true }));
+  const member = { ...presetSpec("DV-C3-CUR-MAP"), view: { kind: "map" as const, look: { colour: "member" as const } } };
+  assert.equal(leafOf(buildSeries(member, f, { fullscreen: false }), "map").forcedColourMode, undefined, "the map's own toggle");
+});
+
+test("S3c map, Trend map / Change map: each school's change over the half's span, this set's schools only", () => {
+  for (const { raw, frame } of comparisons) {
+    const f = withMap(frame as ComparisonsFrame);
+    const target = f.schools.find((s) => s.isTarget)!;
+    // The host's span: the school and the set's average, trimmed, from the half's From year.
+    const others = f.schools.filter((s) => !s.isTarget);
+    const full = trimToDataLib({ periods: f.periods, series: [{ key: "own", label: "", colour: "", values: target.values }, { key: "versus", label: "", colour: "", values: f.periods.map((_, i) => mean(others.map((s) => s.values[i]))) }] });
+    const every = { periods: full.periods, series: f.schools.map((s) => ({ key: s.isTarget ? "own" : s.urn, label: s.name, colour: "", values: full.periods.map((p) => s.values[f.periods.indexOf(p)] ?? null) })) };
+    const table = sliceFromLib(every, null);
+    const want = (fn: (v: (number | null)[]) => number | null) =>
+      Object.fromEntries(table.series.flatMap((x) => (fn(x.values) === null ? [] : [[x.key === "own" ? target.urn : x.key, fn(x.values)!]])));
+
+    const trend: LeafOf<"map"> = leafOf(build("DV-C3-TR-MAP", f), "map");
+    assert.equal(trend.place, "change", raw.name);
+    assert.equal(trend.forcedColourMode, "trend_absolute", "the Trend map: the plain difference on every measure");
+    assert.deepEqual(trend.changeValues!.byUrn, want((v) => changeOverLib(v)?.delta ?? null), raw.name);
+    assert.equal(trend.changeValues!.format(1.5), f.measure.formatDelta(1.5));
+    assert.equal(trend.map.profiles!.length, f.schools.length, "the profile outside the set is left off");
+
+    const change: LeafOf<"map"> = leafOf(build("DV-C3-TR-CHANGEMAP", f), "map");
+    if (f.measure.changeKind === "percent") {
+      assert.equal(change.forcedColourMode, "trend", "a count: the fixed ±% scale");
+      assert.deepEqual(change.changeValues!.byUrn, want(percentChangeLib), raw.name);
+      assert.equal(change.changeValues!.format(-12.4), "−12%");
+    } else {
+      assert.equal(change.forcedColourMode, "trend_absolute");
+      assert.deepEqual(change.changeValues!.byUrn, want((v) => changeOfLib(f.measure, v)), raw.name);
+    }
+    // Two years at least; loading or a ranking is the host's.
+    assert.equal(build("DV-C3-TR-CHANGEMAP", { ...f, state: { ...f.state, changeStart: table.periods[table.periods.length - 1] } }), null, raw.name);
+    assert.equal(build("DV-C3-TR-MAP", { ...f, blocked: true }), null);
+    assert.equal(build("DV-C3-TR-MAP", { ...f, map: { ...f.map!, allowed: false } }), null);
+  }
+});
+
+test("S3c map, Results' Trend map: the focused subject at each comparator school, the map's own toggle", () => {
+  const f = results[0].frame as SubjectsFrame;
+  assert.equal(build("DV-C1-RES-TR-MAP", f), null, "no map handed over (no subject chip)");
+  const m: SubjectsFrame["trendMap"] = { profiles: [], targetUrn: "100053", stage: "ks4", chip: { subject: "History", legend: "History", bucket: null, familyId: null }, accentHex: null, allowed: true, subjectLabel: "History" };
+  const s = build("DV-C1-RES-TR-MAP", { ...f, trendMap: m });
+  const leaf: LeafOf<"map"> = leafOf(s, "map");
+  assert.equal(leaf.place, "trend");
+  assert.equal(leaf.forcedColourMode, undefined);
+  assert.equal(leaf.untitledSizeLegend, true);
+  assert.deepEqual(s!.title, ["History", " at each comparator school, on the map"]);
+});
+
+// --------------------------------------------------------------------------- geography
+
+const GEO_PAYLOAD = (periods: number[], metric: "entries" | "avgPointScore"): GeographyPayload => {
+  const rows = (base: number, from = 0) =>
+    periods.slice(from).map((p, k) => ({ period: p, entries: metric === "entries" ? base + 10 * k : null, avgPointScore: metric === "avgPointScore" ? base / 100 + 0.1 * k : null, schoolCount: 12 }));
+  return { la: { name: "Camden", rows: rows(400, 1) }, region: { name: "London", rows: rows(500, 1) }, national: { name: "England", rows: rows(600) } };
+};
+function withGeo(f: SubjectsFrame | CandidatesFrame, metric: "entries" | "avgPointScore", extra: Partial<FrameGeography> = {}) {
+  const focus = (f.subjects.find((s) => s.key === f.focus) ?? f.subjects[0]).values;
+  const geography: FrameGeography = { label: "History", applies: true, notApplicableText: "Not here.", metric, own: focus, payload: GEO_PAYLOAD(f.periods, metric), id: "History::", ...extra };
+  return { ...f, phase: "ks4" as const, geography };
+}
+
+test("S3c geography: the focused subject against its LA, region and England, from the host's own fetch", () => {
+  for (const [preset, list, metric] of [
+    ["DV-C1-RES-TR-GEO", results.filter((x) => x.raw.measureId === "points"), "avgPointScore"],
+    ["DV-C1-CAND-TR-GEO", candidates, "entries"],
+  ] as const) {
+    for (const { raw, frame } of list) {
+      const f = withGeo(frame as SubjectsFrame | CandidatesFrame, metric);
+      const payload = f.geography.payload!;
+      // The span: the % change half's (every subject and the group lines, trimmed), within
+      // the years the areas have figures.
+      const geoYears = new Set([...payload.la!.rows, ...payload.national!.rows].map((r) => r.period));
+      const chart = build(`${preset}-CHART`, f);
+      const c: LeafOf<"geography"> = leafOf(chart, "geography");
+      assert.equal(chart!.title, null, "the heading is the leaf's own (GeographyView's)");
+      assert.equal(c.view, "chart");
+      assert.equal(c.heading, "History against its LA and England, year by year");
+      assert.deepEqual(c.data.series.map((x) => x.key), ["own", "area-la", "area-national"], `${raw.name}: no region line on the chart`);
+      assert.ok(c.data.periods.every((p) => geoYears.has(p)));
+      const ownAt = (p: number) => f.geography.own[f.periods.indexOf(p)] ?? null;
+      assert.deepEqual(c.data.series[0].values, c.data.periods.map(ownAt), raw.name);
+      assert.equal(c.data.series[0].colour, FOCUS);
+      const pal = paletteLib(["own", "area-la", "area-region", "area-national"], "own", FOCUS, PALETTE_DARK, null);
+      assert.equal(c.data.series[1].colour, pal.get("area-la"));
+      const fig = (r: { entries: number | null; avgPointScore: number | null }) => (metric === "entries" ? r.entries : r.avgPointScore);
+      assert.deepEqual(c.data.series[2].values, c.data.periods.map((p) => fig(payload.national!.rows.find((r) => r.period === p)!)));
+      const table: LeafOf<"geography"> = leafOf(build(`${preset}-TABLE`, f), "geography");
+      assert.equal(table.heading, "History: change against its LA, region and England");
+      assert.deepEqual(table.data.series.map((x) => [x.key, x.label]), [["own", "This school"], ["area-la", "Camden (LA)"], ["area-region", "London (region)"], ["area-national", "England"]]);
+      assert.ok(table.data.series.slice(1).every((x) => x.colour === "var(--muted3)"), "one grey for the labelled area rows");
+      assert.equal(table.centred, `geo:History:::${metric}:${table.data.periods.join(",")}`);
+    }
+  }
+});
+
+test("S3c geography: the host's three notes -- not applicable, loading, nothing published", () => {
+  const f = results.find((x) => x.raw.measureId === "points")!.frame as SubjectsFrame;
+  const note = (extra: Partial<FrameGeography>) => leafOf(build("DV-C1-RES-TR-GEO-TABLE", withGeo(f, "avgPointScore", extra)), "geography").note;
+  assert.equal(note({ applies: false }), "Not here.");
+  assert.equal(note({ payload: undefined }), "Loading LA, regional and national figures…");
+  assert.equal(note({ payload: null }), "No LA, regional or national average points figures are published for History.");
+  // A spec of its own made from the preset (its own compare) is an ordinary line, below.
+  const own = { ...presetSpec("DV-C1-RES-TR-GEO-CHART"), compare: [{ kind: "self" as const, colour: "accent" }, { kind: "la" as const, colour: "palette:0" }] };
+  assert.equal(buildSeries(own, withGeo(f, "avgPointScore"), { fullscreen: false })?.leaf.leaf, "trendChart");
+});
+
+// ---------------------------------------------------------- compare: areas and averages
+
+function lineSpec(compare: ViewSpec["compare"], kind: "line" | "table" = "line"): ViewSpec {
+  const base = historyOnly();
+  return { ...base, view: kind === "table" ? { kind: "table", look: {} } : base.view, compare };
+}
+
+test("S3c compare: LA / region / England lines appear only where the catalogue allows (D7)", () => {
+  const areas: ViewSpec["compare"] = [
+    { kind: "self", colour: "accent" },
+    { kind: "la", colour: "palette:0" },
+    { kind: "region", colour: "palette:6" },
+    { kind: "england", colour: "palette:3" },
+  ];
+  // Results on points: all three, LA / region from the fetch, England the subject's own.
+  for (const { raw, frame } of results.filter((x) => x.raw.measureId === "points")) {
+    const f = { ...withGeo(frame as SubjectsFrame, "avgPointScore"), phase: raw.phase } as SubjectsFrame;
+    const leaf: LeafOf<"trendChart"> = leafOf(buildSeries(lineSpec(areas), f, { fullscreen: false }), "trendChart");
+    assert.deepEqual(leaf.data.series.map((x) => x.key), [f.focus, "area-la", "area-region", "england"], raw.name);
+    const england = f.subjects.find((s) => s.key === f.focus)!.benchmark!;
+    assert.deepEqual(leaf.data.series[3].values, leaf.data.periods.map((p) => england[f.periods.indexOf(p)] ?? null));
+    // CompareSeries.colour, the real tokens.
+    assert.deepEqual(leaf.data.series.slice(1).map((x) => x.colour), [PALETTE_DARK[0], PALETTE_DARK[6], PALETTE_DARK[3]]);
+    assert.ok(leaf.data.series.slice(1).every((x) => x.comparison));
+  }
+  // Grade 4+ / A*-E: none (R-NO-GRADE-RATE-GEO), even with a fetch in the frame.
+  for (const { raw, frame } of results.filter((x) => x.raw.measureId === "threshold")) {
+    const f = { ...withGeo(frame as SubjectsFrame, "avgPointScore"), phase: raw.phase } as SubjectsFrame;
+    const leaf: LeafOf<"trendChart"> = leafOf(buildSeries(lineSpec(areas), f, { fullscreen: false }), "trendChart");
+    assert.deepEqual(leaf.data.series.map((x) => x.key), [f.focus], raw.name);
+  }
+  // Bands: England is the latest year only (R-BANDS-ENGLAND-BENCH) -- never on a line.
+  for (const { raw, frame } of results.filter((x) => x.raw.measureId === "bands")) {
+    const f = { ...withGeo(frame as SubjectsFrame, "avgPointScore"), phase: raw.phase } as SubjectsFrame;
+    const s = buildSeries(lineSpec(areas), f, { fullscreen: false });
+    if (s) assert.deepEqual((s.leaf as Extract<LeafSeries, { leaf: "trendChart" }>).data.series.map((x) => x.key), [f.focus], raw.name);
+  }
+  // The comparison doesn't apply (a non-GCSE qualification at KS4): no area line.
+  const p = results.find((x) => x.raw.measureId === "points")!;
+  const off = { ...withGeo(p.frame as SubjectsFrame, "avgPointScore", { applies: false }), phase: p.raw.phase } as SubjectsFrame;
+  assert.deepEqual(leafOf(buildSeries(lineSpec(areas), off, { fullscreen: false }), "trendChart").data.series.map((x) => x.key), [off.focus, "england"]);
+  // Still loading: the areas join when the fetch lands.
+  const loading = { ...off, geography: { ...off.geography!, applies: true, payload: undefined } };
+  assert.deepEqual(leafOf(buildSeries(lineSpec(areas), loading, { fullscreen: false }), "trendChart").data.series.map((x) => x.key), [off.focus, "england"]);
+});
+
+test("S3c compare: Candidates' area lines count points-eligible entries, the school's line too (R-GEO-POINTS-ELIGIBLE)", () => {
+  const { raw, frame } = candidates[0];
+  const f0 = frame as CandidatesFrame;
+  const pe = f0.periods.map((_, i) => (i % 2 ? 7 : 9));
+  const f = { ...withGeo(f0, "entries", { own: pe }), phase: raw.phase } as CandidatesFrame;
+  const spec = lineSpec([{ kind: "self", colour: "accent" }, { kind: "la", colour: "palette:0" }, { kind: "england", colour: "palette:3" }]);
+  const leaf: LeafOf<"trendChart"> = leafOf(buildSeries(spec, f, { fullscreen: false }), "trendChart");
+  assert.deepEqual(leaf.data.series.map((x) => x.key), [f.focus, "area-la", "england"]);
+  assert.deepEqual(leaf.data.series[0].values, leaf.data.periods.map((p) => pe[f.periods.indexOf(p)]));
+  // Without an area line the school's line is its entries, as before.
+  const plain: LeafOf<"trendChart"> = leafOf(buildSeries(lineSpec([{ kind: "self", colour: "accent" }]), f, { fullscreen: false }), "trendChart");
+  const own = f.subjects.find((s) => s.key === f.focus)!.values;
+  assert.deepEqual(plain.data.series[0].values, plain.data.periods.map((p) => own[f.periods.indexOf(p)]));
+});
+
+test("S3c compare: a table of its own draws its compare series as labelled rows, no rank", () => {
+  const { raw, frame } = results.find((x) => x.raw.measureId === "points")!;
+  const f = { ...withGeo(frame as SubjectsFrame, "avgPointScore"), phase: raw.phase } as SubjectsFrame;
+  const leaf: LeafOf<"yearTable"> = leafOf(buildSeries(lineSpec([{ kind: "self", colour: "accent" }, { kind: "la", colour: "palette:0" }, { kind: "england", colour: "palette:3" }], "table"), f, { fullscreen: false }), "yearTable");
+  assert.deepEqual(leaf.data.series.map((x) => x.key), [f.focus, "area-la", "england"]);
+  assert.equal(leaf.showRank, false);
+  assert.ok(leaf.data.series.slice(1).every((x) => x.comparison && x.colour === "var(--muted3)"));
+  // Follows-page tables are unchanged.
+  assert.equal(leafOf(build("DV-C1-RES-TR-TABLE", f), "yearTable").showRank, undefined);
+  // Comparisons: the set's median as a row under every school.
+  const c = comparisons[0].frame as ComparisonsFrame;
+  const t: LeafOf<"yearTable"> = leafOf(buildSeries({ ...presetSpec("DV-C3-TR-TABLE"), compare: [{ kind: "self", colour: "accent" }, { kind: "nearest", colour: "muted", average: "median" }] }, c, { fullscreen: false }), "yearTable");
+  assert.equal(t.data.series[t.data.series.length - 1].key, "versus-median");
+  assert.equal(t.data.series.length, c.schools.length + 1);
+});
+
+test("S3c compare: an average of things not drawn -- across schools (mean / median / weighted) and at this school", () => {
+  const median = (vs: (number | null)[]) => {
+    const r = real(vs).sort((a, b) => a - b);
+    return r.length ? (r.length % 2 ? r[(r.length - 1) / 2] : (r[r.length / 2 - 1] + r[r.length / 2]) / 2) : null;
+  };
+  for (const { raw, frame } of comparisons) {
+    const f = { ...(frame as ComparisonsFrame), phase: raw.phase } as ComparisonsFrame;
+    const others = f.schools.filter((s) => !s.isTarget);
+    const at = (how: "mean" | "median" | "weighted") => {
+      const s = buildSeries({ ...presetSpec("DV-C3-TR-CHART"), compare: [{ kind: "self", colour: "accent" }, { kind: "nearest", colour: "palette:2", average: how }] }, f, { fullscreen: false });
+      return leafOf(s, "trendChart").data;
+    };
+    const m = at("mean");
+    const line = m.series.find((x) => x.key === "versus")!;
+    for (const [k, p] of m.periods.entries()) close(line.values[k], mean(others.map((s) => s.values[f.periods.indexOf(p)])), `${raw.name} mean ${p}`);
+    assert.equal(line.colour, PALETTE_DARK[2]);
+    const md = at("median");
+    const ml = md.series.find((x) => x.key === "versus-median")!;
+    assert.match(ml.label, /^Median across /);
+    for (const [k, p] of md.periods.entries()) close(ml.values[k], median(others.map((s) => s.values[f.periods.indexOf(p)])), `${raw.name} median ${p}`);
+    const w = at("weighted");
+    const wl = w.series.find((x) => x.key === "versus-weighted")!;
+    for (const [k, p] of w.periods.entries()) {
+      const i = f.periods.indexOf(p);
+      let sum = 0;
+      let n = 0;
+      for (const s of others) if (s.values[i] !== null && (s.counts?.[i] ?? 0) > 0) { sum += s.values[i]! * s.counts![i]!; n += s.counts![i]!; }
+      close(wl.values[k], n ? sum / n : null, `${raw.name} weighted ${p}`);
+    }
+  }
+  // At this school: the page's group as it builds it on demand (schoolGroup), weighted by entries.
+  const { raw, frame } = results.find((x) => x.raw.measureId === "points")!;
+  const f = frame as SubjectsFrame;
+  const members = f.subjects.map((s, k) => ({ key: s.key, values: s.values, counts: s.values.map((v) => (v === null ? null : 10 + k)) }));
+  const g = { ...f, phase: raw.phase, schoolGroup: (kind: string) => (kind === "allSubjects" ? { label: "All subjects", members } : null) } as SubjectsFrame;
+  const spec = (how: "mean" | "median" | "weighted") => lineSpec([{ kind: "self", colour: "accent" }, { kind: "allSubjects", colour: "muted", average: how }]);
+  const wl = leafOf(buildSeries(spec("weighted"), g, { fullscreen: false }), "trendChart").data;
+  const avg = wl.series.find((x) => x.key === "avg-allSubjects-weighted")!;
+  assert.equal(avg.label, "All subjects weighted average");
+  for (const [k, p] of wl.periods.entries()) {
+    const i = f.periods.indexOf(p);
+    let sum = 0;
+    let n = 0;
+    for (const m of members) if (m.values[i] !== null) { sum += m.values[i]! * m.counts[i]!; n += m.counts[i]!; }
+    close(avg.values[k], n ? sum / n : null, `weighted ${p}`);
+  }
+  const ml = leafOf(buildSeries(spec("mean"), g, { fullscreen: false }), "trendChart").data.series.find((x) => x.key === "avg-allSubjects-mean")!;
+  assert.equal(ml.label, "All subjects average");
+  // The page's own group, where it is the group the frame draws: its own line (category).
+  const cat = leafOf(buildSeries(lineSpec([{ kind: "self", colour: "accent" }, { kind: "category", colour: "muted", average: "mean" }]), g, { fullscreen: false }), "trendChart").data;
+  assert.deepEqual(cat.series.map((x) => x.key), [f.focus, "group-0"]);
+  // Nothing to build from: left out, never invented.
+  assert.deepEqual(leafOf(buildSeries(spec("mean"), { ...f, phase: raw.phase }, { fullscreen: false }), "trendChart").data.series.map((x) => x.key), [f.focus]);
+  // A ranked change: its own average as the dashed reference.
+  const chg = { ...presetSpec("DV-C1-RES-TR-CHART"), data: { ...presetSpec("DV-C1-RES-TR-CHART").data, per: "subject" as const, shownAs: "change" as const }, view: { kind: "bar" as const, look: {} }, compare: [{ kind: "allSubjects" as const, colour: "muted", average: "median" as const }] };
+  const bars: LeafOf<"changeList"> = leafOf(buildSeries(chg, g, { fullscreen: false }), "changeList");
+  assert.equal(bars.group?.label, "All subjects median");
+});
+
+test("S3c compare: colour tokens are the editor's swatches", () => {
+  assert.equal(compareColour("accent", "dark"), "var(--accent, var(--fg))");
+  assert.equal(compareColour("muted", "light"), "var(--muted3)");
+  assert.equal(compareColour("palette:4", "dark"), PALETTE_DARK[4]);
+  assert.equal(compareColour("england", "dark"), PALETTE_DARK[3]);
+  assert.equal(compareColour("#abcdef", "dark"), "#abcdef");
+});
+
+test("S3c: the renderer draws them -- donut, map and geography", async () => {
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { renderView } = await import("@/components/views");
+  const ctx = withDonut(context.find((x) => x.raw.measureId === "entries")!.frame as SubjectsFrame);
+  assert.match(renderToStaticMarkup(renderView(presetSpec("DV-C2-CUR-DONUT"), ctx, { fullscreen: false }) as React.ReactElement), /stroke-dasharray/);
+  const f = results.find((x) => x.raw.measureId === "points")!.frame as SubjectsFrame;
+  const geo = renderToStaticMarkup(renderView(presetSpec("DV-C1-RES-TR-GEO-TABLE"), withGeo(f, "avgPointScore"), { fullscreen: false }) as React.ReactElement);
+  assert.match(geo, /History: change against its LA, region and England/);
+  assert.match(geo, /Camden \(LA\)/);
+  const loading = renderToStaticMarkup(renderView(presetSpec("DV-C1-RES-TR-GEO-CHART"), withGeo(f, "avgPointScore", { payload: undefined }), { fullscreen: false }) as React.ReactElement);
+  assert.match(loading, /Loading LA, regional and national figures/);
+  const map = renderToStaticMarkup(renderView(presetSpec("DV-C3-CUR-MAP"), withMap(comparisons[0].frame as ComparisonsFrame, { profiles: null }), { fullscreen: false }) as React.ReactElement);
+  assert.match(map, /Loading map/);
+  assert.match(map, /by school, on the map/);
 });

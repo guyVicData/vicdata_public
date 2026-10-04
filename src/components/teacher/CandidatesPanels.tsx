@@ -13,7 +13,7 @@
 // already counted before this round -- grouped by period rather than collapsed to the
 // latest one. Nothing here is derived a second way.
 import { useState, type ReactNode } from "react";
-import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
+import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
@@ -41,7 +41,7 @@ import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { memberMeans } from "@/lib/teacher-view-populations";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
-import type { CandidatesFrame } from "@/lib/view-series/frames";
+import type { CandidatesFrame, FrameSchoolGroup, FrameSet } from "@/lib/view-series/frames";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
 // `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
@@ -70,6 +70,8 @@ export function CandidatesPanels({
   theme = "dark",
   geography,
   schoolSubjects,
+  schoolGroup,
+  schoolSet,
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -105,6 +107,10 @@ export function CandidatesPanels({
   // number tiles' "rank in all subjects at school" is taken over. The same population
   // Context's All subjects reads, one entry per subject as Column 1 counts them.
   schoolSubjects?: { key: string; values: (number | null)[] }[];
+  // 0.6.1 S3c: what a view of its own's "Add an average" reads (the page's groups of
+  // subjects, and its Compared against set), built on demand. Read only under views=v2.
+  schoolGroup?: FrameSchoolGroup;
+  schoolSet?: () => FrameSet | null;
 }) {
   // Step 6: Trend and % change each gain a table beside their chart.
   // "chart" is the indexed chart (the default, as before); "actual" draws the same lines at
@@ -479,6 +485,12 @@ export function CandidatesPanels({
     currentLabel,
     schoolSubjects,
     schoolName: runtime?.school?.name,
+    // S3c: the phase, the measure and the geography comparison (the fetch above, as fetched).
+    phase,
+    measure,
+    geography: frameGeography(geography, geo, "entries"),
+    schoolGroup,
+    schoolSet,
     state: { trendStart, changeStart, showFit },
   };
 

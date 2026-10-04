@@ -3,7 +3,7 @@
 // (src/components/views/) maps each `leaf` to its component.
 import type { ViewKind } from "@/catalogue/viewspec";
 import type { Measure, PanelData } from "@/lib/teacher-view-panels";
-import type { SortState } from "./frames";
+import type { FrameMap, SortState } from "./frames";
 
 export type ChangeRowData = { key: string; label: string; colour: string; value: number | null };
 export type AverageLine = { value: number; label: string };
@@ -129,6 +129,40 @@ export type LeafSeries =
       to: number;
       rows: SlopeRowData[];
       measure: Measure;
+    }
+  // S3c: ShareDonut (Context's Share), its figures formatted as the host formats them.
+  | {
+      leaf: "donut";
+      percent: number;
+      label: string;
+      groupLabel: string;
+      valueLabel: string;
+      otherLabel?: string;
+      groupValueLabel: string;
+      colour: string;
+    }
+  // S3c: RankingsMap (AcademicMapView), in the host's own wrapper for where it sits:
+  // Comparisons' Current ("current"), Comparisons' Trend / Change maps ("change"), Results'
+  // Trend map ("trend"). The title sits inside the wrapper, as the hosts draw it.
+  | {
+      leaf: "map";
+      place: "current" | "change" | "trend";
+      map: FrameMap;
+      targetUrn: string;
+      forcedColourMode?: "accent" | "grade_band" | "trend" | "trend_absolute";
+      changeValues?: { byUrn: Record<string, number>; format: (v: number) => string; label: string };
+      untitledSizeLegend?: boolean;
+    }
+  // S3c: the geography comparison (GeographyView's own picture): its heading (an instance's
+  // title replaces the words), then a note, the area table or the area chart.
+  | {
+      leaf: "geography";
+      heading: string;
+      note?: string;
+      view: "chart" | "table";
+      data: PanelData;
+      measure: Measure;
+      centred: string;
     }
   | {
       leaf: "verticalBars";

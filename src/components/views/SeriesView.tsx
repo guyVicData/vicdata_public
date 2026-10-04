@@ -4,12 +4,15 @@
 // the props the series builder worked out. Every leaf is the one the hosts draw today
 // (MultiTrend, TrendChart, YearTable, SortTable, ChangeList, ViewChart, VerticalBars), in
 // the same wrappers (CentredOnTarget where a list scrolls to its focused row). S3b adds
-// NumberTiles, RankedList, SchoolRankingTable and the new SlopeChart.
-import { useState } from "react";
+// NumberTiles, RankedList, SchoolRankingTable and the new SlopeChart; S3c ShareDonut and the
+// geography comparison (GeographyView's picture). Maps draw through MapView.
+import { useContext, useState } from "react";
 import { formatChange } from "@/lib/teacher-view-panels";
 import type { LeafSeries, ViewSeries } from "@/lib/view-series";
 import { CentredOnTarget } from "@/components/teacher/CentredOnTarget";
-import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable } from "@/components/teacher/SeriesViews";
+import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, ViewTitleOverrideContext, YearTable, multiTrendHasLine } from "@/components/teacher/SeriesViews";
+import { ShareDonut } from "@/components/teacher/ShareDonut";
+import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 import { SortTable, nextSort, type SortState } from "@/components/teacher/SortTable";
 import { TrendChart } from "@/components/teacher/TrendChart";
 import { VerticalBars } from "@/components/teacher/VerticalBars";
@@ -21,6 +24,8 @@ import { SchoolRankingTable } from "@/components/teacher/SchoolRankingTable";
 import { SlopeChart } from "./SlopeChart";
 
 export function SeriesView({ series, fullscreen }: { series: ViewSeries; fullscreen: boolean }) {
+  // The geography views carry their own heading (GeographyView's), not a ViewTitle line.
+  if (series.leaf.leaf === "geography") return <GeographyLeaf leaf={series.leaf} fullscreen={fullscreen} />;
   return (
     <>
       {series.heading && <p className="mb-2 shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{series.heading}</p>}
@@ -121,7 +126,59 @@ function Leaf({ leaf, fullscreen }: { leaf: LeafSeries; fullscreen: boolean }) {
       return <SlopeChart from={leaf.from} to={leaf.to} rows={leaf.rows} measure={leaf.measure} fullscreen={fullscreen} />;
     case "verticalBars":
       return <VerticalBars bars={leaf.bars} measure={leaf.measure} fullscreen={fullscreen} average={leaf.average} />;
+    case "donut":
+      return (
+        <ShareDonut
+          percent={leaf.percent}
+          label={leaf.label}
+          groupLabel={leaf.groupLabel}
+          valueLabel={leaf.valueLabel}
+          otherLabel={leaf.otherLabel}
+          groupValueLabel={leaf.groupValueLabel}
+          colour={leaf.colour}
+          fullscreen={fullscreen}
+        />
+      );
+    case "geography":
+      return <GeographyLeaf leaf={leaf} fullscreen={fullscreen} />;
+    case "map":
+      // Drawn by its own renderer (MapView, registered for "map").
+      return null;
   }
+}
+
+// S3c: the geography comparison, as GeographyView draws it -- its heading (an instance's title
+// replaces the words), then the note, the area table, or the area chart.
+function GeographyLeaf({ leaf, fullscreen }: { leaf: Extract<LeafSeries, { leaf: "geography" }>; fullscreen: boolean }) {
+  const override = useContext(ViewTitleOverrideContext);
+  const heading = <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{override ?? leaf.heading}</p>;
+  if (leaf.note !== undefined) {
+    return (
+      <>
+        {heading}
+        <p className="text-[12px] leading-relaxed text-[var(--muted2)]">{leaf.note}</p>
+      </>
+    );
+  }
+  if (leaf.view === "table") {
+    return (
+      <>
+        {heading}
+        <CentredOnTarget watch={leaf.centred}>
+          <YearTable data={leaf.data} measure={leaf.measure} focusKey="own" fullscreen={fullscreen} nameHeading="Where" showRank={false} changeEmphasis="percent" />
+        </CentredOnTarget>
+      </>
+    );
+  }
+  // Entries are drawn indexed to each line's first year (MultiTrend's rule for a headcount),
+  // with the indexed chart's title; average points at their real level.
+  return (
+    <>
+      {heading}
+      {shouldIndex(leaf.measure.aggregate) && multiTrendHasLine(leaf.data) && <TrendScaleTitle view="indexed" from={leaf.data.periods[0] ?? null} noun="entries" />}
+      <MultiTrend data={leaf.data} measure={leaf.measure} focusKey="own" fullscreen={fullscreen} />
+    </>
+  );
 }
 
 // Current's sortable table. The sort is the member's: the host's own state when the view

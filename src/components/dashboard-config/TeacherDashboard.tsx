@@ -59,7 +59,7 @@ import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/
 import { MeasurePicker } from "@/components/teacher/MeasurePicker";
 import { GradeCountsPanels } from "@/components/teacher/GradeCountsPanels";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
-import { combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type PanelId } from "@/lib/teacher-view-panels";
+import { combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type MeasureId, type PanelId } from "@/lib/teacher-view-panels";
 import { bestScale, presetsFor, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
@@ -1490,6 +1490,42 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     }
   }
 
+  // 0.6.1 S3c: "Add an average" (an average of things not drawn) on a subject column, for a
+  // view of its own under views=v2 -- built only when such a view asks, so nothing here runs
+  // for a page of presets. At this school: a group of the school's subjects as Context's pill
+  // draws it (contextItemsOf: the category, every subject, the selected ones, on Post-16
+  // points within the focus's family), each subject's figure on the column's measure, with
+  // its entries as the weights. Across schools: the page's Compared against set, from the
+  // comparator profiles already loaded (their points and entries; never a ranking's sample,
+  // R-RANKING-SAMPLE). Aligned to the column's periods.
+  const schoolGroupOn = (measureId: MeasureId, valueAt: (i: SubjectItem, period: number) => number | null, periods: number[]) =>
+    (kind: "category" | "allSubjects" | "selectedSubjects") => {
+      if (!focusItem) return null;
+      const against = kind === "category" ? "category" : kind === "allSubjects" ? "whole" : "selected";
+      const members =
+        kind === "selectedSubjects" && contextAgainst !== "selected"
+          ? contextMembersOf({ against: "selected", schoolSubjectNames, candidateItems, contextOffer, selected: contextSelected, focusItem, inFamily: inContextFamily, asOrAeaOnly, tickedItems })
+          : contextMembers;
+      const its = contextItemsOf({ focusItem, against, candidateItems, items, contextMembers: members, inFamily: inContextFamily, keepToFamily: contextKeepsToFamily(phase, measureId) });
+      return {
+        label: kind === "category" ? focusFamilyLabel ?? "Subject category" : kind === "allSubjects" ? "All subjects" : "Selected subjects",
+        members: keepFocusOrFigured(its.map((i) => ({ key: i.key, values: periods.map((p) => valueAt(i, p)), counts: periods.map((p) => entriesAt(i, p)) })), focusKey),
+      };
+    };
+  const schoolSetOn = (figure: "results" | "candidates", periods: number[]) => () => {
+    if (!activeMapChip || !mapProfiles) return null;
+    if (comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking") return null;
+    const others = (allComparatorSets[comparisonsSet] ?? []).filter((s) => !s.isTarget && s.urn !== schoolUrn);
+    const at = (rows: { period: number; value: number }[] | undefined, p: number) => rows?.find((r) => r.period === p)?.value ?? null;
+    return {
+      label: activeSetLabel,
+      schools: others.map((s) => {
+        const series = comparatorSubjectSeries[s.urn];
+        return { key: s.urn, values: periods.map((p) => at(series?.[figure], p)), counts: periods.map((p) => at(series?.candidates, p)) };
+      }),
+    };
+  };
+
   // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
   // The figure still follows the focus subject (round 7 §9): with one in focus it is that
   // subject's own figure on Results' chosen measure -- points per entry, or the Grade 4+ /
@@ -1678,6 +1714,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <SubjectPanels
         columnId={COL1}
         periods={resultsPeriods}
+        // 0.6.1 S3c: a view of its own's averages (views=v2 only; built when asked).
+        schoolGroup={schoolGroupOn(resultsMeasure.id, valueForResults, resultsPeriods)}
+        schoolSet={resultsMeasure.id === "points" ? schoolSetOn("results", resultsPeriods) : undefined}
         // Content round S6: the focused subject and its category peers.
         subjects={resultsSeries}
         focus={focusKey}
@@ -1798,6 +1837,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <CandidatesPanels
         phase={phase}
         theme={theme}
+        // 0.6.1 S3c: a view of its own's averages (views=v2 only; built when asked).
+        schoolGroup={schoolGroupOn("entries", entriesAt, categoryPeriods)}
+        schoolSet={schoolSetOn("candidates", categoryPeriods)}
         // Content round S6: the focused subject and its category peers. No England
         // overlay here -- "for candidates the national average is irrelevant".
         subjects={candidateItems.map((i) => ({
@@ -1877,6 +1919,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <SubjectPanels
         columnId="context"
         periods={contextPeriods}
+        // 0.6.1 S3c: a view of its own's averages (views=v2 only; built when asked).
+        schoolGroup={schoolGroupOn(contextMeasure.id, contextValueFor, contextPeriods)}
+        schoolSet={contextMeasure.id === "points" ? schoolSetOn("results", contextPeriods) : contextMeasure.id === "entries" ? schoolSetOn("candidates", contextPeriods) : undefined}
         subjects={contextSeries}
         measure={contextMeasure}
         focus={focusKey}
@@ -1986,6 +2031,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const comparisonsHost = (
       <ComparisonsPanels
         phase={phase}
+        theme={theme}
         panels={panelsOf("rankings")}
         onPanelsChange={(next) => setPanels("rankings", next)}
         notes={notesFor("rankings")}

@@ -140,8 +140,7 @@ const DEFAULT_COLOUR: Partial<Record<CompareSeriesKind, string>> = {
 };
 export const defaultColour = (kind: CompareSeriesKind) => DEFAULT_COLOUR[kind] ?? "muted";
 
-// The rail icons a View offers (real PanelIcons names; "SlopeIcon" is the editor's own until
-// PanelIcons has one). The first is the View's default.
+// The rail icons a View offers (real PanelIcons names). The first is the View's default.
 export const ICONS_FOR: Record<ViewKind, string[]> = {
   line: ["TrendLineIcon", "IndexedLineIcon", "ChangeArrowIcon", "AverageIcon"],
   bar: ["HorizontalBarsIcon", "VerticalBarsIcon", "AverageIcon", "ChangeArrowIcon"],

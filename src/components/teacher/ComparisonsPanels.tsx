@@ -24,7 +24,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage, SubjectGradeCount } from "@/lib/academic-data-view";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchComparatorGrades, rateSeriesByUrn } from "@/lib/teacher-view-comparator-grades";
-import { comparisonSchools, comparisonsCurrentView, onRankingMeasure as isOnRankingMeasure, rankedComparisons, sampleAllowsMap } from "@/lib/teacher-view-comparisons";
+import { changeByUrn, comparisonSchools, comparisonsCurrentView, onRankingMeasure as isOnRankingMeasure, rankedComparisons, sampleAllowsMap, signedPercent } from "@/lib/teacher-view-comparisons";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
   DIRECTION_ARROW,
@@ -128,6 +128,7 @@ export function ComparisonsPanels({
   onManageSet,
   threshold,
   rankingSet = null,
+  theme = "dark",
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -181,6 +182,9 @@ export function ComparisonsPanels({
   // the school's rank in the whole population and that population's true average instead,
   // on the ranking's own measure (`measure`, the phase headline).
   rankingSet?: (RankingFigures & { measure: Measure; measureName: string }) | null;
+  // 0.6.1 S3c: the page's theme, for a view's own compare colours (the line palette has a
+  // light and a dark version). Read only by the config-driven renderer (`views=v2`).
+  theme?: "dark" | "light";
 }) {
   // ------------------------------------------- threshold rates (grade counts per school)
   const gradeUrns = allSchools.map((s) => s.urn).sort();
@@ -568,14 +572,7 @@ export function ComparisonsPanels({
   // as that panel measures it (its measure, its "From" year), coloured on the one red-
   // orange-green scale. Not for a ranking (a sample of a population, Part 4 of snagging
   // round 1), and only with two or more years to measure a change across.
-  const changeMapFor = (table: PanelData, value: (values: (number | null)[]) => number | null) => {
-    const byUrn: Record<string, number> = {};
-    for (const s of table.series) {
-      const v = value(s.values);
-      if (v !== null) byUrn[s.key === "own" ? target?.urn ?? s.key : s.key] = v;
-    }
-    return byUrn;
-  };
+  const changeMapFor = (table: PanelData, value: (values: (number | null)[]) => number | null) => changeByUrn(table.series, target?.urn, value);
   const changeMap = (fullscreen: boolean, forced: "trend" | "trend_absolute", changeValues: { byUrn: Record<string, number>; format: (v: number) => string; label: string }) =>
     schoolUrn ? (
       <div className="flex min-h-0 flex-1 flex-col print:hidden">
@@ -597,7 +594,7 @@ export function ComparisonsPanels({
         />
       </div>
     ) : null;
-  const signedPct = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v))}%`;
+  const signedPct = signedPercent;
 
   // -------------------------------------------------------------------- Trend
   const trendSaid = trendSentence({
@@ -863,6 +860,20 @@ export function ComparisonsPanels({
     subjectLabel,
     setKind: setId.startsWith(SAVED_SET_PREFIX) ? "savedSet" : "nearest",
     blocked: seriesLoading || schools.length === 0,
+    // S3c: the phase, the theme and the maps' inputs -- the page's map profiles, the chip's
+    // subject, the phase accent, and the card map's caption / rank handed up to the summary.
+    phase: phase === "ks2" ? undefined : phase,
+    theme,
+    map: {
+      profiles: mapProfiles,
+      targetUrn: schoolUrn ?? null,
+      stage: phase,
+      chip: activeMapChip ? { subject: activeMapChip.subject, legend: activeMapChip.legend, bucket: activeMapChip.bucket, familyId: activeMapChip.familyId } : null,
+      accentHex: phase === "ks2" ? null : PHASE_ACCENT[phase]?.hex ?? null,
+      allowed: sampleAllowsMap(rankingSet),
+      onCaption: setMapCaption,
+      onTargetRank: onMapRank,
+    },
     state: { trendStart, changeStart, showFit },
   };
 

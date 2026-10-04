@@ -15,8 +15,66 @@
 //   candidates   each subject's entries per period (Column 1 Candidates)
 //   comparisons  each school's value per period in the page's comparison set (Comparisons)
 import type { CompareSeriesKind } from "@/catalogue/viewspec";
+import type { Phase } from "@/catalogue/types";
 import type { Measure } from "@/lib/teacher-view-panels";
 import type { GradeRange } from "@/lib/subject-grades";
+import type { GeographyMetric, GeographyPayload } from "@/lib/teacher-view-geography";
+import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
+
+// S3c: the geography comparison (the focused subject against its LA, region and England) as
+// the host already fetched it (useSubjectGeography) -- the frame never fetches. `own` is the
+// school's figure the area figures are read beside (points-eligible entries on Candidates,
+// R-GEO-POINTS-ELIGIBLE), aligned to the frame's periods; `payload` undefined = loading.
+export type FrameGeography = {
+  label: string;
+  applies: boolean;
+  notApplicableText: string;
+  metric: GeographyMetric;
+  own: (number | null)[];
+  payload: GeographyPayload | null | undefined;
+  // What the host fetched it for (the CentredOnTarget key the host's table uses).
+  id: string;
+};
+
+// S3c: "Add an average" on a subject column (1 · Data, an average of things NOT drawn) --
+// the page's own populations, built on demand only when a view of its own asks:
+//   at this school    a group of the school's subjects (category / all subjects / selected
+//                     subjects, as Context's pill would draw them: contextItemsOf), each
+//                     subject's figure on the column's measure and its entries (the weights)
+//   across schools    the page's Compared against set (the comparator schools' own figures
+//                     for the focused subject, as Comparisons reads them), the school left out
+// Both aligned to the frame's periods. null = the page has no such figure (a ranking's
+// sample, a rate the page has no comparator grades for).
+export type FrameGroupMember = { key: string; values: (number | null)[]; counts?: (number | null)[] };
+export type FrameGroup = { label: string; members: FrameGroupMember[] };
+export type FrameSchoolGroup = (kind: "category" | "allSubjects" | "selectedSubjects") => FrameGroup | null;
+export type FrameSet = { label: string; schools: FrameGroupMember[] };
+
+// S3c: Context's donut, as SubjectPanels is handed it (the group's own totals; on Grade
+// bands the group's entries in the range, of all its graded entries).
+export type FrameDonut = {
+  enabled: boolean;
+  groupLabel: string;
+  groupTotals: (number | null)[];
+  shareOf?: string;
+  share?: { values: (number | null)[]; totals: (number | null)[]; label: string; otherLabel: string; format: (v: number) => string };
+};
+
+// S3c: what a map draws on -- the page's already-loaded map profiles, the plotted subject
+// (the chip's), the phase accent -- and the host's own callbacks (the card map hands its
+// caption and the school's rank up to the panel's summary).
+export type FrameMapChip = { subject: string | null; legend: string | null; bucket: string | null; familyId: string | null };
+export type FrameMap = {
+  profiles: AcademicSchoolProfile[] | null;
+  targetUrn: string | null;
+  stage: KsStage;
+  chip: FrameMapChip | null;
+  accentHex: string | null;
+  // R-RANKING-SAMPLE: no map of a ranking's sample.
+  allowed: boolean;
+  onCaption?: (caption: string) => void;
+  onTargetRank?: (info: { rank: number; total: number } | null) => void;
+};
 
 export type FrameSubject = {
   key: string;
@@ -82,6 +140,15 @@ export type SubjectsFrame = {
   gradeBand?: { range: GradeRange | null; rangeLabel: string | null; ownRows: { period: number; grade: string; entries: number }[] } | null;
   // The school's name (a tile scope line's [school]).
   schoolName?: string;
+  // S3c: the phase (the catalogue's honest options, D7), Context's donut, Results' %
+  // change geography comparison, and Results' Trend map (the focused subject at each
+  // comparator school).
+  phase?: Phase;
+  donut?: FrameDonut | null;
+  geography?: FrameGeography | null;
+  trendMap?: (FrameMap & { subjectLabel: string }) | null;
+  schoolGroup?: FrameSchoolGroup;
+  schoolSet?: () => FrameSet | null;
   state: FrameMemberState & {
     // The year Current shows (Context's year menu), as an index into `periods`.
     latestIdx: number;
@@ -109,6 +176,12 @@ export type CandidatesFrame = {
   currentLabel?: string;
   schoolSubjects?: { key: string; values: (number | null)[] }[];
   schoolName?: string;
+  // S3c: the phase, the column's measure (entries) and the % change geography comparison.
+  phase?: Phase;
+  measure?: Measure;
+  geography?: FrameGeography | null;
+  schoolGroup?: FrameSchoolGroup;
+  schoolSet?: () => FrameSet | null;
   state: FrameMemberState;
 };
 
@@ -161,6 +234,10 @@ export type ComparisonsFrame = {
   setKind: "nearest" | "savedSet";
   // The per-subject rows are still loading, or the host draws a note (no schools).
   blocked: boolean;
+  // S3c: the phase, the page's theme (compare colours) and the maps' inputs.
+  phase?: Phase;
+  theme?: "dark" | "light";
+  map?: FrameMap | null;
   state: FrameMemberState;
 };
 

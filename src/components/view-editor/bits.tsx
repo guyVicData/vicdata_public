@@ -86,21 +86,9 @@ export function VeStyles() {
   return <style>{VE_CSS}</style>;
 }
 
-// The real panel glyphs on the View tiles (the icon the view later shows in the rail).
-// Slope has no PanelIcons glyph yet: the editor's own, in PanelIcons' 20x20 language.
-export const SlopeIcon = (
-  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <line x1="4" y1="14.5" x2="16" y2="6" />
-    <line x1="4" y1="8" x2="16" y2="11.5" />
-    <circle cx="4" cy="14.5" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="16" cy="6" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="4" cy="8" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="16" cy="11.5" r="1.5" fill="currentColor" stroke="none" />
-  </svg>
-);
-
+// The real panel glyphs on the View tiles (the icon the view later shows in the rail) --
+// PanelIcons' own, SlopeIcon included (S3c).
 export function glyph(name: string): ReactNode {
-  if (name === "SlopeIcon") return (Icons as unknown as Record<string, ReactNode>).SlopeIcon ?? SlopeIcon;
   const g = (Icons as unknown as Record<string, ReactNode>)[name];
   return g && typeof g === "object" ? g : Icons.TilesIcon;
 }
