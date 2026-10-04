@@ -49,6 +49,7 @@ import { embedColumns, embedInitialColumns, embedSubjectKey, pinnedSetName, plac
 import { confirmLookAs, readLookAs, type LookAs } from "@/lib/look-as";
 import { resolveTrial } from "@/lib/trial";
 import { TrialBanner } from "@/components/trial/TrialBanner";
+import { pickMembership } from "@/lib/view-as";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
 import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
@@ -344,14 +345,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         setSchoolUrn(urn);
         setSchoolName(school?.current_name ?? null);
       } else {
-        const { data: membership } = await supabase
+        const { data: mine } = await supabase
           .from("school_memberships")
-          .select("id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
-          // The signed-in person's own row (S3b fix 2): RLS also returns every approved
-          // colleague's, so a school with two members would fail maybeSingle.
+          .select("id, approved_at, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))")
+          // The signed-in person's own rows (S3b fix 2): RLS also returns every approved
+          // colleague's. 0.6 snag 4: more than one is fine -- the page shows ONE school,
+          // picked by pickMembership (never "the first row").
           .eq("profile_id", sessionData.session?.user?.id ?? "")
-          .eq("status", "approved")
-          .maybeSingle<{ school_accounts: { school_urn: string; schools: { current_name: string } | null } | null }>();
+          .eq("status", "approved");
+        const membership = pickMembership((mine ?? []) as unknown as { approved_at: string | null; school_accounts: { school_urn: string; schools: { current_name: string } | null } | null }[]);
         urn = membership?.school_accounts?.school_urn ?? null;
         setSchoolUrn(urn);
         setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);

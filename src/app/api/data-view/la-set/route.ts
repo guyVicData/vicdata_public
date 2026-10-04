@@ -1,3 +1,4 @@
+import { isPlatformAdmin } from "@/lib/teacher-route-access";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveSchoolTypeCategory, buildLaComparatorSet } from "@/lib/default-comparator-lists";
@@ -39,7 +40,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
   }
 
-  if (!approvedMembership) {
+  // 0.6 snag 4 (B): a platform admin too, after the member check (members' path
+  // unchanged) -- View as gets exactly what a member of this school gets (school-level
+  // data only; nothing personal or school-owned comes from this route).
+  if (!approvedMembership && !(await isPlatformAdmin(supabase))) {
     return NextResponse.json(
       { error: "The Data View is available to verified school staff." },
       { status: 403 },

@@ -28,13 +28,14 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { confirmLookAs, readLookAs, type LookAs } from "./look-as";
+import { parseViewAsCookie, serializeViewAsCookie, VIEW_AS_COOKIE, VIEW_AS_ROLES, viewAsStateKey, type ViewAsCookie, type ViewAsRole } from "./view-as";
 
-export type TrialRole = "teacher" | "smt" | "admissions" | "school_admin";
+export type TrialRole = ViewAsRole;
 export type Trial = { urn: string; role: TrialRole; schoolName: string; stateKey: string };
 
-export const TRIAL_ROLES: TrialRole[] = ["teacher", "smt", "admissions", "school_admin"];
+export const TRIAL_ROLES: TrialRole[] = VIEW_AS_ROLES;
 
-export const trialStateKey = (urn: string, role: string) => `${urn}~trial~${role}`;
+export const trialStateKey = viewAsStateKey;
 
 // 0.6 snag 4 (A): View as lasts across tabs in this browser until Back to me, so it lives in
 // a session COOKIE rather than this tab's sessionStorage. A cookie because the data routes
@@ -42,30 +43,10 @@ export const trialStateKey = (urn: string, role: string) => `${urn}~trial~${role
 // caller is a platform admin before reading anything as the viewed member. It is written
 // only after confirmLookAs said yes; a planted one does nothing (pages and routes both
 // re-confirm). A session cookie: closing the browser also ends View as.
-export const VIEW_AS_COOKIE = "vicdata_view_as";
 // Fired on window whenever this tab starts or ends View as.
 export const TRIAL_EVENT = "vicdata:trial";
 
-type Stored = { urn: string; role: TrialRole; schoolName: string };
-
-// Pure: the View as pair in a Cookie header (or document.cookie), or null. Shared with the
-// data routes' access check.
-export function parseViewAsCookie(cookieHeader: string | null | undefined): Stored | null {
-  if (!cookieHeader) return null;
-  for (const part of cookieHeader.split(";")) {
-    const i = part.indexOf("=");
-    if (i < 0 || part.slice(0, i).trim() !== VIEW_AS_COOKIE) continue;
-    try {
-      const s = JSON.parse(decodeURIComponent(part.slice(i + 1).trim())) as { u?: unknown; r?: unknown; n?: unknown };
-      if (typeof s.u !== "string" || !/^[A-Za-z0-9-]{1,20}$/.test(s.u)) return null;
-      if (typeof s.r !== "string" || !(TRIAL_ROLES as string[]).includes(s.r)) return null;
-      return { urn: s.u, role: s.r as TrialRole, schoolName: typeof s.n === "string" && s.n ? s.n : s.u };
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
+type Stored = ViewAsCookie;
 
 function readCookie(): Stored | null {
   try {
@@ -79,7 +60,7 @@ function writeCookie(s: Stored | null) {
   try {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = s
-      ? `${VIEW_AS_COOKIE}=${encodeURIComponent(JSON.stringify({ u: s.urn, r: s.role, n: s.schoolName }))}; Path=/; SameSite=Lax${secure}`
+      ? `${VIEW_AS_COOKIE}=${serializeViewAsCookie(s)}; Path=/; SameSite=Lax${secure}`
       : `${VIEW_AS_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
   } catch {
     // Not in a browser.

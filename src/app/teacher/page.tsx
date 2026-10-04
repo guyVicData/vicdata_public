@@ -21,6 +21,7 @@
 // school lands on it: config renderer whatever the flag, that role's lens, no role switch.
 import { resolveTrial, trialHref } from "@/lib/trial";
 import { TrialBanner } from "@/components/trial/TrialBanner";
+import { pickMembership, viewAsMembership } from "@/lib/view-as";
 import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
@@ -39,7 +40,6 @@ import {
   KeyDashboardTile,
   LensSwitch,
   lensesOf,
-  lensForLookAs,
   LibraryTile,
   readStoredLens,
   storeLens,
@@ -121,22 +121,24 @@ export default function TeacherHomePage() {
       if (trial) {
         urn = trial.urn;
         setLookAsQuery(trialHref(trial, ""));
-        lookingAs = lensForLookAs(trial.role);
+        // The lens a real single-membership member of the role gets (one: no role switch).
+        lookingAs = lensesOf(viewAsMembership(trial.role))[0];
         setSchoolUrn(urn);
         setSchoolName(trial.schoolName);
       } else {
-        const { data: membership } = await supabase
+        const { data: mine } = await supabase
           .from("school_memberships")
           .select(
             on
-              ? "id, roles, role, is_admin, school_accounts!school_memberships_school_account_id_fkey(school_urn, account_holder_membership_id, schools(current_name))"
-              : "id, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))",
+              ? "id, approved_at, roles, role, is_admin, school_accounts!school_memberships_school_account_id_fkey(school_urn, account_holder_membership_id, schools(current_name))"
+              : "id, approved_at, school_accounts!school_memberships_school_account_id_fkey(school_urn, schools(current_name))",
           )
-          // The signed-in person's own row: RLS also returns every approved colleague's, so
-          // without this a school with two members fails maybeSingle (S3b fix 2).
+          // The signed-in person's own rows: RLS also returns every approved colleague's (S3b
+          // fix 2). 0.6 snag 4: with more than one, the page shows ONE school, picked by
+          // pickMembership (never "the first row").
           .eq("profile_id", user?.id ?? "")
-          .eq("status", "approved")
-          .maybeSingle<Membership>();
+          .eq("status", "approved");
+        const membership = pickMembership((mine ?? []) as unknown as Membership[]);
 
         urn = membership?.school_accounts?.school_urn ?? null;
         setSchoolUrn(urn);

@@ -212,10 +212,14 @@ function AccountMenu() {
       const { data } = await supabase.auth.getSession();
       setSignedIn(Boolean(data.session));
       if (!data.session) return;
-      // 0.6 snag 2: in a "Try VicData as…" trial the menu is the member's: no People, Teams
-      // (the admin's own school's) or Platform. The banner's Change/Exit are the way out.
-      if (getActiveTrial()) return;
-      const [school, admin] = await Promise.all([loadAdminSchool(), supabase.rpc("is_platform_admin")]);
+      // 0.6 snag 2/4: in View as the menu is the member's: People and Teams only for a
+      // School-Admin View as (read-only, of the viewed school), never Platform. The banner's
+      // Change and Back to me are the way out.
+      const viewAs = getActiveTrial();
+      const [school, admin] = await Promise.all([
+        loadAdminSchool(),
+        viewAs ? Promise.resolve({ data: false, error: null }) : supabase.rpc("is_platform_admin"),
+      ]);
       setCanManage(school.status === "ready" && school.school.canManage);
       setPlatformAdmin(!admin.error && admin.data === true);
     })();

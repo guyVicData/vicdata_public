@@ -16,8 +16,9 @@ import { PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { TickList } from "@/components/teacher/TickList";
 import {
   AdminBody, AdminHeader, AdminState, AdminTitle, Avatar, Footnote, PRIMARY_BUTTON, SectionLabel,
-  displayNameOf, useAdminSchool, type AdminSchool,
+  VIEW_AS_READ_ONLY, displayNameOf, loadViewAsPeople, useAdminSchool, type AdminSchool,
 } from "./AdminChrome";
+import { TrialBanner } from "@/components/trial/TrialBanner";
 
 type MemberRow = {
   id: string;
@@ -62,6 +63,8 @@ export function TeamsScreen() {
   const state = useAdminSchool();
   return (
     <main id="teacher-root" data-theme={theme} className="leading-[1.2] w-full flex-grow bg-[var(--bg)] text-[var(--fg)]">
+      {/* 0.6 snag 4: View as shows Teams read-only to a School-Admin View as. */}
+      <TrialBanner className="mx-4 mt-3" />
       <AdminHeader active="teams" />
       {state.status === "loading" && <AdminBody><AdminState>Loading…</AdminState></AdminBody>}
       {state.status === "signed-out" && <AdminBody><AdminState>Sign in to manage your school&rsquo;s teams.</AdminState></AdminBody>}
@@ -83,7 +86,15 @@ export function Teams({ school }: { school: AdminSchool }) {
   // The team just made: its name field takes focus so typing renames it straight away.
   const [focusId, setFocusId] = useState<string | null>(null);
 
+  const readOnly = !!school.readOnly;
   const load = useCallback(async () => {
+    if (school.readOnly) {
+      const got = await loadViewAsPeople(school);
+      if (!got) setError("Could not load your school's teams. Try again.");
+      setTeams((got?.teams as TeamRow[]) ?? []);
+      setMembers(((got?.members ?? []) as (MemberRow & { status: string })[]).filter((m) => m.status === "approved"));
+      return;
+    }
     const [t, m] = await Promise.all([
       supabase
         .from("teams")
@@ -107,6 +118,11 @@ export function Teams({ school }: { school: AdminSchool }) {
   }, [load]);
 
   async function run(p: PromiseLike<{ error: { message: string } | null }>) {
+    // View as never writes the school's teams (the query is never sent: it runs on await).
+    if (readOnly) {
+      setError(`${VIEW_AS_READ_ONLY}: nothing here is saved.`);
+      return;
+    }
     setError(null);
     const { error: e } = await p;
     if (e) setError(e.message);
@@ -128,6 +144,7 @@ export function Teams({ school }: { school: AdminSchool }) {
   };
 
   async function createTeam() {
+    if (readOnly) return;
     setCreating(true);
     setError(null);
     const taken = new Set(named.map((t) => t.name));
@@ -151,8 +168,12 @@ export function Teams({ school }: { school: AdminSchool }) {
     <AdminBody>
       <AdminTitle
         title="Teams"
-        subtitle="Who you can share dashboards and meetings with"
-        action={<button type="button" onClick={createTeam} disabled={creating} className={PRIMARY_BUTTON}>+ New team</button>}
+        subtitle={readOnly ? `Who you can share dashboards and meetings with · ${VIEW_AS_READ_ONLY}: nothing here is saved` : "Who you can share dashboards and meetings with"}
+        action={
+          <button type="button" onClick={createTeam} disabled={creating || readOnly} title={readOnly ? VIEW_AS_READ_ONLY : undefined} className={PRIMARY_BUTTON}>
+            + New team
+          </button>
+        }
       />
 
       {error && <p role="alert" className="text-[12px]" style={{ color: accentText(DELTA_NEGATIVE) }}>{error}</p>}
@@ -182,6 +203,7 @@ export function Teams({ school }: { school: AdminSchool }) {
             t.id === openId ? (
               <OpenTeam
                 key={t.id}
+                readOnly={readOnly}
                 team={t}
                 members={members}
                 memberById={memberById}
@@ -235,6 +257,7 @@ function StackedAvatars({ ids, memberById }: { ids: string[]; memberById: Map<st
 }
 
 function OpenTeam({
+  readOnly = false,
   team,
   members,
   memberById,
@@ -244,6 +267,7 @@ function OpenTeam({
   onAdd,
   onRemove,
 }: {
+  readOnly?: boolean;
   team: TeamRow;
   members: MemberRow[];
   memberById: Map<string, MemberRow>;
@@ -284,6 +308,8 @@ function OpenTeam({
           value={draft}
           maxLength={80}
           aria-label="Team name"
+          readOnly={readOnly}
+          title={readOnly ? VIEW_AS_READ_ONLY : undefined}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commitName}
           onKeyDown={(e) => {
@@ -292,7 +318,7 @@ function OpenTeam({
           }}
           className="min-w-0 flex-grow border-0 border-b border-dashed border-[var(--edge-strong)] bg-transparent py-0.5 text-[14px] font-bold text-[var(--fg)] outline-none"
         />
-        <button type="button" onClick={() => setConfirming(true)} aria-label="Delete team" title="Delete team" className={ICON_BTN} style={{ color: DELTA_NEGATIVE }}>
+        <button type="button" onClick={() => setConfirming(true)} disabled={readOnly} aria-label="Delete team" title={readOnly ? VIEW_AS_READ_ONLY : "Delete team"} className={`${ICON_BTN} disabled:opacity-50`} style={{ color: DELTA_NEGATIVE }}>
           {TRASH}
         </button>
       </div>
@@ -317,7 +343,7 @@ function OpenTeam({
               <div key={m.id} className="flex items-center gap-2 text-[13px]">
                 <Avatar fullName={m.profiles?.full_name} email={m.profiles?.email} size={24} />
                 <span className="min-w-0 flex-grow truncate">{name}{m.job_title ? <> &middot; {m.job_title}</> : null}</span>
-                <button type="button" onClick={() => onRemove(m.id)} aria-label={`Remove ${name} from team`} title="Remove from team" className={ICON_BTN}>
+                <button type="button" onClick={() => onRemove(m.id)} disabled={readOnly} aria-label={`Remove ${name} from team`} title={readOnly ? VIEW_AS_READ_ONLY : "Remove from team"} className={`${ICON_BTN} disabled:opacity-50`}>
                   &times;
                 </button>
               </div>
@@ -330,11 +356,13 @@ function OpenTeam({
         <button
           type="button"
           onClick={() => setPicking(!picking)}
+          disabled={readOnly}
+          title={readOnly ? VIEW_AS_READ_ONLY : undefined}
           aria-expanded={picking}
           aria-haspopup="menu"
-          className="w-full rounded-lg border border-dashed border-[var(--edge-strong)] bg-transparent p-[7px] text-[12.5px] font-semibold text-[var(--chip-fg)]"
+          className="w-full rounded-lg border border-dashed border-[var(--edge-strong)] bg-transparent p-[7px] text-[12.5px] font-semibold text-[var(--chip-fg)] disabled:opacity-60"
         >
-          + Add people
+          {readOnly ? <>+ Add people &middot; {VIEW_AS_READ_ONLY}</> : "+ Add people"}
         </button>
         {picking && (
           <PanelMenu label="Add people" width={320}>
