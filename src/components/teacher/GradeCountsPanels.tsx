@@ -17,11 +17,13 @@
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { ENTRIES_MEASURE, type PanelData, type PanelId } from "@/lib/teacher-view-panels";
-import { NON_GRADE_VALUES, bestScale, gradeOrderFrom, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
+import { bestScale, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
+import { gradeCounts } from "@/lib/grade-spread";
+import type { GradesFrame } from "@/lib/view-series/frames";
 import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
-import { GradeDistribution, type GradeRow } from "./GradeDistribution";
+import { GradeDistribution } from "./GradeDistribution";
 import { GradesIcon, IconButton, Pill, TableIcon } from "./PanelIcons";
 import { ViewTitle, YearTable } from "./SeriesViews";
 
@@ -53,59 +55,33 @@ export function GradeCountsPanels({
   source: (span?: string) => ReactNode;
   controls?: ReactNode;
 }) {
-  const graded = ownRows.filter((r) => !NON_GRADE_VALUES.has(r.grade));
-  const periods = Array.from(new Set(graded.map((r) => r.period))).sort((a, b) => a - b);
-  const latest = periods.length ? periods[periods.length - 1] : null;
-  const earlier = periods.slice(0, -1);
   const [compareFrom, setCompareFrom] = useState<number | null>(null);
   const [changeFrom, setChangeFrom] = useState<number | null>(null);
   // Trends row merge round: this year's spread against an earlier year, and each grade's
   // change, are two views of one Trends panel.
   const [trendsView, setTrendsView] = useState<"spread" | "changeTable">("spread");
   const isChange = trendsView === "changeTable";
-  const cmpYear = compareFrom !== null && earlier.includes(compareFrom) ? compareFrom : earlier[earlier.length - 1] ?? null;
-  const chgYear = changeFrom !== null && earlier.includes(changeFrom) ? changeFrom : earlier[0] ?? null;
+
+  const geo = useSubjectGradeGeography(geography);
+  const england = geo?.data?.national?.rows ?? [];
+  // 0.6.1 S3d: the figures, from src/lib/grade-spread.ts (the renderer reads the same).
+  const g = gradeCounts(ownRows, england, { compareFrom, changeFrom });
+  const { graded, latest, earlier, cmpYear, chgYear, ownTotal, cmpTotal, rowsFor, englandLabel, modal } = g;
 
   // Current's ad-hoc highlight: the same two clicks as Grade bands, local to this view.
   const scale = bestScale(graded.map((r) => r.grade));
   const [pending, setPending] = useState<string | null>(null);
   const [span, setSpan] = useState<{ top: string; bottom: string } | null>(null);
   const range: GradeRange | null = pending ? { scale, top: pending, bottom: pending } : span ? { scale, ...span } : null;
-  const click = (g: string) => {
+  const click = (grade: string) => {
     if (pending) {
-      setSpan(spanBetween(scale, pending, g));
+      setSpan(spanBetween(scale, pending, grade));
       setPending(null);
     } else {
-      setPending(g);
+      setPending(grade);
     }
   };
 
-  const geo = useSubjectGradeGeography(geography);
-  const england = geo?.data?.national?.rows ?? [];
-
-  const inYear = (rows: OwnRow[], p: number | null) => (p === null ? [] : rows.filter((r) => r.period === p && !NON_GRADE_VALUES.has(r.grade)));
-  const countAt = (rows: OwnRow[], g: string) => rows.filter((r) => r.grade === g).reduce((a, r) => a + r.entries, 0);
-  const totalOf = (rows: OwnRow[]) => rows.reduce((a, r) => a + r.entries, 0);
-
-  const own = inYear(graded, latest);
-  const ownTotal = totalOf(own);
-  const eng = inYear(england, latest);
-  const engTotal = totalOf(eng);
-  const cmp = inYear(graded, cmpYear);
-  const cmpTotal = totalOf(cmp);
-  const order = gradeOrderFrom(own.map((r) => r.grade), eng.map((r) => r.grade), cmp.map((r) => r.grade));
-  const rowsFor = (withCompare: boolean): GradeRow[] =>
-    order.map((g) => ({
-      grade: g,
-      ownCount: countAt(own, g),
-      // A grade England does not publish (suppressed below 5 schools) has no share at all.
-      // The year-on-year view carries no England ticks: it compares the school with itself.
-      benchPct: !withCompare && eng.some((r) => r.grade === g) && engTotal > 0 ? (countAt(eng, g) / engTotal) * 100 : null,
-      ...(withCompare ? { compareCount: countAt(cmp, g) } : {}),
-    }));
-  const englandLabel = eng.length && latest !== null ? `England, ${academicYearLabel(latest)}` : null;
-
-  const modal = own.length ? order.reduce((best, g) => (countAt(own, g) > countAt(own, best) ? g : best), order[0]) : null;
   const yearText = latest === null ? "" : academicYearLabel(latest);
   const oneYearOnly = <PanelSummary>Grades are published per subject from 2023/24 only; a second year is needed to compare.</PanelSummary>;
 
@@ -135,7 +111,7 @@ export function GradeCountsPanels({
       ),
     summary: modal ? (
       <PanelSummary>
-        {subjectLabel}&rsquo;s {ownTotal.toLocaleString()} graded entries in {yearText}: most at {modal} ({Math.round((countAt(own, modal) / ownTotal) * 100)}%).
+        {subjectLabel}&rsquo;s {ownTotal.toLocaleString()} graded entries in {yearText}: most at {modal} ({Math.round((g.modalCount / ownTotal) * 100)}%).
       </PanelSummary>
     ) : undefined,
     source: source(yearText),
@@ -171,16 +147,7 @@ export function GradeCountsPanels({
     source: source(cmpYear === null ? yearText : `${academicYearLabel(cmpYear)}–${yearText}`),
   };
 
-  // Each grade's own count, from the chosen year to the latest, in grade order.
-  const changeData: PanelData = {
-    periods: chgYear === null || latest === null ? [] : [chgYear, latest],
-    series: order.map((g) => ({
-      key: g,
-      label: g,
-      colour,
-      values: chgYear === null || latest === null ? [] : [countAt(inYear(graded, chgYear), g), countAt(own, g)],
-    })),
-  };
+  const changeData: PanelData = g.changeDataIn(colour);
   const changeHalf: PanelRender = {
     tag: "% Change",
     afterTag: earlier.length ? <FromYearMenu periods={[...earlier, ...(latest === null ? [] : [latest])]} from={chgYear} onChange={setChangeFrom} /> : undefined,
@@ -217,5 +184,17 @@ export function GradeCountsPanels({
     source: isChange ? changeHalf.source : trendHalf.source,
   };
 
-  return <ColumnPanels columnId={columnId} host="teacher.c1.counts" panels={panels} onPanelsChange={onPanelsChange} notes={notes} controls={controls} render={{ current, trend }} />;
+  // 0.6.1 S3d: what the config-driven view renderer draws from (under `views=v2` only): the
+  // subject's own grade rows and England's, as fetched above, and the members' own picks.
+  const frame: GradesFrame = {
+    kind: "grades",
+    phase: geography?.phase,
+    subjectLabel,
+    ownRows,
+    englandRows: england,
+    colour,
+    state: { compareFrom, changeFrom, highlight: { range, pending, onGradeClick: click } },
+  };
+
+  return <ColumnPanels columnId={columnId} host="teacher.c1.counts" panels={panels} onPanelsChange={onPanelsChange} notes={notes} controls={controls} render={{ current: { ...current, frame }, trend: { ...trend, frame } }} />;
 }

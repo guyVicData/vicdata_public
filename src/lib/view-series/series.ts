@@ -3,6 +3,8 @@
 // (src/components/views/) maps each `leaf` to its component.
 import type { ViewKind } from "@/catalogue/viewspec";
 import type { Measure, PanelData } from "@/lib/teacher-view-panels";
+import type { AverageGrade, GradeRow } from "@/lib/grade-spread";
+import type { GradeRange } from "@/lib/subject-grades";
 import type { FrameMap, SortState } from "./frames";
 
 export type ChangeRowData = { key: string; label: string; colour: string; value: number | null };
@@ -57,8 +59,9 @@ export type LeafSeries =
       highlight?: boolean;
       colourChange?: boolean;
       sortable?: boolean;
-      // CentredOnTarget's watch key (the list scrolls to the focused row).
-      centred: string;
+      // CentredOnTarget's watch key (the list scrolls to the focused row); null = no scroll
+      // box (Grade counts' change table, S3d).
+      centred: string | null;
     }
   | {
       leaf: "sortTable";
@@ -163,6 +166,27 @@ export type LeafSeries =
       data: PanelData;
       measure: Measure;
       centred: string;
+    }
+  // S3d: GradeDistribution, the grade spread -- Grade counts' Current and Spread by year
+  // (in their own scroll box, centred null) and Results' Grades view (CentredOnTarget). The
+  // look options are set only off the default.
+  | {
+      leaf: "gradeSpread";
+      rows: GradeRow[];
+      total: number;
+      compareTotal?: number;
+      compareLabel?: string;
+      colour: string;
+      range: GradeRange | null;
+      pending: string | null;
+      onGradeClick?: (grade: string) => void;
+      benchLabel: string | null;
+      show?: "counts";
+      average?: AverageGrade;
+      shade?: GradeRange;
+      shadeLabel?: string;
+      values?: false;
+      centred: string | null;
     }
   | {
       leaf: "verticalBars";

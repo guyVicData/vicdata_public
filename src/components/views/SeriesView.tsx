@@ -5,13 +5,14 @@
 // (MultiTrend, TrendChart, YearTable, SortTable, ChangeList, ViewChart, VerticalBars), in
 // the same wrappers (CentredOnTarget where a list scrolls to its focused row). S3b adds
 // NumberTiles, RankedList, SchoolRankingTable and the new SlopeChart; S3c ShareDonut and the
-// geography comparison (GeographyView's picture). Maps draw through MapView.
+// geography comparison (GeographyView's picture); S3d GradeDistribution. Maps draw through MapView.
 import { useContext, useState } from "react";
 import { formatChange } from "@/lib/teacher-view-panels";
 import type { LeafSeries, ViewSeries } from "@/lib/view-series";
 import { CentredOnTarget } from "@/components/teacher/CentredOnTarget";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, ViewTitleOverrideContext, YearTable, multiTrendHasLine } from "@/components/teacher/SeriesViews";
 import { ShareDonut } from "@/components/teacher/ShareDonut";
+import { GradeDistribution } from "@/components/teacher/GradeDistribution";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 import { SortTable, nextSort, type SortState } from "@/components/teacher/SortTable";
 import { TrendChart } from "@/components/teacher/TrendChart";
@@ -69,11 +70,20 @@ function Leaf({ leaf, fullscreen }: { leaf: LeafSeries; fullscreen: boolean }) {
     case "yearTable": {
       const { leaf: _l, centred, ...props } = leaf;
       void _l;
+      if (centred === null) return <YearTable {...props} fullscreen={fullscreen} />;
       return (
         <CentredOnTarget watch={centred}>
           <YearTable {...props} fullscreen={fullscreen} />
         </CentredOnTarget>
       );
+    }
+    case "gradeSpread": {
+      const { leaf: _l, centred, ...props } = leaf;
+      void _l;
+      const spread = <GradeDistribution {...props} fullscreen={fullscreen} />;
+      // Results' Grades view scrolls to the focused subject's box; Grade counts' long scales
+      // (Double Award's 17 pairs, IB Diploma's 22 points) scroll in the card.
+      return centred === null ? <div className="min-h-0 flex-1 overflow-y-auto">{spread}</div> : <CentredOnTarget watch={centred}>{spread}</CentredOnTarget>;
     }
     case "sortTable":
       return <SortTableLeaf leaf={leaf} fullscreen={fullscreen} />;

@@ -22,10 +22,10 @@ import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeOver } from "@/lib/teacher-view-trend-styles";
 import { onChangeHalf } from "./compare";
 import { pageVersus, series } from "./comparisons";
-import type { ComparisonsFrame, FrameMap, SubjectsFrame, ViewFrame } from "./frames";
+import type { ComparisonsFrame, FrameMap, SubjectsFrame, SeriesFrame } from "./frames";
 import type { ViewSeries } from "./series";
 
-export function buildMap(spec: ViewSpec, f: ViewFrame): ViewSeries | null {
+export function buildMap(spec: ViewSpec, f: SeriesFrame): ViewSeries | null {
   if (spec.view.kind !== "map") return null;
   if (f.kind === "subjects") return trendMap(f);
   if (f.kind === "comparisons") {

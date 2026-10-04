@@ -9,8 +9,9 @@ import { MapView } from "./MapView";
 import { registerViewKind } from "./registry";
 
 // S3c registers donut (ShareDonut), map (RankingsMap, in its host's own wrapper) and, through
-// line and table, the geography views. Still host-drawn: Grade counts and the grade spread.
-for (const kind of ["line", "table", "bar", "ranking", "numbers", "slope", "donut"] as const) registerViewKind({ kind, build: buildSeries });
+// line and table, the geography views. S3d the grade spread (GradeDistribution) and, through
+// table, Grade counts' change table -- every view type is now drawn from its spec.
+for (const kind of ["line", "table", "bar", "ranking", "numbers", "slope", "donut", "spread"] as const) registerViewKind({ kind, build: buildSeries });
 registerViewKind({ kind: "map", build: buildSeries, render: (series, ctx) => createElement(MapView, { series, fullscreen: ctx.fullscreen }) });
 
 export { renderView, registerViewKind, viewKindRegistered, type ViewKindDef } from "./registry";

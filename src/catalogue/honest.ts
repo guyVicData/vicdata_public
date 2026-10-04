@@ -10,8 +10,8 @@
 //
 //   Measure          Self  Category / all / selected   LA / region / England               10 nearest / saved set
 //   Points           yes   yes                         yes                                  yes
-//   Grade 4+ / A*-E  yes   yes                         greyed (R-NO-GRADE-RATE-GEO)         yes
-//   Bands            yes   yes                         England only, latest year, 5 schools yes
+//   Grade 4+ / A*-E  yes   yes                         greyed (R-NO-GRADE-RATE-GEO)         Comparisons only (S3d)
+//   Bands            yes   yes                         England only, latest year, 5 schools Comparisons only (S3d)
 //   Counts           yes   no                          England ticks only                   none
 //   Entries          yes   yes                         points-eligible / scored quals only  yes
 //
@@ -127,6 +127,11 @@ export function compareHonest(ctx: HonestContext, kind: CompareSeriesKind, opts:
     }
     case "set": {
       if (!geo.ok) return no(ctx.measure === "counts" ? "No comparator grade counts: other schools are compared on points." : `${word}: ${geo.reason ?? "no set figure"}.`, ctx.measure === "counts" ? "R-MEASURE-FALLBACK" : undefined);
+      // S3d: a school's Grade 4+ / band rate is scored from its own grade counts
+      // (R-COMPARATOR-RATE-PER-QUAL), and the page loads the other schools' only in
+      // Comparisons -- a subject column has no such figure to average or draw.
+      if (!set && (ctx.measure === "threshold" || ctx.measure === "bands"))
+        return no("Needs the other schools' grade counts, which are only loaded in Comparisons.", "R-COMPARATOR-RATE-PER-QUAL");
       return yes();
     }
     default:

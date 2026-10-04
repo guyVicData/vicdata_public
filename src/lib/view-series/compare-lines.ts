@@ -24,7 +24,7 @@ import { meanOf, type PanelSeries } from "@/lib/teacher-view-panels";
 import { memberMeans } from "@/lib/teacher-view-populations";
 import { geographyTiers, geographyValues } from "@/lib/teacher-view-geography";
 import { compareColour } from "./colours";
-import type { CandidatesFrame, ComparisonsFrame, FrameGeography, FrameGroupMember, SubjectsFrame, ViewFrame } from "./frames";
+import type { CandidatesFrame, ComparisonsFrame, FrameGeography, FrameGroupMember, SubjectsFrame, SeriesFrame } from "./frames";
 import { medianOf, weightedMeanOf } from "./looks";
 
 export type CompareLine = PanelSeries & { kind: CompareSeriesKind; comparison: true };
@@ -33,18 +33,18 @@ const HOW = { mean: "Average", median: "Median", weighted: "Weighted average" } 
 const AREA_KINDS = new Set<CompareSeriesKind>(["la", "region", "england"]);
 const SET_KINDS = new Set<CompareSeriesKind>(["nearest", "savedSet"]);
 
-function hostOf(f: ViewFrame): HostId {
+function hostOf(f: SeriesFrame): HostId {
   if (f.kind === "subjects") return f.host;
   return f.kind === "candidates" ? "teacher.c1.candidates" : "teacher.c3.comparisons";
 }
 
-function themeOf(f: ViewFrame): "dark" | "light" {
+function themeOf(f: SeriesFrame): "dark" | "light" {
   return f.kind === "comparisons" ? f.theme ?? "dark" : f.theme;
 }
 
 // D7: may this frame draw this kind at all? (A frame without its phase -- an older embed --
 // keeps S3a's rules: only what it holds.)
-export function compareAllowed(f: ViewFrame, kind: CompareSeriesKind, span: boolean): boolean {
+export function compareAllowed(f: SeriesFrame, kind: CompareSeriesKind, span: boolean): boolean {
   if (!f.phase) return true;
   const measure = f.kind === "candidates" ? "entries" : f.measure.id;
   const ctx: HonestContext = { phase: f.phase, measure, host: hostOf(f) };
@@ -159,7 +159,7 @@ function comparisonsLine(f: ComparisonsFrame, cs: CompareSeries): Omit<CompareLi
 // The explicit compare series a frame can draw, in the spec's order, each its own line (or
 // row) aligned to the frame's periods. `span`: the view runs over several years (D7's
 // "latest year only" figures drop out). "self" and markers are the caller's.
-export function compareLinesFor(f: ViewFrame, compare: CompareSeries[], opts: { focusedKey: string | null; span: boolean; as?: CompareSeries["as"][] }): CompareLine[] {
+export function compareLinesFor(f: SeriesFrame, compare: CompareSeries[], opts: { focusedKey: string | null; span: boolean; as?: CompareSeries["as"][] }): CompareLine[] {
   const theme = themeOf(f);
   const out: CompareLine[] = [];
   const asOk = (cs: CompareSeries) => (opts.as ?? ["line", "row"]).includes(cs.as ?? "line");

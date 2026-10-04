@@ -41,7 +41,7 @@ test("D7: Points -- every comparison", () => {
 test("D7: Grade 4+ / A*-E -- LA, region and England greyed with R-NO-GRADE-RATE-GEO", () => {
   for (const phase of ["ks4", "ks5"] as const) {
     const c = subjectCol(phase, "threshold");
-    for (const k of ["self", "category", "allSubjects", "selectedSubjects", "nearest", "savedSet"] as const) assert.ok(ok(c, k), `${phase} threshold ${k}`);
+    for (const k of ["self", "category", "allSubjects", "selectedSubjects"] as const) assert.ok(ok(c, k), `${phase} threshold ${k}`);
     for (const k of ["la", "region", "england"] as const) {
       const v = compareHonest(c, k);
       assert.equal(v.ok, false, `${phase} threshold ${k}`);
@@ -54,13 +54,31 @@ test("D7: Grade 4+ / A*-E -- LA, region and England greyed with R-NO-GRADE-RATE-
 
 test("D7: Bands -- England latest year only (R-BANDS-ENGLAND-BENCH, 5 schools); LA / region greyed", () => {
   const c = subjectCol("ks4", "bands");
-  for (const k of ["self", "category", "allSubjects", "selectedSubjects", "nearest", "savedSet"] as const) assert.ok(ok(c, k, true), k);
+  for (const k of ["self", "category", "allSubjects", "selectedSubjects"] as const) assert.ok(ok(c, k, true), k);
   assert.ok(ok(c, "england", false));
   assert.match(compareHonest(c, "england").note!, /5 schools/);
   const span = compareHonest(c, "england", { span: true });
   assert.equal(span.ok, false);
   assert.equal(span.rule, "R-BANDS-ENGLAND-BENCH");
   for (const k of ["la", "region"] as const) assert.equal(compareHonest(c, k).rule, "R-BANDS-ENGLAND-BENCH");
+});
+
+test("S3d: Grade 4+ / A*-E and bands -- across schools greyed on a subject column (no comparator grade counts there); Comparisons keeps them", () => {
+  for (const phase of ["ks4", "ks5"] as const)
+    for (const measure of ["threshold", "bands"] as const)
+      for (const host of ["teacher.c1.results", "teacher.c2.context"] as const)
+        for (const k of ["nearest", "savedSet"] as const) {
+          const v = compareHonest({ phase, measure, host }, k, { span: true });
+          assert.equal(v.ok, false, `${phase} ${measure} ${host} ${k}`);
+          assert.equal(v.rule, "R-COMPARATOR-RATE-PER-QUAL");
+          assert.match(v.reason!, /grade counts.*only loaded in Comparisons/);
+          assert.ok(compareHonest({ phase, measure, host: "teacher.c3.comparisons" }, k, { span: true }).ok, `${phase} ${measure} Comparisons ${k}`);
+        }
+  // Points and entries keep the set's average on a subject column.
+  for (const k of ["nearest", "savedSet"] as const) {
+    assert.ok(ok(subjectCol("ks4", "points"), k, true));
+    assert.ok(ok(subjectCol("ks4", "entries"), k, true));
+  }
 });
 
 test("D7: Counts -- self and England ticks only; no groups, no areas, no sets", () => {

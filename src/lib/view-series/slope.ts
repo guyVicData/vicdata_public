@@ -17,7 +17,7 @@ import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { basics as candidateBasics } from "./candidates";
 import { onChangeHalf, resolveCompare } from "./compare";
 import { compareLinesFor, type CompareLine } from "./compare-lines";
-import type { ViewFrame } from "./frames";
+import type { SeriesFrame } from "./frames";
 import type { SlopeRowData, ViewSeries } from "./series";
 import { currentRows } from "./subjects";
 
@@ -31,7 +31,7 @@ const asLines = (ls: CompareLine[]): Line[] => ls.map((l) => ({ key: l.key, labe
 
 // The frame's rows and compare lines, its measure, the year Current shows, and the title's
 // subject / scope words.
-function linesOf(spec: ViewSpec, f: ViewFrame, compare: CompareSeries[], allRows: boolean) {
+function linesOf(spec: ViewSpec, f: SeriesFrame, compare: CompareSeries[], allRows: boolean) {
   const explicit = spec.compare !== "follows-page";
   if (f.kind === "subjects") {
     if (f.subjects.length === 0) return null;
@@ -62,7 +62,7 @@ function linesOf(spec: ViewSpec, f: ViewFrame, compare: CompareSeries[], allRows
 }
 
 // The two years, as indexes into the frame's periods.
-export function slopeYears(spec: ViewSpec, f: ViewFrame, lines: Line[], latest: number | null): { from: number; to: number } | null {
+export function slopeYears(spec: ViewSpec, f: SeriesFrame, lines: Line[], latest: number | null): { from: number; to: number } | null {
   const has = (i: number) => lines.some((l) => !l.comparison && l.values[i] !== null);
   const real = f.periods.map((_, i) => i).filter(has);
   if (real.length < 2) return null;
@@ -80,7 +80,7 @@ export function slopeYears(spec: ViewSpec, f: ViewFrame, lines: Line[], latest: 
   return { from: fromIdx, to: toIdx };
 }
 
-export function buildSlope(spec: ViewSpec, f: ViewFrame): ViewSeries | null {
+export function buildSlope(spec: ViewSpec, f: SeriesFrame): ViewSeries | null {
   if (spec.view.kind !== "slope") return null;
   const compare = resolveCompare(spec, f);
   const got = linesOf(spec, f, compare, !!spec.data.rows);

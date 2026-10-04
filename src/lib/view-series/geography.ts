@@ -16,11 +16,11 @@ import { ENTRIES_MEASURE } from "@/lib/teacher-view-panels";
 import { geographyComparison, geographyHeading } from "@/lib/teacher-view-geography";
 import { FOCUS_COLOUR, paletteInOrder } from "@/lib/teacher-view-trend-styles";
 import { basics as candidateBasics, changeData as candidateChange } from "./candidates";
-import type { ViewFrame } from "./frames";
+import type { SeriesFrame } from "./frames";
 import type { ViewSeries } from "./series";
 import { changeData as subjectChange } from "./subjects";
 
-export function buildGeography(spec: ViewSpec, f: ViewFrame): ViewSeries | null {
+export function buildGeography(spec: ViewSpec, f: SeriesFrame): ViewSeries | null {
   if (f.kind === "comparisons") return null;
   const g = f.geography;
   if (!g || f.subjects.length === 0) return null;

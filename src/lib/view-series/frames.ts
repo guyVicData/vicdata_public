@@ -18,6 +18,7 @@ import type { CompareSeriesKind } from "@/catalogue/viewspec";
 import type { Phase } from "@/catalogue/types";
 import type { Measure } from "@/lib/teacher-view-panels";
 import type { GradeRange } from "@/lib/subject-grades";
+import type { GradeCountRow } from "@/lib/grade-spread";
 import type { GeographyMetric, GeographyPayload } from "@/lib/teacher-view-geography";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 
@@ -132,12 +133,23 @@ export type SubjectsFrame = {
   // The host draws its own note in Current instead of any view (no subjects; Grade bands
   // with no range picked yet).
   currentBlocked: boolean;
-  // Results' % change half is the geography comparison (its own fetch, a later part).
+  // Results' % change half is the geography comparison (its own fetch, `geography`).
   hasGeography: boolean;
   // S3b: Results' number tiles. `tiles` = the host offers them (Column 1 Results); on Grade
   // bands, the range and the focused subject's own per-grade rows (bandRate's input).
   tiles?: boolean;
-  gradeBand?: { range: GradeRange | null; rangeLabel: string | null; ownRows: { period: number; grade: string; entries: number }[] } | null;
+  // S3d: the "Grades (pick a range)" view's inputs too -- England's per-grade rows (the
+  // host's fetch, [] until it arrives), the subject's colour and the range picking (a first
+  // click waiting for its second; the page's handler).
+  gradeBand?: {
+    range: GradeRange | null;
+    rangeLabel: string | null;
+    ownRows: GradeCountRow[];
+    englandRows?: GradeCountRow[];
+    colour?: string;
+    pending?: string | null;
+    onGradeClick?: (grade: string) => void;
+  } | null;
   // The school's name (a tile scope line's [school]).
   schoolName?: string;
   // S3c: the phase (the catalogue's honest options, D7), Context's donut, Results' %
@@ -241,4 +253,24 @@ export type ComparisonsFrame = {
   state: FrameMemberState;
 };
 
-export type ViewFrame = SubjectsFrame | CandidatesFrame | ComparisonsFrame;
+// S3d: Column 1 Results on Grade counts (GradeCountsPanels) -- the focused subject's own
+// per-grade rows, every year it has them, and England's (the host's own fetch, [] until it
+// arrives or where there is none), and the members' own picks: the Trends "From" years (the
+// spread's earlier year, the change table's first) and Current's click-two-grades highlight.
+export type GradesFrame = {
+  kind: "grades";
+  phase?: Phase;
+  subjectLabel: string;
+  ownRows: GradeCountRow[];
+  englandRows: GradeCountRow[];
+  colour: string;
+  state: {
+    compareFrom: number | null;
+    changeFrom: number | null;
+    highlight: { range: GradeRange | null; pending: string | null; onGradeClick: (grade: string) => void };
+  };
+};
+
+export type ViewFrame = SubjectsFrame | CandidatesFrame | ComparisonsFrame | GradesFrame;
+// The frames with one value per period (every builder but the grades one reads these).
+export type SeriesFrame = SubjectsFrame | CandidatesFrame | ComparisonsFrame;

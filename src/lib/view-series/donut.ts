@@ -8,11 +8,11 @@
 // or in a note state (no figure that year, a band with no range, no subjects), the host
 // draws, as before.
 import type { ViewSpec } from "@/catalogue/viewspec";
-import type { ViewFrame } from "./frames";
+import type { SeriesFrame } from "./frames";
 import type { ViewSeries } from "./series";
 import { currentHeading } from "./subjects";
 
-export function buildDonut(spec: ViewSpec, f: ViewFrame): ViewSeries | null {
+export function buildDonut(spec: ViewSpec, f: SeriesFrame): ViewSeries | null {
   if (spec.view.kind !== "donut" || f.kind !== "subjects") return null;
   const d = f.donut;
   if (!d || !d.enabled || f.currentBlocked || f.subjects.length === 0) return null;

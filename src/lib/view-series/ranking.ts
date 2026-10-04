@@ -12,7 +12,7 @@
 import type { RankingLook, ViewSpec } from "@/catalogue/viewspec";
 import { changeOf, ENTRIES_MEASURE, formatChange, rankByValue, type Measure } from "@/lib/teacher-view-panels";
 import { rankedComparisons } from "@/lib/teacher-view-comparisons";
-import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame, ViewFrame } from "./frames";
+import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame, SeriesFrame } from "./frames";
 import type { RankColumnKey, RankRowData, SchoolRankRowData, ViewSeries } from "./series";
 import { currentHeading, currentRows, currentTitle } from "./subjects";
 
@@ -48,7 +48,7 @@ function changeAt(measure: Measure, values: (number | null)[], idx: number): str
 
 const shareOf = (value: number | null, max: number) => (value === null || max <= 0 ? null : Math.max(0, value) / max);
 
-export function buildRanking(spec: ViewSpec, f: ViewFrame): ViewSeries | null {
+export function buildRanking(spec: ViewSpec, f: SeriesFrame): ViewSeries | null {
   if (spec.view.kind !== "ranking") return null;
   const look = spec.view.look;
   if (f.kind === "comparisons") return schoolRanking(look, f, !!spec.data.rows);

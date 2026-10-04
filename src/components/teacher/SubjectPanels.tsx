@@ -44,8 +44,9 @@ import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
-import { GradeDistribution, type GradeRow } from "./GradeDistribution";
-import { NON_GRADE_VALUES, bandRate, gradeOrderFrom, type GradeRange } from "@/lib/subject-grades";
+import { GradeDistribution } from "./GradeDistribution";
+import { bandDistribution } from "@/lib/grade-spread";
+import { bandRate, type GradeRange } from "@/lib/subject-grades";
 import { useSubjectGradeGeography, withEnglandBandBenchmark, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { RankingsMap } from "./RankingsMap";
@@ -470,18 +471,8 @@ export function SubjectPanels({
   // Grade bands: the focused subject's distribution in the year Current shows, with
   // England's share at each grade (no tick where England's row was suppressed), and its
   // entries inside the range -- both from the same rows bandRate reads.
-  const bandOwnLatest = gradeBand && latest !== null ? gradeBand.ownRows.filter((r) => r.period === latest && !NON_GRADE_VALUES.has(r.grade)) : [];
-  const bandEnglandLatest = latest !== null ? englandGradeRows.filter((r) => r.period === latest && !NON_GRADE_VALUES.has(r.grade)) : [];
-  const bandOwnTotal = bandOwnLatest.reduce((a, r) => a + r.entries, 0);
-  const bandEnglandTotal = bandEnglandLatest.reduce((a, r) => a + r.entries, 0);
-  const bandDistribution: GradeRow[] = gradeOrderFrom(bandOwnLatest.map((r) => r.grade), bandEnglandLatest.map((r) => r.grade)).map((g) => {
-    const eng = bandEnglandLatest.filter((r) => r.grade === g);
-    return {
-      grade: g,
-      ownCount: bandOwnLatest.filter((r) => r.grade === g).reduce((a, r) => a + r.entries, 0),
-      benchPct: eng.length && bandEnglandTotal > 0 ? (eng.reduce((a, r) => a + r.entries, 0) / bandEnglandTotal) * 100 : null,
-    };
-  });
+  // (0.6.1 S3d: src/lib/grade-spread.ts, which the renderer reads too.)
+  const band = bandDistribution(gradeBand?.ownRows ?? [], englandGradeRows, gradeBand ? latest : null);
 
   // Grade bands: the range row under the panel header -- the presets where the scale has
   // them (GCSE 9-1 only), the range in use, and the way into the Grades view for a custom
@@ -562,16 +553,16 @@ export function SubjectPanels({
         <>
           <ViewTitle>{currentTitle}</ViewTitle>
           {effectiveView === "grades" && gradeBand ? (
-            bandOwnTotal > 0 ? (
+            band.total > 0 ? (
               <CentredOnTarget watch={`grades:${focusedKey}`}>
                 <GradeDistribution
-                  rows={bandDistribution}
-                  total={bandOwnTotal}
+                  rows={band.rows}
+                  total={band.total}
                   colour={gradeBand.colour}
                   range={gradeBand.range}
                   pending={gradeBand.pending}
                   onGradeClick={gradeBand.onGradeClick}
-                  benchLabel={englandGradeRows.length ? `England, ${latest === null ? "" : academicYearLabel(latest)}` : null}
+                  benchLabel={band.benchLabel}
                   fullscreen={fullscreen}
                 />
               </CentredOnTarget>
@@ -1074,7 +1065,9 @@ export function SubjectPanels({
     currentBlocked: subjects.length === 0 || (!!gradeBand && !gradeBand.range),
     hasGeography: !!geography,
     tiles: !!tiles,
-    gradeBand: gradeBand ? { range: gradeBand.range, rangeLabel: gradeBand.rangeLabel, ownRows: gradeBand.ownRows } : null,
+    gradeBand: gradeBand
+      ? { range: gradeBand.range, rangeLabel: gradeBand.rangeLabel, ownRows: gradeBand.ownRows, englandRows: englandGradeRows, colour: gradeBand.colour, pending: gradeBand.pending, onGradeClick: gradeBand.onGradeClick }
+      : null,
     schoolName: runtime?.school?.name,
     // S3c: the phase (D7's honest options), Context's donut, Results' geography comparison
     // (the fetch above, as fetched) and Results' Trend map.

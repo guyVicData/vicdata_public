@@ -14,7 +14,7 @@
 import { cloneElement, Fragment, type ReactNode } from "react";
 import { presetSpec } from "@/catalogue/viewspec";
 import type { DataviewInstance, PanelConfig } from "@/catalogue/types";
-import { configuredDefaultFor, viewsOnState, type VariantState } from "@/catalogue/variants";
+import { configuredDefaultFor, defaultOnState, viewsOnState, type VariantState } from "@/catalogue/variants";
 import { DATAVIEWS } from "@/catalogue/dataviews";
 import * as Icons from "@/components/teacher/PanelIcons";
 import type { RailEntry } from "@/components/dashboard-config/rail";
@@ -64,7 +64,10 @@ export function shownInstance(cfg: PanelConfig, entries: RailEntry[], state: Var
   const shown = viewsOf(cfg, state);
   const active = entries.find((e) => e.active)?.dataview;
   const pick = (list: ViewInstance[]) => list.find((v) => v.dataview === active && isPresetInstance(v)) ?? list.find((v) => v.dataview === active);
-  return pick(shown) ?? pick(all) ?? all.find((v) => v.id === cfg.defaultView) ?? all[0];
+  // S3d: a host with no rail of its own (Grade counts' Current) has no active entry: the
+  // state's own default, or its first view (not a view another state shows).
+  const onState = state ? defaultOnState(cfg, state) : undefined;
+  return pick(shown) ?? pick(all) ?? (onState ? shown.find((v) => v.id === onState) : undefined) ?? all.find((v) => v.id === cfg.defaultView) ?? all[0];
 }
 
 function iconOf(name: string): ReactNode {

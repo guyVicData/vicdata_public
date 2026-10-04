@@ -253,7 +253,7 @@ function line(spec: ViewSpec, look: LineLook, f: SubjectsFrame, compare: Compare
   };
 }
 
-function tableLook(look: TableLook) {
+export function tableLook(look: TableLook) {
   return {
     ...(look.yearColumns && look.yearColumns !== "first-latest" ? { yearColumns: look.yearColumns } : {}),
     ...(look.extra && !look.extra.includes("change") ? { showChange: false } : {}),

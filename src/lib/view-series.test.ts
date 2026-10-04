@@ -15,7 +15,7 @@ import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { bestScale, NON_GRADE_VALUES } from "@/lib/subject-grades";
 import { buildSeries, type LeafSeries, type ViewFrame, type ViewSeries } from "./view-series";
 import { resolveCompare } from "./view-series/compare";
-import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame } from "./view-series/frames";
+import type { CandidatesFrame, ComparisonsFrame, SeriesFrame, SubjectsFrame } from "./view-series/frames";
 import { averageOfShown, medianOf, orderRows, topTen, weightedMeanOf } from "./view-series/looks";
 
 type Raw = Record<string, unknown> & { name: string; kind: string; phase: "ks4" | "ks5"; measureId?: MeasureId; periods: number[] };
@@ -35,7 +35,7 @@ function gradeBandOf(g: NonNullable<SubjectsFrame["gradeBand"]>): NonNullable<Su
   return g.range ? { ...g, range: { ...g.range, scale: bestScale([...g.range.scale]) } } : g;
 }
 
-function frameOf(r: Raw): ViewFrame {
+function frameOf(r: Raw): SeriesFrame {
   if (r.kind === "subjects") {
     const subjects = r.subjects as SubjectsFrame["subjects"];
     const ranked = r.host === "teacher.c2.context";
@@ -114,7 +114,8 @@ function frameOf(r: Raw): ViewFrame {
   };
 }
 
-const FRAMES = RAW.map((r) => ({ raw: r, frame: frameOf(r) }));
+// S3d's Grade counts frames (kind "grades") are src/lib/view-series-grades.test.ts's.
+const FRAMES = RAW.filter((r) => r.kind !== "grades").map((r) => ({ raw: r, frame: frameOf(r) }));
 const ofHost = (pred: (r: Raw) => boolean) => FRAMES.filter((x) => pred(x.raw));
 const build = (preset: string, frame: ViewFrame, fullscreen = false) => buildSeries(presetSpec(preset as DataviewId), frame, { fullscreen });
 function leafOf<K extends LeafSeries["leaf"]>(s: ViewSeries | null, leaf: K): Extract<LeafSeries, { leaf: K }> {
@@ -155,7 +156,8 @@ test("every line / table / bar preset is covered below (or left to its host)", (
     "DV-C3-CUR-BAR", "DV-C3-TR-CHART", "DV-C3-TR-TABLE", "DV-C3-TR-CHANGELIST", "DV-C3-TR-CHANGETABLE",
   ]);
   // The geography views draw from the host's fetch in the frame (S3c, below): without it
-  // (these fixtures carry none) the host draws. Grade counts' table is still its host's.
+  // (these fixtures carry none) the host draws. Grade counts' table draws from a grades frame
+  // only (src/lib/view-series-grades.test.ts).
   const hosts = new Set(["DV-C1-CAND-TR-GEO-CHART", "DV-C1-CAND-TR-GEO-TABLE", "DV-C1-RES-TR-GEO-CHART", "DV-C1-RES-TR-GEO-TABLE", "DV-C1-CNT-TR-CHANGETABLE"]);
   for (const id of LTB) assert.ok(covered.has(id) || hosts.has(id), id);
   for (const id of hosts) for (const { frame } of FRAMES) assert.equal(id === "DV-C1-CNT-TR-CHANGETABLE" ? null : build(id, frame), null, `${id} stays with its host without a geography fetch`);
@@ -816,7 +818,7 @@ const S3C_IDS = ["DV-C2-CUR-DONUT", "DV-C1-RES-TR-MAP", "DV-C3-CUR-MAP", "DV-C3-
 test("S3c: the donut, map and geography presets are registered and drawn from their spec", async () => {
   const { viewKindRegistered } = await import("@/components/views");
   for (const kind of ["donut", "map", "line", "table"] as const) assert.ok(viewKindRegistered(kind), kind);
-  assert.equal(viewKindRegistered("spread"), false, "the grade spread is still its host's (S3d)");
+  assert.ok(viewKindRegistered("spread"), "the grade spread (S3d)");
   for (const id of S3C_IDS) assert.ok(DATAVIEWS.some((d) => d.id === id), id);
 });
 

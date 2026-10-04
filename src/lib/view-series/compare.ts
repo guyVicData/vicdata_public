@@ -21,9 +21,8 @@ export function onChangeHalf(spec: ViewSpec): boolean {
   return spec.data.shownAs === "change" || (spec.view.kind === "table" && spec.view.look.sort === "change");
 }
 
-// Geography series (LA / region / England as their own lines or rows) come from their own
-// fetch (useSubjectGeography) -- a later part of S3. A view that needs one is left to its
-// host until then.
+// The geography presets: LA / region / England as their own lines or rows, from the host's
+// own fetch (useSubjectGeography), handed over in the frame (S3c).
 export function needsGeography(spec: ViewSpec): boolean {
   return !!spec.preset && /-GEO-(CHART|TABLE)$/.test(spec.preset);
 }
@@ -42,7 +41,16 @@ export function resolveCompare(spec: ViewSpec, frame: ViewFrame): CompareSeries[
     ];
   }
   switch (frame.kind) {
+    case "grades":
+      // Grade counts: Current's England ticks; Spread by year (the members' year pick) the
+      // subject itself in an earlier year; the change table nothing beyond its grades.
+      if (kind !== "spread") return [];
+      return "memberPick" in spec.data.years && spec.data.years.memberPick
+        ? [{ kind: "self", colour: "muted", as: "line", at: "earlier-year" }]
+        : [{ kind: "england", colour: "fg", as: "marker" }];
     case "subjects": {
+      // Results' Grades view: England's share at each grade, the latest year.
+      if (kind === "spread") return [{ kind: "england", colour: "fg", as: "marker" }];
       // Current: Results' bars carry England's marker; the tables' third column is the
       // benchmark (England on Results, the group's average on Context), else the subject's
       // own previous year (R-PREV-YEAR-FALLBACK).

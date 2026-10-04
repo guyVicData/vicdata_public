@@ -15,7 +15,7 @@ import { bandRate } from "@/lib/subject-grades";
 import { currentRowsWithDelta, ENTRIES_MEASURE, rankByValue } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeOver, directionOf, signed } from "@/lib/teacher-view-trend-styles";
-import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame, ViewFrame } from "./frames";
+import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame, SeriesFrame } from "./frames";
 import type { BuildContext, TileData, ViewSeries } from "./series";
 
 // 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd". (NumberTiles re-exports it.)
@@ -27,7 +27,7 @@ export function ordinal(n: number): string {
 
 type Built = { title: string | null; main: { figure: string; label: string } | null; tiles: TileData[]; vars: TileVars };
 
-export function buildNumbers(f: ViewFrame, ctx: BuildContext): ViewSeries | null {
+export function buildNumbers(f: SeriesFrame, ctx: BuildContext): ViewSeries | null {
   const built = f.kind === "subjects" ? subjectTiles(f) : f.kind === "candidates" ? candidateTiles(f) : rankingTiles(f);
   if (!built) return null;
   const params = readTileParams(ctx.params ?? null);

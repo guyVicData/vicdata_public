@@ -50,6 +50,10 @@ for (const [urn, phase] of [["100053", "ks4"], ["117037", "ks5"]] as const) {
   const qualificationHeadline = data.dashboard.qualificationHeadline;
   const englandAvg = data.dashboard.englandAverages;
   const items = buildSubjectItems(entries);
+  // England's per-grade rows for a subject (the subject-grade-geography route's national
+  // rows, captured per focus subject; [] where none were).
+  const englandGradesFor = (i: Item): { period: number; grade: string; entries: number }[] =>
+    ((data.englandGrades?.[`${i.subject}::${i.qualificationType}`] ?? []) as { period: number; grade: string; entries: number }[]).map((r) => ({ period: r.period, grade: r.grade, entries: r.entries }));
   // The page's own default tick (its largest subjects) and focus (the first ticked).
   for (const focusItem of [items[0], items.find((i) => i.subject === "History") ?? items[1]]) {
     const ticked = items.slice(0, 4).concat(items.slice(0, 4).includes(focusItem) ? [] : [focusItem]);
@@ -114,10 +118,25 @@ for (const [urn, phase] of [["100053", "ks4"], ["117037", "ks5"]] as const) {
         currentBlocked: usingBands && !bandRange,
         // S3b: the number tiles' Grade bands inputs (TeacherDashboard's focusGradeRows).
         gradeBand: usingBands
-          ? { range: bandRange, rangeLabel: bandRange ? rangeLabel(bandRange) : null, ownRows: focusGrades.map((g: { period: number; grade: string; entries: number }) => ({ period: g.period, grade: g.grade, entries: g.entries })) }
+          ? { range: bandRange, rangeLabel: bandRange ? rangeLabel(bandRange) : null, ownRows: focusGrades.map((g: { period: number; grade: string; entries: number }) => ({ period: g.period, grade: g.grade, entries: g.entries })), englandRows: englandGradesFor(focusItem) }
           : null,
       });
     }
+
+    // ------------------------------------------------- Column 1 Results on Grade counts
+    // S3d: GradeCountsPanels' inputs -- the focused subject's own per-grade rows (the page's
+    // focusGradeRows) and England's (the subject-grade-geography route's national rows, as
+    // captured), every year.
+    out.push({
+      name: `${urn}/${phase} ${focusItem.subject} results counts`,
+      kind: "grades",
+      phase,
+      measureId: "counts",
+      periods: [...new Set(focusGrades.map((g: { period: number }) => g.period as number))].sort((a, b) => (a as number) - (b as number)),
+      subjectLabel: phase === "ks5" ? focusItem.label : focusItem.subject,
+      ownRows: focusGrades.map((g: { period: number; grade: string; entries: number }) => ({ period: g.period, grade: g.grade, entries: g.entries })),
+      englandRows: englandGradesFor(focusItem),
+    });
 
     // ----------------------------------------------------------------- Context
     const groupRows = P.contextGroupRows(phase, headline, qualificationHeadline);
