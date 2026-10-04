@@ -1,6 +1,8 @@
-# VicData 0.6, snagging round 1: Export menu, Compare-against wording, a menu for each view in the editor
+# VicData 0.6, snagging round 1: published dashboards reach the Teacher page, Export menu, Compare-against wording, a menu for each view in the editor
 
-Claude Code build prompt. Three small changes from Guy's first live test of 0.6. Make a branch `v0.6-snag1` from `main`, commit once per item (01, 02, 03), with tsc, eslint and `next build` clean on each. Push the branch. **Don't merge.** Guy merges after looking.
+Claude Code build prompt. Four changes from Guy's first live test of 0.6. Make a branch `v0.6-snag1` from `main`, commit once per item (00, 01, 02, 03), with tsc, eslint and `next build` clean on each. Push the branch. **Don't merge.** Guy merges after looking.
+
+**Why item 00 comes first:** Guy is about to do real work in the editor: refining the four Teacher dashboards, then skeletoning SMT and Admissions dashboards. Today nothing he publishes reaches the Teacher page, so that work would be invisible.
 
 Ground rules as in 0.6:
 - **Pixel-perfect:** reuse the existing components and tokens named below, and introduce no new colours.
@@ -9,6 +11,33 @@ Ground rules as in 0.6:
 - **The live (unflagged) dashboards may change only where an item says so.**
 
 Guy's note on the editor: *"Editing the panel is very hard to understand at the moment. It just needs careful simplifying. Let's tackle one change at a time."* So item 03 is **one** change. Don't restyle or reorganise anything else in the editor this round, however tempting.
+
+---
+
+## 00 — The Teacher page draws the published dashboard, not the copy in code
+
+**The problem:** under `?renderer=config` (or `NEXT_PUBLIC_DASHBOARD_RENDERER=config`), `TeacherDashboard` picks its config with `teacherDashboardFor(phase, sharedMeasure)`. That is the copy built into `src/catalogue/dashboards/teacher.ts`. So a version Guy publishes in the editor for `vicdata.ks4.candidates` (and the others) shows on `/dashboards/vicdata.ks4.candidates` but never on `/teacher/ks4`. Scope brief §4.8 and G1 say a published VicData dashboard reaches every school's Teacher page, like a software upgrade.
+
+**Fix:**
+- **Which config to draw:** under the flag, the Teacher page draws the **published version** of `vicdata.{phase}.{candidates|results}` from the dashboards store (`dashboards-store.ts`, `loadDashboard` by slug, published only, never the draft).
+- **Fallback:** the code copy is used whenever there's no row, no published version, a `schema_version` the renderer can't read, or a load error. Log a console warning when it falls back.
+- **What changes:** the same for every school and every role, because it's one VicData config. Only the dashboard's structure comes from the store: columns, rows, panels, view lists, defaults, names. Everything the host decides per school stays exactly as it is now:
+  - qualification gating;
+  - which views a subject, pill state or ranking set allows;
+  - the Results sub-measure pill;
+  - the AS/AEA and minimum-count rules.
+- **Loading:** load it once per page view, alongside the existing fetches, without adding a loading flash. Show the code copy's skeleton until the stored one arrives, or wait if that's simpler and invisible at real speeds; log which.
+- **Group switcher** (Candidates ↔ Results): it loads the other dashboard's published version in the same way.
+- **Per-user state and notes:** keep resolving through stable IDs and `legacy` keys, so G1's "state survives where the panel survives" holds when a new version arrives. The "Updated — what's changed" line shows on the Teacher page on the first visit after a publish, as it does on `/dashboards/[id]`.
+- **The Edit link** on the flagged Teacher page opens the editor on that same dashboard. Keep it.
+
+**Checks:**
+- **Parity:** the flag-on run must still be identical to flag-off. The stored published versions are the seed, so they should be identical to the code copies; prove it.
+- **Test that an edit reaches the page:**
+  1. In a local or test copy of the data, rename a panel in a published version.
+  2. `/teacher/ks4?renderer=config` must show the new name.
+  3. Remove the version and the page must fall back to the code copy.
+- **Flag off:** the live site is unchanged.
 
 ---
 
@@ -148,6 +177,7 @@ Write a short report, `docs/v0.6/snag1_report_v1.md`, with:
 - the screenshots;
 - anything logged;
 - **a click-through for Guy on the live site after he merges:**
+  0. Rename a panel in `/dashboards/vicdata.ks4.candidates/edit` and publish. Check `/teacher/ks4?renderer=config` shows it, then restore the original version from History and publish;
   1. a Column 3 panel's Export menu, and one in a meeting slot;
   2. Context's Compare against pill for a subject in a long-named category;
   3. in `/dashboards/vicdata.ks4.candidates/edit`: hover a rail icon, open its menu, try each row, then undo.
