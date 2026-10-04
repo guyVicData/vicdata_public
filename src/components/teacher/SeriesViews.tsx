@@ -60,6 +60,8 @@ export function MultiTrend({
   fullscreen = false,
   index,
   seriesLegend,
+  fromZero,
+  endLabels,
 }: {
   // Every series, in Current's order, already coloured and already sliced to the span.
   data: PanelData;
@@ -73,6 +75,9 @@ export function MultiTrend({
   index?: boolean;
   // Passed to TrendChart: false when the caller draws the series legend itself.
   seriesLegend?: boolean;
+  // 0.6.1 S3: a line view's look (TrendChart's), passed through; off by default.
+  fromZero?: boolean;
+  endLabels?: boolean;
 }) {
   if (!multiTrendHasLine(data)) {
     // A long list scrolls inside the panel, starting with the focused row in view. Only
@@ -103,6 +108,8 @@ export function MultiTrend({
       focusKey={focusKey ?? undefined}
       reference={indexed ? { value: 100, label: "100 = first year shown" } : undefined}
       seriesLegend={seriesLegend}
+      fromZero={fromZero}
+      endLabels={endLabels}
     />
   );
 }
@@ -169,10 +176,20 @@ export function ChangeList({
   focusKey,
   group,
   formatValue,
+  values = true,
+  order = "highest",
+  average,
 }: {
   rows: ChangeRow[];
   focusKey: string | null;
   group?: { label: string; value: number | null };
+  // 0.6.1 S3, a bar view's look: an average of the rows drawn, a dotted line (the group's
+  // reference above is an average of things not drawn).
+  average?: { label: string; value: number };
+  // 0.6.1 S3, a bar view's look: false leaves the figures off the rows (the bars alone);
+  // "az" lists the rows by name rather than by change. Defaults draw as before.
+  values?: boolean;
+  order?: "highest" | "az";
   // How a row's value prints, sign included, as ViewChart's formatValue: the measure
   // formats its own values. Absent = a rounded, signed % change.
   formatValue?: (v: number) => string;
@@ -180,22 +197,24 @@ export function ChangeList({
   const format = formatValue ?? signedPercent;
   // The tone follows the printed figure: a % change is shown rounded, so "+0%" reads flat.
   const dirOf = (v: number | null) => directionOf(v === null ? null : formatValue ? v : Math.round(v));
-  const ranked = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  const byChange = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  const rankOfKey = new Map(byChange.map((r, i) => [r.key, i + 1]));
+  const ranked = order === "az" ? [...rows].sort((a, b) => a.label.localeCompare(b.label)) : byChange;
   const real = ranked.filter((r) => r.value !== null).map((r) => Math.abs(r.value!));
   if (real.length === 0) return <p className="text-xs text-[var(--muted)]">No two years of published figures to compare yet.</p>;
-  const maxAbs = Math.max(...real, group?.value !== null && group?.value !== undefined ? Math.abs(group.value) : 0) || 1;
+  const maxAbs = Math.max(...real, group?.value !== null && group?.value !== undefined ? Math.abs(group.value) : 0, average ? Math.abs(average.value) : 0) || 1;
   // Half the track either side of zero, with a little room so the longest bar never
   // touches the edge.
   const pos = (v: number) => 50 + (v / maxAbs) * 46;
   // Nulls sort last, so a row's rank is simply its position among the real ones.
   return (
     <div className="flex flex-col gap-1.5">
-      {ranked.map((r, idx) => {
-        const rank = idx + 1;
+      {ranked.map((r) => {
+        const rank = rankOfKey.get(r.key)!;
         const dir = dirOf(r.value);
         const focus = r.key === focusKey;
         return (
-          <div key={r.key} data-highlight={focus ? "" : undefined} className="grid grid-cols-[6.5rem_1fr_2.75rem] items-center gap-2 text-[11px]">
+          <div key={r.key} data-highlight={focus ? "" : undefined} className={`grid ${values ? "grid-cols-[6.5rem_1fr_2.75rem]" : "grid-cols-[6.5rem_1fr]"} items-center gap-2 text-[11px]`}>
             <span className="flex min-w-0 items-center gap-1.5">
               <span className="w-3 shrink-0 text-right text-[9px] tabular-nums text-[var(--muted3)]">{r.value === null ? "" : rank}</span>
               <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.colour }} />
@@ -226,10 +245,19 @@ export function ChangeList({
                   style={{ left: `${pos(group.value)}%` }}
                 />
               )}
+              {average && (
+                <span
+                  data-average-line=""
+                  className="absolute -bottom-1 -top-1 w-0 border-l border-dotted border-[var(--fg)] opacity-70"
+                  style={{ left: `${pos(average.value)}%` }}
+                />
+              )}
             </span>
-            <span className={`text-right font-semibold tabular-nums ${DIRECTION_TEXT[dir]}`}>
-              {r.value === null ? "—" : format(r.value)}
-            </span>
+            {values && (
+              <span className={`text-right font-semibold tabular-nums ${DIRECTION_TEXT[dir]}`}>
+                {r.value === null ? "—" : format(r.value)}
+              </span>
+            )}
           </div>
         );
       })}
@@ -237,6 +265,12 @@ export function ChangeList({
         <div className="mt-1 flex items-center gap-1.5 border-t border-dashed border-[var(--panel-border2)] pt-1.5 text-[10px] text-[var(--muted2)]">
           <span className="inline-block h-3 w-0 border-l border-dashed border-[var(--fg)] opacity-60" />
           {group.label}: {group.value === null ? "no figure" : format(group.value)}
+        </div>
+      )}
+      {average && (
+        <div className={`${group ? "" : "mt-1 border-t border-dashed border-[var(--panel-border2)] pt-1.5 "}flex items-center gap-1.5 text-[10px] text-[var(--muted2)]`}>
+          <span className="inline-block h-3 w-0 border-l border-dotted border-[var(--fg)] opacity-70" />
+          {average.label}: {format(average.value)}
         </div>
       )}
     </div>
@@ -262,6 +296,14 @@ export function YearTable({
   showRank = true,
   leadingRank = false,
   changeEmphasis = "value",
+  yearColumns = "first-latest",
+  showChange = true,
+  rankColumn = "fullscreen",
+  counts,
+  initialSort,
+  highlight = true,
+  colourChange = true,
+  sortable,
 }: {
   data: PanelData;
   measure: Measure;
@@ -282,15 +324,49 @@ export function YearTable({
   // geography table, where a count of 33,271 beside 53 means little): the % bold and
   // coloured, the count beneath in a legible light tone rather than near-invisible grey.
   changeEmphasis?: "value" | "percent";
+  // 0.6.1 S3, a table view's look (never a figure). Every default draws as before.
+  //   yearColumns  "first-latest": first and latest on the card, every year in fullscreen;
+  //                "every": every year everywhere; "latest": the latest year alone.
+  //   showChange   the Change column.
+  //   rankColumn   the "n of N" rank column: fullscreen only (today), always, or never.
+  //   counts       an "n" column: the count behind each row's latest figure, by row key.
+  //   initialSort  the order the table opens in: "listed" (the caller's), the latest
+  //                year, or the change. Absent: by rank (or as given without one).
+  //   highlight    the focused row picked out; colourChange the change coloured by direction.
+  //   sortable     members re-sort by clicking a heading (absent: unless leadingRank).
+  yearColumns?: "first-latest" | "every" | "latest";
+  showChange?: boolean;
+  rankColumn?: "fullscreen" | "always" | "never";
+  counts?: Record<string, number | null>;
+  initialSort?: "listed" | "latest" | "change";
+  highlight?: boolean;
+  colourChange?: boolean;
+  sortable?: boolean;
 }) {
-  const [userSort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: showRank ? "rank" : "given", dir: 1 });
+  const lastSortIdx = data.periods.length - 1;
+  const openingSort = (): { key: SortKey; dir: 1 | -1 } =>
+    initialSort === "listed"
+      ? { key: "given", dir: 1 }
+      : initialSort === "latest"
+        ? { key: Math.max(0, lastSortIdx), dir: -1 }
+        : initialSort === "change"
+          ? { key: "change", dir: -1 }
+          : { key: showRank ? "rank" : "given", dir: 1 };
+  const [userSort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>(openingSort);
   const sort: { key: SortKey; dir: 1 | -1 } = leadingRank ? { key: "rank", dir: 1 } : userSort;
+  const canSort = sortable ?? !leadingRank;
   const pad = leadingRank ? "px-1" : "px-1.5";
   const { periods, series } = data;
   if (periods.length === 0 || series.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
   }
-  const yearIdx = fullscreen || periods.length <= 2 ? periods.map((_, i) => i) : [0, periods.length - 1];
+  const yearIdx =
+    yearColumns === "latest"
+      ? [periods.length - 1]
+      : yearColumns === "every" || fullscreen || periods.length <= 2
+        ? periods.map((_, i) => i)
+        : [0, periods.length - 1];
+  const rankShown = showRank && !leadingRank && (rankColumn === "always" || (rankColumn === "fullscreen" && fullscreen));
   const lastIdx = periods.length - 1;
 
   // R-NUMBER-TYPE-HONESTY (S3b): the change a row is ranked and sorted by is the measure's
@@ -321,7 +397,7 @@ export function YearTable({
 
   const head = (k: SortKey, children: React.ReactNode, left = false) => (
     <th key={String(k)} className={`${pad} pb-1.5 font-semibold ${left ? "text-left" : "text-right"}`}>
-      {leadingRank ? (
+      {!canSort ? (
         <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.02em] text-[var(--muted)]">{children}</span>
       ) : (
       <button
@@ -345,15 +421,16 @@ export function YearTable({
           {/* Live review Part 4: Rank only in fullscreen. On the card it pushed the year and
               Change columns -- the figures that matter there -- out of view. The ranking
               itself still drives the default sort either way. */}
-          {fullscreen && showRank && !leadingRank && head("rank", "Rank")}
+          {rankShown && head("rank", "Rank")}
           {yearIdx.map((i) => head(i, academicYearLabel(periods[i])))}
-          {head("change", "Change")}
+          {counts && <th className={`${pad} pb-1.5 text-right font-semibold`}><span className="whitespace-nowrap text-[10px] uppercase tracking-[0.02em] text-[var(--muted)]">n</span></th>}
+          {showChange && head("change", "Change")}
         </tr>
       </thead>
       <tbody>
         {sorted.map((r) => {
-          const focus = r.s.key === focusKey;
-          const dir = directionOf(r.change?.delta ?? null);
+          const focus = highlight && r.s.key === focusKey;
+          const dir = colourChange ? directionOf(r.change?.delta ?? null) : "flat";
           return (
             <tr
               key={r.s.key}
@@ -370,7 +447,7 @@ export function YearTable({
                   <span className={`truncate ${focus ? "font-semibold text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.s.label}>{r.s.label}</span>
                 </span>
               </td>
-              {fullscreen && showRank && !leadingRank && (
+              {rankShown && (
                 <td className="whitespace-nowrap px-1.5 text-right text-[var(--muted2)]">
                   {rankOf.has(r.s.key) ? `${rankOf.get(r.s.key)} of ${ranked}` : "—"}
                 </td>
@@ -380,6 +457,10 @@ export function YearTable({
                   {r.s.values[i] === null ? "—" : measure.format(r.s.values[i]!)}
                 </td>
               ))}
+              {counts && (
+                <td className={`${pad} text-right text-[var(--muted2)]`}>{counts[r.s.key] === null || counts[r.s.key] === undefined ? "—" : Math.round(counts[r.s.key]!).toLocaleString()}</td>
+              )}
+              {showChange && (
               <td className={`whitespace-nowrap ${pad} text-right leading-tight`}>
                 {!percentKind ? (
                   // Points and rates: the difference alone (R-NUMBER-TYPE-HONESTY), never a %.
@@ -400,6 +481,7 @@ export function YearTable({
                   </>
                 )}
               </td>
+              )}
             </tr>
           );
         })}
