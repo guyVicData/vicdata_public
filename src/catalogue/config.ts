@@ -79,6 +79,8 @@ export function validateConfig(config: DashboardConfig, knownDataviews: Set<Data
       if (v.kind === "view" && !knownDataviews.has(v.dataview)) p(`${path}.dataviews[${j}]`, `unknown dataview ${v.dataview}`);
     });
     if (panel.defaultView && !panel.dataviews.some((v) => v.id === panel.defaultView)) p(`${path}.defaultView`, `not one of the panel's dataviews`);
+    for (const [m, id] of Object.entries(panel.defaultViewByResults ?? {}))
+      if (id && !panel.dataviews.some((v) => v.id === id)) p(`${path}.defaultViewByResults.${m}`, `not one of the panel's dataviews`);
   });
 
   if (config.kind === "presentation" && !config.presentation) p("presentation", "a presentation needs its slides");

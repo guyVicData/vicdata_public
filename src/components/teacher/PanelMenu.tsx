@@ -115,6 +115,7 @@ export function MenuRow({
   tag,
   swatch,
   checkbox,
+  dotted = false,
   indented = false,
   onClick,
 }: {
@@ -124,6 +125,8 @@ export function MenuRow({
   tag?: string;
   swatch?: string;
   checkbox?: boolean;
+  // 0.6 snag 3 / 03: a checkbox that can't be ticked here, drawn with a dotted border.
+  dotted?: boolean;
   indented?: boolean;
   onClick: () => void;
 }) {
@@ -147,6 +150,7 @@ export function MenuRow({
           className={[
             "flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded border-[1.5px] text-[10px] leading-none",
             selected ? "border-[var(--fg)] bg-[var(--fg)] text-[var(--bg)]" : "border-[var(--panel-border2)]",
+            ...(dotted ? ["border-dotted"] : []),
           ].join(" ")}
         >
           {selected ? "✓" : ""}

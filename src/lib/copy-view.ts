@@ -28,6 +28,7 @@ import {
   type RowTime,
   type SlideConfig,
 } from "@/catalogue/types";
+import { followsResultsPill, withoutResults } from "@/catalogue/results";
 import type { DashboardRow } from "./dashboards-store";
 import { arrangementName, MAX_SLOTS } from "./meeting-layout";
 import { KIND_WORD, type PinInput, type PinnedSettings } from "./meeting-views";
@@ -273,8 +274,10 @@ export function copyToDashboard(config: DashboardConfig, target: SlotTarget, sou
   if (fit.blocked) return { ok: false, reason: "blocked" };
   const taken = idsOf(config);
   // A copy never brings the source panel's private notes (G2): it is a new instance.
-  const { id: _old, ...rest } = source.instance;
+  const { id: _old, ...kept } = source.instance;
   void _old;
+  // 0.6 snag 3 / 03: its Results measures travel only to a dashboard with a Results pill.
+  const rest = followsResultsPill(config) ? kept : withoutResults(kept);
 
   if (target.kind === "rail") {
     const panel = config.panels.find((p) => p.id === target.panelId)!;
@@ -328,8 +331,10 @@ export function newDashboardFromView(source: CopyViewSource, opts: { id: string;
   const row: RowConfig = { id: time === "latest" ? "current" : "trends", name: time === "latest" ? "Current" : "Trends", time, openByDefault: true };
   const panelId = `${opts.id}.c1.${row.id}`;
   const instanceId = `${panelId}/${source.instance.dataview}`;
-  const { id: _old, ...rest } = source.instance;
+  const { id: _old, ...kept } = source.instance;
   void _old;
+  // 0.6 snag 3 / 03: its Results measures travel only when the new column follows a pill.
+  const rest = followsResultsPill({ columns: [column] } as DashboardConfig) ? kept : withoutResults(kept);
   return {
     schema_version: CONFIG_SCHEMA_VERSION,
     id: opts.id,

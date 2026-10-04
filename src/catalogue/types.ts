@@ -165,6 +165,9 @@ export type Dataview = {
   id: DataviewId;
   label: string;
   railIcon: string;
+  // 0.6 snag 3 / 03: the Results pill states this view is offered on, and the most it can
+  // be drawn on (src/catalogue/results.ts). Absent = all four, or not a Results view.
+  resultsMeasures?: ResultsMeasure[];
   measures: MeasureId[];
   supports: {
     data: DataId[];
@@ -255,6 +258,9 @@ export type DataviewInstance =
       // Customise's choices (CustomViewParams), plus NumberTilesParams on a tiles view.
       params?: Record<string, unknown>;
       title?: string;
+      // 0.6 snag 3 / 03: on a Results dashboard, the pill states this view shows on,
+      // overriding its dataview's default (never wider than the dataview can draw).
+      resultsMeasures?: ResultsMeasure[];
     }
   | {
       // Super-admin's planned view (scope brief §4.6a): shown dashed, "Planned".
@@ -304,6 +310,9 @@ export type PanelConfig = {
   override?: PanelOverride;
   dataviews: DataviewInstance[];
   defaultView?: string;
+  // 0.6 snag 3 / 03: on a Results dashboard, the view the panel opens on per pill state
+  // (instance ids). A measure with no entry falls back to defaultView, as before.
+  defaultViewByResults?: Partial<Record<ResultsMeasure, string>>;
   // Legacy keys this panel's notes and open state resolve through (audit §6.3).
   legacy?: { columnKey: string; panelId: "current" | "trend"; noteKeys: string[] };
 };

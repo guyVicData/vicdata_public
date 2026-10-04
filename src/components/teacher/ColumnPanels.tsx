@@ -23,7 +23,8 @@ import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
 import { usePlanColumn } from "@/components/dashboard-config/plan";
 import { PanelBoundary, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
-import { configuredRail, defaultEntry, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
+import { configuredRail, defaultEntry, offRailEntry, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
+import { followsResultsPill } from "@/catalogue/results";
 import { DATAVIEWS } from "@/catalogue/dataviews";
 import type { DashboardConfig, HostId, PanelConfig } from "@/catalogue/types";
 import { useDashboardRuntime, type DashboardRuntime } from "@/components/dashboard-config/runtime";
@@ -112,7 +113,12 @@ export function ColumnPanels({
   // order, and the panel opens on its defaultView -- switched to once, on first show, by
   // the host's own rail button (so the host keeps owning its view state). Seeded Teacher
   // configs list today's full rails with today's defaults, so nothing is switched there.
-  const pendingDefaults: { cfg: PanelConfig; entry: RailEntry }[] = [];
+  //
+  // 0.6 snag 3 / 03: on a Results dashboard the rail is the views shown on the current pill
+  // (catalogue/results.ts), and a pill state with its own default opens on it the first
+  // time that state shows. Configs without the new fields give exactly the hosts' rails.
+  const results = planned && runtime && followsResultsPill(planned.plan.config) ? runtime.results : null;
+  const pendingDefaults: { key: string; first: RailEntry | null; off: RailEntry | null }[] = [];
   if (planned && host) {
     const seen = new Set<PanelId>();
     for (const { row, panel: cfg } of planned.column.rows) {
@@ -121,16 +127,21 @@ export function ColumnPanels({
       const raw = id ? render[id] : undefined;
       if (!id || !raw || seen.has(id)) continue;
       seen.add(id);
-      const first = defaultEntry(railEntries(raw.actions, host, id), cfg);
-      if (first) pendingDefaults.push({ cfg, entry: first });
+      const entries = railEntries(raw.actions, host, id);
+      const ownKey = results && cfg.defaultViewByResults?.[results] ? `${cfg.id}:${results}` : cfg.id;
+      pendingDefaults.push({ key: ownKey, first: defaultEntry(entries, cfg, results), off: offRailEntry(entries, cfg, results) });
     }
   }
   const applied = useRef(new Set<string>());
   useEffect(() => {
-    for (const { cfg, entry } of pendingDefaults) {
-      if (applied.current.has(cfg.id)) continue;
-      applied.current.add(cfg.id);
-      entry.onClick?.();
+    for (const { key, first, off } of pendingDefaults) {
+      if (first && !applied.current.has(key)) {
+        applied.current.add(key);
+        first.onClick?.();
+        continue;
+      }
+      // Its view was taken off this pill: move to one that's on it.
+      off?.onClick?.();
     }
   });
 
@@ -211,7 +222,7 @@ export function ColumnPanels({
           // host's own tag. Seeded configs carry no name, so they draw the host's tag as before.
           let panel = cfg.name ? { ...raw, tag: cfg.name } : raw;
           if (host) {
-            panel = { ...panel, actions: configuredRail(railEntries(raw.actions, host, id), cfg) };
+            panel = { ...panel, actions: configuredRail(railEntries(raw.actions, host, id), cfg, results) };
           }
           if (embed?.frame === "figure") {
             // A meeting slot (or another frame that brings its own card): the figure alone,
