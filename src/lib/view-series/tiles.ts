@@ -11,7 +11,7 @@
 //                the ranking's own measure, from its whole population (R-RANKING-SAMPLE)
 // null = the host draws it (no tiles here, no subjects, a band with no range).
 import { applyMainLabel, applyTileFigures, readTileParams, type TileVars } from "@/lib/tile-figures";
-import { bandRate } from "@/lib/subject-grades";
+import { bandRate, inlineRangeLabel } from "@/lib/subject-grades";
 import { currentRowsWithDelta, ENTRIES_MEASURE, rankByValue } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeOver, directionOf, signed } from "@/lib/teacher-view-trend-styles";
@@ -54,10 +54,10 @@ function subjectTiles(f: SubjectsFrame): Built | null {
   if (gradeBand && tileFocus && tileFocus.value !== null) {
     const inBand = latest !== null && gradeBand.range ? bandRate(gradeBand.ownRows.filter((r) => r.period === latest), gradeBand.range) : null;
     if (inBand) {
-      tiles.push({ key: "count", icon: "GradesIcon", figure: inBand.met.toLocaleString(), detail: `of ${inBand.entries.toLocaleString()} graded entries at ${(gradeBand.rangeLabel ?? "").toLowerCase()}`, vars: { total: inBand.entries } });
+      tiles.push({ key: "count", icon: "GradesIcon", figure: inBand.met.toLocaleString(), detail: `of ${inBand.entries.toLocaleString()} graded entries at ${inlineRangeLabel(gradeBand.rangeLabel ?? "")}`, vars: { total: inBand.entries } });
     }
     if (tileFocus.bench !== null) {
-      tiles.push({ key: "england-average", icon: "AverageIcon", figure: measure.format(tileFocus.bench), detail: `England, ${(gradeBand.rangeLabel ?? "").toLowerCase()}` });
+      tiles.push({ key: "england-average", icon: "AverageIcon", figure: measure.format(tileFocus.bench), detail: `England, ${inlineRangeLabel(gradeBand.rangeLabel ?? "")}` });
       const gap = tileFocus.value - tileFocus.bench;
       const dir = measure.formatDelta(gap).replace("−", "+") === measure.formatDelta(0) ? "flat" : directionOf(gap);
       tiles.push({ key: "england", icon: "FlagIcon", figure: measure.formatDelta(gap), detail: dir === "flat" ? "level with England" : `${dir === "up" ? "above" : "below"} England`, direction: dir, vars: { direction: dir === "flat" ? "level with" : dir === "up" ? "above" : "below" } });
@@ -88,7 +88,7 @@ function subjectTiles(f: SubjectsFrame): Built | null {
     school: f.schoolName,
     year: latest === null ? undefined : academicYearLabel(latest),
     measure: measure.noun,
-    range: gradeBand?.rangeLabel?.toLowerCase(),
+    range: gradeBand?.rangeLabel ? inlineRangeLabel(gradeBand.rangeLabel) : undefined,
   };
   // Results titles no Current view over its tiles (the rank tile names the category).
   return { title: null, main, tiles, vars };

@@ -18,7 +18,7 @@
 import { compareHonest, type HonestMeasure } from "@/catalogue/honest";
 import type { CompareSeries, SpreadLook, ViewSpec } from "@/catalogue/viewspec";
 import { averageGrade, bandDistribution, gradeCounts, type GradeCountRow, type GradeRow } from "@/lib/grade-spread";
-import { bestScale, rangeLabel, type GradeRange } from "@/lib/subject-grades";
+import { bestScale, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { ENTRIES_MEASURE } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { resolveCompare } from "./compare";
@@ -70,7 +70,7 @@ function looks(look: SpreadLook, rows: GradeRow[], pageRange: GradeRange | null)
   }
   if (shade) {
     out.shade = shade;
-    out.shadeLabel = `Shaded: ${rangeLabel(shade).toLowerCase()}`;
+    out.shadeLabel = `Shaded: ${inlineRangeLabel(rangeLabel(shade))}`;
   }
   if (look.values === false) out.values = false;
   return out;

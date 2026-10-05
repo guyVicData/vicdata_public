@@ -11,6 +11,7 @@ import type { ViewSpec } from "@/catalogue/viewspec";
 import type { SeriesFrame } from "./frames";
 import type { ViewSeries } from "./series";
 import { currentHeading } from "./subjects";
+import { inlineRangeLabel } from "@/lib/subject-grades";
 
 export function buildDonut(spec: ViewSpec, f: SeriesFrame): ViewSeries | null {
   if (spec.view.kind !== "donut" || f.kind !== "subjects") return null;
@@ -30,7 +31,7 @@ export function buildDonut(spec: ViewSpec, f: SeriesFrame): ViewSeries | null {
     title: !cal
       ? null
       : share
-        ? `Entries at ${share.label.toLowerCase()} as a proportion of graded entries in ${cal}`
+        ? `Entries at ${inlineRangeLabel(share.label)} as a proportion of graded entries in ${cal}`
         : `Entries in ${focused?.label ?? "this subject"} as a proportion of ${cal}`,
     leaf: {
       leaf: "donut",

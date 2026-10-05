@@ -17,7 +17,7 @@
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { ENTRIES_MEASURE, type PanelData, type PanelId } from "@/lib/teacher-view-panels";
-import { bestScale, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
+import { bestScale, inlineRangeLabel, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
 import { gradeCounts } from "@/lib/grade-spread";
 import type { GradesFrame } from "@/lib/view-series/frames";
 import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
@@ -91,7 +91,7 @@ export function GradeCountsPanels({
     controls: (
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[11.5px] text-[var(--muted)]">
-          {pending ? `From ${pending}: click the other end` : range ? `Highlighting ${rangeLabel(range).toLowerCase()}` : "Click two grades to highlight a range"}
+          {pending ? `From ${pending}: click the other end` : range ? `Highlighting ${inlineRangeLabel(rangeLabel(range))}` : "Click two grades to highlight a range"}
         </span>
         {(range || pending) && <Pill label="Clear" onClick={() => { setPending(null); setSpan(null); }} />}
       </div>

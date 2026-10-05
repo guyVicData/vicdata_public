@@ -16,8 +16,9 @@
 //
 // Each column supplies its own panel contents through `render`; this file knows nothing
 // about measures, subjects or schools.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
 import { CardBox } from "./CardBox";
+import { PillRowSpacer } from "./PillMenu";
 import { ChevronDown, IconButton } from "./PanelIcons";
 import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
@@ -84,6 +85,12 @@ export type PanelRender = {
   // `views=v2`; absent = the host draws every view, as before.
   frame?: ViewFrame;
 };
+
+// The pill row under the card header. 0.6.1 S6: a PillRowSpacer (a column with no pills of
+// its own) only holds the row's height where the columns sit side by side (md up).
+function controlsRowClass(controls: ReactNode): string {
+  return isValidElement(controls) && controls.type === PillRowSpacer ? "mt-2.5 hidden md:block print:hidden" : "mt-2.5 print:hidden";
+}
 
 export function ColumnPanels({
   columnId,
@@ -310,7 +317,7 @@ export function ColumnPanels({
     return (
       <div>
         {/* An embedded view's settings are pinned, so the column's own pills stay off. */}
-        {controls && !embed && <div className="mt-2.5 print:hidden">{controls}</div>}
+        {controls && !embed && <div className={controlsRowClass(controls)}>{controls}</div>}
         {panelsShown}
       </div>
     );
@@ -318,7 +325,7 @@ export function ColumnPanels({
 
   return (
     <div>
-      {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
+      {controls && <div className={controlsRowClass(controls)}>{controls}</div>}
 
       {PANEL_ORDER.map((id) => {
         const panel = render[id];

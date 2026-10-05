@@ -46,7 +46,7 @@ import { ChangeChart, type ChangeBar } from "./ChangeChart";
 import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { GradeDistribution } from "./GradeDistribution";
 import { bandDistribution } from "@/lib/grade-spread";
-import { bandRate, type GradeRange } from "@/lib/subject-grades";
+import { bandRate, inlineRangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { useSubjectGradeGeography, withEnglandBandBenchmark, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { RankingsMap } from "./RankingsMap";
@@ -423,10 +423,10 @@ export function SubjectPanels({
     // the same span, and the gap -- per the grade bands prompt, in place of the rank.
     const inBand = latest !== null && gradeBand.range ? bandRate(gradeBand.ownRows.filter((r) => r.period === latest), gradeBand.range) : null;
     if (inBand) {
-      tileRow.push({ key: "count", icon: GradesIcon, figure: inBand.met.toLocaleString(), detail: `of ${inBand.entries.toLocaleString()} graded entries at ${(gradeBand.rangeLabel ?? "").toLowerCase()}`, vars: { total: inBand.entries } });
+      tileRow.push({ key: "count", icon: GradesIcon, figure: inBand.met.toLocaleString(), detail: `of ${inBand.entries.toLocaleString()} graded entries at ${inlineRangeLabel(gradeBand.rangeLabel ?? "")}`, vars: { total: inBand.entries } });
     }
     if (tileFocus.bench !== null) {
-      tileRow.push({ key: "england-average", icon: AverageIcon, figure: measure.format(tileFocus.bench), detail: `England, ${(gradeBand.rangeLabel ?? "").toLowerCase()}` });
+      tileRow.push({ key: "england-average", icon: AverageIcon, figure: measure.format(tileFocus.bench), detail: `England, ${inlineRangeLabel(gradeBand.rangeLabel ?? "")}` });
       const gap = tileFocus.value - tileFocus.bench;
       const dir = measure.formatDelta(gap).replace("−", "+") === measure.formatDelta(0) ? "flat" : directionOf(gap);
       tileRow.push({ key: "england", icon: FlagIcon, figure: measure.formatDelta(gap), detail: dir === "flat" ? "level with England" : `${dir === "up" ? "above" : "below"} England`, direction: dir, vars: { direction: dir === "flat" ? "level with" : dir === "up" ? "above" : "below" } });
@@ -463,7 +463,7 @@ export function SubjectPanels({
     school: runtime?.school?.name,
     year: latest === null ? undefined : academicYearLabel(latest),
     measure: measure.noun,
-    range: gradeBand?.rangeLabel?.toLowerCase(),
+    range: gradeBand?.rangeLabel ? inlineRangeLabel(gradeBand.rangeLabel) : undefined,
   };
 
   // Grade bands: the focused subject's distribution in the year Current shows, with
@@ -480,7 +480,7 @@ export function SubjectPanels({
     ? null
     : effectiveView === "donut"
       ? donutShare
-        ? `Entries at ${donutShare.label.toLowerCase()} as a proportion of graded entries in ${compareAgainstLabel}`
+        ? `Entries at ${inlineRangeLabel(donutShare.label)} as a proportion of graded entries in ${compareAgainstLabel}`
         : `Entries in ${focusedSubject?.label ?? "this subject"} as a proportion of ${compareAgainstLabel}`
       : effectiveView === "bar" || effectiveView === "list" || effectiveView === "table"
         ? `${scopeNounCurrent} by subject in ${compareAgainstLabel}`

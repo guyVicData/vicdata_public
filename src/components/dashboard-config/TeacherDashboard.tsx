@@ -57,10 +57,11 @@ import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/C
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { ResultsControl } from "@/components/teacher/ResultsControl";
+import { PillRowSpacer } from "@/components/teacher/PillMenu";
 import { GradeCountsPanels } from "@/components/teacher/GradeCountsPanels";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type MeasureId, type PanelId } from "@/lib/teacher-view-panels";
-import { bestScale, rangeLabel, type GradeRange } from "@/lib/subject-grades";
+import { bestScale, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
@@ -1183,7 +1184,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Grade rows exist from 2023/24 only; on Grade bands the axis is the years that have them.
   const hasGrades = (i: SubjectItem, period: number) => hasGradesAt(gradeRows, i, period);
   // The measure as Grade bands' panels read it: its noun narrowed to the span.
-  const resultsMeasureShown = usingBands && bandLabel ? { ...resultsMeasure, noun: `share of entries at ${bandLabel.toLowerCase()}` } : resultsMeasure;
+  const resultsMeasureShown = usingBands && bandLabel ? { ...resultsMeasure, noun: `share of entries at ${inlineRangeLabel(bandLabel)}` } : resultsMeasure;
 
   const valueForResults = (i: SubjectItem, period: number) =>
     usingThreshold ? thresholdAt(i, period) : usingBands ? bandAt(i, period) : pointsAt(i, period);
@@ -1691,6 +1692,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         notes={notesFor(COL1)}
         question={q.howWell}
         source={panelSource}
+        // 0.6.1 S6: no pills of its own since S5; the spacer keeps its panels level with
+        // Context's and Comparisons' (side by side only).
+        controls={<PillRowSpacer />}
       />
     ) : showingResults ? (
       <SubjectPanels
@@ -1770,13 +1774,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         }
         // 0.6.1 S5 (D4): the Results sub-measure pill moved from under this column's
         // heading to the top bar (ResultsControl), beside the grade band choice, so it is
-        // visible (pinch point 12). Column 1 now has no pill row, as in Candidates mode.
+        // visible (pinch point 12). 0.6.1 S6: an empty pill row in its place, so the
+        // three columns' panels stay level where they sit side by side.
+        controls={<PillRowSpacer />}
         benchmarkLabel={usingThreshold ? undefined : "National"}
         benchmarkNoun={
           usingThreshold
             ? undefined
             : usingBands
-              ? `England's share at ${(bandLabel ?? "the chosen grades").toLowerCase()} for the same subject and qualification`
+              ? `England's share at ${(bandLabel ? inlineRangeLabel(bandLabel) : "the chosen grades")} for the same subject and qualification`
             : englandAvg?.basis === "subject"
               ? "the England GCSE average for the subject"
               : "the England average for the same subject and qualification"
@@ -2234,7 +2240,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // palette (--dir-up/--dir-down/--dir-flat, trend-colours.ts), in this theme.
       style={{ ...directionCssVars(theme), ...(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) } as React.CSSProperties}
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
-      className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
+      className="mx-auto w-full max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
       {!embed && <ViewAsBanner />}
       {/* Top-nav completion part 3: below `sm` the phone nav (NavPhone.dc.html) replaces

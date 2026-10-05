@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ResultsControl, bandValue, pickableGrades } from "@/components/teacher/ResultsControl";
-import { GCSE_SCALE, GRADE_SCALES, presetsFor } from "@/lib/subject-grades";
+import { GCSE_SCALE, GRADE_SCALES, inlineRangeLabel, presetsFor, rangeLabel } from "@/lib/subject-grades";
 import { bandRangeFor } from "@/lib/teacher-view-measures";
 
 const A_LEVEL = GRADE_SCALES[2];
@@ -48,4 +48,14 @@ test("the control: Results always; Grades only on Grade bands, with a preset, Cu
   assert.equal(text(html("bands", { scale: A_LEVEL, range: { scale: A_LEVEL, top: "A*", bottom: "B" }, onRange })), "Results: Grade bands Grades: A* to B");
   // No focused subject: no band to pick.
   assert.equal(text(html("bands", null)), "Results: Grade bands");
+});
+
+// 0.6.1 S6: a range inside a sentence keeps the scale's own grades (the Post-16 tiles read
+// "a* to b" before), as "A*–B"; GCSE stays "grades 7–9".
+test("inline range labels keep the scale's own grades", () => {
+  assert.equal(inlineRangeLabel(rangeLabel({ scale: A_LEVEL, top: "A*", bottom: "B" })), "A*–B");
+  assert.equal(inlineRangeLabel(rangeLabel({ scale: A_LEVEL, top: "A", bottom: "A" })), "A");
+  assert.equal(inlineRangeLabel(rangeLabel({ scale: GCSE_SCALE, top: "9", bottom: "7" })), "grades 7–9");
+  assert.equal(inlineRangeLabel(rangeLabel({ scale: GCSE_SCALE, top: "5", bottom: "5" })), "grade 5");
+  assert.equal(inlineRangeLabel("9-9 to 5-5"), "9-9 to 5-5");
 });

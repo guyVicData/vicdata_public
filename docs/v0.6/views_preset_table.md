@@ -200,9 +200,9 @@ Read the columns as:
    - **S3:** the series builder picks that fetcher for any `la` / `region` / `england` series. The host's gating stays as rules: at GCSE, GCSE (9–1) full course only (`R-KS4-POINTS-GCSE-FULL`, `R-GEO-POINTS-ELIGIBLE`); points only at Results (`R-NO-GRADE-RATE-GEO`); the exact qualification at Post-16 (`R-KS5-ENGLAND-EXACT`).
    - **The Results ones keep `resultsMeasures` points / threshold / bands,** as round 3 recorded them: on Grade 4+ and bands they show the not-applicable note today. D7's greying will later say "points only" in step 3; no figure changes here.
    - S1 made their titles distinct (pinch point 3). The table's Title column reads the dataview's template, so it follows.
-2. **"Grades (pick a range)" (`DV-C1-RES-CUR-GRADES`) is retired by D3.**
+2. **"Grades (pick a range)" (`DV-C1-RES-CUR-GRADES`) loses its range picking to D3, and stays as "Grade distribution".**
    - Translated as a spread (per grade, England ticks, `memberSpan: "page-range"`) so the four dashboards still load and draw it in S2.
-   - S5 moves its job to the top bar's range control and removes the instance.
+   - S5 moves its range picking to the top bar's grade band control and keeps the instance, renamed "Grade distribution": the focused subject's spread with the top bar's band shaded, read-only. The instances stay in the configs, so no re-seed is needed and members' open-view state survives.
    - Its preset stays registered, so old configs and meetings that name it keep loading (D9).
 3. **`DV-C1-CNT-*`, the Grade counts views, are fixed to England, with a span highlight.**
    - Per grade, the focused subject, the latest year.

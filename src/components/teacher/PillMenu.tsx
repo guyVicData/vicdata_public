@@ -15,6 +15,22 @@ import { useState, type ReactNode } from "react";
 import { ChevronDown } from "./PanelIcons";
 import { PanelMenu, useDismiss } from "./PanelMenu";
 
+const PILL = "inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--muted2)]";
+
+// 0.6.1 S6: an empty, invisible pill row, for a column with no pills of its own (Results'
+// Column 1, since S5 moved its measure pill to the top bar), so its panels stay level with
+// Context's and Comparisons' when the columns sit side by side. The same box as a pill, so
+// it tracks the pill's height. ColumnPanels draws it from md up only (stacked below md,
+// there is nothing to line up with).
+export function PillRowSpacer() {
+  return (
+    <span aria-hidden="true" className={`${PILL} invisible`}>
+      <span className="min-w-0 truncate">&nbsp;</span>
+      <span className="shrink-0">{ChevronDown}</span>
+    </span>
+  );
+}
+
 export function PillMenu({
   label,
   value,
@@ -50,7 +66,7 @@ export function PillMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         title={title}
-        className="inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--panel-border2)] bg-[var(--panel-bg)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--muted2)] hover:border-[var(--fg)]"
+        className={`${PILL} hover:border-[var(--fg)]`}
       >
         <span className="min-w-0 truncate">
           {label}: <span className="text-[var(--fg)]">{value}</span>
