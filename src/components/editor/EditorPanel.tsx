@@ -1,7 +1,7 @@
 "use client";
 
 // VicData 0.6 S5: one panel in edit mode (Editor.dc.html's .panel.edit), at the real panel
-// unit: header (row tag, data year, inherits/overridden badge, ··· menu), the view rail
+// unit: header (row tag, data year, ··· menu), the view rail
 // (reorder by dragging; + opens Add a view), the body (PanelPreview, or a planned view),
 // the standard elements, and a right-edge handle that drags the span in whole columns.
 // Planned panels (Skeleton.dc.html) are dashed and striped; one whose placeholder matches a
@@ -22,19 +22,19 @@ import { glyph } from "@/components/view-editor/bits";
 import { MenuDivider, MenuRow, PanelMenu, useDismiss } from "@/components/teacher/PanelMenu";
 import { EC, EDITOR, panelWidth } from "@/lib/editor-layout";
 import { isDefaultView, spanOf } from "@/lib/editor-ops";
-import { EBtn, InheritBadge, OverrideBadge, PlusIcon, StandardElements, StatePill } from "./bits";
+import { EBtn, PlusIcon, StandardElements, StatePill } from "./bits";
 import type { PanelPreviewComponent } from "./PanelPreview";
 import { viewInstance } from "@/catalogue/viewspec";
 import { showsForRows, toggledStates, type ShowsForRow } from "@/lib/rail-menu";
 
-// Panel menu: rename, override, move-panel, delete-panel. View menu (snag 1 / 03): the rest,
+// Panel menu: rename, move-panel, delete-panel (0.6.1 D1: "Change data / compared to…" and
+// the inherits / overridden badge went: a panel's views carry their own data and compare). View menu (snag 1 / 03): the rest,
 // each for one instance. "copy-view" copies to a panel on this dashboard; "copy-view-out"
 // is Copy to another dashboard or meeting (S6's CopyViewDialog). 0.6.1 S5: the rail menu
 // sends "move-or-copy-view" (one dialog, Move / Copy) and "take-off" (the pill's measure);
 // "swap-view", "move-view" and "copy-view" stay for callers outside it.
 export type PanelAction =
   | "rename"
-  | "override"
   | "move-panel"
   | "delete-panel"
   | "edit-view"
@@ -136,12 +136,6 @@ export function EditorPanel({
   } catch {
     ctxLine = "";
   }
-  const col = config.columns.find((c) => c.id === panel.column)!;
-  const badge = panel.override ? (
-    <OverrideBadge title={panel.override.reason}>{panel.override.badge}</OverrideBadge>
-  ) : (
-    <InheritBadge>{span > 1 ? `inherits ${col.title} (left-most column)` : "inherits column"}</InheritBadge>
-  );
 
   // Body box: panel width less padding and the rail; height less header, gap and the
   // standard elements' strip.
@@ -176,7 +170,6 @@ export function EditorPanel({
       <div style={{ display: "flex", alignItems: "center", gap: 6, height: HEADER, minWidth: 0 }}>
         <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--chip-fg)", whiteSpace: "nowrap" }}>{panel.name ?? rowName}</span>
         {ctxLine && <span style={{ fontSize: 11.5, color: "var(--muted2)", whiteSpace: "nowrap" }}>{ctxLine}</span>}
-        {badge}
         <span style={{ flexGrow: 1 }} />
         {!readOnly && (
           <div ref={menuRef} style={{ position: "relative" }}>
@@ -194,7 +187,6 @@ export function EditorPanel({
                 {(
                   [
                     ["rename", "Rename panel", undefined],
-                    ["override", "Change data / compared to…", "override"],
                     ["move-panel", "Move panel", undefined],
                   ] as [PanelAction, string, string | undefined][]
                 ).map(([id, label, tag]) => (

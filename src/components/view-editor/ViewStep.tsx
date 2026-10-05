@@ -216,8 +216,8 @@ export function LookBox({ draft, set, env }: Pick<StepProps, "draft" | "set" | "
           <Opt k="Bands" top>
             <Chips>
               <Chip on={(l.bands ?? "none") === "none"} onClick={() => setLook({ bands: "none" })}>None</Chip>
-              {gcse && <Chip on={bandIs("9", "4")} onClick={() => setLook({ bands: { top: "9", bottom: "4" } })}>Shade 9&ndash;4</Chip>}
-              {gcse && <Chip on={bandIs("9", "7")} onClick={() => setLook({ bands: { top: "9", bottom: "7" } })}>Shade 9&ndash;7</Chip>}
+              {gcse && <Chip on={bandIs("9", "4")} onClick={() => setLook({ bands: { top: "9", bottom: "4" } })}>Shade 4&ndash;9</Chip>}
+              {gcse && <Chip on={bandIs("9", "7")} onClick={() => setLook({ bands: { top: "9", bottom: "7" } })}>Shade 7&ndash;9</Chip>}
               <Chip on={l.bands === "follows-page"} onClick={() => setLook({ bands: "follows-page" })}>The page&rsquo;s band</Chip>
             </Chips>
           </Opt>

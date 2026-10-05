@@ -39,11 +39,13 @@ export function SpecPreview({
   const key = JSON.stringify([pinned, spec, params ?? null, dataview.id]);
   const built = useMemo(() => {
     const [p, s, prm] = JSON.parse(key) as [PreviewPin, ViewSpec, Record<string, unknown> | null];
-    const config = oneViewConfig(dataview, p, `ve.${id}`, prm ?? undefined);
+    // As the page draws it on the pinned measure (asPage), never coerced to one the view's
+    // figures support: the preview shows what members see on that measure.
+    const config = oneViewConfig(dataview, p, `ve.${id}`, prm ?? undefined, undefined, { asPage: true });
     const panel = config.panels[0];
     const inst = panel.dataviews[0];
     if (inst.kind === "view") panel.dataviews = [{ ...inst, spec: s }];
-    return { config, pinned: oneViewPinned(dataview, p, true).pinned };
+    return { config, pinned: oneViewPinned(dataview, p, true, { asPage: true }).pinned };
   }, [dataview, key, id]);
   const scale = width / box.width;
   return (

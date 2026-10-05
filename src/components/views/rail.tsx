@@ -76,13 +76,18 @@ function iconOf(name: string): ReactNode {
 }
 
 // The rail: one button per instance on this state's rail. A panel with one view shows none.
+// `titleOf` is the instance's title, resolved for the page, or null when it has none: a
+// button's tooltip (and accessible name) is its view's title where it has one (round 4 item
+// 01: titles everywhere, the rail tooltip included), else the host's own words -- a preset
+// with no title is its host's button, unchanged. A disabled host button keeps its own words,
+// which say why it is off.
 export function instanceRail(
   entries: RailEntry[],
   cfg: PanelConfig,
   state: VariantState | null,
   own: ViewInstance | null,
   choose: (id: string | null) => void,
-  labelOf: (v: ViewInstance) => string,
+  titleOf: (v: ViewInstance) => string | null,
 ): ReactNode {
   if (cfg.dataviews.length === 1) return undefined;
   const views = viewsOf(cfg, state);
@@ -96,17 +101,22 @@ export function instanceRail(
     if (isPresetInstance(v)) {
       if (seen.has(v.dataview)) continue;
       seen.add(v.dataview);
+      const title = entry.disabled ? null : titleOf(v);
+      const named = title ? { label: title, railLabel: entry.element.props.railLabel ?? entry.element.props.label } : {};
       out.push(
         <Fragment key={v.dataview}>
           {hasOwn
             ? cloneElement(entry.element, {
+                ...named,
                 active: !own && entry.active,
                 onClick: () => {
                   choose(null);
                   entry.onClick?.();
                 },
               })
-            : entry.element}
+            : title
+              ? cloneElement(entry.element, named)
+              : entry.element}
         </Fragment>,
       );
       continue;
@@ -114,7 +124,7 @@ export function instanceRail(
     out.push(
       <Fragment key={v.id}>
         <Icons.IconButton
-          label={labelOf(v)}
+          label={titleOf(v) ?? ownViewLabel(v)}
           active={own?.id === v.id}
           disabled={entry.disabled}
           onClick={() => {

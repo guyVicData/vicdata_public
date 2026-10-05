@@ -22,10 +22,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { dataviewById } from "@/catalogue";
 import { presetSpec } from "@/catalogue/viewspec";
-import { dataviewResults } from "@/catalogue/results";
 import { resolveTitle } from "@/catalogue/pick";
 import type { ResultsMeasure } from "@/catalogue/types";
-import { VIEW_LABEL, changeLabel, measureWord, showForOptions, SHORT_KIND } from "@/catalogue/honest";
+import { VIEW_LABEL, changeLabel, measureWord, SHORT_KIND } from "@/catalogue/honest";
 import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import { PANEL_UNIT } from "@/catalogue/config";
 import { TeacherModal } from "@/components/teacher/TeacherModal";
@@ -39,7 +38,7 @@ import { DataStep } from "./DataStep";
 import { LookBox, ViewTiles } from "./ViewStep";
 import { SpecPreview, type PreviewPin } from "./SpecPreview";
 import { viewKindRegistered } from "@/components/views";
-import { buildInstance, describeChanges, draftProblems, ICONS_FOR, startDraft, titleOf, type Draft, type EditorEnv, type ViewInstance } from "./model";
+import { buildInstance, describeChanges, draftProblems, ICONS_FOR, showForOf, startDraft, titleOf, withAutoTicks, type Draft, type EditorEnv, type ViewInstance } from "./model";
 
 export type ViewEditorProps = {
   mode: "add" | "edit";
@@ -82,7 +81,7 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
   const [step, setStep] = useState(mode === "edit" ? 2 : 0);
   const set = (fn: (d: Draft) => Draft) =>
     setDraftRaw((d) => {
-      const n = fn(d);
+      const n = withAutoTicks(fn(d), env);
       if (n !== d) setPast((p) => [...p, d]);
       return n;
     });
@@ -126,7 +125,7 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
   const resolved = (m: ResultsMeasure | null) => resolveTitle(template, dv, ctxFor(m));
   const subjectWord = pvSubject?.label ?? env.ctx.focus.subject?.label ?? null;
 
-  const showFor = env.followsPill ? showForOptions(out.spec, { phase: env.phase, host: env.columnHost }, dv.host.id, dataviewResults(dv)) : [];
+  const showFor = useMemo(() => showForOf(draft, env), [draft, env]);
 
   const preview = (m: ResultsMeasure | null, width: number, box: { width: number; height: number } = BODY, idSuffix = "main") => {
     const pin = pinFor(m);
@@ -202,7 +201,7 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
               className={`res${on ? " on" : ""}${o.ok ? "" : " no"}`}
               disabled={!o.ok}
               aria-pressed={on}
-              onClick={() => set((d) => ({ ...d, ticks: on ? d.ticks.filter((m) => m !== o.measure) : [...d.ticks, o.measure] }))}
+              onClick={() => set((d) => ({ ...d, ticksAuto: false, ticks: on ? d.ticks.filter((m) => m !== o.measure) : [...d.ticks, o.measure] }))}
             >
               <span className="rh" style={o.ok ? undefined : { color: "var(--cc-faint)" }}>
                 <span className={`tick${on ? "" : " offb"}`}>{on ? <TickGlyph /> : null}</span>

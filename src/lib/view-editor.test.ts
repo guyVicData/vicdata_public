@@ -9,7 +9,9 @@ import { contextFromPanel } from "@/catalogue/pick";
 import { presetSpec, type CompareSeriesKind } from "@/catalogue/viewspec";
 import { compareHonest, perHonest, shownAsHonest, showForOptions, viewHonest, type HonestContext, type HonestMeasure } from "@/catalogue/honest";
 import type { DashboardConfig, Phase, ResultsMeasure } from "@/catalogue/types";
-import { addLine, buildInstance, columnHostOf, describeChanges, removeLine, setPer, setView, sideOf, startDraft, type EditorEnv } from "@/components/view-editor/model";
+import { addLine, buildInstance, columnHostOf, describeChanges, honestTicks, removeLine, setPer, setView, showForOf, sideOf, startDraft, withAutoTicks, type EditorEnv } from "@/components/view-editor/model";
+import { DATAVIEWS } from "@/catalogue/dataviews";
+import { oneViewConfig, oneViewPinned } from "@/components/dashboard-config/embed";
 import * as ops from "./editor-ops";
 
 const dash = (id: string): DashboardConfig => TEACHER_DASHBOARDS.find((d) => d.id === id)!;
@@ -219,20 +221,60 @@ test("output: a view made on Grade counts is drawn by Grade counts' own panels",
 
 // ------------------------------------------------- adding under a measure tags it
 
-test("adding under a measure tags it with that measure (Show for starts on the pill)", () => {
+test("Add a view's Show for starts on every measure the view can honestly be drawn on (AddView3)", () => {
   const config = dash("vicdata.ks4.results");
   for (const m of ["points", "threshold", "bands"] as ResultsMeasure[]) {
     const env = envFor(config, "vicdata.ks4.results.c1.trends", m);
     const d = startDraft(env);
-    assert.deepEqual(d.ticks, [m]);
-    const inst = buildInstance(d, env);
-    assert.deepEqual(inst.resultsMeasures, [m]);
-    // Ticking every measure the view can be drawn on is the preset's default: no tag.
-    assert.equal(buildInstance({ ...d, ticks: ["points", "threshold", "bands"] }, env).resultsMeasures, undefined);
+    const honest = showForOf(d, env);
+    // Every honest measure ticked, the editor's own included; the greyed ones unticked.
+    assert.deepEqual(d.ticks, honest.filter((o) => o.ok).map((o) => o.measure));
+    assert.ok(d.ticks.includes(m), `${m} ticked`);
+    for (const o of honest) if (!o.ok) assert.ok(!d.ticks.includes(o.measure), `${o.measure} greyed, unticked`);
+    assert.deepEqual(d.ticks, ["points", "threshold", "bands"]);
+    // Every measure the view can be drawn on is the preset's default: no tag.
+    assert.equal(buildInstance(d, env).resultsMeasures, undefined);
+    // Unticking one tags the rest.
+    const off = { ...d, ticksAuto: false, ticks: d.ticks.filter((x) => x !== "threshold") };
+    assert.deepEqual(buildInstance(off, env).resultsMeasures, ["points", "bands"]);
   }
-  // A Candidates dashboard has no Results pill: nothing to tag.
+  // Grade counts: its own panels draw it, so the other three are greyed and unticked.
+  const counts = envFor(config, "vicdata.ks4.results.c1.current", "counts");
+  const c = startDraft(counts);
+  assert.deepEqual(c.ticks, ["counts"]);
+  assert.deepEqual(showForOf(c, counts).filter((o) => !o.ok).map((o) => o.measure), ["points", "threshold", "bands"]);
+  // Untouched, the ticks follow the draft; once ticked by hand they stay as set.
+  const env = envFor(config, "vicdata.ks4.results.c1.trends", "points");
+  const d = startDraft(env);
+  assert.equal(d.ticksAuto, true);
+  const moved = withAutoTicks({ ...d, spec: setView(d.spec, "table") }, env);
+  assert.deepEqual(moved.ticks, honestTicks(moved, env));
+  const byHand = withAutoTicks({ ...d, ticksAuto: false, ticks: ["points"] }, env);
+  assert.deepEqual(byHand.ticks, ["points"]);
+  // A Candidates dashboard has no Results pill: nothing to tick.
   const cand = envFor(dash("vicdata.ks4.candidates"), "vicdata.ks4.candidates.c1.trends", "entries");
-  const d = startDraft(cand);
-  assert.deepEqual(d.ticks, []);
-  assert.equal(buildInstance(d, cand).resultsMeasures, undefined);
+  const e = startDraft(cand);
+  assert.deepEqual(e.ticks, []);
+  assert.equal(buildInstance(e, cand).resultsMeasures, undefined);
+});
+
+test("Edit keeps the instance's existing ticks", () => {
+  const config = dash("vicdata.ks4.results");
+  const env = envFor(config, "vicdata.ks4.results.c1.trends", "points");
+  const inst = buildInstance({ ...startDraft(env), ticksAuto: false, ticks: ["points"] }, env);
+  const d = startDraft(env, inst);
+  assert.deepEqual(d.ticks, ["points"]);
+  assert.equal(d.ticksAuto, undefined);
+});
+
+test("the editor's preview draws on the measure the page is on (asPage), as members see it", () => {
+  const dv = DATAVIEWS.find((x) => x.id === "DV-C1-RES-TR-GEO-CHART")!;
+  const pin = { phase: "ks4" as const, data: "academic.results" as const, results: "bands" as const };
+  // Meeting slots: a measure the view's figures don't support falls back to one they do.
+  assert.equal(oneViewConfig(dv, pin, "x").columns[0].data.results, "points");
+  // The editor's previews: the page's own measure, so its host draws the not-applicable note.
+  assert.equal(oneViewConfig(dv, pin, "x", undefined, undefined, { asPage: true }).columns[0].data.results, "bands");
+  assert.equal(oneViewPinned(dv, pin, true, { asPage: true }).pinned.results, "bands");
+  // A measure the view doesn't show on is still never drawn.
+  assert.equal(oneViewConfig(dv, { ...pin, results: "counts" }, "x", undefined, undefined, { asPage: true }).columns[0].data.results, "points");
 });

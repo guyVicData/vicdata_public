@@ -104,7 +104,7 @@ test("fit check: a trend view in a latest-year row arrives overridden", () => {
   assert.equal(fit.failure, "time");
   assert.equal(fit.blocked, false);
   assert.match(fit.override!.badge, /^overridden: over time$/);
-  assert.match(fit.message, /keeps its own settings and shows “overridden”/);
+  assert.match(fit.message, /keeps its own settings\.$/);
 });
 
 test("fit check: a view that doesn't fit an existing panel's column can't join its rail", () => {

@@ -118,8 +118,9 @@ export function bandDistribution(ownRows: GradeCountRow[], englandRows: GradeCou
 // first row's middle; a fraction between two rows). On a numbered scale (GCSE 9-1, IB 7-1,
 // the IB Diploma's points) the mean is the grade number, U / Fail counted as 0; on a named
 // scale (A level, vocational, Pre-U) it is the mean position, named by its nearest grade.
-// The median is the grade the middle entry got. null = no entries.
-export type AverageGrade = { position: number; label: string };
+// The median is the grade the middle entry got. null = no entries. `value` is the marker's
+// own tag ("5.3", "7", "≈ A"), drawn beside it so it reads as a value, not a row boundary.
+export type AverageGrade = { position: number; label: string; value: string };
 
 export function averageGrade(rows: GradeRow[], how: "mean" | "median"): AverageGrade | null {
   const total = rows.reduce((a, r) => a + r.ownCount, 0);
@@ -128,7 +129,7 @@ export function averageGrade(rows: GradeRow[], how: "mean" | "median"): AverageG
     let run = 0;
     for (const [i, r] of rows.entries()) {
       run += r.ownCount;
-      if (run * 2 >= total) return { position: i, label: `Median grade ${r.grade}` };
+      if (run * 2 >= total) return { position: i, label: `Median grade ${r.grade}`, value: r.grade };
     }
     return null;
   }
@@ -148,8 +149,8 @@ export function averageGrade(rows: GradeRow[], how: "mean" | "median"): AverageG
         break;
       }
     }
-    return { position, label: `Mean grade ${mean.toFixed(1)}` };
+    return { position, label: `Mean grade ${mean.toFixed(1)}`, value: mean.toFixed(1) };
   }
   const position = rows.reduce((a, r, i) => a + i * r.ownCount, 0) / total;
-  return { position, label: `Mean grade ≈ ${rows[Math.round(position)].grade}` };
+  return { position, label: `Mean grade ≈ ${rows[Math.round(position)].grade}`, value: `≈ ${rows[Math.round(position)].grade}` };
 }

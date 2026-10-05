@@ -7,6 +7,7 @@ import { DATAVIEWS } from "@/catalogue/dataviews";
 import { againstKey, chosenKey, measureKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
 import type { PinnedSettings } from "@/lib/meeting-views";
 import { viewInstance } from "@/catalogue/viewspec";
+import { dataviewResults } from "@/catalogue/results";
 
 export type DashboardMeasure = "candidates" | "results";
 
@@ -225,8 +226,16 @@ export function hostHasYearControl(dv: Dataview): boolean {
 
 // The Results sub-measure a view can draw with: Grade counts' own host is counts only;
 // otherwise the pinned one when the view supports it, else its first.
-function resultsFor(dv: Dataview, pinned: PinnedSettings): ResultsMeasure | undefined {
+// `asPage` (the editor's live previews, 0.6.1 S6): the pinned one wherever the view SHOWS on
+// it (its dataview's Results measures), as the page draws it there -- so a view shown on a
+// measure its figures don't apply to draws its host's own note (the Area chart on Grade
+// bands: R-NO-GRADE-RATE-GEO), not the figures of another measure. Meeting slots keep the
+// supported-measure fallback.
+export type OneViewOptions = { asPage?: boolean };
+
+function resultsFor(dv: Dataview, pinned: PinnedSettings, opts: OneViewOptions = {}): ResultsMeasure | undefined {
   if (dv.host.id === "teacher.c1.counts") return "counts";
+  if (opts.asPage && pinned.results && dataviewResults(dv).includes(pinned.results)) return pinned.results;
   const supported = dv.supports.results;
   if (!supported?.length) return pinned.results;
   return pinned.results && supported.includes(pinned.results) ? pinned.results : supported[0];
@@ -237,10 +246,10 @@ function resultsFor(dv: Dataview, pinned: PinnedSettings): ResultsMeasure | unde
 // `params` (0.6 snag 3 / 01): the view instance's own settings, carried onto the one view
 // so its host draws with them (the editor's live preview of a tiles view, a meeting slot).
 // `title` (0.6 snag 4 / 01): the instance's own title, so the figure shows it as the page does.
-export function oneViewConfig(dv: Dataview, pinned: PinnedSettings, id: string, params?: Record<string, unknown>, title?: string): DashboardConfig {
+export function oneViewConfig(dv: Dataview, pinned: PinnedSettings, id: string, params?: Record<string, unknown>, title?: string, opts: OneViewOptions = {}): DashboardConfig {
   const phase: Phase = pinned.phase && dv.supports.phases.includes(pinned.phase) ? pinned.phase : dv.supports.phases[0];
   const data = pinned.data && dv.supports.data.includes(pinned.data) ? pinned.data : dv.supports.data[0];
-  const results = data === "academic.results" ? resultsFor(dv, pinned) : undefined;
+  const results = data === "academic.results" ? resultsFor(dv, pinned, opts) : undefined;
   const panelId = dv.host.panel;
   const rowId = panelId === "current" ? "current" : "trends";
   return {
@@ -269,8 +278,8 @@ export function oneViewConfig(dv: Dataview, pinned: PinnedSettings, id: string, 
 
 // The settings the embed draws with: the pin, with the measure resolved and the year kept
 // only where it can be honoured.
-export function oneViewPinned(dv: Dataview, pinned: PinnedSettings, keepLive: boolean): { pinned: PinnedSettings; yearNote: string | null } {
-  const config = oneViewConfig(dv, pinned, "x");
+export function oneViewPinned(dv: Dataview, pinned: PinnedSettings, keepLive: boolean, opts: OneViewOptions = {}): { pinned: PinnedSettings; yearNote: string | null } {
+  const config = oneViewConfig(dv, pinned, "x", undefined, undefined, opts);
   const col = config.columns[0].data;
   const next: PinnedSettings = { ...pinned, phase: col.phase, data: col.data, results: col.results === "pill" ? undefined : col.results };
   if (keepLive || !pinned.year) return { pinned: { ...next, year: null }, yearNote: null };

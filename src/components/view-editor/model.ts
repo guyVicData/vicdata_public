@@ -16,7 +16,7 @@ import { dataviewResults } from "@/catalogue/results";
 import { presetSpec, type CompareSeries, type CompareSeriesKind, type ViewKind, type ViewPer, type ViewSpec } from "@/catalogue/viewspec";
 import { titleTemplateOf, type PickPanelContext } from "@/catalogue/pick";
 import type { DashboardConfig, Dataview, DataviewId, DataviewInstance, HostId, Phase, ResultsMeasure } from "@/catalogue/types";
-import { compareHonest, hostOnMeasure, perHonest, shownAsHonest, viewHonest, VIEW_KINDS, VIEW_LABEL, changeLabel, SHORT_KIND, type HonestContext, type HonestMeasure } from "@/catalogue/honest";
+import { compareHonest, hostOnMeasure, perHonest, showForOptions, shownAsHonest, viewHonest, VIEW_KINDS, VIEW_LABEL, changeLabel, SHORT_KIND, type HonestContext, type HonestMeasure, type ShowFor } from "@/catalogue/honest";
 import { hostForColumn, hostPanelOfConfig } from "@/components/dashboard-config/embed";
 import type { Target } from "@/lib/editor-ops";
 
@@ -39,6 +39,9 @@ export type Draft = {
   spec: ViewSpec;
   // Show this view for (Results dashboards).
   ticks: ResultsMeasure[];
+  // Add a view (0.6.1 S6): the ticks are still the default -- every measure the view can
+  // honestly be drawn on (AddView3) -- so they follow the draft until the first tick or untick.
+  ticksAuto?: boolean;
   // The title template as typed; null = follow the spec's own (generated) title.
   title: string | null;
 };
@@ -177,7 +180,29 @@ export function startDraft(env: EditorEnv, instance?: ViewInstance): Draft {
     return { spec: structuredClone(instance.spec), ticks: [...ticks], title: own ?? fromSpec ?? (dv ? titleTemplateOf(dv) : instance.spec.title) };
   }
   const spec = presetSpec(startPreset(drawingHost(env), env.side, env.ctx.data));
-  return { spec, ticks: env.followsPill && env.measure !== "entries" ? [env.measure] : [], title: null };
+  return withAutoTicks({ spec, ticks: [], title: null, ...(env.followsPill ? { ticksAuto: true } : {}) }, env);
+}
+
+// Show this view for's options for the draft as it stands: each Results measure, greyed with
+// the reason where the view can't honestly be drawn on it (honest.ts showForOptions).
+export function showForOf(draft: Draft, env: EditorEnv): ShowFor[] {
+  if (!env.followsPill) return [];
+  const dv = hostPresetFor(draft.spec, drawingHost(env), env.side, env.ctx.data);
+  return showForOptions(buildInstance(draft, env).spec, { phase: env.phase, host: env.columnHost }, dv.host.id, dataviewResults(dv));
+}
+
+// The default ticks (AddView3): every measure the view can honestly be drawn on, the one the
+// editor is on included; the greyed ones unticked.
+export function honestTicks(draft: Draft, env: EditorEnv): ResultsMeasure[] {
+  return showForOf(draft, env).filter((o) => o.ok).map((o) => o.measure);
+}
+
+// While the ticks are still the default, they follow the draft (a Data or View change can
+// make a measure drawable, or not).
+export function withAutoTicks(draft: Draft, env: EditorEnv): Draft {
+  if (!draft.ticksAuto) return draft;
+  const ticks = honestTicks(draft, env);
+  return same(ticks, draft.ticks) ? draft : { ...draft, ticks };
 }
 
 // Pick a View that can draw the data, keeping the current one where it can.

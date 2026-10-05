@@ -276,14 +276,18 @@ test("averageGrade: the mean grade on a numbered scale (U as 0), the mean positi
   const rows = (pairs: [string, number][]): GradeRow[] => pairs.map(([grade, ownCount]) => ({ grade, ownCount, benchPct: null }));
   const gcse = rows([["9", 1], ["8", 0], ["7", 1], ["6", 2], ["5", 0], ["4", 0], ["U", 0]]);
   // (9 + 7 + 6 + 6) / 4 = 7
-  assert.deepEqual(averageGrade(gcse, "mean"), { position: 2, label: "Mean grade 7.0" });
+  assert.deepEqual(averageGrade(gcse, "mean"), { position: 2, label: "Mean grade 7.0", value: "7.0" });
   // 6.5 sits halfway between 7 (row 2) and 6 (row 3).
-  assert.deepEqual(averageGrade(rows([["7", 1], ["6", 1]]), "mean"), { position: 0.5, label: "Mean grade 6.5" });
+  assert.deepEqual(averageGrade(rows([["7", 1], ["6", 1]]), "mean"), { position: 0.5, label: "Mean grade 6.5", value: "6.5" });
   assert.equal(averageGrade(rows([["4", 1], ["U", 1]]), "mean")!.label, "Mean grade 2.0");
+  // 5.3 sits 70% of the way from 6 (row 0) to 5 (row 1): proportionally, not at the boundary.
+  const m53 = averageGrade(rows([["6", 3], ["5", 7]]), "mean")!;
+  assert.equal(m53.value, "5.3");
+  assert.ok(Math.abs(m53.position - 0.7) < 1e-9, String(m53.position));
   // A level: positions A*=0, A=1, B=2 -> (0 + 2*1 + 2) / 4 = 1, "≈ A".
-  assert.deepEqual(averageGrade(rows([["A*", 1], ["A", 2], ["B", 1]]), "mean"), { position: 1, label: "Mean grade ≈ A" });
-  assert.deepEqual(averageGrade(rows([["A*", 1], ["A", 2], ["B", 1]]), "median"), { position: 1, label: "Median grade A" });
-  assert.deepEqual(averageGrade(gcse, "median"), { position: 2, label: "Median grade 7" });
+  assert.deepEqual(averageGrade(rows([["A*", 1], ["A", 2], ["B", 1]]), "mean"), { position: 1, label: "Mean grade ≈ A", value: "≈ A" });
+  assert.deepEqual(averageGrade(rows([["A*", 1], ["A", 2], ["B", 1]]), "median"), { position: 1, label: "Median grade A", value: "A" });
+  assert.deepEqual(averageGrade(gcse, "median"), { position: 2, label: "Median grade 7", value: "7" });
   assert.equal(averageGrade(rows([["9", 0]]), "mean"), null);
   // Double Award pairs aren't numbers: the mean position, named.
   assert.match(averageGrade(rows([["99", 1], ["98", 1], ["88", 1]]), "mean")!.label, /≈ 98/);

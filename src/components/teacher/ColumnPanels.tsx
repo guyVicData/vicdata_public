@@ -34,7 +34,7 @@ import { copySourceFor, panelTitleOverride } from "@/lib/pin-context";
 import { ViewTitleOverrideContext } from "./SeriesViews";
 import type { ViewFrame } from "@/lib/view-series";
 import { renderView, useViewsV2 } from "@/components/views";
-import { instanceRail, isPresetInstance, liveOwnView, ownDefault, ownViewLabel, shownInstance, type ViewInstance } from "@/components/views/rail";
+import { instanceRail, isPresetInstance, liveOwnView, ownDefault, shownInstance, type ViewInstance } from "@/components/views/rail";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -274,9 +274,9 @@ export function ColumnPanels({
           // v2: the rail is the panel's instances; v1: the host's buttons, filtered (rail.tsx).
           const own = v2 ? liveOwnView(cfg, state, ownChosen[cfg.id]) : null;
           if (host) {
-            // A spec of its own is named on its button by its title, resolved for the page.
-            const labelOf = (v: ViewInstance) => (runtime ? titleOverrideFor(plan.config, cfg, v, runtime, true) : null) ?? ownViewLabel(v);
-            panel = { ...panel, actions: v2 ? instanceRail(entries, cfg, state, own, chooseOwn(cfg.id), labelOf) : configuredRail(entries, cfg, state) };
+            // Each button is named by its view's title, resolved for the page, where it has one.
+            const titleOf = (v: ViewInstance) => (runtime ? titleOverrideFor(plan.config, cfg, v, runtime, true) : null);
+            panel = { ...panel, actions: v2 ? instanceRail(entries, cfg, state, own, chooseOwn(cfg.id), titleOf) : configuredRail(entries, cfg, state) };
           }
           const instance = v2 ? shownInstance(cfg, entries, state, own) : activeInstance(cfg, entries, state);
           const title = runtime && host && instance ? titleOverrideFor(plan.config, cfg, instance, runtime, v2) : null;

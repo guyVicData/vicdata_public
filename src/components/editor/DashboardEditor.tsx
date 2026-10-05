@@ -27,7 +27,7 @@ import { GCSE_SCALE, GRADE_SCALES, type GradeRange } from "@/lib/subject-grades"
 import { bandRangeFor } from "@/lib/teacher-view-measures";
 import { MenuHeading, MenuRow } from "@/components/teacher/PanelMenu";
 import { SwitchButton } from "@/components/edit-mode/EditSwitch";
-import { contextFromPanel, settingsOf, titleOverrideOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
+import { contextFromPanel, titleOverrideOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
 import { DASHBOARDS, groupOf } from "@/catalogue/dashboards";
 import { AddViewChooser } from "@/components/chooser-v06/AddViewChooser";
 import { ViewEditor } from "@/components/view-editor/ViewEditor";
@@ -56,8 +56,7 @@ import * as ops from "@/lib/editor-ops";
 import { loadViewRequests, plannedMarkdown } from "@/lib/editor-export";
 import { AssignDialog, assignedTo, type AssignDraft } from "./AssignDialog";
 import { ChevronDown, ChevronUp, EBtn } from "./bits";
-import { ContextStepsDialog, contextFromColumn } from "./ContextSteps";
-import { ColumnChangeDialog, ExportDialog, PublishDialog, RowSettingsDialog, SaveAsDialog, SlotMapDialog, SpanAskDialog, TextDialog } from "./Dialogs";
+import { ExportDialog, PublishDialog, RowSettingsDialog, SaveAsDialog, SlotMapDialog, SpanAskDialog, TextDialog } from "./Dialogs";
 import { EditorCanvas, canvasWidth, type CanvasHandlers } from "./EditorCanvas";
 import { EditorVariantsContext, type EditorVariants, type PanelAction } from "./EditorPanel";
 import { HistoryPanel } from "./HistoryPanel";
@@ -108,9 +107,6 @@ type DialogState =
   // "Swap for another view…" (Pick): the chooser's pick replaces the instance in place.
   | { kind: "replace"; mode: "edit" | "swap"; instance: DataviewInstance; ctx: PickPanelContext }
   | { kind: "row"; rowId: string }
-  | { kind: "column"; columnId: string; ctx: PickPanelContext }
-  | { kind: "column-change"; columnId: string; patch: ops.ColumnPatch; impact: ops.ColumnImpact }
-  | { kind: "override"; panelId: string; ctx: PickPanelContext }
   | { kind: "span"; panelId: string; cols: number; options: ops.SpanOption[] }
   | { kind: "rename-panel"; panelId: string }
   | { kind: "slot"; mode: "move-view" | "copy-view" | "move-or-copy-view" | "move-panel"; panelId: string; instanceId: string | null }
@@ -388,7 +384,6 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
 
   const panelAction = (panelId: string, a: PanelAction, instanceId: string | null) => {
     if (a === "rename") return setDialog({ kind: "rename-panel", panelId });
-    if (a === "override") return setDialog({ kind: "override", panelId, ctx: contextFromPanel(config, panelId, labels) });
     if (a === "move-panel") return setDialog({ kind: "slot", mode: "move-panel", panelId, instanceId });
     if (a === "delete-panel") return apply((c) => ops.deletePanel(c, panelId));
     if (!instanceId) return;
@@ -445,10 +440,6 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   };
 
   const handlers: CanvasHandlers = {
-    editColumn: (columnId) => {
-      const col = config.columns.find((c) => c.id === columnId)!;
-      setDialog({ kind: "column", columnId, ctx: contextFromColumn(col, { dashboard: config.name, labels }) });
-    },
     renameColumn: (columnId, title) => apply((c) => ops.applyColumnChange(c, columnId, { title })),
     rowSettings: (rowId) => setDialog({ kind: "row", rowId }),
     copyRow: (rowId) => apply((c) => ops.copyRow(c, rowId)),
@@ -467,19 +458,6 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       else apply((c) => ops.setSpan(c, panelId, cols, undefined, labels));
     },
     addRow: (structure) => apply((c) => ops.addRow(c, { structure })),
-  };
-
-  // A column's new settings from Steps 1-2: only the fields that really changed, so a
-  // column following the Results pill keeps following it.
-  const columnPatch = (columnId: string, before: PickPanelContext, after: PickPanelContext): ops.ColumnPatch => {
-    const a = settingsOf(before);
-    const b = settingsOf(after);
-    const patch: ops.ColumnPatch = {};
-    if (JSON.stringify(a.data) !== JSON.stringify(b.data)) patch.data = b.data;
-    if (JSON.stringify(a.focus) !== JSON.stringify(b.focus)) patch.focus = b.focus;
-    if (JSON.stringify(a.compare) !== JSON.stringify(b.compare)) patch.compare = b.compare;
-    void columnId;
-    return patch;
   };
 
   const onSettings = (v: SettingsValue) => {
@@ -897,49 +875,6 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
               if (v.structure.join(":") !== ops.structureOf(c, dialog.rowId).join(":")) n = ops.setRowStructure(n, dialog.rowId, v.structure);
               return n;
             });
-            setDialog(null);
-          }}
-        />
-      )}
-      {dialog?.kind === "column" && (
-        <ContextStepsDialog
-          original={dialog.ctx}
-          superAdmin={superAdmin}
-          theme={theme}
-          onClose={() => setDialog(null)}
-          onDone={(ctx) => {
-            const patch = columnPatch(dialog.columnId, dialog.ctx, ctx);
-            if (!Object.keys(patch).length) return setDialog(null);
-            const impact = ops.columnChangeImpact(config, dialog.columnId, patch, labels);
-            if (impact.misfits.length || impact.placeholders.length) setDialog({ kind: "column-change", columnId: dialog.columnId, patch, impact });
-            else {
-              apply((c) => ops.applyColumnChange(c, dialog.columnId, patch, {}, labels));
-              setDialog(null);
-            }
-          }}
-        />
-      )}
-      {dialog?.kind === "column-change" && (
-        <ColumnChangeDialog
-          config={config}
-          columnId={dialog.columnId}
-          patch={dialog.patch}
-          impact={dialog.impact}
-          onClose={() => setDialog(null)}
-          onConfirm={(choices) => {
-            apply((c) => ops.applyColumnChange(c, dialog.columnId, dialog.patch, choices, labels));
-            setDialog(null);
-          }}
-        />
-      )}
-      {dialog?.kind === "override" && (
-        <ContextStepsDialog
-          original={dialog.ctx}
-          superAdmin={superAdmin}
-          theme={theme}
-          onClose={() => setDialog(null)}
-          onDone={(ctx) => {
-            apply((c) => ops.setOverride(c, dialog.panelId, ops.overrideTo(c, dialog.panelId, ctx, labels)));
             setDialog(null);
           }}
         />
