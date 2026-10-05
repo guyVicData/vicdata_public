@@ -364,6 +364,19 @@ test("History, this school only: a line on points; 2-year bars on Grade 4+ and b
   }
 });
 
+// 0.6.1 S6 walk-through 1: the editor narrows the column's preset to This subject and keeps
+// its look, which carries the many-row chart's "change-bars" short-span fallback. One
+// subject still draws D8's per-year bars, not a one-row change list.
+test("History, this school only keeps D8's bars when the look carries the preset's change-bars fallback", () => {
+  const hist = ofHost((r) => r.host === "teacher.c1.results" && String(r.name).includes(" History ") && r.measureId === "bands");
+  assert.ok(hist.length >= 1);
+  for (const { frame } of hist) {
+    const spec = { ...historyOnly(), view: { kind: "line" as const, look: { trendLine: "member" as const, shortSpan: "change-bars" as const } } };
+    const leaf = leafOf(buildSeries(spec, frame, { fullscreen: false }), "trendChart");
+    assert.deepEqual(leaf.data.series.map((x) => x.key), [(frame as SubjectsFrame).focus]);
+  }
+});
+
 test("a spec of its own can ask for England on its line (Results on points)", () => {
   const { frame } = ofHost((r) => r.host === "teacher.c1.results" && r.measureId === "points")[0];
   const spec = { ...historyOnly(), compare: [{ kind: "england" as const, colour: "england" }] };

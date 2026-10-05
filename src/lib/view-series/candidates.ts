@@ -72,7 +72,11 @@ function line(spec: ViewSpec, look: LineLook, f: CandidatesFrame, compare: Compa
   const showFit = fitOn(look.trendLine, f.state.showFit);
   const looks = { ...(look.fromZero ? { fromZero: true } : {}), ...(look.endLabels ? { endLabels: true } : {}) };
   const wantIndex = spec.data.shownAs === "indexed";
-  if (!allRows && look.shortSpan !== "change-bars" && !wantIndex) {
+  // 0.6.1 S6: whatever short-span fallback the look carries. "change-bars" is the many-row
+  // chart's fallback (MultiTrend); a view the editor narrowed to one subject inherits it
+  // from the column's preset, unseen, and drew a one-row change list instead of D8's
+  // per-year bars. No preset is single-row with it, so no preset's drawing changes.
+  if (!allRows && !wantIndex) {
     return {
       kind: "line",
       heading: null,
