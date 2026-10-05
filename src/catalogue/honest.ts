@@ -10,9 +10,9 @@
 //
 //   Measure          Self  Category / all / selected   LA / region / England               10 nearest / saved set
 //   Points           yes   yes                         yes                                  yes
-//   Grade 4+ / A*-E  yes   yes                         greyed (R-NO-GRADE-RATE-GEO)         Comparisons only (S3d)
-//   Bands            yes   yes                         England only, latest year, 5 schools Comparisons only (S3d)
-//   Counts           yes   no                          England ticks only                   none
+//   Grade 4+ / A*-E  yes   yes                         greyed (R-NO-GRADE-RATE-GEO)         yes (0.6.2 S3; S3d: Comparisons only)
+//   Bands            yes   yes                         England only, latest year, 5 schools yes (0.6.2 S3; S3d: Comparisons only)
+//   Counts           yes   no                          England ticks only                   Column 1: each grade's share (0.6.2 S3)
 //   Entries          yes   yes                         points-eligible / scored quals only  yes
 //
 // Pure (no React), so scripts and src/lib/view-editor.test.ts can pin it.
@@ -126,12 +126,19 @@ export function compareHonest(ctx: HonestContext, kind: CompareSeriesKind, opts:
       return yes(kind === "england" ? undefined : "Areas with fewer than 5 schools have no figure.", kind === "england" ? undefined : "R-MIN-SCHOOLS");
     }
     case "set": {
-      if (!geo.ok) return no(ctx.measure === "counts" ? "No comparator grade counts: other schools are compared on points." : `${word}: ${geo.reason ?? "no set figure"}.`, ctx.measure === "counts" ? "R-MEASURE-FALLBACK" : undefined);
-      // S3d: a school's Grade 4+ / band rate is scored from its own grade counts
-      // (R-COMPARATOR-RATE-PER-QUAL), and the page loads the other schools' only in
-      // Comparisons -- a subject column has no such figure to average or draw.
+      // 0.6.2 S3: Grade counts across schools is each grade's SHARE of graded entries,
+      // averaged over the set's schools -- never a raw count, since schools differ in size
+      // (R-COMPARATOR-GRADE-SHARE) -- drawn by Column 1's grade spread. Comparisons and
+      // Context compare on one figure, so there Grade counts still falls back to points.
+      if (ctx.measure === "counts") {
+        if (ctx.host !== "teacher.c1.counts" && ctx.host !== "teacher.c1.results") return no("No comparator grade counts here: Grade counts falls back to Average points.", "R-MEASURE-FALLBACK");
+        return yes("Each grade's share of graded entries, averaged across the schools (a share, not a count: schools differ in size). It takes the place of England's ticks.", "R-COMPARATOR-GRADE-SHARE");
+      }
+      if (!geo.ok) return no(`${word}: ${geo.reason ?? "no set figure"}.`);
+      // 0.6.2 S3: a school's Grade 4+ / band rate is scored from its own grade counts
+      // (R-COMPARATOR-RATE-PER-QUAL), which a subject column now loads too (S3d greyed it).
       if (!set && (ctx.measure === "threshold" || ctx.measure === "bands"))
-        return no("Needs the other schools' grade counts, which are only loaded in Comparisons.", "R-COMPARATOR-RATE-PER-QUAL");
+        return yes("Each school's rate from its own grade counts for this subject and qualification.", "R-COMPARATOR-RATE-PER-QUAL");
       return yes();
     }
     default:

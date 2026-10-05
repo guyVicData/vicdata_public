@@ -58,7 +58,7 @@ import { ViewChart } from "./ViewChart";
 import { VerticalBars } from "./VerticalBars";
 import { RankedList } from "./RankedList";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
-import type { FrameSchoolGroup, FrameSet, SubjectsFrame } from "@/lib/view-series/frames";
+import type { FrameSchoolGroup, FrameSet, FrameSetGrades, SubjectsFrame } from "@/lib/view-series/frames";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -110,6 +110,7 @@ export function SubjectPanels({
   compareAgainstLabel,
   schoolGroup,
   schoolSet,
+  schoolSetGrades,
 }: {
   columnId: string;
   periods: number[];
@@ -256,6 +257,8 @@ export function SubjectPanels({
   // subjects, and its Compared against set), built on demand. Read only under views=v2.
   schoolGroup?: FrameSchoolGroup;
   schoolSet?: () => FrameSet | null;
+  // 0.6.2 S3: the set's grade rows for a spread's "Add an average" across schools.
+  schoolSetGrades?: () => FrameSetGrades | null;
   trendMap?: {
     profiles: AcademicSchoolProfile[] | null;
     targetUrn: string;
@@ -1058,6 +1061,7 @@ export function SubjectPanels({
       : null,
     schoolGroup,
     schoolSet,
+    schoolSetGrades,
     state: { trendStart, changeStart, showFit, latestIdx, hiddenKeys, sort, onSort: (key) => setSort(nextSort(sort, key)) },
   };
 

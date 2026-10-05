@@ -1,17 +1,20 @@
 import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { fetchSubjectLevelDataForSchools, type KsStage, type SubjectGradeCount } from "@/lib/academic-data-view";
+import { fetchSchoolGradeRows, type KsStage, type SubjectGradeCount } from "@/lib/academic-data-view";
 
 // Teacher view, Comparisons on a grade threshold (Grade 4+ / A*-E rate): each comparator
 // school's per-grade entry counts for ONE subject, so the page can score every school's
 // rate exactly as it scores its own (thresholdRate over the same parsed rows).
 //
-// Source: fetchSubjectLevelDataForSchools -- the same batched raw-fact lookup the
-// dashboard route runs for the school itself with [urn], and the Data View's
-// academic-subject-comparison route runs across a whole comparator set. One lookup
-// regardless of set size. Only the requested subject's rows go back: every subject for
-// every school would be tens of thousands of rows the page never reads.
+// Source (0.6.2 S3): fetchSchoolGradeRows, 2021/22-2024/25 for the one subject -- the same
+// four-year grade rows the dashboard route gives the school itself. At GCSE the rollup
+// RPC (academic_subject_grade_rollup_lookup) filtered to the subject in the database once
+// it is applied, else the modern + historic facts (S1: equal on every key); at Post-16 the
+// modern + historic facts (R-HISTORIC-GRADE-LABELS). The facts are read in chunks of 25
+// schools, so a big saved set no longer loses schools at the 50-page cap. Only the
+// requested subject's rows go back. Years already shown (2023/24-2024/25) are identical to
+// the pre-0.6.2 read (docs/v0.6/audit_scripts/grade_rollup/s3_timing.out).
 //
 // Gate: approved staff of `anchorUrn` (the school being viewed), as academic-schools;
 // the comparator schools need no membership of their own.
@@ -47,8 +50,8 @@ export async function GET(request: NextRequest) {
   const urns = Array.from(new Set(urnsParam.split(",").map((u) => u.trim()).filter(Boolean)));
   if (!urns.includes(anchorUrn)) urns.push(anchorUrn);
 
-  const { byUrn } = await fetchSubjectLevelDataForSchools(urns, stage);
+  const { byUrn } = await fetchSchoolGradeRows(urns, stage, subject);
   const gradeRowsByUrn: Record<string, SubjectGradeCount[]> = {};
-  for (const [urn, data] of byUrn) gradeRowsByUrn[urn] = data.gradeDistribution.filter((g) => g.subject === subject);
+  for (const [urn, rows] of byUrn) gradeRowsByUrn[urn] = rows;
   return NextResponse.json({ gradeRowsByUrn });
 }

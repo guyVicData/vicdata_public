@@ -53,6 +53,7 @@ import { DashboardColumn } from "@/components/teacher/DashboardColumn";
 import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries, type SetOption } from "@/components/teacher/ComparisonsPanels";
+import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
 import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
@@ -61,7 +62,8 @@ import { PillRowSpacer } from "@/components/teacher/PillMenu";
 import { GradeCountsPanels } from "@/components/teacher/GradeCountsPanels";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type MeasureId, type PanelId } from "@/lib/teacher-view-panels";
-import { bestScale, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
+import { NON_GRADE_VALUES, bestScale, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
+import type { FrameSetGrades } from "@/lib/view-series/frames";
 import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
@@ -722,6 +724,26 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       live = false;
     };
   }, [reloadPhase, inPlace.reloadTick, inPlace.previewDraft, supabase]);
+
+  // 0.6.2 S3: the Compared-against set's grade rows for the focused subject -- what "Add an
+  // average" across schools draws on Grade 4+, bands and counts in a subject column. Fetched
+  // only once a view asks for it (setGradeRowsFor below queues the ask during render), from
+  // the same /api/teacher/comparator-grades request Comparisons makes, so where Comparisons is
+  // on the page the two share one fetch (fetch-cache.ts).
+  type SetGradesAsk = { key: string; anchorUrn: string; urns: string[]; stage: "ks4" | "ks5"; subject: string };
+  const [setGradesAsk, setSetGradesAsk] = useState<SetGradesAsk | null>(null);
+  const [setGrades, setSetGrades] = useState<{ key: string; rows: Record<string, SubjectGradeCount[]> | null } | null>(null);
+  useEffect(() => {
+    if (!setGradesAsk) return;
+    let cancelled = false;
+    (async () => {
+      const rows = await fetchComparatorGrades(supabase, setGradesAsk.anchorUrn, setGradesAsk.urns, setGradesAsk.stage, setGradesAsk.subject);
+      if (!cancelled) setSetGrades({ key: setGradesAsk.key, rows });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [setGradesAsk, supabase]);
 
   if (loading) return embed ? <EmbedStatus text="Loading…" /> : <main className="mx-auto max-w-4xl p-6"><ViewAsBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
   if (embed && (error || !phase)) return <EmbedStatus text={error ?? "Unknown phase."} />;
@@ -1521,6 +1543,52 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   };
 
+  // 0.6.2 S3: "Add an average" across schools on Grade 4+, bands and counts in a subject
+  // column -- the Compared-against set's other schools' own grade rows for the focused subject
+  // AND qualification (R-COMPARATOR-RATE-PER-QUAL), the same rows Comparisons scores. Asked for
+  // only when a view reads it (the ask is queued, not set, during render); null while loading.
+  // Not for a national / regional ranking set: its schools are a sample (R-RANKING-SAMPLE).
+  const setGradeRowsFor = (): FrameSetGrades | null => {
+    if (!focusItem || !schoolUrn || (phase !== "ks4" && phase !== "ks5")) return null;
+    if (comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking") return null;
+    const all = allComparatorSets[comparisonsSet] ?? [];
+    const others = all.filter((s) => !s.isTarget && s.urn !== schoolUrn);
+    if (!others.length) return null;
+    // Comparisons' own request, to the letter (its gradeUrns), so the two share one fetch.
+    const urns = all.map((s) => s.urn).sort();
+    const key = `${phase}|${focusItem.subject}|${urns.join(",")}`;
+    if (setGrades?.key !== key) {
+      const ask = { key, anchorUrn: schoolUrn, urns, stage: phase, subject: focusItem.subject };
+      if (setGradesAsk?.key !== key) queueMicrotask(() => setSetGradesAsk((cur) => (cur?.key === key ? cur : ask)));
+      return null;
+    }
+    if (!setGrades.rows) return null;
+    const mine = (urn: string) =>
+      (setGrades.rows?.[urn] ?? [])
+        .filter((g) => g.subject === focusItem.subject && g.qualificationType === focusItem.qualificationType)
+        .map((g) => ({ period: g.period, grade: g.grade, entries: g.entries }));
+    return { label: activeSetLabel, schools: others.map((s) => ({ urn: s.urn, rows: mine(s.urn) })) };
+  };
+  // A year line across schools on Grade 4+ / bands: each school's rate per period, scored by
+  // the page's own rate function on the page's range, weighted (if asked) by its graded entries.
+  const schoolSetGradesOn = (periods: number[], onBands: boolean) => () => {
+    const g = setGradeRowsFor();
+    if (!g) return null;
+    const rateOf = gradeRateScorer(onBands, bandRange, phase);
+    const inYear = (rows: FrameSetGrades["schools"][number]["rows"], p: number) => rows.filter((r) => r.period === p);
+    return {
+      label: g.label,
+      schools: g.schools.map((sc) => ({
+        key: sc.urn,
+        values: periods.map((p) => {
+          const rows = inYear(sc.rows, p);
+          return rows.length ? rateOf(rows.map((r) => ({ ...r, subject: focusItem!.subject, qualificationType: focusItem!.qualificationType, sizeWeight: null }))) : null;
+        }),
+        counts: periods.map((p) => inYear(sc.rows, p).filter((r) => !NON_GRADE_VALUES.has(r.grade)).reduce((a, r) => a + r.entries, 0) || null),
+      })),
+    };
+  };
+
   // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
   // The figure still follows the focus subject (round 7 §9): with one in focus it is that
   // subject's own figure on Results' chosen measure -- points per entry, or the Grade 4+ /
@@ -1700,6 +1768,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // 0.6.1 S6: no pills of its own since S5; the spacer keeps its panels level with
         // Context's and Comparisons' (side by side only).
         controls={<PillRowSpacer />}
+        schoolSetGrades={setGradeRowsFor}
       />
     ) : showingResults ? (
       <SubjectPanels
@@ -1707,7 +1776,14 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         periods={resultsPeriods}
         // 0.6.1 S3c: a view of its own's averages (views=v2 only; built when asked).
         schoolGroup={schoolGroupOn(resultsMeasure.id, valueForResults, resultsPeriods)}
-        schoolSet={resultsMeasure.id === "points" ? schoolSetOn("results", resultsPeriods) : undefined}
+        schoolSet={
+          resultsMeasure.id === "points"
+            ? schoolSetOn("results", resultsPeriods)
+            : usingThreshold || (usingBands && bandRange)
+              ? schoolSetGradesOn(resultsPeriods, usingBands)
+              : undefined
+        }
+        schoolSetGrades={usingBands ? setGradeRowsFor : undefined}
         // Content round S6: the focused subject and its category peers.
         subjects={resultsSeries}
         focus={focusKey}
@@ -1902,7 +1978,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         periods={contextPeriods}
         // 0.6.1 S3c: a view of its own's averages (views=v2 only; built when asked).
         schoolGroup={schoolGroupOn(contextMeasure.id, contextValueFor, contextPeriods)}
-        schoolSet={contextMeasure.id === "points" ? schoolSetOn("results", contextPeriods) : contextMeasure.id === "entries" ? schoolSetOn("candidates", contextPeriods) : undefined}
+        schoolSet={
+          contextMeasure.id === "points"
+            ? schoolSetOn("results", contextPeriods)
+            : contextMeasure.id === "entries"
+              ? schoolSetOn("candidates", contextPeriods)
+              : contextMeasure.id === "threshold" || (contextMeasure.id === "bands" && bandRange)
+                ? schoolSetGradesOn(contextPeriods, contextMeasure.id === "bands")
+                : undefined
+        }
         subjects={contextSeries}
         measure={contextMeasure}
         focus={focusKey}

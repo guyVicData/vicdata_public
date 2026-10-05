@@ -1,0 +1,46 @@
+// 0.6.2 S3: comparator-grades before / after, read-only against production, through the app's
+// own lib (the route minus its membership check). For each set (a school + 10 nearest):
+//   before  fetchSubjectLevelDataForSchools(urns, stage) then filtered to one subject (the
+//           route until S3: modern facts, every subject)
+//   after   fetchSchoolGradeRows(urns, stage, subject) (S3: the rollup RPC at GCSE when it is
+//           applied -- it isn't, so this times the fallback: modern + historic facts)
+// and checks the years already shown (2023/24-2024/25) are identical for every school.
+//   npx -y tsx --env-file=.env s3_timing.mts
+import { fetchSchoolGradeRows, fetchSubjectLevelDataForSchools } from "../../../../src/lib/academic-data-view";
+import { createServerAnonSupabaseClient } from "../../../../src/lib/supabase";
+import { gradeRollupRpcState } from "../../../../src/lib/vicdata-reference";
+
+const SETS: { name: string; urn: string; stage: "ks4" | "ks5"; subject: string; urns?: string[] }[] = [
+  { name: "The Chase, GCSE History", urn: "137625", stage: "ks4", subject: "History", urns: ["137625", "137186", "137101", "136890", "136803", "116999", "137051", "138107", "135913", "136897", "136925"] },
+  { name: "Acland Burghley, GCSE Maths", urn: "100053", stage: "ks4", subject: "Maths (General)" },
+  { name: "King's Worcester, A-level Maths", urn: "117037", stage: "ks5", subject: "Mathematics", urns: ["117037", "117038", "117041", "117034", "147783", "117002", "117003", "117012", "145493", "134463", "117020"] },
+  { name: "Croydon College, Business Studies", urn: "130432", stage: "ks5", subject: "Business Studies" },
+];
+const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+const sig = (rows: { qualificationType: string; period: number; grade: string; entries: number; sizeWeight: number | null }[]) =>
+  rows.filter((r) => r.period >= 2023).map((r) => `${r.qualificationType}|${r.period}|${r.sizeWeight}|${r.grade}=${r.entries}`).sort().join(";");
+
+for (const s of SETS) {
+  let urns = s.urns;
+  if (!urns) {
+    const { data } = await createServerAnonSupabaseClient().from("school_nearest_neighbours").select("neighbour_urn, rank").eq("urn", s.urn).eq("pool", "general").order("rank").limit(10);
+    urns = [s.urn, ...((data ?? []) as { neighbour_urn: string }[]).map((r) => r.neighbour_urn)];
+  }
+  const before: number[] = [], after: number[] = [];
+  let b: Map<string, unknown[]> = new Map(), a: Awaited<ReturnType<typeof fetchSchoolGradeRows>> | null = null;
+  for (let i = 0; i < 3; i++) {
+    let t = performance.now();
+    const old = await fetchSubjectLevelDataForSchools(urns, s.stage);
+    b = new Map([...old.byUrn].map(([u, d]) => [u, d.gradeDistribution.filter((g) => g.subject === s.subject)]));
+    before.push(performance.now() - t);
+    t = performance.now();
+    a = await fetchSchoolGradeRows(urns, s.stage, s.subject);
+    after.push(performance.now() - t);
+  }
+  let same = 0;
+  for (const u of urns) if (sig((b.get(u) ?? []) as never) === sig(a!.byUrn.get(u) ?? [])) same++;
+  const rowsB = [...b.values()].reduce((n, r) => n + r.length, 0), rowsA = [...a!.byUrn.values()].reduce((n, r) => n + r.length, 0);
+  const years = [...new Set([...a!.byUrn.values()].flat().map((r) => r.period))].sort().join(",");
+  console.log(`${s.name}: before median ${median(before).toFixed(0)} ms (${before.map((x) => x.toFixed(0)).join(", ")}), ${rowsB} subject rows | after (${a!.source}) median ${median(after).toFixed(0)} ms (${after.map((x) => x.toFixed(0)).join(", ")}), ${rowsA} rows, years ${years} | 2023/24-2024/25 identical for ${same}/${urns.length} schools`);
+}
+console.log("rollup RPC:", gradeRollupRpcState());

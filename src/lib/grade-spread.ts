@@ -111,6 +111,31 @@ export function bandDistribution(ownRows: GradeCountRow[], englandRows: GradeCou
   return { rows, total, benchLabel };
 }
 
+// ------------------------------------------------------------- the set's share (0.6.2 S3)
+
+// R-COMPARATOR-GRADE-SHARE: "Add an average" across schools on a grade spread -- each grade's
+// share of a school's graded entries in `period`, averaged (mean or median) over the schools
+// with graded entries that year, at each of `grades` (the spread's own rows). A share, never
+// a raw count: the schools differ in size. null = no school has graded entries that year.
+export function setShares(schools: { rows: GradeCountRow[] }[], period: number | null, grades: string[], how: "mean" | "median"): { pct: Map<string, number>; schools: number } | null {
+  if (period === null) return null;
+  const shares: Map<string, number>[] = [];
+  for (const s of schools) {
+    const rows = inYear(s.rows, period);
+    const total = totalOf(rows);
+    if (total <= 0) continue;
+    shares.push(new Map(grades.map((g) => [g, (countAt(rows, g) / total) * 100])));
+  }
+  if (!shares.length) return null;
+  const pct = new Map<string, number>();
+  for (const g of grades) {
+    const vs = shares.map((m) => m.get(g) ?? 0).sort((a, b) => a - b);
+    const mid = Math.floor(vs.length / 2);
+    pct.set(g, how === "median" ? (vs.length % 2 ? vs[mid] : (vs[mid - 1] + vs[mid]) / 2) : vs.reduce((a, v) => a + v, 0) / vs.length);
+  }
+  return { pct, schools: shares.length };
+}
+
 // ------------------------------------------------------------------- the average grade
 
 // 2 · View's average grade marker: the mean or the median of the grades drawn, weighted by

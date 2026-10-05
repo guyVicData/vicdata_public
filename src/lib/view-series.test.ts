@@ -1221,3 +1221,27 @@ test("S3c: the renderer draws them -- donut, map and geography", async () => {
   assert.match(map, /Loading map/);
   assert.match(map, /by school, on the map/);
 });
+
+// 0.6.2 S3: "Add an average" across schools on Grade 4+ / bands in a subject column draws the
+// set's line from the frame's schoolSet (the page scores each school's own grade counts,
+// R-COMPARATOR-RATE-PER-QUAL); S3d left it out there.
+test("0.6.2 S3: across schools on Grade 4+ / bands in a subject column -- the set's line is drawn", async () => {
+  const { compareLinesFor } = await import("./view-series/compare-lines");
+  const frames = ofHost((r) => r.host === "teacher.c1.results" && (r.measureId === "threshold" || r.measureId === "bands"));
+  assert.ok(frames.length >= 2);
+  for (const { raw, frame } of frames) {
+    const f = frame as SubjectsFrame;
+    const sch = (k: string, vs: (number | null)[]) => ({ key: k, values: vs, counts: vs.map((v) => (v === null ? null : 10)) });
+    const a = f.periods.map((_, i) => 40 + i);
+    const b = f.periods.map((_, i) => (i === 0 ? null : 60 + i));
+    const withSet: SubjectsFrame = { ...f, schoolSet: () => ({ label: "10 nearest schools", schools: [sch("A", a), sch("B", b)] }) };
+    for (const kind of ["nearest", "savedSet"] as const) {
+      const lines = compareLinesFor(withSet, [{ kind: "self", colour: "accent" }, { kind, colour: "muted", average: "mean" }], { focusedKey: f.focus, span: true });
+      assert.equal(lines.length, 1, `${raw.name} ${kind}`);
+      assert.equal(lines[0].label, "Average across 10 nearest schools");
+      assert.deepEqual(lines[0].values, f.periods.map((_, i) => (i === 0 ? a[0] : (a[i] + (b[i] as number)) / 2)));
+    }
+    // While the set's grade rows load the frame has none, and nothing is drawn.
+    assert.equal(compareLinesFor({ ...f, schoolSet: () => null }, [{ kind: "nearest", colour: "muted", average: "mean" }], { focusedKey: f.focus, span: true }).length, 0);
+  }
+});

@@ -21,3 +21,8 @@ All read-only. No keys in any file.
                           facts through the app's lookup) for src/lib/grade-rows.test.ts
   s2_scale_check.mts.txt  30 schools x both phases: modern-year grade rows and rates identical
                           with gradeYears "four"; lists the sets whose bestScale would change
+  S3 (0.6.2):
+  s3_timing.mts.txt   comparator-grades before / after (the app's lib, read-only), and the
+                      2023/24-2024/25 identity check per school; output s3_timing.out
+  s3_rpc_body.sql     the proposed RPC's body inlined, run 3x read-only (q.py): the "after RPC"
+                      SQL timing; output s3_rpc_body.out

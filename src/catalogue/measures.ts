@@ -120,12 +120,12 @@ function gradeMeasures(phase: "ks4" | "ks5"): Measure[] {
       geographies: geos({
         school: ok(),
         subject_area: no("Grade counts are per subject; a category has no single grade scale"),
-        set: no("No comparator grade-count view; Comparisons falls back to points (R-MEASURE-FALLBACK)"),
+        set: ok("0.6.2 S3: Column 1's grade spread draws the set's average share at each grade (comparator-grades; a share, not a count: R-COMPARATOR-GRADE-SHARE). Comparisons and Context still fall back to points (R-MEASURE-FALLBACK)"),
         ...areaGrades("Shown as England share ticks."),
       }),
       numberTypes: ["totals", "rate"],
-      rules: ["R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-MIN-SCHOOLS", "R-MEASURE-FALLBACK", "R-FOCUS-NEVER-FILTERED", ...(ks4 ? [] : (["R-HISTORIC-GRADE-LABELS"] as const))],
-      knownGaps: [...commonGaps, "Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK)."],
+      rules: ["R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-MIN-SCHOOLS", "R-MEASURE-FALLBACK", "R-FOCUS-NEVER-FILTERED", "R-COMPARATOR-GRADE-SHARE", ...(ks4 ? [] : (["R-HISTORIC-GRADE-LABELS"] as const))],
+      knownGaps: [...commonGaps, "Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK).", "The set's share ticks cover the grades this school's spread draws; a grade only other schools have isn't drawn."],
     },
   ];
 }

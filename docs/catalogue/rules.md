@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 41 rules: 40 active, 1 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 42 rules: 41 active, 1 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -39,6 +39,7 @@ What a number is allowed to be. 41 rules: 40 active, 1 superseded; 22 must lift 
 | R-IGCSE-EXCL | active | At GCSE a comparator flagged by igcseExclusionLikely is dropped from every set; the target is kept but flagged and its results history withheld. | no | manual | — |
 | R-COMPARATOR-NO-FIGURE | active | A comparator with no figure for the measure (or none in the latest year) is not listed and never ranked last. Not applied while loading. | lifted | manual | — |
 | R-COMPARATOR-RATE-PER-QUAL | active | Comparator rates are scored per subject and exact qualification, with the page's own rate function. | lifted | none yet | — |
+| R-COMPARATOR-GRADE-SHARE | active | Grade counts across schools (Column 1's grade spread, 'Add an average' across the 10 nearest / a saved set) is each grade's share of a school's graded entries, averaged (mean or median) over the set's other schools with graded entries that year, for the focused subject and exact qualification; drawn as ticks in place of England's, at the school's own scale in counts mode. Never a raw count, never weighted by entries. | no | none yet | — |
 | R-RANKING-SAMPLE | active | A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure. | lifted | none yet | — |
 | R-PERIOD-TRIM | active | Leading and trailing periods with no published value are trimmed (2020/21 points are null nationally). | no | manual | — |
 | R-INDEX-HEADCOUNTS | active | Only sum measures (entries) are indexed to 100; points and rates are drawn at real levels. | no | none yet | — |
@@ -364,7 +365,7 @@ What a number is allowed to be. 41 rules: 40 active, 1 superseded; 22 must lift 
 | Why | '*' and 'D' are A-level grades too: read raw, a 2021/22 BTEC lands on the A-level scale, its bands give no figure and Grade counts shows letters; an unmapped COVID result left about 9% of 2021/22 A-level sets with no A*-E figure. |
 | Applies to | M-KS5-THRESHOLD, M-KS5-BANDS, M-KS5-COUNTS (2021/22-2022/23) |
 | Enforced in | - src/lib/grade-rows.ts:mapHistoricKs5Grade, parseSubjectGradeDistribution<br>- src/lib/subject-grades.ts:NON_GRADE_VALUES (88) |
-| Tagged at | - src/lib/academic-data-view.ts<br>- src/lib/grade-rows.test.ts<br>- src/lib/grade-rows.ts<br>- src/lib/subject-grades.ts |
+| Tagged at | - src/app/api/teacher/comparator-grades/route.ts<br>- src/lib/academic-data-view.ts<br>- src/lib/grade-rows.test.ts<br>- src/lib/grade-rows.ts<br>- src/lib/subject-grades.ts |
 | Test case | Croydon College (130432), ks5, Business Studies (BTEC Extended Certificate), 2021/22: 2021/22 reads Distinction* 2, Distinction 9, Merit 31, Pass 9 on the vocational scale (no '*' or 'D' rows, COVID result 44 a non-grade); King's Worcester (117037) A-level Maths 2021/22 keeps its '*' rows on the A-level scale, A*-E 100% of 45. [runner: historicGradeLabels] |
 | Origin | 0.6.2 S1 §4 (docs/v0.6/grade_rollup_reconciliation_v1.md); S2 |
 | Status | active |
@@ -538,13 +539,29 @@ What a number is allowed to be. 41 rules: 40 active, 1 superseded; 22 must lift 
 | --- | --- |
 | Statement | Comparator rates are scored per subject and exact qualification, with the page's own rate function. |
 | Why | Pooling a comparator's qualifications mixes grade scales (Maths (General) moved +5pp when fixed). |
-| Applies to | Comparisons on Grade 4+ / A*-E / bands |
-| Enforced in | - src/components/teacher/ComparisonsPanels.tsx:199-207<br>- src/app/teacher/[phase]/page.tsx:2043-2053 |
-| Tagged at | - src/lib/teacher-view-comparator-grades.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts |
+| Applies to | Comparisons on Grade 4+ / A*-E / bands; since 0.6.2 S3 also a subject column's 'Add an average' across schools on them |
+| Enforced in | - src/components/teacher/ComparisonsPanels.tsx:199-207<br>- src/app/teacher/[phase]/page.tsx:2043-2053<br>- src/components/dashboard-config/TeacherDashboard.tsx:setGradeRowsFor, schoolSetGradesOn |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-comparator-grades.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts |
 | Test case | — |
 | Origin | Comparisons / Grade 4 wiring |
 | Status | active |
 | Must lift | src/components/teacher/ComparisonsPanels.tsx:199-207; src/app/teacher/[phase]/page.tsx:2043-2053 → src/lib/teacher-view-comparator-grades.ts:rateSeriesByUrn (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
+| Open issue | — |
+| Fixed | — |
+
+### R-COMPARATOR-GRADE-SHARE
+
+| Field | Content |
+| --- | --- |
+| Statement | Grade counts across schools (Column 1's grade spread, 'Add an average' across the 10 nearest / a saved set) is each grade's share of a school's graded entries, averaged (mean or median) over the set's other schools with graded entries that year, for the focused subject and exact qualification; drawn as ticks in place of England's, at the school's own scale in counts mode. Never a raw count, never weighted by entries. |
+| Why | Schools differ in size: an average of raw counts would draw a big school's spread, not the set's. |
+| Applies to | M-*-COUNTS (set) |
+| Enforced in | - src/catalogue/honest.ts:compareHonest (set)<br>- src/lib/grade-spread.ts:setShares<br>- src/lib/view-series/grades.ts:compareOf, buildGrades, buildBandSpread |
+| Tagged at | - src/lib/grade-spread.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series-grades.test.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/grades.ts |
+| Test case | — |
+| Origin | 0.6.2 S3 (prompt: 'Grade counts across schools should show a share (%), not raw counts') |
+| Status | active |
+| Must lift | — |
 | Open issue | — |
 | Fixed | — |
 

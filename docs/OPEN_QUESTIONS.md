@@ -1485,3 +1485,27 @@ Prompt: `docs/v0.6/vicdata_0_6_grade_data_round_claude_code_prompt_v1.md`. S1 fi
 - **Rule test expectations updated on purpose** (S5 kinds: grade measures gain 2021/22–2022/23, bars become lines): R-THRESHOLD-PERIODS (100053 now 2021/22–2024/25, plus a check that the Data View read stays two years) and R-TREND-LINE-4YR (Grade 4+ now 4 years → line). Unit test added: "History, this school only" on Grade bands / Grade 4+ draws a line on The Chase's real four years.
 - **Checked on 30 schools × both phases** (711 subject sets): the 2023/24 and 2024/25 grade rows and Grade 4+ / A*–E rates are identical to before, every set.
 - **`lookupReferenceData` now warns** when it stops at its 50-page cap (it still stops; no figure changes). The new grade fact reads go in chunks of 25 schools, read one after another, so they stay well under it.
+
+### S3 — comparator grades and "across schools" on grades
+
+- **`/api/teacher/comparator-grades` reads `fetchSchoolGradeRows(urns, stage, subject)`:** one subject, 2021/22–2024/25. At GCSE it's the rollup RPC, filtered to the subject in the database, once applied. Until then, and at Post-16 always, it's the modern + historic facts, read in chunks of 25 schools one after another (a big saved set no longer loses schools at the 50-page cap) and filtered to the subject. Same response shape. The school itself comes from the same read as its dashboard rows.
+- **Years already shown are identical:** for The Chase, Acland Burghley, King's Worcester and Croydon College, each + 10 nearest, every school's 2023/24–2024/25 rows equal the old read (44/44 schools; `docs/v0.6/audit_scripts/grade_rollup/s3_timing.out`). Unit tests check the RPC and facts paths on real rows.
+- **Timings, read-only against production, medians of 3** (before = the old route's read: modern facts, every subject; after = what runs today, the facts fallback, because the RPC isn't applied):
+
+  | Set | Before | After (fallback, 4 years) |
+  |---|---|---|
+  | The Chase + 10, GCSE History | 484 ms (220 rows) | 618 ms (435 rows) |
+  | Acland Burghley + 10, GCSE Maths | 156 ms | 218 ms |
+  | King's Worcester + 10, A-level Maths | 187 ms | 185 ms |
+  | Croydon College + 10, Business Studies | 255 ms | 267 ms |
+
+  **After the RPC is applied (GCSE):** its body, run read-only as SQL for The Chase + 10 History (2021 on, 435 rows), takes 62 ms cold and 21–22 ms warm, including the round trip (`s3_rpc_body.sql/.out`). Add the HTTP floor S1 measured for a one-subject RPC (≈ 50 ms) and that's ≈ 70–110 ms against 484 ms today. This is an estimate from the SQL; it's not a measured HTTP call, because the RPC isn't applied. Post-16 stays on the facts (≈ the same as today).
+- **"Across schools" grade lines are no longer greyed** (step 1's Add an average and step 3's ticks, which both read `compareHonest`):
+  - **Grade 4+ / A*–E and bands on a subject column** (Results, Context): the set's line is each school's own rate per year, from its own grade counts for the focused subject and exact qualification, scored by the page's own rate function and range (R-COMPARATOR-RATE-PER-QUAL). The data is the same comparator-grades request Comparisons makes, letter for letter, so where Comparisons is on the page the two share one fetch (fetch-cache). It's fetched only once a view asks: the ask is queued from the frame, never set during render. A ranking set (a sample) gives no line (R-RANKING-SAMPLE). Weighted means weighted by each school's graded entries that year.
+  - **Grade counts, new rule R-COMPARATOR-GRADE-SHARE:** across schools is **each grade's share of a school's graded entries, averaged** (mean or median) over the set's other schools with graded entries that year. It's never a raw count, because schools differ in size. There was no comparator-counts rule to follow (comparator counts fell back to points), so this is the choice.
+    - It's drawn as ticks on Column 1's grade spread (Grade counts' distribution, and Results' bands Grade distribution), **in place of England's ticks** when both are asked for, since a spread has one tick per grade. While loading, no ticks are drawn; England never stands in.
+    - "Weighted" stays greyed on counts: the plain average lets each school count once.
+    - Comparisons and Context still fall back to points on Grade counts (R-MEASURE-FALLBACK).
+    - Ticks cover only the grades this school's spread draws.
+  - **"Saved set…" stays greyed outside Comparisons, as for every measure** ("A saved set is chosen on a Comparisons page"). That's an existing rule, not a grade one. "10 nearest" (which means the page's current Compared-against set) is offered.
+- **No members' page changes from this:** presets follow the page, and nothing is fetched unless a view of its own asks for a set average. The only change on live is Comparisons' grade lines (Grade 4+, bands) gaining 2021/22–2022/23 and becoming four-year lines: an expected kind.

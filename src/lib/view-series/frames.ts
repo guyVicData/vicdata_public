@@ -50,6 +50,10 @@ export type FrameGroupMember = { key: string; values: (number | null)[]; counts?
 export type FrameGroup = { label: string; members: FrameGroupMember[] };
 export type FrameSchoolGroup = (kind: "category" | "allSubjects" | "selectedSubjects") => FrameGroup | null;
 export type FrameSet = { label: string; schools: FrameGroupMember[] };
+// 0.6.2 S3: the Compared-against set's other schools' own grade rows for the focused subject
+// and exact qualification (/api/teacher/comparator-grades), every year they have them -- what
+// "Add an average" across schools reads on a grade spread (R-COMPARATOR-GRADE-SHARE).
+export type FrameSetGrades = { label: string; schools: { urn: string; rows: GradeCountRow[] }[] };
 
 // S3c: Context's donut, as SubjectPanels is handed it (the group's own totals; on Grade
 // bands the group's entries in the range, of all its graded entries).
@@ -162,6 +166,8 @@ export type SubjectsFrame = {
   trendMap?: (FrameMap & { subjectLabel: string }) | null;
   schoolGroup?: FrameSchoolGroup;
   schoolSet?: () => FrameSet | null;
+  // 0.6.2 S3: the set's grade rows (null while they load, or with no set), built on demand.
+  schoolSetGrades?: () => FrameSetGrades | null;
   state: FrameMemberState & {
     // The year Current shows (Context's year menu), as an index into `periods`.
     latestIdx: number;
@@ -265,6 +271,8 @@ export type GradesFrame = {
   ownRows: GradeCountRow[];
   englandRows: GradeCountRow[];
   colour: string;
+  // 0.6.2 S3: the set's grade rows (null while they load, or with no set), built on demand.
+  schoolSetGrades?: () => FrameSetGrades | null;
   state: {
     compareFrom: number | null;
     changeFrom: number | null;

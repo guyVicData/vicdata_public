@@ -20,7 +20,7 @@ import { ENTRIES_MEASURE, type PanelData, type PanelId } from "@/lib/teacher-vie
 import { bestScale, inlineRangeLabel, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
 import { gradeCounts } from "@/lib/grade-spread";
 import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
-import type { GradesFrame } from "@/lib/view-series/frames";
+import type { FrameSetGrades, GradesFrame } from "@/lib/view-series/frames";
 import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
@@ -42,6 +42,7 @@ export function GradeCountsPanels({
   question,
   source,
   controls,
+  schoolSetGrades,
 }: {
   columnId: string;
   subjectLabel: string;
@@ -55,6 +56,9 @@ export function GradeCountsPanels({
   question: string;
   source: (span?: string) => ReactNode;
   controls?: ReactNode;
+  // 0.6.2 S3: the Compared-against set's grade rows, for a view of its own's "Add an average"
+  // across schools (views=v2 only; built when asked).
+  schoolSetGrades?: () => FrameSetGrades | null;
 }) {
   const [compareFrom, setCompareFrom] = useState<number | null>(null);
   const [changeFrom, setChangeFrom] = useState<number | null>(null);
@@ -196,6 +200,7 @@ export function GradeCountsPanels({
     ownRows,
     englandRows: england,
     colour,
+    schoolSetGrades,
     state: { compareFrom, changeFrom, highlight: { range, pending, onGradeClick: click } },
   };
 

@@ -13,13 +13,13 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | M-KS4-HEADLINE | Attainment 8 | academic.results (points) | ks4 | 2021/22–2024/25 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | points, change_points, rank |
 | M-KS4-THRESHOLD | GCSE Grade 4+ rate | academic.results (threshold) | ks4 | 2021/22–2024/25 | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | rate, change_pp, rank |
 | M-KS4-BANDS | GCSE grade bands | academic.results (bands) | ks4 | 2021/22–2024/25 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | rate, change_pp, totals, market_share, rank |
-| M-KS4-COUNTS | GCSE grade counts | academic.results (counts) | ks4 | 2021/22–2024/25 | ✓ | ✗ | ✗ | ✓ | ✓ | ✓ | totals, rate |
+| M-KS4-COUNTS | GCSE grade counts | academic.results (counts) | ks4 | 2021/22–2024/25 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | totals, rate |
 | M-KS5-ENTRIES | Post-16 candidates | academic.candidates | ks5 | 2020/21–2024/25 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | totals, pct_change, market_share, index100, rank |
 | M-KS5-POINTS | Post-16 average points | academic.results (points) | ks5 | 2021/22–2024/25 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | points, change_points, rank |
 | M-KS5-HEADLINE | A-level points per entry | academic.results (points) | ks5 | 2021/22–2024/25 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | points, change_points, rank |
 | M-KS5-THRESHOLD | Post-16 A*-E rate | academic.results (threshold) | ks5 | 2021/22–2024/25 | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | rate, change_pp, rank |
 | M-KS5-BANDS | Post-16 grade bands | academic.results (bands) | ks5 | 2021/22–2024/25 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | rate, change_pp, totals, market_share, rank |
-| M-KS5-COUNTS | Post-16 grade counts | academic.results (counts) | ks5 | 2021/22–2024/25 | ✓ | ✗ | ✗ | ✓ | ✓ | ✓ | totals, rate |
+| M-KS5-COUNTS | Post-16 grade counts | academic.results (counts) | ks5 | 2021/22–2024/25 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | totals, rate |
 | M-ROLLS | Rolls | rolls | — | 2019–2025 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | totals, pct_change, market_share, index100 |
 | M-BIRTHS | Live births | social.births | — | 2021–2025 | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | totals, pct_change, index100 |
 
@@ -152,14 +152,14 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Years | 2021/22 → 2024/25. School grade rows 2021/22-2024/25 (0.6.2): academic_subject_grade_rollup through its lookup RPC when that is applied, else the modern + historic facts (src/lib/grade-rows.ts), which S1 proved equal on every key. Area grade figures 2021/22-2024/25. |
 | School | ✓ |
 | Subject area | ✗ Grade counts are per subject; a category has no single grade scale |
-| Set | ✗ No comparator grade-count view; Comparisons falls back to points (R-MEASURE-FALLBACK) |
+| Set | ✓ 0.6.2 S3: Column 1's grade spread draws the set's average share at each grade (comparator-grades; a share, not a count: R-COMPARATOR-GRADE-SHARE). Comparisons and Context still fall back to points (R-MEASURE-FALLBACK) |
 | LA | ✓ academic_subject_grade_geography_aggregate 2021-2024; every grade row needs 5 schools (R-MIN-SCHOOLS). Shown as England share ticks. |
 | Region | ✓ academic_subject_grade_geography_aggregate; min 5 schools per grade row |
 | England | ✓ academic_subject_grade_geography_aggregate; min 5 schools per grade row (England not exempt at grade grain) |
 | Honest number types | totals, rate |
-| Rules | R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-MIN-SCHOOLS, R-MEASURE-FALLBACK, R-FOCUS-NEVER-FILTERED |
+| Rules | R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-MIN-SCHOOLS, R-MEASURE-FALLBACK, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-GRADE-SHARE |
 | Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
-| Known gaps | - Until the rollup lookup RPC is applied, comparator-grades reads every subject's facts for the set and filters to one subject (audit B §2); with it, one subject is read in the database.<br>- Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK). |
+| Known gaps | - Until the rollup lookup RPC is applied, comparator-grades reads every subject's facts for the set and filters to one subject (audit B §2); with it, one subject is read in the database.<br>- Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK).<br>- The set's share ticks cover the grades this school's spread draws; a grade only other schools have isn't drawn. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_gcse_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE Key stage 4 performance |
 
@@ -290,14 +290,14 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Years | 2021/22 → 2024/25. School grade rows 2021/22-2024/25 (0.6.2): the modern + historic facts, parsed with R-HISTORIC-GRADE-LABELS (src/lib/grade-rows.ts); the rollup is not used at Post-16 (it has no zero-entry grade rows). Area grade figures 2021/22-2024/25. |
 | School | ✓ |
 | Subject area | ✗ Grade counts are per subject; a category has no single grade scale |
-| Set | ✗ No comparator grade-count view; Comparisons falls back to points (R-MEASURE-FALLBACK) |
+| Set | ✓ 0.6.2 S3: Column 1's grade spread draws the set's average share at each grade (comparator-grades; a share, not a count: R-COMPARATOR-GRADE-SHARE). Comparisons and Context still fall back to points (R-MEASURE-FALLBACK) |
 | LA | ✓ academic_subject_grade_geography_aggregate 2021-2024; every grade row needs 5 schools (R-MIN-SCHOOLS). Shown as England share ticks. |
 | Region | ✓ academic_subject_grade_geography_aggregate; min 5 schools per grade row |
 | England | ✓ academic_subject_grade_geography_aggregate; min 5 schools per grade row (England not exempt at grade grain) |
 | Honest number types | totals, rate |
-| Rules | R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-MIN-SCHOOLS, R-MEASURE-FALLBACK, R-FOCUS-NEVER-FILTERED, R-HISTORIC-GRADE-LABELS |
+| Rules | R-NON-GRADES-EXCL, R-THRESHOLD-PERIODS, R-MIN-SCHOOLS, R-MEASURE-FALLBACK, R-FOCUS-NEVER-FILTERED, R-COMPARATOR-GRADE-SHARE, R-HISTORIC-GRADE-LABELS |
 | Fetched by | - src/app/api/teacher/dashboard/route.ts (subjectData.gradeDistribution via src/lib/academic-data-view.ts:fetchSubjectLevelDataForSchools, gradeYears "four")<br>- src/app/api/teacher/comparator-grades/route.ts (src/lib/teacher-view-comparator-grades.ts)<br>- src/app/api/teacher/subject-grade-geography/route.ts (src/lib/teacher-view-grade-geography.ts) |
-| Known gaps | - comparator-grades reads every subject's facts for the set (modern + historic), then filters to one subject: the rollup can't serve Post-16 (no zero-entry grade rows).<br>- Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK). |
+| Known gaps | - comparator-grades reads every subject's facts for the set (modern + historic), then filters to one subject: the rollup can't serve Post-16 (no zero-entry grade rows).<br>- Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK).<br>- The set's share ticks cover the grades this school's spread draws; a grade only other schools have isn't drawn. |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
 
