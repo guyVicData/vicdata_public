@@ -1451,3 +1451,22 @@ Prompt: `docs/v0.6/vicdata_0_6_view_editor_rebuild_claude_code_prompt_v1.md`. Re
 - **Show this view for** in Add ticks every measure the view can honestly draw, as on AddView3. The ticks follow Data and View changes until first touched; Edit keeps the instance's ticks.
 - **The wider-system (geography) views are greyed off Average points** in "Show this view for" (R-NO-GRADE-RATE-GEO). A view already ticked there can still be unticked.
 - **The spread's mean marker** sits between measured row centres and carries its value tag ("5.3", or "≈ A" on named scales). Band labels read in the presets' order ("Shade 4–9").
+
+## 2026-10-05 — 0.6.2 grade data round
+
+Prompt: `docs/v0.6/vicdata_0_6_grade_data_round_claude_code_prompt_v1.md`. S1 findings: `docs/v0.6/grade_rollup_reconciliation_v1.md`.
+
+### S1 — reconciling the rollup (no app change)
+
+- **KS4 reads the rollup; KS5 reads the historic facts directly.**
+  - The rollup equals the facts on every key, in both phases and all four years.
+  - At KS5, though, it has no zero-entry grade rows, and the app draws them today (Grade counts and the distribution: 127 of 155 sampled subjects differ). By the prompt's own rule, KS5 doesn't use it.
+  - `dfe_ks5_subject_results_historic` parses with the unchanged `parseSubjectGradeDistribution`.
+- **The "−0.9%" in historic KS5 is the IB non-subject rows** (R-IB-NONSUBJECT): 10,478 of 1,142,093 entries in 2021. It isn't suppression, T Levels or a dropped qualification. The modern "double count" is the "All subjects" rows. The rollup sums KS5 sizes only within VRQ Level 3, and no app figure reads size (`averagePointsFor` has no caller).
+- **The rollup needs a read path:** it's granted to `authenticated` only, and anon/service_role are refused.
+  - Proposed, **not applied**: `docs/v0.6/proposed_sql/vicdata_academic_subject_grade_rollup_lookup.sql`. It's for the vicdata data database, so it isn't in this repo's `supabase/migrations/`. PGlite test: `supabase/tests/v062_s1_grade_rollup_lookup_pglite.mjs`, 8/8.
+  - **For Guy:** copy it into `vicdata/supabase/migrations/` with a fresh timestamp and apply it there. S2's KS4 path waits on it.
+- **The RPC's lineage fallback is per era** (periods to 2022 / from 2023), to match `reference_data_lookup`'s per-source fallback. Without it, 82 KS4 URNs would lose their latest-year grades and 130 would miss their historic years.
+- **No index migration:** every planned read is entity-led and served by the primary key and `entity_idx`.
+- **Historic KS5 grade labels need mapping in S2** ("COVID result", "Supp", and the vocational short codes `*`/`D`/`M`/`P`/`DD`/…). They're logged as a rule to add, for example R-HISTORIC-GRADE-LABELS, with the mapping by qualification. Otherwise S2 ships A-level-family history only and leaves vocational at two years. Guy's call if the mapping looks contentious.
+- **Found on the way, not fixed:** `lookupReferenceData`'s 50-page cap silently drops schools from a large batched grade fetch (above about 70 GCSE schools). It doesn't affect today's 10-nearest sets.

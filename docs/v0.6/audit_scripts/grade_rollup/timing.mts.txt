@@ -1,0 +1,30 @@
+// S1 timings (read-only): the facts path as the app reads it today, and the four-year
+// facts path (modern + historic sources), for one school and for a 10-nearest set, one
+// subject. Prints the set's URNs so the rollup side can be timed on the same schools.
+// Usage (repo root): npx -y tsx --env-file=.env <this> <urn> <ks4|ks5> <subject>
+const R = "/Users/guy/dev/vicdata_public/src/lib/";
+const adv = await import(R + "academic-data-view.ts");
+const ref = await import(R + "vicdata-reference.ts");
+const chooser = await import(R + "chooser-sets.ts");
+const [urn, ks, subject] = process.argv.slice(2) as [string, "ks4" | "ks5", string];
+const HIST = ks === "ks4" ? ["dfe_ks4_subject_entries_historic"] : ["dfe_ks5_subject_results_historic"];
+const time = async <T>(label: string, fn: () => Promise<T>, reps = 3) => {
+  const ms: number[] = [];
+  let out!: T;
+  for (let i = 0; i < reps; i++) { const t0 = performance.now(); out = await fn(); ms.push(performance.now() - t0); }
+  ms.sort((a, b) => a - b);
+  console.log(`${label}: median ${ms[Math.floor(reps / 2)].toFixed(0)} ms (runs ${ms.map((m) => m.toFixed(0)).join(", ")})`);
+  return out;
+};
+const nearest = await chooser.resolveDefaultNearest(urn, ks);
+const set = Array.from(new Set([...nearest.rows.map((r: { urn: string }) => r.urn), urn]));
+console.log("set", set.length, set.join(","));
+const one = await time(`one school, today (modern facts, all subjects)`, () => adv.fetchSubjectLevelDataForSchools([urn], ks));
+console.log("  rows", one.byUrn.get(urn)!.gradeDistribution.length);
+const h1 = await time(`one school, + historic facts (all subjects)`, () => Promise.all(HIST.map((s) => ref.lookupReferenceData({ sourceId: s, entityIds: [urn] }))));
+console.log("  rows", h1.flat().length);
+const all = await time(`set of ${set.length}, today (comparator-grades: modern facts, all subjects, then filtered)`, () => adv.fetchSubjectLevelDataForSchools(set, ks));
+console.log("  grade rows", [...all.byUrn.values()].reduce((a, d) => a + d.gradeDistribution.length, 0), "of which subject", [...all.byUrn.values()].reduce((a, d) => a + d.gradeDistribution.filter((g: { subject: string }) => g.subject === subject).length, 0));
+const hs = await time(`set of ${set.length}, + historic facts`, () => Promise.all(HIST.map((s) => ref.lookupReferenceData({ sourceId: s, entityIds: set }))));
+console.log("  rows", hs.flat().length);
+await time(`proxy for an RPC over the rollup grain: grade geography lookup, one subject, national`, () => ref.lookupAcademicSubjectGradeGeography({ ksStage: ks, groupingType: "national", groupingKeys: ["England"], subject }));

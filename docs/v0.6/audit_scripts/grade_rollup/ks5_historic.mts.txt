@@ -1,0 +1,49 @@
+// S1, KS5 feasibility (read-only): four years of one school's grades for a subject, read
+// the way S2 would if KS5 reads the historic facts directly -- the app's own fetch for the
+// modern years, lookupReferenceData on dfe_ks5_subject_results_historic for 2021/22-2022/23,
+// both through parseSubjectGradeDistribution (verbatim copy, not exported) -- scored with the
+// app's own thresholdRate / gradeOrderFrom, unchanged rules.
+// Usage (repo root): npx -y tsx --env-file=.env <this> <urn> <subject> [qualification]
+const R = "/Users/guy/dev/vicdata_public/src/lib/";
+const adv = await import(R + "academic-data-view.ts");
+const ref = await import(R + "vicdata-reference.ts");
+const sg = await import(R + "subject-grades.ts");
+type Row = { qualificationType: string; subject: string; period: number; grade: string; entries: number; sizeWeight: number | null };
+const SUBJECT_TOTAL_LABELS = new Set(["Total exam entries", "Total"]);
+function parseSubjectGradeDistribution(facts: { breakdown: string; value_numeric: number | null; period: number }[]): Row[] {
+  const rows: Row[] = [];
+  for (const f of facts) {
+    if (f.value_numeric === null) continue;
+    const parts = f.breakdown.split("::");
+    const grade = parts[parts.length - 1];
+    if (SUBJECT_TOTAL_LABELS.has(grade)) continue;
+    const [qualificationType, subject] = parts;
+    if (subject === "All subjects") continue;
+    const rawSize = parts.length >= 4 ? Number.parseFloat(parts[2]) : Number.NaN;
+    const sizeWeight = Number.isFinite(rawSize) ? rawSize : null;
+    rows.push({ qualificationType, subject, period: f.period, grade, entries: f.value_numeric, sizeWeight });
+  }
+  return rows;
+}
+const [urn, subject, qualArg] = process.argv.slice(2);
+const t0 = performance.now();
+const [{ byUrn }, hist] = await Promise.all([
+  adv.fetchSubjectLevelDataForSchools([urn], "ks5"),
+  ref.lookupReferenceData({ sourceId: "dfe_ks5_subject_results_historic", entityIds: [urn] }),
+]);
+const ms = performance.now() - t0;
+const rows = [...byUrn.get(urn)!.gradeDistribution, ...parseSubjectGradeDistribution(hist)].filter((g: Row) => g.subject === subject && (!qualArg || g.qualificationType === qualArg));
+console.log(`${urn} ${subject}: modern + historic facts read in ${ms.toFixed(0)} ms (in parallel); historic facts rows ${hist.length}`);
+for (const qual of [...new Set(rows.map((r: Row) => r.qualificationType))]) {
+  console.log(`  ${qual}`);
+  for (const p of [2021, 2022, 2023, 2024]) {
+    const rs = rows.filter((r: Row) => r.qualificationType === qual && r.period === p);
+    if (!rs.length) continue;
+    const by = new Map<string, number>();
+    for (const r of rs) by.set(r.grade, (by.get(r.grade) ?? 0) + r.entries);
+    const order = sg.gradeOrderFrom(by.keys());
+    const t = sg.thresholdRate(rs, "ks5");
+    const scale = sg.bestScale(by.keys());
+    console.log(`    ${p}/${String(p + 1).slice(2)}  ${order.map((g: string) => `${g}:${by.get(g)}`).join(" ")}${[...by.keys()].filter((g) => sg.NON_GRADE_VALUES.has(g)).map((g) => ` [${g}:${by.get(g)}]`).join("")}  | A*-E ${t ? t.rate.toFixed(1) + "%" : "no figure"} | scale ${scale.slice(0, 3).join(",")}...`);
+  }
+}
