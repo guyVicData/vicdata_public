@@ -16,14 +16,15 @@
 //
 // Each column supplies its own panel contents through `render`; this file knows nothing
 // about measures, subjects or schools.
-import { useEffect, useRef, type ReactNode } from "react";
+import { isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
 import { CardBox } from "./CardBox";
+import { PillRowSpacer } from "./PillMenu";
 import { ChevronDown, IconButton } from "./PanelIcons";
 import { PanelExport, PanelNote } from "./PanelFooter";
 import { PANEL_ORDER, togglePanel, type PanelId } from "@/lib/teacher-view-panels";
-import { usePlanColumn } from "@/components/dashboard-config/plan";
+import { ActiveViewContext, usePlanColumn } from "@/components/dashboard-config/plan";
 import { PanelBoundary, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
-import { configuredRail, defaultEntry, offRailEntry, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
+import { configuredRail, defaultEntry, offRailEntry, onDefault, railEntries, type RailEntry } from "@/components/dashboard-config/rail";
 import { followsResultsPill, panelState, stateDefault, stateKey, viewsOnState, type VariantState } from "@/catalogue/variants";
 import { DATAVIEWS } from "@/catalogue/dataviews";
 import type { DashboardConfig, HostId, PanelConfig } from "@/catalogue/types";
@@ -31,6 +32,9 @@ import { runtimeState, useDashboardRuntime, type DashboardRuntime } from "@/comp
 import { CopyViewSourceContext, type CopyViewSourceValue } from "@/components/copy-view/CopyViewSourceContext";
 import { copySourceFor, panelTitleOverride } from "@/lib/pin-context";
 import { ViewTitleOverrideContext } from "./SeriesViews";
+import type { ViewFrame } from "@/lib/view-series";
+import { renderView, useViewsV2 } from "@/components/views";
+import { instanceRail, isPresetInstance, liveOwnView, ownDefault, shownInstance, type ViewInstance } from "@/components/views/rail";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -76,7 +80,17 @@ export type PanelRender = {
   // "Full screen" invitation.
   visibleCaption?: ReactNode;
   suggestFullscreen?: boolean;
+  // 0.6.1 S3: the panel's data as the page has derived it, and the members' own settings on
+  // it, for the config-driven view renderer (src/lib/view-series). Read only under
+  // `views=v2`; absent = the host draws every view, as before.
+  frame?: ViewFrame;
 };
+
+// The pill row under the card header. 0.6.1 S6: a PillRowSpacer (a column with no pills of
+// its own) only holds the row's height where the columns sit side by side (md up).
+function controlsRowClass(controls: ReactNode): string {
+  return isValidElement(controls) && controls.type === PillRowSpacer ? "mt-2.5 hidden md:block print:hidden" : "mt-2.5 print:hidden";
+}
 
 export function ColumnPanels({
   columnId,
@@ -121,8 +135,13 @@ export function ColumnPanels({
   // 0.6 snag 4 / 02: the same for every axis the panel varies by (catalogue/variants.ts):
   // the Results pill, Context's Compare against, Comparisons' comparator kind.
   const page = planned ? runtimeState(runtime, followsResultsPill(planned.plan.config)) : null;
+  // 0.6.1 S3: the config-driven view renderer (`?views=v2`). Off: exactly as before.
+  const v2 = useViewsV2() && !!planned;
+  // The view of its own (a spec that isn't its preset) the member has open, per panel.
+  const [ownChosen, setOwnChosen] = useState<Record<string, string | null>>({});
+  const chooseOwn = (panelId: string) => (id: string | null) => setOwnChosen((cur) => (cur[panelId] === id ? cur : { ...cur, [panelId]: id }));
   const stateOf = (cfg: PanelConfig): VariantState | null => (planned && page ? panelState(planned.plan.config, cfg, page) : null);
-  const pendingDefaults: { key: string; first: RailEntry | null; off: RailEntry | null }[] = [];
+  const pendingDefaults: { key: string; first: RailEntry | null; off: RailEntry | null; settled: boolean; own?: { panel: string; id: string; entry: RailEntry | null } }[] = [];
   if (planned && host) {
     const seen = new Set<PanelId>();
     for (const { row, panel: cfg } of planned.column.rows) {
@@ -135,12 +154,30 @@ export function ColumnPanels({
       const state = stateOf(cfg);
       // A state with its own default opens on it the first time that state shows.
       const ownKey = state && stateDefault(cfg, state) ? `${cfg.id}:${stateKey(state)}` : cfg.id;
-      pendingDefaults.push({ key: ownKey, first: defaultEntry(entries, cfg, state), off: offRailEntry(entries, cfg, state) });
+      const first = defaultEntry(entries, cfg, state);
+      // v2: a default that is a spec of its own opens as itself, the host on its preset.
+      const ownDef = v2 ? ownDefault(cfg, state) : null;
+      pendingDefaults.push({
+        key: ownKey,
+        first,
+        off: offRailEntry(entries, cfg, state),
+        settled: !first && onDefault(entries, cfg, state),
+        ...(ownDef ? { own: { panel: cfg.id, id: ownDef.id, entry: entries.find((e) => e.dataview === ownDef.dataview) ?? null } } : {}),
+      });
     }
   }
   const applied = useRef(new Set<string>());
   useEffect(() => {
-    for (const { key, first, off } of pendingDefaults) {
+    for (const { key, first, off, settled, own } of pendingDefaults) {
+      if (own && !applied.current.has(key)) {
+        applied.current.add(key);
+        chooseOwn(own.panel)(own.id);
+        if (own.entry && !own.entry.active) own.entry.onClick?.();
+        continue;
+      }
+      // 0.6.1 S1: already on its default when it first shows -- that counts as applied, so
+      // the member's first click to another view isn't switched back.
+      if (settled) applied.current.add(key);
       if (first && !applied.current.has(key)) {
         applied.current.add(key);
         first.onClick?.();
@@ -153,7 +190,10 @@ export function ColumnPanels({
 
   // 0.6 snag 4 / 01: `title`, the view's own title (resolved), replaces the host's view
   // title in the body wherever it is drawn -- card, fullscreen, print. null = as before.
-  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null) => {
+  // 0.6.1 S2 (D10): `activeId`, the instance the panel is showing, so the body's leaves read
+  // that view's own params (ActiveViewContext; null = no plan, as before).
+  const withView = (activeId: string | null, body: ReactNode) => (activeId ? <ActiveViewContext.Provider value={activeId}>{body}</ActiveViewContext.Provider> : body);
+  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null, activeId: string | null = null) => {
         const open = panels.includes(id);
         const toggle = toggleOverride ?? (() => onPanelsChange(togglePanel(panels, id)));
         return (
@@ -203,7 +243,7 @@ export function ColumnPanels({
             // 3x3 grid rather than three ragged stacks.
             fixedHeight
           >
-            {({ fullscreen }) => (title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(fullscreen))}
+            {({ fullscreen }) => withView(activeId, title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(fullscreen))}
           </CardBox>
         );
   };
@@ -230,17 +270,33 @@ export function ColumnPanels({
           // host's own tag. Seeded configs carry no name, so they draw the host's tag as before.
           let panel = cfg.name ? { ...raw, tag: cfg.name } : raw;
           const state = stateOf(cfg);
+          const entries = host ? railEntries(raw.actions, host, id) : [];
+          // v2: the rail is the panel's instances; v1: the host's buttons, filtered (rail.tsx).
+          const own = v2 ? liveOwnView(cfg, state, ownChosen[cfg.id]) : null;
           if (host) {
-            panel = { ...panel, actions: configuredRail(railEntries(raw.actions, host, id), cfg, state) };
+            // Each button is named by its view's title, resolved for the page, where it has one.
+            const titleOf = (v: ViewInstance) => (runtime ? titleOverrideFor(plan.config, cfg, v, runtime, true) : null);
+            panel = { ...panel, actions: v2 ? instanceRail(entries, cfg, state, own, chooseOwn(cfg.id), titleOf) : configuredRail(entries, cfg, state) };
           }
-          const title = runtime && host ? titleOverrideFor(plan.config, cfg, railEntries(raw.actions, host, id), runtime, state) : null;
+          const instance = v2 ? shownInstance(cfg, entries, state, own) : activeInstance(cfg, entries, state);
+          const title = runtime && host && instance ? titleOverrideFor(plan.config, cfg, instance, runtime, v2) : null;
+          const activeId = instance?.id ?? null;
+          // v2: the showing view drawn from its spec where its kind is registered and the
+          // builder can draw it; else (or with no frame) the host's own body, as before.
+          if (v2 && instance) {
+            const hostBody = panel.body;
+            const spec = instance.spec;
+            // The instance's own settings (a numbers view's Figures), as viewParamsFor reads them.
+            const params = instance.params ?? null;
+            panel = { ...panel, body: (fullscreen: boolean) => renderView(spec, raw.frame, { fullscreen, params }) ?? hostBody(fullscreen) };
+          }
           if (embed?.frame === "figure") {
             // A meeting slot (or another frame that brings its own card): the figure alone,
             // filling the room it is given. Title, source, note and export are the slot's.
             return (
               <div key={cfg.id} data-panel-id={cfg.id} data-embed="figure" className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto">
                 <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                  {title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(embed.fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(embed.fullscreen)}
+                  {withView(activeId, title ? <ViewTitleOverrideContext.Provider value={title}>{panel.body(embed.fullscreen)}</ViewTitleOverrideContext.Provider> : panel.body(embed.fullscreen))}
                 </PanelBoundary>
               </div>
             );
@@ -248,11 +304,11 @@ export function ColumnPanels({
           const toggle = independent
             ? () => onPanelsChange(panels.includes(id) ? panels.filter((p) => p !== id) : [...panels, id])
             : undefined;
-          const copy = runtime && host ? copyValueFor(plan.config, cfg, railEntries(raw.actions, host, id), runtime, state) : null;
+          const copy = runtime && host && instance ? copyValueFor(plan.config, cfg, instance, runtime) : null;
           return (
             <div key={cfg.id} data-panel-id={cfg.id} data-row-time={row.time} data-override={cfg.override?.badge}>
               <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title)}
+                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title, activeId)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title, activeId)}
               </PanelBoundary>
             </div>
           );
@@ -261,7 +317,7 @@ export function ColumnPanels({
     return (
       <div>
         {/* An embedded view's settings are pinned, so the column's own pills stay off. */}
-        {controls && !embed && <div className="mt-2.5 print:hidden">{controls}</div>}
+        {controls && !embed && <div className={controlsRowClass(controls)}>{controls}</div>}
         {panelsShown}
       </div>
     );
@@ -269,7 +325,7 @@ export function ColumnPanels({
 
   return (
     <div>
-      {controls && <div className="mt-2.5 print:hidden">{controls}</div>}
+      {controls && <div className={controlsRowClass(controls)}>{controls}</div>}
 
       {PANEL_ORDER.map((id) => {
         const panel = render[id];
@@ -283,9 +339,7 @@ export function ColumnPanels({
 // VicData 0.6 integration: what "Copy this view…" copies from a configured panel -- the
 // view its rail has selected (else its default view), in the panel's context resolved
 // with the page's real labels, pinned from the dashboard's runtime state.
-function copyValueFor(config: DashboardConfig, cfg: PanelConfig, entries: RailEntry[], runtime: DashboardRuntime, state: VariantState | null): CopyViewSourceValue | null {
-  const instance = activeInstance(cfg, entries, state);
-  if (!instance) return null;
+function copyValueFor(config: DashboardConfig, cfg: PanelConfig, instance: ViewInstance, runtime: DashboardRuntime): CopyViewSourceValue | null {
   try {
     return { source: copySourceFor(config, cfg.id, instance, runtime), superAdmin: runtime.superAdmin };
   } catch {
@@ -304,9 +358,10 @@ function activeInstance(cfg: PanelConfig, entries: RailEntry[], state: VariantSt
 }
 
 // 0.6 snag 4 / 01: the title the panel's showing view carries in place of its host's.
-function titleOverrideFor(config: DashboardConfig, cfg: PanelConfig, entries: RailEntry[], runtime: DashboardRuntime, state: VariantState | null): string | null {
-  const instance = activeInstance(cfg, entries, state);
-  return instance ? panelTitleOverride(config, cfg.id, instance, runtime) : null;
+// 0.6.1 S3: a spec of its own carries its spec's title (resolved) when it has no title set.
+function titleOverrideFor(config: DashboardConfig, cfg: PanelConfig, instance: ViewInstance, runtime: DashboardRuntime, v2: boolean): string | null {
+  const own = v2 && !isPresetInstance(instance) && !instance.title && !instance.params?.title ? { ...instance, title: instance.spec.title } : instance;
+  return panelTitleOverride(config, cfg.id, own, runtime);
 }
 
 // Current panel rework round 1: every Current tag is the fixed word "Current", and the year

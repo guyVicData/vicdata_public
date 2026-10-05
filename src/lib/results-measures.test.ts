@@ -21,12 +21,13 @@ import type { DashboardConfig, DataviewId, DataviewInstance, ResultsMeasure } fr
 import { configViewIds } from "@/components/dashboard-config/rail";
 import * as ops from "./editor-ops";
 import { copyToDashboard, newDashboardFromView, type CopyViewSource } from "./copy-view";
+import { viewInstance } from "@/catalogue/viewspec";
 
 const gcse = () => teacherDashboardFor("ks4", "results");
 const C1T = "vicdata.ks4.results.c1.trends";
 const C1C = "vicdata.ks4.results.c1.current";
 const C2T = "vicdata.ks4.results.c2.trends";
-const view = (dataview: string, extra: Partial<DataviewInstance> = {}): DataviewInstance => ({ id: `x/${dataview}`, kind: "view", dataview: dataview as DataviewId, ...extra }) as DataviewInstance;
+const view = (dataview: string, extra: Partial<DataviewInstance> = {}): DataviewInstance => ({ ...viewInstance(`x/${dataview}`, dataview as DataviewId), ...extra }) as DataviewInstance;
 const panel = (c: DashboardConfig, id: string) => c.panels.find((p) => p.id === id)!;
 const dvs = (c: DashboardConfig, id: string, m: ResultsMeasure) => viewsOnResults(panel(c, id), m).map((v) => (v.kind === "view" ? v.dataview : v.id));
 
@@ -129,7 +130,7 @@ test("move, copy and swap keep the measures; a copy to a non-Results dashboard d
   const swapped = ops.replaceView(c0, `${C2T}/DV-C2-TR-TABLE`, view("DV-C2-TR-CHANGETABLE"));
   assert.deepEqual(effectiveResults(panel(swapped.config, C2T).dataviews.find((v) => v.id === swapped.instanceId)!), ["counts"]);
 
-  const inst = { id: `${C2T}/DV-C2-TR-TABLE`, kind: "view" as const, dataview: "DV-C2-TR-TABLE" as const, resultsMeasures: ["counts" as const] };
+  const inst = viewInstance(`${C2T}/DV-C2-TR-TABLE`, "DV-C2-TR-TABLE" as const, { resultsMeasures: ["counts" as const] });
   const source: CopyViewSource = { instance: inst, context: contextFromPanel(c0, C2T, { results: "points" }), pinned: { phase: "ks4" }, title: "Trend table" };
   const fresh = newDashboardFromView(source, { id: "mine", name: "Mine" });
   assert.equal(followsResultsPill(fresh), false);
@@ -145,10 +146,10 @@ test("move, copy and swap keep the measures; a copy to a non-Results dashboard d
 
 test("history compare says measure changes in plain words", () => {
   const added = ops.addView(gcse(), C2T, tagForPill(view("DV-C2-TR-TABLE"), "counts")).config;
-  assert.match(ops.changeSummary(gcse(), added), /^Grade counts: added \*Trend table\* to Context · Trends/);
+  assert.match(ops.changeSummary(gcse(), added), /^Grade counts: added \*Results in its category, year by year\* to Context · Trends/);
   const off = ops.setViewResults(gcse(), `${C2T}/DV-C2-TR-TABLE`, ["points", "threshold"]);
-  assert.match(ops.changeSummary(gcse(), off), /Grade bands, Grade counts: removed \*Trend table\* from Context · Trends/);
+  assert.match(ops.changeSummary(gcse(), off), /Grade bands, Grade counts: removed \*Results in its category, year by year\* from Context · Trends/);
   const def = ops.setDefaultView(gcse(), C1T, `${C1T}/DV-C1-CNT-TR-CHANGETABLE`, "counts");
-  assert.match(ops.changeSummary(gcse(), def), /Grade counts: \*Change table\* is now the default in Results · Trends/);
-  assert.match(ops.changeSummary(gcse(), ops.removeView(gcse(), `${C1T}/DV-C1-CNT-TR-SPREAD`)), /^Grade counts: removed \*Spread by year\*/);
+  assert.match(ops.changeSummary(gcse(), def), /Grade counts: \*This subject's entries at each grade: .* against .*, with the change\* is now the default in Results · Trends/);
+  assert.match(ops.changeSummary(gcse(), ops.removeView(gcse(), `${C1T}/DV-C1-CNT-TR-SPREAD`)), /^Grade counts: removed \*This subject's spread of grades: /);
 });

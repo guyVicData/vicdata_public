@@ -1,7 +1,8 @@
 "use client";
 
 // VicData 0.6 S5: the dashboard in edit mode (Editor.dc.html below the edit bar): column
-// headers with "Data: … · Compared to: …" and Edit column, rows as dashed bands with their
+// headings (0.6.1 D1: a heading only -- its "Data: … · Compared to: …" line and Edit column
+// went, as the column no longer drives its views), rows as dashed bands with their
 // icon buttons, panels at the panel unit on whole-unit tracks, and "+ Add row" with the
 // structure picker. `readOnly` draws the same thing without affordances (History preview).
 import { useState } from "react";
@@ -10,13 +11,12 @@ import type { PanelLabels } from "@/catalogue/pick";
 import { COLUMN_ICON_PATHS } from "@/components/teacher/DashboardColumn";
 import { useDismiss } from "@/components/teacher/PanelMenu";
 import { EC, EDITOR, trackWidth } from "@/lib/editor-layout";
-import { columnLine, rowCells, rowLine, structuresFor, type Structure, type Target } from "@/lib/editor-ops";
-import { ChevronDown, ChevronRight, CopyIcon, DownIcon, EBtn, IconBtn, PencilIcon, StructIcon, TrashIcon, UpIcon } from "./bits";
+import { rowCells, rowLine, structuresFor, type Structure, type Target } from "@/lib/editor-ops";
+import { ChevronDown, ChevronRight, CopyIcon, DownIcon, IconBtn, PencilIcon, StructIcon, TrashIcon, UpIcon } from "./bits";
 import { EditorPanel, EmptyCell, type PanelAction } from "./EditorPanel";
 import type { PanelPreviewComponent } from "./PanelPreview";
 
 export type CanvasHandlers = {
-  editColumn: (columnId: string) => void;
   renameColumn: (columnId: string, title: string) => void;
   rowSettings: (rowId: string) => void;
   copyRow: (rowId: string) => void;
@@ -67,7 +67,7 @@ export function EditorCanvas({
       {/* Column headers */}
       <div style={grid}>
         {config.columns.map((col) => (
-          <div key={col.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: `0 ${EDITOR.trackInset}px` }}>
+          <div key={col.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: `0 ${EDITOR.trackInset}px` }}>
             <span style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(var(--accent-rgb),0.14)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 {COLUMN_ICON_PATHS[col.icon]}
@@ -87,13 +87,7 @@ export function EditorCanvas({
                   onFocus={(e) => (e.target.style.borderBottomColor = "var(--edge-strong)")}
                 />
               )}
-              <div style={{ fontSize: 11, marginTop: 2, color: "var(--muted2)" }}>{columnLine(col, labels)}</div>
             </div>
-            {!readOnly && h && (
-              <EBtn small onClick={() => h.editColumn(col.id)}>
-                Edit column
-              </EBtn>
-            )}
           </div>
         ))}
       </div>

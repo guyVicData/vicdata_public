@@ -34,6 +34,7 @@ import {
   type DataviewId,
   type PickContext,
 } from "../src/catalogue";
+import { presetSpec, viewInstance } from "../src/catalogue/viewspec";
 
 const ids = (results: { dataview: Dataview }[]) => results.map((r) => r.dataview.id);
 
@@ -82,7 +83,8 @@ function fakeDashboard(id: string, owner: DashboardConfig["owner"], views: Datav
     layout: { preset: "1", tracks: [1], accordion: "auto-close" },
     columns: [{ id: "c1", title: "Col", icon: "candidates", data: { data: "academic.candidates", phase: "ks4" }, focus: { kind: "subject" }, compare: compare.length ? { kinds: compare } : null }],
     rows: [{ id: "r", name: "Row", time, openByDefault: true }],
-    panels: [{ id: "p", row: "r", column: "c1", dataviews: views.map((v) => ({ id: `p/${v}`, kind: "view" as const, dataview: v })) }],
+    panels: [{ id: "p", row: "r", column: "c1", // Fake dataview ids (matching only): a spec that names them, nothing more.
+    dataviews: views.map((v) => ({ id: `p/${v}`, kind: "view" as const, dataview: v, spec: { ...presetSpec("DV-C2-CUR-BARS"), preset: v } })) }],
   };
 }
 
@@ -450,7 +452,7 @@ describe("dashboard config", () => {
     const bad = structuredClone(base);
     bad.panels[1].column = bad.panels[0].column; // two panels in one cell
     bad.panels[2].span = { cols: 4, rows: 1 }; // past the last column
-    bad.panels[3].dataviews = [{ id: "x", kind: "view", dataview: "DV-NOPE" }];
+    bad.panels[3].dataviews = [{ ...viewInstance("x", "DV-C2-CUR-BARS"), dataview: "DV-NOPE" }];
     const problems = validateConfig(bad, new Set(DATAVIEWS.map((d) => d.id))).map((p) => p.message).join(" | ");
     assert.match(problems, /overlaps/);
     assert.match(problems, /spans past the last column/);
@@ -548,7 +550,7 @@ describe("embedding a config (E)", () => {
     layout: { preset: "custom", tracks: columns.map(() => 1), accordion: "auto-close" },
     columns,
     rows: [{ id: "r1", name: "Current", time: "latest", openByDefault: true }],
-    panels: columns.map((c) => ({ id: `${c.id}.r1`, row: "r1", column: c.id, dataviews: [{ id: `${c.id}.v`, kind: "view" as const, dataview: "DV-C2-CUR-BARS" as DataviewId }] })),
+    panels: columns.map((c) => ({ id: `${c.id}.r1`, row: "r1", column: c.id, dataviews: [viewInstance(`${c.id}.v`, "DV-C2-CUR-BARS" as DataviewId)] })),
   });
   it("columns resolve to hosts by data and comparison, a named host winning", async () => {
     const { hostForColumn } = await import("../src/components/dashboard-config/embed");

@@ -7,6 +7,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardConfig } from "@/catalogue/types";
 import { DASHBOARDS } from "@/catalogue/dashboards";
+import { upgradeConfig } from "@/catalogue/viewspec";
 import { isMissingTable, listDashboards, type AssignmentRow, type DashboardRow } from "@/lib/dashboards-store";
 import { shapeLine, type Me } from "@/lib/copy-view";
 import { canEditRow } from "@/lib/copy-view";
@@ -71,8 +72,9 @@ export async function configsFor(supabase: SupabaseClient, rows: DashboardRow[])
     versionIds.length ? supabase.from("dashboard_versions").select("dashboard_id, config").in("id", versionIds) : Promise.resolve({ data: [] }),
     supabase.from("dashboard_drafts").select("dashboard_id, config").in("dashboard_id", rows.map((r) => r.id)),
   ]);
-  for (const d of (drafts.data ?? []) as { dashboard_id: string; config: DashboardConfig }[]) out.set(d.dashboard_id, d.config);
-  for (const v of (versions.data ?? []) as { dashboard_id: string; config: DashboardConfig }[]) out.set(v.dashboard_id, v.config);
+  // 0.6.1 S2: a v1 config is converted on read (upgradeConfig).
+  for (const d of (drafts.data ?? []) as { dashboard_id: string; config: DashboardConfig }[]) out.set(d.dashboard_id, upgradeConfig(d.config));
+  for (const v of (versions.data ?? []) as { dashboard_id: string; config: DashboardConfig }[]) out.set(v.dashboard_id, upgradeConfig(v.config));
   for (const r of rows) {
     if (out.has(r.id)) continue;
     const seed = r.slug ? DASHBOARDS.find((d) => d.id === r.slug) : undefined;

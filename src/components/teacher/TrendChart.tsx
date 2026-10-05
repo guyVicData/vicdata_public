@@ -152,11 +152,18 @@ export function TrendChart({
   reference,
   band,
   seriesLegend = true,
+  fromZero = false,
+  endLabels = false,
 }: {
   data: PanelData;
   measure: Measure;
   showFit?: boolean;
   fullscreen?: boolean;
+  // 0.6.1 S3 (a View's look, never a figure): the value axis starts at 0 rather than
+  // just under the data; and each line's latest value printed at its right-hand end.
+  // Both off by default, so every host draws exactly as before.
+  fromZero?: boolean;
+  endLabels?: boolean;
   // Trend map/legend round: false drops the per-series entries from the legend under the
   // chart, for a caller that draws its own (Column 1's fullscreen "Subjects shown" rail,
   // where each entry is also the line's show/hide control). The band and reference
@@ -192,7 +199,7 @@ export function TrendChart({
   let max = Math.max(...all);
   if (min === max) { min -= measure.axisStep; max += measure.axisStep; }
   const pad = Math.max(measure.axisStep, (max - min) * 0.2);
-  const scaleMin = Math.max(0, Math.floor((min - pad) / measure.axisStep) * measure.axisStep);
+  const scaleMin = fromZero ? 0 : Math.max(0, Math.floor((min - pad) / measure.axisStep) * measure.axisStep);
   const scaleMax = Math.ceil((max + pad) / measure.axisStep) * measure.axisStep;
   const span = scaleMax - scaleMin || 1;
 
@@ -230,6 +237,100 @@ export function TrendChart({
   const ticks = [scaleMax, (scaleMax + scaleMin) / 2, scaleMin];
   const axisW = yAxisWidth(ticks.map((v) => measure.format(v)));
 
+  const plot = (
+    <svg
+      width="100%"
+      height={plotHeight ?? "100%"}
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      className="block min-h-0 flex-grow"
+      role="img"
+      aria-label={`${focus.label}, ${academicYearLabel(periods[0])} to ${academicYearLabel(periods[periods.length - 1])}`}
+    >
+      <line x1="0" y1={TOP} x2={W} y2={TOP} stroke="var(--panel-border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      <line x1="0" y1={(TOP + BOTTOM) / 2} x2={W} y2={(TOP + BOTTOM) / 2} stroke="var(--panel-border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      <line x1="0" y1={BOTTOM} x2={W} y2={BOTTOM} stroke="var(--panel-border2)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      {bandPoints && <polygon points={bandPoints} fill="var(--muted3)" opacity="0.18" stroke="none" />}
+      {reference && (
+        <line
+          x1="0"
+          y1={yFor(reference.value)}
+          x2={W}
+          y2={yFor(reference.value)}
+          stroke="var(--muted2)"
+          strokeWidth="1"
+          strokeDasharray="2,3"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
+      {ordered.map((s) =>
+        runsOf(s.values).map((run, ri) =>
+          run.length === 1 ? (
+            // A lone real value between two gaps still has to appear -- a one-point
+            // polyline draws nothing at all. Drawn as a short flat dash rather than a
+            // circle, because a circle in a stretched viewBox becomes an ellipse.
+            <line
+              key={`${s.key}-${ri}`}
+              x1={xFor(run[0].i)}
+              y1={yFor(run[0].v)}
+              x2={xFor(run[0].i)}
+              y2={yFor(run[0].v)}
+              stroke={s.colour}
+              strokeWidth={s.comparison ? 4 : 5}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          ) : (
+            <polyline
+              key={`${s.key}-${ri}`}
+              points={run.map((p) => `${xFor(p.i).toFixed(1)},${yFor(p.v).toFixed(1)}`).join(" ")}
+              fill="none"
+              stroke={s.colour}
+              strokeWidth={widthOf(s)}
+              strokeDasharray={s.comparison ? "4,3" : undefined}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          ),
+        ),
+      )}
+      {fit && (
+        <line
+          x1="0"
+          y1={yFor(fit.intercept)}
+          x2={W}
+          y2={yFor(fit.intercept + fit.slope * (periods.length - 1))}
+          stroke={focus.colour}
+          strokeWidth="1.3"
+          strokeDasharray="3,3"
+          opacity="0.8"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
+    </svg>
+  );
+  // endLabels: the latest real value of each line, at the plot's right edge, at its own
+  // height (HTML over the stretched SVG, as the axes are).
+  const lastLabels = endLabels
+    ? ordered.map((s) => {
+        let at = -1;
+        for (let i = s.values.length - 1; i >= 0; i--) if (s.values[i] !== null) { at = i; break; }
+        if (at < 0) return null;
+        const v = s.values[at]!;
+        return (
+          <span
+            key={`end-${s.key}`}
+            data-end-label=""
+            className="absolute right-0 translate-y-[-50%] whitespace-nowrap text-[9.5px] font-semibold tabular-nums"
+            style={{ top: `${yPercent(v)}%`, color: s.colour }}
+          >
+            {measure.format(v)}
+          </span>
+        );
+      })
+    : null;
+
   return (
     <div className="mt-1 flex min-h-0 flex-grow flex-col">
       {/* Accordion round Part 1: the plot row has a floor. In a fixed-height card the
@@ -255,77 +356,14 @@ export function TrendChart({
             </span>
           ))}
         </div>
-        <svg
-          width="100%"
-          height={plotHeight ?? "100%"}
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="none"
-          className="block min-h-0 flex-grow"
-          role="img"
-          aria-label={`${focus.label}, ${academicYearLabel(periods[0])} to ${academicYearLabel(periods[periods.length - 1])}`}
-        >
-          <line x1="0" y1={TOP} x2={W} y2={TOP} stroke="var(--panel-border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-          <line x1="0" y1={(TOP + BOTTOM) / 2} x2={W} y2={(TOP + BOTTOM) / 2} stroke="var(--panel-border)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-          <line x1="0" y1={BOTTOM} x2={W} y2={BOTTOM} stroke="var(--panel-border2)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-          {bandPoints && <polygon points={bandPoints} fill="var(--muted3)" opacity="0.18" stroke="none" />}
-          {reference && (
-            <line
-              x1="0"
-              y1={yFor(reference.value)}
-              x2={W}
-              y2={yFor(reference.value)}
-              stroke="var(--muted2)"
-              strokeWidth="1"
-              strokeDasharray="2,3"
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
-          {ordered.map((s) =>
-            runsOf(s.values).map((run, ri) =>
-              run.length === 1 ? (
-                // A lone real value between two gaps still has to appear -- a one-point
-                // polyline draws nothing at all. Drawn as a short flat dash rather than a
-                // circle, because a circle in a stretched viewBox becomes an ellipse.
-                <line
-                  key={`${s.key}-${ri}`}
-                  x1={xFor(run[0].i)}
-                  y1={yFor(run[0].v)}
-                  x2={xFor(run[0].i)}
-                  y2={yFor(run[0].v)}
-                  stroke={s.colour}
-                  strokeWidth={s.comparison ? 4 : 5}
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                />
-              ) : (
-                <polyline
-                  key={`${s.key}-${ri}`}
-                  points={run.map((p) => `${xFor(p.i).toFixed(1)},${yFor(p.v).toFixed(1)}`).join(" ")}
-                  fill="none"
-                  stroke={s.colour}
-                  strokeWidth={widthOf(s)}
-                  strokeDasharray={s.comparison ? "4,3" : undefined}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  vectorEffect="non-scaling-stroke"
-                />
-              ),
-            ),
-          )}
-          {fit && (
-            <line
-              x1="0"
-              y1={yFor(fit.intercept)}
-              x2={W}
-              y2={yFor(fit.intercept + fit.slope * (periods.length - 1))}
-              stroke={focus.colour}
-              strokeWidth="1.3"
-              strokeDasharray="3,3"
-              opacity="0.8"
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
-        </svg>
+        {endLabels ? (
+          <div className="relative flex min-h-0 flex-grow pr-11">
+            {plot}
+            {lastLabels}
+          </div>
+        ) : (
+          plot
+        )}
       </div>
 
       <XAxis periods={periods} axisWidth={axisW} />

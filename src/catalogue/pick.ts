@@ -28,6 +28,7 @@ import type {
   RowTime,
   ViewType,
 } from "./types";
+import { viewInstance } from "./viewspec";
 
 // ---------------------------------------------------------------------------------
 // The context a panel hands the chooser: column + row + override, resolved for display.
@@ -362,8 +363,17 @@ export function titleOverrideOf(v: DataviewInstance): string | null {
   const fromParams = v.params?.title;
   const own = typeof fromParams === "string" ? fromParams : v.title;
   if (!own || !own.trim() || !dv) return null;
-  return own.trim() === titleTemplateOf(dv).trim() ? null : own;
+  return own.trim() === titleTemplateOf(dv).trim() || own.trim() === RETIRED_TEMPLATES[dv.id] ? null : own;
 }
+
+// 0.6.1 S1 (pinch point 3): templates since reworded. Customise saved the template even
+// when the title wasn't touched, so a saved copy of the old words is still no override.
+const RETIRED_TEMPLATES: Partial<Record<string, string>> = {
+  "DV-C1-CAND-TR-GEO-CHART": "[subject] against the wider system",
+  "DV-C1-CAND-TR-GEO-TABLE": "[subject] against the wider system",
+  "DV-C1-RES-TR-GEO-CHART": "[subject] against the wider system",
+  "DV-C1-RES-TR-GEO-TABLE": "[subject] against the wider system",
+};
 
 // The instance's title as a reader sees it: its override resolved for this context, else
 // the dataview's own (viewTitle).
@@ -612,5 +622,5 @@ export function newInstanceId(ctx: PickPanelContext, dvId: string, custom: boole
 }
 
 export function readyMadeInstance(dv: Dataview, ctx: PickPanelContext): DataviewInstance {
-  return { id: newInstanceId(ctx, dv.id, false), kind: "view", dataview: dv.id };
+  return viewInstance(newInstanceId(ctx, dv.id, false), dv.id);
 }

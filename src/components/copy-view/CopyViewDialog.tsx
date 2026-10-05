@@ -280,7 +280,7 @@ function Dialog({ onClose, source, superAdmin = false, onCopied }: CopyViewDialo
           {done && (
             <Callout tone="green" icon={<TickIcon size={14} width={2.4} />}>
               Copied to {done.name}
-              {done.kind === "meeting" ? ` (${done.arrangement})` : done.overridden ? ", marked “overridden”" : ""}.
+              {done.kind === "meeting" ? ` (${done.arrangement})` : ""}.
             </Callout>
           )}
 
@@ -314,7 +314,7 @@ function Dialog({ onClose, source, superAdmin = false, onCopied }: CopyViewDialo
                       {fit.message}
                     </Callout>
                   )}
-                  {(!fit || fit.fits) && <Note>If the slot&rsquo;s column doesn&rsquo;t match, the view keeps its own settings and shows &ldquo;overridden&rdquo;.</Note>}
+                  {(!fit || fit.fits) && <Note>If the slot&rsquo;s column doesn&rsquo;t match, the view keeps its own settings.</Note>}
                   {cfg && data.dashboards.find((d) => d.row.id === dest)?.row.owner_scope !== "user" && <Note>It goes into the draft. Publish from the editor to show it to everyone.</Note>}
                 </>
               ) : (

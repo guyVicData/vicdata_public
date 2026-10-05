@@ -56,3 +56,24 @@ export function comparisonsCurrentView<V extends string>(rankingSet: unknown, vi
 export function onRankingMeasure(rankingSet: unknown, subjectLabel: string | null, threshold: unknown, measureId: string): boolean {
   return !!rankingSet && !subjectLabel && !threshold && measureId !== "entries";
 }
+
+/**
+ * Comparisons change-map round (moved here in 0.6.1 S3c so the series builder's maps read the
+ * same figures): each school's change as a panel measures it, keyed by URN for the map. The
+ * school's own row is keyed "own" in the panels' tables, so it maps back to its URN.
+ */
+export function changeByUrn(
+  series: { key: string; values: (number | null)[] }[],
+  targetUrn: string | undefined,
+  value: (values: (number | null)[]) => number | null,
+): Record<string, number> {
+  const byUrn: Record<string, number> = {};
+  for (const s of series) {
+    const v = value(s.values);
+    if (v !== null) byUrn[s.key === "own" ? targetUrn ?? s.key : s.key] = v;
+  }
+  return byUrn;
+}
+
+// The change map's own % format on a count: whole, signed, a true minus.
+export const signedPercent = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v))}%`;

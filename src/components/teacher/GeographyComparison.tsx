@@ -14,7 +14,8 @@
 // span.
 import { useContext, useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { fetchSubjectGeography, type GeographyPayload, type GeographyRow } from "@/lib/teacher-view-geography";
+import { fetchSubjectGeography, geographyComparison, geographyHeading, type GeographyMetric, type GeographyPayload } from "@/lib/teacher-view-geography";
+import type { FrameGeography } from "@/lib/view-series/frames";
 import { FOCUS_COLOUR, paletteInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import type { Measure } from "@/lib/teacher-view-panels";
@@ -39,7 +40,28 @@ export type GeographyInput = {
 // `id` is what was fetched: the subject, plus the qualification at Post-16, where A-level
 // and AS Psychology are two different comparisons.
 type Loaded = { id: string; data: GeographyPayload | null } | null;
-const geographyId = (g: GeographyInput) => `${g.subject}::${g.qualificationType ?? ""}`;
+export const geographyId = (g: GeographyInput) => `${g.subject}::${g.qualificationType ?? ""}`;
+
+// 0.6.1 S3c: what was fetched for THIS subject (and qualification): the payload, null when
+// the fetch came back with nothing, undefined while it is loading (or still the last
+// subject's). The hosts hand it to the series builder's frame.
+export function loadedPayload(geography: GeographyInput | undefined, geo: Loaded): GeographyPayload | null | undefined {
+  return geography && geo && geo.id === geographyId(geography) ? geo.data : undefined;
+}
+
+// 0.6.1 S3c: the geography as a view frame carries it (src/lib/view-series/frames.ts).
+export function frameGeography(geography: GeographyInput | undefined, geo: Loaded, metric: GeographyMetric): FrameGeography | null {
+  if (!geography) return null;
+  return {
+    label: geography.label,
+    applies: geography.applies,
+    notApplicableText: geography.notApplicableText,
+    metric,
+    own: geography.own,
+    payload: loadedPayload(geography, geo),
+    id: geographyId(geography),
+  };
+}
 
 // Fetched once per subject (and qualification), only when the comparison applies.
 export function useSubjectGeography(geography: GeographyInput | undefined): Loaded {
@@ -87,10 +109,12 @@ export function GeographyView({
   view: "chart" | "table";
   fullscreen: boolean;
 }) {
-  const noun = metric === "entries" ? "entries" : "average points";
   // 0.6 snag 4 / 01: a view's title override replaces the plain heading's words.
   const override = useContext(ViewTitleOverrideContext);
-  const heading = <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{override ?? `${geography.label} against the wider system`}</p>;
+  // 0.6.1 S1 (pinch point 3): each view its own words, so the two can be told apart -- the
+  // chart draws the LA and England lines (no region: it runs on top of England's), the
+  // table every area's figures with the change. Catalogue titleTemplates say the same.
+  const heading = <p className="shrink-0 text-[12px] font-semibold text-[var(--muted2)]">{override ?? geographyHeading(geography.label, view)}</p>;
   const note = (text: string) => (
     <>
       {heading}
@@ -98,11 +122,9 @@ export function GeographyView({
     </>
   );
 
-  if (!geography.applies) return note(geography.notApplicableText);
-  if (!geo || geo.id !== geographyId(geography)) return note("Loading LA, regional and national figures…");
-
   // Chart colours: the categorical palette (paletteInOrder, which skips hues near the phase
   // accent), the school in FOCUS_COLOUR. The table keeps one grey: its rows are labelled.
+  // The states, rows and years: geographyComparison (the series builder draws from it too).
   const colours = paletteInOrder(
     ["own", "area-la", "area-region", "area-national"],
     "own",
@@ -110,25 +132,20 @@ export function GeographyView({
     theme === "light" ? PALETTE_LIGHT : PALETTE_DARK,
     accentHex,
   );
-  const tiers = [
-    { key: "area-la", area: geo.data?.la, suffix: " (LA)" },
-    { key: "area-region", area: geo.data?.region, suffix: " (region)" },
-    { key: "area-national", area: geo.data?.national, suffix: "" },
-  ].filter((t): t is { key: string; area: NonNullable<typeof t.area>; suffix: string } => !!t.area);
-  const figure = (r: GeographyRow) => (metric === "entries" ? r.entries : r.avgPointScore);
-  const withFigure = tiers.filter((t) => t.area.rows.some((r) => figure(r) !== null));
-  if (withFigure.length === 0) return note(`No LA, regional or national ${noun} figures are published for ${geography.label}.`);
-
-  const geoPeriods = new Set(withFigure.flatMap((t) => t.area.rows.filter((r) => figure(r) !== null).map((r) => r.period)));
-  const shown = spanPeriods.filter((p) => geoPeriods.has(p));
-  const at = (rows: GeographyRow[], p: number) => {
-    const row = rows.find((r) => r.period === p);
-    return row ? figure(row) : null;
-  };
-  const series = [
-    { key: "own", label: "This school", colour: FOCUS_COLOUR, values: shown.map((p) => geography.own[ownPeriods.indexOf(p)] ?? null) },
-    ...withFigure.map((t) => ({ key: t.key, label: `${t.area.name}${t.suffix}`, colour: colours.get(t.key)!, values: shown.map((p) => at(t.area.rows, p)) })),
-  ];
+  const got = geographyComparison({
+    label: geography.label,
+    applies: geography.applies,
+    notApplicableText: geography.notApplicableText,
+    payload: loadedPayload(geography, geo),
+    metric,
+    own: geography.own,
+    ownPeriods,
+    spanPeriods,
+    colourOf: (key) => colours.get(key)!,
+  });
+  if (got.state === "note") return note(got.text);
+  const shown = got.periods;
+  const series = got.lines;
 
   if (view === "table") {
     return (

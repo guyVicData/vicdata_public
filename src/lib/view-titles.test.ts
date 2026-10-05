@@ -11,9 +11,10 @@ import { copySourceFor, panelTitleOverride, type RuntimeLabels } from "./pin-con
 import { slotTitle } from "./meeting-views";
 import { changeSummary } from "./editor-ops";
 import { oneViewConfig } from "@/components/dashboard-config/embed";
+import { viewInstance } from "@/catalogue/viewspec";
 
 type View = Extract<DataviewInstance, { kind: "view" }>;
-const view = (dataview: string, extra: Partial<View> = {}): View => ({ id: `x/${dataview}`, kind: "view", dataview: dataview as DataviewId, ...extra });
+const view = (dataview: string, extra: Partial<View> = {}): View => (viewInstance(`x/${dataview}`, dataview as DataviewId, { ...extra }));
 const rt: RuntimeLabels = {
   school: { urn: "100053", name: "Acland Burghley School" },
   results: "points",
@@ -72,7 +73,7 @@ test("instanceTitle: the override resolved, else the dataview's title", () => {
 test("meeting slots: a title with placeholders is filled from the pin; a plain one stays", () => {
   const s = (title?: string): SlideConfig["slots"][number] => ({
     id: "s",
-    view: { id: "v", kind: "view", dataview: "DV-C2-CUR-BARS", ...(title ? { title } : {}), pinned: { phase: "ks4", data: "academic.candidates", subjectLabel: "History", schoolName: "Acland Burghley School", compare: { kind: "subjects", name: "Humanities" }, year: "2024/25" }, keepLive: false },
+    view: { ...viewInstance("v", "DV-C2-CUR-BARS"), ...(title ? { title } : {}), pinned: { phase: "ks4", data: "academic.candidates", subjectLabel: "History", schoolName: "Acland Burghley School", compare: { kind: "subjects", name: "Humanities" }, year: "2024/25" }, keepLive: false },
   });
   assert.equal(slotTitle(s("[subject] at [school], [year]")), "History at Acland Burghley School, 2024/25");
   assert.equal(slotTitle(s("Our history entries")), "Our history entries");
@@ -94,6 +95,35 @@ test("History's change summary says when a view's title changes", () => {
   const p = next.panels.find((x) => x.column === "c2" && x.row === "current")!;
   const i = p.dataviews.findIndex((v) => v.kind === "view" && v.dataview === "DV-C2-CUR-BARS");
   p.dataviews[i] = { ...(p.dataviews[i] as View), title: "[subject] beside the rest", params: { title: "[subject] beside the rest" } };
-  assert.match(changeSummary(prev, next), /Retitled \*Bar chart\* “\[subject\] beside the rest” in /);
-  assert.match(changeSummary(next, prev), /\*Bar chart\* in .* has its own title again/);
+  // 0.6.1 S1: named by its resolved titles, never a placeholder or the internal "Bar chart".
+  assert.match(changeSummary(prev, next), /Retitled \*Results by subject in its category\* “This subject beside the rest” in /);
+  assert.match(changeSummary(next, prev), /\*This subject beside the rest\* in .* is called “Results by subject in its category” again/);
+});
+
+// 0.6.1 S6 polish (round 4 item 01, the rail tooltip): a member's rail button is named by its
+// view's resolved title where the instance has one; with no title it is its host's button,
+// unchanged; a disabled host button keeps its own words (why it is off).
+test("rail tooltips: the view's title where it has one, else the host's button as it is", async () => {
+  const { createElement } = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { instanceRail } = await import("@/components/views/rail");
+  const { IconButton, TrendLineIcon } = await import("@/components/teacher/PanelIcons");
+  const titled = view("DV-C1-RES-TR-GEO-CHART", { title: "[subject] beside its area" });
+  const plain = view("DV-C1-RES-TR-GEO-TABLE");
+  const panel = { id: "p", row: "r", column: "c", dataviews: [titled, plain], defaultView: titled.id };
+  const button = (label: string, disabled = false) => createElement(IconButton, { label, disabled, children: TrendLineIcon });
+  const entries = [
+    { dataview: titled.dataview, label: "Area chart", active: true, disabled: false, element: button("Area chart") },
+    { dataview: plain.dataview, label: "Change table", active: false, disabled: false, element: button("Change table") },
+  ];
+  const titleOf = (v: View) => (v.title ? v.title.replace("[subject]", "History") : null);
+  const html = renderToStaticMarkup(createElement("div", null, instanceRail(entries as never, panel as never, null, null, () => {}, titleOf)));
+  assert.match(html, /title="History beside its area"/);
+  assert.match(html, /aria-label="History beside its area"/);
+  assert.match(html, /title="Change table"/);
+  assert.doesNotMatch(html, /title="Area chart"/);
+  // Disabled: the host's own words stay.
+  const off = [{ ...entries[0], disabled: true, element: button("Area chart: average points only", true) }, entries[1]];
+  const html2 = renderToStaticMarkup(createElement("div", null, instanceRail(off as never, panel as never, null, null, () => {}, titleOf)));
+  assert.match(html2, /title="Area chart: average points only"/);
 });

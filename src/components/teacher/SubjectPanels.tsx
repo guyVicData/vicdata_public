@@ -34,7 +34,7 @@ import {
   type PanelId,
 } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
-import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
+import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
@@ -43,11 +43,12 @@ import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
-import { GradeDistribution, type GradeRow } from "./GradeDistribution";
-import { NON_GRADE_VALUES, bandRate, gradeOrderFrom, type GradeRange } from "@/lib/subject-grades";
+import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { GradeDistribution } from "./GradeDistribution";
+import { bandDistribution } from "@/lib/grade-spread";
+import { bandRate, inlineRangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { useSubjectGradeGeography, withEnglandBandBenchmark, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
-import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { RankingsMap } from "./RankingsMap";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { ShareDonut } from "./ShareDonut";
@@ -56,9 +57,8 @@ import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
 import { VerticalBars } from "./VerticalBars";
 import { RankedList } from "./RankedList";
-import { usePlanViewParams } from "@/components/dashboard-config/plan";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
-import { applyMainLabel, applyTileFigures, readTileParams } from "@/lib/tile-figures";
+import type { FrameSchoolGroup, FrameSet, SubjectsFrame } from "@/lib/view-series/frames";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -108,6 +108,8 @@ export function SubjectPanels({
   gradeBand,
   rankedViews = false,
   compareAgainstLabel,
+  schoolGroup,
+  schoolSet,
 }: {
   columnId: string;
   periods: number[];
@@ -225,16 +227,14 @@ export function SubjectPanels({
   // view when set. Context never passes it.
   tiles?: boolean;
   // Grade bands frontend round: Results on Grade bands. The range lives on the page (so
-  // Comparisons and Context read the same span); this draws its preset chips, the Grades
-  // view where a custom span is clicked out, and the range's own tiles. The rates
-  // themselves arrive as the usual subjects' values and England benchmark.
+  // Comparisons and Context read the same span); this draws the Grades view and the
+  // range's own tiles. The rates themselves arrive as the usual subjects' values and
+  // England benchmark. 0.6.1 S5 (D3): the range is picked in the top bar (ResultsControl);
+  // the in-panel band row and click-two-grades picking are gone, and the Grades view is the
+  // focused subject's grade distribution with the picked band shaded.
   gradeBand?: {
     range: GradeRange | null;
     rangeLabel: string | null;
-    presets: { id: string; label: string; top: string; bottom: string }[];
-    onPreset: (top: string, bottom: string) => void;
-    pending: string | null;
-    onGradeClick: (grade: string) => void;
     colour: string;
     // The focused subject's own per-grade rows (this school, every year it has them).
     ownRows: { period: number; grade: string; entries: number }[];
@@ -252,6 +252,10 @@ export function SubjectPanels({
   // category ("Sciences & Maths"), "all subjects" or "the subjects you selected" -- for
   // the titles over Context's donut, bar chart, ranked list and table. Absent = no title.
   compareAgainstLabel?: string;
+  // 0.6.1 S3c: what a view of its own's "Add an average" reads (the page's groups of
+  // subjects, and its Compared against set), built on demand. Read only under views=v2.
+  schoolGroup?: FrameSchoolGroup;
+  schoolSet?: () => FrameSet | null;
   trendMap?: {
     profiles: AcademicSchoolProfile[] | null;
     targetUrn: string;
@@ -291,8 +295,6 @@ export function SubjectPanels({
   const changeView: "chart" | "table" = trendsView === "changeTable" ? "table" : "chart";
   const setChangeView = (v: "chart" | "table") => setTrendsView(v === "table" ? "changeTable" : "changeChart");
   const geo = useSubjectGeography(geography);
-  // 0.6 snag 3 / 01: the tiles view's own figure settings, under a config (else none).
-  const tileParams = readTileParams(usePlanViewParams(columnId, "DV-C1-RES-CUR-TILES"));
   const runtime = useDashboardRuntime();
   // Grade bands: England's per-grade rows for the focused subject, every year, one fetch.
   const gradeGeo = useSubjectGradeGeography(gradeBand?.geography ?? null);
@@ -421,10 +423,10 @@ export function SubjectPanels({
     // the same span, and the gap -- per the grade bands prompt, in place of the rank.
     const inBand = latest !== null && gradeBand.range ? bandRate(gradeBand.ownRows.filter((r) => r.period === latest), gradeBand.range) : null;
     if (inBand) {
-      tileRow.push({ key: "count", icon: GradesIcon, figure: inBand.met.toLocaleString(), detail: `of ${inBand.entries.toLocaleString()} graded entries at ${(gradeBand.rangeLabel ?? "").toLowerCase()}`, vars: { total: inBand.entries } });
+      tileRow.push({ key: "count", icon: GradesIcon, figure: inBand.met.toLocaleString(), detail: `of ${inBand.entries.toLocaleString()} graded entries at ${inlineRangeLabel(gradeBand.rangeLabel ?? "")}`, vars: { total: inBand.entries } });
     }
     if (tileFocus.bench !== null) {
-      tileRow.push({ key: "england-average", icon: AverageIcon, figure: measure.format(tileFocus.bench), detail: `England, ${(gradeBand.rangeLabel ?? "").toLowerCase()}` });
+      tileRow.push({ key: "england-average", icon: AverageIcon, figure: measure.format(tileFocus.bench), detail: `England, ${inlineRangeLabel(gradeBand.rangeLabel ?? "")}` });
       const gap = tileFocus.value - tileFocus.bench;
       const dir = measure.formatDelta(gap).replace("−", "+") === measure.formatDelta(0) ? "flat" : directionOf(gap);
       tileRow.push({ key: "england", icon: FlagIcon, figure: measure.formatDelta(gap), detail: dir === "flat" ? "level with England" : `${dir === "up" ? "above" : "below"} England`, direction: dir, vars: { direction: dir === "flat" ? "level with" : dir === "up" ? "above" : "below" } });
@@ -461,46 +463,14 @@ export function SubjectPanels({
     school: runtime?.school?.name,
     year: latest === null ? undefined : academicYearLabel(latest),
     measure: measure.noun,
-    range: gradeBand?.rangeLabel?.toLowerCase(),
+    range: gradeBand?.rangeLabel ? inlineRangeLabel(gradeBand.rangeLabel) : undefined,
   };
-  const tilesMain = applyMainLabel(tilesMainBuilt, tileParams, tileVars);
-  const tilesShown = applyTileFigures(tileRow, tileParams, tileVars);
 
   // Grade bands: the focused subject's distribution in the year Current shows, with
   // England's share at each grade (no tick where England's row was suppressed), and its
   // entries inside the range -- both from the same rows bandRate reads.
-  const bandOwnLatest = gradeBand && latest !== null ? gradeBand.ownRows.filter((r) => r.period === latest && !NON_GRADE_VALUES.has(r.grade)) : [];
-  const bandEnglandLatest = latest !== null ? englandGradeRows.filter((r) => r.period === latest && !NON_GRADE_VALUES.has(r.grade)) : [];
-  const bandOwnTotal = bandOwnLatest.reduce((a, r) => a + r.entries, 0);
-  const bandEnglandTotal = bandEnglandLatest.reduce((a, r) => a + r.entries, 0);
-  const bandDistribution: GradeRow[] = gradeOrderFrom(bandOwnLatest.map((r) => r.grade), bandEnglandLatest.map((r) => r.grade)).map((g) => {
-    const eng = bandEnglandLatest.filter((r) => r.grade === g);
-    return {
-      grade: g,
-      ownCount: bandOwnLatest.filter((r) => r.grade === g).reduce((a, r) => a + r.entries, 0),
-      benchPct: eng.length && bandEnglandTotal > 0 ? (eng.reduce((a, r) => a + r.entries, 0) / bandEnglandTotal) * 100 : null,
-    };
-  });
-
-  // Grade bands: the range row under the panel header -- the presets where the scale has
-  // them (GCSE 9-1 only), the range in use, and the way into the Grades view for a custom
-  // span. A pending first click says so.
-  const bandControls = gradeBand ? (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {gradeBand.presets.map((p) => (
-        <Pill
-          key={p.id}
-          label={`Grades ${p.label}`}
-          active={!!gradeBand.range && gradeBand.range.top === p.top && gradeBand.range.bottom === p.bottom && !gradeBand.pending}
-          onClick={() => gradeBand.onPreset(p.top, p.bottom)}
-        />
-      ))}
-      <Pill label={gradeBand.presets.length ? "Custom…" : "Pick grades…"} active={effectiveView === "grades"} onClick={() => setView("grades")} />
-      <span className="text-[11.5px] text-[var(--muted)]">
-        {gradeBand.pending ? `From ${gradeBand.pending}: click the other end` : gradeBand.rangeLabel ?? "No range yet"}
-      </span>
-    </div>
-  ) : undefined;
+  // (0.6.1 S3d: src/lib/grade-spread.ts, which the renderer reads too.)
+  const band = bandDistribution(gradeBand?.ownRows ?? [], englandGradeRows, gradeBand ? latest : null);
 
   // Current panel rework round 1: a title over each of Context's Current views. The donut's
   // wording is Guy's; the bar chart / ranked list / table one is provisional. On Grade
@@ -510,14 +480,13 @@ export function SubjectPanels({
     ? null
     : effectiveView === "donut"
       ? donutShare
-        ? `Entries at ${donutShare.label.toLowerCase()} as a proportion of graded entries in ${compareAgainstLabel}`
+        ? `Entries at ${inlineRangeLabel(donutShare.label)} as a proportion of graded entries in ${compareAgainstLabel}`
         : `Entries in ${focusedSubject?.label ?? "this subject"} as a proportion of ${compareAgainstLabel}`
       : effectiveView === "bar" || effectiveView === "list" || effectiveView === "table"
         ? `${scopeNounCurrent} by subject in ${compareAgainstLabel}`
         : null;
 
   const current: PanelRender = {
-    controls: bandControls,
     // Current panel rework round 1: the tag is the fixed word "Current" in every column, and
     // the year follows it as plain text ("Data 2024/25"). currentLabel no longer builds the
     // tag; it stays a prop as the column's own name for titles.
@@ -537,7 +506,7 @@ export function SubjectPanels({
     actions: (
       <>
         {tiles && <IconButton label="Number tiles" active={effectiveView === "tiles"} onClick={() => setView("tiles")}>{TilesIcon}</IconButton>}
-        {gradeBand && <IconButton label="Grades (pick a range)" active={effectiveView === "grades"} onClick={() => setView("grades")}>{GradesIcon}</IconButton>}
+        {gradeBand && <IconButton label="Grade distribution" active={effectiveView === "grades"} onClick={() => setView("grades")}>{GradesIcon}</IconButton>}
         {donut && (
           <IconButton
             label={donut.enabled ? "Share (donut)" : "Share is only meaningful for candidate numbers"}
@@ -561,16 +530,15 @@ export function SubjectPanels({
         <>
           <ViewTitle>{currentTitle}</ViewTitle>
           {effectiveView === "grades" && gradeBand ? (
-            bandOwnTotal > 0 ? (
+            band.total > 0 ? (
               <CentredOnTarget watch={`grades:${focusedKey}`}>
                 <GradeDistribution
-                  rows={bandDistribution}
-                  total={bandOwnTotal}
+                  rows={band.rows}
+                  total={band.total}
                   colour={gradeBand.colour}
                   range={gradeBand.range}
-                  pending={gradeBand.pending}
-                  onGradeClick={gradeBand.onGradeClick}
-                  benchLabel={englandGradeRows.length ? `England, ${latest === null ? "" : academicYearLabel(latest)}` : null}
+                  pending={null}
+                  benchLabel={band.benchLabel}
                   fullscreen={fullscreen}
                 />
               </CentredOnTarget>
@@ -579,15 +547,10 @@ export function SubjectPanels({
             )
           ) : gradeBand && !gradeBand.range ? (
             // An honest empty state rather than a band nobody chose: this scale has no
-            // preset, so the rate waits for a range.
-            <div className="flex flex-col items-start gap-2 text-sm text-[var(--muted)]">
-              <p>Pick a range to see a rate: open Grades and click one grade, then another.</p>
-              <button type="button" onClick={() => setView("grades")} className="rounded-md border border-[var(--panel-border2)] px-2 py-1 text-[12px] font-semibold text-[var(--fg)]">
-                Open Grades
-              </button>
-            </div>
+            // preset, so the rate waits for a range -- picked in the top bar (0.6.1 S5).
+            <p data-band-no-range="" className="text-sm text-[var(--muted)]">Pick a grade range from Grades ▾ in the top bar to see a rate.</p>
           ) : effectiveView === "tiles" ? (
-            <NumberTiles main={tilesMain} tiles={tilesShown} fullscreen={fullscreen} />
+            <ConfiguredNumberTiles main={tilesMainBuilt} tiles={tileRow} vars={tileVars} fullscreen={fullscreen} />
           ) : effectiveView === "donut" && donut ? (
             donutPercent === null ? (
               <p className="text-xs text-[var(--muted)]">
@@ -1046,6 +1009,58 @@ export function SubjectPanels({
     source: isChange ? changeHalf.source : trendHalf.source,
   };
 
+  // 0.6.1 S3: what the config-driven view renderer draws from (under `views=v2` only): the
+  // props this host was handed, as the page derived them, and the members' own settings.
+  const groupKind = columnId === "context" ? (runtime?.contextAgainst === "whole" ? "allSubjects" : runtime?.contextAgainst === "selected" ? "selectedSubjects" : "category") : "category";
+  const frame: SubjectsFrame = {
+    kind: "subjects",
+    host: columnId === "context" ? "teacher.c2.context" : "teacher.c1.results",
+    periods,
+    subjects,
+    measure,
+    focus,
+    groups,
+    groupKind,
+    benchmarkKind: benchmarkLabel ? (columnId === "context" ? groupKind : "england") : null,
+    benchmarkLabel,
+    deltaHeading,
+    rankedTable,
+    rankedViews,
+    spaciousBars,
+    categoryLabel,
+    compareAgainstLabel,
+    changeScope,
+    cardTrend,
+    theme,
+    accentHex,
+    currentBlocked: subjects.length === 0 || (!!gradeBand && !gradeBand.range),
+    hasGeography: !!geography,
+    tiles: !!tiles,
+    gradeBand: gradeBand
+      ? { range: gradeBand.range, rangeLabel: gradeBand.rangeLabel, ownRows: gradeBand.ownRows, englandRows: englandGradeRows, colour: gradeBand.colour }
+      : null,
+    schoolName: runtime?.school?.name,
+    // S3c: the phase (D7's honest options), Context's donut, Results' geography comparison
+    // (the fetch above, as fetched) and Results' Trend map.
+    phase: runtime?.phase,
+    donut: donut ?? null,
+    geography: frameGeography(geography, geo, "avgPointScore"),
+    trendMap: trendMap
+      ? {
+          profiles: trendMap.profiles,
+          targetUrn: trendMap.targetUrn,
+          stage: trendMap.stage,
+          chip: { subject: trendMap.subject, legend: trendMap.subjectLabel, bucket: trendMap.subjectBucket, familyId: trendMap.familyId },
+          accentHex: trendMap.accentHex,
+          allowed: true,
+          subjectLabel: trendMap.subjectLabel,
+        }
+      : null,
+    schoolGroup,
+    schoolSet,
+    state: { trendStart, changeStart, showFit, latestIdx, hiddenKeys, sort, onSort: (key) => setSort(nextSort(sort, key)) },
+  };
+
   return (
     <ColumnPanels
       columnId={columnId}
@@ -1070,9 +1085,10 @@ export function SubjectPanels({
                     {current.body(fullscreen)}
                   </>
                 ),
+                frame,
               }
-            : current,
-        trend,
+            : { ...current, frame },
+        trend: { ...trend, frame },
       }}
     />
   );

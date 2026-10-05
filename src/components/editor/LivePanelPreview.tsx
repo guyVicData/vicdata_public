@@ -4,15 +4,19 @@
 // school -- super-admin's look-as school, else their own membership school. The school
 // comes through EditorSchoolContext (so this stays one static component, as the editor's
 // `Preview` prop wants); with no school it is the data-free stand-in.
+//
+// 0.6.1 S4: the editor previews always render v2 -- the instance's own spec through
+// renderView (SpecPreview), so a view of its own previews as itself, not as its preset.
 import { createContext, useContext } from "react";
 import dynamic from "next/dynamic";
+import type { PreviewPin } from "@/components/view-editor/SpecPreview";
 import { dataviewById } from "@/catalogue";
 import { contextFromPanel } from "@/catalogue/pick";
 import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import { DataFreePreview, type PanelPreviewProps } from "./PanelPreview";
 import { EditorVariantsContext } from "./EditorPanel";
 
-const LiveViewPreview = dynamic(() => import("@/components/chooser-v06/LiveViewPreview").then((m) => m.LiveViewPreview), { ssr: false });
+const SpecPreview = dynamic(() => import("@/components/view-editor/SpecPreview").then((m) => m.SpecPreview), { ssr: false });
 
 export const EditorSchoolContext = createContext<PinSchool>(null);
 
@@ -28,12 +32,14 @@ export function LivePanelPreview(props: PanelPreviewProps) {
     const against = variants?.state.compareAgainst;
     if (against && dv.host.id === "teacher.c2.context")
       pinned = { ...pinned, params: { ...(pinned.params ?? {}), against, ...(against === "selected" && variants?.contextSelected ? { selected: variants.contextSelected } : {}) } };
+    // 0.6.1 S5: on Grade bands, the edit bar's band (embed.ts writes it as band:range).
+    if (variants?.band) pinned = { ...pinned, params: { ...(pinned.params ?? {}), bandRange: variants.band } };
   } catch {
     return <DataFreePreview {...props} />;
   }
   return (
     <div data-preview="live" style={{ width: props.width, height: props.height, borderRadius: 8, overflow: "hidden" }}>
-      <LiveViewPreview dataview={dv} context={{ ...pinned, schoolUrn: school.urn }} width={props.width} height={props.height} frame="figure" params={props.view.params} title={props.view.title} />
+      <SpecPreview id={props.view.id} dataview={dv} spec={props.view.spec} params={props.view.params} pinned={{ ...pinned, schoolUrn: school.urn } as PreviewPin} box={{ width: props.width, height: props.height }} width={props.width} />
     </div>
   );
 }

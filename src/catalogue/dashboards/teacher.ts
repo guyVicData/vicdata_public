@@ -24,6 +24,7 @@ import {
   type Phase,
   type RowConfig,
 } from "../types";
+import { viewInstance } from "../viewspec";
 
 type Mode = "candidates" | "results";
 
@@ -129,7 +130,8 @@ function panel(dashboardId: string, phase: Phase, column: "c1" | "c2" | "c3", co
     row: row.id,
     column,
     span: { cols: 1, rows: 1 },
-    dataviews: set[which].map((dv) => ({ id: `${id}/${dv}`, kind: "view" as const, dataview: dv })),
+    // 0.6.1 S2: each instance keeps its id and carries its dataview's preset ViewSpec (D10).
+    dataviews: set[which].map((dv) => viewInstance(`${id}/${dv}`, dv)),
     defaultView: `${id}/${set.defaults[which]}`,
     legacy: {
       columnKey,

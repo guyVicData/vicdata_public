@@ -44,10 +44,14 @@ export function VerticalBars({
   bars,
   measure,
   fullscreen = false,
+  average,
 }: {
   bars: VerticalBar[];
   measure: Measure;
   fullscreen?: boolean;
+  // 0.6.1 S3, a bar view's look: a dashed line across the bars at an average of the bars
+  // drawn (upright form; a dashed line down the rows on its side). Absent: as before.
+  average?: { value: number; label: string };
 }) {
   // The chart fills whatever height its container gives it, measured, rather than a
   // hand-tuned constant: the old fixed 90px dated from the 232px card and left the bars
@@ -62,7 +66,7 @@ export function VerticalBars({
   // round number, which on a real dashboard meant Candidates' tallest bar of 231 being
   // drawn against an axis top of 500 -- half the height, for no reason a reader could
   // see. The axis figures are the data's own now, not a rounder number near it.
-  const top = hasData ? Math.max(...real) : 0;
+  const top = hasData ? Math.max(...real, ...(average ? [average.value] : [])) : 0;
   const ticks = [1, 0.75, 0.5, 0.25, 0];
   // The axis is as wide as its widest figure needs, not a fixed 30px: this panel's
   // figures are mostly one or two digits ("37", "9"), and the fixed box left ~17px of
@@ -162,6 +166,7 @@ export function VerticalBars({
       // measured element, so a wider card (fullscreen, a resize) can turn it upright again.
       <div ref={box} className="mt-1 flex flex-col">
         <HorizontalBars bars={bars} measure={measure} top={top} labelW={Math.min(text?.labelW ?? HLABEL_MAX, HLABEL_MAX, Math.floor(measured.w * 0.4))} />
+        {average && <AverageKey average={average} measure={measure} />}
       </div>
     );
   }
@@ -193,6 +198,14 @@ export function VerticalBars({
           <div key={t} className="absolute inset-x-0 h-px bg-[var(--panel-border)]" style={{ top: 6 + (1 - t) * bodyH }} />
         ))}
         <div className="absolute inset-x-0 h-px bg-[var(--panel-border2)]" style={{ top: 6 + bodyH }} />
+        {average && top > 0 && (
+          <div
+            data-average-line=""
+            className="absolute inset-x-0 z-10 h-0 border-t border-dashed border-[var(--fg)] opacity-60"
+            style={{ top: 6 + (1 - average.value / top) * bodyH }}
+            title={`${average.label}: ${measure.format(average.value)}`}
+          />
+        )}
         {/* pt-[6px] matches the axis SVG's own 6px inset, which is what keeps the two
             columns' baselines on the same line without absolute positioning. pr-4: scrolled
             fully right, the last bar and its label clear the edge rather than meeting it. */}
@@ -264,6 +277,16 @@ function HorizontalBars({ bars, measure, top, labelW }: { bars: VerticalBar[]; m
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// 0.6.1 S3: the average line's key, under bars drawn on their side.
+function AverageKey({ average, measure }: { average: { value: number; label: string }; measure: Measure }) {
+  return (
+    <div className="mt-1.5 flex items-center gap-1.5">
+      <span className="inline-block h-0 w-3 border-t border-dashed border-[var(--fg)] opacity-60" />
+      <span className="text-[10.5px] text-[var(--muted3)]">{average.label}: {measure.format(average.value)}</span>
     </div>
   );
 }

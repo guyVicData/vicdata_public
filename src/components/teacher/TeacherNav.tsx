@@ -12,7 +12,7 @@
 // --muted / --panel-bg / --panel-border2, which also have light-theme values.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { getActiveViewAs } from "@/lib/view-as";
 import { fetchNavLabels, saveNavLabels } from "@/lib/teacher-view-data";
@@ -292,6 +292,7 @@ export function PhoneNav({
   focusKey,
   onFocus,
   onEditSubjects,
+  results,
   className = "",
 }: {
   phase: TeacherPhase;
@@ -304,6 +305,9 @@ export function PhoneNav({
   focusKey: string | null;
   onFocus: (key: string) => void;
   onEditSubjects: () => void;
+  // 0.6.1 S5 (D3 + D4): the Results switch and grade band choice (ResultsControl), a row
+  // of their own under row 2 -- Results mode only.
+  results?: ReactNode;
   // The page's breakpoint class (sm:hidden) -- the swap point is the page's call.
   className?: string;
 }) {
@@ -328,6 +332,7 @@ export function PhoneNav({
           <SubjectMenu subjects={subjects} focusKey={focusKey} onFocus={onFocus} onEditSubjects={onEditSubjects} />
         )}
       </div>
+      {results && <div className="pt-2.5">{results}</div>}
     </div>
   );
 }

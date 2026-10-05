@@ -37,6 +37,8 @@ export function ViewChart({
   markerLabel,
   formatValue,
   spacious = false,
+  average,
+  values = true,
 }: {
   computed: ComputedView;
   unit: string;
@@ -50,6 +52,11 @@ export function ViewChart({
   // labels that wrap to two lines instead of truncating, in a slightly wider label column.
   // Off by default, so Context's bars and Comparisons' graph are unchanged.
   spacious?: boolean;
+  // 0.6.1 S3, a bar view's look (row layout): a dashed line down every row at an average
+  // of the bars drawn, named once under them; `values` false leaves the figures off the
+  // rows. Absent / true: as before.
+  average?: { value: number; label: string };
+  values?: boolean;
 }) {
   if (computed.series && computed.periods) {
     const periods = computed.periods;
@@ -101,7 +108,7 @@ export function ViewChart({
   // The scale has to cover the markers too, or a benchmark above every bar sits off the
   // end of its own track and reads as "nobody is near it" rather than "everyone is below".
   const markers = rows.map((r) => r.marker).filter((v): v is number => v !== null && v !== undefined);
-  const max = scaleMax ?? (Math.max(...vals, ...markers) || 1);
+  const max = scaleMax ?? (Math.max(...vals, ...markers, ...(average ? [average.value] : [])) || 1);
 
   if (layout === "row") {
     const pct = (v: number) => Math.max(0, Math.min(100, (v / max) * 100));
@@ -144,14 +151,29 @@ export function ViewChart({
                   title={`${markerLabel ?? "Benchmark"}: ${show(r.marker)}`}
                 />
               )}
+              {average && (
+                <span
+                  data-average-line=""
+                  className="absolute -bottom-1 -top-1 w-0 border-l border-dashed border-[var(--fg)] opacity-60"
+                  style={{ left: `${pct(average.value)}%` }}
+                />
+              )}
             </span>
-            <span
-              className={`w-11 shrink-0 text-right text-xs tabular-nums ${r.value === null ? "text-[var(--muted3)]" : `font-semibold ${r.emphasis ? "font-extrabold" : ""}`}`}
-            >
-              {r.value === null ? "—" : show(r.value)}
-            </span>
+            {values && (
+              <span
+                className={`w-11 shrink-0 text-right text-xs tabular-nums ${r.value === null ? "text-[var(--muted3)]" : `font-semibold ${r.emphasis ? "font-extrabold" : ""}`}`}
+              >
+                {r.value === null ? "—" : show(r.value)}
+              </span>
+            )}
           </div>
         ))}
+        {average && (
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block h-3 w-0 border-l border-dashed border-[var(--fg)] opacity-60" />
+            <span className="text-[10.5px] text-[var(--muted3)]">{average.label}: {show(average.value)}</span>
+          </div>
+        )}
         {markerLabel && markers.length > 0 && (
           <div className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-0.5 shrink-0 rounded-[1px] bg-[var(--fg)]" />

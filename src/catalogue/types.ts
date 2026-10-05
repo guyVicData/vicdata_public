@@ -9,6 +9,8 @@
 // Code is the source of truth: docs/catalogue/*.md is generated from these objects by
 // scripts/catalogue-export.ts, and the Catalogue page (/platform/catalogue) reads them.
 
+import type { ViewSpec } from "./viewspec";
+
 // ---------------------------------------------------------------------------------
 // Shared vocabularies
 
@@ -18,7 +20,7 @@ export type DataId = "academic.candidates" | "academic.results" | "rolls" | "soc
 
 export type Phase = "ks4" | "ks5";
 
-// The Results sub-measure pill (MeasurePicker): APS / Grade 4+ / grade bands / grade counts.
+// The Results sub-measure pill (ResultsControl, the top bar since 0.6.1 S5): APS / Grade 4+ / grade bands / grade counts.
 export type ResultsMeasure = "points" | "threshold" | "bands" | "counts";
 
 // 0.6 snag 4 / 02: the other page states a view can vary by (src/catalogue/variants.ts).
@@ -211,7 +213,10 @@ export type Dataview = {
 // ---------------------------------------------------------------------------------
 // The dashboard config (stored as JSON; scope brief §1)
 
-export const CONFIG_SCHEMA_VERSION = 1 as const;
+// 0.6.1 S2: 2 -- every view instance carries its ViewSpec (src/catalogue/viewspec.ts). A
+// stored version-1 meeting or custom dashboard is converted on read (upgradeConfig); a
+// version-1 VicData dashboard draws the code copy until the re-seed (D9).
+export const CONFIG_SCHEMA_VERSION = 2 as const;
 
 export type LayoutPreset = "1" | "2" | "3" | "4" | "2:1" | "1:2" | "1:1:2" | "custom";
 
@@ -266,7 +271,12 @@ export type DataviewInstance =
   | {
       id: string;
       kind: "view";
+      // The key the column hosts draw the view by, until S3's renderer reads `spec` alone.
       dataview: DataviewId;
+      // 0.6.1 S2: the view's whole recipe. Translated views carry their dataview's preset
+      // (spec.preset === dataview, validateConfig checks it); make instances with
+      // viewInstance() / retarget() (viewspec.ts) so the two never drift.
+      spec: ViewSpec;
       // Customise's choices (CustomViewParams), plus NumberTilesParams on a tiles view.
       params?: Record<string, unknown>;
       title?: string;

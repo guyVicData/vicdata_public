@@ -102,6 +102,7 @@ export function SortTable({
   fullscreen = false,
   leadingRank = false,
   showValue = true,
+  showDelta = true,
 }: {
   rows: SortRow[];
   sort: SortState;
@@ -115,6 +116,8 @@ export function SortTable({
   leadingRank?: boolean;
   // false drops the value column, where another view on the panel already shows it.
   showValue?: boolean;
+  // 0.6.1 S3, a table view's look: false drops the third ("vs …") column.
+  showDelta?: boolean;
 }) {
   const sorted = applySort(rows, sort);
   const rankOf = new Map(
@@ -134,7 +137,7 @@ export function SortTable({
         )}
         <Header label={columns.name} sortKey="name" sort={sort} onSort={onSort} className="min-w-0 flex-grow text-left" />
         {showValue && <Header label={columns.value} sortKey="value" sort={sort} onSort={onSort} className="w-14 shrink-0 justify-end text-right" />}
-        <Header label={columns.delta} sortKey="delta" sort={sort} onSort={onSort} className="w-[5.5rem] shrink-0 justify-end text-right" />
+        {showDelta && <Header label={columns.delta} sortKey="delta" sort={sort} onSort={onSort} className="w-[5.5rem] shrink-0 justify-end text-right" />}
       </div>
       {sorted.map((r) => (
         <div
@@ -153,7 +156,7 @@ export function SortTable({
               {r.valueLabel}
             </span>
           )}
-          <span className={`w-[5.5rem] shrink-0 text-right font-semibold tabular-nums ${tone(r.deltaTone)}`}>{r.deltaLabel}</span>
+          {showDelta && <span className={`w-[5.5rem] shrink-0 text-right font-semibold tabular-nums ${tone(r.deltaTone)}`}>{r.deltaLabel}</span>}
         </div>
       ))}
     </div>

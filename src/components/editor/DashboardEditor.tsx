@@ -22,11 +22,17 @@ import { followsResultsPill, showsOn, tagForPill } from "@/catalogue/results";
 import { configAxes, panelState, showsOnState, type VariantAxis, type VariantState } from "@/catalogue/variants";
 import { measuresFor } from "@/lib/teacher-view-panels";
 import { PillMenu } from "@/components/teacher/PillMenu";
+import { ResultsControl } from "@/components/teacher/ResultsControl";
+import { GCSE_SCALE, GRADE_SCALES, type GradeRange } from "@/lib/subject-grades";
+import { bandRangeFor } from "@/lib/teacher-view-measures";
 import { MenuHeading, MenuRow } from "@/components/teacher/PanelMenu";
 import { SwitchButton } from "@/components/edit-mode/EditSwitch";
-import { contextFromPanel, settingsOf, titleOverrideOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
+import { contextFromPanel, titleOverrideOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
 import { DASHBOARDS, groupOf } from "@/catalogue/dashboards";
 import { AddViewChooser } from "@/components/chooser-v06/AddViewChooser";
+import { ViewEditor } from "@/components/view-editor/ViewEditor";
+import { columnHostOf, sideOf, type EditorEnv, type ViewInstance } from "@/components/view-editor/model";
+import { effectiveResults } from "@/catalogue/results";
 import type { SubjectSource } from "@/components/chooser-v06/StepScreens";
 import type { PinSchool } from "@/lib/pin-context";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
@@ -50,8 +56,7 @@ import * as ops from "@/lib/editor-ops";
 import { loadViewRequests, plannedMarkdown } from "@/lib/editor-export";
 import { AssignDialog, assignedTo, type AssignDraft } from "./AssignDialog";
 import { ChevronDown, ChevronUp, EBtn } from "./bits";
-import { ContextStepsDialog, contextFromColumn } from "./ContextSteps";
-import { ColumnChangeDialog, ExportDialog, PublishDialog, RowSettingsDialog, SaveAsDialog, SlotMapDialog, SpanAskDialog, TextDialog } from "./Dialogs";
+import { ExportDialog, PublishDialog, RowSettingsDialog, SaveAsDialog, SlotMapDialog, SpanAskDialog, TextDialog } from "./Dialogs";
 import { EditorCanvas, canvasWidth, type CanvasHandlers } from "./EditorCanvas";
 import { EditorVariantsContext, type EditorVariants, type PanelAction } from "./EditorPanel";
 import { HistoryPanel } from "./HistoryPanel";
@@ -85,22 +90,26 @@ export type DashboardEditorProps = {
   // 0.6 snag 4 / 02: the page's own Compare against and comparator kind, so the editor's
   // pills open on them (as the Results pill opens on labels.results).
   // `selected`: Context's selected subjects, for live previews on "Selected subjects".
-  states?: { compareAgainst?: CompareAgainstState; comparator?: ComparatorState; selected?: string[] };
+  // `band` (0.6.1 S5): the focused subject's grade scale and the page's band range, so the
+  // editor's Results control opens on them.
+  states?: { compareAgainst?: CompareAgainstState; comparator?: ComparatorState; selected?: string[]; band?: { scale: string[]; range: { top: string; bottom: string } | null } };
 };
 
 type DialogState =
   | null
   | { kind: "add"; target: ops.Target; ctx: PickPanelContext }
+  // 0.6.1 S4: Add a view / Edit view (AddView1-3, EditView, EditWide). The 0.6 chooser
+  // stays for planned views (its placeholder form, from "Something else? Plan it" and a
+  // placeholder's own Edit), Swap, and columns with no host (Rolls, Live births).
+  | { kind: "view-editor"; mode: "add" | "edit"; target: ops.Target; env: EditorEnv; instance?: ViewInstance }
+  | { kind: "plan"; target: ops.Target; ctx: PickPanelContext }
   // Snag 1 / 03: the view menu's "Edit this view…" (Customise, or a placeholder's form) and
   // "Swap for another view…" (Pick): the chooser's pick replaces the instance in place.
   | { kind: "replace"; mode: "edit" | "swap"; instance: DataviewInstance; ctx: PickPanelContext }
   | { kind: "row"; rowId: string }
-  | { kind: "column"; columnId: string; ctx: PickPanelContext }
-  | { kind: "column-change"; columnId: string; patch: ops.ColumnPatch; impact: ops.ColumnImpact }
-  | { kind: "override"; panelId: string; ctx: PickPanelContext }
   | { kind: "span"; panelId: string; cols: number; options: ops.SpanOption[] }
   | { kind: "rename-panel"; panelId: string }
-  | { kind: "slot"; mode: "move-view" | "copy-view" | "move-panel"; panelId: string; instanceId: string | null }
+  | { kind: "slot"; mode: "move-view" | "copy-view" | "move-or-copy-view" | "move-panel"; panelId: string; instanceId: string | null }
   | { kind: "settings" }
   | { kind: "assign" }
   | { kind: "publish" }
@@ -122,7 +131,9 @@ const RAIL_MENU_CSS =
   `.ed-rv[data-open] .ed-rv-icon,.ed-rv:has(:focus-visible) .ed-rv-icon{${AMBER_ICON}}` +
   `.ed-rv[data-open] .ed-rv-tab,.ed-rv:has(:focus-visible) .ed-rv-tab{${TAB_ON}}` +
   `@media (hover:hover){.ed-rv:hover .ed-rv-icon{${AMBER_ICON}}.ed-rv:hover .ed-rv-tab{${TAB_ON}}}` +
-  `@media (hover:none){.ed-rv[data-active] .ed-rv-tab{${TAB_ON}}}`;
+  `@media (hover:none){.ed-rv[data-active] .ed-rv-tab{${TAB_ON}}}` +
+  // 0.6.1 S5 (RailMenu.dc.html): the menu's rows (.mrow:hover) and the arrows of Move up / down.
+  `button.ed-mrow:not(:disabled):hover,.ed-mrow-arrow:not(:disabled):hover{background:${EC.hover}}`;
 
 const OWNER_WORD = { vicdata: "VicData", school: "School", user: "Personal" } as const;
 
@@ -152,6 +163,10 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   // 0.6 snag 3 / 03: the Results pill (on a Results dashboard): the page's pill when the
   // editor opens in place, else Average points. Rails, previews and the view menu follow it.
   const [pill, setPill] = useState<ResultsMeasure>(hostLabels?.results ?? "points");
+  // 0.6.1 S5 (D3): the band the editor previews Grade bands on -- the page's when the
+  // editor opens in place; else, with no subject to read a scale from, GCSE 9–1's 7–9 (or,
+  // at Post-16, the A-level scale with no range until one is picked).
+  const [band, setBand] = useState<{ top: string; bottom: string } | null>(() => hostStates?.band ? hostStates.band.range : null);
   // 0.6 snag 4 / 02: Context's Compare against and Comparisons' comparator kind, each with
   // its own pill, opening on the page's state.
   const [against, setAgainst] = useState<CompareAgainstState>(hostStates?.compareAgainst ?? "category");
@@ -259,6 +274,9 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   const pillMeasures = measuresFor(config.columns[0]?.data.phase ?? "ks4");
   const pillLabels = Object.fromEntries(pillMeasures.map((m) => [m.id, m.label])) as Record<ResultsMeasure, string>;
   const pillOn = resultsPill ? pill : null;
+  const phaseNow = config.columns[0]?.data.phase ?? "ks4";
+  const bandScale = hostStates?.band?.scale ?? (phaseNow === "ks5" ? GRADE_SCALES[2] : GCSE_SCALE);
+  const bandRange: GradeRange | null = band ? { scale: bandScale, ...band } : bandRangeFor(bandScale, null, undefined);
   // Titles and previews read the editor's pill, not the page's.
   const labels = useMemo(() => (resultsPill ? { ...hostLabels, results: pill } : hostLabels), [resultsPill, hostLabels, pill]);
   // 0.6 snag 4 / 02: one pill per variant axis the dashboard has (catalogue/variants.ts),
@@ -286,6 +304,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
         state: editorState,
         axes: axisInfo,
         contextSelected: hostStates?.selected,
+        band: pill === "bands" && bandRange ? { top: bandRange.top, bottom: bandRange.bottom } : null,
         showAll,
         onShowOn: (panelId, instanceId, axis: VariantAxis, states) => {
           const inst = config.panels.flatMap((p) => p.dataviews).find((v) => v.id === instanceId);
@@ -347,16 +366,54 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     [config, labels],
   );
 
+  // 0.6.1 S4: where a view goes, for the Add a view / Edit view screens: the column's host,
+  // the panel's half, and the measure (the editor's pill; an instance not shown on it opens
+  // on the first measure it shows on). null = a column with no host: the 0.6 chooser.
+  const editorEnv = (target: ops.Target, inst?: ViewInstance): EditorEnv | null => {
+    const host = columnHostOf(config, target);
+    if (!host) return null;
+    const ctx = panelCtx(target);
+    const results = ctx.data === "academic.results";
+    let measure: EditorEnv["measure"] = results ? pill : "entries";
+    if (results && inst) {
+      const on = effectiveResults(inst);
+      if (on.length && !on.includes(pill)) measure = on[0];
+    }
+    return { phase: ctx.phase, columnHost: host, side: sideOf(config, target), measure, followsPill: !!resultsPill && results, ctx: results ? { ...ctx, results: measure as ResultsMeasure } : ctx };
+  };
+
   const panelAction = (panelId: string, a: PanelAction, instanceId: string | null) => {
     if (a === "rename") return setDialog({ kind: "rename-panel", panelId });
-    if (a === "override") return setDialog({ kind: "override", panelId, ctx: contextFromPanel(config, panelId, labels) });
     if (a === "move-panel") return setDialog({ kind: "slot", mode: "move-panel", panelId, instanceId });
     if (a === "delete-panel") return apply((c) => ops.deletePanel(c, panelId));
     if (!instanceId) return;
     const inst = config.panels.find((p) => p.id === panelId)?.dataviews.find((v) => v.id === instanceId);
     if (!inst) return;
+    if (a === "edit-view" && inst.kind === "view") {
+      const env = editorEnv(panelId, inst);
+      if (env) return setDialog({ kind: "view-editor", mode: "edit", target: panelId, env, instance: inst });
+    }
     if (a === "edit-view" || a === "swap-view") return setDialog({ kind: "replace", mode: a === "edit-view" ? "edit" : "swap", instance: inst, ctx: contextFromPanel(config, panelId, labels) });
+    // 0.6.1 S5 (RailMenu): Remove everywhere deletes the view from every measure; Take off
+    // [measure] unticks the edit bar's measure only (pinch point 6), with an Undo toast.
     if (a === "remove-view") return apply((c) => ops.removeView(c, instanceId));
+    if (a === "take-off") {
+      const m = stateOfPanel(panelId)?.results;
+      if (!m) return;
+      try {
+        ops.takeOffState(config, instanceId, "results", m);
+      } catch (e) {
+        if (e instanceof ops.EditorError) return setToast(e.message);
+        throw e;
+      }
+      apply((c) => ops.takeOffState(c, instanceId, "results", m));
+      const name = inst.kind === "view" ? (titleOverrideOf(inst) ?? dataviewById(inst.dataview)?.label ?? inst.dataview) : inst.description;
+      const text = `${name} no longer shows on ${pillLabels[m]}.`;
+      setUndoFor(text);
+      setToast(text);
+      return;
+    }
+    if (a === "move-or-copy-view") return setDialog({ kind: "slot", mode: "move-or-copy-view", panelId, instanceId });
     if (a === "make-default") return apply((c) => ops.setDefaultView(c, panelId, instanceId, stateOfPanel(panelId)));
     if (a === "view-up" || a === "view-down") return apply((c) => ops.moveViewWithinPanel(c, instanceId, a === "view-up" ? -1 : 1));
     if (a === "move-view") return setDialog({ kind: "slot", mode: "move-view", panelId, instanceId });
@@ -383,16 +440,15 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   };
 
   const handlers: CanvasHandlers = {
-    editColumn: (columnId) => {
-      const col = config.columns.find((c) => c.id === columnId)!;
-      setDialog({ kind: "column", columnId, ctx: contextFromColumn(col, { dashboard: config.name, labels }) });
-    },
     renameColumn: (columnId, title) => apply((c) => ops.applyColumnChange(c, columnId, { title })),
     rowSettings: (rowId) => setDialog({ kind: "row", rowId }),
     copyRow: (rowId) => apply((c) => ops.copyRow(c, rowId)),
     moveRow: (rowId, dir) => apply((c) => ops.moveRow(c, rowId, dir)),
     deleteRow: (rowId) => apply((c) => ops.deleteRow(c, rowId)),
-    addView: (target) => setDialog({ kind: "add", target, ctx: panelCtx(target) }),
+    addView: (target) => {
+      const env = editorEnv(target);
+      setDialog(env ? { kind: "view-editor", mode: "add", target, env } : { kind: "add", target, ctx: panelCtx(target) });
+    },
     panelAction,
     reorder: (panelId, from, to) => apply((c) => ops.reorderView(c, panelId, from, to)),
     swapIn: (instanceId: string, dv: Dataview) => apply((c) => ops.swapInPlaceholder(c, instanceId, dv.id)),
@@ -402,19 +458,6 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       else apply((c) => ops.setSpan(c, panelId, cols, undefined, labels));
     },
     addRow: (structure) => apply((c) => ops.addRow(c, { structure })),
-  };
-
-  // A column's new settings from Steps 1-2: only the fields that really changed, so a
-  // column following the Results pill keeps following it.
-  const columnPatch = (columnId: string, before: PickPanelContext, after: PickPanelContext): ops.ColumnPatch => {
-    const a = settingsOf(before);
-    const b = settingsOf(after);
-    const patch: ops.ColumnPatch = {};
-    if (JSON.stringify(a.data) !== JSON.stringify(b.data)) patch.data = b.data;
-    if (JSON.stringify(a.focus) !== JSON.stringify(b.focus)) patch.focus = b.focus;
-    if (JSON.stringify(a.compare) !== JSON.stringify(b.compare)) patch.compare = b.compare;
-    void columnId;
-    return patch;
   };
 
   const onSettings = (v: SettingsValue) => {
@@ -619,18 +662,17 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {axes.length > 0 && (
               <div data-editor-pill="" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {/* 0.6 snag 3 / 03: the page's own Results pill, for the editor's rails. */}
+                {/* 0.6.1 S5 (D3 + D4): the members' own top-bar control -- Results and, on Grade
+                    bands, the grade band -- for the editor's rails and previews. */}
                 {resultsPill && (
-                <PillMenu label="Results" value={pillLabels[pill]} menuLabel="Switch measure" width={236} align="right">
-                  {(close) => (
-                    <>
-                      <MenuHeading>Switch measure</MenuHeading>
-                      {pillMeasures.map((m) => (
-                        <MenuRow key={m.id} label={m.label} selected={m.id === pill} onClick={() => { setPill(m.id as ResultsMeasure); close(); }} />
-                      ))}
-                    </>
-                  )}
-                </PillMenu>
+                  <ResultsControl
+                    measures={pillMeasures}
+                    active={{ id: pill, label: pillLabels[pill] }}
+                    onMeasure={(id) => setPill(id as ResultsMeasure)}
+                    band={{ scale: bandScale, range: bandRange, onRange: (top, bottom) => setBand({ top, bottom }) }}
+                    align="right"
+                    nowrap
+                  />
                 )}
                 {/* 0.6 snag 4 / 02: Context's own Compare against pill -- the page's words. */}
                 {axes.includes("compareAgainst") && (
@@ -716,6 +758,52 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       )}
 
       {/* Dialogs */}
+      {dialog?.kind === "view-editor" && (
+        <ViewEditor
+          mode={dialog.mode}
+          env={dialog.env}
+          instance={dialog.instance}
+          school={school}
+          subjects={subjects}
+          theme={theme}
+          contextState={{ against, selected: hostStates?.selected, ...(pill === "bands" && bandRange ? { band: { top: bandRange.top, bottom: bandRange.bottom } } : {}) }}
+          onClose={() => setDialog(null)}
+          onPlan={() => setDialog({ kind: "plan", target: dialog.target, ctx: dialog.env.ctx })}
+          onSave={(instance) => {
+            const { target, mode } = dialog;
+            setHistory((h) => {
+              try {
+                const r = mode === "edit" && dialog.instance ? ops.updateView(h.present, dialog.instance.id, instance) : ops.addView(h.present, target, instance);
+                setSelected((s) => ({ ...s, [r.panelId]: r.instanceId }));
+                return ops.record(h, r.config);
+              } catch (e) {
+                if (e instanceof ops.EditorError) setToast(e.message);
+                return h;
+              }
+            });
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog?.kind === "plan" && (
+        <AddViewChooser
+          open
+          theme={theme}
+          context={dialog.ctx}
+          superAdmin={superAdmin}
+          school={school}
+          subjects={subjects}
+          startAt="placeholder"
+          onClose={() => setDialog(null)}
+          onAdd={() => setDialog(null)}
+          onPlaceholder={(p: PlaceholderRequest) => {
+            const target = dialog.target;
+            apply((c) => ops.addPlaceholder(c, target, p).config);
+            setDialog(null);
+          }}
+          persistAsk={false}
+        />
+      )}
       {dialog?.kind === "add" && (
         <AddViewChooser
           open
@@ -791,49 +879,6 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           }}
         />
       )}
-      {dialog?.kind === "column" && (
-        <ContextStepsDialog
-          original={dialog.ctx}
-          superAdmin={superAdmin}
-          theme={theme}
-          onClose={() => setDialog(null)}
-          onDone={(ctx) => {
-            const patch = columnPatch(dialog.columnId, dialog.ctx, ctx);
-            if (!Object.keys(patch).length) return setDialog(null);
-            const impact = ops.columnChangeImpact(config, dialog.columnId, patch, labels);
-            if (impact.misfits.length || impact.placeholders.length) setDialog({ kind: "column-change", columnId: dialog.columnId, patch, impact });
-            else {
-              apply((c) => ops.applyColumnChange(c, dialog.columnId, patch, {}, labels));
-              setDialog(null);
-            }
-          }}
-        />
-      )}
-      {dialog?.kind === "column-change" && (
-        <ColumnChangeDialog
-          config={config}
-          columnId={dialog.columnId}
-          patch={dialog.patch}
-          impact={dialog.impact}
-          onClose={() => setDialog(null)}
-          onConfirm={(choices) => {
-            apply((c) => ops.applyColumnChange(c, dialog.columnId, dialog.patch, choices, labels));
-            setDialog(null);
-          }}
-        />
-      )}
-      {dialog?.kind === "override" && (
-        <ContextStepsDialog
-          original={dialog.ctx}
-          superAdmin={superAdmin}
-          theme={theme}
-          onClose={() => setDialog(null)}
-          onDone={(ctx) => {
-            apply((c) => ops.setOverride(c, dialog.panelId, ops.overrideTo(c, dialog.panelId, ctx, labels)));
-            setDialog(null);
-          }}
-        />
-      )}
       {dialog?.kind === "span" && (
         <SpanAskDialog
           options={dialog.options}
@@ -864,15 +909,19 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           from={dialog.panelId}
           mode={dialog.mode === "move-panel" ? "panel" : "view"}
           allowGaps
-          title={dialog.mode === "move-panel" ? "Move panel" : dialog.mode === "move-view" ? "Move this view to another panel" : "Copy this view"}
+          moveOrCopy={dialog.mode === "move-or-copy-view"}
+          title={dialog.mode === "move-panel" ? "Move panel" : dialog.mode === "move-or-copy-view" ? "Move or copy to another panel" : dialog.mode === "move-view" ? "Move this view to another panel" : "Copy this view"}
           sub={dialog.mode === "copy-view" && !onCopyView ? "Copying to another dashboard comes with Copy this view; for now, a panel here." : config.name}
           onClose={() => setDialog(null)}
-          onPick={(t) => {
+          onPick={(t, how) => {
             const { panelId, instanceId, mode } = dialog;
             if (mode === "move-panel") {
               const dest = typeof t === "string" ? config.panels.find((p) => p.id === t)! : null;
               apply((c) => ops.movePanel(c, panelId, dest ? dest.row : (t as { row: string }).row, dest ? dest.column : (t as { column: string }).column));
-            } else if (instanceId) apply((c) => (mode === "move-view" ? ops.moveView(c, instanceId, t) : ops.copyView(c, instanceId, t)).config);
+            } else if (instanceId) {
+              const move = mode === "move-view" || (mode === "move-or-copy-view" && how !== "copy");
+              apply((c) => (move ? ops.moveView(c, instanceId, t) : ops.copyView(c, instanceId, t)).config);
+            }
             setDialog(null);
           }}
         />

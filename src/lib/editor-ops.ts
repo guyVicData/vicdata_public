@@ -13,6 +13,7 @@
 //
 // Tests: npx -y tsx --test src/lib/editor-ops.test.ts
 import { DATAVIEWS, DATAVIEW_IDS, dataviewById, whyNot } from "@/catalogue";
+import { summaryViewName } from "@/lib/change-summary";
 import { validateConfig as validateCore, type ConfigProblem } from "@/catalogue/config";
 import {
   DATA_LABEL,
@@ -66,6 +67,7 @@ import {
   type VariantState,
 } from "@/catalogue/variants";
 import { measuresFor } from "./teacher-view-panels";
+import { viewInstance } from "@/catalogue/viewspec";
 
 export class EditorError extends Error {}
 
@@ -452,7 +454,7 @@ export function applyColumnChange(
     if (choice(m) === "swap" && m.nearest) {
       const id = freeId(c, `${p.id}/${m.nearest}`);
       if (p.defaultView === m.instanceId) p.defaultView = id;
-      p.dataviews[i] = { id, kind: "view", dataview: m.nearest };
+      p.dataviews[i] = viewInstance(id, m.nearest);
     } else {
       p.dataviews.splice(i, 1);
       if (p.defaultView === m.instanceId) delete p.defaultView;
@@ -733,6 +735,18 @@ export function setViewStates<A extends VariantAxis>(config: DashboardConfig, in
   return c;
 }
 
+// 0.6.1 S5 (RailMenu, pinch point 6): "Take off [measure]" -- untick one state, the view
+// stays on every other state it shows on (and in the config). Taking it off its last state
+// is refused: that is Remove everywhere (removeView), which deletes it from every state.
+export function takeOffState<A extends VariantAxis>(config: DashboardConfig, instanceId: string, axis: A, state: AxisStateMap[A]): DashboardConfig {
+  const { panel, index } = findView(config, instanceId);
+  const on = effectiveStates(panel.dataviews[index], axis) as AxisStateMap[A][];
+  if (!on.includes(state)) fail(`That view isn't shown on ${axisStateLabel(axis, state, dashPhase(config))}.`);
+  const rest = on.filter((s) => s !== state);
+  if (!rest.length) fail(`That view shows only on ${axisStateLabel(axis, state, dashPhase(config))}: use Remove everywhere to delete it.`);
+  return setViewStates(config, instanceId, axis, rest);
+}
+
 // The states' names as the pills say them, joined: "Grade counts · Selected subjects".
 // `category` names Context's category option ("Arts, Media & Design subjects") when known.
 export function stateLabel(state: VariantState, phase: Phase, category?: string | null): string {
@@ -801,6 +815,18 @@ export function replaceView(config: DashboardConfig, instanceId: string, instanc
   return { config: checked(c), panelId: panel.id, instanceId: id };
 }
 
+// 0.6.1 S4: Edit view's Save -- the instance's new recipe in place, keeping its id (D10:
+// members' open rows and chosen views key on it) even when the host preset it is drawn by
+// changes. The defaults that pointed at it stay on it where it still shows on their state.
+export function updateView(config: DashboardConfig, instanceId: string, instance: Extract<DataviewInstance, { kind: "view" }>): { config: DashboardConfig; panelId: string; instanceId: string } {
+  const c = clone(config);
+  const { panel, index } = findView(c, instanceId);
+  const next: DataviewInstance = { ...clone(instance), id: instanceId };
+  panel.dataviews[index] = next;
+  remapStateDefaults(panel, (x, st) => (x === instanceId ? (showsOnState(next, st) ? x : undefined) : x));
+  return { config: checked(c), panelId: panel.id, instanceId };
+}
+
 export function moveView(config: DashboardConfig, instanceId: string, target: Target): { config: DashboardConfig; panelId: string; instanceId: string } {
   const c = clone(config);
   const { panel, index } = findView(c, instanceId);
@@ -842,7 +868,7 @@ export function swapInPlaceholder(config: DashboardConfig, instanceId: string, d
   const { panel, index } = findView(c, instanceId);
   if (panel.dataviews[index].kind !== "placeholder") fail("That isn't a planned view.");
   const id = freeId(c, `${panel.id}/${dataview}`);
-  panel.dataviews[index] = { id, kind: "view", dataview };
+  panel.dataviews[index] = viewInstance(id, dataview);
   if (panel.defaultView === instanceId) panel.defaultView = id;
   remapStateDefaults(panel, (x) => (x === instanceId ? id : x));
   return checked(c);
@@ -918,16 +944,10 @@ export function redo(h: History): History {
 // The change summary (§4.8): "Added *Maths points vs 10 nearest* to Comparisons · Trends;
 // renamed row “Trends” to “Over time”".
 
-// 0.6 snag 4 / 01: its own title as written (placeholders and all) when it has one, else
-// its dataview's label -- never Customise's unedited template.
-function viewName(v: DataviewInstance): string {
-  if (v.kind === "placeholder") return v.description;
-  return titleOverrideOf(v) ?? dataviewById(v.dataview)?.label ?? v.dataview;
-}
-
-function dataviewLabel(v: DataviewInstance): string {
-  return v.kind === "placeholder" ? v.description : (dataviewById(v.dataview)?.label ?? v.dataview);
-}
+// 0.6.1 S1 (pinch point 1): a view's member-facing name -- its title (its own, else its
+// dataview's) resolved for its panel with no school (change-summary.ts), never a raw
+// placeholder or the catalogue's internal label ("Area chart").
+const viewName = summaryViewName;
 
 function placeOf(c: DashboardConfig, p: PanelConfig): string {
   const col = c.columns.find((x) => x.id === p.column)?.title ?? p.column;
@@ -1012,7 +1032,7 @@ export function diffConfigs(prev: DashboardConfig, next: DashboardConfig): strin
     if (!o) continue;
     const name = (id: string | undefined) => {
       const v = p.dataviews.find((x) => x.id === id);
-      return v ? viewName(v) : null;
+      return v ? viewName(next, p, v) : null;
     };
     if (o.defaultView !== p.defaultView && name(p.defaultView)) out.push(`*${name(p.defaultView)}* is now the default view in ${where(p)}`);
     // 0.6 snag 4 / 02: a default for a state of several axes ("Grade counts · Selected subjects").
@@ -1040,8 +1060,8 @@ export function diffConfigs(prev: DashboardConfig, next: DashboardConfig): strin
       const after = effectiveResults(v);
       const added = after.filter((m) => !before.includes(m));
       const gone = before.filter((m) => !after.includes(m));
-      if (added.length) head.push(`${names(added)}: added *${viewName(v)}* to ${where(p)}`);
-      if (gone.length) head.push(`${names(gone)}: removed *${viewName(v)}* from ${where(p)}`);
+      if (added.length) head.push(`${names(added)}: added *${viewName(next, p, v, added[0])}* to ${where(p)}`);
+      if (gone.length) head.push(`${names(gone)}: removed *${viewName(next, p, v, gone[0])}* from ${where(p)}`);
     }
     if (was && was.p.id === p.id)
       for (const a of ["compareAgainst", "comparator"] as const) {
@@ -1049,26 +1069,26 @@ export function diffConfigs(prev: DashboardConfig, next: DashboardConfig): strin
         const after = effectiveStates(v, a) as string[];
         const added = after.filter((s) => !before.includes(s));
         const gone = before.filter((s) => !after.includes(s));
-        if (added.length) head.push(`${axisNames(a, added)}: added *${viewName(v)}* to ${where(p)}`);
-        if (gone.length) head.push(`${axisNames(a, gone)}: removed *${viewName(v)}* from ${where(p)}`);
+        if (added.length) head.push(`${axisNames(a, added)}: added *${viewName(next, p, v)}* to ${where(p)}`);
+        if (gone.length) head.push(`${axisNames(a, gone)}: removed *${viewName(next, p, v)}* from ${where(p)}`);
       }
     if (!was) {
       // A placeholder swapped for a view in the same slot reads as one change.
       const swapped = prev.panels.find((x) => x.id === p.id)?.dataviews.find((x) => x.kind === "placeholder" && !nextView.has(x.id));
-      if (swapped && v.kind === "view") head.push(`swapped in *${viewName(v)}* for the planned “${viewName(swapped)}” in ${where(p)}`);
-      else if (v.kind === "placeholder") head.push(`planned *${viewName(v)}* in ${where(p)}`);
-      else head.push(`${tagged(v)}added *${viewName(v)}* to ${where(p)}`);
-    } else if (was.p.id !== p.id) head.push(`moved *${viewName(v)}* to ${where(p)}`);
+      if (swapped && v.kind === "view") head.push(`swapped in *${viewName(next, p, v)}* for the planned “${viewName(prev, p, swapped)}” in ${where(p)}`);
+      else if (v.kind === "placeholder") head.push(`planned *${viewName(next, p, v)}* in ${where(p)}`);
+      else head.push(`${tagged(v)}added *${viewName(next, p, v)}* to ${where(p)}`);
+    } else if (was.p.id !== p.id) head.push(`moved *${viewName(next, p, v)}* to ${where(p)}`);
     // 0.6 snag 4 / 01: a view's own title, set, changed or cleared.
     if (was && (titleOverrideOf(was.v) ?? "") !== (titleOverrideOf(v) ?? "")) {
-      const t = titleOverrideOf(v);
-      out.push(t ? `retitled *${dataviewLabel(v)}* “${t}” in ${where(p)}` : `*${dataviewLabel(v)}* in ${where(p)} has its own title again`);
+      // Named as it read before, then as it reads now -- both resolved.
+      out.push(titleOverrideOf(v) ? `retitled *${viewName(prev, was.p, was.v)}* “${viewName(next, p, v)}” in ${where(p)}` : `*${viewName(prev, was.p, was.v)}* in ${where(p)} is called “${viewName(next, p, v)}” again`);
     }
   }
   for (const [id, { v, p }] of prevView) {
     if (nextView.has(id)) continue;
     const swappedOut = v.kind === "placeholder" && next.panels.find((x) => x.id === p.id)?.dataviews.some((x) => !prevView.has(x.id) && x.kind === "view");
-    if (!swappedOut && np.has(p.id)) head.push(`${tagged(v)}removed *${viewName(v)}* from ${placeOf(prev, p)}`);
+    if (!swappedOut && np.has(p.id)) head.push(`${tagged(v)}removed *${viewName(prev, p, v)}* from ${placeOf(prev, p)}`);
   }
   return [...head, ...out];
 }

@@ -212,6 +212,17 @@ export function rangeLabel(range: GradeRange): string {
   return range.scale === GCSE_SCALE ? `Grades ${range.bottom}–${range.top}` : `${range.top} to ${range.bottom}`;
 }
 
+// 0.6.1 S6: a range label inside a sentence ("of 40 graded entries at grades 7–9", "England,
+// A*–B"). Lower-casing the label whole printed a named scale's grades in lower case ("a* to
+// b"); the scale's own grades keep their case, joined as the qualification names do
+// ("A*–E"). A grade that has its own hyphen (Double Award's "9-9") keeps "to".
+export function inlineRangeLabel(label: string): string {
+  if (/^Grades? /.test(label)) return label.toLowerCase();
+  const [top, bottom, ...rest] = label.split(" to ");
+  if (bottom === undefined || rest.length || /[-–]/.test(top + bottom)) return label;
+  return `${top}–${bottom}`;
+}
+
 // The two-click range: the first click is a one-grade span; the second makes the span
 // between the two clicks, in scale order whichever was clicked first.
 export function spanBetween(scale: string[], a: string, b: string): { top: string; bottom: string } {

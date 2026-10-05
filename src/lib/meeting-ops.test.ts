@@ -30,8 +30,9 @@ import {
 } from "./meeting-ops";
 import { pinLine, resolveTemplate, rollSlotForward, shiftYear, slotTitle, citationOf } from "./meeting-views";
 import { dataviewById } from "@/catalogue";
+import { viewInstance } from "@/catalogue/viewspec";
 
-const inst = (id: string, dataview = "DV-C1-RES-TR-CHART"): DataviewInstance => ({ id, kind: "view", dataview: dataview as `DV-${string}` });
+const inst = (id: string, dataview = "DV-C1-RES-TR-CHART"): DataviewInstance => viewInstance(id, dataview as `DV-${string}`);
 const slot = (id: string, dataview?: string, subject = "Maths (General)"): SlideConfig["slots"][number] => ({
   id,
   view: { ...inst(`v${id}`, dataview), pinned: { phase: "ks4", subjectLabel: subject, year: "2024/25" }, keepLive: false },

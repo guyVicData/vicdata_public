@@ -13,7 +13,7 @@
 // already counted before this round -- grouped by period rather than collapsed to the
 // latest one. Nothing here is derived a second way.
 import { useState, type ReactNode } from "react";
-import { GeographyView, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
+import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
 import {
@@ -34,15 +34,14 @@ import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
 import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, SchoolIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
-import { NumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { memberMeans } from "@/lib/teacher-view-populations";
-import { usePlanViewParams } from "@/components/dashboard-config/plan";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
-import { applyMainLabel, applyTileFigures, readTileParams } from "@/lib/tile-figures";
+import type { CandidatesFrame, FrameSchoolGroup, FrameSet } from "@/lib/view-series/frames";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
 // `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
@@ -71,6 +70,8 @@ export function CandidatesPanels({
   theme = "dark",
   geography,
   schoolSubjects,
+  schoolGroup,
+  schoolSet,
 }: {
   phase: TeacherPhase;
   subjects: CandidateSubject[];
@@ -106,6 +107,10 @@ export function CandidatesPanels({
   // number tiles' "rank in all subjects at school" is taken over. The same population
   // Context's All subjects reads, one entry per subject as Column 1 counts them.
   schoolSubjects?: { key: string; values: (number | null)[] }[];
+  // 0.6.1 S3c: what a view of its own's "Add an average" reads (the page's groups of
+  // subjects, and its Compared against set), built on demand. Read only under views=v2.
+  schoolGroup?: FrameSchoolGroup;
+  schoolSet?: () => FrameSet | null;
 }) {
   // Step 6: Trend and % change each gain a table beside their chart.
   // "chart" is the indexed chart (the default, as before); "actual" draws the same lines at
@@ -126,8 +131,6 @@ export function CandidatesPanels({
   const [showFit, setShowFit] = useState(false);
 
   const measure = ENTRIES_MEASURE;
-  // 0.6 snag 3 / 01: the tiles view's own figure settings, under a config (else none).
-  const tileParams = readTileParams(usePlanViewParams("candidates", "DV-C1-CAND-CUR-TILES"));
   const runtime = useDashboardRuntime();
 
   const valueAt = (s: CandidateSubject, period: number): number | null => s.values[periods.indexOf(period)] ?? null;
@@ -225,10 +228,9 @@ export function CandidatesPanels({
       });
     }
   }
-  // Pick, order, relabel and hide per the view's settings; unset = the tiles above, as built.
+  // Pick, order, relabel and hide per the showing view's settings (ConfiguredNumberTiles);
+  // unset = the tiles above, as built.
   const tileVars = { subject: focused?.label, category: categoryLabel, school: runtime?.school?.name, year: latest === null ? undefined : academicYearLabel(latest) };
-  const tilesMain = applyMainLabel(tilesMainBuilt, tileParams, tileVars);
-  const tilesShown = applyTileFigures(tiles, tileParams, tileVars);
 
   // Current panel rework round 1: the tag is the fixed word "Current" and the year follows
   // it as plain text. Current is the number tiles alone -- no view rail -- since its Bar
@@ -244,7 +246,7 @@ export function CandidatesPanels({
       ) : (
         <>
           <ViewTitle>{focused && latest !== null ? `${focused.label} ${currentLabel ?? "Candidates"}: ${academicYearLabel(latest)}` : null}</ViewTitle>
-          <NumberTiles main={tilesMain} tiles={tilesShown} fullscreen={fullscreen} />
+          <ConfiguredNumberTiles main={tilesMainBuilt} tiles={tiles} vars={tileVars} fullscreen={fullscreen} />
         </>
       ),
     summary: biggest && smallest && biggest.key !== smallest.key ? (
@@ -469,6 +471,29 @@ export function CandidatesPanels({
   // subject. The dashboard renders its own single box for that phase instead.
   if (phase === "ks2") return null;
 
+  // 0.6.1 S3: what the config-driven view renderer draws from (under `views=v2` only).
+  const frame: CandidatesFrame = {
+    kind: "candidates",
+    periods,
+    subjects: subjects.map((s) => ({ key: s.key, label: s.label, shortLabel: s.shortLabel, values: s.values })),
+    focus,
+    groupLabel,
+    categoryLabel,
+    theme,
+    accentHex: PHASE_ACCENT[phase]?.hex ?? null,
+    hasGeography: !!geography,
+    currentLabel,
+    schoolSubjects,
+    schoolName: runtime?.school?.name,
+    // S3c: the phase, the measure and the geography comparison (the fetch above, as fetched).
+    phase,
+    measure,
+    geography: frameGeography(geography, geo, "entries"),
+    schoolGroup,
+    schoolSet,
+    state: { trendStart, changeStart, showFit },
+  };
+
   return (
     <ColumnPanels
       columnId="candidates"
@@ -478,7 +503,7 @@ export function CandidatesPanels({
       notes={notes}
       // Current titles its one view itself (ViewTitle), as Trends titles each of its views;
       // the geography views carry their own heading, as before.
-      render={{ current, trend }}
+      render={{ current: { ...current, frame }, trend: { ...trend, frame } }}
     />
   );
 }

@@ -11,6 +11,7 @@
 // (Present, Grid view, Export PDF, leaving the editor) when the draft has changed.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardConfig, SlideConfig } from "@/catalogue/types";
+import { upgradeConfig } from "@/catalogue/viewspec";
 import {
   createDashboard,
   isMissingTable,
@@ -91,8 +92,9 @@ async function configsFor(supabase: SupabaseClient, rows: DashboardRow[]): Promi
       : Promise.resolve({ data: [] as { dashboard_id: string; config: DashboardConfig }[] }),
     supabase.from("dashboard_drafts").select("dashboard_id, config").in("dashboard_id", rows.map((r) => r.id)),
   ]);
-  for (const v of (versions.data ?? []) as { dashboard_id: string; config: DashboardConfig }[]) out.set(v.dashboard_id, v.config);
-  for (const d of (drafts.data ?? []) as { dashboard_id: string; config: DashboardConfig }[]) out.set(d.dashboard_id, d.config);
+  // 0.6.1 S2: a v1 meeting (text slots and all) is converted on read (upgradeConfig).
+  for (const v of (versions.data ?? []) as { dashboard_id: string; config: DashboardConfig }[]) out.set(v.dashboard_id, upgradeConfig(v.config));
+  for (const d of (drafts.data ?? []) as { dashboard_id: string; config: DashboardConfig }[]) out.set(d.dashboard_id, upgradeConfig(d.config));
   return out;
 }
 

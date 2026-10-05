@@ -24,6 +24,7 @@ import {
   type Structure,
   type Target,
 } from "@/lib/editor-ops";
+import { EC } from "@/lib/editor-layout";
 import { DLabel, Dialog, ErrorLine, Note, Opt, Segmented, StructIcon, SwitchRow, inputStyle } from "./bits";
 
 // ------------------------------------------------------------------- RowSettings
@@ -275,6 +276,7 @@ export function SlotMapDialog({
   from,
   allowGaps,
   mode,
+  moveOrCopy = false,
   onPick,
   onClose,
 }: {
@@ -285,10 +287,13 @@ export function SlotMapDialog({
   // Move panel: empty cells and same-span panels; Move/Copy view: any panel or empty cell.
   allowGaps: boolean;
   mode: "view" | "panel";
-  onPick: (t: Target) => void;
+  // 0.6.1 S5 (RailMenu's "Move or copy to another panel…"): a Move / Copy choice first.
+  moveOrCopy?: boolean;
+  onPick: (t: Target, how?: "move" | "copy") => void;
   onClose: () => void;
 }) {
   const [pick, setPick] = useState<Target | null>(null);
+  const [how, setHow] = useState<"move" | "copy">("move");
   const fromPanel = config.panels.find((p) => p.id === from);
   const fromSpan = fromPanel?.span?.cols ?? 1;
   const key = (t: Target) => (typeof t === "string" ? t : `${t.row}:${t.column}`);
@@ -302,12 +307,23 @@ export function SlotMapDialog({
       footer={
         <>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-          <PrimaryButton disabled={!pick} onClick={() => pick && onPick(pick)}>
-            {mode === "panel" ? "Move here" : title.startsWith("Copy") ? "Copy here" : "Move here"}
+          <PrimaryButton disabled={!pick} onClick={() => pick && onPick(pick, moveOrCopy ? how : undefined)}>
+            {mode === "panel" ? "Move here" : moveOrCopy ? (how === "copy" ? "Copy here" : "Move here") : title.startsWith("Copy") ? "Copy here" : "Move here"}
           </PrimaryButton>
         </>
       }
     >
+      {moveOrCopy && (
+        <Segmented
+          label="Move or copy"
+          value={how}
+          onChange={setHow}
+          options={[
+            { id: "move", label: "Move it" },
+            { id: "copy", label: "Copy it" },
+          ]}
+        />
+      )}
       {rows.map(({ row, cells }) => (
         <div key={row.id} style={{ display: "flex", flexDirection: "column", gap: 6, flex: "0 0 auto" }}>
           <DLabel>{row.name}</DLabel>
@@ -332,8 +348,9 @@ export function SlotMapDialog({
                     gridColumn: `${cell.start + 1} / span ${cell.span}`,
                     minHeight: 54,
                     borderRadius: 8,
-                    border: `1.5px ${empty ? "dashed" : "solid"} ${on ? "var(--cc-blue)" : "var(--cc-border2)"}`,
-                    background: on ? "var(--cc-blue-tint)" : isFrom ? "var(--cc-soft)" : "var(--cc-panel)",
+                    // 0.6.1 S1 (pinch point 4): where it sits now, in the boards' amber.
+                    border: `1.5px ${empty ? "dashed" : "solid"} ${on ? "var(--cc-blue)" : isFrom ? EC.amber : "var(--cc-border2)"}`,
+                    background: on ? "var(--cc-blue-tint)" : isFrom ? `color-mix(in srgb, ${EC.amber} 12%, var(--cc-panel))` : "var(--cc-panel)",
                     color: "var(--cc-ink)",
                     padding: "6px 8px",
                     textAlign: "left",
@@ -344,7 +361,7 @@ export function SlotMapDialog({
                   }}
                 >
                   <span style={{ display: "block", fontSize: 10, color: "var(--cc-sub)", fontWeight: 700 }}>{config.columns[cell.start].title}</span>
-                  {isFrom ? "Here now" : label}
+                  {isFrom ? <span data-slot-here style={{ color: EC.amberText, fontWeight: 700 }}>Here now</span> : label}
                 </button>
               );
             })}

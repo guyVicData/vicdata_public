@@ -15,6 +15,8 @@ import { useEffect, useMemo, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { loadUserState, saveUserState } from "@/lib/dashboards-store";
 import { EC } from "@/lib/editor-layout";
+import { memberSummary } from "@/lib/change-summary";
+import type { DashboardConfig } from "@/catalogue/types";
 
 export type UpdatedNoticeProps = {
   // The dashboards row id (uuid): dashboard_user_state keys on it.
@@ -23,9 +25,12 @@ export type UpdatedNoticeProps = {
   version: number;
   // That version's change_summary (inline *emphasis* allowed).
   summary: string | null;
+  // 0.6.1 S1: that version's config, to name the views a summary published before the
+  // fix names by placeholder or internal label (memberSummary). Optional: words only.
+  config?: DashboardConfig | null;
 };
 
-export function UpdatedNotice({ dashboardId, version, summary }: UpdatedNoticeProps) {
+export function UpdatedNotice({ dashboardId, version, summary, config = null }: UpdatedNoticeProps) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [show, setShow] = useState(false);
 
@@ -59,7 +64,8 @@ export function UpdatedNotice({ dashboardId, version, summary }: UpdatedNoticePr
       /* dismissed for this visit anyway */
     }
   };
-  const parts = (summary ?? "").split(/\*([^*]+)\*/g);
+  // Never a raw placeholder or an internal view name in front of members (pinch point 1).
+  const parts = (summary ? memberSummary(summary, config) : "").split(/\*([^*]+)\*/g);
   return (
     <div role="status" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "4px 10px", background: EC.barBg, border: `1px solid ${EC.barBorder}`, borderRadius: 12, padding: "9px 12px", fontSize: 12.5, lineHeight: 1.45, color: "var(--fg)" }}>
       <span style={{ fontWeight: 700, color: EC.amberText, whiteSpace: "nowrap" }}>Updated &mdash; what&apos;s changed</span>

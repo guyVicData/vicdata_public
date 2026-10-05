@@ -17,7 +17,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | DV-C1-CAND-TR-CHANGELIST | draft | teacher.c1.candidates · trend · (no rail) | academic.candidates | subject | subjects | pct_change | trend | ranking | RD-CHANGE-LIST |
 | DV-C1-CAND-TR-CHANGETABLE | draft | teacher.c1.candidates · trend · (no rail) | academic.candidates | subject | subjects | totals, pct_change | trend | table | RD-YEAR-TABLE |
 | DV-C1-RES-CUR-TILES | live | teacher.c1.results · current · Number tiles | academic.results (points, threshold, bands) | subject | subjects, averages | points, rate, rank, change_points, change_pp, totals | single | numerical | RD-NUMBER-TILES |
-| DV-C1-RES-CUR-GRADES | live | teacher.c1.results · current · Grades (pick a range) | academic.results (bands) | subject | averages | rate | single | graph | RD-GRADE-DISTRIBUTION |
+| DV-C1-RES-CUR-GRADES | live | teacher.c1.results · current · Grade distribution | academic.results (bands) | subject | averages | rate | single | graph | RD-GRADE-DISTRIBUTION |
 | DV-C1-RES-CUR-BAR | live | teacher.c1.results · current · Bar chart | academic.results (points, threshold, bands) | subject | subjects, averages | points, rate | single | ranking | RD-VIEW-CHART |
 | DV-C1-RES-CUR-TABLE | live | teacher.c1.results · current · Sortable table | academic.results (points, threshold, bands) | subject | subjects, averages | points, rate, change_points, change_pp | single | table | RD-SORT-TABLE |
 | DV-C1-RES-TR-CHART | live | teacher.c1.results · trend · Chart | academic.results (points, threshold, bands) | subject | subjects | points, rate, change_points, change_pp | trend | graph | RD-MULTI-TREND |
@@ -177,7 +177,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against the wider system |
+| Title template | [subject] against its LA and England, year by year |
 | Title fallback | Plain heading (not ViewTitle), with TrendScaleTitle indexed under it. |
 | Requires (card warning) | GCSE (9-1) Full Course items only at GCSE (area entries are points-eligible entries); LA and England lines (region in the table). |
 | Params | trendStart |
@@ -205,7 +205,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against the wider system |
+| Title template | [subject]: change against its LA, region and England |
 | Title fallback | — |
 | Requires (card warning) | GCSE (9-1) Full Course items only at GCSE (area entries are points-eligible entries). |
 | Params | changeStart |
@@ -303,7 +303,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Used on | GCSE Results › Results › Current, Post-16 Results › Results › Current |
 | Note | One dataview for the audit's two rows (plain and bands variant): on bands the tiles are met count 'of {n} graded entries at {range}', rate and England gap (placement mismatch M3/M5). |
 
-### DV-C1-RES-CUR-GRADES — Grades (pick a range)
+### DV-C1-RES-CUR-GRADES — Grade distribution
 
 | Field | Content |
 | --- | --- |
@@ -318,18 +318,18 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | View type | graph |
 | Renderer | RD-GRADE-DISTRIBUTION |
 | Title template | (none) |
-| Title fallback | None (wrapper suppressed). No range: 'Pick a range to see a rate: open Grades and click one grade, then another.' |
+| Title fallback | None (wrapper suppressed). The picked band is shaded; with no range picked, nothing is shaded. |
 | Requires (card warning) | School grades are published from 2023/24 only (2 years). |
-| Params | band:range, bandPending |
+| Params | band:range |
 | Rail icon | GradesIcon |
-| Host | teacher.c1.results, current, rail "Grades (pick a range)" (src/components/teacher/SubjectPanels.tsx) |
+| Host | teacher.c1.results, current, rail "Grade distribution" (src/components/teacher/SubjectPanels.tsx) |
 | Audience | subject-level, academic, geography |
 | Status | live |
 | Verified at | not yet |
-| Origin | Grade bands frontend round |
+| Origin | Grade bands frontend round; 0.6.1 S5 (D3: the range is picked in the top bar, no longer by clicking two grades here) |
 | Rules | R-NON-GRADES-EXCL, R-GRADE-SCALE-MATCH, R-BANDS-ENGLAND-BENCH, R-MIN-SCHOOLS |
 | Used on | GCSE Results › Results › Current, Post-16 Results › Results › Current |
-| Note | England share ticks per grade (placement mismatch M5). |
+| Note | England share ticks per grade (placement mismatch M5). Was 'Grades (pick a range)': since 0.6.1 S5 a read-only grade distribution with the top bar's band shaded. |
 
 ### DV-C1-RES-CUR-BAR — Bar chart
 
@@ -485,7 +485,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | graph |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against the wider system |
+| Title template | [subject] against its LA and England, year by year |
 | Title fallback | Plain heading; no TrendScaleTitle (not indexed). |
 | Requires (card warning) | Average points only; at GCSE, GCSE (9-1) Full Course items only. |
 | Params | trendStart |
@@ -513,7 +513,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | trend |
 | View type | table |
 | Renderer | RD-GEOGRAPHY-VIEW |
-| Title template | [subject] against the wider system |
+| Title template | [subject]: change against its LA, region and England |
 | Title fallback | — |
 | Requires (card warning) | Average points only; at GCSE, GCSE (9-1) Full Course items only. |
 | Params | changeStart |

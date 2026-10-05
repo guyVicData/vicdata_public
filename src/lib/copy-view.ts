@@ -245,7 +245,7 @@ export function fitCheck(source: CopyViewSource, slot: PickPanelContext, target:
       fits: false,
       failure,
       blocked: true,
-      message: `Doesn't fit this panel's column (${why}). Drop it in an empty slot or a new row, where it keeps its own settings and shows “overridden”.`,
+      message: `Doesn't fit this panel's column (${why}). Drop it in an empty slot or a new row, where it keeps its own settings.`,
     };
   const override = overrideBetween(slot, source.context, `Copied with Copy this view from ${source.context.labels.dashboard}, ${source.context.labels.column} · ${source.context.labels.row}`);
   return {
@@ -253,7 +253,7 @@ export function fitCheck(source: CopyViewSource, slot: PickPanelContext, target:
     failure,
     blocked: false,
     override: override ?? { badge: "overridden", reason: "Copied with Copy this view" },
-    message: `Doesn't fit this slot's column (${why}). It keeps its own settings and shows “overridden”.`,
+    message: `Doesn't fit this slot's column (${why}). It keeps its own settings.`,
   };
 }
 

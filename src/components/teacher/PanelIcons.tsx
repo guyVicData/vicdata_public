@@ -149,6 +149,19 @@ export const DonutIcon = (
   </svg>
 );
 
+// 0.6.1 S3c: the slope view's glyph -- two rows joined from a first year to the latest, a dot
+// at each end -- in the same 20x20 stroke language (it was the view editor's own until now).
+export const SlopeIcon = (
+  <Glyph>
+    <line x1="4" y1="14.5" x2="16" y2="6" />
+    <line x1="4" y1="8" x2="16" y2="11.5" />
+    <circle cx="4" cy="14.5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="16" cy="6" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="4" cy="8" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="16" cy="11.5" r="1.5" fill="currentColor" stroke="none" />
+  </Glyph>
+);
+
 export const MapPinIcon = (
   <Glyph>
     <path d="M10 18s6-5.5 6-10a6 6 0 1 0-12 0c0 4.5 6 10 6 10z" />
