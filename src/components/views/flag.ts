@@ -1,17 +1,20 @@
 "use client";
 
-// VicData 0.6.1 S3: the switch for the config-driven view renderer. Off by default: with it
-// off, members' pages draw exactly as today (the hosts draw every view, rail.tsx filters
-// their rails). On: `?views=v2` on the URL, or NEXT_PUBLIC_VIEWS=v2 at build time; a
-// surface that always renders v2 (S4's editor previews) provides it through
-// ViewsModeContext.
+// VicData 0.6.1 S3: the switch for the config-driven view renderer. Since S6 it is ON by
+// default: the renderer draws every view from its ViewSpec. The escape hatch is `?views=v1`
+// on the URL, or NEXT_PUBLIC_VIEWS=v1 at build time, which puts the hosts back on drawing
+// every view (rail.tsx filtering their rails), exactly as before S3. `?views=v2` still
+// works (it is the default). A surface that always renders v2 (S4's editor previews)
+// provides it through ViewsModeContext.
 import { createContext, useContext, useState } from "react";
 
 export type ViewsMode = "v1" | "v2";
 
 export function viewsV2Requested(search: URLSearchParams | null): boolean {
-  if (process.env.NEXT_PUBLIC_VIEWS === "v2") return true;
-  return search?.get("views") === "v2";
+  const fromUrl = search?.get("views");
+  if (fromUrl === "v1") return false;
+  if (fromUrl === "v2") return true;
+  return process.env.NEXT_PUBLIC_VIEWS !== "v1";
 }
 
 // null = not set by the surface: the URL / env decides.
