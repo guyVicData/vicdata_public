@@ -12,13 +12,14 @@
 //   % change  each grade's own count, first year to latest, in grade order (YearTable with
 //             its change column), so the shift reads down the scale.
 //
-// Grade-level figures are published from 2023/24 only, so Trend and % change have one or
-// two years to work with and say so, rather than padding an axis.
+// Grade-level figures are published from 2021/22 (0.6.2; 2023/24 before), so Trend and %
+// change have up to four years to work with, and with one say so rather than padding an axis.
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { ENTRIES_MEASURE, type PanelData, type PanelId } from "@/lib/teacher-view-panels";
 import { bestScale, inlineRangeLabel, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
 import { gradeCounts } from "@/lib/grade-spread";
+import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import type { GradesFrame } from "@/lib/view-series/frames";
 import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
@@ -69,7 +70,9 @@ export function GradeCountsPanels({
   const { graded, latest, earlier, cmpYear, chgYear, ownTotal, cmpTotal, rowsFor, englandLabel, modal } = g;
 
   // Current's ad-hoc highlight: the same two clicks as Grade bands, local to this view.
-  const scale = bestScale(graded.map((r) => r.grade));
+  // 0.6.2 S2: on the 2023/24-on rows, as before the grade rows reached back to 2021/22 (see
+  // TeacherDashboard's focusScale).
+  const scale = bestScale(graded.filter((r) => r.period >= MODERN_GRADE_FROM).map((r) => r.grade));
   const [pending, setPending] = useState<string | null>(null);
   const [span, setSpan] = useState<{ top: string; bottom: string } | null>(null);
   const range: GradeRange | null = pending ? { scale, top: pending, bottom: pending } : span ? { scale, ...span } : null;
@@ -83,7 +86,7 @@ export function GradeCountsPanels({
   };
 
   const yearText = latest === null ? "" : academicYearLabel(latest);
-  const oneYearOnly = <PanelSummary>Grades are published per subject from 2023/24 only; a second year is needed to compare.</PanelSummary>;
+  const oneYearOnly = <PanelSummary>This subject has published grades for one year only; a second year is needed to compare.</PanelSummary>;
 
   const current: PanelRender = {
     tag: `Grade counts ${yearText}`.trim(),

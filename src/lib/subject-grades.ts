@@ -82,7 +82,10 @@ export const BOTTOM_RANK: Record<string, number> = { Fail: 900, U: 901, Unclassi
 // Not attainment bands: DfE suppression and non-results. Excluded from the chart's axis
 // so a distribution is not padded with rows that cannot be compared between schools.
 // R-NON-GRADES-EXCL: never counted on either side of a grade rate or distribution.
-export const NON_GRADE_VALUES = new Set(["Suppressed", "No result", "No result / X", "X", "Covid impacted", "Not Awarded", "Awarded"]);
+// 0.6.2 (R-HISTORIC-GRADE-LABELS): "COVID result" and "Supp" are the 2021/22-2022/23 KS5
+// files' own non-grade labels; counted as grades they would leave about 9% of 2021/22 A-level
+// sets with no A*-E figure (S1 §4).
+export const NON_GRADE_VALUES = new Set(["Suppressed", "No result", "No result / X", "X", "Covid impacted", "Not Awarded", "Awarded", "COVID result", "Supp"]);
 
 // The GRADE_SCALES entry that best covers these grades (the same array object, so a caller
 // can test scale identity), or [] when none covers any of them. Shared by gradeOrderFrom

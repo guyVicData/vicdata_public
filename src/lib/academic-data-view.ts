@@ -12,7 +12,17 @@
 // shape as KS4/KS5.
 
 import { createServerAnonSupabaseClient } from "./supabase";
-import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicSubjectHeadline, lookupAcademicSubjectQualificationHeadline, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
+import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicSubjectGradeRollup, gradeRollupRpcState, lookupAcademicSubjectHeadline, lookupAcademicSubjectQualificationHeadline, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
+import {
+  ALL_SUBJECTS_PSEUDO_ROW,
+  HISTORIC_GRADE_FROM,
+  HISTORIC_GRADE_SOURCE,
+  SUBJECT_TOTAL_LABELS,
+  gradeRowsFromFacts,
+  gradeRowsFromRollup,
+  parseSubjectGradeDistribution,
+  type SubjectGradeCount,
+} from "./grade-rows";
 import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "./roll-data";
 import { trendBadge } from "./data-view-cards";
@@ -1047,8 +1057,8 @@ export function populationSeriesAtAge(profile: AcademicSchoolProfile, age: numbe
 // breakdown (it's an aggregate, not raw per-grade counts) -- both still come from the
 // raw-fact functions below, which is why both paths coexist rather than one replacing
 // the other outright.
-const SUBJECT_TOTAL_LABELS = new Set(["Total exam entries", "Total"]);
-const ALL_SUBJECTS_PSEUDO_ROW = "All subjects";
+// 0.6.2: the labels, the grade parser and the grade-row type now live in grade-rows.ts (pure,
+// shared with the four-year grade read below and its tests).
 
 export type SubjectEntry = {
   qualificationType: string;
@@ -1066,18 +1076,7 @@ export type SubjectEntry = {
 // (2023/24 on) -- the historic siblings' own grade-level labels weren't investigated
 // this round, so a grade distribution for an earlier year genuinely isn't available,
 // not silently guessed at.
-export type SubjectGradeCount = {
-  qualificationType: string;
-  subject: string;
-  period: number;
-  grade: string;
-  entries: number;
-  // DfE's own "size" (A-level-equivalent size) for this row, from the third breakdown
-  // segment at KS5. Kept because points are size x challenge and the AVERAGE is over
-  // size-weighted entries, so a grade row without its size cannot be scored at all.
-  // null at KS4, whose breakdowns genuinely carry no size segment.
-  sizeWeight: number | null;
-};
+export type { SubjectGradeCount };
 
 export type SubjectValueAdded = {
   qualificationType: string;
@@ -1105,23 +1104,9 @@ function parseSubjectEntries(facts: ReferenceFact[]): SubjectEntry[] {
 }
 
 // The exact inverse filter of parseSubjectEntries above (real per-GRADE rows, not the
-// Total row), reading the SAME already-fetched facts -- no second fetch.
-function parseSubjectGradeDistribution(facts: ReferenceFact[]): SubjectGradeCount[] {
-  const rows: SubjectGradeCount[] = [];
-  for (const f of facts) {
-    if (f.value_numeric === null) continue;
-    const parts = f.breakdown.split("::");
-    const grade = parts[parts.length - 1];
-    if (SUBJECT_TOTAL_LABELS.has(grade)) continue;
-    const [qualificationType, subject] = parts;
-    if (subject === ALL_SUBJECTS_PSEUDO_ROW) continue;
-    // KS5 breakdowns are qualification::subject::size::grade; KS4's carry no size.
-    const rawSize = parts.length >= 4 ? Number.parseFloat(parts[2]) : Number.NaN;
-    const sizeWeight = Number.isFinite(rawSize) ? rawSize : null;
-    rows.push({ qualificationType, subject, period: f.period, grade, entries: f.value_numeric, sizeWeight });
-  }
-  return rows;
-}
+// Total row), reading the SAME already-fetched facts -- no second fetch. 0.6.2: moved to
+// grade-rows.ts, unchanged for the modern sources (the historic ones add their own total
+// label and R-HISTORIC-GRADE-LABELS).
 
 function parseSubjectValueAdded(facts: ReferenceFact[]): SubjectValueAdded[] {
   const byKey = new Map<string, SubjectValueAdded>();
@@ -1191,21 +1176,36 @@ export type SubjectLevelSchoolData = { entries: SubjectEntry[]; valueAdded: Subj
 // -- Part 2's own deep-dive view needs a real per-school grade profile for the
 // comparison side too, and this is the same real fetch either way, so it costs
 // nothing extra to include here rather than a third fetch later.
+//
+// 0.6.2 S2: `gradeYears: "four"` (the Teacher view's dashboard route) returns
+// gradeDistribution for 2021/22-2024/25 from fetchFourYearGradeRows' sources below;
+// entries and value-added stay the modern facts' either way. Without it (the Data View's
+// deep-dive drawer) the grade rows are the modern facts' alone, exactly as before.
 export async function fetchSubjectLevelDataForSchools(
   urns: string[],
   stage: KsStage,
+  opts: { gradeYears?: "modern" | "four" } = {},
 ): Promise<{ byUrn: Map<string, SubjectLevelSchoolData>; subjectFamilyMap: Record<string, string> }> {
   const byUrn = new Map<string, SubjectLevelSchoolData>();
   if (stage === "ks2" || urns.length === 0) return { byUrn, subjectFamilyMap: {} };
+  const four = opts.gradeYears === "four";
   const sourceIds = stage === "ks4" ? ["dfe_ks4_subject_entries"] : KS5_SUBJECT_SOURCE_IDS;
-  const [rawFactsPerSource, vaFacts, familyMapRows] = await Promise.all([
+  const [rawFactsPerSource, vaFacts, familyMapRows, rollup, historic] = await Promise.all([
     Promise.all(sourceIds.map((sourceId) => lookupReferenceData({ sourceId, entityIds: urns }))),
     stage === "ks5" ? lookupReferenceData({ sourceId: "dfe_ks5_subject_value_added", entityIds: urns }) : Promise.resolve([]),
     lookupAcademicSubjectFamilyMap({ ksStage: stage }),
+    four && stage === "ks4" ? lookupAcademicSubjectGradeRollup({ entityIds: urns, ksStage: "ks4", periodMin: HISTORIC_GRADE_FROM }) : Promise.resolve(null),
+    // KS5 always reads the historic facts; KS4 only once the rollup RPC is known absent.
+    four && (stage === "ks5" || gradeRollupRpcState() === "absent") ? historicGradeFacts(urns, stage) : Promise.resolve(null),
   ]);
   const rawFacts = rawFactsPerSource.flat();
   const subjectFamilyMap: Record<string, string> = {};
   for (const row of familyMapRows) subjectFamilyMap[row.raw_subject] = row.family_id;
+
+  // The four-year grade rows: the rollup's (KS4, when the RPC is there), else the modern
+  // facts already fetched plus the historic ones.
+  let fourYear: Map<string, SubjectGradeCount[]> | null = null;
+  if (four) fourYear = rollup ? gradeRowsFromRollup(rollup) : gradeRowsFromFacts(stage, rawFacts, historic ?? (await historicGradeFacts(urns, stage)));
 
   const rawByUrn = new Map<string, ReferenceFact[]>();
   for (const f of rawFacts) {
@@ -1223,11 +1223,57 @@ export async function fetchSubjectLevelDataForSchools(
     const ownRaw = rawByUrn.get(urn) ?? [];
     byUrn.set(urn, {
       entries: parseSubjectEntries(ownRaw),
-      gradeDistribution: parseSubjectGradeDistribution(ownRaw),
+      gradeDistribution: fourYear ? fourYear.get(urn) ?? [] : parseSubjectGradeDistribution(ownRaw),
       valueAdded: parseSubjectValueAdded(vaByUrn.get(urn) ?? []),
     });
   }
   return { byUrn, subjectFamilyMap };
+}
+
+// 0.6.2: raw facts for a set of schools, in chunks read one after another, so a big set
+// stays well under lookupReferenceData's 50-page cap (about 700 GCSE grade rows a school:
+// one call for the whole set lost schools above about 70, S1 §7) without the parallel
+// statements that contend with each other (lookupAcademicSubjectHeadline's note).
+const GRADE_FACT_CHUNK = 25;
+
+async function factsInChunks(sourceId: string, urns: string[]): Promise<ReferenceFact[]> {
+  const out: ReferenceFact[] = [];
+  for (let i = 0; i < urns.length; i += GRADE_FACT_CHUNK) out.push(...(await lookupReferenceData({ sourceId, entityIds: urns.slice(i, i + GRADE_FACT_CHUNK) })));
+  return out;
+}
+
+// The historic source's facts (2020/21-2022/23; the parser keeps 2021/22-2022/23). With the
+// same lineage fallback as the modern read: reference_data_lookup's, per source.
+function historicGradeFacts(urns: string[], stage: "ks4" | "ks5"): Promise<ReferenceFact[]> {
+  return factsInChunks(HISTORIC_GRADE_SOURCE[stage], urns);
+}
+
+// 0.6.2 S3: the per-grade rows of a set of schools, 2021/22-2024/25, optionally for one
+// subject -- /api/teacher/comparator-grades. Every requested URN is a key (no rows = []).
+//   KS4  the rollup RPC filtered to the subject in the database, when it is there; else the
+//        modern + historic facts, parsed and filtered (S1: equal on every key)
+//   KS5  the modern + historic facts (S1: the rollup has no zero-entry grade rows)
+export async function fetchSchoolGradeRows(
+  urns: string[],
+  stage: "ks4" | "ks5",
+  subject?: string | null,
+): Promise<{ byUrn: Map<string, SubjectGradeCount[]>; source: "rollup" | "facts" }> {
+  const out = new Map<string, SubjectGradeCount[]>(urns.map((u) => [u, []]));
+  if (urns.length === 0) return { byUrn: out, source: "facts" };
+  if (stage === "ks4") {
+    const rollup = await lookupAcademicSubjectGradeRollup({ entityIds: urns, ksStage: "ks4", subject: subject ?? null, periodMin: HISTORIC_GRADE_FROM });
+    if (rollup) {
+      for (const [urn, rows] of gradeRowsFromRollup(rollup)) if (out.has(urn)) out.set(urn, rows);
+      return { byUrn: out, source: "rollup" };
+    }
+  }
+  const modernSources = stage === "ks4" ? ["dfe_ks4_subject_entries"] : KS5_SUBJECT_SOURCE_IDS;
+  const [modern, historic] = await Promise.all([
+    Promise.all(modernSources.map((sourceId) => factsInChunks(sourceId, urns))).then((r) => r.flat()),
+    historicGradeFacts(urns, stage),
+  ]);
+  for (const [urn, rows] of gradeRowsFromFacts(stage, modern, historic, subject)) if (out.has(urn)) out.set(urn, rows);
+  return { byUrn: out, source: "facts" };
 }
 
 export type AcademicSubjectHeadlineEntry = {

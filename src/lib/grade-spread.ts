@@ -8,8 +8,8 @@
 //   bandDistribution   Results on Grade bands: the distribution in the year Current shows
 //   averageGrade       2 · View's average grade marker (a look: an average of what is drawn)
 //
-// Grade-level figures are published from 2023/24 only (D8), so the spread compares at most
-// two years. Pure (no React).
+// Grade-level figures are published from 2021/22 (0.6.2; 2023/24 only before, D8), so the
+// spread compares the latest year with any earlier one. Pure (no React).
 import { BOTTOM_RANK, GRADE_SCALES, NON_GRADE_VALUES, bestScale, gradeOrderFrom } from "./subject-grades";
 import { academicYearLabel } from "./teacher-view-theme";
 import type { PanelData } from "./teacher-view-panels";

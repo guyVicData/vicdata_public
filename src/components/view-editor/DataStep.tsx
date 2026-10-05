@@ -218,7 +218,6 @@ export function DataStep({ draft, set, env, theme, wide }: StepProps) {
       </div>
       <div style={{ fontSize: 11, color: "var(--cc-faint)" }}>
         {env.side === "trend" ? "Year is picked because this is the Trends row. On a Current row it starts on Subject, latest year." : `${schoolSet ? "School" : "Subject"} is picked because this is the Current row. On a Trends row it starts on Year.`}
-        {measure.results && measure.results !== "points" && !schoolSet && spec.data.per !== "school" ? " School grade rows cover 2023/24 and 2024/25 only." : ""}
       </div>
     </div>
   );

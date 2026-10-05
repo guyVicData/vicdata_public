@@ -62,6 +62,7 @@ import { GradeCountsPanels } from "@/components/teacher/GradeCountsPanels";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type MeasureId, type PanelId } from "@/lib/teacher-view-panels";
 import { bestScale, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
+import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
@@ -1172,7 +1173,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const focusGradeRows = focusItem
     ? gradeRows.filter((g) => g.subject === focusItem.subject && g.qualificationType === focusItem.qualificationType)
     : [];
-  const focusScale = bestScale(focusGradeRows.map((g) => g.grade));
+  // 0.6.2 S2: the scale is still read from the 2023/24-on rows only, as before the grade rows
+  // reached back to 2021/22, so the range and every latest-year band figure stay as they were.
+  // (Four years would read some small GCSE cohorts with no 8 or 9 since 2023/24 as GCSE
+  // rather than IB 7-1, and so give them a band figure: a latest-year change, logged for Guy.)
+  const focusScale = bestScale(focusGradeRows.filter((g) => g.period >= MODERN_GRADE_FROM).map((g) => g.grade));
   // 0.6.1 S5 (D3): the range is chosen in the top bar (ResultsControl: the scale's presets,
   // or Custom's from / to), no longer by clicking two grades in the Grades view.
   const bandRange: GradeRange | null = bandRangeFor(focusScale, null, readSetting(columns, BAND_RANGE_KEY));
@@ -1181,7 +1186,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     void setColumnSetting(BAND_RANGE_KEY, JSON.stringify({ top, bottom }));
   };
   const bandAt = (i: SubjectItem, period: number): number | null => subjectBandAt(gradeRows, i, period, bandRange);
-  // Grade rows exist from 2023/24 only; on Grade bands the axis is the years that have them.
+  // Grade rows exist from 2021/22 (0.6.2; 2023/24 before); on Grade bands the axis is the years that have them.
   const hasGrades = (i: SubjectItem, period: number) => hasGradesAt(gradeRows, i, period);
   // The measure as Grade bands' panels read it: its noun narrowed to the span.
   const resultsMeasureShown = usingBands && bandLabel ? { ...resultsMeasure, noun: `share of entries at ${inlineRangeLabel(bandLabel)}` } : resultsMeasure;
@@ -1789,9 +1794,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         }
         note={
           usingThreshold
-            ? `${resultsMeasure.label} is published per grade only from 2023/24, so this covers fewer years than average points. Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
+            ? `Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
             : usingBands
-              ? "Grades are published per subject only from 2023/24, so this covers fewer years than average points. A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish."
+              ? "A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish."
               : undefined
         }
         questions={{
@@ -1984,9 +1989,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         currentLabel={`${titleCase(contextGroupLabel)} Context`}
         note={
           contextMeasure.id === "threshold"
-            ? `${contextMeasure.label} is published per grade only from 2023/24, so this covers fewer years than the other measures.`
+            ? undefined
             : contextMeasure.id === "bands"
-              ? "Grades are published per subject only from 2023/24, so this covers fewer years than the other measures. Subjects on a different grade scale from the range's are left out."
+              ? "Subjects on a different grade scale from the range's are left out."
               : [
                   contextFallsBack
                     ? resultsMeasure.id === "counts"

@@ -16,3 +16,8 @@ All read-only. No keys in any file.
                 predecessor effects; labels_impact historic KS5 label differences;
                 period_check the period -> academic year mapping
   *.out         outputs as run on 5 Oct 2026
+  S2 (0.6.2):
+  s2_fixture.mts.txt      builds src/lib/grade-rows.fixtures.json (KS4 rollup rows by read-only SQL,
+                          facts through the app's lookup) for src/lib/grade-rows.test.ts
+  s2_scale_check.mts.txt  30 schools x both phases: modern-year grade rows and rates identical
+                          with gradeYears "four"; lists the sets whose bestScale would change

@@ -364,6 +364,42 @@ test("History, this school only: a line on points; 2-year bars on Grade 4+ and b
   }
 });
 
+// 0.6.2 S2 (R-TREND-LINE-4YR): school grade rows now cover 2021/22-2024/25, so the same view
+// on Grade bands and Grade 4+ is a line. The Chase (137625) GCSE History's real four years
+// (grade-rows.fixtures.json, the rollup = facts read), scored as the page scores them, in the
+// committed History frames above (whose own grade values were captured with two years).
+test("History, this school only, on four years of grades: a line on Grade 4+ and bands (0.6.2, R-TREND-LINE-4YR)", async () => {
+  const { gradeRowsFromFacts } = await import("./grade-rows");
+  const { thresholdRate, bandRate, GCSE_SCALE } = await import("./subject-grades");
+  const fx = JSON.parse(readFileSync(new URL("./grade-rows.fixtures.json", import.meta.url), "utf8"));
+  const rows = gradeRowsFromFacts("ks4", fx.modern, fx.historic, "History").get("137625")!.filter((r) => r.qualificationType === "GCSE (9-1) Full Course");
+  const periods = [2021, 2022, 2023, 2024];
+  const at = (p: number) => rows.filter((r) => r.period === p);
+  const values = {
+    threshold: periods.map((p) => thresholdRate(at(p), "ks4")?.rate ?? null),
+    bands: periods.map((p) => bandRate(at(p), { scale: GCSE_SCALE, top: "9", bottom: "7" })?.rate ?? null),
+  };
+  assert.ok(values.threshold.every((v) => v !== null) && values.bands.every((v) => v !== null));
+  const hist = ofHost((r) => r.host === "teacher.c1.results" && String(r.name).includes(" History ") && r.phase === "ks4" && (r.measureId === "threshold" || r.measureId === "bands"));
+  assert.ok(hist.length >= 2);
+  for (const { raw, frame } of hist) {
+    const f = frame as SubjectsFrame;
+    const four: SubjectsFrame = {
+      ...f,
+      periods,
+      subjects: f.subjects.map((x) => ({ ...x, values: x.key === f.focus ? values[raw.measureId as "threshold" | "bands"] : periods.map(() => null) })),
+      groups: [],
+      state: { ...f.state, latestIdx: periods.length - 1 },
+    };
+    for (const spec of [historyOnly(), { ...historyOnly(), view: { kind: "line" as const, look: { trendLine: "member" as const, shortSpan: "change-bars" as const } } }]) {
+      const leaf = leafOf(buildSeries(spec, four, { fullscreen: false }), "trendChart");
+      assert.deepEqual(leaf.data.periods, periods, raw.name);
+      assert.equal(trendChartKind(leaf.data), "line", raw.name);
+      assert.deepEqual(leaf.data.series.map((x) => x.key), [f.focus]);
+    }
+  }
+});
+
 // 0.6.1 S6 walk-through 1: the editor narrows the column's preset to This subject and keeps
 // its look, which carries the many-row chart's "change-bars" short-span fallback. One
 // subject still draws D8's per-year bars, not a one-row change list.

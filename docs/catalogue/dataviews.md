@@ -319,7 +319,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Renderer | RD-GRADE-DISTRIBUTION |
 | Title template | (none) |
 | Title fallback | None (wrapper suppressed). The picked band is shaded; with no range picked, nothing is shaded. |
-| Requires (card warning) | School grades are published from 2023/24 only (2 years). |
+| Requires (card warning) | School grades are published from 2021/22 (4 years; 0.6.2). |
 | Params | band:range |
 | Rail icon | GradesIcon |
 | Host | teacher.c1.results, current, rail "Grade distribution" (src/components/teacher/SubjectPanels.tsx) |
@@ -403,7 +403,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Renderer | RD-MULTI-TREND |
 | Title template | Results in [category]: each subject's line |
 | Title fallback | [subject], each year |
-| Requires (card warning) | A line needs 4 real years here; with fewer it shows bars or a change list. Grade 4+ / A*-E and bands have 2 school years, so they show the pp change list. |
+| Requires (card warning) | A line needs 4 real years here; with fewer it shows bars or a change list. Grade 4+ / A*-E and bands have 4 school years from 2021/22 (0.6.2); a subject with grades in fewer years shows the pp change list. |
 | Params | trendStart, showFit, legendHidden, band:range |
 | Rail icon | TrendLineIcon |
 | Host | teacher.c1.results, trend, rail "Chart" (src/components/teacher/SubjectPanels.tsx) |
@@ -543,7 +543,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Renderer | RD-GRADE-DISTRIBUTION |
 | Title template | (none) |
 | Title fallback | None; the tag reads 'Grade counts [year]' (not 'Current', no 'Data [year]'). |
-| Requires (card warning) | School grades are published from 2023/24 only (2 years). |
+| Requires (card warning) | School grades are published from 2021/22 (4 years; 0.6.2). |
 | Params | bandPending, span |
 | Rail icon | GradesIcon |
 | Host | teacher.c1.counts, current, rail "(none)" (src/components/teacher/GradeCountsPanels.tsx) |
@@ -571,7 +571,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Renderer | RD-GRADE-DISTRIBUTION |
 | Title template | [subject]'s spread of grades: [year] against [compare year], grade by grade |
 | Title fallback | — |
-| Requires (card warning) | School grades are published from 2023/24 only (2 years). A second year is needed to compare. |
+| Requires (card warning) | School grades are published from 2021/22 (4 years; 0.6.2). A second year is needed to compare. |
 | Params | compareFrom |
 | Rail icon | GradesIcon |
 | Host | teacher.c1.counts, trend, rail "Spread by year" (src/components/teacher/GradeCountsPanels.tsx) |
@@ -599,7 +599,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Renderer | RD-YEAR-TABLE |
 | Title template | [subject]'s entries at each grade: [change year] against [year], with the change |
 | Title fallback | — |
-| Requires (card warning) | School grades are published from 2023/24 only (2 years). A second year is needed to measure a change. |
+| Requires (card warning) | School grades are published from 2021/22 (4 years; 0.6.2). A second year is needed to measure a change. |
 | Params | changeFrom |
 | Rail icon | TableIcon |
 | Host | teacher.c1.counts, trend, rail "Change table" (src/components/teacher/GradeCountsPanels.tsx) |

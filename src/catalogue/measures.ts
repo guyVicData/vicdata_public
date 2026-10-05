@@ -45,20 +45,25 @@ function gradeMeasures(phase: "ks4" | "ks5"): Measure[] {
     grain: ks4
       ? "School × subject × qualification type × grade × year"
       : "School × subject × qualification type × size × grade × year",
-    sources: ks4 ? ["dfe_ks4_subject_entries"] : ["dfe_ks5_subject_results", "dfe_tlevel_results"],
+    sources: ks4
+      ? ["academic_subject_grade_rollup (via academic_subject_grade_rollup_lookup, once applied)", "dfe_ks4_subject_entries", "dfe_ks4_subject_entries_historic"]
+      : ["dfe_ks5_subject_results", "dfe_tlevel_results", "dfe_ks5_subject_results_historic"],
     years: {
-      from: "2023/24",
+      from: "2021/22",
       to: "2024/25",
-      note: `School grade rows from raw modern facts only (academic-data-view.ts:parseSubjectGradeDistribution). academic_subject_grade_rollup holds 2021/22-2024/25 for ${ks4 ? "4,864 KS4" : "2,893 KS5"} schools but the app never reads it. Area grade figures 2021/22-2024/25.`,
+      note: ks4
+        ? "School grade rows 2021/22-2024/25 (0.6.2): academic_subject_grade_rollup through its lookup RPC when that is applied, else the modern + historic facts (src/lib/grade-rows.ts), which S1 proved equal on every key. Area grade figures 2021/22-2024/25."
+        : "School grade rows 2021/22-2024/25 (0.6.2): the modern + historic facts, parsed with R-HISTORIC-GRADE-LABELS (src/lib/grade-rows.ts); the rollup is not used at Post-16 (it has no zero-entry grade rows). Area grade figures 2021/22-2024/25.",
     },
     keying: "urn" as const,
-    fetchedBy: [`${DASHBOARD_ROUTE} (subjectData.gradeDistribution via ${SUBJECT_LEVEL})`, COMPARATOR_GRADES, GRADE_GEO],
+    fetchedBy: [`${DASHBOARD_ROUTE} (subjectData.gradeDistribution via ${SUBJECT_LEVEL}, gradeYears "four")`, COMPARATOR_GRADES, GRADE_GEO],
     briefing: ks4 ? GCSE_BRIEFING : POST16_BRIEFING,
     citation: SOURCE_NAME[phase],
   };
   const commonGaps = [
-    "School years (2) are shorter than area years (4): the grade rollup is not read.",
-    "comparator-grades pulls every subject and grade for the whole set, then filters to one subject (audit B §2).",
+    ks4
+      ? "Until the rollup lookup RPC is applied, comparator-grades reads every subject's facts for the set and filters to one subject (audit B §2); with it, one subject is read in the database."
+      : "comparator-grades reads every subject's facts for the set (modern + historic), then filters to one subject: the rollup can't serve Post-16 (no zero-entry grade rows).",
   ];
   const areaGrades = (what: string) => ({
     la: ok(`academic_subject_grade_geography_aggregate 2021-2024; every grade row needs 5 schools (R-MIN-SCHOOLS). ${what}`),
@@ -83,7 +88,7 @@ function gradeMeasures(phase: "ks4" | "ks5"): Measure[] {
         england: no("Not wired (R-NO-GRADE-RATE-GEO)"),
       }),
       numberTypes: ["rate", "change_pp", "rank"],
-      rules: ["R-GRADE-SCALE-MATCH", "R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-NO-GRADE-RATE-GEO", "R-FOCUS-NEVER-FILTERED", "R-COMPARATOR-RATE-PER-QUAL", "R-NUMBER-TYPE-HONESTY", "R-TREND-LINE-4YR", ...(ks4 ? [] : (["R-KS5-ASAEA-EXCL"] as const))],
+      rules: ["R-GRADE-SCALE-MATCH", "R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-NO-GRADE-RATE-GEO", "R-FOCUS-NEVER-FILTERED", "R-COMPARATOR-RATE-PER-QUAL", "R-NUMBER-TYPE-HONESTY", "R-TREND-LINE-4YR", ...(ks4 ? [] : (["R-KS5-ASAEA-EXCL", "R-HISTORIC-GRADE-LABELS"] as const))],
       knownGaps: [
         ...commonGaps,
         `Change is shown in percentage points everywhere (S3b, R-NUMBER-TYPE-HONESTY: teacher-view-panels.ts changeKind "pp", changeOf, formatChange).`,
@@ -103,8 +108,8 @@ function gradeMeasures(phase: "ks4" | "ks5"): Measure[] {
         ...areaGrades("Only the focused subject carries a benchmark (R-BANDS-ENGLAND-BENCH)."),
       }),
       numberTypes: ["rate", "change_pp", "totals", "market_share", "rank"],
-      rules: ["R-GRADE-SCALE-MATCH", "R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-BANDS-ENGLAND-BENCH", "R-DONUT-COUNTS-ONLY", "R-MIN-SCHOOLS", "R-FOCUS-NEVER-FILTERED", "R-COMPARATOR-RATE-PER-QUAL", "R-NUMBER-TYPE-HONESTY", ...(ks4 ? [] : (["R-KS5-ASAEA-EXCL"] as const))],
-      knownGaps: [...commonGaps, "Trend of bands: Results Trends draws it, but only over the 2 school years."],
+      rules: ["R-GRADE-SCALE-MATCH", "R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-BANDS-ENGLAND-BENCH", "R-DONUT-COUNTS-ONLY", "R-MIN-SCHOOLS", "R-FOCUS-NEVER-FILTERED", "R-COMPARATOR-RATE-PER-QUAL", "R-NUMBER-TYPE-HONESTY", ...(ks4 ? [] : (["R-KS5-ASAEA-EXCL", "R-HISTORIC-GRADE-LABELS"] as const))],
+      knownGaps: [...commonGaps],
     },
     {
       ...base,
@@ -119,7 +124,7 @@ function gradeMeasures(phase: "ks4" | "ks5"): Measure[] {
         ...areaGrades("Shown as England share ticks."),
       }),
       numberTypes: ["totals", "rate"],
-      rules: ["R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-MIN-SCHOOLS", "R-MEASURE-FALLBACK", "R-FOCUS-NEVER-FILTERED"],
+      rules: ["R-NON-GRADES-EXCL", "R-THRESHOLD-PERIODS", "R-MIN-SCHOOLS", "R-MEASURE-FALLBACK", "R-FOCUS-NEVER-FILTERED", ...(ks4 ? [] : (["R-HISTORIC-GRADE-LABELS"] as const))],
       knownGaps: [...commonGaps, "Context and Comparisons have no grade-count view; they fall back to points (R-MEASURE-FALLBACK)."],
     },
   ];

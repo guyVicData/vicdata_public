@@ -52,7 +52,7 @@ const AVERAGES: CompareKind[] = ["averages"];
 const SCHOOLS: CompareKind[] = ["schools"];
 
 const LINE_NEEDS_4 = "A line needs 4 real years here; with fewer it shows bars or a change list.";
-const GRADES_2YRS = "School grades are published from 2023/24 only (2 years).";
+const GRADES_YEARS = "School grades are published from 2021/22 (4 years; 0.6.2).";
 
 // Host shorthands.
 const c1cand = (panel: "current" | "trend", rail: string | null) => ({ id: "teacher.c1.candidates" as const, panel, rail, file: CP });
@@ -315,7 +315,7 @@ export const DATAVIEWS: Dataview[] = [
     params: ["band:range"],
     titleTemplate: "",
     titleFallback: "None (wrapper suppressed). The picked band is shaded; with no range picked, nothing is shaded.",
-    requires: GRADES_2YRS,
+    requires: GRADES_YEARS,
     renderer: "RD-GRADE-DISTRIBUTION",
     host: c1res("current", "Grade distribution"),
     audience: SUBJECT_GEOGRAPHY,
@@ -397,7 +397,7 @@ export const DATAVIEWS: Dataview[] = [
     params: ["trendStart", "showFit", "legendHidden", "band:range"],
     titleTemplate: "Results in [category]: each subject's line",
     titleFallback: "[subject], each year",
-    requires: LINE_NEEDS_4 + " Grade 4+ / A*-E and bands have 2 school years, so they show the pp change list.",
+    requires: LINE_NEEDS_4 + " Grade 4+ / A*-E and bands have 4 school years from 2021/22 (0.6.2); a subject with grades in fewer years shows the pp change list.",
     renderer: "RD-MULTI-TREND",
     host: c1res("trend", "Chart"),
     audience: SUBJECT_ACADEMIC,
@@ -535,7 +535,7 @@ export const DATAVIEWS: Dataview[] = [
     params: ["bandPending", "span"],
     titleTemplate: "",
     titleFallback: "None; the tag reads 'Grade counts [year]' (not 'Current', no 'Data [year]').",
-    requires: GRADES_2YRS,
+    requires: GRADES_YEARS,
     renderer: "RD-GRADE-DISTRIBUTION",
     host: c1cnt("current", null),
     audience: SUBJECT_GEOGRAPHY,
@@ -562,7 +562,7 @@ export const DATAVIEWS: Dataview[] = [
     },
     params: ["compareFrom"],
     titleTemplate: "[subject]'s spread of grades: [year] against [compare year], grade by grade",
-    requires: GRADES_2YRS + " A second year is needed to compare.",
+    requires: GRADES_YEARS + " A second year is needed to compare.",
     renderer: "RD-GRADE-DISTRIBUTION",
     host: c1cnt("trend", "Spread by year"),
     audience: SUBJECT_ACADEMIC,
@@ -588,7 +588,7 @@ export const DATAVIEWS: Dataview[] = [
     },
     params: ["changeFrom"],
     titleTemplate: "[subject]'s entries at each grade: [change year] against [year], with the change",
-    requires: GRADES_2YRS + " A second year is needed to measure a change.",
+    requires: GRADES_YEARS + " A second year is needed to measure a change.",
     renderer: "RD-YEAR-TABLE",
     host: c1cnt("trend", "Change table"),
     audience: SUBJECT_ACADEMIC,

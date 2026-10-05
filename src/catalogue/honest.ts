@@ -168,7 +168,8 @@ export function perHonest(ctx: HonestContext, per: ViewPer): Honest {
     case "grade":
       if (ctx.measure === "entries") return no("Candidates counts entries, not grades: grades come from Results.");
       if (set) return no("Grades are per school and subject: one value per grade belongs to a subject column.", "R-MEASURE-FALLBACK");
-      return yes("School grade rows cover 2023/24 and 2024/25 only.");
+      // 0.6.2 S2: school grade rows cover 2021/22-2024/25, as points do, so no years note.
+      return yes();
     case "school":
       if (!set) return no("Needs a set of other schools: a Comparisons column.");
       if (ctx.measure === "counts") return no("No comparator grade counts: other schools are compared on points.", "R-MEASURE-FALLBACK");
