@@ -50,7 +50,8 @@ export type ViewEditorProps = {
   subjects?: Partial<Record<"ks4" | "ks5", SubjectSource>>;
   theme: "dark" | "light";
   // Context's Compare against and selected subjects (the editor's pill), for its previews.
-  contextState?: { against?: string; selected?: string[] };
+  // 0.6.1 S5: and the edit bar's grade band (on Grade bands), for its previews.
+  contextState?: { against?: string; selected?: string[]; band?: { top: string; bottom: string } };
   onClose: () => void;
   onSave: (instance: ViewInstance) => void;
   // "Something else? Plan it" (Add only): the placeholder form.
@@ -119,6 +120,7 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
       params.against = contextState.against;
       if (contextState.against === "selected" && contextState.selected) params.selected = contextState.selected;
     }
+    if (contextState?.band && (m ?? env.measure) === "bands") params.bandRange = contextState.band;
     return { ...p, ...(m ? { results: m } : {}), params, schoolUrn: pvSchool.urn };
   };
   const resolved = (m: ResultsMeasure | null) => resolveTitle(template, dv, ctxFor(m));

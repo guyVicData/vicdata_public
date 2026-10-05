@@ -32,6 +32,8 @@ export function LivePanelPreview(props: PanelPreviewProps) {
     const against = variants?.state.compareAgainst;
     if (against && dv.host.id === "teacher.c2.context")
       pinned = { ...pinned, params: { ...(pinned.params ?? {}), against, ...(against === "selected" && variants?.contextSelected ? { selected: variants.contextSelected } : {}) } };
+    // 0.6.1 S5: on Grade bands, the edit bar's band (embed.ts writes it as band:range).
+    if (variants?.band) pinned = { ...pinned, params: { ...(pinned.params ?? {}), bandRange: variants.band } };
   } catch {
     return <DataFreePreview {...props} />;
   }

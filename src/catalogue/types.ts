@@ -20,7 +20,7 @@ export type DataId = "academic.candidates" | "academic.results" | "rolls" | "soc
 
 export type Phase = "ks4" | "ks5";
 
-// The Results sub-measure pill (MeasurePicker): APS / Grade 4+ / grade bands / grade counts.
+// The Results sub-measure pill (ResultsControl, the top bar since 0.6.1 S5): APS / Grade 4+ / grade bands / grade counts.
 export type ResultsMeasure = "points" | "threshold" | "bands" | "counts";
 
 // 0.6 snag 4 / 02: the other page states a view can vary by (src/catalogue/variants.ts).

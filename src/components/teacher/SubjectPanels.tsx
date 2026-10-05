@@ -43,7 +43,7 @@ import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
-import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
+import { AverageIcon, DonutIcon, FlagIcon, GradesIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, MapPinIcon, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon, VerticalBarsIcon } from "./PanelIcons";
 import { GradeDistribution } from "./GradeDistribution";
 import { bandDistribution } from "@/lib/grade-spread";
 import { bandRate, type GradeRange } from "@/lib/subject-grades";
@@ -227,16 +227,14 @@ export function SubjectPanels({
   // view when set. Context never passes it.
   tiles?: boolean;
   // Grade bands frontend round: Results on Grade bands. The range lives on the page (so
-  // Comparisons and Context read the same span); this draws its preset chips, the Grades
-  // view where a custom span is clicked out, and the range's own tiles. The rates
-  // themselves arrive as the usual subjects' values and England benchmark.
+  // Comparisons and Context read the same span); this draws the Grades view and the
+  // range's own tiles. The rates themselves arrive as the usual subjects' values and
+  // England benchmark. 0.6.1 S5 (D3): the range is picked in the top bar (ResultsControl);
+  // the in-panel band row and click-two-grades picking are gone, and the Grades view is the
+  // focused subject's grade distribution with the picked band shaded.
   gradeBand?: {
     range: GradeRange | null;
     rangeLabel: string | null;
-    presets: { id: string; label: string; top: string; bottom: string }[];
-    onPreset: (top: string, bottom: string) => void;
-    pending: string | null;
-    onGradeClick: (grade: string) => void;
     colour: string;
     // The focused subject's own per-grade rows (this school, every year it has them).
     ownRows: { period: number; grade: string; entries: number }[];
@@ -474,26 +472,6 @@ export function SubjectPanels({
   // (0.6.1 S3d: src/lib/grade-spread.ts, which the renderer reads too.)
   const band = bandDistribution(gradeBand?.ownRows ?? [], englandGradeRows, gradeBand ? latest : null);
 
-  // Grade bands: the range row under the panel header -- the presets where the scale has
-  // them (GCSE 9-1 only), the range in use, and the way into the Grades view for a custom
-  // span. A pending first click says so.
-  const bandControls = gradeBand ? (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {gradeBand.presets.map((p) => (
-        <Pill
-          key={p.id}
-          label={`Grades ${p.label}`}
-          active={!!gradeBand.range && gradeBand.range.top === p.top && gradeBand.range.bottom === p.bottom && !gradeBand.pending}
-          onClick={() => gradeBand.onPreset(p.top, p.bottom)}
-        />
-      ))}
-      <Pill label={gradeBand.presets.length ? "Custom…" : "Pick grades…"} active={effectiveView === "grades"} onClick={() => setView("grades")} />
-      <span className="text-[11.5px] text-[var(--muted)]">
-        {gradeBand.pending ? `From ${gradeBand.pending}: click the other end` : gradeBand.rangeLabel ?? "No range yet"}
-      </span>
-    </div>
-  ) : undefined;
-
   // Current panel rework round 1: a title over each of Context's Current views. The donut's
   // wording is Guy's; the bar chart / ranked list / table one is provisional. On Grade
   // bands the donut is the group's entries in the range, not the focused subject's.
@@ -509,7 +487,6 @@ export function SubjectPanels({
         : null;
 
   const current: PanelRender = {
-    controls: bandControls,
     // Current panel rework round 1: the tag is the fixed word "Current" in every column, and
     // the year follows it as plain text ("Data 2024/25"). currentLabel no longer builds the
     // tag; it stays a prop as the column's own name for titles.
@@ -529,7 +506,7 @@ export function SubjectPanels({
     actions: (
       <>
         {tiles && <IconButton label="Number tiles" active={effectiveView === "tiles"} onClick={() => setView("tiles")}>{TilesIcon}</IconButton>}
-        {gradeBand && <IconButton label="Grades (pick a range)" active={effectiveView === "grades"} onClick={() => setView("grades")}>{GradesIcon}</IconButton>}
+        {gradeBand && <IconButton label="Grade distribution" active={effectiveView === "grades"} onClick={() => setView("grades")}>{GradesIcon}</IconButton>}
         {donut && (
           <IconButton
             label={donut.enabled ? "Share (donut)" : "Share is only meaningful for candidate numbers"}
@@ -560,8 +537,7 @@ export function SubjectPanels({
                   total={band.total}
                   colour={gradeBand.colour}
                   range={gradeBand.range}
-                  pending={gradeBand.pending}
-                  onGradeClick={gradeBand.onGradeClick}
+                  pending={null}
                   benchLabel={band.benchLabel}
                   fullscreen={fullscreen}
                 />
@@ -571,13 +547,8 @@ export function SubjectPanels({
             )
           ) : gradeBand && !gradeBand.range ? (
             // An honest empty state rather than a band nobody chose: this scale has no
-            // preset, so the rate waits for a range.
-            <div className="flex flex-col items-start gap-2 text-sm text-[var(--muted)]">
-              <p>Pick a range to see a rate: open Grades and click one grade, then another.</p>
-              <button type="button" onClick={() => setView("grades")} className="rounded-md border border-[var(--panel-border2)] px-2 py-1 text-[12px] font-semibold text-[var(--fg)]">
-                Open Grades
-              </button>
-            </div>
+            // preset, so the rate waits for a range -- picked in the top bar (0.6.1 S5).
+            <p data-band-no-range="" className="text-sm text-[var(--muted)]">Pick a grade range from Grades ▾ in the top bar to see a rate.</p>
           ) : effectiveView === "tiles" ? (
             <ConfiguredNumberTiles main={tilesMainBuilt} tiles={tileRow} vars={tileVars} fullscreen={fullscreen} />
           ) : effectiveView === "donut" && donut ? (
@@ -1066,7 +1037,7 @@ export function SubjectPanels({
     hasGeography: !!geography,
     tiles: !!tiles,
     gradeBand: gradeBand
-      ? { range: gradeBand.range, rangeLabel: gradeBand.rangeLabel, ownRows: gradeBand.ownRows, englandRows: englandGradeRows, colour: gradeBand.colour, pending: gradeBand.pending, onGradeClick: gradeBand.onGradeClick }
+      ? { range: gradeBand.range, rangeLabel: gradeBand.rangeLabel, ownRows: gradeBand.ownRows, englandRows: englandGradeRows, colour: gradeBand.colour }
       : null,
     schoolName: runtime?.school?.name,
     // S3c: the phase (D7's honest options), Context's donut, Results' geography comparison

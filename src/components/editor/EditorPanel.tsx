@@ -66,6 +66,8 @@ export type EditorVariants = {
   onShowOn: (panelId: string, instanceId: string, axis: VariantAxis, states: string[]) => void;
   // The page's selected subjects, so a Context preview on "Selected subjects" draws them.
   contextSelected?: string[];
+  // 0.6.1 S5: the edit bar's grade band (Results on Grade bands), for the live previews.
+  band?: { top: string; bottom: string } | null;
 };
 export const EditorVariantsContext = createContext<EditorVariants | null>(null);
 

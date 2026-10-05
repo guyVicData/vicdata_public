@@ -1,5 +1,5 @@
 // VicData 0.6.1 S3d: one subject's grade spread -- the derivations Grade counts' panels
-// (GradeCountsPanels) and Results' "Grades (pick a range)" view (SubjectPanels) drew inline,
+// (GradeCountsPanels) and Results' Grade distribution view (was "Grades (pick a range)") (SubjectPanels) drew inline,
 // moved here unchanged so the hosts and the config-driven renderer (src/lib/view-series/
 // grades.ts) read the same numbers from one place.
 //

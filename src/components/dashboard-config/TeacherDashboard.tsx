@@ -56,11 +56,11 @@ import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeri
 import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
-import { MeasurePicker } from "@/components/teacher/MeasurePicker";
+import { ResultsControl } from "@/components/teacher/ResultsControl";
 import { GradeCountsPanels } from "@/components/teacher/GradeCountsPanels";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type MeasureId, type PanelId } from "@/lib/teacher-view-panels";
-import { bestScale, presetsFor, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
+import { bestScale, rangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
 import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
@@ -74,7 +74,7 @@ import { type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 // VicData 0.6 S2: the rules that decide each figure and each comparison population live in
 // these libs (every enforcement point tagged with its rule ID); this page only calls them.
-import { bandRangeFor, onGradeScale, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
+import { bandRangeFor, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
 import { type SubjectItem as LibSubjectItem, asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf, subjectItemsOf } from "@/lib/teacher-view-populations";
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
@@ -263,8 +263,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // The map's own rank for this school on the subject it is plotting (reported by
   // AcademicMapView), so the "N of M" line can match the map once a chip is active.
   const [mapRank, setMapRank] = useState<{ rank: number; total: number } | null>(null);
-  // Grade bands: the first click of a two-click range, waiting for its second.
-  const [bandPending, setBandPending] = useState<string | null>(null);
   // The subject picker is a popup opened by the chip header's "±", not a permanent
   // section of the dashboard.
   // Round 8 §3: ONE focus subject for the whole dashboard. Content round S5 killed "All":
@@ -1174,21 +1172,12 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     ? gradeRows.filter((g) => g.subject === focusItem.subject && g.qualificationType === focusItem.qualificationType)
     : [];
   const focusScale = bestScale(focusGradeRows.map((g) => g.grade));
-  const onFocusScale = (g: string) => onGradeScale(focusScale, g);
-  const bandPresets = presetsFor(focusScale);
-  const bandRange: GradeRange | null = bandRangeFor(focusScale, bandPending, readSetting(columns, BAND_RANGE_KEY));
+  // 0.6.1 S5 (D3): the range is chosen in the top bar (ResultsControl: the scale's presets,
+  // or Custom's from / to), no longer by clicking two grades in the Grades view.
+  const bandRange: GradeRange | null = bandRangeFor(focusScale, null, readSetting(columns, BAND_RANGE_KEY));
   const bandLabel = bandRange ? rangeLabel(bandRange) : null;
   const saveBand = (top: string, bottom: string) => {
-    setBandPending(null);
     void setColumnSetting(BAND_RANGE_KEY, JSON.stringify({ top, bottom }));
-  };
-  const clickBandGrade = (grade: string) => {
-    if (bandPending && onFocusScale(bandPending)) {
-      const span = spanBetween(focusScale, bandPending, grade);
-      saveBand(span.top, span.bottom);
-    } else {
-      setBandPending(grade);
-    }
   };
   const bandAt = (i: SubjectItem, period: number): number | null => subjectBandAt(gradeRows, i, period, bandRange);
   // Grade rows exist from 2023/24 only; on Grade bands the axis is the years that have them.
@@ -1702,13 +1691,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         notes={notesFor(COL1)}
         question={q.howWell}
         source={panelSource}
-        controls={
-          <MeasurePicker
-            measures={resultsMeasures}
-            active={resultsMeasure}
-            onChange={(id) => setColumnSetting(measureKey("results"), id)}
-          />
-        }
       />
     ) : showingResults ? (
       <SubjectPanels
@@ -1778,10 +1760,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
             ? {
                 range: bandRange,
                 rangeLabel: bandLabel,
-                presets: bandPresets,
-                onPreset: saveBand,
-                pending: bandPending && onFocusScale(bandPending) ? bandPending : null,
-                onGradeClick: clickBandGrade,
                 colour: colourOf(focusItem),
                 ownRows: focusGradeRows,
                 geography: schoolUrn
@@ -1790,17 +1768,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               }
             : undefined
         }
-        controls={
-          // §3's row-alignment fix: the Results sub-measure pill sits under this
-          // column's own heading, the same slot Context's and Comparisons' pills
-          // use -- not in the shared bar, where it existed in only one toggle state
-          // and pushed the three columns' panels out of line with each other.
-          <MeasurePicker
-            measures={resultsMeasures}
-            active={resultsMeasure}
-            onChange={(id) => setColumnSetting(measureKey("results"), id)}
-          />
-        }
+        // 0.6.1 S5 (D4): the Results sub-measure pill moved from under this column's
+        // heading to the top bar (ResultsControl), beside the grade band choice, so it is
+        // visible (pinch point 12). Column 1 now has no pill row, as in Candidates mode.
         benchmarkLabel={usingThreshold ? undefined : "National"}
         benchmarkNoun={
           usingThreshold
@@ -2015,7 +1985,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
                   contextFallsBack
                     ? resultsMeasure.id === "counts"
                       ? "Grade counts has no single figure to compare subjects on, so Context shows average points."
-                      : "Pick a grade range in Results to compare subjects on it; until then Context shows average points."
+                      : "Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points."
                     : null,
                   // R-POINTS-SAME-QUAL (S3b): say why other qualification types are missing.
                   contextKeepsFamily && contextFamilyLabel
@@ -2213,6 +2183,20 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     );
   }
 
+  // 0.6.1 S5 (D3 + D4): the Results switch and the grade band choice, in the top bar (and
+  // the phone nav), Results mode only. The same saved settings as before (measure:results,
+  // band:range), so members' choices carry over. Never in an embed (returned above).
+  const topResults = (compact: boolean) =>
+    showingResults ? (
+      <ResultsControl
+        measures={resultsMeasures}
+        active={resultsMeasure}
+        onMeasure={(id) => setColumnSetting(measureKey("results"), id)}
+        band={focusItem ? { scale: focusScale, range: bandRange, onRange: saveBand } : null}
+        compact={compact}
+      />
+    ) : undefined;
+
   // 0.6 snag 2 (B): with Edit on, the page stays mounted but hidden (its open rows, focused
   // subject, ticked subjects and scroll come back as they were when Edit goes off) and
   // gives up the #teacher-root id to the editor drawn in its place.
@@ -2224,7 +2208,13 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           subject: focusItem ? { label: phase === "ks5" ? focusItem.label : focusItem.subject, key: focusItem.key } : null,
           ...(focusFamilyLabel ? { category: focusFamilyLabel } : {}),
         },
-        states: { compareAgainst: contextAgainst, comparator: onRanking ? "ranking" : "schools", selected: contextSelected },
+        states: {
+          compareAgainst: contextAgainst,
+          comparator: onRanking ? "ranking" : "schools",
+          selected: contextSelected,
+          // 0.6.1 S5: the editor's own Results control opens on the page's band.
+          ...(focusItem ? { band: { scale: focusScale, range: bandRange ? { top: bandRange.top, bottom: bandRange.bottom } : null } } : {}),
+        },
         top: <ViewAsBanner className="" />,
         onExit: () => setEditOn(false),
       }
@@ -2263,6 +2253,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         focusKey={focusKey}
         onFocus={setFocusKey}
         onEditSubjects={openSubjectPicker}
+        results={topResults(true)}
         className="sm:hidden"
       />
       <div className="hidden sm:block print:block">
@@ -2293,6 +2284,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           // 0.6 snag 2 (B): no super-admin Edit link here any more -- the footer's Edit
           // switch opens the editor in place, and with it off the page is the member's.
           chrome={<ExportButton />}
+          results={topResults(false)}
           switcher={
             dashboardConfig ? (
               <GroupSwitcher

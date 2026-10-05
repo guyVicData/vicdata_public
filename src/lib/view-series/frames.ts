@@ -138,9 +138,10 @@ export type SubjectsFrame = {
   // S3b: Results' number tiles. `tiles` = the host offers them (Column 1 Results); on Grade
   // bands, the range and the focused subject's own per-grade rows (bandRate's input).
   tiles?: boolean;
-  // S3d: the "Grades (pick a range)" view's inputs too -- England's per-grade rows (the
-  // host's fetch, [] until it arrives), the subject's colour and the range picking (a first
-  // click waiting for its second; the page's handler).
+  // S3d: the Grade distribution view's inputs too (was "Grades (pick a range)") --
+  // England's per-grade rows (the host's fetch, [] until it arrives) and the subject's
+  // colour. `pending` / `onGradeClick` (click two grades to pick the range) are no longer
+  // passed by the page since 0.6.1 S5: the range is picked in the top bar.
   gradeBand?: {
     range: GradeRange | null;
     rangeLabel: string | null;

@@ -2,7 +2,9 @@
 
 // Teacher view, round 8 §3: the one control bar, replacing the per-column title rows.
 //
-// It carries exactly three things, and the list is deliberately short. Guy caught, live,
+// It carries exactly three things, and the list is deliberately short. (0.6.1 S5, D3 + D4:
+// and, in Results mode, the Results switch and grade band choice -- moved up from Column 1
+// so they are visible; see ResultsControl.) Guy caught, live,
 // that a measure-specific pill appearing up here only in Results mode threw the three
 // columns' panel grids out of alignment with each other depending on toggle state -- so
 // everything measure-specific moved down under its own column's heading, and what is left
@@ -71,6 +73,7 @@ export function ControlBar({
   onEditSubjects,
   chrome,
   switcher,
+  results,
 }: {
   // Content round S1: the badge draws the phase's own PhaseGlyph -- the one the Teacher
   // home tiles and the nav's phase switcher use -- not a separate mortarboard.
@@ -90,6 +93,9 @@ export function ControlBar({
   // 0.6, ?renderer=config only: the linked-dashboard switcher drawn in the toggle's place
   // (GroupSwitcher). Absent = the Candidates/Results toggle, as before.
   switcher?: ReactNode;
+  // 0.6.1 S5 (D3 + D4): the Results switch and the grade band choice (ResultsControl),
+  // beside the Candidates / Results switch -- Results mode only, never in an embed.
+  results?: ReactNode;
 }) {
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3">
@@ -105,6 +111,7 @@ export function ControlBar({
         </div>
 
         {switcher ?? <MeasureToggle measure={measure} onMeasure={onMeasure} />}
+        {results}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 print:hidden">

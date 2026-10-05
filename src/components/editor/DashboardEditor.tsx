@@ -22,6 +22,9 @@ import { followsResultsPill, showsOn, tagForPill } from "@/catalogue/results";
 import { configAxes, panelState, showsOnState, type VariantAxis, type VariantState } from "@/catalogue/variants";
 import { measuresFor } from "@/lib/teacher-view-panels";
 import { PillMenu } from "@/components/teacher/PillMenu";
+import { ResultsControl } from "@/components/teacher/ResultsControl";
+import { GCSE_SCALE, GRADE_SCALES, type GradeRange } from "@/lib/subject-grades";
+import { bandRangeFor } from "@/lib/teacher-view-measures";
 import { MenuHeading, MenuRow } from "@/components/teacher/PanelMenu";
 import { SwitchButton } from "@/components/edit-mode/EditSwitch";
 import { contextFromPanel, settingsOf, titleOverrideOf, type PanelLabels, type PickPanelContext, type PlaceholderRequest } from "@/catalogue/pick";
@@ -88,7 +91,9 @@ export type DashboardEditorProps = {
   // 0.6 snag 4 / 02: the page's own Compare against and comparator kind, so the editor's
   // pills open on them (as the Results pill opens on labels.results).
   // `selected`: Context's selected subjects, for live previews on "Selected subjects".
-  states?: { compareAgainst?: CompareAgainstState; comparator?: ComparatorState; selected?: string[] };
+  // `band` (0.6.1 S5): the focused subject's grade scale and the page's band range, so the
+  // editor's Results control opens on them.
+  states?: { compareAgainst?: CompareAgainstState; comparator?: ComparatorState; selected?: string[]; band?: { scale: string[]; range: { top: string; bottom: string } | null } };
 };
 
 type DialogState =
@@ -162,6 +167,10 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   // 0.6 snag 3 / 03: the Results pill (on a Results dashboard): the page's pill when the
   // editor opens in place, else Average points. Rails, previews and the view menu follow it.
   const [pill, setPill] = useState<ResultsMeasure>(hostLabels?.results ?? "points");
+  // 0.6.1 S5 (D3): the band the editor previews Grade bands on -- the page's when the
+  // editor opens in place; else, with no subject to read a scale from, GCSE 9–1's 7–9 (or,
+  // at Post-16, the A-level scale with no range until one is picked).
+  const [band, setBand] = useState<{ top: string; bottom: string } | null>(() => hostStates?.band ? hostStates.band.range : null);
   // 0.6 snag 4 / 02: Context's Compare against and Comparisons' comparator kind, each with
   // its own pill, opening on the page's state.
   const [against, setAgainst] = useState<CompareAgainstState>(hostStates?.compareAgainst ?? "category");
@@ -269,6 +278,9 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   const pillMeasures = measuresFor(config.columns[0]?.data.phase ?? "ks4");
   const pillLabels = Object.fromEntries(pillMeasures.map((m) => [m.id, m.label])) as Record<ResultsMeasure, string>;
   const pillOn = resultsPill ? pill : null;
+  const phaseNow = config.columns[0]?.data.phase ?? "ks4";
+  const bandScale = hostStates?.band?.scale ?? (phaseNow === "ks5" ? GRADE_SCALES[2] : GCSE_SCALE);
+  const bandRange: GradeRange | null = band ? { scale: bandScale, ...band } : bandRangeFor(bandScale, null, undefined);
   // Titles and previews read the editor's pill, not the page's.
   const labels = useMemo(() => (resultsPill ? { ...hostLabels, results: pill } : hostLabels), [resultsPill, hostLabels, pill]);
   // 0.6 snag 4 / 02: one pill per variant axis the dashboard has (catalogue/variants.ts),
@@ -296,6 +308,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
         state: editorState,
         axes: axisInfo,
         contextSelected: hostStates?.selected,
+        band: pill === "bands" && bandRange ? { top: bandRange.top, bottom: bandRange.bottom } : null,
         showAll,
         onShowOn: (panelId, instanceId, axis: VariantAxis, states) => {
           const inst = config.panels.flatMap((p) => p.dataviews).find((v) => v.id === instanceId);
@@ -671,18 +684,17 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {axes.length > 0 && (
               <div data-editor-pill="" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {/* 0.6 snag 3 / 03: the page's own Results pill, for the editor's rails. */}
+                {/* 0.6.1 S5 (D3 + D4): the members' own top-bar control -- Results and, on Grade
+                    bands, the grade band -- for the editor's rails and previews. */}
                 {resultsPill && (
-                <PillMenu label="Results" value={pillLabels[pill]} menuLabel="Switch measure" width={236} align="right">
-                  {(close) => (
-                    <>
-                      <MenuHeading>Switch measure</MenuHeading>
-                      {pillMeasures.map((m) => (
-                        <MenuRow key={m.id} label={m.label} selected={m.id === pill} onClick={() => { setPill(m.id as ResultsMeasure); close(); }} />
-                      ))}
-                    </>
-                  )}
-                </PillMenu>
+                  <ResultsControl
+                    measures={pillMeasures}
+                    active={{ id: pill, label: pillLabels[pill] }}
+                    onMeasure={(id) => setPill(id as ResultsMeasure)}
+                    band={{ scale: bandScale, range: bandRange, onRange: (top, bottom) => setBand({ top, bottom }) }}
+                    align="right"
+                    nowrap
+                  />
                 )}
                 {/* 0.6 snag 4 / 02: Context's own Compare against pill -- the page's words. */}
                 {axes.includes("compareAgainst") && (
@@ -776,7 +788,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           school={school}
           subjects={subjects}
           theme={theme}
-          contextState={{ against, selected: hostStates?.selected }}
+          contextState={{ against, selected: hostStates?.selected, ...(pill === "bands" && bandRange ? { band: { top: bandRange.top, bottom: bandRange.bottom } } : {}) }}
           onClose={() => setDialog(null)}
           onPlan={() => setDialog({ kind: "plan", target: dialog.target, ctx: dialog.env.ctx })}
           onSave={(instance) => {

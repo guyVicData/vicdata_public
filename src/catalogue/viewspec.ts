@@ -163,8 +163,9 @@ export type SpreadLook = {
   average?: "none" | "mean" | "median";
   bands?: "none" | "follows-page" | { top: string; bottom: string };
   values?: boolean;
-  // [ext] members click two grades to highlight a span (Grade counts' Current), or to pick
-  // the page's band range ("Grades (pick a range)", retired by D3).
+  // [ext] members click two grades to highlight a span (Grade counts' Current); or the
+  // page's band range, shaded ("page-range": Results' Grade distribution on Grade bands --
+  // since 0.6.1 S5 (D3) picked in the top bar, no longer by clicking grades here).
   memberSpan?: "highlight" | "page-range";
 };
 
