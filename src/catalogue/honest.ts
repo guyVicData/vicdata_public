@@ -291,6 +291,12 @@ export function showForOptions(spec: ViewSpec, base: Omit<HonestContext, "measur
     if (!presetMeasures.includes(m)) return { measure: m, label, ...no(`This view can't be drawn on ${label}.`) };
     for (const verdict of [perHonest(ctx, spec.data.per), shownAsHonest(ctx, spec.data.shownAs, spec.data.per), viewHonest(ctx, spec.view.kind, spec.data)]) if (!verdict.ok) return { measure: m, label, ...verdict };
     if (fallback) return { measure: m, label, ...yes("Falls back to Average points here.", "R-MEASURE-FALLBACK") };
+    // The "against the wider system" views (LA, region, England) follow the page, which
+    // shows them only on Average points: on any other Results measure the panel draws the
+    // not-applicable note (resultsGeographyApplies), so they can't honestly be ticked there.
+    if (spec.compare === "follows-page" && /^DV-C1-RES-TR-GEO-/.test(spec.preset ?? "") && m !== "points") {
+      return { measure: m, label, ...no(`LA, regional and national figures are published for average points only, not ${label.toLowerCase()}.`, "R-NO-GRADE-RATE-GEO") };
+    }
     if (spec.compare === "follows-page") return { measure: m, label, ...yes("Follows the page") };
     const span = "from" in spec.data.years;
     const lines = spec.compare.filter((c) => !c.average);

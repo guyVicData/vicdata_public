@@ -278,3 +278,15 @@ test("the editor's preview draws on the measure the page is on (asPage), as memb
   // A measure the view doesn't show on is still never drawn.
   assert.equal(oneViewConfig(dv, { ...pin, results: "counts" }, "x", undefined, undefined, { asPage: true }).columns[0].data.results, "points");
 });
+
+test("Show this view for: the wider-system views (S6 follow-up) grey Grade 4+, Grade bands and Grade counts on the Results geography views, with the reason", async () => {
+    const { showForOptions } = await import("@/catalogue/honest");
+    for (const preset of ["DV-C1-RES-TR-GEO-CHART", "DV-C1-RES-TR-GEO-TABLE"] as const) {
+      const spec = presetSpec(preset);
+      const opts = showForOptions(spec, { phase: "ks4", host: "teacher.c1.results" } as never, "teacher.c1.results", ["points", "threshold", "bands"]);
+      const byM = Object.fromEntries(opts.map((o) => [o.measure, o]));
+      assert.equal(byM.points.ok, true);
+      for (const m of ["threshold", "bands", "counts"]) assert.equal(byM[m].ok, false, `${preset} ${m}`);
+      assert.match(byM.bands.reason ?? "", /average points only/);
+    }
+  });
