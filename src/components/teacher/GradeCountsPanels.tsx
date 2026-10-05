@@ -152,6 +152,8 @@ export function GradeCountsPanels({
       ),
     summary: cmpYear === null ? oneYearOnly : undefined,
     source: source(cmpYear === null ? yearText : `${academicYearLabel(cmpYear)}–${yearText}`),
+    // R-2122-GRADING-NOTE: this year's spread against the compare year.
+    gradingYears: cmpYear === null || latest === null || ownTotal === 0 ? null : [cmpYear, latest],
   };
 
   const changeData: PanelData = g.changeDataIn(colour);
@@ -172,6 +174,7 @@ export function GradeCountsPanels({
       ),
     summary: chgYear === null ? oneYearOnly : undefined,
     source: source(chgYear === null ? yearText : `${academicYearLabel(chgYear)}–${yearText}`),
+    gradingYears: chgYear === null || latest === null ? null : [chgYear, latest],
   };
 
   // The one Trends panel: the spread comparison then the change table, each half's "From"
@@ -189,6 +192,7 @@ export function GradeCountsPanels({
     body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
     summary: isChange ? changeHalf.summary : trendHalf.summary,
     source: isChange ? changeHalf.source : trendHalf.source,
+    gradingYears: isChange ? changeHalf.gradingYears : trendHalf.gradingYears,
   };
 
   // 0.6.1 S3d: what the config-driven view renderer draws from (under `views=v2` only): the

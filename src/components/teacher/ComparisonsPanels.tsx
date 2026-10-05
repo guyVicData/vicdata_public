@@ -64,6 +64,7 @@ import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
 import type { ComparisonsFrame } from "@/lib/view-series/frames";
 import { SAVED_SET_PREFIX } from "@/lib/teacher-view-saved-sets";
+import { gradingNoteEligible } from "@/catalogue/notes";
 
 export type MapChip = {
   key: string;
@@ -549,6 +550,9 @@ export function ComparisonsPanels({
   const realPeriods = periodsWithData(full);
   const trendData = sliceFrom(full, trendStart);
   const changeData = sliceFrom(full, changeStart);
+  // R-2122-GRADING-NOTE: a grade or points measure (Attainment 8, points, a rate) above KS2
+  // carries the 2021/22 grading note on a Trends view whose years include 2021/22.
+  const graded = gradingNoteEligible(measure.id, phase);
   // The Trend and % Change tables list every school in the set, one row each, over the
   // same years as the charts (which keep the two series above). The school's own row is
   // "own", so it is picked out and centred as the charts' line is.
@@ -691,6 +695,8 @@ export function ComparisonsPanels({
       <PanelSummary>Not enough published years yet to describe a trend for this school.</PanelSummary>
     ),
     source: source(spanLabel(trendData.periods)),
+    // R-2122-GRADING-NOTE: the years this Trend draws, on a grade or points measure.
+    gradingYears: graded ? trendData.periods : null,
     headline: seriesLoading || !trendSaid ? undefined : (
       <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
@@ -779,6 +785,7 @@ export function ComparisonsPanels({
         </PanelSummary>
       ),
     source: source(spanLabel(changeData.periods)),
+    gradingYears: graded ? changeData.periods : null,
     headline: seriesLoading ? undefined : ownChange === null || ownChange === undefined ? undefined : fmtChange(ownChange),
   };
 
@@ -802,6 +809,7 @@ export function ComparisonsPanels({
     body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
     summary: isChange ? changeHalf.summary : trendHalf.summary,
     source: isChange ? changeHalf.source : trendHalf.source,
+    gradingYears: isChange ? changeHalf.gradingYears : trendHalf.gradingYears,
   };
 
   // On a rate, a school that publishes no grades for the subject drops out of the lists as

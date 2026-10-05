@@ -33,6 +33,7 @@ const lib = async () => ({
   tvm: await import("../src/lib/teacher-view-measures"),
   pop: await import("../src/lib/teacher-view-populations"),
   sb: await import("../src/lib/supabase"),
+  notes: await import("../src/catalogue/notes"),
 });
 type Lib = Awaited<ReturnType<typeof lib>>;
 
@@ -204,6 +205,35 @@ const RUNNERS: Record<string, Runner> = {
       grade4Kind: tvp.trendChartKind(rate),
     };
     return { pass: v.pointsYears === 4 && v.pointsKind === "line" && v.grade4Years === 4 && v.grade4Kind === "line", detail: fmt(v) };
+  },
+
+  // R-2122-GRADING-NOTE: The Chase 137625 GCSE History, on its real rows. Its Trends span
+  // (trimmed to data, as the hosts draw it) on Average points and on Grade bands 7-9 reaches
+  // 2021/22, so both carry the note; trimmed to 2022/23 on, or its latest year alone, none.
+  // Entries and KS2 are never eligible. (The note in fullscreen / print: src/lib/grading-note.test.ts.)
+  async gradingNote2122({ adv, sg, tvp, notes }) {
+    const urn = "137625";
+    const qual = "GCSE (9-1) Full Course";
+    const headline = ((await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? []).filter((h) => h.subject === "History");
+    const pp = [...new Set(headline.map((h) => h.period))].sort();
+    const points = tvp.trimToData({ periods: pp, series: [{ key: "h", label: "History", colour: "#000", values: pp.map((p) => headline.find((h) => h.period === p)?.avgPointScore ?? null) }] });
+    const grades = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter((r) => r.subject === "History" && r.qualificationType === qual);
+    const gp = [...new Set(grades.map((r) => r.period))].sort();
+    const range = { scale: sg.bestScale(grades.map((r) => r.grade)), top: "9", bottom: "7" };
+    const bands = tvp.trimToData({ periods: gp, series: [{ key: "h", label: "History", colour: "#000", values: gp.map((p) => sg.bandRate(grades.filter((r) => r.period === p), range)?.rate ?? null) }] });
+    const has = (years: readonly number[] | null) => notes.gradingNoteFor(years) === notes.GRADING_2122_NOTE;
+    const v = {
+      pointsYears: points.periods.join(" "),
+      bandsYears: bands.periods.join(" "),
+      pointsNote: notes.gradingNoteEligible("points", "ks4") && has(points.periods),
+      bandsNote: notes.gradingNoteEligible("bands", "ks4") && has(bands.periods),
+      from2223: has(tvp.sliceFrom(bands, 2022).periods) || has(tvp.sliceFrom(points, 2022).periods),
+      latestOnly: has(bands.periods.slice(-1)),
+      entries: notes.gradingNoteEligible("entries", "ks4"),
+      ks2: notes.gradingNoteEligible("points", "ks2"),
+    };
+    const pass = v.pointsNote && v.bandsNote && !v.from2223 && !v.latestOnly && !v.entries && !v.ks2 && bands.periods[0] === 2021;
+    return { pass, detail: fmt(v) };
   },
 
   // R-THRESHOLD-PERIODS: Acland Burghley 100053's school grade rows (the dashboard's, gradeYears

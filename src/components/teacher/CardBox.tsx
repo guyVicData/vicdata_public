@@ -28,6 +28,11 @@ import { ChevronDown } from "./PanelIcons";
 // so a CardBox outside the dashboard is unaffected.
 export const FullscreenReport = createContext<(open: boolean) => void>(() => {});
 
+// 0.6.2 S4: every CardBox under it renders already open in fullscreen -- what a server
+// render (the unit tests, src/lib/grading-note.test.ts) needs to read the fullscreen and
+// "Print this graph" output, since it can't click. Nothing in the app provides it.
+export const OpenInFullscreen = createContext(false);
+
 // Round 8 §2/§7: every panel is this tall, so the three columns line up as a real 3x3 grid.
 //
 // Computed from the REAL grid rather than copied from the wireframe, which §7 asks for
@@ -181,7 +186,7 @@ export function CardBox({
   // own Leaflet map).
   children: (mode: { fullscreen: boolean }) => ReactNode;
 }) {
-  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(useContext(OpenInFullscreen));
   // Round 8 §5: a panel print is the same fullscreen modal, opened for the print and
   // marked as the one subtree to paint. Tracked separately from `fullscreen` so closing
   // the print does not leave an ordinary fullscreen open behind it.

@@ -59,6 +59,7 @@ import { VerticalBars } from "./VerticalBars";
 import { RankedList } from "./RankedList";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
 import type { FrameSchoolGroup, FrameSet, FrameSetGrades, SubjectsFrame } from "@/lib/view-series/frames";
+import { gradingNoteEligible } from "@/catalogue/notes";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -315,6 +316,11 @@ export function SubjectPanels({
   // the panel on a view it can no longer draw. (R-DONUT-COUNTS-ONLY is decided by the
   // caller through shareApplies(), teacher-view-measures.ts; this only honours it.)
   const effectiveView = (view === "donut" && !donut?.enabled) || (view === "tiles" && !tiles) || (view === "grades" && !gradeBand) || (view === "list" && !rankedViews) ? "bar" : view;
+
+  // R-2122-GRADING-NOTE: a grade or points figure (never entries; KS2 has no SubjectPanels)
+  // carries the 2021/22 grading note on a Trends view whose years include 2021/22
+  // (ColumnPanels adds it after the source, below).
+  const graded = gradingNoteEligible(measure.id, runtime?.phase);
 
   // The source line with the caveat after it -- what every panel's "i" opens.
   const sourceWithNote = (span?: string) => {
@@ -871,6 +877,8 @@ export function SubjectPanels({
     // Part 3: the map, like Comparisons', reads far better with room.
     suggestFullscreen: trendView === "map",
     source: sourceWithNote(spanLabel(trendData.periods)),
+    // R-2122-GRADING-NOTE: the years this Trend draws; the map plots one year (none).
+    gradingYears: graded && trendView !== "map" ? trendData.periods : null,
     headline: trendSaid ? (
       <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
@@ -987,6 +995,7 @@ export function SubjectPanels({
         <PanelSummary>Not enough published years yet to compare on change.</PanelSummary>
       ),
     source: sourceWithNote(spanLabel(changeData.periods)),
+    gradingYears: graded ? changeData.periods : null,
     headline: (() => {
       const p = changeBars.find((b) => b.key === focusedSubject?.key)?.value ?? null;
       return p === null || p === undefined ? undefined : fmtChange(p);
@@ -1010,6 +1019,7 @@ export function SubjectPanels({
     body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
     summary: isChange ? changeHalf.summary : trendHalf.summary,
     source: isChange ? changeHalf.source : trendHalf.source,
+    gradingYears: isChange ? changeHalf.gradingYears : trendHalf.gradingYears,
   };
 
   // 0.6.1 S3: what the config-driven view renderer draws from (under `views=v2` only): the

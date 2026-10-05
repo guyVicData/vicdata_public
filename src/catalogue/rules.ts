@@ -614,6 +614,31 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-2122-GRADING-NOTE",
+    statement:
+      "A grade or points view over time (Trends: line, table, ranked change, change table, slope, Grade counts' spread against an earlier year, a change map) whose years include 2021/22 carries the note GRADING_2122_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view (Current, Results' Trend map), on Candidates (entries), at KS2, or on a trend whose years start after 2021/22 (a 'From' year of 2022/23 or later).",
+    why: "2021/22 (summer 2022) was the first year back to exams after the pandemic: Ofqual set grading roughly midway between 2021 and 2019, so a trend starting there often shows a fall that is partly grading, not results.",
+    appliesTo: "M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS, Comparisons' headline (Attainment 8, A level points per entry): over-time views",
+    enforcedIn: [
+      "src/catalogue/notes.ts:GRADING_2122_NOTE, gradingNoteEligible, gradingNoteFor, specYears",
+      "src/components/teacher/ColumnPanels.tsx:withGradingNote (PanelRender.gradingYears)",
+      `${SP}:graded, trendHalf/changeHalf gradingYears`,
+      `${GP}:trendHalf/changeHalf gradingYears`,
+      `${XP}:graded, trendHalf/changeHalf gradingYears`,
+    ],
+    testCase: {
+      urn: "137625",
+      school: "The Chase",
+      phase: "ks4",
+      subject: "History",
+      year: "2021/22-2024/25",
+      expect: "Grade bands and Average points Trends over 2021/22-2024/25 print the note in fullscreen; Current, Candidates and a Trend from 2022/23 don't (src/lib/grading-note.test.ts, on the real hosts).",
+      check: "gradingNote2122",
+    },
+    origin: "0.6.2 S4 (prompt: 'wherever a grade or points trend includes 2021/22, put a short footnote on the view')",
+    status: "active",
+  },
+  {
     id: "R-RANKING-SAMPLE",
     statement:
       "A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure.",
