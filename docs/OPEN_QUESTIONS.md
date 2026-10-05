@@ -1315,3 +1315,139 @@ Prompt: `docs/v0.6/vicdata_0_6_snagging_round4_claude_code_prompt_v1.md`. Report
 - **Defaults per state:** with two or more axes the editor writes `defaultViewByState`; Results alone still writes round 3's `defaultViewByResults`, and a round-3 per-measure default still applies under any Compare against set. `schema_version` stays 1.
 - **Copies:** a copy into a meeting drops every axis; a copy to a dashboard keeps them.
 - **The editor's live preview on "Selected subjects"** uses the page's selected subjects.
+
+---
+
+## 2026-10-04 — 0.6.1 view editor rebuild: judgement calls logged, build carried on
+
+Prompt: `docs/v0.6/vicdata_0_6_view_editor_rebuild_claude_code_prompt_v1.md`. Report: `docs/v0.6/views_rebuild_report_v1.md`.
+
+### S1 — bugs from live
+
+- **Distinct titles (pinch point 3):**
+  - the Area chart is "[subject] against its LA and England, year by year". It leaves out "region" because the chart draws no region line;
+  - the Change table is "[subject]: change against its LA, region and England".
+- **"What's changed" (pinch point 1):** each view is named by the title the page shows. Placeholders resolve to neutral words ("This subject", "its category", "the first year", "the chosen year"). Members can't read the earlier version (RLS), so summaries published before the fix are reworded from their own text when shown. An internal name that can't be matched becomes its unique title, or "a table" / "a chart".
+- **The old template text still counts as "no custom title"** (`RETIRED_TEMPLATES`).
+- **A title cleared back to its default** reads "… is called “…” again".
+- **The Move/Copy map's current cell** reads "Here now", with an amber border and tint.
+- **A separate commit (655bb70) fixes a members' bug found on main:** under the config renderer, the first rail click away from a panel's default view was undone. It changes clicks only, nothing drawn at rest, and can be dropped on its own.
+
+### S2 — ViewSpec model and presets
+
+- **The preset table** (`docs/v0.6/views_preset_table.md`, 40 presets, every one `compare: "follows-page"`) is generated from `src/catalogue/viewspec.ts`. A test fails if the doc drifts from the code.
+- **The ViewSpec was extended where presets needed it:**
+  - `data.source: "follows-page"`, `data.entries: "points-eligible"`, `data.subject: "follows-or-whole-school" | "whole-school"`, and `data.change: "honest" | "absolute"` (trend map vs change map);
+  - `years.memberPick`;
+  - `compare[].as` (line / marker / reference / row) and `compare[].at: "earlier-year"`;
+  - `variants`, beside `resultsMeasures`;
+  - looks: line `shortSpan` / `memberLegend` / `cardFocusVsAverage`; bar `orientation` / `spacious` / `diverging`; table `extra: "vs-comparison"` / `leadingRank` / `value` / `changeLeads`; spread `memberSpan`.
+- **Reading v1: convert on read** (`upgradeConfig`, adding each view's preset spec and changing nothing else). It covers dashboards, drafts, history, meetings and the library. Members' VicData pages never upgrade: `published-vicdata.ts` draws the code copy for any version other than 2 (D9). A v1 meeting with a text-box slide is tested to load unchanged.
+- **The editor and History also convert VicData's v1 rows on read**, so they see a v1 version as the v2 it equals.
+- **`dataview` stays on each instance** as the key the hosts draw by, until S3. The spec's `resultsMeasures` and `variants` are the preset's defaults; an instance's own narrowing stays where it was.
+- **The re-seed** publishes each Teacher dashboard as a new version over its v1 row, and does nothing when the published config already equals the code copy. It clears only old-format drafts, never a v2 draft.
+- **Retired and draft views still get presets** ("Grades (pick a range)", Candidates' ranked-change draft), so old configs keep loading.
+- **Classification:**
+  - a ranked change is a bar chart of change; a change table is a year table sorted by change;
+  - the Grade counts change table is one value per grade;
+  - the geography views have no rows, and their LA, region and England lines come from compare.
+- **D10:** `panelSignature` is built from the preset; params are looked up by instance id (`ConfiguredNumberTiles`).
+
+### S3 part A — the renderer, with line, table and bar
+
+1. **The panel frame stays the host's for now** (tag, From menu, summary, flag, Trend line toggle, source). v2 draws the title line and the chart. A spec of its own keeps the host on its preset, so the frame matches.
+2. **The host still owns which preset is active.** `defaultEntry` / `offRailEntry` still apply defaults under v2; only the rail filtering is retired.
+3. **A spec counts as "its own" when it differs from its preset.** It then has its own active state, uses `spec.icon`, and resolves its spec title.
+4. **Under v1 the builder duplicates the hosts' assembly** (the same lib calls). It replaces the host bodies when v2 becomes the default.
+5. **Host titles are kept as their exact text runs,** because the browser lays out JSX-interpolated text differently from a single string, and that broke parity.
+6. **Which "From" year a Trends view uses:** the one for the half its preset belongs to. A spec of its own uses the change half when it shows or sorts by change.
+7. **An explicit compare keeps only the series the frame can supply:** the group line, England for the focused subject on Results, the set average, or the chosen school. The rest are dropped until S4's greying.
+8. **Rows:** any value means the frame's rows; leaving `rows` out means the focused subject alone.
+9. **Weighted averages and the table's "n" column** need counts, so only Comparisons offers them.
+10. **A focus-only line** uses TrendChart (bars under 4 years) unless its look asks for change bars. An indexed one uses MultiTrend.
+11. **Comparisons' Trends tables and ranked bars** keep the host's trim, which follows the member's "vs:" line.
+
+### S4 — the Add a view and Edit view screens
+
+- **Retired, and what's kept:** Ch3Pick, Ch3Adjust, Ch3Empty and Steps 1–2 are retired for adding and editing views. The 0.6 chooser stays for:
+  - the placeholder form ("Something else? Plan it", and a placeholder's own Edit);
+  - Swap;
+  - columns with no host (Rolls, Live births);
+  - meetings' Add a view.
+
+  `ContextSteps` (Steps 1–2) stays for column and panel "compared to" and for New dashboard.
+- **D6 (no board):** for Comparisons, step 1's "Compared with" becomes a **Schools** box: chips for Follows the page / 10 nearest / Saved set… / Sector…, a line naming the live set, then a This school row. "Add an average" offers only Across schools. Saved set and Sector are greyed, because there's no set-name picker and the ViewSpec has no sector sets.
+- **`spec.preset` is always the host preset the view is drawn by:** the preset it equals when unchanged, else the nearest preset of the same host and half.
+- **Titles:** a rename alone keeps the instance a preset (the title goes on `instance.title`); a spec of its own carries `spec.title`. In Edit the title is frozen; in Add it follows the data until typed.
+- **Show-for** starts ticked on the current pill. Ticks the host preset can't draw are greyed; Grade counts has its own host.
+- **Board chips greyed with a reason** because the catalogue doesn't allow them:
+  - Indexed on points;
+  - LA and region on bands;
+  - "A chosen school" and "Another subject", which the ViewSpec has no field for.
+
+  The Data "Change" link is disabled, because a view draws its column's data.
+- **"Which subjects" chips** (This subject / Its category / Follows the page) were added to the Numbers box, limited to what each host's frame supplies.
+- **Choosing a Data option a View can't draw switches the View;** a View never changes the Data.
+- **Previews:** step 2 previews every View except Line graph, as the boards do. Add on desktop uses the EditWide layout. Previewing another school uses `SchoolSearch` inside the school ▾.
+- **The Step 3 preview on a phone is about 280px tall** (the real panel unit), taller than the board's sketch.
+- **Not drawn yet (S3 part C):** LA and region lines, averages of things not drawn, compare lines in a custom table, and series colours. Until then the previews show only what draws, and the screens say "The new renderer doesn't draw a … here yet" where a View isn't built.
+
+### S3 part B — ranking, numbers and slope
+
+- **The frames carry the extra inputs** the tiles and ranking need: the band range and grade rows, Candidates' school-wide subjects, Comparisons' ranking figures with sector and distance, and the school name. The hosts' own v1 drawing is untouched.
+- **Ranking look options are all off by default,** so the presets draw exactly as before. A shortened list keeps each row's real rank.
+- **The ranking "change" column** is each row's change from its previous published year, in the measure's honest change type. "n" is the entries count where the page has it.
+- **Slope is new:** each row is drawn at two years, the From year (or the first) and the latest. A row missing either end is left out. No preset uses it, and `follows-page` on a slope adds nothing.
+- **Parity:** one consistent 1/255 single-channel difference over 16 px on one tiles shot is a rendering artifact; its DOM and scroll state are identical.
+
+### S3 part C — donut, maps, geography, and the compare gaps
+
+- **Parity was checked on fixtures, not live data.** Two attempts to rebuild a live-data harness were blocked by the permission classifier: one put the server key in a browser bundle, the other swapped it into a proxy. Both were rightly refused, and the scratch copies were deleted. Parity ran instead through a component harness: the real hosts, through ColumnPanels and the code-copy plans, on the committed real-data fixtures. Context's group totals, the geography payload and map positions are synthetic. Grade counts and Context's bands-share donut aren't covered there; the donut is unit-tested.
+- **Results' England line** uses the subject's England benchmark, the same national figure the geography fetch returns. LA and region come from that fetch.
+- **On Candidates,** once an area line is drawn, the school's own line switches to points-eligible entries.
+- **"10 nearest" and "saved set"** both mean the page's current Compared-against set.
+- **A weighted average** uses all entries as its weights.
+- **A geography preset with edited compare lines** draws as an ordinary line or table.
+- **"Across schools" on Grade 4+ and bands, on a subject column,** can't draw: outside Comparisons the page has no comparator grade counts. It's greyed with a reason (S3 part D) rather than fetched in this pass.
+
+### S3 part D — Grade counts and the grade spread
+
+- **The grade arithmetic moved unchanged into `src/lib/grade-spread.ts`;** GradeCountsPanels and SubjectPanels both read it, as S3 part C did with geography.
+- **Follows-page on a Grade counts spread** means England ticks, except on Spread by year, where it means the subject's own earlier year. An explicit compare on a spread keeps only England and the earlier year.
+- **An own-spec spread** is clickable only with `memberSpan: "highlight"`, which the editor doesn't offer yet.
+- **The average marker** is a dashed line: the mean grade on a numbered scale (U counted as 0), and "≈ grade" from the mean position on a named scale. Double Award counts as a named scale.
+- **In counts mode,** England's tick sits where this school's entries would be at England's share.
+- **A shaded band** applies only when both ends are on the subject's own scale.
+- **Under v2, a panel with no rail** (Grade counts' Current) opens on its state's default view. Before, it fell back to the Results tiles instance.
+- **Honesty:** on a subject column, 10 nearest and saved set are greyed on Grade 4+ / A*–E and Grade bands ("Needs the other schools' grade counts, which are only loaded in Comparisons", R-COMPARATOR-RATE-PER-QUAL).
+- **A possible live bug, the same in v1 and v2:** Post-16 Grade bands with no range picked says "No published grades … in this year" on the Grades view, so a member can't open it to pick a range. S5's top-bar band control is checked against this.
+
+### S5 — the rail menu and the top bar
+
+- **"Show on…" is folded into "Shows for".** A panel that also varies by Compare against (or Comparisons' kind) gets a second chip row, "Shows for · <axis>".
+- **Swap for another view… is dropped from the rail menu;** it isn't on the board.
+- **Move up / down is one row with ↑ ↓ arrows,** because the board doesn't show how one row does both.
+- **The last ticked chip is locked.** Take off on a view's only measure is disabled ("Shows only here"). With no Results axis (Candidates), the red row reads "Remove view".
+- **Grade band choice (D3):** Custom applies on a "Show grades X–Y" button, so one pick saves once. The editor's band starts from the page's band, falling back to GCSE 7–9, or the A-level scale with no range at Post-16.
+- **The "Grades (pick a range)" view is kept as "Grade distribution":** read-only, shading the top bar's band. Its range picking moved to the top bar, the instances stay in the configs (no re-seed), and members' open-view state survives.
+- **The editor's Results pill** is replaced by the shared top-bar control. Compare against stays in the edit bar: it's Context's own setting, and neither D3/D4 nor any board moves it.
+- **A Post-16 member with no range** now picks one from the top bar. The no-range notes point there.
+- **The members' change (D3/D4) is its own commit:** only the top bar and Column 1 Current on Grade bands differ. At 1280 on GCSE, the ControlBar wraps to two rows when four subject chips show.
+
+### S6 — switch on and check
+
+- **Row alignment:** Column 1 on Results pages gets an invisible pill row (`PillRowSpacer`), from md up only, so its panels line up with Context's and Comparisons' again. Candidates mode is unchanged.
+- **Grade ranges inside sentences** keep the scale's own case ("A*–B", not "a* to b"), and keep "to" when a grade contains a hyphen (Double Award). The top bar's own pill still reads "A* to B".
+- **Phone sideways scroll** (it predates this round): the page's `<main>` sized to its content's min-content, because the phone nav's second row needed 375px. `w-full` on the Teacher page's main fixes it, and the subject pill now truncates. `CustomDashboardScreen` has the same pattern and wasn't touched.
+- **v2 is the default.** `?views=v1` or `NEXT_PUBLIC_VIEWS=v1` turns it off, and the URL wins over the env setting.
+- **A single-subject line ignores the column preset's hidden "change-bars" look,** so "this school only" draws D8's two-year bars, not a one-row change list. Found in walk-through 1; no preset uses that combination.
+
+### S6 — polish
+
+- **D1's chrome is out of the editor:** the "inherits column" / "overridden" badges, the panel menu's "Change data / compared to…", the column's "Data · Compared to" line, and Edit column with the dialogs only it opened. The column heading (icon plus a title you can rename) stays.
+  - **Kept underneath:** the panel override data in editor-ops (the span "follows" choice and Copy's fit check still record one, though nothing shows it); the old 0.6 chooser's "overridden" wording, reachable only from planned views and Swap; and Copy's "follows the column" message.
+- **Editor previews draw on the page's own measure** (`oneViewConfig` with `asPage`). The meeting-slot fallback, which swaps to a measure the view supports, is kept for meeting slots only. It was why the Area chart previewed Average points on Grade bands while members saw the not-applicable note.
+- **Rail tooltips** use a view's resolved title when it has one. A disabled host button keeps its own words, because they say why it's off.
+- **Show this view for** in Add ticks every measure the view can honestly draw, as on AddView3. The ticks follow Data and View changes until first touched; Edit keeps the instance's ticks.
+- **The wider-system (geography) views are greyed off Average points** in "Show this view for" (R-NO-GRADE-RATE-GEO). A view already ticked there can still be unticked.
+- **The spread's mean marker** sits between measured row centres and carries its value tag ("5.3", or "≈ A" on named scales). Band labels read in the presets' order ("Shade 4–9").
