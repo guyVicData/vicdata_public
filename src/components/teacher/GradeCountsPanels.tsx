@@ -12,14 +12,15 @@
 //   % change  each grade's own count, first year to latest, in grade order (YearTable with
 //             its change column), so the shift reads down the scale.
 //
-// Grade-level figures are published from 2023/24 only, so Trend and % change have one or
-// two years to work with and say so, rather than padding an axis.
+// Grade-level figures are published from 2021/22 (0.6.2; 2023/24 before), so Trend and %
+// change have up to four years to work with, and with one say so rather than padding an axis.
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { ENTRIES_MEASURE, type PanelData, type PanelId } from "@/lib/teacher-view-panels";
 import { bestScale, inlineRangeLabel, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
 import { gradeCounts } from "@/lib/grade-spread";
-import type { GradesFrame } from "@/lib/view-series/frames";
+import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
+import type { FrameSetGrades, GradesFrame } from "@/lib/view-series/frames";
 import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
@@ -41,6 +42,7 @@ export function GradeCountsPanels({
   question,
   source,
   controls,
+  schoolSetGrades,
 }: {
   columnId: string;
   subjectLabel: string;
@@ -54,6 +56,9 @@ export function GradeCountsPanels({
   question: string;
   source: (span?: string) => ReactNode;
   controls?: ReactNode;
+  // 0.6.2 S3: the Compared-against set's grade rows, for a view of its own's "Add an average"
+  // across schools (views=v2 only; built when asked).
+  schoolSetGrades?: () => FrameSetGrades | null;
 }) {
   const [compareFrom, setCompareFrom] = useState<number | null>(null);
   const [changeFrom, setChangeFrom] = useState<number | null>(null);
@@ -66,10 +71,12 @@ export function GradeCountsPanels({
   const england = geo?.data?.national?.rows ?? [];
   // 0.6.1 S3d: the figures, from src/lib/grade-spread.ts (the renderer reads the same).
   const g = gradeCounts(ownRows, england, { compareFrom, changeFrom });
-  const { graded, latest, earlier, cmpYear, chgYear, ownTotal, cmpTotal, rowsFor, englandLabel, modal } = g;
+  const { graded, latest, earlier, changeEarlier, cmpYear, chgYear, ownTotal, cmpTotal, rowsFor, englandLabel, modal } = g;
 
   // Current's ad-hoc highlight: the same two clicks as Grade bands, local to this view.
-  const scale = bestScale(graded.map((r) => r.grade));
+  // 0.6.2 S2: on the 2023/24-on rows, as before the grade rows reached back to 2021/22 (see
+  // TeacherDashboard's focusScale).
+  const scale = bestScale(graded.filter((r) => r.period >= MODERN_GRADE_FROM).map((r) => r.grade));
   const [pending, setPending] = useState<string | null>(null);
   const [span, setSpan] = useState<{ top: string; bottom: string } | null>(null);
   const range: GradeRange | null = pending ? { scale, top: pending, bottom: pending } : span ? { scale, ...span } : null;
@@ -83,7 +90,7 @@ export function GradeCountsPanels({
   };
 
   const yearText = latest === null ? "" : academicYearLabel(latest);
-  const oneYearOnly = <PanelSummary>Grades are published per subject from 2023/24 only; a second year is needed to compare.</PanelSummary>;
+  const oneYearOnly = <PanelSummary>This subject has published grades for one year only; a second year is needed to compare.</PanelSummary>;
 
   const current: PanelRender = {
     tag: `Grade counts ${yearText}`.trim(),
@@ -145,12 +152,15 @@ export function GradeCountsPanels({
       ),
     summary: cmpYear === null ? oneYearOnly : undefined,
     source: source(cmpYear === null ? yearText : `${academicYearLabel(cmpYear)}–${yearText}`),
+    // R-TREND-FROM-2223: this year's spread against the compare year (the note where that is 2021/22).
+    gradingYears: cmpYear === null || latest === null || ownTotal === 0 ? null : [cmpYear, latest],
   };
 
   const changeData: PanelData = g.changeDataIn(colour);
   const changeHalf: PanelRender = {
     tag: "% Change",
-    afterTag: earlier.length ? <FromYearMenu periods={[...earlier, ...(latest === null ? [] : [latest])]} from={chgYear} onChange={setChangeFrom} /> : undefined,
+    // R-TREND-FROM-2223: the change is measured from 2022/23 at the earliest.
+    afterTag: changeEarlier.length ? <FromYearMenu periods={[...changeEarlier, ...(latest === null ? [] : [latest])]} from={chgYear} onChange={setChangeFrom} /> : undefined,
     question: `Which of ${subjectLabel}'s grades have moved most?`,
     body: (fullscreen) =>
       chgYear === null ? (
@@ -165,6 +175,7 @@ export function GradeCountsPanels({
       ),
     summary: chgYear === null ? oneYearOnly : undefined,
     source: source(chgYear === null ? yearText : `${academicYearLabel(chgYear)}–${yearText}`),
+    gradingYears: chgYear === null || latest === null ? null : [chgYear, latest],
   };
 
   // The one Trends panel: the spread comparison then the change table, each half's "From"
@@ -182,6 +193,7 @@ export function GradeCountsPanels({
     body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
     summary: isChange ? changeHalf.summary : trendHalf.summary,
     source: isChange ? changeHalf.source : trendHalf.source,
+    gradingYears: isChange ? changeHalf.gradingYears : trendHalf.gradingYears,
   };
 
   // 0.6.1 S3d: what the config-driven view renderer draws from (under `views=v2` only): the
@@ -193,6 +205,7 @@ export function GradeCountsPanels({
     ownRows,
     englandRows: england,
     colour,
+    schoolSetGrades,
     state: { compareFrom, changeFrom, highlight: { range, pending, onGradeClick: click } },
   };
 

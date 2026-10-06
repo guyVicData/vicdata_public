@@ -38,8 +38,12 @@ import {
   changePhrase,
   changeTitle,
   formatChange,
+  countedValues,
+  latestYearFrom,
   periodsWithData,
   sliceFrom,
+  statementSpan,
+  withTrendBase,
   trimToData,
   trendChartKind,
   trendSentence,
@@ -64,6 +68,7 @@ import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
 import type { ComparisonsFrame } from "@/lib/view-series/frames";
 import { SAVED_SET_PREFIX } from "@/lib/teacher-view-saved-sets";
+import { trendBaseApplies, trendBaseFor } from "@/catalogue/notes";
 
 export type MapChip = {
   key: string;
@@ -268,8 +273,11 @@ export function ComparisonsPanels({
   const periods = Array.from(new Set(schools.flatMap((s) => seriesFor(s.urn).map((r) => r.period)))).sort((a, b) => a - b);
   const valuesFor = (urn: string) => periods.map((p) => seriesFor(urn).find((r) => r.period === p)?.value ?? null);
 
+  // R-CURRENT-GRADES-FROM-2324: on a rate (from the schools' grade rows), the latest year
+  // is read from 2023/24 on, as before the grade rows reached back to 2021/22.
+  const currentFrom = threshold ? latestYearFrom(measure.id) : null;
   const latestIdx = (() => {
-    for (let i = periods.length - 1; i >= 0; i--) if (schools.some((s) => valuesFor(s.urn)[i] !== null)) return i;
+    for (let i = periods.length - 1; i >= 0; i--) if ((currentFrom === null || periods[i] >= currentFrom) && schools.some((s) => valuesFor(s.urn)[i] !== null)) return i;
     return -1;
   })();
   const latest = latestIdx >= 0 ? periods[latestIdx] : null;
@@ -536,7 +544,10 @@ export function ComparisonsPanels({
     </div>
   );
 
-  const full: PanelData = trimToData({
+  // R-TREND-FROM-2223: on a grade or points measure every year is drawn, and the statements
+  // of both halves (the Trend's sentence, every change) are measured from 2022/23.
+  const trendBase = trendBaseFor(measure.id, phase);
+  const full: PanelData = withTrendBase(trimToData({
     periods,
     series: [
       // Column 3 round Part 3: the school in the phase accent, as the bar graph already
@@ -545,15 +556,19 @@ export function ComparisonsPanels({
       { key: "own", label: "Your school", colour: "var(--accent,var(--fg))", values: target ? valuesFor(target.urn) : [] },
       { key: "versus", label: versusLabel, colour: "var(--muted3)", values: versusValues },
     ],
-  });
+  }), trendBase);
   const realPeriods = periodsWithData(full);
   const trendData = sliceFrom(full, trendStart);
   const changeData = sliceFrom(full, changeStart);
+  // R-TREND-FROM-2223: a grade or points measure (Attainment 8, points, a rate) above KS2
+  // carries the note on a Trends view whose years include 2021/22.
+  const graded = trendBaseApplies(measure.id, phase);
   // The Trend and % Change tables list every school in the set, one row each, over the
   // same years as the charts (which keep the two series above). The school's own row is
   // "own", so it is picked out and centred as the charts' line is.
   const everySchool: PanelData = {
     periods: full.periods,
+    ...(full.statementFrom === undefined ? {} : { statementFrom: full.statementFrom }),
     series: schools.map((s) => {
       const values = valuesFor(s.urn);
       return {
@@ -566,6 +581,9 @@ export function ComparisonsPanels({
   };
   const trendTable = sliceFrom(everySchool, trendStart);
   const changeTable = sliceFrom(everySchool, changeStart);
+  // Every change in the % change half: over the statement span (2022/23 on).
+  const changeSpanData = statementSpan(changeData);
+  const changeTableSpan = statementSpan(changeTable);
   const spanLabel = (ps: number[]) => (ps.length ? `${academicYearLabel(ps[0])}–${academicYearLabel(ps[ps.length - 1])}` : "");
 
   // Comparisons change-map round: Trend's and % change's own maps -- each school's change
@@ -597,14 +615,17 @@ export function ComparisonsPanels({
   const signedPct = signedPercent;
 
   // -------------------------------------------------------------------- Trend
+  // R-TREND-FROM-2223: the sentence, the direction word and the "vs:" clause are measured
+  // over the statement span (2022/23 on, where the chart draws 2021/22).
+  const trendSpan = statementSpan(trendData);
   const trendSaid = trendSentence({
     subjectClause: `Your school's ${comparedOn}`,
-    values: trendData.series[0]?.values ?? [],
+    values: trendSpan.series[0]?.values ?? [],
     measure,
-    startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
+    startLabel: trendSpan.periods.length ? academicYearLabel(trendSpan.periods[0]) : "",
   });
   const versusClause = (() => {
-    const vals = (trendData.series[1]?.values ?? []).filter((v): v is number => v !== null);
+    const vals = (trendSpan.series[1]?.values ?? []).filter((v): v is number => v !== null);
     if (vals.length < 2) return "";
     return ` — against ${versusLabel.toLowerCase()}'s own ${measure.format(vals[0])} to ${measure.format(vals[vals.length - 1])} over the same years.`;
   })();
@@ -618,7 +639,9 @@ export function ComparisonsPanels({
   // The one title line over every view (ViewTitle): what is compared, over which schools,
   // in which shape -- so a screenshot of the body alone says which view it is.
   const setNoun = setLabel.toLowerCase();
-  const trendFrom = trendTable.periods.length ? academicYearLabel(trendTable.periods[0]) : "the first year";
+  // The Trend map's change is measured over the statement span (R-TREND-FROM-2223).
+  const trendMapSpan = statementSpan(trendTable);
+  const trendFrom = trendMapSpan.periods.length ? academicYearLabel(trendMapSpan.periods[0]) : "the first year";
   const trendHalf: PanelRender = {
     // S11: one uniform title, with the span's start as its own dropdown beside it.
     tag: "Trends",
@@ -662,7 +685,7 @@ export function ComparisonsPanels({
         <>
           <ViewTitle>Change in {comparedOn} since {trendFrom}, coloured by school</ViewTitle>
           {changeMap(fullscreen, "trend_absolute", {
-            byUrn: changeMapFor(trendTable, (v) => changeOver(v)?.delta ?? null),
+            byUrn: changeMapFor(trendMapSpan, (v) => changeOver(v)?.delta ?? null),
             format: measure.formatDelta,
             label: `change since ${trendFrom}`,
           })}
@@ -691,6 +714,9 @@ export function ComparisonsPanels({
       <PanelSummary>Not enough published years yet to describe a trend for this school.</PanelSummary>
     ),
     source: source(spanLabel(trendData.periods)),
+    // R-TREND-FROM-2223: the years this Trend draws, on a grade or points measure (the map
+    // draws its change from 2022/23).
+    gradingYears: graded ? (trendShows === "map" ? trendMapSpan.periods : trendData.periods) : null,
     headline: seriesLoading || !trendSaid ? undefined : (
       <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
         {DIRECTION_ARROW[trendSaid.direction]} {DIRECTION_WORD[trendSaid.direction]}
@@ -701,21 +727,21 @@ export function ComparisonsPanels({
   // ---------------------------------------------------------------- change
   // R-NUMBER-TYPE-HONESTY (S3b): % change on candidates (a count); on an average point score
   // or a rate the change in points or percentage points -- values, titles and sentences.
-  const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
-  const ownChange = changeOf(measure, changeData.series[0]?.values ?? []);
+  const changeSince = changeSpanData.periods.length ? academicYearLabel(changeSpanData.periods[0]) : "";
+  const ownChange = changeOf(measure, changeSpanData.series[0]?.values ?? []);
   // Every school's change over the span, as the table ranks them, and the set's average
   // (the mean figure per year over the schools that have one, as Trend's "Average across"
   // line) as the reference -- not whichever school Trend's "vs:" points at.
-  const changeRows: ChangeRow[] = changeTable.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOf(measure, s.values) }));
+  const changeRows: ChangeRow[] = changeTableSpan.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOf(measure, s.values) }));
   const averageLabel = `Average across ${setLabel.toLowerCase()}`;
   const averageChange = changeOf(
     measure,
-    changeTable.periods.map((_, i) => meanOf(changeTable.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
+    changeTableSpan.periods.map((_, i) => meanOf(changeTableSpan.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
   );
   const fmtChange = (v: number) => formatChange(measure, v);
   const changeOnPercent = measure.changeKind === "percent";
 
-  const changeMapOk = sampleAllowsMap(rankingSet) && !!schoolUrn && changeTable.periods.length >= 2;
+  const changeMapOk = sampleAllowsMap(rankingSet) && !!schoolUrn && changeTableSpan.periods.length >= 2;
   const changeShows = changeView === "map" && !changeMapOk ? "chart" : changeView;
 
   const changeHalf: PanelRender = {
@@ -743,9 +769,9 @@ export function ComparisonsPanels({
         <>
           <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, coloured by school</ViewTitle>
           {changeOnPercent
-            ? changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTable, percentChange), format: signedPct, label: `% change since ${changeSince}` })
+            ? changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTableSpan, percentChange), format: signedPct, label: `% change since ${changeSince}` })
             : changeMap(fullscreen, "trend_absolute", {
-                byUrn: changeMapFor(changeTable, (v) => changeOf(measure, v)),
+                byUrn: changeMapFor(changeTableSpan, (v) => changeOf(measure, v)),
                 format: fmtChange,
                 label: `${changePhrase(measure)} since ${changeSince}`,
               })}
@@ -779,6 +805,7 @@ export function ComparisonsPanels({
         </PanelSummary>
       ),
     source: source(spanLabel(changeData.periods)),
+    gradingYears: graded ? changeData.periods : null,
     headline: seriesLoading ? undefined : ownChange === null || ownChange === undefined ? undefined : fmtChange(ownChange),
   };
 
@@ -802,6 +829,7 @@ export function ComparisonsPanels({
     body: (fullscreen) => (isChange ? changeHalf.body(fullscreen) : trendHalf.body(fullscreen)),
     summary: isChange ? changeHalf.summary : trendHalf.summary,
     source: isChange ? changeHalf.source : trendHalf.source,
+    gradingYears: isChange ? changeHalf.gradingYears : trendHalf.gradingYears,
   };
 
   // On a rate, a school that publishes no grades for the subject drops out of the lists as
@@ -876,6 +904,16 @@ export function ComparisonsPanels({
     },
     state: { trendStart, changeStart, showFit },
   };
+  // R-CURRENT-GRADES-FROM-2324: Current's views on a rate read the 2023/24-on years only.
+  const currentFrame: ComparisonsFrame =
+    currentFrom === null
+      ? frame
+      : {
+          ...frame,
+          schools: frame.schools
+            .map((s) => ({ ...s, values: countedValues(s.values, periods, currentFrom) }))
+            .filter((s) => s.isTarget || s.values.some((v) => v !== null)),
+        };
 
   return (
     <ColumnPanels
@@ -906,7 +944,7 @@ export function ComparisonsPanels({
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }
-      render={unavailableNote ? { current: notAvailable(current), trend: notAvailable(trend) } : { current: { ...current, frame }, trend: { ...trend, frame } }}
+      render={unavailableNote ? { current: notAvailable(current), trend: notAvailable(trend) } : { current: { ...current, frame: currentFrame }, trend: { ...trend, frame } }}
     />
   );
 }

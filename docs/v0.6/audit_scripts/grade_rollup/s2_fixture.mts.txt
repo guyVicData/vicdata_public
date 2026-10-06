@@ -1,0 +1,17 @@
+// 0.6.2 S2: builds src/lib/grade-rows.fixtures.json -- the KS4 rollup rows (read-only SQL, the
+// RPC isn't applied: `q.py < ...` with the SELECT in the header of the fixture) and the raw
+// facts (modern + historic, through the app's own lookupReferenceData) for two schools and
+// eight subjects, so src/lib/grade-rows.test.ts can check the two paths agree.
+//   npx -y tsx --env-file=.env s2_fixture.mts <rollup.tsv> > src/lib/grade-rows.fixtures.json
+import { readFileSync } from "node:fs";
+import { lookupReferenceData } from "../../../../src/lib/vicdata-reference";
+
+const SUBJECTS = ["History", "Maths (General)", "Geography", "Science Double Award", "Multimedia", "Sports Studies", "Additional Maths (FSMQ)", "Health Studies"];
+const URNS = ["137625", "100053"];
+const [head, ...lines] = readFileSync(process.argv[2], "utf8").trim().split("\n");
+const cols = head.split("\t");
+const rollup = lines.map((l) => Object.fromEntries(l.split("\t").map((v, i) => [cols[i], cols[i] === "period" ? Number(v) : cols[i] === "entries" ? Number(v) : v])));
+const keep = (f: { breakdown: string }) => SUBJECTS.includes(f.breakdown.split("::")[1]);
+const modern = (await lookupReferenceData({ sourceId: "dfe_ks4_subject_entries", entityIds: URNS })).filter(keep);
+const historic = (await lookupReferenceData({ sourceId: "dfe_ks4_subject_entries_historic", entityIds: URNS })).filter(keep);
+console.log(JSON.stringify({ note: "0.6.2 S2 fixture: real KS4 rollup rows and raw facts, 137625 + 100053, 8 subjects (docs/v0.6/audit_scripts/grade_rollup/s2_fixture.mts.txt)", subjects: SUBJECTS, rollup, modern, historic }));

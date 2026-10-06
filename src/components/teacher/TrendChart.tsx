@@ -25,7 +25,7 @@
 // a missing year invites reading the gap as a real, measured trajectory.
 import { useLayoutEffect, useRef, useState } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
-import { leastSquares, trendChartKind, type Measure, type PanelData } from "@/lib/teacher-view-panels";
+import { countedValues, leastSquares, trendChartKind, type Measure, type PanelData } from "@/lib/teacher-view-panels";
 
 // The wireframe's own plot geometry, as a coordinate space the HTML axes share.
 const W = 260;
@@ -229,7 +229,10 @@ export function TrendChart({
         return [...top, ...bottom].join(" ");
       })()
     : null;
-  const fit = showFit ? leastSquares(focus.values) : null;
+  // R-TREND-FROM-2223: the fitted line counts from the trend's statement year (2022/23 on a
+  // grade or points trend) and is drawn over the years it counts.
+  const fitFrom = Math.max(0, data.statementFrom === null || data.statementFrom === undefined ? 0 : periods.findIndex((p) => p >= data.statementFrom!));
+  const fit = showFit ? leastSquares(countedValues(focus.values, periods, data.statementFrom)) : null;
   // Round 8 §4: fill whatever vertical room the fixed-height panel leaves, rather than a
   // fixed 80px box. The SVG already stretches (preserveAspectRatio="none") and its axes are
   // HTML positioned as percentages of it, so both follow the container for free.
@@ -297,8 +300,8 @@ export function TrendChart({
       )}
       {fit && (
         <line
-          x1="0"
-          y1={yFor(fit.intercept)}
+          x1={xFor(fitFrom)}
+          y1={yFor(fit.intercept + fit.slope * fitFrom)}
           x2={W}
           y2={yFor(fit.intercept + fit.slope * (periods.length - 1))}
           stroke={focus.colour}

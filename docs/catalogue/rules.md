@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 45 rules: 43 active, 2 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -25,8 +25,9 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | R-NO-GRADE-RATE-GEO | active | No LA, region or England benchmark for the Grade 4+ / A*-E rate; the geography comparison is points-only on Results (entries on Candidates). | lifted | manual | yes |
 | R-BANDS-ENGLAND-BENCH | active | On Grade bands the focused subject's benchmark is England's rate on the same span, from grade geography; peers carry none. | lifted | auto: bandsEnglandBench | — |
 | R-GRADE-SCALE-MATCH | active | A rate is computed only on the scale it was defined on (threshold: GCSE 9-1 / Double Award at KS4, A-level A*-E at KS5; bands: the scale the range was picked on). Vocational, IB and Pre-U rows get no figure. | no | manual | — |
-| R-NON-GRADES-EXCL | active | Suppressed, No result, X, Covid impacted and other non-grades are excluded from both sides of every grade rate and distribution. | no | none yet | — |
-| R-THRESHOLD-PERIODS | active | Grade-based measures cover 2023/24 on at school level; the axis is shortened, never padded. | lifted | auto: thresholdPeriods | yes |
+| R-NON-GRADES-EXCL | active | Suppressed, No result, X, Covid impacted and other non-grades (2021/22-2022/23 KS5 too: COVID result, Supp) are excluded from both sides of every grade rate and distribution. | no | none yet | — |
+| R-THRESHOLD-PERIODS | active | Grade-based measures cover 2021/22 on at school level (0.6.2; 2023/24 on before); the axis is shortened to the years a subject has grades, never padded. | lifted | auto: thresholdPeriods | — |
+| R-HISTORIC-GRADE-LABELS | active | 2021/22-2022/23 KS5 grade labels are read in their 2023/24 words: vocational short codes (* D M P HM HP, ** *D DD DM MM MP PP, *** **D *DD DDD DDM DMM MMM MMP MPP PPP) become Distinction* ... Pass-Pass-Pass on BTEC, OCR Cambridge Technical, Other General Qualification and AEA, and on a VRQ set only where it carries a code no A-level-type scale has; never on A level, AS, EPQ, Core Maths, FSMQ, IB or Pre-U. COVID result and Supp are non-grades (R-NON-GRADES-EXCL). KS4's historic labels already match. | no | auto: historicGradeLabels | — |
 | R-QUAL-FAMILY-MATCH | active | Column 1's category and Context's Selected set contain only the focus's qualification family (KS5 display bucket). 'All subjects' crosses families, except on Post-16 points, where it keeps to the focus's family too (R-POINTS-SAME-QUAL). | lifted | manual | — |
 | R-KS4-SUBJECT-DEDUP | active | At GCSE, one category row per subject (headline rows are per subject); at Post-16, none. | lifted | none yet | — |
 | R-SELF-INCLUSIVE-GROUP | active | Group totals and averages include the focused subject. | lifted | manual | — |
@@ -38,6 +39,10 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | R-IGCSE-EXCL | active | At GCSE a comparator flagged by igcseExclusionLikely is dropped from every set; the target is kept but flagged and its results history withheld. | no | manual | — |
 | R-COMPARATOR-NO-FIGURE | active | A comparator with no figure for the measure (or none in the latest year) is not listed and never ranked last. Not applied while loading. | lifted | manual | — |
 | R-COMPARATOR-RATE-PER-QUAL | active | Comparator rates are scored per subject and exact qualification, with the page's own rate function. | lifted | none yet | — |
+| R-COMPARATOR-GRADE-SHARE | active | Grade counts across schools (Column 1's grade spread, 'Add an average' across the 10 nearest / a saved set) is each grade's share of a school's graded entries, averaged (mean or median) over the set's other schools with graded entries that year, for the focused subject and exact qualification; drawn as ticks in place of England's, at the school's own scale in counts mode. Never a raw count, never weighted by entries. | no | none yet | — |
+| R-2122-GRADING-NOTE | superseded by R-TREND-FROM-2223 | A grade or points view over time whose years include 2021/22 carried a note that 2021/22 was graded more generously, so some fall from it reflects grading. Superseded by R-TREND-FROM-2223 (Guy, 6 Oct 2026): trends are now measured from 2022/23, and the note says so. | no | none yet | — |
+| R-TREND-FROM-2223 | active | On a grade or points measure (Average points, Grade 4+ / A*-E, Grade bands, Grade counts, Comparisons' headline; never Candidates, never KS2), 2021/22 stays on the Trends' graphs and tables, but every trend statement is measured from 2022/23 (TREND_BASE_PERIOD): the direction word (R-TREND-FLAT-4PCT) and the trend sentence ('… since 2022/23'), the group / 'vs:' clause, every year table's Change column (Trend and % change tables, Results' area change table: the card's two year columns are then 2022/23 and the latest; fullscreen shows every year), a fitted Trend line, a short span's ranked change bars, ranked change lists, change and Trend maps, the % change half's summary and collapsed figure, and a slope from the span's first year. Grade counts' change table (two years) measures from 2022/23 at the earliest, its 'From' menu from there; its spread may still be compared with 2021/22. Line charts (Trend, Results' area chart) draw 2021/22 as a normal point. A 'From' year of 2022/23 or later is unchanged. A view whose drawn years include 2021/22 carries TREND_BASE_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view, on Candidates or at KS2. Indexed lines are entries only (R-INDEX-HEADCOUNTS), so unaffected. | no | auto: trendFrom2223 | — |
+| R-CURRENT-GRADES-FROM-2324 | active | A latest-year view on a grade measure (Grade 4+ / A*-E, Grade bands, Grade counts; Results, Context and Comparisons' rate) reads the school's grade rows from 2023/24 on only: its subject (or school) list, its year menu, its 'vs last year' and an explicit earlier-year spread are exactly as before the rows reached back to 2021/22. A subject with grades only in 2021/22-2022/23 appears on the Trends alone. | no | auto: currentGradesFrom2324 | — |
 | R-RANKING-SAMPLE | active | A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure. | lifted | none yet | — |
 | R-PERIOD-TRIM | active | Leading and trailing periods with no published value are trimmed (2020/21 points are null nationally). | no | manual | — |
 | R-INDEX-HEADCOUNTS | active | Only sum measures (entries) are indexed to 100; points and rates are drawn at real levels. | no | none yet | — |
@@ -91,7 +96,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Short courses, Double Award and vocational qualifications have no place on the 9-1 points table; scoring them would invent figures. |
 | Applies to | M-KS4-POINTS; Column 1 geography (applicability) |
 | Enforced in | - vicdata:ingest/academic_aggregates.py:139-140,285 (grade in points_table = single grades only)<br>- src/components/data-view/SubjectAreaSection.tsx:POINTS_BEARING_QUALIFICATION (151-155), imported by page.tsx:34<br>- src/app/teacher/[phase]/page.tsx:pointsAt (936), resultsFor (499)<br>- src/app/teacher/[phase]/page.tsx:geography applies (1729, 1857) |
-| Tagged at | - src/components/data-view/SubjectAreaSection.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts |
+| Tagged at | - src/components/data-view/SubjectAreaSection.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-series/compare-lines.ts<br>- src/lib/view-series/geography.ts |
 | Test case | The Chase (137625), ks4: A subject offered as both GCSE and Cambridge National: only the GCSE item carries a points figure (item TBD). [manual] |
 | Origin | Academic Results phase (GCSE points); Teacher view round 6 |
 | Status | active |
@@ -107,7 +112,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | AS entries double-counted beside A level and inflated group totals: 102239's 'All subjects' total was 2,480 against 591 real non-AS entries. |
 | Applies to | M-KS5-ENTRIES, M-KS5-POINTS, M-KS5-THRESHOLD, M-KS5-BANDS; Column 1 category, Context |
 | Enforced in | - src/lib/dfe-qualification-buckets.ts:isAsLevelOrAea (138-141)<br>- src/app/teacher/[phase]/page.tsx:comparablePeer (1055)<br>- src/app/teacher/[phase]/page.tsx:candidateItems (1075)<br>- src/app/teacher/[phase]/page.tsx:groupRows, inGroup (1190-1191)<br>- src/app/teacher/[phase]/page.tsx:threshold group (1228), asOrAeaOnly (1249-1253), selected (1265,1277,1282), band share (1331), contextItems (1367), schoolSubjects (1837) |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts<br>- src/lib/view-editor.test.ts |
 | Test case | Whitmore High School (102239), ks5, 2024/25: Context 'All subjects' entries group total 591 (was 2,480 with AS/AEA and the doubled bucket rows). [runner: asAeaGroupTotal] |
 | Origin | Post-16 Part C1 (..._post16_category_context_exclude_as_aea_build_report_v1.md); Part D |
 | Status | active |
@@ -123,7 +128,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A bucket average drawn beside an IB HL or VRQ bar compared the item with a figure for different qualifications. |
 | Applies to | M-KS5-POINTS, M-KS5-ENTRIES (geography); Column 1 Results markers and geography views |
 | Enforced in | - src/app/api/teacher/dashboard/route.ts:englandAverages (56-72)<br>- src/app/teacher/[phase]/page.tsx:englandValue keying (521-538)<br>- src/app/api/teacher/subject-geography/route.ts:61-64 (exact qualification at ks5) |
-| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/lib/teacher-view-measures.ts |
+| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series/geography.ts |
 | Test case | The Godolphin and Latymer School (100369), ks5, Chemistry, 2024/25: Own IB HL 58.29; England exact: IB HL 43.13, IB SL 37.84 (Part D report :65). [runner: englandExact] |
 | Origin | Post-16 Part C, Part D |
 | Status | active |
@@ -139,7 +144,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A figure from one or two schools identifies them and swings wildly; it is not a benchmark. |
 | Applies to | Every LA / region / England figure |
 | Enforced in | - vicdata:supabase/migrations/20260926140000_subject_geography_lookup_min_school_count.sql:35,66,90,123<br>- vicdata:supabase/migrations/20260927121000_academic_subject_grade_geography_aggregate.sql:50,82<br>- src/app/api/teacher/subject-geography/route.ts:59 (national passes 1)<br>- src/app/api/teacher/dashboard/route.ts:66,74 (national passes 1)<br>- src/lib/vicdata-reference.ts:lookupAcademicSubjectGradeGeography (633, passes null) |
-| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/lib/teacher-view-grade-geography.ts<br>- src/lib/vicdata-reference.ts |
+| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/lib/teacher-view-grade-geography.ts<br>- src/lib/vicdata-reference.ts<br>- src/lib/view-series/geography.ts |
 | Test case | Acland Burghley School (100053), ks4, all years: Camden (the school's LA) GCSE points geography: every row returned by default has school_count >= 5, and asking for minimum 1 returns more rows. [runner: minSchools] |
 | Origin | Subject geography rounds (min school count migration) |
 | Status | active |
@@ -187,7 +192,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Exclusion rules written for comparison populations would otherwise blank the very subject a teacher picked (e.g. an AS Psychology focus). |
 | Applies to | Every measure; Column 1, Context, Comparisons |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:candidateItems (1068-1070, focus first)<br>- src/app/teacher/[phase]/page.tsx:1141, 1362, 1381 (r.key === focusKey \|\|), 1837<br>- src/components/teacher/ComparisonsPanels.tsx:254, 276 (s.isTarget \|\|)<br>- src/lib/teacher-view-populations.ts:contextGroupRows, inContextGroup, asOrAeaOnlySubjects (the focused AS/AEA item's own rows count into its group, S3b)<br>- src/lib/teacher-view-comparator-series.ts:143 (target never dropped), 186 (target kept in fixed sets, flagged igcseExcluded) |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/teacher-view-populations.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/teacher-view-populations.ts |
 | Test case | Whitmore High School (102239), ks5, Psychology (AS): Focus an AS item (AS Psychology in the AS/AEA report :19,38, which named no school; 102239 is a heavy-AS school): its own Column 1 panels still render with its own figures. [manual] |
 | Origin | Post-16 Part C1 (AS/AEA); content round S4 |
 | Status | active |
@@ -251,8 +256,8 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Two or three points drawn as a line read as a trend that isn't there. |
 | Applies to | Every over-time view |
 | Enforced in | - src/lib/teacher-view-panels.ts:TREND_LINE_MIN_YEARS, trendChartKind (311-315)<br>- src/components/teacher/SeriesViews.tsx:multiTrendHasLine (48-49), MultiTrend fallback (76-90)<br>- src/components/teacher/TrendChart.tsx:185<br>- src/components/teacher/ComparisonsPanels.tsx:614-616, 649 (table only)<br>- src/components/teacher/CandidatesPanels.tsx:284, 292<br>- src/components/teacher/SubjectPanels.tsx:789, 798 |
-| Tagged at | - src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-panels.ts |
-| Test case | Acland Burghley School (100053), ks4, Maths (General): Average points has 4 real years (2021/22-2024/25) -> line; Grade 4+ has 2 (2023/24-2024/25) -> bars / change list. [runner: trendLine] |
+| Tagged at | - src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/series.ts<br>- src/lib/view-series/subjects.ts |
+| Test case | Acland Burghley School (100053), ks4, Maths (General): Average points has 4 real years (2021/22-2024/25) -> line; Grade 4+ has 4 too since 0.6.2 (2021/22-2024/25) -> line (it had 2, 2023/24-2024/25 -> bars / change list, before). [runner: trendLine] |
 | Origin | Teacher view round 7 §4 |
 | Status | active |
 | Must lift | — |
@@ -267,7 +272,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A share of an average point score is not a meaningful percentage. |
 | Applies to | DV-C2-CUR-DONUT; M-*-ENTRIES, M-*-BANDS |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1956<br>- src/components/teacher/SubjectPanels.tsx:297 (fallback to bar), 525-534 (button disabled)<br>- src/components/teacher/ShareDonut.tsx:10 (comment) |
-| Tagged at | - src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-measures.ts |
+| Tagged at | - src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/donut.ts |
 | Test case | Acland Burghley School (100053), ks4: Context on Results, Average points: the Share (donut) button is disabled ('Share is only meaningful for candidate numbers'). [manual] |
 | Origin | Teacher view round 6 §4.2 |
 | Status | active |
@@ -283,7 +288,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | No area threshold figure is wired up; drawing one from another measure would compare unlike things. |
 | Applies to | M-KS4-THRESHOLD, M-KS5-THRESHOLD; Column 1 Results markers and geography views |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1136 (no benchmark on rates)<br>- src/app/teacher/[phase]/page.tsx:1153 (no England category line)<br>- src/app/teacher/[phase]/page.tsx:1727-1734 (applies)<br>- src/app/teacher/[phase]/page.tsx:1786 (benchmarkLabel undefined) |
-| Tagged at | - src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts |
+| Tagged at | - src/components/dashboard-config/embed.ts<br>- src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/geography.ts |
 | Test case | Acland Burghley School (100053), ks4: Results -> Grade 4+ -> Area chart shows 'LA, regional and national figures are published for average point score only…'. [manual] |
 | Origin | Comparisons / Grade 4 wiring round |
 | Status | active |
@@ -299,7 +304,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A band rate is only comparable with the same band computed the same way on England's own grade rows. |
 | Applies to | M-KS4-BANDS, M-KS5-BANDS; Column 1 Results tiles and Grades view |
 | Enforced in | - src/components/teacher/SubjectPanels.tsx:282-292 |
-| Tagged at | - src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-grade-geography.ts<br>- src/lib/teacher-view-measures.ts |
+| Tagged at | - src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-grade-geography.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/compare-lines.ts<br>- src/lib/view-series/grades.ts |
 | Test case | The Chase (137625), ks4, History, 2024/25: Grades 7-9: 34.1% (45 of 132) vs England 26.6% (76,171 of 286,338); grades 4-9: 75.8% vs 64.6% (grade bands report :60). [runner: bandsEnglandBench] |
 | Origin | Grade bands frontend round |
 | Status | active |
@@ -327,11 +332,11 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 
 | Field | Content |
 | --- | --- |
-| Statement | Suppressed, No result, X, Covid impacted and other non-grades are excluded from both sides of every grade rate and distribution. |
+| Statement | Suppressed, No result, X, Covid impacted and other non-grades (2021/22-2022/23 KS5 too: COVID result, Supp) are excluded from both sides of every grade rate and distribution. |
 | Why | Counting them in the denominator depresses a real rate by however much DfE chose not to publish. |
 | Applies to | M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS |
-| Enforced in | - src/lib/subject-grades.ts:NON_GRADE_VALUES (84), thresholdRate (156), bandRate (233)<br>- src/components/teacher/GradeCountsPanels.tsx:56, 86<br>- src/components/teacher/SubjectPanels.tsx:456-457 |
-| Tagged at | - src/lib/subject-grades.ts |
+| Enforced in | - src/lib/subject-grades.ts:NON_GRADE_VALUES (88), thresholdRate (160), bandRate (248)<br>- src/components/teacher/GradeCountsPanels.tsx:56, 86<br>- src/components/teacher/SubjectPanels.tsx:456-457 |
+| Tagged at | - src/lib/grade-rows.test.ts<br>- src/lib/subject-grades.ts |
 | Test case | — |
 | Origin | Teacher view round 6 §6.5 |
 | Status | active |
@@ -343,16 +348,32 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 
 | Field | Content |
 | --- | --- |
-| Statement | Grade-based measures cover 2023/24 on at school level; the axis is shortened, never padded. |
-| Why | School grade rows come from raw modern facts only; padding earlier years would draw empty or borrowed values. |
+| Statement | Grade-based measures cover 2021/22 on at school level (0.6.2; 2023/24 on before); the axis is shortened to the years a subject has grades, never padded. |
+| Why | School grade rows begin in 2021/22 (the rollup or the historic facts; 2020/21 has no grades); padding earlier years would draw empty or borrowed values. |
 | Applies to | M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1112-1116, 1315-1320 |
 | Tagged at | - src/lib/teacher-view-measures.ts |
-| Test case | Acland Burghley School (100053), ks4: The school's grade rows cover exactly 2023/24 and 2024/25, so Results on Grade 4+ shows 2 years. [runner: thresholdPeriods] |
+| Test case | Acland Burghley School (100053), ks4: The school's grade rows cover exactly 2021/22-2024/25 (0.6.2; 2023/24 and 2024/25 before), so Results on Grade 4+ shows 4 years. [runner: thresholdPeriods] |
 | Origin | Teacher view round 6 §6.5 |
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1112-1116, 1315-1320 → src/lib/teacher-view-measures.ts:periodsForMeasure (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
-| Open issue | academic_subject_grade_rollup holds 2021/22-2024/25 for 4,864 KS4 and 2,893 KS5 schools and the app never reads it; reading it would lengthen grade measures from 2 to 4 years (audit B). |
+| Open issue | — |
+| Fixed | - 0.6.2 S2: school grade rows read 2021/22-2024/25 (src/lib/grade-rows.ts; academic-data-view.ts:fetchSubjectLevelDataForSchools gradeYears "four"): the rollup at KS4 through academic_subject_grade_rollup_lookup once applied, else the modern + historic facts; the facts at KS5. Grade measures gain 2021/22-2022/23 (docs/v0.6/grade_rollup_reconciliation_v1.md). |
+
+### R-HISTORIC-GRADE-LABELS
+
+| Field | Content |
+| --- | --- |
+| Statement | 2021/22-2022/23 KS5 grade labels are read in their 2023/24 words: vocational short codes (* D M P HM HP, ** *D DD DM MM MP PP, *** **D *DD DDD DDM DMM MMM MMP MPP PPP) become Distinction* ... Pass-Pass-Pass on BTEC, OCR Cambridge Technical, Other General Qualification and AEA, and on a VRQ set only where it carries a code no A-level-type scale has; never on A level, AS, EPQ, Core Maths, FSMQ, IB or Pre-U. COVID result and Supp are non-grades (R-NON-GRADES-EXCL). KS4's historic labels already match. |
+| Why | '*' and 'D' are A-level grades too: read raw, a 2021/22 BTEC lands on the A-level scale, its bands give no figure and Grade counts shows letters; an unmapped COVID result left about 9% of 2021/22 A-level sets with no A*-E figure. |
+| Applies to | M-KS5-THRESHOLD, M-KS5-BANDS, M-KS5-COUNTS (2021/22-2022/23) |
+| Enforced in | - src/lib/grade-rows.ts:mapHistoricKs5Grade, parseSubjectGradeDistribution<br>- src/lib/subject-grades.ts:NON_GRADE_VALUES (88) |
+| Tagged at | - src/app/api/teacher/comparator-grades/route.ts<br>- src/lib/academic-data-view.ts<br>- src/lib/grade-rows.test.ts<br>- src/lib/grade-rows.ts<br>- src/lib/subject-grades.ts |
+| Test case | Croydon College (130432), ks5, Business Studies (BTEC Extended Certificate), 2021/22: 2021/22 reads Distinction* 2, Distinction 9, Merit 31, Pass 9 on the vocational scale (no '*' or 'D' rows, COVID result 44 a non-grade); King's Worcester (117037) A-level Maths 2021/22 keeps its '*' rows on the A-level scale, A*-E 100% of 45. [runner: historicGradeLabels] |
+| Origin | 0.6.2 S1 §4 (docs/v0.6/grade_rollup_reconciliation_v1.md); S2 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
 | Fixed | — |
 
 ### R-QUAL-FAMILY-MATCH
@@ -363,7 +384,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Core Maths beside A-level Maths in one category compared unlike qualifications. |
 | Applies to | Column 1 category, Context Selected |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1063-1065, 1076, 1261-1263, 1272, 1277, 1282 |
-| Tagged at | - src/lib/teacher-view-populations.ts |
+| Tagged at | - src/lib/teacher-view-populations.ts<br>- src/lib/view-editor.test.ts |
 | Test case | The Chase (137625), ks5, Mathematics (A level): A-level Maths focus: 5 bars, Core Maths absent (qualification-match report :29). [manual] |
 | Origin | Column 1 qualification match round; combined round §4c |
 | Status | active |
@@ -427,7 +448,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A delta column with nothing to compare against would be blank for every rate. |
 | Applies to | DV-C1-RES-CUR-TABLE |
 | Enforced in | - src/components/teacher/SubjectPanels.tsx:326-345, 643 |
-| Tagged at | - src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-panels.ts |
+| Tagged at | - src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/compare.ts<br>- src/lib/view-series/subjects.ts |
 | Test case | Acland Burghley School (100053), ks4: Results on Grade 4+, Sortable table: the delta column is headed 'vs last year'. [manual] |
 | Origin | Teacher view round 6 |
 | Status | active |
@@ -443,7 +464,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Grade counts has no single figure to compare subjects or schools on. |
 | Applies to | Context, Comparisons on Results |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1174-1175, 1436-1443 |
-| Tagged at | - src/lib/teacher-view-measures.ts |
+| Tagged at | - src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts |
 | Test case | Acland Burghley School (100053), ks4: Results -> Grade counts: Context shows Average points with the note 'Grade counts has no single figure to compare subjects on…'. [manual] |
 | Origin | Grade bands frontend round |
 | Status | active |
@@ -475,7 +496,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Area entries are points-eligible entries; the school's full count beside them would overstate its share. |
 | Applies to | DV-C1-CAND-TR-GEO-* |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1859-1862<br>- src/components/teacher/CandidatesPanels.tsx:370-371 (caveat) |
-| Tagged at | - src/lib/teacher-view-geography.ts |
+| Tagged at | - src/lib/teacher-view-geography.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/candidates.ts<br>- src/lib/view-series/compare-lines.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/geography.ts |
 | Test case | — |
 | Origin | Candidates live review Part 5 |
 | Status | active |
@@ -521,13 +542,77 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | --- | --- |
 | Statement | Comparator rates are scored per subject and exact qualification, with the page's own rate function. |
 | Why | Pooling a comparator's qualifications mixes grade scales (Maths (General) moved +5pp when fixed). |
-| Applies to | Comparisons on Grade 4+ / A*-E / bands |
-| Enforced in | - src/components/teacher/ComparisonsPanels.tsx:199-207<br>- src/app/teacher/[phase]/page.tsx:2043-2053 |
-| Tagged at | - src/lib/teacher-view-comparator-grades.ts<br>- src/lib/teacher-view-measures.ts |
+| Applies to | Comparisons on Grade 4+ / A*-E / bands; since 0.6.2 S3 also a subject column's 'Add an average' across schools on them |
+| Enforced in | - src/components/teacher/ComparisonsPanels.tsx:199-207<br>- src/app/teacher/[phase]/page.tsx:2043-2053<br>- src/components/dashboard-config/TeacherDashboard.tsx:setGradeRowsFor, schoolSetGradesOn |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-comparator-grades.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts |
 | Test case | — |
 | Origin | Comparisons / Grade 4 wiring |
 | Status | active |
 | Must lift | src/components/teacher/ComparisonsPanels.tsx:199-207; src/app/teacher/[phase]/page.tsx:2043-2053 → src/lib/teacher-view-comparator-grades.ts:rateSeriesByUrn (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
+| Open issue | — |
+| Fixed | — |
+
+### R-COMPARATOR-GRADE-SHARE
+
+| Field | Content |
+| --- | --- |
+| Statement | Grade counts across schools (Column 1's grade spread, 'Add an average' across the 10 nearest / a saved set) is each grade's share of a school's graded entries, averaged (mean or median) over the set's other schools with graded entries that year, for the focused subject and exact qualification; drawn as ticks in place of England's, at the school's own scale in counts mode. Never a raw count, never weighted by entries. |
+| Why | Schools differ in size: an average of raw counts would draw a big school's spread, not the set's. |
+| Applies to | M-*-COUNTS (set) |
+| Enforced in | - src/catalogue/honest.ts:compareHonest (set)<br>- src/lib/grade-spread.ts:setShares<br>- src/lib/view-series/grades.ts:compareOf, buildGrades, buildBandSpread |
+| Tagged at | - src/lib/grade-spread.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series-grades.test.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/grades.ts |
+| Test case | — |
+| Origin | 0.6.2 S3 (prompt: 'Grade counts across schools should show a share (%), not raw counts') |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-2122-GRADING-NOTE
+
+| Field | Content |
+| --- | --- |
+| Statement | A grade or points view over time whose years include 2021/22 carried a note that 2021/22 was graded more generously, so some fall from it reflects grading. Superseded by R-TREND-FROM-2223 (Guy, 6 Oct 2026): trends are now measured from 2022/23, and the note says so. |
+| Why | 2021/22 (summer 2022) was Ofqual's transition year: grading set roughly midway between 2021 and 2019. |
+| Applies to | M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS, Comparisons' headline: over-time views |
+| Enforced in | — |
+| Tagged at | - src/lib/grading-note.test.ts<br>- src/lib/trend-base.test.ts |
+| Test case | — |
+| Origin | 0.6.2 S4 (prompt: 'wherever a grade or points trend includes 2021/22, put a short footnote on the view') |
+| Status | superseded by R-TREND-FROM-2223 |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-TREND-FROM-2223
+
+| Field | Content |
+| --- | --- |
+| Statement | On a grade or points measure (Average points, Grade 4+ / A*-E, Grade bands, Grade counts, Comparisons' headline; never Candidates, never KS2), 2021/22 stays on the Trends' graphs and tables, but every trend statement is measured from 2022/23 (TREND_BASE_PERIOD): the direction word (R-TREND-FLAT-4PCT) and the trend sentence ('… since 2022/23'), the group / 'vs:' clause, every year table's Change column (Trend and % change tables, Results' area change table: the card's two year columns are then 2022/23 and the latest; fullscreen shows every year), a fitted Trend line, a short span's ranked change bars, ranked change lists, change and Trend maps, the % change half's summary and collapsed figure, and a slope from the span's first year. Grade counts' change table (two years) measures from 2022/23 at the earliest, its 'From' menu from there; its spread may still be compared with 2021/22. Line charts (Trend, Results' area chart) draw 2021/22 as a normal point. A 'From' year of 2022/23 or later is unchanged. A view whose drawn years include 2021/22 carries TREND_BASE_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view, on Candidates or at KS2. Indexed lines are entries only (R-INDEX-HEADCOUNTS), so unaffected. |
+| Why | 2021/22 (summer 2022) was the first year back to exams after the pandemic: Ofqual set grading roughly midway between 2021 and 2019, so a trend measured from it would make most schools look as if results had fallen. |
+| Applies to | M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS, Comparisons' headline (Attainment 8, A level points per entry): over-time views |
+| Enforced in | - src/catalogue/notes.ts:TREND_BASE_PERIOD, TREND_BASE_NOTE, trendBaseApplies, trendBaseFor, trendNoteFor, specYears<br>- src/lib/teacher-view-panels.ts:PanelData.statementFrom, withTrendBase, statementSpan, countedValues<br>- src/components/teacher/SeriesViews.tsx:MultiTrend (short span), YearTable (Change column, card columns)<br>- src/components/teacher/TrendChart.tsx:fit<br>- src/components/teacher/ColumnPanels.tsx:withTrendNote (PanelRender.gradingYears)<br>- src/components/teacher/SubjectPanels.tsx:trendFull, trendSpan, changeFull, changeSpan<br>- src/components/teacher/ComparisonsPanels.tsx:full, trendSpan, changeSpanData, changeTableSpan, trendMapSpan<br>- src/components/teacher/GeographyComparison.tsx:GeographyView statementFrom<br>- src/components/teacher/GradeCountsPanels.tsx:changeEarlier<br>- src/lib/grade-spread.ts:gradeCounts (changeEarlier)<br>- src/lib/view-series/subjects.ts:trendData, changeData<br>- src/lib/view-series/comparisons.ts:series, changeDrawn, changeSpan<br>- src/lib/view-series/geography.ts:buildGeography (table statementFrom)<br>- src/lib/view-series/map.ts:changeMap<br>- src/lib/view-series/slope.ts:slopeYears |
+| Tagged at | - src/components/teacher/ColumnPanels.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/GeographyComparison.tsx<br>- src/components/teacher/GradeCountsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/components/teacher/TrendChart.tsx<br>- src/lib/grade-spread.ts<br>- src/lib/grading-note.test.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/slope.ts<br>- src/lib/view-series/subjects.ts |
+| Test case | The Chase (137625), ks4, History, 2021/22-2024/25: Grade bands and Average points Trends draw 2021/22-2024/25 and carry the note; their sentence and direction word are measured 2022/23-2024/25 ('since 2022/23'); a Trend from 2023/24 and the latest year are unchanged; Candidates and KS2 never (src/lib/trend-base.test.ts and src/lib/grading-note.test.ts, on the real hosts). [runner: trendFrom2223] |
+| Origin | 0.6.2 S4b (Guy's decision B, 6 Oct 2026), replacing S4's R-2122-GRADING-NOTE |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-CURRENT-GRADES-FROM-2324
+
+| Field | Content |
+| --- | --- |
+| Statement | A latest-year view on a grade measure (Grade 4+ / A*-E, Grade bands, Grade counts; Results, Context and Comparisons' rate) reads the school's grade rows from 2023/24 on only: its subject (or school) list, its year menu, its 'vs last year' and an explicit earlier-year spread are exactly as before the rows reached back to 2021/22. A subject with grades only in 2021/22-2022/23 appears on the Trends alone. |
+| Why | The grade rows' two older years are for the trends. Read by a latest-year view, they listed subjects with no current figure ('no published figure' rows) and let 'vs last year' reach back past a missing 2023/24 to 2022/23 -- latest-year figures this round must not change (S5). |
+| Applies to | M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS: latest-year views |
+| Enforced in | - src/lib/teacher-view-panels.ts:latestYearFrom, latestYearSeries<br>- src/components/teacher/SubjectPanels.tsx:currentSubjects, currentFrame<br>- src/components/teacher/ComparisonsPanels.tsx:currentFrom, currentFrame<br>- src/lib/grade-spread.ts:gradeCounts (latest)<br>- src/lib/view-series/grades.ts:earlierCounts, buildGrades<br>- src/components/dashboard-config/TeacherDashboard.tsx:focusScale (the band scale, since S2) |
+| Tagged at | - src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/grade-spread.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series/grades.ts |
+| Test case | Acland Burghley School (100053), ks4: On Grade 4+ the Current subject lists match the 2023/24-on rows (no Turkish 'no figure' row), and Latin's 'vs last year' is '—' (no 2023/24), not 2024/25 against 2022/23 (src/lib/trend-base.test.ts). [runner: currentGradesFrom2324] |
+| Origin | 0.6.2 S4b (Guy's decision A, 6 Oct 2026), after S5's first parity run |
+| Status | active |
+| Must lift | — |
 | Open issue | — |
 | Fixed | — |
 
@@ -539,7 +624,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A map of a sample of schools across England is not a local picture, and a rank within the sample is not the school's real rank. |
 | Applies to | Comparisons with a ranking set |
 | Enforced in | - src/components/teacher/ComparisonsPanels.tsx:213, 287-297, 494-506, 615, 713<br>- src/lib/chooser-sets.ts:46-61 |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/dashboard-config/runtime.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/teacher-view-comparisons.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/dashboard-config/runtime.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/variants.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/tiles.ts |
 | Test case | — |
 | Origin | Snagging round 1 Part 4 |
 | Status | active |
@@ -571,7 +656,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | An index of an average reads as a % change of an average, which misleads (catalogue §3). |
 | Applies to | Indexed trend views |
 | Enforced in | - src/lib/teacher-view-trend-styles.ts:shouldIndex (102-104)<br>- src/components/teacher/SeriesViews.tsx:92<br>- src/components/teacher/GeographyComparison.tsx:159 |
-| Tagged at | - src/lib/teacher-view-trend-styles.ts |
+| Tagged at | - src/lib/teacher-view-trend-styles.ts<br>- src/lib/view-editor.test.ts |
 | Test case | — |
 | Origin | Trend redesign |
 | Status | active |
@@ -603,13 +688,13 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | Small year-to-year noise should not be called growth or decline. |
 | Applies to | Trend summaries and direction flags |
 | Enforced in | - src/lib/teacher-view-panels.ts:classifyChange (353-360) |
-| Tagged at | - src/lib/teacher-view-panels.ts |
+| Tagged at | - src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts |
 | Test case | — |
 | Origin | Teacher view wireframe |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
-| Fixed | — |
+| Fixed | - 0.6.2 S4b: on a grade or points measure the word is measured from 2022/23 (R-TREND-FROM-2223), where the chart draws 2021/22. |
 
 ### R-NUMBER-TYPE-HONESTY
 
@@ -619,7 +704,7 @@ What a number is allowed to be. 40 rules: 39 active, 1 superseded; 22 must lift 
 | Why | A % change of an average or a rate misleads: 60% -> 66% is +6pp, not +10%. |
 | Applies to | Every view on M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-HEADLINE |
 | Enforced in | - src/catalogue/measures.ts (numberTypes)<br>- src/catalogue/matching.ts (offer filter, via dataview supports.numberType)<br>- src/lib/teacher-view-panels.ts:ChangeKind, Measure.changeKind, changeOf, formatChange, changeMagnitude, changeTitle, changeInTitle, trendSentence<br>- src/components/teacher/SeriesViews.tsx:YearTable (Change column, ranked by the honest change)<br>- src/components/teacher/ChangeChart.tsx (format, axis units)<br>- src/components/teacher/SubjectPanels.tsx:change half (ChangeList, titles, summary, headline)<br>- src/components/teacher/ComparisonsPanels.tsx:change half (ChangeList, change map trend vs trend_absolute, titles, summary, headline) |
-| Tagged at | - src/components/teacher/ChangeChart.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-panels.ts |
+| Tagged at | - src/components/teacher/ChangeChart.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/ranking.ts |
 | Test case | — |
 | Origin | Catalogue doc §3; decision C3 |
 | Status | active |

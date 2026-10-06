@@ -26,7 +26,8 @@ export function buildGeography(spec: ViewSpec, f: SeriesFrame): ViewSeries | nul
   if (!g || f.subjects.length === 0) return null;
   const view = spec.view.kind === "table" ? "table" : "chart";
   // The % change half's span, as the host trims it (every subject and the group lines).
-  const span = f.kind === "subjects" ? subjectChange(f, true).data.periods : candidateChange(f, candidateBasics(f), true).data.periods;
+  const half = f.kind === "subjects" ? subjectChange(f, true).data : candidateChange(f, candidateBasics(f), true).data;
+  const span = half.periods;
   const measure = f.kind === "subjects" ? f.measure : f.measure ?? ENTRIES_MEASURE;
   const colours = paletteInOrder(["own", "area-la", "area-region", "area-national"], "own", FOCUS_COLOUR, f.theme === "light" ? PALETTE_LIGHT : PALETTE_DARK, f.accentHex);
   const got = geographyComparison({
@@ -49,7 +50,7 @@ export function buildGeography(spec: ViewSpec, f: SeriesFrame): ViewSeries | nul
   // line (its path runs almost on top of England's).
   const data =
     view === "table"
-      ? { periods: got.periods, series: got.lines.map((x) => (x.key === "own" ? x : { ...x, colour: "var(--muted3)" })) }
+      ? { periods: got.periods, series: got.lines.map((x) => (x.key === "own" ? x : { ...x, colour: "var(--muted3)" })), ...(half.statementFrom === undefined ? {} : { statementFrom: half.statementFrom }) }
       : { periods: got.periods, series: got.lines.filter((x) => x.key !== "area-region") };
   return {
     kind,

@@ -33,6 +33,7 @@ const lib = async () => ({
   tvm: await import("../src/lib/teacher-view-measures"),
   pop: await import("../src/lib/teacher-view-populations"),
   sb: await import("../src/lib/supabase"),
+  notes: await import("../src/catalogue/notes"),
 });
 type Lib = Awaited<ReturnType<typeof lib>>;
 
@@ -186,13 +187,13 @@ const RUNNERS: Record<string, Runner> = {
   },
 
   // R-TREND-LINE-4YR: Acland Burghley 100053 GCSE Maths (General) (the rollup's subject name). Points: 4 real years -> line;
-  // Grade 4+ (from the grade rows): 2 years -> bars.
+  // Grade 4+ (from the dashboard's grade rows, gradeYears "four"): 4 years -> line since 0.6.2 (2 years -> bars before).
   async trendLine({ adv, sg, tvp }) {
     const urn = "100053";
     const headline = ((await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? []).filter((h) => h.subject === "Maths (General)");
     const periods = [...new Set(headline.map((h) => h.period))].sort();
     const points = { periods, series: [{ key: "m", label: "Mathematics", colour: "#000", values: periods.map((p) => headline.find((h) => h.period === p)?.avgPointScore ?? null) }] };
-    const grades = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4")).byUrn.get(urn)?.gradeDistribution ?? []).filter(
+    const grades = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter(
       (r) => r.subject === "Maths (General)" && r.qualificationType === "GCSE (9-1) Full Course",
     );
     const gp = [...new Set(grades.map((r) => r.period))].sort();
@@ -203,15 +204,112 @@ const RUNNERS: Record<string, Runner> = {
       grade4Years: tvp.periodsWithData(rate).length,
       grade4Kind: tvp.trendChartKind(rate),
     };
-    return { pass: v.pointsYears === 4 && v.pointsKind === "line" && v.grade4Years === 2 && v.grade4Kind === "bars", detail: fmt(v) };
+    return { pass: v.pointsYears === 4 && v.pointsKind === "line" && v.grade4Years === 4 && v.grade4Kind === "line", detail: fmt(v) };
   },
 
-  // R-THRESHOLD-PERIODS: Acland Burghley 100053's school grade rows cover exactly 2023/24 and 2024/25.
-  async thresholdPeriods({ adv }) {
+  // R-TREND-FROM-2223: The Chase 137625 GCSE History, on its real rows. Its Trends span
+  // (trimmed to data, as the hosts draw it) on Average points and on Grade bands 7-9 draws
+  // 2021/22 and carries the note, but its sentence and direction word are measured from
+  // 2022/23 ("since 2022/23", the same words as a Trend the member starts at 2022/23); a
+  // Trend from 2023/24 is unchanged by the rule. Entries and KS2 never follow it. (The note
+  // in fullscreen / print: src/lib/grading-note.test.ts; the views: src/lib/trend-base.test.ts.)
+  async trendFrom2223({ adv, sg, tvp, notes }) {
+    const urn = "137625";
+    const qual = "GCSE (9-1) Full Course";
+    const headline = ((await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? []).filter((h) => h.subject === "History");
+    const pp = [...new Set(headline.map((h) => h.period))].sort();
+    const base = notes.trendBaseFor("points", "ks4");
+    const points = tvp.withTrendBase(tvp.trimToData({ periods: pp, series: [{ key: "h", label: "History", colour: "#000", values: pp.map((p) => headline.find((h) => h.period === p)?.avgPointScore ?? null) }] }), base);
+    const grades = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter((r) => r.subject === "History" && r.qualificationType === qual);
+    const gp = [...new Set(grades.map((r) => r.period))].sort();
+    const range = { scale: sg.bestScale(grades.filter((r) => r.period >= 2023).map((r) => r.grade)), top: "9", bottom: "7" };
+    const bands = tvp.withTrendBase(tvp.trimToData({ periods: gp, series: [{ key: "h", label: "History", colour: "#000", values: gp.map((p) => sg.bandRate(grades.filter((r) => r.period === p), range)?.rate ?? null) }] }), notes.trendBaseFor("bands", "ks4"));
+    const said = (d: ReturnType<typeof tvp.trimToData>) => {
+      const span = tvp.statementSpan(d);
+      const t = tvp.trendSentence({ subjectClause: "History", values: span.series[0].values, measure: tvp.measureById("ks4", "points"), startLabel: span.periods.length ? `${span.periods[0]}` : "" });
+      return t ? `${t.direction}:${t.sentence}` : "none";
+    };
+    const has = (years: readonly number[] | null) => notes.trendNoteFor(years) === notes.TREND_BASE_NOTE;
+    const v = {
+      pointsYears: points.periods.join(" "),
+      bandsYears: bands.periods.join(" "),
+      statementYears: tvp.statementSpan(bands).periods.join(" "),
+      pointsNote: has(points.periods),
+      bandsNote: has(bands.periods),
+      pointsSince2223: said(points) === said(tvp.sliceFrom(points, 2022)) && said(points).includes("since 2022"),
+      bandsSince2223: said(bands) === said(tvp.sliceFrom(bands, 2022)) && said(bands).includes("since 2022"),
+      from2324Unchanged: said(tvp.sliceFrom(bands, 2023)) === said(tvp.sliceFrom(tvp.trimToData({ ...bands, statementFrom: null }), 2023)),
+      from2223NoNote: !has(tvp.sliceFrom(bands, 2022).periods) && !has(tvp.sliceFrom(points, 2022).periods),
+      latestOnly: has(bands.periods.slice(-1)),
+      entries: notes.trendBaseApplies("entries", "ks4"),
+      ks2: notes.trendBaseApplies("points", "ks2"),
+    };
+    const pass = v.pointsNote && v.bandsNote && v.pointsSince2223 && v.bandsSince2223 && v.from2324Unchanged && v.from2223NoNote && !v.latestOnly && !v.entries && !v.ks2 && bands.periods[0] === 2021 && v.statementYears.startsWith("2022");
+    return { pass, detail: fmt(v) };
+  },
+
+  // R-CURRENT-GRADES-FROM-2324: Acland Burghley 100053 GCSE Grade 4+ on its real four-year rows.
+  // Read from 2023/24 on, as Current reads them: Turkish (grades only before 2023/24) leaves
+  // the list, and Latin (no 2023/24) has no "vs last year" -- not 2024/25 against 2022/23.
+  async currentGradesFrom2324({ adv, sg, tvp }) {
     const urn = "100053";
-    const grades = (await adv.fetchSubjectLevelDataForSchools([urn], "ks4")).byUrn.get(urn)?.gradeDistribution ?? [];
+    const qual = "GCSE (9-1) Full Course";
+    const grades = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter((r) => r.qualificationType === qual);
     const periods = [...new Set(grades.map((r) => r.period))].sort();
-    return { pass: periods.join(",") === "2023,2024", detail: fmt({ gradePeriods: periods.join(" ") }) };
+    const subjects = [...new Set(grades.map((r) => r.subject))].sort();
+    const series = subjects.map((subject) => ({ key: subject, values: periods.map((p) => sg.thresholdRate(grades.filter((r) => r.subject === subject && r.period === p), "ks4")?.rate ?? null) }));
+    const figured = tvp.latestYearSeries(series.filter((s) => s.values.some((v) => v !== null)), periods, tvp.latestYearFrom("threshold"), null);
+    const latestIdx = periods.length - 1;
+    const rows = tvp.currentRowsWithDelta(figured, latestIdx, false);
+    const latin = rows.find((r) => r.s.key === "Latin");
+    const v = {
+      periods: periods.join(" "),
+      turkishListed: figured.some((s) => s.key === "Turkish"),
+      turkishHasOldGrades: series.some((s) => s.key === "Turkish" && s.values.some((x) => x !== null)),
+      latinDelta: latin ? latin.delta : "absent",
+      points: tvp.latestYearFrom("points"),
+    };
+    return { pass: !v.turkishListed && v.turkishHasOldGrades && latin !== undefined && latin.delta === null && v.points === null && v.periods === "2021 2022 2023 2024", detail: fmt(v) };
+  },
+
+  // R-THRESHOLD-PERIODS: Acland Burghley 100053's school grade rows (the dashboard's, gradeYears
+  // "four") cover exactly 2021/22-2024/25 since 0.6.2 (2023/24 and 2024/25 before). The Data
+  // View's read (no option) is unchanged: still the modern years only.
+  async thresholdPeriods({ adv, ref }) {
+    const urn = "100053";
+    const grades = (await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? [];
+    const periods = [...new Set(grades.map((r) => r.period))].sort();
+    const dataView = (await adv.fetchSubjectLevelDataForSchools([urn], "ks4")).byUrn.get(urn)?.gradeDistribution ?? [];
+    const dvPeriods = [...new Set(dataView.map((r) => r.period))].sort();
+    return {
+      pass: periods.join(",") === "2021,2022,2023,2024" && dvPeriods.join(",") === "2023,2024",
+      detail: fmt({ gradePeriods: periods.join(" "), dataViewPeriods: dvPeriods.join(" "), source: ref.gradeRollupRpcState() === "present" ? "rollup" : "facts" }),
+    };
+  },
+
+  // R-HISTORIC-GRADE-LABELS: Croydon College 130432 Business Studies, BTEC Extended Certificate,
+  // 2021/22 in its modern words on the vocational scale; King's Worcester 117037 A-level Maths
+  // 2021/22 keeps its "*" rows on the A-level scale. Through the dashboard's read.
+  async historicGradeLabels({ adv, sg }) {
+    const read = async (urn: string) => (await adv.fetchSubjectLevelDataForSchools([urn], "ks5", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? [];
+    const btec = (await read("130432")).filter((r) => r.subject === "Business Studies" && r.period === 2021 && r.qualificationType.startsWith("BTEC National Extended Certificate"));
+    const at = (rows: typeof btec, g: string) => rows.filter((r) => r.grade === g).reduce((a, r) => a + r.entries, 0);
+    const btecScale = sg.bestScale(btec.map((r) => r.grade));
+    const maths = (await read("117037")).filter((r) => r.subject === "Mathematics" && r.period === 2021 && r.qualificationType === "GCE A level");
+    const mathsRate = sg.thresholdRate(maths, "ks5");
+    const v = {
+      btec: ["Distinction*", "Distinction", "Merit", "Pass"].map((g) => `${g}:${at(btec, g)}`).join(" "),
+      btecShortCodes: btec.filter((r) => ["*", "D", "M", "P"].includes(r.grade)).length,
+      covid: at(btec, "COVID result"),
+      btecScale: btecScale[0] ?? "none",
+      mathsStarRows: maths.filter((r) => r.grade === "*").length,
+      mathsAtoE: round(mathsRate?.rate ?? null),
+      mathsGraded: mathsRate?.entries ?? null,
+    };
+    const pass =
+      v.btec === "Distinction*:2 Distinction:9 Merit:31 Pass:9" && v.btecShortCodes === 0 && v.covid === 44 && v.btecScale === "Distinction*" && sg.NON_GRADE_VALUES.has("COVID result") &&
+      v.mathsStarRows > 0 && v.mathsAtoE === 100 && v.mathsGraded === 45;
+    return { pass, detail: fmt(v) };
   },
 };
 

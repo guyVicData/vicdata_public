@@ -11,6 +11,7 @@
 // year ranges the From:/Since: controls offer, and the arithmetic behind the summary
 // sentences. The components render it; none of them re-derive it.
 import type { TeacherPhase } from "./teacher-view-phases";
+import { MODERN_GRADE_FROM } from "./grade-rows";
 
 // ---------------------------------------------------------------- the panels
 
@@ -232,6 +233,10 @@ export type PanelSeries = {
 export type PanelData = {
   periods: number[];
   series: PanelSeries[];
+  // R-TREND-FROM-2223 (0.6.2 S4b): on a grade or points trend, the year its statements are
+  // measured from -- the change column, a fitted line, a short span's change bars -- while
+  // every period is still drawn. Absent / null = from the first year shown, as before.
+  statementFrom?: number | null;
 };
 
 export function meanOf(values: (number | null)[]): number | null {
@@ -286,11 +291,13 @@ export function periodsWithData(data: PanelData): number[] {
 export function trimToData(data: PanelData): PanelData {
   const real = data.periods.map((_, i) => data.series.some((s) => s.values[i] !== null));
   const first = real.indexOf(true);
-  if (first === -1) return { periods: [], series: data.series.map((s) => ({ ...s, values: [] })) };
+  const keep = data.statementFrom === undefined ? {} : { statementFrom: data.statementFrom };
+  if (first === -1) return { periods: [], series: data.series.map((s) => ({ ...s, values: [] })), ...keep };
   const last = real.lastIndexOf(true);
   return {
     periods: data.periods.slice(first, last + 1),
     series: data.series.map((s) => ({ ...s, values: s.values.slice(first, last + 1) })),
+    ...keep,
   };
 }
 
@@ -311,7 +318,58 @@ export function sliceFrom(data: PanelData, start: number | null): PanelData {
   return {
     periods: data.periods.slice(at),
     series: data.series.map((s) => ({ ...s, values: s.values.slice(at) })),
+    ...(data.statementFrom === undefined ? {} : { statementFrom: data.statementFrom }),
   };
+}
+
+// ------------------------------------------- trends measured from 2022/23 (R-TREND-FROM-2223)
+//
+// 0.6.2 S4b (Guy, 6 Oct 2026): 2021/22 was graded more generously (Ofqual's transition year),
+// so a grade or points trend still DRAWS it, but says nothing measured from it. The base year
+// and which measures follow the rule are src/catalogue/notes.ts's (trendBaseFor); these apply
+// it to a panel's data. `base` null = the rule doesn't apply (entries, KS2): data unchanged.
+
+/** A Trend half's data, marked to be measured from `base` where it draws an earlier year. */
+export function withTrendBase(data: PanelData, base: number | null): PanelData {
+  if (base === null || !data.periods.some((p) => p < base)) return data;
+  return { ...data, statementFrom: base };
+}
+
+/** The span a trend's statements are measured over: `data` from its statementFrom on. */
+export function statementSpan(data: PanelData): PanelData {
+  const from = data.statementFrom;
+  if (from === null || from === undefined) return data;
+  const at = data.periods.findIndex((p) => p >= from);
+  if (at <= 0) return at === 0 ? data : { periods: [], series: data.series.map((s) => ({ ...s, values: [] })) };
+  return { periods: data.periods.slice(at), series: data.series.map((s) => ({ ...s, values: s.values.slice(at) })) };
+}
+
+/** One series' values with every year before `from` left out (null), so the positions still
+ * line up with the drawn periods -- what a fitted line or a change column counts. */
+export function countedValues(values: (number | null)[], periods: number[], from: number | null | undefined): (number | null)[] {
+  if (from === null || from === undefined) return values;
+  return values.map((v, i) => (periods[i] !== undefined && periods[i] < from ? null : v));
+}
+
+// ------------------------------- latest-year grade views from 2023/24 (R-CURRENT-GRADES-FROM-2324)
+//
+// 0.6.2 S4b (Guy, 6 Oct 2026): school grade rows reach back to 2021/22 for the trends, but a
+// latest-year view on a grade measure (Grade 4+ / A*-E, Grade bands, Grade counts) reads the
+// 2023/24-on rows only, as before -- its subject list, its "vs last year" and its year menu
+// stay exactly as they were. (The band scale already does: TeacherDashboard's focusScale.)
+
+/** The first year a latest-year view on this measure reads, or null (points, entries: all). */
+export function latestYearFrom(measureId: string): number | null {
+  return measureId === "threshold" || measureId === "bands" || measureId === "counts" ? MODERN_GRADE_FROM : null;
+}
+
+/** Each series with its years before `from` left out (null), and any that then has no figure
+ * at all dropped -- except the focused one, which always stays (R-FOCUS-NEVER-FILTERED). */
+export function latestYearSeries<S extends { key: string; values: (number | null)[] }>(series: S[], periods: number[], from: number | null, focusKey: string | null): S[] {
+  if (from === null) return series;
+  return series
+    .map((s) => ({ ...s, values: countedValues(s.values, periods, from) }))
+    .filter((s) => s.key === focusKey || s.values.some((v) => v !== null));
 }
 
 // --------------------------------------------------- how a trend is drawn (§4)

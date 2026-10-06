@@ -1,0 +1,8 @@
+process.loadEnvFile("/Users/guy/dev/vicdata/.env");
+const url = process.env.VICDATA_API_URL!, key = process.env.VICDATA_SERVICE_ROLE_KEY!, anon = process.env.VICDATA_ANON_KEY!;
+for (const [name, k] of [["service", key], ["anon", anon]] as const) {
+  const t0 = performance.now();
+  const r = await fetch(`${url}/rest/v1/academic_subject_grade_rollup?entity_id=eq.137625&ks_stage=eq.ks4&subject=eq.History&select=*`, { headers: { apikey: k, Authorization: `Bearer ${k}` } });
+  const body = await r.text();
+  console.log(name, r.status, (performance.now() - t0).toFixed(0), "ms", body.slice(0, 300));
+}

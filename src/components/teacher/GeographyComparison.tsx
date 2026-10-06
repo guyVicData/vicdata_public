@@ -89,6 +89,7 @@ export function GeographyView({
   metric,
   ownPeriods,
   spanPeriods,
+  statementFrom,
   measure,
   theme,
   accentHex,
@@ -103,6 +104,9 @@ export function GeographyView({
   ownPeriods: number[];
   // The panel's current span (its From range).
   spanPeriods: number[];
+  // R-TREND-FROM-2223: the year the change table's Change counts from (2022/23 on points),
+  // while the chart and fullscreen table still draw every year of the span.
+  statementFrom?: number | null;
   measure: Measure;
   theme: "dark" | "light";
   accentHex: string | null;
@@ -153,7 +157,7 @@ export function GeographyView({
         {heading}
         <CentredOnTarget watch={`geo:${geographyId(geography)}:${metric}:${shown.join(",")}`}>
           <YearTable
-            data={{ periods: shown, series: series.map((x) => (x.key === "own" ? x : { ...x, colour: "var(--muted3)" })) }}
+            data={{ periods: shown, series: series.map((x) => (x.key === "own" ? x : { ...x, colour: "var(--muted3)" })), statementFrom }}
             measure={measure}
             focusKey="own"
             fullscreen={fullscreen}

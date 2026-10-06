@@ -1,0 +1,175 @@
+// S1 sample comparison (read-only). For each sampled (school, subject, qualification) set:
+//   A. rollup = source facts per grade, all four years (rollup rules: totals, "All
+//      subjects", IB non-subject rows and non-positive values out; KS5 summed over size);
+//   B. modern years (2023 = 2023/24, 2024 = 2024/25): rollup = what the app reads today,
+//      through the app's own fetch (fetchSubjectLevelDataForSchools -> reference_data_lookup
+//      -> parseSubjectGradeDistribution) and its own grade functions (thresholdRate, bandRate,
+//      gradeOrderFrom, gradeCounts);
+//   C. historic years: the historic facts through the app's own RPC (lookupReferenceData)
+//      and the same parser (a verbatim copy: parseSubjectGradeDistribution isn't exported).
+// Usage (from the repo root): npx -y tsx --env-file=.env <this file> <sample.json>
+import { readFileSync } from "node:fs";
+const R = "/Users/guy/dev/vicdata_public/src/lib/";
+const adv = await import(R + "academic-data-view.ts");
+const ref = await import(R + "vicdata-reference.ts");
+const sg = await import(R + "subject-grades.ts");
+const gs = await import(R + "grade-spread.ts");
+
+type Row = { qualificationType: string; subject: string; period: number; grade: string; entries: number; sizeWeight: number | null };
+// Verbatim copy of academic-data-view.ts parseSubjectGradeDistribution (lines 1109-1124).
+const SUBJECT_TOTAL_LABELS = new Set(["Total exam entries", "Total"]);
+function parseSubjectGradeDistribution(facts: { breakdown: string; value_numeric: number | null; period: number }[]): Row[] {
+  const rows: Row[] = [];
+  for (const f of facts) {
+    if (f.value_numeric === null) continue;
+    const parts = f.breakdown.split("::");
+    const grade = parts[parts.length - 1];
+    if (SUBJECT_TOTAL_LABELS.has(grade)) continue;
+    const [qualificationType, subject] = parts;
+    if (subject === "All subjects") continue;
+    const rawSize = parts.length >= 4 ? Number.parseFloat(parts[2]) : Number.NaN;
+    const sizeWeight = Number.isFinite(rawSize) ? rawSize : null;
+    rows.push({ qualificationType, subject, period: f.period, grade, entries: f.value_numeric, sizeWeight });
+  }
+  return rows;
+}
+// The rollup's own rules (vicdata ingest/academic_aggregates.py recompute_academic_subject_grade_rollup).
+const ROLLUP_TOTALS = new Set(["Total", "Total number entered", "Total exam entries"]);
+const NON_SUBJECT = new Set(["International Baccalaureate::Baccalaureate", "International Baccalaureate Combined Certificate::Baccalaureate", "Other academic::Baccalaureate", "IBO Diploma Programme Core::Learning Skills", "IBO Diploma Programme Core::Study Skills", "IBO Diploma Programme Core::Self Development", "Other academic::Learning Skills", "Other academic::Self Development"]);
+
+const data = JSON.parse(readFileSync(process.argv[2], "utf8"));
+const HIST = { ks4: ["dfe_ks4_subject_entries_historic"], ks5: ["dfe_ks5_subject_results_historic"] } as const;
+const sumBy = (rows: { grade: string; period: number; entries: number }[]) => {
+  const m = new Map<string, number>();
+  for (const r of rows) m.set(`${r.period}|${r.grade}`, (m.get(`${r.period}|${r.grade}`) ?? 0) + r.entries);
+  return m;
+};
+const r1 = (v: number | null | undefined) => (v === null || v === undefined ? null : Math.round(v * 1e6) / 1e6);
+
+for (const ks of ["ks4", "ks5"] as const) {
+  const d = data[ks];
+  const sets: [string, string, string][] = d.sets;
+  const urns = [...new Set(sets.map((s) => s[0]))];
+  // The app's own read today (modern only), batched as comparator-grades does it.
+  const t0 = performance.now();
+  // In chunks of 5: one batched call for ~195 schools hits lookupReferenceData's 50-page
+  // (50,000-row) cap and silently drops schools -- itself a finding (see the report).
+  const chunks: string[][] = [];
+  for (let i = 0; i < urns.length; i += 5) chunks.push(urns.slice(i, i + 5));
+  const byUrn = new Map<string, { gradeDistribution: Row[] }>();
+  for (const ch of chunks) for (const [u, v] of (await adv.fetchSubjectLevelDataForSchools(ch, ks)).byUrn) byUrn.set(u, v);
+  const tApp = performance.now() - t0;
+  const t1 = performance.now();
+  const histFacts = [];
+  for (const ch of chunks) histFacts.push(...(await Promise.all(HIST[ks].map((sourceId) => ref.lookupReferenceData({ sourceId, entityIds: ch })))).flat());
+  const tHist = performance.now() - t1;
+  const histByUrn = new Map<string, typeof histFacts>();
+  for (const f of histFacts) (histByUrn.get(f.entity_id) ?? histByUrn.set(f.entity_id, []).get(f.entity_id)!).push(f);
+
+  const c = { sets: sets.length, A_keys: 0, A_equal: 0, A_diff: [] as string[], B_setYears: 0, B_gradeEqual: 0, B_gradeDiff: [] as string[], B_zeroRowsApp: 0, B_setYearsWithZeroRows: 0, B_appOnlyNonzero: [] as string[], B_threshold: 0, B_thresholdDiff: [] as string[], B_band: 0, B_bandDiff: [] as string[], B_order: 0, B_orderDiff: [] as string[], B_has: 0, B_hasDiff: [] as string[], B_counts: 0, B_countsN: 0, B_countsDiff: [] as string[], C_setYears: 0, C_equal: 0, C_diff: [] as string[], C_totalLabelAsGrade: 0, C_zeroRows: 0, multiSizeKeys: 0 };
+  for (const [urn, subject, qual] of sets) {
+    const roll = (d.rollup as [string, string, string, string, number, number][]).filter((r) => r[0] === urn && r[1] === subject && r[2] === qual).map((r) => ({ grade: r[3], period: r[4], entries: r[5] }));
+    const rollMap = sumBy(roll);
+    // A. facts with the rollup's rules
+    const facts = (d.facts as [string, string, number, string, number | null][]).filter((f) => f[1] === urn);
+    const fr: { grade: string; period: number; entries: number }[] = [];
+    const perKeyRows = new Map<string, number>();
+    for (const [, , period, b, v] of facts) {
+      const p = b.split("::");
+      if (p[0] !== qual || p[1] !== subject) continue;
+      const grade = p[p.length - 1];
+      if (p[1] === "All subjects" || NON_SUBJECT.has(`${p[0]}::${p[1]}`) || ROLLUP_TOTALS.has(grade) || !(v && v > 0)) continue;
+      fr.push({ grade, period, entries: v });
+      perKeyRows.set(`${period}|${grade}`, (perKeyRows.get(`${period}|${grade}`) ?? 0) + 1);
+    }
+    c.multiSizeKeys += [...perKeyRows.values()].filter((n) => n > 1).length;
+    const factMap = sumBy(fr);
+    for (const k of new Set([...rollMap.keys(), ...factMap.keys()])) {
+      c.A_keys++;
+      if (rollMap.get(k) === factMap.get(k)) c.A_equal++;
+      else c.A_diff.push(`${urn}|${subject}|${qual}|${k}: rollup ${rollMap.get(k)} facts ${factMap.get(k)}`);
+    }
+    // B. modern years against the app's own rows
+    const app = (byUrn.get(urn)?.gradeDistribution ?? []).filter((g: Row) => g.subject === subject && g.qualificationType === qual);
+    const rollRows: Row[] = roll.map((r) => ({ qualificationType: qual, subject, period: r.period, grade: r.grade, entries: r.entries, sizeWeight: null }));
+    for (const period of [2023, 2024]) {
+      const a = app.filter((g: Row) => g.period === period);
+      const b = rollRows.filter((g) => g.period === period);
+      if (!a.length && !b.length) continue;
+      c.B_setYears++;
+      const zeros = a.filter((g: Row) => g.entries === 0).length;
+      c.B_zeroRowsApp += zeros;
+      if (zeros) c.B_setYearsWithZeroRows++;
+      const am = sumBy(a.filter((g: Row) => g.entries > 0)), bm = sumBy(b);
+      const same = am.size === bm.size && [...am].every(([k, v]) => bm.get(k) === v);
+      if (same) c.B_gradeEqual++;
+      else c.B_gradeDiff.push(`${urn}|${subject}|${qual}|${period}: app ${JSON.stringify([...am])} rollup ${JSON.stringify([...bm])}`);
+      for (const [k, v] of am) if (!bm.has(k)) c.B_appOnlyNonzero.push(`${urn}|${subject}|${qual}|${k}=${v}`);
+      const phase = ks;
+      const ta = r1(sg.thresholdRate(a, phase)?.rate), tb = r1(sg.thresholdRate(b, phase)?.rate);
+      if (ta === tb) c.B_threshold++; else c.B_thresholdDiff.push(`${urn}|${subject}|${qual}|${period}: app ${ta} rollup ${tb}`);
+      const scale = sg.bestScale(a.map((g: Row) => g.grade));
+      const graded = scale.filter((g: string) => a.some((r: Row) => r.grade === g) || b.some((r) => r.grade === g));
+      const ranges = scale.length ? [{ scale, top: scale[0], bottom: scale[Math.min(2, scale.length - 1)] }, { scale, top: graded[0] ?? scale[0], bottom: graded[graded.length - 1] ?? scale[0] }] : [];
+      let bandOk = true;
+      for (const range of ranges) if (r1(sg.bandRate(a, range)?.rate) !== r1(sg.bandRate(b, range)?.rate)) bandOk = false;
+      if (bandOk) c.B_band++; else c.B_bandDiff.push(`${urn}|${subject}|${qual}|${period}`);
+      const oa = sg.gradeOrderFrom(a.map((g: Row) => g.grade)).join(","), ob = sg.gradeOrderFrom(b.map((g) => g.grade)).join(",");
+      if (oa === ob) c.B_order++; else c.B_orderDiff.push(`${urn}|${subject}|${qual}|${period}: app [${oa}] rollup [${ob}]`);
+      const has = (rs: Row[]) => rs.length > 0;
+      if (has(a) === has(b)) c.B_has++; else c.B_hasDiff.push(`${urn}|${subject}|${qual}|${period}: app ${has(a)} rollup ${has(b)}`);
+    }
+    // Grade counts over the two modern years, no England rows: the drawn rows and counts.
+    const ga = gs.gradeCounts(app.map((g: Row) => ({ period: g.period, grade: g.grade, entries: g.entries })), [], { compareFrom: null, changeFrom: null });
+    const gb = gs.gradeCounts(rollRows.filter((g) => g.period >= 2023).map((g) => ({ period: g.period, grade: g.grade, entries: g.entries })), [], { compareFrom: null, changeFrom: null });
+    const sig = (g: ReturnType<typeof gs.gradeCounts>) => JSON.stringify({ latest: g.latest, cmp: g.cmpYear, rows: g.rowsFor(true).map((r) => [r.grade, r.ownCount, r.compareCount]), modal: g.modal });
+    if (app.length || rollRows.some((g) => g.period >= 2023)) {
+      c.B_countsN++;
+      if (sig(ga) === sig(gb)) c.B_counts++; else c.B_countsDiff.push(`${urn}|${subject}|${qual}: app ${sig(ga)} rollup ${sig(gb)}`);
+    }
+    // C. historic facts through the app's RPC and the same parser
+    const h = parseSubjectGradeDistribution(histByUrn.get(urn) ?? []).filter((g) => g.subject === subject && g.qualificationType === qual);
+    c.C_totalLabelAsGrade += h.filter((g) => ROLLUP_TOTALS.has(g.grade)).length;
+    c.C_zeroRows += h.filter((g) => g.entries === 0).length;
+    const hm = sumBy(h.filter((g) => g.entries > 0 && !ROLLUP_TOTALS.has(g.grade) && !NON_SUBJECT.has(`${g.qualificationType}::${g.subject}`)));
+    const rh = sumBy(roll.filter((r) => r.period <= 2022));
+    for (const period of [2021, 2022]) {
+      const ks1 = [...hm.keys()].filter((k) => k.startsWith(`${period}|`)), ks2 = [...rh.keys()].filter((k) => k.startsWith(`${period}|`));
+      if (!ks1.length && !ks2.length) continue;
+      c.C_setYears++;
+      if (ks1.length === ks2.length && ks1.every((k) => hm.get(k) === rh.get(k))) c.C_equal++;
+      else c.C_diff.push(`${urn}|${subject}|${qual}|${period}: facts ${JSON.stringify(ks1.map((k) => [k, hm.get(k)]))} rollup ${JSON.stringify(ks2.map((k) => [k, rh.get(k)]))}`);
+    }
+  }
+  const show = (a: string[]) => (a.length ? ` e.g. ${a.slice(0, 2).join(" ;; ")}` : "");
+  console.log(`\n=== ${ks}: ${c.sets} sets, ${urns.length} schools (population ${d.population} sets)`);
+  console.log(`A rollup vs facts per grade, 4 years: ${c.A_equal}/${c.A_keys} keys equal${show(c.A_diff)}; keys summed over >1 size: ${c.multiSizeKeys}`);
+  console.log(`B modern set-years: ${c.B_setYears}; per-grade (non-zero) equal ${c.B_gradeEqual}${show(c.B_gradeDiff)}`);
+  console.log(`  app zero-entry rows ${c.B_zeroRowsApp} in ${c.B_setYearsWithZeroRows} set-years; app non-zero rows the rollup lacks: ${c.B_appOnlyNonzero.length}${show(c.B_appOnlyNonzero)}`);
+  console.log(`  thresholdRate equal ${c.B_threshold}/${c.B_setYears}${show(c.B_thresholdDiff)}`);
+  console.log(`  bandRate equal ${c.B_band}/${c.B_setYears}${show(c.B_bandDiff)}`);
+  console.log(`  hasGrades equal ${c.B_has}/${c.B_setYears}${show(c.B_hasDiff)}`);
+  console.log(`  gradeOrderFrom equal ${c.B_order}/${c.B_setYears}${show(c.B_orderDiff)}`);
+  console.log(`  gradeCounts (rows, counts, years, modal) equal ${c.B_counts}/${c.B_countsN}${show(c.B_countsDiff)}`);
+  console.log(`C historic set-years ${c.C_setYears}: facts-through-parser (after rollup rules) = rollup ${c.C_equal}${show(c.C_diff)}; C diffs where the rollup has no rows (lineage): ${c.C_diff.filter((s) => s.endsWith("rollup []")).length}; raw parser keeps total-label rows as grades: ${c.C_totalLabelAsGrade}; zero rows: ${c.C_zeroRows}`);
+  console.log(`  timing (chunks of 5): app modern fetch for ${urns.length} schools ${tApp.toFixed(0)} ms; historic facts ${tHist.toFixed(0)} ms`);
+}
+
+// The Chase, GCSE History, grade by grade.
+const chase = data.ks4;
+const rows = (chase.rollup as [string, string, string, string, number, number][]).filter((r) => r[0] === "137625" && r[1] === "History" && r[2] === "GCSE (9-1) Full Course");
+const { byUrn } = await adv.fetchSubjectLevelDataForSchools(["137625"], "ks4");
+const app = byUrn.get("137625")!.gradeDistribution.filter((g: Row) => g.subject === "History" && g.qualificationType === "GCSE (9-1) Full Course");
+const hist = parseSubjectGradeDistribution(await ref.lookupReferenceData({ sourceId: "dfe_ks4_subject_entries_historic", entityIds: ["137625"] })).filter((g) => g.subject === "History" && g.qualificationType === "GCSE (9-1) Full Course");
+const grades = sg.gradeOrderFrom(rows.map((r) => r[3]), app.map((g: Row) => g.grade), hist.map((g) => g.grade));
+console.log("\nThe Chase 137625 GCSE History: grade | per year rollup / facts (app today for 2023-24, historic facts for 2021-22)");
+for (const g of [...grades, "Total number entered", "Total exam entries"]) {
+  const cells = [2021, 2022, 2023, 2024].map((p) => {
+    const rv = rows.filter((r) => r[3] === g && r[4] === p).reduce((a, r) => a + r[5], 0);
+    const fv = (p >= 2023 ? app : hist).filter((x: Row) => x.grade === g && x.period === p).reduce((a: number, x: Row) => a + x.entries, 0);
+    return `${rv}/${fv}`;
+  });
+  console.log(`${g}\t${cells.join("\t")}`);
+}
+const tot = [2021, 2022, 2023, 2024].map((p) => rows.filter((r) => r[4] === p && !sg.NON_GRADE_VALUES.has(r[3])).reduce((a, r) => a + r[5], 0) + "/" + rows.filter((r) => r[4] === p).reduce((a, r) => a + r[5], 0));
+console.log(`graded/all rollup totals\t${tot.join("\t")}`);

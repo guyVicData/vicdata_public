@@ -28,6 +28,11 @@ import { ChevronDown } from "./PanelIcons";
 // so a CardBox outside the dashboard is unaffected.
 export const FullscreenReport = createContext<(open: boolean) => void>(() => {});
 
+// 0.6.2 S4: every CardBox under it renders already open in fullscreen -- what a server
+// render (the unit tests, src/lib/grading-note.test.ts) needs to read the fullscreen and
+// "Print this graph" output, since it can't click. Nothing in the app provides it.
+export const OpenInFullscreen = createContext(false);
+
 // Round 8 §2/§7: every panel is this tall, so the three columns line up as a real 3x3 grid.
 //
 // Computed from the REAL grid rather than copied from the wireframe, which §7 asks for
@@ -181,7 +186,7 @@ export function CardBox({
   // own Leaflet map).
   children: (mode: { fullscreen: boolean }) => ReactNode;
 }) {
-  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(useContext(OpenInFullscreen));
   // Round 8 §5: a panel print is the same fullscreen modal, opened for the print and
   // marked as the one subtree to paint. Tracked separately from `fullscreen` so closing
   // the print does not leave an ordinary fullscreen open behind it.
@@ -357,7 +362,10 @@ export function CardBox({
               that reads as a flag or a note. A 15rem rail against the ~1150px modal on a
               laptop is roughly the "7-column main, narrow rail" steer; below lg it stacks
               under the main area. The compact card is untouched and stays icon-driven. */}
-          <div className={`mt-1 grid min-h-0 flex-1 gap-4 ${legend || flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
+          {/* 0.6.2 S5: stacked (below lg) the area never shrinks below its content and the modal
+              scrolls, rather than squeezing the figure under a long source line (the trend
+              note) until a fixed-height chart spilled over its own caption. */}
+          <div className={`mt-1 grid min-h-0 flex-1 gap-4 max-lg:min-h-min ${legend || flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
             <div className="flex min-h-0 min-w-0 flex-col gap-2">
               <div className="flex min-h-0 flex-1 items-stretch">
                 {actions && (

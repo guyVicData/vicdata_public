@@ -1,0 +1,1 @@
+select source_id, snapshot_id, count(*) from canonical_facts where source_id in ('dfe_ks4_subject_entries','dfe_ks4_subject_entries_historic','dfe_ks5_subject_results','dfe_ks5_subject_results_historic','dfe_tlevel_results') group by 1,2 order by 1,2

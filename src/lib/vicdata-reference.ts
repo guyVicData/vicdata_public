@@ -4,6 +4,8 @@
 // Never import ingest code directly into this repo (brief) -- this only ever talks to
 // the live, anon-key-callable RPC.
 
+import type { GradeRollupRow } from "./grade-rows";
+
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 50;
 
@@ -79,6 +81,81 @@ export async function lookupReferenceData(params: {
     )) as ReferenceFact[];
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
+    // 0.6.2 S1: the cap used to stop the read silently, dropping whole schools from a big
+    // batched read. It still stops (no figure changes here), but now says so.
+    if (page === MAX_PAGES - 1) console.warn(`[reference_data_lookup] ${params.sourceId}: stopped at ${MAX_PAGES} pages (${rows.length} rows) for ${params.entityIds?.length ?? "all"} entities; later rows were not read`);
+  }
+  return rows;
+}
+
+// 0.6.2: academic_subject_grade_rollup through the PROPOSED anon RPC
+// academic_subject_grade_rollup_lookup (docs/v0.6/proposed_sql/, for the vicdata data
+// database; the table itself is granted to `authenticated` only). Per school, subject, exact
+// qualification type and grade, 2021/22-2024/25, with the same per-era single-predecessor
+// lineage fallback as reference_data_lookup. Used at KS4 only (S1: at KS5 it has no zero-entry
+// grade rows, which the app draws).
+//
+// Until Guy applies it, PostgREST answers 404 / PGRST202 ("function not found"). That is
+// detected once per server process and remembered, so the callers fall back to the raw facts
+// (which S1 proved equal on every key) without asking again. Any other failure throws, as
+// every other lookup here does; the caller decides.
+let gradeRollupRpc: "unknown" | "present" | "absent" = "unknown";
+
+export function gradeRollupRpcState(): "unknown" | "present" | "absent" {
+  return gradeRollupRpc;
+}
+
+// Tests only: forget what was detected.
+export function resetGradeRollupRpcState(): void {
+  gradeRollupRpc = "unknown";
+}
+
+const isMissingFunction = (e: unknown) => {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /HTTP 404\b/.test(msg) || msg.includes("PGRST202");
+};
+
+// null = the RPC isn't there (not applied yet): read the facts instead.
+export async function lookupAcademicSubjectGradeRollup(params: {
+  entityIds: string[];
+  ksStage: KsStage;
+  subject?: string | null;
+  qualificationType?: string | null;
+  periodMin?: number | null;
+  periodMax?: number | null;
+  signal?: AbortSignal;
+}): Promise<GradeRollupRow[] | null> {
+  if (gradeRollupRpc === "absent") return null;
+  const rows: GradeRollupRow[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    let batch: GradeRollupRow[];
+    try {
+      batch = (await fetchPage(
+        "academic_subject_grade_rollup_lookup",
+        {
+          p_entity_ids: params.entityIds,
+          p_ks_stage: params.ksStage,
+          p_subject: params.subject ?? null,
+          p_qualification_type: params.qualificationType ?? null,
+          p_period_min: params.periodMin ?? null,
+          p_period_max: params.periodMax ?? null,
+          p_limit: PAGE_SIZE,
+          p_offset: page * PAGE_SIZE,
+        },
+        params.signal,
+      )) as GradeRollupRow[];
+    } catch (e) {
+      if (page === 0 && isMissingFunction(e)) {
+        gradeRollupRpc = "absent";
+        console.info("[academic_subject_grade_rollup_lookup] not found (not applied yet): grade rows come from the raw facts in this process");
+        return null;
+      }
+      throw e;
+    }
+    gradeRollupRpc = "present";
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    if (page === MAX_PAGES - 1) console.warn(`[academic_subject_grade_rollup_lookup] stopped at ${MAX_PAGES} pages (${rows.length} rows)`);
   }
   return rows;
 }

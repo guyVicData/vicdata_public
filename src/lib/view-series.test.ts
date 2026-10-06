@@ -12,6 +12,7 @@ import type { DataviewId } from "@/catalogue/types";
 import { DATAVIEWS } from "@/catalogue/dataviews";
 import { ENTRIES_MEASURE, formatChange, measureById, trendChartKind, type Measure, type MeasureId, type PanelData } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
+import { TREND_BASE_PERIOD } from "@/catalogue/notes";
 import { bestScale, NON_GRADE_VALUES } from "@/lib/subject-grades";
 import { buildSeries, type LeafSeries, type ViewFrame, type ViewSeries } from "./view-series";
 import { resolveCompare } from "./view-series/compare";
@@ -141,6 +142,9 @@ function honest(m: Measure, vs: (number | null)[]): number | null {
   if (m.changeKind === "percent") return r[0] === 0 ? null : ((r[r.length - 1] - r[0]) / r[0]) * 100;
   return r[r.length - 1] - r[0];
 }
+// 0.6.2 S4b, R-TREND-FROM-2223: on a grade or points measure every change (the % change half's,
+// and a change measured over a Trend) is measured from 2022/23; entries keep their first year.
+const fromBase = (m: Measure, span: number[]) => (m.id === "entries" ? span : span.filter((p) => p >= TREND_BASE_PERIOD));
 const close = (a: number | null | undefined, b: number | null | undefined, msg?: string) =>
   a === null || a === undefined || b === null || b === undefined ? assert.equal(a ?? null, b ?? null, msg) : assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
 
@@ -259,7 +263,8 @@ test("Context on All subjects: the card is the focused subject against the group
 test("Context's ranked change and change table: each subject's honest change, the group's as the reference line", () => {
   for (const { raw, frame } of ofHost((r) => r.host === "teacher.c2.context")) {
     const f = frame as SubjectsFrame;
-    const span = trimmed(f.periods, [...f.subjects.map((s) => s.values), f.groups[0].values]);
+    const drawn = trimmed(f.periods, [...f.subjects.map((s) => s.values), f.groups[0].values]);
+    const span = fromBase(f.measure, drawn);
     const list = leafOf(build("DV-C2-TR-CHANGELIST", f), "changeList");
     for (const s of f.subjects) close(list.rows.find((r) => r.key === s.key)!.value, honest(f.measure, slice(f.periods, span, s.values)), raw.name);
     close(list.group?.value, honest(f.measure, slice(f.periods, span, f.groups[0].values)), `${raw.name} group`);
@@ -267,7 +272,9 @@ test("Context's ranked change and change table: each subject's honest change, th
     assert.equal(list.format, f.measure.changeKind === "percent" ? "percent" : "change");
     const table = leafOf(build("DV-C2-TR-CHANGETABLE", f), "yearTable");
     assert.equal(table.leadingRank, true);
-    assert.deepEqual(table.data.periods, span);
+    // R-TREND-FROM-2223: the table still draws 2021/22; its Change counts from 2022/23.
+    assert.deepEqual(table.data.periods, drawn);
+    assert.equal(table.data.statementFrom ?? null, f.measure.id === "entries" ? null : TREND_BASE_PERIOD);
     assert.ok(!table.data.series.some((s) => s.key.startsWith("group-")), "the group isn't a row");
   }
 });
@@ -328,8 +335,9 @@ test("Comparisons: the set's schools; the school against the set's average (the 
     assert.equal(table.data.series.length, f.schools.length);
     assert.equal(table.nameHeading, "School");
     const list = leafOf(build("DV-C3-TR-CHANGELIST", f), "changeList");
-    for (const s of f.schools) close(list.rows.find((r) => r.key === (s.isTarget ? "own" : s.urn))!.value, honest(f.measure, slice(f.periods, span, s.values)), raw.name);
-    close(list.group?.value, honest(f.measure, slice(f.periods, span, avg)), `${raw.name} set average`);
+    const changeSpan = fromBase(f.measure, span);
+    for (const s of f.schools) close(list.rows.find((r) => r.key === (s.isTarget ? "own" : s.urn))!.value, honest(f.measure, slice(f.periods, changeSpan, s.values)), raw.name);
+    close(list.group?.value, honest(f.measure, slice(f.periods, changeSpan, avg)), `${raw.name} set average`);
     assert.equal(leafOf(build("DV-C3-TR-CHANGETABLE", f), "yearTable").leadingRank, true);
   }
 });
@@ -361,6 +369,42 @@ test("History, this school only: a line on points; 2-year bars on Grade 4+ and b
     }
     // No England, no category line, no other subject: nothing it doesn't ask for.
     assert.ok(!leaf.data.series.some((x) => x.comparison));
+  }
+});
+
+// 0.6.2 S2 (R-TREND-LINE-4YR): school grade rows now cover 2021/22-2024/25, so the same view
+// on Grade bands and Grade 4+ is a line. The Chase (137625) GCSE History's real four years
+// (grade-rows.fixtures.json, the rollup = facts read), scored as the page scores them, in the
+// committed History frames above (whose own grade values were captured with two years).
+test("History, this school only, on four years of grades: a line on Grade 4+ and bands (0.6.2, R-TREND-LINE-4YR)", async () => {
+  const { gradeRowsFromFacts } = await import("./grade-rows");
+  const { thresholdRate, bandRate, GCSE_SCALE } = await import("./subject-grades");
+  const fx = JSON.parse(readFileSync(new URL("./grade-rows.fixtures.json", import.meta.url), "utf8"));
+  const rows = gradeRowsFromFacts("ks4", fx.modern, fx.historic, "History").get("137625")!.filter((r) => r.qualificationType === "GCSE (9-1) Full Course");
+  const periods = [2021, 2022, 2023, 2024];
+  const at = (p: number) => rows.filter((r) => r.period === p);
+  const values = {
+    threshold: periods.map((p) => thresholdRate(at(p), "ks4")?.rate ?? null),
+    bands: periods.map((p) => bandRate(at(p), { scale: GCSE_SCALE, top: "9", bottom: "7" })?.rate ?? null),
+  };
+  assert.ok(values.threshold.every((v) => v !== null) && values.bands.every((v) => v !== null));
+  const hist = ofHost((r) => r.host === "teacher.c1.results" && String(r.name).includes(" History ") && r.phase === "ks4" && (r.measureId === "threshold" || r.measureId === "bands"));
+  assert.ok(hist.length >= 2);
+  for (const { raw, frame } of hist) {
+    const f = frame as SubjectsFrame;
+    const four: SubjectsFrame = {
+      ...f,
+      periods,
+      subjects: f.subjects.map((x) => ({ ...x, values: x.key === f.focus ? values[raw.measureId as "threshold" | "bands"] : periods.map(() => null) })),
+      groups: [],
+      state: { ...f.state, latestIdx: periods.length - 1 },
+    };
+    for (const spec of [historyOnly(), { ...historyOnly(), view: { kind: "line" as const, look: { trendLine: "member" as const, shortSpan: "change-bars" as const } } }]) {
+      const leaf = leafOf(buildSeries(spec, four, { fullscreen: false }), "trendChart");
+      assert.deepEqual(leaf.data.periods, periods, raw.name);
+      assert.equal(trendChartKind(leaf.data), "line", raw.name);
+      assert.deepEqual(leaf.data.series.map((x) => x.key), [f.focus]);
+    }
   }
 });
 
@@ -779,10 +823,12 @@ test("slope: a spec of its own renders from every frame -- each row's figure at 
     }
     assert.ok(String(s.title).endsWith(`: ${academicYearLabel(leaf.from)} to ${academicYearLabel(leaf.to)}`), String(s.title));
   }
-  // Results on points: every subject with a figure in both years, from the span's first year.
+  // Results on points: every subject with a figure in both years, from the span's first year
+  // -- 2022/23 at the earliest (R-TREND-FROM-2223: the span itself starts at 2021/22).
   const f = results.find((x) => x.raw.measureId === "points")!.frame as SubjectsFrame;
   const leaf = leafOf(buildSeries(SLOPE, f, { fullscreen: false }), "slope");
-  const span = trimmed(f.periods, f.subjects.map((x) => x.values));
+  const span = fromBase(f.measure, trimmed(f.periods, f.subjects.map((x) => x.values)));
+  assert.ok(trimmed(f.periods, f.subjects.map((x) => x.values))[0] < TREND_BASE_PERIOD, "the fixture's span draws 2021/22");
   assert.equal(leaf.from, span[0]);
   assert.equal(leaf.to, f.periods[f.state.latestIdx]);
   assert.deepEqual(leaf.rows.map((r) => r.key).sort(), f.subjects.filter((x) => x.values[f.periods.indexOf(leaf.from)] !== null && x.values[f.state.latestIdx] !== null).map((x) => x.key).sort());
@@ -929,7 +975,8 @@ test("S3c map, Trend map / Change map: each school's change over the half's span
     const others = f.schools.filter((s) => !s.isTarget);
     const full = trimToDataLib({ periods: f.periods, series: [{ key: "own", label: "", colour: "", values: target.values }, { key: "versus", label: "", colour: "", values: f.periods.map((_, i) => mean(others.map((s) => s.values[i]))) }] });
     const every = { periods: full.periods, series: f.schools.map((s) => ({ key: s.isTarget ? "own" : s.urn, label: s.name, colour: "", values: full.periods.map((p) => s.values[f.periods.indexOf(p)] ?? null) })) };
-    const table = sliceFromLib(every, null);
+    // R-TREND-FROM-2223: both maps measure from 2022/23 on a points measure.
+    const table = sliceFromLib(every, fromBase(f.measure, every.periods)[0] ?? null);
     const want = (fn: (v: (number | null)[]) => number | null) =>
       Object.fromEntries(table.series.flatMap((x) => (fn(x.values) === null ? [] : [[x.key === "own" ? target.urn : x.key, fn(x.values)!]])));
 
@@ -1184,4 +1231,28 @@ test("S3c: the renderer draws them -- donut, map and geography", async () => {
   const map = renderToStaticMarkup(renderView(presetSpec("DV-C3-CUR-MAP"), withMap(comparisons[0].frame as ComparisonsFrame, { profiles: null }), { fullscreen: false }) as React.ReactElement);
   assert.match(map, /Loading map/);
   assert.match(map, /by school, on the map/);
+});
+
+// 0.6.2 S3: "Add an average" across schools on Grade 4+ / bands in a subject column draws the
+// set's line from the frame's schoolSet (the page scores each school's own grade counts,
+// R-COMPARATOR-RATE-PER-QUAL); S3d left it out there.
+test("0.6.2 S3: across schools on Grade 4+ / bands in a subject column -- the set's line is drawn", async () => {
+  const { compareLinesFor } = await import("./view-series/compare-lines");
+  const frames = ofHost((r) => r.host === "teacher.c1.results" && (r.measureId === "threshold" || r.measureId === "bands"));
+  assert.ok(frames.length >= 2);
+  for (const { raw, frame } of frames) {
+    const f = frame as SubjectsFrame;
+    const sch = (k: string, vs: (number | null)[]) => ({ key: k, values: vs, counts: vs.map((v) => (v === null ? null : 10)) });
+    const a = f.periods.map((_, i) => 40 + i);
+    const b = f.periods.map((_, i) => (i === 0 ? null : 60 + i));
+    const withSet: SubjectsFrame = { ...f, schoolSet: () => ({ label: "10 nearest schools", schools: [sch("A", a), sch("B", b)] }) };
+    for (const kind of ["nearest", "savedSet"] as const) {
+      const lines = compareLinesFor(withSet, [{ kind: "self", colour: "accent" }, { kind, colour: "muted", average: "mean" }], { focusedKey: f.focus, span: true });
+      assert.equal(lines.length, 1, `${raw.name} ${kind}`);
+      assert.equal(lines[0].label, "Average across 10 nearest schools");
+      assert.deepEqual(lines[0].values, f.periods.map((_, i) => (i === 0 ? a[0] : (a[i] + (b[i] as number)) / 2)));
+    }
+    // While the set's grade rows load the frame has none, and nothing is drawn.
+    assert.equal(compareLinesFor({ ...f, schoolSet: () => null }, [{ kind: "nearest", colour: "muted", average: "mean" }], { focusedKey: f.focus, span: true }).length, 0);
+  }
 });

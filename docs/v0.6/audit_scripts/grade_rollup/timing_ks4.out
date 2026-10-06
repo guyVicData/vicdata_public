@@ -1,0 +1,10 @@
+set 11 137625,137186,137101,136890,136803,116999,137051,138107,135913,136897,136925
+one school, today (modern facts, all subjects): median 52 ms (runs 47, 52, 65)
+  rows 413
+one school, + historic facts (all subjects): median 50 ms (runs 47, 50, 51)
+  rows 473
+set of 11, today (comparator-grades: modern facts, all subjects, then filtered): median 400 ms (runs 364, 400, 425)
+  grade rows 4291 of which subject 220
+set of 11, + historic facts: median 479 ms (runs 465, 479, 703)
+  rows 5207
+proxy for an RPC over the rollup grain: grade geography lookup, one subject, national: median 53 ms (runs 49, 53, 73)

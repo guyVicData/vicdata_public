@@ -1,0 +1,31 @@
+Current pairs 1520; word diffs 120; pixel-only diffs 16
+word diffs by school/state: {'100053 bands': 32, '100053 bandsaved': 32, '100053 threshold': 32, '117037 bandsaved': 12, '117037 threshold': 12}
+  36  +Turkish | +—
+      e.g. 100053-ks4-bands-category-dark-1280__c1.current__Bar chart
+  18  +Turkish | +no figure
+      e.g. 100053-ks4-bands-category-dark-390__tab1__c2.current__Bar chart
+  12  +6  Turkish — no published figure
+      e.g. 100053-ks4-bands-category-dark-1280__c2.current__Ranked list
+   8  +Turkish | +— | +—
+      e.g. 100053-ks4-bands-category-dark-1280__c1.current__Sortable table
+   8  +24  Turkish — no published figure
+      e.g. 100053-ks4-bands-whole-dark-1280__c2.current__Ranked list
+   8  +Latin | +no figure
+      e.g. 117037-ks5-bandsaved-whole-dark-1280__c2.current__Bar chart
+   8  +23  Latin — no published figure
+      e.g. 117037-ks5-bandsaved-whole-dark-1280__c2.current__Ranked list
+   8  +Latin | +—
+      e.g. 117037-ks5-bandsaved-whole-dark-1280__c2.current__Sortable table
+   4  +−12pp | +Turkish | +—
+      e.g. 100053-ks4-threshold-category-dark-1280__c1.current__Sortable table
+   4  +25  Turkish — no published figure
+      e.g. 100053-ks4-threshold-whole-dark-1280__c2.current__Ranked list
+   2  +Spanish | -49% | -33% | -16% | -0% | -Spanish | +52% | +50% | +24% | +24% | +Turkish | +no figure
+      e.g. 100053-ks4-bands-category-dark-1280__c2.current__Bar chart
+   2  +French | -66% | -44% | -22% | -0% | -French | +88% | +85% | +58% | +54% | +Turkish | +no figure
+      e.g. 100053-ks4-bandsaved-category-dark-1280__c2.current__Bar chart
+   2  +French | +Spanish | +91% | +Latin | +88% | +Eng Lit | -47% | -23% | -0% | -French | -Spanish | -Latin | -Eng Lit | +69% | +Turkish | +no figure
+      e.g. 100053-ks4-threshold-category-dark-1280__c2.current__Bar chart
+  10  PIXEL size (348, 384)->(351, 384)  e.g. 100053-ks4-bands-category-dark-1280__c1.current__Grade distribution
+   3  PIXEL same size, bbox (128, 183, 238, 287)  e.g. 100053-ks4-bands-category-dark-1280__c3.current__Map
+   3  PIXEL same size, bbox (128, 184, 238, 287)  e.g. 100053-ks4-bands-category-light-1280__c3.current__Map

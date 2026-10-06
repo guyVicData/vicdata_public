@@ -1,0 +1,6 @@
+[academic_subject_grade_rollup_lookup] not found (not applied yet): grade rows come from the raw facts in this process
+The Chase, GCSE History: before median 484 ms (822, 484, 479), 220 subject rows | after (facts) median 618 ms (747, 618, 588), 435 rows, years 2021,2022,2023,2024 | 2023/24-2024/25 identical for 11/11 schools
+Acland Burghley, GCSE Maths: before median 156 ms (161, 156, 144), 82 subject rows | after (facts) median 218 ms (218, 172, 219), 164 rows, years 2021,2022,2023,2024 | 2023/24-2024/25 identical for 11/11 schools
+King's Worcester, A-level Maths: before median 187 ms (708, 187, 164), 44 subject rows | after (facts) median 185 ms (179, 190, 185), 94 rows, years 2021,2022,2023,2024 | 2023/24-2024/25 identical for 11/11 schools
+Croydon College, Business Studies: before median 255 ms (386, 252, 255), 109 subject rows | after (facts) median 267 ms (315, 267, 258), 184 rows, years 2021,2022,2023,2024 | 2023/24-2024/25 identical for 11/11 schools
+rollup RPC: absent

@@ -1,7 +1,8 @@
 // VicData 0.6.1 S3: the series builder for a comparisons frame -- Column 3 (ComparisonsPanels'
 // data: each school's figure per period in the page's comparison set). Line, table and bar.
 import type { BarLook, CompareSeries, LineLook, TableLook, ViewSpec } from "@/catalogue/viewspec";
-import { changeInTitle, changeOf, meanOf, sliceFrom, trendChartKind, trimToData, type PanelData } from "@/lib/teacher-view-panels";
+import { changeInTitle, changeOf, meanOf, sliceFrom, statementSpan, trendChartKind, trimToData, withTrendBase, type PanelData } from "@/lib/teacher-view-panels";
+import { trendBaseFor } from "@/catalogue/notes";
 import { rankedComparisons } from "@/lib/teacher-view-comparisons";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { onChangeHalf, resolveCompare } from "./compare";
@@ -41,16 +42,21 @@ function versusValues(f: ComparisonsFrame, b: ReturnType<typeof basics>): (numbe
 export function series(f: ComparisonsFrame, compare: CompareSeries[], own?: CompareLine[]) {
   const b = basics(f);
   const withVersus = !own && compare.some((c) => (c.as ?? "line") === "line" && (c.kind === "chosenSchool" || c.kind === f.setKind || c.kind === "nearest" || c.kind === "savedSet"));
-  const full = trimToData({
-    periods: f.periods,
-    series: [
-      { key: "own", label: "Your school", colour: OWN, values: b.target ? b.target.values : [] },
-      ...(withVersus ? [{ key: "versus", label: f.versus.label, colour: OTHER, values: versusValues(f, b) }] : []),
-      ...(own ?? []),
-    ],
-  });
+  // R-TREND-FROM-2223: every year drawn; a grade or points trend's statements from 2022/23.
+  const full = withTrendBase(
+    trimToData({
+      periods: f.periods,
+      series: [
+        { key: "own", label: "Your school", colour: OWN, values: b.target ? b.target.values : [] },
+        ...(withVersus ? [{ key: "versus", label: f.versus.label, colour: OTHER, values: versusValues(f, b) }] : []),
+        ...(own ?? []),
+      ],
+    }),
+    trendBaseFor(f.measure.id, f.phase),
+  );
   const everySchool: PanelData = {
     periods: full.periods,
+    ...(full.statementFrom === undefined ? {} : { statementFrom: full.statementFrom }),
     series: f.schools.map((s) => ({
       key: s.isTarget ? "own" : s.urn,
       label: s.name,
@@ -60,6 +66,11 @@ export function series(f: ComparisonsFrame, compare: CompareSeries[], own?: Comp
   };
   return { b, full, everySchool };
 }
+
+// R-TREND-FROM-2223: the % change half's span as drawn (2021/22 too), and what its changes are
+// measured over (2022/23 on, on a grade or points measure; `data` carries statementFrom).
+export const changeDrawn = (f: ComparisonsFrame, data: PanelData): PanelData => sliceFrom(data, f.state.changeStart);
+export const changeSpan = (f: ComparisonsFrame, data: PanelData): PanelData => statementSpan(changeDrawn(f, data));
 
 // The page's own "vs:" line, which trims the set's years for every Trends view (the host's
 // `full`), whatever a view itself compares with.
@@ -193,14 +204,14 @@ function table(spec: ViewSpec, look: TableLook, f: ComparisonsFrame, compare: Co
     const rows = spec.compare === "follows-page" ? [] : compareLinesFor(f, spec.compare, { focusedKey: "own", span: true });
     if (!rows.length) return trendTable(f, everySchool, b.setNoun, look, allRows);
     const withRows: PanelData = {
-      periods: everySchool.periods,
+      ...everySchool,
       series: [...everySchool.series, ...rows.map((r) => ({ ...r, colour: OTHER, values: everySchool.periods.map((p) => r.values[f.periods.indexOf(p)] ?? null) }))],
     };
     const t = trendTable(f, withRows, b.setNoun, look, allRows, rows.map((r) => r.key));
     return t.leaf.leaf === "yearTable" ? { ...t, leaf: { ...t.leaf, showRank: false } } : t;
   }
-  const changeTable = sliceFrom(allRows ? everySchool : { ...everySchool, series: everySchool.series.filter((s) => s.key === "own") }, f.state.changeStart);
-  const changeData = sliceFrom(full, f.state.changeStart);
+  const changeTable = changeDrawn(f, allRows ? everySchool : { ...everySchool, series: everySchool.series.filter((s) => s.key === "own") });
+  const changeData = changeSpan(f, full);
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
   const counts = look.extra?.includes("n") ? countsOf(f, changeTable) : undefined;
   return {
@@ -214,8 +225,8 @@ function table(spec: ViewSpec, look: TableLook, f: ComparisonsFrame, compare: Co
 function changeBars(look: BarLook, f: ComparisonsFrame, compare: CompareSeries[], allRows: boolean): ViewSeries {
   // The span is the versus pair's (as the host trims it), whatever the bars compare with.
   const { everySchool, b, full } = series(f, pageVersus(f));
-  const changeTable = sliceFrom(everySchool, f.state.changeStart);
-  const changeData = sliceFrom(full, f.state.changeStart);
+  const changeTable = changeSpan(f, everySchool);
+  const changeData = changeSpan(f, full);
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
   const rows = changeTable.series
     .filter((s) => allRows || s.key === "own")

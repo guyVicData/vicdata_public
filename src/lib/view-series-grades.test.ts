@@ -80,6 +80,7 @@ function spreadOf(s: ViewSeries | null): Extract<LeafSeries, { leaf: "gradeSprea
 
 const graded = (rows: GradeCountRow[]) => rows.filter((r) => !NON_GRADE_VALUES.has(r.grade));
 const yearsOf = (rows: GradeCountRow[]) => [...new Set(graded(rows).map((r) => r.period))].sort((a, b) => a - b);
+const close = (a: number | null | undefined, b: number, msg: string) => assert.ok(a !== null && a !== undefined && Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
 const count = (rows: GradeCountRow[], p: number, g: string) => graded(rows).filter((r) => r.period === p && r.grade === g).reduce((a, r) => a + r.entries, 0);
 const total = (rows: GradeCountRow[], p: number) => graded(rows).filter((r) => r.period === p).reduce((a, r) => a + r.entries, 0);
 
@@ -317,6 +318,52 @@ test("a spread of its own: England's ticks only where asked, the earlier year wh
   const before = Math.max(...bf.gradeBand!.ownRows.map((r) => r.period).filter((p) => p < latest));
   assert.equal(earlier.compareLabel, academicYearLabel(before));
   for (const row of earlier.rows) assert.equal(row.compareCount, count(bf.gradeBand!.ownRows, before, row.grade));
+});
+
+// 0.6.2 S3 (R-COMPARATOR-GRADE-SHARE): "Add an average" across schools on a spread -- each
+// grade's share of each school's graded entries, averaged; a share, never a count.
+test("a spread with the set's average: each grade's share averaged across the schools, in place of England's ticks", () => {
+  for (const raw of [COUNTS[0], COUNTS[COUNTS.length - 1]]) {
+    const base = gradesFrame(raw);
+    const latest = Math.max(...base.ownRows.filter((r) => !NON_GRADE_VALUES.has(r.grade)).map((r) => r.period));
+    const mine = base.ownRows.filter((r) => r.period === latest);
+    // Two schools with the same spread, one three times the size; a third with everything at one grade.
+    const top = mine.filter((r) => !NON_GRADE_VALUES.has(r.grade))[0].grade;
+    const schools = [
+      { urn: "A", rows: mine },
+      { urn: "B", rows: mine.map((r) => ({ ...r, entries: r.entries * 3 })) },
+      { urn: "C", rows: [{ period: latest, grade: top, entries: 40 }, { period: latest, grade: "X", entries: 5 }] },
+    ];
+    const f: GradesFrame = { ...base, schoolSetGrades: () => ({ label: "10 nearest schools", schools }) };
+    const spec = (how: "mean" | "median") => own("DV-C1-CNT-CUR-DIST", [{ kind: "self", colour: "accent" }, { kind: "england", colour: "fg" }, { kind: "nearest", colour: "muted", average: how }]);
+    const mean = spreadOf(build(spec("mean"), f));
+    const median = spreadOf(build(spec("median"), f));
+    const total = mine.filter((r) => !NON_GRADE_VALUES.has(r.grade)).reduce((a, r) => a + r.entries, 0);
+    for (const row of mean.rows) {
+      const ownShare = (count(mine, latest, row.grade) / total) * 100;
+      const cShare = row.grade === top ? 100 : 0;
+      close(row.benchPct, (2 * ownShare + cShare) / 3, `${raw.name} mean ${row.grade}`);
+    }
+    for (const row of median.rows) close(median.rows.find((r) => r.grade === row.grade)!.benchPct, (count(mine, latest, row.grade) / total) * 100, `${raw.name} median ${row.grade}`);
+    assert.equal(mean.benchLabel, `Average across 10 nearest schools, ${academicYearLabel(latest)}`);
+    assert.equal(median.benchLabel, `Median across 10 nearest schools, ${academicYearLabel(latest)}`);
+    // Still loading: no ticks at all (never England's standing in for the set's).
+    const loading = spreadOf(build(spec("mean"), { ...base, schoolSetGrades: () => null }));
+    assert.ok(loading.rows.every((r) => r.benchPct === null));
+    assert.equal(loading.benchLabel, null);
+    // Counts mode draws the ticks at this school's own scale: a share, not the set's counts.
+    const counts = spreadOf(build({ ...spec("mean"), view: { kind: "spread", look: { ...(spec("mean").view as { look: SpreadLook }).look, show: "counts" } } }, f));
+    assert.deepEqual(counts.rows.map((r) => r.benchPct), mean.rows.map((r) => r.benchPct));
+  }
+  // Results' bands view takes the same ticks.
+  const bf = bandsFrame(BANDS[0], true);
+  const latest = bf.periods[bf.state.latestIdx];
+  const rows = bf.gradeBand!.ownRows.filter((r) => r.period === latest);
+  const withSet = { ...bf, schoolSetGrades: () => ({ label: "Camden rivals", schools: [{ urn: "A", rows }] }) };
+  const band = spreadOf(build(own("DV-C1-RES-CUR-GRADES", [{ kind: "self", colour: "accent" }, { kind: "savedSet", colour: "muted", average: "mean" }]), withSet));
+  const t = rows.filter((r) => !NON_GRADE_VALUES.has(r.grade)).reduce((a, r) => a + r.entries, 0);
+  for (const row of band.rows) close(row.benchPct, (count(rows, latest, row.grade) / t) * 100, row.grade);
+  assert.equal(band.benchLabel, `Average across camden rivals, ${academicYearLabel(latest)}`);
 });
 
 // ------------------------------------------------------------------- the renderer

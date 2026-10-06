@@ -16,12 +16,12 @@
 // (changeOver / changeOf / percentChange over the same span), keyed by URN (changeByUrn).
 // Where the host draws a note (loading, no location, too short a span) it is left to it.
 import type { ViewSpec } from "@/catalogue/viewspec";
-import { changeInTitle, changeOf, changePhrase, formatChange, percentChange, sliceFrom } from "@/lib/teacher-view-panels";
+import { changeInTitle, changeOf, changePhrase, formatChange, percentChange, sliceFrom, statementSpan } from "@/lib/teacher-view-panels";
 import { changeByUrn, signedPercent } from "@/lib/teacher-view-comparisons";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeOver } from "@/lib/teacher-view-trend-styles";
 import { onChangeHalf } from "./compare";
-import { pageVersus, series } from "./comparisons";
+import { changeSpan, pageVersus, series } from "./comparisons";
 import type { ComparisonsFrame, FrameMap, SubjectsFrame, SeriesFrame } from "./frames";
 import type { ViewSeries } from "./series";
 
@@ -76,8 +76,9 @@ function changeMap(spec: ViewSpec, f: ComparisonsFrame): ViewSeries | null {
   // The span is the page's "vs:" pair's (as the host trims it), from the half's own From year.
   const { everySchool, full, b } = series(f, pageVersus(f));
   const changeHalf = onChangeHalf(spec);
-  const start = changeHalf ? f.state.changeStart : f.state.trendStart;
-  const table = sliceFrom(everySchool, start);
+  // R-TREND-FROM-2223: a change from 2022/23 at the earliest on a grade or points measure --
+  // the % change half starts there; a Trend half's map measures over its statement span.
+  const table = changeHalf ? changeSpan(f, everySchool) : statementSpan(sliceFrom(everySchool, f.state.trendStart));
   if (table.periods.length < 2) return null;
   const target = b.target?.urn;
   // This set's schools only: the page's profiles cover every set's schools, and one outside
@@ -99,7 +100,7 @@ function changeMap(spec: ViewSpec, f: ComparisonsFrame): ViewSeries | null {
       },
     };
   }
-  const span = sliceFrom(full, start);
+  const span = changeHalf ? changeSpan(f, full) : statementSpan(sliceFrom(full, f.state.trendStart));
   const since = span.periods.length ? academicYearLabel(span.periods[0]) : "";
   const percent = f.measure.changeKind === "percent";
   return {

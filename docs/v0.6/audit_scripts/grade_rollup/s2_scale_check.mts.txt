@@ -1,0 +1,24 @@
+import { fetchSubjectLevelDataForSchools } from "../../../../src/lib/academic-data-view";
+import { bestScale, thresholdRate, gradeOrderFrom } from "../../../../src/lib/subject-grades";
+const ks4 = ["137625","100053","117037","130432","136296","143369","135761","150009","150127","100369","102239","118952","100000","101269","103961","105831","107576","110094","112951","114543","116461","119677","121640","124268","126006","131116","135919","138227","140987","144678"];
+let diffs = 0, sets = 0, latestDiff = 0;
+for (const phase of ["ks4","ks5"] as const) {
+  for (const urn of ks4) {
+    const [m, f] = await Promise.all([fetchSubjectLevelDataForSchools([urn], phase), fetchSubjectLevelDataForSchools([urn], phase, { gradeYears: "four" })]);
+    const mr = m.byUrn.get(urn)!.gradeDistribution, fr = f.byUrn.get(urn)!.gradeDistribution;
+    const keys = new Set(mr.map(r => `${r.subject}||${r.qualificationType}`));
+    for (const k of keys) {
+      const [s, q] = k.split("||");
+      const a = mr.filter(r => r.subject === s && r.qualificationType === q), b = fr.filter(r => r.subject === s && r.qualificationType === q);
+      sets++;
+      const sa = bestScale(a.map(r=>r.grade)), sb = bestScale(b.map(r=>r.grade));
+      if (sa !== sb) { diffs++; console.log("SCALE", phase, urn, k, sa[0], "->", sb[0], [...new Set(b.filter(r=>r.period<2023).map(r=>r.grade))].join(" ")); }
+      for (const p of [2023, 2024]) {
+        const x = JSON.stringify(thresholdRate(a.filter(r=>r.period===p), phase)), y = JSON.stringify(thresholdRate(b.filter(r=>r.period===p), phase));
+        const ga = JSON.stringify(a.filter(r=>r.period===p).map(r=>[r.grade,r.entries]).sort()), gb = JSON.stringify(b.filter(r=>r.period===p).map(r=>[r.grade,r.entries]).sort());
+        if (x !== y || ga !== gb) { latestDiff++; console.log("MODERN", phase, urn, k, p, x, y); }
+      }
+    }
+  }
+}
+console.log({ sets, scaleDiffs: diffs, modernYearDiffs: latestDiff });

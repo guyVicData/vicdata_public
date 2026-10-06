@@ -1,0 +1,83 @@
+pairs 4000  EXP-PICKER 16  EXP-STATEMENT 432  EXP-YEARS 1352  IDENTICAL 1356  NOTE-ONLY 844  missing-in-br 0  extra-in-br 44
+by state x panel x kind:
+   ('band94', 'current', 'IDENTICAL') 24
+   ('band94', 'current', 'NOTE-ONLY') 128
+   ('band94', 'trends', 'EXP-YEARS') 176
+   ('bands', 'current', 'IDENTICAL') 120
+   ('bands', 'current', 'NOTE-ONLY') 160
+   ('bands', 'trends', 'EXP-STATEMENT') 32
+   ('bands', 'trends', 'EXP-YEARS') 288
+   ('bands', 'trends', 'NOTE-ONLY') 40
+   ('bandsaved', 'current', 'IDENTICAL') 48
+   ('bandsaved', 'current', 'NOTE-ONLY') 256
+   ('bandsaved', 'trends', 'EXP-YEARS') 352
+   ('cand', 'current', 'IDENTICAL') 256
+   ('cand', 'trends', 'IDENTICAL') 416
+   ('counts', 'current', 'IDENTICAL') 208
+   ('counts', 'trends', 'EXP-PICKER') 16
+   ('counts', 'trends', 'EXP-STATEMENT') 32
+   ('counts', 'trends', 'EXP-YEARS') 272
+   ('points', 'current', 'IDENTICAL') 240
+   ('points', 'trends', 'EXP-STATEMENT') 368
+   ('threshold', 'current', 'IDENTICAL') 40
+   ('threshold', 'current', 'NOTE-ONLY') 192
+   ('threshold', 'trends', 'EXP-YEARS') 264
+   ('threshold', 'trends', 'IDENTICAL') 4
+   ('threshold', 'trends', 'NOTE-ONLY') 68
+note-only detail:
+    S2 clause gone [band94 current] 128
+    S2 clause gone [bands current] 160
+    S2 clause gone [bands trends] 40
+    S2 clause gone [bandsaved current] 256
+    S2 clause gone [threshold current] 192
+    S2 clause gone [threshold trends] 68
+branch graded Trends still saying 'since 2021/22': 0
+EXP-YEARS with grading note added: 1156 of 1352
+latest-year check (EXP-YEARS table rows: last year's value main = br): 7212 rows, 0 differ
+views only in main (by panel/view): Counter()
+views only in br (by view @state): Counter({'Chart @bandsaved c3.trends__Chart': 16, 'Chart @threshold c3.trends__Chart': 12, 'Chart @band94 c3.trends__Chart': 8, 'Chart @bands c3.trends__Chart': 8})
+duplicate view shots (same pressed view twice): 0 0
+EXTRA-in-br 100053-ks4-band94-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-band94-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-band94-category-light-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-band94-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bands-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bands-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bands-category-light-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bands-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bandsaved-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bandsaved-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bandsaved-category-light-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bandsaved-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-threshold-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-threshold-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-threshold-category-light-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-threshold-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 117037-ks5-bandsaved-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 117037-ks5-bandsaved-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 117037-ks5-bandsaved-category-light-1280__c3.trends__Chart
+EXTRA-in-br 117037-ks5-bandsaved-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 117037-ks5-threshold-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 117037-ks5-threshold-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 117037-ks5-threshold-category-light-1280__c3.trends__Chart
+EXTRA-in-br 117037-ks5-threshold-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 130432-ks5-bandsaved-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 130432-ks5-bandsaved-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 130432-ks5-bandsaved-category-light-1280__c3.trends__Chart
+EXTRA-in-br 130432-ks5-bandsaved-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-band94-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-band94-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-band94-category-light-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-band94-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bands-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bands-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bands-category-light-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bands-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bandsaved-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bandsaved-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bandsaved-category-light-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bandsaved-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-threshold-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-threshold-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-threshold-category-light-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-threshold-category-light-390__tab2__c3.trends__Chart

@@ -35,6 +35,8 @@ import { ViewTitleOverrideContext } from "./SeriesViews";
 import type { ViewFrame } from "@/lib/view-series";
 import { renderView, useViewsV2 } from "@/components/views";
 import { instanceRail, isPresetInstance, liveOwnView, ownDefault, shownInstance, type ViewInstance } from "@/components/views/rail";
+import { trendNoteFor, specYears } from "@/catalogue/notes";
+import type { ViewSpec } from "@/catalogue/viewspec";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -84,7 +86,25 @@ export type PanelRender = {
   // it, for the config-driven view renderer (src/lib/view-series). Read only under
   // `views=v2`; absent = the host draws every view, as before.
   frame?: ViewFrame;
+  // 0.6.2 S4 / S4b (R-TREND-FROM-2223): the years the view on screen draws (after its "From"
+  // year), on a grade or points measure; null / absent = entries, or no span. Where they
+  // include 2021/22 the trend note follows the source, as the column's own caveat does.
+  gradingYears?: readonly number[] | null;
 };
+
+// R-TREND-FROM-2223: the note (trends are measured from 2022/23) after the source, in
+// SubjectPanels' caveat style (a block span under the citation) -- in the "i" on the card,
+// and printed as text in fullscreen and in "Print this graph", which both draw this source.
+function withTrendNote(source: ReactNode, years: readonly number[] | null): ReactNode {
+  const note = trendNoteFor(years);
+  if (!note) return source;
+  return (
+    <>
+      {source}
+      <span className="mt-1.5 block">{note}</span>
+    </>
+  );
+}
 
 // The pill row under the card header. 0.6.1 S6: a PillRowSpacer (a column with no pills of
 // its own) only holds the row's height where the columns sit side by side (md up).
@@ -193,7 +213,8 @@ export function ColumnPanels({
   // 0.6.1 S2 (D10): `activeId`, the instance the panel is showing, so the body's leaves read
   // that view's own params (ActiveViewContext; null = no plan, as before).
   const withView = (activeId: string | null, body: ReactNode) => (activeId ? <ActiveViewContext.Provider value={activeId}>{body}</ActiveViewContext.Provider> : body);
-  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null, activeId: string | null = null) => {
+  // `spec`: under v2, the view the panel shows (its own years can differ from the host's).
+  const card = (id: PanelId, panel: PanelRender, toggleOverride?: () => void, title: string | null = null, activeId: string | null = null, spec: ViewSpec | null = null) => {
         const open = panels.includes(id);
         const toggle = toggleOverride ?? (() => onPanelsChange(togglePanel(panels, id)));
         return (
@@ -228,7 +249,7 @@ export function ColumnPanels({
             }
             controls={panel.controls}
             caption={panel.summary}
-            source={panel.source}
+            source={withTrendNote(panel.source, specYears(spec, panel.gradingYears))}
             footerActions={({ print, fullscreen }) => (
               <>
                 {/* In fullscreen the note has its own place in the side rail (Part 4). */}
@@ -305,10 +326,11 @@ export function ColumnPanels({
             ? () => onPanelsChange(panels.includes(id) ? panels.filter((p) => p !== id) : [...panels, id])
             : undefined;
           const copy = runtime && host && instance ? copyValueFor(plan.config, cfg, instance, runtime) : null;
+          const shownSpec = v2 && instance ? instance.spec : null;
           return (
             <div key={cfg.id} data-panel-id={cfg.id} data-row-time={row.time} data-override={cfg.override?.badge}>
               <PanelBoundary panelId={cfg.id} title={panel.tag}>
-                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title, activeId)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title, activeId)}
+                {copy ? <CopyViewSourceContext.Provider value={copy}>{card(id, panel, toggle, title, activeId, shownSpec)}</CopyViewSourceContext.Provider> : card(id, panel, toggle, title, activeId, shownSpec)}
               </PanelBoundary>
             </div>
           );

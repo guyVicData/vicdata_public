@@ -16,10 +16,13 @@ import {
   sliceFrom,
   trimToData,
   TREND_LINE_MIN_YEARS,
+  statementSpan,
+  withTrendBase,
   type PanelData,
   type PanelSeries,
 } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
+import { trendBaseFor } from "@/catalogue/notes";
 import { FOCUS_COLOUR, paletteInOrder, shouldIndex, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { onChangeHalf, resolveCompare } from "./compare";
 import { compareLinesFor } from "./compare-lines";
@@ -182,10 +185,14 @@ function currentTable(look: TableLook, f: SubjectsFrame, compare: CompareSeries[
 function trendData(f: SubjectsFrame, allRows: boolean, extra: PanelSeries[]) {
   const c = currentRows(f, !!f.benchmarkLabel);
   const own = allRows ? c.barRows : c.barRows.filter((r) => r.s.key === c.focusedKey);
-  const full = trimToData({
-    periods: f.periods,
-    series: [...own.map((r) => ({ key: r.s.key, label: r.s.label, colour: c.trendColours.get(r.s.key) ?? c.colourFor(r.s), values: r.s.values })), ...extra],
-  });
+  // R-TREND-FROM-2223: every year drawn, statements (change column, fit) from 2022/23.
+  const full = withTrendBase(
+    trimToData({
+      periods: f.periods,
+      series: [...own.map((r) => ({ key: r.s.key, label: r.s.label, colour: c.trendColours.get(r.s.key) ?? c.colourFor(r.s), values: r.s.values })), ...extra],
+    }),
+    trendBaseFor(f.measure.id, f.phase),
+  );
   return { c, data: sliceFrom(full, f.state.trendStart) };
 }
 
@@ -222,6 +229,7 @@ function line(spec: ViewSpec, look: LineLook, f: SubjectsFrame, compare: Compare
     look.cardFocusVsAverage && f.cardTrend === "focusVsGroup" && !ctx.fullscreen
       ? {
           periods: data.periods,
+          statementFrom: data.statementFrom,
           series: [
             ...data.series.filter((x) => x.key === c.focusedKey),
             ...f.groups.slice(0, 1).map((g) => ({
@@ -284,7 +292,7 @@ function yearTable(spec: ViewSpec, look: TableLook, f: SubjectsFrame, allRows: b
       title: c.scope ? `${c.scope}: ${changeSince} against the latest year, ranked by change` : `${c.scopeNoun} by year, since ${changeSince}`,
       leaf: {
         leaf: "yearTable",
-        data: { periods: data.periods, series: data.series.filter((x) => !x.key.startsWith("group-")) },
+        data: { ...data, series: data.series.filter((x) => !x.key.startsWith("group-")) },
         measure: f.measure,
         focusKey: c.focusedKey,
         ...(look.leadingRank ? { leadingRank: true } : {}),
@@ -323,20 +331,26 @@ function yearTable(spec: ViewSpec, look: TableLook, f: SubjectsFrame, allRows: b
 export function changeData(f: SubjectsFrame, allRows: boolean) {
   const c = currentRows(f, !!f.benchmarkLabel);
   const own = (c.redesigned ? c.barRows.map((r) => r.s) : f.subjects).filter((s) => allRows || s.key === c.focusedKey);
-  const full = trimToData({
-    periods: f.periods,
-    series: [
-      ...own.map((s) => ({ key: s.key, label: s.label, colour: c.colourFor(s), values: s.values })),
-      ...f.groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "#57534e", values: g.values })),
-    ],
-  });
+  // R-TREND-FROM-2223: the % change half still draws 2021/22; its changes count from 2022/23.
+  const full = withTrendBase(
+    trimToData({
+      periods: f.periods,
+      series: [
+        ...own.map((s) => ({ key: s.key, label: s.label, colour: c.colourFor(s), values: s.values })),
+        ...f.groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "#57534e", values: g.values })),
+      ],
+    }),
+    trendBaseFor(f.measure.id, f.phase),
+  );
   const data = sliceFrom(full, f.state.changeStart);
-  return { c, data, changeSince: data.periods.length ? academicYearLabel(data.periods[0]) : "" };
+  const span = statementSpan(data);
+  return { c, data, span, changeSince: span.periods.length ? academicYearLabel(span.periods[0]) : "" };
 }
 
 function changeBars(look: BarLook, f: SubjectsFrame, compare: CompareSeries[], allRows: boolean, explicit = false): ViewSeries | null {
   if (f.subjects.length === 0) return null;
-  const { c, data, changeSince } = changeData(f, allRows);
+  // R-TREND-FROM-2223: every change over the statement span (2022/23 on a grade or points measure).
+  const { c, span: data, changeSince } = changeData(f, allRows);
   // S3c: a spec of its own reads its dashed reference from its own compare (the group's mean
   // or median, an area), over the same span.
   const ownRef = explicit ? compareLinesFor(f, compare, { focusedKey: c.focusedKey, span: true, as: ["reference", "line"] })[0] : undefined;

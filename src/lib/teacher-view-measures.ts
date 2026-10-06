@@ -194,8 +194,8 @@ export function bandRangeFor(scale: string[], pending: string | null, savedRaw: 
 
 /**
  * R-THRESHOLD-PERIODS: the periods a measure genuinely covers. Grade rows go back to
- * 2023/24 only, so a threshold or band measure shortens the axis to the years some item
- * has them rather than padding it; every other measure keeps `periods`.
+ * 2021/22 (0.6.2; 2023/24 before), so a threshold or band measure shortens the axis to the
+ * years some item has them rather than padding it; every other measure keeps `periods`.
  */
 export function periodsForMeasure<T>(
   measureId: MeasureId,

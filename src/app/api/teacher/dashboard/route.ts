@@ -170,7 +170,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const { byUrn } = await fetchSubjectLevelDataForSchools([urn], phase);
+  // 0.6.2 S2: the school's grade rows cover 2021/22-2024/25 (the rollup at GCSE when its RPC
+  // is applied, else the modern + historic facts; the facts at Post-16). Entries stay modern.
+  const { byUrn } = await fetchSubjectLevelDataForSchools([urn], phase, { gradeYears: "four" });
   // Every bucket at KS5, so a subject row can take the points belonging to its own
   // qualification rather than the whole-school 'all' row.
   const headlineByUrn = await fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined);

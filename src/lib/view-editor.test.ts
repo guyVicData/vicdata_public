@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { TEACHER_DASHBOARDS } from "@/catalogue/dashboards";
 import { contextFromPanel } from "@/catalogue/pick";
 import { presetSpec, type CompareSeriesKind } from "@/catalogue/viewspec";
-import { compareHonest, perHonest, shownAsHonest, showForOptions, viewHonest, type HonestContext, type HonestMeasure } from "@/catalogue/honest";
+import { averageHow, compareHonest, perHonest, shownAsHonest, showForOptions, viewHonest, type HonestContext, type HonestMeasure } from "@/catalogue/honest";
 import type { DashboardConfig, Phase, ResultsMeasure } from "@/catalogue/types";
 import { addLine, buildInstance, columnHostOf, describeChanges, honestTicks, removeLine, setPer, setView, showForOf, sideOf, startDraft, withAutoTicks, type EditorEnv } from "@/components/view-editor/model";
 import { DATAVIEWS } from "@/catalogue/dataviews";
@@ -65,17 +65,18 @@ test("D7: Bands -- England latest year only (R-BANDS-ENGLAND-BENCH, 5 schools); 
   for (const k of ["la", "region"] as const) assert.equal(compareHonest(c, k).rule, "R-BANDS-ENGLAND-BENCH");
 });
 
-test("S3d: Grade 4+ / A*-E and bands -- across schools greyed on a subject column (no comparator grade counts there); Comparisons keeps them", () => {
+test("0.6.2 S3: Grade 4+ / A*-E and bands -- across schools offered on a subject column too (each school's own grade counts, R-COMPARATOR-RATE-PER-QUAL); S3d greyed it", () => {
   for (const phase of ["ks4", "ks5"] as const)
-    for (const measure of ["threshold", "bands"] as const)
+    for (const measure of ["threshold", "bands"] as const) {
       for (const host of ["teacher.c1.results", "teacher.c2.context"] as const)
         for (const k of ["nearest", "savedSet"] as const) {
           const v = compareHonest({ phase, measure, host }, k, { span: true });
-          assert.equal(v.ok, false, `${phase} ${measure} ${host} ${k}`);
+          assert.equal(v.ok, true, `${phase} ${measure} ${host} ${k}`);
           assert.equal(v.rule, "R-COMPARATOR-RATE-PER-QUAL");
-          assert.match(v.reason!, /grade counts.*only loaded in Comparisons/);
-          assert.ok(compareHonest({ phase, measure, host: "teacher.c3.comparisons" }, k, { span: true }).ok, `${phase} ${measure} Comparisons ${k}`);
+          assert.match(v.note!, /own grade counts/);
         }
+      for (const k of ["nearest", "savedSet"] as const) assert.ok(compareHonest({ phase, measure, host: "teacher.c3.comparisons" }, k, { span: true }).ok, `${phase} ${measure} Comparisons ${k}`);
+    }
   // Points and entries keep the set's average on a subject column.
   for (const k of ["nearest", "savedSet"] as const) {
     assert.ok(ok(subjectCol("ks4", "points"), k, true));
@@ -83,13 +84,24 @@ test("S3d: Grade 4+ / A*-E and bands -- across schools greyed on a subject colum
   }
 });
 
-test("D7: Counts -- self and England ticks only; no groups, no areas, no sets", () => {
+test("D7: Counts -- self, England ticks, and (0.6.2 S3) the set's share ticks on Column 1; no groups, no areas", () => {
   const c = subjectCol("ks4", "counts");
   assert.ok(ok(c, "self"));
   assert.ok(ok(c, "england"));
   assert.match(compareHonest(c, "england").note!, /ticks/);
-  for (const k of ["category", "allSubjects", "selectedSubjects", "la", "region", "nearest", "savedSet"] as const) assert.equal(ok(c, k), false, k);
-  assert.equal(compareHonest(c, "nearest").rule, "R-MEASURE-FALLBACK");
+  for (const k of ["category", "allSubjects", "selectedSubjects", "la", "region"] as const) assert.equal(ok(c, k), false, k);
+  for (const host of ["teacher.c1.counts", "teacher.c1.results"] as const)
+    for (const k of ["nearest", "savedSet"] as const) {
+      const v = compareHonest({ phase: "ks5", measure: "counts", host }, k);
+      assert.ok(v.ok, `${host} ${k}`);
+      assert.equal(v.rule, "R-COMPARATOR-GRADE-SHARE");
+      assert.match(v.note!, /share.*not a count/);
+    }
+  // Comparisons and Context compare on one figure: there Grade counts still falls back to points.
+  for (const host of ["teacher.c3.comparisons", "teacher.c2.context"] as const) assert.equal(compareHonest({ phase: "ks4", measure: "counts", host }, "nearest").rule, "R-MEASURE-FALLBACK");
+  // Shares are averaged plainly (each school counts once): no weighting by entries.
+  assert.equal(averageHow(c, "weighted").ok, false);
+  assert.equal(perHonest({ ...c, host: "teacher.c3.comparisons" }, "school").rule, "R-MEASURE-FALLBACK");
 });
 
 test("D7: Entries -- areas are points-eligible only (GCSE) / scored qualifications only (Post-16)", () => {
@@ -144,6 +156,27 @@ test("Show for: a school-only line greys Grade counts with the reason; bands dro
   assert.equal(opts.find((o) => o.measure === "points")!.note, "All four lines");
   assert.match(opts.find((o) => o.measure === "bands")!.note!, /^School \+ category only: LA & England aren't published/);
   assert.match(opts.find((o) => o.measure === "threshold")!.note!, /LA & England/);
+});
+
+test("0.6.2 S3, step 3: an average across the 10 nearest / a saved set is no longer dropped on Grade 4+ and bands", () => {
+  const config = dash("vicdata.ks4.results");
+  const env = envFor(config, "vicdata.ks4.results.c1.trends", "points");
+  let spec = presetSpec("DV-C1-RES-TR-CHART");
+  delete spec.data.rows;
+  spec = removeLine(spec, -1);
+  for (const kind of ["nearest", "savedSet"] as const) {
+    const withSet = { ...spec, compare: [{ kind: "self" as const, colour: "accent" }, { kind, colour: "muted", average: "mean" as const }] };
+    const opts = showForOptions(withSet, { phase: "ks4", host: env.columnHost }, "teacher.c1.results", ["points", "threshold", "bands"]);
+    for (const m of ["points", "threshold", "bands"] as const) {
+      const o = opts.find((x) => x.measure === m)!;
+      assert.ok(o.ok, `${kind} ${m}`);
+      assert.doesNotMatch(o.note ?? "", /isn't published|aren't published/, `${kind} ${m}`);
+    }
+  }
+  // A Grade counts spread with the set's share ticks ticks Grade counts.
+  const spread = { ...presetSpec("DV-C1-CNT-CUR-DIST"), compare: [{ kind: "self" as const, colour: "accent" }, { kind: "nearest" as const, colour: "muted", average: "mean" as const }] };
+  const o = showForOptions(spread, { phase: "ks4", host: "teacher.c1.results" }, "teacher.c1.counts", ["counts"]);
+  assert.ok(o.find((x) => x.measure === "counts")!.ok);
 });
 
 test("Show for: a Grade counts view is counts-only; Context falls back to points on counts", () => {

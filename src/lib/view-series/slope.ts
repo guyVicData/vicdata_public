@@ -14,6 +14,7 @@
 import type { CompareSeries, ViewSpec } from "@/catalogue/viewspec";
 import { ENTRIES_MEASURE, type Measure } from "@/lib/teacher-view-panels";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
+import { trendBaseFor } from "@/catalogue/notes";
 import { basics as candidateBasics } from "./candidates";
 import { onChangeHalf, resolveCompare } from "./compare";
 import { compareLinesFor, type CompareLine } from "./compare-lines";
@@ -72,10 +73,18 @@ export function slopeYears(spec: ViewSpec, f: SeriesFrame, lines: Line[], latest
   const years = spec.data.years;
   let fromIdx: number;
   if ("latest" in years) fromIdx = before[before.length - 1];
-  else {
-    const start = typeof years.from === "number" ? years.from : onChangeHalf(spec) ? f.state.changeStart : f.state.trendStart;
-    const at = start === null ? -1 : f.periods.indexOf(start);
+  else if (typeof years.from === "number") {
+    const at = f.periods.indexOf(years.from);
     fromIdx = at >= 0 && before.includes(at) ? at : before[0];
+  } else {
+    // R-TREND-FROM-2223: a slope from the span's first year is a change measured from it, so
+    // on a grade or points measure it starts at 2022/23 at the earliest.
+    const base = f.kind === "candidates" ? null : trendBaseFor(f.measure.id, f.phase);
+    const allowed = base === null ? before : before.filter((i) => f.periods[i] >= base);
+    if (!allowed.length) return null;
+    const start = onChangeHalf(spec) ? f.state.changeStart : f.state.trendStart;
+    const at = start === null ? -1 : f.periods.indexOf(start);
+    fromIdx = at >= 0 && allowed.includes(at) ? at : allowed[0];
   }
   return { from: fromIdx, to: toIdx };
 }

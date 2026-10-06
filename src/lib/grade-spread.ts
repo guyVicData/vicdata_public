@@ -8,11 +8,13 @@
 //   bandDistribution   Results on Grade bands: the distribution in the year Current shows
 //   averageGrade       2 · View's average grade marker (a look: an average of what is drawn)
 //
-// Grade-level figures are published from 2023/24 only (D8), so the spread compares at most
-// two years. Pure (no React).
+// Grade-level figures are published from 2021/22 (0.6.2; 2023/24 only before, D8), so the
+// spread compares the latest year with any earlier one. Pure (no React).
 import { BOTTOM_RANK, GRADE_SCALES, NON_GRADE_VALUES, bestScale, gradeOrderFrom } from "./subject-grades";
 import { academicYearLabel } from "./teacher-view-theme";
 import type { PanelData } from "./teacher-view-panels";
+import { MODERN_GRADE_FROM } from "./grade-rows";
+import { TREND_BASE_PERIOD } from "@/catalogue/notes";
 
 // One subject's own per-grade rows (or an area's), every year it has them.
 export type GradeCountRow = { period: number; grade: string; entries: number };
@@ -35,13 +37,19 @@ const totalOf = (rows: GradeCountRow[]) => rows.reduce((a, r) => a + r.entries, 
 // Grade counts (GradeCountsPanels): `compareFrom` / `changeFrom` are the members' own picks
 // (the Trends "From" menus); null or a year not on offer = the default (the year before the
 // latest for the spread, the first year for the change).
+// 0.6.2 S4b: the latest year is the latest from 2023/24 on (R-CURRENT-GRADES-FROM-2324: a
+// subject whose grades stop before then shows none, as before), and the change table measures
+// from 2022/23 at the earliest (R-TREND-FROM-2223: `changeEarlier`, the years its menu offers).
+// The spread still compares with any earlier year, 2021/22 included.
 export function gradeCounts(ownRows: GradeCountRow[], englandRows: GradeCountRow[], picks: { compareFrom: number | null; changeFrom: number | null }) {
   const graded = ownRows.filter((r) => !NON_GRADE_VALUES.has(r.grade));
   const periods = Array.from(new Set(graded.map((r) => r.period))).sort((a, b) => a - b);
-  const latest = periods.length ? periods[periods.length - 1] : null;
-  const earlier = periods.slice(0, -1);
+  const modern = periods.filter((p) => p >= MODERN_GRADE_FROM);
+  const latest = modern.length ? modern[modern.length - 1] : null;
+  const earlier = latest === null ? [] : periods.filter((p) => p < latest);
+  const changeEarlier = earlier.filter((p) => p >= TREND_BASE_PERIOD);
   const cmpYear = picks.compareFrom !== null && earlier.includes(picks.compareFrom) ? picks.compareFrom : earlier[earlier.length - 1] ?? null;
-  const chgYear = picks.changeFrom !== null && earlier.includes(picks.changeFrom) ? picks.changeFrom : earlier[0] ?? null;
+  const chgYear = picks.changeFrom !== null && changeEarlier.includes(picks.changeFrom) ? picks.changeFrom : changeEarlier[0] ?? null;
   const own = inYear(graded, latest);
   const ownTotal = totalOf(own);
   const eng = inYear(englandRows, latest);
@@ -75,6 +83,7 @@ export function gradeCounts(ownRows: GradeCountRow[], englandRows: GradeCountRow
     periods,
     latest,
     earlier,
+    changeEarlier,
     cmpYear,
     chgYear,
     own,
@@ -109,6 +118,31 @@ export function bandDistribution(ownRows: GradeCountRow[], englandRows: GradeCou
   });
   const benchLabel = englandRows.length ? `England, ${latest === null ? "" : academicYearLabel(latest)}` : null;
   return { rows, total, benchLabel };
+}
+
+// ------------------------------------------------------------- the set's share (0.6.2 S3)
+
+// R-COMPARATOR-GRADE-SHARE: "Add an average" across schools on a grade spread -- each grade's
+// share of a school's graded entries in `period`, averaged (mean or median) over the schools
+// with graded entries that year, at each of `grades` (the spread's own rows). A share, never
+// a raw count: the schools differ in size. null = no school has graded entries that year.
+export function setShares(schools: { rows: GradeCountRow[] }[], period: number | null, grades: string[], how: "mean" | "median"): { pct: Map<string, number>; schools: number } | null {
+  if (period === null) return null;
+  const shares: Map<string, number>[] = [];
+  for (const s of schools) {
+    const rows = inYear(s.rows, period);
+    const total = totalOf(rows);
+    if (total <= 0) continue;
+    shares.push(new Map(grades.map((g) => [g, (countAt(rows, g) / total) * 100])));
+  }
+  if (!shares.length) return null;
+  const pct = new Map<string, number>();
+  for (const g of grades) {
+    const vs = shares.map((m) => m.get(g) ?? 0).sort((a, b) => a - b);
+    const mid = Math.floor(vs.length / 2);
+    pct.set(g, how === "median" ? (vs.length % 2 ? vs[mid] : (vs[mid - 1] + vs[mid]) / 2) : vs.reduce((a, v) => a + v, 0) / vs.length);
+  }
+  return { pct, schools: shares.length };
 }
 
 // ------------------------------------------------------------------- the average grade

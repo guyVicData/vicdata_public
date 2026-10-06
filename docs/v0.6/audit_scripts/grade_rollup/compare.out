@@ -1,0 +1,40 @@
+
+=== ks4: 201 sets, 195 schools (population 117238 sets)
+A rollup vs facts per grade, 4 years: 4660/4660 keys equal; keys summed over >1 size: 0
+B modern set-years: 289; per-grade (non-zero) equal 289
+  app zero-entry rows 0 in 0 set-years; app non-zero rows the rollup lacks: 0
+  thresholdRate equal 289/289
+  bandRate equal 289/289
+  hasGrades equal 289/289
+  gradeOrderFrom equal 289/289
+  gradeCounts (rows, counts, years, modal) equal 174/174
+C historic set-years 305: facts-through-parser (after rollup rules) = rollup 293 e.g. 150009|History|GCSE (9-1) Full Course|2021: facts [["2021|1",1],["2021|2",3],["2021|3",6],["2021|4",3],["2021|5",10],["2021|6",7],["2021|7",8],["2021|8",9],["2021|9",5]] rollup [] ;; 150009|History|GCSE (9-1) Full Course|2022: facts [["2022|1",11],["2022|2",8],["2022|3",13],["2022|4",7],["2022|5",12],["2022|6",15],["2022|7",13],["2022|8",2],["2022|9",4],["2022|No result",1],["2022|U",4]] rollup []; C diffs where the rollup has no rows (lineage): 12; raw parser keeps total-label rows as grades: 314; zero rows: 0
+  timing (chunks of 5): app modern fetch for 195 schools 6964 ms; historic facts 7289 ms
+
+=== ks5: 200 sets, 192 schools (population 82564 sets)
+A rollup vs facts per grade, 4 years: 2119/2119 keys equal; keys summed over >1 size: 23
+B modern set-years: 232; per-grade (non-zero) equal 232
+  app zero-entry rows 376 in 183 set-years; app non-zero rows the rollup lacks: 0
+  thresholdRate equal 232/232
+  bandRate equal 232/232
+  hasGrades equal 232/232
+  gradeOrderFrom equal 49/232 e.g. 135761|Health Studies|BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*|2024: app [Distinction*-Distinction*-Distinction*,Distinction*-Distinction*-Distinction,Distinction*-Distinction-Distinction,Distinction-Distinction-Distinction,Distinction-Distinction-Merit,Distinction-Merit-Merit,Merit-Merit-Merit,Merit-Merit-Pass,Merit-Pass-Pass,Pass-Pass-Pass,Fail] rollup [Distinction-Distinction-Distinction,Distinction-Distinction-Merit,Distinction-Merit-Merit,Merit-Merit-Merit,Merit-Merit-Pass,Fail] ;; 136296|Psychology|GCE A level|2023: app [*,A,B,C,D,E,Fail] rollup [A,B,C,D,E,Fail]
+  gradeCounts (rows, counts, years, modal) equal 28/155 e.g. 135761|Health Studies|BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*: app {"latest":2024,"cmp":null,"rows":[["Distinction*-Distinction*-Distinction*",0,0],["Distinction*-Distinction*-Distinction",0,0],["Distinction*-Distinction-Distinction",0,0],["Distinction-Distinction-Distinction",5,0],["Distinction-Distinction-Merit",3,0],["Distinction-Merit-Merit",2,0],["Merit-Merit-Merit",1,0],["Merit-Merit-Pass",1,0],["Merit-Pass-Pass",0,0],["Pass-Pass-Pass",0,0],["Fail",1,0]],"modal":"Distinction-Distinction-Distinction"} rollup {"latest":2024,"cmp":null,"rows":[["Distinction-Distinction-Distinction",5,0],["Distinction-Distinction-Merit",3,0],["Distinction-Merit-Merit",2,0],["Merit-Merit-Merit",1,0],["Merit-Merit-Pass",1,0],["Fail",1,0]],"modal":"Distinction-Distinction-Distinction"} ;; 136296|Psychology|GCE A level: app {"latest":2024,"cmp":2023,"rows":[["A*",1,0],["*",0,0],["A",6,5],["B",17,7],["C",6,3],["D",4,5],["E",0,4],["Fail",0,1]],"modal":"B"} rollup {"latest":2024,"cmp":2023,"rows":[["A*",1,0],["A",6,5],["B",17,7],["C",6,3],["D",4,5],["E",0,4],["Fail",0,1]],"modal":"B"}
+C historic set-years 257: facts-through-parser (after rollup rules) = rollup 253 e.g. 149271|Psychology|GCE A level|2021: facts [["2021|*",1],["2021|B",4],["2021|C",4],["2021|E",2]] rollup [] ;; 149271|Psychology|GCE A level|2022: facts [["2022|B",2],["2022|C",7],["2022|D",4],["2022|E",2],["2022|Fail",1]] rollup []; C diffs where the rollup has no rows (lineage): 4; raw parser keeps total-label rows as grades: 0; zero rows: 478
+  timing (chunks of 5): app modern fetch for 192 schools 8326 ms; historic facts 7984 ms
+
+The Chase 137625 GCSE History: grade | per year rollup / facts (app today for 2023-24, historic facts for 2021-22)
+9	9/9	9/9	15/15	11/11
+8	21/21	18/18	15/15	14/14
+7	19/19	9/9	12/12	20/20
+6	12/12	16/16	17/17	22/22
+5	11/11	8/8	18/18	16/16
+4	6/6	5/5	12/12	17/17
+3	9/9	13/13	18/18	14/14
+2	5/5	7/7	7/7	12/12
+1	2/2	4/4	4/4	5/5
+Total number entered	0/95	0/91	0/0	0/0
+U	1/1	2/2	2/2	1/1
+Total number entered	0/95	0/91	0/0	0/0
+Total exam entries	0/0	0/0	0/0	0/0
+graded/all rollup totals	95/95	91/91	120/121	132/132

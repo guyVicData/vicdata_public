@@ -17,9 +17,10 @@
 // host's, as before (null).
 import { compareHonest, type HonestMeasure } from "@/catalogue/honest";
 import type { CompareSeries, SpreadLook, ViewSpec } from "@/catalogue/viewspec";
-import { averageGrade, bandDistribution, gradeCounts, type GradeCountRow, type GradeRow } from "@/lib/grade-spread";
+import { averageGrade, bandDistribution, gradeCounts, setShares, type GradeCountRow, type GradeRow } from "@/lib/grade-spread";
 import { bestScale, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { ENTRIES_MEASURE } from "@/lib/teacher-view-panels";
+import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { resolveCompare } from "./compare";
 import type { GradesFrame, SubjectsFrame } from "./frames";
@@ -30,21 +31,36 @@ type SpreadLeaf = Extract<LeafSeries, { leaf: "gradeSpread" }>;
 
 // D7: an explicit compare keeps England (ticks, the latest year) and the subject's own earlier
 // year; nothing else has a per-grade figure (R-BANDS-ENGLAND-BENCH, Grade counts' England
-// ticks only), so it drops out.
+// ticks only), so it drops out. 0.6.2 S3: and the set's average share at each grade, "Add an
+// average" across schools (R-COMPARATOR-GRADE-SHARE) -- one tick per grade, so it takes the
+// place of England's when both are asked for.
 function compareOf(spec: ViewSpec, f: GradesFrame | SubjectsFrame) {
   const list: CompareSeries[] = resolveCompare(spec, f);
   const measure: HonestMeasure = f.kind === "grades" ? "counts" : "bands";
   const host = f.kind === "grades" ? "teacher.c1.counts" : f.host;
   const allowed = (c: CompareSeries) => spec.compare === "follows-page" || !f.phase || compareHonest({ phase: f.phase, measure, host }, c.kind).ok;
+  const set = spec.compare === "follows-page" ? null : list.find((c) => (c.kind === "nearest" || c.kind === "savedSet") && allowed(c)) ?? null;
   return {
-    england: list.some((c) => c.kind === "england" && !c.at && allowed(c)),
+    england: !set && list.some((c) => c.kind === "england" && !c.at && allowed(c)),
     earlier: list.some((c) => c.kind === "self" && c.at === "earlier-year"),
+    set: set ? { how: set.average === "median" ? ("median" as const) : ("mean" as const) } : null,
   };
 }
 
+// The set's ticks on a spread's rows, and their legend ("Average across the 10 nearest
+// schools, 2024/25"), or null while the set's rows load / with none that year.
+function setTicks(f: GradesFrame | SubjectsFrame, how: "mean" | "median", period: number | null, grades: string[]) {
+  const g = f.schoolSetGrades?.();
+  if (!g) return null;
+  const shares = setShares(g.schools, period, grades, how);
+  if (!shares || period === null) return null;
+  return { pct: shares.pct, label: `${how === "median" ? "Median" : "Average"} across ${g.label.toLowerCase()}, ${academicYearLabel(period)}` };
+}
+
 // The school's own rows at an earlier year than `latest` (the year before it with grades).
+// R-CURRENT-GRADES-FROM-2324: a latest-year view's earlier year is from 2023/24 on, as before.
 function earlierCounts(rows: GradeCountRow[], latest: number | null, grades: string[]) {
-  const before = [...new Set(rows.filter((r) => latest !== null && r.period < latest).map((r) => r.period))].sort((a, b) => b - a)[0];
+  const before = [...new Set(rows.filter((r) => latest !== null && r.period < latest && r.period >= MODERN_GRADE_FROM).map((r) => r.period))].sort((a, b) => b - a)[0];
   if (before === undefined) return null;
   const inYear = rows.filter((r) => r.period === before && grades.includes(r.grade));
   const at = (g: string) => inYear.filter((r) => r.grade === g).reduce((a, r) => a + r.entries, 0);
@@ -102,15 +118,19 @@ export function buildGrades(spec: ViewSpec, f: GradesFrame): ViewSeries | null {
   }
   if (spec.view.kind !== "spread") return null;
   const look = spec.view.look;
-  const { england, earlier } = compareOf(spec, f);
+  const { england, earlier, set } = compareOf(spec, f);
   if (g.ownTotal === 0) return null;
   if (earlier && g.cmpYear === null) return null;
+  // R-CURRENT-GRADES-FROM-2324: a latest-year spread's earlier year is from 2023/24 on.
+  const years = spec.data.years;
+  if (earlier && "latest" in years && !years.memberPick && g.cmpYear !== null && g.cmpYear < MODERN_GRADE_FROM) return null;
   const withBench = g.rowsFor(false);
   const withCompare = earlier ? g.rowsFor(true) : null;
+  const ticks = set ? setTicks(f, set.how, g.latest, withBench.map((r) => r.grade)) : null;
   const rows: GradeRow[] = withBench.map((r, i) => ({
     grade: r.grade,
     ownCount: r.ownCount,
-    benchPct: england ? r.benchPct : null,
+    benchPct: ticks ? ticks.pct.get(r.grade) ?? null : england ? r.benchPct : null,
     ...(withCompare ? { compareCount: withCompare[i].compareCount } : {}),
   }));
   const highlight = look.memberSpan === "highlight" ? f.state.highlight : null;
@@ -128,7 +148,7 @@ export function buildGrades(spec: ViewSpec, f: GradesFrame): ViewSeries | null {
       range: highlight?.range ?? null,
       pending: highlight?.pending ?? null,
       ...(highlight ? { onGradeClick: highlight.onGradeClick } : {}),
-      benchLabel: england ? g.englandLabel : null,
+      benchLabel: ticks ? ticks.label : england ? g.englandLabel : null,
       ...looks(look, rows, null),
       centred: null,
     },
@@ -145,10 +165,11 @@ export function buildBandSpread(spec: ViewSpec, f: SubjectsFrame): ViewSeries | 
   const latest = f.state.latestIdx >= 0 ? f.periods[f.state.latestIdx] : null;
   const band = bandDistribution(gb.ownRows, gb.englandRows ?? [], latest);
   if (band.total === 0) return null;
-  const { england, earlier } = compareOf(spec, f);
+  const { england, earlier, set } = compareOf(spec, f);
   const before = earlier ? earlierCounts(gb.ownRows, latest, band.rows.map((r) => r.grade)) : null;
   if (earlier && !before) return null;
-  const rows: GradeRow[] = band.rows.map((r) => ({ ...r, benchPct: england ? r.benchPct : null, ...(before ? { compareCount: before.at(r.grade) } : {}) }));
+  const ticks = set ? setTicks(f, set.how, latest, band.rows.map((r) => r.grade)) : null;
+  const rows: GradeRow[] = band.rows.map((r) => ({ ...r, benchPct: ticks ? ticks.pct.get(r.grade) ?? null : england ? r.benchPct : null, ...(before ? { compareCount: before.at(r.grade) } : {}) }));
   const page = look.memberSpan === "page-range";
   const focusedKey = (f.subjects.find((s) => s.key === f.focus) ?? f.subjects[0])?.key ?? null;
   return {
@@ -164,7 +185,7 @@ export function buildBandSpread(spec: ViewSpec, f: SubjectsFrame): ViewSeries | 
       range: page ? gb.range : null,
       pending: page ? gb.pending ?? null : null,
       ...(page && gb.onGradeClick ? { onGradeClick: gb.onGradeClick } : {}),
-      benchLabel: england ? band.benchLabel : null,
+      benchLabel: ticks ? ticks.label : england ? band.benchLabel : null,
       ...looks(look, rows, gb.range),
       centred: `grades:${focusedKey}`,
     },
