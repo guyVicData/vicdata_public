@@ -137,6 +137,17 @@ export function LookBox({ draft, set, env }: Pick<StepProps, "draft" | "set" | "
               </Chips>
             </Opt>
           )}
+          {span && (
+            // 0.6.3 S4: the table's layout by default (members can still swap it on the page).
+            // Auto opens a table of one or two rows years down, else years across.
+            <Opt k="Layout">
+              <Chips>
+                <Chip on={!l.years} onClick={() => setLook({ years: undefined })}>Auto</Chip>
+                <Chip on={l.years === "across"} onClick={() => setLook({ years: "across" })}>Years across</Chip>
+                <Chip on={l.years === "down"} onClick={() => setLook({ years: "down" })}>Years down</Chip>
+              </Chips>
+            </Opt>
+          )}
           <Opt k="Extra columns" top>
             <Chips>
               <Chip on={extra.includes("change")} off={!span && !extra.includes("change")} reason="A change needs a first year in 1 · Data." onClick={() => toggleExtra("change")}>Change</Chip>

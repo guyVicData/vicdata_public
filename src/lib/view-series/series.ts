@@ -60,6 +60,7 @@ export type LeafSeries =
       highlight?: boolean;
       colourChange?: boolean;
       sortable?: boolean;
+      years?: "across" | "down";
       // CentredOnTarget's watch key (the list scrolls to the focused row); null = no scroll
       // box (Grade counts' change table, S3d).
       centred: string | null;

@@ -55,6 +55,7 @@ import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectP
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries, type SetOption } from "@/components/teacher/ComparisonsPanels";
 import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
 import { mapResultOf, type MapSeries } from "@/lib/teacher-map";
+import { TableLayoutContext, type TableLayoutStore } from "@/components/teacher/tableLayout";
 import { isAsLevelOrAea } from "@/lib/dfe-qualification-buckets";
 import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
@@ -627,6 +628,20 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       }
     },
     [canWrite, columns, schoolUrn, phase, supabase],
+);
+
+  // 0.6.3 S4: a year table's layout per view, saved with the member's other page settings.
+  const tableLayoutStore = useMemo<TableLayoutStore>(
+    () => ({
+      get: (key) => {
+        const v = readSetting(columns, key);
+        return v === "across" || v === "down" ? v : null;
+      },
+      set: (key, layout) => {
+        void setColumnSetting(key, layout);
+      },
+    }),
+    [columns, setColumnSetting],
   );
 
   // The nav's label toggle, saved through the same path as every column setting. That
@@ -2454,6 +2469,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     {editorHost && dashboardConfig && <InPlaceEditor slug={dashboardConfig.id} host={editorHost} />}
     {/* §7: the theme attribute is scoped to Teacher view, never to <html> -- see
         TeacherChrome.tsx for why, and Q15. */}
+    {/* 0.6.3 S4: each year table's years across / down, remembered for the member. */}
+    <TableLayoutContext.Provider value={tableLayoutStore}>
     <main
       id={editing ? undefined : "teacher-root"}
       hidden={editing}
@@ -2673,6 +2690,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         />
       )}
     </main>
+    </TableLayoutContext.Provider>
     </>
   );
 }

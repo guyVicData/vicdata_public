@@ -88,15 +88,20 @@ test("a trend whose first year is 2022/23 or later is unchanged", () => {
 
 test("YearTable: the Change column counts from 2022/23; the card's columns are its two ends, fullscreen every year", () => {
   const d = data(FOUR, [60, 50, 52, 55]);
-  const card = text(renderToStaticMarkup(createElement(YearTable, { data: d, measure: THRESHOLD, focusKey: "h" })));
+  // Pinned across (0.6.3 S4: a one-row table would open years down by default).
+  const card = text(renderToStaticMarkup(createElement(YearTable, { data: d, measure: THRESHOLD, focusKey: "h", years: "across" })));
   assert.match(card, /2022\/23 2024\/25/);
   assert.doesNotMatch(card, /2021\/22/);
   assert.match(card, /\+5pp/, "50 -> 55, not 60 -> 55");
-  const full = text(renderToStaticMarkup(createElement(YearTable, { data: d, measure: THRESHOLD, focusKey: "h", fullscreen: true })));
+  const full = text(renderToStaticMarkup(createElement(YearTable, { data: d, measure: THRESHOLD, focusKey: "h", fullscreen: true, years: "across" })));
   assert.match(full, /2021\/22 2022\/23 2023\/24 2024\/25/, "2021/22 still shown");
   assert.match(full, /60% 50% 52% 55% \+5pp/);
   // Without a statement year (entries; KS2): from the first year, as before.
-  assert.match(text(renderToStaticMarkup(createElement(YearTable, { data: { ...d, statementFrom: null }, measure: THRESHOLD, focusKey: "h" }))), /2021\/22 2024\/25 .*−5pp/);
+  assert.match(text(renderToStaticMarkup(createElement(YearTable, { data: { ...d, statementFrom: null }, measure: THRESHOLD, focusKey: "h", years: "across" }))), /2021\/22 2024\/25 .*−5pp/);
+  // 0.6.3 S4: one row opens years down -- every year on the card too, then the change, which
+  // keeps R-TREND-FROM-2223's span.
+  const down = text(renderToStaticMarkup(createElement(YearTable, { data: d, measure: THRESHOLD, focusKey: "h" })));
+  assert.match(down, /2021\/22 60% 2022\/23 50% 2023\/24 52% 2024\/25 55% Change \+5pp/);
 });
 
 // ------------------------------------------------------------- the hosts (Results / Context)
@@ -140,7 +145,7 @@ test("the % change half: every change since 2022/23, 2021/22 still in the fullsc
   // The change table, as the change half hands it over (statementFrom set, every year drawn).
   const d = withTrendBase(trimToData({ periods: FOUR, series: subjects(rows).map((x) => ({ key: x.key, label: x.label, colour: x.colour, values: x.values })) }), 2022);
   assert.deepEqual(statementSpan(d).periods, [2022, 2023, 2024]);
-  const full = text(renderToStaticMarkup(createElement(YearTable, { data: d, measure: THRESHOLD, focusKey: "History::GCSE", fullscreen: true, leadingRank: true })));
+  const full = text(renderToStaticMarkup(createElement(YearTable, { data: d, measure: THRESHOLD, focusKey: "History::GCSE", fullscreen: true, leadingRank: true, years: "across" })));
   assert.match(full, /2021\/22 2022\/23 2023\/24 2024\/25/);
   assert.match(full, /80% 60% 62% 70% \+10pp/, "History +10pp since 2022/23 (it was −10pp since 2021/22)");
 });

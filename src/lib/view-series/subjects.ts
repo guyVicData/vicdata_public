@@ -273,6 +273,8 @@ function line(spec: ViewSpec, look: LineLook, f: SubjectsFrame, compare: Compare
 export function tableLook(look: TableLook) {
   return {
     ...(look.yearColumns && look.yearColumns !== "first-latest" ? { yearColumns: look.yearColumns } : {}),
+    // 0.6.3 S4: the view's own layout; absent = automatic.
+    ...(look.years ? { years: look.years } : {}),
     ...(look.extra && !look.extra.includes("change") ? { showChange: false } : {}),
     ...(look.extra?.includes("rank") && !look.leadingRank ? { rankColumn: "always" as const } : {}),
     // The hosts' year tables open in rank (= latest year) order; "listed" / "change" open
