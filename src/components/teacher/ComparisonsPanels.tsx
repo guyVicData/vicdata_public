@@ -566,9 +566,9 @@ export function ComparisonsPanels({
       </PanelSummary>
     ),
     source: source(),
-    // Column 3 round Part 1: a visible "Full screen" line under the card -- the map
-    // especially reads far better with room.
-    suggestFullscreen: true,
+    // Column 3 round Part 1: a visible "Full screen" line under the card. 0.6.3: not under
+    // the map, which fills the card instead (the card's own expand icon opens fullscreen).
+    suggestFullscreen: view !== "map",
     // S10: the collapsed bar's figure -- where the school sits in the set.
     headline: seriesLoading || !shownRank ? undefined : `${shownRank.rank} of ${shownRank.total}`,
   };
@@ -750,7 +750,8 @@ export function ComparisonsPanels({
         {trendMapOk && <IconButton label="Trend map" active={!isChange && trendShows === "map"} onClick={() => setTrendView("map")}>{MapPinIcon}</IconButton>}
       </>
     ),
-    suggestFullscreen: trendShows === "map",
+    // 0.6.3: the map fills the card; no "Full screen" line under it.
+    suggestFullscreen: false,
 
     body: (fullscreen) =>
       seriesLoading ? (
@@ -833,7 +834,7 @@ export function ComparisonsPanels({
         {changeMapOk && <IconButton label="Change map" active={isChange && changeShows === "map"} onClick={() => setChangeView("map")}>{MapPinIcon}</IconButton>}
       </>
     ),
-    suggestFullscreen: changeShows === "map",
+    suggestFullscreen: false,
     body: (fullscreen) =>
       seriesLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading {subjectLabel ?? "the comparison"}…</p>
