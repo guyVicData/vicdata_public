@@ -589,6 +589,21 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-MAP-ENCODING",
+    statement:
+      "Teacher view maps: dot size = entries (the subject's, with a subject in focus). Candidates Current has no colour (one neutral fill, hover entries only). Results Current is coloured by the selected measure, by rank within the set (pale blue -> deep purple, deepest = top), and the panel's 'rank N of M' is on the same figure. Every Trends map is coloured by the change in the selected measure over the panel's own span (statements from 2022/23), diverging around zero on one symmetric scale (dark red -> pale amber -> deep green). The hover gives the coloured figure first, then entries. No figure, or below the small-entries rule: a hollow grey dot saying which. The school itself: a thick white ring (dark grey on the light theme). A labelled key on every map, card included.",
+    why: "A dot's colour must say what is selected, and the same colour must mean the same thing on every map; the rank scale has its own hues so it can't be read as change.",
+    appliesTo: "DV-C3-CUR-MAP, DV-C3-TR-MAP, DV-C3-TR-CHANGEMAP, DV-C1-RES-TR-MAP (cards and fullscreen)",
+    enforcedIn: [
+      "src/lib/teacher-map.ts:RANK_SEQ_STOPS, RAG_DIVERGING_STOPS, teacherMapSpec, teacherMapFills, currentMapFrom, changeMapFrom, mapResultOf",
+      "src/components/data-view/AcademicMapView.tsx (optional teacherMap prop; the Data View never passes it)",
+      "src/components/teacher/ComparisonsPanels.tsx, SubjectPanels.tsx; src/lib/view-series/map.ts",
+    ],
+    testCase: null,
+    origin: "0.6.3 grade counts, maps, tables round (S2); the rank palette's hues per Guy, 6 Oct 2026",
+    status: "active",
+  },
+  {
     id: "R-GEO-APPLIES",
     statement:
       "The geography comparison is shown only where the area figure counts the same thing: at KS4 for GCSE (9-1) Full Course items only; on Results for points only.",

@@ -28,6 +28,7 @@ export function MapView({ series, fullscreen }: { series: ViewSeries; fullscreen
       {...(leaf.untitledSizeLegend ? { untitledSizeLegend: true } : {})}
       {...(leaf.forcedColourMode ? { forcedColourMode: leaf.forcedColourMode } : {})}
       {...(leaf.changeValues ? { changeValues: leaf.changeValues } : {})}
+      {...(leaf.teacherMap ? { teacherMap: leaf.teacherMap } : {})}
     />
   );
   if (place === "current") {

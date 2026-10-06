@@ -155,6 +155,8 @@ export function GradeCountsPanels({
         {subjectLabel}&rsquo;s {ownTotal.toLocaleString()} graded entries in {yearText}: most at {modal} ({Math.round((g.modalCount / ownTotal) * 100)}%).
       </PanelSummary>
     ) : undefined,
+    // ...and on the card, shown without a click (the answer to the click just made).
+    ...(answer ? { visibleCaption: <span data-answer-line="">{answer}</span> } : {}),
     source: source(yearText),
     headline: ownTotal > 0 ? ownTotal.toLocaleString() : undefined,
   };

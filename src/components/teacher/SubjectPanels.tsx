@@ -15,6 +15,7 @@
 // computed for it. This component owns "how it looks" and nothing else.
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
+import { changeMapFrom, type MapSeries } from "@/lib/teacher-map";
 import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
@@ -41,7 +42,7 @@ import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
-import { DIRECTION_COLOUR, FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { SelectionPrompt, withSelectionChip, type SelectionChipValue } from "./SelectionBits";
@@ -283,6 +284,8 @@ export function SubjectPanels({
     subjectBucket: string | null;
     familyId: string | null;
     accentHex: string | null;
+    // 0.6.3 S2: the focused subject at each school in the set, on Results' measure.
+    series?: MapSeries | null;
   };
 }) {
   // Current panel rework round 1: Context (rankedViews) opens on its bar chart.
@@ -759,6 +762,13 @@ export function SubjectPanels({
   // R-TREND-FROM-2223: the sentence, its direction word and the group's clause are measured
   // over the statement span (2022/23 on, where the chart draws 2021/22).
   const trendSpan = statementSpan(trendData);
+  // 0.6.3 S2: the Trend map follows Results' measure over this panel's own span (from
+  // 2022/23 on a graded measure): each school's change, diverging and centred on zero.
+  const trendMapSpec = trendMap?.series ? changeMapFrom(trendMap.series, trendSpan.periods, "absolute", (v) => changeOver(v)?.delta ?? null) : null;
+  const trendMapProfiles = trendMap?.series && trendMap.profiles ? trendMap.profiles.filter((p) => trendMap.series!.schools.some((sc) => sc.urn === p.urn)) : trendMap?.profiles ?? null;
+  const trendMapTitle = trendMap?.series
+    ? `Change in ${trendMap.subjectLabel} ${trendMap.series.result.noun} since ${trendSpan.periods.length ? academicYearLabel(trendSpan.periods[0]) : "the first year"}, by school`
+    : `${trendMap?.subjectLabel ?? ""} at each comparator school, on the map`;
   const trendSaid = trendSentence({
     // A plural subject name takes a bare possessive -- "Classics's" reads as a typo.
     subjectClause: `${focusLabel}${focusLabel.endsWith("s") ? "'" : "'s"} ${measure.noun}`,
@@ -851,9 +861,9 @@ export function SubjectPanels({
         <div className="flex min-h-0 flex-1 flex-col print:hidden">
           {/* What the map plots: the focused subject at each comparator school (the map's
               own Grade band / Trends toggle picks the colour), not a change figure. */}
-          <ViewTitle>{trendMap.subjectLabel} at each comparator school, on the map</ViewTitle>
+          <ViewTitle>{trendMapTitle}</ViewTitle>
           <RankingsMap
-            profiles={trendMap.profiles}
+            profiles={trendMapProfiles}
             targetUrn={trendMap.targetUrn}
             stage={trendMap.stage}
             heightClass={fullscreen ? "min-h-[22rem] flex-1" : "min-h-[10rem] flex-1"}
@@ -864,6 +874,7 @@ export function SubjectPanels({
             dense={!fullscreen}
             accentHex={trendMap.accentHex}
             untitledSizeLegend
+            {...(trendMapSpec ? { teacherMap: trendMapSpec } : {})}
           />
         </div>
       ) : trendView === "table" ? (
@@ -1105,6 +1116,7 @@ export function SubjectPanels({
           accentHex: trendMap.accentHex,
           allowed: true,
           subjectLabel: trendMap.subjectLabel,
+          ...(trendMap.series && trendMapSpec ? { teacher: { series: trendMap.series, trend: trendMapSpec, profiles: trendMapProfiles }, title: trendMapTitle } : {}),
         }
       : null,
     schoolGroup,

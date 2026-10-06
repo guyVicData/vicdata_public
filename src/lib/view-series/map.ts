@@ -16,6 +16,7 @@
 // (changeOver / changeOf / percentChange over the same span), keyed by URN (changeByUrn).
 // Where the host draws a note (loading, no location, too short a span) it is left to it.
 import type { ViewSpec } from "@/catalogue/viewspec";
+import { changeMapFrom } from "@/lib/teacher-map";
 import { changeInTitle, changeOf, changePhrase, formatChange, percentChange, sliceFrom, statementSpan } from "@/lib/teacher-view-panels";
 import { changeByUrn, signedPercent } from "@/lib/teacher-view-comparisons";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
@@ -42,8 +43,16 @@ function trendMap(f: SubjectsFrame): ViewSeries | null {
   return {
     kind: "map",
     heading: null,
-    title: [m.subjectLabel, " at each comparator school, on the map"],
-    leaf: { leaf: "map", place: "trend", map: m, targetUrn: m.targetUrn, untitledSizeLegend: true },
+    title: m.title ?? [m.subjectLabel, " at each comparator school, on the map"],
+    leaf: {
+      leaf: "map",
+      place: "trend",
+      // 0.6.3 S2: the set's own schools, on Results' measure, as the host encodes them.
+      map: m.teacher?.trend ? { ...m, profiles: m.teacher.profiles ?? m.profiles } : m,
+      targetUrn: m.targetUrn,
+      untitledSizeLegend: true,
+      ...(m.teacher?.trend ? { teacherMap: m.teacher.trend } : {}),
+    },
   };
 }
 
@@ -61,9 +70,11 @@ function currentMap(f: ComparisonsFrame, colour: "value" | "change" | "member"):
     leaf: {
       leaf: "map",
       place: "current",
-      map: m,
+      // 0.6.3 S2: the set's own schools, encoded as the host encodes them.
+      map: m.teacher?.current ? { ...m, profiles: m.teacher.profiles ?? m.profiles } : m,
       targetUrn: m.targetUrn,
       ...(colour === "member" ? {} : { forcedColourMode: m.stage === "ks2" ? ("grade_band" as const) : ("accent" as const) }),
+      ...(m.teacher?.current ? { teacherMap: m.teacher.current } : {}),
     },
   };
 }
@@ -97,6 +108,7 @@ function changeMap(spec: ViewSpec, f: ComparisonsFrame): ViewSeries | null {
         targetUrn: m.targetUrn,
         forcedColourMode: "trend_absolute",
         changeValues: { byUrn: changeByUrn(table.series, target, (v) => changeOver(v)?.delta ?? null), format: f.measure.formatDelta, label: `change since ${from}` },
+        ...(m.teacher ? { teacherMap: changeMapFrom(m.teacher.series, table.periods, "absolute", (v) => changeOver(v)?.delta ?? null) } : {}),
       },
     };
   }
@@ -116,6 +128,7 @@ function changeMap(spec: ViewSpec, f: ComparisonsFrame): ViewSeries | null {
       changeValues: percent
         ? { byUrn: changeByUrn(table.series, target, percentChange), format: signedPercent, label: `% change since ${since}` }
         : { byUrn: changeByUrn(table.series, target, (v) => changeOf(f.measure, v)), format: (v: number) => formatChange(f.measure, v), label: `${changePhrase(f.measure)} since ${since}` },
+      ...(m.teacher ? { teacherMap: changeMapFrom(m.teacher.series, table.periods, "honest", (v) => changeOf(f.measure, v)) } : {}),
     },
   };
 }

@@ -9,6 +9,7 @@
 // the card already ranks against (the dashboard route's phase-filtered neighbours), so the
 // map and the "N of M" beside it are always about the same schools.
 import AcademicMapView from "@/components/data-view/AcademicMapView";
+import type { TeacherMapSpec } from "@/lib/teacher-map";
 import { igcseExclusionLikely, type AcademicSchoolProfile, type KsStage } from "@/lib/academic-data-view";
 
 export function RankingsMap({
@@ -27,6 +28,7 @@ export function RankingsMap({
   untitledSizeLegend = false,
   forcedColourMode,
   changeValues,
+  teacherMap,
 }: {
   profiles: AcademicSchoolProfile[] | null;
   targetUrn: string;
@@ -57,6 +59,8 @@ export function RankingsMap({
   // toggle; and the panel's own change figures for a change map).
   forcedColourMode?: "accent" | "grade_band" | "trend" | "trend_absolute";
   changeValues?: { byUrn: Record<string, number>; format: (v: number) => string; label: string };
+  // 0.6.3 S2: the Teacher view's own encoding (src/lib/teacher-map.ts), passed through.
+  teacherMap?: TeacherMapSpec;
 }) {
   const target = profiles?.find((p) => p.urn === targetUrn) ?? null;
   if (!profiles) {
@@ -86,6 +90,7 @@ export function RankingsMap({
         untitledSizeLegend={untitledSizeLegend}
         forcedColourMode={forcedColourMode}
         changeValues={changeValues}
+        teacherMap={teacherMap}
         // Same GCSE exclusion the advanced dashboard's map applies, with its own note. R-IGCSE-EXCL (the predicate is lib's igcseExclusionLikely).
         ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}
       />

@@ -54,6 +54,7 @@ import { CandidatesPanels } from "@/components/teacher/CandidatesPanels";
 import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectPanels";
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries, type SetOption } from "@/components/teacher/ComparisonsPanels";
 import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
+import { mapResultOf, type MapSeries } from "@/lib/teacher-map";
 import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
@@ -1626,6 +1627,59 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   };
 
+  // 0.6.3 S2: Column 1 Results' Trend map -- the focused subject at each school in the
+  // Compared-against set, on Results' selected measure: points from the map profiles' own
+  // subject rows (as Comparisons reads them), a rate from each school's grade rows for the
+  // subject and qualification (Comparisons' own fetch, setGradeRowsFor), scored by the
+  // page's own rate function; the school's own from its own grade rows.
+  const column1MapSeries = (): MapSeries | null => {
+    if (!focusItem || !schoolUrn || !activeMapChip) return null;
+    const set = allComparatorSets[comparisonsSet] ?? [];
+    const urns = Array.from(new Set([schoolUrn, ...set.map((sc) => sc.urn)]));
+    const onRate = usingThreshold || (usingBands && !!bandRange);
+    const measure = resultsMeasureShown;
+    const graded = (rows: { grade: string; entries: number }[]) => rows.filter((r) => !NON_GRADE_VALUES.has(r.grade)).reduce((a, r) => a + r.entries, 0) || null;
+    let perUrn: Record<string, { period: number; value: number | null; entries: number | null }[]> = {};
+    if (onRate) {
+      const g = setGradeRowsFor();
+      const rateOf = gradeRateScorer(usingBands, bandRange, phase);
+      const ownPeriods = Array.from(new Set(gradeRows.filter((r) => r.subject === focusItem.subject && r.qualificationType === focusItem.qualificationType).map((r) => r.period)));
+      perUrn[schoolUrn] = ownPeriods.map((p) => {
+        const rows = gradeRowsAt(gradeRows, focusItem.subject, focusItem.qualificationType, p);
+        return { period: p, value: rateOf(rows), entries: graded(rows) };
+      });
+      for (const sc of g?.schools ?? []) {
+        const ps = Array.from(new Set(sc.rows.map((r) => r.period)));
+        perUrn[sc.urn] = ps.map((p) => {
+          const rows = sc.rows.filter((r) => r.period === p);
+          return { period: p, value: rateOf(rows.map((r) => ({ ...r, subject: focusItem.subject, qualificationType: focusItem.qualificationType, sizeWeight: null }))), entries: graded(rows) };
+        });
+      }
+    } else {
+      perUrn = Object.fromEntries(
+        urns.map((u) => {
+          const series = comparatorSubjectSeries[u];
+          const ps = Array.from(new Set([...(series?.results ?? []), ...(series?.candidates ?? [])].map((r) => r.period)));
+          const at = (rows: { period: number; value: number }[] | undefined, p: number) => rows?.find((r) => r.period === p)?.value ?? null;
+          return [u, ps.map((p) => ({ period: p, value: at(measure.id === "entries" ? series?.candidates : series?.results, p), entries: at(series?.candidates, p) }))];
+        }),
+      );
+    }
+    const periods = Array.from(new Set(Object.values(perUrn).flatMap((rows) => rows.map((r) => r.period)))).sort((a, b) => a - b);
+    return {
+      periods,
+      schools: urns.map((u) => ({
+        urn: u,
+        values: periods.map((p) => perUrn[u]?.find((r) => r.period === p)?.value ?? null),
+        entries: periods.map((p) => perUrn[u]?.find((r) => r.period === p)?.entries ?? null),
+      })),
+      measure,
+      result: mapResultOf(measure, usingBands ? bandRange : null, true),
+      subjectLabel: activeMapChip.legend,
+      theme,
+    };
+  };
+
   // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
   // The figure still follows the focus subject (round 7 §9): with one in focus it is that
   // subject's own figure on Results' chosen measure -- points per entry, or the Grade 4+ /
@@ -1875,6 +1929,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
                 subjectBucket: activeMapChip.bucket,
                 familyId: activeMapChip.familyId,
                 accentHex: accent?.hex ?? null,
+                series: column1MapSeries(),
               }
             : undefined
         }
@@ -2185,6 +2240,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         prompt={countsPrompt ? "Click a grade in Results to compare it across schools" : undefined}
         selectionChip={selectionChip}
         titleLead={countsSelectionMeasure && usingCounts ? countsSelectionMeasure.label : undefined}
+        mapRange={comparisonsOnBands ? columnsRange : null}
         schoolUrn={schoolUrn}
         mapProfiles={mapProfiles}
         activeMapChip={activeMapChip}

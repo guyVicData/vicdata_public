@@ -21,6 +21,7 @@ import type { GradeRange } from "@/lib/subject-grades";
 import type { GradeCountRow } from "@/lib/grade-spread";
 import type { GeographyMetric, GeographyPayload } from "@/lib/teacher-view-geography";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
+import type { MapSeries, TeacherMapSpec } from "@/lib/teacher-map";
 
 // S3c: the geography comparison (the focused subject against its LA, region and England) as
 // the host already fetched it (useSubjectGeography) -- the frame never fetches. `own` is the
@@ -79,6 +80,9 @@ export type FrameMap = {
   allowed: boolean;
   onCaption?: (caption: string) => void;
   onTargetRank?: (info: { rank: number; total: number } | null) => void;
+  // 0.6.3 S2: the Teacher maps' encoding (src/lib/teacher-map.ts): the panel's per-school
+  // figures for a Trends map's change, Current's spec, and the set's own profiles.
+  teacher?: { series: MapSeries; current?: TeacherMapSpec; trend?: TeacherMapSpec; profiles?: AcademicSchoolProfile[] | null } | null;
 };
 
 export type FrameSubject = {
@@ -166,7 +170,8 @@ export type SubjectsFrame = {
   phase?: Phase;
   donut?: FrameDonut | null;
   geography?: FrameGeography | null;
-  trendMap?: (FrameMap & { subjectLabel: string }) | null;
+  // 0.6.3 S2: `title` -- the host's title for the map on Results' measure.
+  trendMap?: (FrameMap & { subjectLabel: string; title?: string }) | null;
   schoolGroup?: FrameSchoolGroup;
   schoolSet?: () => FrameSet | null;
   // 0.6.2 S3: the set's grade rows (null while they load, or with no set), built on demand.

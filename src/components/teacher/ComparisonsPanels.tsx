@@ -69,6 +69,8 @@ import { ViewChart } from "./ViewChart";
 import type { ComparisonsFrame } from "@/lib/view-series/frames";
 import { SAVED_SET_PREFIX } from "@/lib/teacher-view-saved-sets";
 import { SelectionPrompt, withSelectionChip, type SelectionChipValue } from "./SelectionBits";
+import { changeMapFrom, currentMapFrom, mapResultOf, type MapSeries, type TeacherMapSpec } from "@/lib/teacher-map";
+import type { GradeRange } from "@/lib/subject-grades";
 import { NON_GRADE_VALUES } from "@/lib/subject-grades";
 import { trendBaseApplies, trendBaseFor } from "@/catalogue/notes";
 
@@ -139,6 +141,7 @@ export function ComparisonsPanels({
   prompt,
   selectionChip,
   titleLead,
+  mapRange = null,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -203,6 +206,8 @@ export function ComparisonsPanels({
   prompt?: string;
   selectionChip?: SelectionChipValue | null;
   titleLead?: string;
+  // 0.6.3 S2: the grade range a bands / counts-selection figure is on, for the maps' words.
+  mapRange?: GradeRange | null;
 }) {
   // ------------------------------------------- threshold rates (grade counts per school)
   const gradeUrns = allSchools.map((s) => s.urn).sort();
@@ -309,6 +314,32 @@ export function ComparisonsPanels({
   const latest = latestIdx >= 0 ? periods[latestIdx] : null;
   const valueAt = (urn: string) => (latestIdx >= 0 ? valuesFor(urn)[latestIdx] : null);
 
+  // 0.6.3 S2: the maps' own figures -- every school in the set (one with no figure is a hollow
+  // dot), its values as the ranking and tables read them, and the entries behind them: on a
+  // rate, its graded entries for the subject and qualification; otherwise its entries.
+  const gradedEntriesAt = (urn: string, p: number) =>
+    threshold && grades?.rows
+      ? (grades.rows[urn] ?? [])
+          .filter((g) => g.subject === threshold.subject && g.qualificationType === threshold.qualificationType && g.period === p && !NON_GRADE_VALUES.has(g.grade))
+          .reduce((sum, g) => sum + g.entries, 0) || null
+      : null;
+  const entriesAt = (urn: string, p: number) => (threshold ? gradedEntriesAt(urn, p) : seriesByUrn[urn]?.candidates.find((r) => r.period === p)?.value ?? null);
+  const mapSeries: MapSeries = {
+    periods,
+    schools: allSchools.map((s) => ({
+      urn: s.urn,
+      values: valuesFor(s.urn),
+      entries: periods.map((p) => entriesAt(s.urn, p)),
+      ...(tooFewUrns.has(s.urn) ? { tooFew: true } : {}),
+    })),
+    measure,
+    result: mapResultOf(measure, mapRange, !!subjectLabel),
+    subjectLabel,
+    theme,
+  };
+  const mapProfilesInSet = mapProfiles ? mapProfiles.filter((p) => p.urn === schoolUrn || allSchools.some((sc) => sc.urn === p.urn)) : null;
+  const currentMapSpec = currentMapFrom(mapSeries, latestIdx);
+
   // ------------------------------------------------------------------ Current
   // A comparator with history but nothing in the latest year is left out of the ranking
   // for the same reason: a row of dashes is not a position.
@@ -327,7 +358,7 @@ export function ComparisonsPanels({
   const shownRank =
     (onRankingMeasure || view === "tiles") && setRank
       ? setRank
-      : view === "map" && mapRank && !threshold
+      : view === "map" && mapRank
         ? mapRank
         : targetRank && placed.length > 1
           ? { rank: targetRank, total: placed.length }
@@ -434,7 +465,7 @@ export function ComparisonsPanels({
           <div className={fullscreen ? "print:hidden" : "flex min-h-0 flex-1 flex-col print:hidden"}>
             <ViewTitle>{currentTitle}</ViewTitle>
             <RankingsMap
-              profiles={mapProfiles}
+              profiles={mapProfilesInSet}
               targetUrn={schoolUrn}
               stage={phase}
               heightClass={fullscreen ? "h-[70vh] min-h-[22rem]" : "min-h-[10rem] flex-1"}
@@ -451,6 +482,7 @@ export function ComparisonsPanels({
               // Comparisons change-map round: Current is about standing, so its map is the
               // value colour only -- change has its own maps on Trend and % change.
               forcedColourMode={phase === "ks2" ? "grade_band" : "accent"}
+              teacherMap={currentMapSpec}
             />
           </div>
         ) : (
@@ -632,7 +664,7 @@ export function ComparisonsPanels({
   // orange-green scale. Not for a ranking (a sample of a population, Part 4 of snagging
   // round 1), and only with two or more years to measure a change across.
   const changeMapFor = (table: PanelData, value: (values: (number | null)[]) => number | null) => changeByUrn(table.series, target?.urn, value);
-  const changeMap = (fullscreen: boolean, forced: "trend" | "trend_absolute", changeValues: { byUrn: Record<string, number>; format: (v: number) => string; label: string }) =>
+  const changeMap = (fullscreen: boolean, forced: "trend" | "trend_absolute", changeValues: { byUrn: Record<string, number>; format: (v: number) => string; label: string }, teacherMap: TeacherMapSpec) =>
     schoolUrn ? (
       <div className="flex min-h-0 flex-1 flex-col print:hidden">
         <RankingsMap
@@ -650,6 +682,7 @@ export function ComparisonsPanels({
           accentHex={phase === "ks2" ? null : PHASE_ACCENT[phase]?.hex ?? null}
           forcedColourMode={forced}
           changeValues={changeValues}
+          teacherMap={teacherMap}
         />
       </div>
     ) : null;
@@ -729,7 +762,7 @@ export function ComparisonsPanels({
             byUrn: changeMapFor(trendMapSpan, (v) => changeOver(v)?.delta ?? null),
             format: measure.formatDelta,
             label: `change since ${trendFrom}`,
-          })}
+          }, changeMapFrom(mapSeries, trendMapSpan.periods, "absolute", (v) => changeOver(v)?.delta ?? null))}
         </>
       ) : trendShows === "table" ? (
         // Every school in the set, ranked on the latest year (sortable), the school's own
@@ -810,12 +843,12 @@ export function ComparisonsPanels({
         <>
           <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, coloured by school</ViewTitle>
           {changeOnPercent
-            ? changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTableSpan, percentChange), format: signedPct, label: `% change since ${changeSince}` })
+            ? changeMap(fullscreen, "trend", { byUrn: changeMapFor(changeTableSpan, percentChange), format: signedPct, label: `% change since ${changeSince}` }, changeMapFrom(mapSeries, changeTableSpan.periods, "honest", (v) => changeOf(measure, v)))
             : changeMap(fullscreen, "trend_absolute", {
                 byUrn: changeMapFor(changeTableSpan, (v) => changeOf(measure, v)),
                 format: fmtChange,
                 label: `${changePhrase(measure)} since ${changeSince}`,
-              })}
+              }, changeMapFrom(mapSeries, changeTableSpan.periods, "honest", (v) => changeOf(measure, v)))}
         </>
       ) : changeShows === "table" ? (
         <>
@@ -942,6 +975,7 @@ export function ComparisonsPanels({
       allowed: sampleAllowsMap(rankingSet),
       onCaption: setMapCaption,
       onTargetRank: onMapRank,
+      teacher: { series: mapSeries, current: currentMapSpec, profiles: mapProfilesInSet },
     },
     state: { trendStart, changeStart, showFit },
     ...(titleLead ? { titleLead } : {}),
