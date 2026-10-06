@@ -214,11 +214,14 @@ export function periodsForMeasure<T>(
 // ------------------------------------------------------------------ measure resolution
 
 /**
- * R-MEASURE-FALLBACK: Grade counts has no single figure to compare subjects on, and Grade
- * bands has none until a range is picked, so Context falls back to average point score.
+ * R-MEASURE-FALLBACK: Grade bands has no single figure until a range is picked, so Context
+ * falls back to average point score. 0.6.3 S1 (R-COUNTS-SELECTION): Grade counts no longer
+ * falls back silently -- with a grade selected it is that grade's share (`hasBandRange` is
+ * the selection), and without one Context draws a prompt; the fallback remains only for
+ * Grade counts with no focused subject (nothing to select a grade on).
  */
 export function contextFallsBackFor(showingResults: boolean, resultsMeasureId: MeasureId, hasBandRange: boolean): boolean {
-  return showingResults && (resultsMeasureId === "counts" || (resultsMeasureId === "bands" && !hasBandRange));
+  return showingResults && (resultsMeasureId === "counts" || resultsMeasureId === "bands") && !hasBandRange;
 }
 
 /** R-MEASURE-FALLBACK: Context's measure -- entries on Candidates, else Results' (or points). */
@@ -269,7 +272,9 @@ export function shareApplies(measureId: MeasureId, hasBandRange: boolean): boole
  * come from GCSE (9-1) Full Course alone, so there is nothing to blend there.
  */
 export function contextKeepsToFamily(phase: TeacherPhase, measureId: MeasureId): boolean {
-  return phase === "ks5" && measureId === "points";
+  // 0.6.3 S3: on Grade bands and a Grade counts selection too ("bands" here) -- the scale
+  // check alone can't tell them apart: A level, EPQ, Core Maths and FSMQ all read A*-E.
+  return phase === "ks5" && (measureId === "points" || measureId === "bands" || measureId === "counts");
 }
 
 /**

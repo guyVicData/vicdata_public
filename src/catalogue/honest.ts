@@ -129,9 +129,10 @@ export function compareHonest(ctx: HonestContext, kind: CompareSeriesKind, opts:
       // 0.6.2 S3: Grade counts across schools is each grade's SHARE of graded entries,
       // averaged over the set's schools -- never a raw count, since schools differ in size
       // (R-COMPARATOR-GRADE-SHARE) -- drawn by Column 1's grade spread. Comparisons and
-      // Context compare on one figure, so there Grade counts still falls back to points.
+      // Context compare on one figure: there Grade counts is the selected grade's share
+      // (0.6.3 S1, R-COUNTS-SELECTION), checked as a band.
       if (ctx.measure === "counts") {
-        if (ctx.host !== "teacher.c1.counts" && ctx.host !== "teacher.c1.results") return no("No comparator grade counts here: Grade counts falls back to Average points.", "R-MEASURE-FALLBACK");
+        if (ctx.host !== "teacher.c1.counts" && ctx.host !== "teacher.c1.results") return no("No comparator grade counts here: Grade counts follows the grade selected in Column 1.", "R-COUNTS-SELECTION");
         return yes("Each grade's share of graded entries, averaged across the schools (a share, not a count: schools differ in size). It takes the place of England's ticks.", "R-COMPARATOR-GRADE-SHARE");
       }
       if (!geo.ok) return no(`${word}: ${geo.reason ?? "no set figure"}.`);
@@ -288,9 +289,11 @@ export function showForOptions(spec: ViewSpec, base: Omit<HonestContext, "measur
   const all: ResultsMeasure[] = ["points", "threshold", "bands", "counts"];
   return all.map((m) => {
     const label = measureWord(base.phase, m);
-    // Context and Comparisons draw Grade counts as points (R-MEASURE-FALLBACK).
+    // 0.6.3 S1 (R-COUNTS-SELECTION): Context and Comparisons draw Grade counts as the share
+    // of entries at the grade selected in Column 1 -- a band rate -- and before a selection,
+    // a prompt to pick one (no average-points fallback any more).
     const fallback = (base.host === "teacher.c2.context" || base.host === "teacher.c3.comparisons") && m === "counts";
-    const ctx: HonestContext = { ...base, measure: fallback ? "points" : m };
+    const ctx: HonestContext = { ...base, measure: fallback ? "bands" : m };
     const host = hostOnMeasure(base.host, m);
     if (host !== presetHost) {
       if (m === "counts") return { measure: m, label, ...no(COUNTS_KIND_REASON[spec.view.kind] ?? "Grade counts are drawn by their own panels.") };
@@ -298,7 +301,7 @@ export function showForOptions(spec: ViewSpec, base: Omit<HonestContext, "measur
     }
     if (!presetMeasures.includes(m)) return { measure: m, label, ...no(`This view can't be drawn on ${label}.`) };
     for (const verdict of [perHonest(ctx, spec.data.per), shownAsHonest(ctx, spec.data.shownAs, spec.data.per), viewHonest(ctx, spec.view.kind, spec.data)]) if (!verdict.ok) return { measure: m, label, ...verdict };
-    if (fallback) return { measure: m, label, ...yes("Falls back to Average points here.", "R-MEASURE-FALLBACK") };
+    if (fallback) return { measure: m, label, ...yes("Follows the grade selected in Results' Grade counts; until one is clicked, a prompt to pick one.", "R-COUNTS-SELECTION") };
     // The "against the wider system" views (LA, region, England) follow the page, which
     // shows them only on Average points: on any other Results measure the panel draws the
     // not-applicable note (resultsGeographyApplies), so they can't honestly be ticked there.

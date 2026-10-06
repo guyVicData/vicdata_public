@@ -49,6 +49,7 @@ import { resolveRegionNation } from "@/lib/region-crosswalk";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
 import LoadingSpinnerCard from "./LoadingSpinnerCard";
+import { HOLLOW_DOT, dotOutline, legendGradient, ownRing, teacherMapFills, type TeacherMapSpec } from "@/lib/teacher-map";
 import {
   HEADLINE_MEASURE,
   HEADLINE_UNIT,
@@ -313,6 +314,52 @@ function SizeLegend({ minSize, maxSize, familyId, familyLabel, subjectLabel, siz
   );
 }
 
+// 0.6.3 S2 (Teacher view only, behind `teacherMap`): the labelled key. Fullscreen: a box at
+// the top right -- what colour means in words, the scale with its two ends named, the hollow
+// dot and the school's own ring; the dot-size key stays bottom left. Card: one line in the
+// caption's corner (TeacherDenseLegend), replacing the unlabelled strip.
+function TeacherColourKey({ spec }: { spec: TeacherMapSpec }) {
+  const gradient = legendGradient(spec);
+  // Fullscreen draws on the light basemap, whichever the theme: the ring there is dark grey.
+  const ring = ownRing("light");
+  return (
+    <div data-teacher-map-key="" className="absolute right-3 top-3 z-[1000] w-[13.5rem] rounded-md border border-neutral-200 bg-white p-2 text-[11px] text-neutral-600 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
+      {spec.legend && <p className="font-semibold text-neutral-800 dark:text-neutral-200">{spec.legend}</p>}
+      {gradient && (
+        <>
+          <div className="mt-1.5 h-2 w-full rounded-full" style={{ background: gradient }} />
+          {spec.ends && (
+            <div className="mt-0.5 flex justify-between text-[10px]">
+              <span>{spec.ends[0]}</span>
+              <span>{spec.ends[1]}</span>
+            </div>
+          )}
+        </>
+      )}
+      <p className="mt-1.5 flex items-center gap-1.5">
+        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ border: `1.75px solid ${HOLLOW_DOT}` }} />
+        No figure or too few entries
+      </p>
+      <p className="mt-1 flex items-center gap-1.5">
+        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ border: `2.5px solid ${ring.colour}`, background: "#fff" }} />
+        This school
+      </p>
+      {spec.note && <p className="mt-1.5 text-amber-700 dark:text-amber-400">{spec.note}</p>}
+    </div>
+  );
+}
+
+function TeacherDenseLegend({ spec }: { spec: TeacherMapSpec }) {
+  const gradient = legendGradient(spec);
+  const text = [spec.legend, spec.sizeLegend, spec.note].filter(Boolean).join(" · ");
+  return (
+    <p data-teacher-map-key="" className="flex min-w-0 items-center gap-1.5 rounded bg-white/85 px-1.5 py-0.5 text-[10px] leading-snug text-neutral-600 dark:bg-neutral-950/85 dark:text-neutral-400">
+      {gradient && <span aria-hidden="true" className="inline-block h-[7px] w-7 shrink-0 rounded-full" style={{ background: gradient }} />}
+      <span>{text}</span>
+    </p>
+  );
+}
+
 type HoverInfo = { name: string; isTarget: boolean; lines: string[] };
 
 // The dense map's hover bar. Owns the hover state so that hovering re-renders only this
@@ -383,6 +430,7 @@ export default function AcademicMapView({
   untitledSizeLegend = false,
   forcedColourMode,
   changeValues,
+  teacherMap,
 }: {
   targetProfile: AcademicSchoolProfile;
   tickedProfiles: AcademicSchoolProfile[];
@@ -488,6 +536,11 @@ export default function AcademicMapView({
   // cannot disagree -- used instead of this map's own baseline-year % change. `format`
   // prints one for the tooltip; `label` says what it is ("% change since 2021/22").
   changeValues?: { byUrn: Record<string, number>; format: (v: number) => string; label: string };
+  // VicData 0.6.3 S2 (Teacher view only): the whole encoding from the caller -- each dot's
+  // size, colour figure and hover, the key's words, the own-school ring and hollow dots for
+  // no figure (src/lib/teacher-map.ts). When set it replaces this map's own colour modes,
+  // toggle, colour key / strip and caption; absent (the Data View), nothing here changes.
+  teacherMap?: TeacherMapSpec;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -694,6 +747,13 @@ export default function AcademicMapView({
     };
   }, [rowDataByUrn]);
 
+  // 0.6.3 S2: the dot sizes' range on the teacherMap's own sizes (the subject's entries).
+  const { teacherSizeMin, teacherSizeMax } = useMemo(() => {
+    if (!teacherMap) return { teacherSizeMin: minSize, teacherSizeMax: maxSize };
+    const sizes = withCoords.map((p) => teacherMap.dots[p.urn]?.size ?? rowDataByUrn.get(p.urn)?.size ?? null).filter((v): v is number => v !== null && v > 0);
+    return sizes.length ? { teacherSizeMin: Math.min(...sizes), teacherSizeMax: Math.max(...sizes) } : { teacherSizeMin: 1, teacherSizeMax: 1 };
+  }, [teacherMap, withCoords, rowDataByUrn, minSize, maxSize]);
+
   // A4: real rank, recomputed against whichever comparison set is currently active
   // (same "recompute against the live set" discipline round 2's own comparator
   // widening established) -- based on the same real headline value already driving
@@ -706,6 +766,12 @@ export default function AcademicMapView({
     [withCoords, rowDataByUrn, targetProfile.urn],
   );
   const rankByUrn = useMemo(() => new Map(rankedRows.map((r) => [r.urn, r.rank])), [rankedRows]);
+  // 0.6.3 S2: the Teacher view's fills and rank, over the schools actually plotted.
+  const teacherFills = useMemo(
+    () => (teacherMap ? teacherMapFills(teacherMap, withCoords.map((p) => p.urn), targetProfile.urn) : null),
+    [teacherMap, withCoords, targetProfile.urn],
+  );
+  const teacherRankKey = teacherFills?.rank ? `${teacherFills.rank.rank}/${teacherFills.rank.total}` : teacherFills ? "none" : null;
 
   // Held in a ref so a caller's fresh function each render doesn't re-fire the report.
   const onTargetRankRef = useRef(onTargetRank);
@@ -713,8 +779,15 @@ export default function AcademicMapView({
     onTargetRankRef.current = onTargetRank;
   }, [onTargetRank]);
   useEffect(() => {
+    if (teacherRankKey !== null) return;
     onTargetRankRef.current?.(targetRank !== null ? { rank: targetRank, total: rankTotal } : null);
-  }, [targetRank, rankTotal, targetProfile.urn]);
+  }, [targetRank, rankTotal, targetProfile.urn, teacherRankKey]);
+  // 0.6.3 S2: with a teacherMap, the rank is on its figure (the selected measure).
+  useEffect(() => {
+    if (teacherRankKey === null) return;
+    const [rank, total] = teacherRankKey === "none" ? [null, null] : teacherRankKey.split("/").map(Number);
+    onTargetRankRef.current?.(rank !== null && total !== null ? { rank, total } : null);
+  }, [teacherRankKey]);
 
   // LA/Region choropleth: real fetch, region + LA tiers together (both are cheap --
   // 9 real region rows, ~153 real LA rows nationally -- so both are fetched once
@@ -920,6 +993,33 @@ export default function AcademicMapView({
         const [lat, lng] = bngToLatLng(p.easting!, p.northing!);
         bounds.push([lat, lng]);
         const isTarget = p.urn === targetProfile.urn;
+        if (teacherMap && teacherFills) {
+          // 0.6.3 S2: the caller's encoding (src/lib/teacher-map.ts).
+          const dot = teacherMap.dots[p.urn];
+          const size = dot?.size ?? data.size;
+          const tRadius = size !== null && size > 0 ? radiusFor(size, teacherSizeMin, teacherSizeMax) : UNTICKED_RADIUS;
+          const fill = teacherFills.fill.get(p.urn) ?? null;
+          // The card's dots sit on the theme's own fill; fullscreen's on the light basemap.
+          const ground = dense ? teacherMap.theme : "light";
+          const ring = ownRing(ground);
+          const tLines = dot ? dot.lines : ["No published figure"];
+          const tMarker = L.circleMarker([lat, lng], {
+            radius: tRadius,
+            fillColor: fill ?? HOLLOW_DOT,
+            fillOpacity: fill ? 0.85 : 0,
+            color: isTarget ? ring.colour : fill ? dotOutline(ground) : HOLLOW_DOT,
+            weight: isTarget ? ring.weight : fill ? 1 : 1.75,
+          });
+          const tHtml = `<div style="font-size:12px"><strong>${escapeHtml(p.name)}${isTarget ? " (this school)" : ""}</strong>${tLines.length > 0 ? `<br/>${tLines.map(escapeHtml).join("<br/>")}` : ""}</div>`;
+          if (dense) {
+            tMarker.on("mouseover", () => setHoverInfoRef.current({ name: p.name, isTarget, lines: tLines.map(escapeHtml) })).on("mouseout", () => setHoverInfoRef.current(null));
+          } else {
+            tMarker.bindTooltip(tHtml, { direction: "top", offset: [0, -4] });
+          }
+          tMarker.addTo(group2);
+          if (isTarget) tMarker.bringToFront();
+          continue;
+        }
         const radius = data.size !== null && data.size > 0 ? radiusFor(data.size, minSize, maxSize) : UNTICKED_RADIUS;
 
         let colour = UNTICKED_COLOUR;
@@ -1001,7 +1101,7 @@ export default function AcademicMapView({
         mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
       }
     });
-  }, [mapReady, dense, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, changeMode, changeValues, changeMin, changeMax, accentHex, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup]);
+  }, [mapReady, dense, viewByArea, withCoords, rowDataByUrn, minSize, maxSize, minGrade, maxGrade, rankByUrn, rankTotal, effectiveColourMode, changeMode, changeValues, changeMin, changeMax, accentHex, familyId, familyLabel, subject, subjectLabel, stage, targetProfile.urn, targetProfile.easting, targetProfile.northing, targetProfile.establishmentTypeGroup, teacherMap, teacherFills, teacherSizeMin, teacherSizeMax]);
 
   // LA/Region choropleth: real min/max over the CURRENTLY SHOWN tier's own real
   // values -- same "computed once, shared" discipline as minGrade/maxGrade above,
@@ -1167,7 +1267,9 @@ export default function AcademicMapView({
   // handed up to be shown behind the panel's caption button rather than over the map;
   // without one it is printed on the map as before.
   const denseSizeText = subject ? `entries in ${subjectLabel ?? subject}` : familyId ? `entries in ${familyLabel ?? "this category"}` : sizeCaption;
-  const denseCaption = `Dot size: ${denseSizeText} · Colour: ${changeMode && changeValues ? changeValues.label : effectiveColourMode === "trend" ? "growth" : "grade band (darker = higher)"}`;
+  const denseCaption = teacherMap
+    ? [teacherMap.sizeLegend, teacherMap.legend, teacherMap.note].filter(Boolean).join(" · ")
+    : `Dot size: ${denseSizeText} · Colour: ${changeMode && changeValues ? changeValues.label : effectiveColourMode === "trend" ? "growth" : "grade band (darker = higher)"}`;
   useEffect(() => {
     if (dense) onCaption?.(denseCaption);
   }, [dense, denseCaption, onCaption]);
@@ -1249,7 +1351,7 @@ export default function AcademicMapView({
         {/* Grade band/Trends only means anything for individual school circles --
             hidden while the choropleth (always value-coloured, no separate trend
             concept fetched this round) has taken over the map. */}
-        {!dense && !viewByArea && gradeBandAvailable && !forcedColourMode && (
+        {!dense && !viewByArea && gradeBandAvailable && !forcedColourMode && !teacherMap && (
           <div className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
             <button
               type="button"
@@ -1274,7 +1376,10 @@ export default function AcademicMapView({
           explanatory paragraph. LA/Region choropleth: reuses the SAME GradeBandColourKey
           component while active, just scaled to the current tier's own real min-max --
           the same real colour language throughout, never a third scale. */}
-      {dense ? (
+      {teacherMap ? (
+        // 0.6.3 S2: the Teacher view's key is drawn with the size key (below), labelled.
+        !dense && <TeacherColourKey spec={teacherMap} />
+      ) : dense ? (
         // The wireframe's compact colour scale: a thin vertical strip on the right edge, no
         // title, no boxed labels -- the caption already says in words what colour means.
         // Same stops GradeBandColourKey uses, top = highest, so the strip, the dots and the
@@ -1359,7 +1464,9 @@ export default function AcademicMapView({
                 // bottom edge. One line only; if a narrow card truncates it, the full text
                 // is on hover.
                 <div className="absolute bottom-6 left-2 z-[1000] flex max-w-[calc(100%-4.5rem)] items-center gap-1.5">
-                  {!onCaption && (
+                  {teacherMap ? (
+                    <TeacherDenseLegend spec={teacherMap} />
+                  ) : !onCaption && (
                     <p title={caption} className="truncate whitespace-nowrap rounded bg-white/85 px-1.5 py-0.5 text-[10px] text-neutral-600 dark:bg-neutral-950/85 dark:text-neutral-400">
                       {caption}
                     </p>

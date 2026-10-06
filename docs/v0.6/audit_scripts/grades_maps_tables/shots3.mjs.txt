@@ -1,0 +1,76 @@
+// S5 screenshots on the s5g harness (the members' Teacher page on captured real data, b=br).
+//   node s5shots.mjs <outDir> <chromePort>
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+const [outDir, cport] = process.argv.slice(2);
+mkdirSync(outDir, { recursive: true });
+const profile = `/private/tmp/claude-501/g3shots-chrome-${cport}`;
+rmSync(profile, { recursive: true, force: true });
+const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", ["--headless=new", `--remote-debugging-port=${cport}`, `--user-data-dir=${profile}`, "--window-size=1400,1400", "--hide-scrollbars", "--force-color-profile=srgb", "--disable-gpu", "--font-render-hinting=none", "--no-first-run", "about:blank"], { stdio: "ignore" });
+const kill = () => { try { chrome.kill("SIGKILL"); } catch {} };
+process.on("exit", kill);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let ws, nextId = 1; const pending = new Map();
+for (let i = 0; i < 80; i++) { try { const pages = (await (await fetch(`http://127.0.0.1:${cport}/json/list`)).json()).filter((t) => t.type === "page"); if (pages.length) { ws = new WebSocket(pages[0].webSocketDebuggerUrl); break; } } catch {} await sleep(250); }
+await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
+ws.onmessage = (m) => { const msg = JSON.parse(m.data); if (msg.id && pending.has(msg.id)) { const { res, rej } = pending.get(msg.id); pending.delete(msg.id); msg.error ? rej(new Error(msg.error.message)) : res(msg.result); } };
+const send = (method, params = {}) => new Promise((res, rej) => { const id = nextId++; pending.set(id, { res, rej }); ws.send(JSON.stringify({ id, method, params })); });
+const ev = async (expr) => { const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? "eval"); return r.result.value; };
+const quiet = async () => { for (let i = 0; i < 60; i++) { await sleep(120); if (await ev("window.__inflight===0 && Date.now()-window.__last>500").catch(() => false)) break; } await ev(`new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 400))))`); };
+await send("Page.enable"); await send("Runtime.enable");
+await send("Network.setBlockedURLs", { urls: ["https://*", "*cartocdn*", "*openstreetmap*", "*tile*"] });
+
+const VIS = `[...document.querySelectorAll('main:not([hidden]) [data-panel-id]')].filter(p => p.offsetParent !== null)`;
+const report = [];
+async function shot({ name, q, focus, panel, rail, info, fullscreen, actions }, w, theme) {
+  await send("Emulation.setDeviceMetricsOverride", { width: w, height: w === 390 ? 844 : 1000, deviceScaleFactor: 2, mobile: false });
+  await send("Page.navigate", { url: `http://127.0.0.1:8988/g3/index.html?b=${process.env.B || "br"}&${q}&admin=0&theme=${theme}` });
+  for (let k = 0; k < 100; k++) { await sleep(150); if (await ev(`document.readyState === 'complete' && document.querySelectorAll('main:not([hidden]) [data-panel-id]').length >= 1`).catch(() => false)) break; }
+  await quiet();
+  if (focus) {
+    await ev(`(async () => { const sleep = (ms) => new Promise(r => setTimeout(r, ms)); const T = (e) => (e?.innerText || '').replace(/\\s+/g, ' ').trim(); const re = new RegExp(${JSON.stringify(focus)});
+      let b = [...document.querySelectorAll('main:not([hidden]) button')].find(x => x.offsetParent !== null && re.test(T(x)) && !/Open:|Full screen/.test(x.getAttribute('aria-label') || ''));
+      if (!b) { const m = [...document.querySelectorAll('main:not([hidden]) button[aria-label^="Focus subject"]')].find(x => x.offsetParent !== null); if (m) { m.click(); await sleep(300); b = [...document.querySelectorAll('[role=group][aria-label="Focus subject"] button')].find(x => re.test(T(x))); } }
+      if (b) b.click(); })()`);
+    await quiet();
+  }
+  // Phone: the tab holding the panel.
+  const tabs = await ev(`[...document.querySelectorAll('main:not([hidden]) [role=tab]')].filter(t => t.offsetParent !== null).length`);
+  for (let t = 0; t < tabs; t++) {
+    if (await ev(`${VIS}.some(p => p.dataset.panelId.includes(${JSON.stringify(panel)}))`)) break;
+    await ev(`[...document.querySelectorAll('main:not([hidden]) [role=tab]')].filter(t => t.offsetParent !== null)[${t}].click()`);
+    await quiet();
+  }
+  const P = `${VIS}.find(p => p.dataset.panelId.includes(${JSON.stringify(panel)}))`;
+  if (await ev(`(() => { const b = ${P}.querySelector('button[aria-label^="Open:"]'); if (b) { b.click(); return true; } return false; })()`)) await quiet();
+  if (rail) { await ev(`[...${P}.querySelectorAll('button[aria-label]')].find(b => b.getAttribute('aria-label') === ${JSON.stringify(rail)}).click()`); await quiet(); }
+  if (actions) { await ev(`(async () => { const sleep = (ms) => new Promise(r => setTimeout(r, ms)); const P = ${P}; ${actions} })()`); await quiet(); }
+  let infoText = null;
+  if (info) { await ev(`[...${P}.querySelectorAll('button[aria-label="Where this figure comes from"]')].filter(x => x.offsetParent !== null).pop().click()`); await quiet(); infoText = await ev(`(() => { const b = [...${P}.querySelectorAll('button[aria-label="Where this figure comes from"]')].filter(x => x.offsetParent !== null).pop(); return b.nextElementSibling?.innerText ?? null; })()`); }
+  const r = await ev(`(() => { const p = ${P}; p.scrollIntoView({ block: 'start' }); const r = p.getBoundingClientRect(); const pop = p.querySelector('button[aria-label="Where this figure comes from"]')?.nextElementSibling?.getBoundingClientRect(); const bottom = Math.max(r.bottom, pop ? pop.bottom : 0); return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: bottom - r.top }; })()`);
+  await quiet();
+  const pad = 12;
+  let s = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: Math.max(0, r.x - pad), y: Math.max(0, r.y - pad), width: Math.min(w, r.w + 2 * pad), height: r.h + 2 * pad, scale: 1 } });
+  writeFileSync(`${outDir}/${process.env.B || 'br'}-${name}-card-${w}-${theme}.png`, Buffer.from(s.data, "base64"));
+  const text = await ev(`${P}.innerText`);
+  let modal = null;
+  if (fullscreen) {
+    if (info) await ev(`[...${P}.querySelectorAll('button[aria-label="Where this figure comes from"]')].filter(x => x.offsetParent !== null).pop().click()`);
+    await ev(`${P}.querySelector('button[aria-label^="Full screen: "]').click()`);
+    await quiet();
+    modal = await ev(`(() => { const d = document.querySelector('[role="dialog"]'); return d ? d.innerText : null; })()`);
+    s = await send("Page.captureScreenshot", { format: "png" });
+    writeFileSync(`${outDir}/${process.env.B || 'br'}-${name}-fullscreen-${w}-${theme}.png`, Buffer.from(s.data, "base64"));
+  }
+  const errs = await ev(`JSON.stringify((window.__errs || []).filter(e => !/ResizeObserver/.test(e)))`);
+  report.push({ name, w, theme, infoHasNote: !!infoText && infoText.includes("Trends are measured from 2022/23"), fullscreenHasNote: modal === null ? null : modal.includes("Trends are measured from 2022/23"), text: text.slice(0, 900), info: infoText, modal: modal && modal.slice(0, 1500), errs });
+}
+const SHOTS = JSON.parse(require('node:fs').readFileSync(process.env.SHOTS, 'utf8'));
+for (const s of SHOTS) for (const w of process.env.W ? [Number(process.env.W)] : [1280, 390]) for (const theme of process.env.T ? [process.env.T] : ["light", "dark"]) {
+  try { await shot(s, w, theme); } catch (e) { report.push({ name: s.name, w, theme, error: String(e) }); }
+}
+writeFileSync(`${outDir}/report.json`, JSON.stringify(report, null, 1));
+console.log(JSON.stringify(report.map((r) => ({ n: r.name, w: r.w, t: r.theme, e: r.error || (r.errs !== "[]" ? r.errs : undefined) }))));
+kill(); process.exit(0);

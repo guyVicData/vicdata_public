@@ -142,6 +142,14 @@ export const TableIcon = (
   </Glyph>
 );
 
+// 0.6.3 S4: a year table's "Swap rows and columns" (years across <-> years down).
+export const TransposeIcon = (
+  <Glyph>
+    <path d="M4 7h11.5l-3-3" />
+    <path d="M16 13H4.5l3 3" />
+  </Glyph>
+);
+
 export const DonutIcon = (
   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
     <circle cx="10" cy="10" r="7.5" />

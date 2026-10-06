@@ -5,8 +5,11 @@
 // than being forced through the one-number-per-year panels every other measure uses:
 //
 //   Current   the distribution this year, each grade's share against England's share at the
-//             same grade (GradeDistribution). A span can be highlighted ad hoc with the
-//             same two clicks as Grade bands, and cleared; nothing is highlighted at first.
+//             same grade (GradeDistribution). 0.6.3 S1: a click selects one grade, a second
+//             widens to the range between them, a third starts again; Clear (or clicking the
+//             one selected grade) removes it. The selection IS the top bar's grade band
+//             (band:range, the page's `selection`), so Columns 2 and 3 follow it, and the
+//             summary is its answer line (src/lib/grade-selection.ts).
 //   Trend     this year's spread against an earlier year's, grade by grade (the FromYearMenu
 //             picks the earlier year) -- not a line, since there is no one number to plot.
 //   % change  each grade's own count, first year to latest, in grade order (YearTable with
@@ -17,9 +20,9 @@
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { ENTRIES_MEASURE, type PanelData, type PanelId } from "@/lib/teacher-view-panels";
-import { bestScale, inlineRangeLabel, rangeLabel, spanBetween, type GradeRange } from "@/lib/subject-grades";
+import { bandRate, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
+import { answerLine, englandShare, nextSelection, notRangeEndReason, rangeEndGrade, type Selection } from "@/lib/grade-selection";
 import { gradeCounts } from "@/lib/grade-spread";
-import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import type { FrameSetGrades, GradesFrame } from "@/lib/view-series/frames";
 import { useSubjectGradeGeography, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { ColumnPanels, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
@@ -43,6 +46,7 @@ export function GradeCountsPanels({
   source,
   controls,
   schoolSetGrades,
+  selection = null,
 }: {
   columnId: string;
   subjectLabel: string;
@@ -59,6 +63,10 @@ export function GradeCountsPanels({
   // 0.6.2 S3: the Compared-against set's grade rows, for a view of its own's "Add an average"
   // across schools (views=v2 only; built when asked).
   schoolSetGrades?: () => FrameSetGrades | null;
+  // 0.6.3 S1 (R-COUNTS-SELECTION): the page's grade selection -- band:range, read without a
+  // preset (savedSelection) -- on the focused subject's own scale, and how to change it.
+  // null = nothing to select on (no focused subject's scale).
+  selection?: { scale: string[]; range: GradeRange | null; onSelect: (next: Selection | null) => void } | null;
 }) {
   const [compareFrom, setCompareFrom] = useState<number | null>(null);
   const [changeFrom, setChangeFrom] = useState<number | null>(null);
@@ -71,23 +79,32 @@ export function GradeCountsPanels({
   const england = geo?.data?.national?.rows ?? [];
   // 0.6.1 S3d: the figures, from src/lib/grade-spread.ts (the renderer reads the same).
   const g = gradeCounts(ownRows, england, { compareFrom, changeFrom });
-  const { graded, latest, earlier, changeEarlier, cmpYear, chgYear, ownTotal, cmpTotal, rowsFor, englandLabel, modal } = g;
+  const { latest, earlier, changeEarlier, cmpYear, chgYear, ownTotal, cmpTotal, rowsFor, englandLabel, modal } = g;
 
-  // Current's ad-hoc highlight: the same two clicks as Grade bands, local to this view.
-  // 0.6.2 S2: on the 2023/24-on rows, as before the grade rows reached back to 2021/22 (see
-  // TeacherDashboard's focusScale).
-  const scale = bestScale(graded.filter((r) => r.period >= MODERN_GRADE_FROM).map((r) => r.grade));
-  const [pending, setPending] = useState<string | null>(null);
-  const [span, setSpan] = useState<{ top: string; bottom: string } | null>(null);
-  const range: GradeRange | null = pending ? { scale, top: pending, bottom: pending } : span ? { scale, ...span } : null;
+  // 0.6.3 S1: Current's selection is the page's (band:range), applied straight away: one
+  // click a grade, a second widens to the range, a third starts again, the same grade again
+  // clears. U / Fail / Unclassified can't be range ends (R-RANGE-ENDS-GRADED). The scale is
+  // the page's focusScale (the 2023/24-on rows, 0.6.2 S2).
+  const scale = selection?.scale ?? [];
+  const range: GradeRange | null = selection?.range ?? null;
+  const pending: string | null = null;
   const click = (grade: string) => {
-    if (pending) {
-      setSpan(spanBetween(scale, pending, grade));
-      setPending(null);
-    } else {
-      setPending(grade);
-    }
+    if (!selection) return;
+    const next = nextSelection(scale, range ? { top: range.top, bottom: range.bottom } : null, grade);
+    if (next !== "ignore") selection.onSelect(next);
   };
+  const clickable = (grade: string) => rangeEndGrade(scale, grade);
+  const single = !!range && range.top === range.bottom;
+  const clickTitle = (grade: string) =>
+    notRangeEndReason(scale, grade) ??
+    (!range ? `Select ${grade}` : single ? (grade === range.top ? `Clear ${grade}` : `Widen to ${spanLabel(range.top, grade)}`) : `Start again from ${grade}`);
+  const spanLabel = (a: string, b: string) => {
+    const ranked = scale.indexOf(a) <= scale.indexOf(b) ? { top: a, bottom: b } : { top: b, bottom: a };
+    return inlineRangeLabel(rangeLabel({ scale, ...ranked }));
+  };
+  // The answer line: the share of this year's graded entries inside the selection, with
+  // England's beside it where England publishes every grade drawn (R-ENGLAND-GRADED-ONLY).
+  const answer = range && latest !== null ? answerLine(range, bandRate(g.own, range), englandShare(england, latest, range, g.order)) : null;
 
   const yearText = latest === null ? "" : academicYearLabel(latest);
   const oneYearOnly = <PanelSummary>This subject has published grades for one year only; a second year is needed to compare.</PanelSummary>;
@@ -95,14 +112,18 @@ export function GradeCountsPanels({
   const current: PanelRender = {
     tag: `Grade counts ${yearText}`.trim(),
     question,
-    controls: (
+    controls: selection ? (
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[11.5px] text-[var(--muted)]">
-          {pending ? `From ${pending}: click the other end` : range ? `Highlighting ${inlineRangeLabel(rangeLabel(range))}` : "Click two grades to highlight a range"}
+          {!range
+            ? "Click a grade to compare it across subjects and schools"
+            : single
+              ? `Showing ${inlineRangeLabel(rangeLabel(range))}: click another grade to widen`
+              : `Showing ${inlineRangeLabel(rangeLabel(range))}: click a grade to start again`}
         </span>
-        {(range || pending) && <Pill label="Clear" onClick={() => { setPending(null); setSpan(null); }} />}
+        {range && <Pill label="Clear" onClick={() => selection.onSelect(null)} />}
       </div>
-    ),
+    ) : undefined,
     body: (fullscreen) =>
       ownTotal > 0 ? (
         // A long scale (Double Award's 17 pairs, IB Diploma's 22 points) scrolls in the card.
@@ -110,17 +131,32 @@ export function GradeCountsPanels({
         <>
         <ViewTitle />
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <GradeDistribution rows={rowsFor(false)} total={ownTotal} colour={colour} range={range} pending={pending} onGradeClick={click} benchLabel={englandLabel} fullscreen={fullscreen} />
+          <GradeDistribution
+            rows={rowsFor(false)}
+            total={ownTotal}
+            colour={colour}
+            range={range}
+            pending={pending}
+            {...(selection ? { onGradeClick: click, clickable, clickTitle } : {})}
+            benchLabel={englandLabel}
+            fullscreen={fullscreen}
+          />
         </div>
         </>
       ) : (
         <p className="text-sm text-[var(--muted)]">No published grades for {subjectLabel} yet.</p>
       ),
-    summary: modal ? (
+    // R-COUNTS-SELECTION: with a selection, its answer line ("Grade 9: 3% of entries (7) ·
+    // England 5%"); without one, the spread's mode as before.
+    summary: answer ? (
+      <PanelSummary>{answer}</PanelSummary>
+    ) : modal ? (
       <PanelSummary>
         {subjectLabel}&rsquo;s {ownTotal.toLocaleString()} graded entries in {yearText}: most at {modal} ({Math.round((g.modalCount / ownTotal) * 100)}%).
       </PanelSummary>
     ) : undefined,
+    // ...and on the card, shown without a click (the answer to the click just made).
+    ...(answer ? { visibleCaption: <span data-answer-line="">{answer}</span> } : {}),
     source: source(yearText),
     headline: ownTotal > 0 ? ownTotal.toLocaleString() : undefined,
   };
@@ -206,7 +242,7 @@ export function GradeCountsPanels({
     englandRows: england,
     colour,
     schoolSetGrades,
-    state: { compareFrom, changeFrom, highlight: { range, pending, onGradeClick: click } },
+    state: { compareFrom, changeFrom, highlight: selection ? { range, pending, onGradeClick: click, clickable, clickTitle } : { range: null, pending: null, onGradeClick: () => {}, clickable: () => false } },
   };
 
   return <ColumnPanels columnId={columnId} host="teacher.c1.counts" panels={panels} onPanelsChange={onPanelsChange} notes={notes} controls={controls} render={{ current: { ...current, frame }, trend: { ...trend, frame } }} />;

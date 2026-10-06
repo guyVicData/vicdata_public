@@ -15,7 +15,8 @@
 //
 // Colours come from the caller (greys in Current's order, the focus in the accent), so
 // the same subject is the same colour in every view.
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { Fragment, createContext, useContext, useState, type ReactNode } from "react";
+import { IconButton, TransposeIcon } from "./PanelIcons";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { countedValues, periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
 import {
@@ -28,6 +29,8 @@ import {
   signed,
 } from "@/lib/teacher-view-trend-styles";
 import { CentredOnTarget } from "./CentredOnTarget";
+import { ActiveViewContext } from "@/components/dashboard-config/plan";
+import { useTableLayoutStore, yearsLayoutFor, type YearsLayout } from "./tableLayout";
 import { TrendChart } from "./TrendChart";
 
 // D2's scale: an index, where 100 is "the same as the first year shown".
@@ -305,6 +308,7 @@ export function YearTable({
   highlight = true,
   colourChange = true,
   sortable,
+  years,
 }: {
   data: PanelData;
   measure: Measure;
@@ -343,7 +347,21 @@ export function YearTable({
   highlight?: boolean;
   colourChange?: boolean;
   sortable?: boolean;
+  // 0.6.3 S4: the view's own layout (the editor's "Years across / Years down"); absent =
+  // automatic (one or two rows open years down). The member's swap overrides it.
+  years?: YearsLayout;
 }) {
+  const layoutStore = useTableLayoutStore();
+  const viewId = useContext(ActiveViewContext);
+  const [localLayout, setLocalLayout] = useState<YearsLayout | null>(null);
+  const layoutKey = viewId ? `table:years:${viewId}` : null;
+  const memberLayout = layoutKey && layoutStore ? layoutStore.get(layoutKey) : localLayout;
+  const layout = yearsLayoutFor(memberLayout, years, data.series.length);
+  const swap = () => {
+    const next: YearsLayout = layout === "down" ? "across" : "down";
+    if (layoutKey && layoutStore) layoutStore.set(layoutKey, next);
+    else setLocalLayout(next);
+  };
   const lastSortIdx = data.periods.length - 1;
   const openingSort = (): { key: SortKey; dir: 1 | -1 } =>
     initialSort === "listed"
@@ -417,7 +435,107 @@ export function YearTable({
     </th>
   );
 
+  const changeCell = (r: (typeof rows)[number], dir: ReturnType<typeof directionOf>, extra = "") => (
+    <td className={`whitespace-nowrap ${pad} text-right leading-tight ${extra}`}>
+      {!percentKind ? (
+        // Points and rates: the difference alone (R-NUMBER-TYPE-HONESTY), never a %.
+        <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? measure.formatDelta(r.change.delta) : "—"}</span>
+      ) : changeEmphasis === "percent" ? (
+        <>
+          <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>
+            {r.change?.percent !== null && r.change?.percent !== undefined ? signed(Math.round(r.change.percent), (v) => `${v}%`) : "—"}
+          </span>
+          {r.change && <span className="block text-[9.5px] text-[var(--fg)] opacity-85">{measure.formatDelta(r.change.delta)}</span>}
+        </>
+      ) : (
+        <>
+          <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? measure.formatDelta(r.change.delta) : "—"}</span>
+          {r.change?.percent !== null && r.change?.percent !== undefined && (
+            <span className="block text-[9.5px] text-[var(--muted2)]">{signed(Math.round(r.change.percent), (v) => `${v}%`)}</span>
+          )}
+        </>
+      )}
+    </td>
+  );
+
+  // 0.6.3 S4: the swap, above the table on the card and in fullscreen (not in print).
+  const swapButton = (
+    <div className="flex shrink-0 justify-end print:hidden" data-table-swap="">
+      <IconButton label="Swap rows and columns" onClick={swap}>{TransposeIcon}</IconButton>
+    </div>
+  );
+
+  if (layout === "down") {
+    // Years down: one row per year -- every year, the card included -- then the change row
+    // (R-TREND-FROM-2223's span, as across) and the counts; the columns are the rows across
+    // would have drawn, in the same order. Wide sets scroll sideways inside the card.
+    return (
+      <div className="flex min-w-0 flex-col" data-years-layout="down">
+        {swapButton}
+        <div className="min-w-0 overflow-x-auto">
+          {/* Fixed layout: the columns share the width the card already has (long names
+              truncate, their full name on hover), so a table never widens its card. In
+              fullscreen, or past six columns, each keeps a readable minimum and scrolls. */}
+          <table
+            className={`w-full table-fixed border-collapse tabular-nums ${fullscreen ? "text-[13px]" : "text-[11.5px]"}`}
+            style={sorted.length > 6 ? { minWidth: `${4.5 + sorted.length * 5.5}rem` } : undefined}
+          >
+            <thead className="border-b border-[var(--panel-border2)]">
+              <tr>
+                <th className={`${fullscreen ? "w-24" : "w-[4.25rem]"} px-1.5 pb-1.5 text-left font-semibold`}>
+                  <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.02em] text-[var(--muted)]">Year</span>
+                </th>
+                {sorted.map((r) => {
+                  const focus = highlight && r.s.key === focusKey;
+                  return (
+                    <th key={r.s.key} className="px-1.5 pb-1.5 text-right font-semibold" style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.10)" } : undefined}>
+                      <span className="flex min-w-0 items-center justify-end gap-1.5">
+                        <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.s.colour }} />
+                        <span className={`truncate text-[11px] normal-case ${focus ? "text-[var(--fg)]" : "text-[var(--muted2)]"}`} title={r.s.label}>{r.s.label}</span>
+                      </span>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {periods.map((p, i) => (
+                <tr key={p} className="border-b border-[var(--panel-border)]">
+                  <td className="whitespace-nowrap px-1.5 py-[5px] text-left text-[var(--muted2)]">{academicYearLabel(p)}</td>
+                  {sorted.map((r) => {
+                    const focus = highlight && r.s.key === focusKey;
+                    return (
+                      <td key={r.s.key} className={`px-1.5 text-right ${focus ? "font-semibold" : "text-[var(--muted2)]"}`} style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.10)" } : undefined}>
+                        {r.s.values[i] === null ? "—" : measure.format(r.s.values[i]!)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+              {counts && (
+                <tr className="border-b border-[var(--panel-border)]">
+                  <td className="px-1.5 py-[5px] text-left text-[10px] uppercase tracking-[0.02em] text-[var(--muted)]">n</td>
+                  {sorted.map((r) => (
+                    <td key={r.s.key} className="px-1.5 text-right text-[var(--muted2)]">{counts[r.s.key] === null || counts[r.s.key] === undefined ? "—" : Math.round(counts[r.s.key]!).toLocaleString()}</td>
+                  ))}
+                </tr>
+              )}
+              {showChange && (
+                <tr className="border-t border-[var(--panel-border2)]">
+                  <td className="whitespace-nowrap px-1.5 py-[5px] text-left text-[10px] font-semibold uppercase tracking-[0.02em] text-[var(--muted)]">Change</td>
+                  {sorted.map((r) => <Fragment key={r.s.key}>{changeCell(r, colourChange ? directionOf(r.change?.delta ?? null) : "flat")}</Fragment>)}
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
   return (
+    <div className="flex min-w-0 flex-col" data-years-layout="across">
+    {swapButton}
     <table className={`w-full border-collapse tabular-nums ${fullscreen ? "text-[13px]" : leadingRank ? "text-[11px]" : "text-[11.5px]"}`}>
       <thead className="border-b border-[var(--panel-border2)]">
         <tr>
@@ -465,32 +583,12 @@ export function YearTable({
               {counts && (
                 <td className={`${pad} text-right text-[var(--muted2)]`}>{counts[r.s.key] === null || counts[r.s.key] === undefined ? "—" : Math.round(counts[r.s.key]!).toLocaleString()}</td>
               )}
-              {showChange && (
-              <td className={`whitespace-nowrap ${pad} text-right leading-tight`}>
-                {!percentKind ? (
-                  // Points and rates: the difference alone (R-NUMBER-TYPE-HONESTY), never a %.
-                  <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? measure.formatDelta(r.change.delta) : "—"}</span>
-                ) : changeEmphasis === "percent" ? (
-                  <>
-                    <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>
-                      {r.change?.percent !== null && r.change?.percent !== undefined ? signed(Math.round(r.change.percent), (v) => `${v}%`) : "—"}
-                    </span>
-                    {r.change && <span className="block text-[9.5px] text-[var(--fg)] opacity-85">{measure.formatDelta(r.change.delta)}</span>}
-                  </>
-                ) : (
-                  <>
-                    <span className={`block font-semibold ${DIRECTION_TEXT[dir]}`}>{r.change ? measure.formatDelta(r.change.delta) : "—"}</span>
-                    {r.change?.percent !== null && r.change?.percent !== undefined && (
-                      <span className="block text-[9.5px] text-[var(--muted2)]">{signed(Math.round(r.change.percent), (v) => `${v}%`)}</span>
-                    )}
-                  </>
-                )}
-              </td>
-              )}
+              {showChange && changeCell(r, dir)}
             </tr>
           );
         })}
       </tbody>
     </table>
+    </div>
   );
 }

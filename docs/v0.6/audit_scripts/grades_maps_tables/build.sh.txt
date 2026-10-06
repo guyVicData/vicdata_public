@@ -1,0 +1,7 @@
+#!/bin/zsh
+# build.sh <br|main>: CSS + bundle from that tree.
+S=/private/tmp/claude-501/-Users-guy-dev-club-iss/a30d04fc-7e5d-4a5e-9b33-e3c562b86fc1/scratchpad/g3
+R=$([ "$1" = main ] && echo /private/tmp/claude-501/-Users-guy-dev-club-iss/a30d04fc-7e5d-4a5e-9b33-e3c562b86fc1/scratchpad/main-tree || echo /Users/guy/dev/vicdata_public)
+cd $S && node css.mjs app-$1.css $R >/dev/null
+NODE_PATH=/Users/guy/dev/vicdata_public/node_modules npx -y esbuild@0.24.0 $S/harness.tsx --bundle --jsx=automatic --tsconfig=$R/tsconfig.json --alias:@/lib/supabase=$S/stubs/supabase.ts --alias:next/link=$S/stubs/link.tsx --alias:next/navigation=$S/stubs/navigation.ts --alias:next/dynamic=$S/stubs/dynamic.tsx --define:process.env.NODE_ENV=\"production\" --define:process.env.NEXT_PUBLIC_DASHBOARD_RENDERER=\"config\" --outfile=$S/bundle-$1.js --log-level=warning
+echo built $1

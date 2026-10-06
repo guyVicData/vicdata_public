@@ -21,6 +21,7 @@ import type { GradeRange } from "@/lib/subject-grades";
 import type { GradeCountRow } from "@/lib/grade-spread";
 import type { GeographyMetric, GeographyPayload } from "@/lib/teacher-view-geography";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
+import type { MapSeries, TeacherMapSpec } from "@/lib/teacher-map";
 
 // S3c: the geography comparison (the focused subject against its LA, region and England) as
 // the host already fetched it (useSubjectGeography) -- the frame never fetches. `own` is the
@@ -79,6 +80,9 @@ export type FrameMap = {
   allowed: boolean;
   onCaption?: (caption: string) => void;
   onTargetRank?: (info: { rank: number; total: number } | null) => void;
+  // 0.6.3 S2: the Teacher maps' encoding (src/lib/teacher-map.ts): the panel's per-school
+  // figures for a Trends map's change, Current's spec, and the set's own profiles.
+  teacher?: { series: MapSeries; current?: TeacherMapSpec; trend?: TeacherMapSpec; profiles?: AcademicSchoolProfile[] | null } | null;
 };
 
 export type FrameSubject = {
@@ -130,6 +134,9 @@ export type SubjectsFrame = {
   spaciousBars: boolean;
   categoryLabel?: string;
   compareAgainstLabel?: string;
+  // 0.6.3 S1: Context on a Grade counts selection -- Current's titles lead with it
+  // ("Share at grade 9, by subject in …").
+  titleLead?: string;
   changeScope: "all" | "individual";
   cardTrend?: "focusVsGroup";
   theme: "dark" | "light";
@@ -163,7 +170,8 @@ export type SubjectsFrame = {
   phase?: Phase;
   donut?: FrameDonut | null;
   geography?: FrameGeography | null;
-  trendMap?: (FrameMap & { subjectLabel: string }) | null;
+  // 0.6.3 S2: `title` -- the host's title for the map on Results' measure.
+  trendMap?: (FrameMap & { subjectLabel: string; title?: string }) | null;
   schoolGroup?: FrameSchoolGroup;
   schoolSet?: () => FrameSet | null;
   // 0.6.2 S3: the set's grade rows (null while they load, or with no set), built on demand.
@@ -258,7 +266,18 @@ export type ComparisonsFrame = {
   theme?: "dark" | "light";
   map?: FrameMap | null;
   state: FrameMemberState;
+  // 0.6.3 S1 (R-COUNTS-SELECTION): on Grade counts with a grade selected, Current's views
+  // are titled by the selection ("Share at grade 9, by school (10 nearest schools)").
+  titleLead?: string;
+  // 0.6.3 S1 (R-MIN-ENTRIES): schools publishing the subject below the small-entries rule,
+  // listed by the ranking as "too few entries" rather than a %. Current's frame only.
+  tooFew?: FrameSchool[];
 };
+
+/** 0.6.3 S1: Current's title on a Grade counts selection, every view (map included). */
+export function comparisonsLeadTitle(f: ComparisonsFrame): string | null {
+  return f.titleLead ? `${f.titleLead}, by school (${f.setLabel.toLowerCase()})` : null;
+}
 
 // S3d: Column 1 Results on Grade counts (GradeCountsPanels) -- the focused subject's own
 // per-grade rows, every year it has them, and England's (the host's own fetch, [] until it
@@ -276,7 +295,15 @@ export type GradesFrame = {
   state: {
     compareFrom: number | null;
     changeFrom: number | null;
-    highlight: { range: GradeRange | null; pending: string | null; onGradeClick: (grade: string) => void };
+    // 0.6.3 S1: the selection is the page's band:range (one click a grade, a second widens);
+    // `clickable` / `clickTitle` keep U / Fail / Unclassified from being range ends.
+    highlight: {
+      range: GradeRange | null;
+      pending: string | null;
+      onGradeClick: (grade: string) => void;
+      clickable?: (grade: string) => boolean;
+      clickTitle?: (grade: string) => string;
+    };
   };
 };
 

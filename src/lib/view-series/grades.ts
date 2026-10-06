@@ -148,6 +148,8 @@ export function buildGrades(spec: ViewSpec, f: GradesFrame): ViewSeries | null {
       range: highlight?.range ?? null,
       pending: highlight?.pending ?? null,
       ...(highlight ? { onGradeClick: highlight.onGradeClick } : {}),
+      ...(highlight?.clickable ? { clickable: highlight.clickable } : {}),
+      ...(highlight?.clickTitle ? { clickTitle: highlight.clickTitle } : {}),
       benchLabel: ticks ? ticks.label : england ? g.englandLabel : null,
       ...looks(look, rows, null),
       centred: null,

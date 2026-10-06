@@ -7,7 +7,7 @@ import { rankedComparisons } from "@/lib/teacher-view-comparisons";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { onChangeHalf, resolveCompare } from "./compare";
 import { compareLinesFor, type CompareLine } from "./compare-lines";
-import type { ComparisonsFrame } from "./frames";
+import { comparisonsLeadTitle, type ComparisonsFrame } from "./frames";
 import { averageOfShown, fitOn, orderRows, topTen } from "./looks";
 import type { ViewSeries } from "./series";
 
@@ -102,7 +102,7 @@ function currentBars(look: BarLook, f: ComparisonsFrame, allRows: boolean): View
     return {
       kind: "bar",
       heading: null,
-      title: `${f.titleOn}: ${f.targetName} against ${titleSet}'s average`,
+      title: comparisonsLeadTitle(f) ?? `${f.titleOn}: ${f.targetName} against ${titleSet}'s average`,
       leaf: {
         ...common,
         rows: [
@@ -120,7 +120,7 @@ function currentBars(look: BarLook, f: ComparisonsFrame, allRows: boolean): View
   return {
     kind: "bar",
     heading: null,
-    title: `${f.measure.id === "entries" ? "Entries" : "Results"} by school in ${titleSet}`,
+    title: comparisonsLeadTitle(f) ?? `${f.measure.id === "entries" ? "Entries" : "Results"} by school in ${titleSet}`,
     leaf: {
       ...common,
       // No benchmark marker: the other bars ARE the comparison; the school picked out.
@@ -167,6 +167,8 @@ function line(look: LineLook, f: ComparisonsFrame, compare: CompareSeries[], all
 function tableShape(look: TableLook) {
   return {
     ...(look.yearColumns && look.yearColumns !== "first-latest" ? { yearColumns: look.yearColumns } : {}),
+    // 0.6.3 S4: the view's own layout; absent = automatic.
+    ...(look.years ? { years: look.years } : {}),
     ...(look.extra && !look.extra.includes("change") ? { showChange: false } : {}),
     ...(look.extra?.includes("rank") && !look.leadingRank ? { rankColumn: "always" as const } : {}),
     ...(look.sort === "listed" || (look.sort === "change" && !look.leadingRank) ? { initialSort: look.sort } : {}),

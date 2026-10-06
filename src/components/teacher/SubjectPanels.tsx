@@ -15,6 +15,7 @@
 // computed for it. This component owns "how it looks" and nothing else.
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
+import { changeMapFrom, type MapSeries } from "@/lib/teacher-map";
 import {
   DIRECTION_ARROW,
   DIRECTION_WORD,
@@ -41,9 +42,10 @@ import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
-import { DIRECTION_COLOUR, FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
+import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { SelectionPrompt, withSelectionChip, type SelectionChipValue } from "./SelectionBits";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
@@ -99,6 +101,7 @@ export function SubjectPanels({
   notes,
   emptyText,
   note,
+  limitNote,
   changeScope = "all",
   theme = "dark",
   accentHex = null,
@@ -113,6 +116,9 @@ export function SubjectPanels({
   gradeBand,
   rankedViews = false,
   compareAgainstLabel,
+  prompt,
+  selectionChip = null,
+  titleLead,
   schoolGroup,
   schoolSet,
   schoolSetGrades,
@@ -177,6 +183,9 @@ export function SubjectPanels({
   // onward. Content round S11 moved it from under every panel's figure (printed three
   // times per column) into each panel's "i" popover, after the source it qualifies.
   note?: ReactNode;
+  // 0.6.3 S3: a limit said on the card itself, not only behind the "i" (e.g. A*-E on a
+  // BTEC focus: "A*–E applies to A levels; use a grade or band for this qualification").
+  limitNote?: string;
   // Round 8 §4: the Current panel's tag names its own column ("Results 2024/25",
   // "Context 2024/25") rather than the generic "Current", so a panel read on its own --
   // fullscreen, or printed -- still says which card it came from. Absent falls back to
@@ -258,6 +267,12 @@ export function SubjectPanels({
   // category ("Sciences & Maths"), "all subjects" or "the subjects you selected" -- for
   // the titles over Context's donut, bar chart, ranked list and table. Absent = no title.
   compareAgainstLabel?: string;
+  // 0.6.3 S1 (R-COUNTS-SELECTION), Context on Grade counts: before any grade is selected, the
+  // prompt instead of every view; with a selection, the chip on both panels ("Grade 9 · from
+  // your highlight") and Current's titles led by the selection ("Share at grade 9").
+  prompt?: string;
+  selectionChip?: SelectionChipValue | null;
+  titleLead?: string;
   // 0.6.1 S3c: what a view of its own's "Add an average" reads (the page's groups of
   // subjects, and its Compared against set), built on demand. Read only under views=v2.
   schoolGroup?: FrameSchoolGroup;
@@ -273,6 +288,8 @@ export function SubjectPanels({
     subjectBucket: string | null;
     familyId: string | null;
     accentHex: string | null;
+    // 0.6.3 S2: the focused subject at each school in the set, on Results' measure.
+    series?: MapSeries | null;
   };
 }) {
   // Current panel rework round 1: Context (rankedViews) opens on its bar chart.
@@ -507,7 +524,9 @@ export function SubjectPanels({
         ? `Entries at ${inlineRangeLabel(donutShare.label)} as a proportion of graded entries in ${compareAgainstLabel}`
         : `Entries in ${focusedSubject?.label ?? "this subject"} as a proportion of ${compareAgainstLabel}`
       : effectiveView === "bar" || effectiveView === "list" || effectiveView === "table"
-        ? `${scopeNounCurrent} by subject in ${compareAgainstLabel}`
+        ? titleLead
+          ? `${titleLead}, by subject in ${compareAgainstLabel}`
+          : `${scopeNounCurrent} by subject in ${compareAgainstLabel}`
         : null;
 
   const current: PanelRender = {
@@ -747,6 +766,13 @@ export function SubjectPanels({
   // R-TREND-FROM-2223: the sentence, its direction word and the group's clause are measured
   // over the statement span (2022/23 on, where the chart draws 2021/22).
   const trendSpan = statementSpan(trendData);
+  // 0.6.3 S2: the Trend map follows Results' measure over this panel's own span (from
+  // 2022/23 on a graded measure): each school's change, diverging and centred on zero.
+  const trendMapSpec = trendMap?.series ? changeMapFrom(trendMap.series, trendSpan.periods, "absolute", (v) => changeOver(v)?.delta ?? null) : null;
+  const trendMapProfiles = trendMap?.series && trendMap.profiles ? trendMap.profiles.filter((p) => trendMap.series!.schools.some((sc) => sc.urn === p.urn)) : trendMap?.profiles ?? null;
+  const trendMapTitle = trendMap?.series
+    ? `Change in ${trendMap.subjectLabel} ${trendMap.series.result.noun} since ${trendSpan.periods.length ? academicYearLabel(trendSpan.periods[0]) : "the first year"}, by school`
+    : `${trendMap?.subjectLabel ?? ""} at each comparator school, on the map`;
   const trendSaid = trendSentence({
     // A plural subject name takes a bare possessive -- "Classics's" reads as a typo.
     subjectClause: `${focusLabel}${focusLabel.endsWith("s") ? "'" : "'s"} ${measure.noun}`,
@@ -839,9 +865,9 @@ export function SubjectPanels({
         <div className="flex min-h-0 flex-1 flex-col print:hidden">
           {/* What the map plots: the focused subject at each comparator school (the map's
               own Grade band / Trends toggle picks the colour), not a change figure. */}
-          <ViewTitle>{trendMap.subjectLabel} at each comparator school, on the map</ViewTitle>
+          <ViewTitle>{trendMapTitle}</ViewTitle>
           <RankingsMap
-            profiles={trendMap.profiles}
+            profiles={trendMapProfiles}
             targetUrn={trendMap.targetUrn}
             stage={trendMap.stage}
             heightClass={fullscreen ? "min-h-[22rem] flex-1" : "min-h-[10rem] flex-1"}
@@ -852,6 +878,7 @@ export function SubjectPanels({
             dense={!fullscreen}
             accentHex={trendMap.accentHex}
             untitledSizeLegend
+            {...(trendMapSpec ? { teacherMap: trendMapSpec } : {})}
           />
         </div>
       ) : trendView === "table" ? (
@@ -1067,6 +1094,7 @@ export function SubjectPanels({
     spaciousBars,
     categoryLabel,
     compareAgainstLabel,
+    ...(titleLead ? { titleLead } : {}),
     changeScope,
     cardTrend,
     theme,
@@ -1092,6 +1120,7 @@ export function SubjectPanels({
           accentHex: trendMap.accentHex,
           allowed: true,
           subjectLabel: trendMap.subjectLabel,
+          ...(trendMap.series && trendMapSpec ? { teacher: { series: trendMap.series, trend: trendMapSpec, profiles: trendMapProfiles }, title: trendMapTitle } : {}),
         }
       : null,
     schoolGroup,
@@ -1114,7 +1143,7 @@ export function SubjectPanels({
       // Title over Current's views (bar chart and table), only when there is a comparison
       // within the category -- a lone subject has nothing to name. Not over the number
       // tiles, whose rank tile already names the category.
-      render={{
+      render={prompt ? { current: promptPanel(current, prompt), trend: promptPanel(trend, prompt) } : limitNote ? { current: { ...current, visibleCaption: limitNote, frame: currentFrame }, trend: { ...trend, visibleCaption: limitNote, frame } } : {
         current:
           categoryLabel && currentSubjects.length > 1 && effectiveView !== "tiles" && effectiveView !== "grades"
             ? {
@@ -1127,13 +1156,20 @@ export function SubjectPanels({
                     {current.body(fullscreen)}
                   </>
                 ),
+                controls: withSelectionChip(current.controls, selectionChip),
                 frame: currentFrame,
               }
-            : { ...current, frame: currentFrame },
-        trend: { ...trend, frame },
+            : { ...current, controls: withSelectionChip(current.controls, selectionChip), frame: currentFrame },
+        trend: { ...trend, controls: withSelectionChip(trend.controls, selectionChip), frame },
       }}
     />
   );
+}
+
+// 0.6.3 S1: a panel waiting for a grade selection keeps its tag and question; every view
+// gives way to the prompt (no frame, so both drawing paths draw it).
+function promptPanel(p: PanelRender, text: string): PanelRender {
+  return { tag: p.tag, question: p.question, body: () => <SelectionPrompt text={text} /> };
 }
 
 // Trend map/legend round Part 1: the fullscreen rail's "Subjects shown" list. Each row is

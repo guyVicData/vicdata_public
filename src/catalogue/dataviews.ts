@@ -437,7 +437,7 @@ export const DATAVIEWS: Dataview[] = [
     label: "Map",
     railIcon: "MapPinIcon",
     resultsMeasures: SUBJECT_PANELS_RESULTS,
-    measures: [...POINTS, ...BANDS],
+    measures: [...POINTS, ...THRESHOLD, ...BANDS],
     supports: {
       data: ["academic.results"],
       results: RATE_RESULTS,
@@ -449,15 +449,15 @@ export const DATAVIEWS: Dataview[] = [
       viewType: "map",
     },
     params: ["mapRank"],
-    titleTemplate: "[subject] at each comparator school, on the map",
+    titleTemplate: "Change in [subject] [measure] since [year], by school",
     requires: "Needs a focus subject with a map chip and the school's location; falls back to Chart when the focus loses its chip.",
     renderer: "RD-RANKINGS-MAP",
     host: c1res("trend", "Map"),
     audience: ["subject-level", "academic", "market"],
     ...live,
     origin: "Teacher view round 7 (map in Trends)",
-    rules: ["R-IGCSE-EXCL", "R-POINTS-SAME-QUAL"],
-    note: "Placement mismatch M4: sits in Column 1 Trends but compares a school set and shows one year (the map's own toggle). Declared honestly as schools / single, so the seeded Column 1 Trends panel does not match it.",
+    rules: ["R-IGCSE-EXCL", "R-POINTS-SAME-QUAL", "R-MAP-ENCODING"],
+    note: "Placement mismatch M4: sits in Column 1 Trends but compares a school set. Declared as schools / single, so the seeded Column 1 Trends panel does not match it. 0.6.3 S2: no own toggle any more; each school's change in Results' selected measure over the panel's span, diverging (R-MAP-ENCODING).",
   },
   {
     id: "DV-C1-RES-TR-GEO-CHART",
@@ -649,7 +649,7 @@ export const DATAVIEWS: Dataview[] = [
     ...live,
     origin: "Current panel rework round 1 (Column 1's VerticalBars moved to Context)",
     rules: ["R-QUAL-FAMILY-MATCH", "R-KS5-ASAEA-EXCL", "R-POINTS-SAME-QUAL", "R-POINTS-WEIGHTED", "R-MEASURE-FALLBACK"],
-    note: "Default Context Current view. On Grade counts / bands without a range the host shows points (R-MEASURE-FALLBACK, mismatch M6).",
+    note: "Default Context Current view. On Grade bands without a range the host shows points (R-MEASURE-FALLBACK, mismatch M6); on Grade counts it follows the selected grade or prompts for one (R-COUNTS-SELECTION).",
   },
   {
     id: "DV-C2-CUR-LIST",
@@ -890,7 +890,7 @@ export const DATAVIEWS: Dataview[] = [
     variants: { comparator: ["schools"] },
     label: "Map",
     railIcon: "MapPinIcon",
-    measures: [...ENTRIES, ...POINTS, ...HEADLINE],
+    measures: [...ENTRIES, ...POINTS, ...THRESHOLD, ...BANDS, ...HEADLINE],
     supports: {
       data: BOTH_DATA,
       results: RATE_RESULTS,
@@ -910,8 +910,8 @@ export const DATAVIEWS: Dataview[] = [
     audience: COMPARISONS,
     ...live,
     origin: "Teacher view round 7 (Comparisons map)",
-    rules: ["R-IGCSE-EXCL", "R-RANKING-SAMPLE", "R-POINTS-SAME-QUAL", "R-MEASURE-FALLBACK"],
-    note: "Default Comparisons Current view. With no subject chip on Results the focus switches to the school's headline (mismatch M7).",
+    rules: ["R-IGCSE-EXCL", "R-RANKING-SAMPLE", "R-POINTS-SAME-QUAL", "R-MEASURE-FALLBACK", "R-MAP-ENCODING", "R-COUNTS-SELECTION"],
+    note: "Default Comparisons Current view. With no subject chip on Results the focus switches to the school's headline (mismatch M7). 0.6.3 S2: on Candidates, size = entries and no colour; on Results, colour = the selected measure (points, Grade 4+ / A*–E, a band or a Grade counts selection) by rank in the set (R-MAP-ENCODING), the panel's rank on the same figure.",
   },
   {
     id: "DV-C3-CUR-BAR",
@@ -1039,7 +1039,7 @@ export const DATAVIEWS: Dataview[] = [
     audience: COMPARISONS,
     ...live,
     origin: "Trends row merge round (Trend map / Change map labels)",
-    rules: ["R-RANKING-SAMPLE", "R-IGCSE-EXCL", "R-MEASURE-FALLBACK"],
+    rules: ["R-RANKING-SAMPLE", "R-IGCSE-EXCL", "R-MEASURE-FALLBACK", "R-MAP-ENCODING"],
   },
   {
     id: "DV-C3-TR-CHANGELIST",
@@ -1115,7 +1115,7 @@ export const DATAVIEWS: Dataview[] = [
     ...live,
     origin: "Comparisons change map colour scale round",
     note: "S3b: a count keeps the fixed ±% scale (forcedColourMode trend); points and rates colour by the absolute change on the set's own range (trend_absolute), keyed 'Change' (R-NUMBER-TYPE-HONESTY).",
-    rules: ["R-NUMBER-TYPE-HONESTY", "R-RANKING-SAMPLE", "R-IGCSE-EXCL", "R-MEASURE-FALLBACK"],
+    rules: ["R-NUMBER-TYPE-HONESTY", "R-RANKING-SAMPLE", "R-IGCSE-EXCL", "R-MEASURE-FALLBACK", "R-MAP-ENCODING"],
   },
 ];
 

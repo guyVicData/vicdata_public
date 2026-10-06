@@ -6,6 +6,7 @@ import type { Measure, PanelData } from "@/lib/teacher-view-panels";
 import type { AverageGrade, GradeRow } from "@/lib/grade-spread";
 import type { GradeRange } from "@/lib/subject-grades";
 import type { FrameMap, SortState } from "./frames";
+import type { TeacherMapSpec } from "@/lib/teacher-map";
 
 export type ChangeRowData = { key: string; label: string; colour: string; value: number | null };
 export type AverageLine = { value: number; label: string };
@@ -59,6 +60,7 @@ export type LeafSeries =
       highlight?: boolean;
       colourChange?: boolean;
       sortable?: boolean;
+      years?: "across" | "down";
       // CentredOnTarget's watch key (the list scrolls to the focused row); null = no scroll
       // box (Grade counts' change table, S3d).
       centred: string | null;
@@ -155,6 +157,8 @@ export type LeafSeries =
       forcedColourMode?: "accent" | "grade_band" | "trend" | "trend_absolute";
       changeValues?: { byUrn: Record<string, number>; format: (v: number) => string; label: string };
       untitledSizeLegend?: boolean;
+      // 0.6.3 S2: the Teacher maps' encoding (src/lib/teacher-map.ts).
+      teacherMap?: TeacherMapSpec;
     }
   // S3c: the geography comparison (GeographyView's own picture): its heading (an instance's
   // title replaces the words), then a note, the area table or the area chart.
@@ -180,6 +184,9 @@ export type LeafSeries =
       range: GradeRange | null;
       pending: string | null;
       onGradeClick?: (grade: string) => void;
+      // 0.6.3 S1: Grade counts' selection -- which grades are range ends, and each one's tooltip.
+      clickable?: (grade: string) => boolean;
+      clickTitle?: (grade: string) => string;
       benchLabel: string | null;
       show?: "counts";
       average?: AverageGrade;

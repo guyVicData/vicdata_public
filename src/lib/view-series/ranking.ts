@@ -12,7 +12,7 @@
 import type { RankingLook, ViewSpec } from "@/catalogue/viewspec";
 import { changeOf, ENTRIES_MEASURE, formatChange, rankByValue, type Measure } from "@/lib/teacher-view-panels";
 import { rankedComparisons } from "@/lib/teacher-view-comparisons";
-import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame, SeriesFrame } from "./frames";
+import { comparisonsLeadTitle, type CandidatesFrame, type ComparisonsFrame, type SubjectsFrame, type SeriesFrame } from "./frames";
 import type { RankColumnKey, RankRowData, SchoolRankRowData, ViewSeries } from "./series";
 import { currentHeading, currentRows, currentTitle } from "./subjects";
 
@@ -140,10 +140,28 @@ function schoolRanking(look: RankingLook, f: ComparisonsFrame, allRows: boolean)
     ...(want("n") ? { n: latestIdx >= 0 ? r.counts?.[latestIdx] ?? null : null } : {}),
     ...(want("bar") ? { share: shareOf(r.value, max) } : {}),
   }));
+  // R-MIN-ENTRIES: below the small-entries rule, a school is listed but not placed.
+  if (allRows) {
+    for (const s of f.tooFew ?? []) {
+      rows.push({
+        key: s.urn,
+        name: s.isTarget ? f.targetName : s.name,
+        rank: null,
+        value: null,
+        valueLabel: "too few entries",
+        distanceKm: s.distanceKm ?? null,
+        independent: s.independent ?? null,
+        isTarget: s.isTarget,
+        ...(want("change") ? { change: null } : {}),
+        ...(want("n") ? { n: null } : {}),
+        ...(want("bar") ? { share: null } : {}),
+      });
+    }
+  }
   return {
     kind: "ranking",
     heading: null,
-    title: `Schools ranked by ${f.titleOn} in the ${f.setLabel.toLowerCase()}`,
+    title: comparisonsLeadTitle(f) ?? `Schools ranked by ${f.titleOn} in the ${f.setLabel.toLowerCase()}`,
     leaf: {
       leaf: "schoolRanking",
       rows,

@@ -1,0 +1,51 @@
+// node dvwalk.mjs <out> <port>: the Data View map, both trees, every config, grade band and Trends.
+import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+const [out, cport] = process.argv.slice(2);
+mkdirSync(out, { recursive: true });
+const profile = `/private/tmp/claude-501/dv-chrome-${cport}`;
+rmSync(profile, { recursive: true, force: true });
+const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", ["--headless=new", `--remote-debugging-port=${cport}`, `--user-data-dir=${profile}`, "--window-size=1200,800", "--hide-scrollbars", "--force-color-profile=srgb", "--disable-gpu", "--font-render-hinting=none", "--no-first-run", "about:blank"], { stdio: "ignore" });
+const kill = () => { try { chrome.kill("SIGKILL"); } catch {} };
+process.on("exit", kill);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let ws, nextId = 1; const pending = new Map();
+for (let i = 0; i < 80; i++) { try { const pages = (await (await fetch(`http://127.0.0.1:${cport}/json/list`)).json()).filter((t) => t.type === "page"); if (pages.length) { ws = new WebSocket(pages[0].webSocketDebuggerUrl); break; } } catch {} await sleep(250); }
+await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
+ws.onmessage = (m) => { const msg = JSON.parse(m.data); if (msg.id && pending.has(msg.id)) { const { res, rej } = pending.get(msg.id); pending.delete(msg.id); msg.error ? rej(new Error(msg.error.message)) : res(msg.result); } };
+const send = (method, params = {}) => new Promise((res, rej) => { const id = nextId++; pending.set(id, { res, rej }); ws.send(JSON.stringify({ id, method, params })); });
+const ev = async (expr) => { const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? "eval"); return r.result.value; };
+await send("Page.enable"); await send("Runtime.enable");
+await send("Network.setBlockedURLs", { urls: ["https://*", "*cartocdn*", "*openstreetmap*", "*tile*"] });
+await send("Emulation.setDeviceMetricsOverride", { width: 1100, height: 720, deviceScaleFactor: 1, mobile: false });
+const CONFIGS = [];
+for (const [urn, phase] of [["137625", "ks4"], ["100053", "ks4"], ["117037", "ks5"], ["130432", "ks5"]]) {
+  for (const theme of ["light", "dark"]) {
+    CONFIGS.push({ urn, phase, theme, q: "" });
+    CONFIGS.push({ urn, phase, theme, q: phase === "ks4" ? "&family=humanities_social" : "&bucket=alevel" });
+    if (phase === "ks5") CONFIGS.push({ urn, phase, theme, q: "&bucket=btec_ocr" });
+  }
+}
+const report = [];
+for (const c of CONFIGS) {
+  for (const b of ["main", "br"]) {
+    const name = `${c.urn}-${c.phase}-${c.theme}${c.q.replace(/[&=]/g, "_")}`;
+    await send("Page.navigate", { url: `http://127.0.0.1:8988/g3/dv/index.html?b=${b}&urn=${c.urn}&phase=${c.phase}&theme=${c.theme}${c.q}` });
+    await sleep(1800);
+    for (const mode of ["grade", "trends"]) {
+      if (mode === "trends") { await ev(`(() => { const t = [...document.querySelectorAll('button')].find(x => x.innerText.trim() === 'Trends'); if (t) t.click(); return !!t; })()`); await sleep(900); }
+      // Basemap tiles are blocked but sometimes paint a placeholder: hidden in both trees.
+      await ev(`document.querySelectorAll('.leaflet-tile-pane').forEach(e => e.style.visibility = 'hidden')`);
+      await sleep(100);
+      const s = await send("Page.captureScreenshot", { format: "png" });
+      writeFileSync(`${out}/${b}__${name}__${mode}.png`, Buffer.from(s.data, "base64"));
+      // Every marker's tooltip text and style, from Leaflet's own layers.
+      const dom = await ev(`JSON.stringify([...document.querySelectorAll('path.leaflet-interactive')].map(p => [p.getAttribute('d'), p.getAttribute('fill'), p.getAttribute('stroke'), p.getAttribute('stroke-width')]))`);
+      writeFileSync(`${out}/${b}__${name}__${mode}.json`, dom);
+    }
+    report.push({ b, name, errs: await ev("JSON.stringify(window.__errs)") });
+  }
+}
+writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 1));
+console.log(report.length, "runs");
+kill(); process.exit(0);

@@ -87,7 +87,12 @@ export function buildSubjects(spec: ViewSpec, f: SubjectsFrame, ctx: BuildContex
 // "Results in {category}" over Results' Current bars and table (SubjectPanels' wrapper).
 export const currentHeading = (f: SubjectsFrame) =>
   f.host === "teacher.c1.results" && f.categoryLabel && f.subjects.length > 1 ? [f.measure.id === "entries" ? "Entries" : "Results", " in ", f.categoryLabel] : null;
-export const currentTitle = (f: SubjectsFrame) => (f.compareAgainstLabel ? `${f.measure.id === "entries" ? "Entries" : "Results"} by subject in ${f.compareAgainstLabel}` : null);
+export const currentTitle = (f: SubjectsFrame) =>
+  f.compareAgainstLabel
+    ? f.titleLead
+      ? `${f.titleLead}, by subject in ${f.compareAgainstLabel}`
+      : `${f.measure.id === "entries" ? "Entries" : "Results"} by subject in ${f.compareAgainstLabel}`
+    : null;
 
 function currentBars(look: BarLook, f: SubjectsFrame, compare: CompareSeries[], allRows: boolean): ViewSeries | null {
   if (f.currentBlocked || f.subjects.length === 0) return null;
@@ -268,6 +273,8 @@ function line(spec: ViewSpec, look: LineLook, f: SubjectsFrame, compare: Compare
 export function tableLook(look: TableLook) {
   return {
     ...(look.yearColumns && look.yearColumns !== "first-latest" ? { yearColumns: look.yearColumns } : {}),
+    // 0.6.3 S4: the view's own layout; absent = automatic.
+    ...(look.years ? { years: look.years } : {}),
     ...(look.extra && !look.extra.includes("change") ? { showChange: false } : {}),
     ...(look.extra?.includes("rank") && !look.leadingRank ? { rankColumn: "always" as const } : {}),
     // The hosts' year tables open in rank (= latest year) order; "listed" / "change" open

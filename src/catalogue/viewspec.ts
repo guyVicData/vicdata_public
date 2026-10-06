@@ -146,6 +146,9 @@ export type TableLook = {
   value?: boolean;
   // [ext] which half of a count's Change cell leads (the geography table: the %).
   changeLeads?: "value" | "percent";
+  // 0.6.3 S4: "across" (a row per subject or school, years as columns) or "down" (a row per
+  // year, every year, then the change). Absent: automatic -- one or two rows open down.
+  years?: "across" | "down";
 };
 
 export type RankingLook = {

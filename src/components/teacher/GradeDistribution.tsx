@@ -38,6 +38,8 @@ export function GradeDistribution({
   shade = null,
   shadeLabel = null,
   values = true,
+  clickable,
+  clickTitle,
 }: {
   rows: GradeRow[];
   // The school's graded entries, for each row's share.
@@ -56,6 +58,12 @@ export function GradeDistribution({
   shade?: GradeRange | null;
   shadeLabel?: string | null;
   values?: boolean;
+  // 0.6.3 S1 (Grade counts' selection): which grades can be clicked, and each grade's
+  // tooltip. A grade that can't be a range end (U / Fail / Unclassified) stays visible and
+  // focusable with its tooltip saying why, but a click does nothing. Absent = every grade
+  // clickable with the two-click range wording, as before (Grade bands' Grades view).
+  clickable?: (grade: string) => boolean;
+  clickTitle?: (grade: string) => string;
 }) {
   const pct = (n: number, of: number) => (of > 0 ? (n / of) * 100 : 0);
   // Counts: every bar, tick and earlier-year line in entries (England's share as the entries
@@ -92,6 +100,7 @@ export function GradeDistribution({
       <ul className={`flex flex-col ${fullscreen ? "gap-1.5" : "gap-1"}`} aria-label="Grades">
         {rows.map((r) => {
           const selected = range ? inRange(range, r.grade) : false;
+          const canClick = !!onGradeClick && (clickable ? clickable(r.grade) : true);
           const shaded = shade ? inRange(shade, r.grade) : false;
           const own = ownOf(r);
           const cmp = cmpOf(r);
@@ -100,15 +109,16 @@ export function GradeDistribution({
             <li key={r.grade} className={`flex items-center gap-2 rounded-md px-1 ${selected ? "bg-[rgba(var(--accent-rgb,120,120,120),0.14)]" : shaded ? "bg-[rgba(var(--accent-rgb,120,120,120),0.08)]" : ""}`}>
               <button
                 type="button"
-                onClick={onGradeClick ? () => onGradeClick(r.grade) : undefined}
+                onClick={canClick ? () => onGradeClick!(r.grade) : undefined}
                 disabled={!onGradeClick}
-                aria-pressed={onGradeClick ? selected : undefined}
-                title={onGradeClick ? (pending ? `End the range at ${r.grade}` : `Start a range at ${r.grade}`) : undefined}
+                aria-disabled={onGradeClick && !canClick ? true : undefined}
+                aria-pressed={canClick ? selected : undefined}
+                title={onGradeClick ? (clickTitle ? clickTitle(r.grade) : pending ? `End the range at ${r.grade}` : `Start a range at ${r.grade}`) : undefined}
                 className={[
                   "shrink-0 truncate rounded-[6px] border px-1.5 py-0.5 text-left text-[11px] font-semibold tabular-nums",
                   fullscreen ? "w-44" : "w-[4.5rem]",
                   pending === r.grade ? "border-[var(--accent,var(--fg))] text-[var(--fg)]" : selected ? "border-transparent text-[var(--fg)]" : "border-transparent text-[var(--muted)]",
-                  onGradeClick ? "hover:border-[var(--panel-border2)]" : "cursor-default",
+                  canClick ? "hover:border-[var(--panel-border2)]" : onGradeClick ? "cursor-not-allowed" : "cursor-default",
                 ].join(" ")}
               >
                 {r.grade}

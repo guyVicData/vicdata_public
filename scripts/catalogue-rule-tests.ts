@@ -99,6 +99,114 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt(v) };
   },
 
+  // R-COUNTS-SELECTION: The Chase 137625 GCSE History 2024/25 -- a single grade 9, then 7-9,
+  // through the selection's own answer line; 7-9 must equal Grade bands' 34.1% / 26.6%.
+  async countsSelection({ adv, ref, sg, agg }) {
+    const gs = await import("../src/lib/grade-selection");
+    const urn = "137625";
+    const qual = "GCSE (9-1) Full Course";
+    const own = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4")).byUrn.get(urn)?.gradeDistribution ?? []).filter(
+      (r) => r.subject === "History" && r.period === 2024 && r.qualificationType === qual,
+    );
+    const eng = (
+      await ref.lookupAcademicSubjectGradeGeography({ ksStage: "ks4", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], subject: "History", qualificationType: qual })
+    ).map((r) => ({ period: r.period, grade: r.grade, entries: Number(r.entries_total) }));
+    const one = gs.nextSelection(sg.GCSE_SCALE, null, "9");
+    const widened = one && one !== "ignore" ? gs.nextSelection(sg.GCSE_SCALE, one, "7") : null;
+    if (!one || one === "ignore" || !widened || widened === "ignore") return { pass: false, detail: "selection steps failed" };
+    const line = (sel: { top: string; bottom: string }) => {
+      const range = { scale: sg.GCSE_SCALE, ...sel };
+      const r = sg.bandRate(own, range);
+      return gs.answerLine(range, r ? { met: r.met, entries: r.entries } : null, gs.englandShare(eng, 2024, range, sg.GCSE_SCALE.filter((g) => own.some((o) => o.grade === g))));
+    };
+    const l9 = line(one);
+    const l79 = line(widened);
+    const pass = !!l9 && /^Grade 9: \d+% of entries \(\d+\)/.test(l9) && !!l79 && /^Grades 7–9: 34% of entries \(\d+\) · England 27%$/.test(l79);
+    return { pass, detail: fmt({ grade9: l9, grades79: l79 }) };
+  },
+
+  // R-ALEVEL-STAR (0.6.3 S3): King's Worcester 117037 A level Mathematics -- A* in every year
+  // 2021/22-2024/25 (the raw "*" rows read as A*), and England's A* share in every year too.
+  async aLevelStar({ adv, ref, sg, agg }) {
+    const gr = await import("../src/lib/grade-rows");
+    const urn = "117037";
+    const qual = "GCE A level";
+    const own = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks5", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter(
+      (r) => r.subject === "Mathematics" && r.qualificationType === qual,
+    );
+    const eng = gr.normaliseKs5AreaRows(
+      (await ref.lookupAcademicSubjectGradeGeography({ ksStage: "ks5", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], subject: "Mathematics", qualificationType: qual })).map((r) => ({
+        period: r.period,
+        grade: r.grade,
+        entries: Number(r.entries_total),
+      })),
+      qual,
+    );
+    const aStar = { scale: sg.GRADE_SCALES[2], top: "A*", bottom: "A*" };
+    const v: Record<string, unknown> = {};
+    let pass = !own.some((r) => r.grade === "*");
+    for (const p of [2021, 2022, 2023, 2024]) {
+      const o = sg.bandRate(own.filter((r) => r.period === p), aStar);
+      const e = sg.bandRate(eng.filter((r) => r.period === p), aStar);
+      v[`own${p}`] = o ? `${o.met}/${o.entries}` : null;
+      v[`eng${p}`] = round(e?.rate);
+      pass = pass && !!o && o.met > 0 && !!e && e.rate > 10;
+    }
+    return { pass, detail: fmt(v) };
+  },
+
+  // R-HISTORIC-GRADE-LABELS on England (0.6.3 S3): Croydon College 130432 BTEC Business,
+  // Distinction* in every year for the school and England alike.
+  async btecDistinctionStar({ adv, ref, sg, agg }) {
+    const gr = await import("../src/lib/grade-rows");
+    const urn = "130432";
+    const qual = "BTEC National Extended Certificate L3 - Band F - P-D*";
+    const own = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks5", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter(
+      (r) => r.subject === "Business Studies" && r.qualificationType === qual,
+    );
+    const engRaw = (await ref.lookupAcademicSubjectGradeGeography({ ksStage: "ks5", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], subject: "Business Studies", qualificationType: qual })).map((r) => ({
+      period: r.period,
+      grade: r.grade,
+      entries: Number(r.entries_total),
+    }));
+    const eng = gr.normaliseKs5AreaRows(engRaw, qual);
+    const scale = sg.scaleForQualification(qual, own.map((r) => r.grade));
+    const dStar = { scale, top: "Distinction*", bottom: "Distinction*" };
+    const v: Record<string, unknown> = { scale: scale.slice(0, 2).join("/"), engRawCodes: [...new Set(engRaw.filter((r) => r.period <= 2022).map((r) => r.grade))].join(" ") };
+    let pass = scale[0] === "Distinction*";
+    for (const p of [2021, 2022, 2023, 2024]) {
+      const o = sg.bandRate(own.filter((r) => r.period === p), dStar);
+      const e = sg.bandRate(eng.filter((r) => r.period === p), dStar);
+      v[`own${p}`] = o ? `${o.met}/${o.entries}` : null;
+      v[`eng${p}`] = round(e?.rate);
+      pass = pass && !!e;
+    }
+    return { pass, detail: fmt(v) };
+  },
+
+  // R-SCALE-FROM-QUAL (0.6.3 S3): Sevenoaks 118952 IB Higher level Biology -- grade 7 and
+  // 6-7 on the IB 7-1 scale (never GCSE's), every year.
+  async ibSevenAndSixSeven({ adv, sg }) {
+    const urn = "118952";
+    const qual = "IBO Higher level component";
+    const own = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks5", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter(
+      (r) => r.subject === "Biology" && r.qualificationType === qual,
+    );
+    const scale = sg.scaleForQualification(qual, own.filter((r) => r.period >= 2023).map((r) => r.grade));
+    const seven = { scale, top: "7", bottom: "7" };
+    const sixSeven = { scale, top: "7", bottom: "6" };
+    const v: Record<string, unknown> = { ibScale: scale === sg.GRADE_SCALES[3] };
+    let pass = scale === sg.GRADE_SCALES[3];
+    for (const p of [2021, 2022, 2023, 2024]) {
+      const rows = own.filter((r) => r.period === p);
+      const a = sg.bandRate(rows, seven);
+      const b = sg.bandRate(rows, sixSeven);
+      v[`y${p}`] = a && b ? `${round(a.rate)}/${round(b.rate)}` : null;
+      pass = pass && !!a && !!b && b.rate >= a.rate;
+    }
+    return { pass, detail: fmt(v) };
+  },
+
   // R-KS5-ASAEA-EXCL: 102239 2024/25 'All subjects' entries group total 591 (school KS5 total 1,252).
   // Reproduces page.tsx groupRows (exact-qualification rows without AS/AEA) on the lib's rows.
   async asAeaGroupTotal({ adv, qb }) {
@@ -289,7 +397,8 @@ const RUNNERS: Record<string, Runner> = {
 
   // R-HISTORIC-GRADE-LABELS: Croydon College 130432 Business Studies, BTEC Extended Certificate,
   // 2021/22 in its modern words on the vocational scale; King's Worcester 117037 A-level Maths
-  // 2021/22 keeps its "*" rows on the A-level scale. Through the dashboard's read.
+  // 2021/22 keeps its "*" rows on the A-level scale, read as A* since 0.6.3 (R-ALEVEL-STAR).
+  // Through the dashboard's read.
   async historicGradeLabels({ adv, sg }) {
     const read = async (urn: string) => (await adv.fetchSubjectLevelDataForSchools([urn], "ks5", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? [];
     const btec = (await read("130432")).filter((r) => r.subject === "Business Studies" && r.period === 2021 && r.qualificationType.startsWith("BTEC National Extended Certificate"));
@@ -303,12 +412,14 @@ const RUNNERS: Record<string, Runner> = {
       covid: at(btec, "COVID result"),
       btecScale: btecScale[0] ?? "none",
       mathsStarRows: maths.filter((r) => r.grade === "*").length,
+      // 0.6.3 S3 (R-ALEVEL-STAR): the "*" rows are A* now, on the same A-level scale.
+      mathsAStar: at(maths, "A*"),
       mathsAtoE: round(mathsRate?.rate ?? null),
       mathsGraded: mathsRate?.entries ?? null,
     };
     const pass =
       v.btec === "Distinction*:2 Distinction:9 Merit:31 Pass:9" && v.btecShortCodes === 0 && v.covid === 44 && v.btecScale === "Distinction*" && sg.NON_GRADE_VALUES.has("COVID result") &&
-      v.mathsStarRows > 0 && v.mathsAtoE === 100 && v.mathsGraded === 45;
+      v.mathsStarRows === 0 && v.mathsAStar === 20 && v.mathsAtoE === 100 && v.mathsGraded === 45;
     return { pass, detail: fmt(v) };
   },
 };

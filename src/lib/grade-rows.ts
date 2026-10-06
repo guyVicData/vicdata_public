@@ -114,6 +114,63 @@ export function mapHistoricKs5Grade(qualificationType: string, grade: string, se
   return grade;
 }
 
+// ------------------------------------------------------------------ R-ALEVEL-STAR (0.6.3 S3)
+//
+// A-level-type rows (A level, AS, EPQ, Core Maths, FSMQ, Pre-U; a VRQ A*-E set) write A* as
+// "*" in 2021/22-2023/24 and "A*" from 2024/25, so read raw an A* range or Grade counts row
+// lost every earlier A*: a false fall (King's Worcester's Maths A* "fell" from 20 to 8).
+// After the vocational short codes have taken their words (R-HISTORIC-GRADE-LABELS), any
+// "*" left at KS5 is an A*, and is merged into that row. The Teacher view's four-year rows,
+// the comparator route and England's grade rows all pass through here; the Data View's own
+// (modern) rows don't, so it is unchanged.
+export function starIsAStar<R extends { grade: string; entries: number }>(rows: R[], keyOf: (r: R) => string): R[] {
+  const out: R[] = [];
+  const byKey = new Map<string, R>();
+  for (const r of rows) {
+    const row = r.grade === "*" ? { ...r, grade: "A*" } : r;
+    const k = `${keyOf(row)}|${row.grade}`;
+    const seen = byKey.get(k);
+    if (seen && row.grade === "A*") {
+      const merged = { ...seen, entries: seen.entries + row.entries };
+      out[out.indexOf(seen)] = merged;
+      byKey.set(k, merged);
+      continue;
+    }
+    byKey.set(k, row);
+    out.push(row);
+  }
+  return out;
+}
+
+/**
+ * R-HISTORIC-GRADE-LABELS on area rows (0.6.3 S3): England's, a region's and an LA's KS5
+ * grade rows for one subject and qualification, per year -- the 2021/22-2022/23 vocational
+ * short codes in their modern words (as the school's own), then "*" as A*. A grade's own
+ * school count is kept as the larger of a merged pair (it is a floor, not a sum).
+ */
+export function normaliseKs5AreaRows<R extends { period: number; grade: string; entries: number; schoolCount?: number }>(rows: R[], qualificationType: string): R[] {
+  const labelsByPeriod = new Map<number, Set<string>>();
+  for (const r of rows) {
+    const set = labelsByPeriod.get(r.period) ?? new Set<string>();
+    set.add(r.grade);
+    labelsByPeriod.set(r.period, set);
+  }
+  const words = rows.map((r) => (r.period <= HISTORIC_GRADE_TO ? { ...r, grade: mapHistoricKs5Grade(qualificationType, r.grade, labelsByPeriod.get(r.period)!) } : r));
+  const merged = new Map<string, R>();
+  for (const r of words) {
+    const row = r.grade === "*" ? { ...r, grade: "A*" } : r;
+    const k = `${row.period}|${row.grade}`;
+    const seen = merged.get(k);
+    merged.set(
+      k,
+      seen
+        ? { ...seen, entries: seen.entries + row.entries, ...(seen.schoolCount !== undefined || row.schoolCount !== undefined ? { schoolCount: Math.max(seen.schoolCount ?? 0, row.schoolCount ?? 0) } : {}) }
+        : row,
+    );
+  }
+  return [...merged.values()];
+}
+
 // --------------------------------------------------------------------------- parsing
 
 // The per-grade rows of raw subject facts (not the Total rows). `historic`: the facts are a
@@ -186,6 +243,8 @@ export function gradeRowsFromFacts(stage: "ks4" | "ks5", modern: ReferenceFact[]
     for (const [urn, fs] of groups) {
       let rows = parseSubjectGradeDistribution(fs, hist ? stage : undefined);
       if (!hist) rows = rows.filter((r) => r.period >= MODERN_GRADE_FROM);
+      // R-ALEVEL-STAR: at KS5, "*" is A* (merged per subject, qualification, size, year).
+      if (stage === "ks5") rows = starIsAStar(rows, (r) => `${r.qualificationType}|${r.subject}|${r.period}|${r.sizeWeight ?? ""}`);
       if (subject) rows = rows.filter((r) => r.subject === subject);
       const list = byUrn.get(urn);
       if (list) list.push(...rows);
