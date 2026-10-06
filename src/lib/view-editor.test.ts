@@ -97,8 +97,9 @@ test("D7: Counts -- self, England ticks, and (0.6.2 S3) the set's share ticks on
       assert.equal(v.rule, "R-COMPARATOR-GRADE-SHARE");
       assert.match(v.note!, /share.*not a count/);
     }
-  // Comparisons and Context compare on one figure: there Grade counts still falls back to points.
-  for (const host of ["teacher.c3.comparisons", "teacher.c2.context"] as const) assert.equal(compareHonest({ phase: "ks4", measure: "counts", host }, "nearest").rule, "R-MEASURE-FALLBACK");
+  // Comparisons and Context compare on one figure: there Grade counts follows the selected
+  // grade (0.6.3 S1), no longer a fallback to points.
+  for (const host of ["teacher.c3.comparisons", "teacher.c2.context"] as const) assert.equal(compareHonest({ phase: "ks4", measure: "counts", host }, "nearest").rule, "R-COUNTS-SELECTION");
   // Shares are averaged plainly (each school counts once): no weighting by entries.
   assert.equal(averageHow(c, "weighted").ok, false);
   assert.equal(perHonest({ ...c, host: "teacher.c3.comparisons" }, "school").rule, "R-MEASURE-FALLBACK");
@@ -179,12 +180,12 @@ test("0.6.2 S3, step 3: an average across the 10 nearest / a saved set is no lon
   assert.ok(o.find((x) => x.measure === "counts")!.ok);
 });
 
-test("Show for: a Grade counts view is counts-only; Context falls back to points on counts", () => {
+test("Show for: a Grade counts view is counts-only; Context follows the counts selection (0.6.3 S1)", () => {
   const spread = presetSpec("DV-C1-CNT-CUR-DIST");
   const o = showForOptions(spread, { phase: "ks4", host: "teacher.c1.results" }, "teacher.c1.counts", ["counts"]);
   assert.deepEqual(o.map((x) => x.ok), [false, false, false, true]);
   const ctxBars = showForOptions(presetSpec("DV-C2-CUR-BARS"), { phase: "ks4", host: "teacher.c2.context" }, "teacher.c2.context", ["points", "threshold", "bands", "counts"]);
-  assert.equal(ctxBars.find((x) => x.measure === "counts")!.rule, "R-MEASURE-FALLBACK");
+  assert.equal(ctxBars.find((x) => x.measure === "counts")!.rule, "R-COUNTS-SELECTION");
 });
 
 // ---------------------------------------------------------------------- output

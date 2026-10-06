@@ -99,6 +99,32 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt(v) };
   },
 
+  // R-COUNTS-SELECTION: The Chase 137625 GCSE History 2024/25 -- a single grade 9, then 7-9,
+  // through the selection's own answer line; 7-9 must equal Grade bands' 34.1% / 26.6%.
+  async countsSelection({ adv, ref, sg, agg }) {
+    const gs = await import("../src/lib/grade-selection");
+    const urn = "137625";
+    const qual = "GCSE (9-1) Full Course";
+    const own = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4")).byUrn.get(urn)?.gradeDistribution ?? []).filter(
+      (r) => r.subject === "History" && r.period === 2024 && r.qualificationType === qual,
+    );
+    const eng = (
+      await ref.lookupAcademicSubjectGradeGeography({ ksStage: "ks4", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], subject: "History", qualificationType: qual })
+    ).map((r) => ({ period: r.period, grade: r.grade, entries: Number(r.entries_total) }));
+    const one = gs.nextSelection(sg.GCSE_SCALE, null, "9");
+    const widened = one && one !== "ignore" ? gs.nextSelection(sg.GCSE_SCALE, one, "7") : null;
+    if (!one || one === "ignore" || !widened || widened === "ignore") return { pass: false, detail: "selection steps failed" };
+    const line = (sel: { top: string; bottom: string }) => {
+      const range = { scale: sg.GCSE_SCALE, ...sel };
+      const r = sg.bandRate(own, range);
+      return gs.answerLine(range, r ? { met: r.met, entries: r.entries } : null, gs.englandShare(eng, 2024, range, sg.GCSE_SCALE.filter((g) => own.some((o) => o.grade === g))));
+    };
+    const l9 = line(one);
+    const l79 = line(widened);
+    const pass = !!l9 && /^Grade 9: \d+% of entries \(\d+\)/.test(l9) && !!l79 && /^Grades 7–9: 34% of entries \(\d+\) · England 27%$/.test(l79);
+    return { pass, detail: fmt({ grade9: l9, grades79: l79 }) };
+  },
+
   // R-KS5-ASAEA-EXCL: 102239 2024/25 'All subjects' entries group total 591 (school KS5 total 1,252).
   // Reproduces page.tsx groupRows (exact-qualification rows without AS/AEA) on the lib's rows.
   async asAeaGroupTotal({ adv, qb }) {

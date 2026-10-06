@@ -68,6 +68,8 @@ import { TrendChart } from "./TrendChart";
 import { ViewChart } from "./ViewChart";
 import type { ComparisonsFrame } from "@/lib/view-series/frames";
 import { SAVED_SET_PREFIX } from "@/lib/teacher-view-saved-sets";
+import { SelectionPrompt, withSelectionChip, type SelectionChipValue } from "./SelectionBits";
+import { NON_GRADE_VALUES } from "@/lib/subject-grades";
 import { trendBaseApplies, trendBaseFor } from "@/catalogue/notes";
 
 export type MapChip = {
@@ -134,6 +136,9 @@ export function ComparisonsPanels({
   threshold,
   rankingSet = null,
   theme = "dark",
+  prompt,
+  selectionChip,
+  titleLead,
 }: {
   phase: KsStage;
   panels: PanelId[];
@@ -180,7 +185,9 @@ export function ComparisonsPanels({
   // the rates come from each school's own per-grade counts (/api/teacher/comparator-grades),
   // fetched here for the set's schools and scored by `rateOf` -- the page's own
   // thresholdRate, so every school is scored exactly as the school itself is.
-  threshold?: { subject: string; qualificationType: string; rateOf: (rows: SubjectGradeCount[]) => number | null } | null;
+  // 0.6.3 S1 (R-MIN-ENTRIES): `minEntries` -- a school publishing the subject below it is
+  // listed by the ranking as "too few entries" (its rateOf returns null), not dropped.
+  threshold?: { subject: string; qualificationType: string; rateOf: (rows: SubjectGradeCount[]) => number | null; minEntries?: number } | null;
   // Snagging round 1 Part 4: set when the active comparator is a national/regional
   // RANKING (the chooser's 3a/3b) rather than a list of schools. Its schools are a sample
   // (the top and this school's neighbours), so the column shows no map of them; it shows
@@ -190,6 +197,12 @@ export function ComparisonsPanels({
   // 0.6.1 S3c: the page's theme, for a view's own compare colours (the line palette has a
   // light and a dark version). Read only by the config-driven renderer (`views=v2`).
   theme?: "dark" | "light";
+  // 0.6.3 S1 (R-COUNTS-SELECTION): on Grade counts. Before a grade is selected, both panels
+  // are a quiet prompt; with one, a chip back to Column 1 on both, and Current's titles
+  // name the selection (`titleLead`, "Share at grade 9").
+  prompt?: string;
+  selectionChip?: SelectionChipValue | null;
+  titleLead?: string;
 }) {
   // ------------------------------------------- threshold rates (grade counts per school)
   const gradeUrns = allSchools.map((s) => s.urn).sort();
@@ -217,6 +230,19 @@ export function ComparisonsPanels({
     threshold && gradesLoaded && grades?.rows
       ? rateSeriesByUrn(grades.rows, threshold.subject, threshold.qualificationType, threshold.rateOf)
       : {};
+  // R-MIN-ENTRIES: the schools with graded entries for the subject in its latest year, but
+  // fewer than the minimum -- listed by the ranking as "too few entries".
+  const tooFewUrns = (() => {
+    const out = new Set<string>();
+    if (!threshold?.minEntries || !gradesLoaded || !grades?.rows) return out;
+    const mineOf = (rows: SubjectGradeCount[]) => rows.filter((g) => g.subject === threshold.subject && g.qualificationType === threshold.qualificationType && !NON_GRADE_VALUES.has(g.grade));
+    const lastPeriod = Math.max(-Infinity, ...Object.values(grades.rows).flatMap((rows) => mineOf(rows).map((g) => g.period)));
+    for (const [urn, rows] of Object.entries(grades.rows)) {
+      const entries = mineOf(rows).filter((g) => g.period === lastPeriod).reduce((sum, g) => sum + g.entries, 0);
+      if (entries > 0 && entries < threshold.minEntries) out.add(urn);
+    }
+    return out;
+  })();
 
   // Column 3 round Part 1: Map is the default view, and first in the icon rail to match.
   const [viewChosen, setView] = useState<"tiles" | "graph" | "map" | "ranking">("map");
@@ -320,6 +346,19 @@ export function ComparisonsPanels({
     independent: r.independent ?? null,
     isTarget: r.isTarget,
   }));
+  // R-MIN-ENTRIES: listed, not placed.
+  const tooFewSchools = allSchools.filter((s) => tooFewUrns.has(s.urn) && !ranked.some((r) => r.urn === s.urn && r.value !== null));
+  const tooFewRows: SchoolRankingRow[] = tooFewSchools.map((s) => ({
+    key: s.urn,
+    name: s.isTarget ? targetName : s.name,
+    rank: null,
+    value: null,
+    valueLabel: "too few entries",
+    distanceKm: s.distanceKm ?? null,
+    independent: s.independent ?? null,
+    isTarget: s.isTarget,
+  }));
+  rankingRows.push(...tooFewRows.filter((t) => !rankingRows.some((r) => r.key === t.key)));
 
   // Current panel rework round 1: one title over each view (all four wordings provisional).
   // What each figure is: the chip's subject on the column's measure ("Maths entries"), or
@@ -328,7 +367,9 @@ export function ComparisonsPanels({
   const titleOn = subjectLabel ? `${subjectLabel} ${measure.id === "entries" ? "entries" : measure.label.toLowerCase()}` : headlineLabel;
   const titleSet = `the ${setLabel.toLowerCase()}`;
   const currentTitle =
-    view === "tiles" && rankingSet
+    titleLead && !(view === "tiles" && rankingSet)
+      ? `${titleLead}, by school (${setLabel.toLowerCase()})`
+      : view === "tiles" && rankingSet
       ? // The tiles are on the ranking's own measure, whatever the chip, so they name it.
         `${targetName}'s rank in ${titleSet}: ${rankingSet.measureName}`
       : view === "map"
@@ -903,6 +944,7 @@ export function ComparisonsPanels({
       onTargetRank: onMapRank,
     },
     state: { trendStart, changeStart, showFit },
+    ...(titleLead ? { titleLead } : {}),
   };
   // R-CURRENT-GRADES-FROM-2324: Current's views on a rate read the 2023/24-on years only.
   const currentFrame: ComparisonsFrame =
@@ -913,6 +955,9 @@ export function ComparisonsPanels({
           schools: frame.schools
             .map((s) => ({ ...s, values: countedValues(s.values, periods, currentFrom) }))
             .filter((s) => s.isTarget || s.values.some((v) => v !== null)),
+          ...(tooFewSchools.length
+            ? { tooFew: tooFewSchools.map((s) => ({ urn: s.urn, name: s.name, isTarget: s.isTarget, values: periods.map(() => null), distanceKm: s.distanceKm ?? null, independent: s.independent ?? null })) }
+            : {}),
         };
 
   return (
@@ -944,8 +989,22 @@ export function ComparisonsPanels({
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }
-      render={unavailableNote ? { current: notAvailable(current), trend: notAvailable(trend) } : { current: { ...current, frame: currentFrame }, trend: { ...trend, frame } }}
+      render={
+        prompt
+          ? { current: promptPanel(current, prompt), trend: promptPanel(trend, prompt) }
+          : unavailableNote
+            ? { current: notAvailable(current), trend: notAvailable(trend) }
+            : {
+                current: { ...current, controls: withSelectionChip(current.controls, selectionChip), frame: currentFrame },
+                trend: { ...trend, controls: withSelectionChip(trend.controls, selectionChip), frame },
+              }
+      }
     />
   );
 }
 
+// 0.6.3 S1: before a grade is selected on Grade counts -- the panel's tag and question over
+// a quiet prompt, no frame, so both drawing paths draw the same card.
+function promptPanel(p: PanelRender, text: string): PanelRender {
+  return { tag: p.tag, question: p.question, body: () => <SelectionPrompt text={text} /> };
+}

@@ -130,6 +130,9 @@ export type SubjectsFrame = {
   spaciousBars: boolean;
   categoryLabel?: string;
   compareAgainstLabel?: string;
+  // 0.6.3 S1: Context on a Grade counts selection -- Current's titles lead with it
+  // ("Share at grade 9, by subject in …").
+  titleLead?: string;
   changeScope: "all" | "individual";
   cardTrend?: "focusVsGroup";
   theme: "dark" | "light";
@@ -258,7 +261,18 @@ export type ComparisonsFrame = {
   theme?: "dark" | "light";
   map?: FrameMap | null;
   state: FrameMemberState;
+  // 0.6.3 S1 (R-COUNTS-SELECTION): on Grade counts with a grade selected, Current's views
+  // are titled by the selection ("Share at grade 9, by school (10 nearest schools)").
+  titleLead?: string;
+  // 0.6.3 S1 (R-MIN-ENTRIES): schools publishing the subject below the small-entries rule,
+  // listed by the ranking as "too few entries" rather than a %. Current's frame only.
+  tooFew?: FrameSchool[];
 };
+
+/** 0.6.3 S1: Current's title on a Grade counts selection, every view (map included). */
+export function comparisonsLeadTitle(f: ComparisonsFrame): string | null {
+  return f.titleLead ? `${f.titleLead}, by school (${f.setLabel.toLowerCase()})` : null;
+}
 
 // S3d: Column 1 Results on Grade counts (GradeCountsPanels) -- the focused subject's own
 // per-grade rows, every year it has them, and England's (the host's own fetch, [] until it
@@ -276,7 +290,15 @@ export type GradesFrame = {
   state: {
     compareFrom: number | null;
     changeFrom: number | null;
-    highlight: { range: GradeRange | null; pending: string | null; onGradeClick: (grade: string) => void };
+    // 0.6.3 S1: the selection is the page's band:range (one click a grade, a second widens);
+    // `clickable` / `clickTitle` keep U / Fail / Unclassified from being range ends.
+    highlight: {
+      range: GradeRange | null;
+      pending: string | null;
+      onGradeClick: (grade: string) => void;
+      clickable?: (grade: string) => boolean;
+      clickTitle?: (grade: string) => string;
+    };
   };
 };
 

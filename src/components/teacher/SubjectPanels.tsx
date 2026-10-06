@@ -44,6 +44,7 @@ import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTre
 import { DIRECTION_COLOUR, FOCUS_COLOUR, directionOf, paletteInOrder, tintInOrder } from "@/lib/teacher-view-trend-styles";
 import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
+import { SelectionPrompt, withSelectionChip, type SelectionChipValue } from "./SelectionBits";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { ChangeChart, type ChangeBar } from "./ChangeChart";
@@ -113,6 +114,9 @@ export function SubjectPanels({
   gradeBand,
   rankedViews = false,
   compareAgainstLabel,
+  prompt,
+  selectionChip = null,
+  titleLead,
   schoolGroup,
   schoolSet,
   schoolSetGrades,
@@ -258,6 +262,12 @@ export function SubjectPanels({
   // category ("Sciences & Maths"), "all subjects" or "the subjects you selected" -- for
   // the titles over Context's donut, bar chart, ranked list and table. Absent = no title.
   compareAgainstLabel?: string;
+  // 0.6.3 S1 (R-COUNTS-SELECTION), Context on Grade counts: before any grade is selected, the
+  // prompt instead of every view; with a selection, the chip on both panels ("Grade 9 · from
+  // your highlight") and Current's titles led by the selection ("Share at grade 9").
+  prompt?: string;
+  selectionChip?: SelectionChipValue | null;
+  titleLead?: string;
   // 0.6.1 S3c: what a view of its own's "Add an average" reads (the page's groups of
   // subjects, and its Compared against set), built on demand. Read only under views=v2.
   schoolGroup?: FrameSchoolGroup;
@@ -507,7 +517,9 @@ export function SubjectPanels({
         ? `Entries at ${inlineRangeLabel(donutShare.label)} as a proportion of graded entries in ${compareAgainstLabel}`
         : `Entries in ${focusedSubject?.label ?? "this subject"} as a proportion of ${compareAgainstLabel}`
       : effectiveView === "bar" || effectiveView === "list" || effectiveView === "table"
-        ? `${scopeNounCurrent} by subject in ${compareAgainstLabel}`
+        ? titleLead
+          ? `${titleLead}, by subject in ${compareAgainstLabel}`
+          : `${scopeNounCurrent} by subject in ${compareAgainstLabel}`
         : null;
 
   const current: PanelRender = {
@@ -1067,6 +1079,7 @@ export function SubjectPanels({
     spaciousBars,
     categoryLabel,
     compareAgainstLabel,
+    ...(titleLead ? { titleLead } : {}),
     changeScope,
     cardTrend,
     theme,
@@ -1114,7 +1127,7 @@ export function SubjectPanels({
       // Title over Current's views (bar chart and table), only when there is a comparison
       // within the category -- a lone subject has nothing to name. Not over the number
       // tiles, whose rank tile already names the category.
-      render={{
+      render={prompt ? { current: promptPanel(current, prompt), trend: promptPanel(trend, prompt) } : {
         current:
           categoryLabel && currentSubjects.length > 1 && effectiveView !== "tiles" && effectiveView !== "grades"
             ? {
@@ -1127,13 +1140,20 @@ export function SubjectPanels({
                     {current.body(fullscreen)}
                   </>
                 ),
+                controls: withSelectionChip(current.controls, selectionChip),
                 frame: currentFrame,
               }
-            : { ...current, frame: currentFrame },
-        trend: { ...trend, frame },
+            : { ...current, controls: withSelectionChip(current.controls, selectionChip), frame: currentFrame },
+        trend: { ...trend, controls: withSelectionChip(trend.controls, selectionChip), frame },
       }}
     />
   );
+}
+
+// 0.6.3 S1: a panel waiting for a grade selection keeps its tag and question; every view
+// gives way to the prompt (no frame, so both drawing paths draw it).
+function promptPanel(p: PanelRender, text: string): PanelRender {
+  return { tag: p.tag, question: p.question, body: () => <SelectionPrompt text={text} /> };
 }
 
 // Trend map/legend round Part 1: the fullscreen rail's "Subjects shown" list. Each row is

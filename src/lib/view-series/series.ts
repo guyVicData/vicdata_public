@@ -180,6 +180,9 @@ export type LeafSeries =
       range: GradeRange | null;
       pending: string | null;
       onGradeClick?: (grade: string) => void;
+      // 0.6.3 S1: Grade counts' selection -- which grades are range ends, and each one's tooltip.
+      clickable?: (grade: string) => boolean;
+      clickTitle?: (grade: string) => string;
       benchLabel: string | null;
       show?: "counts";
       average?: AverageGrade;

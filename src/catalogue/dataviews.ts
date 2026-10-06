@@ -649,7 +649,7 @@ export const DATAVIEWS: Dataview[] = [
     ...live,
     origin: "Current panel rework round 1 (Column 1's VerticalBars moved to Context)",
     rules: ["R-QUAL-FAMILY-MATCH", "R-KS5-ASAEA-EXCL", "R-POINTS-SAME-QUAL", "R-POINTS-WEIGHTED", "R-MEASURE-FALLBACK"],
-    note: "Default Context Current view. On Grade counts / bands without a range the host shows points (R-MEASURE-FALLBACK, mismatch M6).",
+    note: "Default Context Current view. On Grade bands without a range the host shows points (R-MEASURE-FALLBACK, mismatch M6); on Grade counts it follows the selected grade or prompts for one (R-COUNTS-SELECTION).",
   },
   {
     id: "DV-C2-CUR-LIST",

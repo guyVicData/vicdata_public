@@ -22,7 +22,7 @@ import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeOver } from "@/lib/teacher-view-trend-styles";
 import { onChangeHalf } from "./compare";
 import { changeSpan, pageVersus, series } from "./comparisons";
-import type { ComparisonsFrame, FrameMap, SubjectsFrame, SeriesFrame } from "./frames";
+import { comparisonsLeadTitle, type ComparisonsFrame, type FrameMap, type SubjectsFrame, type SeriesFrame } from "./frames";
 import type { ViewSeries } from "./series";
 
 export function buildMap(spec: ViewSpec, f: SeriesFrame): ViewSeries | null {
@@ -57,7 +57,7 @@ function currentMap(f: ComparisonsFrame, colour: "value" | "change" | "member"):
   return {
     kind: "map",
     heading: null,
-    title: `${f.titleOn} by school, on the map`,
+    title: comparisonsLeadTitle(f) ?? `${f.titleOn} by school, on the map`,
     leaf: {
       leaf: "map",
       place: "current",

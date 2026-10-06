@@ -54,7 +54,8 @@ export function ResultsControl({
   measures: ResultsChoice[];
   active: ResultsChoice;
   onMeasure: (id: string) => void;
-  // Shown only on Grade bands; null = no focused subject (nothing to pick a range on).
+  // Shown on Grade bands and Grade counts (0.6.3 S1: the counts selection IS the range);
+  // null = no focused subject (nothing to pick a range on).
   band: BandChoice | null;
   align?: "left" | "right";
   // Phone width (PhoneNav): the band's popover opens from the pill's right edge, so it
@@ -75,7 +76,7 @@ export function ResultsControl({
           </>
         )}
       </PillMenu>
-      {active.id === "bands" && band && <BandMenu band={band} align={compact ? "right" : align} width={compact ? 248 : 260} />}
+      {(active.id === "bands" || active.id === "counts") && band && <BandMenu band={band} align={compact ? "right" : align} width={compact ? 248 : 260} />}
     </div>
   );
 }

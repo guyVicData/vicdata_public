@@ -16,7 +16,8 @@
 //   - one error boundary per panel (G3), at the panel unit;
 //   - placeholder panels, dashed "Planned", super-admin only (§4.6a);
 //   - phone: columns become a tab strip, one column at a time (G4, PhoneDash board).
-import { Component, Children, useMemo, useState, type ReactNode } from "react";
+import { Component, Children, useEffect, useMemo, useState, type ReactNode } from "react";
+import { SHOW_COLUMN_EVENT } from "@/components/teacher/showColumn";
 import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { PANEL_HEIGHT } from "@/components/teacher/CardBox";
 import type { DashboardConfig, PanelConfig } from "@/catalogue/types";
@@ -40,6 +41,16 @@ export function ConfigDashboard({
   const plan = useMemo(() => buildPlan(config, superAdmin, { columnKeys }), [config, superAdmin, columnKeys]);
   const columns = Children.toArray(children);
   const [tab, setTab] = useState(0);
+  // 0.6.3 S1: a column asked for by another (showColumn: the selection chip links back to
+  // Column 1) becomes the phone's open tab.
+  useEffect(() => {
+    const on = (e: Event) => {
+      const index = (e as CustomEvent<{ index: number }>).detail?.index;
+      if (typeof index === "number" && index >= 0 && index < config.columns.length) setTab(index);
+    };
+    window.addEventListener(SHOW_COLUMN_EVENT, on);
+    return () => window.removeEventListener(SHOW_COLUMN_EVENT, on);
+  }, [config.columns.length]);
   return (
     <DashboardPlanContext.Provider value={plan}>
       <div data-dashboard-id={config.id} data-renderer="config">

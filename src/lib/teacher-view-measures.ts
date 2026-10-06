@@ -214,11 +214,14 @@ export function periodsForMeasure<T>(
 // ------------------------------------------------------------------ measure resolution
 
 /**
- * R-MEASURE-FALLBACK: Grade counts has no single figure to compare subjects on, and Grade
- * bands has none until a range is picked, so Context falls back to average point score.
+ * R-MEASURE-FALLBACK: Grade bands has no single figure until a range is picked, so Context
+ * falls back to average point score. 0.6.3 S1 (R-COUNTS-SELECTION): Grade counts no longer
+ * falls back silently -- with a grade selected it is that grade's share (`hasBandRange` is
+ * the selection), and without one Context draws a prompt; the fallback remains only for
+ * Grade counts with no focused subject (nothing to select a grade on).
  */
 export function contextFallsBackFor(showingResults: boolean, resultsMeasureId: MeasureId, hasBandRange: boolean): boolean {
-  return showingResults && (resultsMeasureId === "counts" || (resultsMeasureId === "bands" && !hasBandRange));
+  return showingResults && (resultsMeasureId === "counts" || resultsMeasureId === "bands") && !hasBandRange;
 }
 
 /** R-MEASURE-FALLBACK: Context's measure -- entries on Candidates, else Results' (or points). */
