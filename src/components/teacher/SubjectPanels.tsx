@@ -922,7 +922,8 @@ export function SubjectPanels({
       <PanelSummary>Not enough published years yet to describe a trend.</PanelSummary>
     ),
     // Part 3: the map, like Comparisons', reads far better with room.
-    suggestFullscreen: trendView === "map",
+    // 0.6.3: the map fills the card; no "Full screen" line under it.
+    suggestFullscreen: false,
     source: sourceWithNote(spanLabel(trendData.periods)),
     // R-TREND-FROM-2223: the years this Trend draws (the note where they include 2021/22);
     // the map plots one year (none).

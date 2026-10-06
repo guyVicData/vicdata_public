@@ -316,8 +316,8 @@ function SizeLegend({ minSize, maxSize, familyId, familyLabel, subjectLabel, siz
 
 // 0.6.3 S2 (Teacher view only, behind `teacherMap`): the labelled key. Fullscreen: a box at
 // the top right -- what colour means in words, the scale with its two ends named, the hollow
-// dot and the school's own ring; the dot-size key stays bottom left. Card: one line in the
-// caption's corner (TeacherDenseLegend), replacing the unlabelled strip.
+// dot and the school's own ring; the dot-size key stays bottom left. The card has no key: the
+// hover explains each dot.
 function TeacherColourKey({ spec }: { spec: TeacherMapSpec }) {
   const gradient = legendGradient(spec);
   // Fullscreen draws on the light basemap, whichever the theme: the ring there is dark grey.
@@ -349,16 +349,6 @@ function TeacherColourKey({ spec }: { spec: TeacherMapSpec }) {
   );
 }
 
-function TeacherDenseLegend({ spec }: { spec: TeacherMapSpec }) {
-  const gradient = legendGradient(spec);
-  const text = [spec.legend, spec.sizeLegend, spec.note].filter(Boolean).join(" · ");
-  return (
-    <p data-teacher-map-key="" className="flex min-w-0 items-center gap-1.5 rounded bg-white/85 px-1.5 py-0.5 text-[10px] leading-snug text-neutral-600 dark:bg-neutral-950/85 dark:text-neutral-400">
-      {gradient && <span aria-hidden="true" className="inline-block h-[7px] w-7 shrink-0 rounded-full" style={{ background: gradient }} />}
-      <span>{text}</span>
-    </p>
-  );
-}
 
 type HoverInfo = { name: string; isTarget: boolean; lines: string[] };
 
@@ -572,6 +562,10 @@ export default function AcademicMapView({
   // re-runs the marker-drawing effect (withCoords is rebuilt every render), which redrew
   // every dot and wiped the hover the moment it appeared -- caught in verification.
   const setHoverInfoRef = useRef<(info: HoverInfo | null) => void>(() => {});
+  // 0.6.3 (Teacher view only): the map was mounted with a teacherMap -- fine zoom steps, a
+  // fit to every plotted school that is redone whenever the card resizes (refitRef).
+  const [teacherMode] = useState(() => !!teacherMap);
+  const refitRef = useRef<(() => void) | null>(null);
   // A3: default stays Grade band (round 2, item 6 already made this the default;
   // unchanged this round). A5's own fix (below) means this default now genuinely
   // WORKS for Post-16 too, not just KS2/GCSE.
@@ -848,7 +842,7 @@ export default function AcademicMapView({
       // projection, same pan/zoom), only what sits underneath the dots. Read once at mount
       // on purpose: fullscreen mounts its own separate instance (see CardBox), so `dense`
       // never changes for the life of one map.
-      const map = L.map(mapElRef.current, { center: [lat, lng], zoom: 11, zoomControl: false, attributionControl: !dense });
+      const map = L.map(mapElRef.current, { center: [lat, lng], zoom: 11, zoomControl: false, attributionControl: !dense, ...(teacherMode ? { zoomSnap: 0.1, zoomDelta: 0.5 } : {}) });
       if (!dense) L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       // Column 3 round Part 1: no zoom buttons on the dense (card) map -- gated like the
       // tile layer and attribution beside it. The Data View never sets dense, and Teacher
@@ -887,7 +881,10 @@ export default function AcademicMapView({
       // settled yet renders with stale internal tile dimensions (blank/cut-off tiles).
       // Same real fix as MapView.tsx's own 2026-09-05 comment, copied verbatim rather
       // than re-derived.
-      resizeObserver = new ResizeObserver(() => map.invalidateSize());
+      resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize();
+        refitRef.current?.();
+      });
       resizeObserver.observe(mapElRef.current);
     });
     return () => {
@@ -1097,7 +1094,21 @@ export default function AcademicMapView({
         marker.addTo(group2);
       }
 
-      if (bounds.length > 1) {
+      if (teacherMap) {
+        // 0.6.3: every plotted school in view (never trimmed), padded by the largest dot so
+        // no dot is cut at the edge, at fine zoom steps so the set fills the card.
+        const map2 = mapRef.current!;
+        const maxR = Math.max(UNTICKED_RADIUS, ...withCoords.map((p) => {
+          const size = teacherMap.dots[p.urn]?.size ?? rowDataByUrn.get(p.urn)?.size ?? null;
+          return size !== null && size > 0 ? radiusFor(size, teacherSizeMin, teacherSizeMax) : UNTICKED_RADIUS;
+        }));
+        const pad = Math.ceil(maxR + 6);
+        refitRef.current = () => {
+          if (bounds.length > 1) map2.fitBounds(bounds, { padding: [pad, pad], maxZoom: 14, animate: false });
+          else if (bounds.length === 1) map2.setView(bounds[0], 13, { animate: false });
+        };
+        refitRef.current();
+      } else if (bounds.length > 1) {
         mapRef.current!.fitBounds(trimmedBoundsFor(bounds), { padding: [40, 40], maxZoom: 13 });
       }
     });
@@ -1464,9 +1475,9 @@ export default function AcademicMapView({
                 // bottom edge. One line only; if a narrow card truncates it, the full text
                 // is on hover.
                 <div className="absolute bottom-6 left-2 z-[1000] flex max-w-[calc(100%-4.5rem)] items-center gap-1.5">
-                  {teacherMap ? (
-                    <TeacherDenseLegend spec={teacherMap} />
-                  ) : !onCaption && (
+                  {/* 0.6.3: the Teacher card map has no key line -- the hover says what each
+                      dot is (its figure first, then entries). */}
+                  {teacherMap ? null : !onCaption && (
                     <p title={caption} className="truncate whitespace-nowrap rounded bg-white/85 px-1.5 py-0.5 text-[10px] text-neutral-600 dark:bg-neutral-950/85 dark:text-neutral-400">
                       {caption}
                     </p>

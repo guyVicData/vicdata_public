@@ -105,15 +105,27 @@ export function GradeDistribution({
           const own = ownOf(r);
           const cmp = cmpOf(r);
           const bench = benchOf(r);
+          const rowTitle = clickTitle ? clickTitle(r.grade) : pending ? `End the range at ${r.grade}` : `Start a range at ${r.grade}`;
           return (
-            <li key={r.grade} className={`flex items-center gap-2 rounded-md px-1 ${selected ? "bg-[rgba(var(--accent-rgb,120,120,120),0.14)]" : shaded ? "bg-[rgba(var(--accent-rgb,120,120,120),0.08)]" : ""}`}>
+            <li
+              key={r.grade}
+              // 0.6.3: the whole row -- label, bar and figures -- is the click target (a click on
+              // the label bubbles here; the label stays the keyboard's button). Only where the
+              // host makes grades clickable; elsewhere the row is as before.
+              onClick={canClick ? () => onGradeClick!(r.grade) : undefined}
+              title={onGradeClick ? rowTitle : undefined}
+              className={[
+                "flex items-center gap-2 rounded-md px-1",
+                selected ? "bg-[rgba(var(--accent-rgb,120,120,120),0.14)]" : shaded ? "bg-[rgba(var(--accent-rgb,120,120,120),0.08)]" : "",
+                canClick ? `cursor-pointer${selected ? "" : " hover:bg-[rgba(var(--accent-rgb,120,120,120),0.08)]"}` : onGradeClick ? "cursor-not-allowed" : "",
+              ].join(" ")}
+            >
               <button
                 type="button"
-                onClick={canClick ? () => onGradeClick!(r.grade) : undefined}
                 disabled={!onGradeClick}
                 aria-disabled={onGradeClick && !canClick ? true : undefined}
                 aria-pressed={canClick ? selected : undefined}
-                title={onGradeClick ? (clickTitle ? clickTitle(r.grade) : pending ? `End the range at ${r.grade}` : `Start a range at ${r.grade}`) : undefined}
+                title={onGradeClick ? rowTitle : undefined}
                 className={[
                   "shrink-0 truncate rounded-[6px] border px-1.5 py-0.5 text-left text-[11px] font-semibold tabular-nums",
                   fullscreen ? "w-44" : "w-[4.5rem]",
