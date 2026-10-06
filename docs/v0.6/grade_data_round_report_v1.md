@@ -1,6 +1,6 @@
 # VicData 0.6.2, grade data round: report
 
-Branch `v0.6.2-grades`, from `main` (e109b98). **Not merged, and not pushed by Claude** (Guy pushes). **Members' figures change on purpose** in this round: grade trends gain 2021/22–2022/23, and every grade and points trend statement is now measured from 2022/23. Every latest-year figure is unchanged (checked pixel by pixel, below).
+Branch `v0.6.2-grades`, from `main` (e109b98). Pushed, **not merged**. **Members' figures change on purpose** in this round: grade trends gain 2021/22–2022/23, and every grade and points trend statement is now measured from 2022/23. Every latest-year figure is unchanged (checked pixel by pixel, below).
 
 **Checks on every commit:** `tsc --noEmit`, eslint on the changed files and `next build` clean; unit tests 325/325 at the end (`npx -y tsx --test scripts/catalogue-unit-tests.ts src/lib/*.test.ts`); real-data rule tests `PASS=12, FAIL=0, ERROR=0` (MANUAL 15, NONE 16, SUPERSEDED 2). No migration was applied, no database was written, and no server key went into client code or a browser bundle.
 
@@ -21,7 +21,7 @@ Read with `docs/OPEN_QUESTIONS.md`, "2026-10-05 — 0.6.2 grade data round" (S1�
    - Then **restart / redeploy vicdata_public**. The server remembers "RPC absent" once per process, so a running server keeps using the facts until it restarts.
    - Until then, GCSE grades come from the modern + historic facts, which S1 proved equal to the rollup on every key. Nothing is wrong; it's just slower (timings below).
 2. **Review the deliberate changes**, below, and the calls in "Calls made".
-3. **Push the branch** (not done here).
+3. **Merge** when you're happy with the changes (the branch is pushed).
 
 ## Stages and commits
 
