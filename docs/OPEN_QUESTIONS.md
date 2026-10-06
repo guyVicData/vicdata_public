@@ -1600,3 +1600,10 @@ S5's first parity run (3,672 pairs, main vs branch) stopped on 136 unexpected la
 - **Memory:** the member's swap is saved per view instance (`table:years:<view id>`) in their page settings (teacher_view_preferences.columns, the same store as band:range and the measure). The view's own layout (the editor's new "Layout: Auto / Years across / Years down" chips in the table look box) is the default; Auto opens one or two rows years down. "Auto" is a third chip so an editor can go back to the automatic default.
 - **Years down** shows every year (the card too) then the n row (if the view has one) and the Change row, measured as across (from 2022/23 on graded measures, R-TREND-FROM-2223); the rank isn't repeated (the columns keep the across order). The table never widens its card: columns share the card's width (fixed layout, names truncate, full name on hover); past six columns each keeps a minimum and the table scrolls sideways inside the card.
 - **Expected changes:** a single-subject Trend table, a school-vs-England area table, and any year table with one or two rows now open years down.
+
+### S5 — Checks
+
+- **Parity:** 1,356 main/branch view pairs on real-data fixtures (each tree's own fetchers), 5 schools × 7 states × 1280/390 × both themes, every panel and rail view: **0 unexpected**. Report table: `docs/v0.6/grades_maps_tables_report_v1.md`.
+- **Accepted as a knock-on:** on a Grade counts selection at 100053, Context's vertical bar chart (a % axis) is 6 px wider than its points version was, and the grid takes 3 px from Column 1 at 1280 (words equal). The grid sizes columns by content; making it content-blind would move pixels elsewhere, so it is left.
+- **Data View:** the map pixel- and marker-identical in 40 configurations (80/80 files); its data reads hash-identical on both trees.
+- **No T Level school** was in the matrix; the T Level tie is unit-tested only.

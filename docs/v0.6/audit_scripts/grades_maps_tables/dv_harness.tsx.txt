@@ -1,0 +1,38 @@
+/* eslint-disable */
+// 0.6.3 S5: the Data View's own map (AcademicMapView exactly as AcademicDataView mounts it --
+// no Teacher props), on a captured fixture's real profiles, for a pixel comparison of main
+// and the branch. ?urn&phase&family=<id>&bucket=<ks5 bucket>&theme
+import { createRoot } from "react-dom/client";
+import { useState } from "react";
+import AcademicMapView from "@/components/data-view/AcademicMapView";
+import { deserializeAcademicProfile, igcseExclusionLikely } from "@/lib/academic-data-view";
+declare const window: any;
+const q = new URLSearchParams(location.search);
+const F = window.__FIX;
+const profiles = F.profiles.map(deserializeAcademicProfile);
+const target = profiles.find((p: any) => p.urn === F.urn);
+const others = profiles.filter((p: any) => p.urn !== F.urn);
+function App() {
+  const [view, setView] = useState<any>("map");
+  return (
+    <div style={{ width: 1100, height: 720 }} data-theme={q.get("theme") || "light"} className={q.get("theme") === "dark" ? "dark" : ""}>
+      <AcademicMapView
+        targetProfile={target}
+        tickedProfiles={others}
+        stage={F.phase}
+        familyId={q.get("family") || null}
+        familyLabel={q.get("family") ? "Category" : null}
+        activeSetLabel="the 10 nearest schools"
+        ks4ExcludedUrns={F.phase === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p: any) => p.urn)) : new Set()}
+        ks5Bucket={(q.get("bucket") as any) || null}
+        ks5ExcludedUrns={new Set()}
+        activeView={view}
+        onChangeView={setView}
+        authToken={null}
+        isRegionOrNationScope={false}
+        activeRegionName={null}
+      />
+    </div>
+  );
+}
+createRoot(document.getElementById("root")!).render(<App />);

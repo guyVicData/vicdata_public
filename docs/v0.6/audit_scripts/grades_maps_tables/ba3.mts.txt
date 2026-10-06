@@ -1,0 +1,43 @@
+// 0.6.3 before/after: each tree's own functions on its own reads (read-only).
+const root = process.argv[2];
+const adv = await import(root + "/src/lib/academic-data-view.ts");
+const ref = await import(root + "/src/lib/vicdata-reference.ts");
+const sg = await import(root + "/src/lib/subject-grades.ts");
+const agg = await import(root + "/src/lib/academic-aggregate-trends.ts");
+const gs = await import(root + "/src/lib/grade-spread.ts");
+let gr: any = null; try { gr = await import(root + "/src/lib/grade-rows.ts"); } catch {}
+const eng = async (subject: string, qual: string, ph: "ks4" | "ks5") => {
+  const raw = (await ref.lookupAcademicSubjectGradeGeography({ ksStage: ph, groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], subject, qualificationType: qual })).map((r: any) => ({ period: r.period, grade: r.grade, entries: Number(r.entries_total) }));
+  return ph === "ks5" && gr?.normaliseKs5AreaRows ? gr.normaliseKs5AreaRows(raw, qual) : raw;
+};
+const own = async (urn: string, ph: "ks4" | "ks5", subject: string, qual: string) =>
+  ((await adv.fetchSubjectLevelDataForSchools([urn], ph, { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter((r: any) => r.subject === subject && r.qualificationType === qual);
+const r1 = (v: any) => (v === null || v === undefined ? null : Math.round(v * 10) / 10);
+const out: any = {};
+{ // King's Worcester A level Maths, A*
+  const o = await own("117037", "ks5", "Mathematics", "GCE A level"); const e = await eng("Mathematics", "GCE A level", "ks5");
+  const rg = { scale: sg.GRADE_SCALES[2], top: "A*", bottom: "A*" };
+  out.kw_maths_astar = [2021, 2022, 2023, 2024].map((p) => { const a = sg.bandRate(o.filter((r: any) => r.period === p), rg); const b = sg.bandRate(e.filter((r: any) => r.period === p), rg); return `${p}: own ${a ? `${r1(a.rate)}% (${a.met}/${a.entries})` : "—"}, England ${b ? r1(b.rate) + "%" : "—"}`; });
+  const rg2 = { scale: sg.GRADE_SCALES[2], top: "A*", bottom: "B" };
+  out.kw_maths_astar_b = [2021, 2022, 2023, 2024].map((p) => `${p}: ${r1(sg.bandRate(o.filter((r: any) => r.period === p), rg2)?.rate)}`);
+}
+{ // Croydon BTEC Business Ext Cert, Distinction*
+  const q = "BTEC National Extended Certificate L3 - Band F - P-D*";
+  const o = await own("130432", "ks5", "Business Studies", q); const e = await eng("Business Studies", q, "ks5");
+  const scale = sg.bestScale(o.filter((r: any) => r.period >= 2023).map((r: any) => r.grade));
+  const rg = { scale, top: "Distinction*", bottom: "Distinction*" };
+  out.croydon_dstar = [2021, 2022, 2023, 2024].map((p) => { const a = sg.bandRate(o.filter((r: any) => r.period === p), rg); const b = sg.bandRate(e.filter((r: any) => r.period === p), rg); return `${p}: own ${a ? `${r1(a.rate)}% (${a.met}/${a.entries})` : "—"}, England ${b ? r1(b.rate) + "%" : "—"}`; });
+}
+{ // Sevenoaks IB HL Biology 7 / 6-7
+  const o = await own("118952", "ks5", "Biology", "IBO Higher level component");
+  const scale = sg.bestScale(o.filter((r: any) => r.period >= 2023).map((r: any) => r.grade));
+  out.sevenoaks_bio = [2021, 2022, 2023, 2024].map((p) => `${p}: 7 ${r1(sg.bandRate(o.filter((r: any) => r.period === p), { scale, top: "7", bottom: "7" })?.rate)}%, 6–7 ${r1(sg.bandRate(o.filter((r: any) => r.period === p), { scale, top: "7", bottom: "6" })?.rate)}%`);
+}
+{ // Grade counts' England ticks: The Chase History 2024/25 and Croydon BTEC
+  for (const [urn, ph, subj, q] of [["137625", "ks4", "History", "GCSE (9-1) Full Course"], ["130432", "ks5", "Business Studies", "BTEC National Extended Certificate L3 - Band F - P-D*"]] as const) {
+    const o = await own(urn, ph, subj, q); const e = await eng(subj, q, ph);
+    const g = gs.gradeCounts(o, e, { compareFrom: null, changeFrom: null });
+    out[`ticks_${urn}`] = g.rowsFor(false).map((r: any) => `${r.grade} ${r1(r.benchPct)}`).join(", ");
+  }
+}
+console.log(JSON.stringify(out, null, 1));

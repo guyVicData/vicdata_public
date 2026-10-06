@@ -1,0 +1,13 @@
+// The Data View's own data path (modern grade rows, profiles), from one tree, hashed.
+import { createHash } from "node:crypto";
+const root = process.argv[2];
+const adv = await import(root + "/src/lib/academic-data-view.ts");
+const out: Record<string, string> = {};
+for (const [urn, ph] of [["137625", "ks4"], ["117037", "ks5"], ["130432", "ks5"], ["118952", "ks5"]] as const) {
+  const { byUrn } = await adv.fetchSubjectLevelDataForSchools([urn], ph);
+  const d = byUrn.get(urn);
+  out[`${urn} subjectLevel`] = createHash("sha256").update(JSON.stringify(d)).digest("hex").slice(0, 16) + ` (${d?.gradeDistribution.length} grade rows)`;
+  const prof = (await adv.fetchAcademicProfiles([urn], { includeSubjects: true })).map(adv.serializeAcademicProfile);
+  out[`${urn} profile`] = createHash("sha256").update(JSON.stringify(prof)).digest("hex").slice(0, 16);
+}
+console.log(JSON.stringify(out, null, 1));

@@ -1,0 +1,81 @@
+# python3 cmp3.py <outRoot>: 0.6.3 parity, main vs branch, every shot paired by view; each difference classified.
+#   IDENTICAL     pixels and digest equal
+#   EXP-MAP       a map view (S2: encoding, legend, ring, hollow dots, set-only dots, rank on the measure)
+#   EXP-TABLE     a year table (S4: the swap button; one or two rows open years down)
+#   EXP-COUNTS    Grade counts state: Column 1's selection / answer line / controls; Context and
+#                 Comparisons' prompt (no selection) or selection share, titles and chip (S1)
+#   EXP-POST16    a Post-16 grade state (A*-E, bands, counts): "*" as A* (S3), Context's family
+#                 rule on bands / counts, the A*-E limit note on a non-A-level focus
+#   NOISE         words equal, same size, no channel differs by more than 8/255 (anti-aliasing)
+#   EXP-KNOCKON   words equal, the panel 3 px narrower: on a counts selection Context's bar chart
+#                 (% axis) asks for 6 px more and the grid gives it from Column 1
+#   UNEXPECTED    anything else (reviewed by hand)
+import json, os, re, sys
+from collections import Counter, defaultdict
+from PIL import Image, ImageChops
+root = sys.argv[1]
+A, B = os.path.join(root, "main"), os.path.join(root, "br")
+NONVIEW = re.compile(r"^(Full screen|Exit full screen|Collapse|Open:|Where this figure|What this shows|Add a private note|Edit note|Export|Swap rows)")
+def canon(d):
+    m = {}
+    for f in os.listdir(d):
+        if not f.endswith(".json") or "__" not in f: continue
+        n = f[:-5]
+        try: j = json.load(open(os.path.join(d, f)))
+        except Exception: continue
+        if not os.path.exists(os.path.join(d, n + ".png")): continue
+        pressed = [r[:-1] for r in j.get("rail", []) if r.endswith("*") and not NONVIEW.match(r)]
+        key = n.rsplit("__", 1)[0] + "__" + (pressed[0] if pressed else "only")
+        m.setdefault(key, n)
+    return m
+CA, CB = canon(A), canon(B)
+cls = Counter(); rows = []; unexpected = []
+for n in sorted(CA):
+    if n not in CB: continue
+    fa, fb = CA[n], CB[n]
+    ia, ib = Image.open(os.path.join(A, fa + ".png")).convert("RGB"), Image.open(os.path.join(B, fb + ".png")).convert("RGB")
+    da, db = json.load(open(os.path.join(A, fa + ".json"))), json.load(open(os.path.join(B, fb + ".json")))
+    pix = ia.size == ib.size and ImageChops.difference(ia, ib).getbbox() is None
+    case = n.split("__")[0]; urn, ph, state = case.split("-")[:3]
+    panel = [p for p in n.split("__") if re.match(r"^c\d\.(current|trends)$", p)][0]
+    view = n.rsplit("__", 1)[1]
+    same = pix and da["text"] == db["text"] and da.get("caption") == db.get("caption") and da.get("info") == db.get("info")
+    words = da["text"] == db["text"] and da.get("caption") == db.get("caption") and da.get("info") == db.get("info")
+    maxch = 0
+    if not pix and ia.size == ib.size:
+        dd = ImageChops.difference(ia, ib)
+        maxch = max(max(band) for band in [dd.getextrema()[0], dd.getextrema()[1], dd.getextrema()[2]])
+    if same: k = "IDENTICAL"
+    elif words and ia.size == ib.size and maxch <= 8: k = "NOISE"
+    elif words and ia.size != ib.size and state in ("counts1", "counts2"): k = "EXP-KNOCKON"
+    elif re.search(r"map", view, re.I): k = "EXP-MAP"
+    elif any(r.startswith("Swap rows and columns") for r in db.get("rail", [])): k = "EXP-TABLE"
+    elif state.startswith("counts") and (panel.startswith("c2") or panel.startswith("c3") or panel == "c1.current"): k = "EXP-COUNTS"
+    elif ph == "ks5" and state in ("threshold", "bands", "counts0", "counts1", "counts2"): k = "EXP-POST16"
+    else: k = "UNEXPECTED"; unexpected.append(n)
+    cls[k] += 1
+    rows.append((state, panel, k))
+missing = [k for k in CA if k not in CB]; extra = [k for k in CB if k not in CA]
+print(f"pairs {sum(cls.values())}  " + "  ".join(f"{k} {v}" for k, v in sorted(cls.items())) + f"  only-main {len(missing)}  only-branch {len(extra)}")
+g = Counter(rows)
+for key in sorted(g): print("  ", key, g[key])
+print("UNEXPECTED:"); [print("  ", x) for x in unexpected]
+print("only-main:", missing[:40]); print("only-branch:", extra[:40])
+errs = [f for f in os.listdir(B) if f.endswith("__errors.txt")] + [f for f in os.listdir(B) if f.endswith("__failed.txt")]
+errsA = [f for f in os.listdir(A) if f.endswith("__errors.txt")] + [f for f in os.listdir(A) if f.endswith("__failed.txt")]
+print("branch errors/failed:", errs); print("main errors/failed:", errsA)
+
+# Tables: the swap is layout only. Where the branch table is across (as main), its words must be
+# main's apart from the button; where down, the same figures must appear. Post-16 grade states and
+# counts states may differ in figures (S1, S3) and are listed apart.
+def figures(t):
+    return sorted(re.findall(r"[−+-]?\d[\d,]*(?:\.\d+)?%?|—", t or ""))
+tw = Counter(); twlist = []
+for (state, panel, k), n in zip(rows, [x for x in sorted(CA) if x in CB]):
+    if k != "EXP-TABLE": continue
+    ta = json.load(open(os.path.join(A, CA[n] + ".json")))["text"]; tb = json.load(open(os.path.join(B, CB[n] + ".json")))["text"]
+    if ta == tb: tw["same words"] += 1
+    elif figures(ta) == figures(tb): tw["same figures, laid out differently"] += 1
+    elif state.startswith("counts") or (n.split("-")[1] == "ks5" and state in ("threshold", "bands")): tw["figures differ (counts / Post-16 grade state)"] += 1; twlist.append(("allowed", n))
+    else: tw["FIGURES DIFFER"] += 1; twlist.append(("CHECK", n))
+print("tables:", dict(tw)); [print("  ", a, b) for a, b in twlist if a == "CHECK"]
