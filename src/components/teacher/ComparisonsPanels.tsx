@@ -190,7 +190,9 @@ export function ComparisonsPanels({
   // thresholdRate, so every school is scored exactly as the school itself is.
   // 0.6.3 S1 (R-MIN-ENTRIES): `minEntries` -- a school publishing the subject below it is
   // listed by the ranking as "too few entries" (its rateOf returns null), not dropped.
-  threshold?: { subject: string; qualificationType: string; rateOf: (rows: SubjectGradeCount[]) => number | null; minEntries?: number } | null;
+  // 0.6.3 S3: `unavailable` -- no comparable figure exists for this focus (an AS focus on
+  // points); the column gives way to this note.
+  threshold?: { subject: string; qualificationType: string; rateOf: (rows: SubjectGradeCount[]) => number | null; minEntries?: number; unavailable?: string } | null;
   // Snagging round 1 Part 4: set when the active comparator is a national/regional
   // RANKING (the chooser's 3a/3b) rather than a list of schools. Its schools are a sample
   // (the top and this school's neighbours), so the column shows no map of them; it shows
@@ -909,7 +911,9 @@ export function ComparisonsPanels({
   // On a rate, a school that publishes no grades for the subject drops out of the lists as
   // it does for points. The whole column gives way to a note only when no comparator has a
   // rate at all, or the grade counts could not be loaded.
-  const unavailableNote = !threshold || !gradesLoaded
+  const unavailableNote = threshold?.unavailable
+    ? threshold.unavailable
+    : !threshold || !gradesLoaded
     ? null
     : grades?.rows === null
       ? `Comparator schools' ${measure.label.replace(/^Grade/, "grade")} for ${subjectLabel ?? threshold.subject} could not be loaded. Try again shortly.`

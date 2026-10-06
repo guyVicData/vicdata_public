@@ -2,6 +2,7 @@ import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lookupAcademicSubjectGradeGeography } from "@/lib/vicdata-reference";
+import { normaliseKs5AreaRows } from "@/lib/grade-rows";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
 import type { GradeGeographyPayload, GradeGeographyRow } from "@/lib/teacher-view-grade-geography";
@@ -50,9 +51,10 @@ export async function GET(request: NextRequest) {
   const fetchRows = async (groupingType: "la" | "region" | "national", key: string | null) => {
     if (!key) return null;
     const rows = await lookupAcademicSubjectGradeGeography({ ksStage: phase, groupingType, groupingKeys: [key], subject, qualificationType });
-    const out: GradeGeographyRow[] = rows
-      .map((r) => ({ period: r.period, grade: r.grade, entries: Number(r.entries_total), schoolCount: r.school_count }))
-      .sort((a, b) => a.period - b.period);
+    const raw: GradeGeographyRow[] = rows.map((r) => ({ period: r.period, grade: r.grade, entries: Number(r.entries_total), schoolCount: r.school_count }));
+    // 0.6.3 S3: at KS5, the historic vocational codes in their modern words and "*" as A*,
+    // exactly as the school's own rows (R-HISTORIC-GRADE-LABELS, R-ALEVEL-STAR).
+    const out = (phase === "ks5" ? normaliseKs5AreaRows(raw, qualificationType) : raw).sort((a, b) => a.period - b.period);
     return out.length ? { name: key, rows: out } : null;
   };
   try {

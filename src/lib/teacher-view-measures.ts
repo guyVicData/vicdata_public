@@ -272,7 +272,9 @@ export function shareApplies(measureId: MeasureId, hasBandRange: boolean): boole
  * come from GCSE (9-1) Full Course alone, so there is nothing to blend there.
  */
 export function contextKeepsToFamily(phase: TeacherPhase, measureId: MeasureId): boolean {
-  return phase === "ks5" && measureId === "points";
+  // 0.6.3 S3: on Grade bands and a Grade counts selection too ("bands" here) -- the scale
+  // check alone can't tell them apart: A level, EPQ, Core Maths and FSMQ all read A*-E.
+  return phase === "ks5" && (measureId === "points" || measureId === "bands" || measureId === "counts");
 }
 
 /**

@@ -55,6 +55,7 @@ import { SubjectPanels, type SubjectSeries } from "@/components/teacher/SubjectP
 import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeries, type SetOption } from "@/components/teacher/ComparisonsPanels";
 import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
 import { mapResultOf, type MapSeries } from "@/lib/teacher-map";
+import { isAsLevelOrAea } from "@/lib/dfe-qualification-buckets";
 import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
@@ -63,7 +64,7 @@ import { PillRowSpacer } from "@/components/teacher/PillMenu";
 import { GradeCountsPanels } from "@/components/teacher/GradeCountsPanels";
 import { ContextPills, type CompareAgainstId } from "@/components/teacher/ContextPills";
 import { combine, headlineMeasure, measureById, measuresFor, meanOf, panelsFrom, type Measure, type MeasureId, type PanelId } from "@/lib/teacher-view-panels";
-import { NON_GRADE_VALUES, bandRate, bestScale, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
+import { GRADE_SCALES, NON_GRADE_VALUES, bandRate, inlineRangeLabel, rangeLabel, scaleForQualification, type GradeRange } from "@/lib/subject-grades";
 import { savedSelection, selectionChipLabel, type Selection } from "@/lib/grade-selection";
 import { showColumn } from "@/components/teacher/showColumn";
 import type { FrameSetGrades } from "@/lib/view-series/frames";
@@ -81,7 +82,7 @@ import { type RankedSchool } from "@/lib/teacher-view-rankings";
 import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from "@/lib/teacher-view-phases";
 // VicData 0.6 S2: the rules that decide each figure and each comparison population live in
 // these libs (every enforcement point tagged with its rule ID); this page only calls them.
-import { bandRangeFor, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, gradeRowsAt, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
+import { bandRangeFor, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, gradeRowsAt, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, onFocusPointsScale, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
 import { type SubjectItem as LibSubjectItem, asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf, subjectItemsOf } from "@/lib/teacher-view-populations";
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { MINIMUM_SUBJECT_N, deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
@@ -1202,7 +1203,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // reached back to 2021/22, so the range and every latest-year band figure stay as they were.
   // (Four years would read some small GCSE cohorts with no 8 or 9 since 2023/24 as GCSE
   // rather than IB 7-1, and so give them a band figure: a latest-year change, logged for Guy.)
-  const focusScale = bestScale(focusGradeRows.filter((g) => g.period >= MODERN_GRADE_FROM).map((g) => g.grade));
+  // 0.6.3 S3: from the focus's qualification type first (a T Level is on the T Level scale).
+  const focusScale = scaleForQualification(focusItem?.qualificationType ?? "", focusGradeRows.filter((g) => g.period >= MODERN_GRADE_FROM).map((g) => g.grade));
   // 0.6.1 S5 (D3): the range is chosen in the top bar (ResultsControl: the scale's presets,
   // or Custom's from / to), no longer by clicking two grades in the Grades view.
   const bandRange: GradeRange | null = bandRangeFor(focusScale, null, readSetting(columns, BAND_RANGE_KEY));
@@ -1381,7 +1383,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // this leaves them out of the figures too.
   // S3b (Part D decision 1): a focused AS or AEA item counts itself into its own group.
   const groupRows = contextGroupRows(phase, headline, qualificationHeadline, focusItem);
-  const inGroup = (qualificationType: string, subject: string) => inContextGroup(phase, qualificationType, subject, focusItem);
+  // 0.6.3 S3: at Post-16 on bands and a counts selection, each member's rows keep to the
+  // focus's family as well (R-KS5-ASAEA-EXCL still applies first).
+  const bandsInFamily = phase === "ks5" && contextMeasure.id === "bands";
+  const inGroup = (qualificationType: string, subject: string) =>
+    inContextGroup(phase, qualificationType, subject, focusItem) && (!bandsInFamily || onFocusPointsScale(focusQualFamily, qualificationType));
 
   // One value per SUBJECT NAME per period, for whichever measure is active. Group members
   // are subjects of the whole school, not just the ticked ones, so they are addressed by
@@ -1680,6 +1686,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   };
 
+  // 0.6.3 S3: an AS / AEA focus at Post-16 is compared on its own exact qualification
+  // (size, share and rank on its graded entries, never the A-level bucket's).
+  const exactQualFocus = phase === "ks5" && !!focusItem && isAsLevelOrAea(focusItem.qualificationType);
+  // 0.6.3 S3: A*-E at Post-16 scores A-level-scale qualifications only; a BTEC, IB or T
+  // Level focus says so on the panels rather than showing grey dots with no reason.
+  const aStarToEOff = phase === "ks5" && usingThreshold && !!focusItem && focusScale !== GRADE_SCALES[2];
+  const aStarToENote = "A*–E applies to A levels; use a grade or band for this qualification.";
+  const gradedEntriesOf = (rows: SubjectGradeCount[]): number | null => rows.filter((r) => !NON_GRADE_VALUES.has(r.grade)).reduce((a, r) => a + r.entries, 0) || null;
+
   // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
   // The figure still follows the focus subject (round 7 §9): with one in focus it is that
   // subject's own figure on Results' chosen measure -- points per entry, or the Grade 4+ /
@@ -1962,6 +1977,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               ? "the England GCSE average for the subject"
               : "the England average for the same subject and qualification"
         }
+        limitNote={aStarToEOff ? aStarToENote : undefined}
         note={
           usingThreshold
             ? `Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
@@ -2169,6 +2185,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         prompt={countsPrompt ? "Click a grade in Results to compare it across subjects" : undefined}
         selectionChip={selectionChip}
         titleLead={countsSelectionMeasure && usingCounts ? countsSelectionMeasure.label : undefined}
+        limitNote={aStarToEOff ? aStarToENote : undefined}
         note={
           contextMeasure.id === "threshold"
             ? undefined
@@ -2225,7 +2242,17 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // Results on a grade threshold with a subject in focus: the column fetches every
         // comparator's grade counts for it and scores them as thresholdAt() scores ours.
         threshold={
-          showingResults && (usingThreshold || comparisonsOnBands) && activeMapChip && focusItem && phase !== "ks2"
+          // 0.6.3 S3: an AS or AEA focus is compared on its own qualification's rows -- the
+          // map profiles only carry the A-level bucket, which adds A levels in. Candidates:
+          // each school's graded entries; points: none are published at that grain.
+          exactQualFocus && activeMapChip && focusItem && !(showingResults && (usingThreshold || comparisonsOnBands))
+            ? {
+                subject: focusItem.subject,
+                qualificationType: focusItem.qualificationType,
+                rateOf: showingResults ? () => null : gradedEntriesOf,
+                ...(showingResults ? { unavailable: `Other schools' average points aren't published for ${qualificationShortLabel(phase, focusItem.qualificationType) || focusItem.qualificationType} on its own, only with A levels; use a grade or band to compare it.` } : {}),
+              }
+            : showingResults && (usingThreshold || comparisonsOnBands) && activeMapChip && focusItem && phase !== "ks2"
             ? {
                 subject: focusItem.subject,
                 qualificationType: focusItem.qualificationType,
@@ -2234,6 +2261,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
                 rateOf: usingCounts ? selectionRateOf : gradeRateScorer(comparisonsOnBands, bandRange, phase),
                 // R-MIN-ENTRIES (0.6.3 S1): on a counts selection a school below the minimum shows as too few entries.
                 ...(usingCounts ? { minEntries: MINIMUM_SUBJECT_N } : {}),
+                ...(aStarToEOff ? { unavailable: aStarToENote } : {}),
               }
             : null
         }

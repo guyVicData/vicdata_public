@@ -106,6 +106,32 @@ export function bestScale(grades: Iterable<string>): string[] {
   return best;
 }
 
+/**
+ * 0.6.3 S3: whether `scale` is one of the scales that best cover these grades -- bestScale's
+ * pick, or one tied with it. T Level and the vocational single award share Distinction* /
+ * Distinction / Merit / Pass, so a T Level comparator without a "Partial achievement" row
+ * tied, bestScale picked the vocational scale, and the school read as a false grey dot.
+ */
+export function scaleFits(grades: Iterable<string>, scale: string[]): boolean {
+  const graded = Array.from(new Set(grades)).filter((g) => !NON_GRADE_VALUES.has(g) && !(g in BOTTOM_RANK));
+  const hitsOn = (sc: string[]) => graded.filter((g) => sc.includes(g)).length;
+  const own = hitsOn(scale);
+  if (own === 0) return false;
+  const most = Math.max(...GRADE_SCALES.map(hitsOn));
+  return own === most;
+}
+
+export const T_LEVEL_SCALE = GRADE_SCALES[GRADE_SCALES.length - 1];
+
+/**
+ * 0.6.3 S3: the focused subject's scale from its qualification type first, its grades only
+ * after: a T Level is on the T Level scale whatever grades it happens to have this year.
+ */
+export function scaleForQualification(qualificationType: string, grades: Iterable<string>): string[] {
+  if (/^T Level/i.test(qualificationType)) return T_LEVEL_SCALE;
+  return bestScale(grades);
+}
+
 // A grade's position on a scale, best first: its index, BOTTOM_RANK's 900s for Fail/U/
 // Unclassified, and 800 for a grade the scale does not know (it still sorts, after them).
 function rankOn(scale: string[], g: string): number {
@@ -251,7 +277,9 @@ export function bandRate(rows: { grade: string; entries: number }[], range: Grad
   if (total === 0) return null;
   // The range's own ends count toward choosing the scale, so a small cohort with only
   // grades 7-4 still reads as GCSE (not IB's 7-1) when the span was picked on GCSE.
-  if (bestScale([...graded.map((r) => r.grade), range.top, range.bottom]) !== range.scale) return null;
+  // 0.6.3 S3 (R-SCALE-FROM-QUAL): or the range's scale is among the best fits for the rows'
+  // own grades (a T Level comparator tied with the vocational scale).
+  if (bestScale([...graded.map((r) => r.grade), range.top, range.bottom]) !== range.scale && !scaleFits(graded.map((r) => r.grade), range.scale)) return null;
   const met = graded.filter((r) => inRange(range, r.grade)).reduce((a, r) => a + r.entries, 0);
   return { rate: (met / total) * 100, met, entries: total };
 }

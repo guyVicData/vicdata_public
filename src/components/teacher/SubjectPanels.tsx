@@ -101,6 +101,7 @@ export function SubjectPanels({
   notes,
   emptyText,
   note,
+  limitNote,
   changeScope = "all",
   theme = "dark",
   accentHex = null,
@@ -182,6 +183,9 @@ export function SubjectPanels({
   // onward. Content round S11 moved it from under every panel's figure (printed three
   // times per column) into each panel's "i" popover, after the source it qualifies.
   note?: ReactNode;
+  // 0.6.3 S3: a limit said on the card itself, not only behind the "i" (e.g. A*-E on a
+  // BTEC focus: "A*–E applies to A levels; use a grade or band for this qualification").
+  limitNote?: string;
   // Round 8 §4: the Current panel's tag names its own column ("Results 2024/25",
   // "Context 2024/25") rather than the generic "Current", so a panel read on its own --
   // fullscreen, or printed -- still says which card it came from. Absent falls back to
@@ -1139,7 +1143,7 @@ export function SubjectPanels({
       // Title over Current's views (bar chart and table), only when there is a comparison
       // within the category -- a lone subject has nothing to name. Not over the number
       // tiles, whose rank tile already names the category.
-      render={prompt ? { current: promptPanel(current, prompt), trend: promptPanel(trend, prompt) } : {
+      render={prompt ? { current: promptPanel(current, prompt), trend: promptPanel(trend, prompt) } : limitNote ? { current: { ...current, visibleCaption: limitNote, frame: currentFrame }, trend: { ...trend, visibleCaption: limitNote, frame } } : {
         current:
           categoryLabel && currentSubjects.length > 1 && effectiveView !== "tiles" && effectiveView !== "grades"
             ? {

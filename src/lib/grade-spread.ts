@@ -52,7 +52,9 @@ export function gradeCounts(ownRows: GradeCountRow[], englandRows: GradeCountRow
   const chgYear = picks.changeFrom !== null && changeEarlier.includes(picks.changeFrom) ? picks.changeFrom : changeEarlier[0] ?? null;
   const own = inYear(graded, latest);
   const ownTotal = totalOf(own);
-  const eng = inYear(englandRows, latest);
+  // R-ENGLAND-GRADED-ONLY (0.6.3 S3): England's shares over its graded rows only -- the same
+  // denominator as Grade bands' (bandDistribution) and the school's own.
+  const eng = inYear(englandRows.filter((r) => !NON_GRADE_VALUES.has(r.grade)), latest);
   const engTotal = totalOf(eng);
   const cmp = inYear(graded, cmpYear);
   const cmpTotal = totalOf(cmp);
