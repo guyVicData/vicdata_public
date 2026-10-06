@@ -1242,6 +1242,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   };
   // The range Context and Comparisons are scored on: Grade bands' range, or the counts selection.
   const columnsRange: GradeRange | null = usingCounts ? countsRange : bandRange;
+  // The selection drives Context and Comparisons only while the page shows Results: on
+  // Candidates both columns are on entries, whatever Results' measure is.
+  const countsDrive = showingResults && usingCounts;
   const columnsRangeLabel = columnsRange ? rangeLabel(columnsRange) : null;
   // Before any selection, Columns 2 and 3 ask for one (no silent points fallback).
   const countsPrompt = showingResults && usingCounts && !!focusItem && !countsRange;
@@ -1258,7 +1261,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     ? { ...measureById(phase, "bands"), label: `Share at ${inlineRangeLabel(rangeLabel(countsRange))}`, noun: `share of entries at ${inlineRangeLabel(rangeLabel(countsRange))}` }
     : null;
   // The chip on Columns 2 and 3's titles, back to Column 1 ("Grade 9 · from your highlight").
-  const selectionChip = countsRange
+  const selectionChip = countsRange && showingResults
     ? { label: selectionChipLabel(countsRange), onJump: () => showColumn(0, '[data-column-id] [data-panel-id$=".current"]') }
     : null;
   // Grade rows exist from 2021/22 (0.6.2; 2023/24 before); on Grade bands the axis is the years that have them.
@@ -1381,7 +1384,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const contextFallsBack = contextFallsBackFor(showingResults, resultsMeasure.id, !!columnsRange);
   // 0.6.3 S1: on a counts selection Context compares the selection's share; with none, it
   // shows the prompt (the measure below is then not drawn).
-  const contextMeasure = usingCounts && countsSelectionMeasure ? countsSelectionMeasure : contextMeasureFor(phase, showingResults, contextFallsBack, resultsMeasureShown);
+  const contextMeasure = countsDrive && countsSelectionMeasure ? countsSelectionMeasure : contextMeasureFor(phase, showingResults, contextFallsBack, resultsMeasureShown);
   // Current panel rework round 1: three groups, and "category" (the focused subject's own
   // subject category) is the default -- nothing saved, or a saved "area" from before S8
   // (which was this same comparison), reads as it. An explicit All or Selected choice stays.
@@ -1474,7 +1477,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const contextValueFor = (i: SubjectItem, period: number): number | null => {
     if (contextMeasure.id === "entries") return entriesAt(i, period);
     if (contextMeasure.id === "points") return pointsAt(i, period);
-    if (contextMeasure.id === "bands") return usingCounts ? selectionRateOf(gradeRowsAt(gradeRows, i.subject, i.qualificationType, period)) : bandAt(i, period);
+    if (contextMeasure.id === "bands") return countsDrive ? selectionRateOf(gradeRowsAt(gradeRows, i.subject, i.qualificationType, period)) : bandAt(i, period);
     return thresholdAt(i, period);
   };
 
@@ -1706,7 +1709,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const exactQualFocus = phase === "ks5" && !!focusItem && isAsLevelOrAea(focusItem.qualificationType);
   // 0.6.3 S3: A*-E at Post-16 scores A-level-scale qualifications only; a BTEC, IB or T
   // Level focus says so on the panels rather than showing grey dots with no reason.
-  const aStarToEOff = phase === "ks5" && usingThreshold && !!focusItem && focusScale !== GRADE_SCALES[2];
+  const aStarToEOff = phase === "ks5" && showingResults && usingThreshold && !!focusItem && focusScale !== GRADE_SCALES[2];
   const aStarToENote = "A*–E applies to A levels; use a grade or band for this qualification.";
   const gradedEntriesOf = (rows: SubjectGradeCount[]): number | null => rows.filter((r) => !NON_GRADE_VALUES.has(r.grade)).reduce((a, r) => a + r.entries, 0) || null;
 
@@ -1721,8 +1724,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // counts has no single figure to rank schools by, and Grade bands none until a range is
   // picked: both compare on average point score here.
   // 0.6.3 S1: a Grade counts selection is scored the same way, on the selection.
-  const comparisonsOnBands = (usingBands && !!bandRange) || (usingCounts && !!countsRange);
-  const comparisonsMeasure = comparisonsMeasureFor(phase, showingResults, !!activeMapChip, usingThreshold, comparisonsOnBands, usingCounts && countsSelectionMeasure ? countsSelectionMeasure : resultsMeasureShown, headlineLabel);
+  const comparisonsOnBands = (usingBands && !!bandRange) || (countsDrive && !!countsRange);
+  const comparisonsMeasure = comparisonsMeasureFor(phase, showingResults, !!activeMapChip, usingThreshold, comparisonsOnBands, countsDrive && countsSelectionMeasure ? countsSelectionMeasure : resultsMeasureShown, headlineLabel);
 
   // Each set's own caveat, kept from round 5 -- the reason a set is what it is belongs
   // beside the set, not in a tooltip.
@@ -2199,13 +2202,13 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // 0.6.3 S1: on Grade counts, the prompt until a grade is selected; then the chip.
         prompt={countsPrompt ? "Click a grade in Results to compare it across subjects" : undefined}
         selectionChip={selectionChip}
-        titleLead={countsSelectionMeasure && usingCounts ? countsSelectionMeasure.label : undefined}
+        titleLead={countsSelectionMeasure && countsDrive ? countsSelectionMeasure.label : undefined}
         limitNote={aStarToEOff ? aStarToENote : undefined}
         note={
           contextMeasure.id === "threshold"
             ? undefined
             : contextMeasure.id === "bands"
-              ? usingCounts
+              ? countsDrive
                 ? `Subjects on a different grade scale from the selection's are left out, and a subject with fewer than ${MINIMUM_SUBJECT_N} graded entries shows as too few entries.`
                 : "Subjects on a different grade scale from the range's are left out."
               : [
@@ -2282,7 +2285,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         }
         prompt={countsPrompt ? "Click a grade in Results to compare it across schools" : undefined}
         selectionChip={selectionChip}
-        titleLead={countsSelectionMeasure && usingCounts ? countsSelectionMeasure.label : undefined}
+        titleLead={countsSelectionMeasure && countsDrive ? countsSelectionMeasure.label : undefined}
         mapRange={comparisonsOnBands ? columnsRange : null}
         schoolUrn={schoolUrn}
         mapProfiles={mapProfiles}
