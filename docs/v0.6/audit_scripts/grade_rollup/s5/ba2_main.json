@@ -1,0 +1,450 @@
+[
+ {
+  "name": "The Chase",
+  "urn": "137625",
+  "phase": "ks4",
+  "subject": "History",
+  "qual": "GCSE (9-1) Full Course",
+  "years": [
+   "2023/24",
+   "2024/25"
+  ],
+  "threshold": {
+   "label": "Grade 4+ rate",
+   "values": [
+    "74%",
+    "76%"
+   ],
+   "latest": "76%",
+   "vsLastYear": "+2pp",
+   "drawn": "2023/24 2024/25",
+   "word": "Broadly stable",
+   "change": "+2pp since 2023/24",
+   "sentence": "History's grade 4+ rate has stayed roughly level from 74% to 76%; a change of 2 percentage points since 2023/24."
+  },
+  "bands": [
+   {
+    "label": "Grades 4–9",
+    "values": [
+     "74%",
+     "76%"
+    ],
+    "drawn": "2023/24 2024/25",
+    "word": "Broadly stable",
+    "change": "+2pp since 2023/24",
+    "sentence": "History's share of entries at grades 4–9 has stayed roughly level from 74% to 76%; a change of 2 percentage points since 2023/24."
+   },
+   {
+    "label": "Grades 7–9",
+    "values": [
+     "35%",
+     "34%"
+    ],
+    "drawn": "2023/24 2024/25",
+    "word": "Broadly stable",
+    "change": "−1pp since 2023/24",
+    "sentence": "History's share of entries at grades 7–9 has stayed roughly level from 35% to 34%; a change of 1 percentage point since 2023/24."
+   }
+  ],
+  "counts": {
+   "years": [
+    "2023/24",
+    "2024/25"
+   ],
+   "latest": "2024/25",
+   "total": 132,
+   "modal": "6",
+   "spreadAgainst": "2023/24",
+   "changeFrom": "2023/24",
+   "change": [
+    "9: 15 → 11",
+    "8: 15 → 14",
+    "7: 12 → 20"
+   ]
+  },
+  "comparisons": {
+   "schools": 10,
+   "line": [
+    "63% (10)",
+    "61% (10)"
+   ],
+   "drawn": "2023/24 2024/25",
+   "word": "Broadly stable",
+   "change": "−2pp since 2023/24",
+   "sentence": "the 10 nearest schools' average has stayed roughly level from 63% to 61%; a change of 2 percentage points since 2023/24."
+  },
+  "points": {
+   "subject": {
+    "values": [
+     "—",
+     "6.02",
+     "5.51",
+     "5.43",
+     "5.32"
+    ],
+    "drawn": "2021/22 2022/23 2023/24 2024/25",
+    "word": "Declining",
+    "change": "−0.7 since 2021/22",
+    "sentence": "History's average points has fallen from 6.0 to 5.3; a fall of 0.7 points since 2021/22."
+   },
+   "school": {
+    "label": "Attainment 8",
+    "values": [
+     "53.6",
+     "49.4",
+     "50.9",
+     "51.9"
+    ],
+    "drawn": "2021/22 2022/23 2023/24 2024/25",
+    "word": "Broadly stable",
+    "change": "−1.7 since 2021/22",
+    "sentence": "Your school's Attainment 8 has stayed roughly level from 53.6 to 51.9; a change of 1.7 points since 2021/22."
+   },
+   "set": {
+    "values": [
+     "50.4",
+     "47.0",
+     "46.9",
+     "46.4"
+    ],
+    "drawn": "2021/22 2022/23 2023/24 2024/25",
+    "word": "Declining",
+    "change": "−4.1 since 2021/22",
+    "sentence": "the 10 nearest schools' average has fallen from 50.4 to 46.4; a fall of 4.1 points since 2021/22."
+   }
+  }
+ },
+ {
+  "name": "Acland Burghley School",
+  "urn": "100053",
+  "phase": "ks4",
+  "subject": "History",
+  "qual": "GCSE (9-1) Full Course",
+  "years": [
+   "2023/24",
+   "2024/25"
+  ],
+  "threshold": {
+   "label": "Grade 4+ rate",
+   "values": [
+    "76%",
+    "74%"
+   ],
+   "latest": "74%",
+   "vsLastYear": "−3pp",
+   "drawn": "2023/24 2024/25",
+   "word": "Broadly stable",
+   "change": "−3pp since 2023/24",
+   "sentence": "History's grade 4+ rate has stayed roughly level from 76% to 74%; a change of 3 percentage points since 2023/24."
+  },
+  "bands": [
+   {
+    "label": "Grades 4–9",
+    "values": [
+     "76%",
+     "74%"
+    ],
+    "drawn": "2023/24 2024/25",
+    "word": "Broadly stable",
+    "change": "−3pp since 2023/24",
+    "sentence": "History's share of entries at grades 4–9 has stayed roughly level from 76% to 74%; a change of 3 percentage points since 2023/24."
+   },
+   {
+    "label": "Grades 7–9",
+    "values": [
+     "49%",
+     "41%"
+    ],
+    "drawn": "2023/24 2024/25",
+    "word": "Declining",
+    "change": "−7pp since 2023/24",
+    "sentence": "History's share of entries at grades 7–9 has fallen from 49% to 41%; a fall of 7 percentage points since 2023/24."
+   }
+  ],
+  "counts": {
+   "years": [
+    "2023/24",
+    "2024/25"
+   ],
+   "latest": "2024/25",
+   "total": 121,
+   "modal": "9",
+   "spreadAgainst": "2023/24",
+   "changeFrom": "2023/24",
+   "change": [
+    "9: 21 → 25",
+    "8: 21 → 13",
+    "7: 18 → 12"
+   ]
+  },
+  "comparisons": {
+   "schools": 10,
+   "line": [
+    "78% (10)",
+    "71% (10)"
+   ],
+   "drawn": "2023/24 2024/25",
+   "word": "Declining",
+   "change": "−7pp since 2023/24",
+   "sentence": "the 10 nearest schools' average has fallen from 78% to 71%; a fall of 7 percentage points since 2023/24."
+  }
+ },
+ {
+  "name": "Acland Burghley School",
+  "urn": "100053",
+  "phase": "ks4",
+  "subject": "Latin",
+  "qual": "GCSE (9-1) Full Course",
+  "years": [
+   "2024/25"
+  ],
+  "threshold": {
+   "label": "Grade 4+ rate",
+   "values": [
+    "88%"
+   ],
+   "latest": "88%",
+   "vsLastYear": "—",
+   "drawn": "2024/25",
+   "word": "—",
+   "change": "—",
+   "sentence": "Not enough published years yet to describe a trend."
+  },
+  "bands": [
+   {
+    "label": "Grades 4–9",
+    "values": [
+     "88%"
+    ],
+    "drawn": "2024/25",
+    "word": "—",
+    "change": "—",
+    "sentence": "Not enough published years yet to describe a trend."
+   },
+   {
+    "label": "Grades 7–9",
+    "values": [
+     "50%"
+    ],
+    "drawn": "2024/25",
+    "word": "—",
+    "change": "—",
+    "sentence": "Not enough published years yet to describe a trend."
+   }
+  ],
+  "counts": {
+   "years": [
+    "2024/25"
+   ],
+   "latest": "2024/25",
+   "total": 8,
+   "modal": "9",
+   "spreadAgainst": null,
+   "changeFrom": null,
+   "change": [
+    "9: ",
+    "8: ",
+    "6: "
+   ]
+  },
+  "comparisons": {
+   "schools": 10,
+   "line": [
+    "100% (1)"
+   ],
+   "drawn": "2024/25",
+   "word": "—",
+   "change": "—",
+   "sentence": "Not enough published years yet to describe a trend."
+  }
+ },
+ {
+  "name": "The King's School Worcester",
+  "urn": "117037",
+  "phase": "ks5",
+  "subject": "Mathematics",
+  "qual": "GCE A level",
+  "years": [
+   "2023/24",
+   "2024/25"
+  ],
+  "threshold": {
+   "label": "A*–E rate",
+   "values": [
+    "100%",
+    "100%"
+   ],
+   "latest": "100%",
+   "vsLastYear": "0pp",
+   "drawn": "2023/24 2024/25",
+   "word": "Broadly stable",
+   "change": "0pp since 2023/24",
+   "sentence": "Mathematics's a*–e rate has stayed roughly level from 100% to 100%; a change of 0 percentage points since 2023/24."
+  },
+  "bands": [
+   {
+    "label": "A* to B",
+    "values": [
+     "88%",
+     "69%"
+    ],
+    "drawn": "2023/24 2024/25",
+    "word": "Declining",
+    "change": "−19pp since 2023/24",
+    "sentence": "Mathematics's share of entries at A*–B has fallen from 88% to 69%; a fall of 19 percentage points since 2023/24."
+   },
+   {
+    "label": "A* to A",
+    "values": [
+     "61%",
+     "40%"
+    ],
+    "drawn": "2023/24 2024/25",
+    "word": "Declining",
+    "change": "−21pp since 2023/24",
+    "sentence": "Mathematics's share of entries at A*–A has fallen from 61% to 40%; a fall of 21 percentage points since 2023/24."
+   }
+  ],
+  "counts": {
+   "years": [
+    "2023/24",
+    "2024/25"
+   ],
+   "latest": "2024/25",
+   "total": 35,
+   "modal": "B",
+   "spreadAgainst": "2023/24",
+   "changeFrom": "2023/24",
+   "change": [
+    "A*: 0 → 8",
+    "*: 22 → 0",
+    "A: 12 → 6"
+   ]
+  },
+  "comparisons": {
+   "schools": 10,
+   "line": [
+    "100% (2)",
+    "100% (2)"
+   ],
+   "drawn": "2023/24 2024/25",
+   "word": "Broadly stable",
+   "change": "0pp since 2023/24",
+   "sentence": "the 10 nearest schools' average has stayed roughly level from 100% to 100%; a change of 0 percentage points since 2023/24."
+  },
+  "points": {
+   "subject": {
+    "values": [
+     "49.11",
+     "45.18",
+     "48.04",
+     "41.71"
+    ],
+    "drawn": "2021/22 2022/23 2023/24 2024/25",
+    "word": "Declining",
+    "change": "−7.4 since 2021/22",
+    "sentence": "Mathematics's average points has fallen from 49.1 to 41.7; a fall of 7.4 points since 2021/22."
+   },
+   "school": {
+    "label": "A level points per entry",
+    "values": [
+     "45.4",
+     "43.3",
+     "42.8",
+     "42.6"
+    ],
+    "drawn": "2021/22 2022/23 2023/24 2024/25",
+    "word": "Declining",
+    "change": "−2.8 since 2021/22",
+    "sentence": "Your school's A level points per entry has fallen from 45.4 to 42.6; a fall of 2.8 points since 2021/22."
+   },
+   "set": {
+    "values": [
+     "42.6",
+     "42.4",
+     "45.7",
+     "45.5"
+    ],
+    "drawn": "2021/22 2022/23 2023/24 2024/25",
+    "word": "Growing",
+    "change": "+2.9 since 2021/22",
+    "sentence": "the 10 nearest schools' average has grown from 42.6 to 45.5; a rise of 2.9 points since 2021/22."
+   }
+  }
+ },
+ {
+  "name": "Croydon College",
+  "urn": "130432",
+  "phase": "ks5",
+  "subject": "Business Studies",
+  "qual": "BTEC National Extended Certificate L3 - Band F - P-D*",
+  "years": [
+   "2023/24",
+   "2024/25"
+  ],
+  "threshold": {
+   "label": "A*–E rate",
+   "values": [
+    "—",
+    "—"
+   ],
+   "latest": "—",
+   "vsLastYear": "—",
+   "drawn": "",
+   "word": "—",
+   "change": "—",
+   "sentence": "Not enough published years yet to describe a trend."
+  },
+  "bands": [
+   {
+    "label": "Distinction* to Merit",
+    "values": [
+     "51%",
+     "62%"
+    ],
+    "drawn": "2023/24 2024/25",
+    "word": "Growing",
+    "change": "+11pp since 2023/24",
+    "sentence": "Business Studies's share of entries at Distinction*–Merit has grown from 51% to 62%; a rise of 11 percentage points since 2023/24."
+   },
+   {
+    "label": "Distinction* to Distinction",
+    "values": [
+     "12%",
+     "8%"
+    ],
+    "drawn": "2023/24 2024/25",
+    "word": "Declining",
+    "change": "−5pp since 2023/24",
+    "sentence": "Business Studies's share of entries at Distinction*–Distinction has fallen from 12% to 8%; a fall of 5 percentage points since 2023/24."
+   }
+  ],
+  "counts": {
+   "years": [
+    "2023/24",
+    "2024/25"
+   ],
+   "latest": "2024/25",
+   "total": 65,
+   "modal": "Merit",
+   "spreadAgainst": "2023/24",
+   "changeFrom": "2023/24",
+   "change": [
+    "Distinction*: 0 → 0",
+    "Distinction: 7 → 5",
+    "Merit: 22 → 35"
+   ]
+  },
+  "comparisons": {
+   "schools": 10,
+   "line": [
+    "—",
+    "—"
+   ],
+   "drawn": "",
+   "word": "—",
+   "change": "—",
+   "sentence": "Not enough published years yet to describe a trend."
+  }
+ }
+]

@@ -1,0 +1,212 @@
+pairs 3672  EXP-PICKER 16  EXP-YEARS 808  IDENTICAL 1342  NOTE-ONLY 1370  UNEXPECTED 136  missing-in-br 0  extra-in-br 36
+by state x panel x kind:
+   ('bands', 'current', 'IDENTICAL') 118
+   ('bands', 'current', 'NOTE-ONLY') 124
+   ('bands', 'current', 'UNEXPECTED') 38
+   ('bands', 'trends', 'EXP-YEARS') 176
+   ('bands', 'trends', 'NOTE-ONLY') 184
+   ('bandsaved', 'current', 'IDENTICAL') 46
+   ('bandsaved', 'current', 'NOTE-ONLY') 208
+   ('bandsaved', 'current', 'UNEXPECTED') 50
+   ('bandsaved', 'trends', 'EXP-YEARS') 352
+   ('cand', 'current', 'IDENTICAL') 256
+   ('cand', 'trends', 'IDENTICAL') 416
+   ('counts', 'current', 'IDENTICAL') 208
+   ('counts', 'trends', 'EXP-PICKER') 16
+   ('counts', 'trends', 'EXP-YEARS') 16
+   ('counts', 'trends', 'NOTE-ONLY') 288
+   ('points', 'current', 'IDENTICAL') 240
+   ('points', 'trends', 'IDENTICAL') 16
+   ('points', 'trends', 'NOTE-ONLY') 352
+   ('threshold', 'current', 'IDENTICAL') 38
+   ('threshold', 'current', 'NOTE-ONLY') 146
+   ('threshold', 'current', 'UNEXPECTED') 48
+   ('threshold', 'trends', 'EXP-YEARS') 264
+   ('threshold', 'trends', 'IDENTICAL') 4
+   ('threshold', 'trends', 'NOTE-ONLY') 68
+note-only detail:
+    S2 clause gone [bands current] 124
+    S2 clause gone [bands trends] 40
+    S2 clause gone [bandsaved current] 208
+    S2 clause gone [threshold current] 146
+    S2 clause gone [threshold trends] 68
+   note added [bands trends] 144
+   note added [counts trends] 288
+   note added [points trends] 352
+EXP-YEARS with grading note added: 772 of 808
+latest-year check (EXP-YEARS table rows: last year's value main = br): 3040 rows, 0 differ
+UNEXPECTED 100053-ks4-bands-category-dark-1280__c1.current__Bar chart
+UNEXPECTED 100053-ks4-bands-category-dark-1280__c1.current__Grade distribution
+UNEXPECTED 100053-ks4-bands-category-dark-1280__c1.current__Number tiles
+UNEXPECTED 100053-ks4-bands-category-dark-1280__c1.current__Sortable table
+UNEXPECTED 100053-ks4-bands-category-dark-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bands-category-dark-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bands-category-dark-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bands-category-dark-1280__c3.current__Map
+UNEXPECTED 100053-ks4-bands-category-dark-390__tab0__c1.current__Bar chart
+UNEXPECTED 100053-ks4-bands-category-dark-390__tab0__c1.current__Sortable table
+UNEXPECTED 100053-ks4-bands-category-dark-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bands-category-dark-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bands-category-dark-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bands-category-light-1280__c1.current__Bar chart
+UNEXPECTED 100053-ks4-bands-category-light-1280__c1.current__Grade distribution
+UNEXPECTED 100053-ks4-bands-category-light-1280__c1.current__Number tiles
+UNEXPECTED 100053-ks4-bands-category-light-1280__c1.current__Sortable table
+UNEXPECTED 100053-ks4-bands-category-light-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bands-category-light-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bands-category-light-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bands-category-light-1280__c3.current__Map
+UNEXPECTED 100053-ks4-bands-category-light-390__tab0__c1.current__Bar chart
+UNEXPECTED 100053-ks4-bands-category-light-390__tab0__c1.current__Sortable table
+UNEXPECTED 100053-ks4-bands-category-light-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bands-category-light-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bands-category-light-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bands-whole-dark-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bands-whole-dark-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bands-whole-dark-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bands-whole-dark-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bands-whole-dark-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bands-whole-dark-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bands-whole-light-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bands-whole-light-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bands-whole-light-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bands-whole-light-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bands-whole-light-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bands-whole-light-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-category-dark-1280__c1.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-category-dark-1280__c1.current__Grade distribution
+UNEXPECTED 100053-ks4-bandsaved-category-dark-1280__c1.current__Number tiles
+UNEXPECTED 100053-ks4-bandsaved-category-dark-1280__c1.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-category-dark-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-category-dark-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bandsaved-category-dark-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-category-dark-1280__c3.current__Map
+UNEXPECTED 100053-ks4-bandsaved-category-dark-390__tab0__c1.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-category-dark-390__tab0__c1.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-category-dark-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-category-dark-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bandsaved-category-dark-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-category-light-1280__c1.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-category-light-1280__c1.current__Grade distribution
+UNEXPECTED 100053-ks4-bandsaved-category-light-1280__c1.current__Number tiles
+UNEXPECTED 100053-ks4-bandsaved-category-light-1280__c1.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-category-light-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-category-light-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bandsaved-category-light-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-category-light-1280__c3.current__Map
+UNEXPECTED 100053-ks4-bandsaved-category-light-390__tab0__c1.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-category-light-390__tab0__c1.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-category-light-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-category-light-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bandsaved-category-light-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-whole-dark-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-whole-dark-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bandsaved-whole-dark-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-whole-dark-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-whole-dark-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bandsaved-whole-dark-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-whole-light-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-whole-light-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bandsaved-whole-light-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-bandsaved-whole-light-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-bandsaved-whole-light-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-bandsaved-whole-light-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-category-dark-1280__c1.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-category-dark-1280__c1.current__Number tiles
+UNEXPECTED 100053-ks4-threshold-category-dark-1280__c1.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-category-dark-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-category-dark-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-threshold-category-dark-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-category-dark-1280__c3.current__Map
+UNEXPECTED 100053-ks4-threshold-category-dark-390__tab0__c1.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-category-dark-390__tab0__c1.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-category-dark-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-category-dark-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-threshold-category-dark-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-category-light-1280__c1.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-category-light-1280__c1.current__Number tiles
+UNEXPECTED 100053-ks4-threshold-category-light-1280__c1.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-category-light-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-category-light-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-threshold-category-light-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-category-light-1280__c3.current__Map
+UNEXPECTED 100053-ks4-threshold-category-light-390__tab0__c1.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-category-light-390__tab0__c1.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-category-light-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-category-light-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-threshold-category-light-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-whole-dark-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-whole-dark-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-threshold-whole-dark-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-whole-dark-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-whole-dark-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-threshold-whole-dark-390__tab1__c2.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-whole-light-1280__c2.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-whole-light-1280__c2.current__Ranked list
+UNEXPECTED 100053-ks4-threshold-whole-light-1280__c2.current__Sortable table
+UNEXPECTED 100053-ks4-threshold-whole-light-390__tab1__c2.current__Bar chart
+UNEXPECTED 100053-ks4-threshold-whole-light-390__tab1__c2.current__Ranked list
+UNEXPECTED 100053-ks4-threshold-whole-light-390__tab1__c2.current__Sortable table
+UNEXPECTED 117037-ks5-bandsaved-whole-dark-1280__c2.current__Bar chart
+UNEXPECTED 117037-ks5-bandsaved-whole-dark-1280__c2.current__Ranked list
+UNEXPECTED 117037-ks5-bandsaved-whole-dark-1280__c2.current__Sortable table
+UNEXPECTED 117037-ks5-bandsaved-whole-dark-390__tab1__c2.current__Bar chart
+UNEXPECTED 117037-ks5-bandsaved-whole-dark-390__tab1__c2.current__Ranked list
+UNEXPECTED 117037-ks5-bandsaved-whole-dark-390__tab1__c2.current__Sortable table
+UNEXPECTED 117037-ks5-bandsaved-whole-light-1280__c2.current__Bar chart
+UNEXPECTED 117037-ks5-bandsaved-whole-light-1280__c2.current__Ranked list
+UNEXPECTED 117037-ks5-bandsaved-whole-light-1280__c2.current__Sortable table
+UNEXPECTED 117037-ks5-bandsaved-whole-light-390__tab1__c2.current__Bar chart
+UNEXPECTED 117037-ks5-bandsaved-whole-light-390__tab1__c2.current__Ranked list
+UNEXPECTED 117037-ks5-bandsaved-whole-light-390__tab1__c2.current__Sortable table
+UNEXPECTED 117037-ks5-threshold-whole-dark-1280__c2.current__Bar chart
+UNEXPECTED 117037-ks5-threshold-whole-dark-1280__c2.current__Ranked list
+UNEXPECTED 117037-ks5-threshold-whole-dark-1280__c2.current__Sortable table
+UNEXPECTED 117037-ks5-threshold-whole-dark-390__tab1__c2.current__Bar chart
+UNEXPECTED 117037-ks5-threshold-whole-dark-390__tab1__c2.current__Ranked list
+UNEXPECTED 117037-ks5-threshold-whole-dark-390__tab1__c2.current__Sortable table
+UNEXPECTED 117037-ks5-threshold-whole-light-1280__c2.current__Bar chart
+UNEXPECTED 117037-ks5-threshold-whole-light-1280__c2.current__Ranked list
+UNEXPECTED 117037-ks5-threshold-whole-light-1280__c2.current__Sortable table
+UNEXPECTED 117037-ks5-threshold-whole-light-390__tab1__c2.current__Bar chart
+UNEXPECTED 117037-ks5-threshold-whole-light-390__tab1__c2.current__Ranked list
+UNEXPECTED 117037-ks5-threshold-whole-light-390__tab1__c2.current__Sortable table
+views only in main (by panel/view): Counter()
+views only in br (by view @state): Counter({'Chart @bandsaved c3.trends__Chart': 16, 'Chart @threshold c3.trends__Chart': 12, 'Chart @bands c3.trends__Chart': 8})
+duplicate view shots (same pressed view twice): 0 0
+EXTRA-in-br 100053-ks4-bands-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bands-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bands-category-light-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bands-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bandsaved-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bandsaved-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bandsaved-category-light-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-bandsaved-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-threshold-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-threshold-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 100053-ks4-threshold-category-light-1280__c3.trends__Chart
+EXTRA-in-br 100053-ks4-threshold-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 117037-ks5-bandsaved-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 117037-ks5-bandsaved-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 117037-ks5-bandsaved-category-light-1280__c3.trends__Chart
+EXTRA-in-br 117037-ks5-bandsaved-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 117037-ks5-threshold-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 117037-ks5-threshold-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 117037-ks5-threshold-category-light-1280__c3.trends__Chart
+EXTRA-in-br 117037-ks5-threshold-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 130432-ks5-bandsaved-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 130432-ks5-bandsaved-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 130432-ks5-bandsaved-category-light-1280__c3.trends__Chart
+EXTRA-in-br 130432-ks5-bandsaved-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bands-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bands-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bands-category-light-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bands-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bandsaved-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bandsaved-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bandsaved-category-light-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-bandsaved-category-light-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-threshold-category-dark-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-threshold-category-dark-390__tab2__c3.trends__Chart
+EXTRA-in-br 137625-ks4-threshold-category-light-1280__c3.trends__Chart
+EXTRA-in-br 137625-ks4-threshold-category-light-390__tab2__c3.trends__Chart

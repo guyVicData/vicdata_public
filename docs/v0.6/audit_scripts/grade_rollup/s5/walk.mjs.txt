@@ -1,0 +1,148 @@
+// S5 parity walker, members' Teacher page (TeacherDashboard, admin=0) on captured real-data
+// fixtures: every case for both trees (b=main, b=br), every visible panel (per phone tab at
+// 390), every rail view; per shot a PNG and a digest (panel text, rail, the "i" popover text
+// and the caption popover text).
+//   node walk.mjs <outRoot> <chromePort> <casesJsonFile>
+import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from "node:fs";
+
+const [outRoot, cport, casesFile] = process.argv.slice(2);
+const cases = JSON.parse(readFileSync(casesFile, "utf8"));
+const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const profile = `/private/tmp/claude-501/s5g-chrome-${cport}`;
+rmSync(profile, { recursive: true, force: true });
+const chrome = spawn(CHROME, ["--headless=new", `--remote-debugging-port=${cport}`, `--user-data-dir=${profile}`, "--window-size=1400,1400", "--hide-scrollbars", "--force-color-profile=srgb", "--disable-gpu", "--font-render-hinting=none", "--no-first-run", "--mute-audio", "about:blank"], { stdio: "ignore" });
+const kill = () => { try { chrome.kill("SIGKILL"); } catch {} };
+process.on("exit", kill);
+process.on("SIGINT", () => { kill(); process.exit(1); });
+process.on("SIGTERM", () => { kill(); process.exit(1); });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout ${what}`)), ms))]);
+
+let ws, nextId = 1;
+const pending = new Map();
+async function connect() {
+  for (let i = 0; i < 80; i++) {
+    try {
+      const pages = (await (await fetch(`http://127.0.0.1:${cport}/json/list`)).json()).filter((t) => t.type === "page");
+      if (pages.length) { ws = new WebSocket(pages[0].webSocketDebuggerUrl); break; }
+    } catch {}
+    await sleep(250);
+  }
+  await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
+  ws.onmessage = (m) => {
+    const msg = JSON.parse(m.data);
+    if (msg.id && pending.has(msg.id)) { const { res, rej } = pending.get(msg.id); pending.delete(msg.id); msg.error ? rej(new Error(msg.error.message)) : res(msg.result); }
+    if (msg.method === "Fetch.requestPaused") {
+      const u = msg.params.request.url;
+      send(u.startsWith("http://127.0.0.1") ? "Fetch.continueRequest" : "Fetch.failRequest", u.startsWith("http://127.0.0.1") ? { requestId: msg.params.requestId } : { requestId: msg.params.requestId, errorReason: "BlockedByClient" }).catch(() => {});
+    }
+  };
+}
+const send = (method, params = {}) => withTimeout(new Promise((res, rej) => { const id = nextId++; pending.set(id, { res, rej }); ws.send(JSON.stringify({ id, method, params })); }), method === "Page.captureScreenshot" ? 90000 : 30000, method);
+const ev = async (expr) => { const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? "eval"); return r.result.value; };
+const quiet = async () => {
+  for (let i = 0; i < 60; i++) {
+    await sleep(120);
+    if (await ev("window.__inflight===0 && Date.now()-window.__last>500").catch(() => false)) break;
+  }
+  await ev(`new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))))`);
+};
+
+const VIS = `[...document.querySelectorAll('main:not([hidden]) [data-panel-id]')].filter(p => p.offsetParent !== null)`;
+const panelEl = (i) => `${VIS}[${i}]`;
+const railJs = (i) => `[...${panelEl(i)}.querySelectorAll('button[aria-pressed]')].filter(b => b.className.includes('h-[26px]') && !/^Collapse/.test(b.getAttribute('aria-label')))`;
+
+async function shoot(dir, name, i) {
+  const rect = await ev(`(() => { const r = ${panelEl(i)}.getBoundingClientRect(); return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height }; })()`);
+  if (process.env.DBG) console.log(Date.now() % 1000000, name, JSON.stringify(rect));
+  const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: rect.x, y: rect.y, width: Math.max(1, rect.w), height: Math.max(1, rect.h), scale: 1 } });
+  writeFileSync(`${dir}/${name}.png`, Buffer.from(shot.data, "base64"));
+  // The digest: the panel's words, its rail, and the two footer popovers' words (opened, read, closed).
+  const dom = await ev(`(async () => { const p = ${panelEl(i)}; const T = (e) => (e?.innerText || '').trim();
+    const pop = async (label) => { const b = [...p.querySelectorAll('button[aria-label="' + label + '"]')].filter(x => x.offsetParent !== null).pop(); if (!b) return null; b.click(); await new Promise(r => setTimeout(r, 60)); const t = T(b.nextElementSibling); b.click(); await new Promise(r => setTimeout(r, 30)); return t; };
+    const text = T(p);
+    const info = await pop('Where this figure comes from');
+    const caption = await pop('What this shows');
+    return { id: p.dataset.panelId, text, info, caption, rail: [...p.querySelectorAll('button[aria-label]')].map(b => b.getAttribute('aria-label') + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')), titles: [...p.querySelectorAll('[title]')].map(e => e.getAttribute('title')) }; })()`);
+  writeFileSync(`${dir}/${name}.json`, JSON.stringify(dom));
+  await ev(`new Promise(r => requestAnimationFrame(() => setTimeout(r, 60)))`);
+}
+
+async function walkPanels(dir, prefix, only) {
+  let shots = 0;
+  const n = await ev(`${VIS}.length`);
+  for (let i = 0; i < n; i++) {
+    const id = await ev(`${panelEl(i)}.dataset.panelId`);
+    if (only && !only.some((o) => id.includes(o))) continue;
+    const opened = await ev(`(() => { const b = ${panelEl(i)}.querySelector('button[aria-label^="Open:"]'); if (b) { b.click(); return true; } return false; })()`);
+    if (opened) await quiet();
+    const tag = `${prefix}__${id.split(".").slice(-2).join(".")}`;
+    const k = await ev(`${railJs(i)}.length`);
+    if (k === 0) { await shoot(dir, `${tag}__0`, i); shots++; continue; }
+    for (let j = 0; j < k; j++) {
+      const label = await ev(`(() => { const b = ${railJs(i)}[${j}]; if (!b) return null; b.click(); return b.getAttribute('aria-label'); })()`);
+      if (label === null) continue;
+      await quiet();
+      if (/map/i.test(label)) await sleep(500);
+      await shoot(dir, `${tag}__${j}`, i);
+      shots++;
+    }
+  }
+  return shots;
+}
+
+async function runOne(c, b) {
+  const dir = `${outRoot}/${b}`;
+  mkdirSync(dir, { recursive: true });
+  await send("Emulation.setDeviceMetricsOverride", { width: c.w, height: 1400, deviceScaleFactor: 1, mobile: false });
+  await send("Page.navigate", { url: `http://127.0.0.1:8988/s5g/index.html?b=${b}&${c.q}&admin=0&theme=${c.theme}` });
+  for (let k = 0; k < 100; k++) {
+    await sleep(150);
+    if (await ev(`document.readyState === 'complete' && document.querySelectorAll('main:not([hidden]) [data-panel-id]').length >= 2`).catch(() => false)) break;
+  }
+  await quiet();
+  if (c.focus) {
+    const r = await ev(`(async () => { const sleep = (ms) => new Promise(r => setTimeout(r, ms)); const T = (e) => (e?.innerText || '').replace(/\\s+/g, ' ').trim(); const re = new RegExp(${JSON.stringify(c.focus)});
+      let b = [...document.querySelectorAll('main:not([hidden]) button')].find(x => x.offsetParent !== null && re.test(T(x)) && !/Open:|Full screen/.test(x.getAttribute('aria-label') || ''));
+      if (!b) { const m = [...document.querySelectorAll('main:not([hidden]) button[aria-label^="Focus subject"]')].find(x => x.offsetParent !== null); if (m) { m.click(); await sleep(300); b = [...document.querySelectorAll('[role=group][aria-label="Focus subject"] button')].find(x => re.test(T(x))); } }
+      if (!b) return 'NO ' + re; b.click(); return T(b); })()`);
+    writeFileSync(`${dir}/${c.id}__focus.txt`, String(r));
+    await quiet();
+  }
+  const tabs = await ev(`[...document.querySelectorAll('main:not([hidden]) [role=tab]')].filter(t => t.offsetParent !== null).map(t => t.innerText.trim())`);
+  let shots = 0;
+  if (!tabs.length) shots += await walkPanels(dir, c.id, c.only);
+  else for (let t = 0; t < tabs.length; t++) {
+    await ev(`[...document.querySelectorAll('main:not([hidden]) [role=tab]')].filter(t => t.offsetParent !== null)[${t}].click()`);
+    await quiet();
+    shots += await walkPanels(dir, `${c.id}__tab${t}`, c.only);
+  }
+  const errs = await ev(`JSON.stringify((window.__errs || []).filter(e => !/ResizeObserver/.test(e)))`);
+  if (errs !== "[]") writeFileSync(`${dir}/${c.id}__errors.txt`, errs);
+  return shots;
+}
+
+(async () => {
+  await connect();
+  await send("Page.enable");
+  await send("Runtime.enable");
+  await send("Network.enable");
+  await send("Network.setBlockedURLs", { urls: ["https://*", "*cartocdn*", "*openstreetmap*", "*tile*"] });
+  let total = 0;
+  for (const c of cases) {
+    for (const b of ["main", "br"]) {
+      if (existsSync(`${outRoot}/${b}/${c.id}__done`)) continue;
+      try {
+        total += await withTimeout(runOne(c, b), 400000, `case ${c.id} ${b}`);
+        writeFileSync(`${outRoot}/${b}/${c.id}__done`, "");
+      } catch (e) {
+        mkdirSync(`${outRoot}/${b}`, { recursive: true });
+        writeFileSync(`${outRoot}/${b}/${c.id}__failed.txt`, String((e && e.stack) || e));
+      }
+    }
+  }
+  writeFileSync(`${outRoot}/_done_${cport}.txt`, `${total} shots\n`);
+  kill();
+  process.exit(0);
+})();

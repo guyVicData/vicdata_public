@@ -1,0 +1,46 @@
+/* eslint-disable */
+// Snag 3 / 02-03 harness: the Teacher page (published config, renderer=config) with the
+// editor in place, a stateful in-memory Supabase (stubs/supabase.ts), real fixtures.
+import { createRoot } from "react-dom/client";
+import Footer from "@/components/Footer";
+import { TeacherDashboard } from "@/components/dashboard-config/TeacherDashboard";
+import { TEACHER_DASHBOARDS } from "@/catalogue/dashboards";
+
+declare const window: any;
+const p = new URLSearchParams(location.search);
+const F = window.__FIX;
+const GUY = "guy-0000";
+window.__pathname = "/teacher/" + F.phase;
+window.__params = { phase: F.phase };
+const columns: Record<string, string[]> = {};
+if (p.get("measure") !== "candidates") columns["measure:shared"] = ["results"];
+if (p.get("pill")) columns["measure:results"] = [p.get("pill")!];
+if (p.get("against")) columns["against:context"] = [p.get("against")!];
+if (p.get("band")) columns["band:range"] = [p.get("band")!];
+if (p.get("against") === "selected") columns["chosen:context"] = F.ticked;
+window.__DB = {
+  userId: GUY,
+  platformAdmins: p.get("admin") === "0" ? [] : [GUY],
+  missing: [], missingColumns: {},
+  pk: { teacher_view_preferences: ["profile_id", "school_urn", "phase"], dashboard_drafts: ["dashboard_id"], dashboard_user_state: ["profile_id", "dashboard_id", "school_urn"] },
+  writes: [], rpcs: [],
+  tables: {
+    profiles: [{ id: GUY, full_name: "Guy Beckett" }],
+    schools: [{ urn: F.urn, current_name: F.schoolName }],
+    school_accounts: [{ id: "acc", school_urn: F.urn }],
+    school_memberships: [{ id: "m-guy", profile_id: GUY, status: "approved", roles: ["teacher"], role: "teacher", is_admin: true, school_account_id: "acc", school_accounts: { id: "acc", school_urn: F.urn, tier: "school", schools: { current_name: F.schoolName } } }],
+    teacher_view_onboarding: [{ profile_id: GUY, school_urn: F.urn, phase: "ks4" }, { profile_id: GUY, school_urn: F.urn, phase: "ks5" }],
+    teacher_view_preferences: [{ profile_id: GUY, school_urn: F.urn, phase: F.phase, subjects: F.ticked, columns, last_seen_period: null }],
+    teacher_view_notes: [],
+    trial_contexts: [],
+    dashboards: TEACHER_DASHBOARDS.map((c) => ({ id: c.id, slug: c.id, kind: "dashboard", owner_scope: "vicdata", school_account_id: null, owner_profile_id: null, name: c.name, group_id: null, group_order: c.group?.order ?? 0, meeting_date: null, published_version_id: `ver-${c.id}-1`, trial_key: null })),
+    dashboard_versions: TEACHER_DASHBOARDS.map((c) => ({ id: `ver-${c.id}-1`, dashboard_id: c.id, version: 1, schema_version: c.schema_version, config: JSON.parse(JSON.stringify(c)), label: "Seed", change_summary: null, created_by: GUY, created_at: "2026-10-01T00:00:00Z" })),
+    dashboard_drafts: [],
+    dashboard_assignments: TEACHER_DASHBOARDS.map((c) => ({ id: "a-" + c.id, dashboard_id: c.id, target_kind: "role", role: "teacher", team_id: null, profile_id: null, mode: "live", is_key: true })),
+    dashboard_user_state: [], recruitment_jobs: [], sign_in_events: [], platform_audit_log: [], view_requests: [],
+  },
+};
+const root = createRoot(document.getElementById("root")!);
+let n = 0;
+window.__remount = () => root.render(<div key={++n} className="flex min-h-full flex-col"><TeacherDashboard phase={F.phase} mode="page" /><Footer /></div>);
+window.__remount();

@@ -1,0 +1,112 @@
+// S5 (after S4b) before/after figures for named schools, by each tree's OWN functions on its own
+// captured real-data fixture (fix_<tag>_<urn>_<phase>.js, read-only captures).
+//   cd <root> && npx -y tsx <this> <root> <tag>   -> ba2_<tag>.json
+// main: statements over the whole span (as main draws them). br: the same functions, plus the
+// branch's R-TREND-FROM-2223 (withTrendBase / statementSpan / fromTrendBase) where it exists.
+import { readFileSync, writeFileSync } from "node:fs";
+const [root, tag] = process.argv.slice(2);
+const S = "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/22f4c365-7069-4ac9-ab6f-8e923021fb87/scratchpad/s5g/";
+const sg = await import(root + "/src/lib/subject-grades.ts");
+const tvp: any = await import(root + "/src/lib/teacher-view-panels.ts");
+const gs = await import(root + "/src/lib/grade-spread.ts");
+const theme = await import(root + "/src/lib/teacher-view-theme.ts");
+const hasRule = typeof tvp.withTrendBase === "function";
+const notes: any = hasRule ? await import(root + "/src/catalogue/notes.ts") : null;
+const load = (id: string) => { const w: any = {}; new Function("window", readFileSync(`${S}fix_${tag}_${id}.js`, "utf8"))(w); return w.__FIX; };
+const yl = (p: number) => theme.academicYearLabel(p);
+const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+
+type Spec = { name: string; urn: string; phase: "ks4" | "ks5"; subject: string; qual: string; bands: [string, string][]; points?: { headlineQual?: string; school: string; schoolLabel: string } };
+const SPECS: Spec[] = [
+  { name: "The Chase", urn: "137625", phase: "ks4", subject: "History", qual: "GCSE (9-1) Full Course", bands: [["9", "4"], ["9", "7"]], points: { school: "attainment8_average", schoolLabel: "Attainment 8" } },
+  { name: "Acland Burghley School", urn: "100053", phase: "ks4", subject: "History", qual: "GCSE (9-1) Full Course", bands: [["9", "4"], ["9", "7"]] },
+  { name: "Acland Burghley School", urn: "100053", phase: "ks4", subject: "Latin", qual: "GCSE (9-1) Full Course", bands: [["9", "4"], ["9", "7"]] },
+  { name: "The King's School Worcester", urn: "117037", phase: "ks5", subject: "Mathematics", qual: "GCE A level", bands: [["A*", "B"], ["A*", "A"]], points: { headlineQual: "GCE A level", school: "A level::aps_per_entry", schoolLabel: "A level points per entry" } },
+  { name: "Croydon College", urn: "130432", phase: "ks5", subject: "Business Studies", qual: "BTEC National Extended Certificate L3 - Band F - P-D*", bands: [["Distinction*", "Merit"], ["Distinction*", "Distinction"]] },
+];
+
+// A trend's statement, as each tree makes it: the direction word, the sentence, the change.
+function said(periods: number[], values: (number | null)[], measure: any, measureId: string, phase: string, clause: string) {
+  let d = tvp.trimToData({ periods, series: [{ key: "x", label: "", colour: "", values }] });
+  const drawn = d.periods.map(yl);
+  if (hasRule) d = tvp.statementSpan(tvp.withTrendBase(d, notes.trendBaseFor(measureId, phase)));
+  const v = d.series[0]?.values ?? [];
+  const first = d.periods[v.findIndex((x: number | null) => x !== null)];
+  const t = tvp.trendSentence({ subjectClause: clause, values: v, measure, startLabel: first === undefined ? "" : yl(first) });
+  const c = tvp.changeOf(measure, v);
+  return {
+    drawn: drawn.join(" "),
+    word: t ? tvp.DIRECTION_WORD[t.direction] : "—",
+    change: c === null ? "—" : `${tvp.formatChange(measure, c)} since ${yl(first)}`,
+    sentence: t ? t.sentence : "Not enough published years yet to describe a trend.",
+  };
+}
+
+const out: any[] = [];
+for (const s of SPECS) {
+  const F = load(`${s.urn}_${s.phase}`);
+  const mine = (rows: any[]) => rows.filter((g: any) => g.subject === s.subject && g.qualificationType === s.qual);
+  const own = mine(F.dashboard.subjectData.gradeDistribution);
+  const periods = Array.from(new Set(own.map((g: any) => g.period))).sort() as number[];
+  const at = (rows: any[], p: number) => rows.filter((g: any) => g.period === p);
+  const scale = sg.bestScale(own.filter((g: any) => g.period >= 2023).map((g: any) => g.grade));
+  const thrM = tvp.measureById(s.phase, "threshold");
+  const bandM = tvp.measureById(s.phase, "bands");
+  const series = (f: (rows: any[]) => number | null) => periods.map((p) => f(at(own, p)));
+  const fmt = (v: number | null) => (v === null ? "—" : `${Math.round(v)}%`);
+  const thr = series((r) => sg.thresholdRate(r, s.phase)?.rate ?? null);
+  const bands = s.bands.map(([top, bottom]) => {
+    const range = { scale, top, bottom };
+    const v = series((r) => sg.bandRate(r, range)?.rate ?? null);
+    const lab = sg.rangeLabel(range);
+    return { label: lab, values: v.map(fmt), ...said(periods, v, { ...bandM, noun: `share of entries at ${sg.inlineRangeLabel(lab)}` }, "bands", s.phase, `${s.subject}'s share of entries at ${sg.inlineRangeLabel(lab)}`) };
+  });
+  // Latest year as Current reads it, and "vs last year" (R-PREV-YEAR-FALLBACK) on Grade 4+.
+  const curFrom = typeof tvp.latestYearFrom === "function" ? tvp.latestYearFrom("threshold") : null;
+  const curVals = curFrom === null ? thr : periods.map((p, i) => (p < curFrom ? null : thr[i]));
+  const li = curVals.length - 1;
+  let prev: number | null = null;
+  for (let i = li - 1; i >= 0 && prev === null; i--) prev = curVals[i];
+  const vsLast = curVals[li] !== null && prev !== null ? tvp.formatChange(thrM, curVals[li]! - prev) : "—";
+  const gc = gs.gradeCounts(own.map((g: any) => ({ period: g.period, grade: g.grade, entries: g.entries })), [], { compareFrom: null, changeFrom: null });
+  const chg = gc.changeDataIn("");
+  const top = gc.order.slice(0, 3);
+  // Comparisons across schools: the 10 nearest's other schools, each one's own rate per year,
+  // averaged (mean) -- the set's line.
+  const others = F.nearest.rows.map((r: any) => r.urn).filter((u: string) => u !== s.urn);
+  const setLine = periods.map((p) => {
+    const rates = others.map((u: string) => sg.thresholdRate(at(mine(F.gradeRowsByUrn[u] ?? []), p), s.phase)?.rate ?? null).filter((v: number | null) => v !== null) as number[];
+    return rates.length ? { mean: mean(rates)!, n: rates.length } : null;
+  });
+  const rec: any = {
+    name: s.name, urn: s.urn, phase: s.phase, subject: s.subject, qual: s.qual, years: periods.map(yl),
+    threshold: { label: thrM.label, values: thr.map(fmt), latest: fmt(curVals[li] ?? null), vsLastYear: vsLast, ...said(periods, thr, thrM, "threshold", s.phase, `${s.subject}'s ${thrM.noun}`) },
+    bands,
+    counts: { years: gc.periods.map(yl), latest: gc.latest === null ? null : yl(gc.latest), total: gc.ownTotal, modal: gc.modal, spreadAgainst: gc.cmpYear === null ? null : yl(gc.cmpYear), changeFrom: gc.chgYear === null ? null : yl(gc.chgYear),
+      change: chg.series.filter((x: any) => top.includes(x.key)).map((x: any) => `${x.key}: ${x.values.join(" → ")}`) },
+    comparisons: { schools: others.length, line: setLine.map((x) => (x ? `${Math.round(x.mean)}% (${x.n})` : "—")),
+      ...said(periods, setLine.map((x) => (x ? x.mean : null)), thrM, "threshold", s.phase, "the 10 nearest schools' average") },
+  };
+  if (s.points) {
+    const hl = s.phase === "ks5"
+      ? F.dashboard.qualificationHeadline.filter((h: any) => h.subject === s.subject && h.qualificationType === s.points!.headlineQual)
+      : F.dashboard.headline.filter((h: any) => h.subject === s.subject);
+    const pp = Array.from(new Set(hl.map((h: any) => h.period))).sort() as number[];
+    const pv = pp.map((p) => hl.find((h: any) => h.period === p)?.avgPointScore ?? null);
+    const pM = tvp.measureById(s.phase, "points");
+    const prof = (u: string) => F.profiles.find((p: any) => p.urn === u);
+    const headline = (u: string, p: number) => (prof(u)?.[s.phase] ?? []).find((x: any) => x.period === p)?.measures?.[s.points!.school] ?? null;
+    const hp = Array.from(new Set((prof(s.urn)?.[s.phase] ?? []).map((x: any) => x.period))).sort() as number[];
+    const hM = tvp.headlineMeasure(s.phase, s.points.schoolLabel);
+    const ownH = hp.map((p) => headline(s.urn, p));
+    const setH = hp.map((p) => mean(others.map((u: string) => headline(u, p)).filter((v: any) => v !== null)));
+    rec.points = {
+      subject: { values: pv.map((v) => (v === null ? "—" : v.toFixed(2))), ...said(pp, pv, pM, "points", s.phase, `${s.subject}'s average points`) },
+      school: { label: s.points.schoolLabel, values: ownH.map((v) => (v === null ? "—" : Number(v).toFixed(1))), ...said(hp, ownH, hM, "points", s.phase, `Your school's ${s.points.schoolLabel}`) },
+      set: { values: setH.map((v) => (v === null ? "—" : v.toFixed(1))), ...said(hp, setH, hM, "points", s.phase, "the 10 nearest schools' average") },
+    };
+  }
+  out.push(rec);
+}
+writeFileSync(`${S}ba2_${tag}.json`, JSON.stringify(out, null, 1));
+console.log("wrote", tag, out.length, "rule", hasRule);

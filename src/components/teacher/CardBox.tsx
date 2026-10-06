@@ -362,7 +362,10 @@ export function CardBox({
               that reads as a flag or a note. A 15rem rail against the ~1150px modal on a
               laptop is roughly the "7-column main, narrow rail" steer; below lg it stacks
               under the main area. The compact card is untouched and stays icon-driven. */}
-          <div className={`mt-1 grid min-h-0 flex-1 gap-4 ${legend || flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
+          {/* 0.6.2 S5: stacked (below lg) the area never shrinks below its content and the modal
+              scrolls, rather than squeezing the figure under a long source line (the trend
+              note) until a fixed-height chart spilled over its own caption. */}
+          <div className={`mt-1 grid min-h-0 flex-1 gap-4 max-lg:min-h-min ${legend || flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
             <div className="flex min-h-0 min-w-0 flex-col gap-2">
               <div className="flex min-h-0 flex-1 items-stretch">
                 {actions && (

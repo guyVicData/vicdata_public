@@ -1519,7 +1519,7 @@ Prompt: `docs/v0.6/vicdata_0_6_grade_data_round_claude_code_prompt_v1.md`. S1 fi
 - **Deliberate wording change on live:** points trends (Results, Context, Comparisons' headline) already reached back to 2021/22, so they now carry the note in their "i", fullscreen and print text. No figure changes.
 - **Not covered:** meeting slots ("figure" frame) draw no host source or caveats at all (the slot's CardBox has its own citation), so like every other caveat the note isn't there.
 - **Test hook:** CardBox reads a new `OpenInFullscreen` context as its initial fullscreen state (nothing in the app provides it) so `src/lib/grading-note.test.ts` can server-render the real hosts' fullscreen/print output.
-- Screenshots: `docs/v0.6/grade_data_round_screenshots/s4-*` (The Chase 137625 real GCSE humanities rows, Grade bands 9–7 and Average points, card "i" open and fullscreen, 1280/390, light/dark; component harness on the build CSS).
+- Screenshots: `docs/v0.6/grade_data_round_screenshots/s4-*` (The Chase 137625 real GCSE humanities rows, Grade bands 9–7 and Average points, card "i" open and fullscreen, 1280/390, light/dark; component harness on the build CSS). Removed in S5 (they showed S4's wording); `s5-*` replace them.
 
 ### 6 Oct: Guy's decisions (after S5's first parity run stopped)
 
@@ -1543,3 +1543,20 @@ S5's first parity run (3,672 pairs, main vs branch) stopped on 136 unexpected la
 - **How A works:** Current on Grade 4+ / bands reads each subject's values from 2023/24 on (`latestYearSeries`) and drops a peer with none (SubjectPanels hands Current views their own frame); Comparisons' Current on a rate reads its latest year from 2023/24 on; Grade counts' latest year is the latest from 2023/24 on; a latest-year spread's earlier year is from 2023/24 on. The Trends still draw those subjects' older years.
 - **The map's 146 pixels and Column 1's 3 px:** both appeared only at 100053, 1280, Compared against "category", on the three grade states (bands, saved band, Grade 4+) — exactly the shots whose Context Current gained the Turkish row and redrew as horizontal bars — and nowhere else (not at 390, where the columns are tabs; not on points or Candidates). Re-run after A: those shots are pixel-identical to main (Current pairs 1,520; 0 word diffs, 0 pixel diffs). So both were layout knock-ons of the extra row (the grid re-flowed; the map re-fitted as it did), not data.
 - **Found, not fixed (pre-existing):** a year table's points change that rounds to nothing prints "−0.0" (YearTable uses `formatDelta`, not `formatChange`); Context's change summary can read "X has grown the most (−0.1)" when every subject fell.
+
+### S5 — parity and before/after (after S4b)
+
+- **Parity, main vs branch** (harness and scripts: `docs/v0.6/audit_scripts/grade_rollup/s5/`): the members' Teacher page on captured real data for 137625 GCSE (History), 100053 GCSE, 117037 Post-16 (Mathematics), 130432 Post-16 BTEC; Candidates and all four Results measures, a saved band range (9–5 / A*–B / D*–M) and, new this run, Grade bands 9–4 at both GCSE schools; Compared against category / all / selected; 1280 and 390; both themes; every visible panel and every rail view. **4,000 pairs, 0 unexpected:**
+  - IDENTICAL 1,356 (every Candidates view, every points Current view);
+  - NOTE-ONLY 844 (pixels and words equal; the "i" text differs only by S2's retired "published per grade only from 2023/24" clause; no Current view gained a note);
+  - EXP-YEARS 1,352 (grade Trends gaining 2021/22–2022/23, bars → lines, statements from 2022/23, the note);
+  - EXP-STATEMENT 432 (points Trends, and Context / Comparisons on Grade counts' points fallback: statements now since 2022/23, the note);
+  - EXP-PICKER 16 (Grade counts' "From" menu gains its chevron);
+  - 44 views only on the branch: Comparisons' Trends "Chart" on grade measures, which main didn't offer under four years (R-TREND-LINE-4YR).
+  - **Every latest-year view is main's:** 1,672 Current pairs, 0 word diffs, 0 pixel diffs. 7,212 Trend-table rows checked: every latest-year value equals main's. No graded Trend on the branch says "since 2021/22".
+  - Harness noise, both trees alike: a Leaflet `_leaflet_pos` error on 130432's Grade 4+ map at 1280 (12 runs); one main case re-shot after its fixture failed to load.
+- **Fixed on the way (fullscreen on a phone):** S4b's longer note made the stacked fullscreen modal squeeze a line chart until it spilled over its own caption. `CardBox`: below lg the modal's area never shrinks below its content (the modal scrolls). Views without the note are pixel-identical to main in fullscreen at 390 (Candidates Trend, Comparisons Ranking checked); cards are untouched.
+- **Not covered by parity:** the view editor's step 1 / step 3 ticks for across-schools grade lines (they read `compareHonest`, covered by `src/lib/view-editor.test.ts`, not by pixels); fullscreen and print, except the screenshots; saved comparator sets (the harness stubs none); KS2; meeting slots.
+- **Points statements that change on live** (the same figures, measured from 2022/23): the Trend sentence and direction word (Results, Context, Comparisons' headline and subject points), the "against the group / vs:" clause, every year table's Change column (card columns now 2022/23 and the latest), ranked change lists and their summary and collapsed figure, Results' area change table, Comparisons' change table, ranked bars, change map and Trend map, a fitted Trend line, and the note in the "i", fullscreen and print.
+- Before/after for named schools: `ba2_main.json` / `ba2_br.json` (each tree's own functions on its own fixture); tables in the report.
+- Screenshots `docs/v0.6/grade_data_round_screenshots/s5-*`: The Chase GCSE History Grade bands 9–4 Trends (card with the "i" open, and fullscreen), Comparisons Grade 4+ against the 10 nearest (card, "i" open), and Acland Burghley Grade 4+ Current table (latest year, unchanged), 1280 and 390, light and dark.

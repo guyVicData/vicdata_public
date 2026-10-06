@@ -26,3 +26,9 @@ All read-only. No keys in any file.
                       2023/24-2024/25 identity check per school; output s3_timing.out
   s3_rpc_body.sql     the proposed RPC's body inlined, run 3x read-only (q.py): the "after RPC"
                       SQL timing; output s3_rpc_body.out
+
+s5/ (0.6.2 S5, after S4b): the parity harness -- harness.tsx.txt + index.html.txt (the members'
+Teacher page on captured fixtures, stubbed fetch), cap.mts.txt (fixture capture, read-only),
+build.sh.txt, mk.py (the matrix), walk.mjs.txt (Chrome walker), cmp2.py / curdiff.py (classify),
+cmp.out / curdiff.out (the final run), first_run_*.out (the run that stopped), ba2.mts.txt +
+ba2_main.json / ba2_br.json (before/after figures), s5shots.mjs.txt + shots_report.json.
