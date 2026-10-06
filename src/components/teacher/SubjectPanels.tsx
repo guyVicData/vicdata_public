@@ -20,6 +20,10 @@ import {
   DIRECTION_WORD,
   currentRowsWithDelta,
   changeOf,
+  latestYearFrom,
+  latestYearSeries,
+  statementSpan,
+  withTrendBase,
   changePhrase,
   changeTitle,
   formatChange,
@@ -59,7 +63,7 @@ import { VerticalBars } from "./VerticalBars";
 import { RankedList } from "./RankedList";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
 import type { FrameSchoolGroup, FrameSet, FrameSetGrades, SubjectsFrame } from "@/lib/view-series/frames";
-import { gradingNoteEligible } from "@/catalogue/notes";
+import { trendBaseApplies, trendBaseFor } from "@/catalogue/notes";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -317,10 +321,14 @@ export function SubjectPanels({
   // caller through shareApplies(), teacher-view-measures.ts; this only honours it.)
   const effectiveView = (view === "donut" && !donut?.enabled) || (view === "tiles" && !tiles) || (view === "grades" && !gradeBand) || (view === "list" && !rankedViews) ? "bar" : view;
 
-  // R-2122-GRADING-NOTE: a grade or points figure (never entries; KS2 has no SubjectPanels)
-  // carries the 2021/22 grading note on a Trends view whose years include 2021/22
-  // (ColumnPanels adds it after the source, below).
-  const graded = gradingNoteEligible(measure.id, runtime?.phase);
+  // R-TREND-FROM-2223: a grade or points figure (never entries; KS2 has no SubjectPanels)
+  // draws 2021/22 on its Trends but measures every statement from 2022/23, and a view whose
+  // years include 2021/22 carries the note saying so (ColumnPanels adds it after the source).
+  const graded = trendBaseApplies(measure.id, runtime?.phase);
+  const trendBase = trendBaseFor(measure.id, runtime?.phase);
+  // R-CURRENT-GRADES-FROM-2324: Current on a grade measure reads the 2023/24-on years only --
+  // the same subjects, year menu and "vs last year" as before the grade rows reached back.
+  const currentSubjects: SubjectSeries[] = latestYearSeries(subjects, periods, latestYearFrom(measure.id), focus);
 
   // The source line with the caveat after it -- what every panel's "i" opens.
   const sourceWithNote = (span?: string) => {
@@ -340,7 +348,7 @@ export function SubjectPanels({
   // Only the years this measure genuinely has a figure for, so the year menu can never
   // offer an empty one (§6.3). The threshold measure is the case that matters:
   // switching to it shortens this list rather than padding the axis.
-  const realIdx = periods.map((_, i) => i).filter((i) => subjects.some((s) => s.values[i] !== null));
+  const realIdx = periods.map((_, i) => i).filter((i) => currentSubjects.some((s) => s.values[i] !== null));
   // The latest period any subject has a figure for -- not simply the last period in the
   // list, which may be a year this measure has not been published for yet.
   const defaultIdx = realIdx.length ? realIdx[realIdx.length - 1] : -1;
@@ -358,9 +366,16 @@ export function SubjectPanels({
   // -- never a column of dashes. Results' threshold measure is the case that needs it:
   // the national anchor this app holds is points per entry, so a Grade 4+ rate has no
   // published England figure to sit against (R-PREV-YEAR-FALLBACK, in the panels lib).
-  const rows = currentRowsWithDelta(subjects, latestIdx, !!benchmarkLabel);
+  const rows = currentRowsWithDelta(currentSubjects, latestIdx, !!benchmarkLabel);
 
   const barRows = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  // The Trends' subjects, every year: Current's, in Current's order, then any with grades only
+  // before 2023/24 (R-CURRENT-GRADES-FROM-2324 leaves those out of Current alone).
+  const fullOf = new Map(subjects.map((s) => [s.key, s]));
+  const trendOrder: SubjectSeries[] = [
+    ...barRows.map((r) => fullOf.get(r.s.key) ?? r.s),
+    ...subjects.filter((s) => !barRows.some((r) => r.s.key === s.key)),
+  ];
   // Steps 9-10: in Context's modes every subject is tinted in Current's own order -- the
   // grey ramp, lightest for the largest -- with the focus in the accent, the same colours
   // in Current, Trend and % change. Results keeps the colours it is handed.
@@ -373,7 +388,7 @@ export function SubjectPanels({
   // show/hide legend names each colour. The Trend table's dots read the same series, so
   // they match the lines.
   const trendColours = paletteInOrder(
-    barRows.map((r) => r.s.key),
+    trendOrder.map((s) => s.key),
     focusedKey,
     FOCUS_COLOUR,
     theme === "light" ? PALETTE_LIGHT : PALETTE_DARK,
@@ -408,7 +423,7 @@ export function SubjectPanels({
 
   // The donut's two numbers: the focused subject as a share of the comparison group's own
   // total for the SAME year Current is showing.
-  const focusedSubject = subjects.find((s) => s.key === focus) ?? subjects[0];
+  const focusedSubject = currentSubjects.find((s) => s.key === focus) ?? currentSubjects[0];
   const donutShare = donut?.share;
   const donutValue = latestIdx < 0 ? null : donutShare ? donutShare.values[latestIdx] ?? null : focusedSubject ? focusedSubject.values[latestIdx] : null;
   const donutGroupValue = latestIdx >= 0 ? (donutShare ? donutShare.totals[latestIdx] : donut?.groupTotals[latestIdx]) ?? null : null;
@@ -533,7 +548,7 @@ export function SubjectPanels({
       </>
     ),
     body: (fullscreen) =>
-      subjects.length === 0 ? (
+      currentSubjects.length === 0 ? (
         <p className="text-sm text-[var(--muted)]">{emptyText}</p>
       ) : (
         <>
@@ -679,20 +694,21 @@ export function SubjectPanels({
   };
 
   // ----------------------------------------------------------------- Trend
-  const focused = focusedSubject;
+  const focused = subjects.find((s) => s.key === focus) ?? subjects[0];
   const focusLabel = focused?.label ?? "";
 
   // Context's modes draw every subject individually, in Current's order; Results keeps
   // its focused line against the group line(s).
-  const trendFull: PanelData = trimToData({
+  // R-TREND-FROM-2223: every year drawn, statements measured from 2022/23.
+  const trendFull: PanelData = withTrendBase(trimToData({
     periods,
     series: redesigned
-      ? barRows.map((r) => ({ key: r.s.key, label: r.s.label, colour: trendColours.get(r.s.key) ?? colourFor(r.s), values: r.s.values }))
+      ? trendOrder.map((s) => ({ key: s.key, label: s.label, colour: trendColours.get(s.key) ?? colourFor(s), values: s.values }))
       : [
           ...(focused ? [{ key: focused.key, label: focused.label, colour: focused.colour, values: focused.values }] : []),
           ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "var(--muted3)", values: g.values, comparison: true })),
         ],
-  });
+  }), trendBase);
   const trendPeriods = periodsWithData(trendFull);
   const trendData = sliceFrom(trendFull, trendStart);
 
@@ -714,6 +730,7 @@ export function SubjectPanels({
   // Part 3's card graph: the focused line and the group average over the same span.
   const focusVsGroup: PanelData = {
     periods: trendData.periods,
+    statementFrom: trendData.statementFrom,
     series: [
       ...trendData.series.filter((x) => x.key === focusedKey),
       ...groups.slice(0, 1).map((g) => ({
@@ -727,17 +744,20 @@ export function SubjectPanels({
   };
   const trendShown = (fullscreen: boolean): PanelData =>
     railLegend && fullscreen ? { ...trendData, series: trendData.series.filter((x) => x.key === focusedKey || !hiddenKeys.has(x.key)) } : trendData;
+  // R-TREND-FROM-2223: the sentence, its direction word and the group's clause are measured
+  // over the statement span (2022/23 on, where the chart draws 2021/22).
+  const trendSpan = statementSpan(trendData);
   const trendSaid = trendSentence({
     // A plural subject name takes a bare possessive -- "Classics's" reads as a typo.
     subjectClause: `${focusLabel}${focusLabel.endsWith("s") ? "'" : "'s"} ${measure.noun}`,
-    values: trendData.series.find((x) => x.key === focused?.key)?.values ?? [],
+    values: trendSpan.series.find((x) => x.key === focused?.key)?.values ?? [],
     measure,
-    startLabel: trendData.periods.length ? academicYearLabel(trendData.periods[0]) : "",
+    startLabel: trendSpan.periods.length ? academicYearLabel(trendSpan.periods[0]) : "",
   });
   // A trend with a group line says what the (first) group did over the same years, so
   // the focus line is never read in isolation.
   const groupClause = (() => {
-    const first = trendData.series.find((x) => x.key === "group-0");
+    const first = trendSpan.series.find((x) => x.key === "group-0");
     if (!first) return "";
     const vals = first.values.filter((v): v is number => v !== null);
     if (vals.length < 2) return "";
@@ -877,7 +897,8 @@ export function SubjectPanels({
     // Part 3: the map, like Comparisons', reads far better with room.
     suggestFullscreen: trendView === "map",
     source: sourceWithNote(spanLabel(trendData.periods)),
-    // R-2122-GRADING-NOTE: the years this Trend draws; the map plots one year (none).
+    // R-TREND-FROM-2223: the years this Trend draws (the note where they include 2021/22);
+    // the map plots one year (none).
     gradingYears: graded && trendView !== "map" ? trendData.periods : null,
     headline: trendSaid ? (
       <span style={{ color: DIRECTION_COLOUR[trendSaid.direction] }}>
@@ -890,18 +911,21 @@ export function SubjectPanels({
   // R-NUMBER-TYPE-HONESTY (S3b): every figure in this half is the measure's honest change --
   // % for Context on Candidates (entries), points on average point score, percentage
   // points on a rate -- and every title and sentence says which.
-  const changeFull: PanelData = trimToData({
+  // R-TREND-FROM-2223: the % change half still draws 2021/22 (Results' area chart, a change
+  // table in fullscreen), but every change in it is measured from 2022/23 (changeSpan).
+  const changeFull: PanelData = withTrendBase(trimToData({
     periods,
     series: [
-      ...(redesigned ? barRows.map((r) => r.s) : subjects).map((s) => ({ key: s.key, label: s.label, colour: colourFor(s), values: s.values })),
+      ...(redesigned ? trendOrder : subjects).map((s) => ({ key: s.key, label: s.label, colour: colourFor(s), values: s.values })),
       // §4.2: one extra bar per comparison group, alongside the per-subject ones --
       // "individual subjects and the school as a whole" in one picture.
       ...groups.map((g, gi) => ({ key: `group-${gi}`, label: g.label, colour: g.colour ?? "#57534e", values: g.values })),
     ],
-  });
+  }), trendBase);
   const changePeriods = periodsWithData(changeFull);
   const changeData = sliceFrom(changeFull, changeStart);
-  const changeBars: ChangeBar[] = changeData.series.map((s) => ({
+  const changeSpan = statementSpan(changeData);
+  const changeBars: ChangeBar[] = changeSpan.series.map((s) => ({
     key: s.key,
     label: s.label,
     shortLabel: subjects.find((x) => x.key === s.key)?.shortLabel ?? s.label,
@@ -915,7 +939,7 @@ export function SubjectPanels({
   const fmtChange = (v: number) => formatChange(measure, v);
   const bestChange = rankedChange[0];
   const worstChange = rankedChange[rankedChange.length - 1];
-  const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
+  const changeSince = changeSpan.periods.length ? academicYearLabel(changeSpan.periods[0]) : "";
 
   const changeHalf: PanelRender = {
     tag: changeTitle(measure),
@@ -945,6 +969,7 @@ export function SubjectPanels({
           metric="avgPointScore"
           ownPeriods={periods}
           spanPeriods={changeData.periods}
+          statementFrom={changeData.statementFrom}
           measure={measure}
           theme={theme}
           accentHex={accentHex}
@@ -958,7 +983,7 @@ export function SubjectPanels({
           </ViewTitle>
           <CentredOnTarget watch={`change-table:${focusedKey}:${changeData.periods.join(",")}`}>
             <YearTable
-              data={{ periods: changeData.periods, series: changeData.series.filter((x) => !x.key.startsWith("group-")) }}
+              data={{ ...changeData, series: changeData.series.filter((x) => !x.key.startsWith("group-")) }}
               measure={measure}
               focusKey={focusedKey}
               fullscreen={fullscreen}
@@ -977,7 +1002,7 @@ export function SubjectPanels({
             focusKey={focusedKey}
             group={
               groups[0]
-                ? { label: groups[0].label, value: changeOf(measure, changeData.series.find((x) => x.key === "group-0")?.values ?? []) }
+                ? { label: groups[0].label, value: changeOf(measure, changeSpan.series.find((x) => x.key === "group-0")?.values ?? []) }
                 : undefined
             }
             formatValue={measure.changeKind === "percent" ? undefined : fmtChange}
@@ -1046,7 +1071,7 @@ export function SubjectPanels({
     cardTrend,
     theme,
     accentHex,
-    currentBlocked: subjects.length === 0 || (!!gradeBand && !gradeBand.range),
+    currentBlocked: currentSubjects.length === 0 || (!!gradeBand && !gradeBand.range),
     hasGeography: !!geography,
     tiles: !!tiles,
     gradeBand: gradeBand
@@ -1075,6 +1100,9 @@ export function SubjectPanels({
     state: { trendStart, changeStart, showFit, latestIdx, hiddenKeys, sort, onSort: (key) => setSort(nextSort(sort, key)) },
   };
 
+  // R-CURRENT-GRADES-FROM-2324: Current's views read the 2023/24-on years of a grade measure.
+  const currentFrame: SubjectsFrame = currentSubjects === subjects ? frame : { ...frame, subjects: currentSubjects };
+
   return (
     <ColumnPanels
       columnId={columnId}
@@ -1088,7 +1116,7 @@ export function SubjectPanels({
       // tiles, whose rank tile already names the category.
       render={{
         current:
-          categoryLabel && subjects.length > 1 && effectiveView !== "tiles" && effectiveView !== "grades"
+          categoryLabel && currentSubjects.length > 1 && effectiveView !== "tiles" && effectiveView !== "grades"
             ? {
                 ...current,
                 body: (fullscreen) => (
@@ -1099,9 +1127,9 @@ export function SubjectPanels({
                     {current.body(fullscreen)}
                   </>
                 ),
-                frame,
+                frame: currentFrame,
               }
-            : { ...current, frame },
+            : { ...current, frame: currentFrame },
         trend: { ...trend, frame },
       }}
     />

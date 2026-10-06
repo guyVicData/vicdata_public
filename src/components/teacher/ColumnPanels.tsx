@@ -35,7 +35,7 @@ import { ViewTitleOverrideContext } from "./SeriesViews";
 import type { ViewFrame } from "@/lib/view-series";
 import { renderView, useViewsV2 } from "@/components/views";
 import { instanceRail, isPresetInstance, liveOwnView, ownDefault, shownInstance, type ViewInstance } from "@/components/views/rail";
-import { gradingNoteFor, specYears } from "@/catalogue/notes";
+import { trendNoteFor, specYears } from "@/catalogue/notes";
 import type { ViewSpec } from "@/catalogue/viewspec";
 
 // What each panel is called in its toggle's label.
@@ -86,17 +86,17 @@ export type PanelRender = {
   // it, for the config-driven view renderer (src/lib/view-series). Read only under
   // `views=v2`; absent = the host draws every view, as before.
   frame?: ViewFrame;
-  // 0.6.2 S4 (R-2122-GRADING-NOTE): the years the view on screen draws (after its "From"
+  // 0.6.2 S4 / S4b (R-TREND-FROM-2223): the years the view on screen draws (after its "From"
   // year), on a grade or points measure; null / absent = entries, or no span. Where they
-  // include 2021/22 the grading note follows the source, as the column's own caveat does.
+  // include 2021/22 the trend note follows the source, as the column's own caveat does.
   gradingYears?: readonly number[] | null;
 };
 
-// R-2122-GRADING-NOTE: the note after the source, in SubjectPanels' caveat style (a block
-// span under the citation) -- in the "i" on the card, and printed as text in fullscreen and
-// in "Print this graph", which both draw this same source.
-function withGradingNote(source: ReactNode, years: readonly number[] | null): ReactNode {
-  const note = gradingNoteFor(years);
+// R-TREND-FROM-2223: the note (trends are measured from 2022/23) after the source, in
+// SubjectPanels' caveat style (a block span under the citation) -- in the "i" on the card,
+// and printed as text in fullscreen and in "Print this graph", which both draw this source.
+function withTrendNote(source: ReactNode, years: readonly number[] | null): ReactNode {
+  const note = trendNoteFor(years);
   if (!note) return source;
   return (
     <>
@@ -249,7 +249,7 @@ export function ColumnPanels({
             }
             controls={panel.controls}
             caption={panel.summary}
-            source={withGradingNote(panel.source, specYears(spec, panel.gradingYears))}
+            source={withTrendNote(panel.source, specYears(spec, panel.gradingYears))}
             footerActions={({ print, fullscreen }) => (
               <>
                 {/* In fullscreen the note has its own place in the side rail (Part 4). */}

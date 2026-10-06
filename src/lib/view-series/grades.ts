@@ -20,6 +20,7 @@ import type { CompareSeries, SpreadLook, ViewSpec } from "@/catalogue/viewspec";
 import { averageGrade, bandDistribution, gradeCounts, setShares, type GradeCountRow, type GradeRow } from "@/lib/grade-spread";
 import { bestScale, inlineRangeLabel, rangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { ENTRIES_MEASURE } from "@/lib/teacher-view-panels";
+import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { resolveCompare } from "./compare";
 import type { GradesFrame, SubjectsFrame } from "./frames";
@@ -57,8 +58,9 @@ function setTicks(f: GradesFrame | SubjectsFrame, how: "mean" | "median", period
 }
 
 // The school's own rows at an earlier year than `latest` (the year before it with grades).
+// R-CURRENT-GRADES-FROM-2324: a latest-year view's earlier year is from 2023/24 on, as before.
 function earlierCounts(rows: GradeCountRow[], latest: number | null, grades: string[]) {
-  const before = [...new Set(rows.filter((r) => latest !== null && r.period < latest).map((r) => r.period))].sort((a, b) => b - a)[0];
+  const before = [...new Set(rows.filter((r) => latest !== null && r.period < latest && r.period >= MODERN_GRADE_FROM).map((r) => r.period))].sort((a, b) => b - a)[0];
   if (before === undefined) return null;
   const inYear = rows.filter((r) => r.period === before && grades.includes(r.grade));
   const at = (g: string) => inYear.filter((r) => r.grade === g).reduce((a, r) => a + r.entries, 0);
@@ -119,6 +121,9 @@ export function buildGrades(spec: ViewSpec, f: GradesFrame): ViewSeries | null {
   const { england, earlier, set } = compareOf(spec, f);
   if (g.ownTotal === 0) return null;
   if (earlier && g.cmpYear === null) return null;
+  // R-CURRENT-GRADES-FROM-2324: a latest-year spread's earlier year is from 2023/24 on.
+  const years = spec.data.years;
+  if (earlier && "latest" in years && !years.memberPick && g.cmpYear !== null && g.cmpYear < MODERN_GRADE_FROM) return null;
   const withBench = g.rowsFor(false);
   const withCompare = earlier ? g.rowsFor(true) : null;
   const ticks = set ? setTicks(f, set.how, g.latest, withBench.map((r) => r.grade)) : null;

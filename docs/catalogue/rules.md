@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 43 rules: 42 active, 1 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 45 rules: 43 active, 2 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -40,7 +40,9 @@ What a number is allowed to be. 43 rules: 42 active, 1 superseded; 22 must lift 
 | R-COMPARATOR-NO-FIGURE | active | A comparator with no figure for the measure (or none in the latest year) is not listed and never ranked last. Not applied while loading. | lifted | manual | — |
 | R-COMPARATOR-RATE-PER-QUAL | active | Comparator rates are scored per subject and exact qualification, with the page's own rate function. | lifted | none yet | — |
 | R-COMPARATOR-GRADE-SHARE | active | Grade counts across schools (Column 1's grade spread, 'Add an average' across the 10 nearest / a saved set) is each grade's share of a school's graded entries, averaged (mean or median) over the set's other schools with graded entries that year, for the focused subject and exact qualification; drawn as ticks in place of England's, at the school's own scale in counts mode. Never a raw count, never weighted by entries. | no | none yet | — |
-| R-2122-GRADING-NOTE | active | A grade or points view over time (Trends: line, table, ranked change, change table, slope, Grade counts' spread against an earlier year, a change map) whose years include 2021/22 carries the note GRADING_2122_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view (Current, Results' Trend map), on Candidates (entries), at KS2, or on a trend whose years start after 2021/22 (a 'From' year of 2022/23 or later). | no | auto: gradingNote2122 | — |
+| R-2122-GRADING-NOTE | superseded by R-TREND-FROM-2223 | A grade or points view over time whose years include 2021/22 carried a note that 2021/22 was graded more generously, so some fall from it reflects grading. Superseded by R-TREND-FROM-2223 (Guy, 6 Oct 2026): trends are now measured from 2022/23, and the note says so. | no | none yet | — |
+| R-TREND-FROM-2223 | active | On a grade or points measure (Average points, Grade 4+ / A*-E, Grade bands, Grade counts, Comparisons' headline; never Candidates, never KS2), 2021/22 stays on the Trends' graphs and tables, but every trend statement is measured from 2022/23 (TREND_BASE_PERIOD): the direction word (R-TREND-FLAT-4PCT) and the trend sentence ('… since 2022/23'), the group / 'vs:' clause, every year table's Change column (Trend and % change tables, Results' area change table: the card's two year columns are then 2022/23 and the latest; fullscreen shows every year), a fitted Trend line, a short span's ranked change bars, ranked change lists, change and Trend maps, the % change half's summary and collapsed figure, and a slope from the span's first year. Grade counts' change table (two years) measures from 2022/23 at the earliest, its 'From' menu from there; its spread may still be compared with 2021/22. Line charts (Trend, Results' area chart) draw 2021/22 as a normal point. A 'From' year of 2022/23 or later is unchanged. A view whose drawn years include 2021/22 carries TREND_BASE_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view, on Candidates or at KS2. Indexed lines are entries only (R-INDEX-HEADCOUNTS), so unaffected. | no | auto: trendFrom2223 | — |
+| R-CURRENT-GRADES-FROM-2324 | active | A latest-year view on a grade measure (Grade 4+ / A*-E, Grade bands, Grade counts; Results, Context and Comparisons' rate) reads the school's grade rows from 2023/24 on only: its subject (or school) list, its year menu, its 'vs last year' and an explicit earlier-year spread are exactly as before the rows reached back to 2021/22. A subject with grades only in 2021/22-2022/23 appears on the Trends alone. | no | auto: currentGradesFrom2324 | — |
 | R-RANKING-SAMPLE | active | A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure. | lifted | none yet | — |
 | R-PERIOD-TRIM | active | Leading and trailing periods with no published value are trimmed (2020/21 points are null nationally). | no | manual | — |
 | R-INDEX-HEADCOUNTS | active | Only sum measures (entries) are indexed to 100; points and rates are drawn at real levels. | no | none yet | — |
@@ -190,7 +192,7 @@ What a number is allowed to be. 43 rules: 42 active, 1 superseded; 22 must lift 
 | Why | Exclusion rules written for comparison populations would otherwise blank the very subject a teacher picked (e.g. an AS Psychology focus). |
 | Applies to | Every measure; Column 1, Context, Comparisons |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:candidateItems (1068-1070, focus first)<br>- src/app/teacher/[phase]/page.tsx:1141, 1362, 1381 (r.key === focusKey \|\|), 1837<br>- src/components/teacher/ComparisonsPanels.tsx:254, 276 (s.isTarget \|\|)<br>- src/lib/teacher-view-populations.ts:contextGroupRows, inContextGroup, asOrAeaOnlySubjects (the focused AS/AEA item's own rows count into its group, S3b)<br>- src/lib/teacher-view-comparator-series.ts:143 (target never dropped), 186 (target kept in fixed sets, flagged igcseExcluded) |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/teacher-view-populations.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-comparator-series.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/teacher-view-populations.ts |
 | Test case | Whitmore High School (102239), ks5, Psychology (AS): Focus an AS item (AS Psychology in the AS/AEA report :19,38, which named no school; 102239 is a heavy-AS school): its own Column 1 panels still render with its own figures. [manual] |
 | Origin | Post-16 Part C1 (AS/AEA); content round S4 |
 | Status | active |
@@ -570,13 +572,45 @@ What a number is allowed to be. 43 rules: 42 active, 1 superseded; 22 must lift 
 
 | Field | Content |
 | --- | --- |
-| Statement | A grade or points view over time (Trends: line, table, ranked change, change table, slope, Grade counts' spread against an earlier year, a change map) whose years include 2021/22 carries the note GRADING_2122_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view (Current, Results' Trend map), on Candidates (entries), at KS2, or on a trend whose years start after 2021/22 (a 'From' year of 2022/23 or later). |
-| Why | 2021/22 (summer 2022) was the first year back to exams after the pandemic: Ofqual set grading roughly midway between 2021 and 2019, so a trend starting there often shows a fall that is partly grading, not results. |
-| Applies to | M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS, Comparisons' headline (Attainment 8, A level points per entry): over-time views |
-| Enforced in | - src/catalogue/notes.ts:GRADING_2122_NOTE, gradingNoteEligible, gradingNoteFor, specYears<br>- src/components/teacher/ColumnPanels.tsx:withGradingNote (PanelRender.gradingYears)<br>- src/components/teacher/SubjectPanels.tsx:graded, trendHalf/changeHalf gradingYears<br>- src/components/teacher/GradeCountsPanels.tsx:trendHalf/changeHalf gradingYears<br>- src/components/teacher/ComparisonsPanels.tsx:graded, trendHalf/changeHalf gradingYears |
-| Tagged at | - src/components/teacher/ColumnPanels.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/GradeCountsPanels.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/grading-note.test.ts |
-| Test case | The Chase (137625), ks4, History, 2021/22-2024/25: Grade bands and Average points Trends over 2021/22-2024/25 print the note in fullscreen; Current, Candidates and a Trend from 2022/23 don't (src/lib/grading-note.test.ts, on the real hosts). [runner: gradingNote2122] |
+| Statement | A grade or points view over time whose years include 2021/22 carried a note that 2021/22 was graded more generously, so some fall from it reflects grading. Superseded by R-TREND-FROM-2223 (Guy, 6 Oct 2026): trends are now measured from 2022/23, and the note says so. |
+| Why | 2021/22 (summer 2022) was Ofqual's transition year: grading set roughly midway between 2021 and 2019. |
+| Applies to | M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS, Comparisons' headline: over-time views |
+| Enforced in | — |
+| Tagged at | - src/lib/grading-note.test.ts<br>- src/lib/trend-base.test.ts |
+| Test case | — |
 | Origin | 0.6.2 S4 (prompt: 'wherever a grade or points trend includes 2021/22, put a short footnote on the view') |
+| Status | superseded by R-TREND-FROM-2223 |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-TREND-FROM-2223
+
+| Field | Content |
+| --- | --- |
+| Statement | On a grade or points measure (Average points, Grade 4+ / A*-E, Grade bands, Grade counts, Comparisons' headline; never Candidates, never KS2), 2021/22 stays on the Trends' graphs and tables, but every trend statement is measured from 2022/23 (TREND_BASE_PERIOD): the direction word (R-TREND-FLAT-4PCT) and the trend sentence ('… since 2022/23'), the group / 'vs:' clause, every year table's Change column (Trend and % change tables, Results' area change table: the card's two year columns are then 2022/23 and the latest; fullscreen shows every year), a fitted Trend line, a short span's ranked change bars, ranked change lists, change and Trend maps, the % change half's summary and collapsed figure, and a slope from the span's first year. Grade counts' change table (two years) measures from 2022/23 at the earliest, its 'From' menu from there; its spread may still be compared with 2021/22. Line charts (Trend, Results' area chart) draw 2021/22 as a normal point. A 'From' year of 2022/23 or later is unchanged. A view whose drawn years include 2021/22 carries TREND_BASE_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view, on Candidates or at KS2. Indexed lines are entries only (R-INDEX-HEADCOUNTS), so unaffected. |
+| Why | 2021/22 (summer 2022) was the first year back to exams after the pandemic: Ofqual set grading roughly midway between 2021 and 2019, so a trend measured from it would make most schools look as if results had fallen. |
+| Applies to | M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS, Comparisons' headline (Attainment 8, A level points per entry): over-time views |
+| Enforced in | - src/catalogue/notes.ts:TREND_BASE_PERIOD, TREND_BASE_NOTE, trendBaseApplies, trendBaseFor, trendNoteFor, specYears<br>- src/lib/teacher-view-panels.ts:PanelData.statementFrom, withTrendBase, statementSpan, countedValues<br>- src/components/teacher/SeriesViews.tsx:MultiTrend (short span), YearTable (Change column, card columns)<br>- src/components/teacher/TrendChart.tsx:fit<br>- src/components/teacher/ColumnPanels.tsx:withTrendNote (PanelRender.gradingYears)<br>- src/components/teacher/SubjectPanels.tsx:trendFull, trendSpan, changeFull, changeSpan<br>- src/components/teacher/ComparisonsPanels.tsx:full, trendSpan, changeSpanData, changeTableSpan, trendMapSpan<br>- src/components/teacher/GeographyComparison.tsx:GeographyView statementFrom<br>- src/components/teacher/GradeCountsPanels.tsx:changeEarlier<br>- src/lib/grade-spread.ts:gradeCounts (changeEarlier)<br>- src/lib/view-series/subjects.ts:trendData, changeData<br>- src/lib/view-series/comparisons.ts:series, changeDrawn, changeSpan<br>- src/lib/view-series/geography.ts:buildGeography (table statementFrom)<br>- src/lib/view-series/map.ts:changeMap<br>- src/lib/view-series/slope.ts:slopeYears |
+| Tagged at | - src/components/teacher/ColumnPanels.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/GeographyComparison.tsx<br>- src/components/teacher/GradeCountsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/components/teacher/TrendChart.tsx<br>- src/lib/grade-spread.ts<br>- src/lib/grading-note.test.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/slope.ts<br>- src/lib/view-series/subjects.ts |
+| Test case | The Chase (137625), ks4, History, 2021/22-2024/25: Grade bands and Average points Trends draw 2021/22-2024/25 and carry the note; their sentence and direction word are measured 2022/23-2024/25 ('since 2022/23'); a Trend from 2023/24 and the latest year are unchanged; Candidates and KS2 never (src/lib/trend-base.test.ts and src/lib/grading-note.test.ts, on the real hosts). [runner: trendFrom2223] |
+| Origin | 0.6.2 S4b (Guy's decision B, 6 Oct 2026), replacing S4's R-2122-GRADING-NOTE |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-CURRENT-GRADES-FROM-2324
+
+| Field | Content |
+| --- | --- |
+| Statement | A latest-year view on a grade measure (Grade 4+ / A*-E, Grade bands, Grade counts; Results, Context and Comparisons' rate) reads the school's grade rows from 2023/24 on only: its subject (or school) list, its year menu, its 'vs last year' and an explicit earlier-year spread are exactly as before the rows reached back to 2021/22. A subject with grades only in 2021/22-2022/23 appears on the Trends alone. |
+| Why | The grade rows' two older years are for the trends. Read by a latest-year view, they listed subjects with no current figure ('no published figure' rows) and let 'vs last year' reach back past a missing 2023/24 to 2022/23 -- latest-year figures this round must not change (S5). |
+| Applies to | M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS: latest-year views |
+| Enforced in | - src/lib/teacher-view-panels.ts:latestYearFrom, latestYearSeries<br>- src/components/teacher/SubjectPanels.tsx:currentSubjects, currentFrame<br>- src/components/teacher/ComparisonsPanels.tsx:currentFrom, currentFrame<br>- src/lib/grade-spread.ts:gradeCounts (latest)<br>- src/lib/view-series/grades.ts:earlierCounts, buildGrades<br>- src/components/dashboard-config/TeacherDashboard.tsx:focusScale (the band scale, since S2) |
+| Tagged at | - src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/grade-spread.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series/grades.ts |
+| Test case | Acland Burghley School (100053), ks4: On Grade 4+ the Current subject lists match the 2023/24-on rows (no Turkish 'no figure' row), and Latin's 'vs last year' is '—' (no 2023/24), not 2024/25 against 2022/23 (src/lib/trend-base.test.ts). [runner: currentGradesFrom2324] |
+| Origin | 0.6.2 S4b (Guy's decision A, 6 Oct 2026), after S5's first parity run |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
@@ -654,13 +688,13 @@ What a number is allowed to be. 43 rules: 42 active, 1 superseded; 22 must lift 
 | Why | Small year-to-year noise should not be called growth or decline. |
 | Applies to | Trend summaries and direction flags |
 | Enforced in | - src/lib/teacher-view-panels.ts:classifyChange (353-360) |
-| Tagged at | - src/lib/teacher-view-panels.ts |
+| Tagged at | - src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts |
 | Test case | — |
 | Origin | Teacher view wireframe |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
-| Fixed | — |
+| Fixed | - 0.6.2 S4b: on a grade or points measure the word is measured from 2022/23 (R-TREND-FROM-2223), where the chart draws 2021/22. |
 
 ### R-NUMBER-TYPE-HONESTY
 

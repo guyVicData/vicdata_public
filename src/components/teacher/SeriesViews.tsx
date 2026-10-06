@@ -17,7 +17,7 @@
 // the same subject is the same colour in every view.
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
-import { periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
+import { countedValues, periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
 import {
   DIRECTION_FILL,
   DIRECTION_TEXT,
@@ -88,7 +88,8 @@ export function MultiTrend({
     return (
       <CentredOnTarget watch={`${focusKey}:${data.series.map((s) => s.key).join(",")}`}>
         <ChangeList
-          rows={data.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOver(s.values)?.delta ?? null }))}
+          // R-TREND-FROM-2223: each change counted from the trend's statement year.
+          rows={data.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOver(countedValues(s.values, data.periods, data.statementFrom))?.delta ?? null }))}
           focusKey={focusKey}
           formatValue={measure.formatDelta}
         />
@@ -101,7 +102,7 @@ export function MultiTrend({
   const series: PanelSeries[] = data.series.map((s) => ({ ...s, comparison: s.comparison ?? false, values: indexed ? indexTo100(s.values) : s.values }));
   return (
     <TrendChart
-      data={{ periods: data.periods, series }}
+      data={{ periods: data.periods, series, statementFrom: data.statementFrom }}
       measure={indexed ? INDEX_MEASURE : measure}
       showFit={showFit}
       fullscreen={fullscreen}
@@ -360,12 +361,16 @@ export function YearTable({
   if (periods.length === 0 || series.length === 0) {
     return <p className="text-xs text-[var(--muted)]">No published figures for this comparison yet.</p>;
   }
+  // R-TREND-FROM-2223: on a trend measured from a later year than the first it shows, the
+  // Change column counts from that year, and the card's two year columns are the change's
+  // own two ends (every year, 2021/22 included, in fullscreen).
+  const fromIdx = Math.max(0, data.statementFrom === null || data.statementFrom === undefined ? 0 : periods.findIndex((p) => p >= data.statementFrom!));
   const yearIdx =
     yearColumns === "latest"
       ? [periods.length - 1]
       : yearColumns === "every" || fullscreen || periods.length <= 2
         ? periods.map((_, i) => i)
-        : [0, periods.length - 1];
+        : [fromIdx < periods.length - 1 ? fromIdx : 0, periods.length - 1];
   const rankShown = showRank && !leadingRank && (rankColumn === "always" || (rankColumn === "fullscreen" && fullscreen));
   const lastIdx = periods.length - 1;
 
@@ -373,7 +378,7 @@ export function YearTable({
   // honest one -- % for a count, the difference in points or percentage points otherwise.
   const percentKind = measure.changeKind === "percent";
   const rows = series.map((s) => {
-    const change = changeOver(s.values);
+    const change = changeOver(countedValues(s.values, periods, data.statementFrom));
     return { s, change, honest: change ? (percentKind ? change.percent : change.delta) : null, last: s.values[lastIdx] };
   });
   // The one shared ranking rule (teacher-view-panels' rankByValue: largest first, ties

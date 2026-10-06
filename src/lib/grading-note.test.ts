@@ -1,13 +1,14 @@
-// 0.6.2 S4, R-2122-GRADING-NOTE: a grade or points trend whose years include 2021/22 carries
-// the grading note after its source -- in the panel's "i", and printed as text in fullscreen
-// and in "Print this graph" (the same fullscreen modal, printed). Never on a latest-year view,
-// on entries, at KS2, or on a trend that starts after 2021/22.
+// 0.6.2 S4 / S4b, R-TREND-FROM-2223 (replacing R-2122-GRADING-NOTE): a grade or points trend
+// whose years include 2021/22 carries the note (trends are measured from 2022/23) after its
+// source -- in the panel's "i", and printed as text in fullscreen and in "Print this graph"
+// (the same fullscreen modal, printed). Never on a latest-year view, on entries, at KS2, or
+// on a trend that starts after 2021/22. (What the rule measures: src/lib/trend-base.test.ts.)
 // Run: npx -y tsx --test src/lib/grading-note.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { GRADING_2122_NOTE, gradingNoteEligible, gradingNoteFor, specYears } from "@/catalogue/notes";
+import { TREND_BASE_NOTE, trendBaseApplies, trendNoteFor, specYears } from "@/catalogue/notes";
 import { presetSpec } from "@/catalogue/viewspec";
 import { ruleById } from "@/catalogue";
 import { OpenInFullscreen } from "@/components/teacher/CardBox";
@@ -18,7 +19,7 @@ import { ENTRIES_MEASURE, headlineMeasure, measuresFor, type PanelId } from "./t
 
 const [POINTS, THRESHOLD, BANDS, COUNTS] = measuresFor("ks4");
 const FOUR = [2021, 2022, 2023, 2024];
-const NOTE = /2021\/22 grades were awarded more generously \(Ofqual&#x27;s transition year\), so some fall from that year reflects grading, not results\./;
+const NOTE = /Trends are measured from 2022\/23\. 2021\/22 is still shown, but its grades were awarded more generously \(Ofqual&#x27;s transition year after the pandemic\), so measuring from it would make most schools look as if results had fallen\./;
 // The fullscreen modal's source line (CardBox): the same paragraph "Print this graph" prints.
 const MODAL_SOURCE = /<p class="text-\[11px\] leading-relaxed text-\[var\(--source\)\]">(.*?)<\/p>/;
 
@@ -30,29 +31,29 @@ const modalSource = (html: string) => {
 };
 
 test("the rule and its wording: one constant, one rule", () => {
-  assert.equal(GRADING_2122_NOTE, "2021/22 grades were awarded more generously (Ofqual's transition year), so some fall from that year reflects grading, not results.");
-  const rule = ruleById("R-2122-GRADING-NOTE");
+  assert.equal(TREND_BASE_NOTE, "Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.");
+  const rule = ruleById("R-TREND-FROM-2223");
   assert.ok(rule && rule.status === "active");
   assert.ok(rule.enforcedIn.some((e) => e.startsWith("src/catalogue/notes.ts")));
 });
 
 test("which figures: grades and points above KS2, never entries", () => {
   for (const m of ["points", "threshold", "bands", "counts"]) {
-    assert.equal(gradingNoteEligible(m, "ks4"), true, m);
-    assert.equal(gradingNoteEligible(m, "ks5"), true, m);
-    assert.equal(gradingNoteEligible(m, undefined), true, `${m}, no phase (SubjectPanels without a plan)`);
+    assert.equal(trendBaseApplies(m, "ks4"), true, m);
+    assert.equal(trendBaseApplies(m, "ks5"), true, m);
+    assert.equal(trendBaseApplies(m, undefined), true, `${m}, no phase (SubjectPanels without a plan)`);
   }
-  assert.equal(gradingNoteEligible("entries", "ks4"), false);
-  assert.equal(gradingNoteEligible("points", "ks2"), false, "KS2's tests aren't in Ofqual's grading transition");
+  assert.equal(trendBaseApplies("entries", "ks4"), false);
+  assert.equal(trendBaseApplies("points", "ks2"), false, "KS2's tests aren't in Ofqual's grading transition");
 });
 
 test("which years: a trend including 2021/22; not latest-year, not one trimmed to 2022/23 on", () => {
-  assert.equal(gradingNoteFor(FOUR), GRADING_2122_NOTE);
-  assert.equal(gradingNoteFor([2021, 2024]), GRADING_2122_NOTE, "two years, the first 2021/22 (Grade counts' spread, a slope)");
-  assert.equal(gradingNoteFor([2022, 2023, 2024]), null, "trimmed to 2022/23 on");
-  assert.equal(gradingNoteFor([2023, 2024]), null);
-  assert.equal(gradingNoteFor([2021]), null, "one year is not a trend");
-  assert.equal(gradingNoteFor(null), null);
+  assert.equal(trendNoteFor(FOUR), TREND_BASE_NOTE);
+  assert.equal(trendNoteFor([2021, 2024]), TREND_BASE_NOTE, "two years, the first 2021/22 (Grade counts' spread, a slope)");
+  assert.equal(trendNoteFor([2022, 2023, 2024]), null, "trimmed to 2022/23 on");
+  assert.equal(trendNoteFor([2023, 2024]), null);
+  assert.equal(trendNoteFor([2021]), null, "one year is not a trend");
+  assert.equal(trendNoteFor(null), null);
   // Under views=v2: a latest-year spec has none; Grade counts' Spread by year (latest
   // against a picked year) keeps the host's years; a slope with a fixed first year uses it.
   assert.equal(specYears(presetSpec("DV-C1-RES-TR-CHART"), FOUR), FOUR);
@@ -62,7 +63,7 @@ test("which years: a trend including 2021/22; not latest-year, not one trimmed t
   const slope = presetSpec("DV-C1-RES-TR-CHART");
   const fixed = { ...slope, view: { kind: "slope" as const, look: {} }, data: { ...slope.data, years: { from: 2022, rollOn: true } } };
   assert.deepEqual(specYears(fixed as never, FOUR), [2022, 2024]);
-  assert.equal(gradingNoteFor(specYears(fixed as never, FOUR)), null);
+  assert.equal(trendNoteFor(specYears(fixed as never, FOUR)), null);
 });
 
 // ------------------------------------------------------------- the hosts, in fullscreen

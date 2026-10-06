@@ -71,7 +71,7 @@ export function GradeCountsPanels({
   const england = geo?.data?.national?.rows ?? [];
   // 0.6.1 S3d: the figures, from src/lib/grade-spread.ts (the renderer reads the same).
   const g = gradeCounts(ownRows, england, { compareFrom, changeFrom });
-  const { graded, latest, earlier, cmpYear, chgYear, ownTotal, cmpTotal, rowsFor, englandLabel, modal } = g;
+  const { graded, latest, earlier, changeEarlier, cmpYear, chgYear, ownTotal, cmpTotal, rowsFor, englandLabel, modal } = g;
 
   // Current's ad-hoc highlight: the same two clicks as Grade bands, local to this view.
   // 0.6.2 S2: on the 2023/24-on rows, as before the grade rows reached back to 2021/22 (see
@@ -152,14 +152,15 @@ export function GradeCountsPanels({
       ),
     summary: cmpYear === null ? oneYearOnly : undefined,
     source: source(cmpYear === null ? yearText : `${academicYearLabel(cmpYear)}–${yearText}`),
-    // R-2122-GRADING-NOTE: this year's spread against the compare year.
+    // R-TREND-FROM-2223: this year's spread against the compare year (the note where that is 2021/22).
     gradingYears: cmpYear === null || latest === null || ownTotal === 0 ? null : [cmpYear, latest],
   };
 
   const changeData: PanelData = g.changeDataIn(colour);
   const changeHalf: PanelRender = {
     tag: "% Change",
-    afterTag: earlier.length ? <FromYearMenu periods={[...earlier, ...(latest === null ? [] : [latest])]} from={chgYear} onChange={setChangeFrom} /> : undefined,
+    // R-TREND-FROM-2223: the change is measured from 2022/23 at the earliest.
+    afterTag: changeEarlier.length ? <FromYearMenu periods={[...changeEarlier, ...(latest === null ? [] : [latest])]} from={chgYear} onChange={setChangeFrom} /> : undefined,
     question: `Which of ${subjectLabel}'s grades have moved most?`,
     body: (fullscreen) =>
       chgYear === null ? (

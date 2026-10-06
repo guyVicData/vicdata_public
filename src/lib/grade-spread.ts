@@ -13,6 +13,8 @@
 import { BOTTOM_RANK, GRADE_SCALES, NON_GRADE_VALUES, bestScale, gradeOrderFrom } from "./subject-grades";
 import { academicYearLabel } from "./teacher-view-theme";
 import type { PanelData } from "./teacher-view-panels";
+import { MODERN_GRADE_FROM } from "./grade-rows";
+import { TREND_BASE_PERIOD } from "@/catalogue/notes";
 
 // One subject's own per-grade rows (or an area's), every year it has them.
 export type GradeCountRow = { period: number; grade: string; entries: number };
@@ -35,13 +37,19 @@ const totalOf = (rows: GradeCountRow[]) => rows.reduce((a, r) => a + r.entries, 
 // Grade counts (GradeCountsPanels): `compareFrom` / `changeFrom` are the members' own picks
 // (the Trends "From" menus); null or a year not on offer = the default (the year before the
 // latest for the spread, the first year for the change).
+// 0.6.2 S4b: the latest year is the latest from 2023/24 on (R-CURRENT-GRADES-FROM-2324: a
+// subject whose grades stop before then shows none, as before), and the change table measures
+// from 2022/23 at the earliest (R-TREND-FROM-2223: `changeEarlier`, the years its menu offers).
+// The spread still compares with any earlier year, 2021/22 included.
 export function gradeCounts(ownRows: GradeCountRow[], englandRows: GradeCountRow[], picks: { compareFrom: number | null; changeFrom: number | null }) {
   const graded = ownRows.filter((r) => !NON_GRADE_VALUES.has(r.grade));
   const periods = Array.from(new Set(graded.map((r) => r.period))).sort((a, b) => a - b);
-  const latest = periods.length ? periods[periods.length - 1] : null;
-  const earlier = periods.slice(0, -1);
+  const modern = periods.filter((p) => p >= MODERN_GRADE_FROM);
+  const latest = modern.length ? modern[modern.length - 1] : null;
+  const earlier = latest === null ? [] : periods.filter((p) => p < latest);
+  const changeEarlier = earlier.filter((p) => p >= TREND_BASE_PERIOD);
   const cmpYear = picks.compareFrom !== null && earlier.includes(picks.compareFrom) ? picks.compareFrom : earlier[earlier.length - 1] ?? null;
-  const chgYear = picks.changeFrom !== null && earlier.includes(picks.changeFrom) ? picks.changeFrom : earlier[0] ?? null;
+  const chgYear = picks.changeFrom !== null && changeEarlier.includes(picks.changeFrom) ? picks.changeFrom : changeEarlier[0] ?? null;
   const own = inYear(graded, latest);
   const ownTotal = totalOf(own);
   const eng = inYear(englandRows, latest);
@@ -75,6 +83,7 @@ export function gradeCounts(ownRows: GradeCountRow[], englandRows: GradeCountRow
     periods,
     latest,
     earlier,
+    changeEarlier,
     cmpYear,
     chgYear,
     own,
