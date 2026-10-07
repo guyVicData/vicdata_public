@@ -125,6 +125,101 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ grade9: l9, grades79: l79 }) };
   },
 
+  // R-TREND-TABLE-YEARS (0.6.4 A): every trend table on a grade measure shows its chart's years.
+  // The Chase 137625 GCSE History and King's Worcester 117037 A level Mathematics: real grade
+  // rows (the dashboard's read, and the nearest set's through the comparator-grades read), each
+  // column's frame built from them, then each trend table preset beside its column's trend
+  // chart through the series builder, card and fullscreen, years across and years down.
+  async trendTableYears({ adv, sg, tvp }) {
+    const { buildSeries } = await import("../src/lib/view-series");
+    const { presetSpec } = await import("../src/catalogue/viewspec");
+    const { yearColumnsShown } = await import("../src/components/teacher/tableLayout");
+    const { resolveDefaultNearest } = await import("../src/lib/chooser-sets");
+    type Rows = Awaited<ReturnType<typeof adv.fetchSchoolGradeRows>>["byUrn"] extends Map<string, infer R> ? R : never;
+    const cases = [
+      { urn: "137625", phase: "ks4" as const, subject: "History", qual: "GCSE (9-1) Full Course", scale: sg.GCSE_SCALE, bands: [["9", "4"], ["9", "7"], ["9", "9"]] },
+      { urn: "117037", phase: "ks5" as const, subject: "Mathematics", qual: "GCE A level", scale: sg.bestScale(["A*", "A", "B", "C", "D", "E"]), bands: [["A*", "A"], ["A*", "A*"]] },
+    ];
+    const problems: string[] = [];
+    const seen: string[] = [];
+    let checked = 0;
+    for (const c of cases) {
+      const own = ((await adv.fetchSubjectLevelDataForSchools([c.urn], c.phase, { gradeYears: "four" })).byUrn.get(c.urn)?.gradeDistribution ?? []) as Rows;
+      const nearest = await resolveDefaultNearest(c.urn, c.phase);
+      const set = [c.urn, ...nearest.rows.map((r) => r.urn).filter((u) => u !== c.urn)];
+      const setRows = (await adv.fetchSchoolGradeRows(set, c.phase, c.subject)).byUrn;
+      const periods = [...new Set(own.map((r) => r.period))].sort((a, b) => a - b);
+      // The focus and up to three other subjects on the same qualification.
+      const subjects = [c.subject, ...[...new Set(own.filter((r) => r.qualificationType === c.qual && r.subject !== c.subject).map((r) => r.subject))].slice(0, 3)];
+      const rowsOf = (rows: Rows, subject: string, p: number) => rows.filter((r) => r.subject === subject && r.qualificationType === c.qual && r.period === p);
+      const measures: { id: "threshold" | "bands"; label: string; rate: (rows: Rows) => number | null }[] = [
+        { id: "threshold", label: c.phase === "ks4" ? "Grade 4+" : "A*-E", rate: (rows) => sg.thresholdRate(rows, c.phase)?.rate ?? null },
+        ...c.bands.map(([top, bottom]) => ({ id: "bands" as const, label: `${top}-${bottom}`, rate: (rows: Rows) => sg.bandRate(rows, { scale: c.scale, top, bottom })?.rate ?? null })),
+      ];
+      for (const m of measures) {
+        const measure = tvp.measureById(c.phase, m.id);
+        const subjectSeries = subjects.map((s) => ({ key: `${s}::${c.qual}`, label: s, shortLabel: s, colour: "#888", values: periods.map((p) => m.rate(rowsOf(own, s, p))) }));
+        const state = { trendStart: null, changeStart: null, showFit: false };
+        const subjectsFrame = (host: "teacher.c1.results" | "teacher.c2.context") => ({
+          kind: "subjects" as const, host, periods, subjects: subjectSeries, measure, focus: `${c.subject}::${c.qual}`, groups: [], groupKind: null, benchmarkKind: null,
+          rankedTable: host === "teacher.c2.context", rankedViews: host === "teacher.c2.context", spaciousBars: host !== "teacher.c2.context", categoryLabel: "Category",
+          changeScope: "individual" as const, theme: "dark" as const, accentHex: null, currentBlocked: false, hasGeography: false, phase: c.phase, schoolName: "This school",
+          state: { ...state, latestIdx: periods.length - 1, hiddenKeys: new Set<string>(), sort: { key: "value" as const, dir: "desc" as const }, onSort: () => {} },
+        });
+        const comparisons = {
+          kind: "comparisons" as const, periods, measure, targetName: "This school", setLabel: "10 nearest schools", comparedOn: c.subject, titleOn: c.subject,
+          versus: { urn: "average" as const, label: "Average across 10 nearest schools" }, onRankingMeasure: false, ranking: null, setKind: "nearest" as const, subjectLabel: c.subject, blocked: false, phase: c.phase, state,
+          schools: set.map((u) => ({ urn: u, name: u === c.urn ? "This school" : u, isTarget: u === c.urn, values: periods.map((p) => m.rate(rowsOf(setRows.get(u) ?? [], c.subject, p))) })),
+        };
+        const pairs: [string, string, unknown][] = [
+          ["DV-C1-RES-TR-TABLE", "DV-C1-RES-TR-CHART", subjectsFrame("teacher.c1.results")],
+          ["DV-C2-TR-TABLE", "DV-C2-TR-CHART", subjectsFrame("teacher.c2.context")],
+          ["DV-C2-TR-CHANGETABLE", "DV-C2-TR-CHART", subjectsFrame("teacher.c2.context")],
+          ["DV-C3-TR-TABLE", "DV-C3-TR-CHART", comparisons],
+          ["DV-C3-TR-CHANGETABLE", "DV-C3-TR-CHART", comparisons],
+        ];
+        for (const [tableId, chartId, frame] of pairs) {
+          for (const fullscreen of [false, true]) {
+            const build = (id: string) => buildSeries(presetSpec(id as Parameters<typeof presetSpec>[0]), frame as Parameters<typeof buildSeries>[1], { fullscreen });
+            const chart = build(chartId);
+            const table = build(tableId);
+            const tag = `${c.urn} ${m.label} ${tableId}${fullscreen ? " fullscreen" : ""}`;
+            if (!chart || !("data" in chart.leaf) || !table || table.leaf.leaf !== "yearTable") {
+              problems.push(`${tag}: no ${!chart ? "chart" : "table"}`);
+              continue;
+            }
+            const chartYears = (chart.leaf.data as { periods: number[] }).periods;
+            const data = table.leaf.data;
+            for (const layout of ["across", "down"] as const) {
+              const { shown, hidden } = yearColumnsShown(data.periods, data.statementFrom, { yearColumns: "first-latest", fullscreen, layout });
+              const shownYears = shown.map((i) => data.periods[i]);
+              const all = [...shownYears, ...hidden.map((i) => data.periods[i])].sort((a, b) => a - b);
+              checked++;
+              if (data.periods.join() !== chartYears.join()) problems.push(`${tag} ${layout}: table ${data.periods.join(" ")} vs chart ${chartYears.join(" ")}`);
+              else if (chartYears[0] !== 2021) problems.push(`${tag}: chart starts ${chartYears[0]}`);
+              else if (all.join() !== chartYears.join()) problems.push(`${tag} ${layout}: shown + named ${all.join(" ")}`);
+              else if ((layout === "down" || fullscreen) && hidden.length) problems.push(`${tag} ${layout}: hides ${hidden.length}`);
+              else if (layout === "across" && !fullscreen && shownYears.join() !== "2022,2024") problems.push(`${tag} card across: ${shownYears.join(" ")}`);
+              if (!fullscreen && layout === "across") seen.push(`${shownYears.join("+")} (+${hidden.length})`);
+            }
+          }
+        }
+      }
+      // Grade counts' change table: every graded year, its change from 2022/23.
+      const { gradeCounts } = await import("../src/lib/grade-spread");
+      const counts = gradeCounts(own.filter((r) => r.subject === c.subject && r.qualificationType === c.qual), [], { compareFrom: null, changeFrom: null });
+      const cd = counts.changeDataIn("#888");
+      for (const fullscreen of [false, true])
+        for (const layout of ["across", "down"] as const) {
+          const { shown, hidden } = yearColumnsShown(cd.periods, cd.statementFrom, { yearColumns: "first-latest", fullscreen, layout });
+          checked++;
+          const ok = cd.periods.join() === periods.join() && cd.statementFrom === 2022 && (layout === "down" || fullscreen ? hidden.length === 0 : shown.map((i) => cd.periods[i]).join() === "2022,2024" && hidden.length === 2);
+          if (!ok) problems.push(`${c.urn} Grade counts change table ${layout}${fullscreen ? " fullscreen" : ""}: ${cd.periods.join(" ")} from ${cd.statementFrom}`);
+        }
+    }
+    return { pass: problems.length === 0 && checked > 0, detail: problems.length ? problems.slice(0, 6).join("; ") : fmt({ checked, cards: [...new Set(seen)].join(" | "), years: "2021/22-2024/25 every chart, every table" }) };
+  },
+
   // R-ALEVEL-STAR (0.6.3 S3): King's Worcester 117037 A level Mathematics -- A* in every year
   // 2021/22-2024/25 (the raw "*" rows read as A*), and England's A* share in every year too.
   async aLevelStar({ adv, ref, sg, agg }) {

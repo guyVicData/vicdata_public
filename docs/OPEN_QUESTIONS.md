@@ -1607,3 +1607,15 @@ S5's first parity run (3,672 pairs, main vs branch) stopped on 136 unexpected la
 - **Accepted as a knock-on:** on a Grade counts selection at 100053, Context's vertical bar chart (a % axis) is 6 px wider than its points version was, and the grid takes 3 px from Column 1 at 1280 (words equal). The grid sizes columns by content; making it content-blind would move pixels elsewhere, so it is left.
 - **Data View:** the map pixel- and marker-identical in 40 configurations (80/80 files); its data reads hash-identical on both trees.
 - **No T Level school** was in the matrix; the T Level tie is unit-tested only.
+
+## 2026-10-07 — 0.6.4
+
+Prompt: `docs/v0.6/vicdata_0_6_round4_tables_post16_speed_claude_code_prompt_v1.md`. Report: `docs/v0.6/v064_report_v1.md`.
+
+### A — Trend tables show their chart's years (R-TREND-TABLE-YEARS)
+
+- **The cause was the 0.6.2 card rule, not wiring.** Reproduced on real-data fixtures (each tree's own fetchers) for The Chase 137625 GCSE History (Grade 4+, bands 9–4, 9–7, grade 9, Grade counts and a grade-9 selection) and King's Worcester 117037 A level Maths (A*–E, A*–A), both drawing paths, card and fullscreen, years across and down: every trend chart and every trend table's data run 2021/22–2024/25. Years down and fullscreen already showed all four years. **A card with years across showed only 2022/23 and the latest year** (the change's two ends, R-TREND-FROM-2223) and gave no sign that two years were left out. That reads as "the table starts later". No frame or helper applies `MODERN_GRADE_FROM` / R-CURRENT-GRADES-FROM-2324 to a Trends table (checked: grades.ts' uses are the latest-year spread's earlier year; SubjectPanels ~346/~1133 are Current's frame only).
+- **If the live table really starts at 2023/24** (as the prompt says), that isn't reproduced here: please check on live which layout you were looking at. A table remembered "years down" from before 0.6.2's grade rows reached back would still show every year now.
+- **The fix:** on the card, years across keeps the change's two ends and adds a "+2 more years" link under the table, whose hover names the hidden years. A click swaps that view to years down (every year), remembered like the swap button. Fullscreen and years down are unchanged (every year). The cue is in YearTable, so every year table on both paths gets it. A latest-year-only table (`yearColumns: "latest"`) shows no cue.
+- **Grade counts' change table** was the one table that really did drop years: it held only the change year and the latest (2022/23, 2024/25) in every layout, fullscreen included. It now lists every graded year from 2021/22 (or the member's own "From" year, if they picked one) to the latest. Its Change is still from 2022/23, and its card columns are still the change's two ends, with the cue. Because its years now include 2021/22, its "i" carries the trend note (TREND_BASE_NOTE), as every other trend view with 2021/22 does.
+- **Call:** the card keeps first-and-latest rather than all four columns. Four year columns, the name and Change don't fit a 1280 card column without truncating names; the prompt allows first and latest with a cue.

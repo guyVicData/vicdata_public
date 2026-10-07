@@ -237,3 +237,43 @@ test("views=v2: a slope from the span's first year starts at 2022/23; a change m
   assert.deepEqual(specYears(presetSpec("DV-C3-TR-CHART"), FOUR), FOUR, "the Trend chart draws every year");
   assert.equal(specYears(presetSpec("DV-C3-CUR-MAP"), FOUR), null, "a latest-year view");
 });
+
+// 0.6.4 A (R-TREND-TABLE-YEARS): a trend table shows its chart's years.
+test("a year table: the card across names the years it leaves out; years down and fullscreen show every year", async () => {
+  const { yearColumnsShown } = await import("@/components/teacher/tableLayout");
+  const d = data(FOUR, POINTS_VALUES);
+  assert.deepEqual(yearColumnsShown(d.periods, d.statementFrom, { yearColumns: "first-latest", fullscreen: false, layout: "across" }), { shown: [1, 3], hidden: [0, 2] });
+  assert.deepEqual(yearColumnsShown(d.periods, d.statementFrom, { yearColumns: "first-latest", fullscreen: true, layout: "across" }).hidden, []);
+  assert.deepEqual(yearColumnsShown(d.periods, d.statementFrom, { yearColumns: "first-latest", fullscreen: false, layout: "down" }).shown, [0, 1, 2, 3]);
+  assert.deepEqual(yearColumnsShown(d.periods, d.statementFrom, { yearColumns: "latest", fullscreen: false, layout: "across" }), { shown: [3], hidden: [] }, "a latest-year table names nothing");
+  // Three rows open years across: the card shows 2022/23 and 2024/25 and the cue.
+  const three: PanelData = { ...d, series: ["a", "b", "c"].map((k) => ({ ...d.series[0], key: k, label: k })) };
+  const card = text(renderToStaticMarkup(createElement(YearTable, { data: three, measure: POINTS, focusKey: "a" })));
+  assert.match(card, /2022\/23 2024\/25 Change/);
+  assert.doesNotMatch(card, /2021\/22 /);
+  assert.match(card, /\+2 more years/);
+  const html = renderToStaticMarkup(createElement(YearTable, { data: three, measure: POINTS, focusKey: "a" }));
+  assert.match(html, /title="Also 2021\/22, 2023\/24: swap to years down to see every year"/);
+  const full = text(renderToStaticMarkup(createElement(YearTable, { data: three, measure: POINTS, focusKey: "a", fullscreen: true })));
+  assert.match(full, /2021\/22 2022\/23 2023\/24 2024\/25 Change/);
+  assert.doesNotMatch(full, /more year/);
+  // Two years: nothing hidden, no cue (as before).
+  const two = text(renderToStaticMarkup(createElement(YearTable, { data: { ...three, periods: [2023, 2024], statementFrom: undefined, series: three.series.map((s) => ({ ...s, values: [4.9, 5.0] })) }, measure: POINTS, focusKey: "a" })));
+  assert.doesNotMatch(two, /more year/);
+});
+
+test("Grade counts' change table: every graded year from 2021/22, the change from 2022/23; a member's From year starts it", () => {
+  const rows = (years: number[]) => years.flatMap((period) => ["9", "7", "4", "1"].map((grade, i) => ({ period, grade, entries: 10 + i + (period - 2021) })));
+  const g = gradeCounts(rows(FOUR), [], { compareFrom: null, changeFrom: null }).changeDataIn("#000");
+  assert.deepEqual(g.periods, FOUR);
+  assert.equal(g.statementFrom, 2022);
+  assert.deepEqual(g.series.find((s) => s.key === "9")?.values, [10, 11, 12, 13]);
+  const from23 = gradeCounts(rows(FOUR), [], { compareFrom: null, changeFrom: 2023 }).changeDataIn("#000");
+  assert.deepEqual(from23.periods, [2023, 2024]);
+  assert.equal(from23.statementFrom, undefined);
+  // The table: the card's two columns are still the change's ends; the change counts from 2022/23.
+  const card = text(renderToStaticMarkup(createElement(YearTable, { data: g, measure: ENTRIES_MEASURE, focusKey: null, nameHeading: "Grade", showRank: false })));
+  assert.match(card, /2022\/23 2024\/25 Change/);
+  assert.match(card, /9 11 13 \+2/);
+  assert.match(card, /\+2 more years/);
+});

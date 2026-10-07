@@ -30,7 +30,7 @@ import {
 } from "@/lib/teacher-view-trend-styles";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ActiveViewContext } from "@/components/dashboard-config/plan";
-import { useTableLayoutStore, yearsLayoutFor, type YearsLayout } from "./tableLayout";
+import { useTableLayoutStore, yearColumnsShown, yearsLayoutFor, type YearsLayout } from "./tableLayout";
 import { TrendChart } from "./TrendChart";
 
 // D2's scale: an index, where 100 is "the same as the first year shown".
@@ -382,13 +382,10 @@ export function YearTable({
   // R-TREND-FROM-2223: on a trend measured from a later year than the first it shows, the
   // Change column counts from that year, and the card's two year columns are the change's
   // own two ends (every year, 2021/22 included, in fullscreen).
-  const fromIdx = Math.max(0, data.statementFrom === null || data.statementFrom === undefined ? 0 : periods.findIndex((p) => p >= data.statementFrom!));
-  const yearIdx =
-    yearColumns === "latest"
-      ? [periods.length - 1]
-      : yearColumns === "every" || fullscreen || periods.length <= 2
-        ? periods.map((_, i) => i)
-        : [fromIdx < periods.length - 1 ? fromIdx : 0, periods.length - 1];
+  // 0.6.4 A (R-TREND-TABLE-YEARS): a card that shows first and latest says which years it
+  // leaves out, and the cue swaps to years down, where every year shows.
+  const { shown: yearIdx, hidden } = yearColumnsShown(periods, data.statementFrom, { yearColumns, fullscreen, layout: "across" });
+  const hiddenYears = hidden.map((i) => periods[i]);
   const rankShown = showRank && !leadingRank && (rankColumn === "always" || (rankColumn === "fullscreen" && fullscreen));
   const lastIdx = periods.length - 1;
 
@@ -589,6 +586,19 @@ export function YearTable({
         })}
       </tbody>
     </table>
+    {hiddenYears.length > 0 && (
+      <div className="flex justify-end pt-1 print:hidden">
+        <button
+          type="button"
+          onClick={swap}
+          data-more-years=""
+          title={`Also ${hiddenYears.map(academicYearLabel).join(", ")}: swap to years down to see every year`}
+          className="text-[10.5px] text-[var(--muted)] underline decoration-dotted underline-offset-2 hover:text-[var(--fg)]"
+        >
+          +{hiddenYears.length} more year{hiddenYears.length === 1 ? "" : "s"}
+        </button>
+      </div>
+    )}
     </div>
   );
 }

@@ -22,3 +22,23 @@ export function useTableLayoutStore(): TableLayoutStore | null {
 export function yearsLayoutFor(member: YearsLayout | null, view: YearsLayout | undefined, rows: number): YearsLayout {
   return member ?? view ?? (rows <= 2 ? "down" : "across");
 }
+
+/**
+ * 0.6.4 A (R-TREND-TABLE-YEARS): the years a year table shows, by index into `periods`, and
+ * the years it leaves out. Years down and fullscreen show every year (the trend chart's own);
+ * a card across shows the change's two ends (from `statementFrom`, R-TREND-FROM-2223) when it
+ * has more than two, and names the rest (`hidden`, the "+N more years" cue).
+ */
+export function yearColumnsShown(
+  periods: readonly number[],
+  statementFrom: number | null | undefined,
+  opts: { yearColumns: "first-latest" | "every" | "latest"; fullscreen: boolean; layout: YearsLayout },
+): { shown: number[]; hidden: number[] } {
+  const all = periods.map((_, i) => i);
+  if (opts.layout === "down") return { shown: all, hidden: [] };
+  if (opts.yearColumns === "latest") return { shown: periods.length ? [periods.length - 1] : [], hidden: [] };
+  if (opts.yearColumns === "every" || opts.fullscreen || periods.length <= 2) return { shown: all, hidden: [] };
+  const fromIdx = Math.max(0, statementFrom === null || statementFrom === undefined ? 0 : periods.findIndex((p) => p >= statementFrom));
+  const shown = [fromIdx < periods.length - 1 ? fromIdx : 0, periods.length - 1];
+  return { shown, hidden: all.filter((i) => !shown.includes(i)) };
+}
