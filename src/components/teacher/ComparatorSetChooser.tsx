@@ -140,7 +140,7 @@ export function ComparatorSetChooser({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const body = await fetchDefaultLists(supabase, targetUrn);
+      const body = await fetchDefaultLists(supabase, targetUrn, phase === "ks5");
       if (cancelled || !body) return;
       setLists(body);
       const chosen = resolveNearestOption(body.list1, body.boardingBand, body.boardingRecipe, null);
@@ -156,7 +156,7 @@ export function ComparatorSetChooser({
     return () => {
       cancelled = true;
     };
-  }, [supabase, targetUrn]);
+  }, [supabase, targetUrn, phase]);
 
   const target = details.get(targetUrn) ?? null;
   const toSchool = useCallback(
@@ -176,10 +176,13 @@ export function ComparatorSetChooser({
   const laTicked = new Set(laSchools.map((s) => s.urn).filter((u) => !la.unticked.includes(u)));
   const laName = payload.target.laName;
 
+  // 0.6.5 S4: on the Post-16 page "10 nearest" is the 10 nearest with Post-16 provision.
+  const nearestName = (n: number) => (phase === "ks5" ? `${n} nearest with a sixth form or 16+ provision` : `${n} nearest schools`);
+
   const stepNearest = async (delta: number) => {
     const count = Math.max(5, nearest.count + delta);
     setNearest((n) => ({ ...n, busy: true }));
-    const entries = await fetchNearest(supabase, targetUrn, count, nearest.recipe);
+    const entries = await fetchNearest(supabase, targetUrn, count, nearest.recipe, phase === "ks5");
     if (entries) await addDetails(entries.map((e) => e.urn));
     setNearest((n) => ({ ...n, busy: false, count: entries ? count : n.count, entries: entries ?? n.entries }));
   };
@@ -241,7 +244,7 @@ export function ComparatorSetChooser({
     await addDetails([school.urn]);
     setCustom({
       base: from,
-      baseLabel: from === "nearest" ? `${nearest.count} nearest schools` : `Schools in ${laName ?? "your LA"}`,
+      baseLabel: from === "nearest" ? nearestName(nearest.count) : `Schools in ${laName ?? "your LA"}`,
       coreUrns: from === "la" ? laSchools.filter((s) => laTicked.has(s.urn)).map((s) => s.urn) : [],
       added: [school.urn],
       removed: [],
@@ -490,13 +493,14 @@ export function ComparatorSetChooser({
         targetName={targetName}
         schools={nearestSchools}
         count={nearest.count}
+        title={nearestName(nearest.count)}
         loading={nearest.busy || nearest.entries === null}
         onLess={() => void stepNearest(-5)}
         onMore={() => void stepNearest(5)}
         onAdd={(s) => void forkWith("nearest", s)}
         onBack={() => setScreen("hub")}
         onClose={onClose}
-        onDone={() => void onDone({ kind: "urns", label: `${nearest.count} nearest schools`, urns: nearestSchools.map((s) => s.urn) })}
+        onDone={() => void onDone({ kind: "urns", label: nearestName(nearest.count), urns: nearestSchools.map((s) => s.urn) })}
       />
     );
   } else if (screen === "la") {
@@ -538,7 +542,7 @@ export function ComparatorSetChooser({
     content = (
       <CustomScreen
         theme={theme}
-        title={custom.base === "nearest" ? `${nearest.count} nearest schools` : custom.base === "la" ? custom.baseLabel : custom.baseLabel}
+        title={custom.base === "nearest" ? nearestName(nearest.count) : custom.base === "la" ? custom.baseLabel : custom.baseLabel}
         subtitle={
           isEditing
             ? `${plural(customUrns.length, "school")} · ${editingSet!.shared ? "shared school-wide" : "your saved set"}`
@@ -551,7 +555,7 @@ export function ComparatorSetChooser({
         onRemoveAdded={(urn) => setCustom({ ...custom, added: custom.added.filter((u) => u !== urn) })}
         stepper={
           custom.base === "nearest"
-            ? { label: `${nearest.count} nearest schools`, onLess: () => void stepNearest(-5), onMore: () => void stepNearest(5), lessDisabled: nearest.count <= 5, busy: nearest.busy }
+            ? { label: nearestName(nearest.count), onLess: () => void stepNearest(-5), onMore: () => void stepNearest(5), lessDisabled: nearest.count <= 5, busy: nearest.busy }
             : null
         }
         onAdd={(s) => {
@@ -649,7 +653,7 @@ export function ComparatorSetChooser({
         pick={pick}
         onPick={choosePick}
         nearest={{
-          title: `${nearest.count} nearest schools`,
+          title: nearestName(nearest.count),
           count: nearest.entries === null ? null : nearestSchools.length,
           radiusKm: nearestSchools.length ? Math.max(...nearestSchools.map((s) => s.distanceKm ?? 0)) : null,
         }}

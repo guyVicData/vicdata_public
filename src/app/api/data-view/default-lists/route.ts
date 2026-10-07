@@ -48,6 +48,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const lists = await buildDefaultComparatorLists(urn);
+  // 0.6.5 S4: the Teacher view's comparator chooser on its Post-16 page asks for the 10
+  // nearest with Post-16 provision (post16=1). The Data View never sends it: its call, and
+  // its answer, are exactly as before.
+  const lists = request.nextUrl.searchParams.get("post16") === "1" ? await buildDefaultComparatorLists(urn, { post16: true }) : await buildDefaultComparatorLists(urn);
   return NextResponse.json(lists);
 }

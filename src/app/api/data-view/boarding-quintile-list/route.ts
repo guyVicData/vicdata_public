@@ -1,7 +1,7 @@
 import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { buildBoardingQuintileList } from "@/lib/default-comparator-lists";
+import { buildBoardingQuintileList, keepWithKs5Results } from "@/lib/default-comparator-lists";
 
 // Member Data View (brief §6.1): List 3's boarding-quintile recipe, split into its
 // own lazy endpoint -- real, measured at ~41s even after parallelising the batched
@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const list3 = await buildBoardingQuintileList(urn, count);
+  // 0.6.5 S4: post16=1 (the Teacher chooser's Post-16 stepper only): its schools with KS5
+  // results. The Data View never sends it.
+  const built = await buildBoardingQuintileList(urn, count);
+  const list3 = built && request.nextUrl.searchParams.get("post16") === "1" ? await keepWithKs5Results(built) : built;
   return NextResponse.json({ list3 });
 }

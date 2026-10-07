@@ -157,6 +157,23 @@ const RUNNERS: Record<string, Runner> = {
     return { pass: ok, detail: out.join("; ") };
   },
 
+  // R-POST16-DEFAULT-SET (0.6.5 S4): the Post-16 default set has Post-16 provision and shares
+  // more of the focus's qualification; the GCSE nearest 10 is unchanged.
+  async post16DefaultSet({ ref }) {
+    const dcl = await import("../src/lib/default-comparator-lists");
+    const urn = "117037";
+    const gcse = await dcl.buildDefaultComparatorLists(urn, { only: "nearest" });
+    const gcsePlain = await dcl.buildDefaultComparatorLists(urn);
+    const post16 = await dcl.buildDefaultComparatorLists(urn, { only: "nearest", post16: true });
+    const urnsOf = (l: typeof gcse) => (l.list1?.schools ?? []).map((sc) => sc.urn).filter((u) => u !== urn);
+    const [before, after] = [urnsOf(gcse), urnsOf(post16)];
+    const sharing = async (urns: string[]) =>
+      new Set((await ref.lookupAcademicSubjectQualificationHeadline({ entityIds: urns, ksStage: "ks5", qualificationType: "GCE A level" })).filter((r) => r.subject === "Mathematics" && r.period === 2024 && Number(r.entries_total) > 0).map((r) => r.entity_id)).size;
+    const withKs5 = await dcl.withKs5Results(after);
+    const v = { before: before.length, after: after.length, shareBefore: await sharing(before), shareAfter: await sharing(after), allWithKs5: withKs5.size === after.length, gcseUnchanged: JSON.stringify(urnsOf(gcsePlain)) === JSON.stringify(before) };
+    return { pass: v.after === 10 && v.allWithKs5 && v.shareAfter > v.shareBefore && v.gcseUnchanged, detail: fmt(v) };
+  },
+
   // R-TREND-TABLE-YEARS (0.6.4 A): every trend table on a grade measure shows its chart's years.
   // The Chase 137625 GCSE History and King's Worcester 117037 A level Mathematics: real grade
   // rows (the dashboard's read, and the nearest set's through the comparator-grades read), each

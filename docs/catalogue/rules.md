@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 55 rules: 53 active, 2 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -26,6 +26,7 @@ What a number is allowed to be. 55 rules: 53 active, 2 superseded; 22 must lift 
 | R-BANDS-ENGLAND-BENCH | active | On Grade bands the focused subject's benchmark is England's rate on the same span, from grade geography; peers carry none. | lifted | auto: bandsEnglandBench | — |
 | R-GRADE-SCALE-MATCH | active | A rate is computed only on the scale it was defined on (threshold: GCSE 9-1 / Double Award at KS4, A-level A*-E at KS5; bands: the scale the range was picked on). Vocational, IB and Pre-U rows get no figure. | no | manual | — |
 | R-POST16-BAND-DEFAULT | active | Grade bands opens on a default range on every Post-16 scale, as GCSE opens on 7-9: A level and EPQ A* to A; AS and Core Maths A to B; IB subject 7 to 6; vocational single Distinction* to Distinction, double D*D* to DD, triple D*D*D* to DDD; T Level Distinction* to Merit. The scale is the focus's own (scaleForQualification). A saved range wins while both its ends are on the focus's scale; otherwise the scale's default (never a stale or blank range). The Post-16 defaults are Post-16 only; Pre-U and the KS4 vocational scales stay custom-range only. The Grades menu offers the default plus Custom. | no | auto: post16BandDefault | — |
+| R-POST16-DEFAULT-SET | active | On the Post-16 page the default comparison set is the 10 nearest schools and colleges with Post-16 provision, named '10 nearest with a sixth form or 16+ provision': GCSE's matching rules (the same distance order, sector, phase and gender rules and the same widen-the-net backfill) plus one filter -- KS5 results in either of the latest two published years. An FE college's default (the nearest FE colleges) and a boarding recipe (its schools with KS5 results) follow the same rule. GCSE keeps its own nearest 10; saved sets are never altered; the Data View's default-lists, expand-nearest and boarding-quintile-list calls are unchanged (only the Teacher chooser on its Post-16 page asks with post16=1). | no | auto: post16DefaultSet | — |
 | R-NON-GRADES-EXCL | active | Suppressed, No result, X, Covid impacted and other non-grades (2021/22-2022/23 KS5 too: COVID result, Supp) are excluded from both sides of every grade rate and distribution. | no | none yet | — |
 | R-THRESHOLD-PERIODS | active | Grade-based measures cover 2021/22 on at school level (0.6.2; 2023/24 on before); the axis is shortened to the years a subject has grades, never padded. | lifted | auto: thresholdPeriods | — |
 | R-HISTORIC-GRADE-LABELS | active | 2021/22-2022/23 KS5 grade labels are read in their 2023/24 words: vocational short codes (* D M P HM HP, ** *D DD DM MM MP PP, *** **D *DD DDD DDM DMM MMM MMP MPP PPP) become Distinction* ... Pass-Pass-Pass on BTEC, OCR Cambridge Technical, Other General Qualification and AEA, and on a VRQ set only where it carries a code no A-level-type scale has; never on A level, AS, EPQ, Core Maths, FSMQ, IB or Pre-U. COVID result and Supp are non-grades (R-NON-GRADES-EXCL). KS4's historic labels already match. | no | auto: historicGradeLabels | — |
@@ -349,6 +350,22 @@ What a number is allowed to be. 55 rules: 53 active, 2 superseded; 22 must lift 
 | Tagged at | — |
 | Test case | King's Worcester (and Croydon College 130432, Sevenoaks 118952, Christ The King 130416) (117037), ks5, 2024/25: From each school's own grade rows: A level Maths opens on A* to A, a BTEC Extended Diploma on D*D*D* to DDD, IB HL Mathematical Studies on 7 to 6, T Level Health on Distinction* to Merit, each with a real band figure; a saved off-scale range falls back to the default. [runner: post16BandDefault] |
 | Origin | 0.6.5 S1 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-POST16-DEFAULT-SET
+
+| Field | Content |
+| --- | --- |
+| Statement | On the Post-16 page the default comparison set is the 10 nearest schools and colleges with Post-16 provision, named '10 nearest with a sixth form or 16+ provision': GCSE's matching rules (the same distance order, sector, phase and gender rules and the same widen-the-net backfill) plus one filter -- KS5 results in either of the latest two published years. An FE college's default (the nearest FE colleges) and a boarding recipe (its schools with KS5 results) follow the same rule. GCSE keeps its own nearest 10; saved sets are never altered; the Data View's default-lists, expand-nearest and boarding-quintile-list calls are unchanged (only the Teacher chooser on its Post-16 page asks with post16=1). |
+| Why | Guy, 7 Oct 2026 (the 0.6.4 audit's change 6): the GCSE nearest 10 left few comparators sharing a Post-16 qualification (3 for King's Worcester's A level Maths). |
+| Applies to | The Comparisons column's default set at Post-16; the comparator chooser's 10 nearest on the Post-16 page |
+| Enforced in | - src/lib/default-comparator-lists.ts:buildDefaultComparatorLists (post16), withKs5Results, keepWithKs5Results<br>- src/lib/chooser-sets.ts:resolveDefaultNearest<br>- src/app/api/data-view/default-lists, expand-nearest, boarding-quintile-list (post16=1, opt-in)<br>- src/components/teacher/ComparatorSetChooser.tsx:nearestName; src/components/dashboard-config/TeacherDashboard.tsx:DEFAULT_CHOICE_LABEL_POST16 |
+| Tagged at | — |
+| Test case | King's Worcester (and The Chase 137625) (117037), ks5, Mathematics, 2024/25: The Post-16 default has 10 schools, each with KS5 results, and more of them offer A level Maths than the GCSE nearest 10 does (3 before); the GCSE nearest 10 (no option) is unchanged. [runner: post16DefaultSet] |
+| Origin | 0.6.5 S4 |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

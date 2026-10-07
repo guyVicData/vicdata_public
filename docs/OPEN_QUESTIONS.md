@@ -1672,3 +1672,15 @@ Prompt: `docs/v0.6/vicdata_0_6_post16_match_gcse_claude_code_prompt_v1.md`. Repo
 - **Call: a failed request shows the set's schools with no figures** (the loading flag clears), not the bucket's figures. Falling back to the bucket would show a blend under an exact label.
 - **Rates are unchanged:** they already read each school's exact grade rows (R-COMPARATOR-RATE-PER-QUAL).
 - **Catalogue:** R-POINTS-SAME-QUAL now covers Comparisons and maps, with its real-data test extended. The stale "Context 'All subjects' blends qualifications" known gap is removed. 0.6.4 had added no "bucket figures" wording to DV-C3-CUR-MAP or DV-C1-RES-TR-MAP, so nothing was removed there.
+
+### S4 — The Post-16 default comparison set (R-POST16-DEFAULT-SET)
+
+- **The rule:** GCSE's own matching (`findSurroundingSchools`: the same distance order from `school_nearest_neighbours`, the same sector, phase and gender rules, the same widen-the-net backfill and the 0.6.4 `only: "nearest"` fast path) plus one filter through its existing `extraFilterUrns` hook.
+- **Call: "Post-16 provision" is read from real data.** A school qualifies if it has KS5 results (`academic_headline_lookup`, ks5) in either of the latest two published years. The existing `hasPost16Provision` is `statutory_high_age >= 16`, which every 11–16 school passes, so it can't tell a sixth form apart.
+- **Call: FE colleges are not added for a school.** The prompt says "schools and colleges"; the GCSE rules match a school's own sector and phase, which keeps FE colleges out for a school. Changing that would change the set's character beyond "with a sixth form". An FE college's own default was already the nearest FE colleges, all Post-16, so it's unchanged.
+- **Call: a boarding recipe** (Sevenoaks' default) keeps only its schools with KS5 results. Sevenoaks keeps all 10, of which 1 offers IB HL Maths: a data limit (IB is rare), not the rule.
+- **Name:** "10 nearest with a sixth form or 16+ provision", on the Comparisons pill, the chooser's hub, its Nearest screen and the ±5 stepper. The prompt's wording, kept as given; there's no word budget on the pill.
+- **The chooser on the Post-16 page** asks `default-lists`, `expand-nearest` and `boarding-quintile-list` with `post16=1`, so its first row and stepper agree with the pill's default. The Data View never sends that parameter: its calls and answers are unchanged.
+- **The 0.6.4 prefetch** of the other phase posts `{ kind: "nearest" }` with that phase, so at Post-16 the server resolves the Post-16 set. No client change was needed.
+- **Saved sets:** never altered. A set a member saved from "10 nearest" keeps its schools.
+- **Counts** (schools in the default set with the focus qualification in 2024/25, before → after): King's A level Maths 3 → 7; The Chase A level History 5 → 10; Croydon BTEC Extended Diploma Business 4 → 4 and AS Law 0 → 0 (an FE college: unchanged); Sevenoaks IB HL Maths 1 → 1 (boarding recipe).

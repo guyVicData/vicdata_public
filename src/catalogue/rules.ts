@@ -412,6 +412,30 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-POST16-DEFAULT-SET",
+    statement:
+      "On the Post-16 page the default comparison set is the 10 nearest schools and colleges with Post-16 provision, named '10 nearest with a sixth form or 16+ provision': GCSE's matching rules (the same distance order, sector, phase and gender rules and the same widen-the-net backfill) plus one filter -- KS5 results in either of the latest two published years. An FE college's default (the nearest FE colleges) and a boarding recipe (its schools with KS5 results) follow the same rule. GCSE keeps its own nearest 10; saved sets are never altered; the Data View's default-lists, expand-nearest and boarding-quintile-list calls are unchanged (only the Teacher chooser on its Post-16 page asks with post16=1).",
+    why: "Guy, 7 Oct 2026 (the 0.6.4 audit's change 6): the GCSE nearest 10 left few comparators sharing a Post-16 qualification (3 for King's Worcester's A level Maths).",
+    appliesTo: "The Comparisons column's default set at Post-16; the comparator chooser's 10 nearest on the Post-16 page",
+    enforcedIn: [
+      "src/lib/default-comparator-lists.ts:buildDefaultComparatorLists (post16), withKs5Results, keepWithKs5Results",
+      "src/lib/chooser-sets.ts:resolveDefaultNearest",
+      "src/app/api/data-view/default-lists, expand-nearest, boarding-quintile-list (post16=1, opt-in)",
+      "src/components/teacher/ComparatorSetChooser.tsx:nearestName; src/components/dashboard-config/TeacherDashboard.tsx:DEFAULT_CHOICE_LABEL_POST16",
+    ],
+    testCase: {
+      urn: "117037",
+      school: "King's Worcester (and The Chase 137625)",
+      phase: "ks5",
+      subject: "Mathematics",
+      year: "2024/25",
+      expect: "The Post-16 default has 10 schools, each with KS5 results, and more of them offer A level Maths than the GCSE nearest 10 does (3 before); the GCSE nearest 10 (no option) is unchanged.",
+      check: "post16DefaultSet",
+    },
+    origin: "0.6.5 S4",
+    status: "active",
+  },
+  {
     id: "R-NON-GRADES-EXCL",
     statement: "Suppressed, No result, X, Covid impacted and other non-grades (2021/22-2022/23 KS5 too: COVID result, Supp) are excluded from both sides of every grade rate and distribution.",
     why: "Counting them in the denominator depresses a real rate by however much DfE chose not to publish.",

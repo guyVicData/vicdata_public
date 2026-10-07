@@ -28,17 +28,19 @@ export type DefaultListsPayload = {
   local16Plus: DefaultList | null;
 };
 
-export const fetchDefaultLists = (supabase: Supa, urn: string) =>
-  authed<DefaultListsPayload>(supabase, `/api/data-view/default-lists?urn=${encodeURIComponent(urn)}`);
+// 0.6.5 S4: `post16` (the Teacher view's Post-16 page) asks for the nearest with Post-16 provision.
+export const fetchDefaultLists = (supabase: Supa, urn: string, post16 = false) =>
+  authed<DefaultListsPayload>(supabase, `/api/data-view/default-lists?urn=${encodeURIComponent(urn)}${post16 ? "&post16=1" : ""}`);
 
 // The +5/-5 stepper re-runs the same matching pipeline wider (expand-nearest), or -- when
 // "10 nearest" is the boarding-quintile recipe -- that recipe wider.
-export async function fetchNearest(supabase: Supa, urn: string, count: number, recipe: "list1" | "boarding"): Promise<DefaultListEntry[] | null> {
+export async function fetchNearest(supabase: Supa, urn: string, count: number, recipe: "list1" | "boarding", post16 = false): Promise<DefaultListEntry[] | null> {
+  const p16 = post16 ? "&post16=1" : "";
   if (recipe === "boarding") {
-    const body = await authed<{ list3: DefaultList | null }>(supabase, `/api/data-view/boarding-quintile-list?urn=${encodeURIComponent(urn)}&count=${count}`);
+    const body = await authed<{ list3: DefaultList | null }>(supabase, `/api/data-view/boarding-quintile-list?urn=${encodeURIComponent(urn)}&count=${count}${p16}`);
     return body?.list3?.schools ?? null;
   }
-  const body = await authed<{ list: DefaultList }>(supabase, `/api/data-view/expand-nearest?urn=${encodeURIComponent(urn)}&count=${count}`);
+  const body = await authed<{ list: DefaultList }>(supabase, `/api/data-view/expand-nearest?urn=${encodeURIComponent(urn)}&count=${count}${p16}`);
   return body?.list.schools ?? null;
 }
 
