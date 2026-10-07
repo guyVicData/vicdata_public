@@ -1,5 +1,7 @@
 # VicData 0.6.6 — Speed: precomputed Post-16 neighbours, Teacher-only school details
 
+> **SUPERSEDED (7 Oct 2026).** Don't run this file. It is now Part 2 (renumbered 0.6.7) of `vicdata_0_6_rankings_then_speed_claude_code_prompt_v1.md`, which runs after the rankings round.
+
 Claude Code build prompt. Guy asked on 7 Oct 2026 for the two speed options proposed in 0.6.4 (C3) and 0.6.5. **Neither may change any figure, name, order or pixel.** This is purely speed.
 
 **Read first:**
