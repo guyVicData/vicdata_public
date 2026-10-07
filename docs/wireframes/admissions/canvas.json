@@ -1,0 +1,124 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Main.dc.html": {
+      "h": 1180,
+      "title": "Admissions · Pipelines (11+, day + boarding) — large pipeline view across columns 2–3",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "MarketShare.dc.html": {
+      "h": 1180,
+      "title": "Admissions · Market share (11+) — large rivals view; academic ranking of rivals in row 2",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Onboard1.dc.html": {
+      "h": 844,
+      "title": "Setup · 1 Your entry points (managed like a teacher's subjects)",
+      "w": 390,
+      "x": 0,
+      "y": 2500
+    },
+    "Onboard2.dc.html": {
+      "h": 844,
+      "title": "Setup · 2 Day feeders — tick from nearby schools",
+      "w": 390,
+      "x": 470,
+      "y": 2500
+    },
+    "Onboard3.dc.html": {
+      "h": 844,
+      "title": "Setup · 3 Boarding feeders — wider net, preps that send boarders",
+      "w": 390,
+      "x": 940,
+      "y": 2500
+    },
+    "Onboard4.dc.html": {
+      "h": 844,
+      "title": "Setup · 4 Rivals for market share",
+      "w": 390,
+      "x": 1410,
+      "y": 2500
+    },
+    "Phone.dc.html": {
+      "h": 844,
+      "title": "Phone · the large view stacks full width under the entry point",
+      "w": 390,
+      "x": 2080,
+      "y": 1300
+    },
+    "Pipeline16.dc.html": {
+      "h": 600,
+      "title": "Large view · 16+ pipeline: the cohort ladder reaches back into primaries, then births",
+      "w": 960,
+      "x": 0,
+      "y": 1300
+    },
+    "ShapeView.dc.html": {
+      "h": 600,
+      "title": "Large view · Shape and size: your school, the local shape, and rivals' shapes",
+      "w": 960,
+      "x": 1040,
+      "y": 1300
+    },
+    "RivalMomentum.dc.html": {
+      "x": 2550,
+      "y": 1300,
+      "w": 960,
+      "h": 600,
+      "title": "Large view · Rivals' momentum: who is gaining or losing pupils, and whose results are rising fast"
+    },
+    "RivalSubjects.dc.html": {
+      "x": 3590,
+      "y": 1300,
+      "w": 960,
+      "h": 600,
+      "title": "Large view · Strengths and weaknesses: your subject areas ranked against rivals"
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-07T18:25:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t1": {
+      "kind": "title1",
+      "maxW": 2960,
+      "text": "Admissions — Pipelines and Market share",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "First visit — setup steps",
+      "w": 240,
+      "x": 0,
+      "y": 2240
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "MarketShare.dc.html",
+    "Pipeline16.dc.html",
+    "ShapeView.dc.html",
+    "Phone.dc.html",
+    "Onboard1.dc.html",
+    "Onboard2.dc.html",
+    "Onboard3.dc.html",
+    "Onboard4.dc.html",
+    "RivalMomentum.dc.html",
+    "RivalSubjects.dc.html"
+  ],
+  "pages": [],
+  "title": "VicData Admissions dashboards"
+}

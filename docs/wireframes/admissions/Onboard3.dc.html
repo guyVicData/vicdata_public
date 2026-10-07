@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup 3 — boarding feeders</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #0a0a0b; }
+  a { text-decoration: none; color: inherit; }
+  .row { display: grid; grid-template-columns: 20px minmax(0, 1fr) 44px 46px; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid #1c1c1f; font-size: 12.5px; }
+  .box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #3a3a40; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #041418; }
+  .box.on { background: #22d3ee; border-color: #22d3ee; }
+  .s { font-size: 11px; color: #8a8a90; }
+  .pill { border: 1px solid #2a2a2e; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600; color: #c4c4c8; }
+  .pill.on { border-color: #22d3ee; color: #fff; background: rgba(34,211,238,0.1); }
+  .lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6a6a70; }
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0a0a0b; color: #f2f2f3; display: flex; flex-direction: column;">
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #1c1c1f;">
+    <a href="Onboard2.dc.html" style="font-size: 13px; color: #8a8a90;">&larr; Back</a>
+    <span style="font-size: 13px; color: #8a8a90;">Skip for now</span>
+  </div>
+  <div style="padding: 18px 20px 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+    <div>
+      <div style="font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #22d3ee;">Admissions setup &middot; Step 3 of 4 &middot; 11+</div>
+      <div style="font-size: 20px; font-weight: 700; margin-top: 6px; line-height: 1.25;">Your boarding feeders</div>
+      <div style="font-size: 13px; color: #9a9aa0; margin-top: 6px; line-height: 1.45;">Boarders come from further away. Build this list from preps by area and type rather than distance alone.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span class="lbl">Find preps</span>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <span class="pill on">Independent preps</span><span class="pill on">With boarders</span><span class="pill">Ages to 11 or 13</span>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <span class="pill on">[LA 1] &times;</span><span class="pill on">[LA 2] &times;</span><span class="pill on">London SW &times;</span><span class="pill">+ Area</span>
+      </div>
+      <div class="s">[m] preps match. Tick the ones that send you boarders, or keep them all as a fuzzy set that updates itself.</div>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <span style="flex: 1 1 0; text-align: center; border-radius: 10px; border: 1.5px solid #f2f2f3; background: #1a1a1d; padding: 9px; font-size: 12.5px; font-weight: 700;">Pick schools</span>
+      <span style="flex: 1 1 0; text-align: center; border-radius: 10px; border: 1px solid #2a2a2e; padding: 9px; font-size: 12.5px; color: #9a9aa0;">Keep as fuzzy set</span>
+    </div>
+
+    <div style="flex-grow: 1; overflow: hidden;">
+      <div class="row" style="color: #6a6a70; font-size: 10.5px;"><span></span><span>Prep</span><span>Aged 10</span><span>Boards</span></div>
+      <div class="row"><span class="box on">&#10003;</span><span>[Prep G]<br><span class="s">[LA 1] &middot; mixed &middot; S</span></span><span>[n]</span><span>Yes</span></div>
+      <div class="row"><span class="box on">&#10003;</span><span>[Prep H]<br><span class="s">London SW &middot; boys &middot; M</span></span><span>[n]</span><span>Yes</span></div>
+      <div class="row"><span class="box"></span><span>[Prep I]<br><span class="s">[LA 2] &middot; mixed &middot; XS</span></span><span>[n]</span><span>Yes</span></div>
+      <div class="row"><span class="box on">&#10003;</span><span>[Prep J]<br><span class="s">London SW &middot; girls &middot; S</span></span><span>[n]</span><span>Yes</span></div>
+      <div class="row"><span class="box"></span><span>[Prep K]<br><span class="s">[LA 1] &middot; mixed &middot; M</span></span><span>[n]</span><span>Yes</span></div>
+    </div>
+
+    <div style="border-radius: 10px; border: 1px solid #1e1e22; background: #131315; padding: 10px 12px; font-size: 12px; color: #b4b4b8; line-height: 1.4;">International boarders aren&rsquo;t in the school census. Your pipeline shows national new joiners to ISC schools by country as context.</div>
+
+    <a href="Onboard4.dc.html" style="display: block; text-align: center; border-radius: 12px; background: #22d3ee; color: #041418; padding: 13px; font-size: 14px; font-weight: 800;">Save boarding feeders &middot; Next: rivals</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

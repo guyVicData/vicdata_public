@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admissions — Market share</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  button { font-family: inherit; cursor: pointer; }
+  a { color: #22d3ee; text-decoration: none; }
+  a:hover { color: #67e8f9; }
+  .muted { color: #9a9a9a; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #9a9a9a; padding: 0; flex-shrink: 0; }
+  .icon-btn.active { background: #262626; color: #ffffff; }
+  .chip { border: 1px solid #2a2a2a; background: #141414; color: #d4d4d4; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip.active { border-color: #22d3ee; background: #0f2329; color: #fff; }
+  .fchip { border: 1px solid #2a2a2a; background: #101010; color: #c4c4c4; border-radius: 8px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+  .panel { box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 12px 14px 36px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .tag { font-size: 11.5px; font-weight: 600; color: #d4d4d4; }
+  .vt { font-size: 12.5px; font-weight: 700; color: #f2f2f2; }
+  .view-rail { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; padding: 1px 9px 2px 0; border-right: 1px solid #232323; margin-right: 10px; }
+  .bottom-row { position: absolute; left: 14px; right: 14px; bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .src { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; border: 1px solid #2a2a2a; color: #7a7a7a; font-size: 9.5px; font-style: italic; font-weight: 700; }
+  .rowhead { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 12.5px; font-weight: 700; color: #e5e5e5; }
+  .tile { border: 1px solid #232323; border-radius: 9px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .tl { font-size: 10.5px; color: #9a9a9a; }
+  .tv { font-size: 19px; font-weight: 800; color: #f2f2f2; }
+  .key { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #b4b4b4; }
+  .rrow { display: grid; grid-template-columns: 22px minmax(0, 1fr) 110px 42px 40px 64px 64px; align-items: center; gap: 8px; font-size: 12px; color: #d4d4d4; padding: 4px 6px; border-radius: 6px; }
+  .rrow.me { background: #0f2329; color: #fff; font-weight: 700; }
+  .bar { height: 10px; border-radius: 3px; background: #3f3f46; }
+  .arow { display: grid; grid-template-columns: 30px minmax(0, 1fr) 46px 52px; gap: 6px; font-size: 11.5px; color: #d4d4d4; padding: 3px 4px; border-radius: 5px; }
+  .arow.me { background: #0f2329; color: #fff; font-weight: 700; }
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; background: #0a0a0a; padding: 20px 28px; display: flex; flex-direction: column; gap: 14px; color: #f2f2f2;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+    <div style="font-weight: 700; letter-spacing: 0.02em;">VicData</div>
+    <div style="display: flex; align-items: center; gap: 10px; color: #7a7a7a;">
+      <span style="padding: 0 10px; font-size: 12px; font-weight: 700;">Home</span>
+      <span style="width: 1px; height: 16px; background: #262626;"></span>
+      <span style="display: flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 9px; background: #0f2329; color: #22d3ee; font-size: 12px; font-weight: 700;">Admissions</span>
+      <span style="width: 1px; height: 16px; background: #262626;"></span>
+      <span style="width: 26px; height: 26px; border-radius: 50%; background: #1c1c1c; display: inline-block;"></span>
+    </div>
+  </div>
+  <div style="height: 1px; background: #1c1c1c;"></div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #101010; border: 1px solid #232323; border-radius: 14px; padding: 10px 16px;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="width: 36px; height: 36px; border-radius: 10px; background: #0f2329; color: #22d3ee; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px;">A</span>
+      <div style="font-size: 16px; font-weight: 700;">Admissions <span class="muted" style="font-size: 13px; font-weight: 500;">&mdash; [Your school]</span></div>
+      <div style="display: inline-flex; border: 1px solid #2a2a2a; border-radius: 999px; padding: 3px; background: #101010; gap: 2px;">
+        <a href="Main.dc.html" style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #9a9a9a;">Pipelines</a>
+        <span style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: #22d3ee; color: #041418;">Market share</span>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="muted" style="font-size: 11px;">Entry point</span>
+      <span class="chip">4+</span>
+      <span class="chip active">11+</span>
+      <span class="chip">16+</span>
+      <a href="Onboard1.dc.html" class="icon-btn" style="border: 1px solid #2a2a2a; border-radius: 999px; width: 28px; height: 28px;" aria-label="Choose entry points">&plusmn;</a>
+      <span style="width: 1px; height: 18px; background: #262626; margin: 0 4px;"></span>
+      <span class="fchip">Rivals: 10 nearest <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      <span class="fchip">Day + boarding <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      <span class="fchip">All pupils <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      <span class="fchip">State + independent <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+    </div>
+  </div>
+
+  <div class="rowhead">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    Now <span class="muted" style="font-size: 11px; font-weight: 500;">&middot; January 2026 census &middot; pupils aged 11</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+
+    <div class="panel" style="height: 470px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Current</span><span class="muted" style="font-size: 11.5px;">Data 2025/26</span><span style="flex-grow: 1;"></span><button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button></div>
+      <div class="vt">Your place among the 10 nearest, at 11+</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <div class="tile"><span class="tl">Rank at age 11</span><span class="tv" style="color: #22d3ee;">[r] of 11</span><span class="tl">by Year 7 size</span></div>
+        <div class="tile"><span class="tl">Market share</span><span class="tv">[x]%</span><span class="tl">of 11-year-olds in this group</span></div>
+        <div class="tile"><span class="tl">Since 2019/20</span><span class="tv">&#9650; [p] pts</span><span class="tl">share change</span></div>
+        <div class="tile"><span class="tl">Whole school</span><span class="tv" style="font-size: 16px;">[r] of 11</span><span class="tl">by total roll</span></div>
+      </div>
+      <div style="border-top: 1px solid #232323; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+        <div class="tl" style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">This group</div>
+        <div style="font-size: 12px; color: #c4c4c4; line-height: 1.45;">[n] pupils aged 11 across you and 10 rivals: [k] independent, [s] state; [b] with boarding. Shares are of this group, not the whole local market.</div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span style="flex-grow: 1;"></span><span class="muted" style="font-size: 11px;">Share of this group only</span></div>
+    </div>
+
+    <div class="panel" style="grid-column: span 2; height: 470px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tag">Rivals</span><span class="muted" style="font-size: 11.5px;">Data 2025/26 &middot; pupils aged 11</span>
+        <span style="flex-grow: 1;"></span>
+        <span class="fchip">Measure: entry age (11) <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+        <button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button>
+      </div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn" title="Share (donut)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></span>
+          <span class="icon-btn active" title="Ranked bars"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="4" width="14" height="3"></rect><rect x="3" y="9" width="10" height="3"></rect><rect x="3" y="14" width="6" height="3"></rect></svg></span>
+          <span class="icon-btn" title="Map of rivals"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg></span>
+          <span class="icon-btn" title="Table"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+          <a href="RivalMomentum.dc.html" class="icon-btn" title="Rivals' momentum"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="4" y1="20" x2="20" y2="20"></line><line x1="4" y1="20" x2="4" y2="4"></line><circle cx="10" cy="14" r="1.6"></circle><circle cx="16" cy="8" r="1.6"></circle><circle cx="14" cy="15" r="1.6"></circle></svg></a>
+          <a href="RivalSubjects.dc.html" class="icon-btn" title="Strengths and weaknesses"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="3" x2="12" y2="21"></line><line x1="12" y1="7" x2="20" y2="7"></line><line x1="5" y1="12" x2="12" y2="12"></line><line x1="12" y1="17" x2="17" y2="17"></line></svg></a>
+          <a href="ShapeView.dc.html" class="icon-btn" title="Shape and size"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="8" y="3" width="8" height="4"></rect><rect x="6" y="9" width="12" height="4"></rect><rect x="4" y="15" width="16" height="4"></rect></svg></a>
+        </div>
+        <div style="flex-grow: 1; display: flex; gap: 22px; min-width: 0;">
+          <div style="flex: 0 0 210px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 18px;">
+            <svg width="170" height="170" viewBox="0 0 42 42" aria-label="Share donut placeholder">
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#27272a" stroke-width="6"></circle>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#22d3ee" stroke-width="6" stroke-dasharray="14 86" stroke-dashoffset="25"></circle>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#52525b" stroke-width="6" stroke-dasharray="20 80" stroke-dashoffset="11"></circle>
+            </svg>
+            <div style="font-size: 12px; color: #c4c4c4; text-align: center; line-height: 1.4;"><b style="color: #22d3ee; font-size: 15px;">[x]%</b><br>of 11-year-olds across this group</div>
+          </div>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+            <div class="vt" style="margin-bottom: 4px;">11-year-olds by school, ranked &mdash; with where each sits in regional and national results rankings</div>
+            <div class="rrow" style="color: #7a7a7a; font-size: 10.5px;"><span>#</span><span>School</span><span>Pupils aged 11</span><span>Share</span><span>Trend</span><span>Results: region</span><span>Results: England</span></div>
+            <div class="rrow"><span>1</span><span>[Rival A] &middot; Ind &middot; boarding</span><span><span class="bar" style="display: block; width: 100%;"></span></span><span>[s]%</span><span>&#9650;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow"><span>2</span><span>[Rival B] &middot; State</span><span><span class="bar" style="display: block; width: 88%;"></span></span><span>[s]%</span><span>&#9660;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow me"><span>3</span><span>[Your school]</span><span><span class="bar" style="display: block; width: 80%; background: #22d3ee;"></span></span><span>[x]%</span><span>&#9650;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow"><span>4</span><span>[Rival C] &middot; Ind</span><span><span class="bar" style="display: block; width: 66%;"></span></span><span>[s]%</span><span>&#9644;</span><span style="color:#7a7a7a">IGCSE</span><span style="color:#7a7a7a">&ndash;</span></div>
+            <div class="rrow"><span>5</span><span>[Rival D] &middot; State</span><span><span class="bar" style="display: block; width: 60%;"></span></span><span>[s]%</span><span>&#9660;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow"><span>6</span><span>[Rival E] &middot; Ind &middot; girls</span><span><span class="bar" style="display: block; width: 52%;"></span></span><span>[s]%</span><span>&#9650;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow"><span>7</span><span>[Rival F] &middot; State</span><span><span class="bar" style="display: block; width: 46%;"></span></span><span>[s]%</span><span>&#9660;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow"><span>8</span><span>[Rival G] &middot; Ind</span><span><span class="bar" style="display: block; width: 38%;"></span></span><span>[s]%</span><span>&#9644;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow"><span>9</span><span>[Rival H] &middot; Ind &middot; boys</span><span><span class="bar" style="display: block; width: 30%;"></span></span><span>[s]%</span><span>&#9660;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow"><span>10</span><span>[Rival I] &middot; State</span><span><span class="bar" style="display: block; width: 24%;"></span></span><span>[s]%</span><span>&#9650;</span><span>[r]th</span><span>[r]th</span></div>
+            <div class="rrow"><span>11</span><span>[Rival J] &middot; Ind</span><span><span class="bar" style="display: block; width: 16%;"></span></span><span>[s]%</span><span>&#9660;</span><span>[r]th</span><span>[r]th</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span class="muted" style="font-size: 11px;">Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline (Attainment 8) among all schools</span><span style="flex-grow: 1;"></span><span style="display: inline-flex; color: #7a7a7a;" title="Fullscreen"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline></svg></span></div>
+    </div>
+  </div>
+
+  <div class="rowhead">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    Trends <span class="muted" style="font-size: 11px; font-weight: 500;">&middot; 2019/20 to 2025/26</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+
+    <div class="panel" style="height: 330px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Trends</span><span class="muted" style="font-size: 11.5px;">indexed, 2019/20 = 100</span><span style="flex-grow: 1;"></span><button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+          <span class="icon-btn"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="10" width="3" height="7"></rect><rect x="8.5" y="5" width="3" height="12"></rect><rect x="14" y="8" width="3" height="9"></rect></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div class="vt">Your Year 7 against the 10 nearest</div>
+          <svg width="100%" height="160" viewBox="0 0 300 160" preserveAspectRatio="none" aria-label="School vs rivals placeholder">
+            <line x1="0" y1="150" x2="300" y2="150" stroke="#2a2a2a"></line>
+            <line x1="0" y1="80" x2="300" y2="80" stroke="#1e1e1e" stroke-dasharray="2 4"></line>
+            <polyline points="10,80 55,76 100,72 145,70 190,66 235,64 280,60" fill="none" stroke="#22d3ee" stroke-width="2.6"></polyline>
+            <polyline points="10,80 55,82 100,84 145,83 190,88 235,90 280,94" fill="none" stroke="#a1a1aa" stroke-width="1.8" stroke-dasharray="5 3"></polyline>
+          </svg>
+          <div style="display: flex; gap: 12px;"><span class="key"><span style="width: 14px; border-top: 2.5px solid #22d3ee;"></span>You</span><span class="key"><span style="width: 14px; border-top: 2px dashed #a1a1aa;"></span>Rivals' average</span></div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span></div>
+    </div>
+
+    <div class="panel" style="height: 330px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Academic</span><span class="muted" style="font-size: 11.5px;">11+ &rarr; GCSE &middot; 2024/25</span><span style="flex-grow: 1;"></span><button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active" title="Ranking"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><circle cx="3" cy="5" r="1.3"></circle><rect x="6" y="4.3" width="11" height="1.6"></rect><circle cx="3" cy="10" r="1.3"></circle><rect x="6" y="9.3" width="8" height="1.6"></rect><circle cx="3" cy="15" r="1.3"></circle><rect x="6" y="14.3" width="5" height="1.6"></rect></svg></span>
+          <span class="icon-btn" title="Numbers">#</span>
+          <span class="icon-btn" title="% change"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="19" y1="5" x2="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+          <div class="vt" style="margin-bottom: 2px;">Overall: 2nd of 8 rivals on Attainment 8</div>
+          <div class="muted" style="font-size: 11px; margin-bottom: 4px;">[n]th of [N] in England &middot; &#9650; [x] since 2022/23</div>
+          <div style="font-size: 10.5px; font-weight: 700; color: #86efac; text-transform: uppercase; letter-spacing: 0.05em;">Where you lead the rivals</div>
+          <div class="arow"><span>1st</span><span>Sciences &amp; Maths</span><span>+[g]</span><span>&#9650;</span></div>
+          <div class="arow"><span>1st</span><span>Languages</span><span>+[g]</span><span>&#9644;</span></div>
+          <div class="arow"><span>2nd</span><span>Humanities</span><span>+[g]</span><span>&#9650;</span></div>
+          <div style="font-size: 10.5px; font-weight: 700; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;">Where you trail</div>
+          <div class="arow"><span>7th</span><span>Creative arts</span><span>&minus;[g]</span><span>&#9660;</span></div>
+          <div class="arow"><span>6th</span><span>Technology</span><span>&minus;[g]</span><span>&#9644;</span></div>
+          <div class="muted" style="font-size: 10.5px; margin-top: 2px;">2 rivals not ranked: IGCSE school; no published results</div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span class="muted" style="font-size: 11px;">4+ &rarr; KS2 &middot; 11+ &rarr; GCSE &middot; 16+ &rarr; Post-16 &middot; subject explorer &rarr;</span></div>
+    </div>
+
+    <div class="panel" style="height: 330px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Trends</span><span class="muted" style="font-size: 11.5px;">from 2019/20</span><span style="flex-grow: 1;"></span><button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active" title="Line"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+          <span class="icon-btn" title="Numbers">#</span>
+          <span class="icon-btn" title="Ranks"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="4" width="14" height="3"></rect><rect x="3" y="9" width="10" height="3"></rect><rect x="3" y="14" width="6" height="3"></rect></svg></span>
+          <span class="icon-btn" title="% change"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="19" y1="5" x2="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div class="vt">Your market share at 11+, year by year</div>
+          <svg width="100%" height="160" viewBox="0 0 300 160" preserveAspectRatio="none" aria-label="Market share trend placeholder">
+            <line x1="0" y1="150" x2="300" y2="150" stroke="#2a2a2a"></line>
+            <polyline points="10,100 55,96 100,92 145,94 190,86 235,82 280,76" fill="none" stroke="#22d3ee" stroke-width="2.6"></polyline>
+          </svg>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #7a7a7a;"><span>2019/20</span><span>2025/26</span></div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span class="muted" style="font-size: 11px;">Roll trends sit on the same rail</span></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

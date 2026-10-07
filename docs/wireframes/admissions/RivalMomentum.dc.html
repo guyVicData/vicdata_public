@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rivals' momentum</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  .muted { color: #9a9a9a; }
+  .fchip { border: 1px solid #2a2a2a; background: #101010; color: #c4c4c4; border-radius: 8px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  .q { position: absolute; font-size: 10.5px; font-weight: 700; color: #6a6a70; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pt { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: #71717a; }
+  .pl { position: absolute; font-size: 10.5px; color: #b4b4b4; white-space: nowrap; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) 54px 54px; gap: 6px; align-items: center; font-size: 12px; padding: 6px 4px; border-bottom: 1px solid #1f1f1f; }
+  .flag { display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 2px 7px; font-size: 10.5px; font-weight: 700; margin-right: 4px; margin-top: 3px; }
+  .up { background: #14261c; color: #86efac; }
+  .down { background: #2a1616; color: #fca5a5; }
+  .note { background: #1f2430; color: #93c5fd; }
+</style>
+</helmet>
+<div style="width: 960px; height: 600px; box-sizing: border-box; background: #0a0a0a; padding: 20px; display: flex; color: #f2f2f2;">
+  <div style="flex-grow: 1; box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 11.5px; font-weight: 600; color: #d4d4d4;">Rivals&rsquo; momentum</span>
+      <span class="muted" style="font-size: 11.5px;">change since 2022/23</span>
+      <span style="flex-grow: 1;"></span>
+      <span class="fchip">Pupils: aged 11 &#9662;</span>
+      <span class="fchip">Results: Attainment 8 &#9662;</span>
+    </div>
+    <div style="font-size: 13px; font-weight: 700;">Who is gaining pupils, and whose results are rising?</div>
+
+    <div style="display: flex; gap: 18px; flex-grow: 1; min-height: 0;">
+
+      <div style="flex: 0 0 470px; position: relative; border: 1px solid #232323; border-radius: 10px; background: #101010;">
+        <span style="position: absolute; left: 50%; top: 8px; bottom: 26px; width: 1px; background: #2f2f2f;"></span>
+        <span style="position: absolute; top: 50%; left: 8px; right: 8px; height: 1px; background: #2f2f2f;"></span>
+        <span class="q" style="right: 10px; top: 10px;">Growing &middot; improving</span>
+        <span class="q" style="left: 10px; top: 10px;">Shrinking &middot; improving</span>
+        <span class="q" style="right: 10px; bottom: 32px;">Growing &middot; slipping</span>
+        <span class="q" style="left: 10px; bottom: 32px;">Shrinking &middot; slipping</span>
+        <span class="pt" style="left: 78%; top: 18%; background: #fbbf24;"></span><span class="pl" style="left: 81%; top: 17%;">[Rival A]</span>
+        <span class="pt" style="left: 60%; top: 34%; background: #22d3ee; width: 14px; height: 14px; border: 2px solid #fff; box-sizing: border-box;"></span><span class="pl" style="left: 63.5%; top: 33%; color: #fff; font-weight: 700;">You</span>
+        <span class="pt" style="left: 30%; top: 30%;"></span><span class="pl" style="left: 33%; top: 29%;">[Rival D]</span>
+        <span class="pt" style="left: 22%; top: 70%; background: #fca5a5;"></span><span class="pl" style="left: 25%; top: 69%;">[Rival B]</span>
+        <span class="pt" style="left: 55%; top: 60%;"></span><span class="pl" style="left: 58%; top: 59%;">[Rival F]</span>
+        <span class="pt" style="left: 40%; top: 55%;"></span><span class="pl" style="left: 43%; top: 54%;">[Rival E]</span>
+        <span class="pt" style="left: 68%; top: 48%;"></span><span class="pl" style="left: 71%; top: 47%;">[Rival H]</span>
+        <div style="position: absolute; left: 10px; right: 10px; bottom: 6px; display: flex; justify-content: space-between; font-size: 10.5px; color: #7a7a7a;"><span>&larr; losing pupils</span><span>pupils aged 11, % change</span><span>gaining &rarr;</span></div>
+        <div style="position: absolute; left: -2px; top: 50%; transform: rotate(-90deg) translateX(-50%); transform-origin: left top; font-size: 10.5px; color: #7a7a7a; white-space: nowrap;">results change &uarr;</div>
+      </div>
+
+      <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+        <div class="row" style="color: #7a7a7a; font-size: 10.5px;"><span>Rival &middot; flags</span><span>Pupils</span><span>Results</span></div>
+        <div class="row"><span>[Rival A]<br><span class="flag up">&#9650; Results rising fast</span><span class="flag up">&#9650; Gaining pupils</span></span><span>+[p]%</span><span>+[r]</span></div>
+        <div class="row"><span>[Rival B]<br><span class="flag down">&#9660; Losing pupils 3 years running</span></span><span>&minus;[p]%</span><span>&minus;[r]</span></div>
+        <div class="row"><span>[Rival D]<br><span class="flag up">&#9650; Results rising</span><span class="flag down">&#9660; Year 7 shrinking</span></span><span>&minus;[p]%</span><span>+[r]</span></div>
+        <div class="row"><span>[Rival H]<br><span class="flag note">New sixth form</span><span class="flag note">Shape changed: Tube &rarr; Top step</span></span><span>+[p]%</span><span>&plusmn;0</span></div>
+        <div class="row"><span>[Rival F]<br><span class="muted" style="font-size: 11px;">No change worth flagging</span></span><span>+[p]%</span><span>&minus;[r]</span></div>
+        <div class="muted" style="font-size: 10.5px; line-height: 1.4; margin-top: 8px;">Flags appear only when a change is large and lasting (set rules, e.g. above [x]% over two or more years), never from one small cohort. Hover a flag for the figures behind it.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

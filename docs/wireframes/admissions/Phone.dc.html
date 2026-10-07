@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admissions on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  .muted { color: #9a9a9a; }
+  .chip { border: 1px solid #2a2a2a; background: #141414; color: #d4d4d4; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600; }
+  .chip.active { border-color: #22d3ee; background: #0f2329; color: #fff; }
+  .panel { background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .tag { font-size: 11px; font-weight: 600; color: #d4d4d4; }
+  .tile { border: 1px solid #232323; border-radius: 9px; padding: 7px 9px; display: flex; flex-direction: column; gap: 1px; }
+  .tl { font-size: 10px; color: #9a9a9a; }
+  .tv { font-size: 17px; font-weight: 800; }
+  .tab { font-size: 12px; font-weight: 700; color: #9a9a9a; padding: 8px 2px; border-bottom: 2px solid transparent; }
+  .tab.on { color: #fff; border-bottom-color: #22d3ee; }
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0a0a0a; color: #f2f2f2; display: flex; flex-direction: column;">
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 12px; border-bottom: 1px solid #1c1c1f;">
+    <div style="font-weight: 700; font-size: 15px;">VicData</div>
+    <span style="height: 28px; padding: 0 10px; border-radius: 9px; background: #0f2329; color: #22d3ee; font-size: 12px; font-weight: 700; display: flex; align-items: center;">Admissions</span>
+  </div>
+  <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+    <div style="display: inline-flex; border: 1px solid #2a2a2a; border-radius: 999px; padding: 3px; gap: 2px; align-self: flex-start;">
+      <span style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: #22d3ee; color: #041418;">Pipelines</span>
+      <span style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #9a9a9a;">Market share</span>
+    </div>
+    <div style="display: flex; gap: 6px;"><span class="chip">4+</span><span class="chip active">11+</span><span class="chip">16+</span><span class="chip">&plusmn;</span></div>
+
+    <div class="panel">
+      <div class="tag">Your 11+ entry point now &middot; 2025/26</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+        <div class="tile"><span class="tl">Year 7 now</span><span class="tv" style="color: #22d3ee;">[n]</span></div>
+        <div class="tile"><span class="tl">Since 2019/20</span><span class="tv">&#9650; [x]%</span></div>
+      </div>
+      <div class="muted" style="font-size: 11px;">Senior M &middot; 16+ L &middot; Top step at 16</div>
+    </div>
+
+    <div class="panel">
+      <div style="display: flex; gap: 14px; border-bottom: 1px solid #232323;"><span class="tab on">Pipeline</span><span class="tab">Funnel</span><span class="tab">Map</span><span class="tab">Table</span><span class="tab">Shape</span></div>
+      <div style="font-size: 12px; font-weight: 700;">Children who will reach Year 7 entry</div>
+      <svg width="100%" height="150" viewBox="0 0 340 150" preserveAspectRatio="none" aria-label="Pipeline placeholder">
+        <rect x="150" y="10" width="110" height="120" fill="#0f2329" opacity="0.4"></rect>
+        <line x1="0" y1="130" x2="340" y2="130" stroke="#2a2a2a"></line>
+        <polyline points="10,70 40,66 70,62 100,64 130,68" fill="none" stroke="#71717a" stroke-width="2"></polyline>
+        <polyline points="150,72 180,76 210,78 240,84 260,86" fill="none" stroke="#22d3ee" stroke-width="2.4"></polyline>
+        <polyline points="260,86 290,94 330,98" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="5 4"></polyline>
+      </svg>
+      <div class="muted" style="font-size: 11px;">Pool &#9660; [x]% by 2030. The pool, not who will join.</div>
+    </div>
+
+    <div class="panel">
+      <div style="display: flex; gap: 14px; border-bottom: 1px solid #232323;"><span class="tab on">Your trend</span><span class="tab">Pool trends</span><span class="tab">Share needed</span></div>
+      <svg width="100%" height="90" viewBox="0 0 340 90" preserveAspectRatio="none" aria-label="Trend placeholder">
+        <line x1="0" y1="82" x2="340" y2="82" stroke="#2a2a2a"></line>
+        <polyline points="10,60 60,56 110,52 160,48 210,50 260,44 330,40" fill="none" stroke="#22d3ee" stroke-width="2.4"></polyline>
+      </svg>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

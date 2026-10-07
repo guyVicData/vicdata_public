@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admissions — Pipelines</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  button { font-family: inherit; cursor: pointer; }
+  a { color: #22d3ee; text-decoration: none; }
+  a:hover { color: #67e8f9; }
+  .muted { color: #9a9a9a; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #9a9a9a; padding: 0; flex-shrink: 0; }
+  .icon-btn.active { background: #262626; color: #ffffff; }
+  .chip { border: 1px solid #2a2a2a; background: #141414; color: #d4d4d4; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip.active { border-color: #22d3ee; background: #0f2329; color: #fff; }
+  .fchip { border: 1px solid #2a2a2a; background: #101010; color: #c4c4c4; border-radius: 8px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+  .panel { box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 12px 14px 36px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .tag { font-size: 11.5px; font-weight: 600; color: #d4d4d4; }
+  .vt { font-size: 12.5px; font-weight: 700; color: #f2f2f2; }
+  .view-rail { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; padding: 1px 9px 2px 0; border-right: 1px solid #232323; margin-right: 10px; }
+  .bottom-row { position: absolute; left: 14px; right: 14px; bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .src { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; border: 1px solid #2a2a2a; color: #7a7a7a; font-size: 9.5px; font-style: italic; font-weight: 700; }
+  .rowhead { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 12.5px; font-weight: 700; color: #e5e5e5; }
+  .tile { border: 1px solid #232323; border-radius: 9px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .tl { font-size: 10.5px; color: #9a9a9a; }
+  .tv { font-size: 19px; font-weight: 800; color: #f2f2f2; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
+  .key { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #b4b4b4; }
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; background: #0a0a0a; padding: 20px 28px; display: flex; flex-direction: column; gap: 14px; color: #f2f2f2;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+    <div style="font-weight: 700; letter-spacing: 0.02em;">VicData</div>
+    <div style="display: flex; align-items: center; gap: 10px; color: #7a7a7a;">
+      <span style="display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 12px; font-weight: 700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Home</span>
+      <span style="width: 1px; height: 16px; background: #262626;"></span>
+      <span style="display: flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 9px; background: #0f2329; color: #22d3ee; font-size: 12px; font-weight: 700;">Admissions</span>
+      <span style="width: 1px; height: 16px; background: #262626;"></span>
+      <span style="width: 26px; height: 26px; border-radius: 50%; background: #1c1c1c; display: inline-block;"></span>
+    </div>
+  </div>
+  <div style="height: 1px; background: #1c1c1c;"></div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #101010; border: 1px solid #232323; border-radius: 14px; padding: 10px 16px;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="width: 36px; height: 36px; border-radius: 10px; background: #0f2329; color: #22d3ee; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px;">A</span>
+      <div style="font-size: 16px; font-weight: 700;">Admissions <span class="muted" style="font-size: 13px; font-weight: 500;">&mdash; [Your school]</span></div>
+      <div style="display: inline-flex; border: 1px solid #2a2a2a; border-radius: 999px; padding: 3px; background: #101010; gap: 2px;">
+        <span style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: #22d3ee; color: #041418;">Pipelines</span>
+        <a href="MarketShare.dc.html" style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #9a9a9a;">Market share</a>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="muted" style="font-size: 11px;">Entry point</span>
+      <span class="chip">4+</span>
+      <span class="chip active">11+</span>
+      <span class="chip">16+</span>
+      <a href="Onboard1.dc.html" class="icon-btn" style="border: 1px solid #2a2a2a; border-radius: 999px; width: 28px; height: 28px; color: #9a9a9a;" aria-label="Choose entry points">&plusmn;</a>
+      <span style="width: 1px; height: 18px; background: #262626; margin: 0 4px;"></span>
+      <span class="fchip">Day + boarding <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      <span class="fchip">All pupils <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      <span class="fchip">State + independent <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+    </div>
+  </div>
+
+  <div class="rowhead">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    Now <span class="muted" style="font-size: 11px; font-weight: 500;">&middot; January 2026 census &middot; 11+ entry</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+
+    <div class="panel" style="height: 470px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Current</span><span class="muted" style="font-size: 11.5px;">Data 2025/26</span><span style="flex-grow: 1;"></span><button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button></div>
+      <div class="vt">Your 11+ entry point now</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <div class="tile"><span class="tl">Year 7 now</span><span class="tv" style="color: #22d3ee;">[n]</span><span class="tl">pupils aged 11</span></div>
+        <div class="tile"><span class="tl">Since 2019/20</span><span class="tv">&#9650; [x]%</span><span class="tl">Year 7 cohort</span></div>
+        <div class="tile"><span class="tl">Girls &middot; boys</span><span class="tv" style="font-size: 16px;">[g]% &middot; [b]%</span><span class="tl">in Year 7</span></div>
+        <div class="tile"><span class="tl">Day &middot; boarding</span><span class="tv" style="font-size: 16px;">[d] &middot; [bd]</span><span class="tl">whole school (no age split)</span></div>
+      </div>
+      <div style="border-top: 1px solid #232323; padding-top: 8px; display: flex; flex-direction: column; gap: 7px;">
+        <div class="tl" style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Size by phase &middot; XS to XL</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; font-weight: 600; width: 58px;">Senior</span>
+          <span style="display: flex; gap: 3px;"><span class="badge" style="background: #262626; color: #7a7a7a;">XS</span><span class="badge" style="background: #262626; color: #7a7a7a;">S</span><span class="badge" style="background: #22d3ee; color: #041418;">M</span><span class="badge" style="background: #262626; color: #7a7a7a;">L</span><span class="badge" style="background: #262626; color: #7a7a7a;">XL</span></span>
+          <span style="flex-grow: 1;"></span><span style="font-size: 13px; font-weight: 700;">[n]</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; font-weight: 600; width: 58px;">16+</span>
+          <span style="display: flex; gap: 3px;"><span class="badge" style="background: #262626; color: #7a7a7a;">XS</span><span class="badge" style="background: #262626; color: #7a7a7a;">S</span><span class="badge" style="background: #262626; color: #7a7a7a;">M</span><span class="badge" style="background: #22d3ee; color: #041418;">L</span><span class="badge" style="background: #262626; color: #7a7a7a;">XL</span></span>
+          <span style="flex-grow: 1;"></span><span style="font-size: 13px; font-weight: 700;">[n]</span>
+        </div>
+        <div style="font-size: 12px; color: #c4c4c4; line-height: 1.4;">Against schools of that phase in [LA] and nationally (the school page's Roll by phase). Shape: Top step at 16, unchanged since 2019/20.</div>
+        <div style="display: flex; align-items: flex-end; gap: 3px; height: 54px;">
+          <span style="flex: 1 1 0; height: 70%; background: #3f3f46; border-radius: 2px;"></span>
+          <span style="flex: 1 1 0; height: 72%; background: #3f3f46; border-radius: 2px;"></span>
+          <span style="flex: 1 1 0; height: 71%; background: #22d3ee; border-radius: 2px;"></span>
+          <span style="flex: 1 1 0; height: 73%; background: #3f3f46; border-radius: 2px;"></span>
+          <span style="flex: 1 1 0; height: 70%; background: #3f3f46; border-radius: 2px;"></span>
+          <span style="flex: 1 1 0; height: 69%; background: #3f3f46; border-radius: 2px;"></span>
+          <span style="flex: 1 1 0; height: 45%; background: #3f3f46; border-radius: 2px;"></span>
+          <span style="flex: 1 1 0; height: 44%; background: #3f3f46; border-radius: 2px;"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #7a7a7a;"><span>age 11</span><span>age 18</span></div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span style="flex-grow: 1;"></span><span class="muted" style="font-size: 11px;">LA context: Medium for [LA]</span></div>
+    </div>
+
+    <div class="panel" style="grid-column: span 2; height: 470px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tag">Pipeline</span><span class="muted" style="font-size: 11.5px;">entry years 2020&ndash;2036</span>
+        <span style="flex-grow: 1;"></span>
+        <span class="fchip">Feeders: Day list (14) + Boarding list (9) <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+        <span class="fchip">Births: [LA 1] 82% &middot; [LA 2] 18% &middot; Adjust</span>
+        <button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button>
+      </div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active" title="Pipeline"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+          <span class="icon-btn" title="Funnel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 4h18l-7 8v6l-4 2v-8z"></path></svg></span>
+          <span class="icon-btn" title="Map of feeders"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg></span>
+          <span class="icon-btn" title="Feeder table"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="9" y1="10" x2="9" y2="20"></line></svg></span>
+          <a href="ShapeView.dc.html" class="icon-btn" title="Shape and size"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="8" y="3" width="8" height="4"></rect><rect x="6" y="9" width="12" height="4"></rect><rect x="4" y="15" width="16" height="4"></rect></svg></a>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+          <div class="vt">Children who will reach Year 7 entry, by September &mdash; in your feeder schools, then from births</div>
+          <svg width="100%" height="225" viewBox="0 0 860 270" preserveAspectRatio="none" aria-label="Pipeline chart placeholder">
+            <rect x="380" y="20" width="250" height="210" fill="#0f2329" opacity="0.35"></rect>
+            <rect x="630" y="20" width="200" height="210" fill="#0f2329" opacity="0.18"></rect>
+            <line x1="0" y1="230" x2="860" y2="230" stroke="#2a2a2a"></line>
+            <line x1="0" y1="80" x2="860" y2="80" stroke="#1e1e1e"></line>
+            <line x1="0" y1="155" x2="860" y2="155" stroke="#1e1e1e"></line>
+            <polyline points="20,120 70,112 120,108 170,104 220,110 270,114 320,118" fill="none" stroke="#71717a" stroke-width="2.4"></polyline>
+            <line x1="345" y1="20" x2="345" y2="230" stroke="#52525b" stroke-dasharray="3 4"></line>
+            <polyline points="370,124 420,130 470,128 520,138 570,142 620,146" fill="none" stroke="#22d3ee" stroke-width="2.8"></polyline>
+            <polygon points="620,146 670,140 720,144 770,140 820,146 820,186 770,180 720,184 670,178 620,152" fill="#22d3ee" opacity="0.14"></polygon>
+            <polyline points="620,146 670,158 720,162 770,160 820,166" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-dasharray="6 5"></polyline>
+            <circle cx="620" cy="146" r="4" fill="#22d3ee"></circle>
+            <circle cx="320" cy="118" r="4" fill="#71717a"></circle>
+          </svg>
+          <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: #7a7a7a; padding: 0 4px;"><span>2020</span><span>2023</span><span>2026 &middot; now</span><span>2029</span><span>2032</span><span>2036</span></div>
+          <div style="display: flex; gap: 6px; font-size: 10.5px;">
+            <span style="flex: 7 1 0; border-top: 2px solid #3f3f46; padding-top: 4px; color: #9a9a9a;">Past pools (same method, earlier censuses)</span>
+            <span style="flex: 6 1 0; border-top: 2px solid #22d3ee; padding-top: 4px; color: #b4b4b4;">Counted now: ages 9 &rarr; 4 in feeder schools</span>
+            <span style="flex: 4 1 0; border-top: 2px dashed #22d3ee; padding-top: 4px; color: #b4b4b4;">From births 2021&ndash;24 (range)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <span class="key"><span style="width: 16px; height: 0; border-top: 2.5px solid #22d3ee;"></span>Counted</span>
+            <span class="key"><span style="width: 16px; height: 0; border-top: 2.5px dashed #22d3ee;"></span>From births, with range</span>
+            <span class="key" style="color: #7a7a7a;"><span style="width: 14px; height: 9px; background: #0f2329; border: 1px dashed #2f4b52;"></span>Projection: off</span>
+            <span style="flex-grow: 1;"></span>
+            <span style="font-size: 12px; font-weight: 700; color: #f2f2f2;">Pool &#9660; [x]% by 2030 against 2026</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid #232323; padding-top: 8px;">
+            <span style="font-size: 11px; font-weight: 700; color: #9a9a9a;">Feeder flags</span>
+            <span style="border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; background: #14261c; color: #86efac;">Focus: [Primary A], [Prep E], [Primary C] &mdash; rising or stable</span>
+            <span style="border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; background: #2a1616; color: #fca5a5;">Red flag: [Primary D], [Prep B] &mdash; falling faster than the area</span>
+            <span class="muted" style="font-size: 11px;">see the feeder table</span>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span class="muted" style="font-size: 11px;">A pipeline shows the pool of children, not who will join. Ranges widen with distance.</span><span style="flex-grow: 1;"></span><span style="display: inline-flex; color: #7a7a7a;" title="Fullscreen"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline></svg></span></div>
+    </div>
+  </div>
+
+  <div class="rowhead">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    Trends <span class="muted" style="font-size: 11px; font-weight: 500;">&middot; 2019/20 to 2025/26, and forward</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+
+    <div class="panel" style="height: 330px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Trends</span><span class="muted" style="font-size: 11.5px;">from 2019/20</span><span style="flex-grow: 1;"></span><button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+          <span class="icon-btn"><svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="10" width="3" height="7"></rect><rect x="8.5" y="5" width="3" height="12"></rect><rect x="14" y="8" width="3" height="9"></rect></svg></span>
+          <span class="icon-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div class="vt">Your Year 7 cohort, year by year</div>
+          <svg width="100%" height="170" viewBox="0 0 300 170" preserveAspectRatio="none" aria-label="School entry trend placeholder">
+            <line x1="0" y1="160" x2="300" y2="160" stroke="#2a2a2a"></line>
+            <polyline points="10,110 55,104 100,98 145,92 190,96 235,84 280,80" fill="none" stroke="#22d3ee" stroke-width="2.6"></polyline>
+          </svg>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #7a7a7a;"><span>2019/20</span><span>2025/26</span></div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span class="muted" style="font-size: 11px;">Cohort size, not new joiners</span></div>
+    </div>
+
+    <div class="panel" style="height: 330px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Trends</span><span class="muted" style="font-size: 11.5px;">indexed, 2019/20 = 100</span><span style="flex-grow: 1;"></span><button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+          <span class="icon-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div class="vt">10-year-olds: your feeders, [LA] and England</div>
+          <svg width="100%" height="150" viewBox="0 0 300 150" preserveAspectRatio="none" aria-label="Pool trend placeholder">
+            <line x1="0" y1="140" x2="300" y2="140" stroke="#2a2a2a"></line>
+            <line x1="0" y1="70" x2="300" y2="70" stroke="#1e1e1e" stroke-dasharray="2 4"></line>
+            <polyline points="10,70 55,66 100,64 145,68 190,74 235,80 280,86" fill="none" stroke="#22d3ee" stroke-width="2.6"></polyline>
+            <polyline points="10,70 55,68 100,67 145,70 190,72 235,76 280,79" fill="none" stroke="#a1a1aa" stroke-width="1.6"></polyline>
+            <polyline points="10,70 55,69 100,69 145,71 190,73 235,75 280,77" fill="none" stroke="#52525b" stroke-width="1.6" stroke-dasharray="4 3"></polyline>
+          </svg>
+          <div style="display: flex; gap: 12px;"><span class="key"><span style="width: 14px; border-top: 2.5px solid #22d3ee;"></span>Feeders</span><span class="key"><span style="width: 14px; border-top: 2px solid #a1a1aa;"></span>[LA]</span><span class="key"><span style="width: 14px; border-top: 2px dashed #52525b;"></span>England</span></div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span class="muted" style="font-size: 11px;">Also: the school page&rsquo;s area population trend (ages 5&ndash;15)</span></div>
+    </div>
+
+    <div class="panel" style="height: 330px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Forward</span><span class="muted" style="font-size: 11.5px;">2027&ndash;2036</span><span style="flex-grow: 1;"></span><button type="button" class="icon-btn" aria-label="Panel menu">&middot;&middot;&middot;</button></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+          <span class="icon-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div class="vt">Share needed to hold numbers steady</div>
+          <div style="font-size: 12px; color: #c4c4c4; line-height: 1.4;">To keep [n] in Year 7, you'd need <b style="color: #f2f2f2;">[y]%</b> of the 2030 pool. Now: [x]%.</div>
+          <svg width="100%" height="110" viewBox="0 0 300 110" preserveAspectRatio="none" aria-label="Required share placeholder">
+            <line x1="0" y1="100" x2="300" y2="100" stroke="#2a2a2a"></line>
+            <line x1="0" y1="62" x2="300" y2="62" stroke="#71717a" stroke-dasharray="4 4"></line>
+            <polyline points="10,62 70,58 130,54 190,46 250,40" fill="none" stroke="#fbbf24" stroke-width="2.4"></polyline>
+            <polyline points="250,40 290,34" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="5 4"></polyline>
+          </svg>
+          <div style="display: flex; gap: 12px;"><span class="key"><span style="width: 14px; border-top: 2.5px solid #fbbf24;"></span>Share needed</span><span class="key"><span style="width: 14px; border-top: 2px dashed #71717a;"></span>Your share now</span></div>
+        </div>
+      </div>
+      <div class="bottom-row"><span class="src">i</span><span class="muted" style="font-size: 11px;">A requirement, not a forecast</span></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

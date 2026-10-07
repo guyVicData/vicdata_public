@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shape and size</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  .muted { color: #9a9a9a; }
+  .fchip { border: 1px solid #2a2a2a; background: #101010; color: #c4c4c4; border-radius: 8px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  .lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #9a9a9a; }
+  .badge { display: inline-flex; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; background: #262626; color: #d4d4d4; }
+  .pr { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 6px; font-size: 10.5px; color: #7a7a7a; }
+  .mini { border: 1px solid #232323; border-radius: 9px; padding: 8px; display: flex; flex-direction: column; gap: 5px; background: #101010; }
+  .mt { font-size: 11.5px; font-weight: 700; color: #e5e5e5; }
+  .ms { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+</style>
+</helmet>
+<div style="width: 960px; height: 600px; box-sizing: border-box; background: #0a0a0a; padding: 20px; display: flex; color: #f2f2f2;">
+  <div style="flex-grow: 1; box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 11.5px; font-weight: 600; color: #d4d4d4;">Shape and size</span>
+      <span class="muted" style="font-size: 11.5px;">Data 2025/26 &middot; pupils by age</span>
+      <span style="flex-grow: 1;"></span>
+      <span class="fchip">Ages 11&ndash;18</span>
+      <span class="fchip">Compare: feeders&rsquo; area &middot; rivals</span>
+    </div>
+
+    <div style="display: flex; gap: 18px; flex-grow: 1; min-height: 0;">
+
+      <div style="flex: 0 0 300px; display: flex; flex-direction: column; gap: 8px;">
+        <div class="lbl">Your school</div>
+        <div style="font-size: 13px; font-weight: 700;">Top step at 16 <span class="muted" style="font-weight: 500;">&middot; unchanged since 2019/20</span></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;"><span class="badge">Senior &middot; M</span><span class="badge" style="background: #22d3ee; color: #041418;">16+ &middot; L</span><span class="badge">Whole school &middot; L</span></div>
+        <div class="muted" style="font-size: 11px;">Bars by gender, as the school page's Shape card</div>
+        <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 4px;">
+          <div class="pr"><span>age 18</span><span style="display: block; height: 11px; width: 52%; background: #3f3f46; border-radius: 2px;"></span></div>
+          <div class="pr"><span>17</span><span style="display: block; height: 11px; width: 54%; background: #3f3f46; border-radius: 2px;"></span></div>
+          <div class="pr"><span>16</span><span style="display: block; height: 11px; width: 56%; background: #22d3ee; border-radius: 2px;"></span></div>
+          <div class="pr"><span>15</span><span style="display: block; height: 11px; width: 86%; background: #3f3f46; border-radius: 2px;"></span></div>
+          <div class="pr"><span>14</span><span style="display: block; height: 11px; width: 88%; background: #3f3f46; border-radius: 2px;"></span></div>
+          <div class="pr"><span>13</span><span style="display: block; height: 11px; width: 86%; background: #3f3f46; border-radius: 2px;"></span></div>
+          <div class="pr"><span>12</span><span style="display: block; height: 11px; width: 89%; background: #3f3f46; border-radius: 2px;"></span></div>
+          <div class="pr"><span>11</span><span style="display: block; height: 11px; width: 87%; background: #22d3ee; border-radius: 2px;"></span></div>
+        </div>
+        <div class="muted" style="font-size: 11px; line-height: 1.4;">Entry ages highlighted. XS&ndash;XL against schools of that phase in the LA and nationally (quintiles), as the school page; a phase can differ from the whole school.</div>
+      </div>
+
+      <div style="flex: 0 0 210px; display: flex; flex-direction: column; gap: 8px; border-left: 1px solid #232323; padding-left: 16px;">
+        <div class="lbl">Local shape</div>
+        <div style="font-size: 13px; font-weight: 700;">Pyramid <span class="muted" style="font-weight: 500;">&middot; your feeders&rsquo; area</span></div>
+        <div class="muted" style="font-size: 11px; line-height: 1.4;">All pupils aged 4&ndash;10 in your feeder schools, together. A narrowing base means smaller year groups are on the way.</div>
+        <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 4px;">
+          <div class="pr"><span>10</span><span style="display: block; height: 11px; width: 92%; background: #52525b; border-radius: 2px;"></span></div>
+          <div class="pr"><span>9</span><span style="display: block; height: 11px; width: 90%; background: #52525b; border-radius: 2px;"></span></div>
+          <div class="pr"><span>8</span><span style="display: block; height: 11px; width: 87%; background: #52525b; border-radius: 2px;"></span></div>
+          <div class="pr"><span>7</span><span style="display: block; height: 11px; width: 84%; background: #52525b; border-radius: 2px;"></span></div>
+          <div class="pr"><span>6</span><span style="display: block; height: 11px; width: 80%; background: #52525b; border-radius: 2px;"></span></div>
+          <div class="pr"><span>5</span><span style="display: block; height: 11px; width: 78%; background: #52525b; border-radius: 2px;"></span></div>
+          <div class="pr"><span>4</span><span style="display: block; height: 11px; width: 74%; background: #52525b; border-radius: 2px;"></span></div>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px; border-left: 1px solid #232323; padding-left: 16px; min-width: 0;">
+        <div class="lbl">Rivals&rsquo; shapes and sizes</div>
+        <div class="muted" style="font-size: 11px;">Described, not ranked</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+          <div class="mini"><span class="mt">[Rival A]</span><span class="muted" style="font-size: 11px;">Mushroom &middot; L</span><div class="ms"><span style="display: block; height: 6px; width: 80%; background: #52525b;"></span><span style="display: block; height: 6px; width: 46%; background: #52525b;"></span><span style="display: block; height: 6px; width: 44%; background: #52525b;"></span><span style="display: block; height: 6px; width: 45%; background: #52525b;"></span></div></div>
+          <div class="mini"><span class="mt">[Rival B]</span><span class="muted" style="font-size: 11px;">Tube &middot; M</span><div class="ms"><span style="display: block; height: 6px; width: 62%; background: #52525b;"></span><span style="display: block; height: 6px; width: 63%; background: #52525b;"></span><span style="display: block; height: 6px; width: 62%; background: #52525b;"></span><span style="display: block; height: 6px; width: 64%; background: #52525b;"></span></div></div>
+          <div class="mini"><span class="mt">[Rival C]</span><span class="muted" style="font-size: 11px;">Pyramid &middot; S</span><div class="ms"><span style="display: block; height: 6px; width: 34%; background: #52525b;"></span><span style="display: block; height: 6px; width: 42%; background: #52525b;"></span><span style="display: block; height: 6px; width: 50%; background: #52525b;"></span><span style="display: block; height: 6px; width: 58%; background: #52525b;"></span></div></div>
+          <div class="mini"><span class="mt">[Rival D]</span><span class="muted" style="font-size: 11px;">Wineglass &middot; M</span><div class="ms"><span style="display: block; height: 6px; width: 70%; background: #52525b;"></span><span style="display: block; height: 6px; width: 60%; background: #52525b;"></span><span style="display: block; height: 6px; width: 50%; background: #52525b;"></span><span style="display: block; height: 6px; width: 38%; background: #52525b;"></span></div></div>
+          <div class="mini"><span class="mt">[Rival E]</span><span class="muted" style="font-size: 11px;">Top step &middot; XL</span><div class="ms"><span style="display: block; height: 6px; width: 40%; background: #52525b;"></span><span style="display: block; height: 6px; width: 72%; background: #52525b;"></span><span style="display: block; height: 6px; width: 72%; background: #52525b;"></span><span style="display: block; height: 6px; width: 71%; background: #52525b;"></span></div></div>
+          <div class="mini"><span class="mt">[Rival F]</span><span class="muted" style="font-size: 11px;">Funnel &middot; XS</span><div class="ms"><span style="display: block; height: 6px; width: 52%; background: #52525b;"></span><span style="display: block; height: 6px; width: 46%; background: #52525b;"></span><span style="display: block; height: 6px; width: 40%; background: #52525b;"></span><span style="display: block; height: 6px; width: 34%; background: #52525b;"></span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="muted" style="font-size: 11px;">Shape labels use the shared classifier (Tube, Pyramid, Top step, Funnel, Mushroom, Wineglass, Irregular), the same for schools and areas.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

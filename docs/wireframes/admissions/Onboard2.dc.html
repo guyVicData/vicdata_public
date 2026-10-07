@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup 2 — day feeders</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #0a0a0b; }
+  a { text-decoration: none; color: inherit; }
+  .row { display: grid; grid-template-columns: 20px minmax(0, 1fr) 44px 38px; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid #1c1c1f; font-size: 12.5px; }
+  .box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #3a3a40; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #041418; }
+  .box.on { background: #22d3ee; border-color: #22d3ee; }
+  .s { font-size: 11px; color: #8a8a90; }
+  .pill { border: 1px solid #2a2a2e; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600; color: #c4c4c8; }
+  .pill.on { border-color: #22d3ee; color: #fff; background: rgba(34,211,238,0.1); }
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0a0a0b; color: #f2f2f3; display: flex; flex-direction: column;">
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #1c1c1f;">
+    <a href="Onboard1.dc.html" style="font-size: 13px; color: #8a8a90;">&larr; Back</a>
+    <span style="font-size: 13px; color: #8a8a90;">Skip for now</span>
+  </div>
+  <div style="padding: 18px 20px 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+    <div>
+      <div style="font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #22d3ee;">Admissions setup &middot; Step 2 of 4 &middot; 11+</div>
+      <div style="font-size: 20px; font-weight: 700; margin-top: 6px; line-height: 1.25;">Your day feeders</div>
+      <div style="font-size: 13px; color: #9a9aa0; margin-top: 6px; line-height: 1.45;">We&rsquo;ve listed the nearest schools with 10-year-olds. Tick the ones your day pupils come from; widen the net to see more.</div>
+    </div>
+
+    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <span class="pill on">Nearest 15</span><span class="pill">Within [x] km</span><span class="pill">By LA</span><span class="pill">+ Add by name</span>
+    </div>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <span class="pill on">State + independent</span><span class="pill">Girls / boys / mixed</span>
+    </div>
+
+    <div style="height: 120px; border-radius: 10px; background: #131315; border: 1px solid #1e1e22; position: relative;">
+      <span style="position: absolute; left: 48%; top: 44%; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #22d3ee;"></span>
+      <span style="position: absolute; left: 30%; top: 30%; width: 9px; height: 9px; border-radius: 50%; background: #22d3ee;"></span>
+      <span style="position: absolute; left: 62%; top: 58%; width: 10px; height: 10px; border-radius: 50%; background: #22d3ee;"></span>
+      <span style="position: absolute; left: 70%; top: 26%; width: 7px; height: 7px; border-radius: 50%; background: #52525b;"></span>
+      <span style="position: absolute; left: 38%; top: 70%; width: 8px; height: 8px; border-radius: 50%; background: #22d3ee;"></span>
+      <span style="position: absolute; left: 20%; top: 60%; width: 6px; height: 6px; border-radius: 50%; background: #52525b;"></span>
+      <span style="position: absolute; right: 8px; bottom: 6px; font-size: 10.5px; color: #8a8a90;">Dot size = pupils aged 10</span>
+    </div>
+
+    <div style="flex-grow: 1; overflow: hidden;">
+      <div class="row" style="color: #6a6a70; font-size: 10.5px;"><span></span><span>School</span><span>Aged 10</span><span>km</span></div>
+      <div class="row"><span class="box on">&#10003;</span><span>[Primary A] <span style="font-size:10px;font-weight:700;color:#86efac;">&#9650; focus</span><br><span class="s">State &middot; mixed &middot; M</span></span><span>[n]</span><span>[d]</span></div>
+      <div class="row"><span class="box on">&#10003;</span><span>[Prep B] <span style="font-size:10px;font-weight:700;color:#fca5a5;">&#9660; red flag</span><br><span class="s">Independent &middot; mixed &middot; S</span></span><span>[n]</span><span>[d]</span></div>
+      <div class="row"><span class="box on">&#10003;</span><span>[Primary C]<br><span class="s">State &middot; mixed &middot; L</span></span><span>[n]</span><span>[d]</span></div>
+      <div class="row"><span class="box"></span><span>[Primary D] <span style="font-size:10px;font-weight:700;color:#fca5a5;">&#9660; red flag</span><br><span class="s">State &middot; mixed &middot; S</span></span><span>[n]</span><span>[d]</span></div>
+      <div class="row"><span class="box on">&#10003;</span><span>[Prep E] <span style="font-size:10px;font-weight:700;color:#86efac;">&#9644; focus</span><br><span class="s">Independent &middot; girls &middot; S</span></span><span>[n]</span><span>[d]</span></div>
+      <div class="row"><span class="box"></span><span>[Primary F]<br><span class="s">State &middot; mixed &middot; M</span></span><span>[n]</span><span>[d]</span></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div class="s" style="text-align: center;">[k] ticked &middot; [n] pupils aged 10 &middot; flags compare each school&rsquo;s trend with the area&rsquo;s</div>
+      <a href="Onboard3.dc.html" style="display: block; text-align: center; border-radius: 12px; background: #22d3ee; color: #041418; padding: 13px; font-size: 14px; font-weight: 800;">Save day feeders &middot; Next: boarding</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
