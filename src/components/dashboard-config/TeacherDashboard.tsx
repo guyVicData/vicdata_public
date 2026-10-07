@@ -56,7 +56,6 @@ import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeri
 import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
 import { mapResultOf, type MapSeries } from "@/lib/teacher-map";
 import { TableLayoutContext, type TableLayoutStore } from "@/components/teacher/tableLayout";
-import { isAsLevelOrAea } from "@/lib/dfe-qualification-buckets";
 import type { ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
@@ -1765,14 +1764,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   };
 
-  // 0.6.3 S3: an AS / AEA focus at Post-16 is compared on its own exact qualification
-  // (size, share and rank on its graded entries, never the A-level bucket's).
-  const exactQualFocus = phase === "ks5" && !!focusItem && isAsLevelOrAea(focusItem.qualificationType);
   // 0.6.3 S3: A*-E at Post-16 scores A-level-scale qualifications only; a BTEC, IB or T
   // Level focus says so on the panels rather than showing grey dots with no reason.
   const aStarToEOff = phase === "ks5" && showingResults && usingThreshold && !!focusItem && focusScale !== GRADE_SCALES[2];
   const aStarToENote = "A*–E applies to A levels; use a grade or band for this qualification.";
-  const gradedEntriesOf = (rows: SubjectGradeCount[]): number | null => rows.filter((r) => !NON_GRADE_VALUES.has(r.grade)).reduce((a, r) => a + r.entries, 0) || null;
 
   // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
   // The figure still follows the focus subject (round 7 §9): with one in focus it is that
