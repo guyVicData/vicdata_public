@@ -1653,3 +1653,10 @@ Prompt: `docs/v0.6/vicdata_0_6_post16_match_gcse_claude_code_prompt_v1.md`. Repo
 - **Labels:** the menu's preset row and the pill use the same words the pill already used for a named scale ("A* to A", "Distinction* to Distinction"; the double and triple awards in full: "Distinction*-Distinction* to Distinction-Distinction"). That is long in the menu; the prompt's D*D*–DD shorthand isn't used anywhere in the app yet.
 - **Changing focus, today and now:** `bandRangeFor` already dropped a saved range whose ends aren't on the new focus's scale and used the scale's preset. Today, at Post-16, that preset didn't exist, so the panels went to "Pick a grade range". Now they go to the new scale's default. The saved setting isn't overwritten, so going back to the old scale brings the saved range back.
 - **Grade counts' selection** (0.6.3) still never reads a preset: nothing is selected until the member clicks.
+
+### S2 — A*–E only where it means something
+
+- **Greyed:** on a Post-16 focus whose scale isn't the A-level A*–E scale (BTEC / OCR, IB, T Level, Pre-U, or a subject with no grade rows), the top bar's Results switch greys "A*–E rate". It uses the menu's existing disabled style (45% opacity, not-allowed cursor), with *"A*–E applies to A level, AS, Core Maths and EPQ grades."* on hover. `MenuRow` gained an optional `title` for this.
+- **A saved A*–E** on such a focus shows Average points for it. The saved choice (`measure:results`) isn't written, so an A-level focus brings A*–E back.
+- **Call: embeds keep the 0.6.3 note.** A meeting slot or custom dashboard can pin A*–E for a subject. The page doesn't swap the measure there; the panels' note ("A*–E applies to A levels; use a grade or band for this qualification.") stays as the fallback.
+- **Change 4 (Guy): Core Maths and EPQ keep A*–E.** They use A–E letters, so their A*–E rate is their pass rate.

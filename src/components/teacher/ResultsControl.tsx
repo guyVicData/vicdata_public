@@ -21,7 +21,9 @@ import { PillMenu } from "./PillMenu";
 import { MenuDivider, MenuHeading, MenuRow } from "./PanelMenu";
 import { BOTTOM_RANK, GCSE_SCALE, presetsFor, spanBetween, type GradeRange, type PresetContext } from "@/lib/subject-grades";
 
-export type ResultsChoice = { id: string; label: string };
+// 0.6.5 S2: `disabledReason` greys a measure this focus can't have (A*-E on a BTEC, IB,
+// T Level or Pre-U focus), with the reason on hover.
+export type ResultsChoice = { id: string; label: string; disabledReason?: string };
 
 export type BandChoice = {
   // The focused subject's own scale ([] = no published grades to pick from).
@@ -74,7 +76,14 @@ export function ResultsControl({
           <>
             <MenuHeading>Switch measure</MenuHeading>
             {measures.map((m) => (
-              <MenuRow key={m.id} label={m.label} selected={m.id === active.id} onClick={() => { onMeasure(m.id); close(); }} />
+              <MenuRow
+                key={m.id}
+                label={m.label}
+                selected={m.id === active.id}
+                disabled={!!m.disabledReason}
+                title={m.disabledReason}
+                onClick={() => { onMeasure(m.id); close(); }}
+              />
             ))}
           </>
         )}

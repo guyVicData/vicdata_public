@@ -102,3 +102,15 @@ test("the top bar at Post-16: Grades A* to A, with its preset and Custom", () =>
   const band = { scale: A_LEVEL, range: { scale: A_LEVEL, top: "A*", bottom: "A" }, onRange: () => {}, presets: { phase: "ks5", qualificationType: "GCE A level" } };
   assert.match(text(html("bands", band)), /Grades: A\* to A/);
 });
+
+// 0.6.5 S2 (the 0.6.4 audit's change 3): A*-E greyed, with its reason, for a focus it can't score.
+test("a measure this focus can't have is greyed in the Results switch, with the reason on hover", async () => {
+  const { MenuRow } = await import("@/components/teacher/PanelMenu");
+  const row = renderToStaticMarkup(createElement(MenuRow, { label: "A*–E rate", disabled: true, title: "A*–E applies to A level, AS, Core Maths and EPQ grades.", onClick: () => {} }));
+  assert.match(row, /disabled=""/);
+  assert.match(row, /title="A\*–E applies to A level, AS, Core Maths and EPQ grades."/);
+  assert.match(row, /opacity-45/);
+  // Without a reason a row is as before (no title, not disabled).
+  const plain = renderToStaticMarkup(createElement(MenuRow, { label: "Average points", onClick: () => {} }));
+  assert.doesNotMatch(plain, /title=|disabled/);
+});

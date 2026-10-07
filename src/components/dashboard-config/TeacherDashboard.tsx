@@ -1214,17 +1214,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
 
   // Which measure Results' three panels are pointed at. Persisted per column, so the card
   // comes back showing the figure it was left showing.
-  const resultsMeasures = measuresFor(phase);
-  const resultsMeasure = measureById(phase, readSetting(columns, measureKey("results")) ?? resultsMeasures[0].id);
-  const usingThreshold = resultsMeasure.id === "threshold";
-
-  // Grade bands frontend round: the share of a subject's graded entries inside a range the
-  // teacher picks on the FOCUSED subject's own scale. One range, saved like the measure
-  // (BAND_RANGE_KEY), read by Column 1, Comparisons and Context alike. It is kept only
-  // while both ends are grades on the focused subject's scale; otherwise the scale's
-  // preset (7-9, GCSE 9-1 only) or no range at all -- never an invented default band.
-  const usingBands = resultsMeasure.id === "bands";
-  const BAND_RANGE_KEY = "band:range";
   const focusGradeRows = focusItem
     ? gradeRows.filter((g) => g.subject === focusItem.subject && g.qualificationType === focusItem.qualificationType)
     : [];
@@ -1234,6 +1223,24 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // rather than IB 7-1, and so give them a band figure: a latest-year change, logged for Guy.)
   // 0.6.3 S3: from the focus's qualification type first (a T Level is on the T Level scale).
   const focusScale = scaleForQualification(focusItem?.qualificationType ?? "", focusGradeRows.filter((g) => g.period >= MODERN_GRADE_FROM).map((g) => g.grade));
+  const resultsMeasures = measuresFor(phase);
+  const savedResultsMeasure = measureById(phase, readSetting(columns, measureKey("results")) ?? resultsMeasures[0].id);
+  // 0.6.5 S2 (the 0.6.4 audit's change 3): A*-E scores A-level-scale grades only (A level,
+  // AS, Core Maths, EPQ). On a BTEC / OCR, IB, T Level or Pre-U focus the top bar greys it,
+  // and a saved A*-E shows Average points for that focus -- the saved choice is kept, so an
+  // A-level focus brings A*-E back. Embeds (a pinned measure) keep 0.6.3's panel note.
+  const aStarToEUnavailable = phase === "ks5" && !!focusItem && focusScale !== GRADE_SCALES[2];
+  const aStarToEReason = "A*–E applies to A level, AS, Core Maths and EPQ grades.";
+  const resultsMeasure = !embed && aStarToEUnavailable && savedResultsMeasure.id === "threshold" ? resultsMeasures[0] : savedResultsMeasure;
+  const usingThreshold = resultsMeasure.id === "threshold";
+
+  // Grade bands frontend round: the share of a subject's graded entries inside a range the
+  // teacher picks on the FOCUSED subject's own scale. One range, saved like the measure
+  // (BAND_RANGE_KEY), read by Column 1, Comparisons and Context alike. It is kept only
+  // while both ends are grades on the focused subject's scale; otherwise the scale's
+  // preset (7-9, GCSE 9-1 only) or no range at all -- never an invented default band.
+  const usingBands = resultsMeasure.id === "bands";
+  const BAND_RANGE_KEY = "band:range";
   // 0.6.1 S5 (D3): the range is chosen in the top bar (ResultsControl: the scale's presets,
   // or Custom's from / to), no longer by clicking two grades in the Grades view.
   // 0.6.5 S1: the default (no saved range, or one off this scale) is the scale's own --
@@ -2453,7 +2460,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const topResults = (compact: boolean) =>
     showingResults ? (
       <ResultsControl
-        measures={resultsMeasures}
+        measures={aStarToEUnavailable ? resultsMeasures.map((m) => (m.id === "threshold" ? { ...m, disabledReason: aStarToEReason } : m)) : resultsMeasures}
         active={resultsMeasure}
         onMeasure={(id) => setColumnSetting(measureKey("results"), id)}
         band={focusItem ? { scale: focusScale, range: usingCounts ? countsRange : bandRange, onRange: saveBand, presets: bandPresetContext } : null}

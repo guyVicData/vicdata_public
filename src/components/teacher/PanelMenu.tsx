@@ -124,6 +124,7 @@ export function MenuRow({
   checkbox,
   dotted = false,
   indented = false,
+  title,
   onClick,
 }: {
   label: string;
@@ -135,6 +136,8 @@ export function MenuRow({
   // 0.6 snag 3 / 03: a checkbox that can't be ticked here, drawn with a dotted border.
   dotted?: boolean;
   indented?: boolean;
+  // 0.6.5 S2: the reason a row is greyed, on hover.
+  title?: string;
   onClick: () => void;
 }) {
   return (
@@ -142,6 +145,7 @@ export function MenuRow({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      title={title}
       aria-current={selected || undefined}
       aria-pressed={checkbox !== undefined ? selected : undefined}
       className={[
