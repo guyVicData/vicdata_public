@@ -1236,7 +1236,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const focusScale = scaleForQualification(focusItem?.qualificationType ?? "", focusGradeRows.filter((g) => g.period >= MODERN_GRADE_FROM).map((g) => g.grade));
   // 0.6.1 S5 (D3): the range is chosen in the top bar (ResultsControl: the scale's presets,
   // or Custom's from / to), no longer by clicking two grades in the Grades view.
-  const bandRange: GradeRange | null = bandRangeFor(focusScale, null, readSetting(columns, BAND_RANGE_KEY));
+  // 0.6.5 S1: the default (no saved range, or one off this scale) is the scale's own --
+  // 7-9 at GCSE, and at Post-16 one per scale and qualification (A* to A on an A level).
+  const bandPresetContext = { phase, qualificationType: focusItem?.qualificationType ?? null };
+  const bandRange: GradeRange | null = bandRangeFor(focusScale, null, readSetting(columns, BAND_RANGE_KEY), bandPresetContext);
   const bandLabel = bandRange ? rangeLabel(bandRange) : null;
   const saveBand = (top: string, bottom: string) => {
     void setColumnSetting(BAND_RANGE_KEY, JSON.stringify({ top, bottom }));
@@ -2453,7 +2456,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         measures={resultsMeasures}
         active={resultsMeasure}
         onMeasure={(id) => setColumnSetting(measureKey("results"), id)}
-        band={focusItem ? { scale: focusScale, range: usingCounts ? countsRange : bandRange, onRange: saveBand } : null}
+        band={focusItem ? { scale: focusScale, range: usingCounts ? countsRange : bandRange, onRange: saveBand, presets: bandPresetContext } : null}
         compact={compact}
       />
     ) : undefined;
@@ -2474,7 +2477,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           comparator: onRanking ? "ranking" : "schools",
           selected: contextSelected,
           // 0.6.1 S5: the editor's own Results control opens on the page's band.
-          ...(focusItem ? { band: { scale: focusScale, range: bandRange ? { top: bandRange.top, bottom: bandRange.bottom } : null } } : {}),
+          ...(focusItem ? { band: { scale: focusScale, range: bandRange ? { top: bandRange.top, bottom: bandRange.bottom } : null, qualificationType: focusItem.qualificationType } } : {}),
         },
         top: <ViewAsBanner className="" />,
         onExit: () => setEditOn(false),

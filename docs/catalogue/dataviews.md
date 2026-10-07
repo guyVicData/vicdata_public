@@ -447,7 +447,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 
 | Field | Content |
 | --- | --- |
-| Measures | M-KS4-POINTS (GCSE average points), M-KS5-POINTS (Post-16 average points), M-KS4-BANDS (GCSE grade bands), M-KS5-BANDS (Post-16 grade bands) |
+| Measures | M-KS4-POINTS (GCSE average points), M-KS5-POINTS (Post-16 average points), M-KS4-THRESHOLD (GCSE Grade 4+ rate), M-KS5-THRESHOLD (Post-16 A*-E rate), M-KS4-BANDS (GCSE grade bands), M-KS5-BANDS (Post-16 grade bands) |
 | Data | academic.results |
 | Results sub-measures | points, threshold, bands |
 | Phases | ks4, ks5 |
@@ -457,7 +457,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Date mode | single |
 | View type | map |
 | Renderer | RD-RANKINGS-MAP |
-| Title template | [subject] at each comparator school, on the map |
+| Title template | Change in [subject] [measure] since [year], by school |
 | Title fallback | — |
 | Requires (card warning) | Needs a focus subject with a map chip and the school's location; falls back to Chart when the focus loses its chip. |
 | Params | mapRank |
@@ -467,9 +467,9 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Status | live |
 | Verified at | not yet |
 | Origin | Teacher view round 7 (map in Trends) |
-| Rules | R-IGCSE-EXCL, R-POINTS-SAME-QUAL |
+| Rules | R-IGCSE-EXCL, R-POINTS-SAME-QUAL, R-MAP-ENCODING |
 | Used on | GCSE Results › Results › Trends, Post-16 Results › Results › Trends |
-| Note | Placement mismatch M4: sits in Column 1 Trends but compares a school set and shows one year (the map's own toggle). Declared honestly as schools / single, so the seeded Column 1 Trends panel does not match it. |
+| Note | Placement mismatch M4: sits in Column 1 Trends but compares a school set. Declared as schools / single, so the seeded Column 1 Trends panel does not match it. 0.6.3 S2: no own toggle any more; each school's change in Results' selected measure over the panel's span, diverging (R-MAP-ENCODING). |
 
 ### DV-C1-RES-TR-GEO-CHART — Area chart
 
@@ -665,7 +665,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Origin | Current panel rework round 1 (Column 1's VerticalBars moved to Context) |
 | Rules | R-QUAL-FAMILY-MATCH, R-KS5-ASAEA-EXCL, R-POINTS-SAME-QUAL, R-POINTS-WEIGHTED, R-MEASURE-FALLBACK |
 | Used on | GCSE Candidates › Context › Current, GCSE Results › Context › Current, Post-16 Candidates › Context › Current, Post-16 Results › Context › Current |
-| Note | Default Context Current view. On Grade counts / bands without a range the host shows points (R-MEASURE-FALLBACK, mismatch M6). |
+| Note | Default Context Current view. On Grade bands without a range the host shows points (R-MEASURE-FALLBACK, mismatch M6); on Grade counts it follows the selected grade or prompts for one (R-COUNTS-SELECTION). |
 
 ### DV-C2-CUR-LIST — Ranked list
 
@@ -923,7 +923,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 
 | Field | Content |
 | --- | --- |
-| Measures | M-KS4-ENTRIES (GCSE candidates), M-KS5-ENTRIES (Post-16 candidates), M-KS4-POINTS (GCSE average points), M-KS5-POINTS (Post-16 average points), M-KS4-HEADLINE (Attainment 8), M-KS5-HEADLINE (A-level points per entry) |
+| Measures | M-KS4-ENTRIES (GCSE candidates), M-KS5-ENTRIES (Post-16 candidates), M-KS4-POINTS (GCSE average points), M-KS5-POINTS (Post-16 average points), M-KS4-THRESHOLD (GCSE Grade 4+ rate), M-KS5-THRESHOLD (Post-16 A*-E rate), M-KS4-BANDS (GCSE grade bands), M-KS5-BANDS (Post-16 grade bands), M-KS4-HEADLINE (Attainment 8), M-KS5-HEADLINE (A-level points per entry) |
 | Data | academic.candidates, academic.results |
 | Results sub-measures | points, threshold, bands |
 | Phases | ks4, ks5 |
@@ -943,9 +943,9 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Status | live |
 | Verified at | not yet |
 | Origin | Teacher view round 7 (Comparisons map) |
-| Rules | R-IGCSE-EXCL, R-RANKING-SAMPLE, R-POINTS-SAME-QUAL, R-MEASURE-FALLBACK |
+| Rules | R-IGCSE-EXCL, R-RANKING-SAMPLE, R-POINTS-SAME-QUAL, R-MEASURE-FALLBACK, R-MAP-ENCODING, R-COUNTS-SELECTION |
 | Used on | GCSE Candidates › Comparisons › Current, GCSE Results › Comparisons › Current, Post-16 Candidates › Comparisons › Current, Post-16 Results › Comparisons › Current |
-| Note | Default Comparisons Current view. With no subject chip on Results the focus switches to the school's headline (mismatch M7). |
+| Note | Default Comparisons Current view. With no subject chip on Results the focus switches to the school's headline (mismatch M7). 0.6.3 S2: on Candidates, size = entries and no colour; on Results, colour = the selected measure (points, Grade 4+ / A*–E, a band or a Grade counts selection) by rank in the set (R-MAP-ENCODING), the panel's rank on the same figure. |
 
 ### DV-C3-CUR-BAR — Bar chart
 
@@ -1083,7 +1083,7 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Status | live |
 | Verified at | not yet |
 | Origin | Trends row merge round (Trend map / Change map labels) |
-| Rules | R-RANKING-SAMPLE, R-IGCSE-EXCL, R-MEASURE-FALLBACK |
+| Rules | R-RANKING-SAMPLE, R-IGCSE-EXCL, R-MEASURE-FALLBACK, R-MAP-ENCODING |
 | Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | — |
 
@@ -1167,6 +1167,6 @@ The registered recipes the chooser offers and dashboards place, in host then rai
 | Status | live |
 | Verified at | not yet |
 | Origin | Comparisons change map colour scale round |
-| Rules | R-NUMBER-TYPE-HONESTY, R-RANKING-SAMPLE, R-IGCSE-EXCL, R-MEASURE-FALLBACK |
+| Rules | R-NUMBER-TYPE-HONESTY, R-RANKING-SAMPLE, R-IGCSE-EXCL, R-MEASURE-FALLBACK, R-MAP-ENCODING |
 | Used on | GCSE Candidates › Comparisons › Trends, GCSE Results › Comparisons › Trends, Post-16 Candidates › Comparisons › Trends, Post-16 Results › Comparisons › Trends |
 | Note | S3b: a count keeps the fixed ±% scale (forcedColourMode trend); points and rates colour by the absolute change on the set's own range (trend_absolute), keyed 'Change' (R-NUMBER-TYPE-HONESTY). |

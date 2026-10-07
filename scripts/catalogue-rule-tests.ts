@@ -125,6 +125,38 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ grade9: l9, grades79: l79 }) };
   },
 
+  // R-POST16-BAND-DEFAULT (0.6.5 S1): each Post-16 family opens Grade bands on its scale's
+  // default, read from the school's own grade rows the way the page reads them (the focus's
+  // scale from its qualification and its 2023/24-on grades), and the default has a figure.
+  async post16BandDefault({ adv, sg, tvm }) {
+    const cases = [
+      { urn: "117037", subject: "Mathematics", qual: "GCE A level", expect: "A*..A" },
+      { urn: "130432", subject: "Business Studies", qual: "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*", expect: "Distinction*-Distinction*-Distinction*..Distinction-Distinction-Distinction" },
+      { urn: "130432", subject: "Business Studies", qual: "BTEC National Extended Certificate L3 - Band F - P-D*", expect: "Distinction*..Distinction" },
+      { urn: "118952", subject: "Mathematical Studies", qual: "IBO Higher level component", expect: "7..6" },
+      { urn: "130416", subject: "Health", qual: "T Level", expect: "Distinction*..Merit" },
+    ];
+    const out: string[] = [];
+    let ok = true;
+    for (const c of cases) {
+      const rows = ((await adv.fetchSubjectLevelDataForSchools([c.urn], "ks5", { gradeYears: "four" })).byUrn.get(c.urn)?.gradeDistribution ?? []).filter(
+        (r) => r.subject === c.subject && r.qualificationType === c.qual,
+      );
+      const scale = sg.scaleForQualification(c.qual, rows.filter((r) => r.period >= 2023).map((r) => r.grade));
+      const ctx = { phase: "ks5", qualificationType: c.qual };
+      const range = tvm.bandRangeFor(scale, null, undefined, ctx);
+      const latest = Math.max(...rows.map((r) => r.period));
+      const rate = range ? sg.bandRate(rows.filter((r) => r.period === latest), range)?.rate ?? null : null;
+      // A saved range off this scale (a GCSE 7-9) falls back to the default.
+      const fallback = tvm.bandRangeFor(scale, null, JSON.stringify({ top: "9", bottom: "7" }), ctx);
+      const got = range ? `${range.top}..${range.bottom}` : "none";
+      const pass = got === c.expect && rate !== null && fallback?.top === range?.top && fallback?.bottom === range?.bottom;
+      ok &&= pass;
+      out.push(`${c.urn} ${c.qual.split(" - ")[0]}: ${got === c.expect ? "ok" : `got ${got}`} ${rate === null ? "no figure" : round(rate) + "%"}`);
+    }
+    return { pass: ok, detail: out.join("; ") };
+  },
+
   // R-TREND-TABLE-YEARS (0.6.4 A): every trend table on a grade measure shows its chart's years.
   // The Chase 137625 GCSE History and King's Worcester 117037 A level Mathematics: real grade
   // rows (the dashboard's read, and the nearest set's through the comparator-grades read), each

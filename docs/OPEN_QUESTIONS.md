@@ -1638,3 +1638,18 @@ Prompt: `docs/v0.6/vicdata_0_6_round4_tables_post16_speed_claude_code_prompt_v1.
 - The matrix and proposal: `docs/v0.6/post16_vs_gcse_matrix_v1.md`. No Post-16 panel changed; waiting for Guy's review.
 - **Found, not fixed (a live wrong figure, out of this round's scope):** BTEC / vocational points for 2021/22–2022/23 are stored as 0, not null. Confirmed: Croydon 130432 Business Studies, four BTEC sizes; England's rows and the comparators' bucket rows too. The app draws them as 0 (`teacher-view-measures.ts:64-80` drops only nulls). Options are in the matrix (change 2): an ingest fix, and/or an interim app rule treating them as missing. Both are figure changes, so Guy decides.
 - The matrix was read from code and real data; nothing was rendered for it. The published configs couldn't be read with the anon key, so only the code copy was compared.
+
+## 2026-10-07 — 0.6.5
+
+Prompt: `docs/v0.6/vicdata_0_6_post16_match_gcse_claude_code_prompt_v1.md`. Report: `docs/v0.6/v065_report_v1.md`.
+
+### S1 — Grade bands opens on a default range at Post-16 (R-POST16-BAND-DEFAULT)
+
+- **Where:** `BAND_PRESETS` itself, as GCSE's 7–9. Each Post-16 scale gets one preset marked as its default, and the Grades ▾ menu offers it plus Custom (GCSE: 4–9, 7–9, Custom).
+  - The A-level A*–E scale is shared by A level, AS, Core Maths and EPQ, which default differently, so a preset can name its qualifications.
+  - The scale is still the existing detector's (`scaleForQualification`); no second detector.
+- **Call:** the Post-16 presets apply at Post-16 only (a `phase` on the preset). A small GCSE cohort whose grades happen to read as the IB 7–1 scale must not gain a 7–6 band at GCSE.
+- **Call:** an A*–E qualification not on the list (Other General Qualification, FSMQ, AEA) and Pre-U stay custom-range only. The prompt lists no default for them.
+- **Labels:** the menu's preset row and the pill use the same words the pill already used for a named scale ("A* to A", "Distinction* to Distinction"; the double and triple awards in full: "Distinction*-Distinction* to Distinction-Distinction"). That is long in the menu; the prompt's D*D*–DD shorthand isn't used anywhere in the app yet.
+- **Changing focus, today and now:** `bandRangeFor` already dropped a saved range whose ends aren't on the new focus's scale and used the scale's preset. Today, at Post-16, that preset didn't exist, so the panels went to "Pick a grade range". Now they go to the new scale's default. The saved setting isn't overwritten, so going back to the old scale brings the saved range back.
+- **Grade counts' selection** (0.6.3) still never reads a preset: nothing is selected until the member clicks.

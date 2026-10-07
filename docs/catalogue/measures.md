@@ -259,7 +259,7 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 
 | Field | Content |
 | --- | --- |
-| Definition | Share of a subject's graded entries inside a chosen contiguous range on the subject's own scale (subject-grades.ts:bandRate). No presets: custom range only. |
+| Definition | Share of a subject's graded entries inside a chosen contiguous range on the subject's own scale (subject-grades.ts:bandRate). One preset per scale, its default (0.6.5 S1, R-POST16-BAND-DEFAULT): A level and EPQ A*-A; AS and Core Maths A-B; IB 7-6; vocational Distinction*-Distinction, D*D*-DD, D*D*D*-DDD; T Level Distinction*-Merit; Pre-U custom range only. |
 | Data | academic.results · bands |
 | Grain | School × subject × qualification type × size × grade × year |
 | Sources | dfe_ks5_subject_results, dfe_tlevel_results, dfe_ks5_subject_results_historic |

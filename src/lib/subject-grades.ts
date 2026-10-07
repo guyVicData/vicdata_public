@@ -222,18 +222,56 @@ export function thresholdRate(rows: SubjectGradeCount[], phase: TeacherPhase): T
 // it was never on: it gets no figure, as thresholdRate gives a vocational scale none.
 export type GradeRange = { scale: string[]; top: string; bottom: string };
 
-// Presets only where there is a real, established convention: GCSE 9-1's "grade 4 or
-// above" (the standard pass this module's threshold measure already uses) and 7-9, the
-// strong-pass band. No other scale gets presets -- nothing in this codebase or DfE's
-// headline measures establishes one for A level, IB, vocational, Pre-U or T Level, and
-// inventing "Merit or above" would be exactly the kind of made-up convention the
-// threshold measure declines. Those scales are custom-range only.
+// Presets: GCSE 9-1's "grade 4 or above" (the standard pass this module's threshold measure
+// already uses) and 7-9, the strong-pass band, 7-9 the default. 0.6.5 S1 (Guy, 7 Oct 2026,
+// the 0.6.4 audit's change 1): each Post-16 scale gets ONE preset, its default -- the top
+// band, as 7-9 is at GCSE -- so Grade bands opens on a range there too instead of "Pick a
+// grade range". The A-level A*-E scale is shared by A level, AS, Core Maths and EPQ, which
+// default differently (AS has no A*; Core Maths is A-E), so a Post-16 preset may also name
+// the qualifications it is for. Post-16 presets apply at Post-16 only: a small GCSE cohort
+// whose grades read as the IB 7-1 scale never gains a band. Pre-U, KS4 vocational and
+// every scale not listed stay custom-range only.
 export const GCSE_SCALE = GRADE_SCALES[0];
-export const BAND_PRESETS: { id: string; label: string; scale: string[]; top: string; bottom: string }[] = [
+export const ALEVEL_SCALE_GRADES = GRADE_SCALES[2];
+export const IB_SUBJECT_SCALE = GRADE_SCALES[3];
+export const VOCATIONAL_SINGLE_SCALE = GRADE_SCALES[5];
+export const VOCATIONAL_DOUBLE_SCALE = GRADE_SCALES[6];
+export const VOCATIONAL_TRIPLE_SCALE = GRADE_SCALES[7];
+
+export type BandPreset = {
+  id: string;
+  label: string;
+  scale: string[];
+  top: string;
+  bottom: string;
+  // The scale's default range (the band Grade bands opens on when none is saved).
+  default?: boolean;
+  // Post-16 only (the phase id).
+  phase?: "ks5";
+  // For these qualification types only (absent = every qualification on the scale).
+  quals?: (qualificationType: string) => boolean;
+};
+const isAs = (q: string) => /^GCE AS level/.test(q);
+const isCoreMaths = (q: string) => /^Core Maths/i.test(q);
+const isEpq = (q: string) => /^Extended Project/i.test(q);
+const isALevel = (q: string) => q === "GCE A level";
+export const BAND_PRESETS: BandPreset[] = [
   { id: "4-9", label: "4–9", scale: GCSE_SCALE, top: "9", bottom: "4" },
-  { id: "7-9", label: "7–9", scale: GCSE_SCALE, top: "9", bottom: "7" },
+  { id: "7-9", label: "7–9", scale: GCSE_SCALE, top: "9", bottom: "7", default: true },
+  { id: "ks5-alevel", label: "A* to A", scale: ALEVEL_SCALE_GRADES, top: "A*", bottom: "A", default: true, phase: "ks5", quals: (q) => isALevel(q) || isEpq(q) },
+  { id: "ks5-as", label: "A to B", scale: ALEVEL_SCALE_GRADES, top: "A", bottom: "B", default: true, phase: "ks5", quals: (q) => isAs(q) || isCoreMaths(q) },
+  { id: "ks5-ib", label: "7 to 6", scale: IB_SUBJECT_SCALE, top: "7", bottom: "6", default: true, phase: "ks5" },
+  { id: "ks5-voc1", label: "Distinction* to Distinction", scale: VOCATIONAL_SINGLE_SCALE, top: "Distinction*", bottom: "Distinction", default: true, phase: "ks5" },
+  { id: "ks5-voc2", label: "Distinction*-Distinction* to Distinction-Distinction", scale: VOCATIONAL_DOUBLE_SCALE, top: "Distinction*-Distinction*", bottom: "Distinction-Distinction", default: true, phase: "ks5" },
+  { id: "ks5-voc3", label: "Distinction*-Distinction*-Distinction* to Distinction-Distinction-Distinction", scale: VOCATIONAL_TRIPLE_SCALE, top: "Distinction*-Distinction*-Distinction*", bottom: "Distinction-Distinction-Distinction", default: true, phase: "ks5" },
+  { id: "ks5-tlevel", label: "Distinction* to Merit", scale: GRADE_SCALES[GRADE_SCALES.length - 1], top: "Distinction*", bottom: "Merit", default: true, phase: "ks5" },
 ];
-export const presetsFor = (scale: string[]) => BAND_PRESETS.filter((p) => p.scale === scale);
+export type PresetContext = { phase?: string | null; qualificationType?: string | null };
+/** The presets offered on this scale, for this phase and qualification (GCSE's: 4-9, 7-9). */
+export const presetsFor = (scale: string[], ctx: PresetContext = {}) =>
+  BAND_PRESETS.filter((p) => p.scale === scale && (!p.phase || ctx.phase === p.phase) && (!p.quals || p.quals(ctx.qualificationType ?? "")));
+/** The range Grade bands opens on when none is saved, or null (custom-range only). */
+export const defaultPresetFor = (scale: string[], ctx: PresetContext = {}) => presetsFor(scale, ctx).find((p) => p.default) ?? null;
 
 // "Grades 7–9" on GCSE's numbers, "Distinction* to Merit" on a named scale, one grade alone.
 export function rangeLabel(range: GradeRange): string {

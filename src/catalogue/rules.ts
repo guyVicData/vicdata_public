@@ -18,6 +18,7 @@ const GP = "src/components/teacher/GradeCountsPanels.tsx";
 const SV = "src/components/teacher/SeriesViews.tsx";
 const TVP = "src/lib/teacher-view-panels.ts";
 const SG = "src/lib/subject-grades.ts";
+const TVM = "src/lib/teacher-view-measures.ts";
 const QB = "src/lib/dfe-qualification-buckets.ts";
 const CSER = "src/lib/teacher-view-comparator-series.ts";
 
@@ -380,7 +381,7 @@ export const RULES: Rule[] = [
       "A rate is computed only on the scale it was defined on (threshold: GCSE 9-1 / Double Award at KS4, A-level A*-E at KS5; bands: the scale the range was picked on). Vocational, IB and Pre-U rows get no figure.",
     why: "An IB 7-1 row read as GCSE numerics would be scored against a grade 4 it was never on.",
     appliesTo: "M-*-THRESHOLD, M-*-BANDS",
-    enforcedIn: [`${SG}:thresholdRate (155-180)`, `${SG}:bandRate (232-241)`, `${SG}:BAND_PRESETS (201-205)`],
+    enforcedIn: [`${SG}:thresholdRate`, `${SG}:bandRate`, `${SG}:BAND_PRESETS`],
     testCase: {
       urn: "137625",
       school: "The Chase",
@@ -388,6 +389,24 @@ export const RULES: Rule[] = [
       expect: "Asked for GCSE 7-9, a BTEC returns no figure (not 0%); an IB 7-1 row at KS5 is not scored against grade 4.",
     },
     origin: "Teacher view round 6 §6.5; grade bands round",
+    status: "active",
+  },
+  {
+    id: "R-POST16-BAND-DEFAULT",
+    statement:
+      "Grade bands opens on a default range on every Post-16 scale, as GCSE opens on 7-9: A level and EPQ A* to A; AS and Core Maths A to B; IB subject 7 to 6; vocational single Distinction* to Distinction, double D*D* to DD, triple D*D*D* to DDD; T Level Distinction* to Merit. The scale is the focus's own (scaleForQualification). A saved range wins while both its ends are on the focus's scale; otherwise the scale's default (never a stale or blank range). The Post-16 defaults are Post-16 only; Pre-U and the KS4 vocational scales stay custom-range only. The Grades menu offers the default plus Custom.",
+    why: "Guy, 7 Oct 2026 (the 0.6.4 audit's change 1): with no range, Post-16 Grade bands opened on 'Pick a grade range' and Context and Comparisons fell back to points, where GCSE opens on a real band.",
+    appliesTo: "M-KS5-BANDS; the top bar's Grades control",
+    enforcedIn: [`${SG}:BAND_PRESETS, presetsFor, defaultPresetFor`, `${TVM}:bandRangeFor`, "src/components/dashboard-config/TeacherDashboard.tsx:bandPresetContext", "src/components/teacher/ResultsControl.tsx:BandMenu"],
+    testCase: {
+      urn: "117037",
+      school: "King's Worcester (and Croydon College 130432, Sevenoaks 118952, Christ The King 130416)",
+      phase: "ks5",
+      year: "2024/25",
+      expect: "From each school's own grade rows: A level Maths opens on A* to A, a BTEC Extended Diploma on D*D*D* to DDD, IB HL Mathematical Studies on 7 to 6, T Level Health on Distinction* to Merit, each with a real band figure; a saved off-scale range falls back to the default.",
+      check: "post16BandDefault",
+    },
+    origin: "0.6.5 S1",
     status: "active",
   },
   {
