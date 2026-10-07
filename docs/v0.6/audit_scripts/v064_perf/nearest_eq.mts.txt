@@ -1,0 +1,13 @@
+// 0.6.4 C2 check: resolveDefaultNearest from <root> for each school, hashed (read-only).
+//   cd <root> && npx -y tsx --env-file=.env nearest_eq.mts <root> urn:phase ...
+import { createHash } from "node:crypto";
+const [root, ...cases] = process.argv.slice(2);
+const chooser = await import(root + "/src/lib/chooser-sets.ts");
+for (const c of cases) {
+  const [urn, phase] = c.split(":");
+  const t0 = performance.now();
+  const r = await chooser.resolveDefaultNearest(urn, phase);
+  const json = JSON.stringify(r);
+  console.log(urn, phase, createHash("sha256").update(json).digest("hex").slice(0, 16), r.rows.length, "rows", Math.round(performance.now() - t0) + "ms");
+}
+process.exit(0);

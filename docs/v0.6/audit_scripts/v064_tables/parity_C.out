@@ -1,0 +1,14 @@
+pairs 1366  IDENTICAL 1364  NOISE 2  only-main 0  only-branch 0
+   ('bands', 'IDENTICAL') 248
+   ('cand', 'IDENTICAL') 240
+   ('counts0', 'IDENTICAL') 70
+   ('counts1', 'IDENTICAL') 172
+   ('counts1', 'NOISE') 2
+   ('counts2', 'IDENTICAL') 174
+   ('points', 'IDENTICAL') 234
+   ('threshold', 'IDENTICAL') 226
+UNEXPECTED:
+only-main: []
+only-branch: []
+main errors/failed: []
+br errors/failed: []

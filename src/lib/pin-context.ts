@@ -4,7 +4,7 @@
 // view, the panel's Copy this view and the chooser's live previews resolve a context the
 // same way (scope brief §7.5: "every setting is resolved", "the year is pinned to the
 // moment it was added", with a per-view keep-live option).
-import { dataviewById } from "@/catalogue";
+import { dataviewById } from "@/catalogue/dataviews";
 import { averagesLabel, contextFromPanel, defaultFromYear, latestYear, resolveTitle, titleOverrideOf, viewTitle, type PanelLabels, type PickPanelContext } from "@/catalogue/pick";
 import type { CompareKind, DashboardConfig, Dataview, DataviewInstance, ResultsMeasure } from "@/catalogue/types";
 import type { CopyViewSource } from "./copy-view";

@@ -8,9 +8,14 @@
 // Scoped to Teacher view's own comparator vocabulary: the set is exactly the Nearest 10
 // the card already ranks against (the dashboard route's phase-filtered neighbours), so the
 // map and the "N of M" beside it are always about the same schools.
-import AcademicMapView from "@/components/data-view/AcademicMapView";
+import { lazy, Suspense } from "react";
 import type { TeacherMapSpec } from "@/lib/teacher-map";
 import { igcseExclusionLikely, type AcademicSchoolProfile, type KsStage } from "@/lib/academic-data-view";
+
+// 0.6.4 C2: the map's code (AcademicMapView, ~300 KB) loads when a map is first drawn, not
+// with the page; its card box (below) holds the space meanwhile. Leaflet itself was already
+// loaded this way. The Data View imports AcademicMapView directly, as before.
+const AcademicMapView = lazy(() => import("@/components/data-view/AcademicMapView"));
 
 export function RankingsMap({
   profiles,
@@ -74,6 +79,7 @@ export function RankingsMap({
     // z-[1000] overlays stay inside the card instead of competing with the rest of the
     // page -- including the fullscreen modal's backdrop.
     <div className={`${heightClass} relative isolate mt-2 overflow-hidden rounded-md`}>
+      <Suspense fallback={null}>
       <AcademicMapView
         targetProfile={target}
         tickedProfiles={profiles.filter((p) => p.urn !== targetUrn)}
@@ -94,6 +100,7 @@ export function RankingsMap({
         // Same GCSE exclusion the advanced dashboard's map applies, with its own note. R-IGCSE-EXCL (the predicate is lib's igcseExclusionLikely).
         ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}
       />
+      </Suspense>
     </div>
   );
 }

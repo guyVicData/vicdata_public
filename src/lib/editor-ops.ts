@@ -12,7 +12,8 @@
 //   summary   diff two configs into the version's change summary (§4.8)
 //
 // Tests: npx -y tsx --test src/lib/editor-ops.test.ts
-import { DATAVIEWS, DATAVIEW_IDS, dataviewById, whyNot } from "@/catalogue";
+import { DATAVIEWS, DATAVIEW_IDS, dataviewById } from "@/catalogue/dataviews";
+import { whyNot } from "@/catalogue/matching";
 import { summaryViewName } from "@/lib/change-summary";
 import { validateConfig as validateCore, type ConfigProblem } from "@/catalogue/config";
 import {

@@ -9,7 +9,7 @@
 // view off everything is Remove everywhere.
 //
 // Pure, so src/lib/rail-menu.test.ts can pin it.
-import { dataviewById } from "@/catalogue";
+import { dataviewById } from "@/catalogue/dataviews";
 import { showForOptions } from "@/catalogue/honest";
 import { dataviewResults, effectiveResults } from "@/catalogue/results";
 import { AXIS_STATES, dataviewStates, effectiveStates, panelAxes, followsResultsPill, type VariantAxis } from "@/catalogue/variants";

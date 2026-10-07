@@ -1,0 +1,20 @@
+137625-ks4 main load: teacher/dashboard(ks4)@70-93 teacher/chooser-set(nearest,ks4)@71-93 teacher/subject-geography@118-140 teacher/saved-comparator-sets(ks4)@118-140 data-view/academic-schools@118-141
+137625-ks4 main focus change: teacher/subject-geography@4013-4036
+137625-ks4 main -> Candidates: 
+137625-ks4 main -> Results: 
+137625-ks4 main Comparisons map: 
+137625-ks4 br load: teacher/dashboard(ks4)@69-92 teacher/chooser-set(nearest,ks4)@70-93 teacher/subject-geography@107-128 teacher/saved-comparator-sets(ks4)@107-129 data-view/academic-schools@107-130 teacher/dashboard(ks5)@109-131 teacher/chooser-set(nearest,ks5)@109-132
+137625-ks4 br focus change: teacher/subject-geography@3995-4016
+137625-ks4 br -> Candidates: 
+137625-ks4 br -> Results: 
+137625-ks4 br Comparisons map: 
+117037-ks5 main load: teacher/dashboard(ks5)@18-40 teacher/chooser-set(nearest,ks5)@19-40 teacher/subject-geography(ks5)@50-71 teacher/saved-comparator-sets(ks5)@50-71 data-view/academic-schools@50-72
+117037-ks5 main focus change: teacher/subject-geography(ks5)@3879-3902
+117037-ks5 main -> Candidates: 
+117037-ks5 main -> Results: 
+117037-ks5 main Comparisons map: 
+117037-ks5 br load: teacher/dashboard(ks5)@13-34 teacher/chooser-set(nearest,ks5)@14-34 teacher/subject-geography(ks5)@43-65 teacher/saved-comparator-sets(ks5)@43-65 data-view/academic-schools@46-68 teacher/dashboard(ks4)@47-69 teacher/chooser-set(nearest,ks4)@47-69
+117037-ks5 br focus change: teacher/subject-geography(ks5)@3891-3914
+117037-ks5 br -> Candidates: 
+117037-ks5 br -> Results: 
+117037-ks5 br Comparisons map: 

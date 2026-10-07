@@ -6,7 +6,8 @@
 // ("[subject]" -> "Maths (General)", the compare set -> its name), the year pinned to the
 // moment it was added ("as of 2024/25") unless the view is kept live.
 import { changeKind, changeOfMeasure, changeWord } from "@/catalogue/titles";
-import { dataviewById, measureById } from "@/catalogue";
+import { dataviewById } from "@/catalogue/dataviews";
+import { measureById } from "@/catalogue/measures";
 import type { CompareKind, DataId, Dataview, DataviewInstance, Phase, ResultsMeasure, SlideConfig, ViewType } from "@/catalogue/types";
 
 // The pinned settings carried on slot.view.pinned (stored as JSON).

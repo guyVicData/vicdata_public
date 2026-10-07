@@ -1128,3 +1128,10 @@ export const DATAVIEW_IDS: DataviewId[] = DATAVIEWS.map((d) => d.id);
 export function dataviewForRail(host: HostId, panel: "current" | "trend", label: string): Dataview | undefined {
   return DATAVIEWS.find((d) => d.host.id === host && d.host.panel === panel && d.host.rail === label);
 }
+
+// 0.6.4 C2: here rather than only in ./index, so a page that needs a view's entry doesn't also
+// load the rules catalogue (./rules, ~120 KB) that ./index carries.
+const DATAVIEW_BY_ID = new Map(DATAVIEWS.map((d) => [d.id, d]));
+export function dataviewById(id: DataviewId | string): Dataview | undefined {
+  return DATAVIEW_BY_ID.get(id as DataviewId);
+}

@@ -1,6 +1,7 @@
 import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { cachedReference } from "@/lib/server-cache";
 import { fetchAcademicProfiles } from "@/lib/academic-data-view";
 import { availableTeacherPhases, TEACHER_PHASES, type CurrentPhasePeriods } from "@/lib/teacher-view-phases";
 import { lookupAcademicCurrentPeriods } from "@/lib/vicdata-reference";
@@ -53,7 +54,8 @@ export async function GET(request: NextRequest) {
   // the school would make a school whose data stops in 2022 look current against itself,
   // which is precisely what §5 excludes -- and 385 KS4 and 187 KS5 schools really are in
   // that position, so the distinction is load-bearing rather than pedantic.
-  const national = await lookupAcademicCurrentPeriods();
+  // 0.6.4 C2: the latest published period per phase is national -- kept an hour.
+  const national = await cachedReference("phases:current-periods", () => lookupAcademicCurrentPeriods());
   const currentPeriods: CurrentPhasePeriods = {};
   for (const phase of TEACHER_PHASES) currentPeriods[phase] = national[phase] ?? null;
 

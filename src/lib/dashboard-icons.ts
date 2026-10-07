@@ -18,7 +18,7 @@
 // what to draw). src/components/library/DashboardIcon.tsx turns that into elements, so
 // the rules are testable without React.
 import type { DashboardConfig, DataviewId } from "@/catalogue/types";
-import { dataviewById } from "@/catalogue";
+import { dataviewById } from "@/catalogue/dataviews";
 import { DATA_FAMILY } from "@/components/chooser-v06/layout";
 import { FEATURE_ACCENT, PHASE_ACCENT } from "./teacher-view-theme";
 

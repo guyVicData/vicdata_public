@@ -1,6 +1,7 @@
 import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { cachedReference } from "@/lib/server-cache";
 import { lookupAcademicSubjectGradeGeography } from "@/lib/vicdata-reference";
 import { normaliseKs5AreaRows } from "@/lib/grade-rows";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
@@ -45,12 +46,23 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
   if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
-  const { data: school } = await supabase.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>();
-  const regionName = (await resolveTargetRegionNation(urn))?.regionName ?? null;
+  // 0.6.4 C2: the school's LA and region (public, kept an hour), read together.
+  const [laName, regionName] = await Promise.all([
+    cachedReference(`school:la:${urn}`, async () => {
+      const { data: school, error } = await supabase.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>();
+      if (error) throw error;
+      return school?.la_name ?? null;
+      // A failed read isn't kept (and reads as no LA, as before).
+    }).catch(() => null),
+    cachedReference(`school:region:${urn}`, async () => (await resolveTargetRegionNation(urn))?.regionName ?? null),
+  ]);
 
   const fetchRows = async (groupingType: "la" | "region" | "national", key: string | null) => {
     if (!key) return null;
-    const rows = await lookupAcademicSubjectGradeGeography({ ksStage: phase, groupingType, groupingKeys: [key], subject, qualificationType });
+    // 0.6.4 C2: published area grade rows, the same for every member -- kept an hour.
+    const rows = await cachedReference(`gradegeo:${phase}:${groupingType}:${key}:${subject}:${qualificationType}`, () =>
+      lookupAcademicSubjectGradeGeography({ ksStage: phase, groupingType, groupingKeys: [key], subject, qualificationType }),
+    );
     const raw: GradeGeographyRow[] = rows.map((r) => ({ period: r.period, grade: r.grade, entries: Number(r.entries_total), schoolCount: r.school_count }));
     // 0.6.3 S3: at KS5, the historic vocational codes in their modern words and "*" as A*,
     // exactly as the school's own rows (R-HISTORIC-GRADE-LABELS, R-ALEVEL-STAR).
@@ -58,11 +70,9 @@ export async function GET(request: NextRequest) {
     return out.length ? { name: key, rows: out } : null;
   };
   try {
-    const payload: GradeGeographyPayload = {
-      la: await fetchRows("la", school?.la_name ?? null),
-      region: await fetchRows("region", regionName),
-      national: await fetchRows("national", NATIONAL_GROUPING_KEY),
-    };
+    // 0.6.4 C2: the three areas together (they were one after another).
+    const [la, region, national] = await Promise.all([fetchRows("la", laName), fetchRows("region", regionName), fetchRows("national", NATIONAL_GROUPING_KEY)]);
+    const payload: GradeGeographyPayload = { la, region, national };
     return NextResponse.json(payload);
   } catch (err) {
     console.error("[teacher/subject-grade-geography] failed:", err);

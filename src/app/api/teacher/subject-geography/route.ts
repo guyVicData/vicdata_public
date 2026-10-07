@@ -1,6 +1,7 @@
 import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { cachedReference } from "@/lib/server-cache";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
@@ -51,8 +52,16 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
   if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
-  const { data: school } = await supabase.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>();
-  const regionName = (await resolveTargetRegionNation(urn))?.regionName ?? null;
+  // 0.6.4 C2: the school's LA and region (public, kept an hour), read together.
+  const [laName, regionName] = await Promise.all([
+    cachedReference(`school:la:${urn}`, async () => {
+      const { data: school, error } = await supabase.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>();
+      if (error) throw error;
+      return school?.la_name ?? null;
+      // A failed read isn't kept (and reads as no LA, as before).
+    }).catch(() => null),
+    cachedReference(`school:region:${urn}`, async () => (await resolveTargetRegionNation(urn))?.regionName ?? null),
+  ]);
 
   // One lookup per grouping, in series: these reference lookups contend, and the dashboard
   // route serialises its own for the same reason.
@@ -62,10 +71,12 @@ export async function GET(request: NextRequest) {
     // R-MIN-SCHOOLS (England exempt), R-KS5-ENGLAND-EXACT (exact qualification at Post-16)
     const minSchoolCount = groupingType === "national" ? 1 : undefined;
     const query = { measure: "avg_point_score", groupingType, groupingKeys: [key], subject, minSchoolCount };
-    const rows =
+    // 0.6.4 C2: published area figures, the same for every member -- kept an hour.
+    const rows = await cachedReference(`geo:${phase}:${groupingType}:${key}:${subject}:${phase === "ks5" ? qualificationType : ""}`, () =>
       phase === "ks5"
-        ? await lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", ...query, qualificationType: qualificationType! })
-        : await lookupAcademicSubjectGeography({ ksStage: "ks4", ...query });
+        ? lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", ...query, qualificationType: qualificationType! })
+        : lookupAcademicSubjectGeography({ ksStage: "ks4", ...query }),
+    );
     const out = rows
       .map((r) => ({
         period: r.period,
@@ -78,10 +89,8 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => a.period - b.period);
     return out.length ? { name: key, rows: out } : null;
   };
-  const payload: GeographyPayload = {
-    la: await fetchRows("la", school?.la_name ?? null),
-    region: await fetchRows("region", regionName),
-    national: await fetchRows("national", NATIONAL_GROUPING_KEY),
-  };
+  // 0.6.4 C2: the three areas together (they were one after another).
+  const [la, region, national] = await Promise.all([fetchRows("la", laName), fetchRows("region", regionName), fetchRows("national", NATIONAL_GROUPING_KEY)]);
+  const payload: GeographyPayload = { la, region, national };
   return NextResponse.json(payload);
 }
