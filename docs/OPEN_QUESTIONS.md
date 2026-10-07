@@ -1762,3 +1762,34 @@ Rankings on the whole population, on the measure in view (docs/v0.6/vicdata_0_6_
   - A DOM probe of the same state shows both trees at translate(-28px), with identical paths, column widths and map sizes. No figure, word or layout differs.
   - The retry loop also stopped re-setting an unchanged "pending" state.
 - **Croydon's case** focuses the second of two "Business Studies · BTec, OCR, VRQ" chips: the BTEC National Extended Diploma. The first is the VRQ. Two chips with the same label is existing behaviour, not changed here.
+
+## 2026-10-07 — 0.6.7
+
+Speed, with no figure changes (docs/v0.6/vicdata_0_6_rankings_then_speed_claude_code_prompt_v1.md, Part 2). Report: [`docs/v0.6/v067_report_v1.md`](v0.6/v067_report_v1.md). The ingest side's calls are in its report (`~/dev/vicdata` docs/vicdata_teacher_default_neighbours_build_report_v1.md).
+
+### B1 — Teacher-only school details
+
+- **The field list was traced, not guessed.**
+  - **Method:** a harness-only shim wrapped every deserialized profile in a recording Proxy, and the parity walk read 140 cases (the 0.6.5 matrix, the ranking cases, both drawing paths, both phases, 1280 and 390, both themes).
+  - **Fields read:** `urn`, `name`, `easting`, `northing`, `establishmentTypeGroup`, and the phase's subject rows (`ks4Subjects` / `ks5SubjectsByBucket`), with `subject`, `period`, `entriesTotal`, `avgPointScore`.
+  - **Never read:** headline, family, KS2, census or qualification flags.
+- **Design (call): (a) with (b) as backup.**
+  - `chooser-set` returns the lean profiles with every set it resolves. They cover exactly the schools the page needs when that set is all it holds (the usual case), so the 0.6.4 cache and prefetch carry them, and a phase switch needs no profile request.
+  - When the page also holds other sets (saved or custom), one `/api/teacher/comparator-profiles` request covers the whole union, exactly where `academic-schools` was called.
+  - Both use `fetchAcademicProfiles`' own `schools` query, so the same schools come back in the same order.
+- **KS2 keeps `academic-schools` (call).** The trace has no KS2 cases, and a KS2 map may read the KS2 headline or the census for circle size. It's unchanged rather than assumed.
+- **Lean rows:** a subject row keeps the full row type, with the unread fields empty (`familyId: ""`, shares and coverage `null`). Any future reader of those fields must ask for them; the trace is in the report.
+- **The ranking comparator (Part 1)** reads names and series from its own route, so it needs no profiles. Its headline sample's profiles come with `chooser-set`, like any other set.
+- **Profiles keep their phase** in page state, so on a phase switch the other phase's lean rows read as "loading" until the new ones arrive. Today the old full profiles were shown in the meantime; the final state is identical.
+- **No saved or VC sets exist in production yet** (both tables are empty), so the fields diff covers the nearest set and the national ranking sample at both phases for 9 schools (36 sets, 594 profiles): 0 differences. The saved-set path (the new route) is in the parity walk instead, with a saved set of the nearest ten.
+- **A race in the shared map, exposed and logged, not fixed.**
+  - **What:** in 1 of 3 runs of one Post-16 FE-college case (130416, T Level focus), the branch logged an unhandled rejection from `AcademicMapView`'s async layer draw (`getComputedStyle` on an unmounted root).
+  - **Why:** profiles now arrive sooner, so Column 1's map can mount just before the column swaps to its T Level note.
+  - **Impact:** pixels identical, nothing visible.
+  - **Fix:** `if (!rootRef.current) return;` at the top of that `.then` in `AcademicMapView.tsx`. It's a Data View component, which this round may not change, so it's yours to approve.
+
+### B2 — The precomputed Post-16 set
+
+- **App script, not Python (A's call; ingest report §2).** The inputs (`schools`, `school_nearest_neighbours`, `nearest_schools`) are in the app's Supabase project, and the rules are the app's TypeScript. So `scripts/compute-teacher-default-neighbours.ts` runs the app's own build for every eligible school, and the ingest repo loads the CSV with its own credentials. There's no write key in vicdata_public.
+- **When the list is used:** rows exist, none is stale, census period = `CURRENT_CENSUS_PERIOD`, and KS5 periods = the latest two published (`withKs5Results`' own read). Otherwise, silently, the set is built as before (logged once per instance).
+- **FE colleges** aren't precomputed. Their nearest-FE default is 0.5–0.8 s, and they fall back.
