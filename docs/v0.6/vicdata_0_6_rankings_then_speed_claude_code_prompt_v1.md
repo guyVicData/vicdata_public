@@ -41,6 +41,7 @@ Guy, at The Chase (137625), with History in focus and a national ranking chosen 
 - **Since 0.6, Comparisons follows the focused subject and Results measure.**
   - `onRankingMeasure()` (`src/lib/teacher-view-comparisons.ts` ~56) is false whenever a subject or threshold is in view.
   - So the page ranks those **25 schools, chosen for their Attainment 8, on History**. It isn't a History ranking, and the table shows 25 rows.
+- **The tiles' "843rd of 2,545"** (The Chase, A level History in focus) is the **whole-school A-level points per entry** rank, not History.
 - **"Had this working"** refers to the headline-measure version (snagging round 1 Part 4, `e054dd9`; the centred row, `9d04d9a`), which a subject focus now always overrides.
 
 **The data exists for a real ranking.** Production has school-level subject figures for the whole country: e.g. History points for 3,602 schools at GCSE and 1,887 at Post-16 in 2024. Grade rows are in `academic_subject_grade_rollup` (GCSE) and the historic/modern KS5 facts the app already reads.
@@ -94,6 +95,9 @@ For a ranking comparator, Column 3's **Ranking** view (`SchoolRankingTable`) sho
   - "312th of 3,602 schools with GCSE History results, 2024/25";
   - the school's figure;
   - the population average for the same year.
+  - **Keep today's whole-school rank as a secondary tile,** clearly labelled: e.g. "Whole school: 843rd of 2,545 on A-level points per entry".
+  - **Why:** today the tiles ignore the subject in focus ("always on the ranking's own measure", `ComparisonsPanels.tsx` ~441; `measureName: headlineLabel`, `TeacherDashboard.tsx` ~2385). So The Chase's "843rd of 2,545" with A level History in focus is its whole-school A-level rank, which reads as a History rank. The main tile becomes the measure in view; the headline rank stays as context, from the same machinery and figures as today.
+  - **With no subject in focus,** the tiles are unchanged (one rank, the headline).
 - **Map:** still not offered for a ranking (`sampleAllowsMap`), unchanged.
 - **Trends:** for a ranking comparator, Trends use the population's average per year. Any ranked change list ranks the **whole population** on change from 2022/23 (R-TREND-FROM-2223), shown with the same top / break / around-the-school window.
 - **Wording:** keep the existing note style. The window's label says what it is ("Around The Chase"), and the note gives the population and how many were left out (no figure that year, or below the minimum).
