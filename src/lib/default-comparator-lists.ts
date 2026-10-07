@@ -20,6 +20,7 @@ import { singleAgeGenderCountsForPeriod, CURRENT_CENSUS_PERIOD } from "./roll-da
 import { effectivePhaseTags, phaseTags, genderTag, boardingRatio, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type GenderTag, type PhaseTag } from "./typology";
 import { resolveTargetRegionNation } from "./region-nation-comparator";
 import { lookupAcademicCurrentPeriods, lookupAcademicHeadline } from "./vicdata-reference";
+import { cachedReference } from "./server-cache";
 
 export type SchoolTypeCategory =
   | "state"
@@ -734,7 +735,7 @@ export async function buildDefaultComparatorLists(urn: string, opts: { only?: "n
   const boardingConfig = isBoardingCategory ? BOARDING_CATEGORY_CONFIG[schoolTypeCategory as keyof typeof BOARDING_CATEGORY_CONFIG] : null;
 
   const [matched, list2, local16PlusCandidates, boardingBand, boardingRecipe] = await Promise.all([
-    findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", ...(post16 ? { extraFilterUrns: withKs5Results } : {}) }),
+    findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", ...(post16 ? { extraFilterUrns: withKs5Results, filterBeforeFacts: true } : {}) }),
     target.la_name && !nearestOnly ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
     target.la_name && hasPost16Provision && !nearestOnly ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
     isBoardingCategory ? resolveBoardingQuintileBand(urn) : Promise.resolve<BoardingQuintileBand | null>(null),
@@ -766,7 +767,8 @@ export async function buildDefaultComparatorLists(urn: string, opts: { only?: "n
 // call per findSurroundingSchools chunk.
 export async function withKs5Results(urns: string[]): Promise<Set<string>> {
   if (urns.length === 0) return new Set();
-  const latest = (await lookupAcademicCurrentPeriods()).ks5 ?? null;
+  // The latest published period is national: one read an hour per instance (server-cache.ts).
+  const latest = (await cachedReference("phases:current-periods", () => lookupAcademicCurrentPeriods())).ks5 ?? null;
   const rows = await lookupAcademicHeadline({ entityIds: urns, ksStage: "ks5", ...(latest !== null ? { periodMin: latest - 1 } : {}) });
   return new Set(rows.map((r) => r.entity_id));
 }

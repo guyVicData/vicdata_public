@@ -1,6 +1,7 @@
 import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { cachedReference } from "@/lib/server-cache";
 import { resolveDefaultNearest, resolveFixedSet, resolveRankingSet } from "@/lib/chooser-sets";
 import type { RankingFilters } from "@/lib/comparator-chooser";
 
@@ -44,7 +45,13 @@ export async function POST(request: NextRequest) {
   if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
   try {
-    if (body.set.kind === "nearest") return NextResponse.json(await resolveDefaultNearest(body.urn, body.phase));
+    // 0.6.5 S4: the default nearest set is school-level public data (the same for every member,
+    // changing only with the ingest), so it is kept an hour per instance (server-cache.ts); at
+    // Post-16 its build widens past the 100 precomputed neighbours more often (fewer have a sixth form).
+    if (body.set.kind === "nearest") {
+      const { urn, phase } = body;
+      return NextResponse.json(await cachedReference(`chooser:nearest:${urn}:${phase}`, () => resolveDefaultNearest(urn, phase)));
+    }
     if (body.set.kind === "urns") {
       const urns = Array.from(new Set(body.set.urns.filter((u) => typeof u === "string" && /^\d{5,7}$/.test(u)))).slice(0, MAX_URNS);
       return NextResponse.json(await resolveFixedSet(body.urn, body.phase, urns));

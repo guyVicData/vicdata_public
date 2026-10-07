@@ -104,6 +104,12 @@ export async function findSurroundingSchools(
     // is unaffected unless it opts in, same pattern genderMode/targetCount already
     // established.
     extraFilterUrns?: (candidateUrns: string[]) => Promise<Set<string>>;
+    // 0.6.5 S4: run extraFilterUrns BEFORE the chunk's census lookup and fetch census facts
+    // only for the candidates it keeps -- the same matches (a filtered-out candidate is
+    // skipped either way), fewer census rows when the filter drops many (the Teacher view's
+    // Post-16 default set). Off by default: every existing caller, the Data View's included,
+    // runs exactly as before.
+    filterBeforeFacts?: boolean;
   } = {},
 ): Promise<MatchedSchool[]> {
   const genderMode = options.genderMode ?? "exact";
@@ -350,15 +356,24 @@ export async function findSurroundingSchools(
     const matched: MatchedSchool[] = [];
     for (let i = 0; i < genderFiltered.length && matched.length < targetCount; i += FACTS_CHUNK) {
       const chunk = genderFiltered.slice(i, i + FACTS_CHUNK);
-      const facts = await lookupReferenceData({
-        sourceId: "dfe_school_census",
-        entityIds: chunk.map((c) => c.urn),
-        periodMin: targetPeriod,
-        periodMax: targetPeriod,
-      });
-      // Item 11: one batched check per chunk (same FACTS_CHUNK size as the roll-data
-      // lookup just above), not one round trip per candidate.
-      const extraFilterSet = extraFilterUrns ? await extraFilterUrns(chunk.map((c) => c.urn)) : null;
+      let facts: Awaited<ReturnType<typeof lookupReferenceData>>;
+      let extraFilterSet: Set<string> | null;
+      if (options.filterBeforeFacts && extraFilterUrns) {
+        // 0.6.5 S4: the filter first, then census facts for its survivors only.
+        extraFilterSet = await extraFilterUrns(chunk.map((c) => c.urn));
+        const kept = chunk.filter((c) => extraFilterSet!.has(c.urn)).map((c) => c.urn);
+        facts = kept.length ? await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: kept, periodMin: targetPeriod, periodMax: targetPeriod }) : [];
+      } else {
+        facts = await lookupReferenceData({
+          sourceId: "dfe_school_census",
+          entityIds: chunk.map((c) => c.urn),
+          periodMin: targetPeriod,
+          periodMax: targetPeriod,
+        });
+        // Item 11: one batched check per chunk (same FACTS_CHUNK size as the roll-data
+        // lookup just above), not one round trip per candidate.
+        extraFilterSet = extraFilterUrns ? await extraFilterUrns(chunk.map((c) => c.urn)) : null;
+      }
       // Skip-and-backfill (rolls spec §4, resolved here): candidates are already
       // ordered nearest-first; walk them in order and keep the first targetCount
       // that actually have DfE census roll data, skipping standalone 6th-form/FE

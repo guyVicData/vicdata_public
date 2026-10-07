@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
   // 0.6.5 S4: post16=1 (the Teacher chooser's Post-16 stepper only) keeps the same rules and
   // adds the Post-16 provision filter; the Data View never sends it.
   const post16 = request.nextUrl.searchParams.get("post16") === "1";
-  const matched = await findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", targetCount: count, ...(post16 ? { extraFilterUrns: withKs5Results } : {}) });
+  const matched = await findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", targetCount: count, ...(post16 ? { extraFilterUrns: withKs5Results, filterBeforeFacts: true } : {}) });
   const target = resolved.target;
   const schools = matched.map((m) => ({
     urn: m.urn,
