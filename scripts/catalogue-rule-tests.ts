@@ -157,6 +157,45 @@ const RUNNERS: Record<string, Runner> = {
     return { pass: ok, detail: out.join("; ") };
   },
 
+  // R-RANKING-MEASURE (0.6.6): a ranking with a subject in focus is the whole population's, on
+  // the measure in view, and the school's figure in it is Column 1's own.
+  async rankingOnMeasure({ adv, ref, sg }) {
+    const sr = await import("../src/lib/subject-ranking");
+    const cs = await import("../src/lib/chooser-sets");
+    const cc = await import("../src/lib/comparator-chooser");
+    const nation = (await cs.cachedRankingPopulation(null, "ks4", null)).filter((r) => cc.matchesRanking(r, cc.defaultRankingFilters(cc.NATIONAL))).map((r) => r[0]);
+    const req = { urns: nation, targetUrn: "137625", phase: "ks4" as const, subject: "History", familyId: "humanities_social", qualificationType: "GCSE (9-1) Full Course", measure: { kind: "threshold" as const }, period: null };
+    const r = await sr.subjectRanking(req, "rule-test:ks4:england");
+    const own = ((await adv.fetchSubjectLevelDataForSchools(["137625"], "ks4", { gradeYears: "four" })).byUrn.get("137625")?.gradeDistribution ?? []).filter(
+      (g) => g.subject === "History" && g.qualificationType === "GCSE (9-1) Full Course" && g.period === r.period,
+    );
+    const column1 = sg.thresholdRate(own, "ks4")?.rate ?? null;
+    const row = r.window.find((w) => w.urn === "137625");
+    const sharedTies = r.window.every((w, i) => i === 0 || r.window[i - 1].pos !== w.pos - 1 || (w.value === r.window[i - 1].value ? w.rank === r.window[i - 1].rank : w.rank === w.pos));
+    const ks5Nation = (await cs.cachedRankingPopulation(null, "ks5", null)).filter((x) => cc.matchesRanking(x, cc.defaultRankingFilters(cc.NATIONAL))).map((x) => x[0]);
+    const kings = await sr.subjectRanking(
+      { urns: ks5Nation, targetUrn: "117037", phase: "ks5", subject: "Mathematics", familyId: "sciences_maths", qualificationType: "GCE A level", measure: { kind: "points" }, period: null },
+      "rule-test:ks5:england",
+    );
+    const kingsColumn1 = (await ref.lookupAcademicSubjectQualificationHeadline({ entityIds: ["117037"], ksStage: "ks5", qualificationType: "GCE A level" })).find(
+      (x) => x.subject === "Mathematics" && x.period === kings.period,
+    )?.avg_point_score;
+    const v = {
+      via: r.source,
+      period: r.period,
+      rank: `${r.targetRank} of ${r.ranked}`,
+      ranking: r.target?.value === undefined ? null : Math.round(r.target.value * 100) / 100,
+      column1: column1 === null ? null : Math.round(column1 * 100) / 100,
+      windowRow: row ? `${row.rank}@${row.pos}` : "missing",
+      sharedTies,
+      kings: `${kings.target?.value} (Column 1 ${kingsColumn1}) rank ${kings.targetRank} of ${kings.ranked}`,
+    };
+    const pass =
+      column1 !== null && r.target !== null && Math.abs(r.target.value - column1) < 1e-9 && r.ranked > 1000 && !!row && row.rank === r.targetRank && sharedTies &&
+      kings.target !== null && kingsColumn1 !== null && kingsColumn1 !== undefined && Math.abs(kings.target.value - Number(kingsColumn1)) < 1e-9;
+    return { pass, detail: fmt(v) };
+  },
+
   // R-POST16-DEFAULT-SET (0.6.5 S4): the Post-16 default set has Post-16 provision and shares
   // more of the focus's qualification; the GCSE nearest 10 is unchanged.
   async post16DefaultSet({ ref }) {

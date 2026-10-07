@@ -228,6 +228,10 @@ export type PanelSeries = {
   values: (number | null)[];
   // The comparison group's line rather than your own: drawn dashed grey (§4.2, §4.3).
   comparison?: boolean;
+  // 0.6.6: a ranking comparator's change table -- the row's real rank and position in the
+  // whole population's change list (YearTable then draws the window, not 1..N of its rows).
+  rank?: number;
+  pos?: number;
 };
 
 export type PanelData = {

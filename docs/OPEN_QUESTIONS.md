@@ -1703,3 +1703,62 @@ Prompt: `docs/v0.6/vicdata_0_6_post16_match_gcse_claude_code_prompt_v1.md`. Repo
   - **The default nearest set** (`chooser-set`, kind nearest, both phases) is kept an hour per instance: school-level public data, keyed by school and phase only.
   - **Result:** The Chase Post-16 is 17–18 calls (1.1–1.3 s) on its first build of the hour, and from the cache after that.
 - **Layout (S4 follow-up, caught by parity):** two attempts to let a long default name truncate in Comparisons' pills (a zero-width box; then a capped label) were each caught by the parity walk: one squeezed the "vs:" pill off its row beside the Grade counts chip at GCSE; both changed how the grid splits its columns when Context forces Column 2 wide. Both were reverted; `ComparisonsPanels`' pills and `Pill` are exactly main's. The fix is the naming call above.
+
+## 2026-10-07 — 0.6.6
+
+Rankings on the whole population, on the measure in view (docs/v0.6/vicdata_0_6_rankings_then_speed_claude_code_prompt_v1.md, Part 1). Report: [`docs/v0.6/v066_rankings_report_v1.md`](v0.6/v066_rankings_report_v1.md). Rule: R-RANKING-MEASURE.
+
+### What is ranked
+
+- **Population:** the chooser's filtered population (national or a region, plus its filter chips), exactly as the headline ranking reads it (`cachedRankingPopulation` + `matchesRanking`).
+- **Subject:** the focused subject. At Post-16 the exact qualification (R-POINTS-SAME-QUAL). **Call:** at GCSE, points and entries are the subject's own figures across its qualifications (the same `all` rows Comparisons and the GCSE map read). Rates use the focus's qualification (GCSE (9-1) Full Course), as Comparisons scores them.
+- **Measure:** Candidates = entries; Results = average points, Grade 4+ / A*–E, a grade band or single grade, or a Grade counts selection. A counts selection is a contiguous range, so it uses the band machinery (`bandRate`) on the selection. Rates are computed by the app's own `thresholdRate` / `bandRate` (the function is passed the app's scale tables and the range's grades), so a school's figure is Column 1's.
+- **Year:** Comparisons has no year menu, so the year is the latest any of the ranking's schools has a figure in. For a rate it is the latest from 2023/24 (R-CURRENT-GRADES-FROM-2324).
+- **Minimum entries (call): R-MIN-ENTRIES (5).** Counted on entries for points and on graded entries for a rate. This is the rule Comparisons already applies to a counts selection; here it applies to every measure except entries, which rank from 1. Schools below it are counted in the note ("… have fewer than 5 entries"), not ranked.
+- **Ties** share a rank and the next rank skips (R-RANK-TIES). Within a tie the order is by URN, so positions are stable.
+- **A school its own filters exclude** (a state school looking at independent schools) is placed in the order and keeps its would-be rank. It is not counted in the average, and the words say "placed against its N schools … (not itself in this ranking)", as the headline ranking already does.
+- **Predecessors:** the lookups' own rules. A requested school with no rows of its own reads its single predecessor's: under the headline lookups' filters for points and entries, and per era (to 2022 / from 2023) for grades.
+- **No subject in focus:** the headline ranking, byte for byte. In practice that is a school with no ticked subjects; the focus is otherwise always one subject. A focus where the column already shows a note (A*–E on a non-A-level scale, the counts prompt before a selection, T Levels published only for all pathways together) also keeps today's behaviour.
+
+### What is drawn
+
+- **Card table:** the top 3, a break row (⋯), then 5 either side of the school, at real ranks. If the school is in the top 8 it is one continuous block. **Full screen:** the top 10, a break, 10 either side, a break, the bottom 3. The cut is made in `SchoolRankingTable` and `ChangeList` from each row's position, so both drawing paths cut the same way. A windowed table doesn't re-sort.
+- **Distance column (call):** dropped for a window, because its schools are anywhere in the country. Every other table keeps it.
+- **Tiles:** the school's figure on the measure in view; its rank ("988th — of 3,565 schools with GCSE History results, 2024/25"); the population's average ("average across these 3,565 schools"); and the whole-school headline rank as a second tile ("894th — whole school: of 4,793 on Attainment 8 average score"). It uses the dashboard's own `HEADLINE_LABEL`, which is "Attainment 8 average score" at GCSE and "average points per A-level entry" at Post-16; a shorter label is a one-line change if wanted. The new tile is registered as `whole-school` in the tile settings.
+- **Bar chart:** the school against the population's average. **Map:** not offered, as for every ranking (R-RANKING-SAMPLE).
+- **Trends:** the school against the population's average per year. The trend table lists the window's schools ("Around The Chase: …").
+- **Change table (Guy, mid-round: fixed, not logged):** the % change half's table view shows the population change list's window, each row at its real change rank (e.g. 1,206th of 3,476 for The Chase on GCSE History Grade 4+), cut like the other views (top / break / around the school), never 1..N of its rows. YearTable takes an optional `rank` / `pos` per row, set only by a ranking comparator's frame; without them it draws exactly as before (0.6.5 cases: 2,306 of 2,306 pairs identical).
+- **Change list (call):** the whole population's change from 2022/23 (R-TREND-FROM-2223) to the ranking's year, in the same window at real change ranks, against the population's average change. Its "From" menu is not offered, because the list is fixed at 2022/23 (computed with the ranking).
+- **Words:** "Around [School]" titles the window views. The column's note gives the school's place, the population, and who is left out (no figure that year; fewer than 5 entries).
+
+### How it is computed
+
+- **The real path:** `academic_subject_rank_lookup`, one query per request, in the ingest repo (branch `feat/subject-rank-lookup`, migration `20261007200000`). It mirrors `rankFigures` step for step. **Not applied:** Guy applies it (report).
+- **Until then: the app-side fallback.**
+  - It reads that one subject's rows for the population through the lookups the app already reads: chunks of 60 / 150 URNs, 6 at a time, within the anon role's 3 s timeout.
+  - Its figures are kept an hour per (population, subject, qualification, measure) and shared by every school asking. Only the target differs between schools, and a school outside the population has its own rows read beside them.
+  - The route keeps each answer an hour per key.
+- **"Ranking will be available shortly" (call):** the route waits 8 s. If the answer isn't ready, it replies `pending`, keeps computing into the cache, and logs it. The page shows the loading ring with that line and asks again every 4 s (giving up after 2 minutes with "could not be loaded").
+- **Cold fallback timings:** GCSE English Language and Maths nationally are the largest, at 7–8 s. That is under 10 s, so they normally finish within the 8 s wait; the pending state is a safety net.
+- **Function absent:** detected by PostgREST's 404 / PGRST202 and re-checked every 10 minutes, so the app switches to the function within minutes of it being applied, with no restart.
+- **Loading animation (Guy, mid-round):** the site's own loading ring (SchoolMap's `vd-spinner`), drawn in the Teacher view's `--muted3` token. It shows while the ranking loads ("Ranking every school on History Grade 4+…") and while pending. It is still under reduced motion.
+
+### The database function's indexes (for Guy)
+
+- **What they are:** three subject-led covering indexes, `(ks_stage, subject, bucket | qualification_type, entity_id, period) include (…figures…)`.
+- **Why:** a national call reads one index range, index-only (the rollups are all-visible after their rebuild's vacuum). Today it probes the heap once per school, or seq-scans the 409 MB grade rollup.
+- **Size:** about 550 MB added to a 31 GB database: the grade one about the size of its 368 MB primary key, plus roughly 130 MB and 45 MB.
+- **While building:** plain `create index` blocks writes, not reads, for about a minute per table. The ingest writes only during rebuilds.
+- **Timing evidence:**
+  - Production can't be given the indexes by me. On PGlite with them, the function takes 20–255 ms for every case (single-threaded WASM).
+  - Production's CPU measures about 2.8× slower than PGlite on the same pure-CPU queries, which puts it at roughly 0.06–0.7 s.
+  - Production today, without the indexes, runs 0.2–3.0 s. GCSE rates exceed the anon role's 3 s timeout, so the indexes are needed.
+  - Report §4 has the per-case numbers.
+
+### Parity notes
+
+- **One Leaflet timing difference, classed as noise:** Column 1's Trends map in the "pending" ranking case (rk-137625-nat-pending) was 1 px off main in the walk, reproducibly.
+  - The cause is Leaflet's SVG layer. It is sometimes left at a mid-animation translate (-28.23 px) and sometimes reset to -28 px, depending on what else renders in the page at that moment. The branch's pending card asks again every 4 s.
+  - A DOM probe of the same state shows both trees at translate(-28px), with identical paths, column widths and map sizes. No figure, word or layout differs.
+  - The retry loop also stopped re-setting an unchanged "pending" state.
+- **Croydon's case** focuses the second of two "Business Studies · BTec, OCR, VRQ" chips: the BTEC National Extended Diploma. The first is the VRQ. Two chips with the same label is existing behaviour, not changed here.

@@ -17,6 +17,7 @@
 // the same subject is the same colour in every view.
 import { Fragment, createContext, useContext, useState, type ReactNode } from "react";
 import { IconButton, TransposeIcon } from "./PanelIcons";
+import { windowCut } from "@/lib/subject-ranking-view";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { countedValues, periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
 import {
@@ -163,7 +164,10 @@ export const ViewTitleOverrideContext = createContext<string | null>(null);
 
 // ----------------------------------------------------------------- ChangeList
 
-export type ChangeRow = { key: string; label: string; colour: string; value: number | null };
+// 0.6.6: `pos` / `rank` -- a subject ranking's change list (src/lib/subject-ranking-view.ts):
+// the row's position and shared rank in the whole population, drawn in that order, cut for the
+// card or full screen with a break row where positions jump.
+export type ChangeRow = { key: string; label: string; colour: string; value: number | null; pos?: number; rank?: number };
 
 // A % change, rounded, with its sign: ChangeList's default formatting (a count's change).
 // Points and rates pass their own (formatChange / the measure's formatDelta).
@@ -183,8 +187,11 @@ export function ChangeList({
   values = true,
   order = "highest",
   average,
+  fullscreen = false,
 }: {
   rows: ChangeRow[];
+  // 0.6.6: a windowed list's cut (rows with `pos`); unused otherwise.
+  fullscreen?: boolean;
   focusKey: string | null;
   group?: { label: string; value: number | null };
   // 0.6.1 S3, a bar view's look: an average of the rows drawn, a dotted line (the group's
@@ -201,9 +208,15 @@ export function ChangeList({
   const format = formatValue ?? signedPercent;
   // The tone follows the printed figure: a % change is shown rounded, so "+0%" reads flat.
   const dirOf = (v: number | null) => directionOf(v === null ? null : formatValue ? v : Math.round(v));
+  const windowed = rows.some((r) => r.pos !== undefined);
   const byChange = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
-  const rankOfKey = new Map(byChange.map((r, i) => [r.key, i + 1]));
-  const ranked = order === "az" ? [...rows].sort((a, b) => a.label.localeCompare(b.label)) : byChange;
+  const rankOfKey = new Map(byChange.map((r, i) => [r.key, r.rank ?? i + 1]));
+  const drawn: (ChangeRow | null)[] = windowed
+    ? windowCut(rows.map((r) => ({ ...r, pos: r.pos ?? 0, isTarget: r.key === focusKey })), fullscreen)
+    : order === "az"
+      ? [...rows].sort((a, b) => a.label.localeCompare(b.label))
+      : byChange;
+  const ranked = drawn.filter((r): r is ChangeRow => r !== null);
   const real = ranked.filter((r) => r.value !== null).map((r) => Math.abs(r.value!));
   if (real.length === 0) return <p className="text-xs text-[var(--muted)]">No two years of published figures to compare yet.</p>;
   const maxAbs = Math.max(...real, group?.value !== null && group?.value !== undefined ? Math.abs(group.value) : 0, average ? Math.abs(average.value) : 0) || 1;
@@ -213,14 +226,16 @@ export function ChangeList({
   // Nulls sort last, so a row's rank is simply its position among the real ones.
   return (
     <div className="flex flex-col gap-1.5">
-      {ranked.map((r) => {
+      {drawn.map((r, i) => {
+        // A gap in the population's order.
+        if (r === null) return <div key={`break-${i}`} aria-hidden="true" className="text-center text-[11px] leading-none tracking-[0.3em] text-[var(--muted3)]">⋯</div>;
         const rank = rankOfKey.get(r.key)!;
         const dir = dirOf(r.value);
         const focus = r.key === focusKey;
         return (
           <div key={r.key} data-highlight={focus ? "" : undefined} className={`grid ${values ? "grid-cols-[6.5rem_1fr_2.75rem]" : "grid-cols-[6.5rem_1fr]"} items-center gap-2 text-[11px]`}>
             <span className="flex min-w-0 items-center gap-1.5">
-              <span className="w-3 shrink-0 text-right text-[9px] tabular-nums text-[var(--muted3)]">{r.value === null ? "" : rank}</span>
+              <span className={`${windowed ? (rank >= 1000 ? "w-6" : rank >= 100 ? "w-[18px]" : "w-3") : "w-3"} shrink-0 text-right text-[9px] tabular-nums text-[var(--muted3)]`}>{r.value === null ? "" : windowed ? rank.toLocaleString() : rank}</span>
               <span className="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: r.colour }} />
               {/* The focused row's label takes its own colour (the accent), as its dot does. */}
               <span
@@ -372,8 +387,11 @@ export function YearTable({
           ? { key: "change", dir: -1 }
           : { key: showRank ? "rank" : "given", dir: 1 };
   const [userSort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>(openingSort);
-  const sort: { key: SortKey; dir: 1 | -1 } = leadingRank ? { key: "rank", dir: 1 } : userSort;
-  const canSort = sortable ?? !leadingRank;
+  // 0.6.6: rows carrying a population position (a ranking comparator's change table) keep
+  // their real ranks and that order, cut to the window, with a break row where they jump.
+  const windowed = data.series.some((s) => s.pos !== undefined);
+  const sort: { key: SortKey; dir: 1 | -1 } = leadingRank || windowed ? { key: "rank", dir: 1 } : userSort;
+  const canSort = windowed ? false : sortable ?? !leadingRank;
   const pad = leadingRank ? "px-1" : "px-1.5";
   const { periods, series } = data;
   if (periods.length === 0 || series.length === 0) {
@@ -398,13 +416,15 @@ export function YearTable({
   });
   // The one shared ranking rule (teacher-view-panels' rankByValue: largest first, ties
   // share a rank) -- the Current number tiles and Column 3's ranking read it too.
-  const rankOf = rankByValue(rows.map((r) => ({ key: r.s.key, value: leadingRank ? r.honest : r.last })));
+  const rankOf = windowed
+    ? new Map(rows.filter((r) => r.s.rank !== undefined).map((r) => [r.s.key, r.s.rank!]))
+    : rankByValue(rows.map((r) => ({ key: r.s.key, value: leadingRank ? r.honest : r.last })));
   const ranked = rankOf.size;
 
 
   const valueFor = (r: (typeof rows)[number], key: SortKey): number | string | null =>
     key === "given" ? 0 : key === "name" ? r.s.label : key === "rank" ? rankOf.get(r.s.key) ?? null : key === "change" ? r.honest : r.s.values[key];
-  const sorted = [...rows].sort((a, b) => {
+  const sortedAll = [...rows].sort((a, b) => {
     const av = valueFor(a, sort.key);
     const bv = valueFor(b, sort.key);
     if (av === null && bv === null) return 0;
@@ -412,6 +432,9 @@ export function YearTable({
     if (bv === null) return -1;
     return (typeof av === "string" ? av.localeCompare(bv as string) : av - (bv as number)) * sort.dir;
   });
+  const cut = windowed ? windowCut(rows.map((r) => ({ ...r, pos: r.s.pos ?? 0, isTarget: r.s.key === focusKey })), fullscreen) : sortedAll;
+  const sorted = cut.filter((r): r is (typeof rows)[number] => r !== null);
+  const rankWidth = windowed ? (ranked && Math.max(...rankOf.values()) >= 1000 ? "w-9" : "w-7") : "w-5";
   const onSort = (key: SortKey) =>
     setSort((cur) => (cur.key === key ? { key, dir: cur.dir === 1 ? -1 : 1 } : { key, dir: key === "name" || key === "rank" ? 1 : -1 }));
 
@@ -536,7 +559,7 @@ export function YearTable({
     <table className={`w-full border-collapse tabular-nums ${fullscreen ? "text-[13px]" : leadingRank ? "text-[11px]" : "text-[11.5px]"}`}>
       <thead className="border-b border-[var(--panel-border2)]">
         <tr>
-          {leadingRank && <th className="w-5 pb-1.5" aria-label="Rank" />}
+          {leadingRank && <th className={`${rankWidth} pb-1.5`} aria-label="Rank" />}
           {head("name", nameHeading, true)}
           {/* Live review Part 4: Rank only in fullscreen. On the card it pushed the year and
               Change columns -- the figures that matter there -- out of view. The ranking
@@ -548,7 +571,15 @@ export function YearTable({
         </tr>
       </thead>
       <tbody>
-        {sorted.map((r) => {
+        {cut.map((r, ri) => {
+          if (r === null) {
+            const cols = (leadingRank ? 1 : 0) + 1 + (rankShown ? 1 : 0) + yearIdx.length + (counts ? 1 : 0) + (showChange ? 1 : 0);
+            return (
+              <tr key={`break-${ri}`} aria-hidden="true" className="border-b border-[var(--panel-border)]">
+                <td colSpan={cols} className="py-[3px] text-center leading-none tracking-[0.3em] text-[var(--muted3)]">⋯</td>
+              </tr>
+            );
+          }
           const focus = highlight && r.s.key === focusKey;
           const dir = colourChange ? directionOf(r.change?.delta ?? null) : "flat";
           return (
@@ -559,7 +590,7 @@ export function YearTable({
               style={focus ? { background: "rgba(var(--accent-rgb,138,138,144),0.10)" } : undefined}
             >
               {leadingRank && (
-                <td className="w-5 pl-0.5 pr-1 text-right text-[var(--muted3)]">{rankOf.get(r.s.key) ?? ""}</td>
+                <td className={`${rankWidth} pl-0.5 pr-1 text-right text-[var(--muted3)]`}>{windowed ? rankOf.get(r.s.key)?.toLocaleString() ?? "" : rankOf.get(r.s.key) ?? ""}</td>
               )}
               <td className={`max-w-0 ${pad} py-[5px] text-left`}>
                 <span className="flex items-center gap-1.5">
@@ -569,7 +600,7 @@ export function YearTable({
               </td>
               {rankShown && (
                 <td className="whitespace-nowrap px-1.5 text-right text-[var(--muted2)]">
-                  {rankOf.has(r.s.key) ? `${rankOf.get(r.s.key)} of ${ranked}` : "—"}
+                  {rankOf.has(r.s.key) ? (windowed ? rankOf.get(r.s.key)!.toLocaleString() : `${rankOf.get(r.s.key)} of ${ranked}`) : "—"}
                 </td>
               )}
               {yearIdx.map((i) => (

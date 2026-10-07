@@ -98,6 +98,7 @@ function Leaf({ leaf, fullscreen }: { leaf: LeafSeries; fullscreen: boolean }) {
             formatValue={leaf.format === "percent" ? undefined : leaf.format === "change" ? (v) => formatChange(leaf.measure, v) : leaf.measure.formatDelta}
             values={leaf.values}
             order={leaf.order}
+            fullscreen={fullscreen}
           />
         </CentredOnTarget>
       );
