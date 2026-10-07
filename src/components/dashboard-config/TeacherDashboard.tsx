@@ -1798,6 +1798,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         : undefined;
 
   const comparatorEmptyText = "No schools in this comparison with comparable published data for this phase.";
+  // 0.6.5 S6: a T Level focus with entries but no per-pathway grade or points rows -- DfE
+  // published this college's T Level results only for all pathways together (Croydon 130432).
+  // Results' panels say so instead of drawing empty charts; Candidates is unaffected.
+  const tLevelAllPathways =
+    phase === "ks5" && focusItem && /^T Level/i.test(focusItem.qualificationType) &&
+    focusGradeRows.length === 0 && ownRowsFor(focusItem).every((h) => h.avgPointScore === null) &&
+    ownRowsFor(focusItem).some((h) => (h.entriesTotal ?? 0) > 0)
+      ? "DfE publishes this college's T Level results only for all pathways together."
+      : null;
   // 0.6.5 S5: the Post-16 ranking headline is A-level points per entry; a school with no
   // A-level entries in the latest year (IB-only, an FE college) has no figure on it, and the
   // ranking tiles say why rather than drawing an empty or hollow figure.
@@ -1961,6 +1970,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <GradeCountsPanels
         columnId={COL1}
         subjectLabel={phase === "ks5" ? focusItem.label : focusItem.subject}
+        {...(tLevelAllPathways ? { noGradesNote: tLevelAllPathways } : {})}
         ownRows={focusGradeRows}
         geography={schoolUrn ? { urn: schoolUrn, subject: focusItem.subject, qualificationType: focusItem.qualificationType, phase } : null}
         colour={colourOf(focusItem)}
@@ -2075,6 +2085,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               : "the England average for the same subject and qualification"
         }
         limitNote={aStarToEOff ? aStarToENote : undefined}
+        prompt={showingResults && tLevelAllPathways ? tLevelAllPathways : undefined}
         note={
           usingThreshold
             ? `Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
@@ -2279,7 +2290,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // 2024/25" or "Selected Subjects Context 2024/25".
         currentLabel={`${titleCase(contextGroupLabel)} Context`}
         // 0.6.3 S1: on Grade counts, the prompt until a grade is selected; then the chip.
-        prompt={countsPrompt ? "Click a grade in Results to compare it across subjects" : undefined}
+        prompt={showingResults && tLevelAllPathways ? tLevelAllPathways : countsPrompt ? "Click a grade in Results to compare it across subjects" : undefined}
         selectionChip={selectionChip}
         titleLead={countsSelectionMeasure && countsDrive ? countsSelectionMeasure.label : undefined}
         limitNote={aStarToEOff ? aStarToENote : undefined}
@@ -2355,7 +2366,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               }
             : null
         }
-        prompt={countsPrompt ? "Click a grade in Results to compare it across schools" : undefined}
+        prompt={showingResults && tLevelAllPathways ? tLevelAllPathways : countsPrompt ? "Click a grade in Results to compare it across schools" : undefined}
         selectionChip={selectionChip}
         titleLead={countsSelectionMeasure && countsDrive ? countsSelectionMeasure.label : undefined}
         mapRange={comparisonsOnBands ? columnsRange : null}

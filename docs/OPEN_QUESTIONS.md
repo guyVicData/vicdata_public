@@ -1691,3 +1691,9 @@ Prompt: `docs/v0.6/vicdata_0_6_post16_match_gcse_claude_code_prompt_v1.md`. Repo
 - **How:** carried on the ranking figures (`noFigureNote`), so both drawing paths show it: the legacy tiles body, and the series builder's `numberTiles` leaf (a new optional `note`, drawn by SeriesView). The note shows only when the school has no figure on the ranking measure.
 - **The collapsed "rank chip"** has no rank to show, so it stays empty (as before); the panel's summary line carries the note.
 - **Out of scope, logged as a later option:** a per-family Post-16 headline (BTEC / IB / T Level points per entry) for ranking schools without A levels.
+
+### S6 — Per-family notes and small fixes
+
+- **T Level, results published only for all pathways together** (Croydon 130432): a T Level focus with entries but no per-pathway grade rows and no points. Results' three columns show *"DfE publishes this college's T Level results only for all pathways together."* in place of empty charts, using the hosts' existing quiet note card (the `prompt` slot, as the 0.6.3 counts prompt). Grade counts shows it in place of "No published grades …". Candidates is unaffected (its entries are real).
+- **AS in Context:** there is no separate "small group" note. The existing R-POINTS-SAME-QUAL note already says only that family's subjects are compared ("…only Other subjects are compared"). Logged and left, as the prompt allows.
+- **IB Diploma total:** no change (R-IB-NONSUBJECT).
