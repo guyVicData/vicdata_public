@@ -108,7 +108,6 @@ const CHOOSER_SET_ID = "chooser";
 // chooser's own "10 nearest schools" (resolveDefaultNearest). This is its resolve key.
 const DEFAULT_CHOICE_KEY = "default:nearest";
 const DEFAULT_CHOICE_LABEL = "10 nearest schools";
-const DEFAULT_CHOICE_LABEL_POST16 = "10 nearest with a sixth form or 16+ provision";
 // 0.6 E: an embed pinned to a saved set by name holds the pill here while saved sets
 // load, so the default nearest ten never fetches first; the set's own key replaces it
 // once found (and if no set has that name, it reads as nothing chosen: nearest ten).
@@ -1582,9 +1581,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // mothballed: still built by the route, offered nowhere.
   const comparisonsSet: string = storedSaved === "no" ? CHOOSER_SET_ID : storedSet!;
   const activeSavedSet = (savedSets?.sets ?? []).find((set) => savedSetKey(set.id) === comparisonsSet) ?? null;
-  // 0.6.5 S4: on the Post-16 page the default is the 10 nearest with Post-16 provision.
-  const defaultChoiceLabel = phase === "ks5" ? DEFAULT_CHOICE_LABEL_POST16 : DEFAULT_CHOICE_LABEL;
-  const activeSetLabel = activeSavedSet ? activeSavedSet.name : storedSaved === "pending" ? "Loading…" : chooserChoice ? chooserChoice.label : defaultChoiceLabel;
+  // 0.6.5 S4: on the Post-16 page the default is the 10 nearest with Post-16 provision; its pill
+  // keeps "10 nearest schools" (still true there), so Column 3's content -- and with it the
+  // grid's column widths -- don't change. The chooser names it in full.
+  const activeSetLabel = activeSavedSet ? activeSavedSet.name : storedSaved === "pending" ? "Loading…" : chooserChoice ? chooserChoice.label : DEFAULT_CHOICE_LABEL;
   const activeSetOption: SetOption =
     activeSavedSet
       ? {

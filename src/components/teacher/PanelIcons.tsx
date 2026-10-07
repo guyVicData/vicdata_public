@@ -226,7 +226,6 @@ export function Pill({
   expanded,
   onClick,
   trailing,
-  truncate = false,
 }: {
   label: ReactNode;
   active?: boolean;
@@ -234,9 +233,6 @@ export function Pill({
   expanded?: boolean;
   onClick?: () => void;
   trailing?: ReactNode;
-  // 0.6.5: a label longer than 18rem ellipsises (its full text on hover) rather than widening
-  // its card's column; off by default (every other pill as before). A shorter label draws as before.
-  truncate?: boolean;
 }) {
   return (
     <button
@@ -245,7 +241,6 @@ export function Pill({
       disabled={disabled}
       aria-expanded={expanded}
       aria-pressed={expanded === undefined && onClick ? active : undefined}
-      title={truncate && typeof label === "string" ? label : undefined}
       className={[
         "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11.5px] font-medium",
         active
@@ -254,7 +249,7 @@ export function Pill({
         disabled ? "cursor-not-allowed opacity-40" : "",
       ].join(" ")}
     >
-      {truncate ? <span className="inline-block max-w-[18rem] truncate align-bottom">{label}</span> : label}
+      {label}
       {trailing}
     </button>
   );

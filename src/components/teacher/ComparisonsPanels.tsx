@@ -613,11 +613,8 @@ export function ComparisonsPanels({
         periods.map((_, i) => meanOf(others.map((s) => valuesFor(s.urn)[i])));
 
   const versusPill = (open: boolean, setOpenState: (v: boolean) => void, ref: React.RefObject<HTMLDivElement | null>) => (
-    // 0.6.5: a long set name ("10 nearest with a sixth form or 16+ provision") ellipsises in
-    // the card rather than widening Column 3 (the grid's columns size to their content, so a
-    // pill's full text would take width from Columns 1 and 2): Pill's `truncate` caps the label.
     <div className="relative" ref={ref}>
-      <Pill label={`vs: ${versusLabel} ▾`} expanded={open} onClick={() => setOpenState(!open)} truncate />
+      <Pill label={`vs: ${versusLabel} ▾`} expanded={open} onClick={() => setOpenState(!open)} />
       {open && (
         <PanelMenu label="Compare with" align="right" width={220}>
           <MenuHeading>Compare with</MenuHeading>
@@ -1032,9 +1029,7 @@ export function ComparisonsPanels({
         <div className="flex flex-col items-start gap-1.5">
           {/* The same PillMenu Context uses, so round 7 §8's "matching Comparisons'
               pattern exactly" is one component rather than two lookalikes. */}
-          {/* 0.6.5: as the "vs:" pill -- the set's name never widens Column 3; it truncates. */}
-          <div className="w-0 min-w-full">
-          <PillMenu label="Compared against" value={setLabel} menuLabel="Compared against" width={260} title={`Compared against: ${setLabel}`}>
+          <PillMenu label="Compared against" value={setLabel} menuLabel="Compared against" width={260}>
             {(close) => (
               // Comparator dropdown round: the same shape as Context's pill -- what is
               // selected, then the way into the chooser to change it -- instead of its own
@@ -1049,7 +1044,6 @@ export function ComparisonsPanels({
               </>
             )}
           </PillMenu>
-          </div>
           {setNote && <p className="text-[11px] text-[var(--muted3)]">{setNote}</p>}
         </div>
       }
