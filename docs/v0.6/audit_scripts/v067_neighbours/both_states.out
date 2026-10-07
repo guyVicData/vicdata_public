@@ -1,0 +1,8 @@
+[post16-default-neighbours] teacher_default_neighbours_lookup not applied yet; building the Post-16 set as before 
+137625: IDENTICAL (absent true, present true); built 2557 ms, absent 1500 ms, present 179 ms
+117037: IDENTICAL (absent true, present true); built 1152 ms, absent 1038 ms, present 120 ms
+118952: IDENTICAL (absent true, present true); built 1305 ms, absent 1263 ms, present 131 ms
+100053: IDENTICAL (absent true, present true); built 850 ms, absent 883 ms, present 93 ms
+137739: IDENTICAL (absent true, present true); built 2095 ms, absent 1574 ms, present 76 ms
+130416: IDENTICAL (absent true, present true); built 603 ms, absent 741 ms, present 587 ms (not precomputed: falls back)
+130432: IDENTICAL (absent true, present true); built 505 ms, absent 635 ms, present 615 ms (not precomputed: falls back)
