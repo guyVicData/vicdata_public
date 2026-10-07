@@ -15,7 +15,8 @@
 //
 // To a meeting there is no fit check (a slot has nothing to inherit): the view goes in
 // pinned, in the next free slot, and the slide re-arranges (meeting-ops addViewToMeeting).
-import { dataviewById, whyNot, type MatchFailure } from "@/catalogue";
+import { dataviewById } from "@/catalogue/dataviews";
+import { whyNot, type MatchFailure } from "@/catalogue/matching";
 import { contextFromPanel, overrideBetween, settingsOf, toPickContext, type PanelLabels, type PickOverride, type PickPanelContext } from "@/catalogue/pick";
 import {
   CONFIG_SCHEMA_VERSION,

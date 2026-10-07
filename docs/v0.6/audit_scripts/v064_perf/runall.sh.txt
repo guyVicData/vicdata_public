@@ -1,0 +1,9 @@
+#!/bin/zsh
+# round <n>: before (main tree) and after (branch) alternately, two schools.
+n=$1
+for s in "137625 ks4 History GCSE (9-1) Full Course" "117037 ks5 Mathematics GCE A level"; do
+  set -- ${=s}; urn=$1; ph=$2; sub=$3; shift 3; q="$*"
+  (cd /private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/main-tree && npx -y tsx --env-file=/Users/guy/dev/vicdata_public/.env /private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/perf/perf.mts /private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/main-tree $urn $ph $sub "$q" before >> /private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/perf/round$n.jsonl 2>>/private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/perf/round$n.err)
+  (cd /Users/guy/dev/vicdata_public && npx -y tsx --env-file=/Users/guy/dev/vicdata_public/.env /private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/perf/perf.mts /Users/guy/dev/vicdata_public $urn $ph $sub "$q" after >> /private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/perf/round$n.jsonl 2>>/private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/perf/round$n.err)
+done
+echo done > /private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/perf/round$n.done

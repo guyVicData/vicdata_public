@@ -6,7 +6,8 @@
 // a chooser step offers is decided by which registered dataviews exist, not by this school.
 import { dataviewResults } from "./results";
 import { changeKind, changeOfMeasure, changeWord } from "./titles";
-import { DATAVIEWS, MEASURES } from "./index";
+import { DATAVIEWS } from "./dataviews";
+import { MEASURES } from "./measures";
 import { compareMatches, matchDataviews, placements, whyNot, type PickContext, type PickResult } from "./matching";
 import { DASHBOARDS } from "./dashboards";
 import type {

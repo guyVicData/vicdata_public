@@ -24,10 +24,10 @@
 // subject moves a real count immediately, which is the first thing a new user feels.
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
-import { EditorScreen, type InPlaceHost } from "@/components/editor/EditorScreen";
+import type { InPlaceHost } from "@/components/editor/EditorScreen";
 import type { RankingFigures } from "@/lib/chooser-sets";
 import { directionCssVars } from "@/lib/trend-colours";
-import { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { cloneElement, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { completeOnboarding, fetchOnboardedPhases, fetchPreferences, savePreferences, fetchNotes, saveNote, hasNewData, markPeriodSeen, NAV_LABELS_KEY, saveNavLabels, againstKey, chosenKey, measureKey, panelNoteKey, readList, readSetting, setKey, writeList, writeSetting, type ColumnState } from "@/lib/teacher-view-data";
@@ -57,7 +57,7 @@ import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
 import { mapResultOf, type MapSeries } from "@/lib/teacher-map";
 import { TableLayoutContext, type TableLayoutStore } from "@/components/teacher/tableLayout";
 import { isAsLevelOrAea } from "@/lib/dfe-qualification-buckets";
-import { ComparatorSetChooser, type ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
+import type { ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { ResultsControl } from "@/components/teacher/ResultsControl";
@@ -87,6 +87,11 @@ import { bandRangeFor, comparisonsMeasureFor, contextBandShareAt, contextFallsBa
 import { type SubjectItem as LibSubjectItem, asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf, subjectItemsOf } from "@/lib/teacher-view-populations";
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { MINIMUM_SUBJECT_N, deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
+
+// 0.6.4 C2: the editor and the comparator chooser load when opened (PanelFooter's Copy
+// dialog already does), so a member who never edits doesn't download them with the page.
+const EditorScreen = lazy(() => import("@/components/editor/EditorScreen").then((m) => ({ default: m.EditorScreen })));
+const ComparatorSetChooser = lazy(() => import("@/components/teacher/ComparatorSetChooser").then((m) => ({ default: m.ComparatorSetChooser })));
 
 // §3: the picker works at real taught-qualification level, not subject-family level --
 // "someone might teach AS Maths but not Statistics". So an item is a (subject,
@@ -364,6 +369,12 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       }
       if (!urn) { setError(embed ? "No school to draw this view for." : "Teacher view is available to verified school staff."); setLoading(false); return; }
 
+      // 0.6.4 C2: the member's own reads (onboarding, settings, notes) start with the
+      // school's data rather than after it; they are applied in the same order as before.
+      const memberReads = embed
+        ? null
+        : Promise.all([fetchOnboardedPhases(supabase, urn), fetchPreferences(supabase, urn, phase), fetchNotes(supabase, urn)]);
+      memberReads?.catch(() => {});
       // Shared for 5 minutes with every other view of this school (fetch-cache.ts).
       const res = await cachedFetchJson<DashboardPayload>(`/api/teacher/dashboard?urn=${encodeURIComponent(urn)}&phase=${phase}`, { token });
       let loadedEntries: SubjectEntry[] = [];
@@ -410,13 +421,12 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         setLoading(false);
         return;
       }
-      const done = await fetchOnboardedPhases(supabase, urn);
+      const [done, prefs, notes] = await memberReads!;
       setOnboarded(done.includes(phase));
       setOnboardedPhases(done);
-      const prefs = await fetchPreferences(supabase, urn, phase);
       setTicked(prefs.subjects);
       setColumns(prefs.columns);
-      setNotes(await fetchNotes(supabase, urn));
+      setNotes(notes);
 
       // §13's "New-data-in", derived rather than pushed -- see hasNewData.
       const periods = (loadedHeadline as AcademicSubjectHeadlineEntry[]).map((h) => h.period);
@@ -425,6 +435,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       await markPeriodSeen(supabase, urn, phase, latestPeriod);
       if (publishedLoad) setStoredConfigs(await publishedLoad);
       setLoading(false);
+      // 0.6.4 C2: once the page has drawn, at idle, the member's other phase -- its school data
+      // and its default comparator set -- into the fetch cache, so switching GCSE <-> Post-16
+      // reads them from there (fetch-cache.ts: same keys, 5 minutes).
+      prefetchOtherPhases(urn, phase, done, token);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.phase, embedKey]);
@@ -2671,6 +2685,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         </TeacherModal>
       )}
       {chooser && savedSets && schoolUrn && (
+        <Suspense fallback={null}>
         <ComparatorSetChooser
           payload={savedSets}
           phase={phase}
@@ -2691,6 +2706,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
             }
           }}
         />
+        </Suspense>
       )}
     </main>
     </TableLayoutContext.Provider>
@@ -2710,10 +2726,34 @@ function InPlaceEditor({ slug: pageSlug, host }: { slug: string; host: InPlaceHo
   const labelsKey = JSON.stringify(host.labels ?? {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const labels = useMemo(() => host.labels, [labelsKey]);
-  return <EditorScreen id={slug} host={{ ...host, school, labels, onSwitch: setSlug }} />;
+  return (
+    <Suspense fallback={<p className="p-6 text-sm text-[var(--muted)]">Opening the editor…</p>}>
+      <EditorScreen id={slug} host={{ ...host, school, labels, onSwitch: setSlug }} />
+    </Suspense>
+  );
 }
 
 // An embedded view's loading and error states, at whatever size its frame gives it.
 function EmbedStatus({ text }: { text: string }) {
   return <div className="flex h-full min-h-[120px] items-center justify-center p-3 text-center text-[12.5px] text-[var(--muted)]">{text}</div>;
+}
+
+// 0.6.4 C2: the other onboarded phase(s), fetched at idle into the page's fetch cache --
+// exactly the requests that phase's page makes first (the same URL and body, so the same
+// cache keys). Nothing is drawn from them here; a failure is simply not cached.
+const PREFETCH_DELAY_MS = 4000;
+
+function prefetchOtherPhases(urn: string, phase: string, onboarded: string[], token: string) {
+  const others = onboarded.filter((p) => p !== phase && (p === "ks4" || p === "ks5"));
+  if (!others.length || typeof window === "undefined") return;
+  const run = () => {
+    for (const other of others) {
+      void cachedFetchJson(`/api/teacher/dashboard?urn=${encodeURIComponent(urn)}&phase=${other}`, { token });
+      void cachedFetchJson("/api/teacher/chooser-set", { token, method: "POST", body: JSON.stringify({ urn, phase: other, set: { kind: "nearest" } }) });
+    }
+  };
+  // A few seconds on, so it never competes with this page's own Comparisons fetches (the
+  // chooser set, then the schools' profiles), then when the browser is idle.
+  const idle = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+  window.setTimeout(() => (idle ? idle(run, { timeout: 4000 }) : run()), PREFETCH_DELAY_MS);
 }

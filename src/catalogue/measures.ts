@@ -451,3 +451,9 @@ export const MEASURES: Measure[] = [
     citation: "ONS live births",
   },
 ];
+
+// 0.6.4 C2: as dataviews.ts' dataviewById -- without loading ./index's rules.
+const MEASURE_BY_ID = new Map(MEASURES.map((m) => [m.id, m]));
+export function measureById(id: Measure["id"] | string): Measure | undefined {
+  return MEASURE_BY_ID.get(id as Measure["id"]);
+}

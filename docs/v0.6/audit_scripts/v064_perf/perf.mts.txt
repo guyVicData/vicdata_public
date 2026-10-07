@@ -1,0 +1,121 @@
+// 0.6.4 C1: read-only replay of the Teacher page's server routes (bodies after the membership
+// check), for one school + phase, with every upstream HTTP call timed (body read included).
+//   cd <root> && npx -y tsx --env-file=/Users/guy/dev/vicdata_public/.env perf.mts <root> <urn> <phase> <subject> <qual> [label]
+// Prints one JSON line: per-route wall ms, call counts, bytes, and the dashboard route's steps.
+type Call = { scope: string; host: string; path: string; ms: number; bytes: number };
+const calls: Call[] = [];
+let scope = "";
+const orig = globalThis.fetch;
+globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+  const u = new URL(url); const s = scope; const t0 = performance.now();
+  const res = await orig(input as RequestInfo, init);
+  const text = await res.clone().text();
+  let path = u.pathname.replace("/rest/v1/", "");
+  if (path.startsWith("rpc/") && typeof init?.body === "string") { try { const b = JSON.parse(init.body); path += b.p_source_id ? ` ${b.p_source_id}` : ""; path += b.p_offset ? ` off=${b.p_offset}` : ""; } catch {} }
+  calls.push({ scope: s, host: u.host.split(".")[0], path, ms: Math.round(performance.now() - t0), bytes: text.length });
+  return res;
+}) as typeof fetch;
+
+const [root, urn, phase, subject, qual, label] = process.argv.slice(2) as [string, string, "ks4" | "ks5", string, string, string?];
+const R = root + "/src/lib/";
+const adv = await import(R + "academic-data-view.ts");
+const ref = await import(R + "vicdata-reference.ts");
+const agg = await import(R + "academic-aggregate-trends.ts");
+const cs = await import(R + "teacher-view-comparator-series.ts");
+const rk = await import(R + "teacher-view-rankings.ts");
+const chooser = await import(R + "chooser-sets.ts");
+const rn = await import(R + "region-nation-comparator.ts");
+const ph = await import(R + "teacher-view-phases.ts");
+const sbm = await import(R + "supabase.ts");
+const sb = sbm.createServerAnonSupabaseClient();
+let routeMod: any = null;
+let cacheMod: any = null;
+try { cacheMod = await import(R + "server-cache.ts"); } catch {}
+const cached = <T,>(k: string, f: () => Promise<T>): Promise<T> => (cacheMod ? cacheMod.cachedReference(k, f) : f());
+const AFTER = !!cacheMod;
+try { routeMod = await import(R + "teacher-dashboard-payload.ts"); } catch {}
+
+async function once(run: number) {
+calls.length = 0;
+const out: Record<string, unknown> = { label: label ?? "", urn, phase };
+const routes: Record<string, { ms: number; calls: number; kb: number; resKb?: number }> = {};
+async function route<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  scope = name; const n0 = calls.length; const t0 = performance.now();
+  const r = await fn();
+  const mine = calls.slice(n0);
+  routes[name] = { ms: Math.round(performance.now() - t0), calls: mine.length, kb: Math.round(mine.reduce((a, c) => a + c.bytes, 0) / 1024), resKb: Math.round(JSON.stringify(r ?? null).length / 1024) };
+  return r;
+}
+const steps: { step: string; ms: number }[] = [];
+const step = async <T,>(name: string, fn: () => Promise<T>) => { const t0 = performance.now(); const r = await fn(); steps.push({ step: name, ms: Math.round(performance.now() - t0) }); return r; };
+
+// the membership check each route runs first (a stand-in query of the same shape, anon)
+const membership = () => sb.from("school_memberships").select("id").eq("status", "approved").limit(1).maybeSingle();
+
+await route("phases", async () => {
+  await membership();
+  const profiles = await adv.fetchAcademicProfiles([urn], { includePopulation: true });
+  const national = await cached("phases:current-periods", () => ref.lookupAcademicCurrentPeriods());
+  return { n: profiles.length, national };
+});
+
+const dash: any = await route("dashboard", async () => {
+  await step("membership", membership);
+  if (routeMod?.buildDashboardPayload) return step("payload (new route body)", () => routeMod.buildDashboardPayload(sb, urn, phase));
+  const nq = () => sb.from("school_nearest_neighbours").select("rank, distance_km, schools!school_nearest_neighbours_neighbour_urn_fkey(urn, current_name, phase, status, establishment_type_group, statutory_low_age, statutory_high_age, la_name)").eq("urn", urn).eq("pool", "general").order("rank", { ascending: true }).limit(100) as any;
+  const tq = () => sb.from("schools").select("establishment_type_group").eq("urn", urn).maybeSingle() as any;
+  let neighbourRows: any, targetRow: any;
+  if (AFTER) [{ data: neighbourRows }, { data: targetRow }] = await step("neighbours+targetRow", () => Promise.all([nq(), tq()]));
+  else { ({ data: neighbourRows } = await step("neighbours", nq)); ({ data: targetRow } = await step("targetRow", tq)); }
+  const pool = cs.neighbourPool((neighbourRows ?? []) as never, phase);
+  const ind = rk.isIndependent((targetRow as any)?.establishment_type_group ?? null);
+  const cohortSizes = await step("cohortSizes", () => adv.fetchLatestCohortSizes([urn, ...pool.map((p: any) => p.urn)], phase));
+  const buildSets = (usable: any[]) => { const s: any = { nearest: usable.slice(0, rk.SET_SIZE), same_sector: rk.sameSector(usable, ind), local_rivals: rk.localRivals(usable) }; s.similar_size = rk.similarSize(usable, cohortSizes, cohortSizes.get(urn) ?? null); return s; };
+  const ranked = await step("rankSets", () => cs.rankSets(urn, pool, buildSets as never, phase, cohortSizes));
+  const { byUrn } = await step("subjectLevel(four)", () => adv.fetchSubjectLevelDataForSchools([urn], phase, { gradeYears: "four" }));
+  const headline = await step("subjectHeadline", () => adv.fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined));
+  const qh = phase === "ks5" ? await step("qualHeadline", () => adv.fetchSubjectQualificationHeadlineForSchools([urn], phase)) : null;
+  const eng = await step("englandAverages", () => cached(`dashboard:england:${phase}`, () => phase === "ks5"
+    ? ref.lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", measure: "avg_point_score", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], minSchoolCount: 1 })
+    : ref.lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], minSchoolCount: 1 })));
+  return { subjectData: byUrn.get(urn), headline: headline.get(urn), qh: qh?.get(urn), eng, ranked };
+});
+
+await route("saved-comparator-sets", async () => { await membership(); await membership(); await membership(); return cs.rankFixedSets(urn, [], phase); });
+const nearest: any = await route("chooser-set(nearest)", async () => { await membership(); return chooser.resolveDefaultNearest(urn, phase); });
+const union = Array.from(new Set([...nearest.rows.map((r: any) => r.urn), urn]));
+await route("academic-schools(includeSubjects)", async () => { await membership(); return (await adv.fetchAcademicProfiles(union, { includeSubjects: true })).map(adv.serializeAcademicProfile); });
+const geo = async (grade: boolean) => {
+  await membership();
+  const laQ = async () => (await sb.from("schools").select("la_name").eq("urn", urn).maybeSingle<{ la_name: string | null }>()).data?.la_name ?? null;
+  const rgQ = async () => (await rn.resolveTargetRegionNation(urn))?.regionName ?? null;
+  const [la, regionName] = AFTER ? await Promise.all([cached(`school:la:${urn}`, laQ), cached(`school:region:${urn}`, rgQ)]) : [await laQ(), await rgQ()];
+  const one = (gt: "la" | "region" | "national", key: string | null) => {
+    if (!key) return Promise.resolve(null);
+    const load = () => grade ? ref.lookupAcademicSubjectGradeGeography({ ksStage: phase, groupingType: gt, groupingKeys: [key], subject, qualificationType: qual })
+      : phase === "ks5" ? ref.lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", measure: "avg_point_score", groupingType: gt, groupingKeys: [key], subject, qualificationType: qual, minSchoolCount: gt === "national" ? 1 : undefined })
+      : ref.lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: gt, groupingKeys: [key], subject, minSchoolCount: gt === "national" ? 1 : undefined });
+    return cached(`${grade ? "gradegeo" : "geo"}:${phase}:${gt}:${key}:${subject}:${grade || phase === "ks5" ? qual : ""}`, load as () => Promise<unknown>);
+  };
+  const keys = [["la", la], ["region", regionName], ["national", agg.NATIONAL_GROUPING_KEY]] as const;
+  if (AFTER) return Promise.all(keys.map(([g, k]) => one(g, k)));
+  const o = []; for (const [g, k] of keys) o.push(await one(g, k)); return o;
+};
+await route("subject-geography", () => geo(false));
+await route("subject-grade-geography", () => geo(true));
+await route("comparator-grades", async () => { await membership(); return adv.fetchSchoolGradeRows(union, phase, subject); });
+
+const dup = new Map<string, number>();
+for (const c of calls) { const k = `${c.host} ${c.path}`; dup.set(k, (dup.get(k) ?? 0) + 1); }
+out.routes = routes;
+out.dashboardSteps = steps;
+out.totalCalls = calls.length;
+out.slowest = [...calls].sort((a, b) => b.ms - a.ms).slice(0, 12).map((c) => `${c.ms}ms ${Math.round(c.bytes / 1024)}KB ${c.scope} ${c.host} ${c.path}`);
+out.repeated = [...dup].filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, n]) => `${n}x ${k}`);
+out.run = run;
+return out;
+}
+for (const run of [1, 2]) console.log(JSON.stringify(await once(run)));
+
+process.exit(0);

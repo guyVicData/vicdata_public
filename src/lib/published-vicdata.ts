@@ -8,7 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CONFIG_SCHEMA_VERSION, type DashboardConfig, type DataviewId } from "@/catalogue/types";
 import { validateConfig } from "@/catalogue/config";
-import { DATAVIEWS } from "@/catalogue";
+import { DATAVIEWS } from "@/catalogue/dataviews";
 import { isMissingTable } from "./dashboards-store";
 
 export type PublishedLoad = { config: DashboardConfig; source: "store" | "code"; version: number | null; reason?: string };

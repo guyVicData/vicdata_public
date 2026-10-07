@@ -211,7 +211,7 @@ export function GradeCountsPanels({
       ),
     summary: chgYear === null ? oneYearOnly : undefined,
     source: source(chgYear === null ? yearText : `${academicYearLabel(chgYear)}–${yearText}`),
-    gradingYears: chgYear === null || latest === null ? null : [chgYear, latest],
+    gradingYears: chgYear === null || latest === null ? null : changeData.periods,
   };
 
   // The one Trends panel: the spread comparison then the change table, each half's "From"

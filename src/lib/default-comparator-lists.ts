@@ -670,20 +670,25 @@ export async function buildBoardingQuintileList(urn: string, targetCount = 10): 
   return boardingQuintileList(target, [...config.sectorGroups], config.requirePhase, config.quintileBasis, targetCount);
 }
 
-export async function buildDefaultComparatorLists(urn: string): Promise<DefaultComparatorLists> {
+// 0.6.4 C2: `only: "nearest"` (the Teacher view's chooser-set default) builds what
+// resolveNearestOption reads -- list1, boardingBand, boardingRecipe -- and skips the LA set,
+// the 16+ list and the region lookup, which it would discard. Those come back null / empty;
+// list1 is built exactly as before. The Data View's default-lists route passes no option.
+export async function buildDefaultComparatorLists(urn: string, opts: { only?: "nearest" } = {}): Promise<DefaultComparatorLists> {
+  const nearestOnly = opts.only === "nearest";
   const resolved = await resolveSchoolTypeCategory(urn);
   if (!resolved) {
     return { schoolTypeCategory: null, list1: null, list2: null, boardingBand: null, boardingRecipe: null, local16Plus: null, regionName: null, nation: null };
   }
   const { schoolTypeCategory, target, targetPhase } = resolved;
-  const regionNation = await resolveTargetRegionNation(urn);
+  const regionNation = nearestOnly ? null : await resolveTargetRegionNation(urn);
   const regionName = regionNation?.regionName ?? null;
   const nation = regionNation?.nation ?? null;
 
   if (schoolTypeCategory === "fe_college") {
     const [nearestFe, local16Plus] = await Promise.all([
       findNearestFeColleges(urn),
-      target.la_name ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
+      target.la_name && !nearestOnly ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
     ]);
     const list1: DefaultList = {
       key: "fe_nearest_10",
@@ -721,8 +726,8 @@ export async function buildDefaultComparatorLists(urn: string): Promise<DefaultC
 
   const [matched, list2, local16PlusCandidates, boardingBand, boardingRecipe] = await Promise.all([
     findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed" }),
-    target.la_name ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
-    target.la_name && hasPost16Provision ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
+    target.la_name && !nearestOnly ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
+    target.la_name && hasPost16Provision && !nearestOnly ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
     isBoardingCategory ? resolveBoardingQuintileBand(urn) : Promise.resolve<BoardingQuintileBand | null>(null),
     boardingConfig ? boardingQuintileListFast(target, schoolTypeCategory as "independent_boarding_senior" | "independent_boarding_prep" | "state_boarding", boardingConfig.quintileBasis, 10, boardingConfig.sectorGroups) : Promise.resolve<DefaultList | null>(null),
   ]);

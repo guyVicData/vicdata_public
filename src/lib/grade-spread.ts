@@ -70,15 +70,21 @@ export function gradeCounts(ownRows: GradeCountRow[], englandRows: GradeCountRow
     }));
   const englandLabel = eng.length && latest !== null ? `England, ${academicYearLabel(latest)}` : null;
   const modal = own.length ? order.reduce((best, g) => (countAt(own, g) > countAt(own, best) ? g : best), order[0]) : null;
-  // Each grade's own count, from the chosen year to the latest, in grade order.
+  // Each grade's own count, every year to the latest, in grade order. 0.6.4 A
+  // (R-TREND-TABLE-YEARS): every year from 2021/22 (or the member's own "From" year), the
+  // change counted from the change year (statementFrom) -- the card's two year columns are
+  // still the change's own two ends; years down and fullscreen show each year.
+  const changeFirst = picks.changeFrom !== null && chgYear === picks.changeFrom ? chgYear : periods[0];
+  const changePeriods = chgYear === null || latest === null ? [] : periods.filter((p) => p >= changeFirst && p <= latest);
   const changeData: PanelData = {
-    periods: chgYear === null || latest === null ? [] : [chgYear, latest],
+    periods: changePeriods,
     series: order.map((g) => ({
       key: g,
       label: g,
       colour: "",
-      values: chgYear === null || latest === null ? [] : [countAt(inYear(graded, chgYear), g), countAt(own, g)],
+      values: changePeriods.map((p) => (p === latest ? countAt(own, g) : countAt(inYear(graded, p), g))),
     })),
+    ...(chgYear !== null && changePeriods[0] !== undefined && changePeriods[0] < chgYear ? { statementFrom: chgYear } : {}),
   };
   return {
     graded,
@@ -97,7 +103,7 @@ export function gradeCounts(ownRows: GradeCountRow[], englandRows: GradeCountRow
     modal,
     modalCount: modal === null ? 0 : countAt(own, modal),
     // The change table's rows, in the subject's colour.
-    changeDataIn: (colour: string): PanelData => ({ periods: changeData.periods, series: changeData.series.map((s) => ({ ...s, colour })) }),
+    changeDataIn: (colour: string): PanelData => ({ ...changeData, series: changeData.series.map((s) => ({ ...s, colour })) }),
   };
 }
 

@@ -2,38 +2,28 @@
 // plus the matching rule. Code is the source of truth; docs/catalogue/*.md is generated
 // from these objects by scripts/catalogue-export.ts.
 import { DATAVIEWS } from "./dataviews";
-import { MEASURES } from "./measures";
+import { measureById } from "./measures";
 import { RENDERERS } from "./renderers";
 import { RULES } from "./rules";
-import type { Dataview, DataviewId, HostId, Measure, MeasureId, Renderer, RendererId, Rule, RuleId } from "./types";
+import type { Dataview, HostId, Renderer, RendererId, Rule, RuleId } from "./types";
 
 export * from "./types";
 export * from "./matching";
 export { RULES, RULE_IDS } from "./rules";
-export { MEASURES, ACADEMIC_CITATION } from "./measures";
+export { MEASURES, ACADEMIC_CITATION, measureById } from "./measures";
 export { RENDERERS } from "./renderers";
-export { DATAVIEWS, DATAVIEW_IDS, dataviewForRail } from "./dataviews";
+export { DATAVIEWS, DATAVIEW_IDS, dataviewForRail, dataviewById } from "./dataviews";
 
 const index = <T extends { id: string }>(items: T[]) => new Map(items.map((i) => [i.id, i]));
 const RULE_BY_ID = index(RULES);
-const MEASURE_BY_ID = index(MEASURES);
 const RENDERER_BY_ID = index(RENDERERS);
-const DATAVIEW_BY_ID = index(DATAVIEWS);
 
 export function ruleById(id: RuleId | string): Rule | undefined {
   return RULE_BY_ID.get(id);
 }
 
-export function measureById(id: MeasureId | string): Measure | undefined {
-  return MEASURE_BY_ID.get(id);
-}
-
 export function rendererById(id: RendererId | string): Renderer | undefined {
   return RENDERER_BY_ID.get(id);
-}
-
-export function dataviewById(id: DataviewId | string): Dataview | undefined {
-  return DATAVIEW_BY_ID.get(id);
 }
 
 // A host panel's views in rail order (the catalogue's own order). `panel` omitted = both.

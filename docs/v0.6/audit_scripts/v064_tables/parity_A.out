@@ -1,0 +1,22 @@
+pairs 1366  EXP-COUNTS-TABLE 24  EXP-CUE 250  IDENTICAL 1092  only-main 0  only-branch 0
+   ('bands', 'EXP-CUE') 40
+   ('bands', 'IDENTICAL') 208
+   ('cand', 'EXP-CUE') 58
+   ('cand', 'IDENTICAL') 182
+   ('counts0', 'EXP-COUNTS-TABLE') 8
+   ('counts0', 'IDENTICAL') 62
+   ('counts1', 'EXP-COUNTS-TABLE') 8
+   ('counts1', 'EXP-CUE') 32
+   ('counts1', 'IDENTICAL') 134
+   ('counts2', 'EXP-COUNTS-TABLE') 8
+   ('counts2', 'EXP-CUE') 32
+   ('counts2', 'IDENTICAL') 134
+   ('points', 'EXP-CUE') 54
+   ('points', 'IDENTICAL') 180
+   ('threshold', 'EXP-CUE') 34
+   ('threshold', 'IDENTICAL') 192
+UNEXPECTED:
+only-main: []
+only-branch: []
+main errors/failed: []
+br errors/failed: []

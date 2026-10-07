@@ -1,0 +1,55 @@
+# python3 cmp4.py <outRoot>: 0.6.4 parity, main vs branch, every shot paired by view.
+#   IDENTICAL   pixels and digest equal
+#   NOISE       words equal, same size, no channel differs by more than 8/255
+#   EXP-CUE     a year table: words equal once the "+N more years" cue is removed (A)
+#   EXP-COUNTS-TABLE  Grade counts' change table: the cue, and the trend note in its "i" (A)
+#   UNEXPECTED  anything else
+import json, os, re, sys
+from collections import Counter
+from PIL import Image, ImageChops
+root = sys.argv[1]
+A, B = os.path.join(root, "main"), os.path.join(root, "br")
+NONVIEW = re.compile(r"^(Full screen|Exit full screen|Collapse|Open:|Where this figure|What this shows|Add a private note|Edit note|Export|Swap rows)")
+CUE = re.compile(r"\s*\+\d+ more years?")
+NOTE = "trend"
+def canon(d):
+    m = {}
+    for f in os.listdir(d):
+        if not f.endswith(".json") or "__" not in f: continue
+        n = f[:-5]
+        try: j = json.load(open(os.path.join(d, f)))
+        except Exception: continue
+        if not os.path.exists(os.path.join(d, n + ".png")): continue
+        pressed = [r[:-1] for r in j.get("rail", []) if r.endswith("*") and not NONVIEW.match(r)]
+        key = n.rsplit("__", 1)[0] + "__" + (pressed[0] if pressed else "only")
+        m.setdefault(key, n)
+    return m
+CA, CB = canon(A), canon(B)
+cls = Counter(); unexpected = []; per = Counter()
+for n in sorted(CA):
+    if n not in CB: continue
+    fa, fb = CA[n], CB[n]
+    ia, ib = Image.open(os.path.join(A, fa + ".png")).convert("RGB"), Image.open(os.path.join(B, fb + ".png")).convert("RGB")
+    da, db = json.load(open(os.path.join(A, fa + ".json"))), json.load(open(os.path.join(B, fb + ".json")))
+    pix = ia.size == ib.size and ImageChops.difference(ia, ib).getbbox() is None
+    words = da["text"] == db["text"] and da.get("caption") == db.get("caption") and da.get("info") == db.get("info")
+    maxch = 999
+    if ia.size == ib.size:
+        ex = ImageChops.difference(ia, ib).getextrema(); maxch = max(e[1] for e in ex)
+    view = n.rsplit("__", 1)[1]
+    cue = CUE.sub("", db["text"]) == da["text"] and CUE.search(db["text"]) is not None
+    if pix and words: k = "IDENTICAL"
+    elif words and maxch <= 8: k = "NOISE"
+    elif cue and da.get("caption") == db.get("caption") and da.get("info") == db.get("info"): k = "EXP-CUE"
+    elif "counts" in n and view == "Change table" and (cue or CUE.sub("", db["text"]) == da["text"] or db["text"] == da["text"]) and da.get("caption") == db.get("caption"): k = "EXP-COUNTS-TABLE"
+    else: k = "UNEXPECTED"; unexpected.append(n)
+    cls[k] += 1
+    per[(n.split("__")[0].split("-")[2], k)] += 1
+missing = [k for k in CA if k not in CB]; extra = [k for k in CB if k not in CA]
+print(f"pairs {sum(cls.values())}  " + "  ".join(f"{k} {v}" for k, v in sorted(cls.items())) + f"  only-main {len(missing)}  only-branch {len(extra)}")
+for key in sorted(per): print("  ", key, per[key])
+print("UNEXPECTED:"); [print("  ", x) for x in unexpected[:60]]
+print("only-main:", missing[:20]); print("only-branch:", extra[:20])
+for d in (A, B):
+    errs = [f for f in os.listdir(d) if f.endswith("__errors.txt") or f.endswith("__failed.txt")]
+    print(os.path.basename(d), "errors/failed:", errs)

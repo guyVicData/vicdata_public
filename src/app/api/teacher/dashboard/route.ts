@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { createClient } from "@supabase/supabase-js";
+import { cachedReference } from "@/lib/server-cache";
 import {
   fetchSubjectLevelDataForSchools,
   fetchSubjectHeadlineForSchools,
@@ -114,15 +115,18 @@ export async function GET(request: NextRequest) {
   // populationAtAge(profile, HEADLINE_AGE.ks2), which resolves age 10 from the age
   // breakdown; the census also carries a `year_group_10` field, which is the GCSE year and
   // would silently put a secondary cohort on a primary card (Q6).
-  const { data: neighbourRows } = await supabase
-    .from("school_nearest_neighbours")
-    .select("rank, distance_km, schools!school_nearest_neighbours_neighbour_urn_fkey(urn, current_name, phase, status, establishment_type_group, statutory_low_age, statutory_high_age, la_name)")
-    .eq("urn", urn)
-    .eq("pool", "general")
-    .order("rank", { ascending: true })
-    .limit(100);
+  // 0.6.4 C2: the two small vicdata-public reads together (one round trip, not two).
+  const [{ data: neighbourRows }, { data: targetRow }] = await Promise.all([
+    supabase
+      .from("school_nearest_neighbours")
+      .select("rank, distance_km, schools!school_nearest_neighbours_neighbour_urn_fkey(urn, current_name, phase, status, establishment_type_group, statutory_low_age, statutory_high_age, la_name)")
+      .eq("urn", urn)
+      .eq("pool", "general")
+      .order("rank", { ascending: true })
+      .limit(100),
+    supabase.from("schools").select("establishment_type_group").eq("urn", urn).maybeSingle(),
+  ]);
   const pool = neighbourPool((neighbourRows ?? []) as unknown as NeighbourRow[], phase);
-  const { data: targetRow } = await supabase.from("schools").select("establishment_type_group").eq("urn", urn).maybeSingle();
   const targetIndependent = isIndependent((targetRow as { establishment_type_group: string | null } | null)?.establishment_type_group ?? null);
 
   // Similar-sized needs every pool school's cohort, so it is the one set that costs an
@@ -180,7 +184,8 @@ export async function GET(request: NextRequest) {
   // ticked (subject, qualification) item reads. The bucket rows above still serve the
   // category lookup and Context's whole-subject group.
   const qualificationHeadline = phase === "ks5" ? (await fetchSubjectQualificationHeadlineForSchools([urn], phase)).get(urn) ?? [] : [];
-  const england = await englandAverages(phase);
+  // 0.6.4 C2: England's national rows are the same for every school -- kept an hour per instance.
+  const england = await cachedReference(`dashboard:england:${phase}`, () => englandAverages(phase));
 
   return NextResponse.json({
     phase,

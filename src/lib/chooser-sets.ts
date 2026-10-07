@@ -68,7 +68,7 @@ export type RankingFigures = {
 // dashboard-route "Nearest 10 schools" preset (school_nearest_neighbours), a different
 // algorithm, as the default.
 export async function resolveDefaultNearest(targetUrn: string, phase: KsStage): Promise<ChooserSetResult & { count: number }> {
-  const lists = await buildDefaultComparatorLists(targetUrn);
+  const lists = await buildDefaultComparatorLists(targetUrn, { only: "nearest" });
   const chosen = resolveNearestOption(lists.list1, lists.boardingBand, lists.boardingRecipe, null);
   const urns = (chosen?.schools ?? []).map((s) => s.urn).filter((u) => u !== targetUrn);
   return { ...(await resolveFixedSet(targetUrn, phase, urns)), count: urns.length };

@@ -755,7 +755,7 @@ export const RULES: Rule[] = [
   {
     id: "R-TREND-FROM-2223",
     statement:
-      "On a grade or points measure (Average points, Grade 4+ / A*-E, Grade bands, Grade counts, Comparisons' headline; never Candidates, never KS2), 2021/22 stays on the Trends' graphs and tables, but every trend statement is measured from 2022/23 (TREND_BASE_PERIOD): the direction word (R-TREND-FLAT-4PCT) and the trend sentence ('… since 2022/23'), the group / 'vs:' clause, every year table's Change column (Trend and % change tables, Results' area change table: the card's two year columns are then 2022/23 and the latest; fullscreen shows every year), a fitted Trend line, a short span's ranked change bars, ranked change lists, change and Trend maps, the % change half's summary and collapsed figure, and a slope from the span's first year. Grade counts' change table (two years) measures from 2022/23 at the earliest, its 'From' menu from there; its spread may still be compared with 2021/22. Line charts (Trend, Results' area chart) draw 2021/22 as a normal point. A 'From' year of 2022/23 or later is unchanged. A view whose drawn years include 2021/22 carries TREND_BASE_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view, on Candidates or at KS2. Indexed lines are entries only (R-INDEX-HEADCOUNTS), so unaffected.",
+      "On a grade or points measure (Average points, Grade 4+ / A*-E, Grade bands, Grade counts, Comparisons' headline; never Candidates, never KS2), 2021/22 stays on the Trends' graphs and tables, but every trend statement is measured from 2022/23 (TREND_BASE_PERIOD): the direction word (R-TREND-FLAT-4PCT) and the trend sentence ('… since 2022/23'), the group / 'vs:' clause, every year table's Change column (Trend and % change tables, Results' area change table: the card's two year columns are then 2022/23 and the latest, with a '+N more years' cue since 0.6.4; years down and fullscreen show every year, R-TREND-TABLE-YEARS), a fitted Trend line, a short span's ranked change bars, ranked change lists, change and Trend maps, the % change half's summary and collapsed figure, and a slope from the span's first year. Grade counts' change table measures from 2022/23 at the earliest, its 'From' menu from there (since 0.6.4 it lists every year from 2021/22 in years down and fullscreen, the card's two columns still the change's ends); its spread may still be compared with 2021/22. Line charts (Trend, Results' area chart) draw 2021/22 as a normal point. A 'From' year of 2022/23 or later is unchanged. A view whose drawn years include 2021/22 carries TREND_BASE_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view, on Candidates or at KS2. Indexed lines are entries only (R-INDEX-HEADCOUNTS), so unaffected.",
     why: "2021/22 (summer 2022) was the first year back to exams after the pandemic: Ofqual set grading roughly midway between 2021 and 2019, so a trend measured from it would make most schools look as if results had fallen.",
     appliesTo: "M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS, Comparisons' headline (Attainment 8, A level points per entry): over-time views",
     enforcedIn: [
@@ -788,9 +788,33 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-TREND-TABLE-YEARS",
+    statement:
+      "A trend table shows the same years as its trend chart: 2021/22 onward on a grade measure (Grade 4+ / A*-E, Grade bands, a single grade, a Grade counts selection), at GCSE and Post-16, on Results, Context and Comparisons, card and fullscreen, both drawing paths. Years down and fullscreen show every year; a card with years across may show the change's two ends (2022/23 and the latest, R-TREND-FROM-2223) with a '+N more years' cue naming the rest, which swaps to years down. Grade counts' change table lists every graded year from 2021/22 (or the member's 'From' year) the same way, its change from 2022/23. R-CURRENT-GRADES-FROM-2324 never applies to a Trends view.",
+    why: "Guy, 7 Oct 2026: GCSE History's grade-band trend table seemed to start later than its graph. The data was there; the card's years-across table showed only its change's two ends and said nothing about the years it left out.",
+    appliesTo: "DV-C1-RES-TR-TABLE, DV-C2-TR-TABLE, DV-C2-TR-CHANGETABLE, DV-C3-TR-TABLE, DV-C3-TR-CHANGETABLE, DV-C1-CNT-TR-CHANGETABLE on grade measures",
+    enforcedIn: [
+      "src/components/teacher/tableLayout.ts:yearColumnsShown",
+      `${SV}:YearTable (the '+N more years' cue)`,
+      "src/lib/grade-spread.ts:gradeCounts (changeData)",
+      `${GP}:changeHalf gradingYears`,
+    ],
+    testCase: {
+      urn: "137625",
+      school: "The Chase (and King's Worcester 117037 at Post-16)",
+      phase: "ks4",
+      subject: "History (A level Mathematics)",
+      year: "2021/22-2024/25",
+      expect: "For every trend table preset on Grade 4+ / A*-E, bands 9-4 / 9-7 / 9 (A*-A / A*) and Grade counts, built from real grade rows: the table's years equal its chart's (2021/22-2024/25); years down and fullscreen show them all; the card across shows 2022/23 and 2024/25 and names the other two as hidden.",
+      check: "trendTableYears",
+    },
+    origin: "0.6.4 A (Guy's review, 7 Oct 2026)",
+    status: "active",
+  },
+  {
     id: "R-CURRENT-GRADES-FROM-2324",
     statement:
-      "A latest-year view on a grade measure (Grade 4+ / A*-E, Grade bands, Grade counts; Results, Context and Comparisons' rate) reads the school's grade rows from 2023/24 on only: its subject (or school) list, its year menu, its 'vs last year' and an explicit earlier-year spread are exactly as before the rows reached back to 2021/22. A subject with grades only in 2021/22-2022/23 appears on the Trends alone.",
+      "A latest-year view on a grade measure (Grade 4+ / A*-E, Grade bands, Grade counts; Results, Context and Comparisons' rate) reads the school's grade rows from 2023/24 on only: its subject (or school) list, its year menu, its 'vs last year' and an explicit earlier-year spread are exactly as before the rows reached back to 2021/22. A subject with grades only in 2021/22-2022/23 appears on the Trends alone. Never a Trends view, chart or table (R-TREND-TABLE-YEARS).",
     why: "The grade rows' two older years are for the trends. Read by a latest-year view, they listed subjects with no current figure ('no published figure' rows) and let 'vs last year' reach back past a missing 2023/24 to 2022/23 -- latest-year figures this round must not change (S5).",
     appliesTo: "M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS: latest-year views",
     enforcedIn: [
