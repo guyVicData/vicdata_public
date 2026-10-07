@@ -123,3 +123,17 @@ export function seesTeacherView(role: TeacherViewRole): boolean {
 export function hasDepartmentCapability(role: TeacherViewRole): boolean {
   return false;
 }
+
+// 0.7 admissions r1 (A3): the Admissions lead is a FLAG on the admissions membership
+// (school_memberships.admissions_lead), not a new role value, so a lead is still
+// `admissions` everywhere roles are read (the automatic Admissions team, shares, dashboard
+// assignments). Only the School-Admin can set it (database trigger). The lead builds and
+// edits the school's entry points and admissions lists, and can grant or remove
+// `admissions` only, for approved members of the same school (admissions_set_member).
+export const ADMISSIONS_LEAD_LABEL = "Admissions lead";
+
+/** "Admissions lead" for a lead, "Admissions" for other admissions staff, else null. */
+export function admissionsLabel(m: { roles: readonly string[]; admissions_lead?: boolean | null }): string | null {
+  if (!m.roles.includes("admissions")) return null;
+  return m.admissions_lead ? ADMISSIONS_LEAD_LABEL : ROLE_LABELS.admissions;
+}
