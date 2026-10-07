@@ -614,10 +614,9 @@ export function ComparisonsPanels({
 
   const versusPill = (open: boolean, setOpenState: (v: boolean) => void, ref: React.RefObject<HTMLDivElement | null>) => (
     // 0.6.5: a long set name ("10 nearest with a sixth form or 16+ provision") ellipsises in
-    // the card rather than widening Column 3 -- the grid's columns size to their content, so a
-    // pill's full text would take width from Columns 1 and 2. w-0 + min-w-full: this box adds
-    // nothing to the column's minimum width and still fills the row (the pill kept right).
-    <div className="relative flex w-0 min-w-full justify-end" ref={ref}>
+    // the card rather than widening Column 3 (the grid's columns size to their content, so a
+    // pill's full text would take width from Columns 1 and 2): Pill's `truncate` caps the label.
+    <div className="relative" ref={ref}>
       <Pill label={`vs: ${versusLabel} ▾`} expanded={open} onClick={() => setOpenState(!open)} truncate />
       {open && (
         <PanelMenu label="Compare with" align="right" width={220}>
