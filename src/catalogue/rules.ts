@@ -883,7 +883,7 @@ export const RULES: Rule[] = [
   {
     id: "R-RANKING-SAMPLE",
     statement:
-      "A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure.",
+      "A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure -- or, with a subject in focus (0.6.6), on the measure in view (R-RANKING-MEASURE).",
     why: "A map of a sample of schools across England is not a local picture, and a rank within the sample is not the school's real rank.",
     appliesTo: "Comparisons with a ranking set",
     enforcedIn: [`${XP}:213, 287-297, 494-506, 615, 713`, "src/lib/chooser-sets.ts:46-61"],
@@ -891,6 +891,30 @@ export const RULES: Rule[] = [
     origin: "Snagging round 1 Part 4",
     status: "active",
     lift: {from: `${XP}:213, 287-297, 494-506, 615, 713`, to: "src/lib/teacher-view-comparisons.ts:comparisonsCurrentView, onRankingMeasure, sampleAllowsMap", lifted: true, note: "S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality)" },
+  },
+  {
+    id: "R-RANKING-MEASURE",
+    statement:
+      "With a subject in focus, a national or regional ranking ranks EVERY school in the filtered population on the measure in view: the focused subject (the exact qualification at Post-16; at GCSE a rate is the focus's qualification), on entries, average points, Grade 4+ / A*–E, a band or a Grade counts selection, in the panel's year (a rate's latest from 2023/24). A school needs 5 entries (graded entries on a rate) to be ranked (R-MIN-ENTRIES; entries rank from 1); ties share a rank (R-RANK-TIES); a school its own filters exclude is placed against the population and says so. The table draws a window at real ranks -- the card the top 3 and 5 either side (one block when the school is in the top 8), full screen the top 10, 10 either side and the bottom 3; the change list is the whole population's from 2022/23 in the same window. No subject in focus: the headline ranking, unchanged.",
+    why: "A ranking within a sample of 25 schools on a subject is not the school's real rank in the country, and 'not ranked' on a subject the school teaches says nothing.",
+    appliesTo: "Comparisons with a ranking set and a subject in focus",
+    enforcedIn: [
+      "src/lib/subject-ranking.ts:rankFigures (the definition), fallbackFigures, subjectRanking",
+      "vicdata ingest repo supabase/migrations/20261007200000_academic_subject_rank_lookup.sql (the same definition, one query)",
+      "src/app/api/teacher/subject-ranking/route.ts",
+      "src/lib/subject-ranking-view.ts:windowCut, subjectRankRows, subjectChangeRows, subjectTileDetails, subjectRankingNote",
+      "src/components/teacher/ComparisonsPanels.tsx (subjectRanking)",
+      "src/lib/view-series/ranking.ts:schoolRanking, comparisons.ts:subjectChangeBars, tiles.ts:rankingTiles",
+    ],
+    testCase: {
+      urn: "137625",
+      school: "The Chase",
+      phase: "ks4",
+      expect: "GCSE History Grade 4+ nationally: The Chase's figure in the ranking equals Column 1's (its own grade rows, thresholdRate); the ranking counts thousands of schools, its window carries the school at its real rank, and ranks are shared on ties. King's Worcester 117037 A level Mathematics points: 41.71, as Column 1.",
+      check: "rankingOnMeasure",
+    },
+    origin: "0.6.6 (docs/v0.6/vicdata_0_6_rankings_then_speed_claude_code_prompt_v1.md, Part 1)",
+    status: "active",
   },
   {
     id: "R-PERIOD-TRIM",

@@ -139,11 +139,13 @@ function rankingTiles(f: ComparisonsFrame): Built | null {
   // 0.6.5 S5: no figure on the ranking's measure for a known reason: the note, not empty tiles.
   if (rs.noFigureNote && !rs.target) return { title: `${f.targetName}'s rank in the ${f.setLabel.toLowerCase()}: ${rs.measureName}`, main: null, tiles: [], vars: {}, note: rs.noFigureNote };
   const tiles: TileData[] = [];
-  if (rs.targetRank) tiles.push({ key: "rank", icon: "PodiumIcon", figure: ordinal(rs.targetRank), detail: `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
+  if (rs.targetRank) tiles.push({ key: "rank", icon: "PodiumIcon", figure: ordinal(rs.targetRank), detail: rs.rankDetail ?? `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
   // The set's average for the SAME year as the main figure; the latest-of-each average the
   // rank is on only where that year has none.
   const avg = (rs.target ? f.ranking.averageAt(rs.target.period) : null) ?? rs.averageLatest;
-  if (avg !== null) tiles.push({ key: "average", icon: "AverageIcon", figure: rs.measure.format(avg), detail: "average across this set" });
+  if (avg !== null) tiles.push({ key: "average", icon: "AverageIcon", figure: rs.measure.format(avg), detail: rs.averageDetail ?? "average across this set" });
+  // 0.6.6: on a subject ranking, the whole-school headline rank kept as a second tile.
+  if (rs.wholeSchool) tiles.push(wholeSchoolTile(rs.wholeSchool));
   const vars: TileVars = { subject: f.subjectLabel ?? undefined, school: f.targetName, year: rs.target ? academicYearLabel(rs.target.period) : undefined, measure: rs.measureName };
   return {
     title: `${f.targetName}'s rank in the ${f.setLabel.toLowerCase()}: ${rs.measureName}`,
@@ -151,4 +153,10 @@ function rankingTiles(f: ComparisonsFrame): Built | null {
     tiles,
     vars,
   };
+}
+
+/** 0.6.6: "Whole school: 843rd of 2,545 on A-level points per entry", the headline ranking's
+ * own rank beside a subject ranking (ComparisonsPanels builds the same tile). */
+export function wholeSchoolTile(w: { rank: number; total: number; measureName: string }): TileData {
+  return { key: "whole-school", icon: "SchoolIcon", figure: ordinal(w.rank), detail: `whole school: of ${w.total.toLocaleString()} on ${w.measureName}`, vars: { total: w.total } };
 }

@@ -18,6 +18,7 @@
 import { useState, type CSSProperties } from "react";
 import { SECTOR, sectorOf } from "@/lib/school-sector";
 import { TAG_COLOURS } from "@/lib/tag-colours";
+import { windowCut } from "@/lib/subject-ranking-view";
 
 // The TAG_COLOURS entry for each sector, and its foreground shade per theme.
 const SECTOR_TAG = { state: "State", independent: "Independent" } as const;
@@ -39,6 +40,11 @@ export type SchoolRankingRow = {
   change?: string | null;
   n?: number | null;
   share?: number | null;
+  // 0.6.6: a subject ranking's window (src/lib/subject-ranking-view.ts) -- the row's position
+  // in the whole population's order. With positions the rows are drawn in that order, cut for
+  // the card or full screen, with a break row wherever positions jump, and don't re-sort
+  // (their ranks are the population's, not the rows').
+  pos?: number;
 };
 
 // 0.6.1 S3b: the ranking look's columns. Absent = rank, sector, value, distance, exactly as
@@ -63,10 +69,16 @@ export function SchoolRankingTable({
   fullscreen?: boolean;
   columns?: SchoolRankingColumn[];
 }) {
-  const has = (c: SchoolRankingColumn) => (columns ?? HOST_COLUMNS).includes(c);
+  const windowed = rows.some((r) => r.pos !== undefined);
+  // A window's schools are anywhere in the country: no distance column unless one has one.
+  const hostColumns = windowed && rows.every((r) => r.distanceKm === null) ? HOST_COLUMNS.filter((c) => c !== "distance") : HOST_COLUMNS;
+  const has = (c: SchoolRankingColumn) => (columns ?? hostColumns).includes(c);
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: "rank", dir: 1 });
   const onSort = (key: Key) =>
-    setSort((cur) => (cur.key === key ? { key, dir: cur.dir === 1 ? -1 : 1 } : { key, dir: key === "value" ? -1 : 1 }));
+    windowed ? undefined : setSort((cur) => (cur.key === key ? { key, dir: cur.dir === 1 ? -1 : 1 } : { key, dir: key === "value" ? -1 : 1 }));
+  // Ranks past 99 need a wider rank column.
+  const rankWidth = !windowed ? "w-6" : rows.some((r) => (r.rank ?? 0) >= 1000) ? "w-11" : rows.some((r) => (r.rank ?? 0) >= 100) ? "w-8" : "w-6";
+  const columnCount = (["rank", "value", "change", "n", "bar", "distance"] as const).filter((c) => has(c)).length + 1;
 
   const valueOf = (r: SchoolRankingRow): number | string | null =>
     sort.key === "rank" ? r.rank : sort.key === "name" ? r.name : sort.key === "value" ? r.value : r.distanceKm;
@@ -80,17 +92,19 @@ export function SchoolRankingTable({
     return (typeof av === "string" ? av.localeCompare(bv as string) : av - (bv as number)) * sort.dir;
   });
 
+  const drawn: (SchoolRankingRow | null)[] = windowed ? windowCut(rows.map((r) => ({ ...r, pos: r.pos ?? 0 })), fullscreen) : sorted;
   const head = (key: Key, label: string, className: string, title?: string) => (
     <th className={`pb-1.5 font-semibold ${className}`} aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : undefined}>
       <button
         type="button"
         onClick={() => onSort(key)}
         title={title}
-        aria-label={`Sort by ${title ?? (label || "rank")}`}
-        className="inline-flex items-center gap-0.5 whitespace-nowrap text-[10px] uppercase tracking-[0.02em] text-[var(--muted)] hover:text-[var(--fg)]"
+        aria-label={windowed ? undefined : `Sort by ${title ?? (label || "rank")}`}
+        {...(windowed ? { disabled: true } : {})}
+        className={`inline-flex items-center gap-0.5 whitespace-nowrap text-[10px] uppercase tracking-[0.02em] text-[var(--muted)] ${windowed ? "cursor-default" : "hover:text-[var(--fg)]"}`}
       >
         {label}
-        <span aria-hidden="true" className={sort.key === key ? "" : "opacity-0"}>{sort.dir === 1 ? "▲" : "▼"}</span>
+        <span aria-hidden="true" className={sort.key === key && !windowed ? "" : "opacity-0"}>{sort.dir === 1 ? "▲" : "▼"}</span>
       </button>
     </th>
   );
@@ -100,7 +114,7 @@ export function SchoolRankingTable({
       <thead className="border-b border-[var(--panel-border2)]">
         <tr>
           {/* Rank: no heading text, just the sort arrow. */}
-          {has("rank") && head("rank", "", "w-6 pr-1 text-right")}
+          {has("rank") && head("rank", "", `${rankWidth} pr-1 text-right`)}
           {head("name", "School", "px-1 text-left")}
           {has("value") && head("value", valueHeading, "w-14 px-1 text-right")}
           {has("change") && <th className="w-14 px-1 pb-1.5 text-right text-[10px] font-semibold uppercase tracking-[0.02em] text-[var(--muted)]">Change</th>}
@@ -110,7 +124,15 @@ export function SchoolRankingTable({
         </tr>
       </thead>
       <tbody>
-        {sorted.map((r) => {
+        {drawn.map((r, i) => {
+          // A gap in the population's order: the rows between aren't drawn.
+          if (r === null) {
+            return (
+              <tr key={`break-${i}`} aria-hidden="true" className="border-b border-[var(--panel-border)]">
+                <td colSpan={columnCount} className="py-[3px] text-center leading-none tracking-[0.3em] text-[var(--muted3)]">⋯</td>
+              </tr>
+            );
+          }
           const sectorId = r.independent === null || !has("sector") ? null : sectorOf({ independent: r.independent });
           const sector = sectorId === null ? null : { label: SECTOR[sectorId].label, style: sectorFill(sectorId) };
           return (
@@ -120,7 +142,7 @@ export function SchoolRankingTable({
               className="border-b border-[var(--panel-border)] last:border-b-0"
               style={r.isTarget ? { background: "rgba(var(--accent-rgb,138,138,144),0.14)", color: "var(--accent,var(--fg))" } : undefined}
             >
-              {has("rank") && <td className="w-6 py-[6px] pr-1 text-right text-[var(--muted3)]">{r.rank ?? ""}</td>}
+              {has("rank") && <td className={`${rankWidth} py-[6px] pr-1 text-right text-[var(--muted3)]`}>{r.rank === null ? "" : windowed ? r.rank.toLocaleString() : r.rank}</td>}
               <td className={has("rank") ? "max-w-0 px-1" : "max-w-0 px-1 py-[6px]"}>
                 <span className="flex items-center gap-1.5">
                   <span className={`truncate ${r.isTarget ? "font-bold" : ""}`} title={r.name}>{r.name}</span>

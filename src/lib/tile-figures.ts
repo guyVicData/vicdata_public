@@ -91,6 +91,9 @@ export const TILE_FIGURES: Partial<Record<DataviewId, TileViewDef>> = {
     figures: [
       { id: "rank", name: "Rank in the set", numberType: "rank", label: "of [total] in this set", tokens: ["[total]"] },
       { id: "average", name: "The set's average", numberType: "points", label: "average across this set", tokens: [] },
+      // 0.6.6: with a subject in focus the ranking is on the subject's measure; the
+      // whole-school headline rank stays beside it.
+      { id: "whole-school", name: "Whole-school rank", numberType: "rank", label: "whole school: of [total] on the headline", tokens: ["[total]"] },
     ],
   },
 };

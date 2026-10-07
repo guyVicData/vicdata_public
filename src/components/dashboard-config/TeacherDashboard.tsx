@@ -44,6 +44,8 @@ import { PanelLimitNote } from "@/components/teacher/ColumnPanels";
 import { groupOf, teacherDashboardFor } from "@/catalogue/dashboards";
 import type { DashboardConfig } from "@/catalogue/types";
 import { cachedFetchJson } from "@/lib/fetch-cache";
+import { rankedNoun, type SubjectRankingBody, type SubjectRankingPayload, type SubjectRankingState } from "@/lib/subject-ranking-view";
+import type { RankMeasure } from "@/lib/subject-ranking";
 import type { PinnedSettings } from "@/lib/meeting-views";
 import { embedColumns, embedInitialColumns, embedSubjectKey, pinnedSetName, placeholderOnlyNote, savedSetByName, yearPeriodOf } from "./embed";
 import { confirmPlatformAdmin, pickMembership, readPeek, resolveViewAs, type Peek } from "@/lib/view-as";
@@ -796,6 +798,49 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       cancelled = true;
     };
   }, [qualAsk, supabase]);
+
+  // 0.6.6: a national / regional ranking with a subject in focus -- the focused subject on the
+  // measure in view, across the whole filtered population (/api/teacher/subject-ranking).
+  // Asked for during render (subjectRankingAsk below), one request per ranking + subject +
+  // measure, shared for 5 minutes. A cold answer can take a few seconds before the database
+  // function is applied; past the route's wait it answers "pending" and is asked again (fresh)
+  // every RANK_RETRY_MS, showing "Ranking will be available shortly" meanwhile.
+  type RankAsk = { key: string; body: SubjectRankingBody };
+  const [rankAsk, setRankAsk] = useState<RankAsk | null>(null);
+  const [rankRes, setRankRes] = useState<{ key: string; state: SubjectRankingState } | null>(null);
+  useEffect(() => {
+    if (!rankAsk) return;
+    const RANK_RETRY_MS = 4_000;
+    const MAX_TRIES = 30;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const ask = async (tries: number) => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token || cancelled) return;
+      const res = await cachedFetchJson<SubjectRankingPayload & { pending?: boolean }>("/api/teacher/subject-ranking", {
+        token,
+        method: "POST",
+        body: JSON.stringify(rankAsk.body),
+        ...(tries > 0 ? { fresh: true } : {}),
+      }).catch(() => null);
+      if (cancelled) return;
+      if (!res || !res.ok || !res.body) return setRankRes({ key: rankAsk.key, state: { status: "error" } });
+      if (res.body.pending) {
+        if (tries + 1 >= MAX_TRIES) return setRankRes({ key: rankAsk.key, state: { status: "error" } });
+        // Unchanged while it stays pending: no re-render of the page on each retry.
+        setRankRes((cur) => (cur?.key === rankAsk.key && cur.state.status === "pending" ? cur : { key: rankAsk.key, state: { status: "pending" } }));
+        timer = setTimeout(() => void ask(tries + 1), RANK_RETRY_MS);
+        return;
+      }
+      setRankRes({ key: rankAsk.key, state: { status: "ready", data: res.body } });
+    };
+    void ask(0);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [rankAsk, supabase]);
 
   if (loading) return embed ? <EmbedStatus text="Loading…" /> : <main className="mx-auto max-w-4xl p-6"><ViewAsBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
   if (embed && (error || !phase)) return <EmbedStatus text={error ?? "Unknown phase."} />;
@@ -2318,6 +2363,57 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Snagging round 1 Part 4: a national/regional ranking is on (R-RANKING-SAMPLE). 0.6 snag
   // 4 / 02: the same test is the page's comparator state (runtime.comparator).
   const onRanking = !!(comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking" && chooserSet && chooserSet.key === activeChoiceKey && chooserSet.ranking);
+  // 0.6.6: with a subject in focus a ranking is on the measure in view -- the focused subject
+  // (the exact qualification at Post-16, and at GCSE on a rate) on Candidates' entries,
+  // Results' points, Grade 4+ / A*-E, a band or a Grade counts selection -- across the whole
+  // population. Not where the column shows a note instead (A*-E off this scale, a counts
+  // prompt, a T Level published for all pathways together). No subject: the headline
+  // ranking, unchanged.
+  const subjectRankMeasure: RankMeasure | null =
+    !onRanking || !focusItem || !activeMapChip || (phase !== "ks4" && phase !== "ks5") || aStarToEOff || countsPrompt || (showingResults && tLevelAllPathways)
+      ? null
+      : !showingResults
+        ? { kind: "entries" }
+        : usingThreshold
+          ? { kind: "threshold" }
+          : comparisonsOnBands && columnsRange && GRADE_SCALES.indexOf(columnsRange.scale) >= 0
+            ? { kind: "band", scaleIndex: GRADE_SCALES.indexOf(columnsRange.scale), top: columnsRange.top, bottom: columnsRange.bottom }
+            : { kind: "points" };
+  const subjectRankingBody: SubjectRankingBody | null =
+    subjectRankMeasure && chooserChoice?.kind === "ranking" && schoolUrn && focusItem && (phase === "ks4" || phase === "ks5")
+      ? {
+          urn: schoolUrn,
+          phase,
+          filters: chooserChoice.filters,
+          subject: focusItem.subject,
+          familyId: activeMapChip?.familyId ?? null,
+          // R-POINTS-SAME-QUAL at Post-16; at GCSE a rate is the focus's own qualification's
+          // (as Comparisons scores it), points and entries the subject's (all qualifications).
+          qualificationType: phase === "ks5" || subjectRankMeasure.kind === "threshold" || subjectRankMeasure.kind === "band" ? focusItem.qualificationType : null,
+          measure: subjectRankMeasure,
+          period: null,
+        }
+      : null;
+  const subjectRankingKey = subjectRankingBody ? JSON.stringify(subjectRankingBody) : null;
+  if (subjectRankingBody && subjectRankingKey && rankAsk?.key !== subjectRankingKey) {
+    const ask = { key: subjectRankingKey, body: subjectRankingBody };
+    queueMicrotask(() => setRankAsk((cur) => (cur?.key === ask.key ? cur : ask)));
+  }
+  const subjectRanking =
+    subjectRankingKey && subjectRankMeasure && focusItem && activeMapChip
+      ? {
+          state: rankRes?.key === subjectRankingKey ? rankRes.state : ({ status: "loading" } as const),
+          measureName: `${activeMapChip.legend} ${
+            subjectRankMeasure.kind === "band" ? comparisonsMeasure.noun : subjectRankMeasure.kind === "threshold" ? comparisonsMeasure.label : comparisonsMeasure.label.toLowerCase()
+          }`,
+          noun: rankedNoun(phase === "ks5" ? `${exactQualificationLabel(focusItem.qualificationType)} ${focusItem.subject}` : `GCSE ${focusItem.subject}`, subjectRankMeasure),
+          // The headline ranking's own rank, kept as a second tile.
+          wholeSchool:
+            chooserSet?.ranking?.targetRank
+              ? { rank: chooserSet.ranking.targetRank, total: chooserSet.ranking.ranked, measureName: headlineLabel || "the headline measure" }
+              : null,
+        }
+      : null;
   const comparisonsHost = (
       <ComparisonsPanels
         phase={phase}
@@ -2385,6 +2481,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
             ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure", noFigureNote: noALevelNote }
             : null
         }
+        subjectRanking={subjectRanking}
         currentLabel={
           activeSavedSet
             ? `${showingResults ? "Results" : "Candidates"} against ${activeSavedSet.name}`

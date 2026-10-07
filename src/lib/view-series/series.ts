@@ -8,7 +8,7 @@ import type { GradeRange } from "@/lib/subject-grades";
 import type { FrameMap, SortState } from "./frames";
 import type { TeacherMapSpec } from "@/lib/teacher-map";
 
-export type ChangeRowData = { key: string; label: string; colour: string; value: number | null };
+export type ChangeRowData = { key: string; label: string; colour: string; value: number | null; pos?: number; rank?: number };
 export type AverageLine = { value: number; label: string };
 
 // A ViewChart "row" bar (ComputedView's row, the fields the row layout reads).
@@ -228,6 +228,8 @@ export type SchoolRankRowData = {
   change?: string | null;
   n?: number | null;
   share?: number | null;
+  // 0.6.6: a subject ranking's window position (SchoolRankingTable draws the window).
+  pos?: number;
 };
 
 export type SlopeRowData = { key: string; label: string; colour: string; from: number; to: number; emphasis: boolean; comparison?: boolean };

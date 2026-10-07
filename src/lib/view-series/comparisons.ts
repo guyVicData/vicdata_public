@@ -10,6 +10,7 @@ import { compareLinesFor, type CompareLine } from "./compare-lines";
 import { comparisonsLeadTitle, type ComparisonsFrame } from "./frames";
 import { averageOfShown, fitOn, orderRows, topTen } from "./looks";
 import type { ViewSeries } from "./series";
+import { subjectChangeRows, subjectChangeTableSeries } from "@/lib/subject-ranking-view";
 
 const OWN = "var(--accent,var(--fg))";
 const OTHER = "var(--muted3)";
@@ -193,7 +194,8 @@ function trendTable(f: ComparisonsFrame, everySchool: PanelData, setNoun: string
   return {
     kind: "table",
     heading: null,
-    title: ["Every school in the ", setNoun, ": ", f.comparedOn, ", year by year"],
+    // 0.6.6: a ranking on the measure in view draws its window's schools, not every school.
+    title: f.subjectRanking ? [f.subjectRanking.around, ": ", f.comparedOn, ", year by year"] : ["Every school in the ", setNoun, ": ", f.comparedOn, ", year by year"],
     leaf: { leaf: "yearTable", data, measure: f.measure, focusKey: "own", nameHeading: "School", ...tableShape(look), ...(counts ? { counts } : {}), centred: `trend-table:${data.periods.join(",")}:${data.series.length}` },
   };
 }
@@ -212,19 +214,29 @@ function table(spec: ViewSpec, look: TableLook, f: ComparisonsFrame, compare: Co
     const t = trendTable(f, withRows, b.setNoun, look, allRows, rows.map((r) => r.key));
     return t.leaf.leaf === "yearTable" ? { ...t, leaf: { ...t.leaf, showRank: false } } : t;
   }
-  const changeTable = changeDrawn(f, allRows ? everySchool : { ...everySchool, series: everySchool.series.filter((s) => s.key === "own") });
+  // 0.6.6: a ranking comparator's change table is the population change list's window at real
+  // change ranks (ComparisonsPanels builds the same rows).
+  const srChange = f.subjectRanking?.change ?? null;
+  const target = f.schools.find((s) => s.isTarget) ?? null;
+  const windowRows = srChange ? subjectChangeTableSeries(srChange.window, f.schools, f.periods, everySchool.periods, target?.urn ?? null, f.targetName, { own: OWN, other: OTHER }) : null;
+  const changeTable = windowRows
+    ? { ...everySchool, series: allRows ? windowRows : windowRows.filter((s) => s.key === "own") }
+    : changeDrawn(f, allRows ? everySchool : { ...everySchool, series: everySchool.series.filter((s) => s.key === "own") });
   const changeData = changeSpan(f, full);
   const changeSince = changeData.periods.length ? academicYearLabel(changeData.periods[0]) : "";
   const counts = look.extra?.includes("n") ? countsOf(f, changeTable) : undefined;
   return {
     kind: "table",
     heading: null,
-    title: ["Every school in the ", b.setNoun, ": ", changeSince, " against the latest year, ranked by change"],
+    title: f.subjectRanking ? [f.subjectRanking.around, ": ", changeSince, " against the latest year, ranked by change"] : ["Every school in the ", b.setNoun, ": ", changeSince, " against the latest year, ranked by change"],
     leaf: { leaf: "yearTable", data: changeTable, measure: f.measure, focusKey: "own", nameHeading: "School", ...tableShape(look), ...(counts ? { counts } : {}), centred: `change-table:${changeTable.periods.join(",")}:${changeTable.series.length}` },
   };
 }
 
 function changeBars(look: BarLook, f: ComparisonsFrame, compare: CompareSeries[], allRows: boolean): ViewSeries {
+  // 0.6.6: a ranking on the measure in view -- the whole population's change from 2022/23,
+  // in the window around the school at its real change ranks, against the population's average.
+  if (f.subjectRanking) return subjectChangeBars(look, f, compare, allRows);
   // The span is the versus pair's (as the host trims it), whatever the bars compare with.
   const { everySchool, b, full } = series(f, pageVersus(f));
   const changeTable = changeSpan(f, everySchool);
@@ -257,6 +269,29 @@ function changeBars(look: BarLook, f: ComparisonsFrame, compare: CompareSeries[]
       ...(look.values === false ? { values: false } : {}),
       ...(look.order === "az" ? { order: "az" as const } : {}),
       centred: `change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`,
+    },
+  };
+}
+
+function subjectChangeBars(look: BarLook, f: ComparisonsFrame, compare: CompareSeries[], allRows: boolean): ViewSeries {
+  const sr = f.subjectRanking!;
+  const target = f.schools.find((s) => s.isTarget) ?? null;
+  const changeSince = sr.change ? academicYearLabel(sr.change.from) : "";
+  const rows = sr.change ? subjectChangeRows(sr.change.window, f.schools, target?.urn ?? null, f.targetName, { own: OWN, other: OTHER }).filter((r) => allRows || r.key === "own") : [];
+  const reference = compare.some((c) => c.as === "reference" && (c.kind === f.setKind || c.kind === "nearest" || c.kind === "savedSet"));
+  return {
+    kind: "bar",
+    heading: null,
+    title: [changeInTitle(f.measure, f.comparedOn, changeSince), ", ranked across ", sr.changePopulation],
+    leaf: {
+      leaf: "changeList",
+      rows,
+      focusKey: look.highlight === false ? null : "own",
+      ...(reference && sr.change ? { group: { label: `Average across ${sr.changePopulation}`, value: sr.change.average } } : {}),
+      format: f.measure.changeKind === "percent" ? "percent" : "change",
+      measure: f.measure,
+      ...(look.values === false ? { values: false } : {}),
+      centred: `change-list:${rows.map((r) => r.key).join(",")}`,
     },
   };
 }

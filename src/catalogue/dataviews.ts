@@ -882,8 +882,8 @@ export const DATAVIEWS: Dataview[] = [
     audience: ["whole-school", "academic", "market"],
     ...live,
     origin: "Snagging round 1 Part 4 (ranking sets)",
-    rules: ["R-RANKING-SAMPLE", "R-RANK-TIES", "R-IGCSE-EXCL"],
-    note: "Offered on Candidates and Results columns alike because it shows the whole-school headline (Attainment 8 / A-level points per entry) in both modes; the ranking's own measure, never the column's.",
+    rules: ["R-RANKING-SAMPLE", "R-RANKING-MEASURE", "R-RANK-TIES", "R-IGCSE-EXCL"],
+    note: "Offered on Candidates and Results columns alike because it shows the whole-school headline (Attainment 8 / A-level points per entry) in both modes; the ranking's own measure, never the column's. 0.6.6: with a subject in focus, the subject's rank on the measure in view across the whole population, its average, and the whole-school rank as a second tile (R-RANKING-MEASURE).",
   },
   {
     id: "DV-C3-CUR-MAP",

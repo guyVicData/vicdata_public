@@ -238,6 +238,25 @@ export type FrameRankingFigures = {
   // 0.6.5 S5: the school has no figure on the ranking's measure for a known reason (no A-level
   // entries at Post-16): the tiles give way to this note.
   noFigureNote?: string | null;
+  // 0.6.6, a subject ranking: the tiles' own scope lines ("of 3,565 schools with GCSE History
+  // results, 2024/25"), and the whole-school headline rank as a second tile.
+  rankDetail?: string;
+  averageDetail?: string;
+  wholeSchool?: { rank: number; total: number; measureName: string } | null;
+};
+
+// 0.6.6: a national / regional ranking on the measure in view (src/lib/subject-ranking-view.ts):
+// the window's real positions and shared ranks (top 10, 10 either side, bottom 3), and the
+// whole population's change list from 2022/23 in the same window. `schools` holds their names.
+export type FrameSubjectRanking = {
+  window: { urn: string; pos: number; rank: number; value: number }[];
+  change: { from: number; ranked: number; target: number | null; average: number | null; window: { urn: string; pos: number; rank: number; value: number }[] } | null;
+  // "Around The Chase"
+  around: string;
+  // "3,565 schools with GCSE History results"
+  population: string;
+  // The change list's: "3,476 schools with GCSE History results in both years"
+  changePopulation: string;
 };
 
 export type ComparisonsFrame = {
@@ -259,6 +278,8 @@ export type ComparisonsFrame = {
   // population's own average per period stands in for the sample's (R-RANKING-SAMPLE).
   onRankingMeasure: boolean;
   ranking: { averageAt: (period: number | null) => number | null; figures?: FrameRankingFigures } | null;
+  // 0.6.6: set when the ranking is on the measure in view (a subject in focus).
+  subjectRanking?: FrameSubjectRanking | null;
   // The chip's subject, if any (a tile scope line's [subject]).
   subjectLabel?: string | null;
   setKind: "nearest" | "savedSet";

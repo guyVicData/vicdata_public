@@ -57,7 +57,7 @@ import { FromYearMenu } from "./FromYearMenu";
 import { ChangeList, ViewTitle, YearTable, type ChangeRow } from "./SeriesViews";
 import { DIRECTION_COLOUR, changeOver } from "@/lib/teacher-view-trend-styles";
 import { TrendLineToggle } from "./PanelFooter";
-import { AverageIcon, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, PodiumIcon, RankListIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
+import { AverageIcon, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, PodiumIcon, RankListIcon, SchoolIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
 import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
 import type { RankingFigures } from "@/lib/chooser-sets";
 import { PillMenu } from "./PillMenu";
@@ -73,6 +73,9 @@ import { changeMapFrom, currentMapFrom, mapResultOf, type MapSeries, type Teache
 import type { GradeRange } from "@/lib/subject-grades";
 import { NON_GRADE_VALUES } from "@/lib/subject-grades";
 import { trendBaseApplies, trendBaseFor } from "@/catalogue/notes";
+import { populationPhrase, subjectChangeRows, subjectChangeTableSeries, subjectRankingNote, subjectRankRows, subjectTileDetails, type SubjectRankingState } from "@/lib/subject-ranking-view";
+import { MINIMUM_SUBJECT_N } from "@/lib/academic-data-view";
+import { RankingPending } from "./RankingPending";
 
 export type MapChip = {
   key: string;
@@ -117,8 +120,8 @@ export function ComparisonsPanels({
   setId,
   activeSet,
   setLabel,
-  setNote,
-  schools: allSchools,
+  setNote: setNoteProp,
+  schools: allSchoolsProp,
   seriesByUrn,
   // Round 8 §3: the measure comes from the shared control bar now. This column's own
   // Candidates/Results pill is gone; only "Compared against" -- which SCHOOLS, a question
@@ -136,8 +139,9 @@ export function ComparisonsPanels({
   noComparatorNote = null,
   targetName,
   onManageSet,
-  threshold,
-  rankingSet = null,
+  threshold: thresholdProp,
+  rankingSet: rankingSetProp = null,
+  subjectRanking = null,
   theme = "dark",
   prompt,
   selectionChip,
@@ -204,7 +208,15 @@ export function ComparisonsPanels({
   // on the ranking's own measure (`measure`, the phase headline).
   // 0.6.5 S5: `noFigureNote` -- the school has no figure on the ranking's measure for a known
   // reason (no A-level entries at Post-16): the tiles and the rank chip give way to it.
-  rankingSet?: (RankingFigures & { measure: Measure; measureName: string; noFigureNote?: string | null }) | null;
+  rankingSet?: (RankingFigures & { measure: Measure; measureName: string; noFigureNote?: string | null; rankDetail?: string; averageDetail?: string; wholeSchool?: { rank: number; total: number; measureName: string } | null }) | null;
+  // 0.6.6: a ranking with a subject in focus is a ranking on the measure in view -- the focused
+  // subject (exact qualification at Post-16), on the column's measure, across the WHOLE
+  // filtered population (/api/teacher/subject-ranking, R-RANKING-SAMPLE). The column then
+  // draws the population's window at real ranks, its average and its change list in place
+  // of the headline ranking's sample; the whole-school rank stays as a second tile.
+  // `measureName` names the figure ("History Grade 4+"); `noun` what the ranked schools have
+  // ("GCSE History results"); `wholeSchool` the headline rank, where the school has one.
+  subjectRanking?: { state: SubjectRankingState; measureName: string; noun: string; wholeSchool: { rank: number; total: number; measureName: string } | null } | null;
   // 0.6.1 S3c: the page's theme, for a view's own compare colours (the line palette has a
   // light and a dark version). Read only by the config-driven renderer (`views=v2`).
   theme?: "dark" | "light";
@@ -217,6 +229,50 @@ export function ComparisonsPanels({
   // 0.6.3 S2: the grade range a bands / counts-selection figure is on, for the maps' words.
   mapRange?: GradeRange | null;
 }) {
+  // ------------------------------------------------ 0.6.6: a ranking on the measure in view
+  // With its answer in, the column's inputs are the population's: the window's schools (and
+  // the change list's) with their own series, no per-school grade fetch, and the population's
+  // figures in place of the headline ranking's.
+  const sr = subjectRanking?.state.status === "ready" ? subjectRanking.state.data : null;
+  const srSchools: ComparatorSchool[] | null = sr
+    ? Array.from(new Set([...sr.window.map((w) => w.urn), ...(sr.change?.window ?? []).map((w) => w.urn), ...(schoolUrn ? [schoolUrn] : [])])).map((urn) => {
+        const named = sr.names[urn];
+        return urn === schoolUrn
+          ? { urn, name: targetName, isTarget: true }
+          : { urn, name: named?.name ?? urn, isTarget: false, ...(named && named.independent !== null ? { independent: named.independent } : {}) };
+      })
+    : null;
+  const allSchools = srSchools ?? allSchoolsProp;
+  const threshold = subjectRanking ? null : thresholdProp;
+  const srYear = sr?.period != null ? academicYearLabel(sr.period) : null;
+  const rankingSet: typeof rankingSetProp =
+    sr && subjectRanking
+      ? {
+          matched: sr.matched,
+          ranked: sr.ranked,
+          targetRank: sr.targetRank,
+          target: sr.target ? { period: sr.target.period, value: sr.target.value } : null,
+          targetSeries: sr.targetSeries,
+          averageLatest: sr.averageLatest,
+          average: sr.average,
+          measure,
+          measureName: subjectRanking.measureName,
+          noFigureNote: null,
+          ...subjectTileDetails(sr, subjectRanking.noun, srYear),
+          wholeSchool: subjectRanking.wholeSchool,
+        }
+      : rankingSetProp;
+  const srWords = sr && subjectRanking
+    ? {
+        around: `Around ${targetName}`,
+        population: populationPhrase(sr, subjectRanking.noun),
+        changePopulation: sr.change
+          ? `${(sr.change.ranked - (sr.inRanking || sr.change.targetRank === null ? 0 : 1)).toLocaleString()} schools with ${subjectRanking.noun} in both years`
+          : "",
+      }
+    : null;
+  const setNote = sr && subjectRanking ? subjectRankingNote(sr, targetName, subjectRanking.noun, srYear, MINIMUM_SUBJECT_N) : setNoteProp;
+
   // ------------------------------------------- threshold rates (grade counts per school)
   const gradeUrns = allSchools.map((s) => s.urn).sort();
   const gradesKey = threshold && schoolUrn ? `${threshold.subject}|${gradeUrns.join(",")}` : null;
@@ -236,7 +292,8 @@ export function ComparisonsPanels({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gradesKey, schoolUrn, phase, profilesLoading, grades?.key]);
   const gradesLoaded = !!gradesKey && grades?.key === gradesKey;
-  const seriesLoading = profilesLoading || (!!gradesKey && !gradesLoaded);
+  // A subject ranking's answer carries its own series: nothing else to wait for.
+  const seriesLoading = !sr && (profilesLoading || (!!gradesKey && !gradesLoaded));
   // Each school's rate per year: its rows for this subject AND this qualification type
   // (a GCSE and a Cambridge National in one subject are scored apart), as the page does.
   const rateSeries: Record<string, { period: number; value: number }[]> =
@@ -294,7 +351,7 @@ export function ComparisonsPanels({
   // no longer always the phase headline.
   const comparedOn = subjectLabel ? `${subjectLabel} ${measure.label.toLowerCase()}` : headlineLabel;
   const seriesKey = measure.id === "entries" ? "candidates" : "results";
-  const seriesFor = (urn: string) => (threshold ? rateSeries[urn] ?? [] : seriesByUrn[urn]?.[seriesKey] ?? []);
+  const seriesFor = (urn: string) => (sr ? sr.windowSeries[urn] ?? [] : threshold ? rateSeries[urn] ?? [] : seriesByUrn[urn]?.[seriesKey] ?? []);
 
   // Content round S4: a comparator with no published figure for what is being compared --
   // at Post-16 most often a school that does not offer the focused subject -- is simply
@@ -315,10 +372,12 @@ export function ComparisonsPanels({
   // R-CURRENT-GRADES-FROM-2324: on a rate (from the schools' grade rows), the latest year
   // is read from 2023/24 on, as before the grade rows reached back to 2021/22.
   const currentFrom = threshold ? latestYearFrom(measure.id) : null;
-  const latestIdx = (() => {
-    for (let i = periods.length - 1; i >= 0; i--) if ((currentFrom === null || periods[i] >= currentFrom) && schools.some((s) => valuesFor(s.urn)[i] !== null)) return i;
-    return -1;
-  })();
+  const latestIdx = sr
+    ? sr.period === null ? -1 : periods.indexOf(sr.period) // the ranking's own year
+    : (() => {
+        for (let i = periods.length - 1; i >= 0; i--) if ((currentFrom === null || periods[i] >= currentFrom) && schools.some((s) => valuesFor(s.urn)[i] !== null)) return i;
+        return -1;
+      })();
   const latest = latestIdx >= 0 ? periods[latestIdx] : null;
   const valueAt = (urn: string) => (latestIdx >= 0 ? valuesFor(urn)[latestIdx] : null);
 
@@ -361,7 +420,7 @@ export function ComparisonsPanels({
   // Not on a rate: the map is still coloured and ranked by average point score.
   // Part 4: on a ranking, compared on the ranking's own measure (the headline, no subject
   // chip, not entries), the rank is the one in the WHOLE population, not in the sample.
-  const onRankingMeasure = isOnRankingMeasure(rankingSet, subjectLabel, threshold, measure.id);
+  const onRankingMeasure = sr ? true : isOnRankingMeasure(rankingSet, subjectLabel, threshold, measure.id);
   const setRank = rankingSet?.targetRank ? { rank: rankingSet.targetRank, total: rankingSet.ranked } : null;
   const shownRank =
     (onRankingMeasure || view === "tiles") && setRank
@@ -375,7 +434,9 @@ export function ComparisonsPanels({
 
   // Column 3 round Part 2: the school-ranking table's rows -- rank, school, sector,
   // figure, distance from the school itself.
-  const rankingRows: SchoolRankingRow[] = ranked.map((r) => ({
+  const rankingRows: SchoolRankingRow[] = sr
+    ? subjectRankRows(sr.window, allSchools, schoolUrn, targetName, measure.format)
+    : ranked.map((r) => ({
     key: r.urn,
     name: r.isTarget ? targetName : r.name,
     rank: rankOfUrn.get(r.urn) ?? null,
@@ -417,7 +478,9 @@ export function ComparisonsPanels({
           ? onRankingMeasure
             ? `${titleOn}: ${targetName} against ${titleSet}'s average`
             : `${measure.id === "entries" ? "Entries" : "Results"} by school in ${titleSet}`
-          : `Schools ranked by ${titleOn} in ${titleSet}`;
+          : srWords
+            ? `${srWords.around}: ${titleOn}, ranked across ${srWords.population}`
+            : `Schools ranked by ${titleOn} in ${titleSet}`;
 
   // Current panel rework round 1: the tag is the fixed word "Current" and the year follows
   // it as plain text. currentLabel ("Candidates at the 10 Nearest Schools") no longer builds
@@ -451,11 +514,13 @@ export function ComparisonsPanels({
           );
         }
         const tiles: NumberTile[] = [];
-        if (rs.targetRank) tiles.push({ key: "rank", icon: PodiumIcon, figure: ordinal(rs.targetRank), detail: `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
+        if (rs.targetRank) tiles.push({ key: "rank", icon: PodiumIcon, figure: ordinal(rs.targetRank), detail: rs.rankDetail ?? `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
         // The set's average for the SAME year as the main figure (the graphs' figure too);
         // the latest-of-each average the rank is on only where that year has none.
         const avg = (rs.target ? rankingAverageAt(rs.target.period) : null) ?? rs.averageLatest;
-        if (avg !== null) tiles.push({ key: "average", icon: AverageIcon, figure: rs.measure.format(avg), detail: "average across this set" });
+        if (avg !== null) tiles.push({ key: "average", icon: AverageIcon, figure: rs.measure.format(avg), detail: rs.averageDetail ?? "average across this set" });
+        // 0.6.6: the whole-school headline rank beside a subject ranking (view-series/tiles.ts' wholeSchoolTile).
+        if (rs.wholeSchool) tiles.push({ key: "whole-school", icon: SchoolIcon, figure: ordinal(rs.wholeSchool.rank), detail: `whole school: of ${rs.wholeSchool.total.toLocaleString()} on ${rs.wholeSchool.measureName}`, vars: { total: rs.wholeSchool.total } });
         // Pick, order, relabel and hide per the view's settings; unset = as built above.
         const tileVars = { subject: subjectLabel, school: targetName, year: rs.target ? academicYearLabel(rs.target.period) : undefined, measure: rs.measureName };
         return (
@@ -672,7 +737,14 @@ export function ComparisonsPanels({
     }),
   };
   const trendTable = sliceFrom(everySchool, trendStart);
-  const changeTable = sliceFrom(everySchool, changeStart);
+  // 0.6.6: a ranking comparator's change table is the population change list's window, at
+  // real change ranks (the same rows as the ranked bars), not every school shown.
+  const changeTable: PanelData = sr?.change
+    ? {
+        ...everySchool,
+        series: subjectChangeTableSeries(sr.change.window, schools.map((s) => ({ ...s, values: valuesFor(s.urn) })), periods, everySchool.periods, schoolUrn, targetName, { own: "var(--accent,var(--fg))", other: "var(--muted3)" }),
+      }
+    : sliceFrom(everySchool, changeStart);
   // Every change in the % change half: over the statement span (2022/23 on).
   const changeSpanData = statementSpan(changeData);
   const changeTableSpan = statementSpan(changeTable);
@@ -789,7 +861,7 @@ export function ComparisonsPanels({
         // row scrolled into view. Also the only view while the span is too short for a
         // line, whatever trendView was left on.
         <>
-          <ViewTitle>Every school in the {setNoun}: {comparedOn}, year by year</ViewTitle>
+          {srWords ? <ViewTitle>{srWords.around}: {comparedOn}, year by year</ViewTitle> : <ViewTitle>Every school in the {setNoun}: {comparedOn}, year by year</ViewTitle>}
           <CentredOnTarget watch={`trend-table:${trendTable.periods.join(",")}:${trendTable.series.length}`}>
             <YearTable data={trendTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" />
           </CentredOnTarget>
@@ -821,17 +893,24 @@ export function ComparisonsPanels({
   // ---------------------------------------------------------------- change
   // R-NUMBER-TYPE-HONESTY (S3b): % change on candidates (a count); on an average point score
   // or a rate the change in points or percentage points -- values, titles and sentences.
-  const changeSince = changeSpanData.periods.length ? academicYearLabel(changeSpanData.periods[0]) : "";
-  const ownChange = changeOf(measure, changeSpanData.series[0]?.values ?? []);
+  // 0.6.6: on a subject ranking the change list is the whole population's, from 2022/23 to the
+  // ranking's year (computed with it), in the same window; its average is the population's.
+  const srChange = sr ? sr.change : null;
+  const changeSince = srChange ? academicYearLabel(srChange.from) : changeSpanData.periods.length ? academicYearLabel(changeSpanData.periods[0]) : "";
+  const ownChange = sr ? srChange?.target ?? null : changeOf(measure, changeSpanData.series[0]?.values ?? []);
   // Every school's change over the span, as the table ranks them, and the set's average
   // (the mean figure per year over the schools that have one, as Trend's "Average across"
   // line) as the reference -- not whichever school Trend's "vs:" points at.
-  const changeRows: ChangeRow[] = changeTableSpan.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOf(measure, s.values) }));
-  const averageLabel = `Average across ${setLabel.toLowerCase()}`;
-  const averageChange = changeOf(
-    measure,
-    changeTableSpan.periods.map((_, i) => meanOf(changeTableSpan.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
-  );
+  const changeRows: ChangeRow[] = sr
+    ? srChange ? subjectChangeRows(srChange.window, allSchools, schoolUrn, targetName, { own: "var(--accent,var(--fg))", other: "var(--muted3)" }) : []
+    : changeTableSpan.series.map((s) => ({ key: s.key, label: s.label, colour: s.colour, value: changeOf(measure, s.values) }));
+  const averageLabel = srWords ? `Average across ${srWords.changePopulation}` : `Average across ${setLabel.toLowerCase()}`;
+  const averageChange = sr
+    ? srChange?.average ?? null
+    : changeOf(
+        measure,
+        changeTableSpan.periods.map((_, i) => meanOf(changeTableSpan.series.filter((s) => s.key !== "own").map((s) => s.values[i]))),
+      );
   const fmtChange = (v: number) => formatChange(measure, v);
   const changeOnPercent = measure.changeKind === "percent";
 
@@ -840,7 +919,8 @@ export function ComparisonsPanels({
 
   const changeHalf: PanelRender = {
     tag: changeTitle(measure),
-    afterTag: <FromYearMenu periods={realPeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
+    // 0.6.6: a subject ranking's change list is fixed at 2022/23 (the server's), so no "From".
+    afterTag: sr ? undefined : <FromYearMenu periods={realPeriods} from={changeData.periods[0] ?? null} onChange={setChangeStart} />,
     question: "How much has this school moved, against its comparators?",
     // Column 3 round Part 4: a table beside the chart, in the same format as Context's %
     // change table (ranked by change, bare rank first, no sorting).
@@ -872,7 +952,7 @@ export function ComparisonsPanels({
         </>
       ) : changeShows === "table" ? (
         <>
-          <ViewTitle>Every school in the {setNoun}: {changeSince} against the latest year, ranked by change</ViewTitle>
+          {srWords ? <ViewTitle>{srWords.around}: {changeSince} against the latest year, ranked by change</ViewTitle> : <ViewTitle>Every school in the {setNoun}: {changeSince} against the latest year, ranked by change</ViewTitle>}
           <CentredOnTarget watch={`change-table:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
             <YearTable data={changeTable} measure={measure} focusKey="own" fullscreen={fullscreen} nameHeading="School" leadingRank />
           </CentredOnTarget>
@@ -881,9 +961,9 @@ export function ComparisonsPanels({
         // Option H, as Candidates and Context draw their % change: every school ranked by
         // its change, the school itself picked out, the set's average a dashed line.
         <>
-          <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, ranked against the {setNoun}</ViewTitle>
-          <CentredOnTarget watch={`change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
-            <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averageChange }} formatValue={changeOnPercent ? undefined : fmtChange} />
+          {srWords ? <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, ranked across {srWords.changePopulation}</ViewTitle> : <ViewTitle>{changeInTitle(measure, comparedOn, changeSince)}, ranked against the {setNoun}</ViewTitle>}
+          <CentredOnTarget watch={sr ? `change-list:${changeRows.map((r) => r.key).join(",")}` : `change-list:${changeTable.periods.join(",")}:${changeTable.series.length}`}>
+            <ChangeList rows={changeRows} focusKey="own" group={{ label: averageLabel, value: averageChange }} formatValue={changeOnPercent ? undefined : fmtChange} fullscreen={fullscreen} />
           </CentredOnTarget>
         </>
       ),
@@ -929,7 +1009,7 @@ export function ComparisonsPanels({
   // On a rate, a school that publishes no grades for the subject drops out of the lists as
   // it does for points. The whole column gives way to a note only when no comparator has a
   // rate at all, or the grade counts could not be loaded.
-  const unavailableNote = noComparatorNote
+  const unavailableNote = noComparatorNote && !subjectRanking
     ? noComparatorNote
     : threshold?.unavailable
     ? threshold.unavailable
@@ -980,9 +1060,29 @@ export function ComparisonsPanels({
     ranking: rankingSet
       ? {
           averageAt: rankingAverageAt,
-          figures: { ranked: rankingSet.ranked, targetRank: rankingSet.targetRank, target: rankingSet.target, averageLatest: rankingSet.averageLatest, measure: rankingSet.measure, measureName: rankingSet.measureName, noFigureNote: rankingSet.noFigureNote ?? null },
+          figures: {
+            ranked: rankingSet.ranked,
+            targetRank: rankingSet.targetRank,
+            target: rankingSet.target,
+            averageLatest: rankingSet.averageLatest,
+            measure: rankingSet.measure,
+            measureName: rankingSet.measureName,
+            noFigureNote: rankingSet.noFigureNote ?? null,
+            ...(rankingSet.rankDetail ? { rankDetail: rankingSet.rankDetail } : {}),
+            ...(rankingSet.averageDetail ? { averageDetail: rankingSet.averageDetail } : {}),
+            ...(rankingSet.wholeSchool ? { wholeSchool: rankingSet.wholeSchool } : {}),
+          },
         }
       : null,
+    ...(sr && srWords
+      ? {
+          subjectRanking: {
+            window: sr.window,
+            change: sr.change ? { from: sr.change.from, ranked: sr.change.ranked, target: sr.change.target, average: sr.change.average, window: sr.change.window } : null,
+            ...srWords,
+          },
+        }
+      : {}),
     subjectLabel,
     setKind: setId.startsWith(SAVED_SET_PREFIX) ? "savedSet" : "nearest",
     blocked: seriesLoading || schools.length === 0,
@@ -1050,6 +1150,8 @@ export function ComparisonsPanels({
       render={
         prompt
           ? { current: promptPanel(current, prompt), trend: promptPanel(trend, prompt) }
+          : subjectRanking && !sr && !unavailableNote
+            ? { current: waitPanel(current, subjectRanking.state.status, subjectRanking.measureName), trend: waitPanel(trend, subjectRanking.state.status, subjectRanking.measureName) }
           : unavailableNote
             ? { current: notAvailable(current), trend: notAvailable(trend) }
             : {
@@ -1065,4 +1167,21 @@ export function ComparisonsPanels({
 // a quiet prompt, no frame, so both drawing paths draw the same card.
 function promptPanel(p: PanelRender, text: string): PanelRender {
   return { tag: p.tag, question: p.question, body: () => <SelectionPrompt text={text} /> };
+}
+
+// 0.6.6: a subject ranking not in yet -- the panel's tag and question over the loading ring
+// (RankingPending), or a note if it failed; no frame, so both drawing paths draw the same card.
+function waitPanel(p: PanelRender, status: SubjectRankingState["status"], measureName: string): PanelRender {
+  return {
+    tag: p.tag,
+    question: p.question,
+    body: () =>
+      status === "error" ? (
+        <p className="text-[12px] leading-relaxed text-[var(--muted2)]">This ranking could not be loaded. Try again shortly.</p>
+      ) : status === "pending" ? (
+        <RankingPending text="Ranking will be available shortly" detail={`Every school in this ranking is being placed on ${measureName}. The first time takes a little longer.`} />
+      ) : (
+        <RankingPending text={`Ranking every school on ${measureName}…`} />
+      ),
+  };
 }

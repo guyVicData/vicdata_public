@@ -814,3 +814,7 @@ export async function lookupAcademicCurrentPeriods(params?: { signal?: AbortSign
   for (const r of rows ?? []) out[r.ks_stage] = r.latest_period;
   return out;
 }
+
+// 0.6.6: one RPC page, for callers that chunk and page a lookup themselves (the subject
+// ranking's fallback reads, src/lib/subject-ranking.ts). Server-side only, anon key.
+export const callReferenceRpc = fetchPage;

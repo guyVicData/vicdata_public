@@ -15,6 +15,7 @@ import { rankedComparisons } from "@/lib/teacher-view-comparisons";
 import { comparisonsLeadTitle, type CandidatesFrame, type ComparisonsFrame, type SubjectsFrame, type SeriesFrame } from "./frames";
 import type { RankColumnKey, RankRowData, SchoolRankRowData, ViewSeries } from "./series";
 import { currentHeading, currentRows, currentTitle } from "./subjects";
+import { subjectRankRows } from "@/lib/subject-ranking-view";
 
 export const LIST_COLUMNS: RankColumnKey[] = ["rank", "value"];
 export const SCHOOL_COLUMNS: RankColumnKey[] = ["rank", "sector", "value", "distance"];
@@ -114,6 +115,32 @@ function schoolRanking(look: RankingLook, f: ComparisonsFrame, allRows: boolean)
   if (f.blocked || f.schools.length === 0) return null;
   const columns = columnsOf(look, SCHOOL_COLUMNS);
   const want = (c: RankColumnKey) => !!columns?.includes(c);
+  // 0.6.6: a ranking on the measure in view -- the population's window at its real ranks
+  // (SchoolRankingTable cuts it for the card or full screen), not a re-rank of the rows.
+  if (f.subjectRanking) {
+    const sr = f.subjectRanking;
+    const all = subjectRankRows(sr.window, f.schools, f.schools.find((s) => s.isTarget)?.urn ?? null, f.targetName, f.measure.format);
+    const max = Math.max(0, ...all.map((r) => r.value));
+    const rows: SchoolRankRowData[] = (allRows ? all : all.filter((r) => r.isTarget)).map((r) => ({
+      ...r,
+      ...(want("change") ? { change: null } : {}),
+      ...(want("n") ? { n: null } : {}),
+      ...(want("bar") ? { share: shareOf(r.value, max) } : {}),
+    }));
+    return {
+      kind: "ranking",
+      heading: null,
+      title: comparisonsLeadTitle(f) ?? `${sr.around}: ${f.titleOn}, ranked across ${sr.population}`,
+      leaf: {
+        leaf: "schoolRanking",
+        rows,
+        valueHeading: f.measure.id === "entries" ? "Entries" : "Result",
+        targetName: f.targetName,
+        ...(columns ? { columns } : {}),
+        centred: rows.map((r) => r.key).join(","),
+      },
+    };
+  }
   let latestIdx = -1;
   for (let i = f.periods.length - 1; i >= 0 && latestIdx < 0; i--) if (f.schools.some((s) => s.values[i] !== null)) latestIdx = i;
   const valueAt = (urn: string) => (latestIdx >= 0 ? f.schools.find((s) => s.urn === urn)?.values[latestIdx] ?? null : null);
