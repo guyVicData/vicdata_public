@@ -226,6 +226,7 @@ export function Pill({
   expanded,
   onClick,
   trailing,
+  truncate = false,
 }: {
   label: ReactNode;
   active?: boolean;
@@ -233,6 +234,9 @@ export function Pill({
   expanded?: boolean;
   onClick?: () => void;
   trailing?: ReactNode;
+  // 0.6.5: a value too long for the card ellipsises inside it (its full text on hover)
+  // rather than widening the column; off by default (every other pill as before).
+  truncate?: boolean;
 }) {
   return (
     <button
@@ -241,15 +245,18 @@ export function Pill({
       disabled={disabled}
       aria-expanded={expanded}
       aria-pressed={expanded === undefined && onClick ? active : undefined}
+      title={truncate && typeof label === "string" ? label : undefined}
       className={[
-        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11.5px] font-medium",
+        truncate
+          ? "inline-flex min-w-0 max-w-full items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11.5px] font-medium"
+          : "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11.5px] font-medium",
         active
           ? "border-[var(--fg)] bg-[var(--fg)] text-[var(--bg)]"
           : "border-[var(--panel-border2)] bg-[var(--panel-bg)] text-[var(--muted2)] hover:border-[var(--fg)]",
         disabled ? "cursor-not-allowed opacity-40" : "",
       ].join(" ")}
     >
-      {label}
+      {truncate ? <span className="min-w-0 truncate">{label}</span> : label}
       {trailing}
     </button>
   );
