@@ -25,7 +25,7 @@ export function ordinal(n: number): string {
   return `${n.toLocaleString()}${suffix}`;
 }
 
-type Built = { title: string | null; main: { figure: string; label: string } | null; tiles: TileData[]; vars: TileVars };
+type Built = { title: string | null; main: { figure: string; label: string } | null; tiles: TileData[]; vars: TileVars; note?: string };
 
 export function buildNumbers(f: SeriesFrame, ctx: BuildContext): ViewSeries | null {
   const built = f.kind === "subjects" ? subjectTiles(f) : f.kind === "candidates" ? candidateTiles(f) : rankingTiles(f);
@@ -35,7 +35,7 @@ export function buildNumbers(f: SeriesFrame, ctx: BuildContext): ViewSeries | nu
     kind: "numbers",
     heading: null,
     title: built.title,
-    leaf: { leaf: "numberTiles", main: applyMainLabel(built.main, params, built.vars), tiles: applyTileFigures(built.tiles, params, built.vars) },
+    leaf: built.note ? { leaf: "numberTiles", main: null, tiles: [], note: built.note } : { leaf: "numberTiles", main: applyMainLabel(built.main, params, built.vars), tiles: applyTileFigures(built.tiles, params, built.vars) },
   };
 }
 
@@ -136,6 +136,8 @@ function candidateTiles(f: CandidatesFrame): Built | null {
 function rankingTiles(f: ComparisonsFrame): Built | null {
   const rs = f.ranking?.figures;
   if (!f.ranking || !rs) return null;
+  // 0.6.5 S5: no figure on the ranking's measure for a known reason: the note, not empty tiles.
+  if (rs.noFigureNote && !rs.target) return { title: `${f.targetName}'s rank in the ${f.setLabel.toLowerCase()}: ${rs.measureName}`, main: null, tiles: [], vars: {}, note: rs.noFigureNote };
   const tiles: TileData[] = [];
   if (rs.targetRank) tiles.push({ key: "rank", icon: "PodiumIcon", figure: ordinal(rs.targetRank), detail: `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
   // The set's average for the SAME year as the main figure; the latest-of-each average the

@@ -1684,3 +1684,10 @@ Prompt: `docs/v0.6/vicdata_0_6_post16_match_gcse_claude_code_prompt_v1.md`. Repo
 - **The 0.6.4 prefetch** of the other phase posts `{ kind: "nearest" }` with that phase, so at Post-16 the server resolves the Post-16 set. No client change was needed.
 - **Saved sets:** never altered. A set a member saved from "10 nearest" keeps its schools.
 - **Counts** (schools in the default set with the focus qualification in 2024/25, before → after): King's A level Maths 3 → 7; The Chase A level History 5 → 10; Croydon BTEC Extended Diploma Business 4 → 4 and AS Law 0 → 0 (an FE college: unchanged); Sevenoaks IB HL Maths 1 → 1 (boarding recipe).
+
+### S5 — The ranking headline for a school with no A levels
+
+- **When:** a Post-16 school with no "GCE A level" entries in the latest year (IB-only, an FE college without A levels). On a national or regional ranking, Comparisons' ranking tiles and the panel's summary show *"[School] has no A-level entries. Post-16 rankings use A-level points per entry."* in the empty-state style, not empty tiles.
+- **How:** carried on the ranking figures (`noFigureNote`), so both drawing paths show it: the legacy tiles body, and the series builder's `numberTiles` leaf (a new optional `note`, drawn by SeriesView). The note shows only when the school has no figure on the ranking measure.
+- **The collapsed "rank chip"** has no rank to show, so it stays empty (as before); the panel's summary line carries the note.
+- **Out of scope, logged as a later option:** a per-family Post-16 headline (BTEC / IB / T Level points per entry) for ranking schools without A levels.

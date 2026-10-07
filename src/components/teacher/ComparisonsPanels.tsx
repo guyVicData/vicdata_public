@@ -202,7 +202,9 @@ export function ComparisonsPanels({
   // (the top and this school's neighbours), so the column shows no map of them; it shows
   // the school's rank in the whole population and that population's true average instead,
   // on the ranking's own measure (`measure`, the phase headline).
-  rankingSet?: (RankingFigures & { measure: Measure; measureName: string }) | null;
+  // 0.6.5 S5: `noFigureNote` -- the school has no figure on the ranking's measure for a known
+  // reason (no A-level entries at Post-16): the tiles and the rank chip give way to it.
+  rankingSet?: (RankingFigures & { measure: Measure; measureName: string; noFigureNote?: string | null }) | null;
   // 0.6.1 S3c: the page's theme, for a view's own compare colours (the line palette has a
   // light and a dark version). Read only by the config-driven renderer (`views=v2`).
   theme?: "dark" | "light";
@@ -440,6 +442,14 @@ export function ComparisonsPanels({
         // Part 4: always on the ranking's own measure, whatever Column 1 is showing --
         // that is what the population was ranked on; the label says which.
         const rs = rankingSet;
+        if (rs.noFigureNote && !rs.target) {
+          return (
+            <>
+              <ViewTitle>{currentTitle}</ViewTitle>
+              <p className="text-sm text-[var(--muted)]">{rs.noFigureNote}</p>
+            </>
+          );
+        }
         const tiles: NumberTile[] = [];
         if (rs.targetRank) tiles.push({ key: "rank", icon: PodiumIcon, figure: ordinal(rs.targetRank), detail: `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
         // The set's average for the SAME year as the main figure (the graphs' figure too);
@@ -562,6 +572,9 @@ export function ComparisonsPanels({
         This school is {shownRank.rank} of {shownRank.total} on {comparedOn}, among {setLabel.toLowerCase()}.
         {view === "map" && mapCaption ? ` ${mapCaption}.` : ""}
       </PanelSummary>
+    ) : rankingSet?.noFigureNote && !rankingSet.target && (onRankingMeasure || view === "tiles") ? (
+      // 0.6.5 S5: on the ranking's own measure, why the school has no rank.
+      <PanelSummary>{rankingSet.noFigureNote}</PanelSummary>
     ) : (
       <PanelSummary>
         {subjectLabel
@@ -967,7 +980,7 @@ export function ComparisonsPanels({
     ranking: rankingSet
       ? {
           averageAt: rankingAverageAt,
-          figures: { ranked: rankingSet.ranked, targetRank: rankingSet.targetRank, target: rankingSet.target, averageLatest: rankingSet.averageLatest, measure: rankingSet.measure, measureName: rankingSet.measureName },
+          figures: { ranked: rankingSet.ranked, targetRank: rankingSet.targetRank, target: rankingSet.target, averageLatest: rankingSet.averageLatest, measure: rankingSet.measure, measureName: rankingSet.measureName, noFigureNote: rankingSet.noFigureNote ?? null },
         }
       : null,
     subjectLabel,

@@ -235,6 +235,9 @@ export type FrameRankingFigures = {
   averageLatest: number | null;
   measure: Measure;
   measureName: string;
+  // 0.6.5 S5: the school has no figure on the ranking's measure for a known reason (no A-level
+  // entries at Post-16): the tiles give way to this note.
+  noFigureNote?: string | null;
 };
 
 export type ComparisonsFrame = {

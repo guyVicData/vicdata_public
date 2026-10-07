@@ -1798,6 +1798,13 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         : undefined;
 
   const comparatorEmptyText = "No schools in this comparison with comparable published data for this phase.";
+  // 0.6.5 S5: the Post-16 ranking headline is A-level points per entry; a school with no
+  // A-level entries in the latest year (IB-only, an FE college) has no figure on it, and the
+  // ranking tiles say why rather than drawing an empty or hollow figure.
+  const noALevelNote =
+    phase === "ks5" && latestPeriod !== null && !entries.some((e) => e.period === latestPeriod && e.qualificationType === "GCE A level" && e.entries > 0)
+      ? `${schoolName ?? "This school"} has no A-level entries. Post-16 rankings use A-level points per entry.`
+      : null;
   // 0.6.5 S3: at Post-16, on points or entries, when no other school in the set has the focus's
   // exact qualification -- or none publishes its points -- Comparisons says so in place of a
   // column of one school. (Rates keep their own note, from the schools' grade rows.)
@@ -2364,7 +2371,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // figures are on the ranking's own measure, the phase headline.
         rankingSet={
           onRanking && chooserSet?.ranking
-            ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure" }
+            ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure", noFigureNote: noALevelNote }
             : null
         }
         currentLabel={
