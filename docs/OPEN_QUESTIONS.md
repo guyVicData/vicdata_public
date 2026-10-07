@@ -1638,3 +1638,68 @@ Prompt: `docs/v0.6/vicdata_0_6_round4_tables_post16_speed_claude_code_prompt_v1.
 - The matrix and proposal: `docs/v0.6/post16_vs_gcse_matrix_v1.md`. No Post-16 panel changed; waiting for Guy's review.
 - **Found, not fixed (a live wrong figure, out of this round's scope):** BTEC / vocational points for 2021/22–2022/23 are stored as 0, not null. Confirmed: Croydon 130432 Business Studies, four BTEC sizes; England's rows and the comparators' bucket rows too. The app draws them as 0 (`teacher-view-measures.ts:64-80` drops only nulls). Options are in the matrix (change 2): an ingest fix, and/or an interim app rule treating them as missing. Both are figure changes, so Guy decides.
 - The matrix was read from code and real data; nothing was rendered for it. The published configs couldn't be read with the anon key, so only the code copy was compared.
+
+## 2026-10-07 — 0.6.5
+
+Prompt: `docs/v0.6/vicdata_0_6_post16_match_gcse_claude_code_prompt_v1.md`. Report: `docs/v0.6/v065_report_v1.md`.
+
+### S1 — Grade bands opens on a default range at Post-16 (R-POST16-BAND-DEFAULT)
+
+- **Where:** `BAND_PRESETS` itself, as GCSE's 7–9. Each Post-16 scale gets one preset marked as its default, and the Grades ▾ menu offers it plus Custom (GCSE: 4–9, 7–9, Custom).
+  - The A-level A*–E scale is shared by A level, AS, Core Maths and EPQ, which default differently, so a preset can name its qualifications.
+  - The scale is still the existing detector's (`scaleForQualification`); no second detector.
+- **Call:** the Post-16 presets apply at Post-16 only (a `phase` on the preset). A small GCSE cohort whose grades happen to read as the IB 7–1 scale must not gain a 7–6 band at GCSE.
+- **Call:** an A*–E qualification not on the list (Other General Qualification, FSMQ, AEA) and Pre-U stay custom-range only. The prompt lists no default for them.
+- **Labels:** the menu's preset row and the pill use the same words the pill already used for a named scale ("A* to A", "Distinction* to Distinction"; the double and triple awards in full: "Distinction*-Distinction* to Distinction-Distinction"). That is long in the menu; the prompt's D*D*–DD shorthand isn't used anywhere in the app yet.
+- **Changing focus, today and now:** `bandRangeFor` already dropped a saved range whose ends aren't on the new focus's scale and used the scale's preset. Today, at Post-16, that preset didn't exist, so the panels went to "Pick a grade range". Now they go to the new scale's default. The saved setting isn't overwritten, so going back to the old scale brings the saved range back.
+- **Grade counts' selection** (0.6.3) still never reads a preset: nothing is selected until the member clicks.
+
+### S2 — A*–E only where it means something
+
+- **Greyed:** on a Post-16 focus whose scale isn't the A-level A*–E scale (BTEC / OCR, IB, T Level, Pre-U, or a subject with no grade rows), the top bar's Results switch greys "A*–E rate". It uses the menu's existing disabled style (45% opacity, not-allowed cursor), with *"A*–E applies to A level, AS, Core Maths and EPQ grades."* on hover. `MenuRow` gained an optional `title` for this.
+- **A saved A*–E** on such a focus shows Average points for it. The saved choice (`measure:results`) isn't written, so an A-level focus brings A*–E back.
+- **Call: embeds keep the 0.6.3 note.** A meeting slot or custom dashboard can pin A*–E for a subject. The page doesn't swap the measure there; the panels' note ("A*–E applies to A levels; use a grade or band for this qualification.") stays as the fallback.
+- **Change 4 (Guy): Core Maths and EPQ keep A*–E.** They use A–E letters, so their A*–E rate is their pass rate.
+
+### S3 — Comparisons and maps on the exact qualification (R-POINTS-SAME-QUAL)
+
+- **One new route,** `/api/teacher/comparator-qualifications`: membership-gated like comparator-grades, anon key, server side. It is one RPC call to `academic_subject_qualification_headline_lookup`, filtered to the qualification in the database and to the subject in the route. It returns each school's points and entries per year for the focus's exact qualification.
+  - The page asks for it during render, keyed by set + subject + qualification (as the comparator-grades ask). It goes out alongside the map profiles, which are still needed for the schools' locations, and is shared through the 5-minute fetch cache.
+- **At Post-16, `comparatorSubjectSeries` comes from those rows,** for the set and the school. Comparisons (Current and Trends, every view, both paths) and Column 1's Trend map already read that one series, so they all follow. The school's own dot is its Column 1 figure (verified: Croydon A level Maths 2024/25, 24.00 in both; the A-level bucket had 21.45).
+- **Entries too:** Comparisons on Candidates at Post-16 now counts the exact qualification's entries (A level without AS; one BTEC size). On the expected list (item 3).
+- **The 0.6.3 AS / AEA stand-in is gone** (graded entries on Candidates, and a note on points). The exact rows carry AS points and entries for every school. A note stays only where no other school in the set has the qualification, *"No school in this set has AS level Law entries."*, or where none publishes its points: *"No school in this set publishes average points for EPQ Extended Project."* It sits in the column's existing unavailable-note slot.
+- **Chips and labels:** at Post-16 there is one map chip per exact qualification (was per bucket). Its legend and label name the qualification: "Law (AS level)", "Business Studies (BTEC Extended Diploma)", "Mathematical Studies (IB Higher level)" (`exactQualificationLabel`, teacher-view-theme.ts). Column 1, the picker and the column questions keep `qualificationShortLabel`, so Column 1 doesn't change.
+- **Call: a failed request shows the set's schools with no figures** (the loading flag clears), not the bucket's figures. Falling back to the bucket would show a blend under an exact label.
+- **Rates are unchanged:** they already read each school's exact grade rows (R-COMPARATOR-RATE-PER-QUAL).
+- **Catalogue:** R-POINTS-SAME-QUAL now covers Comparisons and maps, with its real-data test extended. The stale "Context 'All subjects' blends qualifications" known gap is removed. 0.6.4 had added no "bucket figures" wording to DV-C3-CUR-MAP or DV-C1-RES-TR-MAP, so nothing was removed there.
+
+### S4 — The Post-16 default comparison set (R-POST16-DEFAULT-SET)
+
+- **The rule:** GCSE's own matching (`findSurroundingSchools`: the same distance order from `school_nearest_neighbours`, the same sector, phase and gender rules, the same widen-the-net backfill and the 0.6.4 `only: "nearest"` fast path) plus one filter through its existing `extraFilterUrns` hook.
+- **Call: "Post-16 provision" is read from real data.** A school qualifies if it has KS5 results (`academic_headline_lookup`, ks5) in either of the latest two published years. The existing `hasPost16Provision` is `statutory_high_age >= 16`, which every 11–16 school passes, so it can't tell a sixth form apart.
+- **Call: FE colleges are not added for a school.** The prompt says "schools and colleges"; the GCSE rules match a school's own sector and phase, which keeps FE colleges out for a school. Changing that would change the set's character beyond "with a sixth form". An FE college's own default was already the nearest FE colleges, all Post-16, so it's unchanged.
+- **Call: a boarding recipe** (Sevenoaks' default) keeps only its schools with KS5 results. Sevenoaks keeps all 10, of which 1 offers IB HL Maths: a data limit (IB is rare), not the rule.
+- **Name (call, after parity):** the chooser names it "10 nearest with a sixth form or 16+ provision" on its hub row, Nearest screen and ±5 stepper, and a set picked there keeps that name. **The column's own pill and titles for the default keep "10 nearest schools"**, which is still true at Post-16. Why: the dashboard grid sizes its columns to their content. A longer default name in Comparisons' non-wrapping pills widened Column 3 at 1280 (Columns 1 and 2 lost 6 px each), and in some states moved Columns 1 and 2 by up to 25 px (Context's sortable table with a very long subject name forces Column 2 wide, and Columns 1 and 3 split what's left by their content). That breaks "Column 1 Post-16 identical". Truncating the pills would also change GCSE (a long saved-set name, a different split). Flip `DEFAULT_CHOICE_LABEL` at Post-16 if you'd rather see the new name on the pill and accept that layout shift.
+- **The chooser on the Post-16 page** asks `default-lists`, `expand-nearest` and `boarding-quintile-list` with `post16=1`, so its first row and stepper agree with the pill's default. The Data View never sends that parameter: its calls and answers are unchanged.
+- **The 0.6.4 prefetch** of the other phase posts `{ kind: "nearest" }` with that phase, so at Post-16 the server resolves the Post-16 set. No client change was needed.
+- **Saved sets:** never altered. A set a member saved from "10 nearest" keeps its schools.
+- **Counts** (schools in the default set with the focus qualification in 2024/25, before → after): King's A level Maths 3 → 7; The Chase A level History 5 → 10; Croydon BTEC Extended Diploma Business 4 → 4 and AS Law 0 → 0 (an FE college: unchanged); Sevenoaks IB HL Maths 1 → 1 (boarding recipe).
+
+### S5 — The ranking headline for a school with no A levels
+
+- **When:** a Post-16 school with no "GCE A level" entries in the latest year (IB-only, an FE college without A levels). On a national or regional ranking, Comparisons' ranking tiles and the panel's summary show *"[School] has no A-level entries. Post-16 rankings use A-level points per entry."* in the empty-state style, not empty tiles.
+- **How:** carried on the ranking figures (`noFigureNote`), so both drawing paths show it: the legacy tiles body, and the series builder's `numberTiles` leaf (a new optional `note`, drawn by SeriesView). The note shows only when the school has no figure on the ranking measure.
+- **The collapsed "rank chip"** has no rank to show, so it stays empty (as before); the panel's summary line carries the note.
+- **Out of scope, logged as a later option:** a per-family Post-16 headline (BTEC / IB / T Level points per entry) for ranking schools without A levels.
+
+### S6 — Per-family notes and small fixes
+
+- **T Level, results published only for all pathways together** (Croydon 130432): a T Level focus with entries but no per-pathway grade rows and no points. Results' three columns show *"DfE publishes this college's T Level results only for all pathways together."* in place of empty charts, using the hosts' existing quiet note card (the `prompt` slot, as the 0.6.3 counts prompt). Grade counts shows it in place of "No published grades …". Candidates is unaffected (its entries are real).
+- **AS in Context:** there is no separate "small group" note. The existing R-POINTS-SAME-QUAL note already says only that family's subjects are compared ("…only Other subjects are compared"). Logged and left, as the prompt allows.
+- **IB Diploma total:** no change (R-IB-NONSUBJECT).
+- **Speed (S4 follow-up):** the Post-16 filter makes the nearest-10 build widen past the 100 precomputed neighbours more often, because fewer of a school's nearest neighbours have a sixth form. The Chase went from 10 upstream calls (0.5–0.8 s warm) to 23 (1.3–1.6 s). Three changes; the answer is identical (5 schools checked, same schools and rolls):
+  - **filterBeforeFacts:** a new, off-by-default option on `findSurroundingSchools` runs the KS5 check before each chunk's census lookup, so census facts are read only for schools that pass. Only the Post-16 path sets it, so the Data View and every other caller run exactly as before.
+  - **The latest KS5 period** comes through the one-hour reference cache, read once rather than per chunk.
+  - **The default nearest set** (`chooser-set`, kind nearest, both phases) is kept an hour per instance: school-level public data, keyed by school and phase only.
+  - **Result:** The Chase Post-16 is 17–18 calls (1.1–1.3 s) on its first build of the hour, and from the cache after that.
+- **Layout (S4 follow-up, caught by parity):** two attempts to let a long default name truncate in Comparisons' pills (a zero-width box; then a capped label) were each caught by the parity walk: one squeezed the "vs:" pill off its row beside the Grade counts chip at GCSE; both changed how the grid splits its columns when Context forces Column 2 wide. Both were reverted; `ComparisonsPanels`' pills and `Pill` are exactly main's. The fix is the naming call above.

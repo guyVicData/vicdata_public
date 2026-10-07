@@ -100,7 +100,7 @@ function gradeMeasures(phase: "ks4" | "ks5"): Measure[] {
       id: `M-${P}-BANDS` as const,
       name: ks4 ? "GCSE grade bands" : "Post-16 grade bands",
       results: "bands",
-      definition: `Share of a subject's graded entries inside a chosen contiguous range on the subject's own scale (subject-grades.ts:bandRate).${ks4 ? " Presets 4-9 and 7-9 on GCSE 9-1; default 7-9." : " No presets: custom range only."}`,
+      definition: `Share of a subject's graded entries inside a chosen contiguous range on the subject's own scale (subject-grades.ts:bandRate).${ks4 ? " Presets 4-9 and 7-9 on GCSE 9-1; default 7-9." : " One preset per scale, its default (0.6.5 S1, R-POST16-BAND-DEFAULT): A level and EPQ A*-A; AS and Core Maths A-B; IB 7-6; vocational Distinction*-Distinction, D*D*-DD, D*D*D*-DDD; T Level Distinction*-Merit; Pre-U custom range only."}`,
       geographies: geos({
         school: ok(),
         subject_area: ok("computed client-side"),
@@ -347,7 +347,6 @@ export const MEASURES: Measure[] = [
     fetchedBy: [`${DASHBOARD_ROUTE} -> ${SUBJECT_QUAL_HEADLINE} (route.ts:176); England via englandAverages (route.ts:46-63)`, SUBJECT_GEO, PROFILES],
     knownGaps: [
       "The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).",
-      "Context 'All subjects' blends qualifications (R-POINTS-SAME-QUAL open issue).",
       "Change is shown in points everywhere, as at GCSE (S3b, R-NUMBER-TYPE-HONESTY).",
     ],
     briefing: POST16_BRIEFING,

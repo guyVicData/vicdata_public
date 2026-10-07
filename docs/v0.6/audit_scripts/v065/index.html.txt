@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>
+const q=new URLSearchParams(location.search);const BT=q.get('b')||'br';
+document.write('<link rel="stylesheet" href="leaflet-all.css"><link rel="stylesheet" href="app-'+BT+'.css">');
+document.write('<script src="fix_'+(q.get("b")||"br")+"_"+(q.get("urn")||"100053")+"_"+(q.get("phase")||"ks4")+(q.get("fx")||"")+'.js"><\/script>');
+</script>
+<script>
+window.process={env:{NODE_ENV:"production"}};
+try{localStorage.clear();sessionStorage.clear();localStorage.setItem("vicdata.teacher.theme",q.get("theme")||"dark");if(q.get("edit")==="1")localStorage.setItem("vicdata.editMode","1")}catch(e){}
+window.__errs=[];window.onerror=function(m,s,l,c,e){window.__errs.push(String(m)+" "+(e&&e.stack));};
+window.addEventListener("unhandledrejection",e=>window.__errs.push("rej "+String(e.reason&&e.reason.stack||e.reason)));
+window.__inflight=0;window.__last=Date.now();
+const J=(o,s)=>new Response(JSON.stringify(o),{status:s||200,headers:{"Content-Type":"application/json"}});
+const realFetch=window.fetch;
+window.fetch=async function(input,init){
+  const url=new URL(typeof input==="string"?input:input.url,location.href);
+  if(!url.pathname.startsWith("/api/")) return realFetch(input,init);
+  window.__inflight++;window.__last=Date.now();
+  try{
+    await new Promise(r=>setTimeout(r,20));
+    const F=window.__FIX,p=url.pathname,sp=url.searchParams;
+    if(p==="/api/teacher/phases") return J({phases:["ks4","ks5"]});
+    if(p==="/api/teacher/dashboard") return J(F.dashboard);
+    if(p==="/api/teacher/chooser-set") return J(F.nearest);
+    if(p==="/api/data-view/academic-schools"){const u=new Set((sp.get("urns")||"").split(","));return J({profiles:F.profiles.filter(x=>u.has(x.urn))});}
+    if(p==="/api/teacher/comparator-grades"){const u=(sp.get("urns")||"").split(",").concat([sp.get("anchorUrn")]);const s=sp.get("subject");const o={};for(const k of u){if(F.gradeRowsByUrn[k])o[k]=F.gradeRowsByUrn[k].filter(g=>g.subject===s);}return J({gradeRowsByUrn:o});}
+    if(p==="/api/teacher/subject-geography"||p==="/api/teacher/subject-grade-geography"){const src=p.endsWith("grade-geography")?F.gradeGeo:F.geo;const s=sp.get("subject"),qt=sp.get("qualificationType");const k=Object.keys(src).find(k=>{const [a,b]=k.split("::");return a===s&&(!qt||b===qt);});return k?J(src[k]):J({error:"nofix"},404);}
+    if(p==="/api/teacher/comparator-qualifications"){const u=(sp.get("urns")||"").split(",").concat([sp.get("anchorUrn")]);const s=sp.get("subject"),qt=sp.get("qualificationType");const o={};for(const k of u){o[k]=((F.qualRowsByUrn||{})[k]||[]).filter(r=>r.subject===s&&r.qualificationType===qt).map(r=>({period:r.period,entries:r.entries,avgPointScore:r.avgPointScore})).sort((a,b)=>a.period-b.period);}return J({rowsByUrn:o});}
+    if(p==="/api/teacher/saved-comparator-sets") return J({me:{membershipId:"m1",schoolAccountId:"a1",canEditShared:false},cap:8,personalCount:0,sets:[],seriesByUrn:{},excludedUrns:[],candidates:[],target:{laName:null,independent:false}});
+    return J({error:"not stubbed"},404);
+  } finally { window.__inflight--;window.__last=Date.now(); }
+};
+</script></head>
+<body style="margin:0">
+<div id="root" class="flex min-h-full flex-col"></div>
+<script>document.write('<script src="bundle-'+BT+'.js"><\/script>');</script></body></html>

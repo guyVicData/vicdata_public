@@ -18,6 +18,7 @@ const GP = "src/components/teacher/GradeCountsPanels.tsx";
 const SV = "src/components/teacher/SeriesViews.tsx";
 const TVP = "src/lib/teacher-view-panels.ts";
 const SG = "src/lib/subject-grades.ts";
+const TVM = "src/lib/teacher-view-measures.ts";
 const QB = "src/lib/dfe-qualification-buckets.ts";
 const CSER = "src/lib/teacher-view-comparator-series.ts";
 
@@ -48,7 +49,7 @@ export const RULES: Rule[] = [
   {
     id: "R-POINTS-SAME-QUAL",
     statement:
-      "A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown.",
+      "A points figure is only comparable within one qualification type (KS4: qualification type; KS5: the exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown. Since 0.6.5 (S3), Post-16 Comparisons and the maps (Column 3 Current and Trends, Column 1's Trend map) read every school's figure for the focus's EXACT qualification -- A level, AS level, each BTEC size, IB Higher or Standard level -- never the bucket's blend, so Column 1, Comparisons and the maps show one figure for the school and one rank; where no other school in the set has the qualification (or publishes its points), Comparisons says so.",
     why: "A-level, BTEC and IB points sit on different challenge tables; one bar chart or average across them compares unlike scales.",
     appliesTo: "M-KS4-POINTS, M-KS5-POINTS; map chips, Column 1 category, Context",
     enforcedIn: [
@@ -57,6 +58,8 @@ export const RULES: Rule[] = [
       `${P}:candidateItems (1063-1099, via R-QUAL-FAMILY-MATCH)`,
       "src/lib/teacher-view-measures.ts:contextKeepsToFamily, onFocusPointsScale, contextGroupValue (Post-16 points rows in the focus's family only)",
       "src/lib/teacher-view-populations.ts:contextItemsOf (keepToFamily: All subjects on Post-16 points)",
+      "src/app/api/teacher/comparator-qualifications/route.ts; src/lib/teacher-view-comparator-quals.ts (0.6.5 S3)",
+      "src/components/dashboard-config/TeacherDashboard.tsx:exactQuals, comparatorSubjectSeries, mapChips (exact at Post-16), exactQualsNote",
     ],
     testCase: {
       urn: "130432",
@@ -65,7 +68,7 @@ export const RULES: Rule[] = [
       subject: "Business Studies",
       year: "2024/25",
       expect:
-        "Context on Average point score: Business Studies (A level + five BTEC sizes) has one group value per family -- the A-level family's is the A-level row's own 26.36, the BTEC family's is the BTEC rows' weighted mean; no focus = no value. With A-level Computer Science focused, All subjects draws 20 A-level subjects (was 55 across every family) and its average is 25.6 (was a 24.7 blend).",
+        "Context on Average point score: Business Studies (A level + five BTEC sizes) has one group value per family -- the A-level family's is the A-level row's own 26.36, the BTEC family's is the BTEC rows' weighted mean; no focus = no value. With A-level Computer Science focused, All subjects draws 20 A-level subjects (was 55 across every family) and its average is 25.6 (was a 24.7 blend). Comparisons on A level Maths 2024/25: Croydon's own figure is its exact A level row (24.00), not the A-level bucket's 21.45, and every comparator's comes from the same exact-qualification rows.",
       check: "pointsSameQual",
     },
     origin: "Academic Results phase; Post-16 Part C and Part D",
@@ -380,7 +383,7 @@ export const RULES: Rule[] = [
       "A rate is computed only on the scale it was defined on (threshold: GCSE 9-1 / Double Award at KS4, A-level A*-E at KS5; bands: the scale the range was picked on). Vocational, IB and Pre-U rows get no figure.",
     why: "An IB 7-1 row read as GCSE numerics would be scored against a grade 4 it was never on.",
     appliesTo: "M-*-THRESHOLD, M-*-BANDS",
-    enforcedIn: [`${SG}:thresholdRate (155-180)`, `${SG}:bandRate (232-241)`, `${SG}:BAND_PRESETS (201-205)`],
+    enforcedIn: [`${SG}:thresholdRate`, `${SG}:bandRate`, `${SG}:BAND_PRESETS`],
     testCase: {
       urn: "137625",
       school: "The Chase",
@@ -388,6 +391,48 @@ export const RULES: Rule[] = [
       expect: "Asked for GCSE 7-9, a BTEC returns no figure (not 0%); an IB 7-1 row at KS5 is not scored against grade 4.",
     },
     origin: "Teacher view round 6 §6.5; grade bands round",
+    status: "active",
+  },
+  {
+    id: "R-POST16-BAND-DEFAULT",
+    statement:
+      "Grade bands opens on a default range on every Post-16 scale, as GCSE opens on 7-9: A level and EPQ A* to A; AS and Core Maths A to B; IB subject 7 to 6; vocational single Distinction* to Distinction, double D*D* to DD, triple D*D*D* to DDD; T Level Distinction* to Merit. The scale is the focus's own (scaleForQualification). A saved range wins while both its ends are on the focus's scale; otherwise the scale's default (never a stale or blank range). The Post-16 defaults are Post-16 only; Pre-U and the KS4 vocational scales stay custom-range only. The Grades menu offers the default plus Custom.",
+    why: "Guy, 7 Oct 2026 (the 0.6.4 audit's change 1): with no range, Post-16 Grade bands opened on 'Pick a grade range' and Context and Comparisons fell back to points, where GCSE opens on a real band.",
+    appliesTo: "M-KS5-BANDS; the top bar's Grades control",
+    enforcedIn: [`${SG}:BAND_PRESETS, presetsFor, defaultPresetFor`, `${TVM}:bandRangeFor`, "src/components/dashboard-config/TeacherDashboard.tsx:bandPresetContext", "src/components/teacher/ResultsControl.tsx:BandMenu"],
+    testCase: {
+      urn: "117037",
+      school: "King's Worcester (and Croydon College 130432, Sevenoaks 118952, Christ The King 130416)",
+      phase: "ks5",
+      year: "2024/25",
+      expect: "From each school's own grade rows: A level Maths opens on A* to A, a BTEC Extended Diploma on D*D*D* to DDD, IB HL Mathematical Studies on 7 to 6, T Level Health on Distinction* to Merit, each with a real band figure; a saved off-scale range falls back to the default.",
+      check: "post16BandDefault",
+    },
+    origin: "0.6.5 S1",
+    status: "active",
+  },
+  {
+    id: "R-POST16-DEFAULT-SET",
+    statement:
+      "On the Post-16 page the default comparison set is the 10 nearest schools and colleges with Post-16 provision, named '10 nearest with a sixth form or 16+ provision' in the chooser (the column's pill keeps '10 nearest schools', so Column 3's content and the grid's widths don't change): GCSE's matching rules (the same distance order, sector, phase and gender rules and the same widen-the-net backfill) plus one filter -- KS5 results in either of the latest two published years. An FE college's default (the nearest FE colleges) and a boarding recipe (its schools with KS5 results) follow the same rule. GCSE keeps its own nearest 10; saved sets are never altered; the Data View's default-lists, expand-nearest and boarding-quintile-list calls are unchanged (only the Teacher chooser on its Post-16 page asks with post16=1).",
+    why: "Guy, 7 Oct 2026 (the 0.6.4 audit's change 6): the GCSE nearest 10 left few comparators sharing a Post-16 qualification (3 for King's Worcester's A level Maths).",
+    appliesTo: "The Comparisons column's default set at Post-16; the comparator chooser's 10 nearest on the Post-16 page",
+    enforcedIn: [
+      "src/lib/default-comparator-lists.ts:buildDefaultComparatorLists (post16), withKs5Results, keepWithKs5Results",
+      "src/lib/chooser-sets.ts:resolveDefaultNearest",
+      "src/app/api/data-view/default-lists, expand-nearest, boarding-quintile-list (post16=1, opt-in)",
+      "src/components/teacher/ComparatorSetChooser.tsx:nearestName; src/components/dashboard-config/TeacherDashboard.tsx:DEFAULT_CHOICE_LABEL_POST16",
+    ],
+    testCase: {
+      urn: "117037",
+      school: "King's Worcester (and The Chase 137625)",
+      phase: "ks5",
+      subject: "Mathematics",
+      year: "2024/25",
+      expect: "The Post-16 default has 10 schools, each with KS5 results, and more of them offer A level Maths than the GCSE nearest 10 does (3 before); the GCSE nearest 10 (no option) is unchanged.",
+      check: "post16DefaultSet",
+    },
+    origin: "0.6.5 S4",
     status: "active",
   },
   {

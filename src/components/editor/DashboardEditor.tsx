@@ -92,7 +92,7 @@ export type DashboardEditorProps = {
   // `selected`: Context's selected subjects, for live previews on "Selected subjects".
   // `band` (0.6.1 S5): the focused subject's grade scale and the page's band range, so the
   // editor's Results control opens on them.
-  states?: { compareAgainst?: CompareAgainstState; comparator?: ComparatorState; selected?: string[]; band?: { scale: string[]; range: { top: string; bottom: string } | null } };
+  states?: { compareAgainst?: CompareAgainstState; comparator?: ComparatorState; selected?: string[]; band?: { scale: string[]; range: { top: string; bottom: string } | null; qualificationType?: string } };
 };
 
 type DialogState =
@@ -276,7 +276,9 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   const pillOn = resultsPill ? pill : null;
   const phaseNow = config.columns[0]?.data.phase ?? "ks4";
   const bandScale = hostStates?.band?.scale ?? (phaseNow === "ks5" ? GRADE_SCALES[2] : GCSE_SCALE);
-  const bandRange: GradeRange | null = band ? { scale: bandScale, ...band } : bandRangeFor(bandScale, null, undefined);
+  // 0.6.5 S1: the page's own default for its focus (Post-16's depend on the qualification).
+  const bandPresets = { phase: phaseNow, qualificationType: hostStates?.band?.qualificationType ?? null };
+  const bandRange: GradeRange | null = band ? { scale: bandScale, ...band } : bandRangeFor(bandScale, null, undefined, bandPresets);
   // Titles and previews read the editor's pill, not the page's.
   const labels = useMemo(() => (resultsPill ? { ...hostLabels, results: pill } : hostLabels), [resultsPill, hostLabels, pill]);
   // 0.6 snag 4 / 02: one pill per variant axis the dashboard has (catalogue/variants.ts),
@@ -669,7 +671,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
                     measures={pillMeasures}
                     active={{ id: pill, label: pillLabels[pill] }}
                     onMeasure={(id) => setPill(id as ResultsMeasure)}
-                    band={{ scale: bandScale, range: bandRange, onRange: (top, bottom) => setBand({ top, bottom }) }}
+                    band={{ scale: bandScale, range: bandRange, onRange: (top, bottom) => setBand({ top, bottom }), presets: bandPresets }}
                     align="right"
                     nowrap
                   />

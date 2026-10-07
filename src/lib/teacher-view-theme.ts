@@ -108,6 +108,31 @@ export function qualificationShortLabel(phase: TeacherPhase, qualificationType: 
   return shortQualificationLabel(qualificationType);
 }
 
+// 0.6.5 S3: a Post-16 qualification by its own short name -- "A level", "AS level", "BTEC
+// Extended Diploma", "IB Higher level" -- for Comparisons and the maps, which now compare the
+// exact qualification (R-POINTS-SAME-QUAL), so the bucket's name ("A-level") would mislabel
+// an AS focus. Column 1 and the subject picker keep qualificationShortLabel.
+export function exactQualificationLabel(qualificationType: string): string {
+  const q = qualificationType.trim();
+  if (q === "GCE A level") return "A level";
+  if (/^GCE AS level/.test(q)) return "AS level";
+  if (/^IBO Higher level/.test(q)) return "IB Higher level";
+  if (/^IBO Standard level/.test(q)) return "IB Standard level";
+  if (/^T Level/i.test(q)) return "T Level";
+  if (/^Core Maths/i.test(q)) return "Core Maths";
+  if (/^Extended Project/i.test(q)) return "EPQ";
+  if (/Pre-U/i.test(q)) return "Pre-U";
+  if (q === "Advanced Extension Award") return "AEA";
+  if (/^BTEC /.test(q)) {
+    // "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*" -> "BTEC Extended Diploma";
+    // "BTEC Level 3 National Certificate (Band D)" -> "BTEC Certificate".
+    const core = q.split(" - Band ")[0].replace(/\s*\(Band [A-Z]\)/, "").replace(/\bL3\b/, "").replace(/\bLevel 3\b/, "").replace(/\bNational\b/, "").replace(/^BTEC\s+/, "");
+    return `BTEC ${core.replace(/\s+/g, " ").trim()}`;
+  }
+  if (/^OCR Cambridge Technical/.test(q)) return q.replace(/^OCR /, "").replace(/\s+at Level 3$/, "").trim();
+  return q;
+}
+
 // KS4's qualification families for onboarding step 1 (GCSE-Step1.dc.html): GCSE, BTEC &
 // OCR, everything else. KS5 needs no equivalent -- its families ARE the existing
 // KS5_BUCKETS via displayBucketFor (bucketFor, with AS level and AEA under Other).

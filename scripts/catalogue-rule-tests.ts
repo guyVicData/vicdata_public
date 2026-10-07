@@ -125,6 +125,55 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt({ grade9: l9, grades79: l79 }) };
   },
 
+  // R-POST16-BAND-DEFAULT (0.6.5 S1): each Post-16 family opens Grade bands on its scale's
+  // default, read from the school's own grade rows the way the page reads them (the focus's
+  // scale from its qualification and its 2023/24-on grades), and the default has a figure.
+  async post16BandDefault({ adv, sg, tvm }) {
+    const cases = [
+      { urn: "117037", subject: "Mathematics", qual: "GCE A level", expect: "A*..A" },
+      { urn: "130432", subject: "Business Studies", qual: "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*", expect: "Distinction*-Distinction*-Distinction*..Distinction-Distinction-Distinction" },
+      { urn: "130432", subject: "Business Studies", qual: "BTEC National Extended Certificate L3 - Band F - P-D*", expect: "Distinction*..Distinction" },
+      { urn: "118952", subject: "Mathematical Studies", qual: "IBO Higher level component", expect: "7..6" },
+      { urn: "130416", subject: "Health", qual: "T Level", expect: "Distinction*..Merit" },
+    ];
+    const out: string[] = [];
+    let ok = true;
+    for (const c of cases) {
+      const rows = ((await adv.fetchSubjectLevelDataForSchools([c.urn], "ks5", { gradeYears: "four" })).byUrn.get(c.urn)?.gradeDistribution ?? []).filter(
+        (r) => r.subject === c.subject && r.qualificationType === c.qual,
+      );
+      const scale = sg.scaleForQualification(c.qual, rows.filter((r) => r.period >= 2023).map((r) => r.grade));
+      const ctx = { phase: "ks5", qualificationType: c.qual };
+      const range = tvm.bandRangeFor(scale, null, undefined, ctx);
+      const latest = Math.max(...rows.map((r) => r.period));
+      const rate = range ? sg.bandRate(rows.filter((r) => r.period === latest), range)?.rate ?? null : null;
+      // A saved range off this scale (a GCSE 7-9) falls back to the default.
+      const fallback = tvm.bandRangeFor(scale, null, JSON.stringify({ top: "9", bottom: "7" }), ctx);
+      const got = range ? `${range.top}..${range.bottom}` : "none";
+      const pass = got === c.expect && rate !== null && fallback?.top === range?.top && fallback?.bottom === range?.bottom;
+      ok &&= pass;
+      out.push(`${c.urn} ${c.qual.split(" - ")[0]}: ${got === c.expect ? "ok" : `got ${got}`} ${rate === null ? "no figure" : round(rate) + "%"}`);
+    }
+    return { pass: ok, detail: out.join("; ") };
+  },
+
+  // R-POST16-DEFAULT-SET (0.6.5 S4): the Post-16 default set has Post-16 provision and shares
+  // more of the focus's qualification; the GCSE nearest 10 is unchanged.
+  async post16DefaultSet({ ref }) {
+    const dcl = await import("../src/lib/default-comparator-lists");
+    const urn = "117037";
+    const gcse = await dcl.buildDefaultComparatorLists(urn, { only: "nearest" });
+    const gcsePlain = await dcl.buildDefaultComparatorLists(urn);
+    const post16 = await dcl.buildDefaultComparatorLists(urn, { only: "nearest", post16: true });
+    const urnsOf = (l: typeof gcse) => (l.list1?.schools ?? []).map((sc) => sc.urn).filter((u) => u !== urn);
+    const [before, after] = [urnsOf(gcse), urnsOf(post16)];
+    const sharing = async (urns: string[]) =>
+      new Set((await ref.lookupAcademicSubjectQualificationHeadline({ entityIds: urns, ksStage: "ks5", qualificationType: "GCE A level" })).filter((r) => r.subject === "Mathematics" && r.period === 2024 && Number(r.entries_total) > 0).map((r) => r.entity_id)).size;
+    const withKs5 = await dcl.withKs5Results(after);
+    const v = { before: before.length, after: after.length, shareBefore: await sharing(before), shareAfter: await sharing(after), allWithKs5: withKs5.size === after.length, gcseUnchanged: JSON.stringify(urnsOf(gcsePlain)) === JSON.stringify(before) };
+    return { pass: v.after === 10 && v.allWithKs5 && v.shareAfter > v.shareBefore && v.gcseUnchanged, detail: fmt(v) };
+  },
+
   // R-TREND-TABLE-YEARS (0.6.4 A): every trend table on a grade measure shows its chart's years.
   // The Chase 137625 GCSE History and King's Worcester 117037 A level Mathematics: real grade
   // rows (the dashboard's read, and the nearest set's through the comparator-grades read), each
@@ -331,7 +380,7 @@ const RUNNERS: Record<string, Runner> = {
   // A level and BTEC (Business Studies) has one Context group value per qualification
   // family, never a blend: the A-level family's is the A-level row's own figure, and no
   // BTEC row moves it. Post-16 points keep to the family; entries do not.
-  async pointsSameQual({ adv, tvm, pop }) {
+  async pointsSameQual({ adv, tvm, pop, ref }) {
     const urn = "130432";
     const qh = (await adv.fetchSubjectQualificationHeadlineForSchools([urn], "ks5")).get(urn) ?? [];
     const groupRows = pop.contextGroupRows("ks5", [], qh);
@@ -348,7 +397,19 @@ const RUNNERS: Record<string, Runner> = {
       keepsOnPoints: tvm.contextKeepsToFamily("ks5", "points"),
       keepsOnEntries: tvm.contextKeepsToFamily("ks5", "entries"),
     };
-    const pass = aRow !== null && v.aLevelFamily === round(aRow, 2) && v.btecRows > 0 && v.btecFamily !== null && v.btecFamily !== v.aLevelFamily && v.noFocus === null && v.keepsOnPoints && !v.keepsOnEntries;
+    // 0.6.5 S3: Comparisons' read (the comparator-qualifications route's lookup) gives the
+    // school's exact A level Maths figure -- Column 1's own row -- not the bucket's blend.
+    const { resolveDefaultNearest } = await import("../src/lib/chooser-sets");
+    const set = (await resolveDefaultNearest(urn, "ks5")).rows.map((r) => r.urn);
+    const exact = await ref.lookupAcademicSubjectQualificationHeadline({ entityIds: [urn, ...set], ksStage: "ks5", qualificationType: "GCE A level" });
+    const ownExact = exact.find((r) => r.entity_id === urn && r.subject === "Mathematics" && r.period === 2024)?.avg_point_score ?? null;
+    const column1 = qh.find((h) => h.subject === "Mathematics" && h.period === 2024 && h.qualificationType === "GCE A level")?.avgPointScore ?? null;
+    const bucket = ((await adv.fetchSubjectHeadlineForSchools([urn], "ks5", undefined, null)).get(urn) ?? []).find((h) => h.subject === "Mathematics" && h.period === 2024 && h.bucket === "alevel")?.avgPointScore ?? null;
+    const onlyALevel = exact.every((r) => r.qualification_type === "GCE A level");
+    Object.assign(v, { comparisonsExact: ownExact, column1: column1, bucketBlend: bucket, onlyALevel });
+    const pass =
+      aRow !== null && v.aLevelFamily === round(aRow, 2) && v.btecRows > 0 && v.btecFamily !== null && v.btecFamily !== v.aLevelFamily && v.noFocus === null && v.keepsOnPoints && !v.keepsOnEntries &&
+      ownExact !== null && column1 !== null && Number(ownExact) === Number(column1) && bucket !== null && Number(bucket) !== Number(ownExact) && onlyALevel;
     return { pass, detail: fmt(v) };
   },
 

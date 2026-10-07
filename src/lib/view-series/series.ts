@@ -108,7 +108,7 @@ export type LeafSeries =
     }
   // S3b: NumberTiles -- the main figure and the tiles, after the instance's Figures
   // (params.tiles / mainLabel, src/lib/tile-figures.ts). Icons by PanelIcons glyph name.
-  | { leaf: "numberTiles"; main: { figure: string; label: string } | null; tiles: TileData[] }
+  | { leaf: "numberTiles"; main: { figure: string; label: string } | null; tiles: TileData[]; note?: string }
   // S3b: RankedList (Context's Ranked list). `columns` / rank set only off the default.
   | {
       leaf: "rankedList";

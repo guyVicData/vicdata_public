@@ -1,0 +1,11 @@
+const calls: string[] = [];
+const orig = globalThis.fetch;
+globalThis.fetch = (async (i: any, init?: any) => { const u = new URL(typeof i === "string" ? i : i.url); const t0 = performance.now(); const r = await orig(i, init); await r.clone().text(); let p = u.pathname.replace("/rest/v1/", ""); calls.push(`${Math.round(performance.now() - t0)}ms ${p}`); return r; }) as typeof fetch;
+const dcl = await import("/Users/guy/dev/vicdata_public/src/lib/default-comparator-lists.ts");
+for (const post16 of [false, true, false, true]) {
+  calls.length = 0;
+  const t0 = performance.now();
+  await dcl.buildDefaultComparatorLists("137625", { only: "nearest", post16 });
+  console.log(post16 ? "post16" : "gcse  ", Math.round(performance.now() - t0), "ms", calls.length, "calls", calls.join(" | "));
+}
+process.exit(0);

@@ -1,0 +1,64 @@
+pairs 2172  E1-bands 334  E2-a*e 150  E3-map 16  E3/4-compare 318  E6-tlevel 14  IDENTICAL 1328  NOISE 10  NOISE-render 2  only-main 144  only-branch 134
+   ('ks4', 'bands', 'c1', 'IDENTICAL') 36
+   ('ks4', 'bands', 'c2', 'IDENTICAL') 31
+   ('ks4', 'bands', 'c2', 'NOISE') 1
+   ('ks4', 'bands', 'c3', 'IDENTICAL') 36
+   ('ks4', 'cand', 'c1', 'IDENTICAL') 24
+   ('ks4', 'cand', 'c2', 'IDENTICAL') 36
+   ('ks4', 'cand', 'c3', 'IDENTICAL') 36
+   ('ks4', 'counts0', 'c1', 'IDENTICAL') 12
+   ('ks4', 'counts0', 'c2', 'IDENTICAL') 8
+   ('ks4', 'counts0', 'c3', 'IDENTICAL') 8
+   ('ks4', 'counts1', 'c1', 'IDENTICAL') 12
+   ('ks4', 'counts1', 'c2', 'IDENTICAL') 32
+   ('ks4', 'counts1', 'c3', 'IDENTICAL') 36
+   ('ks4', 'counts2', 'c1', 'IDENTICAL') 12
+   ('ks4', 'counts2', 'c2', 'IDENTICAL') 32
+   ('ks4', 'counts2', 'c3', 'IDENTICAL') 36
+   ('ks4', 'points', 'c1', 'IDENTICAL') 32
+   ('ks4', 'points', 'c2', 'IDENTICAL') 28
+   ('ks4', 'points', 'c3', 'IDENTICAL') 36
+   ('ks4', 'threshold', 'c1', 'IDENTICAL') 32
+   ('ks4', 'threshold', 'c2', 'IDENTICAL') 28
+   ('ks4', 'threshold', 'c3', 'IDENTICAL') 36
+   ('ks5', 'bands', 'c1', 'E1-bands') 126
+   ('ks5', 'bands', 'c2', 'E1-bands') 98
+   ('ks5', 'bands', 'c3', 'E1-bands') 110
+   ('ks5', 'cand', 'c1', 'IDENTICAL') 90
+   ('ks5', 'cand', 'c2', 'IDENTICAL') 138
+   ('ks5', 'cand', 'c3', 'E3/4-compare') 94
+   ('ks5', 'cand', 'c3', 'IDENTICAL') 32
+   ('ks5', 'counts0', 'c1', 'E6-tlevel') 2
+   ('ks5', 'counts0', 'c1', 'IDENTICAL') 28
+   ('ks5', 'counts0', 'c2', 'E6-tlevel') 4
+   ('ks5', 'counts0', 'c2', 'IDENTICAL') 16
+   ('ks5', 'counts0', 'c3', 'E6-tlevel') 4
+   ('ks5', 'counts0', 'c3', 'IDENTICAL') 16
+   ('ks5', 'counts1', 'c1', 'IDENTICAL') 21
+   ('ks5', 'counts1', 'c1', 'NOISE') 3
+   ('ks5', 'counts1', 'c2', 'IDENTICAL') 56
+   ('ks5', 'counts1', 'c2', 'NOISE') 6
+   ('ks5', 'counts1', 'c2', 'NOISE-render') 2
+   ('ks5', 'counts1', 'c3', 'E3/4-compare') 54
+   ('ks5', 'counts1', 'c3', 'IDENTICAL') 16
+   ('ks5', 'counts2', 'c1', 'IDENTICAL') 18
+   ('ks5', 'counts2', 'c2', 'IDENTICAL') 48
+   ('ks5', 'counts2', 'c3', 'E3/4-compare') 54
+   ('ks5', 'points', 'c1', 'E3-map') 12
+   ('ks5', 'points', 'c1', 'IDENTICAL') 100
+   ('ks5', 'points', 'c2', 'IDENTICAL') 98
+   ('ks5', 'points', 'c3', 'E3/4-compare') 94
+   ('ks5', 'points', 'c3', 'IDENTICAL') 16
+   ('ks5', 'threshold', 'c1', 'E2-a*e') 80
+   ('ks5', 'threshold', 'c1', 'E3-map') 4
+   ('ks5', 'threshold', 'c1', 'IDENTICAL') 28
+   ('ks5', 'threshold', 'c2', 'E2-a*e') 70
+   ('ks5', 'threshold', 'c2', 'IDENTICAL') 28
+   ('ks5', 'threshold', 'c3', 'E3/4-compare') 22
+   ('ks5', 'threshold', 'c3', 'E6-tlevel') 4
+UNEXPECTED:
+only-main: ['130432_tlevel-ks5-points-dark-1280__c3.trends__Change map', '130432_tlevel-ks5-bands-light-390__tab2__c3.current__Bar chart', '130432_btec-ks5-threshold-light-390__tab2__c3.current__only', '130432_tlevel-ks5-points-light-390__tab1__c2.current__Bar chart', '130432_tlevel-ks5-threshold-light-390__tab0__c1.trends__Chart', '130432_tlevel-ks5-bands-light-390__tab1__c2.trends__Chart', '130432_tlevel-ks5-points-dark-1280__c2.current__Bar chart', '130432_tlevel-ks5-bands-light-390__tab2__c3.trends__Trend table', '130432_tlevel-ks5-threshold-light-390__tab0__c1.current__Sortable table', '130432_tlevel-ks5-threshold-dark-1280__c2.trends__Ranked change', '130432_tlevel-ks5-threshold-dark-1280__c1.current__Sortable table', '118952-ks5-threshold-dark-1280__c3.current__only', '130432_tlevel-ks5-bands-dark-1280__c2.trends__Change table', '130432_tlevel-ks5-bands-light-390__tab0__c1.current__Sortable table', '130432_tlevel-ks5-points-light-390__tab1__c2.trends__Chart', '130432_tlevel-ks5-bands-dark-1280__c3.trends__Ranked bars', '130432_tlevel-ks5-points-light-390__tab2__c3.trends__Trend table', '130432_tlevel-ks5-threshold-dark-1280__c1.trends__Change table', '130432_tlevel-ks5-points-dark-1280__c1.trends__Area chart', '130416-ks5-threshold-dark-1280__c3.current__only', '130432_tlevel-ks5-points-dark-1280__c1.trends__Map', '130432_tlevel-ks5-points-light-390__tab2__c3.trends__Trend map', '130432_tlevel-ks5-points-light-390__tab1__c2.trends__Trend table', '130432_tlevel-ks5-bands-dark-1280__c3.trends__Change table', '130432_tlevel-ks5-bands-light-390__tab0__c1.current__Bar chart', '130432_tlevel-ks5-points-light-390__tab0__c1.trends__Change table', '130432_tlevel-ks5-bands-dark-1280__c2.trends__Ranked change', '130432_tlevel-ks5-bands-dark-1280__c1.trends__Change table', '130432_tlevel-ks5-bands-light-390__tab0__c1.trends__Change table', '130432_tlevel-ks5-threshold-dark-1280__c2.trends__Change table']
+only-branch: ['130432_btec-ks5-threshold-light-390__tab2__c3.current__Map', '130432_tlevel-ks5-points-light-390__tab1__c2.current__only', '118952_ibmaths-ks5-threshold-light-390__tab2__c3.trends__Change map', '130432_btec-ks5-bands-dark-1280__c2.current__Share (donut)', '130432_tlevel-ks5-threshold-light-390__tab0__c1.trends__only', '130432_tlevel-ks5-bands-light-390__tab1__c2.trends__only', '130432_tlevel-ks5-points-dark-1280__c2.current__only', '130432_tlevel-ks5-bands-light-390__tab2__c3.trends__only', '130432-ks5-threshold-light-390__tab2__c3.current__Ranking', '118952_ibmaths-ks5-threshold-dark-1280__c3.trends__Ranked bars', '118952-ks5-threshold-dark-1280__c3.current__Map', '130432_tlevel-ks5-points-light-390__tab1__c2.trends__only', '130432_tlevel-ks5-points-light-390__tab2__c3.trends__only', '130432_btec-ks5-threshold-light-390__tab2__c3.trends__Ranked bars', '118952-ks5-threshold-dark-1280__c3.trends__Ranked bars', '130416-ks5-threshold-dark-1280__c3.current__Bar chart', '130432_btec-ks5-threshold-dark-1280__c3.trends__Trend map', '130432_btec-ks5-threshold-dark-1280__c3.trends__Ranked bars', '130432-ks5-threshold-dark-1280__c3.current__Ranking', '130416-ks5-threshold-dark-1280__c3.current__Map', '118952-ks5-threshold-dark-1280__c3.trends__Trend map', '130432_btec-ks5-threshold-light-390__tab2__c3.trends__Trend map', '118952-ks5-bands-light-390__tab1__c2.current__Share (donut)', '130432-ks5-bands-dark-1280__c2.current__Share (donut)', '130416-ks5-bands-light-390__tab1__c2.current__Share (donut)', '118952-ks5-threshold-dark-1280__c3.current__Bar chart', '130432_aslaw-ks5-bands-light-390__tab1__c2.current__Share (donut)', '118952_ibmaths-ks5-threshold-dark-1280__c3.trends__Trend map', '118952_ibmaths-ks5-threshold-light-390__tab2__c3.trends__Change table', '130432_tlevel-ks5-bands-light-390__tab2__c3.current__only']
+A*-E switched cases: ['118952-ks5-threshold-dark-1280', '118952-ks5-threshold-light-390', '118952_ibmaths-ks5-threshold-dark-1280', '118952_ibmaths-ks5-threshold-light-390', '130416-ks5-threshold-dark-1280', '130416-ks5-threshold-light-390', '130432-ks5-threshold-dark-1280', '130432-ks5-threshold-light-390', '130432_btec-ks5-threshold-dark-1280', '130432_btec-ks5-threshold-light-390']
+main errors/failed: []
+br errors/failed: []

@@ -36,6 +36,7 @@ type OwnRow = { period: number; grade: string; entries: number };
 export function GradeCountsPanels({
   columnId,
   subjectLabel,
+  noGradesNote,
   ownRows,
   geography,
   colour,
@@ -50,6 +51,8 @@ export function GradeCountsPanels({
 }: {
   columnId: string;
   subjectLabel: string;
+  // 0.6.5 S6: why there are no grades for this focus, in place of "No published grades".
+  noGradesNote?: string;
   // The focused subject's own per-grade rows, every year it has them.
   ownRows: OwnRow[];
   geography: GradeGeographyInput | null;
@@ -144,7 +147,7 @@ export function GradeCountsPanels({
         </div>
         </>
       ) : (
-        <p className="text-sm text-[var(--muted)]">No published grades for {subjectLabel} yet.</p>
+        <p className="text-sm text-[var(--muted)]">{noGradesNote ?? `No published grades for ${subjectLabel} yet.`}</p>
       ),
     // R-COUNTS-SELECTION: with a selection, its answer line ("Grade 9: 3% of entries (7) ·
     // England 5%"); without one, the spread's mode as before.

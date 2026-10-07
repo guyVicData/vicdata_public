@@ -1,7 +1,7 @@
 import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { resolveSchoolTypeCategory } from "@/lib/default-comparator-lists";
+import { resolveSchoolTypeCategory, withKs5Results } from "@/lib/default-comparator-lists";
 import { findSurroundingSchools } from "@/lib/surrounding-schools";
 import { findNearestFeColleges } from "@/lib/surrounding-fe-colleges";
 import { CURRENT_CENSUS_PERIOD } from "@/lib/roll-data";
@@ -66,7 +66,10 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const matched = await findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", targetCount: count });
+  // 0.6.5 S4: post16=1 (the Teacher chooser's Post-16 stepper only) keeps the same rules and
+  // adds the Post-16 provision filter; the Data View never sends it.
+  const post16 = request.nextUrl.searchParams.get("post16") === "1";
+  const matched = await findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", targetCount: count, ...(post16 ? { extraFilterUrns: withKs5Results, filterBeforeFacts: true } : {}) });
   const target = resolved.target;
   const schools = matched.map((m) => ({
     urn: m.urn,

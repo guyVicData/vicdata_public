@@ -267,6 +267,7 @@ export function NearestScreen({
   targetName,
   schools,
   count,
+  title: titleIn,
   loading,
   onLess,
   onMore,
@@ -278,6 +279,9 @@ export function NearestScreen({
   targetName: string;
   schools: ChooserSchool[];
   count: number;
+  // 0.6.5 S4: the page's own name for the set ("10 nearest with a sixth form or 16+ provision"
+  // at Post-16); absent = "N nearest schools", as before.
+  title?: string;
   loading: boolean;
   onLess: () => void;
   onMore: () => void;
@@ -286,7 +290,7 @@ export function NearestScreen({
   onClose: () => void;
   onDone: () => void;
 }) {
-  const title = `${count} nearest schools`;
+  const title = titleIn ?? `${count} nearest schools`;
   return (
     <>
       <StepHeader title={title} subtitle="Ordered by distance · same sector, phase & qualification" onBack={onBack} onClose={onClose} />

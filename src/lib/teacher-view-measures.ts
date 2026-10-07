@@ -13,7 +13,7 @@
 import type { AcademicSubjectHeadlineEntry, SubjectGradeCount } from "./academic-data-view";
 import { POINTS_BEARING_QUALIFICATION, displayBucketFor } from "./dfe-qualification-buckets";
 import { ENTRIES_MEASURE, headlineMeasure, measuresFor, type Measure, type MeasureId } from "./teacher-view-panels";
-import { BOTTOM_RANK, bandRate, presetsFor, thresholdRate, type GradeRange } from "./subject-grades";
+import { BOTTOM_RANK, bandRate, defaultPresetFor, thresholdRate, type GradeRange, type PresetContext } from "./subject-grades";
 import type { TeacherPhase } from "./teacher-view-phases";
 
 // The (subject, qualification) a figure belongs to -- the page's SubjectItem, structurally.
@@ -176,9 +176,10 @@ export function onGradeScale(scale: string[], grade: string): boolean {
 /**
  * R-GRADE-SCALE-MATCH: the Grade bands range, always on the focused subject's own scale.
  * A pending first click on that scale; else the saved range while both ends are on it;
- * else the scale's 7-9 preset (GCSE 9-1 only); else none -- never an invented default band.
+ * else the scale's default preset (7-9 at GCSE 9-1; 0.6.5 S1: one per Post-16 scale, by
+ * qualification -- subject-grades.ts BAND_PRESETS); else none (custom-range scales).
  */
-export function bandRangeFor(scale: string[], pending: string | null, savedRaw: string | undefined): GradeRange | null {
+export function bandRangeFor(scale: string[], pending: string | null, savedRaw: string | undefined, ctx: PresetContext = {}): GradeRange | null {
   if (pending && onGradeScale(scale, pending)) return { scale, top: pending, bottom: pending };
   try {
     const saved = JSON.parse(savedRaw ?? "null") as { top: string; bottom: string } | null;
@@ -186,7 +187,8 @@ export function bandRangeFor(scale: string[], pending: string | null, savedRaw: 
   } catch {
     // an unreadable saved range reads as none
   }
-  const preset = presetsFor(scale).find((p) => p.id === "7-9");
+  // 0.6.5 S1: the scale's default (7-9 at GCSE; one per Post-16 scale, by qualification).
+  const preset = defaultPresetFor(scale, ctx);
   return preset ? { scale, top: preset.top, bottom: preset.bottom } : null;
 }
 

@@ -19,6 +19,8 @@ import { fetchCensusFactsBatched } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, CURRENT_CENSUS_PERIOD } from "./roll-data";
 import { effectivePhaseTags, phaseTags, genderTag, boardingRatio, FE_PARTICIPATION_ESTABLISHMENT_TYPES, type GenderTag, type PhaseTag } from "./typology";
 import { resolveTargetRegionNation } from "./region-nation-comparator";
+import { lookupAcademicCurrentPeriods, lookupAcademicHeadline } from "./vicdata-reference";
+import { cachedReference } from "./server-cache";
 
 export type SchoolTypeCategory =
   | "state"
@@ -674,8 +676,16 @@ export async function buildBoardingQuintileList(urn: string, targetCount = 10): 
 // resolveNearestOption reads -- list1, boardingBand, boardingRecipe -- and skips the LA set,
 // the 16+ list and the region lookup, which it would discard. Those come back null / empty;
 // list1 is built exactly as before. The Data View's default-lists route passes no option.
-export async function buildDefaultComparatorLists(urn: string, opts: { only?: "nearest" } = {}): Promise<DefaultComparatorLists> {
+//
+// 0.6.5 S4 (the 0.6.4 audit's change 6): `post16: true` (the Teacher view's Post-16 default
+// set) keeps the same matching rules -- the same distance order, sector, phase and gender
+// rules and the same widen-the-net backfill (findSurroundingSchools) -- and adds one filter:
+// the school has Post-16 provision, read from real data (KS5 results in the latest two
+// published years, withKs5Results), not from a statutory age. A boarding recipe keeps only
+// its schools with KS5 results too. GCSE and the Data View never pass it.
+export async function buildDefaultComparatorLists(urn: string, opts: { only?: "nearest"; post16?: boolean } = {}): Promise<DefaultComparatorLists> {
   const nearestOnly = opts.only === "nearest";
+  const post16 = opts.post16 === true;
   const resolved = await resolveSchoolTypeCategory(urn);
   if (!resolved) {
     return { schoolTypeCategory: null, list1: null, list2: null, boardingBand: null, boardingRecipe: null, local16Plus: null, regionName: null, nation: null };
@@ -725,7 +735,7 @@ export async function buildDefaultComparatorLists(urn: string, opts: { only?: "n
   const boardingConfig = isBoardingCategory ? BOARDING_CATEGORY_CONFIG[schoolTypeCategory as keyof typeof BOARDING_CATEGORY_CONFIG] : null;
 
   const [matched, list2, local16PlusCandidates, boardingBand, boardingRecipe] = await Promise.all([
-    findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed" }),
+    findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", ...(post16 ? { extraFilterUrns: withKs5Results, filterBeforeFacts: true } : {}) }),
     target.la_name && !nearestOnly ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
     target.la_name && hasPost16Provision && !nearestOnly ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
     isBoardingCategory ? resolveBoardingQuintileBand(urn) : Promise.resolve<BoardingQuintileBand | null>(null),
@@ -748,5 +758,22 @@ export async function buildDefaultComparatorLists(urn: string, opts: { only?: "n
         }
       : null;
 
-  return { schoolTypeCategory, list1, list2, boardingBand, boardingRecipe, local16Plus, regionName, nation };
+  const recipe = post16 && boardingRecipe ? await keepWithKs5Results(boardingRecipe) : boardingRecipe;
+  return { schoolTypeCategory, list1, list2, boardingBand, boardingRecipe: recipe, local16Plus, regionName, nation };
+}
+
+// 0.6.5 S4: of these schools, the ones with Post-16 provision in real data -- KS5 results
+// (academic_headline_lookup, ks5) in either of the latest two published years. One batched
+// call per findSurroundingSchools chunk.
+export async function withKs5Results(urns: string[]): Promise<Set<string>> {
+  if (urns.length === 0) return new Set();
+  // The latest published period is national: one read an hour per instance (server-cache.ts).
+  const latest = (await cachedReference("phases:current-periods", () => lookupAcademicCurrentPeriods())).ks5 ?? null;
+  const rows = await lookupAcademicHeadline({ entityIds: urns, ksStage: "ks5", ...(latest !== null ? { periodMin: latest - 1 } : {}) });
+  return new Set(rows.map((r) => r.entity_id));
+}
+
+export async function keepWithKs5Results(list: DefaultList): Promise<DefaultList> {
+  const keep = await withKs5Results(list.schools.map((sc) => sc.urn));
+  return { ...list, schools: list.schools.filter((sc) => keep.has(sc.urn)) };
 }

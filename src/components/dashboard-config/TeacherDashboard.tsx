@@ -56,7 +56,6 @@ import { ComparisonsPanels, type ComparatorSchool, type MapChip, type SchoolSeri
 import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
 import { mapResultOf, type MapSeries } from "@/lib/teacher-map";
 import { TableLayoutContext, type TableLayoutStore } from "@/components/teacher/tableLayout";
-import { isAsLevelOrAea } from "@/lib/dfe-qualification-buckets";
 import type { ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
@@ -72,7 +71,8 @@ import type { FrameSetGrades } from "@/lib/view-series/frames";
 import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
-import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
+import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
+import { fetchComparatorQualifications, seriesFromQualificationRows, type ComparatorQualificationRow } from "@/lib/teacher-view-comparator-quals";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
 import { CategorySubjectPicker } from "@/components/teacher/CategorySubjectPicker";
@@ -778,6 +778,25 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   }, [setGradesAsk, supabase]);
 
+  // 0.6.5 S3 (R-POINTS-SAME-QUAL): at Post-16 the Compared-against set's figures for the
+  // focus's EXACT qualification (points and entries per year), which Comparisons and the maps
+  // read instead of the bucket's. Asked for during render (exactQuals below), fetched once per
+  // set + subject + qualification, beside the map profiles' fetch, and shared for 5 minutes.
+  type QualAsk = { key: string; anchorUrn: string; urns: string[]; subject: string; qualificationType: string };
+  const [qualAsk, setQualAsk] = useState<QualAsk | null>(null);
+  const [setQuals, setSetQuals] = useState<{ key: string; rows: Record<string, ComparatorQualificationRow[]> | null } | null>(null);
+  useEffect(() => {
+    if (!qualAsk) return;
+    let cancelled = false;
+    (async () => {
+      const rows = await fetchComparatorQualifications(supabase, qualAsk.anchorUrn, qualAsk.urns, qualAsk.subject, qualAsk.qualificationType);
+      if (!cancelled) setSetQuals({ key: qualAsk.key, rows });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [qualAsk, supabase]);
+
   if (loading) return embed ? <EmbedStatus text="Loading…" /> : <main className="mx-auto max-w-4xl p-6"><ViewAsBanner plain /><p className="text-sm text-neutral-500">Loading…</p></main>;
   if (embed && (error || !phase)) return <EmbedStatus text={error ?? "Unknown phase."} />;
   if (error || !phase) {
@@ -1121,8 +1140,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     const ph = phase;
     for (const i of tickedItems) {
       const bucket = ph === "ks5" ? comparabilityKey(ph, i.qualificationType) : null;
-      const key = `${i.subject}|${bucket ?? "all"}`;
-      const qual = qualificationShortLabel(ph, i.qualificationType);
+      // 0.6.5 S3: at Post-16 one chip per EXACT qualification, named by it ("AS level", "BTEC
+      // Extended Diploma"): Comparisons and the maps now read that qualification's figures.
+      const key = ph === "ks5" ? `${i.subject}|${i.qualificationType}` : `${i.subject}|${bucket ?? "all"}`;
+      const qual = ph === "ks5" ? exactQualificationLabel(i.qualificationType) : qualificationShortLabel(ph, i.qualificationType);
       const existing = mapChips.find((c) => c.key === key);
       if (existing) {
         if (!existing.label.includes(qual)) existing.label += `, ${qual}`;
@@ -1151,7 +1172,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const focusItem = tickedItems.find((i) => i.key === focusKey) ?? null;
   const activeMapChip = focusItem
     ? mapChips.find(
-        (c) => c.subject === focusItem.subject && (phase !== "ks5" || c.bucket === comparabilityKey(phase, focusItem.qualificationType)),
+        (c) => c.subject === focusItem.subject && (phase !== "ks5" || c.key === `${focusItem.subject}|${focusItem.qualificationType}`),
       ) ?? null
     : null;
 
@@ -1214,17 +1235,6 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
 
   // Which measure Results' three panels are pointed at. Persisted per column, so the card
   // comes back showing the figure it was left showing.
-  const resultsMeasures = measuresFor(phase);
-  const resultsMeasure = measureById(phase, readSetting(columns, measureKey("results")) ?? resultsMeasures[0].id);
-  const usingThreshold = resultsMeasure.id === "threshold";
-
-  // Grade bands frontend round: the share of a subject's graded entries inside a range the
-  // teacher picks on the FOCUSED subject's own scale. One range, saved like the measure
-  // (BAND_RANGE_KEY), read by Column 1, Comparisons and Context alike. It is kept only
-  // while both ends are grades on the focused subject's scale; otherwise the scale's
-  // preset (7-9, GCSE 9-1 only) or no range at all -- never an invented default band.
-  const usingBands = resultsMeasure.id === "bands";
-  const BAND_RANGE_KEY = "band:range";
   const focusGradeRows = focusItem
     ? gradeRows.filter((g) => g.subject === focusItem.subject && g.qualificationType === focusItem.qualificationType)
     : [];
@@ -1234,9 +1244,30 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // rather than IB 7-1, and so give them a band figure: a latest-year change, logged for Guy.)
   // 0.6.3 S3: from the focus's qualification type first (a T Level is on the T Level scale).
   const focusScale = scaleForQualification(focusItem?.qualificationType ?? "", focusGradeRows.filter((g) => g.period >= MODERN_GRADE_FROM).map((g) => g.grade));
+  const resultsMeasures = measuresFor(phase);
+  const savedResultsMeasure = measureById(phase, readSetting(columns, measureKey("results")) ?? resultsMeasures[0].id);
+  // 0.6.5 S2 (the 0.6.4 audit's change 3): A*-E scores A-level-scale grades only (A level,
+  // AS, Core Maths, EPQ). On a BTEC / OCR, IB, T Level or Pre-U focus the top bar greys it,
+  // and a saved A*-E shows Average points for that focus -- the saved choice is kept, so an
+  // A-level focus brings A*-E back. Embeds (a pinned measure) keep 0.6.3's panel note.
+  const aStarToEUnavailable = phase === "ks5" && !!focusItem && focusScale !== GRADE_SCALES[2];
+  const aStarToEReason = "A*–E applies to A level, AS, Core Maths and EPQ grades.";
+  const resultsMeasure = !embed && aStarToEUnavailable && savedResultsMeasure.id === "threshold" ? resultsMeasures[0] : savedResultsMeasure;
+  const usingThreshold = resultsMeasure.id === "threshold";
+
+  // Grade bands frontend round: the share of a subject's graded entries inside a range the
+  // teacher picks on the FOCUSED subject's own scale. One range, saved like the measure
+  // (BAND_RANGE_KEY), read by Column 1, Comparisons and Context alike. It is kept only
+  // while both ends are grades on the focused subject's scale; otherwise the scale's
+  // preset (7-9, GCSE 9-1 only) or no range at all -- never an invented default band.
+  const usingBands = resultsMeasure.id === "bands";
+  const BAND_RANGE_KEY = "band:range";
   // 0.6.1 S5 (D3): the range is chosen in the top bar (ResultsControl: the scale's presets,
   // or Custom's from / to), no longer by clicking two grades in the Grades view.
-  const bandRange: GradeRange | null = bandRangeFor(focusScale, null, readSetting(columns, BAND_RANGE_KEY));
+  // 0.6.5 S1: the default (no saved range, or one off this scale) is the scale's own --
+  // 7-9 at GCSE, and at Post-16 one per scale and qualification (A* to A on an A level).
+  const bandPresetContext = { phase, qualificationType: focusItem?.qualificationType ?? null };
+  const bandRange: GradeRange | null = bandRangeFor(focusScale, null, readSetting(columns, BAND_RANGE_KEY), bandPresetContext);
   const bandLabel = bandRange ? rangeLabel(bandRange) : null;
   const saveBand = (top: string, bottom: string) => {
     void setColumnSetting(BAND_RANGE_KEY, JSON.stringify({ top, bottom }));
@@ -1550,6 +1581,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // mothballed: still built by the route, offered nowhere.
   const comparisonsSet: string = storedSaved === "no" ? CHOOSER_SET_ID : storedSet!;
   const activeSavedSet = (savedSets?.sets ?? []).find((set) => savedSetKey(set.id) === comparisonsSet) ?? null;
+  // 0.6.5 S4: on the Post-16 page the default is the 10 nearest with Post-16 provision; its pill
+  // keeps "10 nearest schools" (still true there), so Column 3's content -- and with it the
+  // grid's column widths -- don't change. The chooser names it in full.
   const activeSetLabel = activeSavedSet ? activeSavedSet.name : storedSaved === "pending" ? "Loading…" : chooserChoice ? chooserChoice.label : DEFAULT_CHOICE_LABEL;
   const activeSetOption: SetOption =
     activeSavedSet
@@ -1568,8 +1602,23 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // the one the Map has been using all along (mapProfiles' own per-subject rows), which
   // is why §6.7's "comparator data is whole-school only" was wrong -- the Map disproved
   // it. Nothing new is fetched here; subjectYearsFor reads the profiles already loaded.
+  // 0.6.5 S3: at Post-16, the set's exact-qualification rows (null while they load; rows null
+  // if the request failed). `urns` is the set and the school, as Comparisons draws them.
+  const exactQuals = (() => {
+    if (phase !== "ks5" || !focusItem || !schoolUrn || !activeMapChip) return null;
+    const urns = Array.from(new Set([schoolUrn, ...(allComparatorSets[comparisonsSet] ?? []).map((sc) => sc.urn)])).sort();
+    const key = `${focusItem.subject}|${focusItem.qualificationType}|${urns.join(",")}`;
+    if (setQuals?.key !== key) {
+      const ask: QualAsk = { key, anchorUrn: schoolUrn, urns, subject: focusItem.subject, qualificationType: focusItem.qualificationType };
+      if (qualAsk?.key !== key) queueMicrotask(() => setQualAsk((cur) => (cur?.key === key ? cur : ask)));
+      return { urns, rows: undefined };
+    }
+    return { urns, rows: setQuals.rows };
+  })();
   const comparatorSubjectSeries: Record<string, SchoolSeries> = {};
-  if (activeMapChip && mapProfiles) {
+  if (exactQuals) {
+    for (const u of exactQuals.urns) comparatorSubjectSeries[u] = seriesFromQualificationRows(exactQuals.rows?.[u] ?? []);
+  } else if (activeMapChip && mapProfiles) {
     for (const profile of mapProfiles) {
       const rows = subjectYearsFor(profile, phase, activeMapChip.subject, activeMapChip.bucket);
       comparatorSubjectSeries[profile.urn] = {
@@ -1718,14 +1767,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   };
 
-  // 0.6.3 S3: an AS / AEA focus at Post-16 is compared on its own exact qualification
-  // (size, share and rank on its graded entries, never the A-level bucket's).
-  const exactQualFocus = phase === "ks5" && !!focusItem && isAsLevelOrAea(focusItem.qualificationType);
   // 0.6.3 S3: A*-E at Post-16 scores A-level-scale qualifications only; a BTEC, IB or T
   // Level focus says so on the panels rather than showing grey dots with no reason.
   const aStarToEOff = phase === "ks5" && showingResults && usingThreshold && !!focusItem && focusScale !== GRADE_SCALES[2];
   const aStarToENote = "A*–E applies to A levels; use a grade or band for this qualification.";
-  const gradedEntriesOf = (rows: SubjectGradeCount[]): number | null => rows.filter((r) => !NON_GRADE_VALUES.has(r.grade)).reduce((a, r) => a + r.entries, 0) || null;
 
   // Round 8 §3: driven by the shared toggle, so this column's own measure pill is gone.
   // The figure still follows the focus subject (round 7 §9): with one in focus it is that
@@ -1753,6 +1798,35 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         : undefined;
 
   const comparatorEmptyText = "No schools in this comparison with comparable published data for this phase.";
+  // 0.6.5 S6: a T Level focus with entries but no per-pathway grade or points rows -- DfE
+  // published this college's T Level results only for all pathways together (Croydon 130432).
+  // Results' panels say so instead of drawing empty charts; Candidates is unaffected.
+  const tLevelAllPathways =
+    phase === "ks5" && focusItem && /^T Level/i.test(focusItem.qualificationType) &&
+    focusGradeRows.length === 0 && ownRowsFor(focusItem).every((h) => h.avgPointScore === null) &&
+    ownRowsFor(focusItem).some((h) => (h.entriesTotal ?? 0) > 0)
+      ? "DfE publishes this college's T Level results only for all pathways together."
+      : null;
+  // 0.6.5 S5: the Post-16 ranking headline is A-level points per entry; a school with no
+  // A-level entries in the latest year (IB-only, an FE college) has no figure on it, and the
+  // ranking tiles say why rather than drawing an empty or hollow figure.
+  const noALevelNote =
+    phase === "ks5" && latestPeriod !== null && !entries.some((e) => e.period === latestPeriod && e.qualificationType === "GCE A level" && e.entries > 0)
+      ? `${schoolName ?? "This school"} has no A-level entries. Post-16 rankings use A-level points per entry.`
+      : null;
+  // 0.6.5 S3: at Post-16, on points or entries, when no other school in the set has the focus's
+  // exact qualification -- or none publishes its points -- Comparisons says so in place of a
+  // column of one school. (Rates keep their own note, from the schools' grade rows.)
+  const exactQualsNote = (() => {
+    if (!exactQuals?.rows || !focusItem) return null;
+    if (showingResults && (usingThreshold || comparisonsOnBands)) return null;
+    const others = exactQuals.urns.filter((u) => u !== schoolUrn).map((u) => exactQuals.rows?.[u] ?? []);
+    if (others.length === 0) return null;
+    const what = `${exactQualificationLabel(focusItem.qualificationType)} ${focusItem.subject}`;
+    if (!others.some((rows) => rows.some((r) => (r.entries ?? 0) > 0))) return `No school in this set has ${what} entries.`;
+    if (showingResults && !others.some((rows) => rows.some((r) => r.avgPointScore !== null))) return `No school in this set publishes average points for ${what}.`;
+    return null;
+  })();
 
   // Column 1's persistence key. Both modes share it, because the toggle changes the
   // measure a panel is about, not which panels the person chose to keep -- switching to
@@ -1896,6 +1970,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <GradeCountsPanels
         columnId={COL1}
         subjectLabel={phase === "ks5" ? focusItem.label : focusItem.subject}
+        {...(tLevelAllPathways ? { noGradesNote: tLevelAllPathways } : {})}
         ownRows={focusGradeRows}
         geography={schoolUrn ? { urn: schoolUrn, subject: focusItem.subject, qualificationType: focusItem.qualificationType, phase } : null}
         colour={colourOf(focusItem)}
@@ -2010,6 +2085,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               : "the England average for the same subject and qualification"
         }
         limitNote={aStarToEOff ? aStarToENote : undefined}
+        prompt={showingResults && tLevelAllPathways ? tLevelAllPathways : undefined}
         note={
           usingThreshold
             ? `Subjects graded on a vocational scale have no ${phase === "ks5" ? "A*–E" : "grade 4"} bar and show no figure.`
@@ -2214,7 +2290,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // 2024/25" or "Selected Subjects Context 2024/25".
         currentLabel={`${titleCase(contextGroupLabel)} Context`}
         // 0.6.3 S1: on Grade counts, the prompt until a grade is selected; then the chip.
-        prompt={countsPrompt ? "Click a grade in Results to compare it across subjects" : undefined}
+        prompt={showingResults && tLevelAllPathways ? tLevelAllPathways : countsPrompt ? "Click a grade in Results to compare it across subjects" : undefined}
         selectionChip={selectionChip}
         titleLead={countsSelectionMeasure && countsDrive ? countsSelectionMeasure.label : undefined}
         limitNote={aStarToEOff ? aStarToENote : undefined}
@@ -2269,22 +2345,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           setChooser({ editing });
         }}
         subjectLabel={activeMapChip?.legend ?? null}
-        seriesLoading={!!activeMapChip && mapProfiles === null}
+        seriesLoading={!!activeMapChip && (exactQuals ? exactQuals.rows === undefined : mapProfiles === null)}
+        noComparatorNote={exactQualsNote}
         measure={comparisonsMeasure}
         // Results on a grade threshold with a subject in focus: the column fetches every
         // comparator's grade counts for it and scores them as thresholdAt() scores ours.
         threshold={
-          // 0.6.3 S3: an AS or AEA focus is compared on its own qualification's rows -- the
-          // map profiles only carry the A-level bucket, which adds A levels in. Candidates:
-          // each school's graded entries; points: none are published at that grain.
-          exactQualFocus && activeMapChip && focusItem && !(showingResults && (usingThreshold || comparisonsOnBands))
-            ? {
-                subject: focusItem.subject,
-                qualificationType: focusItem.qualificationType,
-                rateOf: showingResults ? () => null : gradedEntriesOf,
-                ...(showingResults ? { unavailable: `Other schools' average points aren't published for ${qualificationShortLabel(phase, focusItem.qualificationType) || focusItem.qualificationType} on its own, only with A levels; use a grade or band to compare it.` } : {}),
-              }
-            : showingResults && (usingThreshold || comparisonsOnBands) && activeMapChip && focusItem && phase !== "ks2"
+          // 0.6.5 S3: an AS / AEA focus no longer needs 0.6.3's graded-entries stand-in: its exact
+          // qualification's points and entries now come with every Post-16 focus (exactQuals).
+          showingResults && (usingThreshold || comparisonsOnBands) && activeMapChip && focusItem && phase !== "ks2"
             ? {
                 subject: focusItem.subject,
                 qualificationType: focusItem.qualificationType,
@@ -2297,7 +2366,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               }
             : null
         }
-        prompt={countsPrompt ? "Click a grade in Results to compare it across schools" : undefined}
+        prompt={showingResults && tLevelAllPathways ? tLevelAllPathways : countsPrompt ? "Click a grade in Results to compare it across schools" : undefined}
         selectionChip={selectionChip}
         titleLead={countsSelectionMeasure && countsDrive ? countsSelectionMeasure.label : undefined}
         mapRange={comparisonsOnBands ? columnsRange : null}
@@ -2313,7 +2382,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // figures are on the ranking's own measure, the phase headline.
         rankingSet={
           onRanking && chooserSet?.ranking
-            ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure" }
+            ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure", noFigureNote: noALevelNote }
             : null
         }
         currentLabel={
@@ -2450,10 +2519,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const topResults = (compact: boolean) =>
     showingResults ? (
       <ResultsControl
-        measures={resultsMeasures}
+        measures={aStarToEUnavailable ? resultsMeasures.map((m) => (m.id === "threshold" ? { ...m, disabledReason: aStarToEReason } : m)) : resultsMeasures}
         active={resultsMeasure}
         onMeasure={(id) => setColumnSetting(measureKey("results"), id)}
-        band={focusItem ? { scale: focusScale, range: usingCounts ? countsRange : bandRange, onRange: saveBand } : null}
+        band={focusItem ? { scale: focusScale, range: usingCounts ? countsRange : bandRange, onRange: saveBand, presets: bandPresetContext } : null}
         compact={compact}
       />
     ) : undefined;
@@ -2474,7 +2543,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           comparator: onRanking ? "ranking" : "schools",
           selected: contextSelected,
           // 0.6.1 S5: the editor's own Results control opens on the page's band.
-          ...(focusItem ? { band: { scale: focusScale, range: bandRange ? { top: bandRange.top, bottom: bandRange.bottom } : null } } : {}),
+          ...(focusItem ? { band: { scale: focusScale, range: bandRange ? { top: bandRange.top, bottom: bandRange.bottom } : null, qualificationType: focusItem.qualificationType } } : {}),
         },
         top: <ViewAsBanner className="" />,
         onExit: () => setEditOn(false),

@@ -59,3 +59,58 @@ test("inline range labels keep the scale's own grades", () => {
   assert.equal(inlineRangeLabel(rangeLabel({ scale: GCSE_SCALE, top: "5", bottom: "5" })), "grade 5");
   assert.equal(inlineRangeLabel("9-9 to 5-5"), "9-9 to 5-5");
 });
+
+// 0.6.5 S1 (the 0.6.4 audit's change 1): Grade bands opens on a default range at Post-16.
+test("Post-16 opens on each scale's default band; GCSE is unchanged; KS4 never gains a Post-16 preset", () => {
+  const ks5 = (qualificationType: string) => ({ phase: "ks5", qualificationType });
+  const at = (scale: string[], q: string) => bandRangeFor(scale, null, undefined, ks5(q));
+  const [IB, VOC1, VOC2, VOC3] = [GRADE_SCALES[3], GRADE_SCALES[5], GRADE_SCALES[6], GRADE_SCALES[7]];
+  const TLEVEL = GRADE_SCALES[GRADE_SCALES.length - 1];
+  const ends = (r: ReturnType<typeof bandRangeFor>) => (r ? `${r.top}..${r.bottom}` : null);
+  assert.equal(ends(at(A_LEVEL, "GCE A level")), "A*..A");
+  assert.equal(ends(at(A_LEVEL, "GCE AS level")), "A..B");
+  assert.equal(ends(at(A_LEVEL, "Core Maths Qualifications at Level 3")), "A..B");
+  assert.equal(ends(at(A_LEVEL, "Extended Project (Diploma)")), "A*..A");
+  assert.equal(ends(at(IB, "IBO Higher level component")), "7..6");
+  assert.equal(ends(at(VOC1, "BTEC National Extended Certificate L3 - Band F - P-D*")), "Distinction*..Distinction");
+  assert.equal(ends(at(VOC2, "BTEC National Diploma L3 - Band J - PP-D*D*")), "Distinction*-Distinction*..Distinction-Distinction");
+  assert.equal(ends(at(VOC3, "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*")), "Distinction*-Distinction*-Distinction*..Distinction-Distinction-Distinction");
+  assert.equal(ends(at(TLEVEL, "T Level")), "Distinction*..Merit");
+  // A scale with no listed default (Pre-U) and an A*-E qualification not listed: custom only.
+  assert.equal(at(GRADE_SCALES[11], "Cambridge Pre-U Principal Subject"), null);
+  assert.equal(at(A_LEVEL, "Other General Qualification"), null);
+  // GCSE: 7-9 as before, with or without the context; a GCSE cohort read as the IB 7-1 scale
+  // gains no band (the Post-16 presets are Post-16 only).
+  assert.deepEqual(bandRangeFor(GCSE_SCALE, null, undefined, { phase: "ks4", qualificationType: "GCSE (9-1) Full Course" }), { scale: GCSE_SCALE, top: "9", bottom: "7" });
+  assert.equal(bandRangeFor(IB, null, undefined, { phase: "ks4", qualificationType: "GCSE (9-1) Full Course" }), null);
+  assert.deepEqual(presetsFor(GCSE_SCALE, { phase: "ks4" }).map((p) => p.label), ["4–9", "7–9"]);
+  // The menu: the default plus Custom, as at GCSE.
+  assert.deepEqual(presetsFor(A_LEVEL, ks5("GCE A level")).map((p) => p.label), ["A* to A"]);
+});
+
+test("a saved range wins; one that isn't on the new focus's scale falls back to that scale's default", () => {
+  const ks5 = { phase: "ks5", qualificationType: "GCE A level" };
+  assert.deepEqual(bandRangeFor(A_LEVEL, null, JSON.stringify({ top: "A*", bottom: "B" }), ks5), { scale: A_LEVEL, top: "A*", bottom: "B" });
+  // A BTEC range saved, then the focus moves to an A level: A* to A, never a stale or blank range.
+  const saved = JSON.stringify({ top: "Distinction*", bottom: "Merit" });
+  assert.deepEqual(bandRangeFor(A_LEVEL, null, saved, ks5), { scale: A_LEVEL, top: "A*", bottom: "A" });
+  // ...and back to the BTEC: the saved range again.
+  assert.deepEqual(bandRangeFor(GRADE_SCALES[5], null, saved, { phase: "ks5", qualificationType: "BTEC National Extended Certificate L3 - Band F - P-D*" }), { scale: GRADE_SCALES[5], top: "Distinction*", bottom: "Merit" });
+});
+
+test("the top bar at Post-16: Grades A* to A, with its preset and Custom", () => {
+  const band = { scale: A_LEVEL, range: { scale: A_LEVEL, top: "A*", bottom: "A" }, onRange: () => {}, presets: { phase: "ks5", qualificationType: "GCE A level" } };
+  assert.match(text(html("bands", band)), /Grades: A\* to A/);
+});
+
+// 0.6.5 S2 (the 0.6.4 audit's change 3): A*-E greyed, with its reason, for a focus it can't score.
+test("a measure this focus can't have is greyed in the Results switch, with the reason on hover", async () => {
+  const { MenuRow } = await import("@/components/teacher/PanelMenu");
+  const row = renderToStaticMarkup(createElement(MenuRow, { label: "A*–E rate", disabled: true, title: "A*–E applies to A level, AS, Core Maths and EPQ grades.", onClick: () => {} }));
+  assert.match(row, /disabled=""/);
+  assert.match(row, /title="A\*–E applies to A level, AS, Core Maths and EPQ grades."/);
+  assert.match(row, /opacity-45/);
+  // Without a reason a row is as before (no title, not disabled).
+  const plain = renderToStaticMarkup(createElement(MenuRow, { label: "Average points", onClick: () => {} }));
+  assert.doesNotMatch(plain, /title=|disabled/);
+});

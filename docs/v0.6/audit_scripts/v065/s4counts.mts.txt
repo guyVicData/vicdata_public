@@ -1,0 +1,26 @@
+const R = "/Users/guy/dev/vicdata_public/src/lib/";
+const dcl = await import(R + "default-comparator-lists.ts");
+const no = await import(R + "nearest-option.ts");
+const ref = await import(R + "vicdata-reference.ts");
+const cases = [
+  { urn: "117037", subject: "Mathematics", qual: "GCE A level", name: "King's Worcester A level Maths" },
+  { urn: "118952", subject: "Mathematical Studies", qual: "IBO Higher level component", name: "Sevenoaks IB Maths HL" },
+  { urn: "130432", subject: "Business Studies", qual: "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*", name: "Croydon Business BTEC Ext Diploma" },
+  { urn: "130432", subject: "Law", qual: "GCE AS level", name: "Croydon AS Law" },
+  { urn: "137625", subject: "History", qual: "GCE A level", name: "The Chase A level History (Post-16)" },
+];
+for (const c of cases) {
+  const out: string[] = [];
+  for (const post16 of [false, true]) {
+    const t0 = performance.now();
+    const lists = await dcl.buildDefaultComparatorLists(c.urn, { only: "nearest", post16 });
+    const chosen = no.resolveNearestOption(lists.list1, lists.boardingBand, lists.boardingRecipe, null);
+    const urns = (chosen?.schools ?? []).map((s: { urn: string }) => s.urn).filter((u: string) => u !== c.urn);
+    const rows = urns.length ? await ref.lookupAcademicSubjectQualificationHeadline({ entityIds: urns, ksStage: "ks5", qualificationType: c.qual }) : [];
+    const sharing = new Set(rows.filter((r: any) => r.subject === c.subject && r.period === 2024 && Number(r.entries_total) > 0).map((r: any) => r.entity_id));
+    const withPoints = new Set(rows.filter((r: any) => r.subject === c.subject && r.period === 2024 && r.avg_point_score !== null).map((r: any) => r.entity_id));
+    out.push(`${post16 ? "after" : "before"}: ${urns.length} schools (${chosen === lists.boardingRecipe && lists.boardingRecipe ? "boarding recipe" : lists.schoolTypeCategory === "fe_college" ? "FE nearest" : "nearest"}), ${sharing.size} share the qualification, ${withPoints.size} with points (${Math.round(performance.now() - t0)} ms)`);
+  }
+  console.log(`${c.name} (${c.urn}): ${out.join(" | ")}`);
+}
+process.exit(0);

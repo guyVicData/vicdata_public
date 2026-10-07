@@ -1,0 +1,9 @@
+const ss = await import("/Users/guy/dev/vicdata_public/src/lib/surrounding-schools.ts");
+const dcl = await import("/Users/guy/dev/vicdata_public/src/lib/default-comparator-lists.ts");
+const rd = await import("/Users/guy/dev/vicdata_public/src/lib/roll-data.ts");
+for (const urn of ["137625", "117037", "100053", "118952", "130416"]) {
+  const a = await ss.findSurroundingSchools(urn, rd.CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", extraFilterUrns: dcl.withKs5Results });
+  const b = await ss.findSurroundingSchools(urn, rd.CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", extraFilterUrns: dcl.withKs5Results, filterBeforeFacts: true });
+  console.log(urn, a.length, JSON.stringify(a.map((m) => [m.urn, m.totalRoll])) === JSON.stringify(b.map((m) => [m.urn, m.totalRoll])) ? "identical" : "DIFFERENT");
+}
+process.exit(0);

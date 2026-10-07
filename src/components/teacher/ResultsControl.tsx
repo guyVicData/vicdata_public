@@ -8,7 +8,8 @@
 //   Grades: 7–9 ▾                  Grade bands only: the range (saved under band:range)
 //
 // The band follows the focused subject's own scale (bandRangeFor, presetsFor): at GCSE 9–1
-// the presets "4–9" and "7–9" plus Custom; Post-16 and every other named scale Custom only.
+// the presets "4–9" and "7–9" plus Custom; 0.6.5 S1: at Post-16 the scale's one default
+// (e.g. "A* to A") plus Custom; every other named scale Custom only.
 // Custom opens an in-place range picker in the same popover: from grade ▾ to grade ▾.
 // Never drawn inside an embed: meeting slots and previews set both through embed.ts.
 //
@@ -18,15 +19,19 @@
 import { useState } from "react";
 import { PillMenu } from "./PillMenu";
 import { MenuDivider, MenuHeading, MenuRow } from "./PanelMenu";
-import { BOTTOM_RANK, GCSE_SCALE, presetsFor, spanBetween, type GradeRange } from "@/lib/subject-grades";
+import { BOTTOM_RANK, GCSE_SCALE, presetsFor, spanBetween, type GradeRange, type PresetContext } from "@/lib/subject-grades";
 
-export type ResultsChoice = { id: string; label: string };
+// 0.6.5 S2: `disabledReason` greys a measure this focus can't have (A*-E on a BTEC, IB,
+// T Level or Pre-U focus), with the reason on hover.
+export type ResultsChoice = { id: string; label: string; disabledReason?: string };
 
 export type BandChoice = {
   // The focused subject's own scale ([] = no published grades to pick from).
   scale: string[];
   range: GradeRange | null;
   onRange: (top: string, bottom: string) => void;
+  // 0.6.5 S1: which presets the scale offers (Post-16's depend on the phase and qualification).
+  presets?: PresetContext;
 };
 
 // "7–9" at GCSE 9–1 (bottom–top, as the presets say it); "A* to B" on a named scale.
@@ -71,7 +76,14 @@ export function ResultsControl({
           <>
             <MenuHeading>Switch measure</MenuHeading>
             {measures.map((m) => (
-              <MenuRow key={m.id} label={m.label} selected={m.id === active.id} onClick={() => { onMeasure(m.id); close(); }} />
+              <MenuRow
+                key={m.id}
+                label={m.label}
+                selected={m.id === active.id}
+                disabled={!!m.disabledReason}
+                title={m.disabledReason}
+                onClick={() => { onMeasure(m.id); close(); }}
+              />
             ))}
           </>
         )}
@@ -82,7 +94,7 @@ export function ResultsControl({
 }
 
 function BandMenu({ band, align, width }: { band: BandChoice; align: "left" | "right"; width: number }) {
-  const presets = presetsFor(band.scale);
+  const presets = presetsFor(band.scale, band.presets);
   const preset = band.range ? presets.find((p) => p.top === band.range!.top && p.bottom === band.range!.bottom) : undefined;
   const custom = !!band.range && !preset;
   const value = band.range ? (custom && presets.length ? `Custom ${bandValue(band.range)}` : bandValue(band.range)) : "Pick a range";

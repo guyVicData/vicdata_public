@@ -119,6 +119,8 @@ function Leaf({ leaf, fullscreen }: { leaf: LeafSeries; fullscreen: boolean }) {
     }
     case "numberTiles":
       // The Figures are already applied (the series builder, from the instance's params).
+      // 0.6.5 S5: a known reason for no figure (no A-level entries at Post-16) reads as a note.
+      if (leaf.note) return <p className="text-sm text-[var(--muted)]">{leaf.note}</p>;
       return <NumberTiles main={leaf.main} tiles={leaf.tiles.map((t) => ({ ...t, icon: Icons[t.icon] }))} fullscreen={fullscreen} />;
     case "rankedList":
       return (
