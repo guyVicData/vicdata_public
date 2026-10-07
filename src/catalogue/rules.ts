@@ -49,7 +49,7 @@ export const RULES: Rule[] = [
   {
     id: "R-POINTS-SAME-QUAL",
     statement:
-      "A points figure is only comparable within one qualification type (KS4: qualification type; KS5: bucket or exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown.",
+      "A points figure is only comparable within one qualification type (KS4: qualification type; KS5: the exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown. Since 0.6.5 (S3), Post-16 Comparisons and the maps (Column 3 Current and Trends, Column 1's Trend map) read every school's figure for the focus's EXACT qualification -- A level, AS level, each BTEC size, IB Higher or Standard level -- never the bucket's blend, so Column 1, Comparisons and the maps show one figure for the school and one rank; where no other school in the set has the qualification (or publishes its points), Comparisons says so.",
     why: "A-level, BTEC and IB points sit on different challenge tables; one bar chart or average across them compares unlike scales.",
     appliesTo: "M-KS4-POINTS, M-KS5-POINTS; map chips, Column 1 category, Context",
     enforcedIn: [
@@ -58,6 +58,8 @@ export const RULES: Rule[] = [
       `${P}:candidateItems (1063-1099, via R-QUAL-FAMILY-MATCH)`,
       "src/lib/teacher-view-measures.ts:contextKeepsToFamily, onFocusPointsScale, contextGroupValue (Post-16 points rows in the focus's family only)",
       "src/lib/teacher-view-populations.ts:contextItemsOf (keepToFamily: All subjects on Post-16 points)",
+      "src/app/api/teacher/comparator-qualifications/route.ts; src/lib/teacher-view-comparator-quals.ts (0.6.5 S3)",
+      "src/components/dashboard-config/TeacherDashboard.tsx:exactQuals, comparatorSubjectSeries, mapChips (exact at Post-16), exactQualsNote",
     ],
     testCase: {
       urn: "130432",
@@ -66,7 +68,7 @@ export const RULES: Rule[] = [
       subject: "Business Studies",
       year: "2024/25",
       expect:
-        "Context on Average point score: Business Studies (A level + five BTEC sizes) has one group value per family -- the A-level family's is the A-level row's own 26.36, the BTEC family's is the BTEC rows' weighted mean; no focus = no value. With A-level Computer Science focused, All subjects draws 20 A-level subjects (was 55 across every family) and its average is 25.6 (was a 24.7 blend).",
+        "Context on Average point score: Business Studies (A level + five BTEC sizes) has one group value per family -- the A-level family's is the A-level row's own 26.36, the BTEC family's is the BTEC rows' weighted mean; no focus = no value. With A-level Computer Science focused, All subjects draws 20 A-level subjects (was 55 across every family) and its average is 25.6 (was a 24.7 blend). Comparisons on A level Maths 2024/25: Croydon's own figure is its exact A level row (24.00), not the A-level bucket's 21.45, and every comparator's comes from the same exact-qualification rows.",
       check: "pointsSameQual",
     },
     origin: "Academic Results phase; Post-16 Part C and Part D",

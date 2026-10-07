@@ -205,7 +205,7 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Honest number types | points, change_points, rank |
 | Rules | R-ENTRIES-NOT-POINTS, R-POINTS-SAME-QUAL, R-KS5-ENGLAND-EXACT, R-KS5-ASAEA-EXCL, R-SINGLE-BUCKET-100, R-POINTS-WEIGHTED, R-IB-NONSUBJECT, R-MIN-SCHOOLS, R-SAME-YEAR-BENCH, R-GEO-APPLIES, R-FOCUS-NEVER-FILTERED, R-QUAL-FAMILY-MATCH, R-COMPARATOR-NO-FIGURE, R-TREND-LINE-4YR, R-PERIOD-TRIM, R-NUMBER-TYPE-HONESTY |
 | Fetched by | - src/app/api/teacher/dashboard/route.ts -> src/lib/academic-data-view.ts:fetchSubjectQualificationHeadlineForSchools (route.ts:176); England via englandAverages (route.ts:46-63)<br>- src/app/api/teacher/subject-geography/route.ts<br>- src/app/api/data-view/academic-schools/route.ts -> src/lib/academic-data-view.ts:fetchAcademicProfiles |
-| Known gaps | - The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).<br>- Context 'All subjects' blends qualifications (R-POINTS-SAME-QUAL open issue).<br>- Change is shown in points everywhere, as at GCSE (S3b, R-NUMBER-TYPE-HONESTY). |
+| Known gaps | - The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).<br>- Change is shown in points everywhere, as at GCSE (S3b, R-NUMBER-TYPE-HONESTY). |
 | Briefing | /Users/guy/dev/vicdata/docs/vicdata_briefing_post16_what_is_measured_v2.md (sibling repo) |
 | Citation | DfE A level and other 16 to 18 results |
 

@@ -363,7 +363,7 @@ const RUNNERS: Record<string, Runner> = {
   // A level and BTEC (Business Studies) has one Context group value per qualification
   // family, never a blend: the A-level family's is the A-level row's own figure, and no
   // BTEC row moves it. Post-16 points keep to the family; entries do not.
-  async pointsSameQual({ adv, tvm, pop }) {
+  async pointsSameQual({ adv, tvm, pop, ref }) {
     const urn = "130432";
     const qh = (await adv.fetchSubjectQualificationHeadlineForSchools([urn], "ks5")).get(urn) ?? [];
     const groupRows = pop.contextGroupRows("ks5", [], qh);
@@ -380,7 +380,19 @@ const RUNNERS: Record<string, Runner> = {
       keepsOnPoints: tvm.contextKeepsToFamily("ks5", "points"),
       keepsOnEntries: tvm.contextKeepsToFamily("ks5", "entries"),
     };
-    const pass = aRow !== null && v.aLevelFamily === round(aRow, 2) && v.btecRows > 0 && v.btecFamily !== null && v.btecFamily !== v.aLevelFamily && v.noFocus === null && v.keepsOnPoints && !v.keepsOnEntries;
+    // 0.6.5 S3: Comparisons' read (the comparator-qualifications route's lookup) gives the
+    // school's exact A level Maths figure -- Column 1's own row -- not the bucket's blend.
+    const { resolveDefaultNearest } = await import("../src/lib/chooser-sets");
+    const set = (await resolveDefaultNearest(urn, "ks5")).rows.map((r) => r.urn);
+    const exact = await ref.lookupAcademicSubjectQualificationHeadline({ entityIds: [urn, ...set], ksStage: "ks5", qualificationType: "GCE A level" });
+    const ownExact = exact.find((r) => r.entity_id === urn && r.subject === "Mathematics" && r.period === 2024)?.avg_point_score ?? null;
+    const column1 = qh.find((h) => h.subject === "Mathematics" && h.period === 2024 && h.qualificationType === "GCE A level")?.avgPointScore ?? null;
+    const bucket = ((await adv.fetchSubjectHeadlineForSchools([urn], "ks5", undefined, null)).get(urn) ?? []).find((h) => h.subject === "Mathematics" && h.period === 2024 && h.bucket === "alevel")?.avgPointScore ?? null;
+    const onlyALevel = exact.every((r) => r.qualification_type === "GCE A level");
+    Object.assign(v, { comparisonsExact: ownExact, column1: column1, bucketBlend: bucket, onlyALevel });
+    const pass =
+      aRow !== null && v.aLevelFamily === round(aRow, 2) && v.btecRows > 0 && v.btecFamily !== null && v.btecFamily !== v.aLevelFamily && v.noFocus === null && v.keepsOnPoints && !v.keepsOnEntries &&
+      ownExact !== null && column1 !== null && Number(ownExact) === Number(column1) && bucket !== null && Number(bucket) !== Number(ownExact) && onlyALevel;
     return { pass, detail: fmt(v) };
   },
 

@@ -347,7 +347,6 @@ export const MEASURES: Measure[] = [
     fetchedBy: [`${DASHBOARD_ROUTE} -> ${SUBJECT_QUAL_HEADLINE} (route.ts:176); England via englandAverages (route.ts:46-63)`, SUBJECT_GEO, PROFILES],
     knownGaps: [
       "The IB Diploma total ('Diploma total points', 0-45) is a separate figure (academic-data-view.ts:ibDiplomaHeadline).",
-      "Context 'All subjects' blends qualifications (R-POINTS-SAME-QUAL open issue).",
       "Change is shown in points everywhere, as at GCSE (S3b, R-NUMBER-TYPE-HONESTY).",
     ],
     briefing: POST16_BRIEFING,

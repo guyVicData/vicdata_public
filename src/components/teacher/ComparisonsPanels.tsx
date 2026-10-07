@@ -133,6 +133,7 @@ export function ComparisonsPanels({
   subjectLabel,
   seriesLoading: profilesLoading,
   emptyText,
+  noComparatorNote = null,
   targetName,
   onManageSet,
   threshold,
@@ -174,6 +175,9 @@ export function ComparisonsPanels({
   // published figures" while they are still in flight would be a plain lie.
   seriesLoading: boolean;
   emptyText: string;
+  // 0.6.5 S3: no other school in the set has the focus's exact Post-16 qualification (or none
+  // publishes its points): the column gives way to this note, as for an unavailable rate.
+  noComparatorNote?: string | null;
   // Content round S9: the school's real name for its own row, in place of "This school".
   targetName: string;
   // S11: the Current tag names what is compared and against whom, e.g. "Candidates at the
@@ -912,7 +916,9 @@ export function ComparisonsPanels({
   // On a rate, a school that publishes no grades for the subject drops out of the lists as
   // it does for points. The whole column gives way to a note only when no comparator has a
   // rate at all, or the grade counts could not be loaded.
-  const unavailableNote = threshold?.unavailable
+  const unavailableNote = noComparatorNote
+    ? noComparatorNote
+    : threshold?.unavailable
     ? threshold.unavailable
     : !threshold || !gradesLoaded
     ? null
