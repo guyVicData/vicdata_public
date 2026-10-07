@@ -1,0 +1,11 @@
+school phase | before: chooser-set + academic-schools = critical path (profiles KB) | after: chooser-set incl. profiles (profiles KB) | phase switch before -> after
+137625 ks4 | 815 + 1295 = 2110 ms (1056 KB) | 815 + 185 = 1000 ms (302 KB) | 1295 -> 0 ms
+137625 ks5 | 1590 + 1748 = 3338 ms (1509 KB) | 1590 + 514 = 2104 ms (313 KB) | 1748 -> 0 ms
+117037 ks4 | 1300 + 896 = 2196 ms (305 KB) | 1300 + 70 = 1370 ms (91 KB) | 896 -> 0 ms
+117037 ks5 | 1538 + 1348 = 2886 ms (1013 KB) | 1538 + 442 = 1980 ms (221 KB) | 1348 -> 0 ms
+118952 ks4 | 1406 + 199 = 1605 ms (75 KB) | 1406 + 43 = 1449 ms (11 KB) | 199 -> 0 ms
+118952 ks5 | 1381 + 1442 = 2823 ms (1296 KB) | 1381 + 536 = 1917 ms (324 KB) | 1442 -> 0 ms
+130432 ks4 | 764 + 325 = 1089 ms (596 KB) | 764 + 54 = 818 ms (8 KB) | 325 -> 0 ms
+130432 ks5 | 682 + 374 = 1056 ms (596 KB) | 682 + 255 = 937 ms (187 KB) | 374 -> 0 ms
+100053 ks4 | 719 + 1161 = 1880 ms (1263 KB) | 719 + 199 = 918 ms (301 KB) | 1161 -> 0 ms
+100053 ks5 | 725 + 1151 = 1876 ms (1443 KB) | 725 + 374 = 1099 ms (303 KB) | 1151 -> 0 ms
