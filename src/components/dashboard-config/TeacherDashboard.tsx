@@ -88,7 +88,7 @@ import { PHASE_LABELS, PHASE_QUESTIONS, TEACHER_PHASES, type TeacherPhase } from
 import { bandRangeFor, comparisonsMeasureFor, contextBandShareAt, contextFallsBackFor, contextGroupValue, contextKeepsToFamily, contextMeasureFor, englandIndexOf, englandValueAt, gradeRateScorer, gradeRowsAt, hasEnglandPointsBenchmark, hasGradesAt, latestOwnPoints, onFocusPointsScale, ownHeadlineRows, periodsForMeasure, shareApplies, subjectBandAt, subjectEntriesAt, subjectPointsAt, subjectThresholdAt } from "@/lib/teacher-view-measures";
 import { type SubjectItem as LibSubjectItem, asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf, subjectItemsOf } from "@/lib/teacher-view-populations";
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
-import { MINIMUM_SUBJECT_N, deserializeAcademicProfile, subjectYearsFor, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
+import { MINIMUM_SUBJECT_N, deserializeAcademicProfile, subjectYearsFor, type WireAcademicSchoolProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
 
 // 0.6.4 C2: the editor and the comparator chooser load when opened (PanelFooter's Copy
 // dialog already does), so a member who never edits doesn't download them with the page.
@@ -249,7 +249,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // rows are re-fetched from it rather than stored.
   // Snagging round 1 Part 4: a ranking also brings its rank-in-the-whole-population and
   // population-average figures (RankingFigures), which a list of schools does not have.
-  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; ranking: RankingFigures | null } | null>(null);
+  // 0.6.7 B1: `profiles` -- the set's lean school details, at GCSE and Post-16 (chooser-set).
+  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; ranking: RankingFigures | null; profiles?: WireAcademicSchoolProfile[] } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route: the subject
   // itself at GCSE; at Post-16 the subject in its exact qualification, with no fallback.
   const [englandAvg, setEnglandAvg] = useState<{
@@ -294,7 +295,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Round 5: the Rankings map's schools, as full academic profiles. Fetched once here and
   // handed to both the card's map and the fullscreen one, so opening fullscreen is not a
   // second round trip. null = not loaded yet; [] = loaded, nothing to draw.
-  const [mapProfiles, setMapProfiles] = useState<AcademicSchoolProfile[] | null>(null);
+  // 0.6.7 B1: at GCSE and Post-16 they are the lean Teacher-only details for this phase
+  // (teacher-comparator-profiles.ts), so they are kept with the phase they belong to and read
+  // as not loaded on the other phase until its own arrive.
+  const [profilesState, setProfilesState] = useState<{ phase: string; profiles: AcademicSchoolProfile[] } | null>(null);
+  const mapProfiles = profilesState && profilesState.phase === props.phase ? profilesState.profiles : null;
 
   useEffect(() => {
     // Every setState below lives inside this async callback rather than the effect body,
@@ -488,7 +493,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const token = data.session?.access_token;
       if (!token) return;
       // Shared for 5 minutes with every other view of this school (fetch-cache.ts).
-      const res = await cachedFetchJson<{ rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null } & Partial<RankingFigures>>("/api/teacher/chooser-set", {
+      const res = await cachedFetchJson<{ rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; profiles?: WireAcademicSchoolProfile[] } & Partial<RankingFigures>>("/api/teacher/chooser-set", {
         token,
         method: "POST",
         body: JSON.stringify({
@@ -511,7 +516,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               average: body.average ?? [],
             }
           : null;
-      if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking });
+      if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking, ...(body.profiles ? { profiles: body.profiles } : {}) });
     })();
     return () => { cancelled = true; };
   }, [activeChoiceKey, schoolUrn, phase, supabase]);
@@ -550,28 +555,45 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     })();
   }, [pinnedSet, savedSets]);
 
+  // 0.6.7 B1: the schools' details for every set the page holds (comparatorUrns, plus the
+  // school itself, as academic-schools added it). At GCSE and Post-16 they are the lean
+  // Teacher-only details: straight from the chooser-set answer when its set is all the page
+  // holds (the usual case: no second request), otherwise one /api/teacher/comparator-profiles
+  // request for the lot (saved and custom sets). KS2 keeps academic-schools as before.
+  const chooserProfiles = chooserSet && chooserSet.key === activeChoiceKey ? chooserSet : null;
   useEffect(() => {
-    if (!schoolUrn || !onboarded || comparatorUrns.length === 0) return;
+    if (!schoolUrn || !onboarded || comparatorUrns.length === 0 || !phase) return;
+    const forPhase = phase;
+    const lean = forPhase === "ks4" || forPhase === "ks5";
+    const wanted = comparatorUrns.includes(schoolUrn) ? comparatorUrns : [...comparatorUrns, schoolUrn];
+    const covered = new Set((chooserProfiles?.rows ?? []).map((r) => r.urn).concat(schoolUrn));
+    const fromChooser = lean && chooserProfiles?.profiles && covered.size === wanted.length && wanted.every((u) => covered.has(u)) ? chooserProfiles.profiles : null;
     let cancelled = false;
     (async () => {
+      if (fromChooser) {
+        setProfilesState({ phase: forPhase, profiles: fromChooser.map(deserializeAcademicProfile) });
+        return;
+      }
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) return;
       const urns = comparatorUrns.join(",");
       const res = await cachedFetchJson<{ profiles?: Parameters<typeof deserializeAcademicProfile>[0][] }>(
-        // includeSubjects=1: the subject chips need each school's per-subject rows, and
-        // since round 7 so do Graph, Ranking, Trend and % change.
-        `/api/data-view/academic-schools?anchorUrn=${encodeURIComponent(schoolUrn)}&urns=${encodeURIComponent(urns)}&includeSubjects=1`,
+        lean
+          ? `/api/teacher/comparator-profiles?anchorUrn=${encodeURIComponent(schoolUrn)}&urns=${encodeURIComponent(urns)}&phase=${forPhase}`
+          : // includeSubjects=1: the subject chips need each school's per-subject rows, and
+            // since round 7 so do Graph, Ranking, Trend and % change.
+            `/api/data-view/academic-schools?anchorUrn=${encodeURIComponent(schoolUrn)}&urns=${encodeURIComponent(urns)}&includeSubjects=1`,
         { token },
       );
       if (cancelled) return;
-      if (!res.ok || !res.body) { setMapProfiles([]); return; }
+      if (!res.ok || !res.body) { setProfilesState({ phase: forPhase, profiles: [] }); return; }
       const body = res.body;
-      if (!cancelled) setMapProfiles((body.profiles ?? []).map(deserializeAcademicProfile));
+      if (!cancelled) setProfilesState({ phase: forPhase, profiles: (body.profiles ?? []).map(deserializeAcademicProfile) });
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolUrn, onboarded, comparatorUrns]);
+  }, [schoolUrn, onboarded, comparatorUrns, phase, chooserProfiles]);
 
   // R-IB-NONSUBJECT (S3b): subjectItemsOf leaves the IB Diploma total and IB Core rows out.
   const items = useMemo(() => subjectItemsOf(entries), [entries]);

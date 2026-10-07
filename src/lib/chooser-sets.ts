@@ -17,6 +17,7 @@ import { buildRankingPopulation, type RankingPhase } from "./ranking-population"
 import { matchesRanking, type PopulationRow, type RankingFilters } from "./comparator-chooser";
 import { buildDefaultComparatorLists } from "./default-comparator-lists";
 import { resolveNearestOption } from "./nearest-option";
+import { precomputedPost16Neighbours } from "./post16-default-neighbours";
 
 // ------------------------------------------------------------------- population cache
 
@@ -68,6 +69,12 @@ export type RankingFigures = {
 // dashboard-route "Nearest 10 schools" preset (school_nearest_neighbours), a different
 // algorithm, as the default.
 export async function resolveDefaultNearest(targetUrn: string, phase: KsStage): Promise<ChooserSetResult & { count: number }> {
+  // 0.6.7 B2: at Post-16, the precomputed list when it is current (post16-default-neighbours.ts:
+  // the same schools in the same order this build gives); otherwise built as below.
+  if (phase === "ks5") {
+    const precomputed = await precomputedPost16Neighbours(targetUrn);
+    if (precomputed) return { ...(await resolveFixedSet(targetUrn, phase, precomputed)), count: precomputed.length };
+  }
   // 0.6.5 S4: at Post-16, the 10 nearest with Post-16 provision (same rules, plus that filter).
   const lists = await buildDefaultComparatorLists(targetUrn, { only: "nearest", post16: phase === "ks5" });
   const chosen = resolveNearestOption(lists.list1, lists.boardingBand, lists.boardingRecipe, null);
