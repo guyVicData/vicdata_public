@@ -1,0 +1,34 @@
+// 0.6.5 speed: the routes this round touches, before (GCSE-rule nearest / bucket profiles only)
+// against after (Post-16 nearest; plus the exact-qualification fetch), 3 rounds alternating.
+const R = "/Users/guy/dev/vicdata_public/src/lib/";
+const chooser = await import(R + "chooser-sets.ts");
+const dcl = await import(R + "default-comparator-lists.ts");
+const no = await import(R + "nearest-option.ts");
+const ref = await import(R + "vicdata-reference.ts");
+const adv = await import(R + "academic-data-view.ts");
+const t = async <T,>(fn: () => Promise<T>) => { const t0 = performance.now(); const r = await fn(); return { ms: Math.round(performance.now() - t0), r }; };
+const cases = [["117037", "Mathematics", "GCE A level"], ["137625", "History", "GCE A level"], ["130432", "Business Studies", "BTEC National Extended Diploma L3 - Band N - PPP-D*D*D*"]];
+const out: Record<string, number[]> = {};
+const rec = (k: string, ms: number) => (out[k] ??= []).push(ms);
+for (let round = 0; round < 3; round++) {
+  for (const [urn, subject, qual] of cases) {
+    // chooser-set (nearest): the GCSE rule (what main runs at Post-16) and the Post-16 rule.
+    const before = await t(async () => { const l = await dcl.buildDefaultComparatorLists(urn, { only: "nearest" }); const c = no.resolveNearestOption(l.list1, l.boardingBand, l.boardingRecipe, null); return chooser.resolveFixedSet(urn, "ks5", (c?.schools ?? []).map((s: { urn: string }) => s.urn).filter((u: string) => u !== urn)); });
+    rec(`${urn} chooser-set before`, before.ms);
+    const after = await t(() => chooser.resolveDefaultNearest(urn, "ks5"));
+    rec(`${urn} chooser-set after`, after.ms);
+    const union = Array.from(new Set([urn, ...after.r.rows.map((r: { urn: string }) => r.urn)]));
+    // Column 3's second step, in parallel on the page: academic-schools (as before) and the new
+    // exact-qualification read; the column waits for the slower of the two.
+    const prof = await t(() => adv.fetchAcademicProfiles(union, { includeSubjects: true }));
+    rec(`${urn} academic-schools`, prof.ms);
+    const quals = await t(() => ref.lookupAcademicSubjectQualificationHeadline({ entityIds: union, ksStage: "ks5", qualificationType: qual }));
+    rec(`${urn} comparator-qualifications`, quals.ms);
+    const both = await t(() => Promise.all([adv.fetchAcademicProfiles(union, { includeSubjects: true }), ref.lookupAcademicSubjectQualificationHeadline({ entityIds: union, ksStage: "ks5", qualificationType: qual })]));
+    rec(`${urn} academic-schools ‖ comparator-qualifications`, both.ms);
+    void subject;
+  }
+}
+const med = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
+for (const [k, v] of Object.entries(out)) console.log(`${k}: median ${med(v)} ms (${v.join(", ")})`);
+process.exit(0);

@@ -1,0 +1,109 @@
+// S5 parity fixtures: the real data the Teacher page receives, built server-side by the
+// tree's OWN fetchers (read-only), the way its routes build it (minus membership checks).
+//   cd <root> && npx -y tsx --env-file=/Users/guy/dev/vicdata_public/.env <this> <root> <tag> <urn> <phase> [firstSubject]
+// tag "main": dashboard = fetchSubjectLevelDataForSchools([urn], phase); comparator grades =
+//             fetchSubjectLevelDataForSchools(set, phase).gradeDistribution (the old route)
+// tag "br":   dashboard = fetchSubjectLevelDataForSchools([urn], phase, { gradeYears: "four" });
+//             comparator grades = fetchSchoolGradeRows(set, phase) (the S3 route, no subject filter:
+//             the stub filters by subject exactly as the route does)
+// Writes fix_<tag>_<urn>_<phase>.js (window.__FIX = ...).
+import { writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+
+const [root, tag, urn, phase, first, qualPrefix, fx] = process.argv.slice(2) as [string, "main" | "br", string, "ks4" | "ks5", string | undefined, string | undefined, string | undefined];
+const R = root + "/src/lib/";
+const OUT = "/private/tmp/claude-501/-Users-guy-dev-vicdata-public/c95d26c6-f28c-4d39-ab49-d42e18bc0b1a/scratchpad/g3/";
+
+function buildSubjectItems(entries: any[]) {
+  const latest = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
+  if (latest === null) return [];
+  const byKey = new Map<string, any>();
+  for (const e of entries) {
+    if (e.period !== latest) continue;
+    const key = `${e.subject}::${e.qualificationType}`;
+    const ex = byKey.get(key);
+    if (ex) ex.entries += e.entries;
+    else byKey.set(key, { key, subject: e.subject, qualificationType: e.qualificationType, label: e.subject, entries: e.entries });
+  }
+  return Array.from(byKey.values()).sort((a, b) => b.entries - a.entries);
+}
+
+async function main() {
+  const adv = await import(R + "academic-data-view.ts");
+  const ref = await import(R + "vicdata-reference.ts");
+  const agg = await import(R + "academic-aggregate-trends.ts");
+  const chooser = await import(R + "chooser-sets.ts");
+  const rn = await import(R + "region-nation-comparator.ts");
+  const t0 = Date.now();
+
+  const { byUrn } = true ? await adv.fetchSubjectLevelDataForSchools([urn], phase, { gradeYears: "four" }) : await adv.fetchSubjectLevelDataForSchools([urn], phase);
+  const headlineByUrn = await adv.fetchSubjectHeadlineForSchools([urn], phase, undefined, phase === "ks5" ? null : undefined);
+  const qualificationHeadline = phase === "ks5" ? (await adv.fetchSubjectQualificationHeadlineForSchools([urn], phase)).get(urn) ?? [] : [];
+  let englandAverages;
+  if (phase === "ks5") {
+    const exact = await ref.lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", measure: "avg_point_score", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
+    englandAverages = { basis: "qualification", values: exact.filter((r: any) => r.avg_value !== null).map((r: any) => ({ key: `${r.subject}::${r.qualification_type}`, period: r.period, value: Number(r.avg_value) })) };
+  } else {
+    const rows = await ref.lookupAcademicSubjectGeography({ ksStage: "ks4", measure: "avg_point_score", groupingType: "national", groupingKeys: [agg.NATIONAL_GROUPING_KEY], minSchoolCount: 1 });
+    englandAverages = { basis: "subject", values: rows.filter((r: any) => r.avg_value !== null).map((r: any) => ({ key: r.subject, period: r.period, value: Number(r.avg_value) })) };
+  }
+  const subjectData = byUrn.get(urn) ?? { entries: [], valueAdded: [], gradeDistribution: [] };
+  const dashboard = JSON.parse(JSON.stringify({ subjectData, headline: headlineByUrn.get(urn) ?? [], qualificationHeadline, englandAverages }));
+
+  const nearest = JSON.parse(JSON.stringify(await chooser.resolveDefaultNearest(urn, phase)));
+  const union = Array.from(new Set([...nearest.rows.map((r: { urn: string }) => r.urn), urn])).sort();
+  const profiles = (await adv.fetchAcademicProfiles(union, { includeSubjects: true })).map(adv.serializeAcademicProfile);
+  const gradeRowsByUrn: Record<string, unknown[]> = {};
+  if (true) {
+    const { byUrn: g } = await adv.fetchSchoolGradeRows(union, phase);
+    for (const [u, rows] of g) gradeRowsByUrn[u] = rows as unknown[];
+  } else {
+    const { byUrn: g } = await adv.fetchSubjectLevelDataForSchools(union, phase);
+    for (const [u, d] of g) gradeRowsByUrn[u] = (d as { gradeDistribution: unknown[] }).gradeDistribution;
+  }
+
+  // Ticked: the named subject first, then the biggest, four in all.
+  const all = buildSubjectItems(dashboard.subjectData.entries);
+  const lead = all.filter((i) => i.subject === (first ?? "History") && (!qualPrefix || i.qualificationType.startsWith(qualPrefix))).slice(0, qualPrefix ? 1 : 99);
+  const items = [...lead, ...all.filter((i) => !lead.includes(i))].slice(0, 4);
+  const { createClient } = createRequire(root + "/package.json")("@supabase/supabase-js");
+  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: school } = await sb.from("schools").select("la_name, current_name").eq("urn", urn).maybeSingle();
+  const regionName = (await rn.resolveTargetRegionNation(urn))?.regionName ?? null;
+  const geo: Record<string, unknown> = {}, gradeGeo: Record<string, unknown> = {};
+  for (const it of items) {
+    const { subject, qualificationType } = it;
+    const fr = async (gt: "la" | "region" | "national", key: string | null) => {
+      if (!key) return null;
+      const minSchoolCount = gt === "national" ? 1 : undefined;
+      const query = { measure: "avg_point_score", groupingType: gt, groupingKeys: [key], subject, minSchoolCount };
+      const rows = phase === "ks5"
+        ? await ref.lookupAcademicSubjectQualificationGeography({ ksStage: "ks5", ...query, qualificationType })
+        : await ref.lookupAcademicSubjectGeography({ ksStage: "ks4", ...query });
+      const out = rows.map((r: any) => ({ period: r.period, entries: r.entries_total === null ? null : Number(r.entries_total), avgPointScore: r.avg_value === null ? null : Number(r.avg_value), schoolCount: r.school_count })).sort((a: any, b: any) => a.period - b.period);
+      return out.length ? { name: key, rows: out } : null;
+    };
+    const fg = async (gt: "la" | "region" | "national", key: string | null) => {
+      if (!key) return null;
+      const rows = await ref.lookupAcademicSubjectGradeGeography({ ksStage: phase, groupingType: gt, groupingKeys: [key], subject, qualificationType });
+      const out = rows.map((r: any) => ({ period: r.period, grade: r.grade, entries: Number(r.entries_total), schoolCount: r.school_count })).sort((a: any, b: any) => a.period - b.period);
+      return out.length ? { name: key, rows: out } : null;
+    };
+    const la = school?.la_name ?? null, nat = agg.NATIONAL_GROUPING_KEY;
+    geo[it.key] = { la: await fr("la", la), region: await fr("region", regionName), national: await fr("national", nat) };
+    gradeGeo[it.key] = { la: await fg("la", la), region: await fg("region", regionName), national: await fg("national", nat) };
+  }
+  // 0.6.5: every school's exact-qualification rows (the comparator-qualifications route's source).
+  const qualRowsByUrn: Record<string, unknown[]> = {};
+  if (phase === "ks5") {
+    const rows = await ref.lookupAcademicSubjectQualificationHeadline({ entityIds: union, ksStage: "ks5" });
+    for (const r of rows as any[]) (qualRowsByUrn[r.entity_id] ??= []).push({ subject: r.subject, qualificationType: r.qualification_type, period: r.period, entries: r.entries_total === null ? null : Number(r.entries_total), avgPointScore: r.avg_point_score === null ? null : Number(r.avg_point_score) });
+  }
+  const F = { urn, phase, schoolName: school?.current_name ?? urn, dashboard, nearest, profiles, gradeRowsByUrn, geo, gradeGeo, qualRowsByUrn, ticked: items.map((i) => i.key) };
+  writeFileSync(`${OUT}fix_${tag}_${urn}_${phase}${fx ?? ""}.js`, "window.__FIX=" + JSON.stringify(F) + ";\n");
+  const gd = dashboard.subjectData.gradeDistribution as { period: number }[];
+  const per = (rows: { period: number }[]) => Object.entries(rows.reduce((a: Record<number, number>, r) => ((a[r.period] = (a[r.period] ?? 0) + 1), a), {})).map(([p, n]) => `${p}:${n}`).join(" ");
+  const setRows = Object.values(gradeRowsByUrn).flat() as { period: number }[];
+  console.log(tag, urn, phase, `${Date.now() - t0}ms`, "ticked", items.map((i) => i.label).join("|"), "| own grade rows", per(gd), "| set", union.length, "schools, grade rows", per(setRows), "| entries", dashboard.subjectData.entries.length);
+}
+main().catch((e) => { console.error(e?.stack ?? e); process.exit(1); });

@@ -1,0 +1,73 @@
+# python3 cmp5.py <outRoot>: 0.6.5 parity, main vs branch, every shot paired by view.
+#   IDENTICAL / NOISE (words equal, <= 8/255)
+#   GCSE: anything else is UNEXPECTED-GCSE (GCSE must not change at all)
+#   Post-16 expected kinds:
+#     E1 bands      Grade bands state, any column (the scale's default range; bands not points)
+#     E2 a*-e       the threshold state where the branch shows Average points for a non-A-level focus
+#     E3/4 compare  Comparisons (Column 3), any view: exact figures, labels, notes, the Post-16 set
+#     E3 map        a map view in Column 1 (exact figures, the set)
+#     E6 tlevel     the T Level all-pathways note
+#   NOISE-render: words equal, same size, at most 0.1% of pixels differ by more than 8/255
+#   Must be identical at Post-16: Column 1 on Candidates and points (not its map), Context on
+#   Candidates / points / counts, Column 1 + Context on A*-E for an A-level focus, Grade counts' Column 1.
+import json, os, re, sys
+from collections import Counter
+from PIL import Image, ImageChops
+root = sys.argv[1]
+A, B = os.path.join(root, "main"), os.path.join(root, "br")
+NONVIEW = re.compile(r"^(Full screen|Exit full screen|Collapse|Open:|Where this figure|What this shows|Add a private note|Edit note|Export|Swap rows)")
+def canon(d):
+    m = {}
+    for f in os.listdir(d):
+        if not f.endswith(".json") or "__" not in f: continue
+        n = f[:-5]
+        try: j = json.load(open(os.path.join(d, f)))
+        except Exception: continue
+        if not os.path.exists(os.path.join(d, n + ".png")): continue
+        pressed = [r[:-1] for r in j.get("rail", []) if r.endswith("*") and not NONVIEW.match(r)]
+        m.setdefault(n.rsplit("__", 1)[0] + "__" + (pressed[0] if pressed else "only"), n)
+    return m
+CA, CB = canon(A), canon(B)
+def c1text(d, case):
+    out = []
+    for f in os.listdir(d):
+        if f.startswith(case + "__") and "c1.current" in f and f.endswith(".json"):
+            out.append(json.load(open(os.path.join(d, f)))["text"])
+    return " ".join(out)
+switched = {}
+cls = Counter(); per = Counter(); unexpected = []
+for n in sorted(CA):
+    if n not in CB: continue
+    fa, fb = CA[n], CB[n]
+    ia, ib = Image.open(os.path.join(A, fa + ".png")).convert("RGB"), Image.open(os.path.join(B, fb + ".png")).convert("RGB")
+    da, db = json.load(open(os.path.join(A, fa + ".json"))), json.load(open(os.path.join(B, fb + ".json")))
+    pix = ia.size == ib.size and ImageChops.difference(ia, ib).getbbox() is None
+    words = da["text"] == db["text"] and da.get("caption") == db.get("caption") and da.get("info") == db.get("info")
+    maxch = 999
+    if ia.size == ib.size: maxch = max(e[1] for e in ImageChops.difference(ia, ib).getextrema())
+    case = n.split("__")[0]; urn, ph, state = case.split("-")[:3]
+    panel = [p for p in n.split("__") if re.match(r"^c\d\.(current|trends)$", p)][0]
+    view = n.rsplit("__", 1)[1]
+    if case not in switched:
+        tb, ta = c1text(B, case).lower(), c1text(A, case).lower()
+        switched[case] = state == "threshold" and "average points" in tb and "average points" not in ta
+    if pix and words: k = "IDENTICAL"
+    elif words and maxch <= 8: k = "NOISE"
+    elif words and ia.size == ib.size and sum(1 for px in ImageChops.difference(ia, ib).getdata() if max(px) > 8) <= ia.size[0] * ia.size[1] * 0.001: k = "NOISE-render"
+    elif ph == "ks4": k = "UNEXPECTED-GCSE"
+    elif "only for all pathways together" in (db["text"] or ""): k = "E6-tlevel"
+    elif state == "bands": k = "E1-bands"
+    elif switched[case]: k = "E2-a*e"
+    elif panel.startswith("c3"): k = "E3/4-compare"
+    elif re.search(r"map", view, re.I): k = "E3-map"
+    else: k = "UNEXPECTED"
+    if k.startswith("UNEXPECTED"): unexpected.append(n)
+    cls[k] += 1; per[(ph, state, panel[:2], k)] += 1
+missing = [k for k in CA if k not in CB]; extra = [k for k in CB if k not in CA]
+print(f"pairs {sum(cls.values())}  " + "  ".join(f"{k} {v}" for k, v in sorted(cls.items())) + f"  only-main {len(missing)}  only-branch {len(extra)}")
+for key in sorted(per): print("  ", key, per[key])
+print("UNEXPECTED:"); [print("  ", x) for x in unexpected[:80]]
+print("only-main:", missing[:30]); print("only-branch:", extra[:30])
+print("A*-E switched cases:", sorted(c for c, v in switched.items() if v))
+for d in (A, B):
+    print(os.path.basename(d), "errors/failed:", [f for f in os.listdir(d) if f.endswith("__errors.txt") or f.endswith("__failed.txt")])
