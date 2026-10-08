@@ -15,15 +15,31 @@ import { createServerAnonSupabaseClient } from "../supabase";
 import { SHIRE_COUNTY_DISTRICT_GSS_CODES } from "../shire-county-districts";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "../roll-data";
 import { cohortTable, type CohortTable } from "./cohort";
+import { REFERENCE_TTL_MS, cachedReference } from "../server-cache";
 
 export const CENSUS_AGE_BREAKDOWNS: string[] = (["full_time", "part_time"] as const).flatMap((m) =>
   (["female", "male"] as const).flatMap((s) => Array.from({ length: 20 }, (_, a) => `${m}_${s}_aged_${a}`)),
 );
 
-export type SchoolCensus = { urn: string; table: CohortTable; latestPeriod: number | null; ageGender: AgeGenderCounts };
+export type SchoolCensus = { urn: string; table: CohortTable; latestPeriod: number | null; ageGender: AgeGenderCounts; ageGenderByPeriod: Map<number, AgeGenderCounts> };
 
 /** Each school's cohort table, and its latest year's age-gender counts (the page's shape input). */
 export const CENSUS_FIRST_PERIOD = 2019;
+
+/** fetchCensus through the one-hour reference cache, one entry per school (public data, the same
+ * for every member; server-cache.ts). Misses are read together in one batch. */
+export async function cachedCensus(urns: string[]): Promise<Map<string, SchoolCensus>> {
+  const unique = Array.from(new Set(urns));
+  const missing = unique.filter((u) => !censusCached.has(u) || Date.now() - censusCached.get(u)!.at > REFERENCE_TTL_MS);
+  if (missing.length) {
+    const batch = fetchCensus(missing);
+    for (const u of missing) censusCached.set(u, { at: Date.now(), promise: batch.then((m) => m.get(u)!) });
+    batch.catch(() => { for (const u of missing) censusCached.delete(u); });
+    if (censusCached.size > 20_000) censusCached.clear();
+  }
+  return new Map(await Promise.all(unique.map(async (u) => [u, await censusCached.get(u)!.promise] as const)));
+}
+const censusCached = new Map<string, { at: number; promise: Promise<SchoolCensus> }>();
 
 export async function fetchCensus(urns: string[]): Promise<Map<string, SchoolCensus>> {
   const facts = urns.length ? await fetchCensusFactsBatched(urns, { breakdowns: CENSUS_AGE_BREAKDOWNS }) : [];
@@ -50,14 +66,19 @@ export async function fetchCensus(urns: string[]): Promise<Map<string, SchoolCen
     // The latest year with any pupils (the Reigate quirk: an all-zero latest year is skipped).
     const periods = Array.from(new Set(mine.map((f) => f.period))).sort((a, b) => b - a);
     const latest = periods.find((p) => mine.some((f) => f.period === p && (f.value_numeric ?? 0) > 0)) ?? null;
-    out.set(urn, { urn, table: cohortTable(mine), latestPeriod: latest, ageGender: latest === null ? new Map() : singleAgeGenderCountsForPeriod(mine, latest) });
+    const byPeriod = new Map(periods.map((p) => [p, singleAgeGenderCountsForPeriod(mine, p)] as const));
+    out.set(urn, { urn, table: cohortTable(mine), latestPeriod: latest, ageGender: latest === null ? new Map() : byPeriod.get(latest)!, ageGenderByPeriod: byPeriod });
   }
   return out;
 }
 
 export type SchoolInfo = { urn: string; name: string; laCode: string | null; laName: string | null; easting: number | null; northing: number | null };
 
-export async function fetchSchoolInfo(urns: string[]): Promise<Map<string, SchoolInfo>> {
+export function fetchSchoolInfo(urns: string[]): Promise<Map<string, SchoolInfo>> {
+  const key = Array.from(new Set(urns)).sort();
+  return cachedReference(`adm:info:${key.join(",")}`, () => readSchoolInfo(key));
+}
+async function readSchoolInfo(urns: string[]): Promise<Map<string, SchoolInfo>> {
   const supabase = createServerAnonSupabaseClient();
   const out = new Map<string, SchoolInfo>();
   for (let i = 0; i < urns.length; i += 300) {

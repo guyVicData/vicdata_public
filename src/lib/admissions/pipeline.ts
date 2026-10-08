@@ -4,7 +4,7 @@
 // the lead's override), the ladder, and the share needed to hold numbers steady.
 import { CURRENT_CENSUS_PERIOD } from "../roll-data";
 import type { CohortTable, Sex } from "./cohort";
-import { fetchAge10Projections, fetchBirthsByLa, fetchCensus, fetchSchoolInfo, type SchoolCensus, type SchoolInfo } from "./data";
+import { cachedCensus, fetchAge10Projections, fetchBirthsByLa, fetchSchoolInfo, type SchoolCensus, type SchoolInfo } from "./data";
 import { firstEntryYear, type EntryPoint } from "./entry-points";
 import { autoBlend, blendBirths, normalise, type BlendWeights } from "./blend";
 import { buildLadder, poolChange, type Ladder } from "./ladder";
@@ -36,7 +36,7 @@ export type Pipeline = {
 export async function buildPipeline(urn: string, entry: EntryPoint, opts: PipelineOptions = {}): Promise<Pipeline> {
   const sets = opts.sets ?? defaultRungSets(urn, entry, await nearbyCandidates(urn));
   const all = Array.from(new Set([urn, ...Array.from(sets.values()).flat()]));
-  const [census, info] = await Promise.all([fetchCensus(all), fetchSchoolInfo(all)]);
+  const [census, info] = await Promise.all([cachedCensus(all), fetchSchoolInfo(all)]);
   const P = CURRENT_CENSUS_PERIOD;
   // One per-school list per distinct set (the same array object for every age a set holds).
   const byKey = new Map<string, CohortTable[]>();

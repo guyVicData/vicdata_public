@@ -1005,6 +1005,50 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-ADM-RIVAL-RANKS",
+    statement:
+      "Each rival (and the school) carries its national rank and its rank in its own region, on the whole-school headline for the entry point's stage (4+ KS2, 11+ GCSE Attainment 8, 16+ A-level points per entry), on each subject area (family average points, at least 10 entries), on a subject in view (0.6.6 subjectRanking) and on size (roll in the entry point's age band, with the school page's XS-XL badge). Every school with a figure that year, ties share. A school with no published results for the stage says so; at 11+ an IGCSE-heavy independent school is listed but not ranked.",
+    why: "Where local schools sit regionally and nationally (Guy, 7 Oct 19:35).",
+    appliesTo: "Admissions rivals",
+    enforcedIn: ["src/lib/admissions/ranks.ts", "src/lib/admissions/rivals.ts"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "The Chase's national and regional Attainment 8 ranks equal a count over the whole population's raw 2024 headline rows; the preps have no published results; Malvern St James (IGCSE) is listed but not ranked.", check: "admRivalRanks" },
+    origin: "0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FLAG-MOMENTUM",
+    statement:
+      "Rivals' momentum flags, each from a two-year change (pupils in %, results in points) against the NATIONAL thresholds for the phase (top / bottom fifth; admissions_flag_thresholds), never from one small cohort, with the figures behind it: results rising fast (headline), gaining pupils (roll), losing pupils three years running (three falls in a row), the entry year shrinking (Year 7 at 11+), a new sixth form (no pupils at 16 until two years ago), shape changed (the same new shape two years running). Until the thresholds are applied the threshold flags don't fire (none guessed).",
+    why: "A change that is large and lasting, set nationally and tuned later (Guy, 7 Oct 19:40).",
+    appliesTo: "Admissions rivals",
+    enforcedIn: ["src/lib/admissions/flags.ts", "src/lib/admissions/rivals.ts", "src/lib/admissions/thresholds.ts", "ingest: admissions_flag_thresholds"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Each flag fires exactly when its figures cross the national threshold: recomputed from raw rows for The Chase's rivals.", check: "admMomentum" },
+    origin: "0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FLAG-STRENGTHS",
+    statement:
+      "By subject area, the school's rank among the rivals that have that area (at least 10 entries), the gap to their average and its change since 2022/23: Strength (top third, above the average), Strength growing (and the school's own two-year change in the national top fifth), Weakness (bottom third, below), Weakness widening (and in the national bottom fifth). Never against fewer than two rivals.",
+    why: "Strengths and weaknesses against rivals (Guy, 7 Oct 19:32).",
+    appliesTo: "Admissions rivals",
+    enforcedIn: ["src/lib/admissions/flags.ts", "src/lib/admissions/rivals.ts", "src/lib/admissions/thresholds.ts", "ingest: admissions_flag_thresholds"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Each area's rank and gap equal the raw family rows' arithmetic for The Chase and its rivals; flags follow the rule.", check: "admStrengths" },
+    origin: "0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FLAG-FEEDER",
+    statement:
+      "A feeder whose pupils (across the rung ages it holds) fell more than the area's (the whole feeder set) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum.",
+    why: "Pipeline schools to watch and to court.",
+    appliesTo: "Admissions Pipelines",
+    enforcedIn: ["src/lib/admissions/feeders.ts", "src/lib/admissions/flags.ts:feederFlag"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "The Chase's 11+ feeders' flags equal the rule applied to their raw census counts.", check: "admFeeders" },
+    origin: "0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4)",
+    status: "active",
+  },
+  {
     id: "R-PERIOD-TRIM",
     statement: "Leading and trailing periods with no published value are trimmed (2020/21 points are null nationally).",
     why: "An empty first year would start every Results trend on a gap.",

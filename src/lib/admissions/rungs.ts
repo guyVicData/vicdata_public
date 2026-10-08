@@ -10,6 +10,7 @@
 //   4+ and other young entries: the nearest schools holding Reception (the births calibration)
 // A custom age uses the same rule by the kind of school holding each rung age.
 import { createServerAnonSupabaseClient } from "../supabase";
+import { cachedReference } from "../server-cache";
 import { holderOf, type EntryPoint } from "./entry-points";
 
 export const DEFAULT_FEEDERS = 15;
@@ -21,7 +22,11 @@ type Candidate = { urn: string; current_name: string; establishment_type_group: 
 // secondaries); independent preps join through a fuzzy set the lead builds.
 const isState = (c: Candidate) => c.establishment_type_group !== "Independent schools";
 
-export async function nearbyCandidates(urn: string): Promise<Candidate[]> {
+export function nearbyCandidates(urn: string): Promise<Candidate[]> {
+  // Public GIAS geography, the same for every member: the one-hour reference cache.
+  return cachedReference(`adm:nearby:${urn}`, () => readNearby(urn));
+}
+async function readNearby(urn: string): Promise<Candidate[]> {
   const supabase = createServerAnonSupabaseClient();
   const { data, error } = await supabase.rpc("nearest_schools", { p_urn: urn, p_limit: CANDIDATES, p_relax_sector: true });
   if (error) throw error;
