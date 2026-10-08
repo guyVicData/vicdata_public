@@ -314,7 +314,7 @@ create table if not exists public.admissions_lists (
     -- A fuzzy definition instead of (or as well as) a list: sector, gender, boarding, las,
     -- age range, big_leaving_16 -- the ranking population's filters.
     fuzzy jsonb check (fuzzy is null or jsonb_typeof(fuzzy) = 'object'),
-    -- The lead's LA birth-blend override: { "<LA name>": weight, ... }; null = automatic.
+    -- The lead's LA birth-blend override: { "<DfE LA code>": weight, ... }; null = automatic.
     la_blend jsonb check (la_blend is null or jsonb_typeof(la_blend) = 'object'),
     confirmed boolean not null default false, -- "nearby schools" until the lead confirms
     updated_by uuid references public.profiles (id) on delete set null,

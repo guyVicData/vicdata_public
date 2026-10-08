@@ -1,0 +1,9 @@
+137625 16+ pipeline (26 schools): cold 5284 ms, warm 123 ms
+137625 16+ market share (10 rivals): cold 818 ms, warm 0 ms
+137625 16+ rivals' ranks and flags: cold 6825 ms, warm 64 ms
+137625 11+ pipeline (15 schools): cold 150 ms, warm 91 ms
+137625 11+ market share (10 rivals): cold 226 ms, warm 1 ms
+137625 11+ rivals' ranks and flags: cold 9021 ms, warm 65 ms
+117037 16+ pipeline (26 schools): cold 2308 ms, warm 76 ms
+117037 16+ market share (10 rivals): cold 162 ms, warm 1 ms
+117037 16+ rivals' ranks and flags: cold 89 ms, warm 59 ms
