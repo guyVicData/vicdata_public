@@ -8,7 +8,6 @@
 // page-level only (print). Grouped here so a panel's metadata and its actions sit
 // together, out of the way of the figure.
 import { lazy, Suspense, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { DashboardPlanContext } from "@/components/dashboard-config/plan";
 import { CopyViewSourceContext } from "@/components/copy-view/CopyViewSourceContext";
@@ -268,9 +267,11 @@ export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => vo
     setOpen(true);
   };
   const plan = useContext(DashboardPlanContext);
-  const pathname = usePathname();
   const copy = useContext(CopyViewSourceContext);
-  const v06 = plan !== null || !!pathname?.startsWith("/dashboards");
+  // The page's path, read when the menu is drawn (it only draws in the browser, open) rather than
+  // through usePathname: 0.7 r3 (F1) puts this menu on every panel, and the server renders of
+  // panels (unit and rule tests) have no app router for that hook to read.
+  const v06 = plan !== null || (open && typeof window !== "undefined" && window.location.pathname.startsWith("/dashboards"));
   return (
     <span className="relative" ref={ref}>
       <button

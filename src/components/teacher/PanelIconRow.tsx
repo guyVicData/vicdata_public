@@ -18,12 +18,13 @@ import type { ReactNode } from "react";
 
 export const PANEL_ICON_ORDER = ["menu", "fullscreen", "collapse"] as const;
 
-// Each slot's box: the menu and full screen buttons are 24px (h-6 w-6), the collapse button
-// Teacher's 26px IconButton.
+// Each slot reserves its WIDTH only: the menu and full screen buttons are 24px wide, the collapse
+// button Teacher's 26px IconButton. The height is the content's, so an empty slot adds no height
+// and a panel's header is exactly as tall as it was (24px, or 26px with the collapse button).
 const SLOT: Record<(typeof PANEL_ICON_ORDER)[number], string> = {
-  menu: "h-6 w-6",
-  fullscreen: "h-6 w-6",
-  collapse: "h-[26px] w-[26px]",
+  menu: "w-6",
+  fullscreen: "w-6",
+  collapse: "w-[26px]",
 };
 
 export function PanelIconRow({ menu, fullscreen, collapse }: { menu?: ReactNode; fullscreen?: ReactNode; collapse?: ReactNode }) {
