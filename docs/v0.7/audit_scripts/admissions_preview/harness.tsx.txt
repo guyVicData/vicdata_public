@@ -5,6 +5,7 @@ import PeoplePage from "@/app/teacher/people/page";
 import TeacherHome from "@/app/teacher/page";
 import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
 import { admissionsVars } from "@/components/admissions/ui";
+import { EditorScreen } from "@/components/editor/EditorScreen";
 const P = new URLSearchParams(location.search);
 const w = P.get("w");
 const el = document.getElementById("root")!;
@@ -17,4 +18,4 @@ const slot = page === "slot" ? (
     </div>
   </main>
 ) : null;
-createRoot(el).render(slot ? slot : page === "team" ? <MyTeam /> : page === "people" ? <PeoplePage /> : page === "home" ? <TeacherHome /> : <AdmissionsDashboard />);
+createRoot(el).render(page === "editor" ? <EditorScreen id={P.get("dash") ?? "vicdata.admissions.pipelines"} /> : slot ? slot : page === "team" ? <MyTeam /> : page === "people" ? <PeoplePage /> : page === "home" ? <TeacherHome /> : <AdmissionsDashboard />);

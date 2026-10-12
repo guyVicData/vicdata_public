@@ -77,3 +77,10 @@ KNOWN FLAKES (seen 2026-10-12, also in 0.6.6/0.6.7)
   walk.mjs + cmp6.py on it twice (server must be up).
   "rej TypeError: parameter 1 is not of type 'Element'" __errors.txt on a random 130416/130432 ks5
   case, either tree, not repeatable (0.6.7 saw the same).
+
+0.7 r3 (2026-10-12): PARITY_MASK=1 ./run_parity.sh hides the panel icon row on both trees (main: the
+header's full screen / collapse and the footer's Export; branch: [data-panel-icons]) and drops their
+labels from the digest, so a pair differs only if something outside the icon row changed. Run it with
+and without the mask: unmasked counts every pair the icon row changes, masked shows nothing else did.
+Geometry check for a pair that still differs: admissions_preview/geo.js.txt (element rects inside the
+panel, icon row skipped) on both bundles, then diff.

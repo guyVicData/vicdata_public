@@ -1,0 +1,8 @@
+(async () => { const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const P = [...document.querySelectorAll("main:not([hidden]) [data-panel-id]")].find(p => p.offsetParent && p.dataset.panelId.endsWith(window.__PANEL));
+const b = [...P.querySelectorAll("button[aria-label]")].find(x => x.getAttribute("aria-label") === window.__RAIL); if (b) b.click(); await sleep(1500);
+const skip = (e) => e.closest("[data-panel-icons]") || e.closest('button[aria-label="Export this panel"],button[aria-label^="Full screen:"],button[aria-label^="Collapse "]');
+const pr = P.getBoundingClientRect();
+const rows = [...P.querySelectorAll("*")].filter(e => !skip(e)).map(e => { const r = e.getBoundingClientRect(); return [e.tagName, (r.x - pr.x).toFixed(2), (r.y - pr.y).toFixed(2), r.width.toFixed(2), r.height.toFixed(2)].join(","); });
+document.title = rows.length + " " + rows.join("|").length + " " + (await crypto.subtle.digest("SHA-1", new TextEncoder().encode(rows.join("|"))).then(h => [...new Uint8Array(h)].slice(0, 8).map(x => x.toString(16).padStart(2, "0")).join("")));
+})()

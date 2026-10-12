@@ -1,7 +1,7 @@
 // Headless Chrome over CDP: node shot.mjs <port> <out.png> <url> <width> [height] [waitMs]
 import { spawn } from "node:child_process";
 const [port, out, url, width, height = "1300", wait = "2500"] = process.argv.slice(2);
-const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", ["--headless=new", `--remote-debugging-port=${port}`, "--no-first-run", "--disable-gpu", "--hide-scrollbars", "--force-color-profile=srgb", "--font-render-hinting=none", `--user-data-dir=/tmp/admprev-chrome-${port}`, "about:blank"], { stdio: "ignore" });
+const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", ["--headless=new", `--remote-debugging-port=${port}`, "--no-first-run", "--disable-gpu", "--hide-scrollbars", "--force-color-profile=srgb", "--font-render-hinting=none", `--user-data-dir=/tmp/admprev-chrome-${port}-${Date.now()}`, "about:blank"], { stdio: "ignore" });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let target;
 for (let i = 0; i < 50 && !target; i++) { await sleep(200); try { const l = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json(); target = l.find((t) => t.type === "page"); } catch {} }

@@ -1,5 +1,9 @@
 #!/bin/zsh
-# Rebuild the preview: Tailwind CSS over the repo, then the bundle.
-cd /private/tmp/claude-501/-Users-guy-dev-vicdata-public/1a6ac012-a52f-49bf-9748-5d4230c69565/scratchpad/admprev
-perl -e 'alarm 180; exec @ARGV' node css.mjs app.css /Users/guy/dev/vicdata_public >/dev/null && echo "[build] css"
-perl -e 'alarm 240; exec @ARGV' npx -y esbuild@0.24.0 /private/tmp/claude-501/-Users-guy-dev-vicdata-public/1a6ac012-a52f-49bf-9748-5d4230c69565/scratchpad/admprev/harness.tsx --bundle --outfile=/private/tmp/claude-501/-Users-guy-dev-vicdata-public/1a6ac012-a52f-49bf-9748-5d4230c69565/scratchpad/admprev/bundle.js --jsx=automatic --tsconfig=/Users/guy/dev/vicdata_public/tsconfig.json --alias:@/lib/supabase=/private/tmp/claude-501/-Users-guy-dev-vicdata-public/1a6ac012-a52f-49bf-9748-5d4230c69565/scratchpad/admprev/stubs/supabase.ts --alias:next/navigation=/private/tmp/claude-501/-Users-guy-dev-vicdata-public/1a6ac012-a52f-49bf-9748-5d4230c69565/scratchpad/admprev/stubs/navigation.ts --alias:next/link=/private/tmp/claude-501/-Users-guy-dev-vicdata-public/1a6ac012-a52f-49bf-9748-5d4230c69565/scratchpad/admprev/stubs/link.tsx --alias:next/dynamic=/private/tmp/claude-501/-Users-guy-dev-vicdata-public/1a6ac012-a52f-49bf-9748-5d4230c69565/scratchpad/admprev/stubs/dynamic.tsx --alias:react=/Users/guy/dev/vicdata_public/node_modules/react --alias:react-dom=/Users/guy/dev/vicdata_public/node_modules/react-dom --define:process.env.NODE_ENV=\"production\" --loader:.css=empty --log-level=error && echo "[build] bundle"
+# Rebuild the preview: Tailwind CSS over a tree, then the bundle.  REPO=<tree> NAME=<bundle name>
+D=${0:A:h}
+REPO=${REPO:-/Users/guy/dev/vicdata_public}
+NAME=${NAME:-bundle}
+CSS=${CSSNAME:-app}
+cd $D
+perl -e 'alarm 180; exec @ARGV' node css.mjs $CSS.css $REPO >/dev/null && echo "[build] css $CSS"
+perl -e 'alarm 240; exec @ARGV' npx -y esbuild@0.24.0 $D/harness.tsx --bundle --outfile=$D/$NAME.js --jsx=automatic --tsconfig=$REPO/tsconfig.json --alias:@/lib/supabase=$D/stubs/supabase.ts --alias:next/navigation=$D/stubs/navigation.ts --alias:next/link=$D/stubs/link.tsx --alias:next/dynamic=$D/stubs/dynamic.tsx --alias:react=$REPO/node_modules/react --alias:react-dom=$REPO/node_modules/react-dom --define:process.env.NODE_ENV=\"production\" --loader:.css=empty --log-level=error && echo "[build] bundle $NAME"
