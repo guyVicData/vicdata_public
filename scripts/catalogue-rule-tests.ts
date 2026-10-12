@@ -36,6 +36,19 @@ const lib = async () => ({
   notes: await import("../src/catalogue/notes"),
 });
 type Lib = Awaited<ReturnType<typeof lib>>;
+// 0.7 admissions: the national flag thresholds -- the database's once applied, else the ingest dry
+// run's values (docs/v0.7/audit_scripts/admissions_flag_thresholds_dryrun.json), named in the detail.
+async function admissionsThresholds() {
+  const t = await import("../src/lib/admissions/thresholds");
+  const live = await t.loadThresholds();
+  if (live) return { thresholds: live, source: "database" };
+  const rows = JSON.parse((await import("node:fs")).readFileSync(path.join(ROOT, "docs/v0.7/audit_scripts/admissions_flag_thresholds_dryrun.json"), "utf8")) as { phase: string; measure: string; change_kind: string; p_low: number; p_high: number; n_schools: number; period_from: number; period_to: number; min_cohort?: number }[];
+  return {
+    thresholds: t.thresholdsFrom(rows.map((r) => ({ phase: r.phase as never, measure: r.measure as never, changeKind: r.change_kind === "difference" ? ("difference" as const) : ("percent" as const), low: Number(r.p_low), high: Number(r.p_high), lowPct: 20, highPct: 80, minCohort: r.min_cohort ?? 10, nSchools: r.n_schools, from: r.period_from, to: r.period_to }))),
+    source: "ingest dry run (not yet applied)",
+  };
+}
+
 
 type Outcome = { pass: boolean; detail: string };
 type Runner = (L: Lib, rule: Rule) => Promise<Outcome>;
@@ -194,6 +207,240 @@ const RUNNERS: Record<string, Runner> = {
       column1 !== null && r.target !== null && Math.abs(r.target.value - column1) < 1e-9 && r.ranked > 1000 && !!row && row.rank === r.targetRank && sharedTies &&
       kings.target !== null && kingsColumn1 !== null && kingsColumn1 !== undefined && Math.abs(kings.target.value - Number(kingsColumn1)) < 1e-9;
     return { pass, detail: fmt(v) };
+  },
+
+  // ---------------------------------------------------------------- 0.7 admissions r1 (A1)
+  // Each recomputes from raw census / births rows with its own arithmetic, then compares.
+  async admLadder({ ref }) {
+    const { buildPipeline } = await import("../src/lib/admissions/pipeline");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const p = await buildPipeline("137625", entryPoint("11+")!, { today: new Date("2026-10-07") });
+    const set = p.sets.find((s) => s.age === 10)!.urns;
+    const raw = await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: set, periodMin: 2025, periodMax: 2025, breakdowns: ["full_time_male_aged_10", "full_time_female_aged_10"] });
+    const expected = raw.reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    const p2026 = p.ladder.past.find((x) => x.entryYear === 2026)?.pool;
+    const sources = p.ladder.future.map((x) => x.source);
+    const firstBirths = p.ladder.future.find((x) => x.source === "births")?.entryYear;
+    const v = { set: set.length, raw2026: expected, pipeline2026: p2026, first: `${p.ladder.future[0].entryYear} age ${p.ladder.future[0].rungAge}`, firstBirths, years: p.ladder.future.length };
+    const pass = p2026 === expected && p.ladder.future[0].entryYear === 2027 && p.ladder.future[0].rungAge === 9 && sources[0] === "counted" && firstBirths === 2033 && p.ladder.future.length === 10 && sources.indexOf("births") === sources.lastIndexOf("counted") + 1;
+    return { pass, detail: fmt(v) };
+  },
+
+  async admBirthSplit({ ref }) {
+    const { buildPipeline } = await import("../src/lib/admissions/pipeline");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const p = await buildPipeline("136984", entryPoint("4+")!, { today: new Date("2026-10-07") });
+    // Raw births for each blended LA, the shire counties summed from their districts, as the app does.
+    const { SHIRE_COUNTY_DISTRICT_GSS_CODES } = await import("../src/lib/shire-county-districts");
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const sb = createServerAnonSupabaseClient();
+    let blended2023 = 0;
+    let blended2022 = 0;
+    for (const b of p.blend) {
+      const { data } = await sb.from("la_gss_crosswalk").select("gss_code").eq("dfe_code", b.laCode).maybeSingle();
+      const codes = SHIRE_COUNTY_DISTRICT_GSS_CODES[b.laCode] ?? [data!.gss_code];
+      const rows = await ref.lookupReferenceData({ sourceId: "ons_births", entityIds: codes, periodMin: 2022, periodMax: 2023, breakdowns: ["total"] });
+      blended2023 += b.weight * rows.filter((r) => r.period === 2023).reduce((a, r) => a + (r.value_numeric ?? 0), 0);
+      blended2022 += b.weight * rows.filter((r) => r.period === 2022).reduce((a, r) => a + (r.value_numeric ?? 0), 0);
+    }
+    const expected = (8 / 12) * blended2023 + (4 / 12) * blended2022;
+    const got = p.ladder.future.find((x) => x.entryYear === 2027);
+    const v = { blend: p.blend.map((b) => `${b.laName} ${(b.weight * 100).toFixed(0)}%`).join(" + "), expected: Math.round(expected * 10) / 10, pipeline: got?.pool === null || got?.pool === undefined ? null : Math.round(got.pool * 10) / 10, source: got?.source, birthYear: got?.birthYear };
+    return { pass: !!got && got.source === "births" && got.birthYear === 2023 && Math.abs(got.pool! - expected) < 1e-6, detail: fmt(v) };
+  },
+
+  async admDriftRange() {
+    const { buildPipeline } = await import("../src/lib/admissions/pipeline");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const p = await buildPipeline("137625", entryPoint("16+")!, { today: new Date("2026-10-07") });
+    const widths = p.ladder.future.map((x) => (x.pool && x.low !== null && x.high !== null ? (x.high - x.low) / x.pool : null));
+    const allRanged = widths.every((w) => w !== null);
+    const neverNarrows = widths.every((w, i) => i === 0 || w! >= widths[i - 1]! - 1e-9 || p.ladder.future[i].rungAge! <= 10 !== (p.ladder.future[i - 1].rungAge! <= 10));
+    const h = p.ladder.handovers[0];
+    const v = { drift: `${p.ladder.drift?.low.toFixed(3)}-${p.ladder.drift?.high.toFixed(3)} (${p.ladder.drift?.n} ratios, ${p.ladder.drift?.from}-${p.ladder.drift?.to})`, handover: h ? `age ${h.fromAge}: ${h.spread?.low.toFixed(2)}-${h.spread?.high.toFixed(2)}` : "none", widths: widths.map((w) => (w === null ? "-" : (w * 100).toFixed(0) + "%")).join(" ") };
+    return { pass: allRanged && neverNarrows && p.ladder.drift?.from === 2019 && p.ladder.drift?.to === 2025 && !!h?.spread, detail: fmt(v) };
+  },
+
+  async admHoldShare({ ref }) {
+    const { buildPipeline } = await import("../src/lib/admissions/pipeline");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const p = await buildPipeline("137625", entryPoint("11+")!, { today: new Date("2026-10-07") });
+    const ft = (age: number) => [`full_time_male_aged_${age}`, `full_time_female_aged_${age}`];
+    const own = (await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: ["137625"], periodMin: 2025, periodMax: 2025, breakdowns: ft(11) })).reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    const set = p.sets.find((s) => s.age === 10)!.urns;
+    const pool2025 = (await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: set, periodMin: 2024, periodMax: 2024, breakdowns: ft(10) })).reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    const expected = (own / pool2025) * 100;
+    const futureOk = p.hold.needed.every((n, i) => n.share === null || Math.abs(n.share - (own / p.ladder.future[i].pool!) * 100) < 1e-9);
+    const v = { own, pool2025, expected: expected.toFixed(2) + "%", pipeline: p.hold.current ? p.hold.current.share.toFixed(2) + "%" : null, first: p.hold.needed[0] ? `${p.hold.needed[0].entryYear} ${p.hold.needed[0].share?.toFixed(1)}%` : null };
+    return { pass: !!p.hold.current && Math.abs(p.hold.current.share - expected) < 1e-9 && futureOk, detail: fmt(v) };
+  },
+
+  async admGroupShare({ ref }) {
+    const { buildMarketShare } = await import("../src/lib/admissions/market");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const m = await buildMarketShare("117037", entryPoint("11+")!);
+    const urns = ["117037", ...m.rivals];
+    const raw = await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: urns, periodMin: 2025, periodMax: 2025, breakdowns: ["full_time_male_aged_11", "full_time_female_aged_11"] });
+    const total = raw.reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    const kings = raw.filter((f) => f.entity_id === "117037").reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    const row = m.entryAge.rows.find((r) => r.urn === "117037" && r.period === 2025)!;
+    const sums = m.entryAge.periods.map((p) => m.entryAge.rows.filter((r) => r.period === p).reduce((a, r) => a + (r.share ?? 0), 0));
+    const v = { schools: urns.length, kings, total, expected: ((kings / total) * 100).toFixed(2) + "%", got: row.share?.toFixed(2) + "%", rank: row.rank, sums: sums.map((x) => x.toFixed(1)).join(" ") };
+    return { pass: Math.abs(row.share! - (kings / total) * 100) < 1e-9 && sums.every((x) => x === 0 || Math.abs(x - 100) < 1e-9), detail: fmt(v) };
+  },
+
+  async admJoiners({ ref }) {
+    const { fetchCensus } = await import("../src/lib/admissions/data");
+    const { cohortFlow } = await import("../src/lib/admissions/flow");
+    const rows = cohortFlow((await fetchCensus(["137625"])).get("137625")!.table);
+    const raw = await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: ["137625"], periodMin: 2024, periodMax: 2025 });
+    const ft = (age: number, p: number) => raw.filter((f) => f.period === p && (f.breakdown === `full_time_male_aged_${age}` || f.breakdown === `full_time_female_aged_${age}`)).reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    const leaving = (ft(15, 2024) - ft(16, 2025)) / ft(15, 2024);
+    const joiners11 = Math.max(0, ft(11, 2025) - ft(10, 2024));
+    const r16 = rows.find((r) => r.age === 16 && r.period === 2025)!;
+    const r11 = rows.find((r) => r.age === 11 && r.period === 2025)!;
+    const v = { y11_2024: ft(15, 2024), y12_2025: ft(16, 2025), leaving: (leaving * 100).toFixed(1) + "%", got: (r16.leavingShare16! * 100).toFixed(1) + "%", joiners11, gotJoiners11: r11.joinersEst };
+    return { pass: Math.abs(r16.leavingShare16! - leaving) < 1e-12 && r11.joinersEst === joiners11, detail: fmt(v) };
+  },
+
+  async admShape({ ref }) {
+    const { fetchCensus } = await import("../src/lib/admissions/data");
+    const { shapeOf } = await import("../src/lib/admissions/shape");
+    const { classifyShape } = await import("../src/lib/shape-classifier");
+    const rd = await import("../src/lib/roll-data");
+    const facts = await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: ["137625"] });
+    const page = classifyShape(rd.shapeClassifierInput(rd.singleAgeGenderCountsForPeriod(facts, rd.latestPeriod(facts)!)))?.label ?? null;
+    const adm = shapeOf((await fetchCensus(["137625"])).get("137625")!.ageGender);
+    return { pass: page !== null && adm === page, detail: fmt({ page, admissions: adm }) };
+  },
+
+  async admPoolNotIntake() {
+    const { buildPipeline } = await import("../src/lib/admissions/pipeline");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const { ADMISSIONS_NOTES } = await import("../src/catalogue/notes");
+    const p = await buildPipeline("137625", entryPoint("11+")!, { today: new Date("2026-10-07") });
+    const json = JSON.stringify(p);
+    const sources = Array.from(new Set([...p.ladder.past, ...p.ladder.future].map((x) => x.source)));
+    return { pass: !/intake/i.test(json) && /pool, not an intake/.test(ADMISSIONS_NOTES.pool) && sources.every((x) => ["counted", "births", "projection"].includes(x)), detail: fmt({ sources: sources.join("/"), intakeInPayload: /intake/i.test(json) }) };
+  },
+
+  // ---------------------------------------------------------------- 0.7 admissions r1 (A4)
+  async admRivalRanks({ ref }) {
+    const { buildRivals } = await import("../src/lib/admissions/rivals");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const r = await buildRivals("137625", entryPoint("11+")!);
+    const me = r.rows.find((x) => x.isSchool)!;
+    // The whole population's raw 2024 Attainment 8, counted here.
+    const rows = await ref.lookupAcademicHeadline({ ksStage: "ks4", periodMin: r.resultsPeriod!, periodMax: r.resultsPeriod! });
+    const vals = rows.map((x) => Number(x.measures.attainment8_average)).filter((v) => x(v));
+    function x(v: number) { return Number.isFinite(v); }
+    const mine = Number(rows.find((x) => x.entity_id === "137625")!.measures.attainment8_average);
+    const national = { rank: 1 + vals.filter((v) => v > mine).length, of: vals.length };
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const sb = createServerAnonSupabaseClient();
+    const { data: reg } = await sb.from("school_region_nation").select("region_code").eq("urn", "137625").maybeSingle();
+    const inRegion = new Set<string>();
+    for (let from = 0; ; from += 1000) {
+      const { data } = await sb.from("school_region_nation").select("urn").eq("region_code", (reg as { region_code: string }).region_code).range(from, from + 999);
+      for (const d of (data ?? []) as { urn: string }[]) inRegion.add(d.urn);
+      if (!data || data.length < 1000) break;
+    }
+    const regVals = rows.filter((x) => inRegion.has(x.entity_id)).map((x) => Number(x.measures.attainment8_average)).filter((v) => Number.isFinite(v));
+    const regional = { rank: 1 + regVals.filter((v) => v > mine).length, of: regVals.length };
+    const preps = r.rows.filter((x) => x.results.note === "no_published_results").map((x) => x.urn);
+    const igcse = r.rows.filter((x) => x.results.note === "igcse_not_ranked").map((x) => x.urn);
+    const v = { national: `${me.results.national?.rank}/${me.results.national?.of} (raw ${national.rank}/${national.of})`, regional: `${me.results.regional?.rank}/${me.results.regional?.of} (raw ${regional.rank}/${regional.of})`, size: `${me.size?.badge} ${me.size?.national?.rank}/${me.size?.national?.of}`, noResults: preps.join(" "), igcse: igcse.join(" ") };
+    const pass = me.results.national?.rank === national.rank && me.results.national?.of === national.of && me.results.regional?.rank === regional.rank && me.results.regional?.of === regional.of && preps.includes("117002") && igcse.includes("117018") && !!me.size?.badge;
+    return { pass, detail: fmt(v) };
+  },
+
+  async admMomentum({ ref }) {
+    const { buildRivals } = await import("../src/lib/admissions/rivals");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const th = await admissionsThresholds();
+    const r = await buildRivals("137625", entryPoint("11+")!, { thresholds: th.thresholds });
+    const urns = r.rows.map((x) => x.urn);
+    const P = r.censusPeriod;
+    const tRoll = th.thresholds!.get("secondary", "roll")!;
+    const tEntry = th.thresholds!.get("secondary", "entry_cohort")!;
+    const tHead = th.thresholds!.get("secondary", "headline")!;
+    // Raw rows, each year asked on its own (the lookup's predecessor rule, as the census read).
+    const census = new Map<number, Awaited<ReturnType<typeof ref.lookupReferenceData>>>();
+    for (const y of [P - 3, P - 2, P - 1, P]) census.set(y, await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: urns, periodMin: y, periodMax: y }));
+    const roll = (u: string, y: number) => { const v = census.get(y)!.filter((f) => f.entity_id === u && /_aged_\d+$/.test(f.breakdown)).reduce((a, f) => a + (f.value_numeric ?? 0), 0); return v > 0 ? v : null; };
+    const at11 = (u: string, y: number) => census.get(y)!.filter((f) => f.entity_id === u && (f.breakdown === "full_time_male_aged_11" || f.breakdown === "full_time_female_aged_11")).reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    const head = await ref.lookupAcademicHeadline({ entityIds: urns, ksStage: "ks4", periodMin: r.resultsPeriod! - 2 });
+    const a8 = (u: string, y: number) => { const v = head.find((h) => h.entity_id === u && h.period === y)?.measures.attainment8_average; return v === undefined || v === null ? null : Number(v); };
+    const problems: string[] = [];
+    const fired: string[] = [];
+    for (const row of r.rows) {
+      const u = row.urn;
+      const want = new Set<string>();
+      const hf = a8(u, r.resultsPeriod! - 2), ht = a8(u, r.resultsPeriod!);
+      if (hf !== null && ht !== null && at11(u, P) >= tHead.minCohort && ht - hf >= tHead.high) want.add("results_rising_fast");
+      const rf = roll(u, P - 2), rt = roll(u, P);
+      if (rf && rt && rt >= tRoll.minCohort && ((rt - rf) / rf) * 100 >= tRoll.high) want.add("gaining_pupils");
+      const rs = [P - 3, P - 2, P - 1, P].map((y) => roll(u, y));
+      if (rs.every((x) => x !== null) && rs[0]! >= tRoll.minCohort && rs.every((x, i) => i === 0 || x! < rs[i - 1]!)) want.add("losing_pupils_3y");
+      const ef = at11(u, P - 2), et = at11(u, P);
+      if (ef >= tEntry.minCohort && ((et - ef) / ef) * 100 <= tEntry.low) want.add("entry_year_shrinking");
+      const got = new Set<string>(row.momentum.map((m) => m.id as string).filter((id) => want.has(id) || ["results_rising_fast", "gaining_pupils", "losing_pupils_3y", "entry_year_shrinking"].includes(id)));
+      for (const id of new Set([...want, ...got])) if (want.has(id) !== got.has(id)) problems.push(`${u} ${id}: want ${want.has(id)}, got ${got.has(id)}`);
+      for (const m of row.momentum) fired.push(`${u}:${m.id}`);
+    }
+    return { pass: problems.length === 0, detail: fmt({ thresholds: th.source, fired: fired.join(" ") || "none", problems: problems.join("; ") || "none" }) };
+  },
+
+  async admStrengths({ ref }) {
+    const { buildRivals, MIN_AREA_ENTRIES } = await import("../src/lib/admissions/rivals");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const th = await admissionsThresholds();
+    const r = await buildRivals("137625", entryPoint("11+")!, { thresholds: th.thresholds });
+    const ranked = r.rows.filter((x) => x.results.note !== "igcse_not_ranked").map((x) => x.urn);
+    const fam = await ref.lookupAcademicSubjectFamily({ entityIds: ranked, ksStage: "ks4", periodMin: r.resultsPeriod!, periodMax: r.resultsPeriod! });
+    const fig = (u: string, f: string) => { const x = fam.find((y) => y.entity_id === u && y.family_id === f); return x && x.avg_point_score !== null && Number(x.entries_total) >= MIN_AREA_ENTRIES ? Number(x.avg_point_score) : null; };
+    const problems: string[] = [];
+    for (const a of r.areas) {
+      const mine = fig("137625", a.familyId)!;
+      const rivals = ranked.filter((u) => u !== "137625").map((u) => fig(u, a.familyId)).filter((v): v is number => v !== null);
+      const rank = 1 + rivals.filter((v) => v > mine).length;
+      const gap = mine - rivals.reduce((x, y) => x + y, 0) / rivals.length;
+      if (rank !== a.rank || rivals.length + 1 !== a.of || Math.abs(gap - a.gap) > 1e-9) problems.push(`${a.familyId}: rank ${a.rank}/${a.of} vs ${rank}/${rivals.length + 1}, gap ${a.gap} vs ${gap}`);
+    }
+    return { pass: problems.length === 0 && r.areas.length > 0, detail: fmt({ thresholds: th.source, areas: r.areas.map((a) => `${a.familyId} ${a.rank}/${a.of}${a.flags.length ? " " + a.flags.map((f) => f.id).join("+") : ""}`).join("; "), problems: problems.join("; ") || "none" }) };
+  },
+
+  async admFeeders({ ref }) {
+    const { buildPipeline } = await import("../src/lib/admissions/pipeline");
+    const { entryPoint } = await import("../src/lib/admissions/entry-points");
+    const { feederFlags } = await import("../src/lib/admissions/feeders");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const p = await buildPipeline("137625", entryPoint("11+")!);
+    const set = p.sets.find((s) => s.age === 10)!.urns;
+    const ages = p.sets.filter((s) => s.urns === set).map((s) => s.age);
+    const census = await cachedCensus(set);
+    const flags = feederFlags(new Map(set.map((u) => [u, census.get(u)!.table])), ages, 2025, 10);
+    // Raw: full-time pupils at those ages, 2023 and 2025.
+    // Each year asked for on its own, so a converted school reads its predecessor's year (the
+    // reference lookup's lineage rule), as the admissions census read does.
+    const raw = [
+      ...(await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: set, periodMin: 2023, periodMax: 2023 })),
+      ...(await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: set, periodMin: 2025, periodMax: 2025 })),
+    ];
+    const sum = (u: string, p: number) => raw.filter((f) => f.entity_id === u && f.period === p && /^full_time_(male|female)_aged_(\d+)$/.test(f.breakdown) && ages.includes(Number(f.breakdown.split("_").pop()))).reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    let ok = true;
+    let areaFrom = 0, areaTo = 0;
+    for (const u of set) { areaFrom += sum(u, 2023); areaTo += sum(u, 2025); }
+    const area = ((areaTo - areaFrom) / areaFrom) * 100;
+    const out: string[] = [];
+    for (const f of flags) {
+      const from = sum(f.urn, 2023), to = sum(f.urn, 2025);
+      const ch = ((to - from) / from) * 100;
+      const want = from < 10 ? null : ch < 0 && ch < area - 5 ? "feeder_red" : ch >= -2 ? "feeder_focus" : null;
+      if ((f.flag?.id ?? null) !== want) ok = false;
+      out.push(`${f.urn}:${ch.toFixed(0)}%${f.flag ? "=" + f.flag.id.replace("feeder_", "") : ""}`);
+    }
+    return { pass: ok && flags.length === set.length, detail: fmt({ area: area.toFixed(1) + "%", feeders: out.join(" ") }) };
   },
 
   // R-POST16-DEFAULT-SET (0.6.5 S4): the Post-16 default set has Post-16 provision and shares

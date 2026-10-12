@@ -1793,3 +1793,68 @@ Speed, with no figure changes (docs/v0.6/vicdata_0_6_rankings_then_speed_claude_
 - **App script, not Python (A's call; ingest report §2).** The inputs (`schools`, `school_nearest_neighbours`, `nearest_schools`) are in the app's Supabase project, and the rules are the app's TypeScript. So `scripts/compute-teacher-default-neighbours.ts` runs the app's own build for every eligible school, and the ingest repo loads the CSV with its own credentials. There's no write key in vicdata_public.
 - **When the list is used:** rows exist, none is stale, census period = `CURRENT_CENSUS_PERIOD`, and KS5 periods = the latest two published (`withKs5Results`' own read). Otherwise, silently, the set is built as before (logged once per instance).
 - **FE colleges** aren't precomputed. Their nearest-FE default is 0.5–0.8 s, and they fall back.
+
+## 2026-10-08 — 0.7 admissions r1
+
+The data layer, roles and shared lists for the Admissions dashboards; no dashboard UI (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md). Report: [`docs/v0.7/admissions_r1_report_v1.md`](v0.7/admissions_r1_report_v1.md).
+
+### A1 — The cohort ladder and pipeline maths
+
+- **Census counts (call).** Full-time pupils from age 4; at nursery ages (2–3), full-time plus part-time headcount. The school page's roll counts full- and part-time at every age. The difference is deliberate: the roll is "who is on the books", the cohort is "who will move up". The derived table (A2) uses the same definition.
+- **Converted schools (call, found by a rule test).** A school whose own census rows start after 2019/20 (most often an academy conversion's new URN) reads its single predecessor's earlier years. This is the reference lookup's own lineage rule, applied by asking for exactly those years. Without it, a set's year sums and ratios break at the conversion (The Chase's 2025 pool read 383 instead of 401).
+- **Matched ratios (call).**
+  - Drift uses only the schools with a census in both years.
+  - A handover between kinds of school (primary → secondary at 16+) and the births calibration use years where the schools with a census make up at least 90% of the set, scaled up for the missing share.
+  - Otherwise a missing school reads as a shrinking cohort.
+- **Rung sets (call).** One set per kind of school, used at every age that kind holds, so a cohort is followed through the same schools: infant and junior schools both in the set, so a move between them stays inside it.
+  - **Defaults are state schools**, as the plan's "state primaries nearest the school": the 15 nearest teaching Reception to Year 6.
+  - **At 16+:** the 10 nearest secondaries, 11–16 schools first, plus the school's own Year 11.
+  - **Preps** join through the lead's fuzzy set.
+  - **Why not every sector:** with every sector the set's drift reached +17% a year at the 90th percentile (preps grow at 7+ and 8+).
+- **The 16+ ladder's primary rungs** are on the secondaries' scale. They're scaled by the observed Year 6 (primaries) → Year 7 (secondaries) ratio, with its own 10th–90th spread as the range (The Chase: 4.74–5.44).
+- **Births (call).**
+  - **Entry ages above 4:** births are scaled to the set by its observed Reception-to-births ratio (The Chase's primaries: 6.2% of the blended births), then carried forward with drift.
+  - **4+ (and custom ages up to 4):** the births are the pool itself (the area's children); the range is the relative spread of that ratio.
+  - **The LA blend** weights the youngest rung's schools' LAs by their Reception pupils. The override is keyed by DfE LA code.
+- **Reception's horizon (call).** It ends at the last birth year's cohort (2029). "Two years beyond" needs ONS projections at ages 0–3, which we don't hold: an ingest change. It's left as a gap, never invented.
+- **11+ projections:** an overlay, off by default. Within the 10-year 11+ horizon, counts and births cover every year, so the projections never replace the line.
+- **Past pools** are the age E−1 rung in the census a year before, for entry 2020 to 2026. That makes this year's "share needed" the school's Year 7 over last year's Year 6 pool (The Chase: 236 / 401 = 58.9%).
+- **Rivals by default** are the 10 nearest schools of either sector that teach the entry year itself: their range covers the entry age and the year after, so a primary that ends at 11 isn't an 11+ rival.
+- **FE colleges have no school census.** A college's own entry cohort, shares and flags are therefore empty rather than invented. Its 16+ pool comes from the local secondaries as for any school. Using its ILR participation data (an existing source) is a round-2 question.
+
+### A2 — Derived table and national thresholds (ingest repo)
+
+- **The dry run hung.** The first run lost its connection overnight with `statement_timeout = 0` and no client keepalive, and waited for ever. The rebuild and dry run now:
+  - run as **small steps**: per census year for the cohort flow, per measure group for the thresholds;
+  - set a **5-minute `statement_timeout` per step** and client keepalives with a 15 s connect timeout;
+  - **log each step** (step, rows, elapsed).
+- **Two planner traps, fixed in the SQL rather than by settings:**
+  1. Every step used to carry every CTE, so the headline step planned and ran the whole census aggregate. Each step now carries only the CTEs it reads.
+  2. The headline, KS2 and subject-area changes were self-joins, which the planner estimated at 2 rows and ran as nested loops over ~30k × 30k. They are now one grouped pass that pivots the two years with `filter`.
+  - **Result:** the GCSE/Post-16 headline step went from a 5-minute timeout to 0.4 s, and the subject area to 1 s.
+  - **Proof:** the PGlite comparison (SQL against the Python reference on exported real rows) still passes, 9/9.
+- **Headline and subject-area changes are in points** (A2's `change_kind = 'difference'`); entry cohort and roll are in %. The app's flags match.
+
+### A3 — Roles and shared lists
+
+- **The lead is a flag, not a new role value.** `school_memberships.admissions_lead` requires `admissions`, so a lead is still "admissions" everywhere roles are read (the automatic team, shares, dashboard assignments). The roles check constraint is untouched.
+- **Who granted each Admissions role** is recorded in `admissions_grants`. Grants made before this migration, and every grant not made through the lead's function, count as the School-Admin's, so a lead can remove only the grants a lead made.
+- **Audit:** reuses `platform_audit_log`. School-Admins can now read their own school's `admissions_*` rows: the basis for People's "see and override" in round 2.
+- **Sharing:** `admissions_list_shares` uses the same role / team / user target model as Assign / share, since dashboard assignments attach to dashboards. SMT can share and can change only its own shares; the School-Admin and the lead can change any.
+- **Platform admins can read every school's lists (View as). To confirm.**
+- **The independent review** found 1 medium, 4 low and some nits; all were fixed, and the RLS test grew from 61 to 84 checks. Details in the report.
+- **Left alone, for you:** the existing 0.6 S1 `sync_membership_roles` trigger has the same unguarded `''::jsonb` cast on an empty claims setting. It's outside this migration, so it's unchanged; a one-line `nullif` fix if wanted.
+
+### A4/A5 — Rivals, flags and routes
+
+- **Ranks.**
+  - **Region:** each school's region comes from `school_region_nation`, the canonical map; a rule test caught `region_nation_set` leaving some schools out (545 vs 537 in the West Midlands).
+  - **Populations:** the national ones (headline, families, England's schools) are public reference data, cached an hour per phase. School-account data (the lists) never enters a shared cache.
+- **Flag rules (calls), constants in `src/lib/admissions/flags.ts` FLAG_RULES:**
+  - Strength / Weakness: the top or bottom third of the rivals that have that area, and above or below their average. These don't need the national thresholds; "growing" and "widening" do.
+  - Losing pupils: three falls in a row.
+  - A new sixth form: no pupils at 16 until two years ago.
+  - Shape changed: the same new shape two years running.
+  - A feeder's red flag: a fall worse than the area's by 5 points. Focus: no worse than −2%.
+- **Until the thresholds table is applied**, threshold flags don't fire ("thresholds not loaded"); none is guessed.
+- **Route access is by role only:** Admissions, SMT, the School-Admin, platform admin. People a list is shared with read the lists through RLS. Whether they can also open the computed views is a round-2 decision.

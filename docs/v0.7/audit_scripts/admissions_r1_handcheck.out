@@ -1,0 +1,59 @@
+## The Chase 137625, 11+ (15 nearest state primaries)
+
+| School | age 10, 2024/25 (-> 2025 entry) | age 10, 2025/26 (-> 2026) | age 9, 2025/26 (-> 2027) | age 4, 2025/26 (-> 2032) |
+|---|---|---|---|---|
+| Malvern Parish CofE Primary School (144258) | 31 | 29 | 30 | 29 |
+| Great Malvern Primary School (136984) | 48 | 49 | 43 | 38 |
+| Malvern Wyche CofE Primary School (116830) | 21 | 24 | 21 | 12 |
+| Grove Primary School (151298) | 18 | 17 | 7 | 11 |
+| St James' CofE Primary School (116903) | 11 | 5 | 6 | 3 |
+| St Joseph's Catholic Primary School (116901) | 16 | 14 | 12 | 12 |
+| St Matthias Church of England Primary School (147903) | 31 | 20 | 13 | 13 |
+| Madresfield CofE Primary School (144259) | 15 | 11 | 11 | 11 |
+| Somers Park Primary School (137292) | 75 | 89 | 84 | 52 |
+| Northleigh CofE Primary School (147284) | 33 | 31 | 29 | 24 |
+| Hanley Swan St Gabriel's with St Mary's CofE Primary School (144262) | 16 | 17 | 16 | 16 |
+| Malvern Wells CofE Primary School (116902) | 15 | 15 | 15 | 12 |
+| Colwall CofE Primary School and Nursery (116797) | 29 | 27 | 20 | 24 |
+| Welland Primary School (146678) | 27 | 23 | 13 | 17 |
+| Cradley CofE Primary School (116874) | 15 | 11 | 14 | 12 |
+| **Sum** | **401** | **382** | **334** | **286** |
+
+The Chase's own age-11 pupils, 2025/26: 236.
+
+Library:
+- 2025 pool 401 (counted, age 10, census 2024)
+- 2026 pool 382 (counted, age 10, census 2025)
+- 2027 pool 334 [329-344] (counted, age 9, 1 steps)
+- 2028 pool 374 [362-397] (counted, age 8, 2 steps)
+- 2029 pool 341 [325-373] (counted, age 7, 3 steps)
+- 2030 pool 345 [324-389] (counted, age 6, 4 steps)
+- 2031 pool 314 [290-365] (counted, age 5, 5 steps)
+- 2032 pool 286 [260-342] (counted, age 4, 6 steps)
+- 2033 pool 303 [250-387] (births, born 2022, 7 steps)
+- 2034 pool 295 [244-378] (births, born 2023, 7 steps)
+- 2035 pool 290 [240-372] (births, born 2024, 7 steps)
+- 2036 pool 291 [241-373] (births, born 2025, 7 steps)
+- drift 0.9841-1.0305 (35 matched ratios); births calibration 0.0618 (0.0563-0.0661); blend Worcestershire 87.4%, Herefordshire, County of 12.6%
+- current share needed: 236 / 401 = 58.85%; 2027 70.66%
+
+## King's School, Worcester 117037, 11+ market share (10 nearest schools teaching Year 7)
+
+| School | age 11, 2023/24 | 2024/25 | 2025/26 |
+|---|---|---|---|
+| The King's School (117037) | 99 | 123 | 101 |
+| Christopher Whitehead Language College (136890) | 276 | 277 | 247 |
+| Blessed Edward Oldcorne Catholic College (116999) | 213 | 213 | 207 |
+| Kimichi Worcester (152055) | 0 | 0 | 0 |
+| Royal Grammar School Worcester (117038) | 152 | 157 | 124 |
+| Bishop Perowne CofE College (138107) | 246 | 246 | 205 |
+| Nunnery Wood High School (137051) | 304 | 294 | 304 |
+| Tudor Grange Academy Worcester (135913) | 214 | 210 | 205 |
+| The River School (117041) | 17 | 14 | 7 |
+| Witton Middle School (148329) | 156 | 143 | 103 |
+| Bowbrook House School (117034) | 32 | 17 | 28 |
+| **Sum** | **1709** | **1694** | **1531** |
+
+- 2023: King's 99 / 1709 = 5.79%, rank 8 of 11
+- 2024: King's 123 / 1694 = 7.26%, rank 8 of 11
+- 2025: King's 101 / 1531 = 6.60%, rank 8 of 11

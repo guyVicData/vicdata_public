@@ -1,0 +1,123 @@
+[
+ {
+  "phase": "post16",
+  "measure": "entry_cohort",
+  "change_kind": "percent",
+  "p_low": -18.1818181818182,
+  "p_high": 18.8567953785345,
+  "n_schools": 2694,
+  "period_from": 2023,
+  "period_to": 2025,
+  "min_cohort": 10
+ },
+ {
+  "phase": "post16",
+  "measure": "roll",
+  "change_kind": "percent",
+  "p_low": -5.55364752273739,
+  "p_high": 4.74448918593549,
+  "n_schools": 2694,
+  "period_from": 2023,
+  "period_to": 2025,
+  "min_cohort": 10
+ },
+ {
+  "phase": "primary",
+  "measure": "entry_cohort",
+  "change_kind": "percent",
+  "p_low": -19.6078431372549,
+  "p_high": 10.0,
+  "n_schools": 14851,
+  "period_from": 2023,
+  "period_to": 2025,
+  "min_cohort": 10
+ },
+ {
+  "phase": "primary",
+  "measure": "roll",
+  "change_kind": "percent",
+  "p_low": -8.92018779342723,
+  "p_high": 2.58620689655172,
+  "n_schools": 14851,
+  "period_from": 2023,
+  "period_to": 2025,
+  "min_cohort": 10
+ },
+ {
+  "phase": "secondary",
+  "measure": "entry_cohort",
+  "change_kind": "percent",
+  "p_low": -16.0901671200933,
+  "p_high": 5.33903743315508,
+  "n_schools": 4814,
+  "period_from": 2023,
+  "period_to": 2025,
+  "min_cohort": 10
+ },
+ {
+  "phase": "secondary",
+  "measure": "roll",
+  "change_kind": "percent",
+  "p_low": -5.76126179322652,
+  "p_high": 5.51410187693569,
+  "n_schools": 4814,
+  "period_from": 2023,
+  "period_to": 2025,
+  "min_cohort": 10
+ },
+ {
+  "phase": "post16",
+  "measure": "headline",
+  "change_kind": "difference",
+  "p_low": -1.88,
+  "p_high": 3.08,
+  "n_schools": 2396,
+  "period_from": 2022,
+  "period_to": 2024,
+  "min_cohort": 10
+ },
+ {
+  "phase": "secondary",
+  "measure": "headline",
+  "change_kind": "difference",
+  "p_low": -2.8,
+  "p_high": 2.5,
+  "n_schools": 4195,
+  "period_from": 2022,
+  "period_to": 2024,
+  "min_cohort": 10
+ },
+ {
+  "phase": "primary",
+  "measure": "headline",
+  "change_kind": "difference",
+  "p_low": -7.0,
+  "p_high": 13.0,
+  "n_schools": 14321,
+  "period_from": 2022,
+  "period_to": 2024,
+  "min_cohort": 10
+ },
+ {
+  "phase": "post16",
+  "measure": "subject_area",
+  "change_kind": "difference",
+  "p_low": -2.339924081303,
+  "p_high": 3.35480651867749,
+  "n_schools": 10427,
+  "period_from": 2022,
+  "period_to": 2024,
+  "min_cohort": 10
+ },
+ {
+  "phase": "secondary",
+  "measure": "subject_area",
+  "change_kind": "difference",
+  "p_low": -0.34137799301515,
+  "p_high": 0.470361540873704,
+  "n_schools": 22369,
+  "period_from": 2022,
+  "period_to": 2024,
+  "min_cohort": 10
+ }
+]

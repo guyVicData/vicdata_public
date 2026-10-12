@@ -1,0 +1,103 @@
+applied 20261103090000_v06_s1_roles_teams_platform.sql
+applied 20261104090000_v06_membership_insert_hardening.sql
+applied 20261106090000_v07_admissions_r1.sql
+
+-- the lead flag
+PASS the flag needs the admissions role (the guard clears it; the constraint backs it) 
+PASS a teacher can't make themselves lead (RLS: 0 rows) 
+PASS the lead can't make another admissions member lead (RLS: 0 rows) 
+PASS a self-insert can't arrive as lead 
+PASS the School-Admin (account holder) makes M lead 
+PASS a second School-Admin unmakes M 
+PASS making / unmaking a lead is audited admissions_lead_made,admissions_lead_unmade
+
+-- the lead adds and removes Admissions staff
+PASS the lead grants Admissions to T2 
+PASS   T2 keeps their other roles and gains admissions only admissions,hod,teacher
+PASS   provenance: granted by the lead 
+PASS   audited 
+PASS granting again is a no-op (no extra audit row) 
+PASS the lead removes the Admissions they granted 
+PASS   provenance cleared 
+PASS the lead can't remove a School-Admin's grant this Admissions role was granted by the School-Admin; only they can remove it
+PASS the lead can't grant a pending (unapproved) member only approved members of the school can be given Admissions
+PASS the lead can't act on another school's member only the Admissions lead of this school can add or remove Admissions staff
+PASS another school's lead can't act on this school only the Admissions lead of this school can add or remove Admissions staff
+PASS the lead can't remove their own role an Admissions lead's own role is the School-Admin's to change
+PASS the lead can't touch another lead an Admissions lead's own role is the School-Admin's to change
+PASS M (not a lead) can't use the lead's function only the Admissions lead of this school can add or remove Admissions staff
+PASS S (not a lead) can't use the lead's function only the Admissions lead of this school can add or remove Admissions staff
+PASS T (not a lead) can't use the lead's function only the Admissions lead of this school can add or remove Admissions staff
+PASS H (not a lead) can't use the lead's function only the Admissions lead of this school can add or remove Admissions staff
+PASS anon can't call it (permission denied) permission denied for function admissions_set_member
+PASS a null p_grant is refused p_grant must be true (grant) or false (remove)
+PASS one message for 'no such membership' and 'not your school' (no oracle) only the Admissions lead of this school can add or remove Admissions staff
+PASS the lead can't update memberships directly (roles: 0 rows) 
+PASS the lead can't grant SMT or any other role: the function only adds admissions 
+PASS the lead can't delete memberships (0 rows) 
+
+-- the guard itself, provenance and the School-Admin's audit
+PASS the guard's own refusal (owner session, a teacher's claims) only the School-Admin can make or unmake an Admissions lead
+PASS   a session with no claims gets the guard's refusal only the School-Admin can make or unmake an Admissions lead
+PASS   the runbook (service role, transaction-local) makes a lead 
+PASS direct writes to admissions_grants are refused 
+PASS a School-Admin setting the lead's marker still records a School-Admin grant 
+PASS   and it's audited as the School-Admin's admissions_admin_grant
+PASS   so the lead can't remove it this Admissions role was granted by the School-Admin; only they can remove it
+PASS a School-Admin removal is audited 
+PASS the lead grants T3 (provenance: lead) 
+PASS   a School-Admin's legacy role='teacher' removes it and its provenance 
+PASS   the legacy re-grant is the School-Admin's 
+PASS   so the lead can't remove it this Admissions role was granted by the School-Admin; only they can remove it
+
+-- the School-Admin sees and overrides
+PASS the School-Admin reads the school's admissions audit rows 
+PASS   but not other platform rows 
+PASS   the lead can't read the audit log 
+PASS   another school's School-Admin can't 
+PASS the School-Admin removes a lead's grant (override) 
+PASS the School-Admin removing a lead's Admissions ends the lead 
+PASS   and the end of the lead is audited admissions_lead_unmade,admissions_admin_remove
+PASS a School-Admin re-grant is recorded as the School-Admin's 
+
+-- entry points and shared lists
+PASS the lead writes a list 
+PASS   'last changed by' is the database's, not the client's 
+PASS the lead writes an entry point 
+PASS   a bad entry point is refused 
+PASS   a rung list needs its rung 
+PASS   the lead updates the list (LA blend override) 
+PASS read: lead, Admissions, SMT and School-Admins see the list {"L":1,"M":1,"S":1,"H":1,"A2":1,"T":0,"O":0,"OL":0}
+PASS read: a teacher, another school's members and lead don't {"L":1,"M":1,"S":1,"H":1,"A2":1,"T":0,"O":0,"OL":0}
+PASS read: anon sees nothing 
+PASS write: M can't insert, update or delete 
+PASS write: S can't insert, update or delete 
+PASS write: H can't insert, update or delete 
+PASS write: T can't insert, update or delete 
+PASS write: OL can't insert, update or delete 
+PASS write: another school's lead can't write here 
+PASS write: the lead can't move a list to another school 
+PASS write: another school's lead writes its own school's lists 
+PASS   which this school's lead can't see 
+
+-- sharing through teams and roles (read-only)
+PASS a teacher can't share the lists 
+PASS SMT shares them with a team 
+PASS   'shared by' and 'when' are the database's, not the client's 
+PASS   and can't be rewritten later 
+PASS   another SMT member can't change or remove it 
+PASS   SMT removes its own share 
+PASS   the School-Admin removes anyone's share 
+PASS   and so does the lead 
+PASS   the team member reads them 
+PASS   but can't write them 
+PASS   a teacher outside the team doesn't read them 
+PASS a share can't point at another school's team 
+PASS a role share (HOD) reaches T2 
+PASS   but not another school's HOD-free members 
+
+-- re-runnable
+PASS the migration applies a second time over itself 
+PASS   and the lists and grants are intact 
+
+ALL PASS

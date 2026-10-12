@@ -68,3 +68,29 @@ export function specYears(spec: ViewSpec | null | undefined, hostYears: readonly
   }
   return hostYears;
 }
+
+// ------------------------------------------------------------------ admissions (0.7 r1)
+// The honesty wording for the Admissions dashboards (src/lib/admissions/), in one place like the
+// trend notes above, so a view never words a pool, a share or an estimate on its own.
+export const ADMISSIONS_NOTES = {
+  // R-ADM-POOL-NOT-INTAKE
+  pool: "This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come.",
+  // R-ADM-LADDER: the certainty of each year, by its source
+  counted: "Counted: children in these schools now (the January census), followed forward.",
+  births: "From births: the area's calendar-year births, scaled to these schools by how many of them have reached Reception in past years. A range, not a count.",
+  projection: "From ONS projections (age 10, by local authority): a wider band, shown only on request.",
+  // R-ADM-BIRTH-SPLIT
+  birthSplit: "Births are counted by calendar year; a school year runs September to August, so each year's pool is 8/12 of one year's births plus 4/12 of the year before.",
+  birthSex: "Births have no boy/girl split: a girls' or boys' pool from births is an estimate (49% / 51%).",
+  // R-ADM-DRIFT-RANGE
+  drift: "The range is how much these schools' year groups have actually grown or shrunk from one year to the next since 2019/20 (the middle 80% of those changes), applied for each year still to go -- so it widens the further ahead it looks.",
+  // R-ADM-HOLD-SHARE
+  holdShare: "The share needed to hold numbers steady: this year's intake as a share of each future pool. A requirement, not a forecast.",
+  // R-ADM-GROUP-SHARE
+  groupShare: "A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market.",
+  // R-ADM-JOINERS-ESTIMATE
+  joiners: "An estimate: the growth in a year group from one January to the next. It counts net arrivals, not every pupil who joined.",
+  leaving16: "Leaving at 16: the fall from Year 11 to Year 12 at the same school, a year apart. An estimate of net leavers.",
+  // R-ADM-SHAPE-NOT-RANKED
+  shape: "Shapes describe a school's year groups; they are not better or worse, so they are never ranked.",
+} as const;
