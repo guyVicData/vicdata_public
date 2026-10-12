@@ -1269,7 +1269,7 @@ export const RULES: Rule[] = [
     why: "An index needs the same years on every line.",
     appliesTo: "DV-ADM-P-POOL-INDEXED, DV-ADM-P-POOL-TABLE, DV-ADM-P-ENTRY-*, DV-ADM-M-VS-*",
     enforcedIn: ["src/lib/admissions/screens.ts:poolTrends", "src/components/admissions/views/Lines.tsx"],
-    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Feeders = the ladder's counted past pools; the LA's 2025 value = age_profile_aggregates Worcestershire age 10.", check: "admViewTrends" },
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Feeders = the ladder's counted past pools; the LA's 2025 value = age_profile_aggregates Worcestershire age 10; past area years are flagged for the undercount note, and England in the first of them is the sum of the nine regions.", check: "admViewTrends" },
     origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
     status: "active",
   },

@@ -218,7 +218,10 @@ export async function funnel(urn: string, ep: EntryPoint, sets: { age: number; u
 // across the school's LA and England. LA and England come from age_profile_aggregates (pupils by
 // single age 5-15, per LA and region, per census year) for the years it holds; England is the sum
 // of the nine regions. Ages outside 5-15 (4+ reads age 3) have no area line.
-export type PoolTrends = { age: number; feeders: Pt[]; la: Pt[]; england: Pt[]; laName: string | null; areaYears: number[]; base: number | null; indexed: { feeders: Pt[]; la: Pt[]; england: Pt[] } };
+// 0.7 r2b (E3): `pastAreaYears` -- the years before the latest that the LA or England line
+// draws. The aggregates for past years were built from today's schools table, so they count only
+// schools still open and slightly undercount (ADMISSIONS_NOTES.areaUndercount).
+export type PoolTrends = { age: number; feeders: Pt[]; la: Pt[]; england: Pt[]; laName: string | null; areaYears: number[]; pastAreaYears: number[]; base: number | null; indexed: { feeders: Pt[]; la: Pt[]; england: Pt[] } };
 
 /** Series indexed to 100 at their first COMMON year (an index needs the same base on every line);
  * with no common year each line is indexed to its own first year. */
@@ -247,7 +250,9 @@ export async function poolTrends(ep: EntryPoint, ladder: Ladder, laName: string 
   });
   const laSorted = la.sort((a, b) => a.year - b.year);
   const ix = indexTo([feeders, laSorted, england]);
-  return { age, feeders, la: laSorted, england, laName, areaYears: years, base: ix.base, indexed: { feeders: ix.out[0], la: ix.out[1], england: ix.out[2] } };
+  const latest = years.length ? years[years.length - 1] : null;
+  const pastAreaYears = Array.from(new Set([...laSorted, ...england].filter((x) => x.value !== null && latest !== null && x.year < latest).map((x) => x.year))).sort((a, b) => a - b);
+  return { age, feeders, la: laSorted, england, laName, areaYears: years, pastAreaYears, base: ix.base, indexed: { feeders: ix.out[0], la: ix.out[1], england: ix.out[2] } };
 }
 
 function areaByAge(): Promise<{ scope: string; key: string; period: number; byAge: Record<string, number> }[]> {

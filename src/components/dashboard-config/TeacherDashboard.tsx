@@ -59,6 +59,7 @@ import { fetchComparatorGrades } from "@/lib/teacher-view-comparator-grades";
 import { mapResultOf, type MapSeries } from "@/lib/teacher-map";
 import { TableLayoutContext, type TableLayoutStore } from "@/components/teacher/tableLayout";
 import type { ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
+import { linkedSetChoice, linkedSubjectKey, parseLinkedSet, withoutLinkedSet } from "@/lib/teacher-view-linked-set";
 import { SAVED_SET_PREFIX, fetchSavedSets, savedSetKey, type SavedComparatorSet, type SavedSetsPayload } from "@/lib/teacher-view-saved-sets";
 import { ControlBar, type FocusSubject, type SharedMeasure } from "@/components/teacher/ControlBar";
 import { ResultsControl } from "@/components/teacher/ResultsControl";
@@ -287,6 +288,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // CHOICE -- what is actually in focus is `focusKey` below, which falls back to the first
   // ticked subject. Kept nullable because "not chosen yet" is real; it is not "All".
   const [chosenFocusKey, setFocusKey] = useState<string | null>(null);
+  // 0.7 r2b (E2): a comparator set from the address (?set=, Admissions' "with these rivals"),
+  // as the chooser's unsaved choice. Read on load, never saved; the chooser's next choice
+  // drops it. null -- no parameter -- leaves the page exactly as it was.
+  const [linkedSet, setLinkedSet] = useState<string | null>(null);
   // Round 8 §6: every private note this person has for this school, keyed by chart_key and
   // fetched once. Nine panels would otherwise be nine round trips on every load.
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -434,6 +439,16 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       setTicked(prefs.subjects);
       setColumns(prefs.columns);
       setNotes(notes);
+      const linked = parseLinkedSet(search);
+      if (linked) {
+        setLinkedSet(linkedSetChoice(linked));
+        const key = linkedSubjectKey(subjectItemsOf(loadedEntries), linked.subject);
+        if (key) {
+          // Shown, not saved: ticked for this visit only if it wasn't already.
+          if (!prefs.subjects.includes(key)) setTicked([...prefs.subjects, key]);
+          setFocusKey(key);
+        }
+      }
 
       // §13's "New-data-in", derived rather than pushed -- see hasNewData.
       const periods = (loadedHeadline as AcademicSubjectHeadlineEntry[]).map((h) => h.period);
@@ -462,13 +477,13 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // server-side, so it is a set that is known to be a sane size.
   // The chooser's unsaved choice (see chooserSet) joins as CHOOSER_SET_ID: an empty list
   // while it loads, so the pill stays on it rather than falling back to the first preset.
-  const chooserRaw = readSetting(columns, CHOOSER_KEY);
+  const chooserRaw = linkedSet ?? readSetting(columns, CHOOSER_KEY);
   // Comparator dropdown round: what the column is on, resolved once. A saved set by its
   // key (kept while saved sets are still loading, so the default never flashes in first);
   // otherwise the chooser's own stored choice; otherwise the default nearest ten. The old
   // presets (Nearest 10 / Same sector / Local rivals / Similar-sized) are mothballed: a
   // stored preset id now reads as "nothing chosen".
-  const storedSet = readSetting(columns, setKey("rankings"));
+  const storedSet = linkedSet ? CHOOSER_SET_ID : readSetting(columns, setKey("rankings"));
   const allComparatorSets = useMemo<Record<string, ComparatorSchool[] | undefined>>(() => {
     const key = activeComparison(storedSet, chooserRaw, savedSets).activeChoiceKey;
     return {
@@ -2885,6 +2900,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           onSetsChanged={reloadSavedSets}
           onDone={async (choice) => {
             setChooser(null);
+            if (linkedSet) {
+              setLinkedSet(null);
+              window.history.replaceState(window.history.state, "", withoutLinkedSet(window.location.href));
+            }
             // A saved set is switched on by its own id; anything else is kept as the
             // chooser's own choice, which the column resolves and shows by name.
             if (choice.kind === "saved") {

@@ -95,7 +95,7 @@ export function AcademicFooter({ explorerHref }: { explorerHref: string | null }
     <span className="truncate text-[11px] text-[var(--muted2)]">
       4+ &rarr; KS2 &middot; 11+ &rarr; GCSE &middot; 16+ &rarr; Post-16 &middot;{" "}
       {explorerHref ? (
-        <Link href={explorerHref} className="hover:text-[var(--fg)]">
+        <Link href={explorerHref} title="Open in the subject explorer with these rivals" className="hover:text-[var(--fg)]">
           subject explorer &rarr;
         </Link>
       ) : (

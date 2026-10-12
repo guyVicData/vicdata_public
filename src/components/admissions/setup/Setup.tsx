@@ -32,10 +32,13 @@ const STD = [
 const chip = (id: string) => entryPoint(id)?.label.replace(/ \(.*\)$/, "") ?? id;
 const ageOf = (id: string) => entryPoint(id)?.age ?? 11;
 
-function lastChanged(row: { updated_by: string | null; updated_at: string | null } | undefined, names: Record<string, string> | undefined): string | null {
+// 0.7 r2b (E1): a School-Admin's override reads "Changed by School-Admin [name], [date]"
+// (updated_by_kind, set by the database; absent before the r2b migration).
+function lastChanged(row: { updated_by: string | null; updated_at: string | null; updated_by_kind?: string | null } | undefined, names: Record<string, string> | undefined): string | null {
   if (!row?.updated_at) return null;
   const who = row.updated_by ? (names?.[row.updated_by] ?? "a colleague") : "VicData";
-  return `Last changed by ${who}, ${new Date(row.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  const date = new Date(row.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return row.updated_by_kind === "school_admin" ? `Changed by School-Admin ${who}, ${date}` : `Last changed by ${who}, ${date}`;
 }
 
 // ------------------------------------------------------------------------ the board's frame
@@ -94,7 +97,7 @@ export function Setup({ member, step, entry, lists, ages, theme, onStep, onDone,
   const readOnly = member.canEditLists
     ? null
     : member.access === "schoolAdmin"
-      ? "As School-Admin you can see setup, but saving needs the Admissions lead flag: round 1's rules let only the lead change lists. Make a lead in People (or yourself, with the Admissions role)."
+      ? "As School-Admin you can see setup. Saving needs the Admissions lead flag until the School-Admin override is switched on in the database. Make a lead in People (or yourself, with the Admissions role)."
       : "Only the Admissions lead changes setup. You can see what is set.";
   const [chosen, setChosen] = useState<string[]>(() => lists?.entryPoints.map((e) => e.entry_point) ?? []);
   const [current, setCurrent] = useState<string | null>(entry);
