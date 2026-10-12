@@ -33,10 +33,38 @@ Teacher's parity differences must be **only** this icon row. Show before and aft
 - **Setup:**
   - for a school without boarders, step 1 doesn't offer "day and boarding";
   - **step 3 (Boarding feeders) is skipped,** and the step count reads 1–3.
-- **The filters move out of the top bar into column 1's "whole school numbers" panel menu,** next to *All pupils / girls / boys* and *State + independent*. *Day + boarding* is in that menu **only for a boarding school**.
+- **The filters stay where they are now.** Don't move them. *Day + boarding* sits next to *All pupils / girls / boys* and *State + independent* (and in column 1's "whole school numbers" panel menu, if those filters are there too) **only for a boarding school**. For a day school it isn't shown, and the other filters close up.
 - **Everywhere else:**
-  - for a day school, every day/boarding tile, filter, list kind (`boarding_feeders`) and label is hidden;
+  - **Column 1:** the day/boarding numbers tile shows **only for a boarding school**. For a day school the tile is removed, not left showing "0 boarders", and the other tiles close up;
+  - for a day school, every other day/boarding tile, list kind (`boarding_feeders`) and label is hidden;
   - existing boarding lists aren't deleted, only hidden.
+- **A thorough boarding audit.** Guy: *"Non-boarding schools must not have to think about boarders, but boarding schools must."* Check it in both directions, every surface, and don't rely on spot checks:
+  1. **Find every mention.** Grep the Admissions code, the routes, `ADMISSIONS_NOTES`, the catalogue entries (D7), the seed rows and the setup steps for every mention of boarding / boarders / day (`boarding`, `boarder`, `day_only`, `Day +`, `boarding_feeders`, the ISC note). List each one in the report as a table:
+     - surface;
+     - what a **day school** sees (it must be nothing: no tile, filter, chip, column, legend, empty state, note, setup question, editor option or export field mentioning boarding);
+     - what a **boarding school** sees (it must be there and working).
+  2. **Watch the subtle places:**
+     - the setup step count and "day only" wording;
+     - the Pipeline header chips and feeder kinds;
+     - feeder table columns;
+     - funnel and ladder captions;
+     - the boarding entry-point fuzzy set;
+     - the market-share filters;
+     - the rivals' table (a day school's rivals can include boarding schools; show their figures, but don't ask the day school to make any boarding choice);
+     - the editor's compare options (*Boarding feeders*, *Both*): hidden when previewing a day school, kept in the catalogue;
+     - export / meeting-slide text;
+     - the phone tabs;
+     - the "lead hasn't set up yet" defaults.
+  3. **For a boarding school,** check that every boarding surface is present:
+     - setup offers day and boarding, and step 3 runs;
+     - the filter and the column-1 tile show;
+     - the boarding feeders list and fuzzy set work end to end.
+  4. **Add a rule, R-ADM-BOARDING-ONLY-WHERE-BOARDERS,** with a real-data test that renders every Admissions view and the setup flow for:
+     - a day school (The Chase 137625, plus an 11–16 state school);
+     - a boarding school (King's Worcester 117037, if GIAS lists boarders; otherwise an independent prep with boarders).
+     
+     The test asserts no boarding text or control for the day schools, and every boarding surface present for the boarding schools.
+  5. **Screenshots** of column 1, setup and the Pipeline header for one day school and one boarding school, in both themes.
 
 ## F3 — School shape leaves out age 18
 
