@@ -362,10 +362,18 @@ function readyPipe(l: Load<PipelineView>, render: (p: PipelineOk) => ReactNode):
   return ready(p as Load<PipelineOk>, render);
 }
 
-function explorerHref(c: Ctx): string | null {
+// 0.7 r2b (E2): the subject explorer (Teacher's GCSE or Post-16 dashboard) with these rivals --
+// `set` the rivals' URNs (Teacher reads at most 30; src/lib/teacher-view-linked-set.ts), and
+// `subject` the subject area when a row was clicked. The school itself isn't in the set.
+function explorerHref(c: Ctx, subject?: string): string | null {
   const ep = c.entry ? entryPoint(c.entry) : null;
   if (!ep || ep.age <= 10) return null;
-  return ep.age >= 16 ? "/teacher/ks5" : "/teacher/ks4";
+  const path = ep.age >= 16 ? "/teacher/ks5" : "/teacher/ks4";
+  const rivals = c.rivals.status === "ready" ? c.rivals.data.rows.filter((x) => !x.isSchool).map((x) => x.urn).slice(0, 30) : [];
+  if (!rivals.length) return path;
+  const q = new URLSearchParams({ set: rivals.join(",") });
+  if (subject) q.set("subject", subject);
+  return `${path}?${q.toString().replace(/%2C/g, ",")}`;
 }
 
 /** What one view draws, by its dataview id. */
@@ -422,7 +430,7 @@ function viewBody(dv: string, c: Ctx, o: { fullscreen: boolean; onRail?: (dvId: 
     case "DV-ADM-M-FLAGS":
       return ready(c.market, (m) => ready(c.rivals, (r) => <Momentum m={m} r={r} fullscreen={fs} />));
     case "DV-ADM-M-STRENGTHS":
-      return ready(c.rivals, (r) => <Strengths r={r} explorerHref={explorerHref(c)} fullscreen={fs} />);
+      return ready(c.rivals, (r) => <Strengths r={r} explorerHref={(subject) => explorerHref(c, subject)} fullscreen={fs} />);
     case "DV-ADM-M-VS-LINE":
       return ready(c.market, (m) => <VsRivals m={m} setLabel={c.setLabel} as="line" fullscreen={fs} />);
     case "DV-ADM-M-VS-BARS":

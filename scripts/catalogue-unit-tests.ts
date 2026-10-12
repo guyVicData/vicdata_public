@@ -732,3 +732,31 @@ describe("Admissions in the catalogue (0.7 r2)", () => {
     assert.ok(!/'role', 'teacher', 'live', true from public.dashboards where slug = 'vicdata.admissions/.test(sql), "never to Teacher");
   });
 });
+
+// 0.7 admissions r2b (E2): the subject explorer's ?set= (Admissions rivals), read by Teacher.
+describe("Teacher's ?set= from Admissions (0.7 r2b)", () => {
+  it("keeps up to 30 distinct 6-digit URNs, ignores the rest, and is null without a usable set", async () => {
+    const l = await import("../src/lib/teacher-view-linked-set");
+    assert.equal(l.parseLinkedSet(new URLSearchParams("")), null);
+    assert.equal(l.parseLinkedSet(new URLSearchParams("set=")), null);
+    assert.equal(l.parseLinkedSet(new URLSearchParams("set=abc,12345,1234567")), null);
+    assert.deepEqual(l.parseLinkedSet(new URLSearchParams("set=137625, 117037,x,137625,12345&subject=History")), { urns: ["137625", "117037"], subject: "History" });
+    const many = Array.from({ length: 40 }, (_, i) => String(100000 + i)).join(",");
+    assert.equal(l.parseLinkedSet(new URLSearchParams(`set=${many}`))!.urns.length, 30);
+    assert.equal(l.parseLinkedSet(new URLSearchParams("set=137625&subject=%20"))!.subject, null);
+  });
+  it("becomes the chooser's unsaved custom set, 'Admissions rivals'; the subject matches by name", async () => {
+    const l = await import("../src/lib/teacher-view-linked-set");
+    assert.deepEqual(JSON.parse(l.linkedSetChoice({ urns: ["137625"], subject: null })), { kind: "urns", label: "Admissions rivals", urns: ["137625"] });
+    const items = [{ key: "a", label: "History", subject: "History" }, { key: "b", label: "Mathematics (A level)", subject: "Mathematics" }];
+    assert.equal(l.linkedSubjectKey(items, "history"), "a");
+    assert.equal(l.linkedSubjectKey(items, "Mathematics"), "b");
+    assert.equal(l.linkedSubjectKey(items, "Sciences"), null);
+    assert.equal(l.linkedSubjectKey(items, null), null);
+  });
+  it("drops set and subject from the address, keeping everything else", async () => {
+    const l = await import("../src/lib/teacher-view-linked-set");
+    assert.equal(l.withoutLinkedSet("https://x.test/teacher/ks4?set=137625&subject=History&renderer=config#c"), "/teacher/ks4?renderer=config#c");
+    assert.equal(l.withoutLinkedSet("https://x.test/teacher/ks4?set=137625"), "/teacher/ks4");
+  });
+});
