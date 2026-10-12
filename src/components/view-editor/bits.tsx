@@ -103,6 +103,12 @@ export const KIND_GLYPH: Record<ViewKind, string> = {
   slope: "SlopeIcon",
   donut: "DonutIcon",
   map: "MapPinIcon",
+  // 0.7 admissions r2 (D7)
+  pipeline: "AdmPipelineIcon",
+  scatter: "AdmScatterIcon",
+  strengths: "AdmStrengthsIcon",
+  shapes: "AdmShapeIcon",
+  flags: "FlagIcon",
 };
 
 export const CloseGlyph = ({ size = 16, width = 2 }: { size?: number; width?: number }) => (

@@ -75,6 +75,15 @@ export function lineName(kind: CompareSeriesKind, env: EditorEnv, average?: Comp
       return { name: "A chosen school", sub: "Another school" };
     case "otherSubject":
       return { name: "Another subject", sub: "At this school" };
+    // 0.7 admissions r2 (D7): the Admissions sets, the lead's lists (or nearby schools until set).
+    case "dayFeeders":
+      return { name: "Day feeders", sub: "The day feeder list" };
+    case "boardingFeeders":
+      return { name: "Boarding feeders", sub: "The boarding feeder list" };
+    case "bothFeeders":
+      return { name: "Day and boarding feeders", sub: "Both feeder lists together" };
+    case "rivals":
+      return { name: "Rivals", sub: "The rivals list" };
   }
 }
 

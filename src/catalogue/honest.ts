@@ -77,6 +77,11 @@ export const GEOGRAPHY_OF: Record<CompareSeriesKind, Geography> = {
   savedSet: "set",
   chosenSchool: "set",
   otherSubject: "school",
+  // 0.7 admissions r2: the Admissions sets.
+  dayFeeders: "set",
+  boardingFeeders: "set",
+  bothFeeders: "set",
+  rivals: "set",
 };
 
 const geography = (m: Measure, g: Geography): GeographyAvailability => m.geographies[g];
@@ -234,6 +239,12 @@ export const VIEW_LABEL: Record<ViewKind, string> = {
   slope: "Slope",
   donut: "Donut",
   map: "Map",
+  // 0.7 admissions r2 (D7): the Admissions kinds, offered on Admissions dashboards only.
+  pipeline: "Pipeline chart",
+  scatter: "Momentum scatter",
+  strengths: "Strengths bars",
+  shapes: "Shape small multiples",
+  flags: "Flag list",
 };
 
 // Whether a View can draw this data at all. A View never changes a figure, so one that
@@ -259,6 +270,14 @@ export function viewHonest(ctx: HonestContext, kind: ViewKind, data: Pick<ViewSp
       return per === "subject" ? yes() : no("A donut needs a group of subjects: one value per subject (1 · Data).", "R-DONUT-COUNTS-ONLY");
     case "map":
       return schoolSetHost(ctx.host) && per === "school" ? yes() : no("Needs a set of other schools: a Comparisons column.");
+    // 0.7 admissions r2: the Admissions kinds (admissionsViewHonest says the same for their own
+    // data; on a Teacher column they never draw).
+    case "pipeline":
+    case "scatter":
+    case "strengths":
+    case "shapes":
+    case "flags":
+      return no("An Admissions view: it draws on an Admissions dashboard.");
   }
 }
 
@@ -337,4 +356,8 @@ export const SHORT_KIND: Record<CompareSeriesKind, string> = {
   savedSet: "saved set",
   chosenSchool: "a chosen school",
   otherSubject: "another subject",
+  dayFeeders: "day feeders",
+  boardingFeeders: "boarding feeders",
+  bothFeeders: "day and boarding feeders",
+  rivals: "rivals",
 };

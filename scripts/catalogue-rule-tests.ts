@@ -864,6 +864,187 @@ const RUNNERS: Record<string, Runner> = {
       v.mathsStarRows === 0 && v.mathsAStar === 20 && v.mathsAtoE === 100 && v.mathsGraded === 45;
     return { pass, detail: fmt(v) };
   },
+  // ---------------------------------------------------------------- 0.7 admissions r2 (D7)
+  // Every runner reads the screens' own functions (views-api.ts: what the routes answer) for a
+  // real school and checks them against raw rows or round 1's own builders.
+  async admFamilyPupils({ ref }) {
+    const v = await import("../src/lib/admissions/views-api");
+    const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today: new Date("2026-10-12") });
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const facts = await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: ["137625"], breakdowns: ["full_time_female_aged_11", "full_time_male_aged_11"] });
+    const at = (b: string, y: number) => facts.find((f) => f.breakdown === b && f.period === y)?.value_numeric ?? null;
+    const raw = { girls: at("full_time_female_aged_11", 2025), boys: at("full_time_male_aged_11", 2025), base: (at("full_time_female_aged_11", 2019) ?? 0) + (at("full_time_male_aged_11", 2019) ?? 0) };
+    const n = p.now;
+    return { pass: n.girls === raw.girls && n.boys === raw.boys && n.cohort === (raw.girls ?? 0) + (raw.boys ?? 0) && n.base.cohort === raw.base, detail: fmt({ cohort: n.cohort, girls: n.girls, boys: n.boys, base2019: n.base.cohort, rawBase: raw.base }) };
+  },
+  async admFamilyPipeline() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { buildPipeline } = await import("../src/lib/admissions/pipeline");
+    const ep = v.entryPoint("11+")!;
+    const today = new Date("2026-10-12");
+    const [screen, r1] = await Promise.all([v.pipelineView("137625", ep, [], { today }), buildPipeline("137625", ep, { today })]);
+    if ("empty" in screen) return { pass: false, detail: "empty" };
+    const same = (k: "ladder" | "hold" | "change" | "sets" | "blend") => JSON.stringify(screen[k]) === JSON.stringify(r1[k]);
+    const keys = ["ladder", "hold", "change", "sets", "blend"] as const;
+    return { pass: keys.every(same), detail: fmt({ ...Object.fromEntries(keys.map((k) => [k, same(k)])), pool2025: round(screen.ladder.past.find((x) => x.entryYear === 2025)?.pool ?? null, 0) }) };
+  },
+  async admFamilyMarket() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { buildMarketShare } = await import("../src/lib/admissions/market");
+    const ep = v.entryPoint("11+")!;
+    const [screen, r1] = await Promise.all([v.marketView("117037", ep, []), buildMarketShare("117037", ep)]);
+    const k = screen.entryAge.rows.find((r) => r.urn === "117037" && r.period === 2025);
+    return { pass: JSON.stringify(screen.entryAge) === JSON.stringify(r1.entryAge) && JSON.stringify(screen.ageBand) === JSON.stringify(r1.ageBand) && near(k?.share ?? null, 6.6, 0.01) && screen.entryAge.totals[2025] === 1531, detail: fmt({ share2025: round(k?.share ?? null, 2), total2025: screen.entryAge.totals[2025], rivals: screen.rivals.length }) };
+  },
+  async admFamilyRivals({ ref }) {
+    const v = await import("../src/lib/admissions/views-api");
+    const r = await v.rivalsView("137625", v.entryPoint("11+")!, []);
+    const rows = await ref.lookupAcademicHeadline({ entityIds: ["137625"], ksStage: "ks4" });
+    const a8 = (y: number) => {
+      const m = rows.find((x) => x.period === y)?.measures.attainment8_average;
+      return m === undefined || m === null ? null : Number(m);
+    };
+    const mine = r.resultsChange["137625"];
+    const expected = a8(r.resultsPeriod!)! - a8(2022)!;
+    const igcse = r.rows.filter((x) => x.results.note === "igcse_not_ranked").every((x) => r.resultsChange[x.urn].points === null);
+    return { pass: near(mine.points, expected, 1e-9) && igcse, detail: fmt({ from: mine.from, to: mine.to, points: round(mine.points, 2), igcseNull: igcse }) };
+  },
+  async admViewNow({ ref }) {
+    const v = await import("../src/lib/admissions/views-api");
+    const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today: new Date("2026-10-12") });
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const facts = await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: ["137625"], breakdowns: ["boarders_total", "boarders_male", "boarders_female"], periodMin: 2025, periodMax: 2025 });
+    const total = facts.find((f) => f.breakdown === "boarders_total")?.value_numeric ?? null;
+    const raw = total ?? (facts.length ? facts.reduce((a, f) => a + (f.value_numeric ?? 0), 0) : null);
+    const n = p.now;
+    const src = (await import("node:fs")).readFileSync(path.join(ROOT, "src/components/admissions/panels/EntryNow.tsx"), "utf8");
+    return { pass: (n.girls ?? 0) + (n.boys ?? 0) === n.cohort && n.boarders === raw && /PhaseBadgeRow|SIZE_BADGES|BADGE_ORDER/.test(src) && !/\b(tiny|huge|big school|small school)\b/i.test(src), detail: fmt({ cohort: n.cohort, girls: n.girls, boys: n.boys, boarders: n.boarders, roll: n.roll, rawBoarders: raw }) };
+  },
+  async admViewPipeline() {
+    const v = await import("../src/lib/admissions/views-api");
+    const ep = v.entryPoint("11+")!;
+    const off = await v.pipelineView("137625", ep, [], { today: new Date("2026-10-12") });
+    const on = await v.pipelineView("137625", ep, [], { today: new Date("2026-10-12"), projection: true });
+    if ("empty" in off || "empty" in on) return { pass: false, detail: "empty" };
+    const sources = new Set(off.ladder.future.map((x) => x.source));
+    const src = (await import("node:fs")).readFileSync(path.join(ROOT, "src/components/admissions/views/PipelineChart.tsx"), "utf8");
+    const usesNotes = /ADMISSIONS_NOTES|notes\.(counted|births|projection|pool)/.test(src);
+    const pass = [...sources].every((s) => ["counted", "births", "projection"].includes(s)) && off.ladder.projection.length === 0 && on.ladder.projection.length > 0 && off.ladder.past.every((x) => x.source === "counted") && usesNotes && !/look\.(certainty|dash|solid)/.test(src);
+    return { pass, detail: fmt({ sources: [...sources].join("/"), projectionOff: off.ladder.projection.length, projectionOn: on.ladder.projection.length, usesNotes }) };
+  },
+  async admViewFunnel() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { fetchBirthsByLa } = await import("../src/lib/admissions/data");
+    const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today: new Date("2026-10-12") });
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const births = await fetchBirthsByLa(p.blend.map((b) => b.laCode));
+    const blended = (y: number) => p.blend.reduce((a, b) => a + b.weight * (births.get(b.laCode)?.get(y) ?? NaN), 0);
+    const expect = Math.round((8 / 12) * blended(2014) + (4 / 12) * blended(2013));
+    const [b, pool, entry] = [p.funnel.find((s) => s.kind === "births"), p.funnel.find((s) => s.kind === "pool"), p.funnel.find((s) => s.kind === "entry")];
+    return { pass: b?.value === expect && b?.year === 2014 && pool?.value === 401 && entry?.value === 236, detail: fmt({ births: b?.value, expect, pool: pool?.value, entry: entry?.value }) };
+  },
+  async admViewFeeders() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { feederFlags } = await import("../src/lib/admissions/feeders");
+    const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today: new Date("2026-10-12") });
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const urns = p.feederTable.rows.map((r) => r.urn);
+    const census = await cachedCensus(urns);
+    const ref = feederFlags(new Map(urns.map((u) => [u, census.get(u)!.table])), [10], 2025, 10);
+    const same = p.feederTable.rows.every((r) => (ref.find((x) => x.urn === r.urn)?.flag?.id ?? null) === (r.flag?.id ?? null));
+    const area = (p.feederTable.area.to - p.feederTable.area.from) / p.feederTable.area.from;
+    return { pass: same && !urns.includes("137625") && p.feederTable.area.from === 363 && p.feederTable.area.to === 382 && near(area * 100, ((382 - 363) / 363) * 100, 1e-9), detail: fmt({ rows: urns.length, flags: p.feederTable.rows.filter((r) => r.flag).map((r) => r.flag!.id).join("/"), area: `${p.feederTable.area.from}->${p.feederTable.area.to}` }) };
+  },
+  async admViewShapes() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { rivalSet } = await import("../src/lib/admissions/rival-set");
+    const ep = v.entryPoint("11+")!;
+    const [s, set] = await Promise.all([v.shapeView("137625", ep, []), rivalSet("137625", ep, [], v.DEFAULT_FILTERS)]);
+    const order = s.rivals.map((r) => r.urn).join() === set.rivals.join();
+    const noRank = !JSON.stringify(s.rivals).match(/"rank"|"score"/);
+    return { pass: order && noRank && s.localShape.shape !== undefined, detail: fmt({ order, noRank, local: s.localShape.shape, mine: s.shapeByYear.at(-1)?.shape }) };
+  },
+  async admViewTrends() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today: new Date("2026-10-12") });
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const past = p.ladder.past.filter((x) => x.source === "counted").map((x) => x.pool);
+    const { data } = await createServerAnonSupabaseClient().from("age_profile_aggregates").select("by_age").eq("scope", "la").eq("scope_key", "Worcestershire").eq("period", 2025).maybeSingle();
+    const la2025 = (data as { by_age: Record<string, number> } | null)?.by_age["10"] ?? null;
+    const mine = p.poolTrends.la.find((x) => x.year === 2025)?.value ?? null;
+    return { pass: JSON.stringify(p.poolTrends.feeders.map((x) => x.value)) === JSON.stringify(past) && mine === la2025 && mine !== null, detail: fmt({ feederYears: p.poolTrends.feeders.length, la2025: mine, areaYears: p.poolTrends.areaYears.join("/") }) };
+  },
+  async admViewMarket() {
+    const v = await import("../src/lib/admissions/views-api");
+    const m = await v.marketView("117037", v.entryPoint("11+")!, []);
+    const sum = m.entryAge.rows.filter((r) => r.period === 2025).reduce((a, r) => a + (r.share ?? 0), 0);
+    const mine = m.extras.find((e) => e.urn === "117037")!;
+    const rank = 1 + m.extras.filter((e) => e.roll !== null && mine.roll !== null && e.roll > mine.roll).length;
+    return { pass: near(sum, 100, 1e-6) && mine.rollRank === rank, detail: fmt({ sum: round(sum, 4), roll: mine.roll, rollRank: mine.rollRank, of: m.extras.length }) };
+  },
+  async admViewMomentum({ ref }) {
+    const v = await import("../src/lib/admissions/views-api");
+    const { buildRivals } = await import("../src/lib/admissions/rivals");
+    const ep = v.entryPoint("11+")!;
+    const [m, r] = await Promise.all([v.marketView("137625", ep, []), v.rivalsView("137625", ep, [])]);
+    const facts = await ref.lookupReferenceData({ sourceId: "dfe_school_census", entityIds: m.rivals.slice(0, 3), breakdowns: ["full_time_female_aged_11", "full_time_male_aged_11"], periodMin: 2022, periodMax: 2025 });
+    const raw = (u: string, y: number) => facts.filter((f) => f.entity_id === u && f.period === y).reduce((a, f) => a + (f.value_numeric ?? 0), 0);
+    const xOk = m.rivals.slice(0, 3).every((u) => {
+      const e = m.extras.find((x) => x.urn === u)!;
+      return e.entryBase === null || (e.entryBase === raw(u, 2022) && e.entryNow === raw(u, 2025));
+    });
+    const none = await buildRivals("137625", ep, { thresholds: null });
+    const guessed = none.rows.some((x) => x.momentum.some((f) => f.id !== "shape_changed"));
+    return { pass: xOk && !guessed && none.thresholds === "not_loaded" && Object.keys(r.resultsChange).length === r.rows.length, detail: fmt({ xOk, withoutThresholds: none.thresholds, guessed, flagged: r.rows.filter((x) => x.momentum.length).length }) };
+  },
+  async admViewStrengths() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { FLAG_RULES } = await import("../src/lib/admissions/flags");
+    const r = await v.rivalsView("137625", v.entryPoint("11+")!, []);
+    const ok = r.areas.every((a) => {
+      const third = Math.max(1, Math.floor(a.of * FLAG_RULES.strengthShare));
+      return a.flags.every((f) => (f.id.startsWith("strength") ? a.gap > 0 && a.rank <= third : f.id.startsWith("weakness") ? a.gap < 0 && a.rank > a.of - third : true));
+    });
+    return { pass: ok && r.areas.length > 0 && r.areas.every((a) => !!r.areaLabels[a.familyId]), detail: fmt({ areas: r.areas.length, flagged: r.areas.filter((a) => a.flags.length).map((a) => `${a.familyId}:${a.flags.map((f) => f.id).join("+")}`).join(" ") }) };
+  },
+  async admViewFlags() {
+    const v = await import("../src/lib/admissions/views-api");
+    const ids = new Set(["results_rising_fast", "gaining_pupils", "losing_pupils_3y", "entry_year_shrinking", "new_sixth_form", "shape_changed"]);
+    const r = await v.rivalsView("117037", v.entryPoint("11+")!, []);
+    const flags = r.rows.flatMap((x) => x.momentum);
+    return { pass: flags.every((f) => ids.has(f.id) && Object.keys(f.figures).length > 0), detail: fmt({ flags: flags.length, ids: Array.from(new Set(flags.map((f) => f.id))).join("/") || "none" }) };
+  },
+  async admViewAcademic() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { stageForEntry } = await import("../src/lib/admissions/rivals");
+    const r = await v.rivalsView("117037", v.entryPoint("16+")!, []);
+    const map = [4, 11, 16].map(stageForEntry).join("/");
+    const notes = r.rows.filter((x) => x.results.note).every((x) => x.results.national === null);
+    return { pass: map === "ks2/ks4/ks5" && r.stage === "ks5" && notes, detail: fmt({ map, stage: r.stage, unranked: r.rows.filter((x) => x.results.note).length }) };
+  },
+  async admFeSource() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { FE_SOURCE_LABEL } = await import("../src/lib/admissions/screens");
+    const m = await v.marketView("130432", v.entryPoint("16+")!, []);
+    const own = m.entryAge.rows.filter((r) => r.urn === "130432");
+    return { pass: !!m.fe && m.fe.label === FE_SOURCE_LABEL && m.fe.series.length > 0 && own.every((r) => r.count === null && r.share === null), detail: fmt({ ilrYears: m.fe?.series.map((x) => x.year).join("/"), ownCensusRows: own.filter((r) => r.count !== null).length }) };
+  },
+  async admFilters() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
+    const today = new Date("2026-10-12");
+    const ep = v.entryPoint("16+")!;
+    const p = await v.pipelineView("137625", ep, [], { today, filters: { lists: "both", sector: "independent", boardingOnly: false } });
+    const b = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
+    if ("empty" in p) return { pass: false, detail: "empty" };
+    const urns = Array.from(new Set(p.sets.flatMap((s) => s.urns)));
+    const t = await fetchSchoolTraits(urns);
+    const onlyIndependent = urns.every((u) => u === "137625" || t.get(u)?.sector === "independent");
+    return { pass: onlyIndependent && "empty" in b && b.empty === "no_boarding_list", detail: fmt({ schools: urns.length, onlyIndependent, boardingOnlyEmpty: "empty" in b }) };
+  },
+
 };
 
 // --------------------------------------------------------------------------- main

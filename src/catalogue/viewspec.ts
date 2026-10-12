@@ -18,6 +18,7 @@
 //
 // Fields beyond the prompt's S2 shape are marked [ext] and logged in the table doc.
 import { DATAVIEWS } from "./dataviews";
+import { ADMISSIONS_BODIES } from "./admissions";
 import { CONFIG_SCHEMA_VERSION, type DashboardConfig, type DataId, type Dataview, type DataviewId, type DataviewInstance, type ResultsMeasure, type VariantSets } from "./types";
 
 // ---------------------------------------------------------------------------------- data
@@ -77,7 +78,13 @@ export type CompareSeriesKind =
   | "nearest"
   | "savedSet"
   | "chosenSchool"
-  | "otherSubject";
+  | "otherSubject"
+  // 0.7 admissions r2 (D7): the Admissions sets -- the day feeders, the boarding feeders, both
+  // together, and the rivals. The area lines are la / region / england, as for Teacher.
+  | "dayFeeders"
+  | "boardingFeeders"
+  | "bothFeeders"
+  | "rivals";
 
 export type CompareSeries = {
   kind: CompareSeriesKind;
@@ -97,7 +104,12 @@ export type ViewCompare = "follows-page" | CompareSeries[];
 
 // ------------------------------------------------------------------------------------ view
 
-export type ViewKind = "line" | "bar" | "table" | "ranking" | "numbers" | "spread" | "slope" | "donut" | "map";
+export type ViewKind = "line" | "bar" | "table" | "ranking" | "numbers" | "spread" | "slope" | "donut" | "map" | AdmissionsViewKind;
+// 0.7 admissions r2 (D7): the Admissions kinds of view. Their looks are look-only; the
+// certainty styling, honesty wording, flag thresholds and "shapes not ranked" are catalogue
+// rules (R-ADM-*), read at draw time, and have no look option to edit.
+export type AdmissionsViewKind = "pipeline" | "scatter" | "strengths" | "shapes" | "flags";
+export const ADMISSIONS_VIEW_KINDS: AdmissionsViewKind[] = ["pipeline", "scatter", "strengths", "shapes", "flags"];
 
 export type LineLook = {
   // The straight line of best fit: true / false, or "member" -- members' own Trend line
@@ -181,7 +193,19 @@ export type MapLook = {
   colour: "value" | "change" | "member";
 };
 
+// 0.7 admissions r2: look-only options.
+export type PipelineLook = { projection?: "off" | "member"; pastPools?: boolean; rungLabels?: boolean };
+export type ScatterLook = { labels?: boolean; quadrantNames?: boolean };
+export type StrengthsLook = { order?: "gap" | "az"; showFlags?: boolean };
+export type ShapesLook = { columns?: 1 | 2 | 3 };
+export type FlagsLook = { show?: "flagged" | "all" };
+
 export type ViewView =
+  | { kind: "pipeline"; look: PipelineLook }
+  | { kind: "scatter"; look: ScatterLook }
+  | { kind: "strengths"; look: StrengthsLook }
+  | { kind: "shapes"; look: ShapesLook }
+  | { kind: "flags"; look: FlagsLook }
   | { kind: "line"; look: LineLook }
   | { kind: "bar"; look: BarLook }
   | { kind: "table"; look: TableLook }
@@ -305,6 +329,9 @@ const BODIES: Record<string, Body> = {
   "DV-C3-TR-CHANGELIST": C3("school", "change", TRENDS, bar(CHANGE_BARS)),
   "DV-C3-TR-CHANGETABLE": C3("year", "actual", TRENDS, table(CHANGE_TABLE)),
   "DV-C3-TR-CHANGEMAP": C3("school", "change", TRENDS, { kind: "map", look: { colour: "change" } }),
+
+  // ------------------------------------------- 0.7 admissions r2: the Admissions dashboards
+  ...ADMISSIONS_BODIES,
 };
 
 function presetFrom(dv: Dataview): ViewSpec {

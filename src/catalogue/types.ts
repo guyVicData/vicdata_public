@@ -16,7 +16,12 @@ import type { ViewSpec } from "./viewspec";
 
 // Step 1's data families, in VicData terms. `rolls` and `social.births` are registered as
 // measures in 0.6 with no views yet (scope brief D9, combinations doc §6).
-export type DataId = "academic.candidates" | "academic.results" | "rolls" | "social.births";
+export type DataId = "academic.candidates" | "academic.results" | "rolls" | "social.births" | AdmissionsDataId;
+
+// 0.7 admissions r2 (D7): the Admissions families -- Pupils by age, Pipeline, Market share,
+// Rivals' results. They are drawn by the Admissions hosts only (src/catalogue/admissions.ts);
+// no Teacher context matches them (their dataviews carry no Teacher phase).
+export type AdmissionsDataId = "admissions.pupils" | "admissions.pipeline" | "admissions.market" | "admissions.rivals";
 
 export type Phase = "ks4" | "ks5";
 
@@ -43,7 +48,10 @@ export type FocusKind =
   | "around_school"
   | "la"
   | "region"
-  | "national";
+  | "national"
+  // 0.7 admissions r2: the focused entry point (4+, 11+, 16+, a custom age) plays the part the
+  // subject plays for Teacher -- every Admissions view follows the entry-point chips.
+  | "entry_point";
 
 // What a view compares against. "No comparison" is the empty list.
 //   subjects  other subjects in this school (category, all subjects, a chosen set)
@@ -170,7 +178,9 @@ export type DataviewId = `DV-${string}`;
 // Night 1 composes dataviews through the existing panel components ("wrap, don't
 // rewrite"): each registered view names the column host and panel it is drawn by, and
 // the rail entry that selects it.
-export type HostId = "teacher.c1.candidates" | "teacher.c1.results" | "teacher.c1.counts" | "teacher.c2.context" | "teacher.c3.comparisons";
+export type HostId = "teacher.c1.candidates" | "teacher.c1.results" | "teacher.c1.counts" | "teacher.c2.context" | "teacher.c3.comparisons" | AdmissionsHostId;
+// 0.7 admissions r2: the two Admissions dashboards' hosts (src/components/admissions/).
+export type AdmissionsHostId = "admissions.pipelines" | "admissions.market";
 
 export type Dataview = {
   id: DataviewId;
@@ -379,6 +389,10 @@ export type DashboardConfig = {
     subjectChips?: boolean;
     resultsPill?: boolean;
     alignmentSpacer?: boolean;
+    // 0.7 admissions r2: the entry-point chips (4+ / 11+ / 16+ / custom, then ±) and the top
+    // bar's filters (Day + boarding, All pupils, State + independent).
+    entryPointChips?: boolean;
+    admissionsFilters?: boolean;
   };
   presentation?: { meetingDate?: string; slides: SlideConfig[] };
 };

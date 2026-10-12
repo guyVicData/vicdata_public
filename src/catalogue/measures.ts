@@ -5,6 +5,7 @@
 // HTTP through src/lib/vicdata-reference.ts; no measure has a single fetch function yet
 // (audit B §0, §2), so `fetchedBy` lists every route that reaches it. Years are academic
 // years (period N = N/N+1) except births (calendar years) and rolls (January census).
+import { ADMISSIONS_MEASURES } from "./admissions";
 import type { Geography, GeographyAvailability, Measure } from "./types";
 
 // SOURCE_NAME from src/lib/teacher-view-theme.ts, copied rather than imported: that module
@@ -449,6 +450,8 @@ export const MEASURES: Measure[] = [
     ],
     citation: "ONS live births",
   },
+  // 0.7 admissions r2: the Admissions entries, after every existing one (src/catalogue/admissions.ts).
+  ...ADMISSIONS_MEASURES,
 ];
 
 // 0.6.4 C2: as dataviews.ts' dataviewById -- without loading ./index's rules.
