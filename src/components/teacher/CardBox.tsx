@@ -21,6 +21,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
 import { CaptionNote, PanelNote, SourceNote } from "./PanelFooter";
 import { ChevronDown } from "./PanelIcons";
+import { PanelIconRow } from "./PanelIconRow";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
 // ColumnBuilder -- is fullscreen, without threading a callback through every level. The
@@ -108,6 +109,9 @@ export function CardBox({
   note,
   visibleCaption,
   suggestFullscreen = false,
+  menu,
+  height,
+  headerExtra,
   children,
 }: {
   title: string;
@@ -159,6 +163,17 @@ export function CardBox({
   // A built-in "Full screen" link on that line, opening this box's own fullscreen -- for
   // views that read far better with room (Comparisons' map). Off by default.
   suggestFullscreen?: boolean;
+  // 0.7 admissions r3 (F1): the panel menu (PanelExport: Print this graph, Copy this view…),
+  // the first slot of the header's icon row (PanelIconRow), on the card and in the modal.
+  // Given `print`, as footerActions is. Absent = the slot stays empty and reserved.
+  menu?: (tools: { print: () => void; fullscreen: boolean }) => ReactNode;
+  // 0.7 admissions r3 (F1): a fixed-height box's own height, for Admissions' rows (470, 330).
+  // Absent = PANEL_HEIGHT, as every Teacher panel.
+  height?: number;
+  // 0.7 admissions r3 (F1): what sits between the heading and the icon row, right-aligned on
+  // the card (Admissions' header chips: the feeder lists, the births blend). Absent = nothing,
+  // as every Teacher panel.
+  headerExtra?: ReactNode;
   // Round 8 §2: every panel is the same height, so the three columns read as a true 3x3
   // grid rather than three ragged stacks. Absent = size to content, which is what the KS2
   // boxes and any non-panel caller still want.
@@ -252,25 +267,31 @@ export function CardBox({
         {isModal && question && <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">{question}</p>}
         {subtitle && <p className="text-[11px] text-neutral-500">{subtitle}</p>}
       </div>
-      <div className="flex shrink-0 items-center gap-0.5 print:hidden">
-        <button
-          ref={isModal ? closeRef : undefined}
-          type="button"
-          onClick={() => setFullscreen(!isModal)}
-          aria-label={isModal ? `Exit full screen: ${title}` : `Full screen: ${title}`}
-          title={isModal ? "Exit full screen" : "Full screen"}
-          // Mockup: muted3 at rest; the exit icon sits on a faint accent tint in the accent
-          // colour. --accent is set per phase on #teacher-root; KS2 has none and falls back.
-          className={
-            isModal
-              ? MODAL_CLOSE_BUTTON_CLASS
-              : "flex h-6 w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
-          }
-        >
-          <ExpandIcon expanded={isModal} />
-        </button>
-        {!isModal && trailingActions}
-      </div>
+      {!isModal && headerExtra && <div className="ml-auto flex min-w-0 shrink items-center gap-1.5 print:hidden">{headerExtra}</div>}
+      {/* 0.7 admissions r3 (F1): the one icon row (PanelIconRow) -- menu, full screen,
+          collapse -- in the same order and places on every Teacher and Admissions panel. */}
+      <PanelIconRow
+        menu={menu?.({ print: printPanel, fullscreen: isModal })}
+        fullscreen={
+          <button
+            ref={isModal ? closeRef : undefined}
+            type="button"
+            onClick={() => setFullscreen(!isModal)}
+            aria-label={isModal ? `Exit full screen: ${title}` : `Full screen: ${title}`}
+            title={isModal ? "Exit full screen" : "Full screen"}
+            // Mockup: muted3 at rest; the exit icon sits on a faint accent tint in the accent
+            // colour. --accent is set per phase on #teacher-root; KS2 has none and falls back.
+            className={
+              isModal
+                ? MODAL_CLOSE_BUTTON_CLASS
+                : "flex h-6 w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
+            }
+          >
+            <ExpandIcon expanded={isModal} />
+          </button>
+        }
+        collapse={isModal ? null : trailingActions}
+      />
     </div>
   );
 
@@ -310,7 +331,7 @@ export function CardBox({
       ].join(" ")}
       // PANEL_HEIGHT is computed from the real grid, not copied from the wireframe -- see
       // its own note.
-      style={fixedHeight ? { height: PANEL_HEIGHT } : undefined}
+      style={fixedHeight ? { height: height ?? PANEL_HEIGHT } : undefined}
     >
       {header(false)}
       {controls && <div className="shrink-0 print:hidden">{controls}</div>}

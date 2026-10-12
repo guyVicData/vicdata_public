@@ -24,7 +24,7 @@ for (const e of entries.split(",")) {
   log(`${e} candidates`);
   byEntry[ep.id] = { pipeline, pipelineProj, market, rivals, shape, candidates };
 }
-const fx = { urn, name: me.name, low: me.low, high: me.high, entries: entries.split(",").map((e) => v.entryPoint(e)!.id), byEntry };
+const fx = { urn, name: me.name, low: me.low, high: me.high, boarding: me.boarding, entries: entries.split(",").map((e) => v.entryPoint(e)!.id), byEntry };
 writeFileSync(`${out}/fx_${urn}.js`, `window.__FX = window.__FX || {}; window.__FX[${JSON.stringify(urn)}] = ${JSON.stringify(fx)};\n`);
 log("written");
 process.exit(0);

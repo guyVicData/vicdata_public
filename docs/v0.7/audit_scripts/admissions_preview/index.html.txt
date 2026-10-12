@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="app.css">
+<script>document.write('<link rel="stylesheet" href="' + (new URLSearchParams(location.search).get("css") || "app") + '.css">');</script>
 <link rel="stylesheet" href="leaflet.css">
 <style>body{margin:0}</style>
 <script>
@@ -13,16 +13,16 @@ const ROLE = P.get("role") || "lead";            // lead | member | smt | admin 
 const SETUP = P.get("saved") === "1";            // entry points saved? (else not set up)
 window.onerror = (m) => { document.title = "ERR " + m; const pre = document.getElementById("err"); if (pre) pre.textContent += m + "\n"; };
 </script>
-<script src="fx/index.js"></script>
+<script>document.write('<script src="' + (P.get("fx") || "fx_new") + '/index.js"><\/script>');</script>
 <script>
 const fx = window.__FX[CASE];
-const roles = { lead: ["admissions"], member: ["admissions"], smt: ["smt"], admin: ["teacher"], viewas: ["teacher"], teacher: ["teacher"], shared: ["teacher"] }[ROLE];
+const roles = { lead: ["admissions"], member: ["admissions"], smt: ["smt"], admin: ["teacher"], viewas: ["teacher"], padmin: ["teacher"], teacher: ["teacher"], shared: ["teacher"] }[ROLE];
 window.__DB = {
   school_memberships: [{ id: "m1", profile_id: "00000000-0000-0000-0000-000000000001", roles, is_admin: ROLE === "admin", admissions_lead: ROLE === "lead", approved_at: "2026-01-01", status: "approved", school_account_id: "acc1",
     school_accounts: { id: "acc1", school_urn: fx.urn, account_holder_membership_id: null, schools: { current_name: fx.name } } }],
   school_accounts: [{ id: "acc1", school_urn: fx.urn }],
-  schools: [{ urn: fx.urn, statutory_low_age: fx.low, statutory_high_age: fx.high, current_name: fx.name }].concat(fx.names || []),
-  dashboards: [],
+  schools: [{ urn: fx.urn, statutory_low_age: fx.low, statutory_high_age: fx.high, current_name: fx.name, boarders_name: fx.boarding ? "Boarding school" : "No boarders" }].concat(fx.names || []),
+  dashboards: [{ id: "00000000-0000-0000-0000-0000000000d1", slug: "vicdata.admissions.pipelines", kind: "dashboard", owner_scope: "vicdata", name: "Admissions Pipelines", published_version_id: null, owner_profile_id: null, school_account_id: null, updated_at: "2026-10-12T10:00:00Z", created_at: "2026-10-12T10:00:00Z" }], dashboard_drafts: [], dashboard_versions: [],
   admissions_list_shares: ROLE === "shared" ? [{ id: "s1" }] : [],
   admissions_lists: fx.sharedLists || [],
   teams: [{ id: "t1", name: "Sixth form team", auto_key: null, team_members: [] }], profiles: [],
@@ -45,7 +45,7 @@ window.__DB.school_memberships[0].profiles = { full_name: "You", email: "you@sch
 window.__DB.admissions_list_shares = (ROLE === "shared" || ROLE === "lead" || ROLE === "smt") ? [{ id: "s1", target_kind: "role", role: "teacher", team_id: null, profile_id: null, created_by: "p1", created_at: "2026-10-10T10:00:00Z" }] : [];
 window.__DB.admissions_lists = [{ id: "l1", entry_point: "11+", kind: "day_feeders", rung: "", members: ["144258", "119999"], updated_by: "p1", updated_at: "2026-10-10T10:00:00Z" }];
 window.__DB.schools = window.__DB.schools.concat([{ urn: "144258", current_name: "Malvern Parish CofE Primary School" }, { urn: "119999", current_name: "Great Malvern Primary School" }]);
-window.__RPC = { is_platform_admin: ROLE === "viewas" };
+window.__RPC = { is_platform_admin: ROLE === "viewas" || ROLE === "padmin" };
 const ENTRY_POINTS = SETUP ? fx.entries.map((e, i) => ({ entry_point: e, sort_order: i, updated_by: "p1", updated_at: "2026-10-10T10:00:00Z" })) : [];
 const realFetch = window.fetch;
 window.fetch = async (input, init) => {
@@ -67,4 +67,4 @@ window.fetch = async (input, init) => {
 };
 if (ROLE === "viewas") document.cookie = "vicdata_view_as=" + encodeURIComponent(JSON.stringify({ u: fx.urn, r: "admissions", n: fx.name })) + "; path=/";
 </script>
-</head><body><div id="root"></div><pre id="err" style="color:red"></pre><script src="bundle.js"></script></body></html>
+</head><body><div id="root"></div><pre id="err" style="color:red"></pre><script>document.write('<script src="' + (P.get("bundle") || "bundle") + '.js"><\/script>');</script></body></html>

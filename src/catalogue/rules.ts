@@ -1210,7 +1210,7 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-VIEW-NOW",
     statement:
-      "The entry point now shows the school's own entry cohort, its change since 2019/20, girls and boys at the entry age, and day and boarding for the whole school (the census has no boarders by age); size is the school page's Roll by phase (XS-XL), never new words.",
+      "The entry point now shows the school's own entry cohort, its change since 2019/20, girls and boys at the entry age, and day and boarding for the whole school (the census has no boarders by age; a day school's tile reads Day only, 0.7 r3 F2); size is the school page's Roll by phase (XS-XL), never new words.",
     why: "Tiles a reader can check against the census.",
     appliesTo: "DV-ADM-P-NOW, DV-ADM-M-NOW",
     enforcedIn: ["src/components/admissions/panels/EntryNow.tsx", "src/lib/admissions/screens.ts:entryNow"],
@@ -1232,11 +1232,11 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-VIEW-FUNNEL",
     statement:
-      "The funnel follows this September's entrants back: the area's births for their birth year (8/12 + 4/12), each kind of school's pool when they were at its oldest age, then the school's own entry cohort; each stage is labelled with its own source, never as a flow of the same children.",
+      "The funnel follows this September's entrants back, like with like: the area's births for their school year (8/12 + 4/12), every pupil a year below the entry age in every mainstream school in the SAME area a year before (age_profile_aggregates), then the school's own entry cohort. Each bar leads with a bold label, then its area and year in plain words (ADMISSIONS_NOTES); the panel's note says it is not a flow of the same children. No funnel at 4+ (0.7 r3, F7).",
     why: "Births, pools and an entry cohort are different counts.",
     appliesTo: "DV-ADM-P-FUNNEL",
     enforcedIn: ["src/lib/admissions/screens.ts:funnel", "src/components/admissions/views/Funnel.tsx"],
-    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Births stage = 8/12 of 2014 + 4/12 of 2013 in the LA blend; the Year 6 pool = 401; entry = 236.", check: "admViewFunnel" },
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Births = 8/12 of 2014 + 4/12 of 2013 in Worcestershire; Year 6 = Worcestershire's age-10 pupils in 2024/25 (age_profile_aggregates); entry = 236; three bars, labelled Births / Year 6 / Your Year 7; 4+ has none.", check: "admViewFunnel" },
     origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
     status: "active",
   },
@@ -1342,12 +1342,35 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-FILTERS",
     statement:
-      "The top bar's filters (Day + boarding, State + independent, boarding rivals) narrow the sets on the server before round 1's maths runs; unfiltered, every answer is round 1's. A filter that leaves a list empty says so; another list never stands in for it.",
+      "The top bar's filters (Day + boarding, State + independent, boarding rivals) narrow the sets on the server before round 1's maths runs; unfiltered, every answer is round 1's. A filter that leaves a list empty says so; another list never stands in for it. Day + boarding is a boarding school's filter only: for a day school it is never drawn and the server ignores it (R-ADM-BOARDING-ONLY-WHERE-BOARDERS).",
     why: "The figures change only by the schools they count.",
     appliesTo: "Admissions top bar",
     enforcedIn: ["src/lib/admissions/traits.ts:narrow", "src/lib/admissions/rival-set.ts:rivalSet", "src/lib/admissions/views-api.ts:pipelineView"],
-    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "sector=independent leaves only independent schools (and the school's own Year 11 at 16+); boarding-only with no boarding list returns the empty state.", check: "admFilters" },
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "sector=independent leaves only independent schools (and the school's own Year 11 at 16+); for a boarding school (Beaudesert Park 115786) boarding-only with no boarding list returns the empty state; for The Chase (a day school) it is ignored.", check: "admFilters" },
     origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  // ---------------------------------------------------------------- 0.7 admissions r3
+  {
+    id: "R-ADM-BOARDING-ONLY-WHERE-BOARDERS",
+    statement:
+      "A boarding school is one GIAS lists with boarding provision (schools.boarders_name = \"Boarding school\"; \"No boarders\" and \"Not applicable\" are day schools). A day school never has to think about boarders: no tile, filter, chip, column, legend, empty state, note, setup question or step, or editor compare option mentions boarding (column 1's day/boarding tile stays, reading Day only), its saved boarding lists are kept but not used, and the server ignores a boarding filter for it. Its rivals' own figures may still say they board. A boarding school sees every boarding surface: setup's day-and-boarding question and step 3, the filter, the tile's day and boarding, the boarding feeder list and its fuzzy set.",
+    why: "\"Non-boarding schools must not have to think about boarders, but boarding schools must\" (Guy, 12 Oct 2026).",
+    appliesTo: "Admissions: every view, the top bar, setup, the editor's compare options",
+    enforcedIn: ["src/lib/admissions/boarding.ts:isBoardingSchool", "src/lib/admissions/views-api.ts:pipelineView", "src/components/admissions/AdmissionsDashboard.tsx", "src/components/admissions/setup/Setup.tsx", "src/components/view-editor/AdmissionsSteps.tsx"],
+    testCase: { urn: "137625", school: "The Chase, Nunnery Wood High (137051), Beaudesert Park (115786)", phase: "ks4", expect: "Every Pipelines view, column 1, the top bar's filters and every setup step rendered on real data: no boarding text or control for The Chase (11+, 16+) or Nunnery Wood (11+); every boarding surface present for Beaudesert Park (4+, 11+), whose boarding feeder search returns preps with boarders that make a non-empty boarding-only pool.", check: "admBoardingOnly" },
+    origin: "0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F2)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FUNNEL-SAME-AREA",
+    statement:
+      "The funnel's births and its pool bar cover the same area with the same weights: the school's own LA, or the lead's LA blend when one is set. The pool is every pupil a year below the entry age (Year 6 = age 10, Year 11 = age 15, at 31 August, the census a year before entry -- the ladder's own age mapping) in every mainstream school in that area: academies, LA-maintained, free and independent (age_profile_aggregates, scope la). The feeder set's pool is not a funnel bar; it stays in the Pipeline.",
+    why: "\"This is great but needs like with like\" (Guy, 12 Oct 2026): births in one area against a hand-picked set's pupils compared two different areas.",
+    appliesTo: "DV-ADM-P-FUNNEL",
+    enforcedIn: ["src/lib/admissions/screens.ts:funnel, funnelArea", "src/components/admissions/views/Funnel.tsx"],
+    testCase: { urn: "137625", school: "The Chase (11+, 16+), King's Worcester 117037 (11+)", phase: "ks4", expect: "The births and pool bars carry the same LA set and weights (the school's own LA); births recomputed from raw ONS births, the pool from raw age_profile_aggregates rows at age 10 (or 15) in 2024/25.", check: "admFunnelSameArea" },
+    origin: "0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F7)",
     status: "active",
   },
 ];

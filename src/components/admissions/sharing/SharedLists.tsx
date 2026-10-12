@@ -15,7 +15,7 @@ import { TeacherModal } from "@/components/teacher/TeacherModal";
 import type { Theme } from "@/components/teacher/TeacherChrome";
 import { VISIBLE_ROLE_LABELS, type VisibleRoleId } from "@/lib/roles";
 import type { AdmissionsMember } from "../member";
-import { AdmissionsNav } from "../Chrome";
+import { AdmissionsTeacherNav } from "../controls";
 import { cx } from "../ui";
 
 const KIND: Record<string, string> = { day_feeders: "Day feeders", boarding_feeders: "Boarding feeders", rivals: "Rivals", rung: "Ladder rung" };
@@ -41,7 +41,7 @@ export function SharedListsOnly({ member, theme, onTheme }: { member: Admissions
   }, [member.schoolAccountId]);
   return (
     <div className="mx-auto flex max-w-[860px] flex-col gap-4 px-7 py-5">
-      <AdmissionsNav theme={theme} onTheme={onTheme} />
+      <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
       <div>
         <h1 className="text-[18px] font-bold">Admissions lists shared with you &mdash; {member.schoolName}</h1>
         <p className="mt-1 text-[13px] text-[var(--muted2)]">The school&rsquo;s Admissions team shared these lists with you: the schools on each list. The pipelines and market share themselves are for the Admissions and SMT staff.</p>

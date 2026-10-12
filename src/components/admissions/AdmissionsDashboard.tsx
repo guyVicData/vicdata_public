@@ -10,7 +10,7 @@
 // The entry point plays the subject's part: the chips (the school's admissions_entry_points, else
 // the defaults its age range gives) choose what every view follows. The top bar's filters pass
 // through to the routes. Every figure comes from /api/admissions/* (the browser recomputes none).
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
@@ -21,18 +21,24 @@ import { ADMISSIONS_DASHBOARDS } from "@/catalogue/dashboards/admissions";
 import type { DashboardConfig, PanelConfig } from "@/catalogue/types";
 import { loadPublishedVicData } from "@/lib/published-vicdata";
 import { entryPoint } from "@/lib/admissions/entry-points";
+import { isBoardingSchool } from "@/lib/admissions/boarding";
 import { cleanLaNameForDisplay } from "@/lib/la-name-display";
 import { showsOnState } from "@/catalogue/variants";
 import type { EntryPointState } from "@/catalogue/types";
 import { DEFAULT_FILTERS, getJson, query, useRoute, type Filters, type ListsAnswer, type Load, type MarketView, type PipelineOk, type PipelineView, type RivalsView, type ShapeView } from "./api";
 import { loadAdmissionsMember, type AdmissionsMember, type MemberState } from "./member";
-import { AdmissionsNav, HeaderBar, PhoneHeader, RowHead, type DashKey } from "./Chrome";
-import { Empty, FChip, Footer, Panel, Skeleton, Tabs, admissionsVars, cx, fmtN, yearLabel, type PanelMenuAction, type RailItem } from "./ui";
+import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, FilterChips, PhoneHeader, RowHead, type DashKey } from "./controls";
+import { ControlBar } from "@/components/teacher/ControlBar";
+import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
+import { isPlatformAdminCached } from "@/lib/edit-mode";
+import { openViewAs } from "@/components/view-as/ViewAs";
+import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
+import { Empty, FChip, Panel, Skeleton, Tabs, admissionsVars, cx, fmtN, yearLabel, type PanelMenuAction, type RailItem } from "./ui";
 import { useWidth } from "./views/charts";
 import { EntryNow, laContext } from "./panels/EntryNow";
 import { MarketNow } from "./panels/MarketNow";
 import { PipelineChart } from "./views/PipelineChart";
-import { Funnel } from "./views/Funnel";
+import { Funnel, areaWords } from "./views/Funnel";
 import { FeederMap, RivalsMap } from "./views/AdmissionsMap";
 import { EntryTable, FeederTable, RivalsTable, ShareTable } from "./views/Tables";
 import { ShapeAndSize, SHAPES_NOTE } from "./views/ShapeAndSize";
@@ -48,6 +54,13 @@ import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import { contextFromPanel } from "@/catalogue/pick";
 
 const PHONE = 768;
+// The entry-point chips' colour in Teacher's subject-chip slot: the Admissions accent.
+const ENTRY_COLOUR = ROLE_ACCENT.admissions!.hex;
+// The rows' panel heights. 0.7 r3 (F1): +60 and +10 on round 2's 470 / 330 -- the panels are now
+// Teacher's CardBox, whose header line is a little taller and whose visible caption (the LA
+// context) sits inside the body rather than in the footer.
+const ROW_NOW = 530;
+const ROW_TRENDS = 340;
 
 // The school's own entry points when the lead hasn't chosen any: the ones its age range takes.
 export function defaultEntries(low: number | null, high: number | null): string[] {
@@ -78,57 +91,104 @@ function writeUrl(s: UrlState) {
   window.history.replaceState(null, "", `${window.location.pathname}?${sp.toString()}`);
 }
 
+// 0.7 r3 (F4): the editor, drawn in place of the page while the platform admin's Edit is on -- the
+// same in-place editor Teacher's dashboards open (TeacherDashboard's InPlaceEditor), on the
+// Admissions dashboard in view, with this school as its live preview.
+const EditorScreen = lazy(() => import("@/components/editor/EditorScreen").then((m) => ({ default: m.EditorScreen })));
+
 export function AdmissionsDashboard() {
   const [theme, setTheme] = useTheme();
   const [state, setState] = useState<MemberState>({ status: "loading" });
   useEffect(() => {
     loadAdmissionsMember().then(setState);
   }, []);
+  // F5: a platform admin with no Admissions here is pointed at View as, not at joining a school.
+  const [platformAdmin, setPlatformAdmin] = useState(false);
+  useEffect(() => {
+    if (state.status === "no-school" || (state.status === "ready" && state.member.access === "none")) isPlatformAdminCached(createBrowserSupabaseClient()).then(setPlatformAdmin);
+  }, [state]);
+  // F4: Teacher's edit bar. The page registers the Admissions dashboard in view (the footer's and
+  // the View as banner's Edit, platform admins only, as on Teacher); with Edit on the editor is
+  // drawn in its place and the page waits hidden underneath, as Teacher's does.
+  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const [dash, setDash] = useState<DashKey>(() => readUrl().dash);
+  const showsDashboard = state.status === "ready" && state.member.access !== "none" && state.member.access !== "listOnly";
+  const inPlace = useInPlaceEdit(supabase, showsDashboard ? DASH_ID[dash] : null);
+  const editing = inPlace.editing && state.status === "ready";
   return (
-    <main id="teacher-root" data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={admissionsVars(theme)}>
-      {state.status === "ready" ? (
-        <Gate member={state.member} theme={theme} onTheme={setTheme} />
-      ) : (
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
-          <AdmissionsNav theme={theme} onTheme={setTheme} />
-          <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] text-[var(--muted2)]">
-            {state.status === "loading" ? (
-              "Loading Admissions…"
-            ) : state.status === "signed-out" ? (
-              <>
-                <Link href="/login?next=/teacher/admissions" className="font-bold text-[var(--adm-accent-text)]">
-                  Sign in
-                </Link>{" "}
-                to see Admissions.
-              </>
-            ) : (
-              "Admissions is for members of a school on VicData. Join your school from your account page."
-            )}
-          </div>
-        </div>
+    <>
+      {editing && state.status === "ready" && (
+        <Suspense fallback={<p className="p-6 text-sm text-[var(--muted)]">Opening the editor…</p>}>
+          <AdmissionsEditor slug={DASH_ID[dash]} school={{ urn: state.member.schoolUrn, name: state.member.schoolName }} />
+        </Suspense>
       )}
-    </main>
+      <main id={editing ? undefined : "teacher-root"} hidden={editing} data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={admissionsVars(theme)}>
+        {state.status === "ready" ? (
+          <Gate member={state.member} theme={theme} onTheme={setTheme} platformAdmin={platformAdmin} onDash={setDash} reloadTick={inPlace.reloadTick} />
+        ) : (
+          <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
+            <AdmissionsTeacherNav schoolUrn={null} theme={theme} onTheme={setTheme} />
+            <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] text-[var(--muted2)]">
+              {state.status === "loading" ? (
+                "Loading Admissions…"
+              ) : state.status === "signed-out" ? (
+                <>
+                  <Link href="/login?next=/teacher/admissions" className="font-bold text-[var(--adm-accent-text)]">
+                    Sign in
+                  </Link>{" "}
+                  to see Admissions.
+                </>
+              ) : platformAdmin ? (
+                <UseViewAs />
+              ) : (
+                "Admissions is for members of a school on VicData. Join your school from your account page."
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </>
   );
+}
+
+/** F5: a platform admin's empty state -- View as, not "join your school". */
+function UseViewAs() {
+  return (
+    <span className="flex flex-wrap items-center gap-3">
+      To see a school&rsquo;s Admissions, use View as.
+      <button type="button" onClick={() => openViewAs()} className="rounded-full border border-[var(--panel-border2)] px-3 py-1 text-[12px] font-bold text-[var(--fg)] hover:border-[var(--fg)]">
+        View as&hellip;
+      </button>
+    </span>
+  );
+}
+
+function AdmissionsEditor({ slug: pageSlug, school }: { slug: string; school: { urn: string; name: string } }) {
+  const [slug, setSlug] = useState(pageSlug);
+  const pin = useMemo(() => ({ urn: school.urn, name: school.name }), [school.urn, school.name]);
+  return <EditorScreen id={slug} host={{ school: pin, top: <ViewAsBanner className="" />, onExit: () => setEditOn(false), onSwitch: setSlug }} />;
 }
 
 function useTheme(): [ReturnType<typeof useTeacherTheme>[0], (t: ReturnType<typeof useTeacherTheme>[0]) => void] {
   return useTeacherTheme();
 }
 
-function Gate({ member, theme, onTheme }: { member: AdmissionsMember; theme: "dark" | "light"; onTheme: (t: "dark" | "light") => void }) {
+function Gate({ member, theme, onTheme, platformAdmin, onDash, reloadTick }: { member: AdmissionsMember; theme: "dark" | "light"; onTheme: (t: "dark" | "light") => void; platformAdmin: boolean; onDash: (d: DashKey) => void; reloadTick: number }) {
   if (member.access === "listOnly") return <SharedListsOnly member={member} theme={theme} onTheme={onTheme} />;
   if (member.access === "none")
     return (
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-7 py-5">
-        <AdmissionsNav theme={theme} onTheme={onTheme} />
-        <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] leading-relaxed text-[var(--muted2)]">Admissions is for the school&rsquo;s Admissions and SMT staff and its School-Admin. Ask your School-Admin if you need it; a list shared with you appears here.</div>
+        <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
+        <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] leading-relaxed text-[var(--muted2)]">
+          {platformAdmin && !member.viewAs ? <UseViewAs /> : <>Admissions is for the school&rsquo;s Admissions and SMT staff and its School-Admin. Ask your School-Admin if you need it; a list shared with you appears here.</>}
+        </div>
       </div>
     );
-  return <Dashboard member={member} theme={theme} onTheme={onTheme} />;
+  return <Dashboard member={member} theme={theme} onTheme={onTheme} onDash={onDash} reloadTick={reloadTick} />;
 }
 
 // ---------------------------------------------------------------------------------------------
-function Dashboard({ member, theme, onTheme }: { member: AdmissionsMember; theme: "dark" | "light"; onTheme: (t: "dark" | "light") => void }) {
+function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: AdmissionsMember; theme: "dark" | "light"; onTheme: (t: "dark" | "light") => void; onDash: (d: DashKey) => void; reloadTick: number }) {
   // Read once on mount: this component only mounts in the browser, after the member has loaded.
   const [url, setUrl] = useState<UrlState>(readUrl);
   const update = useCallback((next: Partial<UrlState>) => {
@@ -138,30 +198,39 @@ function Dashboard({ member, theme, onTheme }: { member: AdmissionsMember; theme
       return s;
     });
   }, []);
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  useEffect(() => onDash(url.dash), [url.dash, onDash]);
+  const [filterState, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [projection, setProjection] = useState(false);
   const [rootRef, width] = useWidth<HTMLDivElement>();
   const phone = width > 0 && width < PHONE;
 
   // The published configs (the store's, else the code copy).
   const [configs, setConfigs] = useState<Record<DashKey, DashboardConfig>>({ pipelines: ADMISSIONS_DASHBOARDS[0], "market-share": ADMISSIONS_DASHBOARDS[1] });
+  // After editing (reloadTick goes up), re-read them, once the editor's last write has landed.
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
-    Promise.all(ADMISSIONS_DASHBOARDS.map((d) => loadPublishedVicData(supabase, d.id, d))).then(([p, m]) => setConfigs({ pipelines: p.config, "market-share": m.config }));
-  }, []);
+    (async () => {
+      if (reloadTick > 0) await editorWritesSettled();
+      const [p, m] = await Promise.all(ADMISSIONS_DASHBOARDS.map((d) => loadPublishedVicData(supabase, d.id, d)));
+      setConfigs({ pipelines: p.config, "market-share": m.config });
+    })();
+  }, [reloadTick]);
 
   // The school's entry points and lists (the lists route; 503 before the r1 migration is applied).
   const [listsKey, setListsKey] = useState(0);
   const lists = useRoute<ListsAnswer>(`/api/admissions/lists?urn=${member.schoolUrn}&k=${listsKey}`);
-  const [ages, setAges] = useState<{ low: number | null; high: number | null } | null>(null);
+  const [ages, setAges] = useState<{ low: number | null; high: number | null; boarding: boolean } | null>(null);
   useEffect(() => {
     createBrowserSupabaseClient()
       .from("schools")
-      .select("statutory_low_age, statutory_high_age")
+      .select("statutory_low_age, statutory_high_age, boarders_name")
       .eq("urn", member.schoolUrn)
-      .maybeSingle<{ statutory_low_age: number | null; statutory_high_age: number | null }>()
-      .then(({ data }) => setAges({ low: data?.statutory_low_age ?? null, high: data?.statutory_high_age ?? null }));
+      .maybeSingle<{ statutory_low_age: number | null; statutory_high_age: number | null; boarders_name: string | null }>()
+      .then(({ data }) => setAges({ low: data?.statutory_low_age ?? null, high: data?.statutory_high_age ?? null, boarding: isBoardingSchool(data?.boarders_name) }));
   }, [member.schoolUrn]);
+  // 0.7 r3 (F2): boarding only where there are boarders (GIAS, isBoardingSchool). Until the
+  // school's row is read, nothing about boarding is drawn.
+  const boardingSchool = ages?.boarding ?? false;
   const savedKey = lists.status === "ready" ? lists.data.entryPoints.map((e) => e.entry_point).join(",") : "";
   const notSetUp = lists.status === "ready" && savedKey === "";
   const listsMissing = lists.status === "error" && lists.code === 503;
@@ -177,6 +246,8 @@ function Dashboard({ member, theme, onTheme }: { member: AdmissionsMember; theme
   }
 
   const dash = url.dash;
+  // A day school's filters never carry a boarding choice (the chips aren't drawn for it).
+  const filters: Filters = boardingSchool ? filterState : { ...filterState, lists: "both", boardingOnly: false };
   const q = (extra: Record<string, string> = {}) => (entry ? query(member.schoolUrn, entry, filters, extra) : null);
   const pipeline = useRoute<PipelineView>(entry && (dash === "pipelines" || phone) ? `/api/admissions/pipeline?${q(projection ? { projection: "1" } : {})}` : null);
   const market = useRoute<MarketView>(entry && dash === "market-share" ? `/api/admissions/market-share?${q()}` : null);
@@ -217,7 +288,7 @@ function Dashboard({ member, theme, onTheme }: { member: AdmissionsMember; theme
 
   const config = configs[dash];
   const setLabel = market.status === "ready" ? (market.data.rivalsSource === "saved" ? `${market.data.rivals.length} rivals on your list` : `${market.data.rivals.length} nearest`) : "10 nearest";
-  const ctx: Ctx = { member, dash, entry, filters, projection, setProjection, pipeline, market, rivals, shape, setLabel, edit: (s) => update({ setup: s }), lists: lists.status === "ready" ? lists.data : null };
+  const ctx: Ctx = { boardingSchool, member, dash, entry, filters, projection, setProjection, pipeline, market, rivals, shape, setLabel, edit: (s) => update({ setup: s }), lists: lists.status === "ready" ? lists.data : null };
   const editEntries = member.canEditLists ? () => update({ setup: "entry" }) : null;
   const editTitle = member.canEditLists ? "Choose entry points" : member.access === "viewAs" ? "View as: read-only" : "The Admissions lead chooses the entry points";
   const rivalsChip =
@@ -230,8 +301,10 @@ function Dashboard({ member, theme, onTheme }: { member: AdmissionsMember; theme
   return (
     <div ref={rootRef} className={cx("mx-auto flex w-full max-w-[1440px] flex-col", phone ? "gap-0" : "gap-[14px] px-7 py-5")}>
       <ViewAsBanner />
-      <AdmissionsNav theme={theme} onTheme={onTheme} phone={phone} />
-      {!phone && <div className="h-px bg-[var(--border)]" />}
+      {/* F4: Teacher's nav, then Teacher's control bar -- the same components and places. */}
+      <div className={phone ? "px-4 pt-4" : undefined}>
+        <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
+      </div>
       {phone ? (
         <div className="flex flex-col gap-[10px] px-4 py-3">
           <PhoneHeader dash={dash} onDash={(d) => update({ dash: d })} entries={entries.map((id) => ({ id, label: chipLabel(id) }))} entry={entry ?? ""} onEntry={(e) => update({ entry: e })} onEditEntries={editEntries} />
@@ -240,18 +313,26 @@ function Dashboard({ member, theme, onTheme }: { member: AdmissionsMember; theme
         </div>
       ) : (
         <>
-          <HeaderBar
+          <ControlBar
+            phase="ks4"
+            phaseLabel="Admissions"
             schoolName={member.schoolName}
-            dash={dash}
-            onDash={(d) => update({ dash: d })}
-            entries={entries.map((id) => ({ id, label: chipLabel(id) }))}
-            entry={entry ?? ""}
-            onEntry={(e) => update({ entry: e })}
-            onEditEntries={editEntries}
-            editTitle={editTitle}
-            filters={filters}
-            onFilters={setFilters}
-            rivalsChip={rivalsChip}
+            measure="candidates"
+            onMeasure={() => undefined}
+            badge={ADMISSIONS_BADGE}
+            switcher={<DashSwitch active={dash} onSwitch={(d) => update({ dash: d })} configs={configs} />}
+            subjectsLabel="Entry point"
+            subjects={entries.map((id) => ({ key: id, label: chipLabel(id), colour: ENTRY_COLOUR }))}
+            focusKey={entry}
+            onFocus={(e) => update({ entry: e })}
+            onEditSubjects={editEntries ?? (() => undefined)}
+            editSubjects={{ label: "Choose entry points", title: editTitle, disabled: !editEntries }}
+            chrome={
+              <>
+                <Divider />
+                <FilterChips dash={dash} filters={filters} onFilters={setFilters} rivalsChip={rivalsChip} boardingSchool={boardingSchool} />
+              </>
+            }
           />
           <Notes member={member} notSetUp={notSetUp} listsMissing={listsMissing} />
           {entry ? <DesktopGrid config={config} c={ctx} actions={<Actions member={member} onSetup={() => update({ setup: "entry" })} />} /> : <Empty>Choose an entry point to see its pipeline.</Empty>}
@@ -314,6 +395,8 @@ function Notes({ member, notSetUp, listsMissing }: { member: AdmissionsMember; n
 // The panels, by the config.
 
 type Ctx = {
+  // 0.7 r3 (F2): GIAS says the school has boarding provision.
+  boardingSchool: boolean;
   member: AdmissionsMember;
   dash: DashKey;
   entry: string | null;
@@ -478,20 +561,24 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
   return { tag: "Trends", context: "from 2019/20" };
 }
 
-/** Each panel's bottom-row line: the honesty wording, from ADMISSIONS_NOTES. */
-function footerOf(panel: PanelConfig, dv: string, c: Ctx): ReactNode {
-  if (dv === "DV-ADM-P-NOW") return <><span className="grow" /><Footer>{laContext(c.shape.status === "ready" ? c.shape.data : null) ?? ""}</Footer></>;
-  if (dv === "DV-ADM-M-NOW") return <><span className="grow" /><Footer>{ADMISSIONS_NOTES.groupShort}</Footer></>;
-  if (dv === "DV-ADM-P-PIPELINE" || dv === "DV-ADM-P-FUNNEL" || dv === "DV-ADM-P-MAP" || dv === "DV-ADM-P-TABLE") return <Footer>{ADMISSIONS_NOTES.poolShort}</Footer>;
-  if (dv.endsWith("-SHAPE")) return <Footer>{SHAPES_NOTE}</Footer>;
-  if (dv.startsWith("DV-ADM-P-ENTRY")) return <Footer>{ADMISSIONS_NOTES.cohortShort}</Footer>;
-  if (dv.startsWith("DV-ADM-P-POOL") || dv === "DV-ADM-P-AREA-POP") return <Footer>Also: the school page&rsquo;s area population trend (ages 5&ndash;15)</Footer>;
-  if (dv.startsWith("DV-ADM-P-HOLD")) return <Footer>{ADMISSIONS_NOTES.requirement}</Footer>;
-  if (dv.startsWith("DV-ADM-M-ACAD")) return <AcademicFooter explorerHref={explorerHref(c)} />;
+/** Each panel's notes, from ADMISSIONS_NOTES. 0.7 r3 (F1): the honesty wording opens the way
+ * Teacher's notes do -- the caption button beside the source "i", its popover, and printed in full
+ * screen -- rather than as a line of its own. What a panel shows without a click (the LA context,
+ * the subject-explorer link) is CardBox's visible caption, as on Teacher. */
+function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode } {
+  if (dv === "DV-ADM-P-NOW") return { visible: laContext(c.shape.status === "ready" ? c.shape.data : null) ?? undefined };
+  if (dv === "DV-ADM-M-NOW") return { caption: ADMISSIONS_NOTES.groupShort };
+  if (dv === "DV-ADM-P-FUNNEL") return { caption: ADMISSIONS_NOTES.funnelNote };
+  if (dv === "DV-ADM-P-PIPELINE" || dv === "DV-ADM-P-MAP" || dv === "DV-ADM-P-TABLE") return { caption: ADMISSIONS_NOTES.poolShort };
+  if (dv.endsWith("-SHAPE")) return { caption: SHAPES_NOTE };
+  if (dv.startsWith("DV-ADM-P-ENTRY")) return { caption: ADMISSIONS_NOTES.cohortShort };
+  if (dv.startsWith("DV-ADM-P-POOL") || dv === "DV-ADM-P-AREA-POP") return { caption: <>Also: the school page&rsquo;s area population trend (ages 5&ndash;15)</> };
+  if (dv.startsWith("DV-ADM-P-HOLD")) return { caption: ADMISSIONS_NOTES.requirement };
+  if (dv.startsWith("DV-ADM-M-ACAD")) return { visible: <AcademicFooter explorerHref={explorerHref(c)} /> };
   if (dv === "DV-ADM-M-BARS" || dv === "DV-ADM-M-TABLE" || dv === "DV-ADM-M-DONUT" || dv === "DV-ADM-M-MAP")
-    return <Footer>Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools</Footer>;
-  if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return <Footer>Roll trends sit on the same rail</Footer>;
-  return null;
+    return { caption: "Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools" };
+  if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "Roll trends sit on the same rail" };
+  return {};
 }
 
 /** The source note behind each panel's "i". */
@@ -509,10 +596,21 @@ function chipsOf(dv: string, c: Ctx): ReactNode {
   const p = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data : null;
   const lead = c.member.canEditLists;
   const ro = c.member.access === "viewAs" ? "View as: read-only" : "Read-only: the Admissions lead changes this";
-  if (["DV-ADM-P-PIPELINE", "DV-ADM-P-FUNNEL", "DV-ADM-P-MAP", "DV-ADM-P-TABLE"].includes(dv) && p) {
+  // F7: the funnel draws one area (the school's LA, or the lead's blend), not the feeder set: its
+  // chip names that area; the feeders chip stays with the views that draw the feeders.
+  if (dv === "DV-ADM-P-FUNNEL" && p) {
+    const area = p.funnel[0]?.area ?? [];
+    return (
+      <FChip onClick={lead ? () => c.edit("blend") : undefined} chevron={false} title={lead ? "Adjust the LA blend (births and the pool follow it)" : ro}>
+        Area: {areaWords(area)}
+        {lead ? " · Adjust" : ""}
+      </FChip>
+    );
+  }
+  if (["DV-ADM-P-PIPELINE", "DV-ADM-P-MAP", "DV-ADM-P-TABLE"].includes(dv) && p) {
     const day = c.lists?.lists.find((l) => l.kind === "day_feeders" && l.entry_point === p.entry.id)?.members?.length ?? 0;
-    const boarding = c.lists?.lists.find((l) => l.kind === "boarding_feeders" && l.entry_point === p.entry.id)?.members?.length ?? 0;
-    const feeders = day || boarding ? `Feeders: Day list (${day})${boarding ? ` + Boarding list (${boarding})` : ""}` : `Feeders: nearby schools (${p.feederTable.rows.length})`;
+    const boarding = c.boardingSchool ? (c.lists?.lists.find((l) => l.kind === "boarding_feeders" && l.entry_point === p.entry.id)?.members?.length ?? 0) : 0;
+    const feeders = day || boarding ? `Feeders: ${c.boardingSchool ? "Day list" : "your list"} (${day})${boarding ? ` + Boarding list (${boarding})` : ""}` : `Feeders: nearby schools (${p.feederTable.rows.length})`;
     return (
       <>
         <FChip onClick={lead ? () => c.edit("day") : undefined} title={lead ? "Edit the feeder lists" : ro}>
@@ -626,13 +724,14 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
   const dv = dataviewOf(panel, active) ?? "";
   const h = headerOf(panel, dv, c);
   const title = dataviewById(dv)?.label ?? h.tag;
+  const notes = notesOf(dv, c);
   const onRailDv = (dvId: string) => {
     const inst = panel.dataviews.find((v) => v.kind === "view" && v.dataview === dvId);
     if (inst) setActive(inst.id);
   };
   return (
     <>
-    <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv)} footer={footerOf(panel, dv, c)} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title} fullscreen={(panel.span?.cols ?? 1) >= 2}>
+    <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv)} caption={notes.caption} visibleCaption={notes.visible} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title}>
       {({ fullscreen }) => viewBody(dv, c, { fullscreen, onRail: onRailDv })}
     </Panel>
     {copying && instance?.kind === "view" && (
@@ -665,7 +764,7 @@ function DesktopGrid({ config, c, actions }: { config: DashboardConfig; c: Ctx; 
                 .filter((p) => p.row === row.id)
                 .sort((a, b) => config.columns.findIndex((x) => x.id === a.column) - config.columns.findIndex((x) => x.id === b.column))
                 .map((p) => (
-                  <ConfigPanel key={p.id} panel={p} c={c} config={config} height={row.id === "now" ? 470 : 330} />
+                  <ConfigPanel key={p.id} panel={p} c={c} config={config} height={row.id === "now" ? ROW_NOW : ROW_TRENDS} />
                 ))}
             </div>
           )}
@@ -687,27 +786,31 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
   const largeDv = large ? (dataviewOf(large, largeTab) ?? dataviewOf(large, large.defaultView ?? "") ?? "") : "";
   const trendPanel = trends.find((t) => t.id === trendTab) ?? trends[0];
   const trendDv = trendPanel ? (dataviewOf(trendPanel, trendPanel.defaultView ?? "") ?? "") : "";
-  const P = "flex flex-col gap-2 rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3";
+  // 0.7 r3 (F1): each phone block is the same panel as on the desktop (CardBox: the icon row,
+  // the notes, full screen), sized to its content, with the views as tabs under the header.
+  const nowDv = now ? (c.dash === "pipelines" ? "DV-ADM-P-NOW" : "DV-ADM-M-NOW") : "";
+  const largeTitle = dataviewById(largeDv)?.label ?? "Pipeline";
+  const trendTitle = trendPanel ? phoneTrendLabel(trendPanel, c) : "";
   return (
     <>
       {now && (
-        <div className={P}>
-          {c.dash === "pipelines"
-            ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
-            : ready(c.market, (m) => <MarketNow m={m} setLabel={c.setLabel} compact />)}
-        </div>
+        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" source={sourceOf(nowDv)} caption={notesOf(nowDv, c).caption}>
+          {() =>
+            c.dash === "pipelines"
+              ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
+              : ready(c.market, (m) => <MarketNow m={m} setLabel={c.setLabel} compact />)
+          }
+        </Panel>
       )}
       {large && (
-        <div className={P}>
-          <Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />
-          <div className="flex min-h-[220px] flex-col gap-2">{phoneView(largeDv, c)}</div>
-        </div>
+        <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv)} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />}>
+          {({ fullscreen }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? viewBody(largeDv, c, { fullscreen }) : phoneView(largeDv, c)}</div>}
+        </Panel>
       )}
       {trends.length > 0 && (
-        <div className={P}>
-          <Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />
-          <div className="flex min-h-[160px] flex-col gap-2">{viewBody(trendDv, c, { fullscreen: false })}</div>
-        </div>
+        <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv)} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />}>
+          {({ fullscreen }) => <div className="flex min-h-[160px] flex-col gap-2">{viewBody(trendDv, c, { fullscreen })}</div>}
+        </Panel>
       )}
     </>
   );
@@ -747,6 +850,38 @@ export function AdmissionsViewPreview({ dataview, urn, schoolName, entry, height
   const marketL = useRoute<MarketView>(market ? `/api/admissions/market-share?${qs}` : null);
   const rivals = useRoute<RivalsView>(market ? `/api/admissions/rivals?${qs}` : null);
   const shape = useRoute<ShapeView>(`/api/admissions/shape?${qs}`);
-  const c: Ctx = { member, dash: market ? "market-share" : "pipelines", entry: ep, filters, projection: false, setProjection: () => undefined, pipeline, market: marketL, rivals, shape, setLabel: "rivals", edit: () => undefined, lists: null };
+  const c: Ctx = { boardingSchool: false, member, dash: market ? "market-share" : "pipelines", entry: ep, filters, projection: false, setProjection: () => undefined, pipeline, market: marketL, rivals, shape, setLabel: "rivals", edit: () => undefined, lists: null };
   return <div className="flex min-h-0 flex-col gap-2 overflow-hidden" style={{ height }}>{viewBody(dataview, c, { fullscreen: false })}</div>;
+}
+
+// ---------------------------------------------------------------------------------------------
+// 0.7 r3 (F2): every view of both dashboards at once, from answers already in hand, each as its
+// panel draws it (chips, notes, source) -- what R-ADM-BOARDING-ONLY-WHERE-BOARDERS renders on the
+// server, on real data, to check that a day school sees no boarding and a boarding school sees it
+// all. Rendered under CardBox's OpenInFullscreen, the notes and sources print in full.
+export function AdmissionsEveryView({ member, boardingSchool, entry, pipeline, market, rivals, shape, lists }: { member: AdmissionsMember; boardingSchool: boolean; entry: string; pipeline: PipelineView; market: MarketView; rivals: RivalsView; shape: ShapeView; lists: ListsAnswer | null }) {
+  const out: ReactNode[] = [];
+  ADMISSIONS_DASHBOARDS.forEach((config, i) => {
+    const dash: DashKey = i === 0 ? "pipelines" : "market-share";
+    const c: Ctx = { boardingSchool, member, dash, entry, filters: DEFAULT_FILTERS, projection: false, setProjection: () => undefined, pipeline: { status: "ready", data: pipeline }, market: { status: "ready", data: market }, rivals: { status: "ready", data: rivals }, shape: { status: "ready", data: shape }, setLabel: "rivals", edit: () => undefined, lists };
+    out.push(
+      <div key={`f-${dash}`} data-adm-filters={dash}>
+        <FilterChips dash={dash} filters={DEFAULT_FILTERS} onFilters={() => undefined} boardingSchool={boardingSchool} />
+      </div>,
+    );
+    for (const panel of config.panels)
+      for (const r of railOf(panel, entry)) {
+        const dv = dataviewOf(panel, r.id) ?? "";
+        const h = headerOf(panel, dv, c);
+        const n = notesOf(dv, c);
+        out.push(
+          <div key={`${panel.id}/${r.id}`} data-adm-dash={dash} data-adm-dv={dv}>
+            <Panel tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, h.tag)} title={dataviewById(dv)?.label ?? h.tag} source={sourceOf(dv)} caption={n.caption} visibleCaption={n.visible} height="auto">
+              {({ fullscreen }) => viewBody(dv, c, { fullscreen })}
+            </Panel>
+          </div>,
+        );
+      }
+  });
+  return <>{out}</>;
 }

@@ -2,7 +2,7 @@
 
 // VicData 0.7 admissions r2 (D3): Pipelines, row 1, column 1 -- the entry point now (Main.dc.html).
 // Four tiles (the entry cohort, its change since 2019/20, girls and boys, day and boarding for
-// the whole school -- the census has no boarders by age), size by phase on the school page's
+// the whole school -- the census has no boarders by age; a day school's reads Day only, r3 F2), size by phase on the school page's
 // XS-XL badges with its own caption (PhaseBreakdownCard: BADGE_ORDER, comparisonCaption; never
 // new words), the shape line and the mini profile. R-ADM-VIEW-NOW. Every figure is the route's.
 import { BADGE_ORDER, comparisonCaption } from "@/components/dashboard/PhaseBreakdownCard";
@@ -94,7 +94,9 @@ export function EntryNow({ p, shape, compact = false }: { p: PipelineOk; shape: 
         <Tile label={`${word} now`} value={fmtN(n.cohort)} sub={`pupils aged ${p.entry.age}`} accent />
         <Tile label={`Since ${yearLabel(n.base.period)}`} value={n.changePct === null ? "—" : `${n.changePct >= 0 ? "▲" : "▼"} ${Math.abs(n.changePct).toFixed(0)}%`} sub={`${word} cohort (${fmtN(n.base.cohort)} then)`} />
         {!compact && <Tile small label="Girls · boys" value={girlsPct === null ? "—" : `${girlsPct.toFixed(0)}% · ${(boysPct ?? 0).toFixed(0)}%`} sub={`in ${word}`} />}
-        {!compact && <Tile small label="Day · boarding" value={`${fmtN(day)} · ${fmtN(n.boarders)}`} sub="whole school (no age split)" />}
+        {/* 0.7 r3 (F2): one tile, the same place, either way. A boarding school sees day and
+            boarding; a day school sees Day only -- the day count, no boarding half, no label. */}
+        {!compact && (p.school.boarding ? <Tile small label="Day · boarding" value={`${fmtN(day)} · ${fmtN(n.boarders)}`} sub="whole school (no age split)" /> : <Tile small label="Day" value={fmtN(day ?? n.roll)} sub="whole school" />)}
       </div>
       {shape && !compact && (
         <div className="flex flex-col gap-[6px] border-t border-[var(--panel-border)] pt-2">

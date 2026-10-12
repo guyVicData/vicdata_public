@@ -108,4 +108,13 @@ export const ADMISSIONS_NOTES = {
   // 0.7 r2b (E3): the LA and England pool-trend lines for past years (age_profile_aggregates,
   // backfilled from today's schools table). Shown only when a past year is drawn.
   areaUndercount: "Earlier years count only schools still open, so they slightly undercount.",
+  // 0.7 r3 (F7): the funnel's note (behind the panel's caption button, F1), and each bar's label
+  // after its bold lead word ({area}: "Worcestershire", or "Worcestershire 70% · Herefordshire 30%").
+  funnelNote: "Each bar is its own count from its own source, for the same area: not a flow of the same children.",
+  funnelBirths: "in {area} · born Sept {from} – Aug {to} · worked out from calendar-year births",
+  funnelPoolOne: "in all {area} schools, state and independent · {year}",
+  funnelPoolBlend: "in all schools in {area}, state and independent · {year}",
+  funnelEntry: "entry cohort · {year}",
+  funnelPoolMethod: "January census: every pupil aged {age} at 31 August in every mainstream school in the area -- academies, LA-maintained, free and independent -- weighted as the births are.",
+  funnelPoolBySex: "Not held by girls or boys: the area's counts have no split.",
 } as const;

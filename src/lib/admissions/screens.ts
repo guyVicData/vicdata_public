@@ -31,8 +31,13 @@ export function rollOf(c: SchoolCensus | undefined, year: number): number | null
   return t > 0 ? t : null;
 }
 
+// 0.7 r3 (F3): the profiles Admissions draws (column 1's mini profile, Shape and size, the rivals'
+// and the local shape) leave out age 18 and over: Year 14, always tiny. Drawing only -- the shape
+// itself is the shared classifier, which already reads ages 5-17 (roll-data.ts
+// SHAPE_CLASSIFICATION_MAX_AGE), so no school's shape changes and the public page is untouched.
+export const PROFILE_MAX_AGE = 17;
 export const profileOf = (counts: AgeGenderCounts | undefined): { age: number; female: number; male: number }[] =>
-  counts ? Array.from(counts, ([age, v]) => ({ age, female: v.female, male: v.male })).sort((a, b) => a.age - b.age) : [];
+  counts ? Array.from(counts, ([age, v]) => ({ age, female: v.female, male: v.male })).filter((r) => r.age <= PROFILE_MAX_AGE).sort((a, b) => a.age - b.age) : [];
 
 // ---------------------------------------------------------------------------------------------
 // Row 1, column 1 of Pipelines: the entry point now.
@@ -176,40 +181,71 @@ export async function feederTable(
 }
 
 // ---------------------------------------------------------------------------------------------
-// The funnel: this year's entrants traced back -- the area's births for their birth year, each
-// kind of school's pool for them on the way (the set at the oldest age that kind holds, in the
-// census year they were that age), then the school's own entry cohort. Counts, not a flow of the
-// same children: each stage is labelled with its own source.
-export type FunnelStage = { label: string; kind: "births" | "pool" | "entry"; value: number | null; year: number | null; age: number | null; schools: number | null };
+// The funnel (R-ADM-VIEW-FUNNEL, R-ADM-FUNNEL-SAME-AREA): this September's entrants followed back,
+// like with like. 0.7 r3 (F7): every bar before the school's own covers the SAME area, with the
+// same weights -- the school's own LA, or the lead's LA blend when one is set:
+//   births    ONS births in the area for their school year (8/12 + 4/12, R-ADM-BIRTH-SPLIT);
+//   pool      every pupil a year below the entry age in every mainstream school in the area --
+//             academies, LA-maintained, free and independent (age_profile_aggregates, scope la,
+//             ages at 31 August, the census a year before entry: Year 6 = age 10 in 2024/25);
+//   entry     the school's own entry cohort now.
+// The feeder set's pool isn't a funnel bar any more (it stays in the Pipeline). Counts, not a flow
+// of the same children. 4+ has no funnel (no Reception projections yet): no stages.
+export type FunnelArea = { laCode: string; laName: string | null; weight: number }[];
+export type FunnelStage = { label: string; kind: "births" | "pool" | "entry"; value: number | null; year: number | null; age: number | null; schools: number | null; area: FunnelArea | null; bySex?: boolean };
 
-export async function funnel(urn: string, ep: EntryPoint, sets: { age: number; urns: string[] }[], blend: { laCode: string; weight: number }[], own: CohortTable, sex: Sex): Promise<FunnelStage[]> {
-  const out: FunnelStage[] = [];
-  const X = P - ep.age; // birth year (academic) of this September's entrants
-  const weights = new Map(blend.map((b) => [b.laCode, b.weight]));
+export async function funnel(urn: string, ep: EntryPoint, area: FunnelArea, own: CohortTable, sex: Sex): Promise<FunnelStage[]> {
+  if (ep.age <= 4) return [];
+  const X = P - ep.age; // the academic birth year (Sept X-1 to Aug X) of this September's entrants
+  const weights = new Map(area.map((b) => [b.laCode, b.weight]));
   const codes = Array.from(weights.keys()).sort();
   const births = blendBirths(weights, await cachedReference(`adm:births:${codes.join(",")}`, () => fetchBirthsByLa(codes)));
   const b = academicBirths(births, X);
-  out.push({ label: "Births in the area", kind: "births", value: b === null ? null : Math.round(b * (sex === "all" ? 1 : BIRTH_SEX_SHARE[sex])), year: X, age: null, schools: null });
-  // One stage per distinct set, at the oldest age it holds, youngest set first.
-  const distinct: { urns: string[]; top: number }[] = [];
-  for (const s of [...sets].sort((a, c) => a.age - c.age)) {
-    const d = distinct.find((x) => x.urns.join() === s.urns.join());
-    if (d) d.top = Math.max(d.top, s.age);
-    else distinct.push({ urns: s.urns, top: s.age });
-  }
-  for (const d of distinct) {
-    const year = P - (ep.age - d.top);
-    if (year < CENSUS_FIRST_PERIOD) continue;
-    const census = await cachedCensus(d.urns);
-    let v: number | null = null;
-    for (const u of d.urns) {
-      if (u === urn && ep.age >= 16 && d.top >= 11) continue; // its own Year 11 is in the 16+ set; shown on its own
-      const c = cohortAt(census.get(u)?.table ?? new Map(), d.top, year, sex);
-      if (c !== null) v = (v ?? 0) + c;
+  const out: FunnelStage[] = [{ label: "Births", kind: "births", value: b === null ? null : Math.round(b * (sex === "all" ? 1 : BIRTH_SEX_SHARE[sex])), year: X, age: null, schools: null, area, bySex: sex !== "all" }];
+  // The pool: a year below the entry age, in the census a year before (Year 6 = age 10 in 2024/25).
+  const age = ep.age - 1;
+  const year = P - 1;
+  const rows = age >= 5 && age <= 15 ? await areaByAge() : [];
+  let pool: number | null = null;
+  let schools: number | null = null;
+  // The aggregates carry no girl/boy split: a girls' or boys' pool isn't held (never estimated).
+  if (sex === "all" && area.every((x) => x.laName)) {
+    let sum = 0;
+    let count = 0;
+    for (const x of area) {
+      const r = rows.find((y) => y.scope === "la" && y.key === x.laName && y.period === year);
+      const v = r?.byAge[String(age)];
+      if (v === undefined) { sum = NaN; break; }
+      sum += x.weight * v;
+      count += r!.schools;
     }
-    out.push({ label: d.top <= 10 ? `Year ${d.top - 4} in primaries` : `Year ${d.top - 4} in secondaries`, kind: "pool", value: v, year, age: d.top, schools: d.urns.length });
+    if (Number.isFinite(sum)) { pool = Math.round(sum); schools = count; }
   }
-  out.push({ label: "Your entry cohort", kind: "entry", value: cohortAt(own, ep.age, P, sex), year: P, age: ep.age, schools: 1 });
+  out.push({ label: `Year ${age - 4}`, kind: "pool", value: pool, year, age, schools, area, bySex: sex !== "all" });
+  out.push({ label: `Your ${ep.age === 4 ? "Reception" : `Year ${ep.age - 4}`}`, kind: "entry", value: cohortAt(own, ep.age, P, sex), year: P, age: ep.age, schools: 1, area: null });
+  return out;
+}
+
+/** The funnel's area: the lead's LA blend when one is set, else the school's own LA. */
+export async function funnelArea(blend: { laCode: string; laName: string | null; weight: number }[], override: boolean, own: { laCode: string | null; laName: string | null } | undefined): Promise<FunnelArea> {
+  if (override && blend.length) {
+    const names = await laNames(blend.filter((b) => !b.laName).map((b) => b.laCode));
+    return blend.map((b) => ({ laCode: b.laCode, laName: b.laName ?? names.get(b.laCode) ?? null, weight: b.weight }));
+  }
+  return own?.laCode ? [{ laCode: own.laCode, laName: own.laName, weight: 1 }] : [];
+}
+
+// LA names by code (schools.la_name, the key age_profile_aggregates uses), for a blend LA with no
+// feeder school in it.
+async function laNames(codes: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  for (const c of codes) {
+    const name = await cachedReference(`adm:la-name:${c}`, async () => {
+      const { data } = await createServerAnonSupabaseClient().from("schools").select("la_name").eq("la_code", c).not("la_name", "is", null).limit(1);
+      return ((data ?? [])[0] as { la_name: string } | undefined)?.la_name ?? null;
+    });
+    if (name) out.set(c, name);
+  }
   return out;
 }
 
@@ -255,14 +291,14 @@ export async function poolTrends(ep: EntryPoint, ladder: Ladder, laName: string 
   return { age, feeders, la: laSorted, england, laName, areaYears: years, pastAreaYears, base: ix.base, indexed: { feeders: ix.out[0], la: ix.out[1], england: ix.out[2] } };
 }
 
-function areaByAge(): Promise<{ scope: string; key: string; period: number; byAge: Record<string, number> }[]> {
+export function areaByAge(): Promise<{ scope: string; key: string; period: number; byAge: Record<string, number>; schools: number }[]> {
   return cachedReference("adm:age-profile-aggregates", async () => {
     const supabase = createServerAnonSupabaseClient();
-    const out: { scope: string; key: string; period: number; byAge: Record<string, number> }[] = [];
+    const out: { scope: string; key: string; period: number; byAge: Record<string, number>; schools: number }[] = [];
     for (let from = 0; ; from += 1000) {
-      const { data, error } = await supabase.from("age_profile_aggregates").select("scope, scope_key, period, by_age").order("id").range(from, from + 999);
+      const { data, error } = await supabase.from("age_profile_aggregates").select("scope, scope_key, period, by_age, school_count").order("id").range(from, from + 999);
       if (error) throw error;
-      for (const r of (data ?? []) as { scope: string; scope_key: string; period: number; by_age: Record<string, number> }[]) out.push({ scope: r.scope, key: r.scope_key, period: r.period, byAge: r.by_age });
+      for (const r of (data ?? []) as { scope: string; scope_key: string; period: number; by_age: Record<string, number>; school_count: number | null }[]) out.push({ scope: r.scope, key: r.scope_key, period: r.period, byAge: r.by_age, schools: r.school_count ?? 0 });
       if (!data || data.length < 1000) break;
     }
     return out;

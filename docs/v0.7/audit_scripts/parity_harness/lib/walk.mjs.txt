@@ -55,7 +55,15 @@ const VIS = `[...document.querySelectorAll('main:not([hidden]) [data-panel-id]')
 const panelEl = (i) => `${VIS}[${i}]`;
 const railJs = (i) => `[...${panelEl(i)}.querySelectorAll('button[aria-pressed]')].filter(b => b.className.includes('h-[26px]') && !/^Collapse/.test(b.getAttribute('aria-label')))`;
 
+// 0.7 r3 (F1): PARITY_MASK=1 hides the panel icon row on both trees (main: the header's full
+// screen and collapse buttons and the footer's Export; branch: [data-panel-icons]) and drops their
+// labels from the digest, so a pair differs only if something OUTSIDE the icon row moved.
+const MASK = process.env.PARITY_MASK === "1";
+const MASK_CSS = `[data-panel-icons], button[aria-label="Export this panel"], button[aria-label^="Full screen:"], button[aria-label^="Exit full screen"], button[aria-label^="Collapse "] { visibility: hidden !important; }`;
+const MASK_LABEL = /^(Export this panel|Full screen:|Exit full screen|Collapse )/;
+const MASK_TITLE = /^(Export|Full screen|Exit full screen)$|^Collapse /;
 async function shoot(dir, name, i) {
+  if (MASK) await ev(`(() => { if (!document.getElementById('parity-mask')) { const s = document.createElement('style'); s.id = 'parity-mask'; s.textContent = ${JSON.stringify(MASK_CSS)}; document.head.appendChild(s); } return true; })()`);
   const rect = await ev(`(() => { const r = ${panelEl(i)}.getBoundingClientRect(); return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height }; })()`);
   if (process.env.DBG) console.log(Date.now() % 1000000, name, JSON.stringify(rect));
   const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: rect.x, y: rect.y, width: Math.max(1, rect.w), height: Math.max(1, rect.h), scale: 1 } });
@@ -67,6 +75,7 @@ async function shoot(dir, name, i) {
     const info = await pop('Where this figure comes from');
     const caption = await pop('What this shows');
     return { id: p.dataset.panelId, text, info, caption, rail: [...p.querySelectorAll('button[aria-label]')].map(b => b.getAttribute('aria-label') + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')), titles: [...p.querySelectorAll('[title]')].map(e => e.getAttribute('title')) }; })()`);
+  if (MASK && dom) { dom.rail = dom.rail.filter((l) => !MASK_LABEL.test(l)); dom.titles = dom.titles.filter((t) => !MASK_TITLE.test(t)); }
   writeFileSync(`${dir}/${name}.json`, JSON.stringify(dom));
   await ev(`new Promise(r => requestAnimationFrame(() => setTimeout(r, 60)))`);
 }

@@ -935,13 +935,125 @@ const RUNNERS: Record<string, Runner> = {
   async admViewFunnel() {
     const v = await import("../src/lib/admissions/views-api");
     const { fetchBirthsByLa } = await import("../src/lib/admissions/data");
-    const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today: new Date("2026-10-12") });
-    if ("empty" in p) return { pass: false, detail: "empty" };
-    const births = await fetchBirthsByLa(p.blend.map((b) => b.laCode));
-    const blended = (y: number) => p.blend.reduce((a, b) => a + b.weight * (births.get(b.laCode)?.get(y) ?? NaN), 0);
-    const expect = Math.round((8 / 12) * blended(2014) + (4 / 12) * blended(2013));
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const today = new Date("2026-10-12");
+    const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today });
+    const p4 = await v.pipelineView("115786", v.entryPoint("4+")!, [], { today });
+    if ("empty" in p || "empty" in p4) return { pass: false, detail: "empty" };
     const [b, pool, entry] = [p.funnel.find((s) => s.kind === "births"), p.funnel.find((s) => s.kind === "pool"), p.funnel.find((s) => s.kind === "entry")];
-    return { pass: b?.value === expect && b?.year === 2014 && pool?.value === 401 && entry?.value === 236, detail: fmt({ births: b?.value, expect, pool: pool?.value, entry: entry?.value }) };
+    const la = b?.area?.[0];
+    const births = await fetchBirthsByLa([la!.laCode]);
+    const expect = Math.round((8 / 12) * (births.get(la!.laCode)?.get(2014) ?? NaN) + (4 / 12) * (births.get(la!.laCode)?.get(2013) ?? NaN));
+    const { data } = await createServerAnonSupabaseClient().from("age_profile_aggregates").select("by_age").eq("scope", "la").eq("scope_key", la!.laName!).eq("period", 2024).maybeSingle<{ by_age: Record<string, number> }>();
+    const labels = p.funnel.map((s) => s.label).join(" / ");
+    const pass = p.funnel.length === 3 && b?.value === expect && b?.year === 2014 && pool?.value === data?.by_age["10"] && pool?.age === 10 && pool?.year === 2024 && entry?.value === 236 && labels === "Births / Year 6 / Your Year 7" && p4.funnel.length === 0;
+    return { pass, detail: fmt({ area: la?.laName, births: b?.value, expect, pool: pool?.value, rawAge10: data?.by_age["10"], entry: entry?.value, labels, fourPlus: p4.funnel.length }) };
+  },
+  async admFunnelSameArea() {
+    const v = await import("../src/lib/admissions/views-api");
+    const { fetchBirthsByLa } = await import("../src/lib/admissions/data");
+    const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
+    const { createServerAnonSupabaseClient } = await import("../src/lib/supabase");
+    const today = new Date("2026-10-12");
+    const sb = createServerAnonSupabaseClient();
+    const raw = async (laName: string, age: number) => (await sb.from("age_profile_aggregates").select("by_age").eq("scope", "la").eq("scope_key", laName).eq("period", 2024).maybeSingle<{ by_age: Record<string, number> }>()).data?.by_age[String(age)] ?? NaN;
+    const out: string[] = [];
+    let pass = true;
+    const check = async (urn: string, entry: string, lists: Parameters<typeof v.pipelineView>[2], expectArea: { laCode: string; weight: number }[] | null) => {
+      const p = await v.pipelineView(urn, v.entryPoint(entry)!, lists, { today });
+      if ("empty" in p) { pass = false; return; }
+      const b = p.funnel.find((s) => s.kind === "births")!;
+      const pool = p.funnel.find((s) => s.kind === "pool")!;
+      const key = (a: typeof b.area) => JSON.stringify((a ?? []).map((x) => [x.laCode, x.laName, Math.round(x.weight * 1e6)]));
+      const own = (await fetchSchoolTraits([urn])).get(urn)!;
+      const want = expectArea ?? [{ laCode: own.laCode!, weight: 1 }];
+      const sameArea = key(b.area) === key(pool.area) && JSON.stringify((b.area ?? []).map((x) => [x.laCode, Math.round(x.weight * 1e6)])) === JSON.stringify(want.map((x) => [x.laCode, Math.round(x.weight * 1e6)]));
+      const births = await fetchBirthsByLa(want.map((x) => x.laCode));
+      const X = 2025 - p.entry.age;
+      const bl = (y: number) => want.reduce((a, x) => a + x.weight * (births.get(x.laCode)?.get(y) ?? NaN), 0);
+      const expBirths = Math.round((8 / 12) * bl(X) + (4 / 12) * bl(X - 1));
+      let expPool = 0;
+      for (const x of b.area!) expPool += x.weight * (await raw(x.laName!, p.entry.age - 1));
+      // The age mapping is the ladder's: the pool's age is a rung the ladder counts at.
+      const ladderAge = p.sets.some((s) => s.age === p.entry.age - 1);
+      const ok = sameArea && b.value === expBirths && pool.value === Math.round(expPool) && pool.age === p.entry.age - 1 && pool.year === 2024 && ladderAge;
+      pass &&= ok;
+      out.push(`${urn} ${entry}${expectArea ? " blend" : ""}: area ${(b.area ?? []).map((x) => `${x.laName} ${Math.round(x.weight * 100)}%`).join("+")}, births ${b.value}/${expBirths}, pool ${pool.value}/${Math.round(expPool)} ${ok ? "ok" : "MISMATCH"}`);
+    };
+    await check("137625", "11+", [], null);
+    await check("137625", "16+", [], null);
+    await check("117037", "11+", [], null);
+    // A lead's blend: the same blend, weighted the same way, for both bars.
+    const base = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today });
+    if (!("empty" in base) && base.blend.length >= 2) {
+      const blend = { [base.blend[0].laCode]: 0.7, [base.blend[1].laCode]: 0.3 };
+      await check("137625", "11+", [{ kind: "day_feeders", rung: null, members: null, la_blend: blend, confirmed: true }], Object.entries(blend).map(([laCode, weight]) => ({ laCode, weight })));
+    }
+    return { pass, detail: out.join("; ") };
+  },
+  async admBoardingOnly() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const v = await import("../src/lib/admissions/views-api");
+    const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
+    const { AdmissionsEveryView } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { Setup } = await import("../src/components/admissions/setup/Setup");
+    const { OpenInFullscreen } = await import("../src/components/teacher/CardBox");
+    // Setup's "add by name" (SchoolSearch) reads the app router: a do-nothing one for a server render.
+    const { AppRouterContext } = await import("next/dist/shared/lib/app-router-context.shared-runtime");
+    const router = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
+    const withRouter = (el: ReturnType<typeof createElement>) => createElement(AppRouterContext.Provider, { value: router as never }, el);
+    const today = new Date("2026-10-12");
+    // Any word about boarding, or the day-only wording that implies it. ("dashboard" doesn't match.)
+    const BOARD = /\b(boarding|boarders?|boards|ISC)\b|day only|day and boarding|day \+ boarding/i;
+    const member = (urn: string) => ({ userId: "", token: "", membershipId: "m", schoolAccountId: "a", schoolUrn: urn, schoolName: urn, roles: ["admissions"], isAdmin: false, isAccountHolder: false, lead: true, access: "lead" as const, canEditLists: true, override: false, canShare: true, canManageTeam: true, readOnly: false, viewAs: null, leadColumn: true });
+    const out: string[] = [];
+    let pass = true;
+    const run = async (urn: string, entry: string) => {
+      const ep = v.entryPoint(entry)!;
+      const t = (await fetchSchoolTraits([urn])).get(urn)!;
+      const boarding = t.boarding;
+      const [p, m, r, s] = await Promise.all([v.pipelineView(urn, ep, [], { today }), v.marketView(urn, ep, []), v.rivalsView(urn, ep, []), v.shapeView(urn, ep, [])]);
+      const html = renderToStaticMarkup(createElement(OpenInFullscreen.Provider, { value: true }, createElement(AdmissionsEveryView, { member: member(urn), boardingSchool: boarding, entry: ep.id, pipeline: p, market: m, rivals: r, shape: s, lists: null })));
+      const chunks = html.split(/(?=<div data-adm-(?:filters|dash)=)/).filter((c) => c.startsWith("<div data-adm-"));
+      const own = chunks.filter((c) => c.startsWith('<div data-adm-filters') || c.startsWith('<div data-adm-dash="pipelines"'));
+      const market = chunks.filter((c) => c.startsWith('<div data-adm-dash="market-share"'));
+      const setup = ["entry", "day", "boarding", "rivals"].map((step) => renderToStaticMarkup(withRouter(createElement(Setup, { member: member(urn), step: step as "entry", entry: ep.id, lists: null, ages: { low: t.low, high: t.high, boarding }, theme: "dark", onStep: () => undefined, onDone: () => undefined, onSkip: () => undefined }))));
+      const text = (h: string) => h.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/g, " ");
+      if (!boarding) {
+        const leaks = [...own, ...setup].map(text).filter((x) => BOARD.test(x)).map((x) => x.match(BOARD)![0]);
+        const marketControls = market.map(text).some((x) => /Rivals with boarders|Boarding only/.test(x));
+        const tile = /Day · boarding/.test(text(html)) === false && />Day</.test(html);
+        // The server ignores a boarding filter for a day school: the same pool as with none.
+        const asked = await v.pipelineView(urn, ep, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
+        const ignored = !("empty" in asked) && !("empty" in p) && JSON.stringify(asked.ladder) === JSON.stringify(p.ladder);
+        const steps = /Step 1 of 3/.test(setup[0]) && /Step 3 of 3/.test(setup[3]) && /Step 2 of 3/.test(setup[2]);
+        const ok = leaks.length === 0 && !marketControls && tile && ignored && steps;
+        pass &&= ok;
+        out.push(`${urn} ${entry} day: ${chunks.length} surfaces + 4 setup steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps} ${ok ? "ok" : "FAIL"}`);
+      } else {
+        const T = text(html);
+        const filters = chunks.filter((c) => c.startsWith("<div data-adm-filters")).every((c) => /Day \+ boarding/.test(text(c)));
+        const tile = /Day · boarding/.test(T);
+        const isc = ep.age > 4 ? /International boarders/.test(T) : true;
+        const setupOk = /Day and boarding/.test(text(setup[0])) && /Your boarding feeders/.test(text(setup[2])) && /Step 3 of 4/.test(setup[2]) && /Step 4 of 4/.test(setup[3]) && /Boarding only/.test(text(setup[3]));
+        // The boarding feeder list end to end: setup's search returns preps with boarders, kept as a
+        // fuzzy set, and Boarding only draws the pool from them.
+        const cand = await v.candidatesView(urn, ep, new URLSearchParams({ kind: "boarding", mode: "nearest", n: "40" }));
+        const preps = cand.rows.filter((x) => x.boarding && x.sector === "independent");
+        const bp = await v.pipelineView(urn, ep, [{ kind: "boarding_feeders", rung: null, members: preps.map((x) => x.urn), la_blend: null, confirmed: true }], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
+        const used = !("empty" in bp) && bp.sets.some((x) => x.urns.some((u) => preps.some((pp) => pp.urn === u)));
+        const ok = filters && tile && isc && setupOk && preps.length > 0 && preps.length === cand.rows.length && used;
+        pass &&= ok;
+        out.push(`${urn} ${entry} boarding: filters ${filters}, tile ${tile}, ISC note ${isc}, setup 1-4 ${setupOk}, boarding preps ${preps.length}/${cand.rows.length}, boarding-only pool from them ${used} ${ok ? "ok" : "FAIL"}`);
+      }
+    };
+    await run("137625", "11+");
+    await run("137625", "16+");
+    await run("137051", "11+");
+    await run("115786", "4+");
+    await run("115786", "11+");
+    return { pass, detail: out.join("; ") };
   },
   async admViewFeeders() {
     const v = await import("../src/lib/admissions/views-api");
@@ -963,7 +1075,24 @@ const RUNNERS: Record<string, Runner> = {
     const [s, set] = await Promise.all([v.shapeView("137625", ep, []), rivalSet("137625", ep, [], v.DEFAULT_FILTERS)]);
     const order = s.rivals.map((r) => r.urn).join() === set.rivals.join();
     const noRank = !JSON.stringify(s.rivals).match(/"rank"|"score"/);
-    return { pass: order && noRank && s.localShape.shape !== undefined, detail: fmt({ order, noRank, local: s.localShape.shape, mine: s.shapeByYear.at(-1)?.shape }) };
+    // 0.7 r3 (F3): the profiles drawn stop at 17, and leaving out 18+ changes no school's shape (the
+    // shared classifier reads ages 5-17 already): every school in the view, own, rivals and feeders.
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { shapeOf } = await import("../src/lib/admissions/shape");
+    const p = await v.pipelineView("137625", ep, [], { today: new Date("2026-10-12") });
+    const urns = Array.from(new Set(["137625", ...set.rivals, ...("empty" in p ? [] : p.sets.flatMap((x) => x.urns))]));
+    const census = await cachedCensus(urns);
+    let changed = 0;
+    let with18 = 0;
+    for (const u of urns) {
+      const c = census.get(u)?.ageGender;
+      if (!c) continue;
+      if ([...c.keys()].some((a) => a >= 18)) with18++;
+      const without = new Map([...c].filter(([a]) => a <= 17));
+      if (shapeOf(c) !== shapeOf(without)) changed++;
+    }
+    const maxAge = Math.max(...[s.profile, s.localProfile, ...s.rivals.map((r) => r.profile)].flat().map((r) => r.age));
+    return { pass: order && noRank && s.localShape.shape !== undefined && changed === 0 && maxAge <= 17, detail: fmt({ order, noRank, local: s.localShape.shape, mine: s.shapeByYear.at(-1)?.shape, schools: urns.length, withAge18: with18, shapeChangedWithout18: changed, profileMaxAge: maxAge }) };
   },
   async admViewTrends() {
     const v = await import("../src/lib/admissions/views-api");
@@ -1052,12 +1181,15 @@ const RUNNERS: Record<string, Runner> = {
     const today = new Date("2026-10-12");
     const ep = v.entryPoint("16+")!;
     const p = await v.pipelineView("137625", ep, [], { today, filters: { lists: "both", sector: "independent", boardingOnly: false } });
-    const b = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
+    // Boarding only, with no boarding list: the honest empty state for a boarding school (Beaudesert
+    // Park); for a day school (The Chase) the filter isn't its to use and is ignored (0.7 r3, F2).
+    const b = await v.pipelineView("115786", v.entryPoint("11+")!, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
+    const day = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
     if ("empty" in p) return { pass: false, detail: "empty" };
     const urns = Array.from(new Set(p.sets.flatMap((s) => s.urns)));
     const t = await fetchSchoolTraits(urns);
     const onlyIndependent = urns.every((u) => u === "137625" || t.get(u)?.sector === "independent");
-    return { pass: onlyIndependent && "empty" in b && b.empty === "no_boarding_list", detail: fmt({ schools: urns.length, onlyIndependent, boardingOnlyEmpty: "empty" in b }) };
+    return { pass: onlyIndependent && "empty" in b && b.empty === "no_boarding_list" && !("empty" in day), detail: fmt({ schools: urns.length, onlyIndependent, boardingSchoolEmpty: "empty" in b, daySchoolIgnored: !("empty" in day) }) };
   },
 
 };
@@ -1098,6 +1230,7 @@ async function main() {
     } catch (e) {
       counts.ERROR++;
       console.log(`ERROR  ${rule.id} [${tc.check}]: ${(e as Error).message}`);
+      if (process.env.RULE_STACK) console.log((e as Error).stack);
     }
   }
   console.log(`\n${fmt(counts)}`);
