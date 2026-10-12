@@ -70,8 +70,8 @@ export async function sendJson(url: string, method: "PUT" | "POST" | "DELETE", b
 }
 
 // ---------------------------------------------------------------------------- the lists route
-export type ListRow = { id: string; entry_point: string; kind: "day_feeders" | "boarding_feeders" | "rivals" | "rung"; rung: string; members: string[] | null; fuzzy: Record<string, unknown> | null; la_blend: Record<string, number> | null; confirmed: boolean; updated_by: string | null; updated_at: string | null };
-export type ListsAnswer = { lead: boolean; entryPoints: { entry_point: string; sort_order: number; updated_by: string | null; updated_at: string | null }[]; lists: ListRow[]; names?: Record<string, string> };
+export type ListRow = { id: string; entry_point: string; kind: "day_feeders" | "boarding_feeders" | "rivals" | "rung"; rung: string; members: string[] | null; fuzzy: Record<string, unknown> | null; la_blend: Record<string, number> | null; confirmed: boolean; updated_by: string | null; updated_at: string | null; updated_by_kind?: "lead" | "school_admin" | null };
+export type ListsAnswer = { lead: boolean; entryPoints: { entry_point: string; sort_order: number; updated_by: string | null; updated_at: string | null; updated_by_kind?: "lead" | "school_admin" | null }[]; lists: ListRow[]; names?: Record<string, string> };
 
 export type CandidateRow = {
   urn: string; name: string; sector: "state" | "independent"; gender: "mixed" | "girls" | "boys"; boarding: boolean; laCode: string | null; laName: string | null; town: string | null; high: number | null;

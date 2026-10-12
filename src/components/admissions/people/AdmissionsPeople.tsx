@@ -7,17 +7,42 @@
 //   the admissions history (platform_audit_log admissions_* rows, readable by the School-Admin);
 //   the override: remove any Admissions grant, or restore one that was removed (a roles write the
 //     School-Admin may make; every one audited by round 1's triggers).
+//   0.7 r2b (E1): the School-Admin's changes to setup and the lists (admissions_lists_override /
+//     admissions_entry_points_override, written by the r2b audit trigger) in the same history.
 // It reads its own rows, so People's own queries are unchanged and it works before the round 1
 // migration is applied (it then says so). In View as everything is shown and nothing is saved.
 import { useCallback, useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { ADMISSIONS_LEAD_LABEL } from "@/lib/roles";
 import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
+import { entryPoint } from "@/lib/admissions/entry-points";
 import { SectionLabel, VIEW_AS_READ_ONLY, displayNameOf, type AdminSchool } from "@/components/admin/AdminChrome";
 
 type Member = { id: string; roles: string[] | null; profiles: { email: string | null; full_name: string | null } | null };
 type Grant = { membership_id: string; granted_by_kind: "school_admin" | "lead"; granted_by_profile_id: string | null; granted_at: string };
-type Audit = { id: number; action: string; at: string; actor_profile_id: string | null; detail: { membership_id?: string; profile_id?: string } | null };
+type Audit = {
+  id: number;
+  action: string;
+  at: string;
+  actor_profile_id: string | null;
+  detail: { membership_id?: string; profile_id?: string; op?: string; entry_point?: string; kind?: string; rung?: string; added?: string[]; removed?: string[]; changed?: string[] } | null;
+};
+
+const LIST_KIND: Record<string, string> = { day_feeders: "day feeders", boarding_feeders: "boarding feeders", rivals: "rivals" };
+// "changed the 11+ day feeders (+2, −1)", "added the 16+ entry point", ...
+function overrideText(h: Audit): string {
+  const d = h.detail ?? {};
+  const ep = entryPoint(d.entry_point ?? "")?.label.replace(/ \(.*\)$/, "") ?? d.entry_point ?? "";
+  const verb = d.op === "insert" ? "set" : d.op === "delete" ? "removed" : "changed";
+  if (h.action === "admissions_entry_points_override")
+    return d.op === "insert" ? `added the ${ep} entry point` : d.op === "delete" ? `removed the ${ep} entry point` : `reordered the ${ep} entry point`;
+  const what = d.kind === "rung" ? `${ep} list for age ${(d.rung ?? "").replace("age:", "")}` : `${ep} ${LIST_KIND[d.kind ?? ""] ?? "list"}`;
+  const counts = [d.added?.length ? `+${d.added.length}` : "", d.removed?.length ? `\u2212${d.removed.length}` : ""].filter(Boolean).join(", ");
+  const other = (d.changed ?? []).filter((f) => f !== "members").map((f) => ({ la_blend: "LA blend", fuzzy: "definition", confirmed: "confirmed" })[f] ?? f);
+  const extra = [counts, ...other].filter(Boolean).join(", ");
+  return `${verb} the ${what}${extra ? ` (${extra})` : ""}`;
+}
+const isOverride = (h: Audit) => /_override$/.test(h.action);
 
 const ACTION: Record<string, string> = {
   admissions_lead_grant: "added to Admissions by the lead",
@@ -44,6 +69,7 @@ export function AdmissionsPeople({ school, members, onChanged }: { school: Admin
   const [missing, setMissing] = useState(false);
   const [grants, setGrants] = useState<Grant[]>([]);
   const [history, setHistory] = useState<Audit[]>([]);
+  const [actors, setActors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const readOnly = !!school.readOnly;
 
@@ -61,7 +87,14 @@ export function AdmissionsPeople({ school, members, onChanged }: { school: Admin
     }
     setLeads(new Set(((l.data ?? []) as { id: string; admissions_lead: boolean }[]).filter((r) => r.admissions_lead).map((r) => r.id)));
     setGrants((g.data ?? []) as Grant[]);
-    setHistory((h.data ?? []) as Audit[]);
+    const rows = (h.data ?? []) as Audit[];
+    setHistory(rows);
+    // Who made each override: People's member rows don't carry the profile id, so read the names.
+    const ids2 = Array.from(new Set(rows.filter(isOverride).map((r) => r.actor_profile_id).filter((x): x is string => !!x)));
+    if (ids2.length) {
+      const { data: people } = await supabase.from("profiles").select("id, full_name, email").in("id", ids2);
+      setActors(Object.fromEntries(((people ?? []) as { id: string; full_name: string | null; email: string | null }[]).map((p) => [p.id, displayNameOf(p.full_name, p.email)])));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [members, school.schoolAccountId, school.schoolUrn]);
   useEffect(() => {
@@ -132,7 +165,15 @@ export function AdmissionsPeople({ school, members, onChanged }: { school: Admin
               {history.map((h) => (
                 <li key={h.id} className="flex flex-wrap items-center gap-2">
                   <span>
-                    {when(h.at)}: {nameOf(h.detail?.membership_id, h.detail?.profile_id)} {ACTION[h.action] ?? h.action}
+                    {isOverride(h) ? (
+                      <>
+                        {when(h.at)}: {h.actor_profile_id && actors[h.actor_profile_id] ? `School-Admin ${actors[h.actor_profile_id]}` : "The School-Admin"} {overrideText(h)} <span className="text-[var(--muted)]">&middot; override</span>
+                      </>
+                    ) : (
+                      <>
+                        {when(h.at)}: {nameOf(h.detail?.membership_id, h.detail?.profile_id)} {ACTION[h.action] ?? h.action}
+                      </>
+                    )}
                   </span>
                   {removed.includes(h) && (
                     <button

@@ -1,6 +1,6 @@
 // Run from the repo root: npm i --no-save @electric-sql/pglite@0.2 && node supabase/tests/v07_admissions_rls_pglite.mjs
 // Local only (WASM Postgres): applies 0.6 S1, the 0.6 membership hardening and 0.7 admissions
-// r1 (A3) over a stub of the live schema they depend on (as v06_rls_pglite.mjs does), then
+// r1 (A3) -- then, for its last section, 0.7 r2 D1 and r2b E1 (the School-Admin override) -- over a stub of the live schema they depend on (as v06_rls_pglite.mjs does), then
 // signs in as each role on a test school and proves the Admissions lead's limits and the
 // shared lists' read / write rules. Never touches a real database.
 import { PGlite } from "@electric-sql/pglite";
@@ -253,6 +253,77 @@ check("  but not another school's HOD-free members", (await as("O", () => q(`sel
 console.log("\n-- re-runnable");
 check("the migration applies a second time over itself", (await throws(() => ex(readFileSync(repo + "20261106090000_v07_admissions_r1.sql", "utf8")))) === false);
 check("  and the lists and grants are intact", (await q(`select count(*)::int n from admissions_lists`)).rows[0].n === 2 && (await q(`select count(*)::int n from admissions_grants`)).rows[0].n > 0);
+
+console.log("\n-- 2b: the School-Admin override (20261108090000), over 0.7 r2 D1");
+const r1Count = (await q(`select count(*)::int n from admissions_lists`)).rows[0].n;
+for (const f of ["20261107090000_v07_admissions_r2_sync_roles_nullif.sql", "20261108090000_v07_admissions_r2b_school_admin_override.sql"]) {
+  await ex(readFileSync(repo + f, "utf8"));
+  console.log("applied", f);
+}
+await ex(`grant all on all tables in schema public to authenticated, anon;`);
+const overrides = async () => (await q(`select action, actor_profile_id, school_urn, detail from platform_audit_log where action like 'admissions\\_%override' order by id`)).rows;
+const lid = list.rows[0].id;
+let before = (await overrides()).length;
+const hUpd = await as("H", () => q(`update admissions_lists set members = array['100000','100002'] where id = '${lid}' returning updated_by, updated_by_kind`));
+check("the School-Admin (account holder) updates a list", hUpd.rows.length === 1);
+check("  stamped as the School-Admin's: updated_by, updated_by_kind", hUpd.rows[0]?.updated_by === P_.H && hUpd.rows[0]?.updated_by_kind === "school_admin", JSON.stringify(hUpd.rows[0]));
+let ov = (await overrides()).slice(before);
+check("  audited: admissions_lists_override, who and what", ov.length === 1 && ov[0].action === "admissions_lists_override" && ov[0].actor_profile_id === P_.H && ov[0].school_urn === "100053"
+  && ov[0].detail.op === "update" && ov[0].detail.kind === "day_feeders" && ov[0].detail.entry_point === "11+"
+  && ov[0].detail.changed.join() === "members" && ov[0].detail.added.join() === "100002" && ov[0].detail.removed.join() === "100001", JSON.stringify(ov));
+before = (await overrides()).length;
+const a2Ins = await as("A2", () => q(`insert into admissions_lists (school_account_id, entry_point, kind, members, updated_by_kind) values ('${S1}','11+','rivals', array['100003'], 'lead') returning id, updated_by_kind`));
+check("a second School-Admin creates a list; the kind can't be claimed by the client", a2Ins.rows.length === 1 && a2Ins.rows[0].updated_by_kind === "school_admin", JSON.stringify(a2Ins.rows[0]));
+check("  audited as an insert", (await overrides()).slice(before).map((o) => `${o.action}:${o.detail.op}:${o.detail.members}`).join() === "admissions_lists_override:insert:1");
+before = (await overrides()).length;
+check("the School-Admin deletes it (audited)", (await as("H", () => q(`delete from admissions_lists where id = '${a2Ins.rows[0].id}' returning id`))).rows.length === 1
+  && (await overrides()).slice(before).map((o) => o.detail.op).join() === "delete");
+before = (await overrides()).length;
+check("the School-Admin writes an entry point", (await as("H", () => q(`insert into admissions_entry_points (school_account_id, entry_point, sort_order) values ('${S1}','16+',1) returning id`))).rows.length === 1);
+check("  audited: admissions_entry_points_override", (await overrides()).slice(before).map((o) => `${o.action}:${o.detail.op}:${o.detail.entry_point}`).join() === "admissions_entry_points_override:insert:16+");
+before = (await overrides()).length;
+await as("H", () => q(`update admissions_entry_points set sort_order = sort_order where school_account_id = '${S1}'`));
+check("  an update that changes nothing isn't audited (the entry-point save re-upserts every row)", (await overrides()).length === before);
+await as("H", () => q(`update admissions_entry_points set sort_order = 2 where school_account_id = '${S1}' and entry_point = '16+'`));
+check("  a re-order is", (await overrides()).slice(before).map((o) => `${o.detail.op}:${o.detail.from}->${o.detail.to}`).join() === "update:1->2");
+before = (await overrides()).length;
+const lUpd = await as("L", () => q(`update admissions_lists set members = array['100000','100001'] where id = '${lid}' returning updated_by, updated_by_kind`));
+check("the lead is unaffected: still writes", lUpd.rows.length === 1 && lUpd.rows[0].updated_by === P_.L && lUpd.rows[0].updated_by_kind === "lead", JSON.stringify(lUpd.rows[0]));
+check("  and the lead's writes aren't overrides (no audit row)", (await overrides()).length === before);
+check("  the lead writes an entry point, not audited", (await as("L", () => q(`insert into admissions_entry_points (school_account_id, entry_point) values ('${S1}','4+') returning id`))).rows.length === 1 && (await overrides()).length === before);
+for (const who of ["M", "S", "T"]) {
+  const ins = await throws(() => as(who, () => q(`insert into admissions_lists (school_account_id, entry_point, kind) values ('${S1}','4+','rivals')`)));
+  const upd = (await as(who, () => q(`update admissions_lists set members = array['999999'] where id = '${lid}' returning id`))).rows.length;
+  const del = (await as(who, () => q(`delete from admissions_lists where id = '${lid}' returning id`))).rows.length;
+  const ep = await throws(() => as(who, () => q(`insert into admissions_entry_points (school_account_id, entry_point) values ('${S1}','age:7')`)));
+  const label = { M: "an Admissions member without the flag", S: "SMT (shares only)", T: "a teacher on a share" }[who];
+  check(`still refused: ${label} can't insert, update or delete lists or entry points`, !!ins && upd === 0 && del === 0 && !!ep);
+}
+check("  and SMT still shares", (await as("S", () => q(`insert into admissions_list_shares (school_account_id, target_kind, role) values ('${S1}','role','finance') returning id`))).rows.length === 1);
+const otherList = (await q(`select id from admissions_lists where school_account_id = '${S2}'`)).rows[0].id;
+check("across schools: this School-Admin can't write the other school's lists", !!(await throws(() => as("H", () => q(`insert into admissions_lists (school_account_id, entry_point, kind) values ('${S2}','11+','rivals')`))))
+  && (await as("H", () => q(`update admissions_lists set members = array['999999'] where id = '${otherList}' returning id`))).rows.length === 0
+  && (await as("H", () => q(`delete from admissions_lists where id = '${otherList}' returning id`))).rows.length === 0
+  && !!(await throws(() => as("H", () => q(`insert into admissions_entry_points (school_account_id, entry_point) values ('${S2}','4+')`)))));
+check("  nor move a list there", !!(await throws(() => as("H", () => q(`update admissions_lists set school_account_id = '${S2}' where id = '${lid}'`)))));
+check("  the other school's lead can't override here", !!(await throws(() => as("OL", () => q(`insert into admissions_lists (school_account_id, entry_point, kind) values ('${S1}','4+','rivals')`))))
+  && (await as("OL", () => q(`update admissions_lists set members = '{}' where id = '${lid}' returning id`))).rows.length === 0);
+check("  the other school's lead still writes its own (not an override)", (await as("OL", () => q(`update admissions_lists set members = array['117037'] where id = '${otherList}' returning updated_by_kind`))).rows[0]?.updated_by_kind === "lead");
+check("the School-Admin reads the override rows; the lead and other schools don't", (await as("H", () => q(`select id from platform_audit_log where action like '%override'`))).rows.length === (await overrides()).length
+  && (await as("L", () => q(`select id from platform_audit_log where action like '%override'`))).rows.length === 0
+  && (await as("OL", () => q(`select id from platform_audit_log where action like '%override'`))).rows.length === 0);
+const canEdit = {};
+for (const who of ["L", "H", "A2", "M", "S", "T", "OL"]) canEdit[who] = (await as(who, () => q(`select admissions_can_edit_lists('${S1}') ok`))).rows[0].ok;
+check("admissions_can_edit_lists: the lead and the School-Admins, no one else", canEdit.L && canEdit.H && canEdit.A2 && !canEdit.M && !canEdit.S && !canEdit.T && !canEdit.OL, JSON.stringify(canEdit));
+check("  anon can't call it", /permission denied/.test((await throws(() => asAnon(() => q(`select admissions_can_edit_lists('${S1}')`)))) || ""));
+check("  the writer-kind helper isn't callable by members", /permission denied/.test((await throws(() => as("H", () => q(`select admissions_writer_kind('${S1}')`)))) || ""));
+check("a service-role write is stamped with no user and not audited", await (async () => {
+  before = (await overrides()).length;
+  const r = await asService(`update admissions_lists set confirmed = true where id = '${lid}' returning updated_by, updated_by_kind`);
+  return r.rows[0].updated_by === null && r.rows[0].updated_by_kind === null && (await overrides()).length === before;
+})());
+check("2b applies a second time over itself", (await throws(() => ex(readFileSync(repo + "20261108090000_v07_admissions_r2b_school_admin_override.sql", "utf8")))) === false
+  && (await q(`select count(*)::int n from admissions_lists`)).rows[0].n === r1Count);
 
 console.log(`\n${fails ? `${fails} FAILED` : "ALL PASS"}`);
 process.exit(fails ? 1 : 0);

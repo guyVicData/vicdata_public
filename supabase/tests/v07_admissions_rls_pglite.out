@@ -100,4 +100,35 @@ PASS   but not another school's HOD-free members
 PASS the migration applies a second time over itself 
 PASS   and the lists and grants are intact 
 
+-- 2b: the School-Admin override (20261108090000), over 0.7 r2 D1
+applied 20261107090000_v07_admissions_r2_sync_roles_nullif.sql
+applied 20261108090000_v07_admissions_r2b_school_admin_override.sql
+PASS the School-Admin (account holder) updates a list 
+PASS   stamped as the School-Admin's: updated_by, updated_by_kind {"updated_by":"00000000-0000-0000-0000-000000000001","updated_by_kind":"school_admin"}
+PASS   audited: admissions_lists_override, who and what [{"action":"admissions_lists_override","actor_profile_id":"00000000-0000-0000-0000-000000000001","school_urn":"100053","detail":{"op":"update","kind":"day_feeders","rung":"","added":["100002"],"changed":["members"],"list_id":"5aa0d581-0313-4a2e-9b8e-0ad846971b1b","removed":["100001"],"entry_point":"11+"}}]
+PASS a second School-Admin creates a list; the kind can't be claimed by the client {"id":"58b74c88-ac61-433c-b8ff-94d67b472913","updated_by_kind":"school_admin"}
+PASS   audited as an insert 
+PASS the School-Admin deletes it (audited) 
+PASS the School-Admin writes an entry point 
+PASS   audited: admissions_entry_points_override 
+PASS   an update that changes nothing isn't audited (the entry-point save re-upserts every row) 
+PASS   a re-order is 
+PASS the lead is unaffected: still writes {"updated_by":"00000000-0000-0000-0000-000000000003","updated_by_kind":"lead"}
+PASS   and the lead's writes aren't overrides (no audit row) 
+PASS   the lead writes an entry point, not audited 
+PASS still refused: an Admissions member without the flag can't insert, update or delete lists or entry points 
+PASS still refused: SMT (shares only) can't insert, update or delete lists or entry points 
+PASS still refused: a teacher on a share can't insert, update or delete lists or entry points 
+PASS   and SMT still shares 
+PASS across schools: this School-Admin can't write the other school's lists 
+PASS   nor move a list there 
+PASS   the other school's lead can't override here 
+PASS   the other school's lead still writes its own (not an override) 
+PASS the School-Admin reads the override rows; the lead and other schools don't 
+PASS admissions_can_edit_lists: the lead and the School-Admins, no one else {"L":true,"H":true,"A2":true,"M":false,"S":false,"T":false,"OL":false}
+PASS   anon can't call it 
+PASS   the writer-kind helper isn't callable by members 
+PASS a service-role write is stamped with no user and not audited 
+PASS 2b applies a second time over itself 
+
 ALL PASS

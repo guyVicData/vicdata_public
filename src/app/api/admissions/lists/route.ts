@@ -5,10 +5,11 @@ import { entryPoint } from "@/lib/admissions/entry-points";
 // VicData 0.7 admissions r1 (A5): the school's entry points and shared lists (school-level).
 //   GET  ?urn                         entry points and every list (RLS: Admissions, SMT, School-Admin,
 //                                     share targets)
-//   PUT  ?urn  { entryPoints: [...] } replace the school's entry points           (the lead only)
-//   PUT  ?urn  { list: {...} }        create or replace one list (entry point, kind, rung) (the lead only)
+//   PUT  ?urn  { entryPoints: [...] } replace the school's entry points           (the lead; School-Admin, r2b)
+//   PUT  ?urn  { list: {...} }        create or replace one list (entry point, kind, rung) (the lead; School-Admin, r2b)
 // Writes go through the caller's own token: the database refuses anyone but the Admissions lead
-// (RLS, admissions_lists / admissions_entry_points). Who changed it and when is stamped by the
+// and, from 0.7 r2b, the School-Admin as an audited override (RLS, admissions_lists /
+// admissions_entry_points). Who changed it and when is stamped by the
 // database. Before the 0.7 r1 migration is applied, every call says "not set up yet" (503).
 // 0.7 r2: GET also returns `names` (profile id -> name) for "last changed by".
 const KINDS = new Set(["day_feeders", "boarding_feeders", "rivals", "rung"]);
@@ -25,10 +26,15 @@ export async function GET(request: NextRequest) {
   if (caller instanceof NextResponse) return caller;
   const acc = await accountId(caller);
   if (!acc) return NextResponse.json({ error: "No school account." }, { status: 404 });
-  const [eps, lists] = await Promise.all([
-    caller.supabase.from("admissions_entry_points").select("entry_point, sort_order, updated_by, updated_at").eq("school_account_id", acc).order("sort_order"),
-    caller.supabase.from("admissions_lists").select("id, entry_point, kind, rung, members, fuzzy, la_blend, confirmed, updated_by, updated_at").eq("school_account_id", acc),
-  ]);
+  // 0.7 r2b (E1): updated_by_kind ("lead" | "school_admin") once the r2b migration is applied;
+  // before it, read without it. (Typed as "*": the column list is chosen at run time.)
+  const read = (kind: ", updated_by_kind" | "") =>
+    Promise.all([
+      caller.supabase.from("admissions_entry_points").select(("entry_point, sort_order, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc).order("sort_order"),
+      caller.supabase.from("admissions_lists").select(("id, entry_point, kind, rung, members, fuzzy, la_blend, confirmed, updated_by, updated_at" + kind) as "*").eq("school_account_id", acc),
+    ]);
+  let [eps, lists] = await read(", updated_by_kind");
+  if (/updated_by_kind/.test(eps.error?.message ?? lists.error?.message ?? "")) [eps, lists] = await read("");
   const err = eps.error ?? lists.error;
   if (err) return NextResponse.json({ error: notSetUp(err.message) ? "Admissions lists are not set up yet." : "Could not read the lists." }, { status: notSetUp(err.message) ? 503 : 502 });
   // 0.7 r2 (D5): "last changed by [name], [date]" -- the names of whoever stamped the rows, read
@@ -56,8 +62,8 @@ export async function PUT(request: NextRequest) {
     const del = await caller.supabase.from("admissions_entry_points").delete().eq("school_account_id", acc).not("entry_point", "in", `(${ids.map((x) => `"${x}"`).join(",")})`);
     const up = await caller.supabase.from("admissions_entry_points").upsert(ids.map((entry_point, sort_order) => ({ school_account_id: acc, entry_point, sort_order })), { onConflict: "school_account_id,entry_point" }).select("entry_point");
     const err = del.error ?? up.error;
-    if (err) return NextResponse.json({ error: notSetUp(err.message) ? "Admissions lists are not set up yet." : err.code === "42501" ? "Only the Admissions lead can change this." : "Could not save." }, { status: notSetUp(err.message) ? 503 : err.code === "42501" ? 403 : 502 });
-    if ((up.data ?? []).length !== ids.length) return NextResponse.json({ error: "Only the Admissions lead can change this." }, { status: 403 });
+    if (err) return NextResponse.json({ error: notSetUp(err.message) ? "Admissions lists are not set up yet." : err.code === "42501" ? "Only the Admissions lead or the School-Admin can change this." : "Could not save." }, { status: notSetUp(err.message) ? 503 : err.code === "42501" ? 403 : 502 });
+    if ((up.data ?? []).length !== ids.length) return NextResponse.json({ error: "Only the Admissions lead or the School-Admin can change this." }, { status: 403 });
     return NextResponse.json({ entryPoints: ids });
   }
   const l = body.list;
@@ -70,7 +76,7 @@ export async function PUT(request: NextRequest) {
   const res = existing.data
     ? await caller.supabase.from("admissions_lists").update(row).eq("id", (existing.data as { id: string }).id).select("id, updated_by, updated_at")
     : await caller.supabase.from("admissions_lists").insert(row).select("id, updated_by, updated_at");
-  if (res.error) return NextResponse.json({ error: res.error.code === "42501" ? "Only the Admissions lead can change the lists." : "Could not save." }, { status: res.error.code === "42501" ? 403 : 502 });
-  if (!res.data?.length) return NextResponse.json({ error: "Only the Admissions lead can change the lists." }, { status: 403 });
+  if (res.error) return NextResponse.json({ error: res.error.code === "42501" ? "Only the Admissions lead or the School-Admin can change the lists." : "Could not save." }, { status: res.error.code === "42501" ? 403 : 502 });
+  if (!res.data?.length) return NextResponse.json({ error: "Only the Admissions lead or the School-Admin can change the lists." }, { status: 403 });
   return NextResponse.json({ list: res.data[0] });
 }

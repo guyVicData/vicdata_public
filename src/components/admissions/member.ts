@@ -7,8 +7,9 @@
 //
 //   lead         the Admissions lead (admissions_lead): builds and edits lists, runs setup
 //   member       Admissions without the flag, SMT: sees everything, edits nothing
-//   schoolAdmin  is_admin / account holder: sees everything; the override is the lead's
-//                editing, which round 1's RLS doesn't allow without the flag (logged, D5)
+//   schoolAdmin  is_admin / account holder: sees everything; edits setup and the lists as an
+//                override once 0.7 r2b's migration lets it (admissions_can_edit_lists), every
+//                change audited; before that, read-only (round 1's RLS: the lead only)
 //   viewAs       a platform admin through View as: everything, read-only (decision 4)
 //   listOnly     anyone a list is shared with who isn't one of the above: the list's school
 //                names only, never the computed views (decision 5)
@@ -29,8 +30,11 @@ export type AdmissionsMember = {
   isAccountHolder: boolean;
   lead: boolean;
   access: AdmissionsAccess;
-  // What the page may change: setup and lists (the lead), sharing (lead and SMT), My team (lead).
+  // What the page may change: setup and lists (the lead, or the School-Admin's override), sharing
+  // (lead and SMT), My team (lead).
   canEditLists: boolean;
+  // A School-Admin (without the lead flag) editing setup and the lists: the 0.7 r2b override.
+  override: boolean;
   canShare: boolean;
   canManageTeam: boolean;
   readOnly: boolean;
@@ -86,6 +90,7 @@ export async function loadAdmissionsMember(): Promise<MemberState> {
         // a Teacher sees what a Teacher sees (nothing, unless a list is shared with them).
         access: access === "none" ? "none" : "viewAs",
         canEditLists: false,
+        override: false,
         canShare: false,
         canManageTeam: false,
         readOnly: true,
@@ -115,6 +120,13 @@ export async function loadAdmissionsMember(): Promise<MemberState> {
     const { data: shares } = await supabase.from("admissions_list_shares").select("id").eq("school_account_id", account.id).limit(1);
     access = accessOf(base, (shares ?? []).length > 0);
   }
+  // 0.7 r2b (E1): the School-Admin's override, if the database allows it yet. Before the r2b
+  // migration the function doesn't exist: an error, so no override (round 1's rules).
+  let override = false;
+  if (access !== "lead" && (row.is_admin || isAccountHolder)) {
+    const { data: ok, error } = await supabase.rpc("admissions_can_edit_lists", { p_school_account_id: account.id });
+    override = !error && ok === true;
+  }
   return {
     status: "ready",
     member: {
@@ -126,10 +138,11 @@ export async function loadAdmissionsMember(): Promise<MemberState> {
       schoolName: account.schools?.current_name ?? account.school_urn,
       ...base,
       access,
-      canEditLists: access === "lead",
+      canEditLists: access === "lead" || override,
+      override,
       canShare: access === "lead" || roles.includes("smt"),
       canManageTeam: access === "lead",
-      readOnly: access !== "lead",
+      readOnly: access !== "lead" && !override,
       viewAs: null,
       leadColumn,
     },

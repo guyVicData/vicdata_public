@@ -170,7 +170,7 @@ function Dashboard({ member, theme, onTheme }: { member: AdmissionsMember; theme
 
   // D5: a lead with no entry points is taken into setup on the first visit (once per visit:
   // "Skip for now" holds for the session).
-  const firstVisitSetup = member.canEditLists && notSetUp && !url.setup && typeof window !== "undefined" && !window.sessionStorage.getItem("adm.setup.skipped");
+  const firstVisitSetup = member.access === "lead" && notSetUp && !url.setup && typeof window !== "undefined" && !window.sessionStorage.getItem("adm.setup.skipped");
   if (firstVisitSetup) {
     window.sessionStorage.setItem("adm.setup.skipped", "1");
     update({ setup: "entry" });
@@ -293,14 +293,15 @@ function Notes({ member, notSetUp, listsMissing }: { member: AdmissionsMember; n
   const lines: ReactNode[] = [];
   if (listsMissing) lines.push("Admissions lists aren't set up on this database yet: the views use nearby schools.");
   else if (notSetUp && !member.canEditLists) lines.push("The Admissions lead hasn't set these up yet: these are the defaults (nearby schools, and the entry points the school's age range takes).");
-  if (member.access === "schoolAdmin") lines.push("You're seeing Admissions as the School-Admin. The lists are the Admissions lead's to change; make a lead in People.");
+  if (member.override) lines.push("You're seeing Admissions as the School-Admin. You can change setup and the lists as an override: each change shows as yours and is recorded in People's history.");
+  else if (member.access === "schoolAdmin") lines.push("You're seeing Admissions as the School-Admin. The lists are the Admissions lead's to change; make a lead in People.");
   if (!lines.length) return null;
   return (
     <div className="flex flex-col gap-1 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] px-3 py-2 text-[12px] text-[var(--chip-fg)]">
       {lines.map((l, i) => (
         <span key={i}>{l}</span>
       ))}
-      {member.access === "schoolAdmin" && (
+      {(member.access === "schoolAdmin" || member.override) && (
         <Link href="/teacher/people" className="text-[12px] font-bold text-[var(--adm-accent-text)]">
           People &rarr;
         </Link>
@@ -727,7 +728,7 @@ export { fmtN };
 // components from the same routes, for the editor's school and entry point, read-only.
 export function AdmissionsViewPreview({ dataview, urn, schoolName, entry, height = 330 }: { dataview: string; urn: string; schoolName: string; entry: string; height?: number }) {
   const member: AdmissionsMember = useMemo(
-    () => ({ userId: "", token: "", membershipId: null, schoolAccountId: "", schoolUrn: urn, schoolName, roles: [], isAdmin: false, isAccountHolder: false, lead: false, access: "viewAs", canEditLists: false, canShare: false, canManageTeam: false, readOnly: true, viewAs: null, leadColumn: true }),
+    () => ({ userId: "", token: "", membershipId: null, schoolAccountId: "", schoolUrn: urn, schoolName, roles: [], isAdmin: false, isAccountHolder: false, lead: false, access: "viewAs", canEditLists: false, override: false, canShare: false, canManageTeam: false, readOnly: true, viewAs: null, leadColumn: true }),
     [urn, schoolName],
   );
   const filters = DEFAULT_FILTERS;
