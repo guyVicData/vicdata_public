@@ -19,14 +19,13 @@
 // The output is a ViewInstance with a full ViewSpec (model.ts buildInstance); the caller
 // applies it through editor-ops, so undo and autosave work. Every preview is a v2 render
 // (SpecPreview: renderView(spec, frame) through the page's own hosts).
-import { AdmissionsDataStep, AdmissionsPreviewStep, AdmissionsViewStep, type AdmissionsDraft } from "./AdmissionsSteps";
-import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
+import { AdmissionsDataStep, AdmissionsPreviewStep, AdmissionsScaledPreview, AdmissionsViewStep, buildAdmissions, previewEntry, spanWarning, type AdmissionsDraft } from "./AdmissionsSteps";
 import { AXIS_STATES } from "@/catalogue/variants";
 import type { EntryPointState } from "@/catalogue/types";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { dataviewById } from "@/catalogue";
 import { presetSpec } from "@/catalogue/viewspec";
-import { resolveTitle, type PickPanelContext } from "@/catalogue/pick";
+import { resolveTitle, titleTemplateOf } from "@/catalogue/pick";
 import type { ResultsMeasure } from "@/catalogue/types";
 import { VIEW_LABEL, changeLabel, measureWord, SHORT_KIND } from "@/catalogue/honest";
 import { pinFromContext, type PinSchool } from "@/lib/pin-context";
@@ -100,7 +99,8 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
   const adm = !!env.admissions;
   const out = useMemo(() => {
     if (!adm) return buildInstance(draft, env, instance);
-    const built = buildInstance(draft, { ...env, ctx: { ...env.ctx, data: draft.spec.data.source as PickPanelContext["data"] } }, instance);
+    // 0.7 admissions editor s2: the view keeps its own dataview while only its looks or compare change.
+    const built = buildAdmissions(draft, env, instance);
     const ticks = (draft as AdmissionsDraft).entryTicks;
     const can = (dataviewById(built.dataview)?.variants?.entryPoint ?? AXIS_STATES.entryPoint) as EntryPointState[];
     const own = ticks && !(ticks.length === can.length && can.every((t) => ticks.includes(t))) ? ticks.filter((t) => can.includes(t)) : null;
@@ -110,9 +110,13 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
     return { ...built, ...(Object.keys(variants).length ? { variants } : {}) };
   }, [draft, env, instance, adm]);
   const dv = dataviewById(out.dataview)!;
+  // 0.7 admissions editor s1: a spanning Admissions panel previews in a wider column (scaled to fit).
+  const admSpan = env.admissions?.span ?? 1;
+  const admWide = adm && admSpan > 1;
   const changes = mode === "edit" ? describeChanges(original, draft, env.phase, env.measure) : [];
   const problems = adm ? [] : draftProblems(draft, env);
-  const template = titleOf(draft, env);
+  // An Admissions view's title is its dataview's (Teacher's generated titles don't read for it).
+  const template = adm ? (draft.title ?? titleTemplateOf(dv)) : titleOf(draft, env);
   // Honest about the renderer too: a View it doesn't draw yet shows its host's view.
   const notYet = !adm && !viewKindRegistered(draft.spec.view.kind) && !(out.spec.preset && JSON.stringify(out.spec.view) === JSON.stringify(dataviewSpecView(out.dataview)))
     ? <div className="note warn" style={{ fontSize: 11 }}>The new renderer doesn&rsquo;t draw a {VIEW_LABEL[draft.spec.view.kind].toLowerCase()} here yet: until it does, the panel shows its {dv.label.toLowerCase()}.</div>
@@ -145,11 +149,10 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
   const showFor = useMemo(() => showForOf(draft, env), [draft, env]);
 
   const preview = (m: ResultsMeasure | null, width: number, box: { width: number; height: number } = BODY, idSuffix = "main") => {
+    // 0.7 admissions editor s1 (gap 7): at the edit bar's entry point and the panel's real size.
     if (adm)
       return pvSchool ? (
-        <div style={{ width }}>
-          <AdmissionsViewPreview dataview={out.dataview} urn={pvSchool.urn} schoolName={pvSchool.name} entry="11+" height={Math.max(120, Math.round((box.height * width) / box.width))} />
-        </div>
+        <AdmissionsScaledPreview env={env} dataview={out.dataview} spec={out.spec} school={pvSchool} width={width} />
       ) : (
         <div style={{ width, fontSize: 11, color: "var(--muted)", padding: 8 }}>A live preview needs a school: look as a school to see it drawn.</div>
       );
@@ -282,10 +285,10 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
 
   const body = adm
     ? [
-        <AdmissionsDataStep key="d" draft={draft} set={set} env={env} wide={wide} school={pvSchool} />,
-        <AdmissionsViewStep key="v" draft={draft} set={set} env={env} wide={wide} />,
+        <AdmissionsDataStep key="d" draft={draft} set={set} env={env} wide={wide} school={pvSchool} dataview={out.dataview} />,
+        <AdmissionsViewStep key="v" draft={draft} set={set} env={env} wide={wide} dataview={out.dataview} />,
         <span key="p" style={{ display: "contents" }}>
-          <AdmissionsPreviewStep draft={draft} set={set} env={env} wide={wide} dataview={out.dataview} school={wide ? null : pvSchool} />
+          <AdmissionsPreviewStep draft={draft} set={set} env={env} wide={wide} dataview={out.dataview} spec={out.spec} school={wide ? null : pvSchool} />
           {iconBox}
           {titleBox}
         </span>,
@@ -361,16 +364,21 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
             {closeBtn}
           </div>
           <div style={{ flex: "1 1 auto", display: "flex", gap: 22, padding: "14px 22px 0", minHeight: 0 }}>
-            <div style={{ flex: "0 0 380px", display: "flex", flexDirection: "column", gap: 12 }}>
-              <div className="label">Live preview &middot; real panel size</div>
-              <div className="pv" style={{ width: PANEL_UNIT.width, height: PANEL_UNIT.height, boxSizing: "border-box", borderRadius: 14, padding: 12, gap: 6 }}>
+            <div style={{ flex: `0 0 ${admWide ? 560 : 380}px`, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div className="label">Live preview &middot; real panel size{adm && admSpan > 1 ? ", scaled to fit" : ""}</div>
+              <div className="pv" style={{ width: adm ? (admWide ? 560 : 380) : PANEL_UNIT.width, height: adm ? undefined : PANEL_UNIT.height, boxSizing: "border-box", borderRadius: 14, padding: 12, gap: 6 }}>
                 <div className="pvh">
                   <SchoolMenu school={pvSchool} subject={subjectWord} subjects={subjects?.[env.phase]} onSchool={(s) => { setPvSchool(s); setPvSubject(null); }} onSubject={setPvSubject} />
-                  {env.followsPill ? <MeasureMenu value={pvMeasure} options={showFor} phase={env.phase} onPick={setPvMeasure} /> : <b>{measureLabel}</b>}
+                  {env.followsPill ? <MeasureMenu value={pvMeasure} options={showFor} phase={env.phase} onPick={setPvMeasure} /> : <b>{adm ? previewEntry(env).label : measureLabel}</b>}
                 </div>
-                {preview(pvMeasure, BODY.width, { width: BODY.width, height: PANEL_UNIT.height - 24 - 22 })}
+                {preview(pvMeasure, adm ? (admWide ? 560 : 380) - 24 : BODY.width, { width: BODY.width, height: PANEL_UNIT.height - 24 - 22 })}
               </div>
-              <div style={{ fontSize: 11, color: "var(--cc-sub)" }}>Preview another school or result type from the two menus on the panel.</div>
+              <div style={{ fontSize: 11, color: "var(--cc-sub)" }}>{adm ? "Preview another school from the menu on the panel; the entry point is the edit bar's." : "Preview another school or result type from the two menus on the panel."}</div>
+              {adm && spanWarning(env, out.dataview) && (
+                <div className="note warn" data-adm-span-warning="" style={{ fontSize: 11.5 }}>
+                  {spanWarning(env, out.dataview)}.
+                </div>
+              )}
               {notYet}
             </div>
             <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>

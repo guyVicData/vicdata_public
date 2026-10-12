@@ -396,10 +396,11 @@ export const ADMISSIONS_COMPARE: { kind: CompareSeriesKind; label: string; famil
 ];
 
 // What a lead or editor can never change on an Admissions view: catalogue rules, shown as a
-// fixed note in 2 · View (R-ADM-VIEW-PIPELINE, R-ADM-POOL-NOT-INTAKE, R-ADM-FLAG-*, R-ADM-SHAPE-NOT-RANKED).
-export const ADMISSIONS_FIXED: string[] = [
-  "Certainty styling: counted solid, births dashed with their range, projection only on request.",
-  "The honesty wording (a pool, not an intake; a share of this group; an estimate; a requirement, not a forecast).",
-  "Flag thresholds: the fixed national ones, over two or more years; none is guessed.",
-  "Shapes are described, never ranked.",
+// fixed note in 2 · View, each naming its rules (0.7 admissions editor s2). No look option
+// switches any of these off (the R-ADM-EDITOR-LOOKS-KEEP-NOTES rule test).
+export const ADMISSIONS_FIXED: { text: string; rules: RuleId[] }[] = [
+  { text: "Certainty styling: counted solid, births dashed with their range, projection only on request.", rules: ["R-ADM-LADDER", "R-ADM-DRIFT-RANGE", "R-ADM-BIRTH-SPLIT"] },
+  { text: "The honesty wording (a pool, not an intake; a share of this group; an estimate; a requirement, not a forecast).", rules: ["R-ADM-POOL-NOT-INTAKE", "R-ADM-GROUP-SHARE", "R-ADM-JOINERS-ESTIMATE", "R-ADM-HOLD-SHARE"] },
+  { text: "Flag thresholds: the fixed national ones, over two or more years; none is guessed.", rules: ["R-ADM-FLAG-FEEDER", "R-ADM-FLAG-MOMENTUM", "R-ADM-FLAG-STRENGTHS"] },
+  { text: "Shapes are described, never ranked.", rules: ["R-ADM-SHAPE-NOT-RANKED"] },
 ];

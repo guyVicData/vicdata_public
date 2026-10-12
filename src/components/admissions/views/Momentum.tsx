@@ -9,7 +9,7 @@ import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { SHAPE_LABELS } from "@/components/dashboard/ShapeIcon";
 import type { ShapeLabel } from "@/lib/shape-classifier";
 import type { MarketView, RivalsView } from "../api";
-import { Empty, FlagPill, Muted, cx, fmtSigned, yearLabel, type FlagTone } from "../ui";
+import { Empty, FlagPill, Muted, cx, fillHeight, fmtSigned, yearLabel, type FlagTone } from "../ui";
 import { useWidth } from "./charts";
 
 type Flag = RivalsView["rows"][number]["momentum"][number];
@@ -81,13 +81,13 @@ export function FlagList({ m, r, limit, notPlotted = [] }: { m: MarketView; r: R
   );
 }
 
-export function Momentum({ m, r, fullscreen }: { m: MarketView; r: RivalsView; fullscreen: boolean }) {
+export function Momentum({ m, r, fullscreen, room }: { m: MarketView; r: RivalsView; fullscreen: boolean; room?: number }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const pts = r.rows
     .map((x) => ({ x, e: m.extras.find((q) => q.urn === x.urn), rc: r.resultsChange[x.urn] }))
     .filter((p) => p.e?.entryChangePct != null && p.rc?.points != null);
   const left = r.rows.filter((x) => !pts.some((p) => p.x.urn === x.urn));
-  const H = fullscreen ? 480 : 360;
+  const H = fullscreen ? fillHeight(room, 40, 480) : 360;
   const maxX = Math.max(5, ...pts.map((p) => Math.abs(p.e!.entryChangePct!))) * 1.15;
   const maxY = Math.max(1, ...pts.map((p) => Math.abs(p.rc!.points!))) * 1.15;
   const W = Math.max(w, 10);

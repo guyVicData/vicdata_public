@@ -4,20 +4,26 @@
 // container's measured width (first measured synchronously, so a panel never draws at a guessed
 // size), the boards' stroke weights and dash patterns. Nothing here computes a figure: every
 // value arrives from /api/admissions/*.
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+
+// 0.7 admissions editor s1: the editor's preview draws a view at its real panel size, scaled down
+// to fit the dialogue; a chart's first measure (getBoundingClientRect) is of the scaled box, so
+// it is divided back by the scale. 1 everywhere else (the page): the same widths as before.
+export const MeasureScale = createContext(1);
 
 export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
   const ref = useRef<T | null>(null);
   const [w, setW] = useState(0);
+  const k = useContext(MeasureScale);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    setW(el.getBoundingClientRect().width);
+    setW(k === 1 ? el.getBoundingClientRect().width : el.getBoundingClientRect().width / k);
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((e) => setW(e[0].contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [k]);
   return [ref, w];
 }
 

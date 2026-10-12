@@ -5,14 +5,14 @@
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { POPULATION_TREND_LABELS, displayPopulationTrendPct } from "@/lib/population-trend";
 import type { MarketView, PipelineOk } from "../api";
-import { Empty, Key, LineSwatch, ViewTitle, fmtN, fmtPct, yearLabel } from "../ui";
+import { Empty, Key, LineSwatch, ViewTitle, fillHeight, fmtN, fmtPct, yearLabel } from "../ui";
 import { LineChart, YearBars } from "./charts";
 import { cohortWord } from "../panels/EntryNow";
 
 const yr = (y: number) => yearLabel(y);
 
 // ----------------------------------------------------------------- Pipelines, column 1
-export function EntryTrend({ p, as, fullscreen }: { p: PipelineOk; as: "line" | "bars"; fullscreen: boolean }) {
+export function EntryTrend({ p, as, fullscreen, room }: { p: PipelineOk; as: "line" | "bars"; fullscreen: boolean; room?: number }) {
   const s = p.now.series;
   if (s.filter((x) => x.cohort !== null).length < 2) return <Empty>Not enough census years for this school yet.</Empty>;
   return (
@@ -20,19 +20,19 @@ export function EntryTrend({ p, as, fullscreen }: { p: PipelineOk; as: "line" | 
       <ViewTitle>Your {cohortWord(p.entry.age)} cohort, year by year</ViewTitle>
       {as === "line" ? (
         <LineChart
-          height={fullscreen ? 320 : 170}
+          height={fullscreen ? fillHeight(room, 80, 320) : 170}
           xLabels={[yr(s[0].period), yr(s[s.length - 1].period)]}
           series={[{ id: "mine", label: "Your cohort", colour: "var(--accent)", points: s.map((x) => ({ x: x.period, y: x.cohort })), title: (pt) => `${yr(pt.x)}: ${fmtN(pt.y)} aged ${p.entry.age}` }]}
         />
       ) : (
-        <YearBars height={fullscreen ? 320 : 180} bars={s.map((x) => ({ label: yr(x.period).slice(2), value: x.cohort, title: `${yr(x.period)}: ${fmtN(x.cohort)} (${fmtN(x.female)} girls, ${fmtN(x.male)} boys)` }))} />
+        <YearBars height={fullscreen ? fillHeight(room, 80, 320) : 180} bars={s.map((x) => ({ label: yr(x.period).slice(2), value: x.cohort, title: `${yr(x.period)}: ${fmtN(x.cohort)} (${fmtN(x.female)} girls, ${fmtN(x.male)} boys)` }))} />
       )}
     </>
   );
 }
 
 // ----------------------------------------------------------------- Pipelines, column 2
-export function PoolTrends({ p, fullscreen }: { p: PipelineOk; fullscreen: boolean }) {
+export function PoolTrends({ p, fullscreen, room }: { p: PipelineOk; fullscreen: boolean; room?: number }) {
   const t = p.poolTrends;
   const ix = t.indexed;
   const areaShort = t.areaYears.length < 2;
@@ -43,7 +43,7 @@ export function PoolTrends({ p, fullscreen }: { p: PipelineOk; fullscreen: boole
         {t.age}-year-olds: your feeders, {t.laName ?? "the LA"} and England
       </ViewTitle>
       <LineChart
-        height={fullscreen ? 300 : 150}
+        height={fullscreen ? fillHeight(room, 80, 300) : 150}
         reference={{ y: 100 }}
         yFormat={(v) => v.toFixed(0)}
         xLabels={[yr(ix.feeders[0].year), yr(ix.feeders[ix.feeders.length - 1].year)]}
@@ -132,7 +132,7 @@ export function AreaPopulation({ p }: { p: PipelineOk }) {
 }
 
 // ----------------------------------------------------------------- Pipelines, column 3
-export function ShareNeeded({ p, fullscreen, table = false }: { p: PipelineOk; fullscreen: boolean; table?: boolean }) {
+export function ShareNeeded({ p, fullscreen, table = false, room }: { p: PipelineOk; fullscreen: boolean; room?: number; table?: boolean }) {
   const h = p.hold;
   const needed = h.needed.filter((x) => x.share !== null);
   if (!h.current || !needed.length) return <Empty>No share needed: this school has no entry cohort or pool at this entry point.</Empty>;
@@ -178,7 +178,7 @@ export function ShareNeeded({ p, fullscreen, table = false }: { p: PipelineOk; f
         To keep {fmtN(h.current.cohort)} in {cohortWord(p.entry.age)}, you&rsquo;d need <b className="text-[var(--fg)]">{fmtPct(target.share)}</b> of the {target.entryYear} pool. Now: {fmtPct(h.current.share)}.
       </div>
       <LineChart
-        height={fullscreen ? 260 : 110}
+        height={fullscreen ? fillHeight(room, 90, 260) : 110}
         reference={{ y: h.current.share }}
         yFormat={(v) => `${v.toFixed(1)}%`}
         xLabels={[String(needed[0].entryYear), String(needed[needed.length - 1].entryYear)]}
@@ -197,7 +197,7 @@ export function ShareNeeded({ p, fullscreen, table = false }: { p: PipelineOk; f
 }
 
 // ----------------------------------------------------------------- Market share, row 2
-export function VsRivals({ m, setLabel, as, fullscreen }: { m: MarketView; setLabel: string; as: "line" | "bars"; fullscreen: boolean }) {
+export function VsRivals({ m, setLabel, as, fullscreen, room }: { m: MarketView; setLabel: string; as: "line" | "bars"; fullscreen: boolean; room?: number }) {
   const v = m.summary.vsIndexed;
   const word = cohortWord(m.entry.age);
   if (v.mine.filter((x) => x.value !== null).length < 2) return <Empty>Not enough census years to compare.</Empty>;
@@ -209,7 +209,7 @@ export function VsRivals({ m, setLabel, as, fullscreen }: { m: MarketView; setLa
         <ViewTitle>
           Your {word} against the {setLabel}
         </ViewTitle>
-        <div className="flex items-end gap-2" style={{ height: fullscreen ? 300 : 150 }}>
+        <div className="flex items-end gap-2" style={{ height: fullscreen ? fillHeight(room, 80, 300) : 150 }}>
           {rows.map((r) => (
             <div key={r.y} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${yr(r.y)}: you ${fmtN(r.mine)}, rivals' average ${fmtN(r.avg)}`}>
               <div className="flex w-full items-end justify-center gap-[2px]" style={{ height: "85%" }}>
@@ -233,7 +233,7 @@ export function VsRivals({ m, setLabel, as, fullscreen }: { m: MarketView; setLa
         Your {word} against the {setLabel}
       </ViewTitle>
       <LineChart
-        height={fullscreen ? 300 : 160}
+        height={fullscreen ? fillHeight(room, 80, 300) : 160}
         reference={{ y: 100 }}
         yFormat={(x) => x.toFixed(0)}
         xLabels={[yr(v.mine[0].year), yr(v.mine[v.mine.length - 1].year)]}
@@ -251,14 +251,14 @@ export function VsRivals({ m, setLabel, as, fullscreen }: { m: MarketView; setLa
   );
 }
 
-export function ShareTrend({ m, fullscreen }: { m: MarketView; fullscreen: boolean }) {
+export function ShareTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: boolean; room?: number }) {
   const mine = m.entryAge.rows.filter((r) => r.urn === m.urn).sort((a, b) => a.period - b.period);
   if (mine.filter((r) => r.share !== null).length < 2) return <Empty>Not enough years of shares yet.</Empty>;
   return (
     <>
       <ViewTitle>Your market share at {m.entry.label.replace(/ \(.*\)$/, "")}, year by year</ViewTitle>
       <LineChart
-        height={fullscreen ? 300 : 160}
+        height={fullscreen ? fillHeight(room, 80, 300) : 160}
         yFormat={(v) => `${v.toFixed(1)}%`}
         xLabels={[yr(mine[0].period), yr(mine[mine.length - 1].period)]}
         series={[{ id: "s", label: "Your share", colour: "var(--accent)", points: mine.map((r) => ({ x: r.period, y: r.share })), title: (pt) => `${yr(pt.x)}: ${fmtPct(pt.y)} of ${fmtN(m.entryAge.totals[pt.x])} (${ADMISSIONS_NOTES.groupShort.toLowerCase()})` }]}
@@ -267,7 +267,7 @@ export function ShareTrend({ m, fullscreen }: { m: MarketView; fullscreen: boole
   );
 }
 
-export function RollTrend({ m, fullscreen }: { m: MarketView; fullscreen: boolean }) {
+export function RollTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: boolean; room?: number }) {
   // Whole-school rolls: the school in the accent, each rival a grey line (the census's own rolls).
   const series = m.extras.map((e) => {
     const rows = m.ageBand.rows.filter((r) => r.urn === e.urn).sort((a, b) => a.period - b.period);
@@ -279,7 +279,7 @@ export function RollTrend({ m, fullscreen }: { m: MarketView; fullscreen: boolea
       <ViewTitle>
         Pupils aged {m.band.from}&ndash;{m.band.to}: you and the rivals
       </ViewTitle>
-      <LineChart height={fullscreen ? 300 : 160} xLabels={[yr(years[0]), yr(years[years.length - 1])]} series={[...series.filter((s) => s.id !== m.urn), ...series.filter((s) => s.id === m.urn)]} />
+      <LineChart height={fullscreen ? fillHeight(room, 80, 300) : 160} xLabels={[yr(years[0]), yr(years[years.length - 1])]} series={[...series.filter((s) => s.id !== m.urn), ...series.filter((s) => s.id === m.urn)]} />
     </>
   );
 }
