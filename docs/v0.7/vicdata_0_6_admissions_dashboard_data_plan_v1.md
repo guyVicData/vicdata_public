@@ -217,6 +217,17 @@ Rolls, admissions, academic results (with a link to the subject explorer) and so
   - The thresholds are constants kept in one place, so Guy can tune them without touching the logic.
 - **Admissions comes with the whole-school package.** It isn't sold separately, so no separate paywall: access is by role only.
 
+## Round 2 decisions (Guy, 8 Oct, from round 1 report §9)
+
+1. **People page:** the School-Admin's People page shows the lead badge, the lead's grants, the admissions history and the override. The lead gets a smaller **"My team"** view to add or remove Admissions staff.
+2. **Sharing lists:** the **lead and SMT** can share feeder lists and rivals (e.g. with teachers or heads of department). Editing stays lead-only.
+3. **School-Admin override:** kept. A School-Admin without the lead flag can edit lists and grants; every override goes in the audit log.
+4. **Platform admins:** read every school's lists through View as, **read-only**.
+5. **Shares give the list only.** People a list is shared with see the school names, **not** the computed pipeline or rivals views. The routes stay role-gated.
+6. **FE colleges:** yes. Their own 16+ intake and shares come from the existing FE participation data, clearly labelled as a different source.
+7. **Reception projections:** not yet. Births to 2029 are enough; add ONS ages 0–3 if schools ask.
+8. **The `sync_membership_roles` `nullif` fix:** a small, separate migration in round 2, applied before the screens.
+
 ## Wireframes
 
 Design canvas "VicData Admissions dashboards" (7 Oct):
