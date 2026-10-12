@@ -7,7 +7,7 @@
 //
 // 0.6.1 S4: the editor previews always render v2 -- the instance's own spec through
 // renderView (SpecPreview), so a view of its own previews as itself, not as its preset.
-import { createContext, useContext } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import type { PreviewPin } from "@/components/view-editor/SpecPreview";
 import { dataviewById } from "@/catalogue";
@@ -16,6 +16,8 @@ import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import { DataFreePreview, type PanelPreviewProps } from "./PanelPreview";
 import { EditorVariantsContext } from "./EditorPanel";
 import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
+import { admissionsVars } from "@/components/admissions/ui";
+import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 
 const SpecPreview = dynamic(() => import("@/components/view-editor/SpecPreview").then((m) => m.SpecPreview), { ssr: false });
 
@@ -29,7 +31,11 @@ export function LivePanelPreview(props: PanelPreviewProps) {
   // 0.7 admissions r2 (D7): an Admissions view draws itself from the Admissions routes, at the edit
   // bar's entry point.
   if (dv.host.id.startsWith("admissions."))
-    return <AdmissionsViewPreview dataview={dv.id} urn={school.urn} schoolName={school.name} entry={variants?.state.entryPoint === "custom" ? "11+" : (variants?.state.entryPoint ?? "11+")} height={props.height} />;
+    return (
+      <AdmissionsCanvasPreview>
+        <AdmissionsViewPreview dataview={dv.id} spec={props.view.spec} urn={school.urn} schoolName={school.name} entry={variants?.state.entryPoint === "custom" ? "11+" : (variants?.state.entryPoint ?? "11+")} height={props.height} />
+      </AdmissionsCanvasPreview>
+    );
   let pinned;
   try {
     pinned = pinFromContext(contextFromPanel(props.config, props.panel.id, props.labels), dv, school);
@@ -47,4 +53,11 @@ export function LivePanelPreview(props: PanelPreviewProps) {
       <SpecPreview id={props.view.id} dataview={dv} spec={props.view.spec} params={props.view.params} pinned={{ ...pinned, schoolUrn: school.urn } as PreviewPin} box={{ width: props.width, height: props.height }} width={props.width} />
     </div>
   );
+}
+
+// 0.7 admissions editor s2: an Admissions panel previews in the page's own colours (the accent,
+// the flags), which the editor doesn't set.
+function AdmissionsCanvasPreview({ children }: { children: ReactNode }) {
+  const [theme] = useTeacherTheme();
+  return <div style={admissionsVars(theme)}>{children}</div>;
 }

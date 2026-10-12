@@ -32,7 +32,43 @@ export type LookOption = {
   fallback: string | number | boolean;
 };
 
-export const ADMISSIONS_LOOKS: Partial<Record<DataviewId, LookOption[]>> = {};
+const tick = (key: string, label: string, fallback: boolean): LookOption => ({ key, label, choices: "tick", fallback });
+const YEARS: LookOption = { key: "years", label: "Years", choices: [{ value: "down", label: "Down: a row per year" }, { value: "across", label: "Across: a column per year" }], fallback: "down" };
+const SHAPE_COLUMNS: LookOption = { key: "columns", label: "Rivals' shapes in", choices: [1, 2, 3].map((n) => ({ value: n, label: `${n} column${n > 1 ? "s" : ""}` })), fallback: 2 };
+
+export const ADMISSIONS_LOOKS: Partial<Record<DataviewId, LookOption[]>> = {
+  "DV-ADM-P-PIPELINE": [
+    { key: "projection", label: "Projection (11+)", choices: [{ value: "member", label: "Members can turn it on" }, { value: "off", label: "Off" }], fallback: "member" },
+    tick("pastPools", "Past pools before now", true),
+    tick("rungLabels", "Rung labels under the axis", true),
+  ],
+  "DV-ADM-P-MAP": [{ key: "colour", label: "Colour", choices: [{ value: "change", label: "By trend (the feeder flags)" }, { value: "value", label: "By pupils (thirds)" }], fallback: "change" }],
+  "DV-ADM-P-TABLE": [
+    { key: "sort", label: "Order", choices: [{ value: "listed", label: "As listed" }, { value: "latest", label: "Most pupils first" }, { value: "change", label: "Biggest rise first" }], fallback: "listed" },
+    tick("showKm", "Distance (km)", true),
+    tick("showSector", "Sector", true),
+    tick("showGender", "Gender", true),
+    tick("showSize", "Size (XS–XL)", true),
+  ],
+  "DV-ADM-P-SHAPE": [SHAPE_COLUMNS],
+  "DV-ADM-M-SHAPE": [SHAPE_COLUMNS],
+  "DV-ADM-M-BARS": [
+    { key: "show", label: "Show", choices: [{ value: "all", label: "Every school" }, { value: "top5", label: "The top 5, and you" }, { value: "around", label: "Around you" }], fallback: "all" },
+    tick("withDonut", "With the donut", true),
+  ],
+  "DV-ADM-M-MAP": [{ key: "colour", label: "Colour", choices: [{ value: "value", label: "By sector" }, { value: "change", label: "By trend since last year" }], fallback: "value" }],
+  "DV-ADM-M-TABLE": [{ key: "sort", label: "Order", choices: [{ value: "latest", label: "By pupils (the rank)" }, { value: "listed", label: "Nearest first" }], fallback: "latest" }],
+  "DV-ADM-M-MOMENTUM": [tick("labels", "Name each school", true), tick("quadrantNames", "Name the quadrants", true)],
+  "DV-ADM-M-FLAGS": [{ key: "show", label: "Show", choices: [{ value: "flagged", label: "Flagged rivals" }, { value: "all", label: "Every rival" }], fallback: "flagged" }],
+  "DV-ADM-M-STRENGTHS": [
+    { key: "order", label: "Order", choices: [{ value: "gap", label: "By the gap" }, { value: "az", label: "A to Z" }], fallback: "gap" },
+    tick("showFlags", "Show the flags column", true),
+  ],
+  "DV-ADM-P-POOL-INDEXED": [tick("endLabels", "Name each line at its end", false)],
+  "DV-ADM-P-ENTRY-TABLE": [YEARS],
+  "DV-ADM-M-SHARE-NUM": [YEARS],
+  "DV-ADM-M-SHARE-RANKS": [YEARS],
+};
 
 /** A view's looks as it draws them: the spec's own values over the presets' (today's). */
 export function looksOf(dataview: string, look: unknown): Record<string, string | number | boolean> {
@@ -51,7 +87,21 @@ export type ViewCompareOptions = {
   // Lines (or columns) the view can add or drop, each on by default (follows the page).
   lines?: { kind: CompareSeriesKind; label: string }[];
 };
-export const ADMISSIONS_VIEW_COMPARE: Partial<Record<DataviewId, ViewCompareOptions>> = {};
+const FEEDERS: ViewCompareOptions = { feeders: true };
+const AREA_LINES: ViewCompareOptions = { feeders: true, lines: [{ kind: "la", label: "Area: LA" }, { kind: "england", label: "Area: England" }] };
+// The funnel (Guy's decision 9) and every Market share / Rivals' results view draw one set (the
+// area, or the lead's rivals): no chips. Shape and size keeps its local shape: hiding it would take
+// its ADMISSIONS_NOTES line with it (R-ADM-EDITOR-LOOKS-KEEP-NOTES).
+export const ADMISSIONS_VIEW_COMPARE: Partial<Record<DataviewId, ViewCompareOptions>> = {
+  "DV-ADM-P-PIPELINE": FEEDERS,
+  "DV-ADM-P-MAP": FEEDERS,
+  "DV-ADM-P-TABLE": FEEDERS,
+  "DV-ADM-P-HOLD-LINE": FEEDERS,
+  "DV-ADM-P-HOLD-TABLE": FEEDERS,
+  "DV-ADM-P-POOL-INDEXED": AREA_LINES,
+  "DV-ADM-P-POOL-TABLE": AREA_LINES,
+  "DV-ADM-P-AREA-POP": { lines: [{ kind: "la", label: "Area: LA" }, { kind: "region", label: "Area: region" }] },
+};
 
 // ------------------------------------------------------------------ reading a view's compare
 

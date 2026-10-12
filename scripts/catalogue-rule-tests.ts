@@ -1020,6 +1020,18 @@ const RUNNERS: Record<string, Runner> = {
       const market = chunks.filter((c) => c.startsWith('<div data-adm-dash="market-share"'));
       const setup = ["entry", "day", "boarding", "rivals"].map((step) => renderToStaticMarkup(withRouter(createElement(Setup, { member: member(urn), step: step as "entry", entry: ep.id, lists: null, ages: { low: t.low, high: t.high, boarding }, theme: "dark", onStep: () => undefined, onDone: () => undefined, onSkip: () => undefined }))));
       const text = (h: string) => h.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/g, " ");
+      // 0.7 admissions editor s2: the editor's 1 · Data for each feeder view, previewing this school.
+      const { AdmissionsDataStep } = await import("../src/components/view-editor/AdmissionsSteps");
+      const { presetSpec } = await import("../src/catalogue/viewspec");
+      const { ADMISSIONS_VIEW_COMPARE } = await import("../src/catalogue/admissions-editor");
+      const editor = Object.entries(ADMISSIONS_VIEW_COMPARE)
+        .filter(([, o]) => o?.feeders)
+        .map(([dv]) =>
+          renderToStaticMarkup(
+            createElement(AdmissionsDataStep, { draft: { spec: presetSpec(dv as `DV-${string}`), ticks: [], title: null }, set: () => undefined, env: { phase: "ks4", columnHost: "admissions.pipelines", side: dv.includes("-HOLD") || dv.includes("-POOL") ? "trend" : "current", measure: "entries", followsPill: false, ctx: {} as never, admissions: { family: presetSpec(dv as `DV-${string}`).data.source } }, wide: true, school: { urn, name: urn }, dataview: dv as `DV-${string}`, boardingSchool: boarding }),
+          ),
+        );
+      const editorOk = boarding ? editor.every((h) => /Boarding feeders/.test(text(h))) : editor.every((h) => !BOARD.test(text(h)));
       if (!boarding) {
         const leaks = [...own, ...setup].map(text).filter((x) => BOARD.test(x)).map((x) => x.match(BOARD)![0]);
         const marketControls = market.map(text).some((x) => /Rivals with boarders|Boarding only/.test(x));
@@ -1028,9 +1040,9 @@ const RUNNERS: Record<string, Runner> = {
         const asked = await v.pipelineView(urn, ep, [], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
         const ignored = !("empty" in asked) && !("empty" in p) && JSON.stringify(asked.ladder) === JSON.stringify(p.ladder);
         const steps = /Step 1 of 3/.test(setup[0]) && /Step 3 of 3/.test(setup[3]) && /Step 2 of 3/.test(setup[2]);
-        const ok = leaks.length === 0 && !marketControls && tile && ignored && steps;
+        const ok = leaks.length === 0 && !marketControls && tile && ignored && steps && editorOk;
         pass &&= ok;
-        out.push(`${urn} ${entry} day: ${chunks.length} surfaces + 4 setup steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps} ${ok ? "ok" : "FAIL"}`);
+        out.push(`${urn} ${entry} day: ${chunks.length} surfaces + 4 setup steps + ${editor.length} editor Data steps, boarding words ${leaks.length}${leaks.length ? ` (${leaks.slice(0, 3).join(", ")})` : ""}, market controls ${marketControls}, Day-only tile ${tile}, filter ignored ${ignored}, steps 1-3 ${steps}, editor compare without boarding ${editorOk} ${ok ? "ok" : "FAIL"}`);
       } else {
         const T = text(html);
         const filters = chunks.filter((c) => c.startsWith("<div data-adm-filters")).every((c) => /Day \+ boarding/.test(text(c)));
@@ -1043,9 +1055,9 @@ const RUNNERS: Record<string, Runner> = {
         const preps = cand.rows.filter((x) => x.boarding && x.sector === "independent");
         const bp = await v.pipelineView(urn, ep, [{ kind: "boarding_feeders", rung: null, members: preps.map((x) => x.urn), la_blend: null, confirmed: true }], { today, filters: { lists: "boarding", sector: "all", boardingOnly: false } });
         const used = !("empty" in bp) && bp.sets.some((x) => x.urns.some((u) => preps.some((pp) => pp.urn === u)));
-        const ok = filters && tile && isc && setupOk && preps.length > 0 && preps.length === cand.rows.length && used;
+        const ok = filters && tile && isc && setupOk && preps.length > 0 && preps.length === cand.rows.length && used && editorOk;
         pass &&= ok;
-        out.push(`${urn} ${entry} boarding: filters ${filters}, tile ${tile}, ISC note ${isc}, setup 1-4 ${setupOk}, boarding preps ${preps.length}/${cand.rows.length}, boarding-only pool from them ${used} ${ok ? "ok" : "FAIL"}`);
+        out.push(`${urn} ${entry} boarding: filters ${filters}, tile ${tile}, ISC note ${isc}, setup 1-4 ${setupOk}, boarding preps ${preps.length}/${cand.rows.length}, boarding-only pool from them ${used}, editor's feeder chips on ${editor.length} views ${editorOk} ${ok ? "ok" : "FAIL"}`);
       }
     };
     await run("137625", "11+");
@@ -1053,6 +1065,86 @@ const RUNNERS: Record<string, Runner> = {
     await run("137051", "11+");
     await run("115786", "4+");
     await run("115786", "11+");
+    return { pass, detail: out.join("; ") };
+  },
+  async admEditorLooks() {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const v = await import("../src/lib/admissions/views-api");
+    const { fetchSchoolTraits } = await import("../src/lib/admissions/traits");
+    const { AdmissionsOneView } = await import("../src/components/admissions/AdmissionsDashboard");
+    const { InitialWidth } = await import("../src/components/admissions/views/charts");
+    const { ADMISSIONS_LOOKS, ADMISSIONS_VIEW_COMPARE, compareOf } = await import("../src/catalogue/admissions-editor");
+    const { ADMISSIONS_NOTES } = await import("../src/catalogue/notes");
+    const { ADMISSIONS_DASHBOARDS } = await import("../src/catalogue/dashboards/admissions");
+    const { presetSpec } = await import("../src/catalogue/viewspec");
+    const { showsOnState } = await import("../src/catalogue/variants");
+    const { AppRouterContext } = await import("next/dist/shared/lib/app-router-context.shared-runtime");
+    const router = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
+    const today = new Date("2026-10-12");
+    const BOARD = /\b(boarding|boarders?|boards|ISC)\b|day only|day and boarding|day \+ boarding/i;
+    const member = (urn: string) => ({ userId: "", token: "", membershipId: "m", schoolAccountId: "a", schoolUrn: urn, schoolName: urn, roles: ["admissions"], isAdmin: false, isAccountHolder: false, lead: true, access: "lead" as const, canEditLists: true, override: false, canShare: true, canManageTeam: true, readOnly: false, viewAs: null, leadColumn: true });
+    const decode = (h: string) => h.replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+    // Every ADMISSIONS_NOTES line the render carries (in text or a hover title).
+    const notesIn = (h: string) => { const t = decode(h); return Object.entries(ADMISSIONS_NOTES).filter(([, n]) => typeof n === "string" && n.length > 12 && t.includes(n)).map(([k]) => k); };
+    const views = [...new Set(ADMISSIONS_DASHBOARDS.flatMap((d) => d.panels.flatMap((p) => p.dataviews.flatMap((x) => (x.kind === "view" ? [x.dataview] : []))))), "DV-ADM-M-FLAGS" as const];
+    // A map draws in the browser only (Leaflet): its colour look is checked in the preview harness.
+    const browserOnly = new Set(["DV-ADM-P-MAP/colour", "DV-ADM-M-MAP/colour"]);
+    const effect = new Map<string, boolean>();
+    const out: string[] = [];
+    let pass = true;
+    const run = async (urn: string, entry: string) => {
+      const ep = v.entryPoint(entry)!;
+      const boarding = (await fetchSchoolTraits([urn])).get(urn)!.boarding;
+      const [p, m, r, sh] = await Promise.all([v.pipelineView(urn, ep, [], { today }), v.marketView(urn, ep, []), v.rivalsView(urn, ep, []), v.shapeView(urn, ep, [])]);
+      const render = (dv: string, spec?: ReturnType<typeof presetSpec>) =>
+        renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: router as never }, createElement(InitialWidth.Provider, { value: 880 }, createElement(AdmissionsOneView, { member: member(urn), boardingSchool: boarding, entry: ep.id, pipeline: p, market: m, rivals: r, shape: sh, dv, spec }))));
+      let renders = 0, lost = 0, notDefault = 0, boardLeak = 0;
+      const lostWhat: string[] = [];
+      for (const dv of views) {
+        const preset = presetSpec(dv);
+        if (!showsOnState({ kind: "view", id: dv, dataview: dv, spec: preset }, { entryPoint: ep.id as "4+" })) continue;
+        const base = render(dv, preset);
+        const want = notesIn(base);
+        // Defaults draw the preset: no spec, and the preset's own spec, are the same render.
+        if (render(dv) !== base) { notDefault++; lostWhat.push(`${dv} default`); }
+        renders += 2;
+        const variants: { key: string; spec: typeof preset }[] = [];
+        for (const o of ADMISSIONS_LOOKS[dv] ?? []) {
+          const values = o.choices === "tick" ? [!o.fallback] : o.choices.map((c) => c.value).filter((x) => x !== o.fallback);
+          for (const val of values) variants.push({ key: `${dv}/${o.key}=${val}`, spec: { ...preset, view: { ...preset.view, look: { ...(preset.view.look as object), [o.key]: val } } as typeof preset.view } });
+        }
+        const opts = ADMISSIONS_VIEW_COMPARE[dv];
+        for (const l of opts?.lines ?? []) variants.push({ key: `${dv}/${l.kind}=off`, spec: { ...preset, compare: compareOf({ feeders: "page", lines: new Set((opts!.lines ?? []).map((x) => x.kind).filter((k) => k !== l.kind)) }, opts) } });
+        for (const x of variants) {
+          const h = render(dv, x.spec);
+          renders++;
+          const miss = want.filter((n) => !notesIn(h).includes(n));
+          if (miss.length) { lost++; lostWhat.push(`${x.key} drops ${miss.join(",")}`); }
+          const k = x.key.split("=")[0] + "=" + x.key.split("=")[1];
+          effect.set(k, (effect.get(k) ?? false) || h !== base);
+        }
+        // A day school asked for boarding feeders draws its preset, with no boarding words.
+        if (opts?.feeders && !boarding) {
+          for (const f of ["boarding", "both"] as const) {
+            const h = render(dv, { ...preset, compare: compareOf({ feeders: f, lines: new Set((opts.lines ?? []).map((x) => x.kind)) }, opts) });
+            renders++;
+            if (h !== base || BOARD.test(h.replace(/<[^>]+>/g, " "))) { boardLeak++; lostWhat.push(`${dv} feeders=${f} on a day school`); }
+          }
+        }
+      }
+      const ok = lost === 0 && notDefault === 0 && boardLeak === 0;
+      pass &&= ok;
+      out.push(`${urn} ${entry}${boarding ? " (boarding)" : ""}: ${renders} renders, notes lost ${lost}, defaults not the preset ${notDefault}, boarding leaks ${boardLeak}${lostWhat.length ? ` [${lostWhat.slice(0, 4).join("; ")}]` : ""} ${ok ? "ok" : "FAIL"}`);
+    };
+    await run("137625", "11+");
+    await run("137625", "16+");
+    await run("117037", "11+");
+    await run("115786", "11+");
+    // Every option offered changes the drawing somewhere (Guy's decision 1: no control without an effect).
+    const idle = [...effect.entries()].filter(([k, e]) => !e && !browserOnly.has(k.split("=")[0])).map(([k]) => k);
+    pass &&= idle.length === 0;
+    out.push(`options ${effect.size}, without an effect in any case: ${idle.length ? idle.join(", ") : "none"} (map colours checked in the browser)`);
     return { pass, detail: out.join("; ") };
   },
   async admViewFeeders() {

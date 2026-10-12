@@ -27,6 +27,8 @@ import { dataviewById } from "@/catalogue/dataviews";
 import { titleTemplateOf } from "@/catalogue/pick";
 import { AdmissionsViewPreview, admissionsBodySize } from "@/components/admissions/AdmissionsDashboard";
 import { MeasureScale } from "@/components/admissions/views/charts";
+import { admissionsVars } from "@/components/admissions/ui";
+import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { useBoardingSchool } from "@/components/admissions/useBoardingSchool";
 import { KIND_GLYPH, TickGlyph, glyph } from "./bits";
 import { buildInstance, hostPresetFor, drawingHost, presetsOf, setView, type Draft, type EditorEnv, type ViewInstance } from "./model";
@@ -93,10 +95,12 @@ export function buildAdmissions(draft: Draft, env: EditorEnv, original?: ViewIns
 
 // ------------------------------------------------------------------------------ 1 · Data
 
-export function AdmissionsDataStep({ draft, set, env, school = null, dataview }: Props & { school?: { urn: string; name: string } | null; dataview: DataviewId }) {
+export function AdmissionsDataStep({ draft, set, env, school = null, dataview, boardingSchool: known }: Props & { school?: { urn: string; name: string } | null; dataview: DataviewId; boardingSchool?: boolean }) {
   const family = familyOf(draft);
   // 0.7 r3 (F2): previewing a day school, the feeder set isn't a choice (no boarding feeders).
-  const boardingSchool = useBoardingSchool(school?.urn ?? null);
+  // `boardingSchool` when the caller knows it (the rule test's server render); else GIAS's.
+  const looked = useBoardingSchool(known === undefined ? (school?.urn ?? null) : null);
+  const boardingSchool = known ?? looked;
   const opts = ADMISSIONS_VIEW_COMPARE[dataview];
   const st = compareState(draft.spec.compare, opts);
   const write = (next: typeof st) => set((d) => ({ ...d, spec: { ...d.spec, compare: compareOf(next, opts) } }));
@@ -120,7 +124,7 @@ export function AdmissionsDataStep({ draft, set, env, school = null, dataview }:
               <button
                 key={f.id}
                 type="button"
-                className={`chip${family === f.id ? " on" : ""}`}
+                className={`chip${family === f.id ? " active" : ""}`}
                 disabled={!has}
                 title={has ? undefined : "No view of this family sits in this half of the dashboard."}
                 aria-pressed={family === f.id}
@@ -157,7 +161,7 @@ export function AdmissionsDataStep({ draft, set, env, school = null, dataview }:
             {showFeeders && (
               <div data-adm-compare="feeders" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {feederChoices.map((c) => (
-                  <button key={c.id} type="button" className={`chip${st.feeders === c.id ? " on" : ""}`} aria-pressed={st.feeders === c.id} onClick={() => write({ ...st, feeders: c.id })}>
+                  <button key={c.id} type="button" className={`chip${st.feeders === c.id ? " active" : ""}`} aria-pressed={st.feeders === c.id} onClick={() => write({ ...st, feeders: c.id })}>
                     {c.label}
                   </button>
                 ))}
@@ -173,7 +177,7 @@ export function AdmissionsDataStep({ draft, set, env, school = null, dataview }:
                     <button
                       key={k}
                       type="button"
-                      className={`chip${on ? " on" : ""}`}
+                      className={`chip${on ? " active" : ""}`}
                       aria-pressed={on}
                       disabled={last}
                       title={last ? "The view needs at least one" : undefined}
@@ -288,8 +292,10 @@ export function AdmissionsScaledPreview({ env, dataview, spec, school, width }: 
   const a = env.admissions ?? { family: "" };
   const size = admissionsBodySize(a.span ?? 1, a.firstRow ?? true, a.railed ?? true);
   const k = Math.min(1, width / size.width);
+  // The page's own colours (the accent, the flags' greens and reds): the editor doesn't set them.
+  const [theme] = useTeacherTheme();
   return (
-    <div data-adm-preview={`${size.width}x${size.height}`} style={{ width, height: Math.round(size.height * k), overflow: "hidden", position: "relative" }}>
+    <div data-adm-preview={`${size.width}x${size.height}`} style={{ ...admissionsVars(theme), width, height: Math.round(size.height * k), overflow: "hidden", position: "relative" }}>
       <div style={{ width: size.width, transform: k < 1 ? `scale(${k})` : undefined, transformOrigin: "0 0" }}>
         <MeasureScale.Provider value={k}>
           <AdmissionsViewPreview dataview={dataview} spec={spec} urn={school.urn} schoolName={school.name} entry={previewEntry(env).entry} height={size.height} />

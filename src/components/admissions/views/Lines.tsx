@@ -32,31 +32,41 @@ export function EntryTrend({ p, as, fullscreen, room }: { p: PipelineOk; as: "li
 }
 
 // ----------------------------------------------------------------- Pipelines, column 2
-export function PoolTrends({ p, fullscreen, room }: { p: PipelineOk; fullscreen: boolean; room?: number }) {
+// 0.7 admissions editor s2: `la` / `england` -- the view's compare chips (the area lines; the
+// feeders' line always draws) -- and the `endLabels` look. The undercount note always shows.
+export function PoolTrends({ p, fullscreen, room, la = true, england = true, endLabels = false }: { p: PipelineOk; fullscreen: boolean; room?: number; la?: boolean; england?: boolean; endLabels?: boolean }) {
   const t = p.poolTrends;
   const ix = t.indexed;
   const areaShort = t.areaYears.length < 2;
   if (ix.feeders.filter((x) => x.value !== null).length < 2) return <Empty>Not enough past pools to draw a trend.</Empty>;
   return (
     <>
-      <ViewTitle>
-        {t.age}-year-olds: your feeders, {t.laName ?? "the LA"} and England
-      </ViewTitle>
+      {/* Both area lines (the preset): the title's text runs exactly as before the looks. */}
+      {la && england ? (
+        <ViewTitle>
+          {t.age}-year-olds: your feeders, {t.laName ?? "the LA"} and England
+        </ViewTitle>
+      ) : (
+        <ViewTitle>
+          {t.age}-year-olds: your feeders{la ? ` and ${t.laName ?? "the LA"}` : england ? " and England" : ""}
+        </ViewTitle>
+      )}
       <LineChart
-        height={fullscreen ? fillHeight(room, 80, 300) : 150}
+        endLabels={endLabels}
+        height={fullscreen ? fillHeight(room, 150, 300) : 150}
         reference={{ y: 100 }}
         yFormat={(v) => v.toFixed(0)}
         xLabels={[yr(ix.feeders[0].year), yr(ix.feeders[ix.feeders.length - 1].year)]}
         series={[
           { id: "f", label: "Feeders", colour: "var(--accent)", points: ix.feeders.map((x) => ({ x: x.year, y: x.value })), title: (pt) => `Feeders ${yr(pt.x)}: ${pt.y?.toFixed(0)} (${fmtN(t.feeders.find((f) => f.year === pt.x)?.value)} aged ${t.age})` },
-          { id: "la", label: t.laName ?? "LA", colour: "var(--adm-grey-soft)", width: 1.6, points: ix.la.map((x) => ({ x: x.year, y: x.value })), dots: areaShort },
-          { id: "en", label: "England", colour: "var(--adm-grey-2)", width: 1.6, dashed: "4 3", points: ix.england.map((x) => ({ x: x.year, y: x.value })), dots: areaShort },
+          ...(la ? [{ id: "la", label: t.laName ?? "LA", colour: "var(--adm-grey-soft)", width: 1.6, points: ix.la.map((x) => ({ x: x.year, y: x.value })), dots: areaShort }] : []),
+          ...(england ? [{ id: "en", label: "England", colour: "var(--adm-grey-2)", width: 1.6, dashed: "4 3", points: ix.england.map((x) => ({ x: x.year, y: x.value })), dots: areaShort }] : []),
         ]}
       />
       <div className="flex flex-wrap gap-3">
         <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Feeders</Key>
-        <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} weight={2} />}>{t.laName ?? "LA"}</Key>
-        <Key swatch={<LineSwatch colour="var(--adm-grey-2)" width={14} weight={2} dashed />}>England</Key>
+        {la && <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} weight={2} />}>{t.laName ?? "LA"}</Key>}
+        {england && <Key swatch={<LineSwatch colour="var(--adm-grey-2)" width={14} weight={2} dashed />}>England</Key>}
       </div>
       {areaShort && <div className="text-[10.5px] leading-snug text-[var(--muted)]">{t.laName ?? "The LA"} and England by single age are held for {t.areaYears.map(yr).join(", ") || "no year"} only so far: their lines start when more years are synced.</div>}
       {t.pastAreaYears?.length ? <div className="text-[10.5px] leading-snug text-[var(--muted)]">{ADMISSIONS_NOTES.areaUndercount}</div> : null}
@@ -64,20 +74,26 @@ export function PoolTrends({ p, fullscreen, room }: { p: PipelineOk; fullscreen:
   );
 }
 
-export function PoolTable({ p }: { p: PipelineOk }) {
+export function PoolTable({ p, la = true, england = true }: { p: PipelineOk; la?: boolean; england?: boolean }) {
   const t = p.poolTrends;
   const years = Array.from(new Set([...t.feeders, ...t.la, ...t.england].map((x) => x.year))).sort((a, b) => a - b);
   const at = (s: { year: number; value: number | null }[], y: number) => s.find((x) => x.year === y)?.value ?? null;
   return (
     <>
-      <ViewTitle>{t.age}-year-olds: your feeders, {t.laName ?? "the LA"} and England</ViewTitle>
+      {la && england ? (
+        <ViewTitle>{t.age}-year-olds: your feeders, {t.laName ?? "the LA"} and England</ViewTitle>
+      ) : (
+        <ViewTitle>
+          {t.age}-year-olds: your feeders{la ? ` and ${t.laName ?? "the LA"}` : england ? " and England" : ""}
+        </ViewTitle>
+      )}
       <table className="w-full text-[11.5px] tabular-nums">
         <thead>
           <tr className="text-left text-[10.5px] text-[var(--muted)]">
             <th className="font-normal">Year</th>
             <th className="text-right font-normal">Feeders</th>
-            <th className="text-right font-normal">{t.laName ?? "LA"}</th>
-            <th className="text-right font-normal">England</th>
+            {la && <th className="text-right font-normal">{t.laName ?? "LA"}</th>}
+            {england && <th className="text-right font-normal">England</th>}
           </tr>
         </thead>
         <tbody>
@@ -85,8 +101,8 @@ export function PoolTable({ p }: { p: PipelineOk }) {
             <tr key={y} className="border-t border-[var(--panel-border)]">
               <td className="py-[3px]">{yr(y)}</td>
               <td className="text-right">{fmtN(at(t.feeders, y))}</td>
-              <td className="text-right">{fmtN(at(t.la, y))}</td>
-              <td className="text-right">{fmtN(at(t.england, y))}</td>
+              {la && <td className="text-right">{fmtN(at(t.la, y))}</td>}
+              {england && <td className="text-right">{fmtN(at(t.england, y))}</td>}
             </tr>
           ))}
         </tbody>
@@ -98,12 +114,13 @@ export function PoolTable({ p }: { p: PipelineOk }) {
 
 /** The school page's Population trends in the area (ages 5-15), in this panel's style: each
  * area's ages 15 → 5 as bars, with its trend word (POPULATION_TREND_LABELS) as the page shows it. */
-export function AreaPopulation({ p }: { p: PipelineOk }) {
+// 0.7 admissions editor s2: `la` / `region` -- the view's compare chips: which areas it draws.
+export function AreaPopulation({ p, la = true, region = true }: { p: PipelineOk; la?: boolean; region?: boolean }) {
   const a = p.areaPopulation;
   if (!a || (!a.laSeries && !a.regionSeries)) return <Empty>No area population figures for this LA.</Empty>;
   const cols = [
-    { name: a.laName, series: a.laSeries, trend: a.laTrend },
-    { name: a.region, series: a.regionSeries, trend: a.regionTrend },
+    { name: a.laName, series: la ? a.laSeries : null, trend: a.laTrend },
+    { name: a.region, series: region ? a.regionSeries : null, trend: a.regionTrend },
   ].filter((c) => c.series && c.name);
   return (
     <>
@@ -178,7 +195,7 @@ export function ShareNeeded({ p, fullscreen, table = false, room }: { p: Pipelin
         To keep {fmtN(h.current.cohort)} in {cohortWord(p.entry.age)}, you&rsquo;d need <b className="text-[var(--fg)]">{fmtPct(target.share)}</b> of the {target.entryYear} pool. Now: {fmtPct(h.current.share)}.
       </div>
       <LineChart
-        height={fullscreen ? fillHeight(room, 90, 260) : 110}
+        height={fullscreen ? fillHeight(room, 120, 260) : 110}
         reference={{ y: h.current.share }}
         yFormat={(v) => `${v.toFixed(1)}%`}
         xLabels={[String(needed[0].entryYear), String(needed[needed.length - 1].entryYear)]}
@@ -209,7 +226,7 @@ export function VsRivals({ m, setLabel, as, fullscreen, room }: { m: MarketView;
         <ViewTitle>
           Your {word} against the {setLabel}
         </ViewTitle>
-        <div className="flex items-end gap-2" style={{ height: fullscreen ? fillHeight(room, 80, 300) : 150 }}>
+        <div className="flex items-end gap-2" style={{ height: fullscreen ? fillHeight(room, 110, 300) : 150 }}>
           {rows.map((r) => (
             <div key={r.y} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${yr(r.y)}: you ${fmtN(r.mine)}, rivals' average ${fmtN(r.avg)}`}>
               <div className="flex w-full items-end justify-center gap-[2px]" style={{ height: "85%" }}>
@@ -233,7 +250,7 @@ export function VsRivals({ m, setLabel, as, fullscreen, room }: { m: MarketView;
         Your {word} against the {setLabel}
       </ViewTitle>
       <LineChart
-        height={fullscreen ? fillHeight(room, 80, 300) : 160}
+        height={fullscreen ? fillHeight(room, 110, 300) : 160}
         reference={{ y: 100 }}
         yFormat={(x) => x.toFixed(0)}
         xLabels={[yr(v.mine[0].year), yr(v.mine[v.mine.length - 1].year)]}

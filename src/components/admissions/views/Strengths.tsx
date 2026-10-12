@@ -21,10 +21,13 @@ export function overallLine(r: RivalsView): string | null {
 const dir = (v: number | null) => (v === null ? "—" : v > 0.05 ? "▲ rising" : v < -0.05 ? "▼ falling" : "▬ steady");
 const FLAG_WORD: Record<string, string> = { strength: "Strength", strength_growing: "Strength, growing", weakness: "Weakness", weakness_widening: "Weakness, widening" };
 
-export function Strengths({ r, explorerHref, fullscreen }: { r: RivalsView; explorerHref: (subject?: string) => string | null; fullscreen: boolean }) {
+// 0.7 admissions editor s2: `order` -- "gap" (where you lead most first; the preset) or "az"; and
+// `showFlags` -- the flag column. The flags' thresholds are a rule (R-ADM-FLAG-STRENGTHS).
+export function Strengths({ r, explorerHref, fullscreen, order = "gap", showFlags = true }: { r: RivalsView; explorerHref: (subject?: string) => string | null; fullscreen: boolean; order?: "gap" | "az"; showFlags?: boolean }) {
   if (r.stage === "ks2") return <Empty>KS2 results have no subject areas: strengths and weaknesses are for GCSE (11+) and Post-16 (16+) entry points.</Empty>;
   if (!r.areas.length) return <Empty>No subject area has rivals to compare with (each needs at least two rivals with enough entries).</Empty>;
-  const areas = [...r.areas].sort((a, b) => b.gap - a.gap);
+  const areas = order === "az" ? [...r.areas].sort((a, b) => (r.areaLabels[a.familyId] ?? a.familyId).localeCompare(r.areaLabels[b.familyId] ?? b.familyId)) : [...r.areas].sort((a, b) => b.gap - a.gap);
+  const grid = showFlags ? "grid-cols-[170px_60px_minmax(0,1fr)_70px_150px]" : "grid-cols-[170px_60px_minmax(0,1fr)_70px]";
   const max = Math.max(0.1, ...areas.map((a) => Math.abs(a.gap)));
   const href = explorerHref();
   return (
@@ -32,15 +35,15 @@ export function Strengths({ r, explorerHref, fullscreen }: { r: RivalsView; expl
       <div className="text-[13px] font-bold text-[var(--fg)]">Where you lead and trail your rivals, by subject area &mdash; and which way it&rsquo;s moving</div>
       {overallLine(r) && <Muted size={11.5}>{overallLine(r)}</Muted>}
       <div className={fullscreen ? "" : "min-h-0 overflow-y-auto"}>
-        <div className="grid grid-cols-[170px_60px_minmax(0,1fr)_70px_150px] items-center gap-[10px] border-b border-[var(--panel-border)] px-1 py-[6px] text-[10.5px] text-[var(--muted)]">
+        <div className={`grid ${grid} items-center gap-[10px] border-b border-[var(--panel-border)] px-1 py-[6px] text-[10.5px] text-[var(--muted)]`}>
           <span>Subject area</span>
           <span>Your rank</span>
           <span>Gap to the rivals&rsquo; average (behind &larr; &rarr; ahead)</span>
           <span>Since {yearLabel(2022).replace("20", "")}</span>
-          <span>Flag</span>
+          {showFlags && <span>Flag</span>}
         </div>
         {areas.map((a) => (
-          <div key={a.familyId} className="grid grid-cols-[170px_60px_minmax(0,1fr)_70px_150px] items-center gap-[10px] border-b border-[var(--panel-border)] px-1 py-[6px] text-[12px] text-[var(--chip-fg)]">
+          <div key={a.familyId} className={`grid ${grid} items-center gap-[10px] border-b border-[var(--panel-border)] px-1 py-[6px] text-[12px] text-[var(--chip-fg)]`}>
             <span className="truncate" title={a.place?.national ? `${ordinal(a.place.national.rank)} of ${a.place.national.of} in England${a.place.regional ? `; ${ordinal(a.place.regional.rank)} of ${a.place.regional.of} in ${a.place.regional.region}` : ""}` : undefined}>
               {href ? (
                 <Link href={explorerHref(r.areaLabels[a.familyId]) ?? href} title="Open in the subject explorer with these rivals" className="hover:underline">
@@ -57,6 +60,7 @@ export function Strengths({ r, explorerHref, fullscreen }: { r: RivalsView; expl
               <DivergingBar value={a.gap} max={max} />
             </span>
             <span title={a.gapSince2223 === null ? "No 2022/23 figure" : `The gap moved ${a.gapSince2223 > 0 ? "+" : ""}${a.gapSince2223.toFixed(2)} pts since 2022/23`}>{dir(a.gapSince2223)}</span>
+            {showFlags && (
             <span className="flex flex-wrap gap-1">
               {a.flags
                 .filter((f) => !(f.id === "strength" && a.flags.some((g) => g.id === "strength_growing")) && !(f.id === "weakness" && a.flags.some((g) => g.id === "weakness_widening")))
@@ -66,6 +70,7 @@ export function Strengths({ r, explorerHref, fullscreen }: { r: RivalsView; expl
                   </FlagPill>
                 ))}
             </span>
+            )}
           </div>
         ))}
       </div>

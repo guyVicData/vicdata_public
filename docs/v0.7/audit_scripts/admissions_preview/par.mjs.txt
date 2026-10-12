@@ -1,0 +1,83 @@
+// Admissions parity pass (0.7 admissions editor s1-2): every view of both published dashboards,
+// for each school x entry point x theme x width, drawn by two bundles, captured as a full-page PNG
+// and #teacher-root's DOM after each rail step. node par.mjs <port0> <workers> <tree>=<bundle>:<css> ...
+// Steps: on a desktop, step i opens the i-th view of every panel's rail; on a phone, the i-th tab of
+// the large view and of row 2. Map tiles are blocked so a map draws its markers alone, the same each time.
+import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+const [port0, workers, ...trees] = process.argv.slice(2);
+const TREES = trees.map((t) => { const [name, rest] = t.split("="); const [bundle, css] = rest.split(":"); return { name, bundle, css }; });
+const OUT = process.env.OUT ?? "par_out";
+const SCHOOLS = [["137625", ["11+", "16+"]], ["117037", ["11+", "16+"]], ["115786", ["4+", "11+"]]];
+const cases = [];
+for (const [urn, entries] of SCHOOLS) for (const entry of entries) for (const theme of ["dark", "light"]) for (const w of [1440, 390]) for (const dash of ["pipelines", "market-share"]) cases.push({ urn, entry, theme, w, dash });
+if (process.env.ONLY) cases.splice(0, cases.length, ...cases.filter((c) => `${c.urn}_${c.w}_${c.dash}` === process.env.ONLY));
+const jobs = [];
+for (const c of cases) for (const t of TREES) jobs.push({ ...c, tree: t });
+const t0 = Date.now();
+const log = (m) => console.log(`[par +${Math.round((Date.now() - t0) / 1000)}s] ${m}`);
+log(`${cases.length} cases x ${TREES.length} trees = ${jobs.length} page loads, ${workers} workers`);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function browser(port) {
+  const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", ["--headless=new", `--remote-debugging-port=${port}`, "--no-first-run", "--disable-gpu", "--hide-scrollbars", "--force-color-profile=srgb", "--font-render-hinting=none", `--user-data-dir=/tmp/admpar-${port}-${Date.now()}`, "about:blank"], { stdio: "ignore" });
+  let target;
+  for (let i = 0; i < 60 && !target; i++) { await sleep(200); try { target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === "page"); } catch {} }
+  const ws = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise((r) => (ws.onopen = r));
+  let id = 0; const pend = new Map(); const errs = [];
+  ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } else if (d.method === "Runtime.exceptionThrown") errs.push((d.params.exceptionDetails.exception?.description ?? d.params.exceptionDetails.text).slice(0, 200)); };
+  const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+  await send("Page.enable"); await send("Runtime.enable"); await send("Network.enable");
+  await send("Network.setBlockedURLs", { urls: ["*basemaps*", "*cartocdn*", "*tile.openstreetmap*", "*tiles*"] });
+  const ev = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result?.result?.value;
+  return { chrome, ws, send, ev, errs };
+}
+
+const ready = `(async () => { for (let i = 0; i < 80; i++) { const p = document.querySelectorAll('#teacher-root section[aria-label]').length; const l = document.querySelectorAll('[aria-label="Loading"]').length; if (p > 0 && l === 0) { await document.fonts.ready; return true; } await new Promise(r => setTimeout(r, 150)); } return false; })()`;
+const stepsOf = `(() => { const d = [...document.querySelectorAll('section[data-adm-panel]')].map(s => s.querySelectorAll('button[aria-pressed][title].h-\\\\[26px\\\\]').length); const t = [...document.querySelectorAll('[role=tablist]')].map(x => x.querySelectorAll('[role=tab]').length); return Math.max(1, ...d, ...t); })()`;
+const click = (i) => `(() => { let n = 0; for (const s of document.querySelectorAll('section[data-adm-panel]')) { const b = s.querySelectorAll('button[aria-pressed][title].h-\\\\[26px\\\\]'); if (b[${i}]) { b[${i}].click(); n++; } } for (const t of document.querySelectorAll('[role=tablist]')) { const b = t.querySelectorAll('[role=tab]'); if (b[${i}]) { b[${i}].click(); n++; } } return n; })()`;
+// Each panel's current view, for the pair list: "panel id: view label".
+const shown = `JSON.stringify([...document.querySelectorAll('section[data-adm-panel]')].map(s => (s.getAttribute('aria-label') || '') + ' | ' + ([...s.querySelectorAll('button[aria-pressed=true][title].h-\\\\[26px\\\\]')].map(b => b.title)[0] || '-')).concat([...document.querySelectorAll('[role=tab][aria-selected=true]')].map(b => 'tab | ' + b.textContent)))`;
+
+async function work(k) {
+  const port = Number(port0) + k;
+  let b = await browser(port);
+  let done = 0;
+  while (jobs.length) {
+    const j = jobs.shift();
+    const name = `${j.urn}_${j.entry.replace("+", "p")}_${j.theme}_${j.w}_${j.dash}`;
+    const dir = `${OUT}/${j.tree.name}`;
+    mkdirSync(dir, { recursive: true });
+    const url = `http://127.0.0.1:${process.env.HTTP_PORT}/index.html?case=${j.urn}&role=lead&saved=1&theme=${j.theme}&view=${j.dash}&entry=${encodeURIComponent(j.entry)}&fx=fx_s12&bundle=${j.tree.bundle}&css=${j.tree.css}`;
+    await b.send("Emulation.setDeviceMetricsOverride", { width: j.w, height: 1000, deviceScaleFactor: 1, mobile: j.w < 500 });
+    await b.send("Page.navigate", { url });
+    await sleep(500);
+    const ok = await b.ev(ready);
+    await sleep(1200);
+    const n = await b.ev(stepsOf);
+    const meta = [];
+    // Step 0: as the page opens (each panel's default); step i: every panel's view i-1.
+    for (let i = 0; i <= n; i++) {
+      if (i > 0) { await b.ev(click(i - 1)); await sleep(900); await b.ev(ready); await sleep(700); }
+      const h = await b.ev("Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)");
+      await b.send("Emulation.setDeviceMetricsOverride", { width: j.w, height: Math.min(6000, h), deviceScaleFactor: 1, mobile: j.w < 500 });
+      await sleep(350);
+      const shot = await b.send("Page.captureScreenshot", { format: "png" });
+      writeFileSync(`${dir}/${name}__s${i}.png`, Buffer.from(shot.result.data, "base64"));
+      // The DOM, less Leaflet's own transforms (its panes move by sub-pixels with load timing).
+      const dom = await b.ev(`(() => { const r = document.getElementById('teacher-root').cloneNode(true); r.querySelectorAll('.leaflet-container').forEach(m => { m.innerHTML = '[map ' + m.querySelectorAll('.leaflet-interactive').length + ' markers]'; m.removeAttribute('style'); }); return r.outerHTML; })()`);
+      writeFileSync(`${dir}/${name}__s${i}.html`, dom ?? "");
+      meta.push(JSON.parse(await b.ev(shown)));
+      await b.send("Emulation.setDeviceMetricsOverride", { width: j.w, height: 1000, deviceScaleFactor: 1, mobile: j.w < 500 });
+    }
+    writeFileSync(`${dir}/${name}__meta.json`, JSON.stringify({ ready: ok, steps: n + 1, shown: meta, errors: b.errs.splice(0) }));
+    done++;
+    if (done % 10 === 0) { b.ws.close(); b.chrome.kill(); b = await browser(port); }
+    log(`w${k} ${j.tree.name} ${name}: ${n + 1} steps${ok ? "" : " NOT READY"}`);
+  }
+  b.ws.close(); b.chrome.kill();
+}
+await Promise.all(Array.from({ length: Number(workers) }, (_, k) => work(k)));
+log("done");
+process.exit(0);

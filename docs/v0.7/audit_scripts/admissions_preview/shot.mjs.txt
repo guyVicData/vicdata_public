@@ -18,7 +18,7 @@ await send("Page.navigate", { url });
 await sleep(Number(wait));
 if (process.env.CLICK) { for (const js of process.env.CLICK.split(";;")) { await send("Runtime.evaluate", { expression: js }); await sleep(Number(process.env.CLICKWAIT ?? 1200)); } }
 const h = await send("Runtime.evaluate", { expression: "Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)", returnByValue: true });
-const full = Math.min(4000, Math.max(Number(height), h.result.result.value));
+const full = process.env.NOFULL ? Number(height) : Math.min(4000, Math.max(Number(height), h.result.result.value));
 await send("Emulation.setDeviceMetricsOverride", { width: Number(width), height: full, deviceScaleFactor: 1, mobile: Number(width) < 500 });
 await sleep(400);
 const err = await send("Runtime.evaluate", { expression: "document.getElementById('err')?.textContent || document.title", returnByValue: true });

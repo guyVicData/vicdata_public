@@ -18,8 +18,9 @@ import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { dataviewById } from "@/catalogue/dataviews";
 import { ADMISSIONS_DASHBOARDS } from "@/catalogue/dashboards/admissions";
-import type { DashboardConfig, PanelConfig } from "@/catalogue/types";
+import type { DashboardConfig, DataviewId, PanelConfig } from "@/catalogue/types";
 import type { ViewSpec } from "@/catalogue/viewspec";
+import { ADMISSIONS_VIEW_COMPARE, compareState, looksOf } from "@/catalogue/admissions-editor";
 import { loadPublishedVicData } from "@/lib/published-vicdata";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { isBoardingSchool } from "@/lib/admissions/boarding";
@@ -41,16 +42,17 @@ import { MarketNow } from "./panels/MarketNow";
 import { PipelineChart } from "./views/PipelineChart";
 import { Funnel, areaWords } from "./views/Funnel";
 import { FeederMap, RivalsMap } from "./views/AdmissionsMap";
-import { EntryTable, FeederTable, RivalsTable, ShareTable } from "./views/Tables";
+import { EntryTable, FeederTable, RivalsTable, ShareTable, type FeederTableLook } from "./views/Tables";
 import { ShapeAndSize, SHAPES_NOTE } from "./views/ShapeAndSize";
 import { AreaPopulation, EntryTrend, PoolTable, PoolTrends, RollTrend, ShareNeeded, ShareTrend, VsRivals } from "./views/Lines";
 import { DonutView, RankedBars, ShareChange } from "./views/Bars";
-import { Momentum, momentumChips } from "./views/Momentum";
+import { FlagsView, Momentum, momentumChips } from "./views/Momentum";
 import { Strengths } from "./views/Strengths";
 import { AcademicChange, AcademicFooter, AcademicNumbers, AcademicRanking, STAGE_WORD } from "./panels/Academic";
 import { Setup, type SetupStep } from "./setup/Setup";
 import { ShareDialog, SharedListsOnly } from "./sharing/SharedLists";
 import { copySource } from "./export";
+import { useBoardingSchool } from "./useBoardingSchool";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import { contextFromPanel } from "@/catalogue/pick";
 
@@ -443,6 +445,10 @@ const railOf = (panel: PanelConfig, entry: string | null = null): RailItem[] =>
     const dv = v.kind === "view" ? dataviewById(v.dataview) : undefined;
     return { id: v.id, label: (v.kind === "view" ? v.title : undefined) ?? dv?.label ?? v.id, icon: (v.kind === "view" ? v.spec.icon : null) ?? dv?.railIcon ?? "TilesIcon" };
   });
+const specOf = (panel: PanelConfig | undefined, instanceId: string): ViewSpec | undefined => {
+  const v = panel?.dataviews.find((x) => x.id === instanceId);
+  return v?.kind === "view" ? v.spec : undefined;
+};
 const dataviewOf = (panel: PanelConfig, instanceId: string) => {
   const v = panel.dataviews.find((x) => x.id === instanceId);
   return v?.kind === "view" ? v.dataview : null;
@@ -489,9 +495,25 @@ function explorerHref(c: Ctx, subject?: string): string | null {
   return `${path}?${q.toString().replace(/%2C/g, ",")}`;
 }
 
-/** What one view draws, by its dataview id. */
-function viewBody(dv: string, c: Ctx, o: { fullscreen: boolean; height?: number; onRail?: (dvId: string) => void }): ReactNode {
+// 0.7 admissions editor s2 (plan §2.2): a view draws its instance, not just its id -- the dataview
+// picks the component, the spec's looks (ADMISSIONS_LOOKS, defaulting to the preset's: today's
+// drawing) and its compare (ADMISSIONS_VIEW_COMPARE: the feeder set, the lines) are its props.
+type ViewOpts = { fullscreen: boolean; height?: number; onRail?: (dvId: string) => void; spec?: ViewSpec };
+
+/** One view of a panel: its own feeder set fetched when it isn't the page's (a boarding school's
+ * choice only, F2), then drawn by viewBody. */
+function InstanceBody({ dv, c, o }: { dv: string; c: Ctx; o: ViewOpts }) {
+  const st = compareState(o.spec?.compare ?? "follows-page", ADMISSIONS_VIEW_COMPARE[dv as DataviewId]);
+  const lists = c.boardingSchool && st.feeders !== "page" && st.feeders !== c.filters.lists ? st.feeders : null;
+  const own = useRoute<PipelineView>(lists && c.entry ? `/api/admissions/pipeline?${query(c.member.schoolUrn, c.entry, { ...c.filters, lists }, c.projection ? { projection: "1" } : {})}` : null);
+  return <>{viewBody(dv, lists ? { ...c, pipeline: own, filters: { ...c.filters, lists } } : c, o)}</>;
+}
+
+/** What one view draws, by its dataview id, with its instance's looks and lines. */
+function viewBody(dv: string, c: Ctx, o: ViewOpts): ReactNode {
   const fs = o.fullscreen;
+  const L = looksOf(dv, o.spec?.view.look);
+  const lines = compareState(o.spec?.compare ?? "follows-page", ADMISSIONS_VIEW_COMPARE[dv as DataviewId]).lines;
   switch (dv) {
     case "DV-ADM-P-NOW":
       return readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} />);
@@ -500,31 +522,31 @@ function viewBody(dv: string, c: Ctx, o: { fullscreen: boolean; height?: number;
         <>
           {/* 16+ (Pipeline16.dc.html): a ladder through more than one kind of school shows its rung
               cards under a shorter chart; the feeder flags stay in the feeder table. */}
-          <PipelineChart p={p} projection={c.projection} onProjection={c.setProjection} onFeederTable={o.onRail ? () => o.onRail!("DV-ADM-P-TABLE") : undefined} height={fs ? fillHeight(o.height, p.rungSets.length > 1 ? 260 : 170, 380) : p.rungSets.length > 1 ? 120 : 225} flags={p.rungSets.length < 2 || fs} />
+          <PipelineChart p={p} projection={c.projection} onProjection={c.setProjection} pastPools={L.pastPools as boolean} rungLabels={L.rungLabels as boolean} projectionMode={L.projection as "member" | "off"} onFeederTable={o.onRail ? () => o.onRail!("DV-ADM-P-TABLE") : undefined} height={fs ? fillHeight(o.height, p.rungSets.length > 1 ? 260 : 170, 380) : p.rungSets.length > 1 ? 120 : 225} flags={p.rungSets.length < 2 || fs} />
           <RungCards p={p} c={c} />
         </>
       ));
     case "DV-ADM-P-FUNNEL":
       return readyPipe(c.pipeline, (p) => <Funnel p={p} fullscreen={fs} room={o.height} />);
     case "DV-ADM-P-MAP":
-      return readyPipe(c.pipeline, (p) => <FeederMap p={p} fullscreen={fs} room={o.height} />);
+      return readyPipe(c.pipeline, (p) => <FeederMap p={p} fullscreen={fs} room={o.height} colour={L.colour as "change" | "value"} />);
     case "DV-ADM-P-TABLE":
-      return readyPipe(c.pipeline, (p) => <FeederTable p={p} fullscreen={fs} />);
+      return readyPipe(c.pipeline, (p) => <FeederTable p={p} fullscreen={fs} look={L as FeederTableLook} />);
     case "DV-ADM-P-SHAPE":
     case "DV-ADM-M-SHAPE":
-      return ready(c.shape, (s) => <ShapeAndSize s={s} entryAge={entryPoint(c.entry!)!.age} showLocal={dv === "DV-ADM-P-SHAPE"} fullscreen={fs} />);
+      return ready(c.shape, (s) => <ShapeAndSize s={s} entryAge={entryPoint(c.entry!)!.age} showLocal={dv === "DV-ADM-P-SHAPE"} fullscreen={fs} columns={L.columns as 1 | 2 | 3} />);
     case "DV-ADM-P-ENTRY-LINE":
       return readyPipe(c.pipeline, (p) => <EntryTrend p={p} as="line" fullscreen={fs} room={o.height} />);
     case "DV-ADM-P-ENTRY-BARS":
       return readyPipe(c.pipeline, (p) => <EntryTrend p={p} as="bars" fullscreen={fs} room={o.height} />);
     case "DV-ADM-P-ENTRY-TABLE":
-      return readyPipe(c.pipeline, (p) => <EntryTable p={p} />);
+      return readyPipe(c.pipeline, (p) => <EntryTable p={p} years={L.years as "down" | "across"} />);
     case "DV-ADM-P-POOL-INDEXED":
-      return readyPipe(c.pipeline, (p) => <PoolTrends p={p} fullscreen={fs} room={o.height} />);
+      return readyPipe(c.pipeline, (p) => <PoolTrends p={p} fullscreen={fs} room={o.height} la={lines.has("la")} england={lines.has("england")} endLabels={L.endLabels as boolean} />);
     case "DV-ADM-P-POOL-TABLE":
-      return readyPipe(c.pipeline, (p) => <PoolTable p={p} />);
+      return readyPipe(c.pipeline, (p) => <PoolTable p={p} la={lines.has("la")} england={lines.has("england")} />);
     case "DV-ADM-P-AREA-POP":
-      return readyPipe(c.pipeline, (p) => <AreaPopulation p={p} />);
+      return readyPipe(c.pipeline, (p) => <AreaPopulation p={p} la={lines.has("la")} region={lines.has("region")} />);
     case "DV-ADM-P-HOLD-LINE":
       return readyPipe(c.pipeline, (p) => <ShareNeeded p={p} fullscreen={fs} room={o.height} />);
     case "DV-ADM-P-HOLD-TABLE":
@@ -534,16 +556,18 @@ function viewBody(dv: string, c: Ctx, o: { fullscreen: boolean; height?: number;
     case "DV-ADM-M-DONUT":
       return ready(c.market, (m) => <DonutView m={m} />);
     case "DV-ADM-M-BARS":
-      return ready(c.market, (m) => <RankedBars m={m} rivals={c.rivals} fullscreen={fs} />);
+      return ready(c.market, (m) => <RankedBars m={m} rivals={c.rivals} fullscreen={fs} show={L.show as "all" | "top5" | "around"} withDonut={L.withDonut as boolean} />);
     case "DV-ADM-M-MAP":
-      return ready(c.market, (m) => <RivalsMap m={m} fullscreen={fs} room={o.height} />);
+      return ready(c.market, (m) => <RivalsMap m={m} fullscreen={fs} room={o.height} colour={L.colour as "value" | "change"} />);
     case "DV-ADM-M-TABLE":
-      return ready(c.market, (m) => <RivalsTable m={m} rivals={c.rivals} fullscreen={fs} />);
+      return ready(c.market, (m) => <RivalsTable m={m} rivals={c.rivals} fullscreen={fs} sort={L.sort as "latest" | "listed"} />);
     case "DV-ADM-M-MOMENTUM":
+      return ready(c.market, (m) => ready(c.rivals, (r) => <Momentum m={m} r={r} fullscreen={fs} room={o.height} labels={L.labels as boolean} quadrantNames={L.quadrantNames as boolean} />));
+    // Guy's decision 8: the flag list is a view of its own.
     case "DV-ADM-M-FLAGS":
-      return ready(c.market, (m) => ready(c.rivals, (r) => <Momentum m={m} r={r} fullscreen={fs} room={o.height} />));
+      return ready(c.market, (m) => ready(c.rivals, (r) => <FlagsView m={m} r={r} show={L.show as "flagged" | "all"} />));
     case "DV-ADM-M-STRENGTHS":
-      return ready(c.rivals, (r) => <Strengths r={r} explorerHref={(subject) => explorerHref(c, subject)} fullscreen={fs} />);
+      return ready(c.rivals, (r) => <Strengths r={r} explorerHref={(subject) => explorerHref(c, subject)} fullscreen={fs} order={L.order as "gap" | "az"} showFlags={L.showFlags as boolean} />);
     case "DV-ADM-M-VS-LINE":
       return ready(c.market, (m) => <VsRivals m={m} setLabel={c.setLabel} as="line" fullscreen={fs} room={o.height} />);
     case "DV-ADM-M-VS-BARS":
@@ -557,9 +581,9 @@ function viewBody(dv: string, c: Ctx, o: { fullscreen: boolean; height?: number;
     case "DV-ADM-M-SHARE-LINE":
       return ready(c.market, (m) => <ShareTrend m={m} fullscreen={fs} room={o.height} />);
     case "DV-ADM-M-SHARE-NUM":
-      return ready(c.market, (m) => <ShareTable m={m} />);
+      return ready(c.market, (m) => <ShareTable m={m} years={L.years as "down" | "across"} />);
     case "DV-ADM-M-SHARE-RANKS":
-      return ready(c.market, (m) => <ShareTable m={m} ranks />);
+      return ready(c.market, (m) => <ShareTable m={m} ranks years={L.years as "down" | "across"} />);
     case "DV-ADM-M-SHARE-CHANGE":
       return ready(c.market, (m) => <ShareChange m={m} />);
     case "DV-ADM-M-ROLL-LINE":
@@ -762,7 +786,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
   return (
     <>
     <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv)} caption={notes.caption} visibleCaption={notes.visible} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title} focusBar={c.focusBar}>
-      {({ fullscreen, height }) => viewBody(dv, c, { fullscreen, height, onRail: onRailDv })}
+      {({ fullscreen, height }) => <InstanceBody dv={dv} c={c} o={{ fullscreen, height, onRail: onRailDv, spec: instance?.kind === "view" ? instance.spec : undefined }} />}
     </Panel>
     {copying && instance?.kind === "view" && (
       <CopyViewDialog open meetingOnly onClose={() => setCopying(false)} source={copySource(instance, c, title, contextFromPanel(config, panel.id, { school: c.member.schoolName }))} />
@@ -835,12 +859,12 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
       )}
       {large && (
         <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv)} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar}>
-          {({ fullscreen, height }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? viewBody(largeDv, c, { fullscreen, height }) : phoneView(largeDv, c)}</div>}
+          {({ fullscreen, height }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? <InstanceBody dv={largeDv} c={c} o={{ fullscreen, height, spec: specOf(large, largeTab) }} /> : phoneView(largeDv, c, specOf(large, largeTab))}</div>}
         </Panel>
       )}
       {trends.length > 0 && (
         <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv)} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar}>
-          {({ fullscreen, height }) => <div className="flex min-h-[160px] flex-col gap-2">{viewBody(trendDv, c, { fullscreen, height })}</div>}
+          {({ fullscreen, height }) => <div className="flex min-h-[160px] flex-col gap-2"><InstanceBody dv={trendDv} c={c} o={{ fullscreen, height, spec: specOf(trendPanel, stateDefault(trendPanel, { entryPoint: entryState(c.entry) }) ?? trendPanel.defaultView ?? "") }} /></div>}
         </Panel>
       )}
     </>
@@ -849,18 +873,18 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
 const shortTab = (l: string) => ({ "Map of feeders": "Map", "Feeder table": "Table", "Shape and size": "Shape", "Rivals' shapes": "Shape", "Ranked bars": "Bars", "Share (donut)": "Donut", "Map of rivals": "Map", "Rivals table": "Table", "Rivals' momentum": "Momentum", "Strengths and weaknesses": "Strengths" })[l] ?? l;
 const phoneTrendLabel = (t: PanelConfig, c: Ctx) => (c.dash === "pipelines" ? ({ c1: "Your trend", c2: "Pool trends", c3: "Share needed" } as Record<string, string>)[t.column] : ({ c1: "You and rivals", c2: "Academic", c3: "Share" } as Record<string, string>)[t.column]) ?? t.name ?? t.column;
 
-function phoneView(dv: string, c: Ctx): ReactNode {
+function phoneView(dv: string, c: Ctx, spec?: ViewSpec): ReactNode {
   if (dv === "DV-ADM-P-PIPELINE")
     return readyPipe(c.pipeline, (p) => (
       <>
-        <PipelineChart p={p} projection={false} height={150} compact />
+        <PipelineChart p={p} projection={false} height={150} compact pastPools={looksOf(dv, spec?.view.look).pastPools as boolean} rungLabels={looksOf(dv, spec?.view.look).rungLabels as boolean} />
         <div className="text-[11px] text-[var(--muted2)]">
           {p.change && p.changeYear ? `Pool ${p.change.pct < 0 ? "▼" : "▲"} ${Math.abs(p.change.pct).toFixed(0)}% by ${p.changeYear}. ` : ""}The pool, not who will join.
         </div>
       </>
     ));
-  if (dv === "DV-ADM-M-BARS") return ready(c.market, (m) => <RankedBars m={m} rivals={c.rivals} withDonut={false} fullscreen={false} phone />);
-  return viewBody(dv, c, { fullscreen: false });
+  if (dv === "DV-ADM-M-BARS") return ready(c.market, (m) => <RankedBars m={m} rivals={c.rivals} withDonut={false} fullscreen={false} phone show={looksOf(dv, spec?.view.look).show as "all" | "top5" | "around"} />);
+  return <InstanceBody dv={dv} c={c} o={{ fullscreen: false, spec }} />;
 }
 
 export { fmtN };
@@ -869,7 +893,9 @@ export { fmtN };
 // D7: one Admissions view for the editor (Data → View → Preview, and its canvas): drawn by the same
 // components from the same routes, for the editor's school and entry point, read-only.
 export function AdmissionsViewPreview({ dataview, spec, urn, schoolName, entry, height = 330 }: { dataview: string; spec?: ViewSpec; urn: string; schoolName: string; entry: string; height?: number }) {
-  void spec;
+  // 0.7 admissions editor s2: the instance's own looks and lines, and boarding only for a boarding
+  // school (F2: a day school's preview draws no boarding feeder set, whatever the spec says).
+  const boardingSchool = useBoardingSchool(urn) === true;
   const member: AdmissionsMember = useMemo(
     () => ({ userId: "", token: "", membershipId: null, schoolAccountId: "", schoolUrn: urn, schoolName, roles: [], isAdmin: false, isAccountHolder: false, lead: false, access: "viewAs", canEditLists: false, override: false, canShare: false, canManageTeam: false, readOnly: true, viewAs: null, leadColumn: true }),
     [urn, schoolName],
@@ -882,8 +908,12 @@ export function AdmissionsViewPreview({ dataview, spec, urn, schoolName, entry, 
   const marketL = useRoute<MarketView>(market ? `/api/admissions/market-share?${qs}` : null);
   const rivals = useRoute<RivalsView>(market ? `/api/admissions/rivals?${qs}` : null);
   const shape = useRoute<ShapeView>(`/api/admissions/shape?${qs}`);
-  const c: Ctx = { boardingSchool: false, member, dash: market ? "market-share" : "pipelines", entry: ep, filters, projection: false, setProjection: () => undefined, pipeline, market: marketL, rivals, shape, setLabel: "rivals", edit: () => undefined, lists: null };
-  return <div className="flex min-h-0 flex-col gap-2 overflow-hidden" style={{ height }}>{viewBody(dataview, c, { fullscreen: false })}</div>;
+  const c: Ctx = { boardingSchool, member, dash: market ? "market-share" : "pipelines", entry: ep, filters, projection: false, setProjection: () => undefined, pipeline, market: marketL, rivals, shape, setLabel: "rivals", edit: () => undefined, lists: null };
+  return (
+    <div className="flex min-h-0 flex-col gap-2 overflow-hidden" style={{ height }}>
+      <InstanceBody dv={dataview} c={c} o={{ fullscreen: false, spec }} />
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -909,11 +939,26 @@ export function AdmissionsEveryView({ member, boardingSchool, entry, pipeline, m
         out.push(
           <div key={`${panel.id}/${r.id}`} data-adm-dash={dash} data-adm-dv={dv}>
             <Panel tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, h.tag)} title={dataviewById(dv)?.label ?? h.tag} source={sourceOf(dv)} caption={n.caption} visibleCaption={n.visible} height="auto">
-              {({ fullscreen }) => viewBody(dv, c, { fullscreen })}
+              {({ fullscreen }) => <InstanceBody dv={dv} c={c} o={{ fullscreen, spec: specOf(panel, r.id) }} />}
             </Panel>
           </div>,
         );
       }
   });
   return <>{out}</>;
+}
+
+// 0.7 admissions editor s2: one view as its panel draws it, with a given spec -- what
+// R-ADM-EDITOR-LOOKS-KEEP-NOTES renders on the server under each look and compare value.
+export function AdmissionsOneView({ member, boardingSchool, entry, pipeline, market, rivals, shape, dv, spec }: { member: AdmissionsMember; boardingSchool: boolean; entry: string; pipeline: PipelineView; market: MarketView; rivals: RivalsView; shape: ShapeView; dv: string; spec?: ViewSpec }) {
+  const dash: DashKey = dv.startsWith("DV-ADM-M") ? "market-share" : "pipelines";
+  const c: Ctx = { boardingSchool, member, dash, entry, filters: DEFAULT_FILTERS, projection: false, setProjection: () => undefined, pipeline: { status: "ready", data: pipeline }, market: { status: "ready", data: market }, rivals: { status: "ready", data: rivals }, shape: { status: "ready", data: shape }, setLabel: "rivals", edit: () => undefined, lists: null };
+  const panel = ADMISSIONS_DASHBOARDS.flatMap((d) => d.panels).find((p) => p.dataviews.some((v) => v.kind === "view" && v.dataview === dv)) ?? ADMISSIONS_DASHBOARDS[1].panels[1];
+  const h = headerOf(panel, dv, c);
+  const n = notesOf(dv, c);
+  return (
+    <Panel tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, h.tag)} title={dataviewById(dv)?.label ?? h.tag} source={sourceOf(dv)} caption={n.caption} visibleCaption={n.visible} height="auto">
+      {({ fullscreen }) => <InstanceBody dv={dv} c={c} o={{ fullscreen, spec }} />}
+    </Panel>
+  );
 }

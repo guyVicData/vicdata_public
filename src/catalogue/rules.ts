@@ -1358,7 +1358,7 @@ export const RULES: Rule[] = [
     why: "\"Non-boarding schools must not have to think about boarders, but boarding schools must\" (Guy, 12 Oct 2026).",
     appliesTo: "Admissions: every view, the top bar, setup, the editor's compare options",
     enforcedIn: ["src/lib/admissions/boarding.ts:isBoardingSchool", "src/lib/admissions/views-api.ts:pipelineView", "src/components/admissions/AdmissionsDashboard.tsx", "src/components/admissions/setup/Setup.tsx", "src/components/view-editor/AdmissionsSteps.tsx"],
-    testCase: { urn: "137625", school: "The Chase, Nunnery Wood High (137051), Beaudesert Park (115786)", phase: "ks4", expect: "Every Pipelines view, column 1, the top bar's filters and every setup step rendered on real data: no boarding text or control for The Chase (11+, 16+) or Nunnery Wood (11+); every boarding surface present for Beaudesert Park (4+, 11+), whose boarding feeder search returns preps with boarders that make a non-empty boarding-only pool.", check: "admBoardingOnly" },
+    testCase: { urn: "137625", school: "The Chase, Nunnery Wood High (137051), Beaudesert Park (115786)", phase: "ks4", expect: "Every Pipelines view, column 1, the top bar's filters and every setup step rendered on real data: no boarding text or control for The Chase (11+, 16+) or Nunnery Wood (11+); every boarding surface present for Beaudesert Park (4+, 11+), whose boarding feeder search returns preps with boarders that make a non-empty boarding-only pool. The editor's 1 · Data for every feeder view offers the feeder set (Boarding feeders) for Beaudesert Park only (0.7 editor s2); a day school's previews ignore a boarding feeder spec (R-ADM-EDITOR-LOOKS-KEEP-NOTES).", check: "admBoardingOnly" },
     origin: "0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F2)",
     status: "active",
   },
@@ -1371,6 +1371,18 @@ export const RULES: Rule[] = [
     enforcedIn: ["src/lib/admissions/screens.ts:funnel, funnelArea", "src/components/admissions/views/Funnel.tsx"],
     testCase: { urn: "137625", school: "The Chase (11+, 16+), King's Worcester 117037 (11+)", phase: "ks4", expect: "The births and pool bars carry the same LA set and weights (the school's own LA); births recomputed from raw ONS births, the pool from raw age_profile_aggregates rows at age 10 (or 15) in 2024/25.", check: "admFunnelSameArea" },
     origin: "0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F7)",
+    status: "active",
+  },
+  // ---------------------------------------------------------------- 0.7 admissions editor s1-2
+  {
+    id: "R-ADM-EDITOR-LOOKS-KEEP-NOTES",
+    statement:
+      "An Admissions view's look options and compare chips change how it draws, never what it must say: under every look and compare an editor can choose (src/catalogue/admissions-editor.ts), each view still renders every R-ADM wording from ADMISSIONS_NOTES that its preset renders (a pool, not an intake; a share of this group; the estimates; the requirement; the flags' rules; the undercount), and its rule-held styling and thresholds don't move. Options left at their defaults draw exactly the preset. A day school's view never draws a boarding feeder set, whatever its spec asks.",
+    why: "The editor may change a view's look, not its honesty (ADMISSIONS_FIXED; Guy's decision on the editor plan, 12 Oct 2026: a look option must never switch a note off).",
+    appliesTo: "Every Admissions view, through the editor's looks and compare chips",
+    enforcedIn: ["src/catalogue/admissions-editor.ts:ADMISSIONS_LOOKS, ADMISSIONS_VIEW_COMPARE", "src/components/admissions/AdmissionsDashboard.tsx:viewBody, InstanceBody"],
+    testCase: { urn: "137625", school: "The Chase (11+, 16+), King's Worcester 117037 (11+), Beaudesert Park 115786 (11+)", phase: "ks4", expect: "Every view of both dashboards and the flag list, rendered on real data under each look and compare value in turn: the ADMISSIONS_NOTES wording the preset renders is all still there; with every option at its default the render is the preset's, byte for byte; a day school asked for boarding feeders draws its preset, with no boarding words.", check: "admEditorLooks" },
+    origin: "0.7 admissions editor stages 1-2 (docs/v0.7/vicdata_0_7_admissions_editor_stages1_2_claude_code_prompt_v1.md, S2.6)",
     status: "active",
   },
 ];
