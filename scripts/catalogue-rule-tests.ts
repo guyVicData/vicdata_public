@@ -974,7 +974,22 @@ const RUNNERS: Record<string, Runner> = {
     const { data } = await createServerAnonSupabaseClient().from("age_profile_aggregates").select("by_age").eq("scope", "la").eq("scope_key", "Worcestershire").eq("period", 2025).maybeSingle();
     const la2025 = (data as { by_age: Record<string, number> } | null)?.by_age["10"] ?? null;
     const mine = p.poolTrends.la.find((x) => x.year === 2025)?.value ?? null;
-    return { pass: JSON.stringify(p.poolTrends.feeders.map((x) => x.value)) === JSON.stringify(past) && mine === la2025 && mine !== null, detail: fmt({ feederYears: p.poolTrends.feeders.length, la2025: mine, areaYears: p.poolTrends.areaYears.join("/") }) };
+    // 0.7 r2b (E3): past years (backfilled) are flagged for the undercount note; England is the
+    // sum of the nine regions in each of them too.
+    const t = p.poolTrends;
+    const latest = Math.max(...t.areaYears);
+    const pastOk = JSON.stringify(t.pastAreaYears) === JSON.stringify(t.areaYears.filter((y) => y < latest && (t.la.some((x) => x.year === y && x.value !== null) || t.england.some((x) => x.year === y && x.value !== null))));
+    const first = t.pastAreaYears[0];
+    let englandOk = true;
+    if (first !== undefined) {
+      const { data: regions } = await createServerAnonSupabaseClient().from("age_profile_aggregates").select("by_age").eq("scope", "region").eq("period", first);
+      const rs = (regions ?? []) as { by_age: Record<string, number> }[];
+      englandOk = rs.length === 9 && t.england.find((x) => x.year === first)?.value === rs.reduce((a, r) => a + (r.by_age["10"] ?? 0), 0);
+    }
+    return {
+      pass: JSON.stringify(t.feeders.map((x) => x.value)) === JSON.stringify(past) && mine === la2025 && mine !== null && pastOk && englandOk,
+      detail: fmt({ feederYears: t.feeders.length, la2025: mine, areaYears: t.areaYears.join("/"), pastAreaYears: t.pastAreaYears.join("/"), england1st: first === undefined ? null : t.england.find((x) => x.year === first)?.value }),
+    };
   },
   async admViewMarket() {
     const v = await import("../src/lib/admissions/views-api");

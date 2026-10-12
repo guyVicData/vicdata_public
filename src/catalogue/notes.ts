@@ -105,4 +105,7 @@ export const ADMISSIONS_NOTES = {
   flagsMissing: "Flags not available yet: the national thresholds aren't loaded, and no flag is ever guessed.",
   feederFlags: "Flags compare each school's trend with the area's (the whole set's).",
   boardingCensus: "International boarders aren't in the school census. Your pipeline shows national new joiners to ISC schools by country as context.",
+  // 0.7 r2b (E3): the LA and England pool-trend lines for past years (age_profile_aggregates,
+  // backfilled from today's schools table). Shown only when a past year is drawn.
+  areaUndercount: "Earlier years count only schools still open, so they slightly undercount.",
 } as const;
