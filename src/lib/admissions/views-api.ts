@@ -9,13 +9,13 @@ import { blendFromLists, rungSetsFromLists, type SavedList } from "./lists";
 import { cachedCensus, fetchSchoolInfo } from "./data";
 import { feederFlags } from "./feeders";
 import { loadThresholds, phaseForEntryAge } from "./thresholds";
-import { fetchSchoolTraits, isDefaultFilters, narrow, type AdmissionsFilters } from "./traits";
-import { entryNow, feParticipation, feederTable, funnel, poolTrends, profileOf, rivalExtras } from "./screens";
+import { fetchSchoolTraits, isDefaultFilters, narrow, schoolsInLas, type AdmissionsFilters, type SchoolTraits } from "./traits";
+import { distanceKm, entryNow, feParticipation, feederTable, funnel, indexTo, poolTrends, profileOf, rivalExtras } from "./screens";
 import { buildMarketShare } from "./market";
 import { rivalSet } from "./rival-set";
 import { buildRivals, stageForEntry, subjectPlaces } from "./rivals";
-import { headlinePopulation, sizePlaces } from "./ranks";
-import { pointsChange } from "./flags";
+import { englandSchools, headlinePopulation, sizePlaces } from "./ranks";
+import { pctChange, pointsChange } from "./flags";
 import { familyLabels } from "./family-labels";
 import { localShape, shapeOf, sizeByBand, sumAgeGender } from "./shape";
 import { lookupAgeBandDistributions } from "../age-band-distributions";
@@ -93,6 +93,8 @@ export async function pipelineView(urn: string, ep: EntryPoint, all: SavedList[]
     areaPopulation: area,
     rungSets,
     fe,
+    // "Pool ▼ x% by 2030 against 2026": the year round 1's poolChange measured to.
+    changeYear: p.change ? Math.min(p.ladder.future[p.ladder.future.length - 1]?.entryYear ?? CURRENT_CENSUS_PERIOD, (p.ladder.future[0]?.entryYear ?? CURRENT_CENSUS_PERIOD) + 3) : null,
     school: { urn, name: me?.name ?? urn, laName: me?.laName ?? null, laCode: me?.laCode ?? null, boarding: me?.boarding ?? false },
   };
 }
@@ -107,12 +109,53 @@ export async function marketView(urn: string, ep: EntryPoint, lists: SavedList[]
   const census = await cachedCensus(urns);
   const own = traits.get(urn);
   const fe = census.get(urn)?.latestPeriod == null ? await feParticipation(urn, own?.typeGroup ?? null) : null;
+  // The headline tiles, worked out here so the page draws them as they come.
+  const latest = Math.max(...m.entryAge.periods);
+  const first = Math.min(...m.entryAge.periods);
+  const mine = (y: number) => m.entryAge.rows.find((r) => r.urn === urn && r.period === y) ?? null;
+  const extras = rivalExtras(urn, urns, census, traits, ep);
+  const summary = {
+    latest,
+    first,
+    rank: mine(latest)?.rank ?? null,
+    of: m.entryAge.rows.filter((r) => r.period === latest && r.count !== null).length,
+    share: mine(latest)?.share ?? null,
+    shareFirst: mine(first)?.share ?? null,
+    changePts: mine(latest)?.share != null && mine(first)?.share != null ? mine(latest)!.share! - mine(first)!.share! : null,
+    total: m.entryAge.totals[latest] ?? null,
+    rivals: m.rivals.length,
+    independent: extras.filter((e) => e.traits?.sector === "independent").length,
+    state: extras.filter((e) => e.traits?.sector === "state").length,
+    boarding: extras.filter((e) => e.traits?.boarding).length,
+    rollRank: extras.find((e) => e.urn === urn)?.rollRank ?? null,
+    rollOf: extras.filter((e) => e.roll !== null).length,
+    // Each school's entry-age trend over the last year (the ranked bars' arrow), in %.
+    trend: Object.fromEntries(urns.map((u) => {
+      const a = m.entryAge.rows.find((r) => r.urn === u && r.period === latest - 1)?.count ?? null;
+      const b2 = m.entryAge.rows.find((r) => r.urn === u && r.period === latest)?.count ?? null;
+      return [u, a === null || b2 === null || a === 0 ? null : ((b2 - a) / a) * 100];
+    })) as Record<string, number | null>,
+    // Each school's change in share since the first year, in percentage points (the change bars).
+    shareChange: Object.fromEntries(urns.map((u) => {
+      const a = m.entryAge.rows.find((r) => r.urn === u && r.period === first)?.share ?? null;
+      const b2 = m.entryAge.rows.find((r) => r.urn === u && r.period === latest)?.share ?? null;
+      return [u, a === null || b2 === null ? null : b2 - a];
+    })) as Record<string, number | null>,
+    // The rivals' average at the entry age each year (the "against rivals" line), and the school's.
+    rivalsAverage: m.entryAge.periods.map((y) => {
+      const vals = m.entryAge.rows.filter((r) => r.period === y && r.urn !== urn && r.count !== null).map((r) => r.count!);
+      return { year: y, value: vals.length ? vals.reduce((a, v) => a + v, 0) / vals.length : null };
+    }),
+  };
+  const minePts = m.entryAge.periods.map((y) => ({ year: y, value: mine(y)?.count ?? null }));
+  const vs = indexTo([minePts, summary.rivalsAverage]);
   return {
     ...m,
+    summary: { ...summary, vsIndexed: { base: vs.base, mine: vs.out[0], rivals: vs.out[1] } },
     note: ADMISSIONS_NOTES.groupShare,
     filters,
     rivalsSource: saved ? ("saved" as const) : ("nearest" as const),
-    extras: rivalExtras(urn, urns, census, traits, ep),
+    extras,
     fe,
   };
 }
@@ -142,7 +185,14 @@ export async function rivalsView(urn: string, ep: EntryPoint, lists: SavedList[]
     }),
   );
   const areaLabels = r.areas.length && r.resultsPeriod !== null && (stage === "ks4" || stage === "ks5") ? await familyLabels(urn, stage, r.resultsPeriod) : {};
-  return { ...r, subjects, resultsChange, areaLabels };
+  // "Overall: 2nd of 8 rivals on Attainment 8 · 897th of 4,736 in England": the school's place among
+  // the rivals with a ranked headline (not IGCSE, not unpublished), and its national place.
+  const me = r.rows.find((x) => x.isSchool);
+  const ranked = r.rows.filter((x) => x.results.value !== null && x.results.note === null);
+  const overall = me && me.results.value !== null && me.results.note === null
+    ? { rank: 1 + ranked.filter((x) => x.results.value! > me.results.value!).length, of: ranked.length, measure: stage === "ks4" ? "Attainment 8" : stage === "ks5" ? "A-level points per entry" : "the KS2 expected standard", national: me.results.national, change: resultsChange[urn]?.points ?? null, unranked: r.rows.filter((x) => x.results.note !== null).map((x) => ({ urn: x.urn, name: x.name, note: x.results.note })) }
+    : null;
+  return { ...r, subjects, resultsChange, areaLabels, overall };
 }
 export type RivalsView = Awaited<ReturnType<typeof rivalsView>>;
 
@@ -181,3 +231,69 @@ export async function shapeView(urn: string, ep: EntryPoint, lists: SavedList[],
 export type ShapeView = Awaited<ReturnType<typeof shapeView>>;
 
 export { entryPoint };
+
+// ------------------------------------------------------------------------------ Setup's lists
+// The schools setup offers to tick, with the figures beside each (pupils at the age that matters,
+// their two-year trend and flag against the schools shown -- R-ADM-FLAG-FEEDER, the same function
+// as the pipeline's -- km, sector, gender, boarding, XS-XL). `sp` is the route's query.
+const CAP = 150;
+const holdsAge = (t: { low: number | null; high: number | null }, age: number) => (t.low ?? 99) <= age && (t.high ?? -1) >= age;
+const bandOfAge = (age: number): AgeBandKey => (age <= 4 ? "early_years" : age <= 10 ? "primary" : age <= 15 ? "secondary" : "sixth_form");
+
+export async function candidatesView(urn: string, ep: EntryPoint, sp: URLSearchParams) {
+  const kind = sp.get("kind") === "rivals" ? "rivals" : sp.get("kind") === "boarding" ? "boarding" : "day";
+  const mode = sp.get("mode") ?? "nearest";
+  // The age that matters: a feeder's pupils a year before entry (Reception's at 4+); a rival's at
+  // entry. &age=N (a rung's own age, 16+'s "Edit list") overrides it.
+  const asked = Number(sp.get("age"));
+  const age = Number.isInteger(asked) && asked >= 4 && asked <= 17 ? asked : kind === "rivals" ? ep.age : Math.max(4, ep.age - 1);
+  const me = (await fetchSchoolTraits([urn])).get(urn);
+  let pool: SchoolTraits[] = [];
+  if (mode === "urns") {
+    const urns = (sp.get("urns") ?? "").split(",").filter((u) => /^\d{5,7}$/.test(u)).slice(0, 500);
+    pool = Array.from((await fetchSchoolTraits(urns)).values());
+  } else if (mode === "la" || (kind === "boarding" && sp.get("las"))) {
+    const las = (sp.get("las") ?? "").split(",").filter((x) => /^\d{3}$/.test(x)).slice(0, 12);
+    pool = las.length ? await schoolsInLas(las) : [];
+  } else if (mode === "region") {
+    const england = await englandSchools();
+    const region = england.get(urn)?.regionCode;
+    const urns = region ? Array.from(england, ([u, s]) => ({ u, s })).filter(({ s }) => s.regionCode === region && (s.low ?? 99) <= age && (s.high ?? -1) >= age).map(({ u }) => u) : [];
+    pool = Array.from((await fetchSchoolTraits(urns)).values());
+  } else {
+    const near = await nearbyCandidates(urn);
+    pool = Array.from((await fetchSchoolTraits(near.map((c) => c.urn))).values());
+  }
+  const sector = sp.get("sector");
+  const tops = (sp.get("ages") ?? "").split(",").map(Number).filter((n) => n >= 5 && n <= 19);
+  let list = pool
+    .filter((t) => t.urn !== urn)
+    .filter((t) => holdsAge(t, age) && (kind !== "rivals" || holdsAge(t, age + 1)))
+    .filter((t) => (sector === "state" || sector === "independent" ? t.sector === sector : true))
+    .filter((t) => (kind === "boarding" ? t.sector === "independent" && t.boarding : true))
+    .filter((t) => (sp.get("boarding") === "1" ? t.boarding : true))
+    .filter((t) => (sp.get("gender") === "same" && me ? t.gender === me.gender : true))
+    .filter((t) => (tops.length ? tops.includes(t.high ?? -1) : true))
+    .map((t) => ({ t, km: distanceKm(me, t) }))
+    .sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9));
+  if (mode === "radius") list = list.filter((x) => x.km !== null && x.km <= Math.min(80, Number(sp.get("km") ?? 5)));
+  if (mode === "nearest") list = list.slice(0, Math.min(60, Math.max(1, Number(sp.get("n") ?? (kind === "rivals" ? 10 : 15)))));
+  list = list.slice(0, CAP);
+  const urns = list.map((x) => x.t.urn);
+  const thresholds = await loadThresholds();
+  const [census, sizes] = await Promise.all([cachedCensus(urns), sizePlaces(bandOfAge(age), urns, me?.laName ?? null)]);
+  const sizeFilter = (sp.get("sizes") ?? "").split(",").filter(Boolean);
+  const flags = feederFlags(new Map(urns.map((u) => [u, census.get(u)?.table ?? new Map()])), [age], CURRENT_CENSUS_PERIOD, thresholds?.get(phaseForEntryAge(ep.age), "entry_cohort")?.minCohort ?? 10);
+  const rows = list
+    .map(({ t, km }) => {
+      const f = flags.find((x) => x.urn === t.urn)!;
+      return {
+        urn: t.urn, name: t.name, sector: t.sector, gender: t.gender, boarding: t.boarding, laCode: t.laCode, laName: t.laName, town: t.town,
+        high: t.high, distanceKm: km, pupils: f.to, before: f.from, changePct: pctChange(f.from, f.to), flag: kind === "rivals" ? null : f.flag,
+        size: sizes.get(t.urn)?.badge ?? null, easting: t.easting, northing: t.northing,
+      };
+    })
+    .filter((r) => (sizeFilter.length ? !!r.size && sizeFilter.includes(r.size) : true));
+  return { kind, mode, age, period: CURRENT_CENSUS_PERIOD, school: me ? { urn: me.urn, name: me.name, easting: me.easting, northing: me.northing, laCode: me.laCode, laName: me.laName, gender: me.gender } : null, rows };
+}
+export type CandidatesView = Awaited<ReturnType<typeof candidatesView>>;

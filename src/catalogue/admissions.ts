@@ -13,7 +13,7 @@
 // What can't be edited (catalogue rules, never look options): the certainty styling and the
 // honesty wording (ADMISSIONS_NOTES, R-ADM-LADDER, R-ADM-POOL-NOT-INTAKE), the flag thresholds
 // (R-ADM-FLAG-*, thresholds.ts), and "shapes described, not ranked" (R-ADM-SHAPE-NOT-RANKED).
-import type { AdmissionsDataId, AdmissionsHostId, AudienceTag, CompareKind, Dataview, DataviewId, Measure, MeasureId, NumberType, Renderer, RuleId, ViewType } from "./types";
+import type { AdmissionsDataId, AdmissionsHostId, AudienceTag, CompareKind, Dataview, DataviewId, EntryPointState, Measure, MeasureId, NumberType, Renderer, RuleId, ViewType } from "./types";
 import type { ViewSpec, ViewView, ViewYears } from "./viewspec";
 
 const A = "src/components/admissions";
@@ -150,6 +150,8 @@ type Def = {
   rules: RuleId[];
   audience: AudienceTag[];
   note?: string;
+  // The entry points the view can be drawn on (the editor's "Shows for"); absent = all.
+  entryPoints?: EntryPointState[];
 };
 
 const dv = (d: Def): Dataview => ({
@@ -167,6 +169,7 @@ const dv = (d: Def): Dataview => ({
   origin: ORIGIN,
   rules: d.rules,
   ...(d.note ? { note: d.note } : {}),
+  ...(d.entryPoints ? { variants: { entryPoint: d.entryPoints } } : {}),
 });
 
 const P = "admissions.pipelines" as const;
@@ -200,7 +203,7 @@ export const ADMISSIONS_DATAVIEWS: Dataview[] = [
   dv({ id: "DV-ADM-M-MAP", label: "Map of rivals", railIcon: "MapPinIcon", data: "admissions.market", host: M, panel: "current", file: "views/AdmissionsMap.tsx", viewType: "map", dateMode: "single", numberType: ["totals", "market_share"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-MAP", title: "Your rivals, sized by pupils aged [entry-age]", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
   dv({ id: "DV-ADM-M-TABLE", label: "Rivals table", railIcon: "TableIcon", data: "admissions.market", host: M, panel: "current", file: "views/Tables.tsx", viewType: "table", dateMode: "single", numberType: ["totals", "market_share", "rank"], compare: SETS, measures: ["M-ADM-MARKET", "M-ADM-RIVAL-RESULTS"], renderer: "RD-ADM-TABLE", title: "Your rivals at [entry]", rules: ["R-ADM-VIEW-MARKET", "R-ADM-RIVAL-RANKS"], audience: AUD_MARKET }),
   dv({ id: "DV-ADM-M-MOMENTUM", label: "Rivals' momentum", railIcon: "AdmScatterIcon", data: "admissions.rivals", host: M, panel: "current", file: "views/Momentum.tsx", viewType: "graph", dateMode: "trend", numberType: ["pct_change", "change_points"], compare: SETS, measures: ["M-ADM-RIVAL-RESULTS", "M-ADM-PUPILS"], renderer: "RD-ADM-SCATTER", title: "Who is gaining pupils, and whose results are rising?", rules: ["R-ADM-VIEW-MOMENTUM", "R-ADM-FLAG-MOMENTUM"], audience: AUD_RESULTS }),
-  dv({ id: "DV-ADM-M-STRENGTHS", label: "Strengths and weaknesses", railIcon: "AdmStrengthsIcon", data: "admissions.rivals", host: M, panel: "current", file: "views/Strengths.tsx", viewType: "graph", dateMode: "single", numberType: ["points", "change_points", "rank"], compare: SETS, measures: ["M-ADM-RIVAL-RESULTS"], renderer: "RD-ADM-STRENGTHS", title: "Where you lead and trail your rivals, by subject area", rules: ["R-ADM-VIEW-STRENGTHS", "R-ADM-FLAG-STRENGTHS"], audience: AUD_RESULTS }),
+  dv({ id: "DV-ADM-M-STRENGTHS", label: "Strengths and weaknesses", railIcon: "AdmStrengthsIcon", data: "admissions.rivals", host: M, panel: "current", file: "views/Strengths.tsx", viewType: "graph", dateMode: "single", numberType: ["points", "change_points", "rank"], compare: SETS, measures: ["M-ADM-RIVAL-RESULTS"], renderer: "RD-ADM-STRENGTHS", title: "Where you lead and trail your rivals, by subject area", rules: ["R-ADM-VIEW-STRENGTHS", "R-ADM-FLAG-STRENGTHS"], audience: AUD_RESULTS, entryPoints: ["11+", "16+", "custom"], note: "KS2 has no subject areas: not on 4+ (a custom age below 11 shows the reason)." }),
   dv({ id: "DV-ADM-M-SHAPE", label: "Rivals' shapes", railIcon: "AdmShapeIcon", data: "admissions.pupils", host: M, panel: "current", file: "views/ShapeAndSize.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: SETS, measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-SHAPES", title: "Shape and size: your school and rivals' shapes", rules: ["R-ADM-VIEW-SHAPES", "R-ADM-SHAPE-NOT-RANKED"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-M-FLAGS", label: "Flags", railIcon: "FlagIcon", data: "admissions.rivals", host: M, panel: "current", file: "views/Momentum.tsx", viewType: "table", dateMode: "trend", numberType: ["pct_change", "change_points"], compare: SETS, measures: ["M-ADM-RIVAL-RESULTS", "M-ADM-PUPILS"], renderer: "RD-ADM-FLAGS", title: "Rivals' flags: large and lasting changes", rules: ["R-ADM-VIEW-FLAGS", "R-ADM-FLAG-MOMENTUM"], audience: AUD_RESULTS, note: "In the editor's catalogue; the published dashboard shows the flags inside Rivals' momentum." }),
   // ------------------------------------------------------ Market share: row 2
@@ -213,7 +216,7 @@ export const ADMISSIONS_DATAVIEWS: Dataview[] = [
   dv({ id: "DV-ADM-M-SHARE-NUM", label: "Market share numbers", railIcon: "AdmNumbersIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "market_share"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-TABLE", title: "Your market share at [entry], year by year", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
   dv({ id: "DV-ADM-M-SHARE-RANKS", label: "Market share ranks", railIcon: "HorizontalBarsIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["rank"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-TABLE", title: "Your rank at [entry], year by year", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
   dv({ id: "DV-ADM-M-SHARE-CHANGE", label: "Market share change", railIcon: "ChangeArrowIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Bars.tsx", viewType: "graph", dateMode: "trend", numberType: ["pct_change", "change_pp"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-BARS", title: "Change since 2019/20: your pupils and share at [entry]", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
-  dv({ id: "DV-ADM-M-ROLL-LINE", label: "Roll trends", railIcon: "AdmRollIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: SETS, measures: ["M-ADM-MARKET", "M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "Whole-school rolls: you and the [rivals]", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
+  dv({ id: "DV-ADM-M-ROLL-LINE", label: "Roll trends", railIcon: "AdmRollIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: SETS, measures: ["M-ADM-MARKET", "M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "Pupils in the entry point's age band: you and the [rivals]", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
 ];
 
 // ------------------------------------------------------------------------------- presets

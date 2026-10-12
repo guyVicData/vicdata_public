@@ -19,6 +19,7 @@ import type { PinnedSettings } from "@/lib/meeting-views";
 import { TeacherDashboard } from "@/components/dashboard-config/TeacherDashboard";
 import { oneViewConfig, oneViewPinned } from "@/components/dashboard-config/embed";
 import { SlotRendererContext, type SlotRenderInput, type SlotRenderer } from "./SlotRendererContext";
+import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
 
 const logged = new Set<string>();
 
@@ -62,6 +63,14 @@ function LiveSlot({ input }: { input: SlotRenderInput }) {
 export const liveSlotRenderer: SlotRenderer = (input) => {
   const dv = input.dataview;
   if (!dv || !input.pinned.schoolUrn) return null;
+  // 0.7 admissions r2 (D8): an Admissions view draws from the Admissions routes at its pinned entry
+  // point (the routes check the viewer is allowed into Admissions at that school).
+  if (dv.host.id.startsWith("admissions."))
+    return (
+      <div data-live-slot={dv.id} className="flex min-h-0 min-w-0 flex-col" style={input.fullscreen ? { flex: "1 1 auto" } : { width: input.width, height: input.height }}>
+        <AdmissionsViewPreview dataview={dv.id} urn={input.pinned.schoolUrn} schoolName={input.pinned.schoolName ?? input.pinned.schoolUrn} entry={String(input.pinned.params?.entry ?? "11+")} height={input.fullscreen ? 640 : input.height} />
+      </div>
+    );
   const phase = input.pinned.phase ?? dv.supports.phases[0];
   if (phase !== "ks4" && phase !== "ks5") return null;
   return <LiveSlot input={input} />;

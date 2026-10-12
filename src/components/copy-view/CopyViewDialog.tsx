@@ -68,6 +68,9 @@ export type CopyViewDialogProps = {
   source: CopyViewSource;
   superAdmin?: boolean;
   onCopied?: (result: CopyViewResult) => void;
+  // 0.7 admissions r2 (D8): an Admissions view goes to a meeting's slides only (a custom
+  // dashboard draws Teacher's hosts). Absent: both, exactly as before.
+  meetingOnly?: boolean;
 };
 
 type Mode = "dashboard" | "meeting";
@@ -104,7 +107,7 @@ const BarsGlyph = () => (
   </svg>
 );
 
-function Dialog({ onClose, source, superAdmin = false, onCopied }: CopyViewDialogProps) {
+function Dialog({ onClose, source, superAdmin = false, onCopied, meetingOnly = false }: CopyViewDialogProps) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const router = useRouter();
   const today = localToday();
@@ -112,7 +115,7 @@ function Dialog({ onClose, source, superAdmin = false, onCopied }: CopyViewDialo
   const kind = kindWordOf(source.instance.dataview);
   const last = useMemo(() => readLastUsed(storage()), []);
 
-  const [mode, setMode] = useState<Mode>(last?.mode ?? "dashboard");
+  const [mode, setMode] = useState<Mode>(meetingOnly ? "meeting" : (last?.mode ?? "dashboard"));
   const [data, setData] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dest, setDest] = useState<string | "new" | null>(null);
@@ -263,7 +266,7 @@ function Dialog({ onClose, source, superAdmin = false, onCopied }: CopyViewDialo
         <CpvStyles />
         <DialogHeader title="Copy this view" subtitle={source.title} onClose={onClose} />
         <Body gap={10}>
-          <Segmented<Mode>
+          {!meetingOnly && <Segmented<Mode>
             value={mode}
             onChange={(m) => {
               setMode(m);
@@ -273,7 +276,7 @@ function Dialog({ onClose, source, superAdmin = false, onCopied }: CopyViewDialo
               { id: "dashboard", label: "To a dashboard" },
               { id: "meeting", label: "To a meeting" },
             ]}
-          />
+          />}
 
           {loadError && <div style={{ fontSize: 12.5, color: "var(--cc-danger)" }}>{loadError}</div>}
           {!data && !loadError && <Note>Loading…</Note>}

@@ -92,6 +92,9 @@ export async function assignmentsFor(supabase: SupabaseClient, ids: string[]): P
 
 // /dashboards/[id] takes the slug when there is one ("vicdata.ks4.candidates").
 export function dashboardHref(row: Pick<DashboardRow, "id" | "slug">): string {
+  // 0.7 admissions r2: the Admissions dashboards live on their own page (Pipelines | Market share).
+  if (row.slug === "vicdata.admissions.pipelines") return "/teacher/admissions?view=pipelines";
+  if (row.slug === "vicdata.admissions.market-share") return "/teacher/admissions?view=market-share";
   return `/dashboards/${encodeURIComponent(row.slug ?? row.id)}`;
 }
 

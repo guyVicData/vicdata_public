@@ -33,9 +33,12 @@ export type ResultsMeasure = "points" | "threshold" | "bands" | "counts";
 // comparing with a set of schools or a ranking (R-RANKING-SAMPLE).
 export type CompareAgainstState = "category" | "whole" | "selected";
 export type ComparatorState = "schools" | "ranking";
+// 0.7 admissions r2 (D7): the Admissions entry-point chips as a page axis -- the editor's
+// "Shows for" lists entry points on an Admissions dashboard where Teacher's lists result types.
+export type EntryPointState = "4+" | "11+" | "16+" | "custom";
 // The states a view is offered on, per axis beyond Results (whose own field is
 // resultsMeasures, round 3's). Absent axis = every state.
-export type VariantSets = { compareAgainst?: CompareAgainstState[]; comparator?: ComparatorState[] };
+export type VariantSets = { compareAgainst?: CompareAgainstState[]; comparator?: ComparatorState[]; entryPoint?: EntryPointState[] };
 
 // Focus (scope brief §3). School-keyed data: school | subject_area | custom_area | subject |
 // my_subjects. Area-keyed data: around_school | la | region | national (combinations F7).

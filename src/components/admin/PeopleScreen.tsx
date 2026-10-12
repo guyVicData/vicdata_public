@@ -6,6 +6,7 @@
 // only the account holder may change (a trigger enforces it, so the chip is disabled for
 // everyone else rather than failing on click). Approve and Decline make exactly the calls
 // /account's member panel makes. Job title is free text, display only.
+import { AdmissionsPeople } from "@/components/admissions/people/AdmissionsPeople";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { ATTENTION_ACCENT, ATTENTION_INK, DELTA_NEGATIVE, accentOver, accentText } from "@/lib/teacher-view-theme";
@@ -339,6 +340,9 @@ export function People({ school }: { school: AdminSchool }) {
       {members !== null && shownWaiting.length + shownApproved.length === 0 && (
         <AdminState>{q ? "No one matches that search." : "No one here yet."}</AdminState>
       )}
+
+      {/* 0.7 admissions r2 (D6): the Admissions lead, the lead's grants, the history, the override. */}
+      {members !== null && <AdmissionsPeople school={school} members={approved} onChanged={load} />}
 
       <Footnote>
         Job title is free text and only for display. Roles decide what people see. HOD and Finance stay in the system but are hidden for now.

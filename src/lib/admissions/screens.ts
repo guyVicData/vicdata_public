@@ -46,6 +46,9 @@ export type EntryNow = {
   boys: number | null;
   boarders: number | null; // whole school (the census has no boarders by age)
   roll: number | null;
+  day: number | null; // roll - boarders
+  girlsPct: number | null;
+  boysPct: number | null;
   series: { period: number; cohort: number | null; female: number | null; male: number | null }[]; // the entry-cohort trend (row 2)
 };
 
@@ -70,6 +73,9 @@ export async function entryNow(urn: string, ep: EntryPoint, own: SchoolCensus | 
     boys: now.male,
     boarders,
     roll: rollOf(own, P),
+    day: rollOf(own, P) !== null && boarders !== null ? rollOf(own, P)! - boarders : null,
+    girlsPct: now.cohort ? ((now.female ?? 0) / now.cohort) * 100 : null,
+    boysPct: now.cohort ? ((now.male ?? 0) / now.cohort) * 100 : null,
     series,
   };
 }
@@ -212,7 +218,22 @@ export async function funnel(urn: string, ep: EntryPoint, sets: { age: number; u
 // across the school's LA and England. LA and England come from age_profile_aggregates (pupils by
 // single age 5-15, per LA and region, per census year) for the years it holds; England is the sum
 // of the nine regions. Ages outside 5-15 (4+ reads age 3) have no area line.
-export type PoolTrends = { age: number; feeders: Pt[]; la: Pt[]; england: Pt[]; laName: string | null; areaYears: number[] };
+export type PoolTrends = { age: number; feeders: Pt[]; la: Pt[]; england: Pt[]; laName: string | null; areaYears: number[]; base: number | null; indexed: { feeders: Pt[]; la: Pt[]; england: Pt[] } };
+
+/** Series indexed to 100 at their first COMMON year (an index needs the same base on every line);
+ * with no common year each line is indexed to its own first year. */
+export function indexTo(series: Pt[][]): { base: number | null; out: Pt[][] } {
+  const has = (s: Pt[]) => new Set(s.filter((p) => p.value !== null).map((p) => p.year));
+  const sets = series.filter((s) => s.length).map(has);
+  const common = sets.length ? [...sets[0]].filter((y) => sets.every((st) => st.has(y))).sort((a, b) => a - b)[0] ?? null : null;
+  return {
+    base: common,
+    out: series.map((s) => {
+      const b = (common !== null ? s.find((p) => p.year === common) : s.find((p) => p.value !== null))?.value ?? null;
+      return s.map((p) => ({ year: p.year, value: p.value === null || !b ? null : (p.value / b) * 100 }));
+    }),
+  };
+}
 
 export async function poolTrends(ep: EntryPoint, ladder: Ladder, laName: string | null): Promise<PoolTrends> {
   const age = ep.age - 1;
@@ -224,7 +245,9 @@ export async function poolTrends(ep: EntryPoint, ladder: Ladder, laName: string 
     const rows = area.filter((r) => r.scope === "region" && r.period === y);
     return { year: y, value: rows.length === 9 ? rows.reduce((s, r) => s + (r.byAge[String(age)] ?? 0), 0) : null };
   });
-  return { age, feeders, la: la.sort((a, b) => a.year - b.year), england, laName, areaYears: years };
+  const laSorted = la.sort((a, b) => a.year - b.year);
+  const ix = indexTo([feeders, laSorted, england]);
+  return { age, feeders, la: laSorted, england, laName, areaYears: years, base: ix.base, indexed: { feeders: ix.out[0], la: ix.out[1], england: ix.out[2] } };
 }
 
 function areaByAge(): Promise<{ scope: string; key: string; period: number; byAge: Record<string, number> }[]> {

@@ -31,7 +31,8 @@ import { HomeCard, PhaseGlyph, RecruitmentGlyph, MeetingsGlyph, NEUTRAL_TILE } f
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
 import { configRendererRequested } from "@/components/dashboard-config/plan";
-import { TEACHER_DASHBOARDS } from "@/catalogue/dashboards";
+import { ADMISSIONS_DASHBOARDS, TEACHER_DASHBOARDS } from "@/catalogue/dashboards";
+import { AdmissionsTile } from "@/components/admissions/AdmissionsTile";
 import type { DashboardConfig } from "@/catalogue/types";
 import { loadKeyDashboards } from "@/components/library/data";
 import {
@@ -61,6 +62,9 @@ type Membership = {
 // assigned to the role as key, minus the four Teacher dashboards the phase tiles already
 // stand for.
 const PHASE_TILE_SLUGS = new Set(TEACHER_DASHBOARDS.map((d) => d.id));
+// 0.7 admissions r2 (D2): the Admissions dashboards are reached by their own tile (one page,
+// Pipelines | Market share), never as two key-dashboard tiles.
+const ADMISSIONS_SLUGS = new Set(ADMISSIONS_DASHBOARDS.map((d) => d.id));
 
 export default function TeacherHomePage() {
   const supabase = createBrowserSupabaseClient();
@@ -84,6 +88,9 @@ export default function TeacherHomePage() {
   const [lens, setLensState] = useState<Lens>("teacher");
   const [keyDashboards, setKeyDashboards] = useState<Partial<Record<Lens, { href: string; config: DashboardConfig }[]>>>({});
   const [nextMeeting, setNextMeeting] = useState<{ name: string; date: string | null } | null>(null);
+  // 0.7 admissions r2 (D2): the School-Admin's Admissions tile on the Teacher lens (Admissions and
+  // SMT get theirs on their own lens; a platform admin through View as as one of those roles).
+  const [schoolAdmin, setSchoolAdmin] = useState(false);
   const setLens = (l: Lens) => {
     setLensState(l);
     storeLens(l);
@@ -141,6 +148,7 @@ export default function TeacherHomePage() {
         urn = membership?.school_accounts?.school_urn ?? null;
         setSchoolUrn(urn);
         setSchoolName(membership?.school_accounts?.schools?.current_name ?? null);
+        if (on && membership) setSchoolAdmin(!!membership.is_admin || membership.school_accounts?.account_holder_membership_id === membership.id);
         if (on && membership)
           myLenses = lensesOf({
             roles: membership.roles,
@@ -156,7 +164,7 @@ export default function TeacherHomePage() {
         setLensState(lookingAs ?? initialLens(ls, readStoredLens()));
         // Each lens's key dashboards, and the next meeting, alongside the phases below.
         void Promise.all(ls.map(async (l) => [l, (await loadKeyDashboards(supabase, l).catch(() => ({ entries: [] }))).entries] as const)).then((pairs) =>
-          setKeyDashboards(Object.fromEntries(pairs.map(([l, es]) => [l, es.filter((e) => !(e.row.slug && PHASE_TILE_SLUGS.has(e.row.slug))).map((e) => ({ href: e.href, config: e.config }))]))),
+          setKeyDashboards(Object.fromEntries(pairs.map(([l, es]) => [l, es.filter((e) => !(e.row.slug && (PHASE_TILE_SLUGS.has(e.row.slug) || ADMISSIONS_SLUGS.has(e.row.slug)))).map((e) => ({ href: e.href, config: e.config }))]))),
         );
         void listMeetings(supabase)
           .then((r) => {
@@ -215,6 +223,7 @@ export default function TeacherHomePage() {
           built), then the same Dashboards, Recruitment and Meetings tiles. */}
       {v06 && !error && lens !== "teacher" && (
         <div className="mt-6 flex flex-col gap-3">
+          {(lens === "admissions" || lens === "smt") && <AdmissionsTile />}
           {(keyDashboards[lens] ?? []).length > 0 ? (
             keyDashboards[lens]!.map((k) => <KeyDashboardTile key={k.href} href={k.href} config={k.config} lens={lens} />)
           ) : (
@@ -265,6 +274,7 @@ export default function TeacherHomePage() {
           {/* 0.6: any other key dashboard for Teacher, then the library. */}
           {v06 && (keyDashboards.teacher ?? []).map((k) => <KeyDashboardTile key={k.href} href={k.href} config={k.config} lens="teacher" />)}
           {v06 && <LibraryTile lens="teacher" />}
+          {v06 && schoolAdmin && <AdmissionsTile />}
           <HomeCard
             href="/teacher/recruitment"
             colour={FEATURE_ACCENT.recruitment}

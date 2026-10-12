@@ -52,7 +52,24 @@ export type ConsortiumMapMember = {
   roll: number | null;
 };
 
-export default function ConsortiumMap({ members }: { members: ConsortiumMapMember[] }) {
+// 0.7 admissions r2: new OPTIONAL props for the Admissions feeder and rival maps -- each one
+// absent draws exactly what it drew before (the consortium page passes none):
+//   colourOf   a dot's colour (default: the one amber)
+//   targetUrn  the school itself: ringed, drawn last (default: none)
+//   tooltipOf  a dot's tooltip text (default: name and pupils)
+//   heightClass the map's height and frame classes (default: h-[320px], the page's frame)
+//   onSelect   what a click does (default: open the school's page)
+//   fitPadding the fit-to-bounds padding in px (default: 32)
+export type ConsortiumMapOptions = {
+  colourOf?: (m: ConsortiumMapMember) => string;
+  targetUrn?: string;
+  tooltipOf?: (m: ConsortiumMapMember) => string;
+  heightClass?: string;
+  onSelect?: (urn: string) => void;
+  fitPadding?: number;
+};
+
+export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const router = useRouter();
@@ -75,21 +92,25 @@ export default function ConsortiumMap({ members }: { members: ConsortiumMapMembe
       const maxRoll = rolls.length ? Math.max(...rolls) : 0;
 
       const latLngs: [number, number][] = [];
-      for (const m of members) {
+      // The target (when given) is drawn last, so it sits on top.
+      const ordered = targetUrn ? [...members.filter((m) => m.urn !== targetUrn), ...members.filter((m) => m.urn === targetUrn)] : members;
+      for (const m of ordered) {
         const [lat, lng] = bngToLatLng(m.easting, m.northing);
         latLngs.push([lat, lng]);
+        const isTarget = targetUrn !== undefined && m.urn === targetUrn;
+        const colour = colourOf ? colourOf(m) : MARKER_COLOUR;
         const marker = L.circleMarker([lat, lng], {
-          radius: rollRadius(m.roll, minRoll, maxRoll),
-          color: MARKER_COLOUR,
-          fillColor: MARKER_COLOUR,
-          fillOpacity: 0.55,
-          weight: 1.5,
+          radius: isTarget ? 8 : rollRadius(m.roll, minRoll, maxRoll),
+          color: isTarget ? colour : colour,
+          fillColor: isTarget ? "#ffffff" : colour,
+          fillOpacity: isTarget ? 1 : 0.55,
+          weight: isTarget ? 3 : 1.5,
         });
-        marker.bindTooltip(`${m.name}${m.roll !== null ? ` — ${m.roll.toLocaleString()} pupils` : ""}`, {
+        marker.bindTooltip(tooltipOf ? tooltipOf(m) : `${m.name}${m.roll !== null ? ` — ${m.roll.toLocaleString()} pupils` : ""}`, {
           direction: "top",
           offset: [0, -4],
         });
-        marker.on("click", () => router.push(`/schools/${m.urn}`));
+        marker.on("click", () => (onSelect ? onSelect(m.urn) : router.push(`/schools/${m.urn}`)));
         (marker.getElement?.() as SVGElement | undefined)?.style.setProperty("cursor", "pointer");
         marker.addTo(group);
       }
@@ -99,7 +120,7 @@ export default function ConsortiumMap({ members }: { members: ConsortiumMapMembe
       if (latLngs.length === 1) {
         map.setView(latLngs[0], 14);
       } else {
-        map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+        map.fitBounds(L.latLngBounds(latLngs), { padding: [fitPadding ?? 32, fitPadding ?? 32] });
       }
     });
 
@@ -116,7 +137,7 @@ export default function ConsortiumMap({ members }: { members: ConsortiumMapMembe
   return (
     <div
       ref={mapElRef}
-      className="h-[320px] w-full overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-800"
+      className={heightClass ?? "h-[320px] w-full overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-800"}
     />
   );
 }

@@ -93,4 +93,16 @@ export const ADMISSIONS_NOTES = {
   leaving16: "Leaving at 16: the fall from Year 11 to Year 12 at the same school, a year apart. An estimate of net leavers.",
   // R-ADM-SHAPE-NOT-RANKED
   shape: "Shapes describe a school's year groups; they are not better or worse, so they are never ranked.",
+  // 0.7 r2: the short forms the panels' bottom rows and keys carry (the same rules, fewer words).
+  poolShort: "A pipeline shows the pool of children, not who will join. Ranges widen with distance.",
+  requirement: "A requirement, not a forecast",
+  groupShort: "Share of this group only",
+  cohortShort: "Cohort size, not new joiners",
+  estimate: "An estimate",
+  shapesShort: "Described, not ranked",
+  localShape: "A narrowing base means smaller year groups are on the way.",
+  flagsRule: "Flags appear only when a change is large and lasting (fixed national thresholds, over two or more years), never from one small cohort. Hover a flag for the figures behind it.",
+  flagsMissing: "Flags not available yet: the national thresholds aren't loaded, and no flag is ever guessed.",
+  feederFlags: "Flags compare each school's trend with the area's (the whole set's).",
+  boardingCensus: "International boarders aren't in the school census. Your pipeline shows national new joiners to ISC schools by country as context.",
 } as const;

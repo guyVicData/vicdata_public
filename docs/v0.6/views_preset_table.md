@@ -155,7 +155,7 @@ Read the columns as:
 | 58 | `DV-ADM-M-MAP` | Map of rivals | **map** · colour: value | admissions.market · follows · school · — · actual · latest | all | all | MapPinIcon | Your rivals, sized by pupils aged [entry-age] | none (draft) |
 | 59 | `DV-ADM-M-TABLE` | Rivals table | **table** · yearColumns: latest; extra: change+rank; sort: latest; highlight: true; memberSort: true | admissions.market · follows · school · — · actual · latest | all | all | TableIcon | Your rivals at [entry] | none (draft) |
 | 60 | `DV-ADM-M-MOMENTUM` | Rivals' momentum | **scatter** · labels: true; quadrantNames: true | admissions.rivals · follows · school · — · change · latest | all | all | AdmScatterIcon | Who is gaining pupils, and whose results are rising? | none (draft) |
-| 61 | `DV-ADM-M-STRENGTHS` | Strengths and weaknesses | **strengths** · order: gap; showFlags: true | admissions.rivals · follows · subject · — · actual · latest | all | all | AdmStrengthsIcon | Where you lead and trail your rivals, by subject area | none (draft) |
+| 61 | `DV-ADM-M-STRENGTHS` | Strengths and weaknesses | **strengths** · order: gap; showFlags: true | admissions.rivals · follows · subject · — · actual · latest | all | entryPoint: 11+/16+/custom | AdmStrengthsIcon | Where you lead and trail your rivals, by subject area | none (draft) |
 | 62 | `DV-ADM-M-SHAPE` | Rivals' shapes | **shapes** · columns: 2 | admissions.pupils · follows · school · — · actual · latest | all | all | AdmShapeIcon | Shape and size: your school and rivals' shapes | none (draft) |
 | 63 | `DV-ADM-M-FLAGS` | Flags | **flags** · show: flagged | admissions.rivals · follows · school · — · change · latest | all | all | FlagIcon | Rivals' flags: large and lasting changes | none (draft) |
 | 64 | `DV-ADM-M-VS-LINE` | You and the rivals | **line** · — | admissions.market · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Your [entry-year] against the [rivals] | none (draft) |
@@ -167,7 +167,7 @@ Read the columns as:
 | 70 | `DV-ADM-M-SHARE-NUM` | Market share numbers | **table** · yearColumns: every; years: down | admissions.market · follows · year · — · actual · from first, rolls on | all | all | AdmNumbersIcon | Your market share at [entry], year by year | none (draft) |
 | 71 | `DV-ADM-M-SHARE-RANKS` | Market share ranks | **table** · yearColumns: every; extra: rank; years: down | admissions.market · follows · year · — · actual · from first, rolls on | all | all | HorizontalBarsIcon | Your rank at [entry], year by year | none (draft) |
 | 72 | `DV-ADM-M-SHARE-CHANGE` | Market share change | **bar** · orientation: horizontal; diverging: true; values: true | admissions.market · follows · school · — · change · from first, rolls on | all | all | ChangeArrowIcon | Change since 2019/20: your pupils and share at [entry] | none (draft) |
-| 73 | `DV-ADM-M-ROLL-LINE` | Roll trends | **line** · — | admissions.market · follows · year · — · actual · from first, rolls on | all | all | AdmRollIcon | Whole-school rolls: you and the [rivals] | none (draft) |
+| 73 | `DV-ADM-M-ROLL-LINE` | Roll trends | **line** · — | admissions.market · follows · year · — · actual · from first, rolls on | all | all | AdmRollIcon | Pupils in the entry point's age band: you and the [rivals] | none (draft) |
 
 <!-- preset-table:end -->
 

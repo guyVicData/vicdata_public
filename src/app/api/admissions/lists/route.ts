@@ -10,6 +10,7 @@ import { entryPoint } from "@/lib/admissions/entry-points";
 // Writes go through the caller's own token: the database refuses anyone but the Admissions lead
 // (RLS, admissions_lists / admissions_entry_points). Who changed it and when is stamped by the
 // database. Before the 0.7 r1 migration is applied, every call says "not set up yet" (503).
+// 0.7 r2: GET also returns `names` (profile id -> name) for "last changed by".
 const KINDS = new Set(["day_feeders", "boarding_feeders", "rivals", "rung"]);
 const URN = /^\d{5,7}$/;
 const notSetUp = (msg: string) => /admissions_(lists|entry_points)|does not exist|schema cache/i.test(msg);
@@ -30,7 +31,15 @@ export async function GET(request: NextRequest) {
   ]);
   const err = eps.error ?? lists.error;
   if (err) return NextResponse.json({ error: notSetUp(err.message) ? "Admissions lists are not set up yet." : "Could not read the lists." }, { status: notSetUp(err.message) ? 503 : 502 });
-  return NextResponse.json({ lead: caller.lead, entryPoints: eps.data, lists: lists.data });
+  // 0.7 r2 (D5): "last changed by [name], [date]" -- the names of whoever stamped the rows, read
+  // with the caller's own token (RLS: colleagues at the same school), else left out.
+  const ids = Array.from(new Set([...(eps.data ?? []), ...(lists.data ?? [])].map((r) => (r as { updated_by: string | null }).updated_by).filter((x): x is string => !!x)));
+  const names: Record<string, string> = {};
+  if (ids.length) {
+    const { data: people } = await caller.supabase.from("profiles").select("id, full_name, email").in("id", ids);
+    for (const p of (people ?? []) as { id: string; full_name: string | null; email: string | null }[]) names[p.id] = p.full_name || p.email || "a colleague";
+  }
+  return NextResponse.json({ lead: caller.lead, entryPoints: eps.data, lists: lists.data, names });
 }
 
 type ListBody = { entry_point: string; kind: string; rung?: string; members?: string[]; fuzzy?: Record<string, unknown> | null; la_blend?: Record<string, number> | null; confirmed?: boolean };

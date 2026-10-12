@@ -658,3 +658,77 @@ describe("title templates resolve completely", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------------
+// 0.7 admissions r2: Admissions in the catalogue (D2, D7)
+describe("Admissions in the catalogue (0.7 r2)", () => {
+  it("the two Admissions dashboards validate, linked as one group, with ONE large view spanning columns 2-3", async () => {
+    const { validateConfig } = await import("../src/catalogue/config");
+    const { ADMISSIONS_DASHBOARDS } = await import("../src/catalogue/dashboards/admissions");
+    const known = new Set(DATAVIEWS.map((d) => d.id));
+    assert.deepEqual(ADMISSIONS_DASHBOARDS.map((d) => d.id), ["vicdata.admissions.pipelines", "vicdata.admissions.market-share"]);
+    for (const d of ADMISSIONS_DASHBOARDS) {
+      assert.deepEqual(validateConfig(d, known), [], d.id);
+      assert.equal(d.group?.id, "vicdata.admissions");
+      const now = d.panels.filter((p) => p.row === "now");
+      assert.deepEqual(now.map((p) => [p.column, p.span?.cols]), [["c1", 1], ["c2", 2]], `${d.id}: row 1 is the entry point and one large view`);
+      assert.equal(d.panels.filter((p) => p.row === "trends").length, 3, `${d.id}: row 2 is three panels`);
+      assert.ok(d.columns.every((c) => c.focus.kind === "entry_point"), `${d.id}: every column follows the entry point`);
+      assert.ok(d.features?.entryPointChips && d.features.admissionsFilters);
+    }
+  });
+  it("Admissions dataviews come after Teacher's, carry no Teacher phase, and no Teacher context offers them", () => {
+    const first = DATAVIEWS.findIndex((d) => d.id.startsWith("DV-ADM-"));
+    assert.ok(first > 0 && DATAVIEWS.slice(first).every((d) => d.id.startsWith("DV-ADM-")), "appended after every Teacher dataview");
+    for (const d of DATAVIEWS.slice(first)) {
+      assert.deepEqual(d.supports.phases, [], d.id);
+      assert.ok(d.supports.data.every((x) => x.startsWith("admissions.")), d.id);
+      assert.ok(d.host.id.startsWith("admissions."), d.id);
+      assert.ok(d.rules.some((r) => r.startsWith("R-ADM-")), `${d.id} has an R-ADM rule`);
+    }
+    const offered = matchDataviews(DATAVIEWS, KS4_CAND, []).map((r) => r.dataview.id);
+    assert.ok(!offered.some((id) => id.startsWith("DV-ADM-")), "a Teacher context never offers an Admissions view");
+  });
+  it("every new family and view has an R-ADM rule with a real-data test", () => {
+    const families = ["admissions.pupils", "admissions.pipeline", "admissions.market", "admissions.rivals"];
+    for (const f of families) {
+      const m = MEASURES.find((x) => x.data === f);
+      assert.ok(m, `a measure for ${f}`);
+      const fam = m!.rules.find((r) => r.startsWith("R-ADM-FAMILY-"));
+      assert.ok(fam && ruleById(fam)?.testCase?.check, `${f}: its family rule has a runner`);
+    }
+    for (const d of DATAVIEWS.filter((x) => x.id.startsWith("DV-ADM-"))) {
+      const view = d.rules.find((r) => r.startsWith("R-ADM-VIEW-") || r === "R-ADM-HOLD-SHARE");
+      assert.ok(view && ruleById(view)?.testCase?.check, `${d.id}: a view rule with a runner`);
+    }
+  });
+  it("the entry point is a page axis appended last: Teacher's state keys are unchanged", async () => {
+    const v = await import("../src/catalogue/variants");
+    assert.equal(v.VARIANT_AXES[v.VARIANT_AXES.length - 1], "entryPoint");
+    assert.equal(v.stateKey({ results: "counts", compareAgainst: "selected" }), "results:counts|compareAgainst:selected");
+    const { TEACHER_DASHBOARDS } = await import("../src/catalogue/dashboards/teacher");
+    for (const d of TEACHER_DASHBOARDS) for (const p of d.panels) assert.ok(!v.panelAxes(d, p).includes("entryPoint"), `${p.id}: no entry-point axis on Teacher`);
+    const { ADMISSIONS_DASHBOARDS } = await import("../src/catalogue/dashboards/admissions");
+    for (const d of ADMISSIONS_DASHBOARDS) for (const p of d.panels) assert.deepEqual(v.panelAxes(d, p), ["entryPoint"], p.id);
+    // Strengths can't draw at 4+ (KS2 has no subject areas): greyed in Shows for, with the reason.
+    assert.deepEqual(v.dataviewStates(dataviewById("DV-ADM-M-STRENGTHS"), "entryPoint"), ["11+", "16+", "custom"]);
+  });
+  it("each Admissions family's kinds of view are drawable; the locked rules are fixed notes, never looks", async () => {
+    const h = await import("../src/catalogue/honest");
+    for (const d of DATAVIEWS.filter((x) => x.id.startsWith("DV-ADM-")))
+      assert.ok(h.admissionsViewHonest(d.supports.data[0], presetSpec(d.id).view.kind).ok, `${d.id}: its own kind is offered for its family`);
+    assert.ok(!h.admissionsViewHonest("admissions.pupils", "scatter").ok);
+    assert.equal(h.ADMISSIONS_FIXED.length, 4);
+    for (const d of DATAVIEWS.filter((x) => x.id.startsWith("DV-ADM-"))) {
+      const keys = Object.keys(presetSpec(d.id).view.look as object);
+      assert.ok(!keys.some((k) => /certainty|styling|wording|threshold|notRanked|shapeRank/i.test(k)), `${d.id}: no look option for a catalogue rule (${keys.join(", ")})`);
+    }
+  });
+  it("the seed gives the Admissions dashboards to Admissions and SMT only; Teacher's SQL is as before", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const sql = execFileSync("npx", ["-y", "tsx", path.resolve(__dirname, "dashboards-seed-sql.ts")], { encoding: "utf8" });
+    const adm = sql.split("\n").filter((l) => /select id, 'role', '(\w+)', 'live', true from public.dashboards where slug = 'vicdata.admissions/.test(l));
+    assert.deepEqual(adm.map((l) => /'role', '(\w+)'/.exec(l)![1]).sort(), ["admissions", "admissions", "smt", "smt"]);
+    assert.ok(!/'role', 'teacher', 'live', true from public.dashboards where slug = 'vicdata.admissions/.test(sql), "never to Teacher");
+  });
+});
