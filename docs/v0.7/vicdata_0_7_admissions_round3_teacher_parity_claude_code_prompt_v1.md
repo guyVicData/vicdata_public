@@ -1,4 +1,4 @@
-# VicData 0.7 — Admissions round 3: match Teacher, boarding only where it applies, one edit bar, editor plan for the large views
+# VicData 0.7 — Admissions round 3: match Teacher, boarding only where it applies, one edit bar, the funnel like with like, editor plan for the large views
 
 Claude Code build prompt, written 12 Oct 2026. It comes from Guy's first live click-through of round 2 / 2b. Read `docs/v0.7/admissions_r2_report_v1.md` and `docs/v0.7/admissions_r2b_report_v1.md` first.
 
@@ -86,11 +86,40 @@ Write `docs/v0.7/admissions_editor_plan_v1.md`, a plan for Guy to review. **Don'
 4. **The Preview step:** how "Shows for" lists entry points, and how a large view previews at 1440, at 390 and on a 16:9 slide.
 5. **Stages and risks:** a staged build order (small first), what each stage touches, its parity risk to Teacher, and the questions for Guy.
 
+## F7 — The funnel ("From births to your Year 7"): like with like, labelled clearly
+
+**Guy:** *"This is great but needs like with like."*
+
+**Now** (`src/components/admissions/views/Funnel.tsx`):
+
+- the births bar is ONS births in the **LA blend**;
+- the Year 6 (or Year 11) bar is the **feeder set's** pool, a hand-picked subset;
+- so the first two bars cover different areas.
+
+**Change:**
+
+- **Same area.** Births and the Year 6 / Year 11 bar use **the same geography**:
+  - by default, the school's own LA;
+  - when the lead has set an LA blend, the same blend, weighted the same way, for both.
+- **The pool bar** counts **all** pupils at that age in **all** mainstream schools in that area: academies, LA-maintained, free and independent. Use `age_profile_aggregates` (scope `la`), which already holds those groups and is backfilled 2019–2025. Confirm the age mapping (Year 6 = age 10 at 31 August of the census year) against the ladder's.
+- **The feeder-set pool leaves the funnel.** It stays in the Pipeline view.
+- **Labels:** each bar leads with a bold bracket-style label, then the area and the year, in plain words, from `ADMISSIONS_NOTES`. For The Chase at 11+:
+  - **Births** in Worcestershire · born Sept 2013 – Aug 2014 · worked out from calendar-year births
+  - **Year 6** in all Worcestershire schools, state and independent · 2024/25
+  - **Your Year 7** entry cohort · 2025/26
+  
+  With a blend, the area reads "Worcestershire 70% · Herefordshire 30%".
+- **Wording:**
+  - Drop "an estimate for the area". The births split *is* the estimate, so say what it is. The hover keeps the method note.
+  - Keep "not a flow of the same children" as the panel's note (F1's notes icon).
+- **The same for 16+:** Year 11 in all schools in the area, then your Year 12. **4+ has no funnel** (no Reception projections yet).
+- **A rule:** R-ADM-FUNNEL-SAME-AREA, with a real-data test. It checks that the births and pool bars use the same LA set and weights, for The Chase (11+, 16+) and King's Worcester.
+
 ## Report
 
 Write `docs/v0.7/admissions_r3_report_v1.md`, with:
 
-- F1–F5 as built, with screenshots;
+- F1–F5 and F7 as built, with screenshots (F7: The Chase at 11+ and 16+, before and after);
 - the Teacher parity differences, which must be F1's icon row only;
 - F3's classifier check;
 - the F6 plan's path and a short summary;
