@@ -4,20 +4,29 @@
 // container's measured width (first measured synchronously, so a panel never draws at a guessed
 // size), the boards' stroke weights and dash patterns. Nothing here computes a figure: every
 // value arrives from /api/admissions/*.
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+
+// 0.7 admissions editor s1: the editor's preview draws a view at its real panel size, scaled down
+// to fit the dialogue; a chart's first measure (getBoundingClientRect) is of the scaled box, so
+// it is divided back by the scale. 1 everywhere else (the page): the same widths as before.
+export const MeasureScale = createContext(1);
+// A width to draw at before the first measure: 0 (measure first) everywhere but a server render,
+// where R-ADM-EDITOR-LOOKS-KEEP-NOTES sets one so the charts draw and their looks can be compared.
+export const InitialWidth = createContext(0);
 
 export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
   const ref = useRef<T | null>(null);
-  const [w, setW] = useState(0);
+  const [w, setW] = useState(useContext(InitialWidth));
+  const k = useContext(MeasureScale);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    setW(el.getBoundingClientRect().width);
+    setW(k === 1 ? el.getBoundingClientRect().width : el.getBoundingClientRect().width / k);
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((e) => setW(e[0].contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [k]);
   return [ref, w];
 }
 
@@ -61,6 +70,7 @@ export function LineChart({
   xLabels,
   fromZero = false,
   yFormat = (v: number) => Math.round(v).toLocaleString("en-GB"),
+  endLabels = false,
   children,
 }: {
   series: Series[];
@@ -69,6 +79,8 @@ export function LineChart({
   xLabels?: [string, string] | null;
   fromZero?: boolean;
   yFormat?: (v: number) => string;
+  // 0.7 admissions editor s2: each line's name and last value at its end (a look option, off by default).
+  endLabels?: boolean;
   children?: ReactNode;
 }) {
   const [ref, w] = useWidth<HTMLDivElement>();
@@ -77,7 +89,7 @@ export function LineChart({
   const xd: [number, number] = xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 1];
   const yd = extent(ys, 0.12, fromZero);
   const W = Math.max(w, 10);
-  const pad = { l: 10, r: 10, t: 8, b: 10 };
+  const pad = { l: 10, r: endLabels ? 92 : 10, t: 8, b: 10 };
   const sx = scale(xd, [pad.l, W - pad.r]);
   const sy = scale(yd, [height - pad.b, pad.t]);
   return (
@@ -98,6 +110,15 @@ export function LineChart({
               )}
             </g>
           ))}
+          {endLabels &&
+            series.map((s) => {
+              const last = [...s.points].reverse().find((p) => p.y !== null);
+              return last ? (
+                <text key={`end-${s.id}`} data-end-label="" x={sx(last.x) + 6} y={sy(last.y!) + 3.5} fontSize={10.5} fill={s.colour}>
+                  {s.label.length > 13 ? `${s.label.slice(0, 12)}…` : s.label} {yFormat(last.y!)}
+                </text>
+              ) : null;
+            })}
           {children}
         </svg>
       )}

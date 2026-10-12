@@ -80,7 +80,9 @@ export function TeacherModal({
   // 0.6.1 S4: "wide" -- Edit view's desktop panel (docs/wireframes/v0.6/EditWide): 1080x700
   // centred, 12px clear of a smaller window's edges, over the chooser's flat backdrop; like
   // "chooser" it draws its own header, body and footer.
-  size?: "fullscreen" | "compact" | "chooser" | "wide";
+  // 0.7 admissions editor s1 (Guy, decision 3): "focus" -- an Admissions panel's full screen as a
+  // focus mode, filling the window 12px clear of its edges at every size (on a phone, the screen).
+  size?: "fullscreen" | "compact" | "chooser" | "wide" | "focus";
   children: ReactNode;
 }) {
   // Held in a ref so a caller passing a fresh arrow each render does not re-run the
@@ -137,7 +139,9 @@ export function TeacherModal({
             ? // 28rem wide at most, 12px clear of a phone's edges; as tall as its content up
               // to 12px clear of the top and bottom, then it scrolls itself.
               "left-1/2 top-1/2 max-h-[calc(100dvh-1.5rem)] w-[min(28rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 sm:p-5"
-            : "inset-[3%] sm:inset-[5%] sm:p-6"
+            : size === "focus"
+              ? "inset-3 sm:p-5"
+              : "inset-[3%] sm:inset-[5%] sm:p-6"
         }`}
       >
         {children}

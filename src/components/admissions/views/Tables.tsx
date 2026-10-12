@@ -29,8 +29,14 @@ export function FeederFlag({ flag, compact = false }: { flag: { id: string; labe
 
 const SECTOR = { state: "State", independent: "Independent" } as const;
 
-export function FeederTable({ p, fullscreen }: { p: PipelineOk; fullscreen: boolean }) {
+// 0.7 admissions editor s2: the looks -- `sort` ("listed": the route's order; "latest": most pupils
+// first; "change": the biggest rise first) and which of the km / sector / gender / size columns show.
+// The flag column always shows (R-ADM-FLAG-FEEDER).
+export type FeederTableLook = { sort?: "listed" | "latest" | "change"; showKm?: boolean; showSector?: boolean; showGender?: boolean; showSize?: boolean };
+export function FeederTable({ p, fullscreen, look = {} }: { p: PipelineOk; fullscreen: boolean; look?: FeederTableLook }) {
   const t = p.feederTable;
+  const { sort = "listed", showKm = true, showSector = true, showGender = true, showSize = true } = look;
+  const rows = sort === "latest" ? [...t.rows].sort((a, b) => (b.pupils ?? -1) - (a.pupils ?? -1)) : sort === "change" ? [...t.rows].sort((a, b) => (b.changePct ?? -1e9) - (a.changePct ?? -1e9)) : t.rows;
   if (!t.rows.length) return <Empty>No feeder schools in this set. The Admissions lead builds the lists in setup.</Empty>;
   return (
     <>
@@ -45,14 +51,14 @@ export function FeederTable({ p, fullscreen }: { p: PipelineOk; fullscreen: bool
               <th className={cx(TH, "text-right")}>Aged {t.age}</th>
               <th className={cx(TH, "text-right")}>Trend</th>
               <th className={TH}>Flag</th>
-              <th className={cx(TH, "text-right")}>km</th>
-              <th className={TH}>Sector</th>
-              <th className={TH}>Gender</th>
-              <th className={TH}>Size</th>
+              {showKm && <th className={cx(TH, "text-right")}>km</th>}
+              {showSector && <th className={TH}>Sector</th>}
+              {showGender && <th className={TH}>Gender</th>}
+              {showSize && <th className={TH}>Size</th>}
             </tr>
           </thead>
           <tbody>
-            {t.rows.map((r) => (
+            {rows.map((r) => (
               <tr key={r.urn} className="border-t border-[var(--panel-border)] text-[var(--chip-fg)]">
                 <td className={cx(TD, "max-w-[240px] truncate")} title={`${r.name}${r.laName ? ` · ${r.laName}` : ""}${r.inLists.length ? ` · on the ${r.inLists.join(" and ")} list` : ""}`}>
                   {r.name}
@@ -64,10 +70,10 @@ export function FeederTable({ p, fullscreen }: { p: PipelineOk; fullscreen: bool
                 <td className={TD}>
                   <FeederFlag flag={r.flag} />
                 </td>
-                <td className={cx(TD, "text-right")}>{r.distanceKm === null ? "—" : r.distanceKm.toFixed(1)}</td>
-                <td className={TD}>{r.sector ? SECTOR[r.sector] : "—"}</td>
-                <td className={cx(TD, "capitalize")}>{r.gender ?? "—"}</td>
-                <td className={TD}>{r.size ?? "—"}</td>
+                {showKm && <td className={cx(TD, "text-right")}>{r.distanceKm === null ? "—" : r.distanceKm.toFixed(1)}</td>}
+                {showSector && <td className={TD}>{r.sector ? SECTOR[r.sector] : "—"}</td>}
+                {showGender && <td className={cx(TD, "capitalize")}>{r.gender ?? "—"}</td>}
+                {showSize && <td className={TD}>{r.size ?? "—"}</td>}
               </tr>
             ))}
           </tbody>
@@ -80,10 +86,13 @@ export function FeederTable({ p, fullscreen }: { p: PipelineOk; fullscreen: bool
   );
 }
 
-export function RivalsTable({ m, rivals, fullscreen }: { m: MarketView; rivals: Load<RivalsView>; fullscreen: boolean }) {
+// 0.7 admissions editor s2: `sort` -- "latest" (by pupils at the entry age: the rank) or "listed"
+// (nearest first; the school itself at the top).
+export function RivalsTable({ m, rivals, fullscreen, sort = "latest" }: { m: MarketView; rivals: Load<RivalsView>; fullscreen: boolean; sort?: "latest" | "listed" }) {
   const y = m.summary.latest;
   const r = rivals.status === "ready" ? rivals.data : null;
-  const rows = m.entryAge.rows.filter((x) => x.period === y).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+  const km = (urn: string) => (urn === m.urn ? -1 : (m.extras.find((x) => x.urn === urn)?.distanceKm ?? 1e9));
+  const rows = m.entryAge.rows.filter((x) => x.period === y).sort(sort === "listed" ? (a, b) => km(a.urn) - km(b.urn) : (a, b) => (a.rank ?? 999) - (b.rank ?? 999));
   return (
     <>
       <ViewTitle>Your rivals at {m.entry.label.replace(/ \(.*\)$/, "")}</ViewTitle>
@@ -125,7 +134,22 @@ export function RivalsTable({ m, rivals, fullscreen }: { m: MarketView; rivals: 
   );
 }
 
-export function EntryTable({ p }: { p: PipelineOk }) {
+// 0.7 admissions editor s2: `years` -- "down" (a row per year, the preset) or "across" (a column per year).
+export function EntryTable({ p, years = "down" }: { p: PipelineOk; years?: "down" | "across" }) {
+  if (years === "across")
+    return (
+      <>
+        <ViewTitle>Your {cohortWord(p.entry.age)} cohort, year by year</ViewTitle>
+        <Across
+          years={p.now.series.map((s) => s.period)}
+          rows={[
+            { label: `Pupils aged ${p.entry.age}`, strong: true, at: (y) => fmtN(p.now.series.find((s) => s.period === y)?.cohort) },
+            { label: "Girls", at: (y) => fmtN(p.now.series.find((s) => s.period === y)?.female) },
+            { label: "Boys", at: (y) => fmtN(p.now.series.find((s) => s.period === y)?.male) },
+          ]}
+        />
+      </>
+    );
   return (
     <>
       <ViewTitle>Your {cohortWord(p.entry.age)} cohort, year by year</ViewTitle>
@@ -153,8 +177,23 @@ export function EntryTable({ p }: { p: PipelineOk }) {
   );
 }
 
-export function ShareTable({ m, ranks = false }: { m: MarketView; ranks?: boolean }) {
+export function ShareTable({ m, ranks = false, years = "down" }: { m: MarketView; ranks?: boolean; years?: "down" | "across" }) {
   const mine = m.entryAge.rows.filter((r) => r.urn === m.urn).sort((a, b) => a.period - b.period);
+  const last = (r: (typeof mine)[number]) => (ranks ? (r.rank ? `${r.rank} of ${m.entryAge.rows.filter((x) => x.period === r.period && x.count !== null).length}` : "—") : fmtPct(r.share));
+  if (years === "across")
+    return (
+      <>
+        <ViewTitle>{ranks ? `Your rank at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year` : `Your market share at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year`}</ViewTitle>
+        <Across
+          years={mine.map((r) => r.period)}
+          rows={[
+            { label: "You", at: (y) => fmtN(mine.find((r) => r.period === y)?.count) },
+            { label: "Group", at: (y) => fmtN(m.entryAge.totals[y]) },
+            { label: ranks ? "Rank" : "Share", strong: true, at: (y) => { const r = mine.find((x) => x.period === y); return r ? last(r) : "—"; } },
+          ]}
+        />
+      </>
+    );
   return (
     <>
       <ViewTitle>{ranks ? `Your rank at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year` : `Your market share at ${m.entry.label.replace(/ \(.*\)$/, "")}, year by year`}</ViewTitle>
@@ -179,5 +218,37 @@ export function ShareTable({ m, ranks = false }: { m: MarketView; ranks?: boolea
         </tbody>
       </table>
     </>
+  );
+}
+
+/** A year table turned across: a column per year, a row per figure (the `years: "across"` look). */
+function Across({ years, rows }: { years: number[]; rows: { label: string; strong?: boolean; at: (y: number) => string }[] }) {
+  return (
+    <div className="min-w-0 overflow-x-auto">
+      <table className="w-full tabular-nums">
+        <thead>
+          <tr className="text-left">
+            <th className={TH} />
+            {years.map((y) => (
+              <th key={y} className={cx(TH, "text-right")}>
+                {yearLabel(y).replace(/^20/, "")}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label} className="border-t border-[var(--panel-border)] text-[var(--chip-fg)]">
+              <td className={cx(TD, "whitespace-nowrap")}>{r.label}</td>
+              {years.map((y) => (
+                <td key={y} className={cx(TD, "text-right", r.strong && "font-semibold text-[var(--fg)]")}>
+                  {r.at(y)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

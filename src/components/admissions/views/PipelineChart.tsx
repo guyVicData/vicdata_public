@@ -64,12 +64,17 @@ function tip(p: PoolPoint, schools: number | null): string {
   return `September ${p.entryYear}: ${fmtN(p.pool)}${range}. ONS projection (age 10). An estimate.`;
 }
 
-export function PipelineChart({ p, height = 225, projection, onProjection, onFeederTable, compact = false, flags: showFlags = true }: { p: PipelineOk; height?: number; projection: boolean; onProjection?: (on: boolean) => void; onFeederTable?: () => void; compact?: boolean; flags?: boolean }) {
+// 0.7 admissions editor s2: the looks (PipelineLook) -- `pastPools` (the past pools before now),
+// `rungLabels` (the captions under the axis) and `projectionMode` ("member": members can turn the
+// 11+ projection on; "off": it stays off and says so). The certainty styling is a rule, not a look.
+export function PipelineChart({ p, height = 225, projection, onProjection, onFeederTable, compact = false, flags: showFlags = true, pastPools = true, rungLabels = true, projectionMode = "member" }: { p: PipelineOk; height?: number; projection: boolean; onProjection?: (on: boolean) => void; onFeederTable?: () => void; compact?: boolean; flags?: boolean; pastPools?: boolean; rungLabels?: boolean; projectionMode?: "member" | "off" }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const notes = p.notes ?? ADMISSIONS_NOTES;
-  const past = p.ladder.past.filter((x) => x.pool !== null);
+  const projectionOn = projectionMode === "off" ? false : projection;
+  const allPast = p.ladder.past.filter((x) => x.pool !== null);
+  const past = pastPools ? allPast : [];
   const future = p.ladder.future.filter((x) => x.pool !== null);
-  const proj = projection ? p.ladder.projection : [];
+  const proj = projectionOn ? p.ladder.projection : [];
   if (!past.length && !future.length) return <Empty>No pool to draw: there are no schools with a census in this set. Choose feeders in setup, or widen the filters.</Empty>;
   const years = [...past, ...future, ...proj].map((x) => x.entryYear);
   const x0 = Math.min(...years);
@@ -79,7 +84,7 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
   const sx = scale([x0 - 0.4, x1 + 0.4], [0, W]);
   const yd = extent([...past.map((x) => x.pool), ...future.flatMap((x) => [x.pool, x.low, x.high]), ...proj.flatMap((x) => [x.low, x.high])], 0.15);
   const sy = scale(yd, [H - 14, 14]);
-  const nowYear = past.length ? past[past.length - 1].entryYear : x0;
+  const nowYear = past.length ? past[past.length - 1].entryYear : allPast.length && !pastPools ? allPast[allPast.length - 1].entryYear : x0;
   const counted = future.filter((x) => x.source === "counted");
   const births = future.filter((x) => x.source === "births");
   const lastCounted = counted.length ? counted[counted.length - 1] : null;
@@ -95,7 +100,7 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
   // drift range, then the births' range) -- R-ADM-DRIFT-RANGE.
   const rangePts = future.filter((x) => x.low !== null && x.high !== null).sort((a, b) => a.entryYear - b.entryYear);
   const schoolsAt = (age: number | null) => p.sets.find((s) => s.age === age)?.urns.length ?? null;
-  const segs = segmentsOf(p);
+  const segs = segmentsOf(p).filter((s) => pastPools || s.style !== "past");
   // The boards' shading: the counted run lightly tinted, the births run fainter.
   const bandX = (pts: PoolPoint[]) => (pts.length ? [sx(pts[0].entryYear) - (sx(1) - sx(0)) / 2, sx(pts[pts.length - 1].entryYear) + (sx(1) - sx(0)) / 2] : null);
   const cb = bandX(counted);
@@ -156,6 +161,7 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
         ))}
       </div>
       {/* Rung labels go under the axis (prompt D3). */}
+      {rungLabels && (
       <div className="flex gap-[6px] text-[10.5px]">
         {segs.map((s) => (
           <span
@@ -171,6 +177,7 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
           </span>
         ))}
       </div>
+      )}
       {!compact && (
         <div className="flex flex-wrap items-center gap-4">
           <Key swatch={<LineSwatch colour="var(--accent)" />}>
@@ -179,7 +186,11 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
           <Key swatch={<LineSwatch colour="var(--accent)" dashed />}>
             <span title={`${notes.births} ${notes.drift}`}>From births, with range</span>
           </Key>
-          {canProject ? (
+          {canProject && projectionMode === "off" ? (
+            <Key muted swatch={<span aria-hidden="true" className="h-[9px] w-[14px] border border-dashed border-[var(--adm-range-edge)] bg-[var(--adm-tint)]" />}>
+              <span title={notes.projection}>Projection: off for this view</span>
+            </Key>
+          ) : canProject ? (
             <button type="button" onClick={() => onProjection?.(!projection)} disabled={!onProjection} title={notes.projection} className="inline-flex items-center gap-[6px] text-[11px] text-[var(--muted)] hover:text-[var(--fg)]">
               <span aria-hidden="true" className="h-[9px] w-[14px] border border-dashed border-[var(--adm-range-edge)] bg-[var(--adm-tint)]" />
               Projection: {projection ? "on" : "off"}

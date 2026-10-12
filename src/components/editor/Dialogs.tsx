@@ -277,6 +277,7 @@ export function SlotMapDialog({
   allowGaps,
   mode,
   moveOrCopy = false,
+  checkTarget,
   onPick,
   onClose,
 }: {
@@ -289,6 +290,9 @@ export function SlotMapDialog({
   mode: "view" | "panel";
   // 0.6.1 S5 (RailMenu's "Move or copy to another panel…"): a Move / Copy choice first.
   moveOrCopy?: boolean;
+  // 0.7 admissions editor s1: a cell this view can't go to yet (blocked, with why), or can with a
+  // warning. Absent = every cell as before (Teacher).
+  checkTarget?: (t: Target) => { blocked?: string; warn?: string } | null;
   onPick: (t: Target, how?: "move" | "copy") => void;
   onClose: () => void;
 }) {
@@ -333,7 +337,8 @@ export function SlotMapDialog({
               const empty = !cell.panel || !cell.panel.dataviews.length;
               const isFrom = cell.panel?.id === from;
               const okPanel = mode === "panel" ? empty || (cell.span === fromSpan) : true;
-              const disabled = isFrom || (!allowGaps && empty) || !okPanel;
+              const check = checkTarget && !isFrom ? checkTarget(t) : null;
+              const disabled = isFrom || (!allowGaps && empty) || !okPanel || !!check?.blocked;
               const on = pick !== null && key(pick) === key(t);
               const first = cell.panel?.dataviews[0];
               const label = empty ? "Empty" : (cell.panel!.name ?? (first?.kind === "view" ? (first.title ?? dataviewById(first.dataview)?.label ?? "") : first?.description ?? ""));
@@ -342,6 +347,7 @@ export function SlotMapDialog({
                   key={cell.start}
                   type="button"
                   disabled={disabled}
+                  title={check?.blocked ?? check?.warn}
                   aria-pressed={on}
                   onClick={() => setPick(t)}
                   style={{
@@ -369,6 +375,20 @@ export function SlotMapDialog({
         </div>
       ))}
       <Note>{mode === "panel" ? "Pick an empty cell, or a panel of the same width to swap places with." : "Pick a panel, or an empty cell to start a new one."}</Note>
+      {checkTarget && (() => {
+        const blocked = rows.flatMap(({ row, cells }) => cells.map((cell) => checkTarget(cell.panel ? cell.panel.id : { row: row.id, column: config.columns[cell.start].id })?.blocked)).find(Boolean);
+        const warn = pick ? checkTarget(pick)?.warn : null;
+        return (
+          <>
+            {blocked && <Note>{blocked}.</Note>}
+            {warn && (
+              <div data-slot-warning="" style={{ fontSize: 12, lineHeight: 1.4, color: EC.amberText, fontWeight: 600 }}>
+                {warn}.
+              </div>
+            )}
+          </>
+        );
+      })()}
     </Dialog>
   );
 }

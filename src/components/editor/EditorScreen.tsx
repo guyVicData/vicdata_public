@@ -26,6 +26,7 @@ import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import type { CopyViewSource } from "@/lib/copy-view";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
+import { isAdmissionsHost } from "@/catalogue/admissions";
 import { loadSubjectSources } from "@/components/chooser-v06/schoolSubjects";
 import type { SubjectSource } from "@/components/chooser-v06/StepScreens";
 import { DashboardEditor, type CopyViewHandler, type DashboardEditorProps } from "./DashboardEditor";
@@ -149,7 +150,9 @@ export function EditorScreen({ id, Preview, onCopyView, host }: { id: string; Pr
           school={school}
           subjects={subjects}
         />
-        {copying && <CopyViewDialog open source={copying} superAdmin onClose={() => setCopying(null)} />}
+        {/* 0.7 admissions editor s1 (gap 8): an Admissions view goes to meetings only -- a custom
+            dashboard draws Teacher hosts alone (embed.ts), as the page's own copy already says. */}
+        {copying && <CopyViewDialog open source={copying} superAdmin meetingOnly={isAdmissionsHost(dataviewById(copying.instance.dataview)?.host.id)} onClose={() => setCopying(null)} />}
       </EditorSchoolContext.Provider>
     );
   return (

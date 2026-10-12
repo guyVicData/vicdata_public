@@ -49,7 +49,9 @@ function Mini({ profile }: { profile: { age: number; female: number; male: numbe
   );
 }
 
-export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen }: { s: ShapeView; entryAge: number; showLocal?: boolean; fullscreen: boolean }) {
+// 0.7 admissions editor s2: `columns` -- the rivals' shapes in 1, 2 or 3 columns (full screen one
+// more, up to 3). Shapes stay in the route's order, never ranked (R-ADM-SHAPE-NOT-RANKED).
+export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen, columns = 2 }: { s: ShapeView; entryAge: number; showLocal?: boolean; fullscreen: boolean; columns?: 1 | 2 | 3 }) {
   if (!s.profile.some((r) => r.female + r.male > 0)) return <Empty>No census for this school: no shape to describe.</Empty>;
   const own = s.profile.filter((r) => r.female + r.male > 0);
   const ages: [number, number] = [own[0].age, own[own.length - 1].age];
@@ -88,7 +90,7 @@ export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen }: { s:
       <div className="flex min-w-0 grow flex-col gap-2 border-l border-[var(--panel-border)] pl-4">
         <Lbl>Rivals&rsquo; shapes and sizes</Lbl>
         <Muted>{ADMISSIONS_NOTES.shapesShort}</Muted>
-        <div className={`grid gap-2 ${fullscreen ? "grid-cols-3" : "grid-cols-2"} overflow-y-auto`} style={fullscreen ? undefined : { maxHeight: 330 }}>
+        <div className={`grid gap-2 ${GRID_COLS[Math.min(3, fullscreen ? columns + 1 : columns)]} overflow-y-auto`} style={fullscreen ? undefined : { maxHeight: 330 }}>
           {s.rivals.map((r) => (
             <div key={r.urn} className="flex flex-col gap-[5px] rounded-[9px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-2" title={ADMISSIONS_NOTES.shape}>
               <span className="truncate text-[11.5px] font-bold text-[var(--fg)]">{r.name}</span>
@@ -103,5 +105,7 @@ export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen }: { s:
     </div>
   );
 }
+
+const GRID_COLS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };
 
 export const SHAPES_NOTE = "Shape labels use the shared classifier (Tube, Pyramid, Top step, Funnel, Mushroom, Wineglass, Irregular), the same for schools and areas.";

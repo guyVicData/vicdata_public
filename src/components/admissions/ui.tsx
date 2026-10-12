@@ -9,7 +9,7 @@
 //   #22d3ee → --accent (ROLE_ACCENT.admissions) · #0f2329 → the accent at 0.14 (--adm-tint)
 // The boards' semantic colours (green flag, red flag, amber, orange, greys) are
 // Admissions variables below, a dark and a light value each, so both themes read.
-import type { CSSProperties, ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
 import { CardBox } from "@/components/teacher/CardBox";
 import { PanelExport, type PanelMenuItem } from "@/components/teacher/PanelFooter";
@@ -208,6 +208,7 @@ export function Panel({
   children,
   id,
   onCopy,
+  focusBar,
 }: {
   tag: string;
   context?: ReactNode;
@@ -227,10 +228,15 @@ export function Panel({
   height: number | "auto";
   span?: 1 | 2;
   title: string;
-  children: (o: { fullscreen: boolean }) => ReactNode;
+  // `height`: in full screen on a desktop, the room the figure has (FocusFill), for a chart to fill.
+  children: (o: { fullscreen: boolean; height?: number }) => ReactNode;
   id?: string;
   // D8: "Copy this view…" (meeting slides; absent in View as and wherever a copy can't be saved).
   onCopy?: () => void;
+  // 0.7 admissions editor s1 (Guy, decision 3): full screen is a focus mode on every Admissions
+  // panel -- the rail, the panel's chips, the notes, the menu and this bar (the entry-point chips),
+  // so a member can change view and entry point without leaving it.
+  focusBar?: ReactNode;
 }) {
   return (
     <section
@@ -258,12 +264,45 @@ export function Panel({
         fixedHeight={height !== "auto"}
         height={height === "auto" ? undefined : height}
         menu={({ print }) => <PanelExport onPrint={print} onCopy={onCopy} extra={menu} />}
+        focus={{ bar: focusBar }}
       >
-        {({ fullscreen }) => <div className={cx("flex min-w-0 grow flex-col gap-2", height !== "auto" && "min-h-0")}>{children({ fullscreen })}</div>}
+        {({ fullscreen }) =>
+          fullscreen ? (
+            <FocusFill>{(h) => children({ fullscreen, height: h })}</FocusFill>
+          ) : (
+            <div className={cx("flex min-w-0 grow flex-col gap-2", height !== "auto" && "min-h-0")}>{children({ fullscreen })}</div>
+          )
+        }
       </CardBox>
     </section>
   );
 }
+
+/** Full screen's figure area: it takes the room the modal leaves and says how tall that is, so a
+ * chart can fill it (desktop widths; below Teacher's lg the modal stacks and scrolls, and the views
+ * keep their full-screen sizes). Content taller than the room scrolls inside it. */
+function FocusFill({ children }: { children: (height: number | undefined) => ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [h, setH] = useState<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const on = () => setH(window.innerWidth >= 1024 ? Math.floor(el.getBoundingClientRect().height) : undefined);
+    on();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(on);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={ref} data-focus-fill={h ?? ""} className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
+      {children(h)}
+    </div>
+  );
+}
+
+/** A chart's height in full screen: the room less what sits around it, never below its own size. */
+export const fillHeight = (room: number | undefined, around: number, min: number) => (room ? Math.max(min, room - around) : min);
 
 export const ViewTitle = ({ children }: { children: ReactNode }) => <div className="text-[12.5px] font-bold text-[var(--fg)]">{children}</div>;
 

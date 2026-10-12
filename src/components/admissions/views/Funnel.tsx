@@ -10,7 +10,7 @@
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { cleanLaNameForDisplay } from "@/lib/la-name-display";
 import type { PipelineOk } from "../api";
-import { Empty, ViewTitle, fmtN, yearLabel } from "../ui";
+import { Empty, ViewTitle, fillHeight, fmtN, yearLabel } from "../ui";
 import { cohortWord } from "../panels/EntryNow";
 
 type Stage = PipelineOk["funnel"][number];
@@ -39,7 +39,7 @@ function method(s: Stage): string {
   return `January ${(s.year ?? 0) + 1} census: your own pupils aged ${s.age}.`;
 }
 
-export function Funnel({ p, fullscreen }: { p: PipelineOk; fullscreen: boolean }) {
+export function Funnel({ p, fullscreen, room }: { p: PipelineOk; fullscreen: boolean; room?: number }) {
   const stages = p.funnel;
   if (!stages.length) return <Empty>No funnel at 4+: there are no Reception projections yet.</Empty>;
   if (!stages.some((s) => s.value !== null)) return <Empty>No figures to follow back for this entry point.</Empty>;
@@ -47,7 +47,7 @@ export function Funnel({ p, fullscreen }: { p: PipelineOk; fullscreen: boolean }
   return (
     <>
       <ViewTitle>From births to your {cohortWord(p.entry.age)}: this September&rsquo;s entrants, followed back</ViewTitle>
-      <div className="flex grow flex-col justify-center gap-3" style={{ minHeight: fullscreen ? 360 : 230 }}>
+      <div className="flex grow flex-col justify-center gap-3" style={{ minHeight: fullscreen ? fillHeight(room, 90, 360) : 230 }}>
         {stages.map((s, i) => {
           const w = s.value === null ? 0 : Math.max(6, (s.value / max) * 100);
           return (

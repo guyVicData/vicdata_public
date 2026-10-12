@@ -1,0 +1,16 @@
+#!/bin/zsh
+# Focus-mode screenshots: node shot.mjs per size and theme, the large view's full screen opened.
+cd ${0:A:h}; mkdir -p focus
+FS='document.querySelector("[data-adm-panel$=\"c2.now\"] button[aria-label^=\"Full screen\"]").click()'
+U="http://127.0.0.1:8995/index.html?case=137625&role=lead&saved=1&fx=fx_s12&bundle=bundle_look&css=app_s2&entry=11%2B"
+i=0
+for t in dark light; do for sz in "1440 900" "1920 1080" "1280 720"; do set -- ${=sz}
+  CLICKWAIT=2500 NOFULL=1 CLICK="$FS" node shot.mjs $((9500+i)) focus/large_pipelines_${t}_$1x$2.png "$U&theme=$t&view=pipelines" $1 $2 7000 | tail -1; i=$((i+1)); done; done
+# Market share's large view, a row-2 panel, column 1, and the phone
+CLICKWAIT=2500 NOFULL=1 CLICK="$FS" node shot.mjs 9520 focus/large_market_dark_1440x900.png "$U&theme=dark&view=market-share" 1440 900 7000 | tail -1
+R2='document.querySelector("[data-adm-panel$=\"c2.trends\"] button[aria-label^=\"Full screen\"]").click()'
+CLICKWAIT=2500 NOFULL=1 CLICK="$R2" node shot.mjs 9521 focus/row2_pool_dark_1440x900.png "$U&theme=dark&view=pipelines" 1440 900 7000 | tail -1
+C1='document.querySelector("[data-adm-panel$=\"c1.now\"] button[aria-label^=\"Full screen\"]").click()'
+CLICKWAIT=2500 NOFULL=1 CLICK="$C1" node shot.mjs 9522 focus/col1_now_light_1440x900.png "$U&theme=light&view=pipelines" 1440 900 7000 | tail -1
+PH='[...document.querySelectorAll("button[aria-label^=\"Full screen\"]")][1].click()'
+CLICKWAIT=2500 NOFULL=1 CLICK="$PH" node shot.mjs 9523 focus/phone_large_dark_390x844.png "$U&theme=dark&view=pipelines" 390 844 7000 | tail -1

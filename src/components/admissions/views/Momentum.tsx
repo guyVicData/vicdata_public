@@ -9,7 +9,7 @@ import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { SHAPE_LABELS } from "@/components/dashboard/ShapeIcon";
 import type { ShapeLabel } from "@/lib/shape-classifier";
 import type { MarketView, RivalsView } from "../api";
-import { Empty, FlagPill, Muted, cx, fmtSigned, yearLabel, type FlagTone } from "../ui";
+import { Empty, FlagPill, Muted, cx, fillHeight, fmtSigned, yearLabel, type FlagTone } from "../ui";
 import { useWidth } from "./charts";
 
 type Flag = RivalsView["rows"][number]["momentum"][number];
@@ -25,8 +25,8 @@ export const figuresOf = (f: Flag) =>
 const shapeWord = (s: unknown) => SHAPE_LABELS[s as ShapeLabel] ?? String(s);
 const flagText = (f: Flag) => (f.id === "shape_changed" ? `Shape changed: ${shapeWord(f.figures.from)} → ${shapeWord(f.figures.to)}` : f.label);
 
-export function FlagList({ m, r, limit, notPlotted = [] }: { m: MarketView; r: RivalsView; limit?: number; notPlotted?: RivalsView["rows"] }) {
-  const rows = r.rows.filter((x) => !x.isSchool);
+export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: { m: MarketView; r: RivalsView; limit?: number; notPlotted?: RivalsView["rows"]; flaggedOnly?: boolean }) {
+  const rows = r.rows.filter((x) => !x.isSchool && (!flaggedOnly || x.momentum.length > 0));
   const sorted = [...rows].sort((a, b) => b.momentum.length - a.momentum.length);
   const shown = limit ? sorted.slice(0, limit) : sorted;
   return (
@@ -81,13 +81,15 @@ export function FlagList({ m, r, limit, notPlotted = [] }: { m: MarketView; r: R
   );
 }
 
-export function Momentum({ m, r, fullscreen }: { m: MarketView; r: RivalsView; fullscreen: boolean }) {
+// 0.7 admissions editor s2: `labels` (each school named beside its dot; off: only "You", the rest
+// on hover) and `quadrantNames` (the four corner names). The thresholds are rules, not looks.
+export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames = true }: { m: MarketView; r: RivalsView; fullscreen: boolean; room?: number; labels?: boolean; quadrantNames?: boolean }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const pts = r.rows
     .map((x) => ({ x, e: m.extras.find((q) => q.urn === x.urn), rc: r.resultsChange[x.urn] }))
     .filter((p) => p.e?.entryChangePct != null && p.rc?.points != null);
   const left = r.rows.filter((x) => !pts.some((p) => p.x.urn === x.urn));
-  const H = fullscreen ? 480 : 360;
+  const H = fullscreen ? fillHeight(room, 40, 480) : 360;
   const maxX = Math.max(5, ...pts.map((p) => Math.abs(p.e!.entryChangePct!))) * 1.15;
   const maxY = Math.max(1, ...pts.map((p) => Math.abs(p.rc!.points!))) * 1.15;
   const W = Math.max(w, 10);
@@ -106,10 +108,14 @@ export function Momentum({ m, r, fullscreen }: { m: MarketView; r: RivalsView; f
             <>
               <span className="absolute bottom-[26px] top-2 w-px bg-[var(--panel-border2)]" style={{ left: sx(0) }} />
               <span className="absolute left-2 right-2 h-px bg-[var(--panel-border2)]" style={{ top: sy(0) }} />
+              {quadrantNames && (
+                <>
               <span className="absolute right-[10px] top-[10px] text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--adm-quadrant)]">Growing &middot; improving</span>
               <span className="absolute left-[10px] top-[10px] text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--adm-quadrant)]">Shrinking &middot; improving</span>
               <span className="absolute bottom-8 right-[10px] text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--adm-quadrant)]">Growing &middot; slipping</span>
               <span className="absolute bottom-8 left-[10px] text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--adm-quadrant)]">Shrinking &middot; slipping</span>
+                </>
+              )}
               {(() => {
                 // Labels nudged down until they clear the one above them (same columns only).
                 const placed: { l: number; t: number; w: number }[] = [];
@@ -135,9 +141,11 @@ export function Momentum({ m, r, fullscreen }: { m: MarketView; r: RivalsView; f
                       className={cx("absolute rounded-full", me && "border-2 border-white")}
                       style={{ left: sx(e!.entryChangePct!) - size / 2, top: sy(rc!.points!) - size / 2, width: size, height: size, boxSizing: "border-box", background: me ? "var(--accent)" : up ? "var(--adm-amber)" : down ? "var(--adm-down-fg)" : "var(--adm-grey-line)" }}
                     />
+                    {(labels || me) && (
                     <span className={cx("absolute whitespace-nowrap text-[10.5px]", me ? "font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")} style={{ left: sx(e!.entryChangePct!) + size / 2 + 3, top: labelTop.get(x.urn) ?? sy(rc!.points!) - 7 }}>
                       {me ? "You" : x.name.length > 22 ? `${x.name.slice(0, 21)}…` : x.name}
                     </span>
+                    )}
                   </span>
                 );
               })}
@@ -154,6 +162,20 @@ export function Momentum({ m, r, fullscreen }: { m: MarketView; r: RivalsView; f
         </div>
         <FlagList m={m} r={r} notPlotted={left} />
       </div>
+    </>
+  );
+}
+
+/** 0.7 admissions editor s2 (Guy's decision 8): the flag list as a view of its own (DV-ADM-M-FLAGS),
+ * for a row-2 panel or a one-unit slide cell. `show`: "flagged" (only rivals with a flag; the
+ * preset) or "all" (every rival). The flags rule's wording stays under it either way. */
+export function FlagsView({ m, r, show = "flagged" }: { m: MarketView; r: RivalsView; show?: "flagged" | "all" }) {
+  const flagged = r.rows.filter((x) => !x.isSchool && x.momentum.length > 0).length;
+  return (
+    <>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">Rivals&rsquo; flags: large and lasting changes</div>
+      {show === "flagged" && flagged === 0 && <Muted>{r.thresholds === "not_loaded" ? "" : "No rival has a change worth flagging."}</Muted>}
+      <FlagList m={m} r={r} flaggedOnly={show === "flagged" && r.thresholds !== "not_loaded"} />
     </>
   );
 }

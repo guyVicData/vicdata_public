@@ -1,0 +1,33 @@
+# Compare two parity trees: python3 parcmp.py <out> <treeA> <treeB>
+# A pair is IDENTICAL when the PNG pixels and #teacher-root's DOM both match exactly.
+import sys, os, json, glob
+from PIL import Image, ImageChops
+out, a, b = sys.argv[1:4]
+A = os.path.join(out, a); B = os.path.join(out, b)
+pngs = sorted(os.path.basename(p) for p in glob.glob(os.path.join(A, "*.png")))
+res = {"identical": 0, "pixels": [], "dom": [], "missing": []}
+views = set()
+for n in pngs:
+    pb = os.path.join(B, n)
+    if not os.path.exists(pb):
+        res["missing"].append(n); continue
+    ia = Image.open(os.path.join(A, n)).convert("RGB"); ib = Image.open(pb).convert("RGB")
+    same_px = ia.size == ib.size and ImageChops.difference(ia, ib).getbbox() is None
+    ha = open(os.path.join(A, n[:-4] + ".html")).read(); hb = open(os.path.join(B, n[:-4] + ".html")).read()
+    same_dom = ha == hb
+    if same_px and same_dom: res["identical"] += 1
+    if not same_px:
+        res["pixels"].append(n + ("" if ia.size == ib.size else f" size {ia.size} vs {ib.size}"))
+    if not same_dom:
+        i = next((k for k in range(min(len(ha), len(hb))) if ha[k] != hb[k]), min(len(ha), len(hb)))
+        res["dom"].append(f"{n} @{i}: ...{ha[max(0,i-60):i+80]!r} || {hb[max(0,i-60):i+80]!r}")
+for m in glob.glob(os.path.join(A, "*__meta.json")):
+    j = json.load(open(m))
+    case = os.path.basename(m).split("__")[0]
+    for step in j["shown"]:
+        for v in step: views.add(case + " :: " + v)
+    if j["errors"]: print("ERRORS", m, j["errors"][:3])
+    if not j["ready"]: print("NOT READY", m)
+print(f"{a} vs {b}: {len(pngs)} pairs, identical {res['identical']}, pixel diffs {len(res['pixels'])}, DOM diffs {len(res['dom'])}, missing {len(res['missing'])}; distinct panel-views drawn: {len(views)}")
+for x in res["pixels"][:20]: print("  PX ", x)
+for x in res["dom"][:10]: print("  DOM", x[:400])

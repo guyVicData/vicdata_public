@@ -13,7 +13,8 @@
 // (G8). The draft autosaves (debounced saveDraft); Publish makes a new immutable version
 // with the generated change summary. Until the S2 tables exist (store `available: false`)
 // it all works in memory and says "Saving needs the database update".
-import { isAdmissionsData } from "@/catalogue/admissions";
+import { isAdmissionsData, isAdmissionsHost } from "@/catalogue/admissions";
+import { ADMISSIONS_NEEDS_SPAN, ADMISSIONS_ROW_MOVE_BLOCKED, ADMISSIONS_SPAN_WARNING } from "@/catalogue/admissions-editor";
 import type { EntryPointState } from "@/catalogue/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -391,7 +392,14 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       if (on.length && !on.includes(pill)) measure = on[0];
     }
     // 0.7 admissions r2 (D7): an Admissions column opens the editor's Admissions steps.
-    if (isAdmissionsData(ctx.data)) return { phase: ctx.phase, columnHost: host, side: sideOf(config, target), measure: "entries", followsPill: false, ctx, admissions: { family: ctx.data } };
+    if (isAdmissionsData(ctx.data)) {
+      // 0.7 admissions editor s1 (gap 7): the preview follows the edit bar's entry point and draws
+      // at the panel's real size on the Admissions page (span, row, rail).
+      const panel = typeof target === "string" ? config.panels.find((p) => p.id === target) : null;
+      const row = typeof target === "string" ? panel?.row : target.row;
+      const admissions = { family: ctx.data, entry: entryState, span: panel?.span?.cols ?? 1, firstRow: row === config.rows[0]?.id, railed: (panel?.dataviews.length ?? 0) + (inst ? 0 : 1) > 1 };
+      return { phase: ctx.phase, columnHost: host, side: sideOf(config, target), measure: "entries", followsPill: false, ctx, admissions };
+    }
     return { phase: ctx.phase, columnHost: host, side: sideOf(config, target), measure, followsPill: !!resultsPill && results, ctx: results ? { ...ctx, results: measure as ResultsMeasure } : ctx };
   };
 
@@ -941,6 +949,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
           mode={dialog.mode === "move-panel" ? "panel" : "view"}
           allowGaps
           moveOrCopy={dialog.mode === "move-or-copy-view"}
+          checkTarget={admissionsSlotCheck(config, dialog.panelId, dialog.instanceId)}
           title={dialog.mode === "move-panel" ? "Move panel" : dialog.mode === "move-or-copy-view" ? "Move or copy to another panel" : dialog.mode === "move-view" ? "Move this view to another panel" : "Copy this view"}
           sub={dialog.mode === "copy-view" && !onCopyView ? "Copying to another dashboard comes with Copy this view; for now, a panel here." : config.name}
           onClose={() => setDialog(null)}
@@ -1008,4 +1017,21 @@ export function friendlyCreateError(e: unknown): string {
   if (/does not exist|schema cache|database update/i.test(m)) return "Saving needs the database update.";
   if (/row-level security|not allowed|permission/i.test(m)) return "You can't create that kind of dashboard.";
   return m || "That didn't save. Check your connection and try again.";
+}
+
+// 0.7 admissions editor s1 (Guy's decision 2): on an Admissions dashboard, a view or panel stays in
+// its own row until stage 3 makes presets side-free (gap 3: moved to another row and edited, the
+// funnel would become Share needed); a view that needs two columns may go into a one-unit panel,
+// with the warning. Teacher dashboards: no check, as before.
+function admissionsSlotCheck(config: DashboardConfig, fromId: string, instanceId: string | null): ((t: ops.Target) => { blocked?: string; warn?: string } | null) | undefined {
+  const from = config.panels.find((p) => p.id === fromId);
+  if (!from || !isAdmissionsHost(columnHostOf(config, fromId))) return undefined;
+  const inst = instanceId ? from.dataviews.find((v) => v.id === instanceId) : null;
+  return (t) => {
+    const dest = typeof t === "string" ? config.panels.find((p) => p.id === t) : null;
+    const row = dest ? dest.row : (t as { row: string }).row;
+    if (row !== from.row) return { blocked: ADMISSIONS_ROW_MOVE_BLOCKED };
+    if (inst?.kind === "view" && ADMISSIONS_NEEDS_SPAN.has(inst.dataview) && (dest?.span?.cols ?? 1) < 2) return { warn: ADMISSIONS_SPAN_WARNING };
+    return null;
+  };
 }

@@ -44,9 +44,13 @@ export function ShareDonut({ share, size = 170, label }: { share: number | null;
 const GRID = "grid-cols-[22px_minmax(0,1fr)_110px_42px_40px_64px_64px]";
 const GRID_PHONE = "grid-cols-[18px_minmax(0,1fr)_40px_28px]";
 
-export function RankedBars({ m, rivals, withDonut = true, fullscreen, phone = false }: { m: MarketView; rivals: Load<RivalsView>; withDonut?: boolean; fullscreen: boolean; phone?: boolean }) {
+// 0.7 admissions editor s2: `show` -- "all" (the preset), "top5" (the top five and, always, you) or
+// "around" (two above you and two below); `withDonut` -- the share donut beside the bars.
+export function RankedBars({ m, rivals, withDonut = true, fullscreen, phone = false, show = "all" }: { m: MarketView; rivals: Load<RivalsView>; withDonut?: boolean; fullscreen: boolean; phone?: boolean; show?: "all" | "top5" | "around" }) {
   const y = m.summary.latest;
-  const rows = m.entryAge.rows.filter((r) => r.period === y).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+  const ranked = m.entryAge.rows.filter((r) => r.period === y).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+  const at = ranked.findIndex((r) => r.urn === m.urn);
+  const rows = show === "top5" ? ranked.filter((r, i) => i < 5 || r.urn === m.urn) : show === "around" && at >= 0 ? ranked.slice(Math.max(0, at - 2), at + 3) : ranked;
   const max = Math.max(1, ...rows.map((r) => r.count ?? 0));
   const r = rivals.status === "ready" ? rivals.data : null;
   const age = m.entry.age;

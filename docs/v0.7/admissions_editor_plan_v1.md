@@ -345,3 +345,19 @@ Today's preview shows neither size nor entry point (gap 7). Fixing that is stage
     - *Evidence:* the editor is platform-admin only (`EditorScreen.tsx`, `usePlatformAdmin`). F4 puts Teacher's Edit bar on Admissions for platform admins only.
     - *Options:* (a) platform admins edit the published Admissions dashboards; schools don't; (b) the Admissions lead gets their own copy to edit, as custom dashboards work.
     - *Recommendation:* (a) for 0.7. (b) needs its own plan: per-school configs and how a published upgrade reaches a lead's copy.
+
+#### Decided (Guy, 12 Oct)
+
+All ten recommendations are accepted. Question 3 has one addition. Stages 1 and 2 are built on these (`docs/v0.7/admissions_editor_s1_2_report_v1.md`).
+
+1. Look and compare options that don't draw are **hidden** until they do (a).
+2. Any view can go in any panel, **with a warning** when a view that needs two columns goes into one (a).
+3. Admissions spans: (a), column 1 one unit, columns 2–3 one large view, no full-width span.
+   - **Guy adds:** the large 2–3 view's **full screen** must be a proper focus mode: the rail, the entry-point chips, the notes icon and the ⋯ menu, filling the window, closed with Esc or the icon, on every panel; on a phone the existing tab layout, full screen.
+4. Column-1 tiles stay fixed. Column 1 may hold a rail (a). Choosable tiles come later.
+5. The preview size switch is Admissions only first (a). Teacher follows in its own small round.
+6. Admissions views on other dashboards come later (stage 5), and only on SMT and Admissions dashboards (b).
+7. On another dashboard, the entry point is pinned per view (a).
+8. The flag list becomes its own view (a), in stage 2.
+9. The funnel offers no compare chips. Its area follows the lead's blend (a).
+10. Only platform admins edit the published Admissions dashboards in 0.7 (a).

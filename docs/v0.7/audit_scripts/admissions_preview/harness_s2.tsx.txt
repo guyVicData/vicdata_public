@@ -1,0 +1,32 @@
+import { createRoot } from "react-dom/client";
+import { AdmissionsDashboard, AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
+import { admissionsVars } from "@/components/admissions/ui";
+import { EditorScreen } from "@/components/editor/EditorScreen";
+import { presetSpec } from "@/catalogue/viewspec";
+import { compareOf, ADMISSIONS_VIEW_COMPARE } from "@/catalogue/admissions-editor";
+const P = new URLSearchParams(location.search);
+const w = P.get("w");
+const el = document.getElementById("root")!;
+if (w) el.style.width = `${w}px`;
+const page = P.get("page");
+// page=look: one view as the editor previews it, with ?lk=key:value (a look) and ?feeders=day|boarding|both|page
+function lookPage() {
+  const dv = P.get("dv")! as `DV-${string}`;
+  const spec = presetSpec(dv);
+  for (const kv of P.getAll("lk")) {
+    const [k, raw] = kv.split(":");
+    const v = raw === "true" ? true : raw === "false" ? false : /^\d+$/.test(raw) ? Number(raw) : raw;
+    (spec.view.look as Record<string, unknown>)[k] = v;
+  }
+  const f = P.get("feeders");
+  if (f) spec.compare = compareOf({ feeders: f as "day", lines: new Set((ADMISSIONS_VIEW_COMPARE[dv]?.lines ?? []).map((l) => l.kind)) }, ADMISSIONS_VIEW_COMPARE[dv]);
+  const theme = (P.get("theme") ?? "dark") as "dark";
+  return (
+    <main id="teacher-root" data-theme={theme} style={{ ...admissionsVars(theme), background: "var(--bg)", padding: 20, color: "var(--fg)" }}>
+      <div data-slot="" style={{ width: Number(P.get("sw") ?? 844), height: Number(P.get("sh") ?? 450), background: "var(--panel-bg)", border: "1px solid var(--panel-border)", borderRadius: 12, padding: 12, boxSizing: "content-box", overflow: "hidden" }}>
+        <AdmissionsViewPreview dataview={dv} spec={spec} urn={P.get("case")!} schoolName="School" entry={P.get("entry") ?? "11+"} height={Number(P.get("sh") ?? 450)} />
+      </div>
+    </main>
+  );
+}
+createRoot(el).render(page === "editor" ? <EditorScreen id={P.get("dash") ?? "vicdata.admissions.pipelines"} /> : page === "look" ? lookPage() : <AdmissionsDashboard />);

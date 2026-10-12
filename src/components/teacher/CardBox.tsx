@@ -112,6 +112,7 @@ export function CardBox({
   menu,
   height,
   headerExtra,
+  focus,
   children,
 }: {
   title: string;
@@ -174,6 +175,12 @@ export function CardBox({
   // the card (Admissions' header chips: the feeder lists, the births blend). Absent = nothing,
   // as every Teacher panel.
   headerExtra?: ReactNode;
+  // 0.7 admissions editor s1 (Guy, decision 3): full screen as a focus mode -- the modal fills the
+  // window, and keeps what the card has for moving about: the header chips (headerExtra), the
+  // `bar` (Admissions' entry-point chips) and the controls row (the phone's tabs) above the figure,
+  // the rail beside it, the notes behind their icons below it (the caption and source print in
+  // full only on paper). Absent = Teacher's full screen, exactly as before.
+  focus?: { bar?: ReactNode };
   // Round 8 §2: every panel is the same height, so the three columns read as a true 3x3
   // grid rather than three ragged stacks. Absent = size to content, which is what the KS2
   // boxes and any non-panel caller still want.
@@ -267,7 +274,7 @@ export function CardBox({
         {isModal && question && <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">{question}</p>}
         {subtitle && <p className="text-[11px] text-neutral-500">{subtitle}</p>}
       </div>
-      {!isModal && headerExtra && <div className="ml-auto flex min-w-0 shrink items-center gap-1.5 print:hidden">{headerExtra}</div>}
+      {(!isModal || focus) && headerExtra && <div className="ml-auto flex min-w-0 shrink items-center gap-1.5 print:hidden">{headerExtra}</div>}
       {/* 0.7 admissions r3 (F1): the one icon row (PanelIconRow) -- menu, full screen,
           collapse -- in the same order and places on every Teacher and Admissions panel. */}
       <PanelIconRow
@@ -376,8 +383,15 @@ export function CardBox({
           onClose={() => setFullscreen(false)}
           initialFocusRef={closeRef}
           printable={printing}
+          size={focus ? "focus" : undefined}
         >
           {header(true)}
+          {focus && (focus.bar || controls) && (
+            <div data-focus-bar="" className="flex shrink-0 flex-col gap-2 print:hidden">
+              {focus.bar && <div className="flex flex-wrap items-center gap-2">{focus.bar}</div>}
+              {controls}
+            </div>
+          )}
           {/* Accordion round Part 4 (first draft): the main area -- view rail, figure,
               conclusion, source -- and, beside it, a narrow rail for what the panel has
               that reads as a flag or a note. A 15rem rail against the ~1150px modal on a
@@ -394,10 +408,10 @@ export function CardBox({
                 )}
                 <div className="flex min-w-0 flex-grow flex-col">{children({ fullscreen: true })}</div>
               </div>
-              {captionLine}
+              {focus ? <div className="hidden print:block">{captionLine}</div> : captionLine}
               {/* The source is plain text here, on screen AND in print -- the same line
                   in both, rather than a print-only copy of what the card hides behind "i". */}
-              {source && <p className="text-[11px] leading-relaxed text-[var(--source)]">{source}</p>}
+              {source && <p className={`text-[11px] leading-relaxed text-[var(--source)]${focus ? " hidden print:block" : ""}`}>{source}</p>}
             </div>
             {(legend || flag || note) && (
               <aside className="flex min-h-0 flex-col gap-4 border-t border-[var(--panel-border)] pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
@@ -438,6 +452,8 @@ export function CardBox({
               above as text, the flag and note are in the rail. */}
           <div className="flex items-center gap-1.5 print:hidden">
             {footerLead}
+            {focus && <SourceNote>{source}</SourceNote>}
+            {focus && <CaptionNote>{caption}</CaptionNote>}
             {footerActions?.({ print: printPanel, fullscreen: true })}
           </div>
         </TeacherModal>

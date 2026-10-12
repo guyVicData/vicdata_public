@@ -15,7 +15,7 @@ import { DATAVIEWS } from "@/catalogue/dataviews";
 import { dataviewResults } from "@/catalogue/results";
 import { presetSpec, type CompareSeries, type CompareSeriesKind, type ViewKind, type ViewPer, type ViewSpec } from "@/catalogue/viewspec";
 import { titleTemplateOf, type PickPanelContext } from "@/catalogue/pick";
-import type { DashboardConfig, Dataview, DataviewId, DataviewInstance, HostId, Phase, ResultsMeasure } from "@/catalogue/types";
+import type { DashboardConfig, Dataview, DataviewId, DataviewInstance, EntryPointState, HostId, Phase, ResultsMeasure } from "@/catalogue/types";
 import { compareHonest, hostOnMeasure, perHonest, showForOptions, shownAsHonest, viewHonest, VIEW_KINDS, VIEW_LABEL, changeLabel, SHORT_KIND, type HonestContext, type HonestMeasure, type ShowFor } from "@/catalogue/honest";
 import { hostForColumn, hostPanelOfConfig } from "@/components/dashboard-config/embed";
 import type { Target } from "@/lib/editor-ops";
@@ -35,7 +35,9 @@ export type EditorEnv = {
   ctx: PickPanelContext;
   // 0.7 admissions r2 (D7): an Admissions column -- its steps are AdmissionsSteps.tsx's, and
   // "Shows for" lists entry points.
-  admissions?: { family: string };
+  // 0.7 admissions editor s1 (gap 7): the edit bar's entry point and the panel's real size on the
+  // Admissions page (its span, its row, whether it has a rail), so the preview draws as the panel.
+  admissions?: { family: string; entry?: EntryPointState; span?: number; firstRow?: boolean; railed?: boolean };
 };
 
 export type Draft = {
