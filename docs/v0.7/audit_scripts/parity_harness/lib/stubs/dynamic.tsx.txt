@@ -1,0 +1,6 @@
+/* eslint-disable */
+import { lazy, Suspense, createElement } from "react";
+export default function dynamic(loader: any, _opts?: any) {
+  const L = lazy(() => loader().then((m: any) => ({ default: m?.default ?? m })));
+  return (p: any) => createElement(Suspense, { fallback: null }, createElement(L, p));
+}

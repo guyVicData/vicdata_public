@@ -1,0 +1,24 @@
+// SSR entry (bundled per tree): the public school page, rendered to static markup on recorded
+// data. Async server components are awaited by hand (renderToStaticMarkup can't), client
+// components render their first (pre-effect) markup.
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import Page from "@/app/schools/[urn]/page";
+
+const isAsync = (f: any) => typeof f === "function" && f.constructor && f.constructor.name === "AsyncFunction";
+async function resolve(node: any): Promise<any> {
+  if (node == null || typeof node !== "object") return node;
+  if (Array.isArray(node)) return Promise.all(node.map(resolve));
+  if (typeof node.then === "function") return resolve(await node);
+  if (!React.isValidElement(node)) return node;
+  const el: any = node;
+  if (isAsync(el.type)) return resolve(await el.type(el.props));
+  const props = el.props ?? {};
+  if (props.children === undefined) return el;
+  const children = await resolve(props.children);
+  return React.cloneElement(el, undefined, ...(Array.isArray(children) ? children : [children]));
+}
+export async function render(urn: string): Promise<string> {
+  const el = await (Page as any)({ params: Promise.resolve({ urn }) });
+  return renderToStaticMarkup(await resolve(el));
+}

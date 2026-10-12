@@ -1,0 +1,4 @@
+// Import-graph entry: the members' Teacher pages.
+export { default as T1 } from "@/app/teacher/[phase]/page";
+export { default as T2 } from "@/app/teacher/page";
+export { default as T3 } from "@/app/teacher/people/page";

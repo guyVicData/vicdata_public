@@ -1,0 +1,36 @@
+// Headless Chrome over CDP: node shot.mjs <port> <out.png> <url> <width> [height] [waitMs]
+import { spawn } from "node:child_process";
+const [port, out, url, width, height = "1300", wait = "2500"] = process.argv.slice(2);
+const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", ["--headless=new", `--remote-debugging-port=${port}`, "--no-first-run", "--disable-gpu", "--hide-scrollbars", "--force-color-profile=srgb", "--font-render-hinting=none", `--user-data-dir=/tmp/admprev-chrome-${port}`, "about:blank"], { stdio: "ignore" });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let target;
+for (let i = 0; i < 50 && !target; i++) { await sleep(200); try { const l = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json(); target = l.find((t) => t.type === "page"); } catch {} }
+const ws = new WebSocket(target.webSocketDebuggerUrl);
+await new Promise((r) => (ws.onopen = r));
+let id = 0; const pend = new Map();
+const logs = [];
+ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } else if (d.method === "Runtime.exceptionThrown") logs.push("EXC " + (d.params.exceptionDetails.exception?.description ?? d.params.exceptionDetails.text).slice(0, 400)); else if (d.method === "Runtime.consoleAPICalled" && ["error", "warning"].includes(d.params.type)) logs.push(d.params.type + " " + d.params.args.map((a) => a.value ?? a.description ?? "").join(" ").slice(0, 300)); };
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+await send("Emulation.setDeviceMetricsOverride", { width: Number(width), height: Number(height), deviceScaleFactor: 1, mobile: Number(width) < 500 });
+await send("Page.enable");
+await send("Runtime.enable");
+await send("Page.navigate", { url });
+await sleep(Number(wait));
+if (process.env.CLICK) { for (const js of process.env.CLICK.split(";;")) { await send("Runtime.evaluate", { expression: js }); await sleep(Number(process.env.CLICKWAIT ?? 1200)); } }
+const h = await send("Runtime.evaluate", { expression: "Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)", returnByValue: true });
+const full = Math.min(4000, Math.max(Number(height), h.result.result.value));
+await send("Emulation.setDeviceMetricsOverride", { width: Number(width), height: full, deviceScaleFactor: 1, mobile: Number(width) < 500 });
+await sleep(400);
+const err = await send("Runtime.evaluate", { expression: "document.getElementById('err')?.textContent || document.title", returnByValue: true });
+let clip;
+if (process.env.CLIP) {
+  const r = await send("Runtime.evaluate", { expression: `JSON.stringify(document.querySelector(${JSON.stringify(process.env.CLIP)})?.getBoundingClientRect())`, returnByValue: true });
+  const b = JSON.parse(r.result.result.value ?? "null");
+  if (b) clip = { x: b.x - 20, y: b.y - 20, width: b.width + 40, height: b.height + 40, scale: 1 };
+}
+const shot = await send("Page.captureScreenshot", { format: "png", ...(clip ? { clip } : {}) });
+(await import("node:fs")).writeFileSync(out, Buffer.from(shot.result.data, "base64"));
+console.log(out, full, "|", err.result.result.value);
+if (process.env.LOGS) for (const l of logs) console.log("  " + l);
+ws.close(); chrome.kill();
+process.exit(0);

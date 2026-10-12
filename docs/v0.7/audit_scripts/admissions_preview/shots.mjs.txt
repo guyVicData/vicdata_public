@@ -1,0 +1,14 @@
+// Batch screenshots: node shots.mjs <jobs.json> — each job {out, url, w, h, wait, click?, clip?}; 4 at a time.
+import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+const jobs = JSON.parse(readFileSync(process.argv[2], "utf8"));
+let port = 9400, i = 0, done = 0;
+const run = (j) => new Promise((res) => {
+  const env = { ...process.env, ...(j.click ? { CLICK: j.click } : {}), ...(j.clip ? { CLIP: j.clip } : {}) };
+  const p = spawn("perl", ["-e", "alarm 90; exec @ARGV", "node", "shot.mjs", String(port++), j.out, j.url, String(j.w), String(j.h ?? 1180), String(j.wait ?? 5000)], { env, stdio: ["ignore", "pipe", "pipe"] });
+  p.stdout.on("data", (d) => process.stdout.write(d));
+  p.on("exit", () => { done++; res(); });
+});
+const worker = async () => { while (i < jobs.length) await run(jobs[i++]); };
+await Promise.all([worker(), worker(), worker(), worker()]);
+console.log(`[shots] ${done}/${jobs.length}`);

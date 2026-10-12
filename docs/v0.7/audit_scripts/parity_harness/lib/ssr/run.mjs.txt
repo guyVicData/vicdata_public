@@ -1,0 +1,32 @@
+// node --env-file=<repo>/.env run.mjs <bundle.mjs> <record|replay> <store.json> <outPrefix> <urn...>
+// Wraps fetch: "record" calls the network and saves every response (by method+url+body);
+// "replay" serves the saved responses (a miss goes to the network and is counted).
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+const [bundle, mode, storePath, outPrefix, ...urns] = process.argv.slice(2);
+const store = mode === "replay" && existsSync(storePath) ? JSON.parse(readFileSync(storePath, "utf8")) : {};
+const realFetch = globalThis.fetch;
+let hits = 0, misses = 0, recorded = 0;
+globalThis.fetch = async (input, init = {}) => { try { return await wrapped(input, init); } catch (e) { console.log('[ssr] fetch wrapper error', String(e)); throw e; } };
+const wrapped = async (input, init) => {
+  const req = new Request(input, init);
+  const body = init.body ? String(init.body) : (req.method !== "GET" && req.method !== "HEAD" ? await req.clone().text() : "");
+  const key = `${req.method} ${req.url} ${body}`;
+  if (mode === "replay" && store[key]) { hits++; const s = store[key]; return new Response(s.body, { status: s.status, headers: s.headers }); }
+  if (mode === "replay") misses++;
+  const res = await realFetch(input, init);
+  const text = await res.text();
+  const headers = {}; for (const h of ["content-type", "content-range"]) { const v = res.headers.get(h); if (v) headers[h] = v; }
+  if (mode === "record") { store[key] = { status: res.status, headers, body: text }; recorded++; }
+  return new Response(text, { status: res.status, headers });
+};
+process.on("unhandledRejection", (e) => console.log("UNHANDLED", e));
+const { render } = await import(bundle);
+for (const urn of urns) {
+  const t0 = Date.now();
+  const html = await render(urn);
+  writeFileSync(`${outPrefix}_${urn}.html`, html);
+  console.log(`[ssr ${mode}] ${urn}: ${html.length} bytes in ${Date.now() - t0} ms`);
+}
+if (mode === "record") writeFileSync(storePath, JSON.stringify(store));
+console.log(`[ssr ${mode}] fetch: recorded ${recorded}, replay hits ${hits}, misses ${misses}`);
+process.exit(0);

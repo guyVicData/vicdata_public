@@ -1,0 +1,21 @@
+import json
+B="http://127.0.0.1:8977/index.html?role=lead&saved=1"
+L='[data-adm-panel$=".c2.now"]'
+def click(label): return f'document.querySelector("[aria-label=\\"{label}\\"]").click()'
+jobs=[]
+for th in ["dark","light"]:
+  jobs+=[
+   {"out":f"shots/b_Main_{th}.png","url":f"{B}&case=137625&theme={th}","w":1440,"h":1180},
+   {"out":f"shots/b_MarketShare_{th}.png","url":f"{B}&case=137625&theme={th}&view=market-share","w":1440,"h":1180,"wait":6000},
+   {"out":f"shots/b_Pipeline16_{th}.png","url":f"{B}&case=137625&theme={th}&entry=16%2B","w":1440,"h":1180,"clip":L},
+   {"out":f"shots/b_ShapeView_{th}.png","url":f"{B}&case=137625&theme={th}","w":1440,"h":1180,"clip":L,"click":click("Shape and size")},
+   {"out":f"shots/b_RivalMomentum_{th}.png","url":f"{B}&case=137625&theme={th}&view=market-share","w":1440,"h":1180,"clip":L,"click":click("Rivals’ momentum")+";;"+click("Rivals' momentum"),"wait":6000},
+   {"out":f"shots/b_RivalSubjects_{th}.png","url":f"{B}&case=137625&theme={th}&view=market-share","w":1440,"h":1180,"clip":L,"click":click("Strengths and weaknesses"),"wait":6000},
+   {"out":f"shots/b_Phone_{th}.png","url":f"{B}&case=137625&theme={th}","w":390,"h":844},
+   {"out":f"shots/b_PhoneMarket_{th}.png","url":f"{B}&case=137625&theme={th}&view=market-share","w":390,"h":844,"wait":6000},
+  ]
+  for i,st in enumerate(["entry","day","boarding","rivals"],1):
+    jobs.append({"out":f"shots/b_Onboard{i}_{th}.png","url":f"{B}&case=137625&theme={th}&setup={st}","w":390,"h":844})
+  jobs.append({"out":f"shots/b_Main1440_390_{th}.png","url":f"{B}&case=137625&theme={th}&view=market-share","w":390,"h":844,"wait":6000})
+json.dump(jobs,open("jobs_boards.json","w"))
+print(len(jobs))

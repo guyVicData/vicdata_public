@@ -1,0 +1,136 @@
+#!/bin/zsh
+# run_parity.sh -- VicData parity: the branch working tree of /Users/guy/dev/vicdata_public vs `main`.
+# See README.txt. Read-only against the repo and the database; writes only under this directory.
+#
+#   ./run_parity.sh                 full run (all 7 case sets, import graph, SSR)
+#   ./run_parity.sh --sets "c5_0 sv" only those case sets (c5_0 c5_1 c5_2 c5_3 rka rkb sv)
+#   ./run_parity.sh --recapture-main  re-capture main's fixtures too (else cached)
+#   ./run_parity.sh --rk            re-capture the ranking fixtures (else cached)
+#   ./run_parity.sh --selftest      also run the negative control (a planted label change must be caught)
+#   ./run_parity.sh --no-walk       fixtures + import graph + SSR only
+setopt null_glob
+W=${0:A:h}
+R=/Users/guy/dev/vicdata_public
+L=$W/lib; H=$W/h
+HP=${PARITY_HTTP:-8991}
+SETS="c5_0 c5_1 c5_2 c5_3 rka rkb sv"; RECAP_MAIN=0; RK=0; SELFTEST=0; WALK=1
+WALK_CAP=${PARITY_WALK_CAP:-5400}   # seconds per walker
+while [ $# -gt 0 ]; do case $1 in
+  --sets) SETS=$2; shift;; --recapture-main) RECAP_MAIN=1;; --rk) RK=1;; --selftest) SELFTEST=1;; --no-walk) WALK=0;;
+  *) echo "unknown option $1"; exit 2;; esac; shift; done
+T0=$SECONDS
+log() { echo "[parity +$((SECONDS-T0))s] $*"; }
+export PARITY_HTTP=$HP PARITY_FIX=$H/fix
+mkdir -p $W/logs $W/out $H/fix
+RUN=$W/out/run_$(date +%Y%m%d_%H%M%S); mkdir -p $RUN
+exec > >(tee -a $RUN/run.log) 2>&1
+log "run dir $RUN"
+log "branch: $(git -C $R rev-parse --abbrev-ref HEAD) @ $(git -C $R rev-parse --short HEAD) (+ working tree); main @ $(git -C $R rev-parse --short main)"
+
+# 1. main worktree (created once, reused; moved to main's tip if main has moved)
+if [ ! -d $W/main-tree/.git ] && [ ! -f $W/main-tree/.git ]; then
+  log "creating main worktree"
+  git -C $R worktree add --detach $W/main-tree main && cp -cR $R/node_modules $W/main-tree/ || { log "worktree FAILED"; exit 1; }
+  RECAP_MAIN=1
+fi
+if [ "$(git -C $W/main-tree rev-parse HEAD)" != "$(git -C $R rev-parse main)" ]; then
+  log "main moved: updating the worktree to $(git -C $R rev-parse --short main)"
+  git -C $W/main-tree checkout -q --detach $(git -C $R rev-parse main) || { log "worktree update FAILED"; exit 1; }
+  RECAP_MAIN=1
+fi
+if ! cmp -s $R/package-lock.json $W/main-tree/package-lock.json; then log "WARNING: package-lock.json differs between branch and main (main-tree keeps its cloned node_modules)"; fi
+
+# 2. static server for the harness page
+if ! curl -s -o /dev/null --max-time 3 http://127.0.0.1:$HP/index.html; then
+  (cd $H && nohup python3 -m http.server $HP --bind 127.0.0.1 > $W/logs/http.log 2>&1 &)
+  STARTED_HTTP=1; sleep 1
+fi
+curl -s -o /dev/null --max-time 3 http://127.0.0.1:$HP/index.html || { log "http server on $HP not reachable"; exit 1; }
+log "serving $H on 127.0.0.1:$HP"
+
+# 3. fixtures: branch every run; main when missing / asked / main moved
+log "capturing branch fixtures"
+$L/capall.sh br || { log "branch fixture capture FAILED (logs: $W/logs/cap_br_*.log)"; exit 1; }
+if [ $RECAP_MAIN = 1 ] || { fm=($H/fix/fix_main_*.js); [ ${#fm} -lt 10 ]; }; then
+  log "capturing main fixtures"; $L/capall.sh main || { log "main fixture capture FAILED"; exit 1; }
+else log "main fixtures: cached ($(ls -l $H/fix/fix_main_137625_ks4.js | awk '{print $6, $7, $8}'))"; fi
+SAME=0; DIFF=""
+for f in $H/fix/fix_br_*.js; do m=${f/fix_br_/fix_main_}; if cmp -s $f $m; then SAME=$((SAME+1)); else DIFF="$DIFF ${f:t}"; fi; done
+FIXLINE="fixtures: $SAME/10 byte-identical between trees${DIFF:+; differ:$DIFF}"
+log "$FIXLINE"
+
+# 4. bundles + CSS
+log "building bundles"
+$L/build.sh main && $L/build.sh br || { log "build FAILED"; exit 1; }
+
+# 5. ranking fixtures (shared by both trees; computed by the branch lib). Probed only when asked or missing.
+if [ $RK = 1 ] || { fr=($H/fix/fix_rk_*.js); [ ${#fr} -lt 3 ]; }; then
+  [ $RK = 1 ] && rm -f $H/fix/fix_rk_*.js
+  python3 -c "import json; json.dump(json.load(open('$L/cases/cases6_rk_a.json'))+json.load(open('$L/cases/cases6_rk_b.json')),open('$L/cases/cases6_rk_all.json','w'))"
+  for pass in 1 2 3; do
+    log "ranking fixtures: probe pass $pass"
+    perl -e 'alarm 1200; exec @ARGV' node $L/probe_rk.mjs $W/logs/rk_missing.json 9611 $L/cases/cases6_rk_all.json > $W/logs/probe_$pass.log 2>&1
+    n=$(python3 -c "import json;print(sum(len(x['missing']) for x in json.load(open('$W/logs/rk_missing.json'))))")
+    log "ranking fixtures: $n unanswered requests"; [ "$n" = 0 ] && break
+    (cd $R && perl -e 'alarm 1200; exec @ARGV' npx -y tsx --env-file=$R/.env $L/caprk.mts $R $W/logs/rk_missing.json > $W/logs/caprk_$pass.log 2>&1) || { log "caprk FAILED (see $W/logs/caprk_$pass.log)"; exit 1; }
+  done
+else log "ranking fixtures: cached"; fi
+
+# 6. walk: one headless Chrome per case set, in parallel
+typeset -A CASEFILE; CASEFILE=(c5_0 cases5_0.json c5_1 cases5_1.json c5_2 cases5_2.json c5_3 cases5_3.json rka cases6_rk_a.json rkb cases6_rk_b.json sv cases7_saved.json)
+if [ $WALK = 1 ]; then
+  pids=(); port=9620
+  for s in ${=SETS}; do
+    port=$((port+1))
+    (perl -e "alarm $WALK_CAP; exec @ARGV" node $L/walk.mjs $RUN/$s $port $L/cases/$CASEFILE[$s] > $RUN/walk_$s.log 2>&1) &
+    pids+=($!)
+  done
+  TOTAL=0; for s in ${=SETS}; do TOTAL=$((TOTAL + 2 * $(python3 -c "import json;print(len(json.load(open('$L/cases/$CASEFILE[$s]'))))"))); done
+  log "walking ${#pids} case sets ($TOTAL case x tree runs), cap ${WALK_CAP}s each"
+  while true; do
+    alive=0; for p in $pids; do kill -0 $p 2>/dev/null && alive=$((alive+1)); done
+    dn=($RUN/*/*/*__done); fl=($RUN/*/*/*__failed.txt); done_n=${#dn}; failed_n=${#fl}
+    [ $alive = 0 ] && break
+    log "walk: $done_n/$TOTAL case runs done, $failed_n failed, $alive walkers running"
+    sleep 60
+  done
+  log "walk finished: $done_n/$TOTAL case runs done, $failed_n failed"
+fi
+
+# 7. compare
+SUM=$RUN/SUMMARY.txt; : > $SUM
+echo "VicData parity $(date '+%Y-%m-%d %H:%M') -- branch $(git -C $R rev-parse --abbrev-ref HEAD) working tree vs main $(git -C $R rev-parse --short main)" >> $SUM
+echo "$FIXLINE" >> $SUM
+if [ $WALK = 1 ]; then
+  echo "Teacher walker (cmp6: IDENTICAL / NOISE (<=8/255 or <=0.1% px, words equal) / UNEXPECTED):" >> $SUM
+  for s in ${=SETS}; do
+    perl -e 'alarm 1200; exec @ARGV' python3 $L/cmp6.py $RUN/$s > $RUN/cmp_$s.txt 2>&1
+    line=$(grep '^SUMMARY' $RUN/cmp_$s.txt | sed 's/^SUMMARY //')
+    errs=$(grep 'errors/failed:' $RUN/cmp_$s.txt | sed 's/errors\/failed://' | tr '\n' ' ')
+    printf "  %-5s %s | %s\n" $s "${line:-cmp FAILED (see $RUN/cmp_$s.txt)}" "$errs" >> $SUM
+  done
+  python3 - $RUN ${=SETS} >> $SUM <<'PY'
+import sys, re
+run, sets = sys.argv[1], sys.argv[2:]
+tot = {}
+for s in sets:
+    try: line = [l for l in open(f"{run}/cmp_{s}.txt") if l.startswith("SUMMARY")][0]
+    except Exception: continue
+    for k, v in re.findall(r"(\w+)=(\d+)", line): tot[k] = tot.get(k, 0) + int(v)
+print("  TOTAL " + " ".join(f"{k}={v}" for k, v in tot.items()))
+PY
+fi
+log "import graph"
+echo "Import graph (esbuild metafile; branch graph ∩ files differing from main):" >> $SUM
+perl -e 'alarm 600; exec @ARGV' python3 $L/graph.py $RUN/graph 2>&1 | sed 's/^\[graph\] /  /' >> $SUM || echo "  graph FAILED" >> $SUM
+log "public page SSR"
+echo "Public school page SSR (renderToStaticMarkup, branch on live read-only data recorded, main on the recording):" >> $SUM
+perl -e 'alarm 900; exec @ARGV' $L/ssr.sh 2>&1 | grep -E '^\[ssr\] |first difference|replay\] fetch' | sed 's/^\[ssr[^]]*\] /  /' >> $SUM
+if [ $SELFTEST = 1 ]; then
+  log "negative control"; echo "Negative control:" >> $SUM
+  $L/selftest.sh 2>&1 | grep '^\[selftest\]' | sed 's/^/  /' >> $SUM
+fi
+echo "Run time: $((SECONDS-T0)) s. Output: $RUN" >> $SUM
+[ -n "$STARTED_HTTP" ] && pkill -f "http.server $HP --bind 127.0.0.1" 2>/dev/null
+echo; cat $SUM
+grep -qE "unexpected=[1-9]|only_main=[1-9]|only_branch=[1-9]|DIFFERENT|FAILED" $SUM && exit 3 || exit 0

@@ -1,0 +1,14 @@
+#!/bin/zsh
+# selftest.sh: negative control. A copy of the branch bundle with one visible label changed
+# ("Growing" -> "Growinq", the Trends panel badge) is walked as tree "neg" against main on one
+# case; cmp6 must report UNEXPECTED pairs for it (and IDENTICAL for the rest).
+W=${0:A:h:h}; H=$W/h; HP=${PARITY_HTTP:-8991}
+sed 's/"Growing"/"Growinq"/g' $H/bundle-br.js > $H/bundle-neg.js
+cp $H/app-br.css $H/app-neg.css
+for f in $H/fix/fix_br_*.js; do cp -c $f ${f/fix_br_/fix_neg_}; done
+python3 -c "import json; json.dump(json.load(open('$W/lib/cases/cases5_0.json'))[:1], open('$W/lib/cases/selftest.json','w'))"
+rm -rf $W/out/selftest
+PARITY_TREES=main,neg PARITY_HTTP=$HP perl -e 'alarm 400; exec @ARGV' node $W/lib/walk.mjs $W/out/selftest 9690 $W/lib/cases/selftest.json
+python3 $W/lib/cmp6.py $W/out/selftest neg > $W/out/selftest/cmp.txt
+grep -E "^SUMMARY|^   [0-9]" $W/out/selftest/cmp.txt | head -3; sed -n '/^UNEXPECTED:/,/^only-main/p' $W/out/selftest/cmp.txt | head -6
+grep -q "unexpected=0 " $W/out/selftest/cmp.txt && { echo "[selftest] FAIL: the planted change was not caught"; exit 1; } || echo "[selftest] OK: the planted change was caught"

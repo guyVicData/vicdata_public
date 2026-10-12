@@ -1,0 +1,10 @@
+// node css.mjs <out.css> <repoRoot>: compile <root>/src/app/globals.css with Tailwind v4, scanning <root> (as Next does).
+import { readFileSync, writeFileSync } from "node:fs";
+const root = process.argv[3] ?? "/Users/guy/dev/vicdata_public";
+const { default: postcss } = await import(root + "/node_modules/postcss/lib/postcss.js");
+const twm = await import(root + "/node_modules/@tailwindcss/postcss/dist/index.js");
+const tw = twm.default?.default ?? twm.default ?? twm;
+const from = root + "/src/app/globals.css";
+const r = await postcss([tw({ base: root })]).process(readFileSync(from, "utf8"), { from });
+writeFileSync(process.argv[2] ?? "app.css", r.css);
+console.log("css", r.css.length);

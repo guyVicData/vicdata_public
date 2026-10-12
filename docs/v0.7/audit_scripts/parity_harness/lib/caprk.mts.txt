@@ -1,0 +1,70 @@
+// Ranking fixtures (rebuilt 2026-10-12 from the 0.6.6 caprk.mts + the 0.6.7 caplean RK step):
+// what the chooser-set (headline ranking, resolveRankingSet) and subject-ranking routes return
+// for each request body probe_rk.mjs saw unanswered, plus the lean and full profiles for each
+// ranking set. Read-only; computed by <root>'s lib (the branch by default).
+//   cd <root> && PARITY_FIX=<dir> npx -y tsx --env-file=/Users/guy/dev/vicdata_public/.env caprk.mts <root> <rk_missing.json>
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { createRequire } from "node:module";
+const OUT = (process.env.PARITY_FIX ?? ".") + "/";
+const ROOT = process.argv[2];
+const R = ROOT + "/src/lib/";
+const SK = (o: unknown) => JSON.stringify(o, (_k, v) => (v && typeof v === "object" && !Array.isArray(v) ? Object.keys(v).sort().reduce((a: any, x) => ((a[x] = v[x]), a), {}) : v));
+async function main() {
+  const cs = await import(R + "chooser-sets.ts");
+  const cc = await import(R + "comparator-chooser.ts");
+  const sr = await import(R + "subject-ranking.ts");
+  const tcp = await import(R + "teacher-comparator-profiles.ts");
+  const adv = await import(R + "academic-data-view.ts");
+  const { createClient } = createRequire(ROOT + "/package.json")("@supabase/supabase-js");
+  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const missing = JSON.parse(readFileSync(process.argv[3], "utf8")) as { id: string; q: string; missing: any[] }[];
+  const files = new Map<string, any>();
+  const touched = new Set<string>();
+  for (const c of missing) {
+    const q = new URLSearchParams(c.q);
+    const file = `${OUT}fix_rk_${q.get("urn")}_${q.get("phase")}${q.get("fx") ?? ""}.js`;
+    if (!files.has(file)) files.set(file, existsSync(file) ? JSON.parse(readFileSync(file, "utf8").replace(/^window.__RK=/, "").replace(/;\s*$/, "")) : { chooser: {}, subject: {} });
+    const fx = files.get(file)!;
+    for (const m of c.missing) {
+      if (m.chooser) {
+        const k = SK(m.chooser.set.filters);
+        if (fx.chooser[k]) continue;
+        const { data: t } = await sb.from("schools").select("current_name, la_name").eq("urn", m.chooser.urn).maybeSingle();
+        const t0 = Date.now();
+        fx.chooser[k] = JSON.parse(JSON.stringify(await cs.resolveRankingSet(m.chooser.urn, t?.current_name ?? "This school", m.chooser.phase, m.chooser.set.filters, t?.la_name ?? null)));
+        touched.add(file);
+        console.log(c.id, "chooser", Date.now() - t0, "ms");
+      }
+      if (m.subject) {
+        const b = m.subject;
+        const k = SK(b);
+        if (fx.subject[k]) continue;
+        const t0 = Date.now();
+        const population = await cs.cachedRankingPopulation(b.filters.scope.kind === "region" ? b.filters.scope.code : null, b.phase, null);
+        const matched = population.filter((r: any) => cc.matchesRanking(r, b.filters));
+        const ranking = await sr.subjectRanking({ urns: matched.map((r: any) => r[0]), targetUrn: b.urn, phase: b.phase, subject: b.subject, familyId: b.familyId, qualificationType: b.qualificationType, measure: b.measure, period: b.period ?? null }, SK(b.filters) + b.phase);
+        const wanted = new Set([...ranking.window.map((w: any) => w.urn), ...(ranking.change?.window ?? []).map((w: any) => w.urn), ...Object.keys(ranking.windowSeries)]);
+        const names: Record<string, unknown> = {};
+        for (const r of population as any[]) if (wanted.has(r[0])) names[r[0]] = { name: r[1], independent: r[2] === null ? null : r[2] === "Independent" };
+        fx.subject[k] = JSON.parse(JSON.stringify({ ...ranking, names }));
+        touched.add(file);
+        console.log(c.id, "subject", JSON.stringify(b.measure), b.qualificationType, `${ranking.targetRank} of ${ranking.ranked}`, Date.now() - t0, "ms");
+      }
+    }
+  }
+  for (const [file, RK] of files) {
+    if (!touched.has(file) && RK.chooserProfiles) continue;
+    const [, urn, phase] = file.match(/fix_rk_(\d+)_(ks\d)/)!;
+    RK.chooserProfiles = {};
+    RK.chooserFullProfiles = {};
+    for (const [k, v] of Object.entries(RK.chooser) as [string, { rows: { urn: string }[] }][]) {
+      const urns = tcp.profileUrnsFor(v.rows.map((r) => r.urn), urn);
+      RK.chooserProfiles[k] = (await tcp.fetchTeacherComparatorProfiles(urns, phase as "ks4" | "ks5")).map(adv.serializeAcademicProfile);
+      RK.chooserFullProfiles[k] = (await adv.fetchAcademicProfiles(urns, { includeSubjects: true })).map(adv.serializeAcademicProfile);
+    }
+    writeFileSync(file, "window.__RK=" + JSON.stringify(RK) + ";\n");
+    console.log(file.split("/").pop(), Object.keys(RK.chooser).length, "ranking sets,", Object.keys(RK.subject).length, "subject rankings");
+  }
+  process.exit(0);
+}
+main().catch((e) => { console.error(e); process.exit(1); });
