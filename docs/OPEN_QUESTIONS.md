@@ -1888,3 +1888,19 @@ The screens for Admissions (docs/v0.7/vicdata_0_7_admissions_round2_views_claude
 - **Export (D8).** Print this view (the fullscreen view, printed alone) and Copy to meeting slides (Teacher's dialog, meeting only: a custom dashboard draws Teacher's hosts). A slide pins the school and entry point and draws live from the routes. Large views fit a 16:9 slide in the 2×2 span cell (750 × 696 figure); at one unit (327 × 300) the pipeline, funnel, map and donut read, but the tables, momentum, strengths and shape need the 2×2 span.
 - **Maps** reuse `ConsortiumMap` through new optional props (colour per dot, the school ringed, tooltip, height, click, fit padding); absent, the consortium page draws exactly as before. The Data View's maps aren't touched.
 - **Rule tests:** 17 new R-ADM rules, each with a real-data runner (49 PASS in all).
+
+## 2026-10-12 — 0.7 admissions r2b
+
+The three follow-ups Guy approved from round 2 (docs/v0.7/vicdata_0_7_admissions_round2b_followups_claude_code_prompt_v1.md). Report: [`docs/v0.7/admissions_r2b_report_v1.md`](v0.7/admissions_r2b_report_v1.md).
+
+### Calls (logged, build carried on)
+
+- **E1: who counts as an override.** A write by anyone who isn't the school's Admissions lead: under the new policies that can only be the School-Admin or the account holder. A School-Admin who is also the lead writes as the lead (no override row). Service-role writes (scripts) have no user and aren't audited, as before.
+- **E1: `updated_by_kind` on both tables.** The lead must see "Changed by School-Admin [name], [date]", but only the School-Admin reads the audit log (round 1's policy). So the stamp trigger also records whose kind of write it was (`lead` / `school_admin`), set by the database, never the client. The lists route reads it when the column exists and falls back without it.
+- **E1: `admissions_can_edit_lists(school_account_id)`.** The page asks it whether a School-Admin may edit. Before the migration it doesn't exist, the call fails and the page keeps round 1's rule (setup read-only for the School-Admin). So the app works before and after the apply, with no deploy between.
+- **E1: what an override row says.** `detail` has `op` (insert/update/delete), the entry point, and for a list its kind, rung and id, the fields changed, and the URNs added and removed. An update that changes nothing isn't recorded: the entry-point save re-upserts every row, and those would otherwise fill the history.
+- **E1: first-visit setup still opens by itself for the lead only.** A School-Admin opens it from the ± or the rivals chip. It's an override, so it shouldn't be pushed on them.
+- **E2: `&subject=` as well as `set=`.** The Strengths link passes the subject area's name. Teacher focuses the subject with that name (exact name, case aside; first by entries if the school runs it under more than one qualification). If it isn't ticked, it is ticked for this visit only, not saved. A family with no subject of the same name (e.g. "Sciences") changes nothing. One edge: if the teacher then ticks or unticks another subject, the page saves the tick list it has, and that includes the linked subject.
+- **E2: the set is the rivals without the school,** the first 30 if there are more (Teacher reads at most 30). The Academic panel's short "subject explorer →" link passes the rivals too; its wording stays short, with the full wording as its title.
+- **E2: changing the set** (any choice in the chooser) drops the linked set and takes `set` and `subject` out of the address, so a reload doesn't bring it back.
+- **E3: the server says when a past year is drawn** (`poolTrends.pastAreaYears`: years before the latest with an LA or England value). The note shows under the pool-trend chart and table only then.

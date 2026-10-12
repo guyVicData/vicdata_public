@@ -1,0 +1,25 @@
+VicData parity 2026-10-12 13:01 -- branch v0.7-admissions-r2b working tree vs main 85ac4e6
+fixtures: 10/10 byte-identical between trees
+Teacher walker (cmp6: IDENTICAL / NOISE (<=8/255 or <=0.1% px, words equal) / UNEXPECTED):
+  c5_0  pairs=588 identical=588 noise=0 unexpected=0 only_main=0 only_branch=0 | main  ['130416-ks5-points-dark-1280__errors.txt'] br  ['130416-ks5-points-dark-1280__errors.txt'] 
+  c5_1  pairs=576 identical=576 noise=0 unexpected=0 only_main=0 only_branch=0 | main  ['130432_btec-ks5-bands-light-390__errors.txt', '130416-ks5-points-light-390__errors.txt'] br  ['130432_aslaw-ks5-points-light-390__errors.txt', '130416-ks5-points-light-390__errors.txt'] 
+  c5_2  pairs=552 identical=552 noise=0 unexpected=0 only_main=0 only_branch=0 | main  [] br  [] 
+  c5_3  pairs=590 identical=590 noise=0 unexpected=0 only_main=0 only_branch=0 | main  [] br  [] 
+  rka   pairs=268 identical=268 noise=0 unexpected=0 only_main=0 only_branch=0 | main  [] br  [] 
+  rkb   pairs=229 identical=229 noise=0 unexpected=0 only_main=0 only_branch=0 | main  [] br  [] 
+  sv    pairs=72 identical=72 noise=0 unexpected=0 only_main=0 only_branch=0 | main  [] br  [] 
+  TOTAL pairs=2875 identical=2875 noise=0 unexpected=0 only_main=0 only_branch=0
+Import graph (esbuild metafile; branch graph ∩ files differing from main):
+  14 src files differ from main (tracked diff + untracked)
+  dataview: 72 src modules; changed files in graph: 0
+  dataview-api: 44 src modules; changed files in graph: 0
+  public: 61 src modules; changed files in graph: 0
+  public-api: 13 src modules; changed files in graph: 0
+  teacher: 263 src modules; changed files in graph: 12 -> src/catalogue/notes.ts, src/catalogue/rules.ts, src/components/admissions/AdmissionsDashboard.tsx, src/components/admissions/api.ts, src/components/admissions/member.ts, src/components/admissions/panels/Academic.tsx, src/components/admissions/people/AdmissionsPeople.tsx, src/components/admissions/setup/Setup.tsx, src/components/admissions/views/Lines.tsx, src/components/admissions/views/Strengths.tsx, src/components/dashboard-config/TeacherDashboard.tsx, src/lib/teacher-view-linked-set.ts; modules only in one tree's graph: src/lib/teacher-view-linked-set.ts
+Public school page SSR (renderToStaticMarkup, branch on live read-only data recorded, main on the recording):
+  fetch: recorded 0, replay hits 62, misses 0
+  137625: IDENTICAL (64747 bytes)
+  117037: IDENTICAL (73399 bytes)
+Negative control:
+  [selftest] OK: the planted change was caught
+Run time: 1310 s. Output: /private/tmp/claude-501/-Users-guy-dev-vicdata-public/1a6ac012-a52f-49bf-9748-5d4230c69565/scratchpad/parity/out/run_20261012_124040
