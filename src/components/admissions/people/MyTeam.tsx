@@ -11,7 +11,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { displayNameOf } from "@/components/admin/AdminChrome";
 import { loadAdmissionsMember, type MemberState } from "../member";
-import { AdmissionsNav } from "../Chrome";
+import { AdmissionsTeacherNav } from "../controls";
 import { admissionsVars, cx } from "../ui";
 import { LeadBadge } from "./AdmissionsPeople";
 
@@ -56,7 +56,7 @@ export function MyTeam() {
   return (
     <main id="teacher-root" data-theme={theme} className="min-h-screen bg-[var(--bg)] text-[var(--fg)]" style={admissionsVars(theme)}>
       <div className="mx-auto flex max-w-[640px] flex-col gap-4 px-5 py-5">
-        <AdmissionsNav theme={theme} onTheme={setTheme} />
+        <AdmissionsTeacherNav schoolUrn={member?.schoolUrn ?? null} theme={theme} onTheme={setTheme} />
         <Link href="/teacher/admissions" className="text-[13px] text-[var(--muted)] hover:text-[var(--fg)]">
           &larr; Admissions
         </Link>

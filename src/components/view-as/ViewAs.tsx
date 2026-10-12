@@ -5,9 +5,10 @@
 // mechanism itself is src/lib/view-as.ts (item C), lasting across tabs.
 //
 // One component, two places (one source of truth):
-//   * ViewAsPill: the compact pill in the top nav, before the account link -- "Viewing as:
-//     you" at rest, "Teacher · The Chase ▾" in People's role-chip colour while viewing as
-//     someone -- opening the existing PanelMenu popover with the panel below in it;
+//   * ViewAsPill: the compact pill in the top nav, before the account link -- "Teacher · The
+//     Chase ▾" in People's role-chip colour while viewing as someone, opening the existing
+//     PanelMenu popover with the panel below in it. 0.7 r3 (F5): nothing at rest (it used to
+//     read "Viewing as: you"); the popover opens from the footer's "View as…" instead;
 //   * ViewAsCard: the same panel as a card on /account, for anyone who goes there.
 // Platform's "Look at it as…" opens the pill's popover with that school and role filled in
 // (openViewAs); the banner's Change opens it too.
@@ -265,7 +266,7 @@ export function ViewAsCard() {
       </div>
       <p className="mt-1 text-sm text-neutral-500">
         See VicData exactly as a member with one role at a school sees it. It saves as that member, never to your own account or to the school, and
-        the school never sees it. It lasts across tabs until Back to me. The View as pill in the top bar does the same from any page.
+        the school never sees it. It lasts across tabs until Back to me. &ldquo;View as…&rdquo; at the foot of every page does the same.
       </p>
       <ViewAsPanel compact={false} />
     </section>
@@ -303,6 +304,20 @@ export function ViewAsPill({ tone }: { tone: "teacher" | "site" }) {
   }, [shown]);
 
   if (!shown) return null;
+
+  // 0.7 admissions r3 (F5): the pill shows only while viewing as someone. At rest there's no
+  // "Viewing as: you" in the nav: View as opens from the edit bar (the footer's "View as…",
+  // FooterViewAs) and the account page. The popover still opens here, in the nav, from either.
+  if (!current)
+    return (
+      <div className="relative" ref={ref} data-view-as-pill="">
+        {open && (
+          <PanelMenu label="View as" align="right" width={320} tall>
+            <ViewAsPanel key={openKey} compact prefill={prefill} />
+          </PanelMenu>
+        )}
+      </div>
+    );
 
   const accent = current ? ROLE_ACCENT[current.role] : null;
   const style: CSSProperties = current && accent

@@ -74,6 +74,9 @@ export function ControlBar({
   chrome,
   switcher,
   results,
+  badge,
+  subjectsLabel = "Focus subject",
+  editSubjects,
 }: {
   // Content round S1: the badge draws the phase's own PhaseGlyph -- the one the Teacher
   // home tiles and the nav's phase switcher use -- not a separate mortarboard.
@@ -96,13 +99,19 @@ export function ControlBar({
   // 0.6.1 S5 (D3 + D4): the Results switch and the grade band choice (ResultsControl),
   // beside the Candidates / Results switch -- Results mode only, never in an embed.
   results?: ReactNode;
+  // 0.7 admissions r3 (F4): Admissions draws this same bar -- its "A" badge in the phase glyph's
+  // place, its entry points in the subject chips' slot (`subjectsLabel` names the group), and the
+  // "±" can be read-only for anyone but the lead (`editSubjects`). All absent = exactly as before.
+  badge?: ReactNode;
+  subjectsLabel?: string;
+  editSubjects?: { label: string; title?: string; disabled?: boolean };
 }) {
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3">
       <div className="flex flex-wrap items-center gap-3.5">
         <div className="flex items-center gap-2.5 whitespace-nowrap">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[rgba(var(--accent-rgb,138,138,144),0.14)] text-[var(--accent,var(--muted2))]">
-            <span className="flex [&>svg]:h-[23px] [&>svg]:w-[23px]"><PhaseGlyph phase={phase} /></span>
+            {badge ?? <span className="flex [&>svg]:h-[23px] [&>svg]:w-[23px]"><PhaseGlyph phase={phase} /></span>}
           </span>
           <p className="text-base font-bold">
             {phaseLabel}
@@ -116,7 +125,7 @@ export function ControlBar({
 
       <div className="flex flex-wrap items-center gap-2 print:hidden">
         {subjects.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Focus subject">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label={subjectsLabel}>
             {subjects.map((s) => {
               const on = s.key === focusKey;
               return (
@@ -143,10 +152,11 @@ export function ControlBar({
         <button
           type="button"
           onClick={onEditSubjects}
-          aria-label="Change subjects"
+          disabled={editSubjects?.disabled}
+          aria-label={editSubjects?.label ?? "Change subjects"}
           aria-haspopup="dialog"
-          title="Change subjects"
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[var(--accent,var(--muted2))] text-[13px] font-extrabold text-[var(--accent,var(--muted2))]"
+          title={editSubjects?.title ?? "Change subjects"}
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[var(--accent,var(--muted2))] text-[13px] font-extrabold text-[var(--accent,var(--muted2))]${editSubjects?.disabled ? " opacity-50" : ""}`}
         >
           &plusmn;
         </button>
