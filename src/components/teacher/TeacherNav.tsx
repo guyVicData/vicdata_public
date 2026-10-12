@@ -28,7 +28,8 @@ import { ViewAsPill } from "@/components/view-as/ViewAs";
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
-const HOME_ICON = (
+// 0.7 admissions r2: exported (unchanged) for the Admissions nav.
+export const HOME_ICON = (
   <svg {...ICON}>
     <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
     <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
@@ -193,7 +194,7 @@ function PhaseSwitcher({ phase, phases, labelsOn }: { phase: TeacherPhase | null
   );
 }
 
-function AccountMenu() {
+export function AccountMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);

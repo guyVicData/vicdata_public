@@ -1,0 +1,22 @@
+#!/bin/zsh
+# ssr.sh [urn...]: the public school page SSR byte comparison. The branch renders on live data
+# (read-only, anon key) and records every response; main renders on that recording.
+W=${0:A:h:h}
+L=$W/lib/ssr
+O=$W/logs/ssr; mkdir -p $O
+URNS=($@); [ ${#URNS} -eq 0 ] && URNS=(137625 117037)
+for tree in br main; do
+  R=$([ $tree = main ] && echo $W/main-tree || echo /Users/guy/dev/vicdata_public)
+  (cd $R && NODE_PATH=$R/node_modules perl -e 'alarm 300; exec @ARGV' npx -y esbuild@0.24.0 $L/entry.tsx --bundle --jsx=automatic --platform=node --format=esm \
+    --tsconfig=$R/tsconfig.json --alias:react=$R/node_modules/react --alias:react-dom=$R/node_modules/react-dom \
+    --alias:next/font/google=$L/font.ts --alias:next/navigation=$L/navigation.ts --alias:next/link=$W/lib/stubs/link.tsx --alias:next/dynamic=$L/dynamic.tsx \
+    --loader:.css=empty --banner:js="import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" --define:process.env.NODE_ENV=\"production\" --outfile=$O/ssr-$tree.mjs --log-level=error) || { echo "[ssr] bundle FAILED ($tree)"; exit 1; }
+done
+perl -e 'alarm 400; exec @ARGV' node --env-file=/Users/guy/dev/vicdata_public/.env $L/run.mjs $O/ssr-br.mjs record $O/store.json $O/br $URNS || { echo "[ssr] branch render FAILED"; exit 1; }
+perl -e 'alarm 400; exec @ARGV' node --env-file=/Users/guy/dev/vicdata_public/.env $L/run.mjs $O/ssr-main.mjs replay $O/store.json $O/main $URNS || { echo "[ssr] main render FAILED"; exit 1; }
+for u in $URNS; do
+  if cmp -s $O/br_$u.html $O/main_$u.html; then echo "[ssr] $u: IDENTICAL ($(wc -c < $O/br_$u.html | tr -d ' ') bytes)"
+  else echo "[ssr] $u: DIFFERENT"; python3 -c "
+import sys,difflib;a=open(sys.argv[1]).read();b=open(sys.argv[2]).read()
+i=next((k for k in range(min(len(a),len(b))) if a[k]!=b[k]),min(len(a),len(b)));print('   first difference at byte',i,'| main:',repr(b[max(0,i-80):i+120]),'| branch:',repr(a[max(0,i-80):i+120]))" $O/br_$u.html $O/main_$u.html; fi
+done

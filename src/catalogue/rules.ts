@@ -1162,6 +1162,194 @@ export const RULES: Rule[] = [
     origin: "Population trend section (public school page)",
     status: "active",
   },
+  // ---------------------------------------------------------------- 0.7 admissions r2 (D7)
+  {
+    id: "R-ADM-FAMILY-PUPILS",
+    statement:
+      "Pupils by age is the census count at one age (full-time from 4, plus part-time at 2-3), per school and census year, and the entry point now reads the school's own count at the entry age, split by sex, against 2019/20.",
+    why: "One definition of a cohort across every Admissions view.",
+    appliesTo: "Admissions family: Pupils by age (M-ADM-PUPILS)",
+    enforcedIn: ["src/lib/admissions/screens.ts:entryNow", "src/lib/admissions/cohort.ts:cohortAt"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Year 7 now = the raw census's full-time 11-year-olds (124 girls + 112 boys = 236); since 2019/20 from 208.", check: "admFamilyPupils" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FAMILY-PIPELINE",
+    statement:
+      "The Pipeline family is round 1's pipeline unchanged: with no filter, the screens' answer carries exactly buildPipeline's ladder, share needed, sets and blend; the screens only add what they draw.",
+    why: "Round 2 draws round 1's figures; it never recomputes them.",
+    appliesTo: "Admissions family: Pipeline (M-ADM-POOL)",
+    enforcedIn: ["src/lib/admissions/views-api.ts:pipelineView"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "pipelineView's ladder, hold, change, sets and blend equal buildPipeline's for 11+.", check: "admFamilyPipeline" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FAMILY-MARKET",
+    statement:
+      "The Market share family is round 1's group share unchanged: with no filter the screens' answer carries buildMarketShare's rows and totals; the extras (whole roll and its rank, change since 2022/23) are the census's own figures.",
+    why: "A share of this group, computed once.",
+    appliesTo: "Admissions family: Market share (M-ADM-MARKET)",
+    enforcedIn: ["src/lib/admissions/views-api.ts:marketView", "src/lib/admissions/screens.ts:rivalExtras"],
+    testCase: { urn: "117037", school: "King's Worcester", phase: "ks4", expect: "marketView's entry-age rows equal buildMarketShare's; King's 2025/26 share 6.60% of 1,531.", check: "admFamilyMarket" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FAMILY-RIVALS",
+    statement:
+      "Rivals' results is round 1's rivals unchanged, plus each school's whole-school headline change since 2022/23 in points, from the same headline population the flags read; an IGCSE school, listed but not ranked, has none.",
+    why: "The momentum scatter's y must be the figure the flags were judged on.",
+    appliesTo: "Admissions family: Rivals' results (M-ADM-RIVAL-RESULTS)",
+    enforcedIn: ["src/lib/admissions/views-api.ts:rivalsView"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "The Chase's results change = its 2024 Attainment 8 minus its 2022 (raw headline rows); IGCSE rivals null.", check: "admFamilyRivals" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-NOW",
+    statement:
+      "The entry point now shows the school's own entry cohort, its change since 2019/20, girls and boys at the entry age, and day and boarding for the whole school (the census has no boarders by age); size is the school page's Roll by phase (XS-XL), never new words.",
+    why: "Tiles a reader can check against the census.",
+    appliesTo: "DV-ADM-P-NOW, DV-ADM-M-NOW",
+    enforcedIn: ["src/components/admissions/panels/EntryNow.tsx", "src/lib/admissions/screens.ts:entryNow"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "girls + boys = cohort; boarders = the census's boarders_total; day = roll - boarders.", check: "admViewNow" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-PIPELINE",
+    statement:
+      "The pipeline chart draws past pools, then counted years solid, births dashed with their range band, and projection only on request (11+), with every label from ADMISSIONS_NOTES. The styling and wording have no look option.",
+    why: "Certainty must be visible and can't be edited away.",
+    appliesTo: "DV-ADM-P-PIPELINE",
+    enforcedIn: ["src/components/admissions/views/PipelineChart.tsx", "src/catalogue/admissions.ts:PipelineLook"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Every future year's source is counted, births or projection; no projection unless asked; the chart reads its labels from ADMISSIONS_NOTES.", check: "admViewPipeline" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-FUNNEL",
+    statement:
+      "The funnel follows this September's entrants back: the area's births for their birth year (8/12 + 4/12), each kind of school's pool when they were at its oldest age, then the school's own entry cohort; each stage is labelled with its own source, never as a flow of the same children.",
+    why: "Births, pools and an entry cohort are different counts.",
+    appliesTo: "DV-ADM-P-FUNNEL",
+    enforcedIn: ["src/lib/admissions/screens.ts:funnel", "src/components/admissions/views/Funnel.tsx"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Births stage = 8/12 of 2014 + 4/12 of 2013 in the LA blend; the Year 6 pool = 401; entry = 236.", check: "admViewFunnel" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-FEEDERS",
+    statement:
+      "The feeder table and map list the nearest rung's schools with their pupils at that age now and two years ago, each flagged by R-ADM-FLAG-FEEDER against the whole set, with distance, sector, gender and XS-XL; the school itself is not a feeder.",
+    why: "The same flag everywhere a feeder appears.",
+    appliesTo: "DV-ADM-P-TABLE, DV-ADM-P-MAP, setup's lists",
+    enforcedIn: ["src/lib/admissions/screens.ts:feederTable", "src/app/api/admissions/candidates/route.ts"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Each row's flag equals feederFlags on the raw census at age 10; the area change = (382 - 363) / 363.", check: "admViewFeeders" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-SHAPES",
+    statement:
+      "Shape and size shows the school's profile by gender, the feeders' local shape and the rivals' shapes as small multiples in the rival set's own order, with no rank, score or sort by shape.",
+    why: "Shapes are described, never ranked.",
+    appliesTo: "DV-ADM-P-SHAPE, DV-ADM-M-SHAPE",
+    enforcedIn: ["src/lib/admissions/views-api.ts:shapeView", "src/components/admissions/views/ShapeAndSize.tsx"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "The rivals come back in the rival set's order and carry no rank field.", check: "admViewShapes" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-TRENDS",
+    statement:
+      "Pool trends index the feeders' past pools and the same age across the LA and England (age_profile_aggregates: LA rows, England the sum of the nine regions) to their first common year; a year the aggregates don't hold is a gap, never filled.",
+    why: "An index needs the same years on every line.",
+    appliesTo: "DV-ADM-P-POOL-INDEXED, DV-ADM-P-POOL-TABLE, DV-ADM-P-ENTRY-*, DV-ADM-M-VS-*",
+    enforcedIn: ["src/lib/admissions/screens.ts:poolTrends", "src/components/admissions/views/Lines.tsx"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Feeders = the ladder's counted past pools; the LA's 2025 value = age_profile_aggregates Worcestershire age 10.", check: "admViewTrends" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-MARKET",
+    statement:
+      "Market views are shares of this group: each school's pupils at the entry age over the group's total, summing to 100% in a year; ranks within the set; the whole-school rank is by total roll.",
+    why: "Not a share of the local market.",
+    appliesTo: "DV-ADM-M-*",
+    enforcedIn: ["src/lib/admissions/views-api.ts:marketView"],
+    testCase: { urn: "117037", school: "King's Worcester", phase: "ks4", expect: "The latest year's shares sum to 100%; King's whole-school rank equals its place by roll among the 11.", check: "admViewMarket" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-MOMENTUM",
+    statement:
+      "The momentum scatter plots each rival's change at the entry age (census, since 2022/23, %) against its whole-school headline change (points, same years); flags come only from the national thresholds, and with none loaded the view says flags are not available yet.",
+    why: "Never a guessed flag.",
+    appliesTo: "DV-ADM-M-MOMENTUM",
+    enforcedIn: ["src/components/admissions/views/Momentum.tsx", "src/lib/admissions/views-api.ts:rivalsView"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Each rival's x and y equal the raw census and headline changes; with thresholds absent no momentum flag is returned.", check: "admViewMomentum" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-STRENGTHS",
+    statement:
+      "Strengths and weaknesses rank the school only among rivals with that subject area (and at least the minimum entries), show the gap to their average and its move since 2022/23, and flag Strength / Weakness by the top or bottom third (R-ADM-FLAG-STRENGTHS).",
+    why: "Only like-for-like comparisons.",
+    appliesTo: "DV-ADM-M-STRENGTHS, DV-ADM-M-ACAD-*",
+    enforcedIn: ["src/lib/admissions/rivals.ts:buildRivals", "src/components/admissions/views/Strengths.tsx"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Every Strength has a positive gap and a rank in the top third; every Weakness the opposite.", check: "admViewStrengths" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-FLAGS",
+    statement:
+      "A flag list shows each rival's momentum flags with the figures behind each one on hover, never a flag without its figures.",
+    why: "Every flag must be checkable.",
+    appliesTo: "DV-ADM-M-FLAGS, DV-ADM-M-MOMENTUM",
+    enforcedIn: ["src/components/admissions/views/Momentum.tsx"],
+    testCase: { urn: "117037", school: "King's Worcester", phase: "ks4", expect: "Every flag returned has an id from FLAG ids and non-empty figures.", check: "admViewFlags" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-VIEW-ACADEMIC",
+    statement:
+      "The academic panel follows the entry point: 4+ reads KS2, 11+ GCSE, 16+ Post-16; a rival with no published results or an IGCSE-heavy one is listed and not ranked, with the reason.",
+    why: "Rivals at 4+ are mostly preps that don't sit SATs: say so.",
+    appliesTo: "DV-ADM-M-ACAD-*",
+    enforcedIn: ["src/lib/admissions/rivals.ts:stageForEntry", "src/components/admissions/panels/Academic.tsx"],
+    testCase: { urn: "117037", school: "King's Worcester", phase: "ks5", expect: "stageForEntry(4, 11, 16) = ks2, ks4, ks5; King's 16+ rivals read Post-16.", check: "admViewAcademic" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FE-SOURCE",
+    statement:
+      "An FE college's own figures come from FE participation data (ILR, learners under 19 over the year), labelled as that source, and are never divided into a census group's total, ranked against schools or shown as a Year 12 count.",
+    why: "Two sources measuring different things must not be blended.",
+    appliesTo: "Admissions for FE colleges (decision 6)",
+    enforcedIn: ["src/lib/admissions/screens.ts:feParticipation"],
+    testCase: { urn: "130432", school: "Croydon College", phase: "ks5", expect: "Croydon's market view has an ILR series labelled FE participation data, and no census count or share of its own.", check: "admFeSource" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
+  {
+    id: "R-ADM-FILTERS",
+    statement:
+      "The top bar's filters (Day + boarding, State + independent, boarding rivals) narrow the sets on the server before round 1's maths runs; unfiltered, every answer is round 1's. A filter that leaves a list empty says so; another list never stands in for it.",
+    why: "The figures change only by the schools they count.",
+    appliesTo: "Admissions top bar",
+    enforcedIn: ["src/lib/admissions/traits.ts:narrow", "src/lib/admissions/rival-set.ts:rivalSet", "src/lib/admissions/views-api.ts:pipelineView"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "sector=independent leaves only independent schools (and the school's own Year 11 at 16+); boarding-only with no boarding list returns the empty state.", check: "admFilters" },
+    origin: "0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7)",
+    status: "active",
+  },
 ];
 
 // Every ID a type-level template allows, checked at runtime by the unit tests.

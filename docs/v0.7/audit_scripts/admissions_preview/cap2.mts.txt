@@ -1,0 +1,30 @@
+// Fixtures for the Admissions preview: each school's answers from the routes' own functions
+// (views-api.ts), no lists saved (nearby defaults), read-only. Usage: cap2.mts <outdir> <urn> <entry,entry>
+import { writeFileSync } from "node:fs";
+const [out, urn, entries] = process.argv.slice(2);
+const v = await import("/Users/guy/dev/vicdata_public/src/lib/admissions/views-api.ts");
+const { fetchSchoolTraits } = await import("/Users/guy/dev/vicdata_public/src/lib/admissions/traits.ts");
+const today = new Date("2026-10-12");
+const t0 = Date.now();
+const log = (m: string) => console.log(`[cap ${urn}] ${m} (${Date.now() - t0} ms)`);
+const me = (await fetchSchoolTraits([urn])).get(urn)!;
+const byEntry: Record<string, unknown> = {};
+for (const e of entries.split(",")) {
+  const ep = v.entryPoint(e)!;
+  const [pipeline, pipelineProj, market, rivals, shape] = await Promise.all([
+    v.pipelineView(urn, ep, [], { today }),
+    ep.age === 11 ? v.pipelineView(urn, ep, [], { today, projection: true }) : Promise.resolve(null),
+    v.marketView(urn, ep, []),
+    v.rivalsView(urn, ep, []),
+    v.shapeView(urn, ep, []),
+  ]);
+  log(`${e} views`);
+  const cand = async (kind: string, extra: Record<string, string>) => v.candidatesView(urn, ep, new URLSearchParams({ kind, ...extra }));
+  const candidates = { day: await cand("day", { mode: "nearest", n: "15" }), boarding: await cand("boarding", { mode: "nearest", n: "40" }), rivals: await cand("rivals", { mode: "nearest", n: "10" }) };
+  log(`${e} candidates`);
+  byEntry[ep.id] = { pipeline, pipelineProj, market, rivals, shape, candidates };
+}
+const fx = { urn, name: me.name, low: me.low, high: me.high, entries: entries.split(",").map((e) => v.entryPoint(e)!.id), byEntry };
+writeFileSync(`${out}/fx_${urn}.js`, `window.__FX = window.__FX || {}; window.__FX[${JSON.stringify(urn)}] = ${JSON.stringify(fx)};\n`);
+log("written");
+process.exit(0);

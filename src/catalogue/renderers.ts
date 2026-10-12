@@ -2,6 +2,7 @@
 // rules (catalogue doc §2.3). State copy is quoted exactly from the components (audit A §1).
 // minHeight is the component's own floor inside today's fixed 384px panel (CardBox
 // PANEL_HEIGHT); fullscreen is its behaviour in the panel's fullscreen modal.
+import { ADMISSIONS_RENDERERS } from "./admissions";
 import type { Renderer } from "./types";
 
 const T = "src/components/teacher";
@@ -185,4 +186,6 @@ export const RENDERERS: Renderer[] = [
     fullscreen: "As MultiTrend / YearTable.",
     phone: "As MultiTrend / YearTable.",
   },
+  // 0.7 admissions r2: the Admissions entries, after every existing one (src/catalogue/admissions.ts).
+  ...ADMISSIONS_RENDERERS,
 ];

@@ -11,6 +11,7 @@
 // `averages` only (finding F2: the seeded Column 1 Trends panel carries an override);
 // Comparisons compares against a school set (`schools`), focused on a subject or, with no
 // subject chip, the school itself.
+import { ADMISSIONS_DATAVIEWS } from "./admissions";
 import type { AudienceTag, CompareKind, Dataview, DataviewId, HostId, MeasureId, Phase, ResultsMeasure } from "./types";
 
 const CP = "src/components/teacher/CandidatesPanels.tsx";
@@ -1117,6 +1118,8 @@ export const DATAVIEWS: Dataview[] = [
     note: "S3b: a count keeps the fixed ±% scale (forcedColourMode trend); points and rates colour by the absolute change on the set's own range (trend_absolute), keyed 'Change' (R-NUMBER-TYPE-HONESTY).",
     rules: ["R-NUMBER-TYPE-HONESTY", "R-RANKING-SAMPLE", "R-IGCSE-EXCL", "R-MEASURE-FALLBACK", "R-MAP-ENCODING"],
   },
+  // 0.7 admissions r2: the Admissions entries, after every existing one (src/catalogue/admissions.ts).
+  ...ADMISSIONS_DATAVIEWS,
 ];
 
 export const DATAVIEW_IDS: DataviewId[] = DATAVIEWS.map((d) => d.id);

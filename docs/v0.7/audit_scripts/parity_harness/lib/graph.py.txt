@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+# graph.py [outDir]: esbuild metafile import graphs, per surface, in the BRANCH working tree (and in
+# main-tree, to report graph-membership changes), intersected with the src files that differ from
+# main (git diff --name-only main -- src, plus untracked src files).
+# Surfaces: dataview (src/app/schools/[urn]/data/page), public (src/app/schools/[urn]/page),
+# teacher (teacher/[phase], teacher, teacher/people pages); plus dataview-api / public-api: the
+# server routes those client graphs fetch ("/api/..." literals that exist as route.ts), so a
+# change on the server side of the Data View or public page is caught too.
+import json, os, re, subprocess, sys, time
+W = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+R = "/Users/guy/dev/vicdata_public"
+TREES = {"br": R, "main": os.path.join(W, "main-tree")}
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(W, "logs", "graph")
+G = os.path.join(OUT, "entries"); os.makedirs(G, exist_ok=True)
+git = lambda *a: subprocess.run(["git", "-C", R, *a], capture_output=True, text=True, timeout=60).stdout.split()
+changed = sorted(set(git("diff", "--name-only", "main", "--", "src") + git("ls-files", "--others", "--exclude-standard", "src")))
+open(os.path.join(OUT, "changed.txt"), "w").write("\n".join(changed) + "\n")
+print(f"[graph] {len(changed)} src files differ from main (tracked diff + untracked)", flush=True)
+ENTRIES = {
+    "dataview": ["@/app/schools/[urn]/data/page"],
+    "public": ["@/app/schools/[urn]/page"],
+    "teacher": ["@/app/teacher/[phase]/page", "@/app/teacher/page", "@/app/teacher/people/page"],
+}
+def esbuild(tree, name, imports):
+    root = TREES[tree]
+    entry = os.path.join(G, f"{name}.ts")
+    open(entry, "w").write("".join(f'export * as m{i} from "{p}";\n' for i, p in enumerate(imports)))
+    meta = os.path.join(OUT, f"meta_{tree}_{name}.json")
+    cmd = ["npx", "-y", "esbuild@0.24.0", entry, "--bundle", "--jsx=automatic", f"--tsconfig={root}/tsconfig.json",
+           "--packages=external", "--platform=neutral", "--format=esm", "--loader:.css=empty", "--loader:.svg=empty",
+           "--loader:.png=empty", f"--metafile={meta}", f"--outfile={os.path.join(OUT, f'out_{tree}_{name}.js')}", "--log-level=error"]
+    p = subprocess.run(cmd, cwd=root, capture_output=True, text=True, timeout=180, env={**os.environ, "NODE_PATH": root + "/node_modules"})
+    if p.returncode: raise SystemExit(f"[graph] esbuild failed {tree} {name}: {p.stderr[:2000]}")
+    return sorted(i for i in json.load(open(meta))["inputs"] if i.startswith("src/"))
+def api_routes(root, mods):
+    out = set()
+    for m in mods:
+        for a in re.findall(r'["`\'](/api/[A-Za-z0-9_\-/]+)', open(os.path.join(root, m)).read()):
+            f = os.path.join("src/app", a.strip("/"), "route.ts")
+            if os.path.exists(os.path.join(root, f)): out.add("@/" + f[4:-3])
+    return sorted(out)
+res, lines = {}, []
+for name, imports in ENTRIES.items():
+    g = {t: esbuild(t, name, imports) for t in TREES}
+    surfaces = [(name, g)]
+    if name != "teacher":
+        routes = api_routes(R, g["br"])
+        surfaces.append((name + "-api", {t: esbuild(t, name + "-api", routes) for t in TREES}))
+    for s, gg in surfaces:
+        hit = sorted(set(gg["br"]) & set(changed))
+        delta = sorted(set(gg["br"]) ^ set(gg["main"]))
+        res[s] = {"modules": len(gg["br"]), "changed_in_graph": hit, "membership_delta_vs_main": delta}
+        line = f"[graph] {s}: {len(gg['br'])} src modules; changed files in graph: {len(hit)}" + (" -> " + ", ".join(hit) if hit else "")
+        if delta: line += f"; modules only in one tree's graph: {', '.join(delta)}"
+        print(line, flush=True); lines.append(line)
+json.dump({"changed": changed, "surfaces": res}, open(os.path.join(OUT, "graph_result.json"), "w"), indent=1)

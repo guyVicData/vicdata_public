@@ -3,8 +3,10 @@
 // dashboard has no published row.
 import type { DashboardConfig } from "../types";
 import { TEACHER_DASHBOARDS } from "./teacher";
+import { ADMISSIONS_DASHBOARDS } from "./admissions";
 
-export const DASHBOARDS: DashboardConfig[] = [...TEACHER_DASHBOARDS];
+// 0.7 admissions r2: the Admissions dashboards after Teacher's (Teacher's order is unchanged).
+export const DASHBOARDS: DashboardConfig[] = [...TEACHER_DASHBOARDS, ...ADMISSIONS_DASHBOARDS];
 
 export function dashboardById(id: string): DashboardConfig | undefined {
   return DASHBOARDS.find((d) => d.id === id);
@@ -17,3 +19,4 @@ export function groupOf(config: DashboardConfig): DashboardConfig[] {
 }
 
 export { TEACHER_DASHBOARDS, teacherDashboardFor } from "./teacher";
+export { ADMISSIONS_DASHBOARDS, ADMISSIONS_PIPELINES_ID, ADMISSIONS_MARKET_ID, isAdmissionsDashboard } from "./admissions";

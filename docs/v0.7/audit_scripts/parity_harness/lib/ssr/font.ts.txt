@@ -1,0 +1,6 @@
+// next/font/google stand-in for SSR: a stable class and variable per font.
+const f = (name: string) => (o: any = {}) => ({ className: `font-${name}`, variable: o.variable ?? `--font-${name}`, style: { fontFamily: name } });
+export const Newsreader = f("newsreader");
+export const IBM_Plex_Sans = f("plex-sans");
+export const Geist = f("geist");
+export const Geist_Mono = f("geist-mono");

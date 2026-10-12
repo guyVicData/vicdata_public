@@ -1,0 +1,14 @@
+#!/bin/zsh
+# build.sh <main|br>: Tailwind CSS + the Teacher harness bundle from that tree, into $W/h/.
+set -e
+W=${0:A:h:h}
+R=$([ "$1" = main ] && echo $W/main-tree || echo /Users/guy/dev/vicdata_public)
+L=$W/lib
+cd $L
+perl -e 'alarm 180; exec @ARGV' node css.mjs $W/h/app-$1.css $R >/dev/null
+NODE_PATH=$R/node_modules perl -e 'alarm 300; exec @ARGV' npx -y esbuild@0.24.0 $L/harness.tsx --bundle --jsx=automatic --tsconfig=$R/tsconfig.json \
+  --alias:react=$R/node_modules/react --alias:react-dom=$R/node_modules/react-dom \
+  --alias:@/lib/supabase=$L/stubs/supabase.ts --alias:next/link=$L/stubs/link.tsx --alias:next/navigation=$L/stubs/navigation.ts --alias:next/dynamic=$L/stubs/dynamic.tsx \
+  --define:process.env.NODE_ENV=\"production\" --define:process.env.NEXT_PUBLIC_DASHBOARD_RENDERER=\"config\" \
+  --outfile=$W/h/bundle-$1.js --log-level=warning
+echo "built $1 ($(wc -c < $W/h/bundle-$1.js | tr -d ' ') bytes JS, $(wc -c < $W/h/app-$1.css | tr -d ' ') bytes CSS) from $R"

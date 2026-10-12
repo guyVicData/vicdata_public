@@ -135,6 +135,39 @@ Read the columns as:
 | 38 | `DV-C3-TR-CHANGELIST` | Ranked bars | **bar** · orientation: horizontal; order: highest; highlight: true; values: true; diverging: true | follows-page · follows-or-whole-school · school · follows-page · change · from first, rolls on (members pick) | all | all | HorizontalBarsIcon | [change-of-measure] since [year], ranked against the [set] | GCSE C, GCSE R, Post-16 C, Post-16 R |
 | 39 | `DV-C3-TR-CHANGETABLE` | Change table | **table** · yearColumns: first-latest; extra: change; sort: change; highlight: true; colourChange: true; leadingRank: true | follows-page · follows-or-whole-school · year · follows-page · actual · from first, rolls on (members pick) | all | all | TableIcon | Every school in the [set]: [year] against the latest year, ranked by change | GCSE C, GCSE R, Post-16 C, Post-16 R |
 | 40 | `DV-C3-TR-CHANGEMAP` | Change map | **map** · colour: change | follows-page · follows-or-whole-school · school · follows-page · change · from first, rolls on (members pick) | all | comparator: schools | MapPinIcon | [change-of-measure] since [year], coloured by school | GCSE C, GCSE R, Post-16 C, Post-16 R |
+| 41 | `DV-ADM-P-NOW` | Entry point now | **numbers** · — | admissions.pupils · follows · school · — · actual · latest | all | all | TilesIcon | Your [entry] entry point now | none (draft) |
+| 42 | `DV-ADM-P-PIPELINE` | Pipeline | **pipeline** · projection: member; pastPools: true; rungLabels: true | admissions.pipeline · follows · year · — · actual · from first, rolls on | all | all | AdmPipelineIcon | Children who will reach [entry-year] entry, by September | none (draft) |
+| 43 | `DV-ADM-P-FUNNEL` | Funnel | **bar** · orientation: horizontal; values: true | admissions.pipeline · follows · school · — · actual · latest | all | all | AdmFunnelIcon | From births to your [entry-year] | none (draft) |
+| 44 | `DV-ADM-P-MAP` | Map of feeders | **map** · colour: change | admissions.pipeline · follows · school · — · actual · latest | all | all | MapPinIcon | Your feeders, sized by pupils aged [feeder-age], coloured by trend | none (draft) |
+| 45 | `DV-ADM-P-TABLE` | Feeder table | **table** · yearColumns: latest; extra: change; sort: listed; highlight: true; colourChange: true; memberSort: true | admissions.pipeline · follows · school · — · actual · latest | all | all | TableIcon | Your feeders: pupils aged [feeder-age], trend and flags | none (draft) |
+| 46 | `DV-ADM-P-SHAPE` | Shape and size | **shapes** · columns: 2 | admissions.pupils · follows · school · — · actual · latest | all | all | AdmShapeIcon | Shape and size: your school, the local shape, and rivals' shapes | none (draft) |
+| 47 | `DV-ADM-P-ENTRY-LINE` | Your cohort | **line** · — | admissions.pupils · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Your [entry-year] cohort, year by year | none (draft) |
+| 48 | `DV-ADM-P-ENTRY-BARS` | Your cohort, bars | **bar** · orientation: vertical; values: true | admissions.pupils · follows · year · — · actual · from first, rolls on | all | all | VerticalBarsIcon | Your [entry-year] cohort, year by year | none (draft) |
+| 49 | `DV-ADM-P-ENTRY-TABLE` | Your cohort, table | **table** · yearColumns: every; extra: change; years: down | admissions.pupils · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Your [entry-year] cohort, year by year | none (draft) |
+| 50 | `DV-ADM-P-POOL-INDEXED` | Pool trends | **line** · — | admissions.pupils · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | [feeder-age]-year-olds: your feeders, [la] and England | none (draft) |
+| 51 | `DV-ADM-P-POOL-TABLE` | Pool trends, table | **table** · yearColumns: every; years: down | admissions.pupils · follows · year · — · actual · from first, rolls on | all | all | TableIcon | [feeder-age]-year-olds: your feeders, [la] and England | none (draft) |
+| 52 | `DV-ADM-P-AREA-POP` | Area population | **bar** · orientation: vertical | admissions.pupils · follows · year · — · actual · latest | all | all | AdmPopulationIcon | Population trends in the area (ages 5-15) | none (draft) |
+| 53 | `DV-ADM-P-HOLD-LINE` | Share needed | **line** · — | admissions.pipeline · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Share needed to hold numbers steady | none (draft) |
+| 54 | `DV-ADM-P-HOLD-TABLE` | Share needed, table | **table** · yearColumns: every; years: down | admissions.pipeline · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Share needed to hold numbers steady | none (draft) |
+| 55 | `DV-ADM-M-NOW` | Your place now | **numbers** · — | admissions.market · follows · school · — · actual · latest | all | all | TilesIcon | Your place among the [rivals], at [entry] | none (draft) |
+| 56 | `DV-ADM-M-DONUT` | Share (donut) | **donut** · — | admissions.market · follows · school · — · actual · latest | all | all | DonutIcon | Your share of [entry-age]-year-olds across this group | none (draft) |
+| 57 | `DV-ADM-M-BARS` | Ranked bars | **ranking** · columns: rank+bar+value+change; show: all; alwaysSelf: true | admissions.market · follows · school · — · actual · latest | all | all | HorizontalBarsIcon | [entry-age]-year-olds by school, ranked, with where each sits in regional and national results rankings | none (draft) |
+| 58 | `DV-ADM-M-MAP` | Map of rivals | **map** · colour: value | admissions.market · follows · school · — · actual · latest | all | all | MapPinIcon | Your rivals, sized by pupils aged [entry-age] | none (draft) |
+| 59 | `DV-ADM-M-TABLE` | Rivals table | **table** · yearColumns: latest; extra: change+rank; sort: latest; highlight: true; memberSort: true | admissions.market · follows · school · — · actual · latest | all | all | TableIcon | Your rivals at [entry] | none (draft) |
+| 60 | `DV-ADM-M-MOMENTUM` | Rivals' momentum | **scatter** · labels: true; quadrantNames: true | admissions.rivals · follows · school · — · change · latest | all | all | AdmScatterIcon | Who is gaining pupils, and whose results are rising? | none (draft) |
+| 61 | `DV-ADM-M-STRENGTHS` | Strengths and weaknesses | **strengths** · order: gap; showFlags: true | admissions.rivals · follows · subject · — · actual · latest | all | entryPoint: 11+/16+/custom | AdmStrengthsIcon | Where you lead and trail your rivals, by subject area | none (draft) |
+| 62 | `DV-ADM-M-SHAPE` | Rivals' shapes | **shapes** · columns: 2 | admissions.pupils · follows · school · — · actual · latest | all | all | AdmShapeIcon | Shape and size: your school and rivals' shapes | none (draft) |
+| 63 | `DV-ADM-M-FLAGS` | Flags | **flags** · show: flagged | admissions.rivals · follows · school · — · change · latest | all | all | FlagIcon | Rivals' flags: large and lasting changes | none (draft) |
+| 64 | `DV-ADM-M-VS-LINE` | You and the rivals | **line** · — | admissions.market · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Your [entry-year] against the [rivals] | none (draft) |
+| 65 | `DV-ADM-M-VS-BARS` | You and the rivals, bars | **bar** · orientation: vertical | admissions.market · follows · year · — · actual · from first, rolls on | all | all | VerticalBarsIcon | Your [entry-year] against the [rivals] | none (draft) |
+| 66 | `DV-ADM-M-ACAD-RANK` | Academic ranking | **ranking** · columns: rank+value+change; show: all | admissions.rivals · follows · subject · — · actual · latest | all | all | RankListIcon | Academic: your rank among the rivals | none (draft) |
+| 67 | `DV-ADM-M-ACAD-NUM` | Academic numbers | **table** · yearColumns: latest; extra: rank; sort: latest; highlight: true | admissions.rivals · follows · school · — · actual · latest | all | all | AdmNumbersIcon | Academic: the rivals' headline figures | none (draft) |
+| 68 | `DV-ADM-M-ACAD-CHANGE` | Academic change | **bar** · orientation: horizontal; diverging: true; highlight: true; values: true | admissions.rivals · follows · school · — · change · latest | all | all | ChangeArrowIcon | Academic: change since 2022/23 | none (draft) |
+| 69 | `DV-ADM-M-SHARE-LINE` | Market share | **line** · — | admissions.market · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Your market share at [entry], year by year | none (draft) |
+| 70 | `DV-ADM-M-SHARE-NUM` | Market share numbers | **table** · yearColumns: every; years: down | admissions.market · follows · year · — · actual · from first, rolls on | all | all | AdmNumbersIcon | Your market share at [entry], year by year | none (draft) |
+| 71 | `DV-ADM-M-SHARE-RANKS` | Market share ranks | **table** · yearColumns: every; extra: rank; years: down | admissions.market · follows · year · — · actual · from first, rolls on | all | all | HorizontalBarsIcon | Your rank at [entry], year by year | none (draft) |
+| 72 | `DV-ADM-M-SHARE-CHANGE` | Market share change | **bar** · orientation: horizontal; diverging: true; values: true | admissions.market · follows · school · — · change · from first, rolls on | all | all | ChangeArrowIcon | Change since 2019/20: your pupils and share at [entry] | none (draft) |
+| 73 | `DV-ADM-M-ROLL-LINE` | Roll trends | **line** · — | admissions.market · follows · year · — · actual · from first, rolls on | all | all | AdmRollIcon | Pupils in the entry point's age band: you and the [rivals] | none (draft) |
 
 <!-- preset-table:end -->
 
@@ -190,6 +223,45 @@ Read the columns as:
 | `DV-C3-TR-CHANGELIST` | The set's average (reference, mean over the other schools): its change as a dashed line. |
 | `DV-C3-TR-CHANGETABLE` | The set's schools as rows. |
 | `DV-C3-TR-CHANGEMAP` | The set's schools (never a ranking), coloured by the honest change: the fixed ±% scale on a count, the set's own range on points and rates. |
+
+
+**0.7 admissions r2.** On an Admissions dashboard, "follows-page" means the focused **entry point** (the chips) and the top bar's filters (Day + boarding, All pupils, State + independent). The series come from `/api/admissions/*` (`src/lib/admissions/views-api.ts`).
+
+| Preset | Follows-page resolves to |
+|---|---|
+| `DV-ADM-P-NOW` | The focused entry point's own cohort now, its change since 2019/20, girls and boys, day and boarding (whole school), the school page's Roll by phase. |
+| `DV-ADM-P-PIPELINE` | The pool by entry year for the focused entry point over the lead's lists (else nearby schools), narrowed by the top bar; projection only when the member asks (11+). |
+| `DV-ADM-P-FUNNEL` | Births in the LA blend → each kind of school's pool → the school's entry cohort, this September's entrants. |
+| `DV-ADM-P-MAP` | The nearest rung's schools, sized by pupils at that age, coloured by their trend against the set. |
+| `DV-ADM-P-TABLE` | The same schools as rows, with flag, distance, sector, gender and XS–XL. |
+| `DV-ADM-P-SHAPE` | The school's profile, the feeders' local shape, and the rivals' shapes (described, not ranked). |
+| `DV-ADM-P-ENTRY-LINE` | The school's entry-age cohort, 2019/20 on. |
+| `DV-ADM-P-ENTRY-BARS` | As the line, as bars. |
+| `DV-ADM-P-ENTRY-TABLE` | As the line, a row per year. |
+| `DV-ADM-P-POOL-INDEXED` | The feeders' past pools, the LA and England at the same age, indexed to their first common year. |
+| `DV-ADM-P-POOL-TABLE` | As indexed, actual figures. |
+| `DV-ADM-P-AREA-POP` | The school page's Population trends in the area (ages 5–15). |
+| `DV-ADM-P-HOLD-LINE` | The share needed to hold numbers steady, each future year, against the share now. |
+| `DV-ADM-P-HOLD-TABLE` | As the line, with the pools. |
+| `DV-ADM-M-NOW` | Rank at the entry age among the rivals, market share, its change since 2019/20, whole-school rank by roll. |
+| `DV-ADM-M-DONUT` | The school's share of the group at the entry age. |
+| `DV-ADM-M-BARS` | Each school's pupils at the entry age, share, trend, and results ranks in its region and England. |
+| `DV-ADM-M-MAP` | The rivals, sized by pupils at the entry age. |
+| `DV-ADM-M-TABLE` | The rivals as rows. |
+| `DV-ADM-M-MOMENTUM` | Each rival's entry-age change against its results change since 2022/23, with its flags. |
+| `DV-ADM-M-STRENGTHS` | Each subject area: rank among the rivals with it, gap to their average, its move, flags. |
+| `DV-ADM-M-SHAPE` | The rivals' shapes (described, not ranked). |
+| `DV-ADM-M-FLAGS` | Each rival's momentum flags with their figures. |
+| `DV-ADM-M-VS-LINE` | The school's entry cohort against the rivals' average, indexed. |
+| `DV-ADM-M-VS-BARS` | As the line, actual figures as bars. |
+| `DV-ADM-M-ACAD-RANK` | The overall rank among the rivals for the entry point's stage, then where the school leads and trails. |
+| `DV-ADM-M-ACAD-NUM` | Each rival's headline figure and rank. |
+| `DV-ADM-M-ACAD-CHANGE` | Each rival's headline change since 2022/23. |
+| `DV-ADM-M-SHARE-LINE` | The school's share of the group at the entry age, 2019/20 on. |
+| `DV-ADM-M-SHARE-NUM` | As the line, with the counts. |
+| `DV-ADM-M-SHARE-RANKS` | The school's rank in the group each year. |
+| `DV-ADM-M-SHARE-CHANGE` | The change since 2019/20 in pupils and share. |
+| `DV-ADM-M-ROLL-LINE` | Whole-school rolls: the school and the rivals. |
 
 ## The awkward cases ([review])
 

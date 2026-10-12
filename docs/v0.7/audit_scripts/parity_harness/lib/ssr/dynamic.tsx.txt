@@ -1,0 +1,2 @@
+// next/dynamic stand-in for SSR: like ssr:false, renders nothing on the server.
+export default function dynamic(_loader: any, _opts?: any) { return () => null; }

@@ -1,0 +1,22 @@
+applied 20261103090000_v06_s1_roles_teams_platform.sql
+applied 20261104090000_v06_membership_insert_hardening.sql
+
+-- before D1 (the 0.6 S1 trigger as applied)
+PASS an empty claims setting: an insert fails (invalid input syntax for type json)
+PASS the service role still writes a role set as given 
+PASS an empty claims setting: an update fails too (invalid input syntax for type json)
+
+applied 20261107090000_v07_admissions_r2_sync_roles_nullif.sql
+
+-- after D1
+PASS an empty claims setting: the insert succeeds 
+PASS ...and is treated as not the service role (a joiner's set is Teacher) 
+PASS an empty claims setting: an update of `role` alone succeeds and syncs roles 
+PASS claims never set (NULL): an insert succeeds, Teacher 
+PASS the service role: the role set as given, duplicates out, sorted 
+PASS an authenticated joiner: Teacher whatever was asked 
+PASS the function body differs from S1's only by the nullif guard 
+PASS the trigger still points at the function 
+PASS re-running D1 is safe 
+
+ALL PASS

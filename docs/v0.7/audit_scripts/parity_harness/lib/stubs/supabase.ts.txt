@@ -1,0 +1,145 @@
+/* eslint-disable */
+// Parity harness: in-memory Supabase stand-in (recovered from the snag-2 harness): window.__DB.tables holds rows,
+// every write is appended to window.__DB.writes, every rpc to window.__DB.rpcs.
+// Filters: eq, neq, is, in, or (incl. and(...)), order/limit (order ignored), maybeSingle/single.
+declare const window: any;
+const DB = () => window.__DB;
+
+type Cond = (r: any) => boolean;
+function val(v: string): any {
+  if (v === "null") return null;
+  if (v.startsWith('"') && v.endsWith('"')) return v.slice(1, -1);
+  return v;
+}
+function splitTop(s: string): string[] {
+  const out: string[] = []; let depth = 0, cur = "", q = false;
+  for (const ch of s) {
+    if (ch === '"') q = !q;
+    if (!q && ch === "(") depth++;
+    if (!q && ch === ")") depth--;
+    if (!q && depth === 0 && ch === ",") { out.push(cur); cur = ""; continue; }
+    cur += ch;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+function parseCond(s: string): Cond {
+  if (s.startsWith("and(")) { const parts = splitTop(s.slice(4, -1)).map(parseCond); return (r) => parts.every((p) => p(r)); }
+  if (s.startsWith("or(")) { const parts = splitTop(s.slice(3, -1)).map(parseCond); return (r) => parts.some((p) => p(r)); }
+  const [col, op, ...rest] = s.split(".");
+  const v = val(rest.join("."));
+  if (op === "eq") return (r) => r[col] === v;
+  if (op === "neq") return (r) => r[col] !== v;
+  if (op === "is") return (r) => (r[col] ?? null) === v;
+  throw new Error("op " + op);
+}
+
+class Q {
+  op = "select"; payload: any = null; conds: Cond[] = []; maybe = false; one = false; returning = false; onConflict: string | null = null;
+  constructor(public table: string) {}
+  select() { if (this.op !== "select") this.returning = true; return this; }
+  eq(col: string, v: any) { this.conds.push((r) => r[col] === v); return this; }
+  neq(col: string, v: any) { this.conds.push((r) => r[col] !== v); return this; }
+  is(col: string, v: any) { this.conds.push((r) => (r[col] ?? null) === v); return this; }
+  in(col: string, vs: any[]) { this.conds.push((r) => vs.includes(r[col])); return this; }
+  or(expr: string) { const parts = splitTop(expr).map(parseCond); this.conds.push((r) => parts.some((p) => p(r))); return this; }
+  order() { return this; }
+  limit() { return this; }
+  insert(p: any) { this.op = "insert"; this.payload = p; return this; }
+  upsert(p: any, o?: { onConflict?: string }) { this.op = "upsert"; this.payload = p; this.onConflict = o?.onConflict ?? null; return this; }
+  update(p: any) { this.op = "update"; this.payload = p; return this; }
+  delete() { this.op = "delete"; return this; }
+  maybeSingle() { this.maybe = true; return this; }
+  single() { this.one = true; return this; }
+  run(): { data: any; error: any } {
+    const db = DB();
+    if ((db.missing ?? []).includes(this.table)) return { data: null, error: { code: "42P01", message: `relation "public.${this.table}" does not exist` } };
+    const rows: any[] = (db.tables[this.table] ??= []);
+    const match = (r: any) => this.conds.every((c) => c(r));
+    const log = (op: string, row: any) => db.writes.push({ table: this.table, op, row: JSON.parse(JSON.stringify(row)) });
+    if ((db.missingColumns ?? {})[this.table]) {
+      const col = db.missingColumns[this.table];
+      const touches = JSON.stringify(this.payload ?? {}).includes(`"${col}"`) || this.conds.some((c) => { try { c({}); } catch {} return false; });
+      if (touches) return { data: null, error: { code: "42703", message: `column ${this.table}.${col} does not exist` } };
+    }
+    if (this.op === "select") {
+      const got = rows.filter(match);
+      return { data: this.maybe || this.one ? got[0] ?? null : got, error: null };
+    }
+    if (this.op === "insert" || this.op === "upsert") {
+      const list = Array.isArray(this.payload) ? this.payload : [this.payload];
+      const out: any[] = [];
+      for (const p of list) {
+        const keys = this.onConflict ? this.onConflict.split(",") : db.pk[this.table] ?? null;
+        const existing = this.op === "upsert" && keys ? rows.find((r) => keys.every((k: string) => r[k] === p[k])) : null;
+        if (existing) { Object.assign(existing, p); log("update", existing); out.push(existing); }
+        else { const row = { id: p.id ?? `${this.table}-${rows.length + 1}`, created_at: new Date().toISOString(), ...p }; rows.push(row); log("insert", row); out.push(row); }
+      }
+      return { data: this.one || this.maybe ? out[0] : out, error: null };
+    }
+    if (this.op === "update") {
+      const got = rows.filter(match);
+      for (const r of got) { Object.assign(r, this.payload); log("update", r); }
+      return { data: got, error: null };
+    }
+    if (this.op === "delete") {
+      const got = rows.filter(match);
+      db.tables[this.table] = rows.filter((r) => !match(r));
+      for (const r of got) log("delete", r);
+      return { data: got, error: null };
+    }
+    return { data: null, error: null };
+  }
+  then(res: (r: any) => any, rej?: any) { return Promise.resolve(this.run()).then(res, rej); }
+}
+
+const uid = () => DB().userId;
+async function rpc(name: string, args: any = {}) {
+  const db = DB();
+  db.rpcs.push({ name, args: JSON.parse(JSON.stringify(args)) });
+  const admin = (db.platformAdmins ?? []).includes(uid());
+  if (name === "is_platform_admin") return { data: admin, error: null };
+  if (name === "log_platform_action") {
+    if (!admin) return { data: null, error: { message: "platform admin only" } };
+    (db.tables.platform_audit_log ??= []).push({ action: args.p_action, school_urn: args.p_school_urn, detail: args.p_detail });
+    db.writes.push({ table: "platform_audit_log", op: "insert", row: { action: args.p_action, school_urn: args.p_school_urn, detail: args.p_detail } });
+    return { data: null, error: null };
+  }
+  if (name === "reset_trial") {
+    if ((db.missing ?? []).includes("reset_trial")) return { data: null, error: { code: "PGRST202", message: "Could not find the function public.reset_trial" } };
+    if (!admin) return { data: null, error: { message: "platform admin only" } };
+    const key = `${args.p_urn}~trial~${args.p_role}`;
+    for (const t of ["teacher_view_preferences", "teacher_view_notes", "teacher_view_onboarding", "dashboard_user_state"]) {
+      const rows = db.tables[t] ?? [];
+      const gone = rows.filter((r: any) => r.profile_id === uid() && r.school_urn === key);
+      db.tables[t] = rows.filter((r: any) => !gone.includes(r));
+      for (const r of gone) db.writes.push({ table: t, op: "delete(reset_trial)", row: r });
+    }
+    return { data: null, error: null };
+  }
+  if (name === "record_sign_in") {
+    db.writes.push({ table: "sign_in_events", op: "insert", row: { profile_id: uid() } });
+    return { data: null, error: null };
+  }
+  if (name === "search_schools") {
+    const q = String(args.p_query).toLowerCase();
+    return { data: (db.tables.schools ?? []).filter((s: any) => s.current_name.toLowerCase().includes(q)), error: null };
+  }
+  return { data: null, error: null };
+}
+
+const listeners: any[] = [];
+const client = {
+  auth: {
+    getSession: async () => ({ data: { session: uid() ? { access_token: "token-" + uid(), user: { id: uid(), email: "guy@example.org" } } : null } }),
+    getUser: async () => ({ data: { user: uid() ? { id: uid(), email: "guy@example.org" } : null } }),
+    onAuthStateChange: (cb: any) => { listeners.push(cb); return { data: { subscription: { unsubscribe() {} } } }; },
+    signOut: async () => ({}),
+  },
+  from: (t: string) => new Q(t),
+  rpc,
+};
+(window as any).__emitAuth = (event: string) => { for (const cb of listeners) cb(event, { user: { id: uid() }, access_token: "token-abcdefghijklmnopqrstuvwxyz-" + Math.random() }); };
+export function createBrowserSupabaseClient() { return client as any; }
+export function createServiceRoleSupabaseClient() { return client as any; }
+export function createServerAnonSupabaseClient() { return client as any; }

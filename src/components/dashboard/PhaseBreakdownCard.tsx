@@ -10,12 +10,13 @@ const BAND_COLOUR: Record<AgeBandKey, string> = {
   nineteen_plus: "#7a5ba0",
 };
 
-const BADGE_ORDER: SizeBadge[] = ["XS", "S", "M", "L", "XL"];
+// 0.7 admissions r2: exported (unchanged) for the Admissions entry-point panel's size row.
+export const BADGE_ORDER: SizeBadge[] = ["XS", "S", "M", "L", "XL"];
 const ACTIVE_BG = "#a97a1f";
 const MUTED_BG_LIGHT = "#f0ece0";
 const MUTED_FG_LIGHT = "#b3ab99";
 
-function comparisonCaption(
+export function comparisonCaption(
   schoolValue: number,
   regionalMean: number | null,
   regionalLabel: string | null,

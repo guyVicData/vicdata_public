@@ -1,0 +1,2 @@
+// Import-graph entry: the public school page.
+export { default as P } from "@/app/schools/[urn]/page";

@@ -177,6 +177,68 @@ export const MapPinIcon = (
   </Glyph>
 );
 
+// 0.7 admissions r2: the Admissions boards' rail glyphs (docs/wireframes/admissions), drawn on
+// their 24x24 grid at the same 15px and stroke weight as the glyphs above. Teacher never uses them.
+function AdmGlyph({ children, fill = false }: { children: ReactNode; fill?: boolean }) {
+  return (
+    <svg width={15} height={15} viewBox="0 0 24 24" fill={fill ? "currentColor" : "none"} stroke={fill ? undefined : "currentColor"} strokeWidth={fill ? undefined : 2.04} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
+export const AdmPipelineIcon = (
+  <AdmGlyph>
+    <polyline points="3 17 9 11 13 15 21 7" />
+  </AdmGlyph>
+);
+export const AdmFunnelIcon = (
+  <AdmGlyph>
+    <path d="M3 4h18l-7 8v6l-4 2v-8z" />
+  </AdmGlyph>
+);
+export const AdmShapeIcon = (
+  <AdmGlyph>
+    <rect x="8" y="3" width="8" height="4" />
+    <rect x="6" y="9" width="12" height="4" />
+    <rect x="4" y="15" width="16" height="4" />
+  </AdmGlyph>
+);
+export const AdmScatterIcon = (
+  <AdmGlyph>
+    <line x1="4" y1="20" x2="20" y2="20" />
+    <line x1="4" y1="20" x2="4" y2="4" />
+    <circle cx="10" cy="14" r="1.6" />
+    <circle cx="16" cy="8" r="1.6" />
+    <circle cx="14" cy="15" r="1.6" />
+  </AdmGlyph>
+);
+export const AdmStrengthsIcon = (
+  <AdmGlyph>
+    <line x1="12" y1="3" x2="12" y2="21" />
+    <line x1="12" y1="7" x2="20" y2="7" />
+    <line x1="5" y1="12" x2="12" y2="12" />
+    <line x1="12" y1="17" x2="17" y2="17" />
+  </AdmGlyph>
+);
+export const AdmNumbersIcon = (
+  <svg width={15} height={15} viewBox="0 0 24 24" aria-hidden="true">
+    <text x="12" y="17" textAnchor="middle" fontSize="15" fontWeight="700" fill="currentColor">#</text>
+  </svg>
+);
+export const AdmPopulationIcon = (
+  <AdmGlyph fill>
+    <rect x="3" y="4" width="11" height="3" rx="1" />
+    <rect x="3" y="9" width="14" height="3" rx="1" />
+    <rect x="3" y="14" width="18" height="3" rx="1" />
+  </AdmGlyph>
+);
+export const AdmRollIcon = (
+  <AdmGlyph>
+    <polyline points="3 15 9 13 15 14 21 10" />
+    <polyline points="3 19 9 18 15 18 21 17" strokeDasharray="2 2" />
+  </AdmGlyph>
+);
+
 // The wireframe's 26px icon button: transparent at rest, inverted when active, and at
 // 35% with pointer events off when disabled. Disabled is a real `disabled` attribute as
 // well as a look -- §4.2 wants the donut genuinely inert for a Results measure, not just

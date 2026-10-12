@@ -216,6 +216,9 @@ const COLUMN_ICON: Record<Dataview["host"]["id"], DashboardConfig["columns"][num
   "teacher.c1.counts": "results",
   "teacher.c2.context": "context",
   "teacher.c3.comparisons": "rankings",
+  // 0.7 admissions r2: never drawn through TeacherDashboard (Admissions slots have their own renderer).
+  "admissions.pipelines": "context",
+  "admissions.market": "rankings",
 };
 
 // Does this host offer a year control on this panel? (Context's Current: SubjectPanels'

@@ -1,0 +1,8 @@
+// next/navigation stand-in for SSR.
+const router = { push() {}, replace() {}, back() {}, refresh() {}, prefetch() {} };
+export function useRouter() { return router; }
+export function usePathname() { return "/"; }
+export function useSearchParams() { return new URLSearchParams(); }
+export function useParams() { return {}; }
+export function notFound(): never { throw new Error("notFound"); }
+export function redirect(u: string): never { throw new Error("redirect " + u); }

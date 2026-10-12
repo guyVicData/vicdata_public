@@ -77,6 +77,11 @@ export const GEOGRAPHY_OF: Record<CompareSeriesKind, Geography> = {
   savedSet: "set",
   chosenSchool: "set",
   otherSubject: "school",
+  // 0.7 admissions r2: the Admissions sets.
+  dayFeeders: "set",
+  boardingFeeders: "set",
+  bothFeeders: "set",
+  rivals: "set",
 };
 
 const geography = (m: Measure, g: Geography): GeographyAvailability => m.geographies[g];
@@ -234,6 +239,12 @@ export const VIEW_LABEL: Record<ViewKind, string> = {
   slope: "Slope",
   donut: "Donut",
   map: "Map",
+  // 0.7 admissions r2 (D7): the Admissions kinds, offered on Admissions dashboards only.
+  pipeline: "Pipeline chart",
+  scatter: "Momentum scatter",
+  strengths: "Strengths bars",
+  shapes: "Shape small multiples",
+  flags: "Flag list",
 };
 
 // Whether a View can draw this data at all. A View never changes a figure, so one that
@@ -259,6 +270,14 @@ export function viewHonest(ctx: HonestContext, kind: ViewKind, data: Pick<ViewSp
       return per === "subject" ? yes() : no("A donut needs a group of subjects: one value per subject (1 · Data).", "R-DONUT-COUNTS-ONLY");
     case "map":
       return schoolSetHost(ctx.host) && per === "school" ? yes() : no("Needs a set of other schools: a Comparisons column.");
+    // 0.7 admissions r2: the Admissions kinds (admissionsViewHonest says the same for their own
+    // data; on a Teacher column they never draw).
+    case "pipeline":
+    case "scatter":
+    case "strengths":
+    case "shapes":
+    case "flags":
+      return no("An Admissions view: it draws on an Admissions dashboard.");
   }
 }
 
@@ -337,4 +356,50 @@ export const SHORT_KIND: Record<CompareSeriesKind, string> = {
   savedSet: "saved set",
   chosenSchool: "a chosen school",
   otherSubject: "another subject",
+  dayFeeders: "day feeders",
+  boardingFeeders: "boarding feeders",
+  bothFeeders: "day and boarding feeders",
+  rivals: "rivals",
 };
+
+// ------------------------------------------------------------- 0.7 admissions r2 (D7)
+
+// The kinds of view each Admissions family can honestly draw (its dataviews' own kinds, nothing
+// a family's figures can't be): the pipeline by year, pupils by year or school, market share by
+// school or year, rivals' results by school or subject area.
+export const ADMISSIONS_KINDS: Record<string, ViewKind[]> = {
+  "admissions.pupils": ["numbers", "line", "bar", "table", "shapes"],
+  "admissions.pipeline": ["pipeline", "bar", "map", "table", "line"],
+  "admissions.market": ["numbers", "donut", "ranking", "map", "table", "line", "bar"],
+  "admissions.rivals": ["scatter", "strengths", "flags", "ranking", "table", "bar"],
+};
+
+export function admissionsViewHonest(family: string, kind: ViewKind): Honest {
+  const ok = ADMISSIONS_KINDS[family]?.includes(kind);
+  if (ok) return yes();
+  if (kind === "spread" || kind === "slope") return no("A grade spread or slope draws exam results by grade: not Admissions figures.");
+  if (kind === "scatter" || kind === "strengths" || kind === "flags") return no("Draws the rivals' results: choose Rivals' results in 1 · Data.");
+  if (kind === "pipeline") return no("Draws the pool by entry year: choose Pipeline in 1 · Data.");
+  if (kind === "shapes") return no("Draws schools' age profiles: choose Pupils by age in 1 · Data.");
+  return no("This family has no figures this view can draw.");
+}
+
+// The compare options Step 1 offers an Admissions view, and which families each fits.
+export const ADMISSIONS_COMPARE: { kind: CompareSeriesKind; label: string; families: string[]; why: string }[] = [
+  { kind: "dayFeeders", label: "Day feeders", families: ["admissions.pupils", "admissions.pipeline"], why: "The day feeder list (or nearby schools until the lead sets it)." },
+  { kind: "boardingFeeders", label: "Boarding feeders", families: ["admissions.pupils", "admissions.pipeline"], why: "The boarding feeder list: no list, no line." },
+  { kind: "bothFeeders", label: "Both", families: ["admissions.pupils", "admissions.pipeline"], why: "Day and boarding feeders together (the page's Day + boarding)." },
+  { kind: "rivals", label: "Rivals", families: ["admissions.market", "admissions.rivals", "admissions.pupils"], why: "The rivals list (or the nearest schools teaching the entry year)." },
+  { kind: "la", label: "Area: LA", families: ["admissions.pupils", "admissions.pipeline"], why: "Pupils of the same age across the LA (age_profile_aggregates, ages 5-15)." },
+  { kind: "region", label: "Area: region", families: ["admissions.pupils", "admissions.pipeline"], why: "Pupils of the same age across the region (ages 5-15)." },
+  { kind: "england", label: "Area: England", families: ["admissions.pupils", "admissions.pipeline"], why: "The nine regions summed (ages 5-15)." },
+];
+
+// What a lead or editor can never change on an Admissions view: catalogue rules, shown as a
+// fixed note in 2 · View (R-ADM-VIEW-PIPELINE, R-ADM-POOL-NOT-INTAKE, R-ADM-FLAG-*, R-ADM-SHAPE-NOT-RANKED).
+export const ADMISSIONS_FIXED: string[] = [
+  "Certainty styling: counted solid, births dashed with their range, projection only on request.",
+  "The honesty wording (a pool, not an intake; a share of this group; an estimate; a requirement, not a forecast).",
+  "Flag thresholds: the fixed national ones, over two or more years; none is guessed.",
+  "Shapes are described, never ranked.",
+];

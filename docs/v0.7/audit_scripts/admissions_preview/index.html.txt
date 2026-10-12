@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="leaflet.css">
+<style>body{margin:0}</style>
+<script>
+window.process = { env: { NODE_ENV: "production" } };
+const P = new URLSearchParams(location.search);
+const THEME = P.get("theme") || "dark";
+try { localStorage.setItem("vicdata.teacher.theme", THEME); } catch {}
+const CASE = P.get("case") || "137625";
+const ROLE = P.get("role") || "lead";            // lead | member | smt | admin | viewas | teacher | shared
+const SETUP = P.get("saved") === "1";            // entry points saved? (else not set up)
+window.onerror = (m) => { document.title = "ERR " + m; const pre = document.getElementById("err"); if (pre) pre.textContent += m + "\n"; };
+</script>
+<script src="fx/index.js"></script>
+<script>
+const fx = window.__FX[CASE];
+const roles = { lead: ["admissions"], member: ["admissions"], smt: ["smt"], admin: ["teacher"], viewas: ["teacher"], teacher: ["teacher"], shared: ["teacher"] }[ROLE];
+window.__DB = {
+  school_memberships: [{ id: "m1", profile_id: "00000000-0000-0000-0000-000000000001", roles, is_admin: ROLE === "admin", admissions_lead: ROLE === "lead", approved_at: "2026-01-01", status: "approved", school_account_id: "acc1",
+    school_accounts: { id: "acc1", school_urn: fx.urn, account_holder_membership_id: null, schools: { current_name: fx.name } } }],
+  school_accounts: [{ id: "acc1", school_urn: fx.urn }],
+  schools: [{ urn: fx.urn, statutory_low_age: fx.low, statutory_high_age: fx.high, current_name: fx.name }].concat(fx.names || []),
+  dashboards: [],
+  admissions_list_shares: ROLE === "shared" ? [{ id: "s1" }] : [],
+  admissions_lists: fx.sharedLists || [],
+  teams: [{ id: "t1", name: "Sixth form team", auto_key: null, team_members: [] }], profiles: [],
+  admissions_grants: [{ membership_id: "m3", granted_by_kind: "lead", granted_by_profile_id: "p1", granted_at: "2026-10-09T09:00:00Z" }, { membership_id: "m2", granted_by_kind: "school_admin", granted_by_profile_id: null, granted_at: "2026-09-01T09:00:00Z" }],
+  platform_audit_log: [
+    { id: 3, action: "admissions_lead_grant", at: "2026-10-09T09:00:00Z", actor_profile_id: "p1", detail: { membership_id: "m3" } },
+    { id: 2, action: "admissions_lead_made", at: "2026-10-08T15:00:00Z", actor_profile_id: "p9", detail: { membership_id: "m2" } },
+    { id: 1, action: "admissions_admin_remove", at: "2026-10-07T12:00:00Z", actor_profile_id: "p9", detail: { membership_id: "m5" } },
+  ],
+  dashboard_assignments: [],
+};
+// People: colleagues at the school (the People page, My team and sharing read these).
+window.__DB.school_memberships = window.__DB.school_memberships.concat([
+  { id: "m2", profile_id: "p1", roles: ["admissions"], role: "admissions", is_admin: false, admissions_lead: true, status: "approved", school_account_id: "acc1", job_title: "Head of Admissions", profiles: { full_name: "Jo Admissions", email: "jo@school.example" } },
+  { id: "m3", profile_id: "p3", roles: ["admissions"], role: "admissions", is_admin: false, admissions_lead: false, status: "approved", school_account_id: "acc1", job_title: "Registrar", profiles: { full_name: "Sam Registrar", email: "sam@school.example" } },
+  { id: "m4", profile_id: "p4", roles: ["smt"], role: "smt", is_admin: false, admissions_lead: false, status: "approved", school_account_id: "acc1", job_title: "Deputy Head", profiles: { full_name: "Alex Deputy", email: "alex@school.example" } },
+  { id: "m5", profile_id: "p5", roles: ["teacher"], role: "teacher", is_admin: false, admissions_lead: false, status: "approved", school_account_id: "acc1", job_title: "Teacher of History", profiles: { full_name: "Robin Teacher", email: "robin@school.example" } },
+]);
+window.__DB.school_memberships[0].profiles = { full_name: "You", email: "you@school.example" };
+window.__DB.admissions_list_shares = (ROLE === "shared" || ROLE === "lead" || ROLE === "smt") ? [{ id: "s1", target_kind: "role", role: "teacher", team_id: null, profile_id: null, created_by: "p1", created_at: "2026-10-10T10:00:00Z" }] : [];
+window.__DB.admissions_lists = [{ id: "l1", entry_point: "11+", kind: "day_feeders", rung: "", members: ["144258", "119999"], updated_by: "p1", updated_at: "2026-10-10T10:00:00Z" }];
+window.__DB.schools = window.__DB.schools.concat([{ urn: "144258", current_name: "Malvern Parish CofE Primary School" }, { urn: "119999", current_name: "Great Malvern Primary School" }]);
+window.__RPC = { is_platform_admin: ROLE === "viewas" };
+const ENTRY_POINTS = SETUP ? fx.entries.map((e, i) => ({ entry_point: e, sort_order: i, updated_by: "p1", updated_at: "2026-10-10T10:00:00Z" })) : [];
+const realFetch = window.fetch;
+window.fetch = async (input, init) => {
+  const u = new URL(typeof input === "string" ? input : input.url, location.href);
+  const json = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
+  if (!u.pathname.startsWith("/api/")) return realFetch(input, init);
+  const entry = u.searchParams.get("entry");
+  const d = fx.byEntry[entry];
+  if (u.pathname === "/api/teacher/phases") return json({ phases: ["ks4", "ks5"] });
+  if (u.pathname === "/api/teacher/view-as-people") return json({ members: window.__DB.school_memberships.slice(1), teams: window.__DB.teams });
+  if (u.pathname === "/api/admissions/lists") return json({ lead: ROLE === "lead", entryPoints: ENTRY_POINTS, lists: [], names: { p1: "Jo Admissions" } });
+  if (!d) return json({ error: "no fixture" }, 502);
+  if (u.pathname === "/api/admissions/pipeline") return json(u.searchParams.get("lists") === "boarding" ? { empty: "no_boarding_list" } : (u.searchParams.get("projection") === "1" && d.pipelineProj) ? d.pipelineProj : d.pipeline);
+  if (u.pathname === "/api/admissions/market-share") return json(d.market);
+  if (u.pathname === "/api/admissions/rivals") return json(d.rivals);
+  if (u.pathname === "/api/admissions/shape") return json(d.shape);
+  if (u.pathname === "/api/admissions/candidates") { const k = u.searchParams.get("kind"); return json(d.candidates?.[k] ?? { kind: k, mode: "nearest", age: 10, period: 2025, school: null, rows: [] }); }
+  return json({ error: "unstubbed " + u.pathname }, 404);
+};
+if (ROLE === "viewas") document.cookie = "vicdata_view_as=" + encodeURIComponent(JSON.stringify({ u: fx.urn, r: "admissions", n: fx.name })) + "; path=/";
+</script>
+</head><body><div id="root"></div><pre id="err" style="color:red"></pre><script src="bundle.js"></script></body></html>

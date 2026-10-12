@@ -19,6 +19,7 @@
 // `--legacy-v1` prints the v1 seed exactly as 0.6 S3 shipped it (insert-if-missing, version
 // 1, specs stripped), for the PGlite re-seed test only.
 import { DASHBOARDS } from "../src/catalogue/dashboards";
+import { ADMISSIONS_SEED_ROLES, isAdmissionsDashboard } from "../src/catalogue/dashboards/admissions";
 import type { DashboardConfig } from "../src/catalogue/types";
 
 const legacy = process.argv.includes("--legacy-v1");
@@ -69,7 +70,7 @@ for (const d of DASHBOARDS) {
   v as (
     insert into public.dashboard_versions (dashboard_id, version, schema_version, config, label, change_summary)
     select dash.id, coalesce((select max(x.version) from public.dashboard_versions x where x.dashboard_id = dash.id), 0) + 1,
-           ${d.schema_version}, ${config}, 'Re-seed (0.6.1)', 'The Teacher dashboard in the ViewSpec format (0.6.1 S2): the same views, ids and defaults'
+           ${d.schema_version}, ${config}, ${isAdmissionsDashboard(d.id) ? "'Seed (0.7 admissions r2)', 'The Admissions dashboards (0.7 admissions round 2): Pipelines and Market share'" : "'Re-seed (0.6.1)', 'The Teacher dashboard in the ViewSpec format (0.6.1 S2): the same views, ids and defaults'"}
     from dash
     returning id, dashboard_id
   )
@@ -77,9 +78,12 @@ for (const d of DASHBOARDS) {
     out.push(`delete from public.dashboard_drafts where dashboard_id = (select id from public.dashboards where slug = ${lit(d.id)})
   and coalesce((config ->> 'schema_version')::int, 0) < ${d.schema_version};`);
   }
-  out.push(`insert into public.dashboard_assignments (dashboard_id, target_kind, role, mode, is_key)
-  select id, 'role', 'teacher', 'live', true from public.dashboards where slug = ${lit(d.id)}
-    and not exists (select 1 from public.dashboard_assignments a join public.dashboards x on x.id = a.dashboard_id where x.slug = ${lit(d.id)} and a.role = 'teacher');`);
+  // 0.7 admissions r2: each dashboard to its own roles -- Teacher's to 'teacher' as before, the
+  // Admissions dashboards to Admissions and SMT only (never Teacher).
+  for (const role of isAdmissionsDashboard(d.id) ? ADMISSIONS_SEED_ROLES : (["teacher"] as const))
+    out.push(`insert into public.dashboard_assignments (dashboard_id, target_kind, role, mode, is_key)
+  select id, 'role', ${lit(role)}, 'live', true from public.dashboards where slug = ${lit(d.id)}
+    and not exists (select 1 from public.dashboard_assignments a join public.dashboards x on x.id = a.dashboard_id where x.slug = ${lit(d.id)} and a.role = ${lit(role)});`);
 }
 out.push("commit;");
 console.log(out.join("\n"));

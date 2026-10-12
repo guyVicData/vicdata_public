@@ -102,6 +102,11 @@ export const DATA_LABEL: Record<DataId, string> = {
   "academic.results": "Results",
   rolls: "Rolls",
   "social.births": "Live births",
+  // 0.7 admissions r2 (D7): the Admissions families.
+  "admissions.pupils": "Pupils by age",
+  "admissions.pipeline": "Pipeline",
+  "admissions.market": "Market share",
+  "admissions.rivals": "Rivals' results",
 };
 
 export const PHASE_LABEL: Record<Phase, string> = { ks4: "GCSE", ks5: "Post-16" };
@@ -167,6 +172,7 @@ export const FOCUS_LABEL: Record<FocusKind, string> = {
   la: "LA",
   region: "Region",
   national: "England",
+  entry_point: "Entry point",
 };
 
 // Block 1's chips (F7): school-keyed data focuses inside the school, area-keyed data on an

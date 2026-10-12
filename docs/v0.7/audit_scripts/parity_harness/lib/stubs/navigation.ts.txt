@@ -1,0 +1,8 @@
+/* eslint-disable */
+declare const window: any;
+const router = { push(u: string) { (window.__pushed ??= []).push(u); }, replace(u: string) { (window.__pushed ??= []).push(u); }, back() {}, refresh() {}, prefetch() {} };
+export function useRouter() { return router; }
+export function usePathname() { return window.__pathname ?? "/"; }
+export function useSearchParams() { return new URLSearchParams(location.search); }
+export function useParams() { return window.__params ?? {}; }
+export function notFound() { throw new Error("notFound"); }

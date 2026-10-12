@@ -1,0 +1,2 @@
+// Import-graph entry: the member Data View page.
+export { default as DV } from "@/app/schools/[urn]/data/page";

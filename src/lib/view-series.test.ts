@@ -150,7 +150,8 @@ const close = (a: number | null | undefined, b: number | null | undefined, msg?:
 
 // ------------------------------------------------------------------ the presets
 
-const LTB = DATAVIEWS.filter((d) => ["line", "table", "bar"].includes(presetSpec(d.id).view.kind)).map((d) => d.id);
+// 0.7 admissions r2: Teacher's presets (the Admissions ones draw through src/components/admissions).
+const LTB = DATAVIEWS.filter((d) => d.host.id.startsWith("teacher.") && ["line", "table", "bar"].includes(presetSpec(d.id).view.kind)).map((d) => d.id);
 
 test("every line / table / bar preset is covered below (or left to its host)", () => {
   const covered = new Set([
@@ -615,7 +616,7 @@ const candidates = ofHost((r) => r.kind === "candidates");
 const comparisons = ofHost((r) => r.kind === "comparisons");
 
 test("every ranking / numbers preset is covered below", () => {
-  const ids = DATAVIEWS.filter((d) => ["ranking", "numbers", "slope"].includes(presetSpec(d.id).view.kind)).map((d) => d.id).sort();
+  const ids = DATAVIEWS.filter((d) => d.host.id.startsWith("teacher.") && ["ranking", "numbers", "slope"].includes(presetSpec(d.id).view.kind)).map((d) => d.id).sort();
   assert.deepEqual(ids, ["DV-C1-CAND-CUR-TILES", "DV-C1-RES-CUR-TILES", "DV-C2-CUR-LIST", "DV-C3-CUR-RANKING", "DV-C3-CUR-TILES"]);
 });
 

@@ -33,6 +33,9 @@ export type EditorEnv = {
   // A Results dashboard following the pill: Show this view for has ticks.
   followsPill: boolean;
   ctx: PickPanelContext;
+  // 0.7 admissions r2 (D7): an Admissions column -- its steps are AdmissionsSteps.tsx's, and
+  // "Shows for" lists entry points.
+  admissions?: { family: string };
 };
 
 export type Draft = {
@@ -79,6 +82,9 @@ const START: Record<HostId, Record<Side, DataviewId[]>> = {
   "teacher.c1.candidates": { current: ["DV-C1-CAND-CUR-TILES"], trend: ["DV-C1-CAND-TR-ACTUAL"] },
   "teacher.c2.context": { current: ["DV-C2-CUR-BARS"], trend: ["DV-C2-TR-CHART", "DV-C2-TR-ACTUAL"] },
   "teacher.c3.comparisons": { current: ["DV-C3-CUR-BAR"], trend: ["DV-C3-TR-CHART"] },
+  // 0.7 admissions r2 (D7)
+  "admissions.pipelines": { current: ["DV-ADM-P-PIPELINE"], trend: ["DV-ADM-P-ENTRY-LINE"] },
+  "admissions.market": { current: ["DV-ADM-M-BARS"], trend: ["DV-ADM-M-SHARE-LINE"] },
 };
 
 export const presetsOf = (host: HostId, side: Side): Dataview[] => DATAVIEWS.filter((d) => d.host.id === host && d.host.panel === side);
@@ -154,6 +160,12 @@ export const ICONS_FOR: Record<ViewKind, string[]> = {
   slope: ["SlopeIcon", "TrendLineIcon"],
   donut: ["DonutIcon"],
   map: ["MapPinIcon"],
+  // 0.7 admissions r2 (D7)
+  pipeline: ["AdmPipelineIcon", "AdmFunnelIcon"],
+  scatter: ["AdmScatterIcon"],
+  strengths: ["AdmStrengthsIcon", "HorizontalBarsIcon"],
+  shapes: ["AdmShapeIcon"],
+  flags: ["FlagIcon"],
 };
 
 const DEFAULT_LOOK: { [K in ViewKind]: Extract<ViewSpec["view"], { kind: K }>["look"] } = {
@@ -166,6 +178,12 @@ const DEFAULT_LOOK: { [K in ViewKind]: Extract<ViewSpec["view"], { kind: K }>["l
   slope: {},
   donut: {},
   map: { colour: "value" },
+  // 0.7 admissions r2 (D7): look-only; the certainty styling and flags are catalogue rules.
+  pipeline: { projection: "member", pastPools: true, rungLabels: true },
+  scatter: { labels: true, quadrantNames: true },
+  strengths: { order: "gap", showFlags: true },
+  shapes: { columns: 2 },
+  flags: { show: "flagged" },
 };
 
 export function startDraft(env: EditorEnv, instance?: ViewInstance): Draft {

@@ -1,0 +1,20 @@
+import { createRoot } from "react-dom/client";
+import { AdmissionsDashboard } from "@/components/admissions/AdmissionsDashboard";
+import { MyTeam } from "@/components/admissions/people/MyTeam";
+import PeoplePage from "@/app/teacher/people/page";
+import TeacherHome from "@/app/teacher/page";
+import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
+import { admissionsVars } from "@/components/admissions/ui";
+const P = new URLSearchParams(location.search);
+const w = P.get("w");
+const el = document.getElementById("root")!;
+if (w) el.style.width = `${w}px`;
+const page = P.get("page");
+const slot = page === "slot" ? (
+  <main id="teacher-root" data-theme="dark" style={{ ...admissionsVars("dark"), background: "var(--bg)", padding: 20 }}>
+    <div data-slot="" style={{ width: Number(P.get("sw")), height: Number(P.get("sh")), background: "var(--panel-bg)", border: "1px solid var(--panel-border)", borderRadius: 12, padding: 12, boxSizing: "content-box", overflow: "hidden", color: "var(--fg)" }}>
+      <AdmissionsViewPreview dataview={P.get("dv")!} urn={P.get("case")!} schoolName="The Chase" entry={P.get("entry") ?? "11+"} height={Number(P.get("sh"))} />
+    </div>
+  </main>
+) : null;
+createRoot(el).render(slot ? slot : page === "team" ? <MyTeam /> : page === "people" ? <PeoplePage /> : page === "home" ? <TeacherHome /> : <AdmissionsDashboard />);

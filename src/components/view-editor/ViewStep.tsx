@@ -32,6 +32,12 @@ const NOTE: Record<ViewKind, ReactNode> = {
   slope: <>The rows, the first year and the latest come from <b>1 &middot; Data</b>.</>,
   donut: <>The subjects and the year come from <b>1 &middot; Data</b>.</>,
   map: <>The schools, and whether it is coloured by the figure or the change, come from <b>1 &middot; Data</b>.</>,
+  // 0.7 admissions r2 (D7)
+  pipeline: <>The sets, the entry point and the years come from <b>1 &middot; Data</b>. Counted, births and projection styling is fixed (a catalogue rule).</>,
+  scatter: <>The rivals and the two changes since 2022/23 come from <b>1 &middot; Data</b>. Flags use the fixed national thresholds.</>,
+  strengths: <>The rivals and the subject areas come from <b>1 &middot; Data</b>. Strength and weakness flags are catalogue rules.</>,
+  shapes: <>The schools come from <b>1 &middot; Data</b>. Shapes are described, never ranked.</>,
+  flags: <>The rivals come from <b>1 &middot; Data</b>. Each flag&rsquo;s threshold is fixed, and its figures show on hover.</>,
 };
 
 export function ViewTiles({ draft, set, env, wide }: Pick<StepProps, "draft" | "set" | "env" | "wide">) {

@@ -1,0 +1,31 @@
+#!/bin/zsh
+# capall.sh <main|br>: the 10 Teacher fixtures (0.6.5 matrix) from that tree's own fetchers,
+# read-only, into $W/h/fix/fix_<tag>_*.js. 4 at a time, 300 s cap each. Logs in $W/logs/.
+W=${0:A:h:h}
+T=$1
+R=$([ "$T" = main ] && echo $W/main-tree || echo /Users/guy/dev/vicdata_public)
+mkdir -p $W/logs $W/h/fix
+export PARITY_FIX=$W/h/fix
+run() { # urn phase first qualPrefix fx
+  local log=$W/logs/cap_${T}_$1_$2$5.log t0=$SECONDS
+  (cd $R && perl -e 'alarm 300; exec @ARGV' npx -y tsx --env-file=/Users/guy/dev/vicdata_public/.env $W/lib/cap.mts $R $T $1 $2 "$3" "$4" "$5" > $log 2>&1)
+  local rc=$?
+  echo "  [cap $T] $1 $2$5: rc=$rc $((SECONDS-t0))s $(tail -1 $log | cut -c1-110)"
+}
+echo "[cap $T] capturing 10 fixtures from $R"
+run 137625 ks4 History "" "" &
+run 100053 ks4 History "" "" &
+run 117037 ks5 Mathematics "GCE A level" "" &
+run 130432 ks5 "Business Studies" "" "" &
+wait
+run 118952 ks5 Biology "" "" &
+run 130416 ks5 Health "T Level" "" &
+run 130432 ks5 Law "GCE AS level" "_aslaw" &
+run 130432 ks5 "Business Studies" "BTEC National Extended Diploma" "_btec" &
+wait
+run 130432 ks5 "Maintenance, Installation and Repair for Engineering and Manufacturing" "T Level" "_tlevel" &
+run 118952 ks5 "Mathematical Studies" "IBO Higher" "_ibmaths" &
+wait
+n=$(ls $W/h/fix/fix_${T}_*.js 2>/dev/null | wc -l | tr -d ' ')
+echo "[cap $T] done: $n fixture files"
+[ "$n" -ge 10 ]

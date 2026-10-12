@@ -722,7 +722,7 @@ export function setViewResults(config: DashboardConfig, instanceId: string, meas
   return setViewStates(config, instanceId, "results", measures);
 }
 
-const AXIS_NOUN: Record<VariantAxis, string> = { results: "Results measure", compareAgainst: "Compare against set", comparator: "kind of comparison" };
+const AXIS_NOUN: Record<VariantAxis, string> = { results: "Results measure", compareAgainst: "Compare against set", comparator: "kind of comparison", entryPoint: "entry point" };
 
 export function setViewStates<A extends VariantAxis>(config: DashboardConfig, instanceId: string, axis: A, states: AxisStateMap[A][]): DashboardConfig {
   const c = clone(config);

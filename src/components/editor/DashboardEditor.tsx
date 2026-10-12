@@ -13,6 +13,8 @@
 // (G8). The draft autosaves (debounced saveDraft); Publish makes a new immutable version
 // with the generated change summary. Until the S2 tables exist (store `available: false`)
 // it all works in memory and says "Saving needs the database update".
+import { isAdmissionsData } from "@/catalogue/admissions";
+import type { EntryPointState } from "@/catalogue/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -137,6 +139,9 @@ const RAIL_MENU_CSS =
 
 const OWNER_WORD = { vicdata: "VicData", school: "School", user: "Personal" } as const;
 
+// 0.7 admissions r2 (D7): the entry-point axis's words (the edit bar's pill, "Shows for").
+const ENTRY_LABELS: Record<EntryPointState, string> = { "4+": "4+", "11+": "11+", "16+": "16+", custom: "Custom age" };
+
 export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview, onCopyView, labels: hostLabels, school = null, subjects, top, onExit, onSwitch, writeAsSelf = false, states: hostStates }: DashboardEditorProps) {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
@@ -173,6 +178,8 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
   // Comparisons' comparator kind has no pill of its own (the band has no room for a third):
   // it is the page's, and Show all views reveals the views of the other kind.
   const comparator: ComparatorState = hostStates?.comparator ?? "schools";
+  // 0.7 admissions r2 (D7): an Admissions dashboard's entry point -- the edit bar's own pill.
+  const [entryState, setEntryState] = useState<EntryPointState>("11+");
   const [showAll, setShowAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
@@ -290,11 +297,13 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
     ...(axes.includes("results") ? { results: pill } : {}),
     ...(axes.includes("compareAgainst") ? { compareAgainst: against } : {}),
     ...(axes.includes("comparator") ? { comparator } : {}),
+    ...(axes.includes("entryPoint") ? { entryPoint: entryState } : {}),
   };
   const axisInfo: EditorVariants["axes"] = {
     results: { name: "Results", labels: pillLabels },
     compareAgainst: { name: "Compare against", labels: againstLabels },
     comparator: { name: "Compared against", labels: comparatorLabels },
+    entryPoint: { name: "Entry point", labels: ENTRY_LABELS },
   };
   const stateOfPanel = (panelId: string): VariantState | null => {
     const p = config.panels.find((x) => x.id === panelId);
@@ -381,6 +390,8 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
       const on = effectiveResults(inst);
       if (on.length && !on.includes(pill)) measure = on[0];
     }
+    // 0.7 admissions r2 (D7): an Admissions column opens the editor's Admissions steps.
+    if (isAdmissionsData(ctx.data)) return { phase: ctx.phase, columnHost: host, side: sideOf(config, target), measure: "entries", followsPill: false, ctx, admissions: { family: ctx.data } };
     return { phase: ctx.phase, columnHost: host, side: sideOf(config, target), measure, followsPill: !!resultsPill && results, ctx: results ? { ...ctx, results: measure as ResultsMeasure } : ctx };
   };
 
@@ -660,7 +671,7 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
             </nav>
           )}
         </div>
-        {(config.features?.subjectChips || axes.length > 0) && (
+        {(config.features?.subjectChips || config.features?.entryPointChips || axes.length > 0) && (
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {axes.length > 0 && (
               <div data-editor-pill="" style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -691,10 +702,28 @@ export function DashboardEditor({ loaded, superAdmin, Preview = DataFreePreview,
                     </PillMenu>
                   </span>
                 )}
+                {/* 0.7 admissions r2 (D7): the entry point plays the subject's part on an Admissions dashboard. */}
+                {axes.includes("entryPoint") && (
+                  <span data-editor-axis="entryPoint" style={{ display: "contents" }}>
+                    <PillMenu label="Entry point" value={ENTRY_LABELS[entryState]} width={220} align="right" title={`Entry point: ${ENTRY_LABELS[entryState]}`}>
+                      {(close) => (
+                        <>
+                          <MenuHeading>Entry point</MenuHeading>
+                          {(["4+", "11+", "16+", "custom"] as const).map((id) => (
+                            <MenuRow key={id} label={ENTRY_LABELS[id]} selected={id === entryState} onClick={() => { setEntryState(id); close(); }} />
+                          ))}
+                        </>
+                      )}
+                    </PillMenu>
+                  </span>
+                )}
                 <SwitchButton on={showAll} onChange={setShowAll} className="text-[12px] font-semibold text-[var(--muted2)] hover:text-[var(--fg)]">
                   Show all views
                 </SwitchButton>
               </div>
+            )}
+            {config.features?.entryPointChips && (
+              <span style={{ border: "1px dashed var(--panel-border2)", color: "var(--muted2)", borderRadius: 999, padding: "5px 12px", fontSize: 12, fontWeight: 600 }}>Entry-point chips: the school&apos;s own entry points</span>
             )}
             {config.features?.subjectChips && (
               <span style={{ border: "1px dashed var(--panel-border2)", color: "var(--muted2)", borderRadius: 999, padding: "5px 12px", fontSize: 12, fontWeight: 600 }}>Subject chips: the viewer&apos;s own subjects</span>

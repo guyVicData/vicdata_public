@@ -24,18 +24,21 @@
 // added each view's spec). Pure, so the
 // hosts, the editor and the tests share it.
 import { DATAVIEWS } from "./dataviews";
-import type { ComparatorState, CompareAgainstState, DashboardConfig, Dataview, DataviewInstance, HostId, PanelConfig, ResultsMeasure, VariantSets } from "./types";
+import type { ComparatorState, CompareAgainstState, DashboardConfig, Dataview, DataviewInstance, EntryPointState, HostId, PanelConfig, ResultsMeasure, VariantSets } from "./types";
 
-export type VariantAxis = "results" | "compareAgainst" | "comparator";
-export type AxisStateMap = { results: ResultsMeasure; compareAgainst: CompareAgainstState; comparator: ComparatorState };
+// 0.7 admissions r2: "entryPoint" (the Admissions entry-point chips) is appended LAST, so every
+// Teacher state key (stateKey, defaultViewByState) is written exactly as before.
+export type VariantAxis = "results" | "compareAgainst" | "comparator" | "entryPoint";
+export type AxisStateMap = { results: ResultsMeasure; compareAgainst: CompareAgainstState; comparator: ComparatorState; entryPoint: EntryPointState };
 // The current state of each axis that applies (a panel's, or the whole page's).
 export type VariantState = { [A in VariantAxis]?: AxisStateMap[A] };
 
-export const VARIANT_AXES: VariantAxis[] = ["results", "compareAgainst", "comparator"];
+export const VARIANT_AXES: VariantAxis[] = ["results", "compareAgainst", "comparator", "entryPoint"];
 export const AXIS_STATES: { [A in VariantAxis]: AxisStateMap[A][] } = {
   results: ["points", "threshold", "bands", "counts"],
   compareAgainst: ["category", "whole", "selected"],
   comparator: ["schools", "ranking"],
+  entryPoint: ["4+", "11+", "16+", "custom"],
 };
 
 // The host whose views an axis varies; Results varies every view on a Results dashboard.
@@ -108,9 +111,10 @@ export function followsResultsPill(config: Pick<DashboardConfig, "columns">): bo
 
 // The axes a panel varies by: Results on a Results dashboard; Context's and Comparisons'
 // own axes on the panels their hosts draw (by the panel's views' dataviews).
-export function panelAxes(config: Pick<DashboardConfig, "columns">, panel: PanelConfig): VariantAxis[] {
+export function panelAxes(config: Pick<DashboardConfig, "columns"> & Partial<Pick<DashboardConfig, "features">>, panel: PanelConfig): VariantAxis[] {
   const hosts = new Set(panel.dataviews.flatMap((v) => (v.kind === "view" ? [BY_ID.get(v.dataview)?.host.id] : [])));
-  return VARIANT_AXES.filter((a) => (a === "results" ? followsResultsPill(config) : hosts.has(AXIS_HOST[a])));
+  // 0.7 admissions r2: an Admissions dashboard's every panel follows the entry-point chips.
+  return VARIANT_AXES.filter((a) => (a === "results" ? followsResultsPill(config) : a === "entryPoint" ? !!config.features?.entryPointChips : hosts.has(AXIS_HOST[a])));
 }
 
 // Every axis any panel of the dashboard varies by (the editor's pills).
@@ -120,7 +124,7 @@ export function configAxes(config: DashboardConfig): VariantAxis[] {
 }
 
 // The panel's own state: the page's (or the editor's) state on the axes the panel varies by.
-export function panelState(config: Pick<DashboardConfig, "columns">, panel: PanelConfig, page: VariantState | null): VariantState {
+export function panelState(config: Pick<DashboardConfig, "columns"> & Partial<Pick<DashboardConfig, "features">>, panel: PanelConfig, page: VariantState | null): VariantState {
   const out: VariantState = {};
   if (!page) return out;
   for (const a of panelAxes(config, panel)) if (page[a] !== undefined) (out as Record<string, string>)[a] = page[a]!;
