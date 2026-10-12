@@ -7,13 +7,12 @@
 //   #2a2a2a chip edge → --panel-border2 · #101010 inset → --box-bg · #f2f2f2 → --fg
 //   #9a9a9a → --muted2 · #7a7a7a → --muted · #d4d4d4 / #c4c4c4 → --chip-fg
 //   #22d3ee → --accent (ROLE_ACCENT.admissions) · #0f2329 → the accent at 0.14 (--adm-tint)
-// The boards' semantic colours (green flag, red flag, note blue, amber, orange, greys) are
+// The boards' semantic colours (green flag, red flag, amber, orange, greys) are
 // Admissions variables below, a dark and a light value each, so both themes read.
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
-import { SourceNote } from "@/components/teacher/PanelFooter";
-import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
-import { useDismiss } from "@/components/teacher/PanelMenu";
+import { CardBox } from "@/components/teacher/CardBox";
+import { PanelExport, type PanelMenuItem } from "@/components/teacher/PanelFooter";
 import * as Icons from "@/components/teacher/PanelIcons";
 import type { Theme } from "@/components/teacher/TeacherChrome";
 
@@ -38,8 +37,6 @@ export function admissionsVars(theme: Theme): CSSProperties {
     "--adm-up-fg": dark ? "#86efac" : "#15803d",
     "--adm-down-bg": dark ? "#2a1616" : "#fee2e2",
     "--adm-down-fg": dark ? "#fca5a5" : "#b91c1c",
-    "--adm-note-bg": dark ? "#1f2430" : "#dbeafe",
-    "--adm-note-fg": dark ? "#93c5fd" : "#1d4ed8",
     "--adm-amber": dark ? "#fbbf24" : "#b45309",
     "--adm-orange": dark ? "#f97316" : "#ea580c",
     "--adm-range-edge": dark ? "#2f4b52" : "#a5e4ef",
@@ -126,7 +123,8 @@ export type FlagTone = "up" | "down" | "note";
 const TONE: Record<FlagTone, string> = {
   up: "bg-[var(--adm-up-bg)] text-[var(--adm-up-fg)]",
   down: "bg-[var(--adm-down-bg)] text-[var(--adm-down-fg)]",
-  note: "bg-[var(--adm-note-bg)] text-[var(--adm-note-fg)]",
+  // 0.7 r3 (F1): a flag with no direction takes Teacher's neutral chip, not a note colour of its own.
+  note: "bg-[var(--box-bg)] text-[var(--muted2)]",
 };
 /** A flag pill. `figures` is the hover: every flag shows the figures behind it (R-ADM-VIEW-FLAGS). */
 export function FlagPill({ tone, children, figures, small = false }: { tone: FlagTone; children: ReactNode; figures?: string; small?: boolean }) {
@@ -156,30 +154,17 @@ export function railGlyph(name: string): ReactNode {
 
 export type RailItem = { id: string; label: string; icon: string };
 
-/** The boards' 22px rail icon button: transparent, the inverted chip when active. */
-function RailButton({ item, active, onClick }: { item: RailItem; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      title={item.label}
-      aria-label={item.label}
-      aria-pressed={active}
-      onClick={onClick}
-      className={cx("flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] [&>svg]:h-3 [&>svg]:w-3", active ? "bg-[var(--adm-rail-on)] text-[var(--fg)]" : "text-[var(--muted2)] hover:text-[var(--fg)]")}
-    >
-      {railGlyph(item.icon)}
-    </button>
-  );
-}
-
+/** 0.7 r3 (F1): the rail is Teacher's -- its IconButton, down CardBox's rail column. */
 export function Rail({ items, active, onPick }: { items: RailItem[]; active: string; onPick: (id: string) => void }) {
   if (items.length < 2) return null;
   return (
-    <div role="toolbar" aria-label="Views" className="mr-[10px] flex shrink-0 flex-col gap-[3px] border-r border-[var(--panel-border)] pb-[2px] pl-0 pr-[9px] pt-[1px]">
+    <>
       {items.map((it) => (
-        <RailButton key={it.id} item={it} active={it.id === active} onClick={() => onPick(it.id)} />
+        <Icons.IconButton key={it.id} label={it.label} active={it.id === active} onClick={() => onPick(it.id)}>
+          {railGlyph(it.icon)}
+        </Icons.IconButton>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -196,43 +181,14 @@ export function Tabs({ items, active, onPick }: { items: RailItem[]; active: str
   );
 }
 
-export type PanelMenuAction = { label: string; onClick: () => void; disabled?: boolean; title?: string };
+export type PanelMenuAction = PanelMenuItem;
 
-function DotsMenu({ actions }: { actions: PanelMenuAction[] }) {
-  const [open, setOpen] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
-  if (!actions.length) return null;
-  return (
-    <span className="relative" ref={ref}>
-      <button type="button" aria-label="Panel menu" aria-expanded={open} onClick={() => setOpen(!open)} className="flex h-[22px] w-[22px] items-center justify-center rounded-[6px] text-[var(--muted2)] hover:text-[var(--fg)]">
-        &middot;&middot;&middot;
-      </button>
-      {open && (
-        <span className="absolute right-0 top-6 z-40 flex w-52 flex-col rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-1 shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
-          {actions.map((a) => (
-            <button
-              key={a.label}
-              type="button"
-              disabled={a.disabled}
-              title={a.title}
-              onClick={() => {
-                setOpen(false);
-                a.onClick();
-              }}
-              className="rounded-[7px] px-2.5 py-1.5 text-left text-[12px] text-[var(--fg)] hover:bg-[var(--box-bg)] disabled:opacity-50"
-            >
-              {a.label}
-            </button>
-          ))}
-        </span>
-      )}
-    </span>
-  );
-}
-
-/** One Admissions panel, as the boards draw it: a header line (tag, muted context, chips, ···),
- * an optional rail on the left of the body, and a bottom row pinned 10px from the edge (the
- * source "i", the panel's honesty line, the fullscreen mark). */
+/** One Admissions panel or large view. 0.7 r3 (F1): Teacher's own CardBox -- the same header
+ * and icon row (PanelIconRow: the menu, full screen, a reserved collapse slot), the same rail,
+ * the same footer notes (the source "i", the caption behind its button, the flag at the right)
+ * and the same full screen. Only the size differs: Admissions' rows are 470 and 330 tall, and
+ * the large view spans two columns. Admissions' own header line (tag · context) is the tag, its
+ * chips sit right-aligned before the icon row. */
 export function Panel({
   tag,
   context,
@@ -242,11 +198,13 @@ export function Panel({
   railActive,
   onRail,
   source,
-  footer,
+  caption,
+  visibleCaption,
+  flag,
+  controls,
   height,
   span = 1,
   title,
-  fullscreen = true,
   children,
   id,
   onCopy,
@@ -259,93 +217,53 @@ export function Panel({
   railActive?: string;
   onRail?: (id: string) => void;
   source?: ReactNode;
-  footer?: ReactNode;
+  // The panel's honesty note, behind the footer's caption button (Teacher's CaptionNote).
+  caption?: ReactNode;
+  // A line the panel shows without a click (CardBox's visibleCaption): the LA context, a link.
+  visibleCaption?: ReactNode;
+  flag?: ReactNode;
+  // A row under the header (CardBox's controls): the phone's tabs.
+  controls?: ReactNode;
   height: number | "auto";
   span?: 1 | 2;
   title: string;
-  fullscreen?: boolean;
   children: (o: { fullscreen: boolean }) => ReactNode;
   id?: string;
-  // D8: "Copy to meeting slides…" (absent in View as and wherever a copy can't be saved).
+  // D8: "Copy this view…" (meeting slides; absent in View as and wherever a copy can't be saved).
   onCopy?: () => void;
 }) {
-  const [full, setFull] = useState(false);
-  // D8: "Print this view" -- the fullscreen view, printed alone (TeacherModal printable), as
-  // Teacher's "Print this graph".
-  const [printing, setPrinting] = useState(false);
-  useEffect(() => {
-    if (!printing) return;
-    const done = () => {
-      setPrinting(false);
-      setFull(false);
-    };
-    window.addEventListener("afterprint", done, { once: true });
-    const t = window.setTimeout(() => window.print(), 350);
-    return () => {
-      window.clearTimeout(t);
-      window.removeEventListener("afterprint", done);
-    };
-  }, [printing]);
-  const actions: PanelMenuAction[] = [
-    { label: "Print this view", onClick: () => { setFull(true); setPrinting(true); } },
-    ...(onCopy ? [{ label: "Copy to meeting slides…", onClick: onCopy }] : []),
-    ...menu,
-  ];
-  const body = (isFull: boolean) => (
-    <div className="flex min-h-0 grow">
-      {rail && railActive && onRail && <Rail items={rail} active={railActive} onPick={onRail} />}
-      <div className="flex min-w-0 grow flex-col gap-2">{children({ fullscreen: isFull })}</div>
-    </div>
-  );
   return (
     <section
       id={id}
       aria-label={title}
       data-adm-panel={id}
-      className="relative flex flex-col gap-2 rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-[14px] pb-9 pt-3"
-      style={{ height: height === "auto" ? undefined : height, gridColumn: span === 2 ? "span 2" : undefined, boxSizing: "border-box" }}
+      className="min-w-0 [&>div]:!mt-0"
+      style={{ gridColumn: span === 2 ? "span 2" : undefined }}
     >
-      <div className="flex items-center gap-[6px]">
-        <span className="shrink-0 whitespace-nowrap text-[11.5px] font-semibold text-[var(--chip-fg)]">{tag}</span>
-        {context && <span className="min-w-0 truncate whitespace-nowrap text-[11.5px] text-[var(--muted2)]">{context}</span>}
-        <span className="grow" />
-        {chips}
-        <DotsMenu actions={actions} />
-      </div>
-      {body(false)}
-      <div className="absolute bottom-[10px] left-[14px] right-[14px] flex items-center gap-[6px]">
-        {source ? <SourceNote>{source}</SourceNote> : <span className="flex h-[17px] w-[17px] items-center justify-center rounded-full border border-[var(--panel-border2)] text-[9.5px] font-bold italic text-[var(--muted)]">i</span>}
-        {footer}
-        {fullscreen && (
-          <>
-            <span className="grow" />
-            <button type="button" title="Fullscreen" aria-label={`${title}: fullscreen`} onClick={() => setFull(true)} className="inline-flex text-[var(--muted)] hover:text-[var(--fg)] [&>svg]:h-3 [&>svg]:w-3">
-              <ExpandIcon expanded={false} />
-            </button>
-          </>
-        )}
-      </div>
-      {full && (
-        <TeacherModal label={title} backdropLabel="Close fullscreen" onClose={() => setFull(false)} printable={printing}>
-          <div className="flex h-full flex-col gap-3 p-5">
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-bold text-[var(--fg)]">{title}</span>
-              <span className="grow" />
-              {chips}
-              <button type="button" className={MODAL_CLOSE_BUTTON_CLASS} aria-label="Exit fullscreen" onClick={() => setFull(false)}>
-                <ExpandIcon expanded />
-              </button>
-            </div>
-            {body(true)}
-            {footer && <div className="flex items-center gap-2">{footer}</div>}
-          </div>
-        </TeacherModal>
-      )}
+      <CardBox
+        title={title}
+        tag={
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-[var(--fg)]">{tag}</span>
+            {context && <span className="min-w-0 truncate whitespace-nowrap text-[11.5px] text-[var(--muted2)]">{context}</span>}
+          </span>
+        }
+        headerExtra={chips}
+        controls={controls}
+        actions={rail && railActive && onRail && rail.length > 1 ? <Rail items={rail} active={railActive} onPick={onRail} /> : undefined}
+        source={source}
+        caption={caption}
+        visibleCaption={visibleCaption}
+        flag={flag}
+        fixedHeight={height !== "auto"}
+        height={height === "auto" ? undefined : height}
+        menu={({ print }) => <PanelExport onPrint={print} onCopy={onCopy} extra={menu} />}
+      >
+        {({ fullscreen }) => <div className={cx("flex min-w-0 grow flex-col gap-2", height !== "auto" && "min-h-0")}>{children({ fullscreen })}</div>}
+      </CardBox>
     </section>
   );
 }
-
-export const Footer = ({ children }: { children: ReactNode }) => <span className="truncate text-[11px] text-[var(--muted2)]">{children}</span>;
 
 export const ViewTitle = ({ children }: { children: ReactNode }) => <div className="text-[12.5px] font-bold text-[var(--fg)]">{children}</div>;
 

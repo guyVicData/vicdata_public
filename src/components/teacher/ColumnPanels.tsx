@@ -250,15 +250,16 @@ export function ColumnPanels({
             controls={panel.controls}
             caption={panel.summary}
             source={withTrendNote(panel.source, specYears(spec, panel.gradingYears))}
-            footerActions={({ print, fullscreen }) => (
+            footerActions={({ fullscreen }) => (
               <>
                 {/* In fullscreen the note has its own place in the side rail (Part 4). */}
                 {notes && !fullscreen && (
                   <PanelNote body={notes.bodyFor(id)} onSave={(body) => notes.onSave(id, body)} />
                 )}
-                <PanelExport onPrint={print} />
               </>
             )}
+            // 0.7 admissions r3 (F1): Export moved from the footer to the icon row's menu.
+            menu={({ print }) => <PanelExport onPrint={print} />}
             note={notes ? { body: notes.bodyFor(id), onSave: (body) => notes.onSave(id, body) } : undefined}
             // Round 8 §2: every panel the same height, so the three columns read as one
             // 3x3 grid rather than three ragged stacks.

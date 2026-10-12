@@ -27,7 +27,7 @@ import type { EntryPointState } from "@/catalogue/types";
 import { DEFAULT_FILTERS, getJson, query, useRoute, type Filters, type ListsAnswer, type Load, type MarketView, type PipelineOk, type PipelineView, type RivalsView, type ShapeView } from "./api";
 import { loadAdmissionsMember, type AdmissionsMember, type MemberState } from "./member";
 import { AdmissionsNav, HeaderBar, PhoneHeader, RowHead, type DashKey } from "./Chrome";
-import { Empty, FChip, Footer, Panel, Skeleton, Tabs, admissionsVars, cx, fmtN, yearLabel, type PanelMenuAction, type RailItem } from "./ui";
+import { Empty, FChip, Panel, Skeleton, Tabs, admissionsVars, cx, fmtN, yearLabel, type PanelMenuAction, type RailItem } from "./ui";
 import { useWidth } from "./views/charts";
 import { EntryNow, laContext } from "./panels/EntryNow";
 import { MarketNow } from "./panels/MarketNow";
@@ -48,6 +48,11 @@ import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import { contextFromPanel } from "@/catalogue/pick";
 
 const PHONE = 768;
+// The rows' panel heights. 0.7 r3 (F1): +60 and +10 on round 2's 470 / 330 -- the panels are now
+// Teacher's CardBox, whose header line is a little taller and whose visible caption (the LA
+// context) sits inside the body rather than in the footer.
+const ROW_NOW = 530;
+const ROW_TRENDS = 340;
 
 // The school's own entry points when the lead hasn't chosen any: the ones its age range takes.
 export function defaultEntries(low: number | null, high: number | null): string[] {
@@ -478,20 +483,24 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
   return { tag: "Trends", context: "from 2019/20" };
 }
 
-/** Each panel's bottom-row line: the honesty wording, from ADMISSIONS_NOTES. */
-function footerOf(panel: PanelConfig, dv: string, c: Ctx): ReactNode {
-  if (dv === "DV-ADM-P-NOW") return <><span className="grow" /><Footer>{laContext(c.shape.status === "ready" ? c.shape.data : null) ?? ""}</Footer></>;
-  if (dv === "DV-ADM-M-NOW") return <><span className="grow" /><Footer>{ADMISSIONS_NOTES.groupShort}</Footer></>;
-  if (dv === "DV-ADM-P-PIPELINE" || dv === "DV-ADM-P-FUNNEL" || dv === "DV-ADM-P-MAP" || dv === "DV-ADM-P-TABLE") return <Footer>{ADMISSIONS_NOTES.poolShort}</Footer>;
-  if (dv.endsWith("-SHAPE")) return <Footer>{SHAPES_NOTE}</Footer>;
-  if (dv.startsWith("DV-ADM-P-ENTRY")) return <Footer>{ADMISSIONS_NOTES.cohortShort}</Footer>;
-  if (dv.startsWith("DV-ADM-P-POOL") || dv === "DV-ADM-P-AREA-POP") return <Footer>Also: the school page&rsquo;s area population trend (ages 5&ndash;15)</Footer>;
-  if (dv.startsWith("DV-ADM-P-HOLD")) return <Footer>{ADMISSIONS_NOTES.requirement}</Footer>;
-  if (dv.startsWith("DV-ADM-M-ACAD")) return <AcademicFooter explorerHref={explorerHref(c)} />;
+/** Each panel's notes, from ADMISSIONS_NOTES. 0.7 r3 (F1): the honesty wording opens the way
+ * Teacher's notes do -- the caption button beside the source "i", its popover, and printed in full
+ * screen -- rather than as a line of its own. What a panel shows without a click (the LA context,
+ * the subject-explorer link) is CardBox's visible caption, as on Teacher. */
+function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode } {
+  if (dv === "DV-ADM-P-NOW") return { visible: laContext(c.shape.status === "ready" ? c.shape.data : null) ?? undefined };
+  if (dv === "DV-ADM-M-NOW") return { caption: ADMISSIONS_NOTES.groupShort };
+  if (dv === "DV-ADM-P-FUNNEL") return { caption: ADMISSIONS_NOTES.funnelNote };
+  if (dv === "DV-ADM-P-PIPELINE" || dv === "DV-ADM-P-MAP" || dv === "DV-ADM-P-TABLE") return { caption: ADMISSIONS_NOTES.poolShort };
+  if (dv.endsWith("-SHAPE")) return { caption: SHAPES_NOTE };
+  if (dv.startsWith("DV-ADM-P-ENTRY")) return { caption: ADMISSIONS_NOTES.cohortShort };
+  if (dv.startsWith("DV-ADM-P-POOL") || dv === "DV-ADM-P-AREA-POP") return { caption: <>Also: the school page&rsquo;s area population trend (ages 5&ndash;15)</> };
+  if (dv.startsWith("DV-ADM-P-HOLD")) return { caption: ADMISSIONS_NOTES.requirement };
+  if (dv.startsWith("DV-ADM-M-ACAD")) return { visible: <AcademicFooter explorerHref={explorerHref(c)} /> };
   if (dv === "DV-ADM-M-BARS" || dv === "DV-ADM-M-TABLE" || dv === "DV-ADM-M-DONUT" || dv === "DV-ADM-M-MAP")
-    return <Footer>Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools</Footer>;
-  if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return <Footer>Roll trends sit on the same rail</Footer>;
-  return null;
+    return { caption: "Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools" };
+  if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "Roll trends sit on the same rail" };
+  return {};
 }
 
 /** The source note behind each panel's "i". */
@@ -626,13 +635,14 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
   const dv = dataviewOf(panel, active) ?? "";
   const h = headerOf(panel, dv, c);
   const title = dataviewById(dv)?.label ?? h.tag;
+  const notes = notesOf(dv, c);
   const onRailDv = (dvId: string) => {
     const inst = panel.dataviews.find((v) => v.kind === "view" && v.dataview === dvId);
     if (inst) setActive(inst.id);
   };
   return (
     <>
-    <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv)} footer={footerOf(panel, dv, c)} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title} fullscreen={(panel.span?.cols ?? 1) >= 2}>
+    <Panel id={panel.id} onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)} tag={h.tag} context={h.context} chips={chipsOf(dv, c)} menu={menuOf(dv, c, title)} rail={rail} railActive={active} onRail={setActive} source={sourceOf(dv)} caption={notes.caption} visibleCaption={notes.visible} height={height} span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1} title={title}>
       {({ fullscreen }) => viewBody(dv, c, { fullscreen, onRail: onRailDv })}
     </Panel>
     {copying && instance?.kind === "view" && (
@@ -665,7 +675,7 @@ function DesktopGrid({ config, c, actions }: { config: DashboardConfig; c: Ctx; 
                 .filter((p) => p.row === row.id)
                 .sort((a, b) => config.columns.findIndex((x) => x.id === a.column) - config.columns.findIndex((x) => x.id === b.column))
                 .map((p) => (
-                  <ConfigPanel key={p.id} panel={p} c={c} config={config} height={row.id === "now" ? 470 : 330} />
+                  <ConfigPanel key={p.id} panel={p} c={c} config={config} height={row.id === "now" ? ROW_NOW : ROW_TRENDS} />
                 ))}
             </div>
           )}
@@ -687,27 +697,31 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
   const largeDv = large ? (dataviewOf(large, largeTab) ?? dataviewOf(large, large.defaultView ?? "") ?? "") : "";
   const trendPanel = trends.find((t) => t.id === trendTab) ?? trends[0];
   const trendDv = trendPanel ? (dataviewOf(trendPanel, trendPanel.defaultView ?? "") ?? "") : "";
-  const P = "flex flex-col gap-2 rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3";
+  // 0.7 r3 (F1): each phone block is the same panel as on the desktop (CardBox: the icon row,
+  // the notes, full screen), sized to its content, with the views as tabs under the header.
+  const nowDv = now ? (c.dash === "pipelines" ? "DV-ADM-P-NOW" : "DV-ADM-M-NOW") : "";
+  const largeTitle = dataviewById(largeDv)?.label ?? "Pipeline";
+  const trendTitle = trendPanel ? phoneTrendLabel(trendPanel, c) : "";
   return (
     <>
       {now && (
-        <div className={P}>
-          {c.dash === "pipelines"
-            ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
-            : ready(c.market, (m) => <MarketNow m={m} setLabel={c.setLabel} compact />)}
-        </div>
+        <Panel tag="Current" title={dataviewById(nowDv)?.label ?? "Current"} height="auto" source={sourceOf(nowDv)} caption={notesOf(nowDv, c).caption}>
+          {() =>
+            c.dash === "pipelines"
+              ? readyPipe(c.pipeline, (p) => <EntryNow p={p} shape={c.shape.status === "ready" ? c.shape.data : null} compact />)
+              : ready(c.market, (m) => <MarketNow m={m} setLabel={c.setLabel} compact />)
+          }
+        </Panel>
       )}
       {large && (
-        <div className={P}>
-          <Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />
-          <div className="flex min-h-[220px] flex-col gap-2">{phoneView(largeDv, c)}</div>
-        </div>
+        <Panel tag={largeTitle} title={largeTitle} height="auto" source={sourceOf(largeDv)} caption={notesOf(largeDv, c).caption} controls={<Tabs items={largeRail} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />}>
+          {({ fullscreen }) => <div className="flex min-h-[220px] flex-col gap-2">{fullscreen ? viewBody(largeDv, c, { fullscreen }) : phoneView(largeDv, c)}</div>}
+        </Panel>
       )}
       {trends.length > 0 && (
-        <div className={P}>
-          <Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />
-          <div className="flex min-h-[160px] flex-col gap-2">{viewBody(trendDv, c, { fullscreen: false })}</div>
-        </div>
+        <Panel tag={trendTitle} title={trendTitle} height="auto" source={sourceOf(trendDv)} caption={notesOf(trendDv, c).caption} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: phoneTrendLabel(t, c), icon: "" }))} active={trendTab} onPick={setTrendTab} />}>
+          {({ fullscreen }) => <div className="flex min-h-[160px] flex-col gap-2">{viewBody(trendDv, c, { fullscreen })}</div>}
+        </Panel>
       )}
     </>
   );

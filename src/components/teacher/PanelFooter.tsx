@@ -12,7 +12,7 @@ import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { DashboardPlanContext } from "@/components/dashboard-config/plan";
 import { CopyViewSourceContext } from "@/components/copy-view/CopyViewSourceContext";
-import { MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
+import { MenuDivider, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
 
 // VicData 0.6 S6: loaded only when someone opens it, so pages that never can (every
 // hand-coded dashboard) don't carry the dialog.
@@ -195,6 +195,19 @@ export const ExportIcon = (
   </svg>
 );
 
+// 0.7 admissions r3 (F1): the panel menu's mark -- three dots, the icon row's first slot
+// (PanelIconRow). It replaced the footer's ExportIcon on every panel, Teacher and Admissions.
+export const MoreIcon = (
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <circle cx="4.5" cy="10" r="1.6" />
+    <circle cx="10" cy="10" r="1.6" />
+    <circle cx="15.5" cy="10" r="1.6" />
+  </svg>
+);
+
+// One more row a host adds after the export items (Admissions' "Edit the feeder lists").
+export type PanelMenuItem = { label: string; onClick: () => void; disabled?: boolean; title?: string };
+
 // Three functions, one menu. Only the first does anything: there is no custom-dashboard
 // concept in the codebase at all, and Guy's call this round was to leave presentations
 // disabled too even though Meetings is in fact built (round 8 §1's claim that it is not
@@ -207,13 +220,17 @@ export const ExportIcon = (
 // or on /dashboards/*. Everywhere else (every live, hand-coded dashboard) the menu is
 // exactly as it was. The panel's host provides what to copy (CopyViewSourceContext); with
 // no source the item is hidden.
-// 0.6 snag 1 item 01: the menu used to be cut off by the panel. PanelMenu opens below its
-// anchor (`top-full`), so from the footer it ran down past the panel's bottom edge, which a
-// fixed-height CardBox clips (`overflow-hidden`); a scaled meeting slide clips it too. It
-// now opens ABOVE the button, drawn in a portal into #teacher-root (where the theme lives)
-// at the button's own position, so no panel, card or slide transform can clip it. It is
-// left-aligned to the button, like the Notes popover beside it, and right-aligned instead
-// when that would run off the screen. Scrolling or resizing closes it.
+//
+// 0.7 admissions r3 (F1): the menu moved from the footer to the panel's header icon row,
+// behind three dots, in the same place on every Teacher and Admissions panel. The items and
+// their order are unchanged: Print this graph, then Copy this view… (or the two Coming soon
+// rows). `onCopy` is a host's own copy (Admissions: the dialog, meeting slides only), shown
+// under the same label; `extra` rows follow a divider.
+//
+// It opens BELOW the button (it sits at the top of the panel now), drawn in a portal into
+// #teacher-root (where the theme lives) at the button's own position, so no panel, card or
+// slide transform can clip it (0.6 snag 1 item 01). Right-aligned to the button, left-aligned
+// when that would run off the screen's left edge. Scrolling or resizing closes it.
 const EXPORT_MENU_WIDTH = 212;
 
 // Into #teacher-root, so the theme variables still apply (Q15: the theme is an attribute on
@@ -222,9 +239,9 @@ function portalTo(node: ReactNode) {
   if (typeof document === "undefined") return null;
   return createPortal(node, document.getElementById("teacher-root") ?? document.body);
 }
-const EXPORT_MENU_GAP = 6; // px between the button's top and the menu (Notes' bottom-6 sits the same)
+const EXPORT_MENU_GAP = 6; // px between the button's bottom and the menu
 
-export function PanelExport({ onPrint }: { onPrint: () => void }) {
+export function PanelExport({ onPrint, onCopy, extra = [] }: { onPrint: () => void; onCopy?: () => void; extra?: PanelMenuItem[] }) {
   const [open, setOpen] = useState(false);
   const [copying, setCopying] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -245,8 +262,8 @@ export function PanelExport({ onPrint }: { onPrint: () => void }) {
     if (open) return setOpen(false);
     const r = buttonRef.current?.getBoundingClientRect();
     if (r) {
-      const fitsLeft = r.left + EXPORT_MENU_WIDTH <= window.innerWidth - 8;
-      setAnchor({ left: fitsLeft ? r.left : r.right, top: r.top - EXPORT_MENU_GAP, align: fitsLeft ? "left" : "right" });
+      const fitsRight = r.right - EXPORT_MENU_WIDTH >= 8;
+      setAnchor({ left: fitsRight ? r.right : r.left, top: r.bottom + EXPORT_MENU_GAP, align: fitsRight ? "right" : "left" });
     }
     setOpen(true);
   };
@@ -264,15 +281,17 @@ export function PanelExport({ onPrint }: { onPrint: () => void }) {
         aria-haspopup="menu"
         aria-label="Export this panel"
         title="Export"
-        className="flex h-[17px] w-[17px] items-center justify-center rounded-[5px] text-[var(--muted)] hover:text-[var(--fg)]"
+        className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
       >
-        {ExportIcon}
+        {MoreIcon}
       </button>
       {open && anchor && portalTo(
         <div ref={menuRef} className="fixed z-[1600] h-0 w-0" style={{ left: anchor.left, top: anchor.top }}>
-          <PanelMenu label="Export" width={EXPORT_MENU_WIDTH} placement="above" align={anchor.align}>
+          <PanelMenu label="Export" width={EXPORT_MENU_WIDTH} align={anchor.align}>
             <MenuRow label="Print this graph" onClick={() => { setOpen(false); onPrint(); }} />
-            {v06 ? (
+            {onCopy ? (
+              <MenuRow label="Copy this view…" onClick={() => { setOpen(false); onCopy(); }} />
+            ) : v06 ? (
               copy && <MenuRow label="Copy this view…" onClick={() => { setOpen(false); setCopying(true); }} />
             ) : (
               <>
@@ -280,6 +299,10 @@ export function PanelExport({ onPrint }: { onPrint: () => void }) {
                 <MenuRow label="Copy to a presentation" tag="Coming soon" disabled onClick={() => {}} />
               </>
             )}
+            {extra.length > 0 && <MenuDivider />}
+            {extra.map((x) => (
+              <MenuRow key={x.label} label={x.label} title={x.title} disabled={x.disabled} onClick={() => { setOpen(false); x.onClick(); }} />
+            ))}
           </PanelMenu>
         </div>,
       )}

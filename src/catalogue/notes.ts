@@ -108,4 +108,6 @@ export const ADMISSIONS_NOTES = {
   // 0.7 r2b (E3): the LA and England pool-trend lines for past years (age_profile_aggregates,
   // backfilled from today's schools table). Shown only when a past year is drawn.
   areaUndercount: "Earlier years count only schools still open, so they slightly undercount.",
+  // 0.7 r3 (F7): the funnel's note (behind the panel's caption button, F1).
+  funnelNote: "Each bar is its own count from its own source, for the same area: not a flow of the same children.",
 } as const;

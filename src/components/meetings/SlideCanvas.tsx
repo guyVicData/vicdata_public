@@ -290,12 +290,9 @@ function ViewSlotBox({ slot, cell }: { slot: SlideConfig["slots"][number]; cell:
         }
         source={citation ? <>Source: {citation}{pinned.year ? `, ${pinned.year}` : ""}.</> : null}
         note={note}
-        footerActions={({ print, fullscreen }) => (
-          <>
-            {note && !fullscreen && <PanelNote body={note.body} onSave={note.onSave} />}
-            <PanelExport onPrint={print} />
-          </>
-        )}
+        footerActions={({ fullscreen }) => <>{note && !fullscreen && <PanelNote body={note.body} onSave={note.onSave} />}</>}
+        // 0.7 admissions r3 (F1): Export in the icon row's menu, as on every panel.
+        menu={({ print }) => <PanelExport onPrint={print} />}
       >
         {({ fullscreen }) =>
           render?.({ slot, dataview: dv, pinned, keepLive: !!slot.view!.keepLive, width: inner.width, height: inner.height, fullscreen }) ?? (
