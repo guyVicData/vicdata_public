@@ -35,7 +35,7 @@ Teacher's parity differences must be **only** this icon row. Show before and aft
   - **step 3 (Boarding feeders) is skipped,** and the step count reads 1–3.
 - **The filters stay where they are now.** Don't move them. *Day + boarding* sits next to *All pupils / girls / boys* and *State + independent* (and in column 1's "whole school numbers" panel menu, if those filters are there too) **only for a boarding school**. For a day school it isn't shown, and the other filters close up.
 - **Everywhere else:**
-  - **Column 1:** the day/boarding numbers tile shows **only for a boarding school**. For a day school the tile is removed, not left showing "0 boarders", and the other tiles close up;
+  - **Column 1:** the day / boarding tile is one tile. **For a boarding school** it shows day and boarding as now. **For a day school** it stays, but shows **Day only**: the day count with no boarding half, no "0 boarders", and no boarding label or split bar. Same tile, same position, so the column's layout doesn't change between school types;
   - for a day school, every other day/boarding tile, list kind (`boarding_feeders`) and label is hidden;
   - existing boarding lists aren't deleted, only hidden.
 - **A thorough boarding audit.** Guy: *"Non-boarding schools must not have to think about boarders, but boarding schools must."* Check it in both directions, every surface, and don't rely on spot checks:
