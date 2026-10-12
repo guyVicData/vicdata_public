@@ -282,7 +282,7 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
 
   const body = adm
     ? [
-        <AdmissionsDataStep key="d" draft={draft} set={set} env={env} wide={wide} />,
+        <AdmissionsDataStep key="d" draft={draft} set={set} env={env} wide={wide} school={pvSchool} />,
         <AdmissionsViewStep key="v" draft={draft} set={set} env={env} wide={wide} />,
         <span key="p" style={{ display: "contents" }}>
           <AdmissionsPreviewStep draft={draft} set={set} env={env} wide={wide} dataview={out.dataview} school={wide ? null : pvSchool} />

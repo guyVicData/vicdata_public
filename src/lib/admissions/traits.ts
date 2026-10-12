@@ -2,6 +2,7 @@
 // boarding, age range, LA, location -- and the top bar's filters over those sets. Server-only
 // (anon key; public GIAS, the one-hour reference cache). The figures themselves stay with the
 // round 1 libraries; this only describes and filters the schools they are computed over.
+import { isBoardingSchool } from "./boarding";
 import { createServerAnonSupabaseClient } from "../supabase";
 import { cachedReference } from "../server-cache";
 
@@ -24,9 +25,10 @@ export type SchoolTraits = {
 type Row = { urn: string; current_name: string; establishment_type_group: string | null; gender: string | null; boarders_name: string | null; statutory_low_age: number | null; statutory_high_age: number | null; la_code: string | null; la_name: string | null; town: string | null; easting: number | null; northing: number | null };
 
 const genderOf = (g: string | null): SchoolTraits["gender"] => (/^girls/i.test(g ?? "") ? "girls" : /^boys/i.test(g ?? "") ? "boys" : "mixed");
-// GIAS boarders_name, read as the boarding default list reads it (default-comparator-lists.ts):
-// any value but null and "No boarders" is a school with boarders.
-export const hasBoarders = (b: string | null): boolean => !!b && b !== "No boarders";
+// GIAS boarders_name. 0.7 r3 (F2): the one test, isBoardingSchool ("Boarding school"). Round 2
+// read it as the boarding default list does (anything but null and "No boarders"), which counted
+// the 393 open state schools marked "Not applicable" as having boarders.
+export const hasBoarders = (b: string | null): boolean => isBoardingSchool(b);
 
 export function fetchSchoolTraits(urns: string[]): Promise<Map<string, SchoolTraits>> {
   const key = Array.from(new Set(urns)).sort();

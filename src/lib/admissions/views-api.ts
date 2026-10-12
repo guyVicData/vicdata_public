@@ -10,7 +10,7 @@ import { cachedCensus, fetchSchoolInfo } from "./data";
 import { feederFlags } from "./feeders";
 import { loadThresholds, phaseForEntryAge } from "./thresholds";
 import { fetchSchoolTraits, isDefaultFilters, narrow, schoolsInLas, type AdmissionsFilters, type SchoolTraits } from "./traits";
-import { distanceKm, entryNow, feParticipation, feederTable, funnel, indexTo, poolTrends, profileOf, rivalExtras } from "./screens";
+import { distanceKm, entryNow, feParticipation, feederTable, funnel, funnelArea, indexTo, poolTrends, profileOf, rivalExtras } from "./screens";
 import { buildMarketShare } from "./market";
 import { rivalSet } from "./rival-set";
 import { buildRivals, stageForEntry, subjectPlaces } from "./rivals";
@@ -30,8 +30,13 @@ export type { EntryPoint };
 export const DEFAULT_FILTERS: AdmissionsFilters = { lists: "both", sector: "all", boardingOnly: false };
 
 // ------------------------------------------------------------------------------- Pipelines
-export async function pipelineView(urn: string, ep: EntryPoint, all: SavedList[], o: { filters?: AdmissionsFilters; sex?: Sex; projection?: boolean; today?: Date } = {}) {
-  const filters = o.filters ?? DEFAULT_FILTERS;
+export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList[], o: { filters?: AdmissionsFilters; sex?: Sex; projection?: boolean; today?: Date } = {}) {
+  // 0.7 r3 (F2): a day school never thinks about boarders. Its boarding lists (if any were saved
+  // before) are kept but not used, and the Day + boarding filter doesn't apply to it.
+  const boardingSchool = (await fetchSchoolTraits([urn])).get(urn)?.boarding ?? false;
+  const all = boardingSchool ? saved : saved.filter((l) => l.kind !== "boarding_feeders");
+  const asked = o.filters ?? DEFAULT_FILTERS;
+  const filters = boardingSchool ? asked : { ...asked, lists: "both" as const };
   const sex = o.sex ?? "all";
   // Which feeder lists make the pool. Asking for one kind that isn't saved is an honest empty
   // state, never the other kind or the nearby defaults standing in for it.
@@ -70,7 +75,7 @@ export async function pipelineView(urn: string, ep: EntryPoint, all: SavedList[]
   const [now, table, stages, trends, area, fe] = await Promise.all([
     entryNow(urn, ep, own),
     feederTable(urn, ep, p.sets, traits, minCohort, { day: listMembers("day_feeders"), boarding: listMembers("boarding_feeders") }),
-    funnel(urn, ep, p.sets, p.blend, own?.table ?? new Map(), sex),
+    funnelArea(p.blend, p.blendSource === "override", me).then((area) => funnel(urn, ep, area, own?.table ?? new Map(), sex)),
     poolTrends(ep, p.ladder, me?.laName ?? null),
     cachedReference(`adm:area-pop:${me?.laCode ?? ""}:${CURRENT_CENSUS_PERIOD}`, () => lookupPopulationTrend(me?.laName ?? null, me?.laCode ?? null, CURRENT_CENSUS_PERIOD)),
     own?.latestPeriod == null ? feParticipation(urn, me?.typeGroup ?? null) : Promise.resolve(null),

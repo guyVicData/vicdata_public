@@ -18,6 +18,7 @@ import { presetSpec } from "@/catalogue/viewspec";
 import { AXIS_STATES } from "@/catalogue/variants";
 import { dataviewById } from "@/catalogue/dataviews";
 import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
+import { useBoardingSchool } from "@/components/admissions/useBoardingSchool";
 import { KIND_GLYPH, TickGlyph, glyph } from "./bits";
 import { presetsOf, setView, type Draft, type EditorEnv } from "./model";
 
@@ -34,8 +35,12 @@ export function familyPreset(env: EditorEnv, family: AdmissionsDataId, kind?: Vi
   return pick ? presetSpec(pick.id) : null;
 }
 
-export function AdmissionsDataStep({ draft, set, env }: Props) {
+export function AdmissionsDataStep({ draft, set, env, school = null }: Props & { school?: { urn: string; name: string } | null }) {
   const family = familyOf(draft);
+  // 0.7 r3 (F2): previewing a day school, the boarding compare options (Boarding feeders, Both)
+  // aren't offered. They stay in the catalogue (ADMISSIONS_COMPARE) for boarding schools.
+  const boardingSchool = useBoardingSchool(school?.urn ?? null);
+  const compareOptions = ADMISSIONS_COMPARE.filter((o) => boardingSchool !== false || (o.kind !== "boardingFeeders" && o.kind !== "bothFeeders"));
   const lines = draft.spec.compare === "follows-page" ? null : draft.spec.compare;
   const on = (k: CompareSeries["kind"]) => !!lines?.some((l) => l.kind === k);
   const toggle = (k: CompareSeries["kind"]) =>
@@ -83,7 +88,7 @@ export function AdmissionsDataStep({ draft, set, env }: Props) {
         <div className="label">Compared with</div>
         <div style={{ fontSize: 11, color: "var(--cc-sub)", marginTop: -4 }}>{lines ? "This view's own lines." : "Follows the page: the sets the top bar and the lead's lists give."}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {ADMISSIONS_COMPARE.map((o) => {
+          {compareOptions.map((o) => {
             const fits = o.families.includes(family);
             return (
               <button key={o.kind} type="button" className={`chip${on(o.kind) ? " on" : ""}`} disabled={!fits} aria-pressed={on(o.kind)} title={fits ? o.why : `Not for this family: ${o.why}`} onClick={() => toggle(o.kind)}>

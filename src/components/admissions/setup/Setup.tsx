@@ -1,7 +1,8 @@
 "use client";
 
 // VicData 0.7 admissions r2 (D5): setup, the lead's (Onboard1-4.dc.html) -- 1 entry points (one or
-// several, a custom age; day and boarding, or day only), 2 day feeders, 3 boarding feeders, 4
+// several, a custom age; day and boarding, or day only -- a boarding school only, r3 F2), 2 day
+// feeders, 3 boarding feeders (a boarding school only: a day school's steps are 1-3), 4
 // rivals -- and the two editors the dashboards open: the LA birth blend and a 16+ rung's list.
 // Saving writes admissions_entry_points and admissions_lists (with la_blend) through
 // /api/admissions/lists: RLS allows the Admissions lead alone (round 1), and the screen says
@@ -92,7 +93,7 @@ const Lbl = ({ children }: { children: ReactNode }) => <span className="text-[10
 const S = ({ children, className = "" }: { children: ReactNode; className?: string }) => <span className={cx("text-[11px] text-[var(--muted)]", className)}>{children}</span>;
 
 // ------------------------------------------------------------------------ the root
-export function Setup({ member, step, entry, lists, ages, theme, onStep, onDone, onSkip }: { member: AdmissionsMember; step: SetupStep; entry: string | null; lists: ListsAnswer | null; ages: { low: number | null; high: number | null } | null; theme: Theme; onStep: (s: SetupStep) => void; onDone: (firstEntry?: string) => void; onSkip: () => void }) {
+export function Setup({ member, step: asked, entry, lists, ages, theme, onStep, onDone, onSkip }: { member: AdmissionsMember; step: SetupStep; entry: string | null; lists: ListsAnswer | null; ages: { low: number | null; high: number | null; boarding?: boolean } | null; theme: Theme; onStep: (s: SetupStep) => void; onDone: (firstEntry?: string) => void; onSkip: () => void }) {
   void theme;
   const readOnly = member.canEditLists
     ? null
@@ -101,7 +102,17 @@ export function Setup({ member, step, entry, lists, ages, theme, onStep, onDone,
       : "Only the Admissions lead changes setup. You can see what is set.";
   const [chosen, setChosen] = useState<string[]>(() => lists?.entryPoints.map((e) => e.entry_point) ?? []);
   const [current, setCurrent] = useState<string | null>(entry);
-  const [dayOnly, setDayOnly] = useState<boolean>(() => !(lists?.lists ?? []).some((l) => l.kind === "boarding_feeders" && (l.members?.length ?? 0) > 0));
+  const [dayOnlyChoice, setDayOnly] = useState<boolean | null>(null);
+  const saved = (kind: ListRow["kind"]) => (lists?.lists ?? []).some((l) => l.kind === kind && (l.members?.length ?? 0) > 0);
+  // Until the lead chooses: day only if day feeders are saved and boarding ones aren't (round 2's
+  // inference), else a boarding school starts on day and boarding.
+  // 0.7 r3 (F2): a day school (GIAS: no boarding provision) is never asked about boarding. Step 1
+  // has no "day and boarding" question, step 3 (Boarding feeders) is skipped, and the steps count
+  // 1-3. A boarding school keeps the question and all four steps.
+  const boardingSchool = !!ages?.boarding;
+  const dayOnly = !boardingSchool || (dayOnlyChoice ?? (saved("day_feeders") && !saved("boarding_feeders")));
+  const of = dayOnly ? 3 : 4;
+  const step: SetupStep = asked === "boarding" && dayOnly ? "day" : asked;
   const ep = current ?? chosen[0] ?? entry ?? "11+";
   const listOf = (kind: ListRow["kind"], rung = "") => lists?.lists.find((l) => l.entry_point === entryPoint(ep)?.id && l.kind === kind && (l.rung ?? "") === rung);
   const nextEntry = () => {
@@ -115,10 +126,10 @@ export function Setup({ member, step, entry, lists, ages, theme, onStep, onDone,
       onStep("day");
     } else onDone(chosen[0]);
   };
-  if (step === "entry") return <StepEntry member={member} readOnly={readOnly} ages={ages} chosen={chosen} setChosen={setChosen} dayOnly={dayOnly} setDayOnly={setDayOnly} lists={lists} onSkip={onSkip} onNext={(first) => { setCurrent(first); onStep("day"); }} />;
-  if (step === "day") return <StepFeeders kind="day" ep={ep} readOnly={readOnly} list={listOf("day_feeders")} names={lists?.names} onBack={() => onStep("entry")} onSkip={onSkip} onNext={() => onStep(dayOnly ? "rivals" : "boarding")} member={member} />;
-  if (step === "boarding") return <StepFeeders kind="boarding" ep={ep} readOnly={readOnly} list={listOf("boarding_feeders")} names={lists?.names} onBack={() => onStep("day")} onSkip={onSkip} onNext={() => onStep("rivals")} member={member} />;
-  if (step === "rivals") return <StepRivals ep={ep} readOnly={readOnly} list={listOf("rivals")} names={lists?.names} onBack={() => onStep(dayOnly ? "day" : "boarding")} onSkip={onSkip} onFinish={finish} nextEntry={nextEntry()} member={member} />;
+  if (step === "entry") return <StepEntry boardingSchool={boardingSchool} member={member} readOnly={readOnly} ages={ages} chosen={chosen} setChosen={setChosen} dayOnly={dayOnly} setDayOnly={setDayOnly} lists={lists} onSkip={onSkip} onNext={(first) => { setCurrent(first); onStep("day"); }} />;
+  if (step === "day") return <StepFeeders kind="day" of={of} boardingSchool={boardingSchool} nextLabel={dayOnly ? "rivals" : "boarding"} ep={ep} readOnly={readOnly} list={listOf("day_feeders")} names={lists?.names} onBack={() => onStep("entry")} onSkip={onSkip} onNext={() => onStep(dayOnly ? "rivals" : "boarding")} member={member} />;
+  if (step === "boarding") return <StepFeeders kind="boarding" of={of} boardingSchool nextLabel="rivals" ep={ep} readOnly={readOnly} list={listOf("boarding_feeders")} names={lists?.names} onBack={() => onStep("day")} onSkip={onSkip} onNext={() => onStep("rivals")} member={member} />;
+  if (step === "rivals") return <StepRivals of={of} boardingSchool={boardingSchool} ep={ep} readOnly={readOnly} list={listOf("rivals")} names={lists?.names} onBack={() => onStep(dayOnly ? "day" : "boarding")} onSkip={onSkip} onFinish={finish} nextEntry={nextEntry()} member={member} />;
   if (step === "blend") return <BlendEditor ep={ep} readOnly={readOnly} list={listOf("day_feeders")} lists={lists} member={member} onClose={() => onDone()} />;
   const m = /^rung:(\d+)-(\d+)$/.exec(step);
   if (m) return <RungEditor ep={ep} from={Number(m[1])} to={Number(m[2])} readOnly={readOnly} lists={lists} member={member} onClose={() => onDone()} />;
@@ -126,7 +137,7 @@ export function Setup({ member, step, entry, lists, ages, theme, onStep, onDone,
 }
 
 // ------------------------------------------------------------------------ 1 · entry points
-function StepEntry({ member, readOnly, ages, chosen, setChosen, dayOnly, setDayOnly, lists, onSkip, onNext }: { member: AdmissionsMember; readOnly: string | null; ages: { low: number | null; high: number | null } | null; chosen: string[]; setChosen: (c: string[]) => void; dayOnly: boolean; setDayOnly: (d: boolean) => void; lists: ListsAnswer | null; onSkip: () => void; onNext: (first: string) => void }) {
+function StepEntry({ boardingSchool, member, readOnly, ages, chosen, setChosen, dayOnly, setDayOnly, lists, onSkip, onNext }: { boardingSchool: boolean; member: AdmissionsMember; readOnly: string | null; ages: { low: number | null; high: number | null } | null; chosen: string[]; setChosen: (c: string[]) => void; dayOnly: boolean; setDayOnly: (d: boolean) => void; lists: ListsAnswer | null; onSkip: () => void; onNext: (first: string) => void }) {
   const [custom, setCustom] = useState<string>(() => chosen.find((c) => c.startsWith("age:")) ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -153,7 +164,7 @@ function StepEntry({ member, readOnly, ages, chosen, setChosen, dayOnly, setDayO
   };
   const changed = lastChanged(lists?.entryPoints[0], lists?.names);
   return (
-    <Frame step={1} entry={null} back={null} onSkip={onSkip} readOnly={readOnly} title="Which entry points do you recruit for?" intro="Pick one or several. Each gets its own pipeline, feeders and rivals, and you switch between them at the top of the page." cta={<Cta onClick={save} busy={busy} disabled={!all.length}>{`Next: day feeders for ${chip(all[0] ?? "11+")}`}</Cta>} ctaNote={err ?? "You can change all of this later"}>
+    <Frame step={1} of={boardingSchool && !dayOnly ? 4 : 3} entry={null} back={null} onSkip={onSkip} readOnly={readOnly} title="Which entry points do you recruit for?" intro="Pick one or several. Each gets its own pipeline, feeders and rivals, and you switch between them at the top of the page." cta={<Cta onClick={save} busy={busy} disabled={!all.length}>{`Next: ${boardingSchool ? "day feeders" : "feeders"} for ${chip(all[0] ?? "11+")}`}</Cta>} ctaNote={err ?? "You can change all of this later"}>
       {changed && <S>{changed}</S>}
       <div className="flex flex-col gap-2">
         {STD.map((o) => (
@@ -183,6 +194,7 @@ function StepEntry({ member, readOnly, ages, chosen, setChosen, dayOnly, setDayO
           </select>
         </div>
       </div>
+      {boardingSchool && (
       <div className="flex flex-col gap-2">
         <Lbl>Who do you take?</Lbl>
         <div className="flex gap-2">
@@ -194,6 +206,7 @@ function StepEntry({ member, readOnly, ages, chosen, setChosen, dayOnly, setDayO
         </div>
         <S className="leading-[1.4]">Day and boarding get separate feeder lists in the next steps.</S>
       </div>
+      )}
     </Frame>
   );
 }
@@ -266,7 +279,7 @@ async function saveList(member: AdmissionsMember, ep: string, kind: ListRow["kin
 }
 
 // ------------------------------------------------------------------------ 2 · day, 3 · boarding
-function StepFeeders({ kind, ep, readOnly, list, names, onBack, onSkip, onNext, member }: { kind: "day" | "boarding"; ep: string; readOnly: string | null; list: ListRow | undefined; names?: Record<string, string>; onBack: () => void; onSkip: () => void; onNext: () => void; member: AdmissionsMember }) {
+function StepFeeders({ kind, of, boardingSchool, nextLabel, ep, readOnly, list, names, onBack, onSkip, onNext, member }: { kind: "day" | "boarding"; of: number; boardingSchool: boolean; nextLabel: "boarding" | "rivals"; ep: string; readOnly: string | null; list: ListRow | undefined; names?: Record<string, string>; onBack: () => void; onSkip: () => void; onNext: () => void; member: AdmissionsMember }) {
   const age = Math.max(4, ageOf(ep) - 1);
   const [mode, setMode] = useState<"nearest" | "radius" | "la">("nearest");
   const [km, setKm] = useState(5);
@@ -328,13 +341,14 @@ function StepFeeders({ kind, ep, readOnly, list, names, onBack, onSkip, onNext, 
   return (
     <Frame
       step={isDay ? 2 : 3}
+      of={of}
       entry={ep}
       back={onBack}
       onSkip={onSkip}
       readOnly={readOnly}
-      title={isDay ? "Your day feeders" : "Your boarding feeders"}
-      intro={isDay ? `We’ve listed the nearest schools with ${age}-year-olds. Tick the ones your day pupils come from; widen the net to see more.` : "Boarders come from further away. Build this list from preps by area and type rather than distance alone."}
-      cta={<Cta onClick={save} busy={busy}>{isDay ? "Save day feeders · Next: boarding" : "Save boarding feeders · Next: rivals"}</Cta>}
+      title={isDay ? (boardingSchool ? "Your day feeders" : "Your feeders") : "Your boarding feeders"}
+      intro={isDay ? `We’ve listed the nearest schools with ${age}-year-olds. Tick the ones your ${boardingSchool ? "day " : ""}pupils come from; widen the net to see more.` : "Boarders come from further away. Build this list from preps by area and type rather than distance alone."}
+      cta={<Cta onClick={save} busy={busy}>{isDay ? `Save ${boardingSchool ? "day " : ""}feeders · Next: ${nextLabel}` : "Save boarding feeders · Next: rivals"}</Cta>}
       ctaNote={err ?? (isDay ? `${tickedRows.length} ticked · ${fmtN(pupils)} pupils aged ${age} · ${ADMISSIONS_NOTES.feederFlags.charAt(0).toLowerCase()}${ADMISSIONS_NOTES.feederFlags.slice(1, -1)}` : undefined)}
     >
       {changed && <S>{changed}</S>}
@@ -422,7 +436,7 @@ function LaPicker({ las, setLas, options, on, label }: { las: string[]; setLas: 
 }
 
 // ------------------------------------------------------------------------ 4 · rivals
-function StepRivals({ ep, readOnly, list, names, onBack, onSkip, onFinish, nextEntry, member }: { ep: string; readOnly: string | null; list: ListRow | undefined; names?: Record<string, string>; onBack: () => void; onSkip: () => void; onFinish: () => void; nextEntry: string | null; member: AdmissionsMember }) {
+function StepRivals({ of, boardingSchool, ep, readOnly, list, names, onBack, onSkip, onFinish, nextEntry, member }: { of: number; boardingSchool: boolean; ep: string; readOnly: string | null; list: ListRow | undefined; names?: Record<string, string>; onBack: () => void; onSkip: () => void; onFinish: () => void; nextEntry: string | null; member: AdmissionsMember }) {
   const age = ageOf(ep);
   const [source, setSource] = useState<"nearest" | "region" | "saved" | "custom">(list?.members?.length ? "custom" : "nearest");
   const [n, setN] = useState<10 | 15>(10);
@@ -465,7 +479,7 @@ function StepRivals({ ep, readOnly, list, names, onBack, onSkip, onFinish, nextE
   );
   const stage = age <= 10 ? "KS2" : age <= 15 ? "GCSE" : "Post-16";
   return (
-    <Frame step={4} entry={ep} back={onBack} onSkip={onSkip} readOnly={readOnly} title="Who are you competing with?" intro={`Rivals drive Market share: your share of their ${age}-year-olds, how their rolls are moving, and how their results compare.`} cta={<Cta onClick={save} busy={busy}>{`Finish · open ${chip(ep)} pipeline`}</Cta>} ctaNote={err ?? (nextEntry ? `${chip(nextEntry)} is next: it starts its own feeder steps` : `${c.answer?.rows.length ?? "…"} rivals`)}>
+    <Frame step={of} of={of} entry={ep} back={onBack} onSkip={onSkip} readOnly={readOnly} title="Who are you competing with?" intro={`Rivals drive Market share: your share of their ${age}-year-olds, how their rolls are moving, and how their results compare.`} cta={<Cta onClick={save} busy={busy}>{`Finish · open ${chip(ep)} pipeline`}</Cta>} ctaNote={err ?? (nextEntry ? `${chip(nextEntry)} is next: it starts its own feeder steps` : `${c.answer?.rows.length ?? "…"} rivals`)}>
       {lastChanged(list, names) && <S>{lastChanged(list, names)}</S>}
       <div className="flex flex-col gap-2">
         {opt("nearest", `${n} nearest with a Year ${age - 4}`, "Same as your Teacher comparisons, at this age", <Pill on onClick={() => setN(n === 10 ? 15 : 10)}>10 / 15</Pill>)}
@@ -494,7 +508,8 @@ function StepRivals({ ep, readOnly, list, names, onBack, onSkip, onFinish, nextE
           <Pill on={sector === "all"} onClick={() => setSector(sector === "all" ? "state" : sector === "state" ? "independent" : "all")}>
             {sector === "all" ? "State + independent" : sector === "state" ? "State only" : "Independent only"}
           </Pill>
-          <Pill on={boarding} onClick={() => setBoarding(!boarding)}>Boarding only</Pill>
+          {/* 0.7 r3 (F2): a day school's rivals may board (their figures show), but it isn't asked to choose by boarding. */}
+          {boardingSchool && <Pill on={boarding} onClick={() => setBoarding(!boarding)}>Boarding only</Pill>}
           <Pill on={gender} onClick={() => setGender(!gender)}>Same gender intake</Pill>
           <Pill on={sizes} onClick={() => setSizes(!sizes)}>Size: S&ndash;L</Pill>
         </div>
