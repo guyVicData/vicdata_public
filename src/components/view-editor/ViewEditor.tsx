@@ -19,10 +19,14 @@
 // The output is a ViewInstance with a full ViewSpec (model.ts buildInstance); the caller
 // applies it through editor-ops, so undo and autosave work. Every preview is a v2 render
 // (SpecPreview: renderView(spec, frame) through the page's own hosts).
+import { AdmissionsDataStep, AdmissionsPreviewStep, AdmissionsViewStep, type AdmissionsDraft } from "./AdmissionsSteps";
+import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
+import { AXIS_STATES } from "@/catalogue/variants";
+import type { EntryPointState } from "@/catalogue/types";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { dataviewById } from "@/catalogue";
 import { presetSpec } from "@/catalogue/viewspec";
-import { resolveTitle } from "@/catalogue/pick";
+import { resolveTitle, type PickPanelContext } from "@/catalogue/pick";
 import type { ResultsMeasure } from "@/catalogue/types";
 import { VIEW_LABEL, changeLabel, measureWord, SHORT_KIND } from "@/catalogue/honest";
 import { pinFromContext, type PinSchool } from "@/lib/pin-context";
@@ -91,13 +95,26 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
     setPast(past.slice(0, -1));
     setDraftRaw(prev);
   };
-  const out = useMemo(() => buildInstance(draft, env, instance), [draft, env, instance]);
+  // 0.7 admissions r2 (D7): on an Admissions column the draft's family picks the preset, and the
+  // entry-point ticks are written as the instance's entryPoint variant (none = every one it can).
+  const adm = !!env.admissions;
+  const out = useMemo(() => {
+    if (!adm) return buildInstance(draft, env, instance);
+    const built = buildInstance(draft, { ...env, ctx: { ...env.ctx, data: draft.spec.data.source as PickPanelContext["data"] } }, instance);
+    const ticks = (draft as AdmissionsDraft).entryTicks;
+    const can = (dataviewById(built.dataview)?.variants?.entryPoint ?? AXIS_STATES.entryPoint) as EntryPointState[];
+    const own = ticks && !(ticks.length === can.length && can.every((t) => ticks.includes(t))) ? ticks.filter((t) => can.includes(t)) : null;
+    const variants = { ...(built.variants ?? {}) };
+    if (own) variants.entryPoint = own;
+    else delete variants.entryPoint;
+    return { ...built, ...(Object.keys(variants).length ? { variants } : {}) };
+  }, [draft, env, instance, adm]);
   const dv = dataviewById(out.dataview)!;
   const changes = mode === "edit" ? describeChanges(original, draft, env.phase, env.measure) : [];
-  const problems = draftProblems(draft, env);
+  const problems = adm ? [] : draftProblems(draft, env);
   const template = titleOf(draft, env);
   // Honest about the renderer too: a View it doesn't draw yet shows its host's view.
-  const notYet = !viewKindRegistered(draft.spec.view.kind) && !(out.spec.preset && JSON.stringify(out.spec.view) === JSON.stringify(dataviewSpecView(out.dataview)))
+  const notYet = !adm && !viewKindRegistered(draft.spec.view.kind) && !(out.spec.preset && JSON.stringify(out.spec.view) === JSON.stringify(dataviewSpecView(out.dataview)))
     ? <div className="note warn" style={{ fontSize: 11 }}>The new renderer doesn&rsquo;t draw a {VIEW_LABEL[draft.spec.view.kind].toLowerCase()} here yet: until it does, the panel shows its {dv.label.toLowerCase()}.</div>
     : null;
 
@@ -128,6 +145,14 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
   const showFor = useMemo(() => showForOf(draft, env), [draft, env]);
 
   const preview = (m: ResultsMeasure | null, width: number, box: { width: number; height: number } = BODY, idSuffix = "main") => {
+    if (adm)
+      return pvSchool ? (
+        <div style={{ width }}>
+          <AdmissionsViewPreview dataview={out.dataview} urn={pvSchool.urn} schoolName={pvSchool.name} entry="11+" height={Math.max(120, Math.round((box.height * width) / box.width))} />
+        </div>
+      ) : (
+        <div style={{ width, fontSize: 11, color: "var(--muted)", padding: 8 }}>A live preview needs a school: look as a school to see it drawn.</div>
+      );
     const pin = pinFor(m);
     if (!pin)
       return (
@@ -255,7 +280,17 @@ export function ViewEditor({ mode, env, instance, school, subjects, theme, conte
     </>
   );
 
-  const body = [<DataStep key="d" {...stepProps} />, viewStep, previewStep][step];
+  const body = adm
+    ? [
+        <AdmissionsDataStep key="d" draft={draft} set={set} env={env} wide={wide} />,
+        <AdmissionsViewStep key="v" draft={draft} set={set} env={env} wide={wide} />,
+        <span key="p" style={{ display: "contents" }}>
+          <AdmissionsPreviewStep draft={draft} set={set} env={env} wide={wide} dataview={out.dataview} school={wide ? null : pvSchool} />
+          {iconBox}
+          {titleBox}
+        </span>,
+      ][step]
+    : [<DataStep key="d" {...stepProps} />, viewStep, previewStep][step];
 
   // ------------------------------------------------------------------ chrome
   const closeRef = useRef<HTMLButtonElement | null>(null);

@@ -15,6 +15,7 @@ import { contextFromPanel } from "@/catalogue/pick";
 import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import { DataFreePreview, type PanelPreviewProps } from "./PanelPreview";
 import { EditorVariantsContext } from "./EditorPanel";
+import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
 
 const SpecPreview = dynamic(() => import("@/components/view-editor/SpecPreview").then((m) => m.SpecPreview), { ssr: false });
 
@@ -25,6 +26,10 @@ export function LivePanelPreview(props: PanelPreviewProps) {
   const variants = useContext(EditorVariantsContext);
   const dv = dataviewById(props.view.dataview);
   if (!school || !dv) return <DataFreePreview {...props} />;
+  // 0.7 admissions r2 (D7): an Admissions view draws itself from the Admissions routes, at the edit
+  // bar's entry point.
+  if (dv.host.id.startsWith("admissions."))
+    return <AdmissionsViewPreview dataview={dv.id} urn={school.urn} schoolName={school.name} entry={variants?.state.entryPoint === "custom" ? "11+" : (variants?.state.entryPoint ?? "11+")} height={props.height} />;
   let pinned;
   try {
     pinned = pinFromContext(contextFromPanel(props.config, props.panel.id, props.labels), dv, school);

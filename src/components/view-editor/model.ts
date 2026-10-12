@@ -33,6 +33,9 @@ export type EditorEnv = {
   // A Results dashboard following the pill: Show this view for has ticks.
   followsPill: boolean;
   ctx: PickPanelContext;
+  // 0.7 admissions r2 (D7): an Admissions column -- its steps are AdmissionsSteps.tsx's, and
+  // "Shows for" lists entry points.
+  admissions?: { family: string };
 };
 
 export type Draft = {
