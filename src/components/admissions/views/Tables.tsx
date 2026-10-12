@@ -8,8 +8,8 @@ import type { Load, MarketView, PipelineOk, RivalsView } from "../api";
 import { Empty, FlagPill, ViewTitle, cx, fmtN, fmtPct, fmtSigned, ordinal, yearLabel } from "../ui";
 import { cohortWord } from "../panels/EntryNow";
 
-const TH = "py-1 text-[10.5px] font-normal text-[var(--muted)]";
-const TD = "py-[5px] text-[12px]";
+const TH = "px-1 py-1 text-[10.5px] font-normal text-[var(--muted)]";
+const TD = "px-1 py-[5px] text-[12px]";
 
 const flagFigures = (f: { figures: Record<string, number | string | null> }) =>
   Object.entries(f.figures)

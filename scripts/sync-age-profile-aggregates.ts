@@ -7,6 +7,7 @@
 // sync-roll-aggregates.ts/sync-age-band-distributions.ts.
 //
 // Usage: npx tsx --env-file=.env scripts/sync-age-profile-aggregates.ts
+//        PERIOD=2019 npx tsx --env-file=.env scripts/sync-age-profile-aggregates.ts   (an earlier year)
 
 import { createServiceRoleSupabaseClient } from "../src/lib/supabase";
 import { CURRENT_CENSUS_PERIOD } from "../src/lib/roll-data";
@@ -15,7 +16,10 @@ const PAGE_SIZE = 1000;
 const BATCH_SIZE = 10;
 const MAX_PAGES = 3000;
 const ENTITY_BATCH_SIZE = 100;
-const TARGET_PERIOD = CURRENT_CENSUS_PERIOD;
+// 0.7 admissions r2: PERIOD=<year> backfills an earlier census year (the Admissions pool trends
+// index the LA and England by year); unset, the current year as before.
+const TARGET_PERIOD = process.env.PERIOD ? Number(process.env.PERIOD) : CURRENT_CENSUS_PERIOD;
+if (!Number.isInteger(TARGET_PERIOD) || TARGET_PERIOD < 2019 || TARGET_PERIOD > CURRENT_CENSUS_PERIOD) throw new Error(`PERIOD must be a census year 2019-${CURRENT_CENSUS_PERIOD}`);
 const MIN_AGE = 5;
 const MAX_AGE = 15;
 

@@ -103,7 +103,7 @@ export function EntryNow({ p, shape, compact = false }: { p: PipelineOk; shape: 
           <div className="text-[12px] leading-[1.4] text-[var(--chip-fg)]">
             Against schools of that phase in {shape.laName ?? "the LA"} and nationally (the school page&rsquo;s Roll by phase).{shapeLine(shape) ? ` Shape: ${shapeLine(shape)}.` : ""}
           </div>
-          <MiniProfile shape={shape} entryAge={p.entry.age} />
+          <MiniProfile shape={shape} entryAge={p.entry.age} height={shape.bands.length >= 3 ? 26 : 44} />
         </div>
       )}
       {shape && compact && (

@@ -30,7 +30,7 @@ export function Funnel({ p, fullscreen }: { p: PipelineOk; fullscreen: boolean }
               <div className="flex w-full items-center justify-center">
                 <span
                   className="flex h-[34px] items-center justify-center rounded-[6px] text-[13px] font-extrabold tabular-nums"
-                  style={{ width: `${w}%`, background: s.kind === "entry" ? "var(--accent)" : s.kind === "births" ? "var(--adm-grey-bar)" : "var(--adm-tint)", color: s.kind === "entry" ? "var(--adm-on-accent)" : "var(--fg)", border: s.kind === "pool" ? "1px solid var(--accent)" : undefined }}
+                  style={{ width: `${w}%`, minWidth: 64, background: s.kind === "entry" ? "var(--accent)" : s.kind === "births" ? "var(--adm-grey-bar)" : "var(--adm-tint)", color: s.kind === "entry" ? "var(--adm-on-accent)" : "var(--fg)", border: s.kind === "pool" ? "1px solid var(--accent)" : undefined }}
                 >
                   {s.value === null ? "not held" : fmtN(s.value)}
                 </span>

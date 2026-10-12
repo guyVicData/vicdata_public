@@ -22,6 +22,8 @@ import type { DashboardConfig, PanelConfig } from "@/catalogue/types";
 import { loadPublishedVicData } from "@/lib/published-vicdata";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { cleanLaNameForDisplay } from "@/lib/la-name-display";
+import { showsOnState } from "@/catalogue/variants";
+import type { EntryPointState } from "@/catalogue/types";
 import { DEFAULT_FILTERS, getJson, query, useRoute, type Filters, type ListsAnswer, type Load, type MarketView, type PipelineOk, type PipelineView, type RivalsView, type ShapeView } from "./api";
 import { loadAdmissionsMember, type AdmissionsMember, type MemberState } from "./member";
 import { AdmissionsNav, HeaderBar, PhoneHeader, RowHead, type DashKey } from "./Chrome";
@@ -326,19 +328,24 @@ type Ctx = {
   lists: ListsAnswer | null;
 };
 
-const railOf = (panel: PanelConfig): RailItem[] =>
-  panel.dataviews.filter((v) => v.kind === "view").map((v) => {
+// The entry point as the page axis it is in the config (variants.ts): a view not offered on this
+// entry point (Strengths at 4+: KS2 has no subject areas) leaves the rail.
+export const entryState = (entry: string | null): EntryPointState => (entry === "4+" || entry === "11+" || entry === "16+" ? entry : "custom");
+const railOf = (panel: PanelConfig, entry: string | null = null): RailItem[] =>
+  panel.dataviews.filter((v) => v.kind === "view" && (entry === null || showsOnState(v, { entryPoint: entryState(entry) }))).map((v) => {
     const dv = v.kind === "view" ? dataviewById(v.dataview) : undefined;
-    return { id: v.id, label: v.title ?? dv?.label ?? v.id, icon: (v.kind === "view" ? v.spec.icon : null) ?? dv?.railIcon ?? "TilesIcon" };
+    return { id: v.id, label: (v.kind === "view" ? v.title : undefined) ?? dv?.label ?? v.id, icon: (v.kind === "view" ? v.spec.icon : null) ?? dv?.railIcon ?? "TilesIcon" };
   });
 const dataviewOf = (panel: PanelConfig, instanceId: string) => {
   const v = panel.dataviews.find((x) => x.id === instanceId);
   return v?.kind === "view" ? v.dataview : null;
 };
 
-function useActive(panel: PanelConfig): [string, (id: string) => void] {
-  const [a, setA] = useState(panel.defaultView ?? panel.dataviews[0]?.id ?? "");
-  const valid = panel.dataviews.some((v) => v.id === a) ? a : (panel.defaultView ?? panel.dataviews[0]?.id ?? "");
+function useActive(panel: PanelConfig, entry: string | null): [string, (id: string) => void] {
+  const shown = panel.dataviews.filter((v) => showsOnState(v, { entryPoint: entryState(entry) }));
+  const [a, setA] = useState(panel.defaultView ?? shown[0]?.id ?? "");
+  const fallback = shown.some((v) => v.id === panel.defaultView) ? panel.defaultView! : (shown[0]?.id ?? "");
+  const valid = shown.some((v) => v.id === a) ? a : fallback;
   return [valid, setA];
 }
 
@@ -371,7 +378,7 @@ function viewBody(dv: string, c: Ctx, o: { fullscreen: boolean; onRail?: (dvId: 
         <>
           {/* 16+ (Pipeline16.dc.html): a ladder through more than one kind of school shows its rung
               cards under a shorter chart; the feeder flags stay in the feeder table. */}
-          <PipelineChart p={p} projection={c.projection} onProjection={c.setProjection} onFeederTable={o.onRail ? () => o.onRail!("DV-ADM-P-TABLE") : undefined} height={fs ? 380 : p.rungSets.length > 1 ? 150 : 225} flags={p.rungSets.length < 2 || fs} />
+          <PipelineChart p={p} projection={c.projection} onProjection={c.setProjection} onFeederTable={o.onRail ? () => o.onRail!("DV-ADM-P-TABLE") : undefined} height={fs ? 380 : p.rungSets.length > 1 ? 120 : 225} flags={p.rungSets.length < 2 || fs} />
           <RungCards p={p} c={c} />
         </>
       ));
@@ -503,7 +510,8 @@ function chipsOf(dv: string, c: Ctx): ReactNode {
           {feeders}
         </FChip>
         <FChip onClick={lead ? () => c.edit("blend") : undefined} chevron={false} title={lead ? "Adjust the LA birth blend" : ro}>
-          Births: {p.blend.map((b) => `${b.laName ? cleanLaNameForDisplay(b.laName) : b.laCode} ${Math.round(b.weight * 100)}%`).join(" · ")}
+          Births: {p.blend.slice(0, 3).map((b) => `${b.laName ? cleanLaNameForDisplay(b.laName) : b.laCode} ${Math.round(b.weight * 100)}%`).join(" · ")}
+          {p.blend.length > 3 ? ` · +${p.blend.length - 3}` : ""}
           {lead ? " · Adjust" : ""}
         </FChip>
       </>
@@ -574,7 +582,7 @@ function RungCards({ p, c }: { p: PipelineOk; c: Ctx }) {
             <span className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">
               Rung {i + 1} &middot; {secondary ? "secondaries" : "primaries"}
             </span>
-            <span className="text-[12px] font-semibold text-[var(--fg)]">{secondary ? secondaryLine(r, p.urn) : `Primaries in the same area as rung 1 (${r.schools.length})`}</span>
+            <span className="line-clamp-2 text-[12px] font-semibold text-[var(--fg)]">{secondary ? secondaryLine(r, p.urn) : `Primaries in the same area as rung 1 (${r.schools.length})`}</span>
             <span className="text-[11px] text-[var(--muted2)]">{secondary ? "Their pupils must move at 16" : r.saved ? "The lead's list" : "Default: the nearest; adjustable"}</span>
             {lead && (
               <button type="button" className="self-start text-[11px] font-bold text-[var(--adm-accent-text)]" onClick={() => c.edit(`rung:${Math.min(...r.ages)}-${Math.max(...r.ages)}` as SetupStep)}>
@@ -586,7 +594,10 @@ function RungCards({ p, c }: { p: PipelineOk; c: Ctx }) {
       })}
       <div className="flex flex-col gap-[3px] rounded-[9px] border border-[var(--panel-border)] bg-[var(--box-bg)] px-[10px] py-2">
         <span className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">Rung {p.rungSets.length + 1} &middot; births</span>
-        <span className="text-[12px] font-semibold text-[var(--fg)]">{p.blend.map((b) => `${b.laName ? cleanLaNameForDisplay(b.laName) : b.laCode} ${Math.round(b.weight * 100)}%`).join(" · ")}</span>
+        <span className="line-clamp-2 text-[12px] font-semibold text-[var(--fg)]" title={p.blend.map((b) => `${b.laName ? cleanLaNameForDisplay(b.laName) : b.laCode} ${Math.round(b.weight * 100)}%`).join(" · ")}>
+          {p.blend.slice(0, 3).map((b) => `${b.laName ? cleanLaNameForDisplay(b.laName) : b.laCode} ${Math.round(b.weight * 100)}%`).join(" · ")}
+          {p.blend.length > 3 ? ` · +${p.blend.length - 3} more` : ""}
+        </span>
         <span className="text-[11px] text-[var(--muted2)]">{p.blendSource === "override" ? "The lead's blend" : "Blended automatically; adjust the weights"}</span>
         {lead && (
           <button type="button" className="self-start text-[11px] font-bold text-[var(--adm-accent-text)]" onClick={() => c.edit("blend")}>
@@ -599,10 +610,10 @@ function RungCards({ p, c }: { p: PipelineOk; c: Ctx }) {
 }
 
 function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx; height: number | "auto"; config: DashboardConfig }) {
-  const [active, setActive] = useActive(panel);
+  const [active, setActive] = useActive(panel, c.entry);
   const [copying, setCopying] = useState(false);
   const instance = panel.dataviews.find((v) => v.id === active);
-  const rail = railOf(panel);
+  const rail = railOf(panel, c.entry);
   const dv = dataviewOf(panel, active) ?? "";
   const h = headerOf(panel, dv, c);
   const title = dataviewById(dv)?.label ?? h.tag;
@@ -663,7 +674,7 @@ function PhoneBody({ config, ctx: c }: { config: DashboardConfig; ctx: Ctx }) {
   const trends = config.panels.filter((p) => p.row === "trends");
   const [largeTab, setLargeTab] = useState(large?.defaultView ?? "");
   const [trendTab, setTrendTab] = useState(trends[0]?.id ?? "");
-  const largeRail = large ? railOf(large).map((r) => ({ ...r, label: shortTab(r.label) })) : [];
+  const largeRail = large ? railOf(large, c.entry).map((r) => ({ ...r, label: shortTab(r.label) })) : [];
   const largeDv = large ? (dataviewOf(large, largeTab) ?? dataviewOf(large, large.defaultView ?? "") ?? "") : "";
   const trendPanel = trends.find((t) => t.id === trendTab) ?? trends[0];
   const trendDv = trendPanel ? (dataviewOf(trendPanel, trendPanel.defaultView ?? "") ?? "") : "";

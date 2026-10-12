@@ -226,7 +226,8 @@ export default function TeacherHomePage() {
           {(lens === "admissions" || lens === "smt") && <AdmissionsTile />}
           {(keyDashboards[lens] ?? []).length > 0 ? (
             keyDashboards[lens]!.map((k) => <KeyDashboardTile key={k.href} href={k.href} config={k.config} lens={lens} />)
-          ) : (
+          ) : lens === "admissions" ? null : (
+            // 0.7 admissions r2: the Admissions lens has its own tile above, not a placeholder.
             <KeyDashboardsEmpty lens={lens} />
           )}
           <LibraryTile lens={lens} />

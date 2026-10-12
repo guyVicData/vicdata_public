@@ -58,16 +58,17 @@ const CHEVRON = (
 );
 
 /** The boards' .fchip: an 8px-radius filter or set chip, optionally a menu. */
-export function FChip({ children, onClick, title, chevron = true, active = false, disabled = false }: { children: ReactNode; onClick?: () => void; title?: string; chevron?: boolean; active?: boolean; disabled?: boolean }) {
+export function FChip({ children, onClick, title: titleIn, chevron = true, active = false, disabled = false }: { children: ReactNode; onClick?: () => void; title?: string; chevron?: boolean; active?: boolean; disabled?: boolean }) {
+  const title = titleIn ?? (typeof children === "string" ? children : undefined);
   const cls = cx(
-    "inline-flex items-center gap-[5px] whitespace-nowrap rounded-[8px] border px-[10px] py-[5px] text-[11.5px] font-semibold",
+    "inline-flex min-w-0 max-w-[340px] items-center gap-[5px] whitespace-nowrap rounded-[8px] border px-[10px] py-[5px] text-[11.5px] font-semibold [&>span.t]:truncate",
     active ? "border-[var(--accent)] text-[var(--fg)]" : "border-[var(--panel-border2)] text-[var(--chip-fg)]",
     "bg-[var(--box-bg)]",
     disabled && "opacity-60",
   );
   const body = (
     <>
-      {children}
+      <span className="t min-w-0">{children}</span>
       {chevron && onClick && CHEVRON}
     </>
   );
@@ -305,8 +306,8 @@ export function Panel({
       style={{ height: height === "auto" ? undefined : height, gridColumn: span === 2 ? "span 2" : undefined, boxSizing: "border-box" }}
     >
       <div className="flex items-center gap-[6px]">
-        <span className="text-[11.5px] font-semibold text-[var(--chip-fg)]">{tag}</span>
-        {context && <span className="text-[11.5px] text-[var(--muted2)]">{context}</span>}
+        <span className="shrink-0 whitespace-nowrap text-[11.5px] font-semibold text-[var(--chip-fg)]">{tag}</span>
+        {context && <span className="min-w-0 truncate whitespace-nowrap text-[11.5px] text-[var(--muted2)]">{context}</span>}
         <span className="grow" />
         {chips}
         <DotsMenu actions={actions} />

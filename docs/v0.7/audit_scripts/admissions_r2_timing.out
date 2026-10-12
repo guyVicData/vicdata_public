@@ -1,0 +1,12 @@
+137625 11+ cold (all four in parallel): 11717 ms
+137625 11+ warm run 1: all four in parallel 277 ms (market 6, rivals 76, shape 206, pipeline 277)
+137625 11+ warm run 2: all four in parallel 163 ms (market 2, rivals 69, shape 125, pipeline 163)
+137625 11+ warm run 3: all four in parallel 222 ms (market 2, rivals 93, shape 150, pipeline 222)
+137625 16+ cold (all four in parallel): 4345 ms
+137625 16+ warm run 1: all four in parallel 234 ms (market 2, rivals 59, pipeline 219, shape 233)
+137625 16+ warm run 2: all four in parallel 176 ms (market 1, rivals 53, shape 120, pipeline 176)
+137625 16+ warm run 3: all four in parallel 166 ms (market 1, rivals 55, shape 117, pipeline 166)
+117037 11+ cold (all four in parallel): 2079 ms
+117037 11+ warm run 1: all four in parallel 146 ms (market 1, rivals 69, shape 121, pipeline 146)
+117037 11+ warm run 2: all four in parallel 177 ms (market 2, rivals 60, pipeline 136, shape 177)
+117037 11+ warm run 3: all four in parallel 163 ms (market 2, rivals 70, shape 146, pipeline 163)
