@@ -5,6 +5,7 @@
 // the live, anon-key-callable RPC.
 
 import type { GradeRollupRow } from "./grade-rows";
+import { latestYearsFromRows, type LatestYears } from "../catalogue/years";
 
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 50;
@@ -813,6 +814,16 @@ export async function lookupAcademicCurrentPeriods(params?: { signal?: AbortSign
   const out: Record<string, number | null> = {};
   for (const r of rows ?? []) out[r.ks_stage] = r.latest_period;
   return out;
+}
+
+// 0.7 year rules: the same RPC, as the latest year per key stage with its provisional flag
+// (src/catalogue/years.ts). `provisional` is a column the ingest adds when DfE's release is
+// provisional (October KS4); absent, every year is final -- which is what it returns today.
+export async function lookupAcademicLatestYears(params?: { signal?: AbortSignal }): Promise<LatestYears> {
+  const rows = (await fetchPage("academic_current_periods", {}, params?.signal)) as
+    | { ks_stage: string; latest_period: number | null; provisional?: boolean | null }[]
+    | null;
+  return latestYearsFromRows(rows);
 }
 
 // 0.6.6: one RPC page, for callers that chunk and page a lookup themselves (the subject

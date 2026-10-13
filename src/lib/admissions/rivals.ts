@@ -7,7 +7,7 @@
 // published results" (most preps at KS2); at 11+ an IGCSE-heavy independent school is listed
 // but not ranked (igcseExclusionLikely, the existing GCSE rule).
 import { cachedReference } from "../server-cache";
-import { lookupAcademicCurrentPeriods, lookupAcademicHeadline } from "../vicdata-reference";
+import { lookupAcademicHeadline, lookupAcademicLatestYears } from "../vicdata-reference";
 import { igcseExclusionLikely, type AcademicSchoolProfile, type KsStage } from "../academic-data-view";
 import { CURRENT_CENSUS_PERIOD, type AgeBandKey } from "../roll-data";
 import { TREND_BASE_PERIOD } from "@/catalogue/notes";
@@ -44,20 +44,22 @@ export type Rivals = {
   entry: EntryPoint;
   stage: KsStage;
   resultsPeriod: number | null;
+  // DfE's provisional flag on that year (academic_current_periods; false until the ingest sets it).
+  resultsProvisional?: boolean;
   censusPeriod: number;
   rows: RivalRow[];
   areas: AreaRow[];
   thresholds: "loaded" | "not_loaded";
 };
 
-async function latestResultsPeriod(stage: KsStage): Promise<number | null> {
-  if (stage === "ks2") {
-    const pop = await headlinePopulation("ks2", CURRENT_CENSUS_PERIOD - 1);
-    let max = -Infinity;
-    for (const byP of pop.values()) for (const p of byP.keys()) max = Math.max(max, p);
-    return Number.isFinite(max) ? max : null;
-  }
-  return (await cachedReference("phases:current-periods", () => lookupAcademicCurrentPeriods()))[stage] ?? null;
+// The latest results year for this key stage, from the data (academic_current_periods, one row
+// per stage; KS2's is dfe_ks2_attainment's latest), with DfE's provisional flag where the ingest
+// sets one. 0.7 year rules: KS2's used to be found by reading every school's KS2 headline from
+// the census year less one; the same year, read the same way as GCSE's and Post-16's.
+async function latestResults(stage: KsStage): Promise<{ period: number | null; provisional: boolean }> {
+  const years = await cachedReference("years:latest", () => lookupAcademicLatestYears());
+  const y = years[stage];
+  return { period: y?.period ?? null, provisional: y?.provisional ?? false };
 }
 
 // opts.thresholds: tests pass the ingest dry run's values before the table is applied.
@@ -66,7 +68,8 @@ export async function buildRivals(urn: string, entry: EntryPoint, opts: { rivals
   const urns = [urn, ...rivals];
   const stage = stageForEntry(entry.age);
   const phase = phaseForEntryAge(entry.age);
-  const [period, census, info, thresholds] = await Promise.all([latestResultsPeriod(stage), cachedCensus(urns), fetchSchoolInfo(urns), opts.thresholds !== undefined ? Promise.resolve(opts.thresholds) : (loadThresholds() as Promise<Thresholds>)]);
+  const [latest, census, info, thresholds] = await Promise.all([latestResults(stage), cachedCensus(urns), fetchSchoolInfo(urns), opts.thresholds !== undefined ? Promise.resolve(opts.thresholds) : (loadThresholds() as Promise<Thresholds>)]);
+  const period = latest.period;
   const P = CURRENT_CENSUS_PERIOD;
   const [heads, sizes, headPop] = await Promise.all([
     period === null ? Promise.resolve(new Map<string, Place>()) : headlinePlaces(stage, period, urns),
@@ -142,7 +145,7 @@ export async function buildRivals(urn: string, entry: EntryPoint, opts: { rivals
     areas.forEach((a, i) => (a.place = places[i].get(urn) ?? null));
   }
 
-  return { urn, entry, stage, resultsPeriod: period, censusPeriod: P, rows, areas, thresholds: thresholds ? "loaded" : "not_loaded" };
+  return { urn, entry, stage, resultsPeriod: period, ...(latest.provisional ? { resultsProvisional: true } : {}), censusPeriod: P, rows, areas, thresholds: thresholds ? "loaded" : "not_loaded" };
 }
 
 /** With a subject in view: each school's national and regional rank on it, from 0.6.6's

@@ -14,9 +14,15 @@ import { ageGenderCountsFromCompact } from "../data-view-serialize";
 import { lookupAgeBandDistributions, sizeBadgeForValue, type SizeBadge } from "../age-band-distributions";
 import { AGE_BANDS, CURRENT_CENSUS_PERIOD, type AgeBandKey, type AgeGenderCounts } from "../roll-data";
 import type { RegionNationRow } from "../region-nation-comparator";
+import { TREND_BASE_PERIOD } from "../../catalogue/years";
 
 export const KS2_HEADLINE = HEADLINE_MEASURE.ks2;
 const FIGURE_YEARS = 3; // the latest year and the two before (two-year changes)
+
+/** The first year a results read loads: the latest three, and the trend base too (every
+ * "change since 2022/23" reads it). With 2024/25 latest the two are the same year; once a later
+ * year lands the base stays loaded rather than dropping out of the window. */
+export const firstResultsYear = (latest: number) => Math.min(latest - FIGURE_YEARS + 1, TREND_BASE_PERIOD);
 
 type ByPeriod = Map<number, number>;
 
@@ -27,10 +33,10 @@ export function headlinePopulation(stage: KsStage, latest: number): Promise<Map<
     const out = new Map<string, ByPeriod>();
     const put = (u: string, p: number, v: number) => (out.get(u) ?? out.set(u, new Map()).get(u)!).set(p, v);
     if (stage === "ks2") {
-      const facts = await lookupReferenceData({ sourceId: "dfe_ks2_attainment", breakdowns: [KS2_HEADLINE], periodMin: latest - FIGURE_YEARS + 1 });
+      const facts = await lookupReferenceData({ sourceId: "dfe_ks2_attainment", breakdowns: [KS2_HEADLINE], periodMin: firstResultsYear(latest) });
       for (const f of facts) if (f.value_numeric !== null) put(f.entity_id, f.period, f.value_numeric);
     } else {
-      const rows = await lookupAcademicHeadline({ ksStage: stage, periodMin: latest - FIGURE_YEARS + 1 });
+      const rows = await lookupAcademicHeadline({ ksStage: stage, periodMin: firstResultsYear(latest) });
       for (const r of rows) {
         const v = Number(r.measures[HEADLINE_MEASURE[stage]]);
         if (r.measures[HEADLINE_MEASURE[stage]] !== null && r.measures[HEADLINE_MEASURE[stage]] !== undefined && Number.isFinite(v)) put(r.entity_id, r.period, v);
@@ -52,7 +58,7 @@ export function familyPopulation(stage: "ks4" | "ks5", latest: number, urns: str
     await Promise.all(Array.from({ length: 6 }, async () => {
       while (next < chunks.length) {
         const c = chunks[next++];
-        const rows = await lookupAcademicSubjectFamily({ entityIds: c, ksStage: stage, periodMin: latest - FIGURE_YEARS + 1 });
+        const rows = await lookupAcademicSubjectFamily({ entityIds: c, ksStage: stage, periodMin: firstResultsYear(latest) });
         for (const r of rows) {
           const byFam = out.get(r.entity_id) ?? out.set(r.entity_id, new Map()).get(r.entity_id)!;
           (byFam.get(r.family_id) ?? byFam.set(r.family_id, new Map()).get(r.family_id)!).set(r.period, { avg: r.avg_point_score === null ? null : Number(r.avg_point_score), entries: Number(r.entries_total) });

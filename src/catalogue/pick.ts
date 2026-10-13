@@ -10,6 +10,7 @@ import { DATAVIEWS } from "./dataviews";
 import { MEASURES } from "./measures";
 import { compareMatches, matchDataviews, placements, whyNot, type PickContext, type PickResult } from "./matching";
 import { DASHBOARDS } from "./dashboards";
+import { measureYearsTo } from "./years";
 import type {
   ColumnHeader,
   CompareKind,
@@ -199,21 +200,23 @@ export function isAreaKeyed(ctx: Pick<PickPanelContext, "data" | "phase" | "resu
   return measureFor(ctx)?.keying === "geography";
 }
 
-// "2021/22" .. "2024/25" (academic) or "2019" .. "2025" (calendar).
+// "2021/22" .. "2024/25" (academic) or "2019" .. "2025" (calendar). The last is the data's
+// latest for the measure's family where it's known (years.ts measureYearsTo), else the card's.
 export function yearsOf(measure: Measure | undefined): string[] {
   if (!measure) return [];
   const academic = /^(\d{4})\/(\d{2})$/;
   const a = measure.years.from.match(academic);
-  const b = measure.years.to.match(academic);
+  const to = measureYearsTo(measure.years);
+  const b = to.match(academic);
   if (a && b) {
     const out: string[] = [];
     for (let y = +a[1]; y <= +b[1]; y++) out.push(`${y}/${String((y + 1) % 100).padStart(2, "0")}`);
     return out;
   }
   const from = parseInt(measure.years.from, 10);
-  const to = parseInt(measure.years.to, 10);
-  if (!Number.isFinite(from) || !Number.isFinite(to)) return [measure.years.to];
-  return Array.from({ length: to - from + 1 }, (_, i) => String(from + i));
+  const toYear = parseInt(to, 10);
+  if (!Number.isFinite(from) || !Number.isFinite(toYear)) return [to];
+  return Array.from({ length: toYear - from + 1 }, (_, i) => String(from + i));
 }
 
 // Trends start where the measure's honest series starts: KS4/KS5 points were 0 in 2020/21

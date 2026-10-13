@@ -42,6 +42,7 @@ import { PALETTE_DARK, PALETTE_LIGHT } from "@/lib/school-series-colours";
 import { memberMeans } from "@/lib/teacher-view-populations";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
 import type { CandidatesFrame, FrameSchoolGroup, FrameSet } from "@/lib/view-series/frames";
+import { isProvisional } from "@/catalogue/years";
 
 // Trend/% change redesign step 1: each subject arrives with its own values, aligned to the
 // `periods` prop, read by the page from `headline`'s entriesTotal -- the same source and
@@ -238,7 +239,7 @@ export function CandidatesPanels({
   // title names the focused subject, the column (currentLabel, "Candidates") and the year.
   const current: PanelRender = {
     tag: "Current",
-    afterTag: latest === null ? undefined : <DataDate>{academicYearLabel(latest)}</DataDate>,
+    afterTag: latest === null ? undefined : <DataDate provisional={isProvisional(phase, latest)}>{academicYearLabel(latest)}</DataDate>,
     question,
     body: (fullscreen) =>
       currentRows.length === 0 ? (

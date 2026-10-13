@@ -29,6 +29,7 @@ import {
   type GenderTag,
   type PhaseTag,
 } from "./typology";
+import { CENSUS_FIRST_PERIOD } from "../catalogue/years";
 
 // Real, already-diagnosed limit (brief §6.1): a live, unbatched lookupReferenceData
 // call against ~264 entity IDs hits a genuine Postgres statement timeout -- confirmed
@@ -142,7 +143,7 @@ export async function fetchCensusFactsBatched(
 // same anchor). Not necessarily every school's own earliest real data point -- a
 // school opened after 2019 simply has no real "since 2019" comparison, handled as a
 // null trend rather than a fabricated one.
-export const TREND_ANCHOR_PERIOD = 2019;
+export const TREND_ANCHOR_PERIOD = CENSUS_FIRST_PERIOD; // src/catalogue/years.ts
 
 export type DataViewSchoolProfile = {
   urn: string;

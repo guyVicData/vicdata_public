@@ -26,6 +26,7 @@
 import type { AgeGenderCounts } from "./roll-data";
 import type { DataViewSchoolProfile } from "./data-view-profiles";
 import type { FilterableSchoolData } from "./data-view-filters";
+import { CENSUS_FIRST_PERIOD } from "../catalogue/years";
 
 type WireAgeGenderCounts = [number, { male: number; female: number }][];
 // 2026-09-06, UX refinements round 1, A2: ageGenderCountsByPeriod is a Map OF Maps --
@@ -121,7 +122,7 @@ export function profileToFilterableData2019(p: DataViewSchoolProfile): Filterabl
 // TREND_ANCHOR_PERIOD (data-view-profiles.ts) duplicated as a literal here rather
 // than imported -- same reasoning as data-view-filters.ts's own DEFAULT_START_PERIOD:
 // that module is server-only, and this one deliberately has no server-only imports.
-const TREND_ANCHOR_PERIOD_FALLBACK = 2019;
+const TREND_ANCHOR_PERIOD_FALLBACK = CENSUS_FIRST_PERIOD; // src/catalogue/years.ts
 
 // 2026-09-06, UX refinements round 1, A2: the general form of the function above --
 // same slice, at WHICHEVER real period the date-range control's selectable start

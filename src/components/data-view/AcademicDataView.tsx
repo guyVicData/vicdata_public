@@ -67,6 +67,7 @@ import AcademicMapView from "./AcademicMapView";
 import AcademicGraphsView from "./AcademicGraphsView";
 import AcademicRankingsView from "./AcademicRankingsView";
 import CategoryFilter from "./CategoryFilter";
+import { setLatestYears, type LatestYears } from "@/catalogue/years";
 
 const CONTROL_LABEL = "text-xs font-semibold uppercase tracking-wide text-neutral-500";
 
@@ -334,7 +335,9 @@ export default function AcademicDataView({
           setError("Couldn't load academic data for this school.");
           return;
         }
-        const body = (await res.json()) as { profiles: WireAcademicSchoolProfile[] };
+        const body = (await res.json()) as { profiles: WireAcademicSchoolProfile[]; latestYears?: LatestYears | null };
+        // 0.7 year rules: read before the profiles' render, for "(provisional)" on year labels.
+        setLatestYears(body.latestYears);
         const profiles = body.profiles.map(deserializeAcademicProfile);
         setProfilesByUrn(new Map(profiles.map((p) => [p.urn, p])));
       } catch {

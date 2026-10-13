@@ -10,6 +10,7 @@
 // scripts/catalogue-export.ts, and the Catalogue page (/platform/catalogue) reads them.
 
 import type { ViewSpec } from "./viewspec";
+import type { YearFamily } from "./years";
 
 // ---------------------------------------------------------------------------------
 // Shared vocabularies
@@ -144,7 +145,10 @@ export type Measure = {
   definition: string;
   grain: string;
   sources: string[];
-  years: { from: string; to: string; note?: string };
+  // `to` is the card's latest year when it was written; `latest` names the family whose latest
+  // year the data gives (src/catalogue/years.ts), which replaces `to` wherever it's known
+  // (measureYearsTo). 0.7 year rules.
+  years: { from: string; to: string; note?: string; latest?: YearFamily };
   // Area-keyed or school-keyed (vicdata-production source_registry.entity_keying).
   keying: "urn" | "geography";
   geographies: Record<Geography, GeographyAvailability>;

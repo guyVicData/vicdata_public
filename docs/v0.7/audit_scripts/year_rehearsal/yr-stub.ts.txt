@@ -1,0 +1,1 @@
+export function setLatestYears(_: unknown): void {}

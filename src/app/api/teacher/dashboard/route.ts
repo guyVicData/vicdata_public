@@ -1,6 +1,6 @@
 import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
-import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
+import { lookupAcademicLatestYears, lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeography } from "@/lib/vicdata-reference";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { createClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
@@ -186,6 +186,9 @@ export async function GET(request: NextRequest) {
   const qualificationHeadline = phase === "ks5" ? (await fetchSubjectQualificationHeadlineForSchools([urn], phase)).get(urn) ?? [] : [];
   // 0.6.4 C2: England's national rows are the same for every school -- kept an hour per instance.
   const england = await cachedReference(`dashboard:england:${phase}`, () => englandAverages(phase));
+  // 0.7 year rules: the latest year per key stage, from the data, with DfE's provisional flag
+  // (src/catalogue/years.ts) -- what the page's catalogue titles and "Data" lines read.
+  const latestYears = await cachedReference("years:latest", () => lookupAcademicLatestYears()).catch(() => null);
 
   return NextResponse.json({
     phase,
@@ -203,5 +206,6 @@ export async function GET(request: NextRequest) {
     ownSeries: targetSeries,
     seriesByUrn,
     headlineLabel: HEADLINE_LABEL[phase],
+    latestYears,
   });
 }

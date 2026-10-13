@@ -31,6 +31,7 @@ import { academicYearLabel } from "./TrendPill";
 import SubjectAreaBarChart from "./SubjectAreaBarChart";
 import SubjectAreaDivergingBarChart from "./SubjectAreaDivergingBarChart";
 import { Card } from "./GraphsView";
+import { withProvisional } from "@/catalogue/years";
 
 function pctChange(first: number | null, last: number | null): number | null {
   if (first === null || last === null || first === 0) return null;
@@ -719,7 +720,7 @@ export default function SubjectAreaSection({
         </label>
       )}
 
-      <Card title={`Candidates${latestPeriod !== null ? `, ${academicYearLabel(latestPeriod)}` : ""}`}>
+      <Card title={`Candidates${latestPeriod !== null ? `, ${withProvisional(academicYearLabel(latestPeriod), stage, latestPeriod)}` : ""}`}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-xs text-neutral-500">{profile.name}</p>
@@ -745,7 +746,7 @@ export default function SubjectAreaSection({
         </div>
       </Card>
 
-      <Card title={`Results${latestPeriod !== null ? `, ${academicYearLabel(latestPeriod)}` : ""}`}>
+      <Card title={`Results${latestPeriod !== null ? `, ${withProvisional(academicYearLabel(latestPeriod), stage, latestPeriod)}` : ""}`}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-xs text-neutral-500">{profile.name}</p>

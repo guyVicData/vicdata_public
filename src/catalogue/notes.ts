@@ -10,17 +10,15 @@
 // note saying so. Never on a latest-year view, on Candidates (entries) or at KS2 (its tests
 // aren't graded by Ofqual's GCSE / A-level transition).
 import type { ViewSpec } from "./viewspec";
+import { CENSUS_FIRST_PERIOD, GRADING_2122_PERIOD, periodLabel, TREND_BASE_PERIOD } from "./years";
 
 // The wording. Edit here; every view reads it.
 export const TREND_BASE_NOTE =
-  "Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.";
+  `Trends are measured from ${periodLabel(TREND_BASE_PERIOD)}. ${periodLabel(GRADING_2122_PERIOD)} is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.`;
 
-// 2021/22, as the app's periods number it (the summer-2022 results).
-export const GRADING_2122_PERIOD = 2021;
-
-// The year every trend statement is measured from: 2022/23 (the summer-2023 results). The one
-// place it is set.
-export const TREND_BASE_PERIOD = 2022;
+// 2021/22 (the summer-2022 results) and the year every trend statement is measured from,
+// 2022/23 (the summer-2023 results): both set in years.ts, with the app's other fixed years.
+export { GRADING_2122_PERIOD, TREND_BASE_PERIOD };
 
 // The measures a view's figure can be on (teacher-view-panels' MeasureId): grades and points
 // follow the rule, entries ("Candidates") don't.
@@ -83,7 +81,7 @@ export const ADMISSIONS_NOTES = {
   birthSplit: "Births are counted by calendar year; a school year runs September to August, so each year's pool is 8/12 of one year's births plus 4/12 of the year before.",
   birthSex: "Births have no boy/girl split: a girls' or boys' pool from births is an estimate (49% / 51%).",
   // R-ADM-DRIFT-RANGE
-  drift: "The range is how much these schools' year groups have actually grown or shrunk from one year to the next since 2019/20 (the middle 80% of those changes), applied for each year still to go -- so it widens the further ahead it looks.",
+  drift: `The range is how much these schools' year groups have actually grown or shrunk from one year to the next since ${periodLabel(CENSUS_FIRST_PERIOD)} (the middle 80% of those changes), applied for each year still to go -- so it widens the further ahead it looks.`,
   // R-ADM-HOLD-SHARE
   holdShare: "The share needed to hold numbers steady: this year's intake as a share of each future pool. A requirement, not a forecast.",
   // R-ADM-GROUP-SHARE

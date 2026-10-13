@@ -45,6 +45,7 @@ import type { ViewKey } from "@/lib/data-view-types";
 import ViewSwitcher from "./ViewSwitcher";
 import PdfExportButton from "./PdfExportButton";
 import LoadingSpinnerCard from "./LoadingSpinnerCard";
+import { CENSUS_FIRST_PERIOD } from "@/catalogue/years";
 
 const TILE_URL = process.env.NEXT_PUBLIC_CARTO_API_KEY
   ? `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`
@@ -178,7 +179,7 @@ function radiusFor(value: number, min: number, max: number): number {
 // TREND_ANCHOR_PERIOD_FALLBACK already apply) rather than a value-imported from
 // data-view-profiles.ts -- that module is server-only (createServerAnonSupabaseClient)
 // and this is a client component.
-const LARGE_SET_ANCHOR_PERIOD = 2019;
+const LARGE_SET_ANCHOR_PERIOD = CENSUS_FIRST_PERIOD; // src/catalogue/years.ts
 
 // 2026-10-09, real bug found live ("London/England schools don't load"): a Region/
 // Nation-scale comparator set deliberately never gets a full multi-year

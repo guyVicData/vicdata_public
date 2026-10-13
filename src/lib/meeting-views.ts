@@ -8,6 +8,7 @@
 import { changeKind, changeOfMeasure, changeWord } from "@/catalogue/titles";
 import { dataviewById } from "@/catalogue/dataviews";
 import { measureById } from "@/catalogue/measures";
+import { measureYearsTo } from "@/catalogue/years";
 import type { CompareKind, DataId, Dataview, DataviewInstance, Phase, ResultsMeasure, SlideConfig, ViewType } from "@/catalogue/types";
 
 // The pinned settings carried on slot.view.pinned (stored as JSON).
@@ -71,10 +72,12 @@ export function citationOf(slot: SlideConfig["slots"][number]): string | null {
   return measureOf(dv, p.phase, p.data, p.results)?.citation ?? null;
 }
 
-// The latest year the registry has for this view's measure ("2024/25").
+// The latest year for this view's measure ("2024/25"): the data's where the page has read it
+// (src/catalogue/years.ts), else the measure card's.
 export function latestYearOf(slot: SlideConfig["slots"][number]): string | null {
   const dv = dataviewOf(slot);
-  return measureOf(dv, pinnedOf(slot).phase)?.years.to ?? null;
+  const m = measureOf(dv, pinnedOf(slot).phase);
+  return m ? measureYearsTo(m.years) : null;
 }
 
 // MeetingPlay's kind words, from the view's type (for "Suggest a title").
@@ -120,7 +123,7 @@ export function resolveTemplate(dv: Dataview, p: PinnedSettings, template: strin
     subject,
     // A trend view's [year] is where it starts ("since 2021/22"); a single-year view's is
     // the year it shows.
-    year: dv.supports.dateMode === "trend" ? p.yearRange?.from || measure?.years.from || "" : p.year || measure?.years.to || "",
+    year: dv.supports.dateMode === "trend" ? p.yearRange?.from || measure?.years.from || "" : p.year || (measure ? measureYearsTo(measure.years) : "") || "",
     "from-year": p.yearRange?.from || measure?.years.from || "",
     category: group,
     "comparison-group": group,

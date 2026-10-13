@@ -7,6 +7,7 @@
 // years (period N = N/N+1) except births (calendar years) and rolls (January census).
 import { ADMISSIONS_MEASURES } from "./admissions";
 import type { Geography, GeographyAvailability, Measure } from "./types";
+import type { YearFamily } from "./years";
 
 // SOURCE_NAME from src/lib/teacher-view-theme.ts, copied rather than imported: that module
 // pulls in a client component (SubjectAreaSection), and the catalogue must load in plain
@@ -52,6 +53,7 @@ function gradeMeasures(phase: "ks4" | "ks5"): Measure[] {
     years: {
       from: "2021/22",
       to: "2024/25",
+      latest: (ks4 ? "ks4" : "ks5") as YearFamily,
       note: ks4
         ? "School grade rows 2021/22-2024/25 (0.6.2): academic_subject_grade_rollup through its lookup RPC when that is applied, else the modern + historic facts (src/lib/grade-rows.ts), which S1 proved equal on every key. Area grade figures 2021/22-2024/25."
         : "School grade rows 2021/22-2024/25 (0.6.2): the modern + historic facts, parsed with R-HISTORIC-GRADE-LABELS (src/lib/grade-rows.ts); the rollup is not used at Post-16 (it has no zero-entry grade rows). Area grade figures 2021/22-2024/25.",
@@ -144,6 +146,7 @@ export const MEASURES: Measure[] = [
     years: {
       from: "2020/21",
       to: "2024/25",
+      latest: "ks4",
       note: "Rollup entries 5 years. The subject list comes from raw facts, latest year only, without the IB Diploma total and IB Core rows (teacher-view-populations.ts:subjectItemsOf, R-IB-NONSUBJECT). Area (points-eligible) entries 2021/22-2024/25.",
     },
     keying: "urn",
@@ -194,7 +197,7 @@ export const MEASURES: Measure[] = [
     definition: "Points per points-eligible entry, GCSE (9-1) Full Course only, on the 9-1 table (vicdata:ingest/academic_aggregates.py:93,139-140).",
     grain: "School × subject × year (points_weighted_sum / points_eligible_entries)",
     sources: ["dfe_ks4_subject_entries", "dfe_ks4_subject_entries_historic"],
-    years: { from: "2021/22", to: "2024/25", note: "2020/21 rollup rows have 0 points-eligible entries (teacher-assessed year)." },
+    years: { from: "2021/22", to: "2024/25", latest: "ks4", note: "2020/21 rollup rows have 0 points-eligible entries (teacher-assessed year)." },
     keying: "urn",
     geographies: geos({
       school: ok(),
@@ -238,7 +241,7 @@ export const MEASURES: Measure[] = [
     definition: "The DfE Attainment 8 average for the whole school (HEADLINE_MEASURE.ks4 = attainment8_average). Comparisons' measure with no subject chip.",
     grain: "School × year",
     sources: ["dfe_ks4_headline", "dfe_ks4_headline_historic"],
-    years: { from: "2021/22", to: "2024/25" },
+    years: { from: "2021/22", to: "2024/25", latest: "ks4" },
     keying: "urn",
     geographies: geos({
       school: ok(),
@@ -266,7 +269,7 @@ export const MEASURES: Measure[] = [
     definition: "Entries per subject × exact qualification type (A level, AS, IB HL/SL, BTEC, T Level…), per school and year.",
     grain: "School × subject × qualification type × year (academic_subject_qualification_rollup, 3,001 schools); bucket rollup for categories",
     sources: ["dfe_ks5_subject_results", "dfe_ks5_subject_results_historic", "dfe_tlevel_results"],
-    years: { from: "2020/21", to: "2024/25", note: "Rollups 5 years; the item list is raw facts, latest year only." },
+    years: { from: "2020/21", to: "2024/25", latest: "ks5", note: "Rollups 5 years; the item list is raw facts, latest year only." },
     keying: "urn",
     geographies: geos({
       school: ok(),
@@ -316,7 +319,7 @@ export const MEASURES: Measure[] = [
     definition: "Points per entry on the qualification's own challenge table (A level A*=56 … E=16), size-weighted (points_size_units).",
     grain: "School × subject × exact qualification × year",
     sources: ["dfe_ks5_subject_results", "dfe_ks5_subject_results_historic", "dfe_tlevel_results"],
-    years: { from: "2021/22", to: "2024/25" },
+    years: { from: "2021/22", to: "2024/25", latest: "ks5" },
     keying: "urn",
     geographies: geos({
       school: ok(),
@@ -362,7 +365,7 @@ export const MEASURES: Measure[] = [
     definition: "The school's A-level average points per entry (A level::aps_per_entry). Comparisons' measure with no subject chip.",
     grain: "School × year",
     sources: ["dfe_ks5_headline", "dfe_ks5_headline_historic"],
-    years: { from: "2021/22", to: "2024/25" },
+    years: { from: "2021/22", to: "2024/25", latest: "ks5" },
     keying: "urn",
     geographies: geos({
       school: ok(),
@@ -389,7 +392,7 @@ export const MEASURES: Measure[] = [
     definition: "Census headcount by single age × sex × full/part-time, plus boarders (src/lib/roll-data.ts:1-3, 33).",
     grain: "School × age × sex × attendance × census year",
     sources: ["dfe_school_census"],
-    years: { from: "2019", to: "2025", note: "January census; 7 years. LA aggregates (roll_aggregates scope 'regional') are 2025 only." },
+    years: { from: "2019", to: "2025", latest: "census", note: "January census; 7 years. LA aggregates (roll_aggregates scope 'regional') are 2025 only." },
     keying: "urn",
     geographies: geos({
       school: ok("reference_data_lookup"),

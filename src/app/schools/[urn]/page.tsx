@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Newsreader, IBM_Plex_Sans } from "next/font/google";
 import { createServerAnonSupabaseClient } from "@/lib/supabase";
-import { lookupReferenceData } from "@/lib/vicdata-reference";
+import { lookupAcademicLatestYears, lookupReferenceData } from "@/lib/vicdata-reference";
 import {
   buildRollSnapshot,
   singleAgeGenderCountsForPeriod,
@@ -83,6 +83,8 @@ import {
   FeNoParticipationDataCard,
 } from "@/components/dashboard/FeCollegeCards";
 import { RegionalSixthFormCard } from "@/components/dashboard/RegionalSixthFormCard";
+import { setLatestYears } from "@/catalogue/years";
+import { cachedReference } from "@/lib/server-cache";
 
 export const dynamic = "force-dynamic"; // per-school live data, never statically cached
 
@@ -283,6 +285,9 @@ export default async function SchoolPage({
   // own fetchAcademicProfiles would otherwise make for nothing on this, the highest-
   // traffic page on the site.
   const academic = (await fetchAcademicProfiles([urn], { includePopulation: false }))[0] ?? null;
+  // 0.7 year rules: the latest year per key stage with DfE's provisional flag, read before the
+  // academic sentence renders (src/catalogue/years.ts). Only when the page has academic data.
+  if (academic) setLatestYears(await cachedReference("years:latest", () => lookupAcademicLatestYears()).catch(() => null));
 
   // FE-participation backfill card (2026-08-22, docs/OPEN_QUESTIONS.md in the vicdata
   // ingest repo -- built after confirming most Academy 16-19 converter/Free schools 16

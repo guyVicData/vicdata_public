@@ -90,6 +90,7 @@ import { bandRangeFor, comparisonsMeasureFor, contextBandShareAt, contextFallsBa
 import { type SubjectItem as LibSubjectItem, asOrAeaOnlySubjects, candidateItemsOf, categoryItemsOf, contextGroupRows, contextItemsOf, contextMembersOf, contextOfferOf, focusQualificationFamily, inContextGroup, keepFocusOrFigured, memberMeans, schoolSubjectNamesOf, schoolSubjectsOf, subjectItemsOf } from "@/lib/teacher-view-populations";
 import { candidatesGeographyApplies, pointsEligibleEntriesByPeriod, resultsGeographyApplies } from "@/lib/teacher-view-geography";
 import { MINIMUM_SUBJECT_N, deserializeAcademicProfile, subjectYearsFor, type WireAcademicSchoolProfile, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry, type SubjectEntry, type SubjectGradeCount } from "@/lib/academic-data-view";
+import { setLatestYears, type LatestYears } from "@/catalogue/years";
 
 // 0.6.4 C2: the editor and the comparator chooser load when opened (PanelFooter's Copy
 // dialog already does), so a member who never edits doesn't download them with the page.
@@ -126,6 +127,8 @@ type DashboardPayload = {
   headlineLabel?: string;
   seriesByUrn?: Record<string, SchoolSeries>;
   englandAverages?: { basis: "qualification" | "subject"; values: { key: string; period: number; value: number }[] } | null;
+  // 0.7 year rules: the latest year per key stage, from the data (src/catalogue/years.ts).
+  latestYears?: LatestYears | null;
 };
 
 // Comparator dropdown round: what the Comparisons column is on. A saved set by its key
@@ -392,6 +395,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       let loadedEntries: SubjectEntry[] = [];
       if (res.ok && res.body) {
         const body = res.body;
+        // Before the first render with this data: the catalogue's titles and "Data" lines read it.
+        setLatestYears(body.latestYears);
         loadedEntries = body.subjectData?.entries ?? [];
         setEntries(body.subjectData?.entries ?? []);
         setGradeRows(body.subjectData?.gradeDistribution ?? []);

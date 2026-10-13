@@ -13,6 +13,7 @@
 //   3. scoped to the comparable qualification type, reusing the existing bucket logic, so
 //      a subject entered under two qualifications only offers genuinely comparable views.
 import { bucketFor, KS5_BUCKET_LABEL, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
+import { MEETING_TREND_MIN_YEARS } from "@/catalogue/years";
 import type { AcademicSubjectHeadlineEntry } from "@/lib/academic-data-view";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 
@@ -22,7 +23,7 @@ export type ColumnId = "candidates" | "results" | "context" | "rankings";
 // and not "whatever we have" -- two points is a line, not a trend, and the brief is
 // explicit about the number.
 // R-TREND-3YR (superseded by R-TREND-LINE-4YR; meetings slide picker only)
-export const TREND_MIN_YEARS = 3;
+export const TREND_MIN_YEARS = MEETING_TREND_MIN_YEARS; // set in src/catalogue/years.ts
 
 // §8's five axes, in the brief's own order and wording. Axis 4 is the only one that needs
 // further input from the user (which subjects to compare against), which is why it is

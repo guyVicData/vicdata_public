@@ -2,6 +2,8 @@ import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchAcademicProfiles, serializeAcademicProfile } from "@/lib/academic-data-view";
+import { cachedReference } from "@/lib/server-cache";
+import { lookupAcademicLatestYears } from "@/lib/vicdata-reference";
 
 // Academic Results Data View tab (frontend build brief, Part B): the batched
 // per-school data fetch behind AcademicMapView/AcademicGraphsView/AcademicRankingsView
@@ -55,5 +57,8 @@ export async function GET(request: NextRequest) {
   // includeSubjects=1 -- so the Data View keeps making exactly the fetch it always made.
   const includeSubjects = request.nextUrl.searchParams.get("includeSubjects") === "1";
   const profiles = await fetchAcademicProfiles(urns, { includeSubjects });
-  return NextResponse.json({ profiles: profiles.map(serializeAcademicProfile) });
+  // 0.7 year rules: the latest year per key stage with DfE's provisional flag
+  // (src/catalogue/years.ts), for the "(provisional)" after a year label.
+  const latestYears = await cachedReference("years:latest", () => lookupAcademicLatestYears()).catch(() => null);
+  return NextResponse.json({ profiles: profiles.map(serializeAcademicProfile), latestYears });
 }

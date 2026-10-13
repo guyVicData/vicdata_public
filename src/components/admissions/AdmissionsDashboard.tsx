@@ -55,6 +55,7 @@ import { copySource } from "./export";
 import { useBoardingSchool } from "./useBoardingSchool";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import { contextFromPanel } from "@/catalogue/pick";
+import { CENSUS_FIRST_PERIOD, CURRENT_CENSUS_PERIOD, TREND_BASE_PERIOD } from "@/catalogue/years";
 
 const PHONE = 768;
 // The entry-point chips' colour in Teacher's subject-chip slot: the Admissions accent.
@@ -593,11 +594,15 @@ function viewBody(dv: string, c: Ctx, o: ViewOpts): ReactNode {
   }
 }
 
+/** The results year, "2025/26", with "(provisional)" while DfE's release is (0.7 year rules). */
+const resultsYearLabel = (r: { resultsPeriod: number | null; resultsProvisional?: boolean }) =>
+  r.resultsPeriod === null ? "" : `${yearLabel(r.resultsPeriod)}${r.resultsProvisional ? " (provisional)" : ""}`;
+
 /** Each panel's header line: its tag and context, as the boards write them. */
 function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; context: ReactNode } {
   const ep = c.entry ? entryPoint(c.entry) : null;
   const p = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data : null;
-  const census = p?.censusPeriod ?? 2025;
+  const census = p?.censusPeriod ?? CURRENT_CENSUS_PERIOD;
   const r = c.rivals.status === "ready" ? c.rivals.data : null;
   if (panel.row === "now" && panel.column === "c1") return { tag: "Current", context: `Data ${yearLabel(census)}` };
   if (dv.startsWith("DV-ADM-P-") && panel.row === "now") {
@@ -605,14 +610,14 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     const years = p ? `entry years ${p.ladder.past[0]?.entryYear ?? ""}–${p.ladder.future[p.ladder.future.length - 1]?.entryYear ?? ""}` : "";
     return { tag: dv === "DV-ADM-P-PIPELINE" ? "Pipeline" : (dataviewById(dv)?.label ?? "Pipeline"), context: ep && ep.age >= 16 ? `16+ · ${years}` : years };
   }
-  if (dv === "DV-ADM-M-MOMENTUM" || dv === "DV-ADM-M-FLAGS") return { tag: "Rivals’ momentum", context: "change since 2022/23" };
-  if (dv === "DV-ADM-M-STRENGTHS") return { tag: "Strengths and weaknesses", context: r ? `${STAGE_WORD[r.stage]} ${r.resultsPeriod ? yearLabel(r.resultsPeriod) : ""} · average points` : "" };
+  if (dv === "DV-ADM-M-MOMENTUM" || dv === "DV-ADM-M-FLAGS") return { tag: "Rivals’ momentum", context: `change since ${yearLabel(TREND_BASE_PERIOD)}` };
+  if (dv === "DV-ADM-M-STRENGTHS") return { tag: "Strengths and weaknesses", context: r ? `${STAGE_WORD[r.stage]} ${r.resultsPeriod ? resultsYearLabel(r) : ""} · average points` : "" };
   if (dv === "DV-ADM-M-SHAPE") return { tag: "Shape and size", context: `Data ${yearLabel(census)} · pupils by age` };
   if (panel.row === "now") return { tag: "Rivals", context: `Data ${yearLabel(census)} · pupils aged ${ep?.age ?? ""}` };
   if (dv.startsWith("DV-ADM-P-HOLD")) return { tag: "Forward", context: p ? `${p.ladder.future[0]?.entryYear}–${p.ladder.future[p.ladder.future.length - 1]?.entryYear}` : "" };
-  if (dv === "DV-ADM-P-POOL-INDEXED" || dv === "DV-ADM-M-VS-LINE") return { tag: "Trends", context: "indexed, 2019/20 = 100" };
-  if (dv.startsWith("DV-ADM-M-ACAD")) return { tag: "Academic", context: r && ep ? `${ep.label.replace(/ \(.*\)$/, "")} → ${STAGE_WORD[r.stage]} · ${r.resultsPeriod ? yearLabel(r.resultsPeriod) : ""}` : "" };
-  return { tag: "Trends", context: "from 2019/20" };
+  if (dv === "DV-ADM-P-POOL-INDEXED" || dv === "DV-ADM-M-VS-LINE") return { tag: "Trends", context: `indexed, ${yearLabel(CENSUS_FIRST_PERIOD)} = 100` };
+  if (dv.startsWith("DV-ADM-M-ACAD")) return { tag: "Academic", context: r && ep ? `${ep.label.replace(/ \(.*\)$/, "")} → ${STAGE_WORD[r.stage]} · ${r.resultsPeriod ? resultsYearLabel(r) : ""}` : "" };
+  return { tag: "Trends", context: `from ${yearLabel(CENSUS_FIRST_PERIOD)}` };
 }
 
 /** Each panel's notes, from ADMISSIONS_NOTES. 0.7 r3 (F1): the honesty wording opens the way
@@ -798,10 +803,10 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
 function DesktopGrid({ config, c, actions }: { config: DashboardConfig; c: Ctx; actions?: ReactNode }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ now: true, trends: true });
   const ep = c.entry ? entryPoint(c.entry) : null;
-  const census = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data.censusPeriod : 2025;
+  const census = c.pipeline.status === "ready" && !("empty" in c.pipeline.data) ? c.pipeline.data.censusPeriod : CURRENT_CENSUS_PERIOD;
   const ctx: Record<string, string> = {
     now: `January ${census + 1} census · ${c.dash === "pipelines" ? `${ep?.label.replace(/ \(.*\)$/, "")} entry` : `pupils aged ${ep?.age}`}`,
-    trends: c.dash === "pipelines" ? `${yearLabel(2019)} to ${yearLabel(census)}, and forward` : `${yearLabel(2019)} to ${yearLabel(census)}`,
+    trends: c.dash === "pipelines" ? `${yearLabel(CENSUS_FIRST_PERIOD)} to ${yearLabel(census)}, and forward` : `${yearLabel(CENSUS_FIRST_PERIOD)} to ${yearLabel(census)}`,
   };
   return (
     <>

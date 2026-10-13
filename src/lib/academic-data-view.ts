@@ -12,6 +12,7 @@
 // shape as KS4/KS5.
 
 import { createServerAnonSupabaseClient } from "./supabase";
+import { DATA_VIEW_TREND_BASELINE } from "../catalogue/years";
 import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicSubjectGradeRollup, gradeRollupRpcState, lookupAcademicSubjectHeadline, lookupAcademicSubjectQualificationHeadline, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
 import {
   ALL_SUBJECTS_PSEUDO_ROW,
@@ -220,7 +221,8 @@ export function stageHasUsableData(profile: AcademicSchoolProfile, stage: KsStag
 // canonical_facts_current) -- genuinely doesn't reach back to 2021/22 the way the
 // modern KS4/KS5 headline series does, so its trend baseline is honestly its own
 // earliest real year, not a fabricated match to the other two stages.
-export const TREND_BASELINE_PERIOD: Record<KsStage, number> = { ks2: 2022, ks4: 2021, ks5: 2021 };
+// Set in src/catalogue/years.ts (DATA_VIEW_TREND_BASELINE), beside the Teacher rule it differs from.
+export const TREND_BASELINE_PERIOD: Record<KsStage, number> = DATA_VIEW_TREND_BASELINE;
 
 // The single population age this stage's headline figure is about -- spec §3's own
 // "circle size shows the number of N-year-olds" framing.

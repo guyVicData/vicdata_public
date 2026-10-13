@@ -25,7 +25,7 @@
 //   R-NUMBER-TYPE-HONESTY  entries change in %, points and rates in points / pp.
 //   Ties share a rank; higher is better (entries: more entries rank higher).
 import { callReferenceRpc, type AcademicSubjectHeadlineRow, type AcademicSubjectQualificationHeadlineRow } from "./vicdata-reference";
-import { gradeRowsFromRollup, mapHistoricKs5Grade, starIsAStar, MODERN_GRADE_FROM, type GradeRollupRow } from "./grade-rows";
+import { gradeRowsFromRollup, mapHistoricKs5Grade, starIsAStar, MODERN_GRADE_FROM, HISTORIC_GRADE_FROM, type GradeRollupRow } from "./grade-rows";
 import { GRADE_SCALES, NON_GRADE_VALUES, BOTTOM_RANK, bandRate, inRange, thresholdRate, type GradeRange } from "./subject-grades";
 import { MINIMUM_SUBJECT_N } from "./academic-data-view";
 import { TREND_BASE_PERIOD } from "@/catalogue/notes";
@@ -291,7 +291,7 @@ async function figuresFor(urns: string[], req: SubjectRankingRequest): Promise<F
   }
   // Rates: the grade rollup's rows for the one subject and qualification, 2021/22 on.
   const parts = await pool(chunks(urns, FALLBACK_CHUNK.grades), FALLBACK_CONCURRENCY, (c) =>
-    pagedRpc<GradeRollupRow>("academic_subject_grade_rollup_lookup", { p_entity_ids: c, p_ks_stage: req.phase, p_subject: req.subject, p_qualification_type: req.qualificationType, p_period_min: 2021, p_period_max: null }),
+    pagedRpc<GradeRollupRow>("academic_subject_grade_rollup_lookup", { p_entity_ids: c, p_ks_stage: req.phase, p_subject: req.subject, p_qualification_type: req.qualificationType, p_period_min: HISTORIC_GRADE_FROM, p_period_max: null }),
   );
   let rows = parts.flat();
   if (req.phase === "ks5") rows = normaliseKs5Rollup(rows);
