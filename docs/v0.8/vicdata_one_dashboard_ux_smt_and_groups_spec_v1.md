@@ -1,6 +1,6 @@
 # VicData — One dashboard UX: Teacher, Admissions, SMT and groups
 
-Written 12 Oct 2026, for Guy to review. Updated 13 Oct: a group as a comparison set (§3.5); the group against other groups and non-group schools (§3.6); Oxbridge inside Destinations. It sets out the shared layout and controls every role's dashboards use, and specifies the SMT dashboards and the group view to match. It follows Guy's round 3 principle: *the core UI is identical; only the column arrangement differs.*
+Written 12 Oct 2026, for Guy to review. Updated 13 Oct: Guy's answers (§2.2 chips, §3.2 access, §5); a group as a comparison set (§3.5); the group against other groups and non-group schools (§3.6); Oxbridge inside Destinations. It sets out the shared layout and controls every role's dashboards use, and specifies the SMT dashboards and the group view to match. It follows Guy's round 3 principle: *the core UI is identical; only the column arrangement differs.*
 
 Read with:
 - `docs/v0.7/admissions_r3_report_v1.md` (the shared panel chrome, nav and edit bar);
@@ -18,7 +18,7 @@ Teacher has all of these. Admissions has them after round 3 and the editor stage
 | **Edit bar** | Platform admins only: Edit, View as…, publish state | ✓ | ✓ (r3) | same | same |
 | **Dashboard switch** | Linked dashboards in one group, in the control bar | Candidates · Results | Pipelines · Market share | Overview · Academic · Pupils · Context | Overview · Schools · Academic · Pupils |
 | **Focus chips** | What every view follows, like Teacher's subjects | Subjects | Entry points (4+ / 11+ / 16+ / age) | Level: Whole school · Phases · Subject areas (top-down, §2.2) | Phase: All · Primary · Secondary · Post-16, plus a school picker |
-| **Filters** | Pills in the control bar; only where they apply | Qualification | Gender · sector · Day + boarding (boarding schools only) | Gender · phase | Group source · open/closed |
+| **Filters** | Pills in the control bar; only where they apply | Qualification | Gender · sector · Day + boarding (boarding schools only) | Gender (mixed schools) · Day + boarding (boarding schools only) | Group source · open/closed |
 | **Compared with** | The comparison-set chooser (nearest 10, LA, region, saved sets, custom, `?set=`) | ✓ | Feeders / rivals lists | ✓, plus "your group(s)" | Other groups · the LA · the region · the sector |
 | **Grid** | Rows × columns, accordion rows, spans | 3 columns, Current / Trends | Column 1 + a large 2–3 view; then 3 panels | Same as Admissions | Same as Admissions |
 | **Column 1** | "Now": fixed headline tiles plus a rail | Subject now | Entry point now | The school now (§2) | The group now (§3) |
@@ -56,6 +56,14 @@ The chips are **Whole school · Phase (Primary / GCSE / Post-16, only the phases
 
 - Choosing a subject area narrows the Academic views to it. Its subjects appear in the large view, each with "Open in the subject explorer".
 - The chips are part of the dashboard's config, so the editor's "Shows for" lists levels for SMT, as it lists entry points for Admissions.
+
+**How they work, exactly as Teacher's subject chips and Admissions' entry-point chips do (Guy, 13 Oct: confirmed):**
+- **The same component** in the same place in the control bar: one row, one chip selected at a time, held in the URL (so a link or a meeting slide reopens the same level), and remembered for the user between visits.
+- **Row 1 chips:** **Whole school** (the default) · **Primary** · **GCSE** · **Post-16**. Only the phases the school has appear: a senior school with no prep sees Whole school · GCSE · Post-16; an IGCSE school such as Leighton Park sees GCSE labelled "no published GCSE results" and its views say why.
+- **Subject areas sit under a phase,** because "Sciences" at GCSE and at A level are different results. Choosing GCSE or Post-16 shows a second, lighter row of area chips (English · Maths · Sciences · Humanities · Languages · Creative · Technical · Other, from `subject_family_map`; only the areas the school enters), in the way Admissions' 16+ chip reveals its own options. "All areas" is selected by default. Whole school and Primary have no second row.
+- **Every view follows the chips.** A view that can't show the level in focus says so in its own space ("Value added isn't published for KS2"), never disappears silently: the same rule as Teacher's and Admissions' views.
+- **Filters stay as pills,** separate from the chips, as in Teacher (qualification) and Admissions (gender, sector, day/boarding): for SMT, **Gender** (mixed schools only) and **Day/boarding** (boarding schools only). Phase is a chip, never a pill.
+- **The comparison set** ("Compared with") follows the level too: at GCSE it ranks among the set's schools with GCSE results, and says how many.
 
 ### 2.3 The four dashboards
 
@@ -119,11 +127,14 @@ Any group in the groups plan:
 
 Each view says where the group came from (its source label) and how sure we are of its membership (confirmed / likely).
 
-### 3.2 Who sees it (to decide, §5)
+### 3.2 Who sees it (Guy, 13 Oct: decided)
 
-- **First:** platform admins, and the SMT or School-Admin of **any member school**, for its own groups. A Cognita school's SMT sees Cognita; a MAT school's SMT sees its trust.
-- **Later:** a **group account** for a trust's or group's central team, covering all its schools. That's a commercial product, a membership tier above the school, so it needs its own decision.
+- **The group view comes with a group membership,** bought by the group's head office. It does **not** come with an individual school's membership.
+- **The group decides** whether to give its schools' SMT the group view. Head office grants or withdraws that access, school by school.
+- **A school's own membership** still gets its group as a **comparison set** (§3.5): "3rd of 9 Dukes schools with GCSE results". It doesn't get the group dashboards.
+- **Platform admins** see everything, through View as for demos.
 - **Self-declared groups:** only the school that made them, plus whoever it shares them with (the groups plan's privacy rule).
+- **To build:** a `group_account` role tied to a `group_id`; head-office users; and a grant table of the schools given the view. That's an RLS round of its own, before group view round 1.
 
 ### 3.3 The four dashboards
 
@@ -210,11 +221,15 @@ The group view's comparisons work like a school's, one level up. The group (pupi
 
 ## 5. Questions for Guy
 
-1. **SMT's dashboards:** are Overview · Academic · Pupils · Context the right four? Or should Pupils and Admissions be one?
-2. **SMT focus chips:** levels (Whole school · Phase · Subject area), as above? Or phases only, with subject areas inside the Academic large view?
-3. **Value added on SMT's front page:** show A-level VA and Progress 8 on the Overview tiles, with "not published for independent schools" where it applies?
-4. **Context data:** ingest the Indices of Deprivation and the free-school-meals data before SMT Context, or launch Context with population only?
-5. **Who sees the group view:** a member school's SMT and School-Admin first? And is a group account for central teams a product you want to plan now?
-6. **Group against group:** rank groups only against groups of the same type (MAT against MAT, independent against independent)? Or offer a mixed comparison with a clear label? (§3.6 assumes same type by default, with named groups pickable.)
-8. **Non-group schools:** count single-academy trusts as standalone (§3.6), or as their own set?
-7. **Wireframes:** draw SMT and the group view on the canvas before any build, as we did for Admissions?
+**Answered 13 Oct:**
+- value added sits inside Academic;
+- level chips, working as Teacher's and Admissions' do (§2.2);
+- the group view comes with the head office's group membership, and the group decides which schools see it (§3.2);
+- single-academy trusts count as non-group schools;
+- wireframe schools: The Chase and Leighton Park (SMT); Harris and Dukes (groups).
+
+**Still open:**
+
+1. **Context data:** ingest the Indices of Deprivation and the free-school-meals data before SMT Context, or launch Context with population only? (The wireframes will show both, with the data gap marked.)
+2. **Group against group:** rank groups only against groups of the same type, as §3.6 assumes, with named groups pickable? Or also offer a mixed comparison with a clear label?
+3. **Value added on the Overview tiles,** as well as inside Academic?
