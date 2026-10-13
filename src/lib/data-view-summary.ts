@@ -17,8 +17,11 @@ import type { DataViewFilterState, PhaseBandKey } from "./data-view-filters";
 import type { DataViewSchoolProfile } from "./data-view-profiles";
 import type { SetOption } from "./data-view-types";
 import type { GenderTag } from "./typology";
+import { CURRENT_CENSUS_PERIOD } from "../catalogue/years";
 
-const CURRENT_CENSUS_PERIOD_LABEL_YEAR = 2025; // roll-data.ts's own CURRENT_CENSUS_PERIOD, duplicated as a literal -- see data-view-filters.ts's own DEFAULT_START_PERIOD comment for why this file avoids importing that server-only-adjacent module by value.
+// roll-data.ts's CURRENT_CENSUS_PERIOD, read from src/catalogue/years.ts (which imports nothing, so
+// this file still avoids the server-only-adjacent roll-data module).
+const CURRENT_CENSUS_PERIOD_LABEL_YEAR = CURRENT_CENSUS_PERIOD;
 
 function academicYearLabel(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;

@@ -11,6 +11,7 @@ import type { ShapeLabel } from "@/lib/shape-classifier";
 import type { MarketView, RivalsView } from "../api";
 import { Empty, FlagPill, Muted, cx, fillHeight, fmtSigned, yearLabel, type FlagTone } from "../ui";
 import { useWidth } from "./charts";
+import { TREND_BASE_PERIOD } from "@/catalogue/years";
 
 type Flag = RivalsView["rows"][number]["momentum"][number];
 const TONE: Record<string, FlagTone> = { results_rising_fast: "up", gaining_pupils: "up", losing_pupils_3y: "down", entry_year_shrinking: "down", new_sixth_form: "note", shape_changed: "note" };
@@ -59,7 +60,7 @@ export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: 
                   </span>
                 )}
               </span>
-              <span className="text-right tabular-nums" title={e ? `${e.entryBase ?? "—"} → ${e.entryNow ?? "—"} aged ${m.entry.age}, ${yearLabel(2022)} to ${yearLabel(m.summary.latest)}` : undefined}>
+              <span className="text-right tabular-nums" title={e ? `${e.entryBase ?? "—"} → ${e.entryNow ?? "—"} aged ${m.entry.age}, ${yearLabel(TREND_BASE_PERIOD)} to ${yearLabel(m.summary.latest)}` : undefined}>
                 {fmtSigned(e?.entryChangePct, 0)}
               </span>
               <span className="text-right tabular-nums" title={rc ? `${rc.from ?? "—"} → ${rc.to ?? "—"}` : undefined}>
@@ -136,7 +137,7 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
                 const down = x.momentum.some((f) => TONE[f.id] === "down");
                 const size = me ? 14 : 11;
                 return (
-                  <span key={x.urn} title={`${x.name}: pupils aged ${m.entry.age} ${fmtSigned(e!.entryChangePct, 1)}, ${results} ${fmtSigned(rc!.points, 1, " pts")} (since ${yearLabel(2022)})${x.momentum.length ? `\n${x.momentum.map(flagText).join(" · ")}` : ""}`}>
+                  <span key={x.urn} title={`${x.name}: pupils aged ${m.entry.age} ${fmtSigned(e!.entryChangePct, 1)}, ${results} ${fmtSigned(rc!.points, 1, " pts")} (since ${yearLabel(TREND_BASE_PERIOD)})${x.momentum.length ? `\n${x.momentum.map(flagText).join(" · ")}` : ""}`}>
                     <span
                       className={cx("absolute rounded-full", me && "border-2 border-white")}
                       style={{ left: sx(e!.entryChangePct!) - size / 2, top: sy(rc!.points!) - size / 2, width: size, height: size, boxSizing: "border-box", background: me ? "var(--accent)" : up ? "var(--adm-amber)" : down ? "var(--adm-down-fg)" : "var(--adm-grey-line)" }}

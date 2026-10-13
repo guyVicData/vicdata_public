@@ -19,12 +19,13 @@ import type { CohortTable, Sex } from "./cohort";
 import { cohortAt, periodsOf } from "./cohort";
 import { COUNTED_MIN_AGE, horizonYears, type EntryPoint } from "./entry-points";
 import { percentile } from "./stats";
+import { PAST_FROM_ENTRY_YEAR } from "../../catalogue/years"; // set in src/catalogue/years.ts
+export { PAST_FROM_ENTRY_YEAR };
 
 export const DRIFT_LOW_PCT = 10;
 export const DRIFT_HIGH_PCT = 90;
 export const MIN_DRIFT_COHORT = 10; // a ratio needs at least this many pupils underneath it
 export const BIRTH_SEX_SHARE = { male: 0.51, female: 0.49 } as const; // births have no sex split: an estimate
-export const PAST_FROM_ENTRY_YEAR = 2020;
 
 export type PoolSource = "counted" | "births" | "projection";
 export type PoolPoint = {

@@ -1,0 +1,33 @@
+// node dvshots.mjs <cdpPort> <httpPort> <outDir> <name=bundle:css:fixTree> ...  -> per urn x view x width: PNG + #teacher-root text/HTML
+import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+const [port, http, out, ...trees] = process.argv.slice(2);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", ["--headless=new", `--remote-debugging-port=${port}`, "--no-first-run", "--disable-gpu", "--hide-scrollbars", "--force-color-profile=srgb", "--font-render-hinting=none", `--user-data-dir=/tmp/dvshots-${port}-${Date.now()}`, "about:blank"], { stdio: "ignore" });
+let target; for (let i = 0; i < 60 && !target; i++) { await sleep(200); try { target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === "page"); } catch {} }
+const ws = new WebSocket(target.webSocketDebuggerUrl); await new Promise((r) => (ws.onopen = r));
+let id = 0; const pend = new Map(); ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } };
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result?.result?.value;
+await send("Page.enable"); await send("Runtime.enable");
+await send("Network.enable"); await send("Network.setBlockedURLs", { urls: ["https://*"] });
+for (const t of trees) {
+  const [name, rest] = t.split("="); const [bundle, css, fixTree] = rest.split(":");
+  mkdirSync(`${out}/${name}`, { recursive: true });
+  for (const urn of ["137625", "117037", "118952"]) for (const view of ["graphs", "rankings", "snapshot"]) for (const w of [1440, 390]) {
+    await send("Emulation.setDeviceMetricsOverride", { width: w, height: 900, deviceScaleFactor: 1, mobile: w < 600 });
+    await send("Page.navigate", { url: `http://127.0.0.1:${http}/index.html?fix=fix_${fixTree}_${urn}_ks4_y&view=${view}&bundle=${bundle}&css=${css}` });
+    await sleep(400);
+    for (let i = 0; i < 60; i++) { if (await ev(`document.querySelector('#teacher-root') && document.readyState === 'complete'`)) break; await sleep(100); }
+    await ev(`document.fonts.ready.then(() => true)`); await sleep(700);
+    const h = await ev(`Math.ceil(document.documentElement.scrollHeight)`);
+    await send("Emulation.setDeviceMetricsOverride", { width: w, height: Math.min(h, 12000), deviceScaleFactor: 1, mobile: w < 600 }); await sleep(300);
+    const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+    const nm = `${urn}_${view}_${w}`;
+    writeFileSync(`${out}/${name}/${nm}.png`, Buffer.from(shot.result.data, "base64"));
+    writeFileSync(`${out}/${name}/${nm}.html`, (await ev(`document.getElementById('teacher-root')?.outerHTML ?? ''`)) ?? "");
+    writeFileSync(`${out}/${name}/${nm}.txt`, ((await ev(`document.getElementById('teacher-root')?.innerText ?? ''`)) ?? "") + "\n--errors--\n" + ((await ev(`JSON.stringify(window.__errs)`)) ?? ""));
+    console.log(name, nm);
+  }
+}
+ws.close(); chrome.kill();

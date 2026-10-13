@@ -21,6 +21,7 @@ import { deleteDashboard } from "@/lib/dashboards-store";
 import { localToday, shortDate } from "@/lib/meeting-ops";
 import { createMeeting, friendlyMeetingError, listMeetings, meetingCap, NOT_APPLIED_LINE, reuseMeeting, type MeetingSummary } from "@/lib/meeting-store";
 import { ROSE, ROSE_INK, ROSE_ROOT_STYLE } from "./MeetingChrome";
+import { setLatestYears } from "@/catalogue/years";
 
 type Tab = "upcoming" | "archive";
 
@@ -133,6 +134,12 @@ export function MeetingsLibrary() {
                 today={today}
                 onReuse={async (date, rollForward) => {
                   try {
+                    // 0.7 year rules: "move every view on" moves to the data's latest year, read
+                    // now (the measure cards' own year if that read fails).
+                    if (rollForward) {
+                      const r = await fetch("/api/academic-periods").then((x) => (x.ok ? x.json() : null)).catch(() => null);
+                      setLatestYears(r?.latestYears);
+                    }
                     const id = await reuseMeeting(supabase, { name: m.name, config: m.config }, { meetingDate: date, rollForward });
                     router.push(`/teacher/meetings/${id}`);
                   } catch (e) {

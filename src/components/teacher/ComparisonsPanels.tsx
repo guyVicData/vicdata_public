@@ -76,6 +76,7 @@ import { trendBaseApplies, trendBaseFor } from "@/catalogue/notes";
 import { populationPhrase, subjectChangeRows, subjectChangeTableSeries, subjectRankingNote, subjectRankRows, subjectTileDetails, type SubjectRankingState } from "@/lib/subject-ranking-view";
 import { MINIMUM_SUBJECT_N } from "@/lib/academic-data-view";
 import { RankingPending } from "./RankingPending";
+import { isProvisional } from "@/catalogue/years";
 
 export type MapChip = {
   key: string;
@@ -487,7 +488,7 @@ export function ComparisonsPanels({
   // the tag; the titles above name the set instead.
   const current: PanelRender = {
     tag: "Current",
-    afterTag: latest === null ? undefined : <DataDate>{academicYearLabel(latest)}</DataDate>,
+    afterTag: latest === null ? undefined : <DataDate provisional={isProvisional(phase, latest)}>{academicYearLabel(latest)}</DataDate>,
     question,
     actions: (
       <>

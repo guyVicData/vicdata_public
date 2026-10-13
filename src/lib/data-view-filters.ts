@@ -37,6 +37,7 @@ import { phaseTagAgeRange, PHASE_BAND_EARLY_YEARS_CEILING_AGE, type PhaseTag } f
 import type { AgeGenderCounts } from "./roll-data";
 import { EARLY_YEARS_PROXY_AGE_THRESHOLD } from "./narrative-config";
 import type { IlrParticipationSnapshot } from "./ilr-participation-data";
+import { CENSUS_FIRST_PERIOD } from "../catalogue/years";
 
 // Member Data View build (2026-10-03), brief §4: "Early Years" is named explicitly
 // alongside the real PhaseTag taxonomy (Junior/Senior/16+) as one of the four phase
@@ -98,7 +99,7 @@ export type DataViewFilterState = {
 // rather than imported -- that module is server-only (createServerAnonSupabaseClient),
 // and this one deliberately has no server-only imports so client components can use
 // it directly (same discipline data-view-serialize.ts's own header comment documents).
-const DEFAULT_START_PERIOD = 2019;
+const DEFAULT_START_PERIOD = CENSUS_FIRST_PERIOD; // src/catalogue/years.ts
 
 export function emptyDataViewFilterState(): DataViewFilterState {
   return { phaseBands: new Set(), ages: new Set(), gender: new Set(), boarding: new Set(), startPeriod: DEFAULT_START_PERIOD, sector: new Set() };

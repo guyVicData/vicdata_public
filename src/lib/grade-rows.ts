@@ -12,6 +12,7 @@
 // the agreement of the two KS4 paths are pinned by src/lib/grade-rows.test.ts. The fetching
 // is academic-data-view.ts's (fetchSchoolGradeRows), server routes only.
 import type { ReferenceFact } from "./vicdata-reference";
+import { HISTORIC_GRADE_FROM, HISTORIC_GRADE_TO, MODERN_GRADE_FROM } from "../catalogue/years";
 
 // Mirrors academic-data-view.ts's SubjectGradeCount (that module re-exports this one).
 export type SubjectGradeCount = {
@@ -36,10 +37,9 @@ export const HISTORIC_TOTAL_LABELS = new Set([...SUBJECT_TOTAL_LABELS, "Total nu
 export const ALL_SUBJECTS_PSEUDO_ROW = "All subjects";
 
 // The academic years each source covers (period P = P/(P+1)). The historic sources also
-// hold 2020/21, but as totals only (no grades: the teacher-assessed year).
-export const MODERN_GRADE_FROM = 2023;
-export const HISTORIC_GRADE_FROM = 2021;
-export const HISTORIC_GRADE_TO = 2022;
+// hold 2020/21, but as totals only (no grades: the teacher-assessed year). Set in
+// src/catalogue/years.ts with the app's other fixed years.
+export { HISTORIC_GRADE_FROM, HISTORIC_GRADE_TO, MODERN_GRADE_FROM };
 
 export const HISTORIC_GRADE_SOURCE = {
   ks4: "dfe_ks4_subject_entries_historic",

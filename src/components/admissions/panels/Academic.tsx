@@ -9,6 +9,7 @@ import type { RivalsView } from "../api";
 import { Empty, Muted, cx, fmtSigned, ordinal, arrow } from "../ui";
 import { DivergingBar } from "../views/charts";
 import { overallLine } from "../views/Strengths";
+import { periodLabel as yearLabel, TREND_BASE_PERIOD } from "@/catalogue/years";
 
 export const STAGE_WORD = { ks2: "KS2", ks4: "GCSE", ks5: "Post-16" } as const;
 
@@ -31,7 +32,7 @@ export function AcademicRanking({ r }: { r: RivalsView }) {
       <div className="mb-[2px] text-[12.5px] font-bold text-[var(--fg)]">{line?.split(" · ")[0] ?? `No ranked ${STAGE_WORD[r.stage]} headline for this school`}</div>
       <Muted className="mb-1">
         {r.overall?.national ? `${ordinal(r.overall.national.rank)} of ${r.overall.national.of.toLocaleString("en-GB")} in England` : "Not ranked in England"}
-        {r.overall?.change != null ? ` · ${arrow(r.overall.change, 0.05)} ${Math.abs(r.overall.change).toFixed(1)} since 2022/23` : ""}
+        {r.overall?.change != null ? ` · ${arrow(r.overall.change, 0.05)} ${Math.abs(r.overall.change).toFixed(1)} since ${yearLabel(TREND_BASE_PERIOD)}` : ""}
       </Muted>
       {r.stage !== "ks2" && lead.length > 0 && <div className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--adm-up-fg)]">Where you lead the rivals</div>}
       {lead.map((a) => (
@@ -78,7 +79,7 @@ export function AcademicChange({ r }: { r: RivalsView }) {
   const max = Math.max(0.5, ...rows.map((q) => Math.abs(q.c ?? 0)));
   return (
     <div className="flex min-w-0 grow flex-col gap-1 overflow-y-auto">
-      <div className="mb-1 text-[12.5px] font-bold text-[var(--fg)]">Change since 2022/23 ({r.overall?.measure ?? STAGE_WORD[r.stage]}, points)</div>
+      <div className="mb-1 text-[12.5px] font-bold text-[var(--fg)]">Change since {yearLabel(TREND_BASE_PERIOD)} ({r.overall?.measure ?? STAGE_WORD[r.stage]}, points)</div>
       {rows.map(({ x, c }) => (
         <div key={x.urn} className={cx("grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_44px] items-center gap-2 text-[11.5px]", x.isSchool ? "font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")}>
           <span className="truncate">{x.name}</span>

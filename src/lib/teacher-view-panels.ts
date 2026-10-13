@@ -12,6 +12,7 @@
 // sentences. The components render it; none of them re-derive it.
 import type { TeacherPhase } from "./teacher-view-phases";
 import { MODERN_GRADE_FROM } from "./grade-rows";
+import { TREND_LINE_MIN_YEARS } from "../catalogue/years";
 
 // ---------------------------------------------------------------- the panels
 
@@ -387,8 +388,8 @@ export function latestYearSeries<S extends { key: string; values: (number | null
 // average point score genuinely has four years (2021/22 on, since DfE published no point
 // scores for the teacher-assessed 2020/21 cohort), while the threshold measure genuinely
 // has two (2023/24 on). Same column, same card, two different DfE datasets.
-// R-TREND-LINE-4YR
-export const TREND_LINE_MIN_YEARS = 4;
+// R-TREND-LINE-4YR (the number is set in src/catalogue/years.ts)
+export { TREND_LINE_MIN_YEARS };
 
 export function trendChartKind(data: PanelData): "bars" | "line" {
   return periodsWithData(data).length >= TREND_LINE_MIN_YEARS ? "line" : "bars";

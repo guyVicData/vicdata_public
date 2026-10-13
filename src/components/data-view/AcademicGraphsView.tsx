@@ -89,6 +89,7 @@ import SubjectDeepDiveDrawer, { type DeepDiveTarget } from "./SubjectDeepDiveDra
 import AggregateTrendChart, { AGGREGATE_TARGET_COLOUR, AGGREGATE_REGION_COLOUR, AGGREGATE_NATION_COLOUR, type AggregateChartSeries } from "./AggregateTrendChart";
 import type { AcademicAggregateTrends } from "@/lib/academic-aggregate-trends";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
+import { withProvisional } from "@/catalogue/years";
 
 // Round 2, Part B: a small, self-contained N-slice donut for the entries-share
 // breakdown (spec §4, "echoes the gender donut") -- GenderSplitCard.tsx's own Donut is
@@ -540,7 +541,7 @@ export default function AcademicGraphsView({
                 </p>
               </Card>
             ) : (
-              <Card title={`Candidate numbers${entriesPeriods.length > 0 ? `, ${academicYearLabel(entriesPeriods[entriesPeriods.length - 1])}` : ""} — ${targetProfile.name} vs ${setLabel}`}>
+              <Card title={`Candidate numbers${entriesPeriods.length > 0 ? `, ${withProvisional(academicYearLabel(entriesPeriods[entriesPeriods.length - 1]), stage, entriesPeriods[entriesPeriods.length - 1])}` : ""} — ${targetProfile.name} vs ${setLabel}`}>
                 <SortedBarChart points={entriesBarPoints} />
                 <p className="mt-2 text-xs text-neutral-400">{entriesNoun}, real DfE entries counts (roll population for KS2, which DfE doesn&rsquo;t publish an entries figure for).</p>
               </Card>
@@ -610,7 +611,7 @@ export default function AcademicGraphsView({
             // the overall results summary bar chart (school vs comparison set, latest
             // real year); right, the growth/decline chart.
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Card title={latestPeriod !== null ? `${groupHeadlineLabel}, ${academicYearLabel(latestPeriod)} — ${targetProfile.name} vs ${setLabel}` : "Results summary"}>
+              <Card title={latestPeriod !== null ? `${groupHeadlineLabel}, ${withProvisional(academicYearLabel(latestPeriod), stage, latestPeriod)} — ${targetProfile.name} vs ${setLabel}` : "Results summary"}>
                 {anyWholeGroupExcluded ? (
                   <p className="text-sm text-neutral-500">{anyWholeGroupSentence}</p>
                 ) : latestPeriod !== null ? (

@@ -4,6 +4,7 @@
 
 import type { ReferenceFact } from "./vicdata-reference";
 import { STATIONARY_ABS_FLOOR } from "./shape-classifier";
+import { CURRENT_CENSUS_PERIOD } from "../catalogue/years";
 
 // Fallback census period for surrounding-schools lookups when the target school has
 // no roll data of its own to read a period off (bug fix, "Public View rebuild": a
@@ -12,8 +13,8 @@ import { STATIONARY_ABS_FLOOR } from "./shape-classifier";
 // returns null for it, but its surrounding-schools section still needs *some* period
 // to query candidate schools' roll data at). Same year sync-roll-aggregates.ts
 // targets for its own precomputed aggregates -- kept as one shared constant so the
-// two can't drift apart.
-export const CURRENT_CENSUS_PERIOD = 2025;
+// two can't drift apart. Set in src/catalogue/years.ts, where why it's still fixed is written down.
+export { CURRENT_CENSUS_PERIOD };
 
 // Age-band boundaries: a reasonable, standard UK schooling-phase default -- not fixed
 // by the spec (which specifies the age-band *axis* itself, not exact boundaries).

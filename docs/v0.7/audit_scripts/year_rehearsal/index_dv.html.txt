@@ -1,0 +1,3 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>const P=new URLSearchParams(location.search);window.process={env:{NODE_ENV:"production"}};document.write('<link rel="stylesheet" href="'+(P.get("css")||"app")+'.css"><link rel="stylesheet" href="leaflet.css">');document.write('<script src="fix/'+P.get("fix")+'.js"><\/script>');window.__errs=[];window.onerror=function(m){window.__errs.push(String(m))};</script>
+</head><body style="background:#fff"><div id="root"></div><script>document.write('<script src="'+(P.get("bundle")||"bundle")+'.js"><\/script>');</script></body></html>

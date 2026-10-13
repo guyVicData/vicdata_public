@@ -16,6 +16,8 @@ import { SHIRE_COUNTY_DISTRICT_GSS_CODES } from "../shire-county-districts";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "../roll-data";
 import { cohortTable, type CohortTable } from "./cohort";
 import { REFERENCE_TTL_MS, cachedReference } from "../server-cache";
+import { CENSUS_FIRST_PERIOD } from "../../catalogue/years"; // set in src/catalogue/years.ts
+export { CENSUS_FIRST_PERIOD };
 
 export const CENSUS_AGE_BREAKDOWNS: string[] = (["full_time", "part_time"] as const).flatMap((m) =>
   (["female", "male"] as const).flatMap((s) => Array.from({ length: 20 }, (_, a) => `${m}_${s}_aged_${a}`)),
@@ -24,7 +26,6 @@ export const CENSUS_AGE_BREAKDOWNS: string[] = (["full_time", "part_time"] as co
 export type SchoolCensus = { urn: string; table: CohortTable; latestPeriod: number | null; ageGender: AgeGenderCounts; ageGenderByPeriod: Map<number, AgeGenderCounts> };
 
 /** Each school's cohort table, and its latest year's age-gender counts (the page's shape input). */
-export const CENSUS_FIRST_PERIOD = 2019;
 
 /** fetchCensus through the one-hour reference cache, one entry per school (public data, the same
  * for every member; server-cache.ts). Misses are read together in one batch. */

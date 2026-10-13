@@ -1,0 +1,27 @@
+// Year rules Y3: the Data View's academic graphs and rankings, and the public page's academic
+// sentence, drawn from a Teacher parity fixture's wire profiles (the school and its 10 nearest).
+// ?fix=<file>&view=graphs|rankings|snapshot ; setLatestYears from the fixture's dashboard payload.
+import { createRoot } from "react-dom/client";
+import AcademicGraphsView from "@/components/data-view/AcademicGraphsView";
+import AcademicRankingsView from "@/components/data-view/AcademicRankingsView";
+import { AcademicSnapshotCard } from "@/components/dashboard/AcademicSnapshotCard";
+import { deserializeAcademicProfile, igcseExclusionLikely } from "@/lib/academic-data-view";
+import { setLatestYears } from "@harness/years";
+
+declare global { interface Window { __FIX: any } }
+const F = window.__FIX;
+const P = new URLSearchParams(location.search);
+setLatestYears(F.dashboard?.latestYears);
+const profiles = (F.profiles as any[]).map(deserializeAcademicProfile);
+const target = profiles.find((p) => p.urn === F.urn)!;
+const ticked = profiles;
+const excluded = new Set(profiles.filter((p) => igcseExclusionLikely(p)).map((p) => p.urn));
+const view = P.get("view") ?? "graphs";
+const el = document.getElementById("root")!;
+createRoot(el).render(
+  <div id="teacher-root" className="mx-auto max-w-6xl p-4">
+    {view === "graphs" && <AcademicGraphsView targetProfile={target} tickedProfiles={ticked} stage="ks4" startPeriod={2019} activeSetLabel="10 nearest schools" ks4ExcludedUrns={excluded} />}
+    {view === "rankings" && <AcademicRankingsView targetProfile={target} tickedProfiles={ticked} stage="ks4" startPeriod={2019} activeSetLabel="10 nearest schools" ks4ExcludedUrns={excluded} />}
+    {view === "snapshot" && <AcademicSnapshotCard profile={target} schoolName={F.schoolName} urn={F.urn} />}
+  </div>,
+);

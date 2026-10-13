@@ -13,6 +13,7 @@ import {
   HEADLINE_MEASURE,
   type AcademicSchoolProfile,
 } from "@/lib/academic-data-view";
+import { withProvisional } from "@/catalogue/years";
 
 // Free State of School "Academic snapshot" card (frontend build brief §7, wording per
 // summary-wordings doc §1). Snapshot only -- no trend, no comparator context, no map,
@@ -26,9 +27,11 @@ function academicYear(period: number): string {
 }
 
 function sentenceFor(schoolName: string, stage: "ks4" | "ks2", period: number, value: number): string {
+  // 0.7 year rules: "(provisional)" after the year while DfE's release is (src/catalogue/years.ts).
+  const year = withProvisional(academicYear(period), stage, period);
   return stage === "ks4"
-    ? `${schoolName}'s GCSE pupils achieved an average Attainment 8 score of ${value.toFixed(1)} in ${academicYear(period)}.`
-    : `${Math.round(value)}% of ${schoolName}'s Year 6 pupils met the expected standard in reading, writing and maths in ${academicYear(period)}.`;
+    ? `${schoolName}'s GCSE pupils achieved an average Attainment 8 score of ${value.toFixed(1)} in ${year}.`
+    : `${Math.round(value)}% of ${schoolName}'s Year 6 pupils met the expected standard in reading, writing and maths in ${year}.`;
 }
 
 // KS5 qualification-type-awareness round, Part 3: replaces the old hardcoded

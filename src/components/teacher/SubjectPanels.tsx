@@ -66,6 +66,7 @@ import { RankedList } from "./RankedList";
 import { useDashboardRuntime } from "@/components/dashboard-config/runtime";
 import type { FrameSchoolGroup, FrameSet, FrameSetGrades, SubjectsFrame } from "@/lib/view-series/frames";
 import { trendBaseApplies, trendBaseFor } from "@/catalogue/notes";
+import { isProvisional } from "@/catalogue/years";
 
 const NO_KEYS: ReadonlySet<string> = new Set();
 
@@ -540,11 +541,11 @@ export function SubjectPanels({
     // usually-disabled left chevron read as a stray "back" button. It is the year in the
     // "Data {year}" line.
     afterTag: yearControl && realIdx.length > 1 ? (
-      <DataDate>
+      <DataDate provisional={isProvisional(runtime?.phase, latest)}>
         <FromYearMenu mode="year" periods={realIdx.map((i) => periods[i])} from={latest} onChange={(p) => setYearIdx(periods.indexOf(p))} />
       </DataDate>
     ) : latest === null ? undefined : (
-      <DataDate>{academicYearLabel(latest)}</DataDate>
+      <DataDate provisional={isProvisional(runtime?.phase, latest)}>{academicYearLabel(latest)}</DataDate>
     ),
     actions: (
       <>
