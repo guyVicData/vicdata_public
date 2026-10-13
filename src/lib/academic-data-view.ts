@@ -13,6 +13,7 @@
 
 import { createServerAnonSupabaseClient } from "./supabase";
 import { DATA_VIEW_TREND_BASELINE } from "../catalogue/years";
+import { DOUBLE_AWARD_QUALIFICATION, doubleAwardPoints } from "./subject-grades";
 import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupAcademicSubjectGradeRollup, gradeRollupRpcState, lookupAcademicSubjectHeadline, lookupAcademicSubjectQualificationHeadline, lookupAcademicKs5QualificationFlags, lookupAcademicSubjectFamilyMap, lookupReferenceData, type KsStage as AcademicRpcKsStage, type ReferenceFact } from "./vicdata-reference";
 import {
   ALL_SUBJECTS_PSEUDO_ROW,
@@ -1333,7 +1334,41 @@ export async function fetchSubjectHeadlineForSchools(
     if (list) list.push(entry);
     else byUrn.set(r.entity_id, [entry]);
   }
+  if (stage === "ks4") await fillDoubleAwardPoints(byUrn);
   return byUrn;
+}
+
+// 0.8 SMT r2 (S1): the subject rollup holds no average for a GCSE Double Award (its grades are
+// pairs, "98", which the rollup's single-grade points table doesn't score), so Science Double
+// Award read "—" and was never ranked, in Teacher and SMT alike. Its rows with entries and no
+// points get the average from their own grade rows, on DfE's convention (doubleAwardPoints: two
+// entries, each the average of its two grades). One grade-rollup read for the double-award rows
+// only; if it fails or isn't there, the rows stay as the rollup gave them.
+async function fillDoubleAwardPoints(byUrn: Map<string, AcademicSubjectHeadlineEntry[]>): Promise<void> {
+  const want = Array.from(byUrn).filter(([, list]) => list.some((e) => e.avgPointScore === null && e.entriesTotal > 0)).map(([u]) => u);
+  if (!want.length) return;
+  let rows: Awaited<ReturnType<typeof lookupAcademicSubjectGradeRollup>> = null;
+  try {
+    rows = await lookupAcademicSubjectGradeRollup({ entityIds: want, ksStage: "ks4", qualificationType: DOUBLE_AWARD_QUALIFICATION });
+  } catch {
+    return;
+  }
+  if (!rows?.length) return;
+  const grades = new Map<string, { grade: string; entries: number }[]>();
+  for (const r of rows) {
+    const k = `${r.entity_id}|${r.subject}|${r.period}`;
+    (grades.get(k) ?? grades.set(k, []).get(k)!).push({ grade: r.grade, entries: Number(r.entries) });
+  }
+  for (const [u, list] of byUrn)
+    for (const e of list) {
+      if (e.avgPointScore !== null) continue;
+      const g = grades.get(`${u}|${e.subject}|${e.period}`);
+      const pts = g ? doubleAwardPoints(g) : null;
+      if (pts) {
+        e.avgPointScore = pts.points;
+        e.pointsCoveragePercent = 100;
+      }
+    }
 }
 
 // Post-16 Part C: the exact-qualification sibling of fetchSubjectHeadlineForSchools, from

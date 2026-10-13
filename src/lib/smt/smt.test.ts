@@ -96,8 +96,8 @@ test("SMT in the catalogue: after Teacher's and Admissions', no Teacher phase, e
   for (const r of RULES.filter((x) => x.id.startsWith("R-SMT-"))) assert.ok(r.testCase?.check, `${r.id} has a real-data runner`);
 });
 
-test("the two SMT dashboards validate, linked as one group, with one large view spanning columns 2-3", () => {
-  assert.equal(SMT_DASHBOARDS.length, 2);
+test("the four SMT dashboards validate, linked as one group, with one large view spanning columns 2-3", () => {
+  assert.deepEqual(SMT_DASHBOARDS.map((d) => d.id), ["vicdata.smt.overview", "vicdata.smt.academic", "vicdata.smt.pupils", "vicdata.smt.context"]);
   const known = new Set(DATAVIEWS.map((d) => d.id));
   for (const d of SMT_DASHBOARDS) {
     assert.deepEqual(validateConfig(d, known), [], d.id);
@@ -107,9 +107,9 @@ test("the two SMT dashboards validate, linked as one group, with one large view 
     assert.equal(large[0].column, "c2");
     assert.ok(isSmtDashboard(d.id));
   }
-  // Pupils and Context are coming (round 2), not dashboards yet.
-  assert.deepEqual(SMT_COMING.map((c) => c.name), ["Pupils", "Context"]);
-  assert.ok(!DASHBOARDS.some((d) => SMT_COMING.some((c) => c.id === d.id)));
+  // Round 2 built Pupils and Context: nothing is "coming" now.
+  assert.deepEqual(SMT_COMING, []);
+  assert.equal(DASHBOARDS.filter((d) => isSmtDashboard(d.id)).length, 4);
 });
 
 test("the subject explorer link carries the set and its name; Teacher reads the name, else Admissions' default", async () => {
@@ -118,4 +118,27 @@ test("the subject explorer link carries the set and its name; Teacher reads the 
   assert.equal(JSON.parse(linkedSetChoice(l)).label, "10 nearest schools");
   assert.equal(JSON.parse(linkedSetChoice(parseLinkedSet(new URLSearchParams("set=137186"))!)).label, LINKED_SET_LABEL);
   assert.equal(withoutLinkedSet("https://x/teacher/ks4?set=137186&setLabel=a&subject=b&k=1"), "/teacher/ks4?k=1");
+});
+
+test("R-DOUBLE-AWARD-POINTS: two entries per award, each the average of its two grades; a mixed scale isn't scored", async () => {
+  const { doubleAwardPoints, isDoubleAward } = await import("../subject-grades");
+  assert.deepEqual(doubleAwardPoints([{ grade: "98", entries: 1 }]), { points: 8.5, entries: 2 });
+  assert.deepEqual(doubleAwardPoints([{ grade: "99", entries: 1 }, { grade: "11", entries: 1 }, { grade: "U", entries: 2 }, { grade: "Suppressed", entries: 5 }]), { points: 2.5, entries: 8 });
+  assert.equal(doubleAwardPoints([{ grade: "98", entries: 1 }, { grade: "7", entries: 1 }]), null);
+  assert.equal(doubleAwardPoints([{ grade: "No result", entries: 3 }]), null);
+  assert.ok(isDoubleAward("GCSE (9-1) Full Course (Double Award)") && !isDoubleAward("GCSE (9-1) Full Course"));
+});
+
+test("Pupils follows the level by the ages it highlights; staying on is Year 12 against Year 11 a year before", async () => {
+  const { LEVEL_AGES, stayingOnAt } = await import("./pupils");
+  assert.deepEqual(LEVEL_AGES, { whole: null, primary: [4, 11], gcse: [11, 16], post16: [16, 18] });
+  const t = new Map([[2024, new Map([[15, { male: 50, female: 50 }]])], [2025, new Map([[16, { male: 30, female: 30 }]])]]);
+  assert.deepEqual(stayingOnAt(t, 2025), { pct: 60, from: 100, to: 60, year: 2025 });
+  assert.equal(stayingOnAt(new Map(), 2025), null);
+});
+
+test("Context's main ages follow the school's phase, in the census's held ages", async () => {
+  const { mainAges } = await import("./context");
+  assert.deepEqual(mainAges({ phases: { primary: false, gcse: true, post16: true }, low: 11 }), [11, 15]);
+  assert.deepEqual(mainAges({ phases: { primary: true, gcse: false, post16: false }, low: 4 }), [5, 10]);
 });

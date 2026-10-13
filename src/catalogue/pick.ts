@@ -113,6 +113,7 @@ export const DATA_LABEL: Record<DataId, string> = {
   "smt.results": "Results and ranks",
   "smt.value_added": "Value added",
   "smt.subjects": "Subject areas and subjects",
+  "smt.area": "The area",
 };
 
 export const PHASE_LABEL: Record<Phase, string> = { ks4: "GCSE", ks5: "Post-16" };

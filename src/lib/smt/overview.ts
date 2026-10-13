@@ -102,7 +102,7 @@ export function p8Of(school: Pick<SmtSchool, "independent" | "phases" | "latest"
   return { status: "no_baseline", text: smtNote("p8NoBaseline", { years }) };
 }
 
-const rollAt = (census: RollSnapshot[], year: number, f: SmtFilters): number | null => {
+export const rollAt = (census: RollSnapshot[], year: number, f: SmtFilters): number | null => {
   const c = census.find((s) => s.period === year);
   if (!c) return null;
   if (f.boarding === "boarding" && c.boarding) return c.boarding.boarders;
@@ -224,27 +224,9 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
   }
 
   // ------------------------------------------------------------ market share at 11+ (Admissions, read-only)
-  const takes11 = (school.low ?? 99) <= 11 && (school.high ?? 0) >= 11 && school.phases.gcse;
-  let market: Overview["trends"]["market"] = { status: "empty", reason: smtNote(takes11 ? "marketNoLists" : "marketNoEntry") };
-  if (takes11 && caller) {
-    const ep = entryPoint("11+")!;
-    const lists = await savedLists(caller.supabase, urn, ep.id);
-    const rivals = rivalsFromLists(lists);
-    if (!rivals) market = { status: "empty", reason: smtNote("marketNoLists") };
-    else {
-      const m = await buildMarketShare(urn, ep, { rivals });
-      const byUrn = new Map<string, Pt[]>();
-      for (const r of m.entryAge.rows) (byUrn.get(r.urn) ?? byUrn.set(r.urn, []).get(r.urn)!).push({ year: r.period, value: r.share });
-      const latest = m.entryAge.periods.at(-1);
-      const largest = m.entryAge.rows.filter((r) => r.urn !== urn && r.period === latest && r.share !== null).sort((a, b) => (b.share ?? 0) - (a.share ?? 0))[0];
-      market = { status: "ready", school: byUrn.get(urn) ?? [], rival: largest ? (byUrn.get(largest.urn) ?? []) : [], rivalName: largest ? (m.schools[largest.urn]?.name ?? largest.urn) : null, rivals: m.rivals.length };
-      const mine = m.entryAge.rows.find((r) => r.urn === urn && r.period === latest);
-      const first = m.entryAge.rows.find((r) => r.urn === urn && r.period === m.entryAge.periods[0]);
-      // groupShare's shares are already per cent.
-      const pct = (s: number | null | undefined) => (s === null || s === undefined ? null : s);
-      if (mine) rows.push({ key: "market11", label: "Market share at 11+", stage: null, unit: "share", value: pct(mine.share), period: latest ?? null, set: mine.rank !== null ? { rank: mine.rank, of: m.rivals.length + 1, label: "Admissions' rivals" } : null, region: null, england: null, since: first && pct(first.share) !== null && pct(mine.share) !== null ? { from: m.entryAge.periods[0], change: pct(mine.share)! - pct(first.share)!, unit: "pp" } : null, note: null });
-    }
-  }
+  const m11 = await marketAt11(school, caller);
+  const market = m11.trend;
+  if (m11.row) rows.push(m11.row);
 
   // ------------------------------------------------------------ flags on the school
   const flags: SmtFlag[] = [];
@@ -353,3 +335,34 @@ export async function setNames(urns: string[]): Promise<Record<string, { name: s
   return Object.fromEntries(urns.map((u) => [u, { name: info.get(u)?.name ?? u, easting: info.get(u)?.easting ?? null, northing: info.get(u)?.northing ?? null }]));
 }
 
+
+/** Market share at 11+, from Admissions, read-only: the school's share against its saved 11+ rivals,
+ * year by year, and the scorecard's row. Empty, with the reason, where the school has no 11+ entry or
+ * Admissions has no saved rivals there. Shared by Overview and Pupils. */
+export async function marketAt11(school: SmtSchool, caller: { supabase: SupabaseClient } | null): Promise<{ trend: Overview["trends"]["market"]; row: ScoreRow | null }> {
+  const urn = school.urn;
+  let row: ScoreRow | null = null;
+  const takes11 = (school.low ?? 99) <= 11 && (school.high ?? 0) >= 11 && school.phases.gcse;
+  let market: Overview["trends"]["market"] = { status: "empty", reason: smtNote(takes11 ? "marketNoLists" : "marketNoEntry") };
+  if (takes11 && caller) {
+    const ep = entryPoint("11+")!;
+    const lists = await savedLists(caller.supabase, urn, ep.id);
+    const rivals = rivalsFromLists(lists);
+    if (!rivals) market = { status: "empty", reason: smtNote("marketNoLists") };
+    else {
+      const m = await buildMarketShare(urn, ep, { rivals });
+      const byUrn = new Map<string, Pt[]>();
+      for (const r of m.entryAge.rows) (byUrn.get(r.urn) ?? byUrn.set(r.urn, []).get(r.urn)!).push({ year: r.period, value: r.share });
+      const latest = m.entryAge.periods.at(-1);
+      const largest = m.entryAge.rows.filter((r) => r.urn !== urn && r.period === latest && r.share !== null).sort((a, b) => (b.share ?? 0) - (a.share ?? 0))[0];
+      market = { status: "ready", school: byUrn.get(urn) ?? [], rival: largest ? (byUrn.get(largest.urn) ?? []) : [], rivalName: largest ? (m.schools[largest.urn]?.name ?? largest.urn) : null, rivals: m.rivals.length };
+      const mine = m.entryAge.rows.find((r) => r.urn === urn && r.period === latest);
+      const first = m.entryAge.rows.find((r) => r.urn === urn && r.period === m.entryAge.periods[0]);
+      // groupShare's shares are already per cent.
+      const pct = (s: number | null | undefined) => (s === null || s === undefined ? null : s);
+      if (mine) row = ({ key: "market11", label: "Market share at 11+", stage: null, unit: "share", value: pct(mine.share), period: latest ?? null, set: mine.rank !== null ? { rank: mine.rank, of: m.rivals.length + 1, label: "Admissions' rivals" } : null, region: null, england: null, since: first && pct(first.share) !== null && pct(mine.share) !== null ? { from: m.entryAge.periods[0], change: pct(mine.share)! - pct(first.share)!, unit: "pp" } : null, note: null });
+    }
+  }
+
+  return { trend: market, row };
+}

@@ -1,8 +1,7 @@
 "use client";
 
 // VicData 0.8 SMT round 1 (B6; the Home board): the SMT home's first card, "The school" -- the SMT
-// dashboards as shortcut chips (Overview and Academic live; Pupils and Context shown as coming, SMT
-// round 2) and a one-line summary from the Overview's own figures: the roll's change, the headline
+// dashboards as shortcut chips (all four live since SMT round 2) and a one-line summary from the Overview's own figures: the roll's change, the headline
 // rank in the comparison set, the number of flags. The same reads as the dashboard (the member's
 // remembered set), so the line and the page agree.
 import Link from "next/link";
@@ -16,6 +15,13 @@ import { loadSmtMember, type SmtMember } from "./member";
 import { useSmtSet } from "./useSmtSet";
 
 const S = productAccent("smt")!;
+// 0.8 SMT round 2: all four are live.
+const LIVE = [
+  { name: "Overview", href: "/teacher/smt" },
+  { name: "Academic", href: "/teacher/smt/academic" },
+  { name: "Pupils", href: "/teacher/smt/pupils" },
+  { name: "Context", href: "/teacher/smt/context" },
+];
 
 const SchoolGlyph = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -60,14 +66,13 @@ export function SchoolTile() {
         </div>
       </Link>
       <div className="mt-3 flex flex-wrap gap-2">
-        <Link href="/teacher/smt" className={`${chip} bg-[rgba(var(--tile-rgb),0.14)] text-[var(--fg)] hover:bg-[rgba(var(--tile-rgb),0.24)]`}>
-          Overview
-        </Link>
-        <Link href="/teacher/smt/academic" className={`${chip} bg-[rgba(var(--tile-rgb),0.14)] text-[var(--fg)] hover:bg-[rgba(var(--tile-rgb),0.24)]`}>
-          Academic
-        </Link>
+        {LIVE.map((d) => (
+          <Link key={d.href} href={d.href} className={`${chip} bg-[rgba(var(--tile-rgb),0.14)] text-[var(--fg)] hover:bg-[rgba(var(--tile-rgb),0.24)]`}>
+            {d.name}
+          </Link>
+        ))}
         {SMT_COMING.map((d) => (
-          <span key={d.id} className={`${chip} border border-dashed border-[var(--panel-border2)] text-[var(--muted3,var(--muted))]`} title="Coming in SMT round 2">
+          <span key={d.id} className={`${chip} border border-dashed border-[var(--panel-border2)] text-[var(--muted3,var(--muted))]`} title="Coming soon">
             {d.name}
           </span>
         ))}

@@ -26,7 +26,7 @@
 //   Ties share a rank; higher is better (entries: more entries rank higher).
 import { callReferenceRpc, type AcademicSubjectHeadlineRow, type AcademicSubjectQualificationHeadlineRow } from "./vicdata-reference";
 import { gradeRowsFromRollup, mapHistoricKs5Grade, starIsAStar, MODERN_GRADE_FROM, HISTORIC_GRADE_FROM, type GradeRollupRow } from "./grade-rows";
-import { GRADE_SCALES, NON_GRADE_VALUES, BOTTOM_RANK, bandRate, inRange, thresholdRate, type GradeRange } from "./subject-grades";
+import { DOUBLE_AWARD_QUALIFICATION, GRADE_SCALES, NON_GRADE_VALUES, BOTTOM_RANK, bandRate, doubleAwardPoints, inRange, isDoubleAward, thresholdRate, type GradeRange } from "./subject-grades";
 import { MINIMUM_SUBJECT_N } from "./academic-data-view";
 import { TREND_BASE_PERIOD } from "@/catalogue/notes";
 
@@ -268,6 +268,23 @@ async function figuresFor(urns: string[], req: SubjectRankingRequest): Promise<F
   const put = (u: string, p: number, f: { value: number | null; n: number | null }) => (figs.get(u) ?? figs.set(u, new Map()).get(u)!).set(p, f);
   if (req.measure.kind === "points" || req.measure.kind === "entries") {
     const wantPoints = req.measure.kind === "points";
+    // 0.8 SMT r2 (S1): a GCSE Double Award's points come from its grade rows (doubleAwardPoints):
+    // the subject rollup can't score pair grades, so it holds no average for them.
+    if (req.phase === "ks4" && wantPoints && isDoubleAward(req.qualificationType)) {
+      const parts = await pool(chunks(urns, FALLBACK_CHUNK.grades), FALLBACK_CONCURRENCY, (c) =>
+        pagedRpc<GradeRollupRow>("academic_subject_grade_rollup_lookup", { p_entity_ids: c, p_ks_stage: "ks4", p_subject: req.subject, p_qualification_type: req.qualificationType, p_period_min: HISTORIC_GRADE_FROM, p_period_max: null }),
+      );
+      for (const [u, list] of gradeRowsFromRollup(parts.flat())) {
+        const mine = list.filter((g) => g.subject === req.subject && isDoubleAward(g.qualificationType));
+        for (const p of new Set(mine.map((g) => g.period))) {
+          const rows = mine.filter((g) => g.period === p);
+          const pts = doubleAwardPoints(rows);
+          // n stays the published count of awards (the small-entries rule reads it).
+          put(u, p, { value: pts?.points ?? null, n: rows.filter((g) => !NON_GRADE_VALUES.has(g.grade)).reduce((a, g) => a + g.entries, 0) || null });
+        }
+      }
+      return figs;
+    }
     if (req.phase === "ks4") {
       const parts = await pool(chunks(urns, FALLBACK_CHUNK.headline), FALLBACK_CONCURRENCY, (c) =>
         pagedRpc<AcademicSubjectHeadlineRow>("academic_subject_headline_lookup", { p_entity_ids: c, p_ks_stage: "ks4", p_family_id: req.familyId, p_period_min: null, p_period_max: null, p_bucket: "all" }),
@@ -349,6 +366,9 @@ export function rankRpcArgs(req: SubjectRankingRequest) {
 /** The function's answer, or null if it isn't applied yet (remembered for this process). */
 export async function rankByFunction(req: SubjectRankingRequest): Promise<SubjectRanking | null> {
   if (rankRpc === "absent" && Date.now() - absentSince < ABSENT_RECHECK_MS) return null;
+  // 0.8 SMT r2 (S1): the database function scores points from the subject rollup, which holds none
+  // for a Double Award; the app-side figures score it (figuresFor, doubleAwardPoints).
+  if (req.phase === "ks4" && req.measure.kind === "points" && isDoubleAward(req.qualificationType)) return null;
   try {
     const out = (await callReferenceRpc("academic_subject_rank_lookup", rankRpcArgs(req))) as unknown;
     rankRpc = "present";
@@ -392,6 +412,19 @@ function populationFigures(popKey: string, req: SubjectRankingRequest): Promise<
 /** The ranking: the function first, else the fallback. `popKey` names the population
  * (scope and filters), so the fallback's figures are shared between schools. */
 export async function subjectRanking(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
+  const out = await rankSubject(req, popKey);
+  // 0.8 SMT r2 (S1): Teacher asks for GCSE points with no qualification (the subject's, across its
+  // qualifications). A Double Award subject then finds no figure anywhere -- the rollup holds none
+  // for it -- so it is asked again as a double award, scored from its grade rows (doubleAwardPoints).
+  // Only when the first answer ranked nobody: every other subject is answered exactly as before.
+  if (req.phase === "ks4" && req.measure.kind === "points" && !req.qualificationType && out.ranked === 0) {
+    const again = await rankSubject({ ...req, qualificationType: DOUBLE_AWARD_QUALIFICATION }, `${popKey}|double-award`);
+    if (again.ranked > 0) return again;
+  }
+  return out;
+}
+
+async function rankSubject(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
   const viaFunction = await rankByFunction(req);
   if (viaFunction) return viaFunction;
   let figs = await populationFigures(popKey, req);

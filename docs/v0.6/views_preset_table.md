@@ -188,6 +188,23 @@ Read the columns as:
 | 91 | `DV-SMT-A-BANDS` | Results by band | **line** · — | smt.results · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Top 25%, middle 50%, bottom 25% | none (draft) |
 | 92 | `DV-SMT-A-MIX` | Entries mix | **bar** · orientation: vertical | smt.subjects · follows · year · — · actual · from first, rolls on | all | all | VerticalBarsIcon | Entries mix, year by year | none (draft) |
 | 93 | `DV-SMT-A-MIX-TABLE` | Entries mix, table | **table** · yearColumns: every; years: down | smt.subjects · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Entries mix, year by year | none (draft) |
+| 94 | `DV-SMT-P-NOW` | Your pupils now | **numbers** · — | smt.school · follows · school · — · actual · latest | all | all | TilesIcon | Your pupils now | none (draft) |
+| 95 | `DV-SMT-P-SHAPE` | Shape and size | **shapes** · columns: 1 | smt.school · follows · school · — · actual · latest | all | all | AdmShapeIcon | Pupils in each year group | none (draft) |
+| 96 | `DV-SMT-P-ENTRIES` | Entry points | **table** · yearColumns: latest | smt.school · follows · school · — · actual · latest | all | all | AdmFunnelIcon | Entry points at a glance | none (draft) |
+| 97 | `DV-SMT-P-LEAVING` | Leaving at 16 | **table** · yearColumns: every; years: down | smt.school · follows · year · — · actual · from first, rolls on | all | all | ChangeArrowIcon | Leaving at 16 | none (draft) |
+| 98 | `DV-SMT-P-MARKET` | Market share | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | DonutIcon | Market share at 11+, against your rivals | none (draft) |
+| 99 | `DV-SMT-P-PHASES` | Roll by phase | **line** · — | smt.school · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Roll by phase, indexed (2019/20 = 100) | none (draft) |
+| 100 | `DV-SMT-P-PHASES-TABLE` | Roll by phase, table | **table** · yearColumns: every; years: down | smt.school · follows · year · — · indexed · from first, rolls on | all | all | TableIcon | Roll by phase, year by year | none (draft) |
+| 101 | `DV-SMT-P-POOL` | The pool | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | AdmPipelineIcon | The pool for your main entry point | none (draft) |
+| 102 | `DV-SMT-P-AREA` | School-age population | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | AdmPopulationIcon | The area's school-age population | none (draft) |
+| 103 | `DV-SMT-C-NOW` | The area now | **numbers** · — | smt.area · follows · school · — · actual · latest | all | all | TilesIcon | The area now | none (draft) |
+| 104 | `DV-SMT-C-MAP` | Map | **map** · colour: value | smt.area · follows · school · — · actual · latest | all | all | MapPinIcon | Where the school-age children are | none (draft) |
+| 105 | `DV-SMT-C-BYAGE` | Population by age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Children by single year of age | none (draft) |
+| 106 | `DV-SMT-C-BIRTHS` | Births and projections | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Births and projections | none (draft) |
+| 107 | `DV-SMT-C-BIRTHS-INDEXED` | Births, indexed | **line** · — | smt.area · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Births, indexed | none (draft) |
+| 108 | `DV-SMT-C-BIRTHS-TABLE` | Births, table | **table** · yearColumns: every; years: down | smt.area · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Births, year by year | none (draft) |
+| 109 | `DV-SMT-C-PROJECTION` | Projection | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Projected to 2036 | none (draft) |
+| 110 | `DV-SMT-C-AGES` | By single year of age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Population by single year of age | none (draft) |
 
 <!-- preset-table:end -->
 
@@ -307,6 +324,28 @@ Read the columns as:
 | `DV-SMT-A-BANDS` | Reserved: results by band arrive with their own round. |
 | `DV-SMT-A-MIX` | Each area's (or subject's) share of the entries, year by year. |
 | `DV-SMT-A-MIX-TABLE` | As the columns, year by year. |
+
+0.8 SMT round 2: Pupils and Context follow the level too (Pupils highlights the level's ages); Context follows its Area pill (around the school, or the LA).
+
+| Preset | What follows-page draws |
+|---|---|
+| `DV-SMT-P-NOW` | Your pupils now: roll and change since 2019/20, girls and boys (mixed), day and boarding (boarding), staying on at 16, XS-XL by phase, the LA context line. |
+| `DV-SMT-P-SHAPE` | Pupils in each year group, the shape and since when, the shapes around (the LA's same-range schools, the set, staying on in the set's sixth forms); never ranked. |
+| `DV-SMT-P-ENTRIES` | Each Admissions entry point: its cohort now and its next pool; read-only. |
+| `DV-SMT-P-LEAVING` | Year 11 to Year 12, year by year: staying on and net leavers. |
+| `DV-SMT-P-MARKET` | Market share at 11+, from Admissions; read-only. |
+| `DV-SMT-P-PHASES` | Each phase's roll and England's pupils aged 5-15, indexed to 100. |
+| `DV-SMT-P-PHASES-TABLE` | As the line, year by year. |
+| `DV-SMT-P-POOL` | Admissions' pool for the main entry point: counted, then from births. |
+| `DV-SMT-P-AREA` | Pupils aged 5-15 in the LA's schools, year by year. |
+| `DV-SMT-C-NOW` | The area now: children of the school's ages around it (or in the LA), births, the projection, schools nearby, the place line, and the data gap. |
+| `DV-SMT-C-MAP` | The region's LAs shaded by pupils of the school's ages; the school and schools nearby. |
+| `DV-SMT-C-BYAGE` | Pupils by single year of age in the LA, the school's ages highlighted. |
+| `DV-SMT-C-BIRTHS` | Births in the LA and the ONS projection of 10-year-olds. |
+| `DV-SMT-C-BIRTHS-INDEXED` | Births, the LA against England, 2012 = 100. |
+| `DV-SMT-C-BIRTHS-TABLE` | As the line, year by year. |
+| `DV-SMT-C-PROJECTION` | ONS's projection of 10-year-olds to 2036. |
+| `DV-SMT-C-AGES` | Pupils by single year of age in the LA. |
 
 ## The awkward cases ([review])
 

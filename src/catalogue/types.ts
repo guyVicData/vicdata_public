@@ -27,7 +27,7 @@ export type AdmissionsDataId = "admissions.pupils" | "admissions.pipeline" | "ad
 // 0.8 SMT round 1: the SMT families -- the school (roll, phases, size), its results and ranks, value
 // added, and its subjects. Drawn by the SMT hosts only (src/catalogue/smt.ts); no Teacher context
 // matches them.
-export type SmtDataId = "smt.school" | "smt.results" | "smt.value_added" | "smt.subjects";
+export type SmtDataId = "smt.school" | "smt.results" | "smt.value_added" | "smt.subjects" | "smt.area";
 
 export type Phase = "ks4" | "ks5";
 
@@ -197,7 +197,7 @@ export type HostId = "teacher.c1.candidates" | "teacher.c1.results" | "teacher.c
 // 0.7 admissions r2: the two Admissions dashboards' hosts (src/components/admissions/).
 export type AdmissionsHostId = "admissions.pipelines" | "admissions.market";
 // 0.8 SMT round 1: the two SMT dashboards' hosts (src/components/smt/).
-export type SmtHostId = "smt.overview" | "smt.academic";
+export type SmtHostId = "smt.overview" | "smt.academic" | "smt.pupils" | "smt.context";
 
 export type Dataview = {
   id: DataviewId;

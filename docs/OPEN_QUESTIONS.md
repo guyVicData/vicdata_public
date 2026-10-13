@@ -2017,3 +2017,42 @@ Prompt: `docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md`. R
 - **Privacy wording the terms and privacy notice will need** (for Guy):
   - *Members:* "When you use VicData we record which dashboards and views you open, for which school, and when, against your membership and role. We use this to improve VicData and to give your school reports on how it is used. Other schools never see who you are; any figures shown to other schools are counts, with small numbers hidden."
   - *Public:* "We count visits to each school's public page per day. We don't set cookies for this, and we don't record who you are, your IP address or your device."
+
+## 2026-10-13 — 0.8 SMT r2
+
+Prompt: `docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md`. Report: `docs/v0.8/smt_r2_report_v1.md`.
+
+**Snags**
+- **S1, Science Double Award.** The cause is at the data's source: the ingest's subject rollup scores single GCSE grades only, so the double award's paired grades ("98" … "11") never got points. Its average was null for every school. Teacher's path had the same gap: no average, no rank at The Chase, Acland Burghley (100053) or Nunnery Wood (137051).
+  - The fix is in the app's shared reads, not the ingest, because production is read-only for me. `doubleAwardPoints` scores each pair on DfE's convention (two entries, each the average of its two grades). It fills `fetchSubjectHeadlineForSchools` and the subject ranking, so Teacher, SMT and the Data View all get the same figure.
+  - **For the ingest repo:** scoring double awards in `academic_aggregates.py` would let the subject-area (family) averages and the database rank function carry them too. Until then the family average (e.g. Sciences & Maths 5.91) still leaves the double award out.
+- **S1, other scales.** Qualifications on their own scale (Additional Maths FSMQ, BTECs, Cambridge Nationals) say "different grading scale, not ranked" rather than "—".
+- **S3, the entries mix.** It now reads the subject rollup (2021/22 on), as the results trend does. The modern subject sources start in 2023/24.
+- **S4, the four tiles.** With an area chosen, "Rank in {set}" is its own fourth tile, as the Academic board draws it. Post-16 is the same. At All areas the tiles were already four.
+
+**Pupils**
+- **No Admissions "leaving at 16" view existed,** only its note. Leaving at 16 is built from the census (Year 11 to Year 12 a year apart) with that note's wording.
+- **Staying on above 100%** (more joined than left, e.g. Leighton Park) is shown as it is and labelled so.
+- **The England line** on roll by phase is pupils aged 5–15 in every mainstream school (the census aggregates), as on Overview. `roll_aggregates`' national whole-roll series jumps 11% from 2019/20 to 2020/21, so its first year looks partial and it isn't used. **Worth a look in the ingest.**
+- **"The area's school-age population"** is the school census (pupils aged 5–15 in the LA's schools). VicData holds ONS's LA population as a total only, not by age. The caption says so.
+- **The set's staying-on median** counts only its schools with a sixth form (GIAS top age 17 or more).
+- **"The LA's schools of the same type"** means the schools in the school's LA (from Admissions' nearby pool) with the same statutory age range.
+- **Entry points at a glance** reads the school's saved Admissions entry points through RLS. Where none are set it shows the empty state. The pool (row 2) uses the lead's lists where readable, else Admissions' nearby defaults, as Admissions does.
+
+**Context**
+- **The geography audit.** No population by single year of age exists for LSOAs, MSOAs or districts. The app has pupils by age (5–15) per LA from the census, ONS births per district (summed to county), and ONS projections of 10-year-olds per county or unitary. Its boundaries are counties and unitaries.
+  - So **the map shades by district in the only sense the data allows: whole LAs,** the region's LAs shaded by pupils of the school's ages. It says so on the map.
+- **No district for a school.** `schools` has LSOA and MSOA codes but no district, and the app has no MSOA-to-district lookup. So:
+  - the Area pill offers "around the school" and the LA, not the district;
+  - the place line reads town · LA · region.
+- **"Around the school"** is every school within 5 miles, all sectors, from Admissions' nearby pool. No radius existed anywhere: the public page and Admissions both use nearest-N lists. Children "around" are pupils of the school's ages in those schools.
+- **"Schools nearby"** counts schools teaching at least three of the main ages, so a primary that runs to 11 isn't counted as a secondary.
+- **Projections** are ONS's 10-year-olds (the only age held) in five-year steps, 2022-based, to 2035. The tile reads "10-year-olds by 2035" where the wireframe drew "11–15s by 2032".
+- **Population by age** covers ages 5–15, the ages the census aggregates hold. The wireframe drew up to 17.
+- **Context's comparison is England** (the pill reads "Compared against: England"). It has no set, and no gender or boarding pills.
+
+**Round 1 fix found on the way**
+- **The set map's school marker.** It was given `var(--accent)`, which Leaflet writes as an SVG attribute, where CSS variables don't resolve. It now takes the accent's hex.
+
+**The editor and the seed**
+- The re-seed adds the Pupils and Context dashboards and assigns them to SMT. Commands are in the report.

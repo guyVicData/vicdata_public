@@ -1385,6 +1385,117 @@ export const RULES: Rule[] = [
     origin: "0.7 admissions editor stages 1-2 (docs/v0.7/vicdata_0_7_admissions_editor_stages1_2_claude_code_prompt_v1.md, S2.6)",
     status: "active",
   },
+  // ---------------------------------------------------------------- 0.8 SMT round 2
+  {
+    id: "R-DOUBLE-AWARD-POINTS",
+    statement:
+      "A GCSE Double Award (grades published as pairs, \"98\" ... \"11\") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say \"different grading scale, not ranked\".",
+    why: "The subject rollup scores single GCSE grades only, so Science Double Award -- often a school's largest science entry -- read no average and was never ranked, in Teacher and SMT alike (SMT round 1 snag).",
+    appliesTo: "Teacher's subject points and rankings at GCSE; SMT's Subjects (DV-SMT-A-SUBJECTS)",
+    enforcedIn: ["src/lib/subject-grades.ts:doubleAwardPoints", "src/lib/academic-data-view.ts:fillDoubleAwardPoints", "src/lib/subject-ranking.ts:subjectRanking, figuresFor, rankByFunction"],
+    testCase: { urn: "137625", school: "The Chase; Acland Burghley 100053; Nunnery Wood 137051", phase: "ks4", subject: "Science Double Award", expect: "Each school's Science Double Award 2024/25 average equals the mean of its pair grades recomputed from the raw grade rows (each pair's two digits averaged, weighted by entries); the subject is ranked in its set and in England.", check: "doubleAwardPoints" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-PUPILS-LEVEL",
+    statement:
+      "Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-16), Post-16 Years 12 and 13 (16-18), Primary Reception to Year 6 (4-11); Whole school highlights nothing. The figures don't change with the level; the year groups in focus do.",
+    why: "The level is the dashboard's focus, as the subject is Teacher's (spec §2.2).",
+    appliesTo: "DV-SMT-P-SHAPE, DV-SMT-P-NOW",
+    enforcedIn: ["src/lib/smt/pupils.ts:LEVEL_AGES", "src/components/smt/views/Pupils.tsx:ShapeAndSize"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase at GCSE: Y7-Y11 highlighted (ages 11-15 held), Y12-Y13 not; at Post-16 the reverse; Whole school none.", check: "smtPupilsLevel" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-VIEW-PUPILS-NOW",
+    statement:
+      "Your pupils now shows the census's roll and its change since 2019/20, girls and boys (mixed schools only), day and boarding (boarding schools only), staying on at 16 (Year 12 now against Year 11 a year before, where the school has both), the school page's XS-XL by phase and the LA context line.",
+    why: "Tiles a reader can check against the census; the boarding-only and mixed-only rule as everywhere else.",
+    appliesTo: "DV-SMT-P-NOW",
+    enforcedIn: ["src/lib/smt/pupils.ts:buildPupils, stayingOnAt", "src/components/smt/views/Pupils.tsx:PupilsNow"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: roll and staying on recomputed from the census (Year 12 2025/26 against Year 11 2024/25); no boarding tile. Leighton Park: the boarding tile.", check: "smtPupilsNow" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-VIEW-SHAPE",
+    statement:
+      "Shape and size draws pupils in each year group, the shape and since when, and the shapes around (the LA's schools of the same age range, the comparison set's shapes, staying on in the set's sixth forms) -- described, never ranked.",
+    why: "R-ADM-SHAPE-NOT-RANKED: shapes are neither better nor worse.",
+    appliesTo: "DV-SMT-P-SHAPE",
+    enforcedIn: ["src/lib/smt/pupils.ts:buildPupils", "src/components/smt/views/Pupils.tsx:ShapeAndSize"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: year groups equal the census by age; the shape is the shared classifier's; no rank appears in the view.", check: "smtShape" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-ADMISSIONS-READ-ONLY",
+    statement:
+      "Views from Admissions (entry points at a glance, the pool, market share) are read-only in SMT: no setup, no list editing, each with Open in Admissions; where Admissions has no entry points or no saved rivals, an empty state says why.",
+    why: "Admissions owns its lists; SMT reads them (spec §2.4).",
+    appliesTo: "DV-SMT-P-ENTRIES, DV-SMT-P-POOL, DV-SMT-P-MARKET, DV-SMT-O-MARKET-*",
+    enforcedIn: ["src/lib/smt/pupils.ts:buildPupils", "src/lib/smt/overview.ts:marketAt11", "src/components/smt/views/Pupils.tsx:EntryPoints"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "With no entry points readable, Entry points says SMT_NOTES.entryPointsNone and links to Admissions; no edit control is drawn; the pool is Admissions' own ladder.", check: "smtAdmissionsReadOnly" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-VIEW-LEAVING",
+    statement:
+      "Leaving at 16 follows Year 11 to Year 12 at the school year by year (the census a year apart): staying on and the net leavers, worded as Admissions' estimate (ADMISSIONS_NOTES.leaving16).",
+    why: "An estimate of net leavers, not a count of who left.",
+    appliesTo: "DV-SMT-P-LEAVING",
+    enforcedIn: ["src/lib/smt/pupils.ts:buildPupils"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: each year's Year 11 and Year 12 equal the census at ages 15 and 16 a year apart.", check: "smtLeaving" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-CONTEXT-GEOGRAPHY",
+    statement:
+      "Context's area figures are the finest VicData holds and say which: pupils by single age 5-15 per local authority (school census), births per LA (ONS), projections of 10-year-olds per county or unitary (ONS). The map shades whole LAs -- \"shading by district\" -- because no LSOA or MSOA population by age exists; \"around the school\" is every school within 5 miles.",
+    why: "The prompt's geography audit: LSOA, else MSOA, else district, logged.",
+    appliesTo: "DV-SMT-C-*",
+    enforcedIn: ["src/lib/smt/context.ts:buildContext", "src/components/smt/views/Context.tsx:AreaMap"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: every LA on the map has a boundary and its figure equals the census aggregate's sum at ages 11-15; population by age equals the LA's by_age; the shade note says district.", check: "smtContextGeography" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-DATA-GAP",
+    statement:
+      "Context shows the data gap where the figures would be: \"Deprivation and free school meals: not yet in VicData\", with the planned sources (Indices of Deprivation by LSOA; DfE's school-level free-school-meals data), from SMT_NOTES; the map's Shade by lists only what exists.",
+    why: "A missing source is said, never left as an empty space.",
+    appliesTo: "DV-SMT-C-NOW, DV-SMT-C-MAP",
+    enforcedIn: ["src/components/smt/views/Context.tsx:DataGap, AreaMap"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The rendered area-now and map views carry SMT_NOTES.dataGap, dataGapPlanned and shadeLater.", check: "smtDataGap" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-VIEW-CONTEXT-NOW",
+    statement:
+      "The area now shows children of the school's main ages around the school (or in the LA), births last year and since 2012, the ONS projection, the schools nearby of the same phase (all sectors), and the place line (town · LA · region).",
+    why: "Each tile names its source and its area.",
+    appliesTo: "DV-SMT-C-NOW",
+    enforcedIn: ["src/lib/smt/context.ts:buildContext"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: births last year equal ONS births for Worcestershire's districts; schools nearby are those within 5 miles teaching at least three of ages 11-15.", check: "smtContextNow" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-VIEW-BIRTHS",
+    statement:
+      "Births are drawn by LA against England (every English district and unitary summed), indexed to 2012 = 100, said to be by LA; the projection is ONS's, to 2036, said to be a projection, not a forecast for the school.",
+    why: "Two sources, two areas: each line says which.",
+    appliesTo: "DV-SMT-C-BIRTHS*, DV-SMT-C-PROJECTION",
+    enforcedIn: ["src/lib/smt/context.ts:buildContext", "src/components/smt/views/Context.tsx"],
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "Both lines are 100 in 2012; England is the sum of the E06-E09 areas; every projection point is 2036 or before.", check: "smtBirths" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
   // ---------------------------------------------------------------- 0.8 SMT round 1
   {
     id: "R-SMT-LEVEL-CHIPS",
@@ -1543,7 +1654,7 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-ACADEMIC-NOW",
     statement:
-      "The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile.",
+      "The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile. With a subject area chosen the tiles are four, as the Academic board draws them: entries, the average, the top grades, and the rank in the set as its own tile.",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-NOW",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],
@@ -1587,18 +1698,18 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-MIX",
     statement:
-      "The entries mix shows each area's (or subject's) share of the entries year by year; entries count from the first year (not graded, so no 2021/22 note).",
+      "The entries mix shows each area's (or subject's) share of the entries for every year the data has, from 2021/22 (the subject rollup), as the results trend beside it does; entries count from the first year (not graded, so no 2021/22 note).",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],
-    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Each year's shares add up to 100%.", check: "smtGrades" },
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "The GCSE mix runs from 2021/22 to the latest year, as the results trend does; each year's shares add up to 100%.", check: "smtMix" },
     origin: "0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
   {
     id: "R-SMT-VIEW-RESERVED",
     statement:
-      "Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its caption and body, and no figure.",
+      "Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its caption and body -- \"the top 25%, middle 50% and bottom 25% of entries\" (the bands are of entries, not pupils) -- and no figure.",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-BANDS",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],

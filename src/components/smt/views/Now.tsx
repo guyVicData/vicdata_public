@@ -11,12 +11,12 @@ import { SMT_NOTES } from "@/catalogue/notes";
 import type { Overview, SmtSchool } from "../api";
 import { NoteTile, fmt, rankText, yearOf } from "../ui";
 
-export function SizeByPhase({ o, school }: { o: Overview; school: SmtSchool }) {
-  if (!o.now.sizes.length) return null;
+export function SizeByPhase({ sizes, school, caption = true }: { sizes: Overview["now"]["sizes"]; school: SmtSchool; caption?: boolean }) {
+  if (!sizes.length) return null;
   return (
     <div className="flex flex-col gap-[6px] border-t border-[var(--panel-border)] pt-2">
       <Lbl>Size by phase &middot; XS to XL</Lbl>
-      {o.now.sizes.map((b) => (
+      {sizes.map((b) => (
         <div key={b.key} className="flex items-center gap-2" title={b.laMean !== null && b.englandMean !== null ? comparisonCaption(b.total, b.laMean, school.laName, b.englandMean) : "Not enough data yet to compare"}>
           <span className="w-[78px] truncate text-[12px] font-semibold text-[var(--fg)]">{b.label === "Sixth Form" ? "16+" : b.label === "Secondary" ? "Senior" : b.label}</span>
           <span className="flex gap-[3px]">
@@ -30,7 +30,7 @@ export function SizeByPhase({ o, school }: { o: Overview; school: SmtSchool }) {
           <span className="text-[13px] font-bold tabular-nums text-[var(--fg)]">{fmt(b.total, "pupils")}</span>
         </div>
       ))}
-      <div className="text-[12px] leading-[1.4] text-[var(--chip-fg)]">Against schools of that phase in {school.laName ?? "the LA"} and nationally (the school page&rsquo;s Roll by phase).</div>
+      {caption && <div className="text-[12px] leading-[1.4] text-[var(--chip-fg)]">Against schools of that phase in {school.laName ?? "the LA"} and nationally (the school page&rsquo;s Roll by phase).</div>}
     </div>
   );
 }
@@ -75,7 +75,7 @@ export function SchoolNow({ o, school, compact = false }: { o: Overview; school:
     <>
       <div className="text-[12.5px] font-bold text-[var(--fg)]">The school now</div>
       <div className="grid grid-cols-2 gap-2">{tiles}</div>
-      <SizeByPhase o={o} school={school} />
+      <SizeByPhase sizes={o.now.sizes} school={school} />
     </>
   );
 }

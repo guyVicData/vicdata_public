@@ -174,6 +174,28 @@ function doubleAwardDigits(grade: string): [number, number] | null {
   return [Number(grade[0]), Number(grade[1])];
 }
 
+// 0.8 SMT r2 (S1): the GCSE Double Award's average points, on DfE's convention -- a double award
+// counts as two GCSE entries, each worth the average of its two grades ("98" -> 8.5; U -> 0). The
+// published grades are pairs, which no single-grade points table scores, so without this the
+// subject reads no average and is never ranked. Null unless every graded row is a pair (or U):
+// a mixed scale is never scored. `entries` is the GCSE-equivalent count (two per award).
+export const DOUBLE_AWARD_QUALIFICATION = "GCSE (9-1) Full Course (Double Award)";
+export const isDoubleAward = (qualificationType: string | null | undefined) => !!qualificationType && /Double Award/i.test(qualificationType);
+export function doubleAwardPoints(rows: { grade: string; entries: number }[]): { points: number; entries: number } | null {
+  const graded = rows.filter((r) => !NON_GRADE_VALUES.has(r.grade) && r.entries > 0);
+  if (!graded.length) return null;
+  let sum = 0;
+  let n = 0;
+  for (const r of graded) {
+    const pair = doubleAwardDigits(r.grade);
+    if (!pair && r.grade !== "U") return null;
+    const each = pair ? (pair[0] + pair[1]) / 2 : 0;
+    sum += each * r.entries * 2;
+    n += r.entries * 2;
+  }
+  return n ? { points: Math.round((sum / n) * 100) / 100, entries: n } : null;
+}
+
 export type ThresholdOutcome = { rate: number; entries: number } | null;
 
 // The share of this subject's real graded entries that met the phase's threshold.

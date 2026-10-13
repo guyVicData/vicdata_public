@@ -96,7 +96,7 @@ async function smtAcademicCase(urn: string, phase: "whole" | "gcse" | "post16" |
   return smtMemo.get(key) as Promise<import("../src/lib/smt/academic").Academic>;
 }
 // Render one SMT view as the page draws it (charts at a fixed width), for the wording checks.
-async function smtRender(urn: string, dv: string, academic?: import("../src/lib/smt/academic").Academic) {
+async function smtRender(urn: string, dv: string, academic?: import("../src/lib/smt/academic").Academic, more: { pupils?: import("../src/lib/smt/pupils").Pupils; context?: import("../src/lib/smt/context").Context } = {}) {
   const { createElement } = await import("react");
   const { renderToStaticMarkup } = await import("react-dom/server");
   const { ViewBody } = await import("../src/components/smt/SmtDashboard");
@@ -107,17 +107,45 @@ async function smtRender(urn: string, dv: string, academic?: import("../src/lib/
   const ctx = {
     member: { userId: "", token: "", membershipId: "m", schoolAccountId: "a", schoolUrn: urn, schoolName: c.school.name, roles: ["smt"], isAdmin: false, isAccountHolder: false, access: "member", readOnly: false, viewAs: null },
     school: c.school,
-    dash: dv.startsWith("DV-SMT-O-") ? "overview" : "academic",
+    dash: dv.startsWith("DV-SMT-O-") ? "overview" : dv.startsWith("DV-SMT-P-") ? "pupils" : dv.startsWith("DV-SMT-C-") ? "context" : "academic",
     level: academic?.level ?? { phase: "whole", area: null },
     set: c.set,
     filters: { sex: "all", boarding: "all" },
     overview: { status: "ready", data: c.overview },
     academic: academic ? { status: "ready", data: academic } : { status: "loading" },
+    pupils: more.pupils ? { status: "ready", data: more.pupils } : { status: "loading" },
+    context: more.context ? { status: "ready", data: more.context } : { status: "loading" },
     onArea: () => undefined,
     focusBar: null,
     phone: false,
   };
   return renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: router as never }, createElement(InitialWidth.Provider, { value: 800 }, createElement(ViewBody, { dv, c: ctx as never, fullscreen: false }))));
+}
+async function smtPupilsCase(urn: string, phase: "whole" | "gcse" | "post16" | "primary" = "whole") {
+  const key = `pupils|${urn}|${phase}`;
+  if (!smtMemo.has(key))
+    smtMemo.set(key, (async () => {
+      const c = await smtCase(urn);
+      const { buildPupils } = await import("../src/lib/smt/pupils");
+      return buildPupils(c.school, c.set, { sex: "all", boarding: "all" }, { phase, area: null }, null);
+    })().catch((e) => {
+      smtMemo.delete(key);
+      throw e;
+    }));
+  return smtMemo.get(key) as Promise<import("../src/lib/smt/pupils").Pupils>;
+}
+async function smtContextCase(urn: string, area: "around" | "la" = "around") {
+  const key = `context|${urn}|${area}`;
+  if (!smtMemo.has(key))
+    smtMemo.set(key, (async () => {
+      const c = await smtCase(urn);
+      const { buildContext } = await import("../src/lib/smt/context");
+      return buildContext(c.school, area);
+    })().catch((e) => {
+      smtMemo.delete(key);
+      throw e;
+    }));
+  return smtMemo.get(key) as Promise<import("../src/lib/smt/context").Context>;
 }
 const textOf = (html: string) => html.replace(/<title>[^<]*<\/title>/g, " ").replace(/<[^>]+>/g, " ").replace(/&#x27;|&rsquo;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ");
 
@@ -1344,6 +1372,143 @@ const RUNNERS: Record<string, Runner> = {
     return { pass: onlyIndependent && "empty" in b && b.empty === "no_boarding_list" && !("empty" in day), detail: fmt({ schools: urns.length, onlyIndependent, boardingSchoolEmpty: "empty" in b, daySchoolIgnored: !("empty" in day) }) };
   },
 
+  // ------------------------------------------------------------------ 0.8 SMT round 2
+  async doubleAwardPoints() {
+    const { doubleAwardPoints, DOUBLE_AWARD_QUALIFICATION } = await import("../src/lib/subject-grades");
+    const { fetchSubjectHeadlineForSchools } = await import("../src/lib/academic-data-view");
+    const L = await lib();
+    const out: string[] = [];
+    let pass = true;
+    for (const urn of ["137625", "100053", "137051"]) {
+      const raw = (await L.ref.lookupAcademicSubjectGradeRollup({ entityIds: [urn], ksStage: "ks4", qualificationType: DOUBLE_AWARD_QUALIFICATION, periodMin: 2024, periodMax: 2024 })) ?? [];
+      let sum = 0;
+      let n = 0;
+      for (const r of raw) {
+        if (r.subject !== "Science Double Award") continue;
+        const m = /^([1-9])([1-9])$/.exec(r.grade);
+        const e = Number(r.entries);
+        if (m) { sum += ((Number(m[1]) + Number(m[2])) / 2) * e; n += e; } else if (r.grade === "U") n += e;
+      }
+      const expect = n ? Math.round((sum / n) * 100) / 100 : null;
+      const head = (await fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn)?.find((x) => x.subject === "Science Double Award" && x.period === 2024);
+      const fn = doubleAwardPoints(raw.filter((r) => r.subject === "Science Double Award").map((r) => ({ grade: r.grade, entries: Number(r.entries) })));
+      const ok = expect !== null && head?.avgPointScore === expect && fn?.points === expect;
+      pass &&= ok;
+      out.push(`${urn} ${head?.avgPointScore} (recomputed ${expect}) ${ok ? "ok" : "MISMATCH"}`);
+    }
+    // Ranked in a set and in England (SMT's Subjects, Teacher's subjectRanking).
+    const a = await smtAcademicCase("137625", "gcse", "sciences_maths");
+    const dbl = a.parts[0].subjects.find((x) => x.subject === "Science Double Award");
+    const fsmq = a.parts[0].subjects.find((x) => /FSMQ/.test(x.qualification) || /FSMQ/.test(x.subject));
+    pass &&= !!dbl?.set && !!dbl?.england && dbl.avg !== null && (!fsmq || fsmq.reason === "scale");
+    // Teacher's Comparisons asks for GCSE points with no qualification: still ranked.
+    const { subjectRanking } = await import("../src/lib/subject-ranking");
+    const c = await smtCase("137625");
+    const t = await subjectRanking({ urns: ["137625", ...c.set.urns], targetUrn: "137625", phase: "ks4", subject: "Science Double Award", familyId: "sciences_maths", qualificationType: null, measure: { kind: "points" }, period: null }, "rule:teacher-ask");
+    pass &&= t.targetRank !== null && t.target?.value === dbl?.avg;
+    return { pass, detail: fmt({ schools: out.join("; "), chaseRanked: dbl?.set && `${dbl.set.rank} of ${dbl.set.of}, England ${dbl.england?.rank} of ${dbl.england?.of}`, teacherAsk: `${t.targetRank} of ${t.ranked} (${t.target?.value})`, fsmq: fsmq ? `${fsmq.subject}: ${fsmq.reason}` : "none" }) };
+  },
+  async smtMix() {
+    const a = await smtAcademicCase("137625", "gcse", null);
+    const p = a.parts[0];
+    const years = p.mix.years.map((y) => y.year);
+    const trendYears = p.trend.school.filter((x) => x.value !== null).map((x) => x.year);
+    const sums = p.mix.years.every((y) => Math.abs(Object.values(y.shares).reduce((s, v) => s + v, 0) - 100) < 1e-6);
+    const pass = years[0] === 2021 && years.at(-1) === p.period && trendYears[0] === years[0] && sums;
+    return { pass, detail: fmt({ mixYears: years.join("/"), trendFrom: trendYears[0], addsTo100: sums }) };
+  },
+  async smtPupilsLevel() {
+    const out: string[] = [];
+    let pass = true;
+    for (const [phase, want] of [["gcse", [11, 16]], ["post16", [16, 18]], ["whole", null]] as const) {
+      const p = await smtPupilsCase("137625", phase);
+      const html = await smtRender("137625", "DV-SMT-P-SHAPE", undefined, { pupils: p });
+      const on = (html.match(/data-level-age="on"/g) ?? []).length;
+      const held = p.shape.yearGroups.filter((y) => want && y.age >= want[0] && y.age <= want[1]).length;
+      const ok = JSON.stringify(p.highlight) === JSON.stringify(want) && on === held;
+      pass &&= ok;
+      out.push(`${phase}: ${JSON.stringify(p.highlight)} ${on} bars ${ok ? "ok" : "MISMATCH"}`);
+    }
+    return { pass, detail: out.join("; ") };
+  },
+  async smtPupilsNow() {
+    const p = await smtPupilsCase("137625");
+    const c = await smtCase("137625");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const t = (await cachedCensus(["137625"])).get("137625")!.table;
+    const P = c.school.census.at(-1)!.period;
+    const pct = (cohortAt(t, 16, P)! / cohortAt(t, 15, P - 1)!) * 100;
+    const lp = await smtPupilsCase("110110");
+    const html = textOf(await smtRender("137625", "DV-SMT-P-NOW", undefined, { pupils: p }));
+    const lpHtml = textOf(await smtRender("110110", "DV-SMT-P-NOW", undefined, { pupils: lp }));
+    const pass = p.now.roll === c.school.census.at(-1)!.totalRoll && Math.abs((p.now.stayingOn?.pct ?? -1) - pct) < 1e-9 && p.now.boarding === null && !/Day · boarding/.test(html) && /Day · boarding/.test(lpHtml) && /Girls · boys/.test(html);
+    return { pass, detail: fmt({ roll: p.now.roll, stayingOn: round(p.now.stayingOn?.pct, 1), recomputed: round(pct, 1), chaseBoardingTile: /Day · boarding/.test(html), leightonBoardingTile: /Day · boarding/.test(lpHtml) }) };
+  },
+  async smtShape() {
+    const p = await smtPupilsCase("137625");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const counts = (await cachedCensus(["137625"])).get("137625")!.ageGender;
+    const same = p.shape.yearGroups.every((y) => { const v = counts.get(y.age); return !!v && v.male + v.female === y.total; });
+    const html = textOf(await smtRender("137625", "DV-SMT-P-SHAPE", undefined, { pupils: p }));
+    const ranked = /\b\d+(st|nd|rd|th) of\b|\branked \d|\brank(ed)? (in|among)\b/i.test(html);
+    return { pass: same && !ranked && p.shape.label !== null, detail: fmt({ yearGroups: p.shape.yearGroups.length, matchCensus: same, shape: p.shape.label, laShape: p.shape.around.la?.shape, rankedWords: ranked }) };
+  },
+  async smtAdmissionsReadOnly() {
+    const p = await smtPupilsCase("137625");
+    const { SMT_NOTES } = await import("../src/catalogue/notes");
+    const html = await smtRender("137625", "DV-SMT-P-ENTRIES", undefined, { pupils: p });
+    const text = textOf(html);
+    const noEdit = !/<button/.test(html) && !/Choose|Edit the|Set up/.test(text);
+    const pass = p.entries.status === "empty" && p.entries.reason === SMT_NOTES.entryPointsNone && /Open in Admissions/.test(text) && noEdit && p.trends.pool.status === "ready";
+    return { pass, detail: fmt({ entries: p.entries.status, reasonShown: text.includes(SMT_NOTES.entryPointsNone.slice(0, 40)), openInAdmissions: /Open in Admissions/.test(text), noEditControls: noEdit, pool: p.trends.pool.status }) };
+  },
+  async smtLeaving() {
+    const p = await smtPupilsCase("137625");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const t = (await cachedCensus(["137625"])).get("137625")!.table;
+    const ok = p.leaving.length > 0 && p.leaving.every((r) => r.year11 === cohortAt(t, 15, r.year - 1) && r.year12 === cohortAt(t, 16, r.year));
+    return { pass: ok, detail: fmt({ years: p.leaving.map((r) => `${r.year}:${r.year11}->${r.year12}`).join(" "), matchCensus: ok }) };
+  },
+  async smtContextGeography() {
+    const c = await smtContextCase("137625");
+    const { areaByAge } = await import("../src/lib/admissions/screens");
+    const { SMT_NOTES } = await import("../src/catalogue/notes");
+    const aggs = await areaByAge();
+    const p = c.map.period!;
+    const sum = (name: string) => { const r = aggs.find((x) => x.scope === "la" && x.key === name && x.period === p); if (!r) return null; let t = 0; for (let a = c.ages[0]; a <= c.ages[1]; a++) t += r.byAge[String(a)] ?? 0; return t; };
+    const mapOk = c.map.las.length > 0 && c.map.las.every((l) => l.geometry !== null && l.value === sum(l.name));
+    const la = aggs.find((x) => x.scope === "la" && x.key === "Worcestershire" && x.period === p)!;
+    const ageOk = c.byAge.ages.every((a) => a.value === (la.byAge[String(a.age)] ?? 0));
+    const html = textOf(await smtRender("137625", "DV-SMT-C-MAP", undefined, { context: c }));
+    const pass = mapOk && ageOk && html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40));
+    return { pass, detail: fmt({ las: c.map.las.length, everyBoundaryAndFigure: mapOk, byAgeMatches: ageOk, districtNote: html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40)) }) };
+  },
+  async smtDataGap() {
+    const c = await smtContextCase("137625");
+    const { SMT_NOTES } = await import("../src/catalogue/notes");
+    const now = textOf(await smtRender("137625", "DV-SMT-C-NOW", undefined, { context: c }));
+    const map = textOf(await smtRender("137625", "DV-SMT-C-MAP", undefined, { context: c }));
+    const later = SMT_NOTES.shadeLater.replace(/\u201c|\u201d/g, "");
+    const pass = now.includes(SMT_NOTES.dataGap) && now.includes(SMT_NOTES.dataGapPlanned.slice(0, 50)) && map.replace(/\u201c|\u201d/g, "").includes(later.slice(0, 40));
+    return { pass, detail: fmt({ gapInAreaNow: now.includes(SMT_NOTES.dataGap), plannedSources: now.includes(SMT_NOTES.dataGapPlanned.slice(0, 50)), shadeLaterOnMap: pass }) };
+  },
+  async smtContextNow() {
+    const c = await smtContextCase("137625");
+    const { fetchBirthsByLa } = await import("../src/lib/admissions/data");
+    const births = (await fetchBirthsByLa(["885"])).get("885")!;
+    const year = Math.max(...births.keys());
+    const pass = c.now.births?.year === year && c.now.births.value === births.get(year) && c.now.schools.count > 0 && c.place.la === "Worcestershire";
+    return { pass, detail: fmt({ births: `${c.now.births?.value} (${c.now.births?.year})`, raw: births.get(year), schoolsNearby: c.now.schools.count, children: c.now.children.value, place: [c.place.town, c.place.la, c.place.region].join(" · ") }) };
+  },
+  async smtBirths() {
+    const c = await smtContextCase("137625");
+    const base = c.births.base;
+    const at = (pts: { year: number; value: number | null }[]) => pts.find((p) => p.year === base)?.value;
+    const pass = base === 2012 && at(c.births.indexed.la) === 100 && at(c.births.indexed.england) === 100 && c.projection.pts.every((p) => p.year <= 2036) && c.projection.pts.length > 1;
+    return { pass, detail: fmt({ base, england2012: c.births.england.find((p) => p.year === 2012)?.value, projectionYears: c.projection.pts.map((p) => p.year).join("/") }) };
+  },
   // ------------------------------------------------------------------ 0.8 SMT round 1
   async smtLevelChips() {
     const { levelChips, parseLevel } = await import("../src/lib/smt/levels");
@@ -1529,8 +1694,12 @@ const RUNNERS: Record<string, Runner> = {
     const fam = (await L.ref.lookupAcademicSubjectFamily({ entityIds: ["137625"], ksStage: "ks4", familyIds: ["sciences_maths"], periodMin: p, periodMax: p })).find((r) => (r.bucket ?? "all") === "all");
     const entries = a.parts[0].tiles.find((t) => t.key === "entries")?.value;
     const avg = a.parts[0].tiles.find((t) => t.key === "area_avg")?.value;
-    const pass = !!fam && entries === Number(fam.entries_total) && avg === Number(fam.avg_point_score);
-    return { pass, detail: fmt({ entries, familyEntries: fam?.entries_total, average: avg, familyAverage: fam?.avg_point_score }) };
+    // S4: four tiles with an area, the rank its own and last (GCSE and Post-16).
+    const post = await smtAcademicCase("137625", "post16", (await smtCase("137625")).school.areas.post16[0].id);
+    const order = (t: { key: string }[]) => t.map((x) => x.key).join(",");
+    const fourOk = order(a.parts[0].tiles) === "entries,area_avg,top,area_rank" && order(post.parts[0].tiles) === "entries,area_avg,top,area_rank";
+    const pass = !!fam && entries === Number(fam.entries_total) && avg === Number(fam.avg_point_score) && fourOk;
+    return { pass, detail: fmt({ entries, familyEntries: fam?.entries_total, average: avg, familyAverage: fam?.avg_point_score, gcseTiles: order(a.parts[0].tiles), post16Tiles: order(post.parts[0].tiles) }) };
   },
   async smtAreas() {
     const a = await smtAcademicCase("137625", "gcse", null);
@@ -1555,8 +1724,9 @@ const RUNNERS: Record<string, Runner> = {
     const a = await smtAcademicCase("137625", "gcse", null);
     const html = textOf(await smtRender("137625", "DV-SMT-A-BANDS", a));
     const { SMT_NOTES } = await import("../src/catalogue/notes");
-    const pass = html.includes(SMT_NOTES.bandReserved.slice(0, 50)) && !/\d+(\.\d+)?%/.test(html.replace(SMT_NOTES.bandReserved, "").replace(/Top 25%, middle 50%, bottom 25%/, ""));
-    return { pass, detail: fmt({ caption: html.includes(SMT_NOTES.bandReserved.slice(0, 50)), noFigures: pass }) };
+    const exact = SMT_NOTES.bandReserved === "Arrives with the results-by-band round: the top 25%, middle 50% and bottom 25% of entries.";
+    const pass = exact && !/pupils/.test(SMT_NOTES.bandReserved) && html.includes(SMT_NOTES.bandReserved) && !/\d+(\.\d+)?%/.test(html.replace(SMT_NOTES.bandReserved, "").replace(/Top 25%, middle 50%, bottom 25%/, ""));
+    return { pass, detail: fmt({ captionOfEntries: exact, shown: html.includes(SMT_NOTES.bandReserved), noFigures: pass }) };
   },
 };
 
