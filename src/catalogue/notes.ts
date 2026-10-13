@@ -156,7 +156,9 @@ export const SMT_NOTES = {
   // The size badges, as the school page says them.
   size: "XS to XL: this school's pupils in each phase against every school with that phase in England (fifths). The school page's Roll by phase.",
   // Results by band (reserved).
-  bandReserved: "Arrives with the results-by-band round: the top 25%, middle 50% and bottom 25% of pupils, once the data is built.",
+  bandReserved: "Arrives with the results-by-band round: the top 25%, middle 50% and bottom 25% of entries.",
+  // A qualification on its own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) has no GCSE points.
+  differentScale: "different grading scale, not ranked",
   // Small numbers.
   smallEntries: "Subjects with fewer than {min} entries aren't ranked: one or two pupils would decide the rank.",
 } as const;

@@ -9,7 +9,7 @@
 import { HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
 import { smtNote } from "@/catalogue/notes";
 import { cachedReference } from "../server-cache";
-import { fetchSubjectLevelDataForSchools } from "../academic-data-view";
+import { fetchSubjectHeadlineForSchools, fetchSubjectLevelDataForSchools } from "../academic-data-view";
 import { lookupAcademicSubjectFamily } from "../vicdata-reference";
 import { subjectRanking } from "../subject-ranking";
 import { cachedRankingPopulation } from "../chooser-sets";
@@ -26,7 +26,7 @@ import { igcseIn, middleHalf, p8Of, type BandPt, type P8, type Pt, type Rank, ty
 export const MIN_SUBJECT_ENTRIES = MIN_SUBJECT_ENTRIES_UI; // R-SMT-SMALL-ENTRIES: a subject needs this many to be ranked
 export const MAX_SUBJECTS = 16;
 
-export type Tile = { key: string; label: string; value: number | null; unit: "pupils" | "points" | "grade" | "pct" | "va" | "share"; period: number | null; sub: string; set: (Rank & { label: string }) | null; england: Rank | null; note: "igcse" | "none" | null };
+export type Tile = { key: string; label: string; value: number | null; unit: "pupils" | "points" | "grade" | "pct" | "va" | "share" | "rank"; period: number | null; sub: string; set: (Rank & { label: string }) | null; england: Rank | null; note: "igcse" | "none" | null };
 
 export type SubjectRow = {
   subject: string;
@@ -38,6 +38,8 @@ export type SubjectRow = {
   england: Rank | null;
   since: number | null; // the change in avg since 2022/23
   ranked: boolean; // false below MIN_SUBJECT_ENTRIES or where the subject has no ranking
+  // Why it isn't ranked: too few entries, or a grading scale with no points (an FSMQ, a BTEC).
+  reason: "small" | "scale" | null;
 };
 
 export type VaRow = { qualification: string; period: number; value: number | null; lo: number | null; hi: number | null; banding: string | null };
@@ -143,7 +145,11 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
   if (area) {
     const v = famVal(urn, period);
     const setVals = new Map(all.map((u) => [u, famVal(u, period)]));
-    tiles.push({ key: "area_avg", label: stage === "ks4" ? "Average grade" : "Points per entry", value: v, unit: stage === "ks4" ? "grade" : "points", period, sub: `the area's subjects, ${periodLabel(period)}`, set: withLabel(setPlace(setVals, urn, exclude)), england: null, note: v === null ? "none" : null });
+    tiles.push({ key: "area_avg", label: stage === "ks4" ? "Average grade" : "Points per entry", value: v, unit: stage === "ks4" ? "grade" : "points", period, sub: `the area's subjects, ${periodLabel(period)}`, set: null, england: null, note: v === null ? "none" : null });
+    // S4 (the Academic board): the rank in the set is its own tile, the fourth.
+    const r = setPlace(setVals, urn, exclude);
+    const areaName = school.areas[stage === "ks4" ? "gcse" : "post16"].find((a) => a.id === area)?.label ?? "this area";
+    tiles.push({ key: "area_rank", label: `Rank in ${set.label}`, value: r?.rank ?? null, unit: "rank", period, sub: r ? `of ${r.of}, schools with ${areaName} results` : `no ${areaName} figure to rank`, set: r ? { ...r, label: `${set.label} with ${areaName} results` } : null, england: null, note: r ? null : "none" });
   } else {
     const places = await placesOn(pop, period, headKey, [urn], exclude);
     const p = places.get(urn)!;
@@ -167,6 +173,10 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
   const top = graded.filter((g) => bandsDef[0].grades.includes(g.grade)).reduce((a, g) => a + g.entries, 0);
   tiles.push({ key: "top", label: stage === "ks4" ? "Grade 7 and above" : "A*–A", value: gradedTotal ? (top / gradedTotal) * 100 : null, unit: "pct", period, sub: stage === "ks4" ? "GCSE (9-1) entries" : "A-level entries", set: null, england: null, note: gradedTotal ? null : "none" });
 
+  // The wireframe's order with an area: Entries, Average grade, Grade 7 and above (A*-A), Rank.
+  const rankAt = tiles.findIndex((t) => t.key === "area_rank");
+  if (rankAt >= 0) tiles.push(...tiles.splice(rankAt, 1));
+
   // ------------------------------------------------------------ grade profile
   const grades = { period, entries: gradedTotal, bands: bandsDef.map((b) => { const n = graded.filter((g) => b.grades.includes(g.grade)).reduce((a, g) => a + g.entries, 0); return { label: b.label, entries: n, pct: gradedTotal ? (n / gradedTotal) * 100 : 0 }; }) };
 
@@ -189,7 +199,7 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
   const setKey = setUrns.slice().sort().join(",");
   const subjects = await pool(latestRows, 4, async (e): Promise<SubjectRow> => {
     const base = { targetUrn: urn, phase: stage, subject: e.subject, familyId: famOf(e.subject), qualificationType: e.qualificationType, measure: { kind: "points" as const }, period: null };
-    if (e.entries < MIN_SUBJECT_ENTRIES) return { subject: e.subject, qualification: e.qualificationType, familyId: famOf(e.subject), entries: e.entries, avg: null, set: null, england: null, since: null, ranked: false };
+    if (e.entries < MIN_SUBJECT_ENTRIES) return { subject: e.subject, qualification: e.qualificationType, familyId: famOf(e.subject), entries: e.entries, avg: null, set: null, england: null, since: null, ranked: false, reason: "small" };
     const [s, n] = await cachedReference(`smt:subject:${urn}:${stage}:${e.subject}:${e.qualificationType}:${setKey}`, () => Promise.all([subjectRanking({ ...base, urns: all }, `smt:set:${urn}:${setKey}`), subjectRanking({ ...base, urns: nation }, `smt:nation:${stage}`)]));
     const series = s.targetSeries.length ? s.targetSeries : n.targetSeries;
     const now = s.target?.value ?? n.target?.value ?? null;
@@ -204,6 +214,7 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
       england: n.targetRank !== null ? { rank: n.targetRank, of: n.ranked } : null,
       since: now !== null && then !== null && period > TREND_BASE_PERIOD ? now - then : null,
       ranked: s.targetRank !== null || n.targetRank !== null,
+      reason: now === null ? "scale" : null,
     };
   });
 
@@ -221,22 +232,26 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
     trend = { label: stage === "ks4" ? "Attainment 8" : "A level: points per entry", school: years.map((y) => ({ year: y, value: figure(pop, urn, y, headKey) })), band: middleHalf(pop, setUrns, headKey, years, exclude) };
   }
   // Entries mix: each area's share of the stage's entries (all areas), or each subject's share of
-  // the area's (an area chosen), year by year.
-  const mixYears = Array.from(new Set(mine.entries.map((e) => e.period))).sort((a, b) => a - b);
-  const keyOf = (e: { subject: string; qualificationType: string }) => (area ? e.subject : (famOf(e.subject) ?? "other"));
+  // the area's (an area chosen), year by year. From the subject rollup, which holds every year
+  // from 2021/22 (the modern subject sources start in 2023/24): change in entries counts from the
+  // first year with data (the year rules; R-SMT-VIEW-MIX).
+  const head = (await cachedReference(`smt:subject-headline:${urn}:${stage}`, () => fetchSubjectHeadlineForSchools([urn], stage))).get(urn) ?? [];
+  const mixRows = head.filter((e) => e.period >= HISTORIC_GRADE_FROM && e.period <= period && (!area || e.familyId === area) && e.entriesTotal > 0);
+  const keyOf = (e: { subject: string; familyId: string | null }) => (area ? e.subject : (e.familyId ?? "other"));
   const totals = new Map<string, number>();
-  for (const e of mine.entries) if (inArea(e.subject)) totals.set(keyOf(e), (totals.get(keyOf(e)) ?? 0) + e.entries);
+  for (const e of mixRows) totals.set(keyOf(e), (totals.get(keyOf(e)) ?? 0) + e.entriesTotal);
   const keys = Array.from(totals).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k]) => k);
-  const labelOf = (k: string) => (area ? k : (school.areas[stage === "ks4" ? "gcse" : "post16"].find((a) => a.id === k)?.label ?? (k === "other" ? "Other" : k)));
+  const labelOf = (k: string) => (area ? k : (school.areas[stage === "ks4" ? "gcse" : "post16"].find((a) => a.id === k)?.label ?? head.find((e) => e.familyId === k)?.familyLabel ?? (k === "other" ? "Other" : k)));
+  const mixYears = Array.from(new Set(mixRows.map((e) => e.period))).sort((a, b) => a - b);
   const mix = {
     keys: [...keys.map((k) => ({ key: k, label: labelOf(k) })), ...(totals.size > keys.length ? [{ key: "rest", label: "The rest" }] : [])],
     years: mixYears.map((y) => {
-      const rows = mine.entries.filter((e) => e.period === y && inArea(e.subject));
-      const total = rows.reduce((a, e) => a + e.entries, 0);
+      const rows = mixRows.filter((e) => e.period === y);
+      const total = rows.reduce((a, e) => a + e.entriesTotal, 0);
       const shares: Record<string, number> = {};
       for (const e of rows) {
         const k = keys.includes(keyOf(e)) ? keyOf(e) : "rest";
-        shares[k] = (shares[k] ?? 0) + (total ? (e.entries / total) * 100 : 0);
+        shares[k] = (shares[k] ?? 0) + (total ? (e.entriesTotal / total) * 100 : 0);
       }
       return { year: y, shares, total };
     }),

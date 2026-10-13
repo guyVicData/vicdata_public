@@ -1344,6 +1344,46 @@ const RUNNERS: Record<string, Runner> = {
     return { pass: onlyIndependent && "empty" in b && b.empty === "no_boarding_list" && !("empty" in day), detail: fmt({ schools: urns.length, onlyIndependent, boardingSchoolEmpty: "empty" in b, daySchoolIgnored: !("empty" in day) }) };
   },
 
+  // ------------------------------------------------------------------ 0.8 SMT round 2
+  async doubleAwardPoints() {
+    const { doubleAwardPoints, DOUBLE_AWARD_QUALIFICATION } = await import("../src/lib/subject-grades");
+    const { fetchSubjectHeadlineForSchools } = await import("../src/lib/academic-data-view");
+    const L = await lib();
+    const out: string[] = [];
+    let pass = true;
+    for (const urn of ["137625", "100053", "137051"]) {
+      const raw = (await L.ref.lookupAcademicSubjectGradeRollup({ entityIds: [urn], ksStage: "ks4", qualificationType: DOUBLE_AWARD_QUALIFICATION, periodMin: 2024, periodMax: 2024 })) ?? [];
+      let sum = 0;
+      let n = 0;
+      for (const r of raw) {
+        if (r.subject !== "Science Double Award") continue;
+        const m = /^([1-9])([1-9])$/.exec(r.grade);
+        const e = Number(r.entries);
+        if (m) { sum += ((Number(m[1]) + Number(m[2])) / 2) * e; n += e; } else if (r.grade === "U") n += e;
+      }
+      const expect = n ? Math.round((sum / n) * 100) / 100 : null;
+      const head = (await fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn)?.find((x) => x.subject === "Science Double Award" && x.period === 2024);
+      const fn = doubleAwardPoints(raw.filter((r) => r.subject === "Science Double Award").map((r) => ({ grade: r.grade, entries: Number(r.entries) })));
+      const ok = expect !== null && head?.avgPointScore === expect && fn?.points === expect;
+      pass &&= ok;
+      out.push(`${urn} ${head?.avgPointScore} (recomputed ${expect}) ${ok ? "ok" : "MISMATCH"}`);
+    }
+    // Ranked in a set and in England (SMT's Subjects, Teacher's subjectRanking).
+    const a = await smtAcademicCase("137625", "gcse", "sciences_maths");
+    const dbl = a.parts[0].subjects.find((x) => x.subject === "Science Double Award");
+    const fsmq = a.parts[0].subjects.find((x) => /FSMQ/.test(x.qualification) || /FSMQ/.test(x.subject));
+    pass &&= !!dbl?.set && !!dbl?.england && dbl.avg !== null && (!fsmq || fsmq.reason === "scale");
+    return { pass, detail: fmt({ schools: out.join("; "), chaseRanked: dbl?.set && `${dbl.set.rank} of ${dbl.set.of}, England ${dbl.england?.rank} of ${dbl.england?.of}`, fsmq: fsmq ? `${fsmq.subject}: ${fsmq.reason}` : "none" }) };
+  },
+  async smtMix() {
+    const a = await smtAcademicCase("137625", "gcse", null);
+    const p = a.parts[0];
+    const years = p.mix.years.map((y) => y.year);
+    const trendYears = p.trend.school.filter((x) => x.value !== null).map((x) => x.year);
+    const sums = p.mix.years.every((y) => Math.abs(Object.values(y.shares).reduce((s, v) => s + v, 0) - 100) < 1e-6);
+    const pass = years[0] === 2021 && years.at(-1) === p.period && trendYears[0] === years[0] && sums;
+    return { pass, detail: fmt({ mixYears: years.join("/"), trendFrom: trendYears[0], addsTo100: sums }) };
+  },
   // ------------------------------------------------------------------ 0.8 SMT round 1
   async smtLevelChips() {
     const { levelChips, parseLevel } = await import("../src/lib/smt/levels");
@@ -1529,8 +1569,12 @@ const RUNNERS: Record<string, Runner> = {
     const fam = (await L.ref.lookupAcademicSubjectFamily({ entityIds: ["137625"], ksStage: "ks4", familyIds: ["sciences_maths"], periodMin: p, periodMax: p })).find((r) => (r.bucket ?? "all") === "all");
     const entries = a.parts[0].tiles.find((t) => t.key === "entries")?.value;
     const avg = a.parts[0].tiles.find((t) => t.key === "area_avg")?.value;
-    const pass = !!fam && entries === Number(fam.entries_total) && avg === Number(fam.avg_point_score);
-    return { pass, detail: fmt({ entries, familyEntries: fam?.entries_total, average: avg, familyAverage: fam?.avg_point_score }) };
+    // S4: four tiles with an area, the rank its own and last (GCSE and Post-16).
+    const post = await smtAcademicCase("137625", "post16", (await smtCase("137625")).school.areas.post16[0].id);
+    const order = (t: { key: string }[]) => t.map((x) => x.key).join(",");
+    const fourOk = order(a.parts[0].tiles) === "entries,area_avg,top,area_rank" && order(post.parts[0].tiles) === "entries,area_avg,top,area_rank";
+    const pass = !!fam && entries === Number(fam.entries_total) && avg === Number(fam.avg_point_score) && fourOk;
+    return { pass, detail: fmt({ entries, familyEntries: fam?.entries_total, average: avg, familyAverage: fam?.avg_point_score, gcseTiles: order(a.parts[0].tiles), post16Tiles: order(post.parts[0].tiles) }) };
   },
   async smtAreas() {
     const a = await smtAcademicCase("137625", "gcse", null);
@@ -1555,8 +1599,9 @@ const RUNNERS: Record<string, Runner> = {
     const a = await smtAcademicCase("137625", "gcse", null);
     const html = textOf(await smtRender("137625", "DV-SMT-A-BANDS", a));
     const { SMT_NOTES } = await import("../src/catalogue/notes");
-    const pass = html.includes(SMT_NOTES.bandReserved.slice(0, 50)) && !/\d+(\.\d+)?%/.test(html.replace(SMT_NOTES.bandReserved, "").replace(/Top 25%, middle 50%, bottom 25%/, ""));
-    return { pass, detail: fmt({ caption: html.includes(SMT_NOTES.bandReserved.slice(0, 50)), noFigures: pass }) };
+    const exact = SMT_NOTES.bandReserved === "Arrives with the results-by-band round: the top 25%, middle 50% and bottom 25% of entries.";
+    const pass = exact && !/pupils/.test(SMT_NOTES.bandReserved) && html.includes(SMT_NOTES.bandReserved) && !/\d+(\.\d+)?%/.test(html.replace(SMT_NOTES.bandReserved, "").replace(/Top 25%, middle 50%, bottom 25%/, ""));
+    return { pass, detail: fmt({ captionOfEntries: exact, shown: html.includes(SMT_NOTES.bandReserved), noFigures: pass }) };
   },
 };
 

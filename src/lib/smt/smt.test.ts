@@ -119,3 +119,12 @@ test("the subject explorer link carries the set and its name; Teacher reads the 
   assert.equal(JSON.parse(linkedSetChoice(parseLinkedSet(new URLSearchParams("set=137186"))!)).label, LINKED_SET_LABEL);
   assert.equal(withoutLinkedSet("https://x/teacher/ks4?set=137186&setLabel=a&subject=b&k=1"), "/teacher/ks4?k=1");
 });
+
+test("R-DOUBLE-AWARD-POINTS: two entries per award, each the average of its two grades; a mixed scale isn't scored", async () => {
+  const { doubleAwardPoints, isDoubleAward } = await import("../subject-grades");
+  assert.deepEqual(doubleAwardPoints([{ grade: "98", entries: 1 }]), { points: 8.5, entries: 2 });
+  assert.deepEqual(doubleAwardPoints([{ grade: "99", entries: 1 }, { grade: "11", entries: 1 }, { grade: "U", entries: 2 }, { grade: "Suppressed", entries: 5 }]), { points: 2.5, entries: 8 });
+  assert.equal(doubleAwardPoints([{ grade: "98", entries: 1 }, { grade: "7", entries: 1 }]), null);
+  assert.equal(doubleAwardPoints([{ grade: "No result", entries: 3 }]), null);
+  assert.ok(isDoubleAward("GCSE (9-1) Full Course (Double Award)") && !isDoubleAward("GCSE (9-1) Full Course"));
+});

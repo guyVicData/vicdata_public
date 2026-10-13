@@ -1385,6 +1385,18 @@ export const RULES: Rule[] = [
     origin: "0.7 admissions editor stages 1-2 (docs/v0.7/vicdata_0_7_admissions_editor_stages1_2_claude_code_prompt_v1.md, S2.6)",
     status: "active",
   },
+  // ---------------------------------------------------------------- 0.8 SMT round 2
+  {
+    id: "R-DOUBLE-AWARD-POINTS",
+    statement:
+      "A GCSE Double Award (grades published as pairs, \"98\" ... \"11\") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say \"different grading scale, not ranked\".",
+    why: "The subject rollup scores single GCSE grades only, so Science Double Award -- often a school's largest science entry -- read no average and was never ranked, in Teacher and SMT alike (SMT round 1 snag).",
+    appliesTo: "Teacher's subject points and rankings at GCSE; SMT's Subjects (DV-SMT-A-SUBJECTS)",
+    enforcedIn: ["src/lib/subject-grades.ts:doubleAwardPoints", "src/lib/academic-data-view.ts:fillDoubleAwardPoints", "src/lib/subject-ranking.ts:figuresFor, rankByFunction"],
+    testCase: { urn: "137625", school: "The Chase; Acland Burghley 100053; Nunnery Wood 137051", phase: "ks4", subject: "Science Double Award", expect: "Each school's Science Double Award 2024/25 average equals the mean of its pair grades recomputed from the raw grade rows (each pair's two digits averaged, weighted by entries); the subject is ranked in its set and in England.", check: "doubleAwardPoints" },
+    origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
   // ---------------------------------------------------------------- 0.8 SMT round 1
   {
     id: "R-SMT-LEVEL-CHIPS",
@@ -1543,7 +1555,7 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-ACADEMIC-NOW",
     statement:
-      "The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile.",
+      "The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile. With a subject area chosen the tiles are four, as the Academic board draws them: entries, the average, the top grades, and the rank in the set as its own tile.",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-NOW",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],
@@ -1587,18 +1599,18 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-MIX",
     statement:
-      "The entries mix shows each area's (or subject's) share of the entries year by year; entries count from the first year (not graded, so no 2021/22 note).",
+      "The entries mix shows each area's (or subject's) share of the entries for every year the data has, from 2021/22 (the subject rollup), as the results trend beside it does; entries count from the first year (not graded, so no 2021/22 note).",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],
-    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Each year's shares add up to 100%.", check: "smtGrades" },
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "The GCSE mix runs from 2021/22 to the latest year, as the results trend does; each year's shares add up to 100%.", check: "smtMix" },
     origin: "0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
   {
     id: "R-SMT-VIEW-RESERVED",
     statement:
-      "Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its caption and body, and no figure.",
+      "Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its caption and body -- \"the top 25%, middle 50% and bottom 25% of entries\" (the bands are of entries, not pupils) -- and no figure.",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-BANDS",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],

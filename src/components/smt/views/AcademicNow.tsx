@@ -8,15 +8,16 @@ import { Lbl, Tile } from "@/components/admissions/ui";
 import { SMT_NOTES, smtNote } from "@/catalogue/notes";
 import type { Academic, SmtSchool } from "../api";
 import type { StagePart, Tile as TileData } from "@/lib/smt/academic";
-import { NoteTile, fmt, rankText, yearOf } from "../ui";
+import { NoteTile, fmt, ord, rankText, yearOf } from "../ui";
 import { GradeBar } from "./Grades";
 
 const STAGE: Record<"ks4" | "ks5", string> = { ks4: "GCSE", ks5: "Post-16" };
 
 function tileOf(t: TileData) {
   if (t.note === "igcse") return <NoteTile key={t.key} label="GCSE" title="IGCSE school" sub="no comparable GCSE results" />;
+  if (t.unit === "rank") return <Tile key={t.key} small label={t.label} value={t.value === null ? "—" : ord(t.value)} sub={t.sub} />;
   const sub = t.set ? `${rankText(t.set)} ${t.set.label.replace(/^.* with /, "with ")}` : t.england ? `national rank ${rankText(t.england)}` : t.sub;
-  return <Tile key={t.key} small={t.key !== "entries"} label={t.label} value={t.unit === "pupils" ? fmt(t.value, "pupils") : fmt(t.value, t.unit, t.key)} sub={t.key === "entries" ? t.sub : sub} accent={t.key === "entries"} />;
+  return <Tile key={t.key} small={t.key !== "entries"} label={t.label} value={t.unit === "pupils" ? fmt(t.value, "pupils") : fmt(t.value, t.unit as Exclude<typeof t.unit, "rank">, t.key)} sub={t.key === "entries" ? t.sub : sub} accent={t.key === "entries"} />;
 }
 
 export function PartTiles({ part, a }: { part: StagePart; a: Academic }) {
