@@ -33,6 +33,8 @@ import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
 import { configRendererRequested } from "@/components/dashboard-config/plan";
 import { ADMISSIONS_DASHBOARDS, TEACHER_DASHBOARDS } from "@/catalogue/dashboards";
 import { AdmissionsTile } from "@/components/admissions/AdmissionsTile";
+import { SchoolTile } from "@/components/smt/SchoolTile";
+import { SMT_DASHBOARDS } from "@/catalogue/dashboards/smt";
 import type { DashboardConfig } from "@/catalogue/types";
 import { loadKeyDashboards } from "@/components/library/data";
 import {
@@ -65,6 +67,8 @@ const PHASE_TILE_SLUGS = new Set(TEACHER_DASHBOARDS.map((d) => d.id));
 // 0.7 admissions r2 (D2): the Admissions dashboards are reached by their own tile (one page,
 // Pipelines | Market share), never as two key-dashboard tiles.
 const ADMISSIONS_SLUGS = new Set(ADMISSIONS_DASHBOARDS.map((d) => d.id));
+// 0.8 SMT r1: the SMT dashboards are The school card's shortcuts, never key-dashboard tiles too.
+const SMT_SLUGS = new Set(SMT_DASHBOARDS.map((d) => d.id));
 
 export default function TeacherHomePage() {
   const supabase = createBrowserSupabaseClient();
@@ -164,7 +168,7 @@ export default function TeacherHomePage() {
         setLensState(lookingAs ?? initialLens(ls, readStoredLens()));
         // Each lens's key dashboards, and the next meeting, alongside the phases below.
         void Promise.all(ls.map(async (l) => [l, (await loadKeyDashboards(supabase, l).catch(() => ({ entries: [] }))).entries] as const)).then((pairs) =>
-          setKeyDashboards(Object.fromEntries(pairs.map(([l, es]) => [l, es.filter((e) => !(e.row.slug && (PHASE_TILE_SLUGS.has(e.row.slug) || ADMISSIONS_SLUGS.has(e.row.slug)))).map((e) => ({ href: e.href, config: e.config }))]))),
+          setKeyDashboards(Object.fromEntries(pairs.map(([l, es]) => [l, es.filter((e) => !(e.row.slug && (PHASE_TILE_SLUGS.has(e.row.slug) || ADMISSIONS_SLUGS.has(e.row.slug) || SMT_SLUGS.has(e.row.slug)))).map((e) => ({ href: e.href, config: e.config }))]))),
         );
         void listMeetings(supabase)
           .then((r) => {
@@ -223,10 +227,13 @@ export default function TeacherHomePage() {
           built), then the same Dashboards, Recruitment and Meetings tiles. */}
       {v06 && !error && lens !== "teacher" && (
         <div className="mt-6 flex flex-col gap-3">
+          {/* 0.8 SMT r1 (B6): the SMT home opens on The school (its dashboards and a summary line),
+              in KeyDashboardsEmpty's place; Admissions follows, read-only for SMT. */}
+          {lens === "smt" && <SchoolTile />}
           {(lens === "admissions" || lens === "smt") && <AdmissionsTile />}
           {(keyDashboards[lens] ?? []).length > 0 ? (
             keyDashboards[lens]!.map((k) => <KeyDashboardTile key={k.href} href={k.href} config={k.config} lens={lens} />)
-          ) : lens === "admissions" ? null : (
+          ) : lens === "admissions" || lens === "smt" ? null : (
             // 0.7 admissions r2: the Admissions lens has its own tile above, not a placeholder.
             <KeyDashboardsEmpty lens={lens} />
           )}

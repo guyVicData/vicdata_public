@@ -35,8 +35,8 @@ function asV1<T extends { schema_version: number }>(c: T): StoredConfig {
 
 test("every dataview has exactly one preset, made from it, following the page (D1a)", () => {
   assert.deepEqual(PRESET_IDS, DATAVIEWS.map((d) => d.id));
-  // 0.7 admissions r2: Teacher's 40, then the Admissions presets after them.
-  assert.equal(PRESET_IDS.filter((id) => !id.startsWith("DV-ADM-")).length, 40);
+  // 0.7 admissions r2: Teacher's 40, then the Admissions presets after them (0.8: then SMT's).
+  assert.equal(PRESET_IDS.filter((id) => !id.startsWith("DV-ADM-") && !id.startsWith("DV-SMT-")).length, 40);
   assert.deepEqual(PRESET_IDS.slice(0, 40).filter((id) => id.startsWith("DV-ADM-")), []);
   for (const dv of DATAVIEWS) {
     const s = VIEW_PRESETS.get(dv.id)!;

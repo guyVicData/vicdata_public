@@ -7,11 +7,13 @@
 //                          "urns" }): same ranking, figures and views. Nothing is saved.
 //   &subject=<name>        optional: the subject to focus, matched to the school's subjects by
 //                          name (case aside); no match, no change.
+//   &setLabel=<name>       0.8 SMT: optional, the set's name ("10 nearest schools", a saved set's) for
+//                          the Compared against pill; absent = "Admissions rivals", as before.
 // With no usable `set`, null: the page is exactly as it is without the parameter.
 export const LINKED_SET_LABEL = "Admissions rivals";
 export const LINKED_SET_MAX = 30;
 
-export type LinkedSet = { urns: string[]; subject: string | null };
+export type LinkedSet = { urns: string[]; subject: string | null; label?: string };
 
 export function parseLinkedSet(search: URLSearchParams): LinkedSet | null {
   const raw = search.get("set");
@@ -19,12 +21,13 @@ export function parseLinkedSet(search: URLSearchParams): LinkedSet | null {
   const urns = Array.from(new Set(raw.split(",").map((u) => u.trim()).filter((u) => /^\d{6}$/.test(u)))).slice(0, LINKED_SET_MAX);
   if (!urns.length) return null;
   const subject = search.get("subject")?.trim() || null;
-  return { urns, subject };
+  const label = search.get("setLabel")?.trim().slice(0, 80) || null;
+  return label ? { urns, subject, label } : { urns, subject };
 }
 
 /** The chooser choice the page stores for an unsaved custom set, as a JSON string. */
 export function linkedSetChoice(set: LinkedSet): string {
-  return JSON.stringify({ kind: "urns", label: LINKED_SET_LABEL, urns: set.urns });
+  return JSON.stringify({ kind: "urns", label: set.label ?? LINKED_SET_LABEL, urns: set.urns });
 }
 
 /** The subject item a linked subject names, if the school has it. */
@@ -39,5 +42,6 @@ export function withoutLinkedSet(href: string): string {
   const url = new URL(href);
   url.searchParams.delete("set");
   url.searchParams.delete("subject");
+  url.searchParams.delete("setLabel");
   return url.pathname + (url.search ? url.search : "") + url.hash;
 }

@@ -4,9 +4,11 @@
 import type { DashboardConfig } from "../types";
 import { TEACHER_DASHBOARDS } from "./teacher";
 import { ADMISSIONS_DASHBOARDS } from "./admissions";
+import { SMT_DASHBOARDS } from "./smt";
 
 // 0.7 admissions r2: the Admissions dashboards after Teacher's (Teacher's order is unchanged).
-export const DASHBOARDS: DashboardConfig[] = [...TEACHER_DASHBOARDS, ...ADMISSIONS_DASHBOARDS];
+// 0.8 SMT round 1: the SMT dashboards after Admissions' (both unchanged).
+export const DASHBOARDS: DashboardConfig[] = [...TEACHER_DASHBOARDS, ...ADMISSIONS_DASHBOARDS, ...SMT_DASHBOARDS];
 
 export function dashboardById(id: string): DashboardConfig | undefined {
   return DASHBOARDS.find((d) => d.id === id);
@@ -20,3 +22,4 @@ export function groupOf(config: DashboardConfig): DashboardConfig[] {
 
 export { TEACHER_DASHBOARDS, teacherDashboardFor } from "./teacher";
 export { ADMISSIONS_DASHBOARDS, ADMISSIONS_PIPELINES_ID, ADMISSIONS_MARKET_ID, isAdmissionsDashboard } from "./admissions";
+export { SMT_DASHBOARDS, SMT_OVERVIEW_ID, SMT_ACADEMIC_ID, SMT_COMING, isSmtDashboard } from "./smt";

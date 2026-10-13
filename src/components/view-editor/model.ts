@@ -87,6 +87,9 @@ const START: Record<HostId, Record<Side, DataviewId[]>> = {
   // 0.7 admissions r2 (D7)
   "admissions.pipelines": { current: ["DV-ADM-P-PIPELINE"], trend: ["DV-ADM-P-ENTRY-LINE"] },
   "admissions.market": { current: ["DV-ADM-M-BARS"], trend: ["DV-ADM-M-SHARE-LINE"] },
+  // 0.8 SMT round 1
+  "smt.overview": { current: ["DV-SMT-O-SCORECARD"], trend: ["DV-SMT-O-ROLL-LINE"] },
+  "smt.academic": { current: ["DV-SMT-A-AREAS"], trend: ["DV-SMT-A-TREND-LINE"] },
 };
 
 export const presetsOf = (host: HostId, side: Side): Dataview[] => DATAVIEWS.filter((d) => d.host.id === host && d.host.panel === side);

@@ -91,7 +91,8 @@ function fakeDashboard(id: string, owner: DashboardConfig["owner"], views: Datav
 // 0.7 admissions r2: the Admissions dashboards and dataviews are drawn by their own hosts
 // (src/components/admissions), not Teacher's; the Teacher-shaped checks below run on Teacher's,
 // and the Admissions ones have their own block ("Admissions in the catalogue").
-const teacherOnly = (d: DashboardConfig) => !d.id.startsWith("vicdata.admissions.");
+// 0.8: SMT's dashboards, like Admissions', aren't Teacher's.
+const teacherOnly = (d: DashboardConfig) => !d.id.startsWith("vicdata.admissions.") && !d.id.startsWith("vicdata.smt.");
 const teacherDv = (d: { host: { id: string } }) => d.host.id.startsWith("teacher.");
 
 // The seeded dashboards, when they exist (another S-step owns them).
@@ -416,7 +417,7 @@ describe("catalogue integrity", () => {
     }
   });
   it("dataviews are ordered by host then panel (the stable sort key)", () => {
-    const hosts = ["teacher.c1.candidates", "teacher.c1.results", "teacher.c1.counts", "teacher.c2.context", "teacher.c3.comparisons", "admissions.pipelines", "admissions.market"];
+    const hosts = ["teacher.c1.candidates", "teacher.c1.results", "teacher.c1.counts", "teacher.c2.context", "teacher.c3.comparisons", "admissions.pipelines", "admissions.market", "smt.overview", "smt.academic"];
     const keys = DATAVIEWS.map((d) => hosts.indexOf(d.host.id) * 2 + (d.host.panel === "current" ? 0 : 1));
     assert.deepEqual(keys, [...keys].sort((a, b) => a - b));
   });
@@ -679,8 +680,11 @@ describe("Admissions in the catalogue (0.7 r2)", () => {
   });
   it("Admissions dataviews come after Teacher's, carry no Teacher phase, and no Teacher context offers them", () => {
     const first = DATAVIEWS.findIndex((d) => d.id.startsWith("DV-ADM-"));
-    assert.ok(first > 0 && DATAVIEWS.slice(first).every((d) => d.id.startsWith("DV-ADM-")), "appended after every Teacher dataview");
-    for (const d of DATAVIEWS.slice(first)) {
+    // 0.8: SMT's are appended after Admissions' (their own test below).
+    const end = DATAVIEWS.findIndex((d) => d.id.startsWith("DV-SMT-"));
+    const adm = DATAVIEWS.slice(first, end < 0 ? undefined : end);
+    assert.ok(first > 0 && adm.every((d) => d.id.startsWith("DV-ADM-")), "appended after every Teacher dataview");
+    for (const d of adm) {
       assert.deepEqual(d.supports.phases, [], d.id);
       assert.ok(d.supports.data.every((x) => x.startsWith("admissions.")), d.id);
       assert.ok(d.host.id.startsWith("admissions."), d.id);

@@ -31,6 +31,7 @@ import { DEFAULT_FILTERS, getJson, query, useRoute, type Filters, type ListsAnsw
 import { loadAdmissionsMember, type AdmissionsMember, type MemberState } from "./member";
 import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, FilterChips, PhoneHeader, type DashKey } from "./controls";
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
+import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
 import { ControlBar } from "@/components/teacher/ControlBar";
 import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { isPlatformAdminCached } from "@/lib/edit-mode";
@@ -280,6 +281,9 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
     }, 1200);
     return () => window.clearTimeout(t);
   }, [dash, entry, filters]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 0.8 B7: the usage log's page view, and the scope CardBox's full screen reads. Draws nothing.
+  const usageScope: UsageScope | null = member.viewAs ? null : { product: "admissions", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: entry, setKind: null };
+  useUsagePageView(usageScope);
 
   if (url.setup && member.access !== "viewAs")
     return (
@@ -324,6 +328,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
     ) : undefined;
 
   return (
+    <UsageScopeContext.Provider value={usageScope}>
     <ShellPage phone={phone} rootRef={rootRef}>
       <ViewAsBanner />
       {/* F4: Teacher's nav, then Teacher's control bar -- the same components and places. */}
@@ -364,6 +369,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
         </>
       )}
     </ShellPage>
+    </UsageScopeContext.Provider>
   );
 }
 

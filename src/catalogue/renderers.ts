@@ -3,6 +3,7 @@
 // minHeight is the component's own floor inside today's fixed 384px panel (CardBox
 // PANEL_HEIGHT); fullscreen is its behaviour in the panel's fullscreen modal.
 import { ADMISSIONS_RENDERERS } from "./admissions";
+import { SMT_RENDERERS } from "./smt";
 import type { Renderer } from "./types";
 
 const T = "src/components/teacher";
@@ -188,4 +189,6 @@ export const RENDERERS: Renderer[] = [
   },
   // 0.7 admissions r2: the Admissions entries, after every existing one (src/catalogue/admissions.ts).
   ...ADMISSIONS_RENDERERS,
+  // 0.8 SMT round 1: the SMT dashboards (after Teacher's and Admissions', which are unchanged).
+  ...SMT_RENDERERS,
 ];

@@ -1,0 +1,3 @@
+import { createRoot } from "react-dom/client";
+import TeacherHome from "@/app/teacher/page";
+createRoot(document.getElementById("root")!).render(<TeacherHome />);

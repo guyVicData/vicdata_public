@@ -45,8 +45,11 @@ A slot that doesn't apply keeps its width, so the other icons never move. Admiss
 - **Badge and title.** Pass `badge` (the "A", the "S") and `phaseLabel` ("Admissions", "SMT") to `ControlBar`.
 - **Focus chips.** Pass them through `ControlBar`'s `subjects` / `focusKey` / `onFocus` (single-select, held in the URL by the product).
   - Name the group with `subjectsLabel` (the accessible label only; nothing is drawn before the chips).
-  - Use `editSubjects` for the ±, or leave it out.
+  - Use `editSubjects` for the ±, or leave it out. `noEdit` drops the ± altogether (SMT: the chips are the school's phases, nothing to edit).
+  - A chip with no `colour` takes the product's accent. A `marked` chip is drawn dashed, with its reason as the tooltip; it can still be chosen (SMT: an IGCSE school's GCSE).
+  - Use `subRow` for a second, lighter row of chips under the first, inside the bar (SMT: the subject areas under GCSE or Post-16).
 - **Filters.** Put pills (`FChip`, `MenuChip`, `PillMenu`) in `ControlBar`'s `chrome` slot, only where they apply: boarding only for a boarding school, gender only for a mixed school.
 - **Views.** Each view is a catalogue entry plus a component, drawn inside a `RailPanel` or `CardBox`.
 - **Notes.** Take the honesty wording from the product's notes file (`ADMISSIONS_NOTES`, `SMT_NOTES`) and pass it as the panel's `caption`.
 - **Edit.** Register the page's dashboard with `useInPlaceEdit`, so the footer's Edit opens the shared editor in place.
+- **Usage.** Give the page a usage scope (`UsageScopeContext` / `useUsagePageView`, or `UsageReporter`, from `src/lib/usage-client.ts`). The page view is then logged, and `CardBox` logs a full-screen open. Nothing is drawn.

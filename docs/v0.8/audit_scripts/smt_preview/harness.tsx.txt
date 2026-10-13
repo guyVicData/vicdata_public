@@ -1,0 +1,8 @@
+import { createRoot } from "react-dom/client";
+import { SmtDashboard } from "@/components/smt/SmtDashboard";
+import TeacherHome from "@/app/teacher/page";
+import { EditorScreen } from "@/components/editor/EditorScreen";
+const P = new URLSearchParams(location.search);
+const el = document.getElementById("root")!;
+const page = P.get("page");
+createRoot(el).render(page === "home" ? <TeacherHome /> : page === "editor" ? <EditorScreen id={P.get("dash") ?? "vicdata.smt.overview"} host={{ school: { urn: P.get("case") ?? "137625", name: "The Chase" } }} /> : <SmtDashboard dash={page === "academic" ? "academic" : "overview"} />);

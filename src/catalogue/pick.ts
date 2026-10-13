@@ -108,6 +108,11 @@ export const DATA_LABEL: Record<DataId, string> = {
   "admissions.pipeline": "Pipeline",
   "admissions.market": "Market share",
   "admissions.rivals": "Rivals' results",
+  // 0.8 SMT round 1: the SMT families.
+  "smt.school": "The school",
+  "smt.results": "Results and ranks",
+  "smt.value_added": "Value added",
+  "smt.subjects": "Subject areas and subjects",
 };
 
 export const PHASE_LABEL: Record<Phase, string> = { ks4: "GCSE", ks5: "Post-16" };
@@ -174,6 +179,7 @@ export const FOCUS_LABEL: Record<FocusKind, string> = {
   region: "Region",
   national: "England",
   entry_point: "Entry point",
+  level: "Level",
 };
 
 // Block 1's chips (F7): school-keyed data focuses inside the school, area-keyed data on an

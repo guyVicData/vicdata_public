@@ -16,6 +16,7 @@ import { pinFromContext, type PinSchool } from "@/lib/pin-context";
 import { DataFreePreview, type PanelPreviewProps } from "./PanelPreview";
 import { EditorVariantsContext } from "./EditorPanel";
 import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
+import { SmtViewPreview } from "@/components/smt/SmtDashboard";
 import { admissionsVars } from "@/components/admissions/ui";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 
@@ -36,6 +37,8 @@ export function LivePanelPreview(props: PanelPreviewProps) {
         <AdmissionsViewPreview dataview={dv.id} spec={props.view.spec} urn={school.urn} schoolName={school.name} entry={variants?.state.entryPoint === "custom" ? "11+" : (variants?.state.entryPoint ?? "11+")} height={props.height} />
       </AdmissionsCanvasPreview>
     );
+  // 0.8 SMT r1: an SMT view draws itself from the SMT routes, at Whole school on the member's set.
+  if (dv.host.id.startsWith("smt.")) return <SmtViewPreview dataview={dv.id} urn={school.urn} schoolName={school.name} height={props.height} />;
   let pinned;
   try {
     pinned = pinFromContext(contextFromPanel(props.config, props.panel.id, props.labels), dv, school);

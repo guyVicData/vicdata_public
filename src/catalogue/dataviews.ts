@@ -12,6 +12,7 @@
 // Comparisons compares against a school set (`schools`), focused on a subject or, with no
 // subject chip, the school itself.
 import { ADMISSIONS_DATAVIEWS } from "./admissions";
+import { SMT_DATAVIEWS } from "./smt";
 import type { AudienceTag, CompareKind, Dataview, DataviewId, HostId, MeasureId, Phase, ResultsMeasure } from "./types";
 
 const CP = "src/components/teacher/CandidatesPanels.tsx";
@@ -1120,6 +1121,8 @@ export const DATAVIEWS: Dataview[] = [
   },
   // 0.7 admissions r2: the Admissions entries, after every existing one (src/catalogue/admissions.ts).
   ...ADMISSIONS_DATAVIEWS,
+  // 0.8 SMT round 1: the SMT dashboards (after Teacher's and Admissions', which are unchanged).
+  ...SMT_DATAVIEWS,
 ];
 
 export const DATAVIEW_IDS: DataviewId[] = DATAVIEWS.map((d) => d.id);

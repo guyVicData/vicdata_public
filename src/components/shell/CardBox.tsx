@@ -22,6 +22,7 @@ import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherMod
 import { CaptionNote, PanelNote, SourceNote } from "./PanelFooter";
 import { ChevronDown } from "./PanelIcons";
 import { PanelIconRow } from "./PanelIconRow";
+import { reportUsage, useUsageScope } from "@/lib/usage-client";
 
 // Lets the dashboard know when any box -- a column's default box or a pinned one deep in
 // ColumnBuilder -- is fullscreen, without threading a callback through every level. The
@@ -215,6 +216,13 @@ export function CardBox({
   const [printing, setPrinting] = useState(false);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const report = useContext(FullscreenReport);
+  // 0.8 B7: opening a view in full screen is logged where the page set a usage scope (Teacher,
+  // Admissions, SMT); a print isn't, and nothing is drawn either way.
+  const usage = useUsageScope();
+  useEffect(() => {
+    if (fullscreen && !printing && usage) reportUsage({ ...usage, event: "fullscreen", view: title });
+    // Only on opening: the scope and title are read then.
+  }, [fullscreen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Open the modal, let it paint, print, then put everything back. afterprint is the only
   // honest signal for "the dialog has gone" -- there is no promise to await.

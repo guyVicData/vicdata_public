@@ -37,6 +37,7 @@ import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardFrame, GroupSwitcher, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
 import { accentVars, productAccent } from "@/components/shell/accent";
+import { UsageReporter, type UsageScope } from "@/lib/usage-client";
 import { buildPlan, configRendererRequested, DashboardPlanContext, type PlanEmbed } from "@/components/dashboard-config/plan";
 import { DashboardRuntimeContext, type DashboardRuntime } from "@/components/dashboard-config/runtime";
 import { VicDataUpdatesBySlug } from "@/components/editor/DashboardUpdates";
@@ -2690,8 +2691,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       }
     : null;
 
+  // 0.8 B7: the usage log's page view (and the scope CardBox's full screen reads). Draws nothing.
+  const usageScope: UsageScope | null = schoolUrn && phase ? { product: "teacher", urn: schoolUrn, dashboard: dashboardConfig?.id ?? `teacher.${phase}`, level: focusItem ? focusItem.subject : null, setKind: activeSavedSet ? "saved" : chooserChoice ? chooserChoice.kind : "nearest" } : null;
   return (
-    <>
+    <UsageReporter scope={usageScope}>
     {editorHost && dashboardConfig && <InPlaceEditor slug={dashboardConfig.id} host={editorHost} />}
     {/* §7: the theme attribute is scoped to Teacher view, never to <html> -- see
         TeacherChrome.tsx for why, and Q15. */}
@@ -2923,7 +2926,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       )}
     </main>
     </TableLayoutContext.Provider>
-    </>
+    </UsageReporter>
   );
 }
 
