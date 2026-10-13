@@ -417,7 +417,7 @@ describe("catalogue integrity", () => {
     }
   });
   it("dataviews are ordered by host then panel (the stable sort key)", () => {
-    const hosts = ["teacher.c1.candidates", "teacher.c1.results", "teacher.c1.counts", "teacher.c2.context", "teacher.c3.comparisons", "admissions.pipelines", "admissions.market", "smt.overview", "smt.academic"];
+    const hosts = ["teacher.c1.candidates", "teacher.c1.results", "teacher.c1.counts", "teacher.c2.context", "teacher.c3.comparisons", "admissions.pipelines", "admissions.market", "smt.overview", "smt.academic", "smt.pupils", "smt.context"];
     const keys = DATAVIEWS.map((d) => hosts.indexOf(d.host.id) * 2 + (d.host.panel === "current" ? 0 : 1));
     assert.deepEqual(keys, [...keys].sort((a, b) => a - b));
   });

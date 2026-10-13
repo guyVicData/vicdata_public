@@ -64,3 +64,6 @@ export const MIN_SUBJECT_ENTRIES_UI = 5;
 export function pillsFor(s: { mixed: boolean; boarding: boolean }): ("gender" | "boarding")[] {
   return [...(s.mixed ? (["gender"] as const) : []), ...(s.boarding ? (["boarding"] as const) : [])];
 }
+
+// Context's "around the school" radius, for the page's words (context.ts AROUND_MILES).
+export const AROUND_MILES_UI = 5;

@@ -222,6 +222,8 @@ const COLUMN_ICON: Record<Dataview["host"]["id"], DashboardConfig["columns"][num
   // 0.8 SMT: never drawn through TeacherDashboard either (SMT has its own renderer).
   "smt.overview": "context",
   "smt.academic": "results",
+  "smt.pupils": "context",
+  "smt.context": "context",
 };
 
 // Does this host offer a year control on this panel? (Context's Current: SubjectPanels'

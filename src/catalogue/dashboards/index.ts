@@ -22,4 +22,4 @@ export function groupOf(config: DashboardConfig): DashboardConfig[] {
 
 export { TEACHER_DASHBOARDS, teacherDashboardFor } from "./teacher";
 export { ADMISSIONS_DASHBOARDS, ADMISSIONS_PIPELINES_ID, ADMISSIONS_MARKET_ID, isAdmissionsDashboard } from "./admissions";
-export { SMT_DASHBOARDS, SMT_OVERVIEW_ID, SMT_ACADEMIC_ID, SMT_COMING, isSmtDashboard } from "./smt";
+export { SMT_DASHBOARDS, SMT_OVERVIEW_ID, SMT_ACADEMIC_ID, SMT_PUPILS_ID, SMT_CONTEXT_ID, SMT_COMING, isSmtDashboard } from "./smt";

@@ -60,7 +60,12 @@ export type ConsortiumMapMember = {
 //   heightClass the map's height and frame classes (default: h-[320px], the page's frame)
 //   onSelect   what a click does (default: open the school's page)
 //   fitPadding the fit-to-bounds padding in px (default: 32)
+// 0.8 SMT r2 (Context): one more OPTIONAL prop, absent everywhere before it --
+//   areas      polygons drawn under the dots (WGS84 GeoJSON), each with its own fill and tooltip;
+//              the map still fits to the dots
+export type ConsortiumMapArea = { id: string; geometry: GeoJSON.MultiPolygon; fill: string; fillOpacity: number; stroke: string; tooltip: string; weight?: number };
 export type ConsortiumMapOptions = {
+  areas?: ConsortiumMapArea[];
   colourOf?: (m: ConsortiumMapMember) => string;
   targetUrn?: string;
   tooltipOf?: (m: ConsortiumMapMember) => string;
@@ -69,7 +74,7 @@ export type ConsortiumMapOptions = {
   fitPadding?: number;
 };
 
-export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
+export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding, areas }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const router = useRouter();
@@ -86,6 +91,13 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
+      if (areas?.length) {
+        for (const a of areas) {
+          const layer = L.geoJSON(a.geometry as GeoJSON.GeoJsonObject, { style: { color: a.stroke, weight: a.weight ?? 1, fillColor: a.fill, fillOpacity: a.fillOpacity } });
+          layer.bindTooltip(a.tooltip, { sticky: true });
+          layer.addTo(map);
+        }
+      }
       const group: LayerGroup = L.layerGroup().addTo(map);
       const rolls = members.map((m) => m.roll).filter((r): r is number => r !== null);
       const minRoll = rolls.length ? Math.min(...rolls) : 0;

@@ -20,6 +20,8 @@ export type SmtSchool = {
   name: string;
   laCode: string | null;
   laName: string | null;
+  // GIAS's town (the place line; VicData holds no district for a school).
+  town: string | null;
   regionName: string | null;
   independent: boolean;
   typeGroup: string | null;
@@ -38,7 +40,7 @@ export type SmtSchool = {
   census: RollSnapshot[];
 };
 
-type SchoolRow = { current_name: string | null; la_name: string | null; la_code: string | null; gender: string | null; boarders_name: string | null; establishment_type_group: string | null; statutory_low_age: number | null; statutory_high_age: number | null };
+type SchoolRow = { current_name: string | null; town: string | null; la_name: string | null; la_code: string | null; gender: string | null; boarders_name: string | null; establishment_type_group: string | null; statutory_low_age: number | null; statutory_high_age: number | null };
 
 export function latestYears(): Promise<LatestYears> {
   return cachedReference("years:latest", () => lookupAcademicLatestYears()) as Promise<LatestYears>;
@@ -69,7 +71,7 @@ export async function schoolAreas(urn: string, stage: "ks4" | "ks5", period: num
 export async function smtSchool(urn: string): Promise<SmtSchool | null> {
   const { data } = await createServerAnonSupabaseClient()
     .from("schools")
-    .select("current_name, la_name, la_code, gender, boarders_name, establishment_type_group, statutory_low_age, statutory_high_age")
+    .select("current_name, town, la_name, la_code, gender, boarders_name, establishment_type_group, statutory_low_age, statutory_high_age")
     .eq("urn", urn)
     .maybeSingle<SchoolRow>();
   if (!data) return null;
@@ -100,6 +102,7 @@ export async function smtSchool(urn: string): Promise<SmtSchool | null> {
     name: data.current_name ?? urn,
     laCode: data.la_code,
     laName: data.la_name,
+    town: data.town,
     regionName: england.get(urn)?.regionName ?? null,
     independent: typeGroup === "Independent schools",
     typeGroup,

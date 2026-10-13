@@ -159,6 +159,23 @@ export const SMT_NOTES = {
   bandReserved: "Arrives with the results-by-band round: the top 25%, middle 50% and bottom 25% of entries.",
   // A qualification on its own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) has no GCSE points.
   differentScale: "different grading scale, not ranked",
+  // ---- 0.8 SMT round 2: Pupils
+  entryPointsNone: "Admissions hasn't set this school's entry points yet, so there is nothing to show here. The Admissions lead sets them in Admissions.",
+  shapesAround: "Shapes are described, never ranked: a smaller sixth form isn't worse.",
+  rollByPhase: "Each phase's roll, and England's pupils aged 5 to 15 in every mainstream school (the census aggregates), indexed to 100 in {base}.",
+  pool: "The pool for the main entry point, from Admissions: counted in the schools it draws from, then from births. A pool, not an intake.",
+  areaPupils: "Pupils aged 5 to 15 in {la}'s mainstream schools (school census). ONS publishes the LA's population by single year of age, but VicData holds its total only.",
+  levelAges: "The level picks the ages: GCSE Years 7 to 11, Post-16 Years 12 and 13, Primary Reception to Year 6.",
+  // ---- 0.8 SMT round 2: Context
+  dataGap: "Deprivation and free school meals: not yet in VicData",
+  dataGapPlanned: "Planned: the English Indices of Deprivation by neighbourhood (LSOA), and DfE's school-level free-school-meals data. Until then, Context shows population only.",
+  shadeLater: "When the deprivation data arrives, \u201cShade by\u201d gains Deprivation and Free school meals (state schools).",
+  shadeByDistrict: "Shading by district: VicData holds pupil numbers by age for each local authority, not for neighbourhoods (LSOA or MSOA), so the map shades whole districts.",
+  aroundSchool: "Around the school: every school within {miles} miles, all sectors.",
+  childrenAround: "Pupils aged {ages} in schools within {miles} miles (school census): children who go to school nearby, wherever they live.",
+  births: "Births are counted by local authority (ONS), by calendar year.",
+  projection: "A projection, not a forecast for the school: ONS's projection of {age}-year-olds in {area} (county or unitary).",
+  popByAge: "Pupils by single year of age in {la}'s mainstream schools (school census, ages 5 to 15). VicData has no population by age for older children yet.",
   // Small numbers.
   smallEntries: "Subjects with fewer than {min} entries aren't ranked: one or two pupils would decide the rank.",
 } as const;

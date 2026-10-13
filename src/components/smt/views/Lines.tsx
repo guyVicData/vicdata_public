@@ -132,8 +132,9 @@ export function ResultsBand({ trend, setLabel, fullscreen, room, title, schoolNa
   );
 }
 
-export function MarketLine({ o, fullscreen, room }: { o: Overview; fullscreen: boolean; room?: number }) {
-  const m = o.trends.market;
+export function MarketLine({ o, market, schoolName, fullscreen, room }: { o?: Overview; market?: Overview["trends"]["market"]; schoolName?: string; fullscreen: boolean; room?: number }) {
+  const m = market ?? o!.trends.market;
+  const you = schoolName ?? (o ? o.schools[o.urn]?.name : null) ?? "You";
   if (m.status === "empty")
     return (
       <>
@@ -158,12 +159,83 @@ export function MarketLine({ o, fullscreen, room }: { o: Overview; fullscreen: b
         ]}
       />
       <div className="flex flex-wrap gap-3">
-        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>{o.schools[o.urn]?.name ?? "You"}</Key>
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>{you}</Key>
         {m.rival.length > 0 && <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} weight={2} />}>Largest rival{m.rivalName ? ` (${m.rivalName})` : ""}</Key>}
       </div>
       <Link href="/teacher/admissions?view=market-share&entry=11%2B" className="text-[11.5px] font-bold text-[var(--adm-accent-text)]">
         Open in Admissions &rarr;
       </Link>
+    </>
+  );
+}
+
+// ------------------------------------------------------------ 0.8 SMT round 2: Pupils' row 2
+
+/** Indexed lines (each phase's roll, England's pupils aged 5-15), 100 in the base year. */
+export function IndexedLines({ title, lines, fullscreen, room, caption }: { title: string; lines: { key: string; label: string; pts: Pt[] }[]; fullscreen: boolean; room?: number; caption?: string }) {
+  if (!lines.length || lines[0].pts.filter((p) => p.value !== null).length < 2) return <Empty>Not enough census years to draw a trend.</Empty>;
+  const colour = (k: string, i: number) => (k === "england" ? "var(--adm-grey-2)" : i === 0 ? "var(--accent)" : "rgba(var(--accent-rgb),0.7)");
+  const dash = (k: string, i: number) => (k === "england" ? "4 3" : i > 0 ? "5 4" : undefined);
+  const years = lines[0].pts.map((p) => p.year);
+  return (
+    <>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">{title}</div>
+      <LineChart
+        height={fullscreen ? fillHeight(room, 150, 300) : 150}
+        reference={{ y: 100 }}
+        yFormat={(v) => v.toFixed(0)}
+        xLabels={[yr(years[0]), yr(years[years.length - 1])]}
+        series={lines.map((l, i) => ({ id: l.key, label: l.label, colour: colour(l.key, i), width: l.key === "england" ? 1.6 : 2.6, dashed: dash(l.key, i), points: l.pts.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${l.label} ${yr(pt.x)}: ${pt.y?.toFixed(0)}` }))}
+      />
+      <div className="flex flex-wrap gap-3">
+        {lines.map((l, i) => (
+          <Key key={l.key} swatch={<LineSwatch colour={colour(l.key, i)} width={14} weight={l.key === "england" ? 2 : 2.5} dashed={!!dash(l.key, i)} />}>
+            {l.label}
+          </Key>
+        ))}
+      </div>
+      {caption && <div className="text-[10.5px] leading-snug text-[var(--muted)]">{caption}</div>}
+    </>
+  );
+}
+
+/** Admissions' pool for the main entry point: counted (solid), then from births (dashed). */
+export function PoolLine({ pool, fullscreen, room, caption }: { pool: { status: "ready"; entry: string; counted: Pt[]; births: Pt[] } | { status: "empty"; reason: string }; fullscreen: boolean; room?: number; caption: string }) {
+  if (pool.status === "empty") return <Empty>{pool.reason}</Empty>;
+  const all = [...pool.counted, ...pool.births];
+  const ys = all.map((p) => p.year);
+  return (
+    <>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">The pool for your main entry point ({pool.entry})</div>
+      <LineChart
+        height={fullscreen ? fillHeight(room, 150, 300) : 140}
+        yFormat={(v) => fmt(v, "pupils")}
+        xLabels={ys.length ? [String(Math.min(...ys)), String(Math.max(...ys))] : null}
+        series={[
+          { id: "c", label: "Counted", colour: "var(--accent)", points: pool.counted.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${pt.x} entry: ${fmt(pt.y, "pupils")} (counted)` },
+          { id: "b", label: "From births", colour: "var(--accent)", dashed: "5 4", points: pool.births.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${pt.x} entry: ${fmt(pt.y, "pupils")} (from births)` },
+        ]}
+      />
+      <div className="flex flex-wrap gap-3">
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Counted</Key>
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} dashed />}>From births</Key>
+      </div>
+      <div className="text-[10.5px] leading-snug text-[var(--muted)]">{caption}</div>
+    </>
+  );
+}
+
+/** One plain line (the area's school-age pupils), actual figures. */
+export function PlainLine({ title, label, pts, fullscreen, room, caption }: { title: string; label: string; pts: Pt[]; fullscreen: boolean; room?: number; caption: string }) {
+  if (pts.filter((p) => p.value !== null).length < 2) return <Empty>Not enough years held to draw a trend.</Empty>;
+  return (
+    <>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">{title}</div>
+      <LineChart height={fullscreen ? fillHeight(room, 150, 300) : 140} yFormat={(v) => fmt(v, "pupils")} xLabels={[yr(pts[0].year), yr(pts[pts.length - 1].year)]} series={[{ id: "a", label, colour: "var(--adm-grey-soft)", points: pts.map((p) => ({ x: p.year, y: p.value })) }]} />
+      <div className="flex flex-wrap gap-3">
+        <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} />}>{label}</Key>
+      </div>
+      <div className="text-[10.5px] leading-snug text-[var(--muted)]">{caption}</div>
     </>
   );
 }

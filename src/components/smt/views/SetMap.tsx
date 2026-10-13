@@ -8,7 +8,10 @@ import type { ConsortiumMapMember } from "@/components/ConsortiumMap";
 import { Empty, Key, fillHeight } from "@/components/admissions/ui";
 import type { Overview } from "../api";
 import { fmt } from "../ui";
+import { productAccent } from "@/components/shell/accent";
 
+// Leaflet sets marker colours as SVG attributes, where CSS variables don't resolve: the accent's hex.
+const SMT_HEX = productAccent("smt")!.hex;
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
 
 export function SetMap({ o, fullscreen, room }: { o: Overview; fullscreen: boolean; room?: number }) {
@@ -28,7 +31,7 @@ export function SetMap({ o, fullscreen, room }: { o: Overview; fullscreen: boole
           members={members}
           targetUrn={o.urn}
           heightClass={`${h ? "h-full" : fullscreen ? "h-[560px]" : "h-[360px]"} w-full overflow-hidden rounded-[10px] border border-[var(--panel-border)]`}
-          colourOf={(x) => (x.urn === o.urn ? "var(--accent)" : "#71717a")}
+          colourOf={(x) => (x.urn === o.urn ? SMT_HEX : "#71717a")}
           tooltipOf={(x) => `${x.name}${x.urn === o.urn ? " (you)" : ""}`}
         />
       </div>

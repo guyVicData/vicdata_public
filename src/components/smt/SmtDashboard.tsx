@@ -22,14 +22,14 @@ import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { openViewAs } from "@/components/view-as/ViewAs";
 import { AdmissionsTeacherNav, Divider } from "@/components/admissions/controls";
-import { Empty, EntryChip, Skeleton } from "@/components/admissions/ui";
+import { Empty, EntryChip, FChip, Skeleton } from "@/components/admissions/ui";
 import { useWidth } from "@/components/admissions/views/charts";
 import { CopyViewDialog } from "@/components/copy-view/CopyViewDialog";
 import type { ChooserChoice } from "@/components/teacher/ComparatorSetChooser";
 import { dataviewById } from "@/catalogue/dataviews";
 import { contextFromPanel } from "@/catalogue/pick";
-import { SMT_DASHBOARDS, SMT_ACADEMIC_ID, SMT_OVERVIEW_ID } from "@/catalogue/dashboards/smt";
-import { SMT_NOTES, TREND_BASE_NOTE, smtNote } from "@/catalogue/notes";
+import { SMT_DASHBOARDS, SMT_ACADEMIC_ID, SMT_CONTEXT_ID, SMT_OVERVIEW_ID, SMT_PUPILS_ID } from "@/catalogue/dashboards/smt";
+import { ADMISSIONS_NOTES, SMT_NOTES, TREND_BASE_NOTE, smtNote } from "@/catalogue/notes";
 import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel, setLatestYears } from "@/catalogue/years";
 import type { DashboardConfig, DataviewInstance, PanelConfig } from "@/catalogue/types";
 import { loadPublishedVicData } from "@/lib/published-vicdata";
@@ -38,6 +38,9 @@ import { ALL_AREAS_LABEL, LEVEL_LABEL, levelChips, levelLabel, levelQuery, parse
 import { SMT_ONLY_MESSAGE } from "@/lib/smt/auth-rules";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
 import { useSmt, type Academic, type Load, type Overview, type SmtFilters, type SmtSchool, type SmtSetChoice } from "./api";
+import type { Pupils } from "@/lib/smt/pupils";
+import type { Context, ContextArea } from "@/lib/smt/context";
+import { AROUND_MILES_UI } from "@/lib/smt/levels";
 import { loadSmtMember, type SmtMember, type SmtMemberState } from "./member";
 import { DEFAULT_SET_LABEL, useSmtSet } from "./useSmtSet";
 import { smtVars, yearOf } from "./ui";
@@ -45,7 +48,7 @@ import { SchoolNow } from "./views/Now";
 import { Scorecard } from "./views/Scorecard";
 import { SetMap } from "./views/SetMap";
 import { SchoolFlags } from "./views/Flags";
-import { Direction, MarketLine, ResultsBand, RollIndexed } from "./views/Lines";
+import { Direction, IndexedLines, MarketLine, PlainLine, PoolLine, ResultsBand, RollIndexed } from "./views/Lines";
 import { BandTable, MarketTable, MixTable, RollTable } from "./views/Tables";
 import { AcademicNow } from "./views/AcademicNow";
 import { SubjectAreas } from "./views/Areas";
@@ -54,13 +57,16 @@ import { ValueAdded } from "./views/ValueAdded";
 import { GradeProfile } from "./views/Grades";
 import { EntriesMix } from "./views/Mix";
 import { ReservedPanel } from "./views/Reserved";
+import { EntryPoints, LeavingAt16, PupilsNow, ShapeAndSize } from "./views/Pupils";
+import { AgeBars, AreaMap, BirthsAndProjections, BirthsIndexed, BirthsTable, ContextNow, Projection } from "./views/Context";
 
 const ComparatorSetChooser = lazy(() => import("@/components/teacher/ComparatorSetChooser").then((m) => ({ default: m.ComparatorSetChooser })));
 const EditorScreen = lazy(() => import("@/components/editor/EditorScreen").then((m) => ({ default: m.EditorScreen })));
 
-export type SmtDash = "overview" | "academic";
-const DASH_ID: Record<SmtDash, string> = { overview: SMT_OVERVIEW_ID, academic: SMT_ACADEMIC_ID };
-const PATH: Record<SmtDash, string> = { overview: "/teacher/smt", academic: "/teacher/smt/academic" };
+export type SmtDash = "overview" | "academic" | "pupils" | "context";
+const DASHES: SmtDash[] = ["overview", "academic", "pupils", "context"];
+const DASH_ID: Record<SmtDash, string> = { overview: SMT_OVERVIEW_ID, academic: SMT_ACADEMIC_ID, pupils: SMT_PUPILS_ID, context: SMT_CONTEXT_ID };
+const PATH: Record<SmtDash, string> = { overview: "/teacher/smt", academic: "/teacher/smt/academic", pupils: "/teacher/smt/pupils", context: "/teacher/smt/context" };
 const PHONE = 768; // Admissions' phone width
 const ROW_NOW = 530; // Admissions' rows (0.7 r3 F1)
 const ROW_TRENDS = 340;
@@ -181,6 +187,8 @@ export type Ctx = {
   filters: SmtFilters;
   overview: Load<Overview>;
   academic: Load<Academic>;
+  pupils: Load<Pupils>;
+  context: Load<Context>;
   onArea: (stage: "ks4" | "ks5", id: string) => void;
   focusBar: ReactNode;
   phone: boolean;
@@ -202,13 +210,13 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const f: SmtFilters = { sex: s?.mixed ? filters.sex : "all", boarding: s?.boarding ? filters.boarding : "all" };
 
   // The published configs (the store's, else the code copy), re-read after editing.
-  const [configs, setConfigs] = useState<Record<SmtDash, DashboardConfig>>({ overview: SMT_DASHBOARDS[0], academic: SMT_DASHBOARDS[1] });
+  const [configs, setConfigs] = useState<Record<SmtDash, DashboardConfig>>({ overview: SMT_DASHBOARDS[0], academic: SMT_DASHBOARDS[1], pupils: SMT_DASHBOARDS[2], context: SMT_DASHBOARDS[3] });
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
     (async () => {
       if (reloadTick > 0) await editorWritesSettled();
-      const [o, a] = await Promise.all(SMT_DASHBOARDS.map((d) => loadPublishedVicData(supabase, d.id, d)));
-      setConfigs({ overview: o.config, academic: a.config });
+      const [o, a, p, c] = await Promise.all(SMT_DASHBOARDS.map((d) => loadPublishedVicData(supabase, d.id, d)));
+      setConfigs({ overview: o.config, academic: a.config, pupils: p.config, context: c.config });
     })();
   }, [reloadTick]);
 
@@ -216,6 +224,10 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const body = set ? { urn: member.schoolUrn, set } : null;
   const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body ? { ...body, filters: f } : null);
   const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, level: level.phase, area: level.area } : null);
+  const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: f } : null);
+  // Context: the area pill (around the school, or the LA), held in the address (?area=la).
+  const [area, setArea] = useState<ContextArea>(() => (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("near") === "la" ? "la" : "around"));
+  const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${member.schoolUrn}&area=${area}` : null, null);
 
   // B7: a page view, once per school, dashboard, level and set kind.
   const usage: UsageScope | null = useMemo(() => (s ? { product: "smt", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: level.area ? `${level.phase}/${level.area}` : level.phase, setKind: set?.kind ?? null } : null), [s, member.schoolUrn, dash, level.phase, level.area, set?.kind]);
@@ -283,7 +295,31 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
       }}
     </PillMenu>
   );
-  const pills = (
+  // Context (the board): the Area pill and "Compared against: England" (its comparisons are the LA
+  // and England); no set, no gender or boarding (the area's figures have neither split).
+  const setArea2 = (a: ContextArea) => {
+    setArea(a);
+    const sp = new URLSearchParams(window.location.search);
+    if (a === "la") sp.set("near", "la");
+    else sp.delete("near");
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`);
+  };
+  const contextPills = (
+    <>
+      <Divider />
+      <MenuChip
+        label="Area"
+        value={area}
+        onPick={setArea2}
+        options={[
+          { id: "around", label: "Area: around the school", title: smtNote("aroundSchool", { miles: AROUND_MILES_UI }) },
+          { id: "la", label: `Area: ${s?.laName ?? "the LA"}` },
+        ]}
+      />
+      <FChip title="Context compares the area with England">Compared against: England</FChip>
+    </>
+  );
+  const pills = dash === "context" ? contextPills : (
     <>
       <Divider />
       {setPill}
@@ -315,8 +351,8 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   );
 
   const config = configs[dash];
-  const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, filters: f, overview, academic, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone } : null;
-  const switcher = <GroupSwitcher dashboards={[configs.overview, configs.academic]} activeId={config.id} onSwitch={(d) => go(d.id === configs.academic.id ? "academic" : "overview")} />;
+  const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, filters: f, overview, academic, pupils, context, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone } : null;
+  const switcher = <GroupSwitcher dashboards={DASHES.map((d) => configs[d])} activeId={config.id} onSwitch={(d) => go(DASHES.find((x) => configs[x].id === d.id) ?? "overview")} />;
 
   return (
     <UsageScopeContext.Provider value={member.viewAs ? null : usage}>
@@ -392,6 +428,14 @@ function rowContext(row: string, c: Ctx): string {
       return [census !== null ? `January ${census + 1} census` : null, results || null].filter(Boolean).join(" · ");
     }
     return `indexed to 100, against ${c.school.laName ?? "the LA"} and England`;
+  }
+  if (c.dash === "pupils") {
+    if (row === "now") return census !== null ? `January ${census + 1} census` : "";
+    return `${periodLabel(CENSUS_FIRST_PERIOD)} to ${census !== null ? periodLabel(census) : ""}`;
+  }
+  if (c.dash === "context") {
+    if (row === "now") return "ONS births and projections, school census by age";
+    return "indexed to 100, against England";
   }
   const area = c.level.area ? (c.school.areas[c.level.phase === "gcse" ? "gcse" : "post16"].find((a) => a.id === c.level.area)?.label ?? null) : null;
   const stage = c.level.phase === "gcse" ? "ks4" : c.level.phase === "post16" ? "ks5" : c.level.phase === "primary" ? "ks2" : null;
@@ -478,7 +522,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
             instance,
             context: contextFromPanel(config, panel.id, { school: c.member.schoolName }),
             title: `${title} · ${levelLabel(c.level)}`,
-            pinned: { schoolUrn: c.member.schoolUrn, schoolName: c.member.schoolName, params: { level: c.level.phase, area: c.level.area, set: { kind: c.set.kind, label: c.set.label, urns: c.set.urns } }, keepLive: true },
+            pinned: { schoolUrn: c.member.schoolUrn, schoolName: c.member.schoolName, params: { level: c.level.phase, area: c.level.area, set: { kind: c.set.kind, label: c.set.label, urns: c.set.urns }, ...(c.context.status === "ready" ? { near: c.context.data.area } : {}) }, keepLive: true },
           }}
         />
       )}
@@ -527,6 +571,40 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-A-MIX":
     case "DV-SMT-A-MIX-TABLE":
       return { tag: "Trends", context: "entries mix" };
+    // 0.8 SMT round 2: Pupils
+    case "DV-SMT-P-NOW":
+      return { tag: "Current", context: c.school.census.at(-1) ? `Data ${periodLabel(c.school.census.at(-1)!.period)}` : "" };
+    case "DV-SMT-P-SHAPE":
+      return { tag: "Shape and size", context: `pupils by age, against the local shape and ${set}` };
+    case "DV-SMT-P-ENTRIES":
+      return { tag: "Entry points", context: "from Admissions, read-only" };
+    case "DV-SMT-P-LEAVING":
+      return { tag: "Leaving at 16", context: "Year 11 to Year 12" };
+    case "DV-SMT-P-MARKET":
+      return { tag: "Market share", context: "from Admissions, read-only" };
+    case "DV-SMT-P-PHASES":
+    case "DV-SMT-P-PHASES-TABLE":
+      return { tag: "Trends", context: `${periodLabel(CENSUS_FIRST_PERIOD)} = 100` };
+    case "DV-SMT-P-POOL":
+      return { tag: "From Admissions", context: `${c.pupils.status === "ready" && c.pupils.data.trends.pool.status === "ready" ? c.pupils.data.trends.pool.entry : "main entry point"}, read-only` };
+    case "DV-SMT-P-AREA":
+      return { tag: "Area", context: "school census, ages 5–15" };
+    // 0.8 SMT round 2: Context
+    case "DV-SMT-C-NOW":
+      return { tag: "Current", context: c.context.status === "ready" && c.context.data.area === "la" ? (c.school.laName ?? "the LA") : "around the school" };
+    case "DV-SMT-C-MAP":
+      return { tag: "Map", context: "the area around the school" };
+    case "DV-SMT-C-BYAGE":
+      return { tag: "Population by age", context: c.school.laName ?? "" };
+    case "DV-SMT-C-BIRTHS":
+      return { tag: "Births and projections", context: c.school.laName ?? "" };
+    case "DV-SMT-C-BIRTHS-INDEXED":
+    case "DV-SMT-C-BIRTHS-TABLE":
+      return { tag: "Trends", context: "births, 2012 = 100" };
+    case "DV-SMT-C-PROJECTION":
+      return { tag: "Forward", context: "to 2036" };
+    case "DV-SMT-C-AGES":
+      return { tag: "Area", context: "population by age" };
   }
   return { tag: panel.name ?? "", context: null };
 }
@@ -579,6 +657,33 @@ function captionOf(dv: string, c: Ctx): ReactNode {
       return SMT_NOTES.entriesMix;
     case "DV-SMT-A-BANDS":
       return SMT_NOTES.bandReserved;
+    case "DV-SMT-P-NOW":
+    case "DV-SMT-P-SHAPE":
+      return `${SMT_NOTES.size} ${SMT_NOTES.shapesAround} ${SMT_NOTES.levelAges}`;
+    case "DV-SMT-P-ENTRIES":
+    case "DV-SMT-P-POOL":
+      return SMT_NOTES.pool;
+    case "DV-SMT-P-LEAVING":
+      return ADMISSIONS_NOTES.leaving16;
+    case "DV-SMT-P-MARKET":
+      return SMT_NOTES.marketShort;
+    case "DV-SMT-P-PHASES":
+    case "DV-SMT-P-PHASES-TABLE":
+      return smtNote("rollByPhase", { base: periodLabel(CENSUS_FIRST_PERIOD) });
+    case "DV-SMT-P-AREA":
+      return smtNote("areaPupils", { la: c.school.laName ?? "the LA" });
+    case "DV-SMT-C-NOW":
+      return c.context.status === "ready" ? `${c.context.data.notes.children} ${c.context.data.notes.births} ${c.context.data.notes.projection}` : null;
+    case "DV-SMT-C-MAP":
+      return `${SMT_NOTES.shadeByDistrict} ${SMT_NOTES.shadeLater}`;
+    case "DV-SMT-C-BYAGE":
+    case "DV-SMT-C-AGES":
+      return c.context.status === "ready" ? c.context.data.notes.popByAge : null;
+    case "DV-SMT-C-BIRTHS":
+    case "DV-SMT-C-BIRTHS-INDEXED":
+    case "DV-SMT-C-BIRTHS-TABLE":
+    case "DV-SMT-C-PROJECTION":
+      return c.context.status === "ready" ? `${c.context.data.notes.births} ${c.context.data.notes.projection}` : SMT_NOTES.births;
   }
   return null;
 }
@@ -596,6 +701,28 @@ function flagOf(dv: string, c: Ctx): ReactNode {
       return t ? <Direction pts={t.school} flat={0.5} /> : null;
     }
     if (dv === "DV-SMT-O-MARKET-LINE" && o.trends.market.status === "ready") return <Direction pts={o.trends.market.school} flat={0.5} up="Gaining share" down="Losing share" />;
+  }
+  if (c.dash === "pupils" && c.pupils.status === "ready") {
+    const p = c.pupils.data;
+    if (dv === "DV-SMT-P-PHASES" && p.trends.phases[0]) return <Direction pts={p.trends.phases[0].pts} flat={2} up="Growing" down="Shrinking" />;
+    if (dv === "DV-SMT-P-POOL" && p.trends.pool.status === "ready") {
+      const all = [...p.trends.pool.counted, ...p.trends.pool.births];
+      const now = p.trends.pool.counted.at(-1)?.value ?? null;
+      const end = all.at(-1)?.value ?? null;
+      if (now && end !== null) {
+        const pct = ((end - now) / now) * 100;
+        return <span className={`text-[12px] font-bold ${pct > 2 ? "text-[var(--adm-up-fg)]" : pct < -2 ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]"}`}>{pct > 2 ? "▲ Pool rising" : pct < -2 ? "▼ Pool falling" : "▬ Pool steady"}</span>;
+      }
+    }
+  }
+  if (dv === "DV-SMT-C-BIRTHS-INDEXED" && c.context.status === "ready") {
+    const l = c.context.data.births.la;
+    const a = l.find((x) => x.value !== null)?.value ?? null;
+    const b = [...l].reverse().find((x) => x.value !== null)?.value ?? null;
+    if (a && b !== null) {
+      const pct = ((b - a) / a) * 100;
+      return <span className={`text-[12px] font-bold ${pct > 2 ? "text-[var(--adm-up-fg)]" : pct < -2 ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]"}`}>{pct > 2 ? "▲ Rising" : pct < -2 ? "▼ Falling" : "▬ Steady"}</span>;
+    }
   }
   if (dv === "DV-SMT-A-TREND-LINE" && c.academic.status === "ready" && c.academic.data.parts[0]) return <Direction pts={c.academic.data.parts[0].trend.school} flat={c.level.area ? 0.05 : 0.5} />;
   return null;
@@ -652,6 +779,54 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
           return <MarketLine o={o} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-O-MARKET-TABLE":
           return <MarketTable o={o} />;
+      }
+      return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
+    });
+  }
+  if (dv.startsWith("DV-SMT-P-")) {
+    return ready(c.pupils, (p) => {
+      switch (dv) {
+        case "DV-SMT-P-NOW":
+          return <PupilsNow p={p} school={c.school} compact={c.phone && !fullscreen} />;
+        case "DV-SMT-P-SHAPE":
+          return <ShapeAndSize p={p} height={fullscreen && room ? Math.max(220, room - 160) : 190} />;
+        case "DV-SMT-P-ENTRIES":
+          return <EntryPoints p={p} />;
+        case "DV-SMT-P-LEAVING":
+          return <LeavingAt16 p={p} school={c.school} />;
+        case "DV-SMT-P-MARKET":
+          return <MarketLine market={p.market} schoolName={c.school.name} fullscreen={fullscreen} room={room} />;
+        case "DV-SMT-P-PHASES":
+          return <IndexedLines title="Roll by phase, indexed" lines={p.trends.phases} fullscreen={fullscreen} room={room} caption={smtNote("rollByPhase", { base: periodLabel(p.trends.base ?? CENSUS_FIRST_PERIOD) })} />;
+        case "DV-SMT-P-PHASES-TABLE":
+          return <RollTable o={{ trends: { roll: { lines: p.trends.phases, base: p.trends.base, laName: c.school.laName } } } as never} />;
+        case "DV-SMT-P-POOL":
+          return <PoolLine pool={p.trends.pool} fullscreen={fullscreen} room={room} caption={SMT_NOTES.pool} />;
+        case "DV-SMT-P-AREA":
+          return <PlainLine title="The area's school-age population" label={c.school.laName ?? "The LA"} pts={p.trends.area.pts} fullscreen={fullscreen} room={room} caption={smtNote("areaPupils", { la: c.school.laName ?? "the LA" })} />;
+      }
+      return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
+    });
+  }
+  if (dv.startsWith("DV-SMT-C-")) {
+    return ready(c.context, (x) => {
+      switch (dv) {
+        case "DV-SMT-C-NOW":
+          return <ContextNow c={x} compact={c.phone && !fullscreen} />;
+        case "DV-SMT-C-MAP":
+          return <AreaMap c={x} fullscreen={fullscreen} room={room} />;
+        case "DV-SMT-C-BYAGE":
+          return <AgeBars c={x} ages={x.ages} height={fullscreen && room ? Math.max(220, room - 120) : 260} />;
+        case "DV-SMT-C-BIRTHS":
+          return <BirthsAndProjections c={x} fullscreen={fullscreen} room={room} />;
+        case "DV-SMT-C-BIRTHS-INDEXED":
+          return <BirthsIndexed c={x} fullscreen={fullscreen} room={room} />;
+        case "DV-SMT-C-BIRTHS-TABLE":
+          return <BirthsTable c={x} />;
+        case "DV-SMT-C-PROJECTION":
+          return <Projection c={x} fullscreen={fullscreen} room={room} />;
+        case "DV-SMT-C-AGES":
+          return <AgeBars c={x} ages={x.ages} height={fullscreen && room ? Math.max(200, room - 120) : 130} title="Children by single year of age" />;
       }
       return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
     });
@@ -750,8 +925,9 @@ function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
   const trendPanel = trends.find((t) => t.id === trendTab) ?? trends[0];
   const trendDv = trendPanel ? dvOf(trendPanel, trendPanel.defaultView ?? "") : "";
   const nowDv = now ? dvOf(now, now.defaultView ?? "") : "";
-  const tabLabel = (t: PanelConfig) => (c.dash === "overview" ? ({ c1: "Roll", c2: "Results", c3: "Market share" } as Record<string, string>)[t.column] : ({ c1: "Results", c2: "By band", c3: "Entries" } as Record<string, string>)[t.column]) ?? t.name ?? t.column;
-  const title = c.dash === "overview" ? `${c.school.name.replace(/ School$/, "")} now · ${yearOf(c.school.census.at(-1)?.period ?? null)}` : levelLabel(c.level, areaLabelOf(c));
+  const TABS: Record<SmtDash, Record<string, string>> = { overview: { c1: "Roll", c2: "Results", c3: "Market share" }, academic: { c1: "Results", c2: "By band", c3: "Entries" }, pupils: { c1: "Roll", c2: "Pool", c3: "Area" }, context: { c1: "Births", c2: "Projection", c3: "By age" } };
+  const tabLabel = (t: PanelConfig) => TABS[c.dash][t.column] ?? t.name ?? t.column;
+  const title = c.dash === "overview" || c.dash === "pupils" ? `${c.school.name.replace(/ School$/, "")} now · ${yearOf(c.school.census.at(-1)?.period ?? null)}` : c.dash === "context" ? "The area now" : levelLabel(c.level, areaLabelOf(c));
   return (
     <>
       {now && (
@@ -793,14 +969,16 @@ export function SmtViewPreview({ dataview, urn, schoolName, params, height }: { 
   const sets = useSmtSet(pinnedSet ? null : urn, s ? setPhaseOf(s.phases) : null);
   const set = pinnedSet && Array.isArray(pinnedSet.urns) ? pinnedSet : sets.set;
   const level: SmtLevel = s ? parseLevel(new URLSearchParams(levelQuery({ phase: (params?.level as SmtPhase) ?? "whole", area: (params?.area as string) ?? null })), s.phases, { gcse: s.areas.gcse.map((a) => a.id), post16: s.areas.post16.map((a) => a.id) }) : { phase: "whole", area: null };
-  const overviewView = dataview.startsWith("DV-SMT-O-");
+  const dash: SmtDash = dataview.startsWith("DV-SMT-O-") ? "overview" : dataview.startsWith("DV-SMT-P-") ? "pupils" : dataview.startsWith("DV-SMT-C-") ? "context" : "academic";
   const body = set ? { urn, set } : null;
-  const overview = useSmt<Overview>(s && body && overviewView ? "/api/smt/overview" : null, body ? { ...body, filters: { sex: "all", boarding: "all" } } : null);
-  const academic = useSmt<Academic>(s && body && !overviewView ? "/api/smt/academic" : null, body ? { ...body, level: level.phase, area: level.area } : null);
+  const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body ? { ...body, filters: { sex: "all", boarding: "all" } } : null);
+  const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, level: level.phase, area: level.area } : null);
+  const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: { sex: "all", boarding: "all" } } : null);
+  const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${urn}&area=${params?.near === "la" ? "la" : "around"}` : null, null);
   const member = { userId: "", token: "", membershipId: null, schoolAccountId: "", schoolUrn: urn, schoolName, roles: [], isAdmin: false, isAccountHolder: false, access: "member", readOnly: true, viewAs: null } as SmtMember;
   return (
     <div data-smt-preview={dataview} className="flex min-h-0 flex-col gap-2 overflow-hidden text-[var(--fg)]" style={{ ...smtVars(theme), height }}>
-      {s && set ? <ViewBody dv={dataview} c={{ member, school: s, dash: overviewView ? "overview" : "academic", level, set, filters: { sex: "all", boarding: "all" }, overview, academic, onArea: () => undefined, focusBar: null, phone: false }} fullscreen={false} /> : school.status === "error" ? <Empty>{school.message}</Empty> : <Skeleton />}
+      {s && set ? <ViewBody dv={dataview} c={{ member, school: s, dash, level, set, filters: { sex: "all", boarding: "all" }, overview, academic, pupils, context, onArea: () => undefined, focusBar: null, phone: false }} fullscreen={false} /> : school.status === "error" ? <Empty>{school.message}</Empty> : <Skeleton />}
     </div>
   );
 }

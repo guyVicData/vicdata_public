@@ -38,6 +38,8 @@ window.fetch = async (input, init) => {
   if (u.pathname === "/api/teacher/chooser-set") return json({ rows: fx.nearest.rows, seriesByUrn: {}, note: null });
   if (u.pathname === "/api/teacher/saved-comparator-sets") return json({ me: { membershipId: "m1", schoolAccountId: "acc1", canEditShared: true }, cap: 8, personalCount: 0, sets: [], seriesByUrn: {}, excludedUrns: [], candidates: [] });
   if (u.pathname === "/api/smt/overview") { const f = body.filters || {}; return json(fx.overview[(f.sex || "all") + "|" + (f.boarding || "all")] || fx.overview["all|all"]); }
+  if (u.pathname === "/api/smt/pupils") { const f = body.filters || {}; return json(fx.pupils[(body.level || "whole") + "|" + (f.sex || "all") + "|" + (f.boarding || "all")] || fx.pupils["whole|all|all"]); }
+  if (u.pathname === "/api/smt/context") return json(fx.context[u.searchParams.get("area") === "la" ? "la" : "around"]);
   if (u.pathname === "/api/smt/academic") { const k = (body.level || "whole") + "|" + (body.area || ""); return fx.academic[k] ? json(fx.academic[k]) : json({ error: "no fixture " + k }, 502); }
   return json({ error: "unstubbed " + u.pathname }, 404);
 };

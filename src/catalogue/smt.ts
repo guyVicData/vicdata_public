@@ -93,6 +93,22 @@ export const SMT_MEASURES: Measure[] = [
     knownGaps: ["The subject areas are the data's own families (8), not the spec's illustrative list.", "Entries before 2023/24 come from the historic sources; the mix draws the years both hold."],
     citation: "DfE KS4 and KS5 subject tables",
   },
+  {
+    id: "M-SMT-AREA",
+    name: "The area around the school",
+    data: "smt.area",
+    definition: "Pupils by single age (5-15) in the LA's mainstream schools and in schools within 5 miles (the school census), births by LA (ONS), ONS projections of 10-year-olds (county or unitary), schools nearby, and the LA boundaries for the map (src/lib/smt/context.ts). Population only: no deprivation or free-school-meals data yet.",
+    grain: "LA (or the 5-mile area) × year",
+    sources: ["age_profile_aggregates", "ons_births", "ons_population_projections", "la_boundaries", "dfe_school_census"],
+    years: { from: "2012", to: String(CURRENT_CENSUS_PERIOD), latest: "census", note: "Births from 2012; pupils by age for the census years held; projections to 2036." },
+    keying: "geography",
+    geographies: { school: { ok: false, reason: "An area measure" }, subject_area: { ok: false, reason: "Not a subject measure" }, set: { ok: false, reason: "An area measure" }, la: { ok: true, reason: "age_profile_aggregates, ons_births" }, region: { ok: true, reason: "the region's LAs on the map" }, england: { ok: true, reason: "births: the sum of every English LA" } },
+    numberTypes: ["totals", "pct_change", "index100"],
+    rules: ["R-SMT-CONTEXT-GEOGRAPHY", "R-SMT-DATA-GAP", "R-SMT-YEARS"],
+    fetchedBy: ["src/lib/smt/context.ts:buildContext", "src/app/api/smt/context/route.ts"],
+    knownGaps: ["No population by single year of age for neighbourhoods (LSOA, MSOA) or districts: the map shades whole LAs.", "Pupils by age are census pupils (5-15), not resident population.", "Projections are of 10-year-olds only, by county or unitary.", "No deprivation or free-school-meals data yet."],
+    citation: "DfE school census (January); ONS births; ONS subnational population projections",
+  },
 ];
 
 // ------------------------------------------------------------------------------ renderers
@@ -121,6 +137,12 @@ export const SMT_RENDERERS: Renderer[] = [
   r("RD-SMT-GRADES", "GradeProfile", "views/Grades.tsx", "The grade profile in bands (9-7, 6-5, 4, 3-1; A*-A, B, C, D-U).", "No graded entries."),
   r("RD-SMT-MIX", "EntriesMix", "views/Mix.tsx", "Each area's (or subject's) share of the entries, year by year.", "No entries."),
   r("RD-SMT-RESERVED", "ReservedPanel", "views/Reserved.tsx", "A reserved panel: the slot exists, the data doesn't yet.", "Always its caption."),
+  // 0.8 SMT round 2
+  r("RD-SMT-SHAPE", "ShapeAndSize", "views/Pupils.tsx", "Pupils in each year group, the shape and since when, and the shapes around: the LA's schools of the same type, the set's shapes, staying on in the set. Described, never ranked.", "No census: says so."),
+  r("RD-SMT-ENTRIES", "EntryPointsAtAGlance", "views/Pupils.tsx", "Each Admissions entry point: its cohort now and its next pool, read-only, with Open in Admissions.", "No entry points set: the reason, and Open in Admissions."),
+  r("RD-SMT-LEAVING", "LeavingAt16", "views/Pupils.tsx", "Year 11 to Year 12 at the school, year by year: staying on and the net leavers.", "No sixth form, or no Year 11: says so."),
+  r("RD-SMT-AREA-MAP", "AreaMap", "views/Context.tsx", "The region's LAs shaded by pupils of the school's ages; the school in the accent, schools of its phase nearby in grey.", "No boundaries: says so."),
+  r("RD-SMT-AGES", "AgeBars", "views/Context.tsx", "Pupils by single year of age, the school's ages highlighted.", "No ages held: says so."),
 ];
 
 // ------------------------------------------------------------------------------ dataviews
@@ -166,6 +188,8 @@ const dv = (d: Def): Dataview => ({
 
 const O = "smt.overview" as const;
 const A = "smt.academic" as const;
+const P2 = "smt.pupils" as const;
+const C2 = "smt.context" as const;
 const SET: CompareKind[] = ["schools"];
 const SET_AREA: CompareKind[] = ["schools", "averages"];
 const WS: AudienceTag[] = ["whole-school", "academic"];
@@ -198,6 +222,26 @@ export const SMT_DATAVIEWS: Dataview[] = [
   dv({ id: "DV-SMT-A-BANDS", label: "Results by band", railIcon: "TrendLineIcon", data: "smt.results", host: A, panel: "trend", file: "views/Reserved.tsx", viewType: "graph", dateMode: "trend", numberType: ["points"], compare: [], measures: ["M-SMT-RESULTS"], renderer: "RD-SMT-RESERVED", title: "Top 25%, middle 50%, bottom 25%", rules: ["R-SMT-VIEW-RESERVED"], audience: WS, status: "draft", note: "Reserved: arrives with the results-by-band round (roadmap step 4). The slot exists; the data doesn't yet." }),
   dv({ id: "DV-SMT-A-MIX", label: "Entries mix", railIcon: "VerticalBarsIcon", data: "smt.subjects", host: A, panel: "trend", file: "views/Mix.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-SMT-SUBJECTS"], renderer: "RD-SMT-MIX", title: "Entries mix, year by year", rules: ["R-SMT-VIEW-MIX"], audience: WS }),
   dv({ id: "DV-SMT-A-MIX-TABLE", label: "Entries mix, table", railIcon: "TableIcon", data: "smt.subjects", host: A, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-SMT-SUBJECTS"], renderer: "RD-SMT-TABLE", title: "Entries mix, year by year", rules: ["R-SMT-VIEW-MIX"], audience: WS }),
+
+  // ------------------------------------------------------ 0.8 SMT round 2: Pupils
+  dv({ id: "DV-SMT-P-NOW", label: "Your pupils now", railIcon: "TilesIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "numerical", dateMode: "single", numberType: ["totals", "pct_change"], compare: ["averages"], measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-NOW", title: "Your pupils now", rules: ["R-SMT-VIEW-PUPILS-NOW", "R-SMT-BOARDING-ONLY", "R-SMT-PUPILS-LEVEL"], audience: ROLLS }),
+  dv({ id: "DV-SMT-P-SHAPE", label: "Shape and size", railIcon: "AdmShapeIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: SET, measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-SHAPE", title: "Pupils in each year group", rules: ["R-SMT-VIEW-SHAPE", "R-ADM-SHAPE-NOT-RANKED", "R-SMT-PUPILS-LEVEL"], audience: ROLLS }),
+  dv({ id: "DV-SMT-P-ENTRIES", label: "Entry points", railIcon: "AdmFunnelIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "table", dateMode: "single", numberType: ["totals"], compare: [], measures: ["M-SMT-SCHOOL", "M-ADM-POOL"], renderer: "RD-SMT-ENTRIES", title: "Entry points at a glance", rules: ["R-SMT-ADMISSIONS-READ-ONLY", "R-ADM-POOL-NOT-INTAKE"], audience: ROLLS }),
+  dv({ id: "DV-SMT-P-LEAVING", label: "Leaving at 16", railIcon: "ChangeArrowIcon", data: "smt.school", host: P2, panel: "current", file: "views/Pupils.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "pct_change"], compare: [], measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-LEAVING", title: "Leaving at 16", rules: ["R-SMT-VIEW-LEAVING", "R-ADM-JOINERS-ESTIMATE"], audience: ROLLS }),
+  dv({ id: "DV-SMT-P-MARKET", label: "Market share", railIcon: "DonutIcon", data: "smt.school", host: P2, panel: "current", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["market_share"], compare: SET, measures: ["M-SMT-SCHOOL", "M-ADM-MARKET"], renderer: "RD-SMT-LINE", title: "Market share at 11+, against your rivals", rules: ["R-SMT-ADMISSIONS-READ-ONLY", "R-ADM-GROUP-SHARE"], audience: ["market", "whole-school"] }),
+  dv({ id: "DV-SMT-P-PHASES", label: "Roll by phase", railIcon: "IndexedLineIcon", data: "smt.school", host: P2, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["index100"], compare: ["averages"], measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-LINE", title: `Roll by phase, indexed (${periodLabel(CENSUS_FIRST_PERIOD)} = 100)`, rules: ["R-SMT-VIEW-TRENDS"], audience: ROLLS }),
+  dv({ id: "DV-SMT-P-PHASES-TABLE", label: "Roll by phase, table", railIcon: "TableIcon", data: "smt.school", host: P2, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["index100"], compare: ["averages"], measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-TABLE", title: "Roll by phase, year by year", rules: ["R-SMT-VIEW-TRENDS"], audience: ROLLS }),
+  dv({ id: "DV-SMT-P-POOL", label: "The pool", railIcon: "AdmPipelineIcon", data: "smt.school", host: P2, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-SMT-SCHOOL", "M-ADM-POOL"], renderer: "RD-SMT-LINE", title: "The pool for your main entry point", rules: ["R-SMT-ADMISSIONS-READ-ONLY", "R-ADM-POOL-NOT-INTAKE", "R-ADM-LADDER"], audience: ROLLS }),
+  dv({ id: "DV-SMT-P-AREA", label: "School-age population", railIcon: "AdmPopulationIcon", data: "smt.school", host: P2, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: ["averages"], measures: ["M-SMT-SCHOOL"], renderer: "RD-SMT-LINE", title: "The area's school-age population", rules: ["R-SMT-VIEW-TRENDS"], audience: ROLLS }),
+  // ------------------------------------------------------ 0.8 SMT round 2: Context
+  dv({ id: "DV-SMT-C-NOW", label: "The area now", railIcon: "TilesIcon", data: "smt.area", host: C2, panel: "current", file: "views/Context.tsx", viewType: "numerical", dateMode: "single", numberType: ["totals", "pct_change"], compare: ["averages"], measures: ["M-SMT-AREA"], renderer: "RD-SMT-NOW", title: "The area now", rules: ["R-SMT-VIEW-CONTEXT-NOW", "R-SMT-DATA-GAP"], audience: ["geography", "whole-school"] }),
+  dv({ id: "DV-SMT-C-MAP", label: "Map", railIcon: "MapPinIcon", data: "smt.area", host: C2, panel: "current", file: "views/Context.tsx", viewType: "map", dateMode: "single", numberType: ["totals"], compare: ["averages"], measures: ["M-SMT-AREA"], renderer: "RD-SMT-AREA-MAP", title: "Where the school-age children are", rules: ["R-SMT-CONTEXT-GEOGRAPHY"], audience: ["geography", "whole-school"] }),
+  dv({ id: "DV-SMT-C-BYAGE", label: "Population by age", railIcon: "VerticalBarsIcon", data: "smt.area", host: C2, panel: "current", file: "views/Context.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: [], measures: ["M-SMT-AREA"], renderer: "RD-SMT-AGES", title: "Children by single year of age", rules: ["R-SMT-CONTEXT-GEOGRAPHY"], audience: ["geography"] }),
+  dv({ id: "DV-SMT-C-BIRTHS", label: "Births and projections", railIcon: "TrendLineIcon", data: "smt.area", host: C2, panel: "current", file: "views/Context.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: ["averages"], measures: ["M-SMT-AREA"], renderer: "RD-SMT-LINE", title: "Births and projections", rules: ["R-SMT-VIEW-BIRTHS"], audience: ["geography"] }),
+  dv({ id: "DV-SMT-C-BIRTHS-INDEXED", label: "Births, indexed", railIcon: "IndexedLineIcon", data: "smt.area", host: C2, panel: "trend", file: "views/Context.tsx", viewType: "graph", dateMode: "trend", numberType: ["index100"], compare: ["averages"], measures: ["M-SMT-AREA"], renderer: "RD-SMT-LINE", title: "Births, indexed", rules: ["R-SMT-VIEW-BIRTHS"], audience: ["geography"] }),
+  dv({ id: "DV-SMT-C-BIRTHS-TABLE", label: "Births, table", railIcon: "TableIcon", data: "smt.area", host: C2, panel: "trend", file: "views/Context.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "index100"], compare: ["averages"], measures: ["M-SMT-AREA"], renderer: "RD-SMT-TABLE", title: "Births, year by year", rules: ["R-SMT-VIEW-BIRTHS"], audience: ["geography"] }),
+  dv({ id: "DV-SMT-C-PROJECTION", label: "Projection", railIcon: "TrendLineIcon", data: "smt.area", host: C2, panel: "trend", file: "views/Context.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-SMT-AREA"], renderer: "RD-SMT-LINE", title: "Projected to 2036", rules: ["R-SMT-VIEW-BIRTHS"], audience: ["geography"] }),
+  dv({ id: "DV-SMT-C-AGES", label: "By single year of age", railIcon: "VerticalBarsIcon", data: "smt.area", host: C2, panel: "trend", file: "views/Context.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: [], measures: ["M-SMT-AREA"], renderer: "RD-SMT-AGES", title: "Population by single year of age", rules: ["R-SMT-CONTEXT-GEOGRAPHY"], audience: ["geography"] }),
 ];
 
 // ------------------------------------------------------------------------------- presets
@@ -232,6 +276,24 @@ export const SMT_BODIES: Record<string, Body> = {
   "DV-SMT-A-BANDS": b("smt.results", "year", "actual", TRENDS, { kind: "line", look: {} }),
   "DV-SMT-A-MIX": b("smt.subjects", "year", "actual", TRENDS, { kind: "bar", look: { orientation: "vertical" } }),
   "DV-SMT-A-MIX-TABLE": b("smt.subjects", "year", "actual", TRENDS, { kind: "table", look: { yearColumns: "every", years: "down" } }),
+  // 0.8 SMT round 2
+  "DV-SMT-P-NOW": b("smt.school", "school", "actual", LATEST, { kind: "numbers", look: {} }),
+  "DV-SMT-P-SHAPE": b("smt.school", "school", "actual", LATEST, { kind: "shapes", look: { columns: 1 } }),
+  "DV-SMT-P-ENTRIES": b("smt.school", "school", "actual", LATEST, { kind: "table", look: { yearColumns: "latest" } }),
+  "DV-SMT-P-LEAVING": b("smt.school", "year", "actual", SINCE_2019, { kind: "table", look: { yearColumns: "every", years: "down" } }),
+  "DV-SMT-P-MARKET": b("smt.school", "year", "actual", SINCE_2019, { kind: "line", look: {} }),
+  "DV-SMT-P-PHASES": b("smt.school", "year", "indexed", SINCE_2019, { kind: "line", look: {} }),
+  "DV-SMT-P-PHASES-TABLE": b("smt.school", "year", "indexed", SINCE_2019, { kind: "table", look: { yearColumns: "every", years: "down" } }),
+  "DV-SMT-P-POOL": b("smt.school", "year", "actual", SINCE_2019, { kind: "line", look: {} }),
+  "DV-SMT-P-AREA": b("smt.school", "year", "actual", SINCE_2019, { kind: "line", look: {} }),
+  "DV-SMT-C-NOW": b("smt.area", "school", "actual", LATEST, { kind: "numbers", look: {} }),
+  "DV-SMT-C-MAP": b("smt.area", "school", "actual", LATEST, { kind: "map", look: { colour: "value" } }),
+  "DV-SMT-C-BYAGE": b("smt.area", "year", "actual", LATEST, { kind: "bar", look: { orientation: "vertical" } }),
+  "DV-SMT-C-BIRTHS": b("smt.area", "year", "actual", TRENDS, { kind: "line", look: {} }),
+  "DV-SMT-C-BIRTHS-INDEXED": b("smt.area", "year", "indexed", TRENDS, { kind: "line", look: {} }),
+  "DV-SMT-C-BIRTHS-TABLE": b("smt.area", "year", "actual", TRENDS, { kind: "table", look: { yearColumns: "every", years: "down" } }),
+  "DV-SMT-C-PROJECTION": b("smt.area", "year", "actual", TRENDS, { kind: "line", look: {} }),
+  "DV-SMT-C-AGES": b("smt.area", "year", "actual", LATEST, { kind: "bar", look: { orientation: "vertical" } }),
 };
 
 export const SMT_FAMILIES: { id: SmtDataId; label: string }[] = [
@@ -239,6 +301,7 @@ export const SMT_FAMILIES: { id: SmtDataId; label: string }[] = [
   { id: "smt.results", label: "Results and ranks" },
   { id: "smt.value_added", label: "Value added" },
   { id: "smt.subjects", label: "Subject areas and subjects" },
+  { id: "smt.area", label: "The area" },
 ];
 export const isSmtData = (d: string | undefined | null): d is SmtDataId => !!d && d.startsWith("smt.");
 export const isSmtHost = (h: string | undefined | null): h is SmtHostId => !!h && h.startsWith("smt.");

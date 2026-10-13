@@ -26,7 +26,7 @@
 //   Ties share a rank; higher is better (entries: more entries rank higher).
 import { callReferenceRpc, type AcademicSubjectHeadlineRow, type AcademicSubjectQualificationHeadlineRow } from "./vicdata-reference";
 import { gradeRowsFromRollup, mapHistoricKs5Grade, starIsAStar, MODERN_GRADE_FROM, HISTORIC_GRADE_FROM, type GradeRollupRow } from "./grade-rows";
-import { GRADE_SCALES, NON_GRADE_VALUES, BOTTOM_RANK, bandRate, doubleAwardPoints, inRange, isDoubleAward, thresholdRate, type GradeRange } from "./subject-grades";
+import { DOUBLE_AWARD_QUALIFICATION, GRADE_SCALES, NON_GRADE_VALUES, BOTTOM_RANK, bandRate, doubleAwardPoints, inRange, isDoubleAward, thresholdRate, type GradeRange } from "./subject-grades";
 import { MINIMUM_SUBJECT_N } from "./academic-data-view";
 import { TREND_BASE_PERIOD } from "@/catalogue/notes";
 
@@ -412,6 +412,19 @@ function populationFigures(popKey: string, req: SubjectRankingRequest): Promise<
 /** The ranking: the function first, else the fallback. `popKey` names the population
  * (scope and filters), so the fallback's figures are shared between schools. */
 export async function subjectRanking(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
+  const out = await rankSubject(req, popKey);
+  // 0.8 SMT r2 (S1): Teacher asks for GCSE points with no qualification (the subject's, across its
+  // qualifications). A Double Award subject then finds no figure anywhere -- the rollup holds none
+  // for it -- so it is asked again as a double award, scored from its grade rows (doubleAwardPoints).
+  // Only when the first answer ranked nobody: every other subject is answered exactly as before.
+  if (req.phase === "ks4" && req.measure.kind === "points" && !req.qualificationType && out.ranked === 0) {
+    const again = await rankSubject({ ...req, qualificationType: DOUBLE_AWARD_QUALIFICATION }, `${popKey}|double-award`);
+    if (again.ranked > 0) return again;
+  }
+  return out;
+}
+
+async function rankSubject(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
   const viaFunction = await rankByFunction(req);
   if (viaFunction) return viaFunction;
   let figs = await populationFigures(popKey, req);
