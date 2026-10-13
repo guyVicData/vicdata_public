@@ -110,9 +110,13 @@ The chips are **Whole school · Phase (Primary / GCSE / Post-16, only the phases
     - **DfE's school-level free-school-meals and pupil-characteristics data** (state schools).
   - Both are public. They need an ingest round before Context can do more than population.
 
+**SMT home** (Guy, 13 Oct): the existing role home (name, school, role switch, "What would you like to look at?"), with stacked cards: **The school** (the four SMT dashboards as shortcuts, a one-line summary), **Admissions** (read-only for SMT), **My dashboards** (made by you or shared with SMT), **Recruitment**, **Meetings**, then the further functions Guy will name.
+
 ### 2.4 Access
 
-- **Who sees it:** SMT and the School-Admin. Platform admins see it through View as, read-only. Teachers don't.
+- **Who sees it:** SMT and the School-Admin. **Governors see exactly the SMT view** (Guy, 13 Oct): no separate governors' product; a governor is given the SMT role. Platform admins see it through View as, read-only. Teachers don't.
+- **Comparison sets** (Guy, 13 Oct: "a default VicData function"): SMT edits them exactly as Teacher does. The control bar's **"Compared against"** pill is Teacher's `PillMenu` (the selected set; "Edit this set…"; "Change comparison…"), opening Teacher's `ComparatorSetChooser` hub (10 nearest, schools in the LA, my saved sets, the school's sets, regional and national rankings). One set drives the whole SMT dashboard; saved sets are the same sets Teacher uses.
+- **Wireframes:** the canvas "VicData SMT dashboards" (13 Oct): Overview, Academic, Pupils, Context, Leighton Park in light, phone, and the SMT home. Panel chrome, nav and the Edit · View as… footer match Admissions round 3.
 - **Admissions inside SMT:** SMT's Pupils dashboard shows Admissions figures read-only. SMT can already read Admissions.
 - **No new RLS:** everything is public data, or the school's own Admissions lists, which SMT can already read.
 
