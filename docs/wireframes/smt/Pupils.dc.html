@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SMT — Pupils</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  a { color: #a78bfa; text-decoration: none; }
+  a:hover { color: #c4b5fd; }
+  .muted { color: #9a9a9a; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #9a9a9a; padding: 0; flex-shrink: 0; font-family: inherit; }
+  .icon-btn.active { background: #262626; color: #ffffff; }
+  .chip { border: 1px solid #2a2a2a; background: #141414; color: #d4d4d4; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip.active { border-color: #a78bfa; background: #1d1730; color: #fff; }
+  .fchip { border: 1px solid #2a2a2a; background: #101010; color: #c4c4c4; border-radius: 8px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+  .panel { box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 12px 14px 36px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .tag { font-size: 11.5px; font-weight: 600; color: #d4d4d4; }
+  .vt { font-size: 12.5px; font-weight: 700; color: #f2f2f2; }
+  .view-rail { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; padding: 1px 9px 2px 0; border-right: 1px solid #232323; margin-right: 10px; }
+  .bottom-row { position: absolute; left: 14px; right: 14px; bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .src { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; border: 1px solid #2a2a2a; color: #7a7a7a; font-size: 9.5px; font-style: italic; font-weight: 700; }
+  .rowhead { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 12.5px; font-weight: 700; color: #e5e5e5; }
+  .tile { border: 1px solid #232323; border-radius: 9px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .tl { font-size: 10.5px; color: #9a9a9a; }
+  .tv { font-size: 19px; font-weight: 800; color: #f2f2f2; }
+  .badge { display: inline-flex; align-items: center; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; background: #262626; color: #7a7a7a; }
+  .badge.on { background: #a78bfa; color: #160f2a; }
+  .key { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #b4b4b4; }
+  .col { flex: 1 1 0; border-radius: 2px; background: #3f3f46; }
+  /* Teacher's panel chrome (CardBox + PanelIconRow, admissions r3 F1). Header, right-aligned: menu, full screen, collapse slot (reserved, empty on SMT). */
+  .icons { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .hbtn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; border: 0; background: transparent; color: #7a7a7a; padding: 0; font-family: inherit; }
+  .slot-empty { display: inline-block; width: 26px; height: 1px; }
+  /* Footer, pinned to the bottom edge: source "i", caption (What this shows), private note; flag at the right edge. */
+  button.src { background: transparent; padding: 0; font-family: inherit; }
+  .fbtn { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 5px; border: 0; background: transparent; color: #9a9a9a; padding: 0; }
+  .flag { margin-left: auto; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  /* The honesty lines live behind the caption button, never as a printed footer line. */
+  .bottom-row .muted { display: none; }
+</style>
+</helmet>
+<div style="width: 1440px; height: 1230px; box-sizing: border-box; background: #0a0a0a; padding: 20px 28px; display: flex; flex-direction: column; gap: 14px; color: #f2f2f2;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+    <div style="font-weight: 700; letter-spacing: 0.02em;">VicData</div>
+    <div style="display: flex; align-items: center; gap: 10px; color: #7a7a7a;">
+      <span style="display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 12px; font-weight: 700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Home</span>
+      <span style="width: 1px; height: 16px; background: #262626;"></span>
+      <button type="button" aria-label="Library" style="width: 34px; height: 34px; border-radius: 50%; border: 0; background: transparent; color: #9a9a9a; display: inline-flex; align-items: center; justify-content: center; padding: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg></button>
+      <span style="width: 1px; height: 16px; background: #262626;"></span>
+      <button type="button" aria-label="Account" style="width: 34px; height: 34px; border-radius: 50%; border: 0; background: #161616; color: #9a9a9a; display: inline-flex; align-items: center; justify-content: center; padding: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button>
+      <button type="button" aria-label="Light or dark" style="width: 34px; height: 34px; border-radius: 50%; border: 0; background: #161616; color: #9a9a9a; display: inline-flex; align-items: center; justify-content: center; padding: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></button>
+    </div>
+  </div>
+  <div style="height: 1px; background: #1c1c1c;"></div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #101010; border: 1px solid #232323; border-radius: 14px; padding: 10px 16px;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="width: 36px; height: 36px; border-radius: 10px; background: #1d1730; color: #a78bfa; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px;">S</span>
+      <div style="font-size: 16px; font-weight: 700;">SMT <span class="muted" style="font-size: 13px; font-weight: 500;">&mdash; The Chase</span></div>
+      <div style="display: inline-flex; border: 1px solid #2a2a2a; border-radius: 999px; padding: 3px; background: #101010; gap: 2px;">
+        <a href="Main.dc.html" style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #9a9a9a;">Overview</a>
+        <a href="Academic.dc.html" style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #9a9a9a;">Academic</a>
+        <span style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: #a78bfa; color: #160f2a;">Pupils</span>
+        <a href="Context.dc.html" style="border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #9a9a9a;">Context</a>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="chip active">Whole school</span>
+      <span class="chip">GCSE</span>
+      <span class="chip">Post-16</span>
+      <span style="width: 1px; height: 18px; background: #262626; margin: 0 4px;"></span>
+      <span class="fchip">Compared against: Nearest 10 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      <span class="fchip">All pupils <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+    </div>
+  </div>
+
+  <div class="rowhead">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    Now <span class="muted" style="font-size: 11px; font-weight: 500;">&middot; January 2026 census</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+
+    <div class="panel" style="height: 530px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Current</span><span class="muted" style="font-size: 11.5px;">Data 2025/26</span><span style="flex-grow: 1;"></span><span class="icons"><button type="button" class="hbtn" aria-label="Panel menu"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6"></circle><circle cx="10" cy="10" r="1.6"></circle><circle cx="15.5" cy="10" r="1.6"></circle></svg></button><button type="button" class="hbtn" aria-label="Full screen"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline><line x1="2.5" y1="2.5" x2="8" y2="8"></line><line x1="17.5" y1="17.5" x2="12" y2="12"></line></svg></button><span class="slot-empty" aria-hidden="true"></span></span></div>
+      <div class="vt">Your pupils now</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <div class="tile"><span class="tl">Roll</span><span class="tv" style="color: #a78bfa;">[n]</span><span class="tl">ages 11&ndash;18</span></div>
+        <div class="tile"><span class="tl">Since 2019/20</span><span class="tv">&#9650; [x]%</span><span class="tl">whole school</span></div>
+        <div class="tile"><span class="tl">Girls &middot; boys</span><span class="tv" style="font-size: 16px;">[g]% &middot; [b]%</span><span class="tl">whole school</span></div>
+        <div class="tile"><span class="tl">Staying on at 16</span><span class="tv">[x]%</span><span class="tl">Year 11 to Year 12</span></div>
+      </div>
+      <div style="border-top: 1px solid #232323; padding-top: 8px; display: flex; flex-direction: column; gap: 7px;">
+        <div class="tl" style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Size by phase &middot; XS to XL</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; font-weight: 600; width: 58px;">Senior</span>
+          <span style="display: flex; gap: 3px;"><span class="badge">XS</span><span class="badge">S</span><span class="badge">M</span><span class="badge on">L</span><span class="badge">XL</span></span>
+          <span style="flex-grow: 1;"></span><span style="font-size: 13px; font-weight: 700;">[n]</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; font-weight: 600; width: 58px;">16+</span>
+          <span style="display: flex; gap: 3px;"><span class="badge">XS</span><span class="badge">S</span><span class="badge on">M</span><span class="badge">L</span><span class="badge">XL</span></span>
+          <span style="flex-grow: 1;"></span><span style="font-size: 13px; font-weight: 700;">[n]</span>
+        </div>
+        <div style="font-size: 12px; color: #c4c4c4; line-height: 1.4;">No day or boarding split: The Chase has no boarders, so the filter and the tile don&rsquo;t appear.</div>
+      </div>
+      <div class="bottom-row"><button type="button" class="src" aria-label="Where this figure comes from">i</button><button type="button" class="fbtn" aria-label="What this shows"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4.5h13v8.5H9l-3.5 3v-3h-2z"></path><path d="M7 8h6M7 10.5h4"></path></svg></button><button type="button" class="fbtn" aria-label="Add a private note"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3z"></path><path d="M11.5 5.5 14.5 8.5"></path></svg></button><span style="flex-grow: 1;"></span><span class="muted" style="font-size: 11px;">Context: Large for Worcestershire</span></div>
+    </div>
+
+    <div class="panel" style="grid-column: span 2; height: 530px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="tag">Shape and size</span><span class="muted" style="font-size: 11.5px;">pupils by age, against the local shape and Nearest 10</span>
+        <span style="flex-grow: 1;"></span>
+        <span class="icons"><button type="button" class="hbtn" aria-label="Panel menu"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6"></circle><circle cx="10" cy="10" r="1.6"></circle><circle cx="15.5" cy="10" r="1.6"></circle></svg></button><button type="button" class="hbtn" aria-label="Full screen"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline><line x1="2.5" y1="2.5" x2="8" y2="8"></line><line x1="17.5" y1="17.5" x2="12" y2="12"></line></svg></button><span class="slot-empty" aria-hidden="true"></span></span>
+      </div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active" title="Shape and size"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="8" y="3" width="8" height="4"></rect><rect x="6" y="9" width="12" height="4"></rect><rect x="4" y="15" width="16" height="4"></rect></svg></span>
+          <span class="icon-btn" title="Entry points at a glance"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8z"></path></svg></span>
+          <span class="icon-btn" title="Leaving at 16"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+          <span class="icon-btn" title="Market share"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v9h9"></path></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <div class="vt">Pupils in each year group, Year 7 to Year 13</div>
+          <div style="display: flex; gap: 24px; flex-grow: 1; min-height: 0;">
+            <div style="flex: 3 1 0; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; align-items: flex-end; gap: 6px; height: 220px; border-bottom: 1px solid #2a2a2a;">
+                <span class="col" style="height: 84%; background: #a78bfa;"></span>
+                <span class="col" style="height: 86%; background: #a78bfa;"></span>
+                <span class="col" style="height: 82%; background: #a78bfa;"></span>
+                <span class="col" style="height: 80%; background: #a78bfa;"></span>
+                <span class="col" style="height: 78%; background: #a78bfa;"></span>
+                <span class="col" style="height: 44%; background: #6d5bb0;"></span>
+                <span class="col" style="height: 40%; background: #6d5bb0;"></span>
+              </div>
+              <div style="display: flex; gap: 6px; font-size: 10.5px; color: #7a7a7a;"><span style="flex: 1 1 0; text-align: center;">Y7</span><span style="flex: 1 1 0; text-align: center;">Y8</span><span style="flex: 1 1 0; text-align: center;">Y9</span><span style="flex: 1 1 0; text-align: center;">Y10</span><span style="flex: 1 1 0; text-align: center;">Y11</span><span style="flex: 1 1 0; text-align: center;">Y12</span><span style="flex: 1 1 0; text-align: center;">Y13</span></div>
+              <div style="font-size: 12px; color: #c4c4c4; line-height: 1.45;"><b style="color: #f2f2f2;">Shape: Top step at 16.</b> Year groups hold steady to 16, then about half stay on. Unchanged since 2019/20.</div>
+            </div>
+            <div style="flex: 2 1 0; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid #232323; padding-left: 18px;">
+              <div class="tl" style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Shapes around you</div>
+              <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                <div style="display: flex; justify-content: space-between;"><span>Worcestershire 11&ndash;18 schools</span><span style="font-weight: 700;">Top step at 16</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>Nearest 10</span><span style="font-weight: 700;">[n] Top step &middot; [n] 11&ndash;16</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>Staying on at 16, Nearest 10</span><span style="font-weight: 700;">[x]%</span></div>
+              </div>
+              <div style="font-size: 11.5px; color: #9a9a9a; line-height: 1.45;">Shapes are described, never ranked: a smaller sixth form isn&rsquo;t worse.</div>
+              <a href="#" style="font-size: 11.5px; font-weight: 700; margin-top: auto;">Open in Admissions &rarr;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-row"><button type="button" class="src" aria-label="Where this figure comes from">i</button><button type="button" class="fbtn" aria-label="What this shows"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4.5h13v8.5H9l-3.5 3v-3h-2z"></path><path d="M7 8h6M7 10.5h4"></path></svg></button><button type="button" class="fbtn" aria-label="Add a private note"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3z"></path><path d="M11.5 5.5 14.5 8.5"></path></svg></button><span class="muted" style="font-size: 11px;">Entry points, leaving at 16 and market share come from Admissions, read-only</span></div>
+    </div>
+  </div>
+
+  <div class="rowhead">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    Trends <span class="muted" style="font-size: 11px; font-weight: 500;">&middot; 2019/20 to 2025/26</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;">
+
+    <div class="panel" style="height: 340px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Trends</span><span class="muted" style="font-size: 11.5px;">2019/20 = 100</span><span style="flex-grow: 1;"></span><span class="icons"><button type="button" class="hbtn" aria-label="Panel menu"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6"></circle><circle cx="10" cy="10" r="1.6"></circle><circle cx="15.5" cy="10" r="1.6"></circle></svg></button><button type="button" class="hbtn" aria-label="Full screen"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline><line x1="2.5" y1="2.5" x2="8" y2="8"></line><line x1="17.5" y1="17.5" x2="12" y2="12"></line></svg></button><span class="slot-empty" aria-hidden="true"></span></span></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+          <span class="icon-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div class="vt">Roll by phase, indexed</div>
+          <svg width="100%" height="160" viewBox="0 0 300 160" preserveAspectRatio="none" role="img" aria-label="Roll by phase trend placeholder">
+            <line x1="0" y1="150" x2="300" y2="150" stroke="#2a2a2a"></line>
+            <line x1="0" y1="80" x2="300" y2="80" stroke="#1e1e1e" stroke-dasharray="2 4"></line>
+            <polyline points="10,80 55,76 100,72 145,68 190,64 235,60 280,58" fill="none" stroke="#a78bfa" stroke-width="2.6"></polyline>
+            <polyline points="10,80 55,82 100,84 145,82 190,86 235,88 280,90" fill="none" stroke="#6d5bb0" stroke-width="2.2" stroke-dasharray="6 3"></polyline>
+            <polyline points="10,80 55,79 100,79 145,80 190,81 235,82 280,83" fill="none" stroke="#52525b" stroke-width="1.6" stroke-dasharray="4 3"></polyline>
+          </svg>
+          <div style="display: flex; gap: 12px;"><span class="key"><span style="width: 14px; border-top: 2.5px solid #a78bfa;"></span>Senior</span><span class="key"><span style="width: 14px; border-top: 2.5px dashed #6d5bb0;"></span>16+</span><span class="key"><span style="width: 14px; border-top: 2px dashed #52525b;"></span>England</span></div>
+        </div>
+      </div>
+      <div class="bottom-row"><button type="button" class="src" aria-label="Where this figure comes from">i</button><button type="button" class="fbtn" aria-label="What this shows"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4.5h13v8.5H9l-3.5 3v-3h-2z"></path><path d="M7 8h6M7 10.5h4"></path></svg></button><button type="button" class="fbtn" aria-label="Add a private note"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3z"></path><path d="M11.5 5.5 14.5 8.5"></path></svg></button><span class="muted" style="font-size: 11px;">January census each year</span><span class="flag" style="color: #86efac;">&#9650; Growing</span></div>
+    </div>
+
+    <div class="panel" style="height: 340px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">From Admissions</span><span class="muted" style="font-size: 11.5px;">11+, read-only</span><span style="flex-grow: 1;"></span><span class="icons"><button type="button" class="hbtn" aria-label="Panel menu"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6"></circle><circle cx="10" cy="10" r="1.6"></circle><circle cx="15.5" cy="10" r="1.6"></circle></svg></button><button type="button" class="hbtn" aria-label="Full screen"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline><line x1="2.5" y1="2.5" x2="8" y2="8"></line><line x1="17.5" y1="17.5" x2="12" y2="12"></line></svg></button><span class="slot-empty" aria-hidden="true"></span></span></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div class="vt">The pool for your main entry point</div>
+          <svg width="100%" height="150" viewBox="0 0 300 150" preserveAspectRatio="none" role="img" aria-label="Pool trend placeholder">
+            <line x1="0" y1="140" x2="300" y2="140" stroke="#2a2a2a"></line>
+            <polyline points="10,70 55,66 100,64 145,68 190,74" fill="none" stroke="#a78bfa" stroke-width="2.6"></polyline>
+            <polyline points="190,74 235,82 280,88" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-dasharray="6 5"></polyline>
+          </svg>
+          <div style="display: flex; gap: 12px;"><span class="key"><span style="width: 14px; border-top: 2.5px solid #a78bfa;"></span>Counted</span><span class="key"><span style="width: 14px; border-top: 2.5px dashed #a78bfa;"></span>From births</span></div>
+        </div>
+      </div>
+      <div class="bottom-row"><button type="button" class="src" aria-label="Where this figure comes from">i</button><button type="button" class="fbtn" aria-label="What this shows"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4.5h13v8.5H9l-3.5 3v-3h-2z"></path><path d="M7 8h6M7 10.5h4"></path></svg></button><button type="button" class="fbtn" aria-label="Add a private note"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3z"></path><path d="M11.5 5.5 14.5 8.5"></path></svg></button><span class="muted" style="font-size: 11px;">The pool of children, not who will join</span><span class="flag" style="color: #fca5a5;">&#9660; Pool falling</span></div>
+    </div>
+
+    <div class="panel" style="height: 340px;">
+      <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Area</span><span class="muted" style="font-size: 11.5px;">ONS, ages 5&ndash;15</span><span style="flex-grow: 1;"></span><span class="icons"><button type="button" class="hbtn" aria-label="Panel menu"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6"></circle><circle cx="10" cy="10" r="1.6"></circle><circle cx="15.5" cy="10" r="1.6"></circle></svg></button><button type="button" class="hbtn" aria-label="Full screen"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline><line x1="2.5" y1="2.5" x2="8" y2="8"></line><line x1="17.5" y1="17.5" x2="12" y2="12"></line></svg></button><span class="slot-empty" aria-hidden="true"></span></span></div>
+      <div style="display: flex; flex-grow: 1; min-height: 0;">
+        <div class="view-rail">
+          <span class="icon-btn active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"></polyline></svg></span>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div class="vt">The area&rsquo;s school-age population</div>
+          <svg width="100%" height="150" viewBox="0 0 300 150" preserveAspectRatio="none" role="img" aria-label="Area population placeholder">
+            <line x1="0" y1="140" x2="300" y2="140" stroke="#2a2a2a"></line>
+            <polyline points="10,60 55,58 100,58 145,62 190,66 235,72 280,78" fill="none" stroke="#a1a1aa" stroke-width="2.2"></polyline>
+          </svg>
+          <div style="display: flex; gap: 12px;"><span class="key"><span style="width: 14px; border-top: 2px solid #a1a1aa;"></span>Malvern Hills and Worcestershire</span></div>
+        </div>
+      </div>
+      <div class="bottom-row"><button type="button" class="src" aria-label="Where this figure comes from">i</button><button type="button" class="fbtn" aria-label="What this shows"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4.5h13v8.5H9l-3.5 3v-3h-2z"></path><path d="M7 8h6M7 10.5h4"></path></svg></button><button type="button" class="fbtn" aria-label="Add a private note"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3z"></path><path d="M11.5 5.5 14.5 8.5"></path></svg></button><span class="muted" style="font-size: 11px;">Also on the Context dashboard</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top: auto; display: flex; align-items: center; gap: 16px; border-top: 1px solid #1c1c1c; padding-top: 10px; font-size: 11.5px; color: #7a7a7a;"><span>VicData</span><span>Sources</span><span style="flex-grow: 1;"></span><span style="display: inline-flex; align-items: center; gap: 6px; color: #b4b4b4;">Edit <span style="position: relative; display: inline-block; width: 18px; height: 10px; border: 1px solid currentColor; border-radius: 999px; box-sizing: border-box;"><span style="position: absolute; top: 1px; left: 1px; width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span></span></span><span style="color: #b4b4b4;">View as&hellip;</span><span style="font-size: 10.5px; color: #5c5c62;">platform admins only &middot; Edit opens the shared editor in place</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1230}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

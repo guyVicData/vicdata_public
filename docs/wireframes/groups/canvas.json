@@ -1,0 +1,23 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-13T20:05:00Z"},
+  "title": "VicData group dashboards",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1230, "title": "Group · Overview (Harris Federation, all phases): the group now, Against others large view, indexed trends"},
+    "Schools.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1230, "title": "Group · Schools (Dukes Education, light theme): every member school, rank within the group and nationally, honest gaps"},
+    "Academic.dc.html": {"x": 0, "y": 1610, "w": 1440, "h": 1230, "title": "Group · Academic (Harris, Secondary): results against peer MATs and non-group schools, each school's rank"},
+    "SchoolSide.dc.html": {"x": 1520, "y": 1610, "w": 960, "h": 640, "title": "A member school's view · its group as a comparison set (\"3rd of 9 Dukes schools with GCSE results\")"},
+    "Home.dc.html": {"x": 0, "y": 3220, "w": 390, "h": 844, "title": "Group home · head office: group dashboards, member schools, access, my dashboards, meetings"},
+    "Access.dc.html": {"x": 470, "y": 3220, "w": 960, "h": 640, "title": "Group access · head office chooses which schools' SMT get the group view"},
+    "Phone.dc.html": {"x": 1510, "y": 3220, "w": 390, "h": 844, "title": "Phone · the group now, then the large view as tabs, then rows"}
+  },
+  "order": ["Main.dc.html", "Schools.dc.html", "Academic.dc.html", "SchoolSide.dc.html", "Home.dc.html", "Access.dc.html", "Phone.dc.html"],
+  "notes": {
+    "t1": {"kind": "title1", "text": "Group view — Overview and Schools", "x": 0, "y": -260, "maxW": 2960},
+    "t2": {"kind": "title1", "text": "Academic, and the group from a school's side", "x": 0, "y": 1350, "maxW": 2960},
+    "t3": {"kind": "title1", "text": "Head office: home, access, phone", "x": 0, "y": 2960, "maxW": 2960}
+  },
+  "designSystems": []
+}

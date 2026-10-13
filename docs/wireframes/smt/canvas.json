@@ -1,0 +1,23 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-13T18:55:00Z"},
+  "title": "VicData SMT dashboards",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1230, "title": "SMT · Overview (The Chase, whole school): the school now, scorecard large view, indexed trends"},
+    "Academic.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1230, "title": "SMT · Academic (The Chase, GCSE → Sciences): level chips with the subject-area row, subjects large view"},
+    "Pupils.dc.html": {"x": 0, "y": 1560, "w": 1440, "h": 1230, "title": "SMT · Pupils (The Chase, whole school): roll by phase, shape and size large view, Admissions read-only"},
+    "Context.dc.html": {"x": 1520, "y": 1560, "w": 1440, "h": 1230, "title": "SMT · Context (The Chase): the area around the school, population only, data gap marked"},
+    "LeightonLight.dc.html": {"x": 0, "y": 3120, "w": 1440, "h": 1230, "title": "SMT · Overview, light theme (Leighton Park): IGCSE school, boarding filter, value added honesty"},
+    "Phone.dc.html": {"x": 1520, "y": 3120, "w": 390, "h": 844, "title": "Phone · column 1, then the large view as tabs, then rows"},
+    "Home.dc.html": {"x": 1990, "y": 3120, "w": 390, "h": 844, "title": "SMT home · the school's dashboards, Admissions, my dashboards, Recruitment, Meetings, slots for further functions"}
+  },
+  "order": ["Main.dc.html", "Academic.dc.html", "Pupils.dc.html", "Context.dc.html", "LeightonLight.dc.html", "Phone.dc.html", "Home.dc.html"],
+  "notes": {
+    "t1": {"kind": "title1", "text": "SMT — Overview and Academic", "x": 0, "y": -260, "maxW": 2960},
+    "t2": {"kind": "title1", "text": "SMT — Pupils and Context", "x": 0, "y": 1300, "maxW": 2960},
+    "t3": {"kind": "title1", "text": "Light theme, phone and home", "x": 0, "y": 2860, "maxW": 2960}
+  },
+  "designSystems": []
+}

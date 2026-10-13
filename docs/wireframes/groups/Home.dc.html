@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Group home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #0a0a0b; }
+  a { text-decoration: none; color: inherit; }
+  .card { display: block; border-radius: 14px; border: 1.5px solid #1e1e22; background: #131315; padding: 15px; }
+  .icon { width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .ct { font-size: 15px; font-weight: 700; }
+  .cd { font-size: 13px; color: #9a9aa0; margin-top: 2px; line-height: 1.35; }
+  .dchip { border: 1px solid #4a2c14; background: #21150b; color: #fed7aa; border-radius: 999px; padding: 6px 11px; font-size: 12px; font-weight: 700; }
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0a0a0b; color: #f2f2f3; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #1c1c1f;">
+    <div style="font-weight: 700; font-size: 15px; letter-spacing: 0.02em;">VicData</div>
+    <div style="display: flex; align-items: center; gap: 18px; font-size: 13px; color: #8a8a90;">
+      <span>Home</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </div>
+  </div>
+
+  <div style="padding: 20px 20px 28px; overflow: hidden; flex-grow: 1; display: flex; flex-direction: column; gap: 16px;">
+    <div>
+      <div style="font-size: 22px; font-weight: 700; line-height: 1.2;">[Your name]</div>
+      <div style="font-size: 13px; color: #8a8a90; margin-top: 2px;">Dukes Education &middot; head office</div>
+    </div>
+
+    <div style="font-size: 16px; font-weight: 600; color: #d4d4d8;">What would you like to look at?</div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <a href="Main.dc.html" class="card" style="border-color: #4a2c14;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="icon" style="background: rgba(251,146,60,0.14); color: #fb923c;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="6" cy="7" r="3"></circle><circle cx="18" cy="7" r="3"></circle><circle cx="12" cy="17" r="3"></circle><path d="M8.5 9 11 15M15.5 9 13 15"></path></svg>
+          </div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div class="ct">The group</div>
+            <div class="cd">How are our schools doing, and against whom?</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px;">
+          <span class="dchip">Overview</span><span class="dchip">Schools</span><span class="dchip">Academic</span><span class="dchip">Pupils</span>
+        </div>
+        <div style="font-size: 12px; color: #b4b4ba; margin-top: 10px;">26 schools &middot; roll &#9650; [x]% &middot; [g] growing</div>
+      </a>
+
+      <a href="Schools.dc.html" class="card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="icon" style="background: rgba(167,139,250,0.14); color: #a78bfa;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"></path></svg>
+          </div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div class="ct">Our schools</div>
+            <div class="cd">Open any member school&rsquo;s SMT dashboards</div>
+          </div>
+        </div>
+      </a>
+
+      <a href="Access.dc.html" class="card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="icon" style="background: rgba(251,191,36,0.14); color: #fbbf24;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+          </div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div class="ct">Access</div>
+            <div class="cd">Which schools&rsquo; SMT see the group view: [n] of 26</div>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="icon" style="background: rgba(167,139,250,0.10); color: #c4b5fd;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+          </div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div class="ct">My dashboards</div>
+            <div class="cd">The ones you&rsquo;ve made, and those shared with head office</div>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="icon" style="background: rgba(251,113,133,0.14); color: #fb7185;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></svg>
+          </div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div class="ct">Meetings</div>
+            <div class="cd">Next: [board meeting], [date]</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

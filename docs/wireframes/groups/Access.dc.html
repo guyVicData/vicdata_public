@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Group access</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  .muted { color: #9a9a9a; }
+  .th { font-size: 10.5px; color: #9a9a9a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; background: #101010; }
+  .td { font-size: 12.5px; color: #e5e5e5; padding: 10px 12px; border-top: 1px solid #232323; display: flex; align-items: center; }
+  .sw { position: relative; display: inline-block; width: 34px; height: 20px; border-radius: 999px; background: #3f3f46; border: 0; padding: 0; }
+  .sw .k { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #e5e5e5; }
+  .sw.on { background: #fb923c; }
+  .sw.on .k { left: 16px; background: #1f0f04; }
+  .btn { border: 1px solid #2a2a2a; background: #141414; color: #e5e5e5; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 700; font-family: inherit; }
+  .pill { border-radius: 6px; padding: 1px 7px; font-size: 10.5px; font-weight: 700; }
+</style>
+</helmet>
+<div style="width: 960px; height: 640px; box-sizing: border-box; background: #0a0a0a; padding: 22px 26px; display: flex; flex-direction: column; gap: 14px; color: #f2f2f2;">
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;">
+    <div>
+      <div style="font-size: 20px; font-weight: 700;">Access to the group view</div>
+      <div class="muted" style="font-size: 13px; margin-top: 3px;">Dukes Education &middot; head office decides which schools&rsquo; SMT see the group dashboards</div>
+    </div>
+    <div style="display: flex; gap: 8px;"><button type="button" class="btn">Give all schools access</button><button type="button" class="btn">Remove all</button></div>
+  </div>
+
+  <div style="display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: #c4c4c4; line-height: 1.45; background: #141414; border: 1px solid #232323; border-radius: 10px; padding: 10px 12px;">
+    Every member school already sees <b style="color: #fed7aa;">&nbsp;All Dukes schools&nbsp;</b> as a comparison set in its own dashboards. This page adds the <b style="color: #fed7aa;">&nbsp;group dashboards&nbsp;</b> (Overview, Schools, Academic, Pupils) for a school&rsquo;s SMT.
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2.4fr 1fr 1fr 1.3fr 1.3fr; border: 1px solid #232323; border-radius: 10px; overflow: hidden;">
+    <div class="th">School</div><div class="th">SMT members</div><div class="th">Group view</div><div class="th">Since</div><div class="th">Opened, last 30 days</div>
+    <div class="td">[Senior school A]</div><div class="td">[n]</div><div class="td"><button type="button" class="sw on" role="switch" aria-checked="true" aria-label="Group view for Senior school A"><span class="k"></span></button></div><div class="td muted">[date]</div><div class="td">[n] times by [n] staff</div>
+    <div class="td">[Senior school B]</div><div class="td">[n]</div><div class="td"><button type="button" class="sw on" role="switch" aria-checked="true" aria-label="Group view for Senior school B"><span class="k"></span></button></div><div class="td muted">[date]</div><div class="td">[n] times by [n] staff</div>
+    <div class="td">[Prep school D]</div><div class="td">[n]</div><div class="td"><button type="button" class="sw" role="switch" aria-checked="false" aria-label="Group view for Prep school D"><span class="k"></span></button></div><div class="td muted">&mdash;</div><div class="td muted">&mdash;</div>
+    <div class="td">[Prep school E]&nbsp;<span class="pill" style="background: #3b2f0a; color: #fde68a;">likely member</span></div><div class="td muted">not a member</div><div class="td"><button type="button" class="sw" role="switch" aria-checked="false" aria-label="Group view for Prep school E"><span class="k"></span></button></div><div class="td muted">&mdash;</div><div class="td muted">invite to VicData</div>
+    <div class="td">[Sixth-form college F]</div><div class="td">[n]</div><div class="td"><button type="button" class="sw on" role="switch" aria-checked="true" aria-label="Group view for Sixth-form college F"><span class="k"></span></button></div><div class="td muted">[date]</div><div class="td">[n] times by [n] staff</div>
+  </div>
+
+  <div class="muted" style="font-size: 11.5px; line-height: 1.5;">Showing 5 of 26. A school needs its own VicData membership for its staff to sign in; the group membership pays for head office and for the group view. Usage counts come from the usage log (counts only; names are never shown across schools).</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A member school's group comparison</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Helvetica, sans-serif; background: #0a0a0a; }
+  .muted { color: #9a9a9a; }
+  .fchip { border: 1px solid #2a2a2a; background: #101010; color: #c4c4c4; border-radius: 8px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+  .chip { border: 1px solid #2a2a2a; background: #141414; color: #d4d4d4; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip.active { border-color: #a78bfa; background: #1d1730; color: #fff; }
+  .panel { box-sizing: border-box; background: #141414; border: 1px solid #232323; border-radius: 12px; padding: 12px 14px 36px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .tag { font-size: 11.5px; font-weight: 600; color: #d4d4d4; }
+  .vt { font-size: 12.5px; font-weight: 700; color: #f2f2f2; }
+  .th { font-size: 10.5px; color: #9a9a9a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 10px; background: #101010; }
+  .td { font-size: 12.5px; color: #e5e5e5; padding: 9px 10px; border-top: 1px solid #232323; }
+  .td.grp { background: #1c140d; }
+  .td.na { color: #8a8a8a; font-style: italic; }
+  .icons { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .hbtn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; border: 0; background: transparent; color: #7a7a7a; padding: 0; }
+  .slot-empty { display: inline-block; width: 26px; height: 1px; }
+  .bottom-row { position: absolute; left: 14px; right: 14px; bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .src { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; border: 1px solid #2a2a2a; background: transparent; color: #7a7a7a; font-size: 9.5px; font-style: italic; font-weight: 700; padding: 0; font-family: inherit; }
+  .fbtn { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 5px; border: 0; background: transparent; color: #9a9a9a; padding: 0; }
+  .pop { position: absolute; z-index: 5; box-sizing: border-box; border-radius: 10px; border: 1px solid #2a2a2a; background: #141414; padding: 6px; box-shadow: 0 10px 24px rgba(0,0,0,0.45); }
+  .mi { display: flex; align-items: center; gap: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; color: #e5e5e5; border-radius: 6px; }
+  .mh { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #9a9a9a; padding: 8px 10px 4px; }
+  .src-pill { border-radius: 5px; padding: 1px 6px; font-size: 10px; font-weight: 700; background: #262626; color: #a1a1aa; }
+</style>
+</helmet>
+<div style="position: relative; width: 960px; height: 640px; box-sizing: border-box; background: #0a0a0a; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; color: #f2f2f2;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #101010; border: 1px solid #232323; border-radius: 14px; padding: 10px 14px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="width: 32px; height: 32px; border-radius: 9px; background: #1d1730; color: #a78bfa; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;">S</span>
+      <div style="font-size: 15px; font-weight: 700;">SMT <span class="muted" style="font-size: 12.5px; font-weight: 500;">&mdash; [A Dukes senior school]</span></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="chip">Whole school</span><span class="chip active">GCSE</span><span class="chip">Post-16</span>
+      <span style="width: 1px; height: 18px; background: #262626;"></span>
+      <span class="fchip" style="border-color: #fb923c; color: #fff;">Compared against: All Dukes schools <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+    </div>
+  </div>
+
+  <div class="panel" style="flex-grow: 1;">
+    <div style="display: flex; align-items: center; gap: 6px;"><span class="tag">Scorecard</span><span class="muted" style="font-size: 11.5px;">GCSE, against the group and the usual sets</span><span style="flex-grow: 1;"></span><span class="icons"><button type="button" class="hbtn" aria-label="Panel menu"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6"></circle><circle cx="10" cy="10" r="1.6"></circle><circle cx="15.5" cy="10" r="1.6"></circle></svg></button><button type="button" class="hbtn" aria-label="Full screen"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7,2 2,2 2,7"></polyline><polyline points="13,18 18,18 18,13"></polyline><line x1="2.5" y1="2.5" x2="8" y2="8"></line><line x1="17.5" y1="17.5" x2="12" y2="12"></line></svg></button><span class="slot-empty" aria-hidden="true"></span></span></div>
+    <div class="vt">Your rank within Dukes, beside your local and national ranks</div>
+    <div style="display: grid; grid-template-columns: 1.9fr 0.8fr 1.5fr 1.1fr 1.1fr; border: 1px solid #232323; border-radius: 10px; overflow: hidden;">
+      <div class="th">Measure</div><div class="th">You</div><div class="th" style="color: #fdba74;">Dukes schools</div><div class="th">Nearest 10</div><div class="th">England</div>
+      <div class="td">Attainment 8</div><div class="td" style="font-weight: 700;">[x]</div><div class="td grp"><b>3rd of 9</b> <span class="muted" style="font-size: 11px;">with GCSE results</span></div><div class="td">[r] of 10</div><div class="td">[r] of [N]</div>
+      <div class="td">Grade 7+ share</div><div class="td" style="font-weight: 700;">[x]%</div><div class="td grp"><b>2nd of 9</b></div><div class="td">[r] of 10</div><div class="td">[r] of [N]</div>
+      <div class="td">Roll</div><div class="td" style="font-weight: 700;">[n]</div><div class="td grp"><b>4th of 14</b> <span class="muted" style="font-size: 11px;">senior schools</span></div><div class="td">[r] of 11</div><div class="td">[r] of [N]</div>
+      <div class="td">Progress 8</div><div class="td na">Not published</div><div class="td grp na">independent schools</div><div class="td na">&mdash;</div><div class="td na">&mdash;</div>
+    </div>
+    <div style="font-size: 12px; color: #c4c4c4; line-height: 1.45;">The group counts only schools that share the phase in view. Dukes&rsquo; preps and IGCSE schools are left out of GCSE ranks, and the count says so.</div>
+    <div class="bottom-row"><button type="button" class="src" aria-label="Where this figure comes from">i</button><button type="button" class="fbtn" aria-label="What this shows"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4.5h13v8.5H9l-3.5 3v-3h-2z"></path><path d="M7 8h6M7 10.5h4"></path></svg></button><button type="button" class="fbtn" aria-label="Add a private note"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3z"></path><path d="M11.5 5.5 14.5 8.5"></path></svg></button></div>
+  </div>
+
+  <div class="pop" style="top: 66px; right: 24px; width: 300px;">
+    <div class="mh">Compared against</div>
+    <span class="mi" style="background: #21150b;">&#10003; All Dukes schools <span class="src-pill">Club ISS</span></span>
+    <span class="mi" style="padding-left: 26px; color: #a1a1aa;">9 with GCSE results &middot; 26 in all</span>
+    <span class="mi">Change comparison&hellip;</span>
+    <div class="mh" style="border-top: 1px solid #232323; margin-top: 4px;">Your groups</div>
+    <span class="mi">All Dukes schools</span>
+    <span class="mi">[A second group, e.g. a sponsor] <span class="src-pill">likely</span></span>
+    <div style="font-size: 10.5px; color: #7a7a7a; padding: 6px 10px 4px; line-height: 1.45;">Official groups appear for their members automatically. Self-declared groups only for the school that made them.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
