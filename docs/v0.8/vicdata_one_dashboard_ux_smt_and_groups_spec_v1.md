@@ -1,6 +1,6 @@
 # VicData — One dashboard UX: Teacher, Admissions, SMT and groups
 
-Written 12 Oct 2026, for Guy to review. It sets out the shared layout and controls every role's dashboards use, and specifies the SMT dashboards and the group view to match. It follows Guy's round 3 principle: *the core UI is identical; only the column arrangement differs.*
+Written 12 Oct 2026, for Guy to review. Updated 13 Oct: a group as a comparison set (§3.5); Oxbridge inside Destinations. It sets out the shared layout and controls every role's dashboards use, and specifies the SMT dashboards and the group view to match. It follows Guy's round 3 principle: *the core UI is identical; only the column arrangement differs.*
 
 Read with:
 - `docs/v0.7/admissions_r3_report_v1.md` (the shared panel chrome, nav and edit bar);
@@ -89,6 +89,8 @@ The chips are **Whole school · Phase (Primary / GCSE / Post-16, only the phases
   - market share.
 - **Row 2:** roll trend indexed, the pool trend for the main entry point, and the area's population (ages 5–15, ONS).
 
+**Destinations** (later, after value added and SEND): DfE 16–18 destinations for every school (university, apprenticeships, further education, employment, not sustained), top third for state schools and colleges, and **Oxbridge** from the universities' apply-centre files, as ranges. **Oxbridge lives here, inside Destinations,** not as a separate view.
+
 **Context**, the area around the school.
 
 - **Column 1:** the area now: births trend, population projection, the school's LA and region.
@@ -145,6 +147,19 @@ Each view says where the group came from (its source label) and how sure we are 
 - value added (A-level VA for all schools; Progress 8 for state schools; independents labelled "not published").
 
 **Pupils:** combined roll by age (the group's shape), entry cohorts across schools, leaving at 16, and each school's market share in its own area.
+
+### 3.5 A school's group as a comparison set (Guy, 13 Oct)
+
+For a member school, **its group becomes a comparison set** in the existing chooser, everywhere a comparison set works: Teacher, Admissions, SMT, and the public page's rankings.
+- **Labels:** "All Dukes schools", or for a MAT, "All Harris Federation schools".
+- **The school's rank within its group** appears beside its local, regional and national ranks: "3rd of 26 Dukes schools on A-level points".
+- **Phase:** the set filters to the schools that share the phase or measure in view. Dukes' preps don't count in a GCSE ranking, and the count says so ("3rd of 9 Dukes schools with GCSE results").
+- **Sources:**
+  - **official groups** (GIAS, Club ISS, Companies House) are offered automatically to their members;
+  - **likely memberships** (Companies House only) are included with the source label;
+  - **self-declared groups** are offered only to the school that made them.
+- **A school in several groups** (a MAT and a different sponsor, say) sees each as a separate set.
+- **Built on** `school_groups_lookup` / `group_schools_lookup`, through the same custom-set path as `?set=`. No new chrome.
 
 ### 3.4 Honesty wording (`GROUP_NOTES`)
 
