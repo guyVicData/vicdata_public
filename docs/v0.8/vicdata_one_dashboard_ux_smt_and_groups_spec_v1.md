@@ -203,6 +203,12 @@ The group view's comparisons work like a school's, one level up. The group (pupi
 - **Academic** and **Pupils:** each large view has the same comparison chooser, with "Non-group schools" and "Peer groups" alongside the existing sets;
 - **built on** the groups lookups and a new aggregate per group per year, computed in the database, never in the browser.
 
+### 3.7 Wireframes (13 Oct)
+
+Canvas "VicData group dashboards": Harris Overview (Against others), Dukes Schools (light theme), Harris Academic (Secondary), a member school's view of its group as a comparison set, the head-office home, the Access page (which schools' SMT get the group view), and phone. Group accent: orange (to confirm). Panel chrome, nav and footer as SMT and Admissions.
+
+**Usage tracking** (Guy, 13 Oct) is noted separately: `claude/vicdata_usage_tracking_note_v1.md`. The Access page previews it ("opened N times by N staff").
+
 ### 3.4 Honesty wording (`GROUP_NOTES`)
 
 - **"Membership as of [date], from [source]."**
