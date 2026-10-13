@@ -6,6 +6,7 @@
 // (audit B §0, §2), so `fetchedBy` lists every route that reaches it. Years are academic
 // years (period N = N/N+1) except births (calendar years) and rolls (January census).
 import { ADMISSIONS_MEASURES } from "./admissions";
+import { SMT_MEASURES } from "./smt";
 import type { Geography, GeographyAvailability, Measure } from "./types";
 import type { YearFamily } from "./years";
 
@@ -455,6 +456,8 @@ export const MEASURES: Measure[] = [
   },
   // 0.7 admissions r2: the Admissions entries, after every existing one (src/catalogue/admissions.ts).
   ...ADMISSIONS_MEASURES,
+  // 0.8 SMT round 1: the SMT dashboards (after Teacher's and Admissions', which are unchanged).
+  ...SMT_MEASURES,
 ];
 
 // 0.6.4 C2: as dataviews.ts' dataviewById -- without loading ./index's rules.

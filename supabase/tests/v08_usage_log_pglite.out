@@ -1,0 +1,30 @@
+applied 20261109090000_v08_usage_log.sql
+
+-- the server role
+PASS writes an event 
+PASS counts a public page view 
+PASS one row per school per day, one more per view [{"school_urn":"110110","views":1},{"school_urn":"137625","views":2}]
+
+-- anon
+PASS can't write an event 
+PASS can't read events 
+PASS can't change or delete events 
+PASS can't read the page counts 
+PASS can't write the page counts 
+PASS can't call the counter 
+
+-- authenticated
+PASS can't write an event 
+PASS can't read events 
+PASS can't change or delete events 
+PASS can't read the page counts 
+PASS can't write the page counts 
+PASS can't call the counter 
+
+-- the shape
+PASS RLS is on for both tables 
+PASS neither table has a policy (nobody reads through the API) 
+PASS an unknown product or event is refused 
+PASS deleting a membership keeps its events, unlinked 
+
+ALL PASS

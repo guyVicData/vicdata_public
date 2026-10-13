@@ -219,6 +219,9 @@ const COLUMN_ICON: Record<Dataview["host"]["id"], DashboardConfig["columns"][num
   // 0.7 admissions r2: never drawn through TeacherDashboard (Admissions slots have their own renderer).
   "admissions.pipelines": "context",
   "admissions.market": "rankings",
+  // 0.8 SMT: never drawn through TeacherDashboard either (SMT has its own renderer).
+  "smt.overview": "context",
+  "smt.academic": "results",
 };
 
 // Does this host offer a year control on this panel? (Context's Current: SubjectPanels'

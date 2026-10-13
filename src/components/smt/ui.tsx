@@ -1,0 +1,89 @@
+"use client";
+
+// VicData 0.8 SMT round 1: SMT's few own pieces. The page wears the shared shell (src/components/shell)
+// and Admissions' small kit (tiles, flag pills, keys, the chart kit) -- the same tokens, the boards'
+// semantic colours as Admissions variables -- with SMT's accent (ROLE_ACCENT.smt) in place of
+// Admissions'. Nothing here computes a figure: every value arrives from /api/smt/*.
+import type { CSSProperties, ReactNode } from "react";
+import { accentVars, productAccent } from "@/components/shell/accent";
+import { admissionsVars, cx } from "@/components/admissions/ui";
+import type { Theme } from "@/components/shell/TeacherChrome";
+import { periodLabel, withProvisional, type YearFamily } from "@/catalogue/years";
+
+const S = productAccent("smt")!;
+
+/** The page root's variables: Admissions' semantic colours, SMT's accent. */
+export function smtVars(theme: Theme): CSSProperties {
+  const dark = theme === "dark";
+  return {
+    ...admissionsVars(theme),
+    ...accentVars(S),
+    "--adm-tint": `rgba(${S.rgb},${dark ? 0.12 : 0.14})`,
+    "--adm-accent-text": dark ? S.hex : "#6d28d9",
+    "--adm-on-accent": "#160f2a",
+    "--adm-range-edge": dark ? "#3b3252" : "#d8ccfa",
+  } as CSSProperties;
+}
+
+export type Unit = "pupils" | "points" | "pct" | "va" | "share" | "grade";
+
+/** A figure as the boards write it, by its unit. */
+export function fmt(v: number | null | undefined, unit: Unit, key?: string): string {
+  if (v === null || v === undefined || !Number.isFinite(v)) return "—";
+  switch (unit) {
+    case "pupils":
+      return Math.round(v).toLocaleString("en-GB");
+    case "pct":
+    case "share":
+      return `${v.toFixed(1).replace(/\.0$/, "")}%`;
+    case "va":
+      return `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(2)}`;
+    case "grade":
+      return v.toFixed(2);
+    default:
+      return key && /aps_per_entry/.test(key) ? v.toFixed(2) : v.toFixed(1);
+  }
+}
+
+/** A change, signed, in its own unit: +2.5 pts, −0.7 pts, +6.1 pp, ▲ 16%. */
+export function fmtChange(c: { change: number; unit: "pct" | "points" | "pp" } | null | undefined, dp = 1): string {
+  if (!c) return "—";
+  const v = c.change;
+  const s = `${Math.abs(v).toFixed(c.unit === "pct" ? 0 : dp)}`;
+  return c.unit === "pct" ? `${v > 0.5 ? "▲" : v < -0.5 ? "▼" : "▬"} ${s}%` : `${v > 0 ? "+" : v < 0 ? "−" : "±"}${s} ${c.unit === "pp" ? "pp" : "pts"}`;
+}
+
+export const dirClass = (v: number | null | undefined, flat = 0.05) => (v === null || v === undefined ? "text-[var(--muted2)]" : v > flat ? "text-[var(--adm-up-fg)]" : v < -flat ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]");
+export const arrowOf = (v: number | null | undefined, flat = 0.05) => (v === null || v === undefined ? "" : v > flat ? "▲" : v < -flat ? "▼" : "▬");
+
+export const ord = (n: number) => {
+  const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return `${n.toLocaleString("en-GB")}${s}`;
+};
+export const rankText = (r: { rank: number; of: number } | null | undefined) => (r ? `${ord(r.rank)} of ${r.of.toLocaleString("en-GB")}` : "—");
+
+/** A results year, "(provisional)" where the data says so (years.ts). */
+export const yearOf = (p: number | null | undefined, family?: YearFamily | null) => (p === null || p === undefined ? "" : withProvisional(periodLabel(p), family ?? null, p));
+export const shortYear = (p: number) => `${String(p % 100).padStart(2, "0")}/${String((p + 1) % 100).padStart(2, "0")}`;
+
+/** The boards' column-1 tile, with the accent figure, as Admissions' (ui.tsx Tile) but with a muted note. */
+export function NoteTile({ label, title, sub }: { label: string; title: string; sub: string }) {
+  return (
+    <div className="flex flex-col gap-[2px] rounded-[9px] border border-[var(--panel-border)] px-[10px] py-2">
+      <span className="text-[10.5px] text-[var(--muted2)]">{label}</span>
+      <span className="text-[15px] font-extrabold text-[var(--muted2)]">{title}</span>
+      <span className="text-[10.5px] leading-snug text-[var(--muted2)]">{sub}</span>
+    </div>
+  );
+}
+
+export function Th({ children, className }: { children: ReactNode; className?: string }) {
+  return <th className={cx("whitespace-nowrap px-2 py-[7px] text-left text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--muted2)]", className)}>{children}</th>;
+}
+export function Td({ children, className, title }: { children: ReactNode; className?: string; title?: string }) {
+  return (
+    <td title={title} className={cx("px-2 py-[7px] text-[12.5px] text-[var(--chip-fg)]", className)}>
+      {children}
+    </td>
+  );
+}

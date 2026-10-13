@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
+import { countablePublicView, countPublicPageView, publicPageUrn } from "@/lib/usage-public";
 import { timingSafeEqual, sha256Hex, PREVIEW_GATE_COOKIE } from "@/lib/timing-safe";
 
 // Default-deny: the gate is active unless ACCESS_GATE_ENABLED is explicitly "false".
@@ -22,7 +23,7 @@ function unauthorized(): NextResponse {
   });
 }
 
-export async function proxy(request: NextRequest): Promise<NextResponse> {
+async function gate(request: NextRequest): Promise<NextResponse> {
   const gateEnabled = process.env.ACCESS_GATE_ENABLED !== "false";
   if (!gateEnabled) {
     return NextResponse.next();
@@ -101,4 +102,15 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.next();
+}
+
+// 0.8 shell + SMT r1 (B7): the public school page's daily count. A request the gate lets through to
+// /schools/<urn> adds one to that school's count for the day, after the response (waitUntil), so
+// the page is never slower and never changes. No cookie is set; nothing about the visitor is sent
+// or kept; prefetches and anything that says it's a bot aren't counted (src/lib/usage.ts).
+export async function proxy(request: NextRequest, event?: NextFetchEvent): Promise<NextResponse> {
+  const res = await gate(request);
+  const urn = publicPageUrn(request.nextUrl.pathname);
+  if (urn && event && res.headers.get("x-middleware-next") === "1" && countablePublicView(request.method, request.headers)) event.waitUntil(countPublicPageView(urn));
+  return res;
 }

@@ -116,3 +116,52 @@ export const ADMISSIONS_NOTES = {
   funnelPoolMethod: "January census: every pupil aged {age} at 31 August in every mainstream school in the area -- academies, LA-maintained, free and independent -- weighted as the births are.",
   funnelPoolBySex: "Not held by girls or boys: the area's counts have no split.",
 } as const;
+
+// ------------------------------------------------------------------------- SMT (0.8 round 1)
+// The honesty wording for the SMT dashboards (src/lib/smt/, src/components/smt/), in one place like
+// the notes above: every SMT view takes its caveats from here (R-SMT-NOTES), never its own words.
+// {placeholders} are filled by smtNote().
+export const SMT_NOTES = {
+  // Ranks (R-SMT-SET-RANKS): who is counted.
+  ranks: "Ranks are among the schools with that result: highest first, ties share a place. The count says how many were ranked.",
+  setRank: "{rank} of {of} {setLabel} with {stage} results",
+  // R-IGCSE-EXCL, said for SMT.
+  igcseChip: "No published GCSE results: this school sits IGCSEs, which DfE's tables don't count, so its GCSE figures aren't comparable.",
+  igcseView: "{school} sits IGCSEs, which DfE's GCSE tables don't count. Its GCSE figures would read near zero, so it isn't compared or ranked at GCSE. Post-16 results are compared as usual.",
+  igcseRow: "not ranked: IGCSE",
+  // Progress 8 (R-SMT-P8-REASON): which reason applies, never a blank.
+  p8Independent: "Progress 8 is not published for independent schools.",
+  p8NoBaseline: "Progress 8 is not published for {years}: those pupils sat no KS2 tests (2020 and 2021), so there is no baseline.",
+  p8Published: "Progress 8, {year}: the latest DfE published. None for {years} (no KS2 baseline).",
+  p8NoGcse: "No GCSE results, so no Progress 8.",
+  // A-level value added (R-SMT-VA-HONEST).
+  alevelVa: "A-level value added compares each student's results with others nationally who started from similar GCSEs. 0 is the national average; the range is DfE's 95% confidence interval -- a figure whose range crosses 0 isn't clearly different from average.",
+  vaNotKs2: "Value added isn't published for KS2.",
+  vaNoGcseSubjects: "DfE has never published GCSE value added by subject. When Progress 8 returns, the whole-school figure shows here, never a subject one.",
+  vaNotPublished: "No value added is published for this school at Post-16.",
+  // Trends (R-TREND-FROM-2223 is the shared note; these are SMT's own lines).
+  sinceBase: "Change is measured from {base}, the first year graded on the normal scale.",
+  middleHalf: "The band is the middle half of {setLabel} with results that year (the 25th to the 75th percentile). Schools without results are left out.",
+  rollIndexed: "Each line is indexed to 100 in {base}. {la} and England count pupils aged 5 to 15 in every mainstream school (age_profile_aggregates), so they are a like-for-like trend for the area, not a total roll.",
+  rollAreaUndercount: "Earlier area years count only schools still open, so they slightly undercount.",
+  // Entries (the year rules: change in entries counts from the first year).
+  entriesMix: "Each subject's share of the entries, year by year. Entries change counts from the first year shown (entries aren't graded, so the 2021/22 note doesn't apply).",
+  // Market share from Admissions, read-only.
+  marketNoLists: "The Admissions lead hasn't chosen rivals at 11+ yet, so there is no market share to show. Admissions sets them.",
+  marketNoEntry: "This school has no 11+ entry, so it has no market share at 11+.",
+  marketShort: "A share of the rivals Admissions chose: not a share of the local market.",
+  // Flags (R-SMT-FLAGS).
+  flagsRule: "Flags appear only when a change is large and lasting: three years of falling roll, results moving at least {gap} faster than the set's middle over two years, or an entry year shrinking past the national threshold. Hover a flag for the figures.",
+  flagsNone: "No flags: nothing has moved far enough, for long enough.",
+  // The size badges, as the school page says them.
+  size: "XS to XL: this school's pupils in each phase against every school with that phase in England (fifths). The school page's Roll by phase.",
+  // Results by band (reserved).
+  bandReserved: "Arrives with the results-by-band round: the top 25%, middle 50% and bottom 25% of pupils, once the data is built.",
+  // Small numbers.
+  smallEntries: "Subjects with fewer than {min} entries aren't ranked: one or two pupils would decide the rank.",
+} as const;
+
+/** An SMT note with its {placeholders} filled. */
+export function smtNote(key: keyof typeof SMT_NOTES, vars: Record<string, string | number> = {}): string {
+  return SMT_NOTES[key].replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
+}

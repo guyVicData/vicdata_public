@@ -1969,3 +1969,51 @@ The year rules review before GCSE 2025/26 (docs/v0.7/vicdata_0_7_year_rules_revi
 - **Not changed, for Guy:** the Data View measures KS4/KS5 change from 2021/22 (its own baseline) while Teacher measures from 2022/23; the subject ranking applies 2022/23 to entries too, though R-TREND-FROM-2223 says never on Candidates; the meetings picker still offers a "trend" from 3 years where every other view needs 4. Each is a rule's substance, so each is a question in the report, not a fix.
 - **Progress 8 isn't drawn anywhere** in the app (it stopped at 2023/24), so 2025/26 having none can't show a gap or an error. Nothing to add.
 - **The rehearsal fixture** (`scripts/year-rehearsal/`) adds the new year at the fetch layer, so the app's own server code computes everything from it. Two database-side functions (the subject rank and grade rollup lookups) can't see a synthetic year; they answer "not applied", which sends the app to its own fallback reads.
+
+## 2026-10-13 — 0.8 shell + SMT r1
+
+Prompt: `docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md`. Report: `docs/v0.8/shell_smt_r1_report_v1.md`.
+
+**Part A, the shell**
+- **The old paths re-export.** Each moved file is re-exported, by name, from a stub at its old path, so nothing outside the shell had to change. Admissions' `Panel` is a thin wrapper round the shell's `RailPanel`, and so round `CardBox`.
+- **Two files were moved whole that the prompt didn't name.** `PanelIcons` (the rail's glyphs) and `TeacherChrome` (the theme toggle) both moved, because the nav and the panel import them.
+- **"The shell reads the accent from context" means the CSS custom properties.** A product sets `--accent` / `--accent-rgb` once on its root (`accentVars(productAccent(...))`), and every shell part reads `var(--accent)`. No React context was added, because that would change nothing a reader sees and would add a second way of doing the same thing. The groups accent is left out until it's confirmed.
+- **The CSS differs by one class, from Guy's docs.** The branch's Tailwind CSS has one extra class (`translate-x-0`). It comes from Guy's untracked docs in `docs/`, which Tailwind scans. No element uses it, and it isn't from code.
+
+**B1, routes and the switch**
+- **The switch shows two dashboards, not four.** Pupils and Context are registered as coming (`SMT_COMING`), but the switch shows Overview and Academic only. Neither the editor nor `GroupSwitcher` has a "coming" state, and adding one would be new chrome. The home's "The school" card shows Pupils and Context as coming (dashed, not links).
+- **Who gets in.** SMT (governors hold the SMT role), the School-Admin (`is_admin` or the account holder), and platform admins through View as, read-only. The server gate is `smtCaller`. No new RLS.
+- **The seed.** It now gives the SMT dashboards to the SMT role only. Until Guy re-seeds, the page draws the code copy. The editor needs the seeded `dashboards` rows to open on SMT (shown working in the harness with them).
+
+**B2, the level chips**
+- **The subject areas are the data's eight families.** They come from `subject_family_map` / the family lookup: Sciences & Maths, Languages & Literature, and so on. The spec's list (English · Maths · Sciences · Humanities · Languages · Creative · Technical · Other) was illustrative; the data has no separate English or Maths family. Only the families the school entered in the latest year are shown.
+- **An IGCSE school's GCSE chip** is drawn dashed, with a ring and the reason as its tooltip (`SMT_NOTES.igcseChip`). It can still be chosen; the views then say why there's nothing to compare. Its comparison set is chosen in Post-16.
+- **The level is remembered in this browser** (`localStorage`, per school), as is the set. It isn't saved to the member's Teacher preferences, which are per phase and per subject. The address (`?level=`, `&area=`) wins over the remembered value.
+- **The filters don't apply to results.** Gender (mixed schools only) and Day + boarding (boarding schools only) filter the roll figures. On Academic, a non-default filter shows "Results aren't published for girls and boys or for day and boarding pupils".
+
+**B3, Compared against**
+- **One set, in one phase.** Teacher's saved sets and its chooser are per phase. SMT's single set is chosen in the school's main exam phase (GCSE; an IGCSE school's is Post-16) and kept whatever the level. A level then ranks only the set's schools with results at that level, and the count says so.
+- **"Edit this set…"** opens Teacher's chooser on the set when it's a saved set the member can edit. Otherwise it opens the chooser fresh.
+- **`?set=` also carries `&setLabel=`.** The subject explorer link carries `&setLabel=` so Teacher names the set ("10 nearest schools") rather than "Admissions rivals". Without it, Teacher is unchanged.
+
+**B4/B5, data and views**
+- **The roll lines compare like with like as far as the data allows.** No per-year LA whole-roll aggregate exists, so the roll is indexed against the LA's and England's pupils aged 5–15 (`age_profile_aggregates`), and the caption says so.
+- **A-level value added has no "since 2022/23".** It has two published years (2023/24, 2024/25), so the column reads "—" with a hover saying why.
+- **Market share at 11+** is drawn only where Admissions has saved rivals at 11+. Without them it's an empty state with the reason, as the prompt asks, even though Admissions itself falls back to the nearest ten.
+- **The map is the shared Leaflet map** (`ConsortiumMap`, the one Admissions' maps draw with), not Teacher's `RankingsMap`. That component needs full academic profiles for every school, which the Overview doesn't read.
+- **The results trend's band is the set's middle half** (25th–75th percentile of the set's schools with results that year). 2021/22 is shaded, with the trend note as its hover.
+- **The results flag compares with the set's median.** "Results rising/falling faster than the set" uses the median two-year change, with thresholds in `src/lib/smt/flags-rules.ts`: 2 Attainment 8 points, 3 A-level points, at least 4 set schools. The roll and entry-cohort flags are Admissions' own functions and thresholds.
+- **Subjects use Teacher's `subjectRanking`,** so a subject's average, set rank and England rank match the subject explorer's. Subjects under 5 entries aren't ranked. The ranking RPC timed out a few times on cold reads and fell back to its app-side path, as Teacher does.
+- **The national KS2 read** happens only for a school with a primary phase and KS2 results. National reads retry once, because a cold national read can hit the statement timeout.
+
+**B6, the SMT home**
+- **The card order is the one the prompt and the wireframe give.** The school, then Admissions (existing tile), Dashboards (the existing library tile, "My dashboards" in the wireframe), Recruitment and Meetings. The wireframe's dashed "[Further functions]" slot isn't drawn, because nothing is named for it yet.
+
+**B7, the usage log**
+- **Members.** `usage_events` holds a page view per dashboard, school, level and set kind, and each full-screen open (from `CardBox`, where the page set a usage scope).
+  - The membership and role come from the session on the server, never from the browser.
+  - View as is never logged.
+- **The public page.** It's counted in the proxy (`src/proxy.ts`), after the response, so the page itself is unchanged. One counter per school per day; no cookie, no IP address, no user agent kept. Prefetches and self-declared bots aren't counted.
+- **Privacy wording the terms and privacy notice will need** (for Guy):
+  - *Members:* "When you use VicData we record which dashboards and views you open, for which school, and when, against your membership and role. We use this to improve VicData and to give your school reports on how it is used. Other schools never see who you are; any figures shown to other schools are counts, with small numbers hidden."
+  - *Public:* "We count visits to each school's public page per day. We don't set cookies for this, and we don't record who you are, your IP address or your device."

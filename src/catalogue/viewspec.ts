@@ -19,6 +19,7 @@
 // Fields beyond the prompt's S2 shape are marked [ext] and logged in the table doc.
 import { DATAVIEWS } from "./dataviews";
 import { ADMISSIONS_BODIES } from "./admissions";
+import { SMT_BODIES } from "./smt";
 import { CONFIG_SCHEMA_VERSION, type DashboardConfig, type DataId, type Dataview, type DataviewId, type DataviewInstance, type ResultsMeasure, type VariantSets } from "./types";
 
 // ---------------------------------------------------------------------------------- data
@@ -332,6 +333,8 @@ const BODIES: Record<string, Body> = {
 
   // ------------------------------------------- 0.7 admissions r2: the Admissions dashboards
   ...ADMISSIONS_BODIES,
+  // 0.8 SMT round 1: the SMT dashboards (after Teacher's and Admissions', which are unchanged).
+  ...SMT_BODIES,
 };
 
 function presetFrom(dv: Dataview): ViewSpec {

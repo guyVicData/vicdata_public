@@ -20,6 +20,7 @@ import { TeacherDashboard } from "@/components/dashboard-config/TeacherDashboard
 import { oneViewConfig, oneViewPinned } from "@/components/dashboard-config/embed";
 import { SlotRendererContext, type SlotRenderInput, type SlotRenderer } from "./SlotRendererContext";
 import { AdmissionsViewPreview } from "@/components/admissions/AdmissionsDashboard";
+import { SmtViewPreview } from "@/components/smt/SmtDashboard";
 
 const logged = new Set<string>();
 
@@ -69,6 +70,14 @@ export const liveSlotRenderer: SlotRenderer = (input) => {
     return (
       <div data-live-slot={dv.id} className="flex min-h-0 min-w-0 flex-col" style={input.fullscreen ? { flex: "1 1 auto" } : { width: input.width, height: input.height }}>
         <AdmissionsViewPreview dataview={dv.id} urn={input.pinned.schoolUrn} schoolName={input.pinned.schoolName ?? input.pinned.schoolUrn} entry={String(input.pinned.params?.entry ?? "11+")} height={input.fullscreen ? 640 : input.height} />
+      </div>
+    );
+  // 0.8 SMT r1: an SMT view draws from the SMT routes at its pinned level and set (the routes check
+  // the viewer is allowed into SMT at that school).
+  if (dv.host.id.startsWith("smt."))
+    return (
+      <div data-live-slot={dv.id} className="flex min-h-0 min-w-0 flex-col" style={input.fullscreen ? { flex: "1 1 auto" } : { width: input.width, height: input.height }}>
+        <SmtViewPreview dataview={dv.id} urn={input.pinned.schoolUrn} schoolName={input.pinned.schoolName ?? input.pinned.schoolUrn} params={input.pinned.params as Record<string, unknown> | undefined} height={input.fullscreen ? 640 : input.height} />
       </div>
     );
   const phase = input.pinned.phase ?? dv.supports.phases[0];

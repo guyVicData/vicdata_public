@@ -168,6 +168,26 @@ Read the columns as:
 | 71 | `DV-ADM-M-SHARE-RANKS` | Market share ranks | **table** · yearColumns: every; extra: rank; years: down | admissions.market · follows · year · — · actual · from first, rolls on | all | all | HorizontalBarsIcon | Your rank at [entry], year by year | none (draft) |
 | 72 | `DV-ADM-M-SHARE-CHANGE` | Market share change | **bar** · orientation: horizontal; diverging: true; values: true | admissions.market · follows · school · — · change · from first, rolls on | all | all | ChangeArrowIcon | Change since 2019/20: your pupils and share at [entry] | none (draft) |
 | 73 | `DV-ADM-M-ROLL-LINE` | Roll trends | **line** · — | admissions.market · follows · year · — · actual · from first, rolls on | all | all | AdmRollIcon | Pupils in the entry point's age band: you and the [rivals] | none (draft) |
+| 74 | `DV-SMT-O-NOW` | The school now | **numbers** · — | smt.school · follows · school · — · actual · latest | all | all | TilesIcon | The school now | none (draft) |
+| 75 | `DV-SMT-O-SCORECARD` | Scorecard | **table** · yearColumns: latest; extra: rank+change | smt.results · follows · school · — · actual · latest | all | all | TableIcon | How [school] compares, headline by headline | none (draft) |
+| 76 | `DV-SMT-O-MAP` | Map | **map** · colour: value | smt.school · follows · school · — · actual · latest | all | all | MapPinIcon | [school] and [set] | none (draft) |
+| 77 | `DV-SMT-O-FLAGS` | Flags | **flags** · show: flagged | smt.school · follows · school · — · change · latest | all | all | FlagIcon | Flags: large and lasting changes at [school] | none (draft) |
+| 78 | `DV-SMT-O-ROLL-LINE` | Roll, indexed | **line** · — | smt.school · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Roll, indexed (2019/20 = 100) | none (draft) |
+| 79 | `DV-SMT-O-ROLL-TABLE` | Roll, table | **table** · yearColumns: every; years: down | smt.school · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Roll, year by year | none (draft) |
+| 80 | `DV-SMT-O-RESULTS-LINE` | Results trend | **line** · — | smt.results · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Headline results against [set] | none (draft) |
+| 81 | `DV-SMT-O-RESULTS-TABLE` | Results, table | **table** · yearColumns: every; years: down | smt.results · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Headline results against [set], year by year | none (draft) |
+| 82 | `DV-SMT-O-MARKET-LINE` | Market share | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Market share at 11+, against your rivals | none (draft) |
+| 83 | `DV-SMT-O-MARKET-TABLE` | Market share, table | **table** · yearColumns: every; years: down | smt.school · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Market share at 11+, year by year | none (draft) |
+| 84 | `DV-SMT-A-NOW` | The level now | **numbers** · — | smt.results · follows · school · — · actual · latest | all | all | TilesIcon | [level] now | none (draft) |
+| 85 | `DV-SMT-A-AREAS` | Subject areas | **strengths** · order: gap; showFlags: true | smt.subjects · follows · subject · — · actual · latest | all | all | AdmStrengthsIcon | Where [school] leads and trails [set], by subject area | none (draft) |
+| 86 | `DV-SMT-A-SUBJECTS` | Subjects | **table** · yearColumns: latest; extra: rank+change; sort: listed | smt.subjects · follows · subject · — · actual · latest | all | all | TableIcon | Each subject, its rank, and where it's heading | none (draft) |
+| 87 | `DV-SMT-A-VA` | Value added | **table** · yearColumns: latest | smt.value_added · follows · subject · — · actual · latest | all | all | AdmNumbersIcon | Value added | none (draft) |
+| 88 | `DV-SMT-A-GRADES` | Grade profile | **bar** · orientation: horizontal; values: true | smt.subjects · follows · grade · — · actual · latest | all | all | HorizontalBarsIcon | Grade profile | none (draft) |
+| 89 | `DV-SMT-A-TREND-LINE` | Results trend | **line** · — | smt.results · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | [level] results against [set] | none (draft) |
+| 90 | `DV-SMT-A-TREND-TABLE` | Results, table | **table** · yearColumns: every; years: down | smt.results · follows · year · — · actual · from first, rolls on | all | all | TableIcon | [level] results against [set], year by year | none (draft) |
+| 91 | `DV-SMT-A-BANDS` | Results by band | **line** · — | smt.results · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Top 25%, middle 50%, bottom 25% | none (draft) |
+| 92 | `DV-SMT-A-MIX` | Entries mix | **bar** · orientation: vertical | smt.subjects · follows · year · — · actual · from first, rolls on | all | all | VerticalBarsIcon | Entries mix, year by year | none (draft) |
+| 93 | `DV-SMT-A-MIX-TABLE` | Entries mix, table | **table** · yearColumns: every; years: down | smt.subjects · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Entries mix, year by year | none (draft) |
 
 <!-- preset-table:end -->
 
@@ -262,6 +282,31 @@ Read the columns as:
 | `DV-ADM-M-SHARE-RANKS` | The school's rank in the group each year. |
 | `DV-ADM-M-SHARE-CHANGE` | The change since 2019/20 in pupils and share. |
 | `DV-ADM-M-ROLL-LINE` | Whole-school rolls: the school and the rivals. |
+
+0.8 SMT round 1: the SMT views follow the level chips (Whole school, a phase, a subject area under it) and the dashboard's one comparison set.
+
+| Preset | What follows-page draws |
+|---|---|
+| `DV-SMT-O-NOW` | The school now: roll and its change since 2019/20, girls and boys (or day and boarding), each phase's headline with its national rank, A-level value added, Progress 8 or its reason, XS-XL by phase. |
+| `DV-SMT-O-SCORECARD` | Each headline: the school, its rank in the set (schools with that result), the region, England, since 2022/23; IGCSE rows not ranked; the flags line. |
+| `DV-SMT-O-MAP` | The school and the comparison set's schools, located. |
+| `DV-SMT-O-FLAGS` | The school's own flags (roll falling three years, results against the set's middle, the entry cohort shrinking), with their figures. |
+| `DV-SMT-O-ROLL-LINE` | The roll (day and boarding at a boarding school) indexed to 100 against the LA and England (pupils aged 5-15). |
+| `DV-SMT-O-ROLL-TABLE` | As the line, year by year. |
+| `DV-SMT-O-RESULTS-LINE` | Each headline against the set's middle half, 2021/22 shaded. |
+| `DV-SMT-O-RESULTS-TABLE` | As the line, year by year, with the schools behind each band. |
+| `DV-SMT-O-MARKET-LINE` | Market share at 11+ against the largest rival, from Admissions (read-only; empty with the reason without rivals). |
+| `DV-SMT-O-MARKET-TABLE` | As the line, year by year. |
+| `DV-SMT-A-NOW` | The level's headlines (both phases at Whole school), value added with its reason, the grade profile. |
+| `DV-SMT-A-AREAS` | Each subject area against the set: rank, gap to the set's average, its move since 2022/23, flags. |
+| `DV-SMT-A-SUBJECTS` | The area's subjects: entries, average, rank in the set and England, since 2022/23, the subject explorer link. |
+| `DV-SMT-A-VA` | A-level value added by qualification type and by subject, with intervals; Progress 8 or its reason. |
+| `DV-SMT-A-GRADES` | The grade profile in bands, latest year. |
+| `DV-SMT-A-TREND-LINE` | The level's headline (or the area's average) against the set's middle half. |
+| `DV-SMT-A-TREND-TABLE` | As the line, year by year. |
+| `DV-SMT-A-BANDS` | Reserved: results by band arrive with their own round. |
+| `DV-SMT-A-MIX` | Each area's (or subject's) share of the entries, year by year. |
+| `DV-SMT-A-MIX-TABLE` | As the columns, year by year. |
 
 ## The awkward cases ([review])
 

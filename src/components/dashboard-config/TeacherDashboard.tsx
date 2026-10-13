@@ -36,6 +36,8 @@ import { PhoneNav, TeacherNav } from "@/components/teacher/TeacherNav";
 import { CardBox } from "@/components/teacher/CardBox";
 import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "@/components/teacher/TeacherModal";
 import { DashboardFrame, GroupSwitcher, PlannedPanel } from "@/components/dashboard-config/ConfigDashboard";
+import { accentVars, productAccent } from "@/components/shell/accent";
+import { UsageReporter, type UsageScope } from "@/lib/usage-client";
 import { buildPlan, configRendererRequested, DashboardPlanContext, type PlanEmbed } from "@/components/dashboard-config/plan";
 import { DashboardRuntimeContext, type DashboardRuntime } from "@/components/dashboard-config/runtime";
 import { VicDataUpdatesBySlug } from "@/components/editor/DashboardUpdates";
@@ -74,7 +76,7 @@ import type { FrameSetGrades } from "@/lib/view-series/frames";
 import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
-import { PHASE_ACCENT, SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
+import { SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
 import { fetchComparatorQualifications, seriesFromQualificationRows, type ComparatorQualificationRow } from "@/lib/teacher-view-comparator-quals";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
@@ -162,7 +164,7 @@ function parseChooserChoice(raw: string | undefined): ChooserChoice | null {
 
 // The onboarding steps only ever run for GCSE and Post-16, which always have an accent.
 function accentFor(phase: "ks4" | "ks5"): { hex: string; rgb: string } {
-  return PHASE_ACCENT[phase] as { hex: string; rgb: string };
+  return productAccent("teacher", phase) as { hex: string; rgb: string };
 }
 
 // The props contract (0.6 E).
@@ -1054,7 +1056,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       <main
         id="teacher-root"
         data-theme={theme}
-        style={{ "--accent": accentHex, "--accent-rgb": accentFor(ph).rgb } as React.CSSProperties}
+        style={accentVars({ hex: accentHex, rgb: accentFor(ph).rgb })}
         // w-full: the root layout's <body> is a flex column, where a mx-auto child sizes to
         // its content; this pins onboarding to the screen width instead.
         className="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
@@ -1265,7 +1267,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
 
   // Round 6 (card content rebuild): the mockups' visual layer. Colour is per qualification
   // group, shared by the chip header, the Candidates bars, the Results scores and the pie.
-  const accent = PHASE_ACCENT[phase];
+  const accent = productAccent("teacher", phase);
   const groupColour = colourByGroup(phase, tickedItems);
   const colourOf = (i: SubjectItem) => groupColour.get(comparabilityKey(phase, i.qualificationType)) ?? "var(--muted)";
   const latestPeriod = entries.length ? Math.max(...entries.map((e) => e.period)) : null;
@@ -2602,7 +2604,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
 
   // ---------------------------------------------------------------- mode "embed" (0.6 E)
   if (embed) {
-    const accentStyle = { ...directionCssVars(theme), ...(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) } as React.CSSProperties;
+    const accentStyle = { ...directionCssVars(theme), ...accentVars(accent) } as React.CSSProperties;
     if (!embedConfig) return <EmbedStatus text="No view to draw." />;
     const cols = embedColumns(embedConfig);
     const hostFor = (key: string) => (key === "context" ? contextHost : key === "rankings" ? comparisonsHost : column1Host);
@@ -2689,8 +2691,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       }
     : null;
 
+  // 0.8 B7: the usage log's page view (and the scope CardBox's full screen reads). Draws nothing.
+  const usageScope: UsageScope | null = schoolUrn && phase ? { product: "teacher", urn: schoolUrn, dashboard: dashboardConfig?.id ?? `teacher.${phase}`, level: focusItem ? focusItem.subject : null, setKind: activeSavedSet ? "saved" : chooserChoice ? chooserChoice.kind : "nearest" } : null;
   return (
-    <>
+    <UsageReporter scope={usageScope}>
     {editorHost && dashboardConfig && <InPlaceEditor slug={dashboardConfig.id} host={editorHost} />}
     {/* §7: the theme attribute is scoped to Teacher view, never to <html> -- see
         TeacherChrome.tsx for why, and Q15. */}
@@ -2703,7 +2707,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       // The phase accent reaches every card and box as a custom property, so the shared
       // components never carry a phase-specific hex of their own. So does the one change
       // palette (--dir-up/--dir-down/--dir-flat, trend-colours.ts), in this theme.
-      style={{ ...directionCssVars(theme), ...(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) } as React.CSSProperties}
+      style={{ ...directionCssVars(theme), ...accentVars(accent) } as React.CSSProperties}
       // max-w-7xl is 80rem = 1280px, the laptop board's own width.
       className="mx-auto w-full max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
@@ -2922,7 +2926,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       )}
     </main>
     </TableLayoutContext.Provider>
-    </>
+    </UsageReporter>
   );
 }
 
