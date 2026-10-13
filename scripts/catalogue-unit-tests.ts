@@ -467,7 +467,7 @@ describe("dashboard config", () => {
   it("PANEL_UNIT.height is CardBox's PANEL_HEIGHT", async () => {
     const { readFileSync } = await import("node:fs");
     const { PANEL_UNIT, spanWidth } = await import("../src/catalogue/config");
-    const src = readFileSync(new URL("../src/components/teacher/CardBox.tsx", import.meta.url), "utf8");
+    const src = readFileSync(new URL("../src/components/shell/CardBox.tsx", import.meta.url), "utf8");
     assert.equal(Number(/export const PANEL_HEIGHT = (\d+);/.exec(src)?.[1]), PANEL_UNIT.height);
     assert.equal(spanWidth(1), 351);
   });

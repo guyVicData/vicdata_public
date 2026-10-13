@@ -1,0 +1,463 @@
+"use client";
+
+// Teacher view, round 5: one box per view inside a column, titled by that view's short
+// title, with a fullscreen that is a real floating modal.
+//
+// Why not FullscreenChartModal. It already takes arbitrary children, so it could host the
+// Rankings map -- but it is an opaque full-viewport sheet (bg-white, inset-0, no backdrop),
+// so the dashboard disappears behind it and there is nothing to click to dismiss. Changing
+// that component would change the advanced dashboard's fullscreen too, which this round
+// does not ask for. So Teacher view gets its own, deliberately small version.
+//
+// Three things are load-bearing:
+//   - The modal renders INSIDE this box rather than through a portal to <body>. Teacher
+//     view's theme is an attribute on #teacher-root, not on <html> (Q15), so a portal
+//     would escape it and always render in the system theme.
+//   - The box's own content keeps rendering underneath while the modal is open. That is
+//     what makes it a modal rather than a layout swap: close it and nothing reflows.
+//   - z-[1500], the same layer FullscreenChartModal uses, because Leaflet's own panes and
+//     controls go up to 1000 and the map card underneath must not show through.
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { ExpandIcon, MODAL_CLOSE_BUTTON_CLASS, TeacherModal } from "./TeacherModal";
+import { CaptionNote, PanelNote, SourceNote } from "./PanelFooter";
+import { ChevronDown } from "./PanelIcons";
+import { PanelIconRow } from "./PanelIconRow";
+
+// Lets the dashboard know when any box -- a column's default box or a pinned one deep in
+// ColumnBuilder -- is fullscreen, without threading a callback through every level. The
+// dashboard uses it to hide its column dividers, as the mockup does. Defaults to a no-op,
+// so a CardBox outside the dashboard is unaffected.
+export const FullscreenReport = createContext<(open: boolean) => void>(() => {});
+
+// 0.6.2 S4: every CardBox under it renders already open in fullscreen -- what a server
+// render (the unit tests, src/lib/grading-note.test.ts) needs to read the fullscreen and
+// "Print this graph" output, since it can't click. Nothing in the app provides it.
+export const OpenInFullscreen = createContext(false);
+
+// Round 8 §2/§7: every panel is this tall, so the three columns line up as a real 3x3 grid.
+//
+// Computed from the REAL grid rather than copied from the wireframe, which §7 asks for
+// explicitly. At the 1280px cap: 1280 - 48 page padding = 1232 content; minus 4 gaps of
+// 18px and two 2px dividers leaves 1156 across three tracks, so a column track is 385px.
+// The wireframe's proportion is 260px tall at 394px wide, so 260 x 385/394 = 254px, rounded
+// to the nearest 8px step.
+//
+// Deliberately scaled against the COLUMN track, which is the brief's own wording ("260px at
+// its own 394px column width"). Scaling against the panel's inner width instead -- 353px
+// once DashboardColumn's padding is taken off -- would give 233px, and the wireframe's own
+// 394 is ambiguous between the two, since its panel and its column head are both 394. The
+// taller reading leaves a usable chart area; flagged in the build report as the judgement
+// §7 asked to have made explicitly rather than silently.
+//
+// Content round S10 lowered it from 256px to 224px. The new sizing target is vertical:
+// two panels open plus one collapsed bar should fit a laptop viewport without scrolling.
+// Summed at 256px -- page padding, nav, control bar, column header and pills, two panels,
+// one ~42px bar -- the column ran to about 860px, over a typical ~800px laptop viewport;
+// at 224px it is about 800px. S12 moved the Trend sentence out of the panel body into
+// the footer, which gives back most of the chart height this takes away. Three open is
+// allowed to scroll, as agreed.
+//
+// Round 2 §6 raised it "slightly", to 232px -- the low end of the 232-240 asked for. Two
+// open panels move the column by twice any change, so +8px is +16px on the ~800px total
+// and 240 would be +32px. Round 2 §8 also moved every caption out of the panel body into
+// a footer popover, so the chart area grows by more than these 8px on its own.
+//
+// Accordion round: 384px. The shape changed -- one panel open and two collapsed bars, never
+// two open -- so the budget is redone from scratch for that shape, from the real classes,
+// on a 13" laptop (1440x900 screen, a browser viewport of about 790px):
+//   page top padding (sm:p-6)                         24
+//   TeacherNav row                                    34
+//   ControlBar: mt-4 16 + py-3 24 + 40px badge + 2    82
+//   DashboardGrid mt-6                                24
+//   column border 1 + accent bar 3 + p-4 top 16       20
+//   column heading (the S11 sentence, two lines)      42
+//   column pills: mt-2.5 10 + pill 26                 36
+//   two collapsed bars, each mt-3 12 + bar 46        116
+//   the open panel's own mt-3                         12
+//   column p-4 bottom 16 + border 1                   17
+//                                                    ---
+//                                                    407
+// 790 - 407 = 383, taken to the 8px step: 384 -- 152px (65%) more than the two-open 232,
+// which is the whole point of the accordion. On a taller screen there is simply room
+// below; Column 1's occasional "this moved" note (~28px) is the one thing that can tip a
+// 790px viewport into a short scroll.
+//
+// Kept a single fixed height, not a floor that grows with content: the three columns'
+// open panels still line up as one row, whichever panel each has open, and content taller
+// than 384px (a long subject list, a ten-school legend) scrolls inside the panel's own
+// content box rather than making one column longer than the others.
+export const PANEL_HEIGHT = 384;
+
+export function CardBox({
+  title,
+  subtitle,
+  question,
+  tag,
+  actions,
+  trailingActions,
+  controls,
+  caption,
+  source,
+  footerActions,
+  fixedHeight = false,
+  collapsed = false,
+  onExpand,
+  headline,
+  footerLead,
+  flag,
+  legend,
+  note,
+  visibleCaption,
+  suggestFullscreen = false,
+  menu,
+  height,
+  headerExtra,
+  focus,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  // The full natural-language question, shown as the modal's heading: a projected
+  // fullscreen box has room for the sentence, and §14 wants the real question wherever
+  // there is space for it.
+  question?: string;
+  // Round 6: a panel's own heading, which replaces the plain muted title a pinned view
+  // uses. `title` still names the box for its fullscreen button, its modal and every aria
+  // label, so the two can never describe different things. Optional, so every round-5
+  // caller is untouched.
+  //
+  // Round 7 §2 dropped the tinted pill this used to sit in: on the real dashboard it read
+  // as a button, which it never was. Plain text, a little larger, so losing the pill does
+  // not read as a demotion.
+  tag?: ReactNode;
+  // The panel's VIEW-CHOICE icons (bar/table/donut/map/…). Round 7 §3 moved these out of
+  // the top-right corner, which was carrying up to four icons; round 8 §4 moves them again,
+  // from a horizontal row under the heading to a vertical RAIL down the left of the
+  // content, with a divider between the two. They choose how to draw the figure, so they
+  // belong beside the figure; fullscreen and remove act on the panel itself.
+  actions?: ReactNode;
+  // The one icon that belongs AFTER the fullscreen button: remove. Two icons, top-right,
+  // on every panel (round 7 §3).
+  trailingActions?: ReactNode;
+  // A full-width control row under the header, above the content: the panels' subject
+  // chips and their From:/Since:/Trend-line pills. Not part of the figure, so -- like the
+  // comparison-set chooser already here -- it is dropped when the box is projected.
+  controls?: ReactNode;
+  // The mockups' two closing lines under every box's content: a one-line explanation
+  // (11.5px, --muted2) and a source line (9.5px, --source). Optional because a pinned
+  // axis view carries its own framing in its subtitle.
+  caption?: ReactNode;
+  source?: ReactNode;
+  // Round 8 §4: the footer's own controls -- the private note and Export -- beside the
+  // source icon, all pinned to the panel's real bottom edge. Given `print`, so Export can
+  // drive this box's own fullscreen-and-print without reaching into it.
+  // `fullscreen` (accordion round Part 4) lets a caller leave out, in the modal, a control
+  // the fullscreen rail now carries in its own place -- the private note.
+  footerActions?: (tools: { print: () => void; fullscreen: boolean }) => ReactNode;
+  // Part 4: the private note, for the fullscreen rail -- its text shown outright, and the
+  // same editor as the card's footer icon. Absent = the panel has no note slot.
+  note?: { body: string | null; onSave: (body: string) => Promise<void> | void };
+  // Column 3 round Part 1: a caption line shown WITHOUT a click, on the card only -- the
+  // counterpart to CaptionNote (which stays behind its button). Fullscreen does not show it:
+  // there is nothing left to invite anyone into once they are there.
+  visibleCaption?: ReactNode;
+  // A built-in "Full screen" link on that line, opening this box's own fullscreen -- for
+  // views that read far better with room (Comparisons' map). Off by default.
+  suggestFullscreen?: boolean;
+  // 0.7 admissions r3 (F1): the panel menu (PanelExport: Print this graph, Copy this view…),
+  // the first slot of the header's icon row (PanelIconRow), on the card and in the modal.
+  // Given `print`, as footerActions is. Absent = the slot stays empty and reserved.
+  menu?: (tools: { print: () => void; fullscreen: boolean }) => ReactNode;
+  // 0.7 admissions r3 (F1): a fixed-height box's own height, for Admissions' rows (470, 330).
+  // Absent = PANEL_HEIGHT, as every Teacher panel.
+  height?: number;
+  // 0.7 admissions r3 (F1): what sits between the heading and the icon row, right-aligned on
+  // the card (Admissions' header chips: the feeder lists, the births blend). Absent = nothing,
+  // as every Teacher panel.
+  headerExtra?: ReactNode;
+  // 0.7 admissions editor s1 (Guy, decision 3): full screen as a focus mode -- the modal fills the
+  // window, and keeps what the card has for moving about: the header chips (headerExtra), the
+  // `bar` (Admissions' entry-point chips) and the controls row (the phone's tabs) above the figure,
+  // the rail beside it, the notes behind their icons below it (the caption and source print in
+  // full only on paper). Absent = Teacher's full screen, exactly as before.
+  focus?: { bar?: ReactNode };
+  // Round 8 §2: every panel is the same height, so the three columns read as a true 3x3
+  // grid rather than three ragged stacks. Absent = size to content, which is what the KS2
+  // boxes and any non-panel caller still want.
+  fixedHeight?: boolean;
+  // Content round S10: a collapsed panel is one header bar -- its title, its headline
+  // figure, and a chevron to open it -- and nothing else. The whole bar is the button.
+  collapsed?: boolean;
+  onExpand?: () => void;
+  headline?: ReactNode;
+  // Content round S12: two optional footer slots, so the Trend panels can move controls
+  // out of the panel body -- `footerLead` sits first in the row, before the "i" (the
+  // Trend-line toggle); `flag` sits at the row's right edge (the growth/decline flag,
+  // "the first of our flags"). A panel that passes neither gets exactly the footer it
+  // had. (Round 2 §8: every panel's caption now sits behind the footer's own button, flag
+  // or no flag; the fullscreen view, which has the room, still prints it.)
+  footerLead?: ReactNode;
+  flag?: ReactNode;
+  // Trend map/legend round: a rail-only slot -- the first section of the fullscreen rail
+  // (Trend's "Subjects shown" show/hide list), divided from the flag and note below it.
+  // Unlike `flag`, the compact card never renders it; below lg the rail stacks under the
+  // chart, so the legend is the first thing after it.
+  legend?: ReactNode;
+  // Called twice while fullscreen is open -- once for the box underneath, once for the
+  // modal -- so it must be safe to mount two copies (the map is: each instance owns its
+  // own Leaflet map).
+  children: (mode: { fullscreen: boolean }) => ReactNode;
+}) {
+  const [fullscreen, setFullscreen] = useState(useContext(OpenInFullscreen));
+  // Round 8 §5: a panel print is the same fullscreen modal, opened for the print and
+  // marked as the one subtree to paint. Tracked separately from `fullscreen` so closing
+  // the print does not leave an ordinary fullscreen open behind it.
+  const [printing, setPrinting] = useState(false);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
+  const report = useContext(FullscreenReport);
+
+  // Open the modal, let it paint, print, then put everything back. afterprint is the only
+  // honest signal for "the dialog has gone" -- there is no promise to await.
+  const printPanel = () => {
+    setPrinting(true);
+    setFullscreen(true);
+    const root = document.getElementById("teacher-root");
+    root?.setAttribute("data-print-panel", "");
+    const done = () => {
+      root?.removeAttribute("data-print-panel");
+      setPrinting(false);
+      setFullscreen(false);
+      window.removeEventListener("afterprint", done);
+    };
+    window.addEventListener("afterprint", done);
+    // Two frames: one for the modal to mount, one for it to lay out before the print
+    // dialog snapshots the page.
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  };
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    report(true);
+    return () => report(false);
+  }, [fullscreen, report]);
+
+  // Escape, backdrop click, scroll lock and focus live in TeacherModal, shared with the
+  // dashboard's subject picker.
+
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-expanded={false}
+        aria-label={`Open: ${title}`}
+        className="mt-3 flex w-full items-center gap-2 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] px-3 py-2.5 text-left hover:border-[var(--panel-border2)] print:hidden"
+      >
+        <span className="min-w-0 flex-grow truncate text-[13px] font-semibold text-[var(--muted2)]">{title}</span>
+        {headline && <span className="shrink-0 text-[13px] font-bold tabular-nums text-[var(--fg)]">{headline}</span>}
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-[var(--muted3)]">{ChevronDown}</span>
+      </button>
+    );
+  }
+
+  const header = (isModal: boolean) => (
+    <div className="flex items-start justify-between gap-2">
+      <div className="min-w-0">
+        {tag && !isModal ? (
+          // The pill carries the title visually; the heading itself stays in the tree for
+          // screen readers rather than being replaced by a decorative span.
+          <h3 className="sr-only">{title}</h3>
+        ) : (
+          <h3 className={isModal ? "text-base font-bold" : "text-[11.5px] font-bold text-[var(--muted2)]"}>{title}</h3>
+        )}
+        {tag && !isModal && tag}
+        {isModal && question && <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">{question}</p>}
+        {subtitle && <p className="text-[11px] text-neutral-500">{subtitle}</p>}
+      </div>
+      {(!isModal || focus) && headerExtra && <div className="ml-auto flex min-w-0 shrink items-center gap-1.5 print:hidden">{headerExtra}</div>}
+      {/* 0.7 admissions r3 (F1): the one icon row (PanelIconRow) -- menu, full screen,
+          collapse -- in the same order and places on every Teacher and Admissions panel. */}
+      <PanelIconRow
+        menu={menu?.({ print: printPanel, fullscreen: isModal })}
+        fullscreen={
+          <button
+            ref={isModal ? closeRef : undefined}
+            type="button"
+            onClick={() => setFullscreen(!isModal)}
+            aria-label={isModal ? `Exit full screen: ${title}` : `Full screen: ${title}`}
+            title={isModal ? "Exit full screen" : "Full screen"}
+            // Mockup: muted3 at rest; the exit icon sits on a faint accent tint in the accent
+            // colour. --accent is set per phase on #teacher-root; KS2 has none and falls back.
+            className={
+              isModal
+                ? MODAL_CLOSE_BUTTON_CLASS
+                : "flex h-6 w-6 items-center justify-center rounded-md text-[var(--muted3)] hover:text-[var(--fg)]"
+            }
+          >
+            <ExpandIcon expanded={isModal} />
+          </button>
+        }
+        collapse={isModal ? null : trailingActions}
+      />
+    </div>
+  );
+
+  // Round 8 §4: one footer row, pinned to the panel's own bottom edge by absolute
+  // positioning rather than pushed there by flex order -- so a short chart and a long one
+  // put their source, note and Export in exactly the same place. The panel reserves the
+  // room for it in its own bottom padding.
+  const footerRow = (
+    <div
+      className={[
+        fixedHeight ? "absolute inset-x-3 bottom-2.5" : "",
+        "flex items-center gap-1.5 print:hidden",
+      ].join(" ")}
+    >
+      {footerLead}
+      {/* §4: the citation is an icon that opens its own text, not a printed sentence. */}
+      <SourceNote>{source}</SourceNote>
+      {/* Round 2 §8: the caption is behind its own button too, beside the source. */}
+      <CaptionNote>{caption}</CaptionNote>
+      {footerActions?.({ print: printPanel, fullscreen: false })}
+      {flag && <span className="ml-auto min-w-0 truncate text-[11.5px] font-bold">{flag}</span>}
+    </div>
+  );
+
+  // The caption is the panel's one-line conclusion. Round 2 §8 moved it out of the panel
+  // body into the footer's CaptionNote button; only the fullscreen modal still prints it.
+  const captionLine = caption ? <p className="text-[11.5px] leading-snug text-[var(--muted2)]">{caption}</p> : null;
+
+  return (
+    // Mockup box: radius 10px, 1px --panel-border, --box-bg, 12px padding, 10px gap.
+    // Fixed-height panels add bottom padding to reserve the footer's row and go
+    // `relative` so it can be pinned there.
+    <div
+      className={[
+        "mt-3 flex flex-col gap-2 rounded-[10px] border border-[var(--panel-border)] bg-[var(--box-bg)] p-3",
+        fixedHeight ? "relative overflow-hidden pb-9" : "",
+      ].join(" ")}
+      // PANEL_HEIGHT is computed from the real grid, not copied from the wireframe -- see
+      // its own note.
+      style={fixedHeight ? { height: height ?? PANEL_HEIGHT } : undefined}
+    >
+      {header(false)}
+      {controls && <div className="shrink-0 print:hidden">{controls}</div>}
+      {/* Round 8 §4: the view rail runs down the left of the content, divided from it, and
+          both stretch to fill whatever height the fixed panel leaves them. */}
+      <div className={fixedHeight ? "flex min-h-0 flex-grow items-stretch gap-0" : ""}>
+        {actions && (
+          <div className="mr-2.5 flex shrink-0 flex-col gap-[3px] border-r border-[var(--panel-border)] pr-2.5 print:hidden">
+            {actions}
+          </div>
+        )}
+        {/* Round 2 §7: the content scrolls inside its own box. It used to have no overflow
+            rule, so anything taller than the space the panel leaves it -- a long ranking, a
+            trend chart and its legend -- spilled into the reserved bottom padding and drew
+            underneath the pinned footer (the panel only clipped at its outer edge). The
+            reserve itself was never short: the footer is 17px tall pinned 10px up, inside
+            36px. A list that centres its own row (CentredOnTarget) still scrolls itself. */}
+        <div className={fixedHeight ? "flex min-h-0 min-w-0 flex-grow flex-col overflow-y-auto" : "min-w-0 flex-grow"}>
+          {children({ fullscreen: false })}
+        </div>
+      </div>
+      {(visibleCaption || suggestFullscreen) && (
+        <div className="flex shrink-0 items-center gap-2 text-[11.5px] leading-snug text-[var(--muted2)] print:hidden">
+          {visibleCaption && <p className="min-w-0 flex-1">{visibleCaption}</p>}
+          {suggestFullscreen && (
+            <button
+              type="button"
+              onClick={() => setFullscreen(true)}
+              className="ml-auto inline-flex shrink-0 items-center gap-1 font-semibold text-[var(--muted)] hover:text-[var(--fg)]"
+            >
+              Full screen <ExpandIcon expanded={false} />
+            </button>
+          )}
+        </div>
+      )}
+      {footerRow}
+
+      {fullscreen && (
+        <TeacherModal
+          label={`${title}, full screen`}
+          backdropLabel="Close full screen"
+          onClose={() => setFullscreen(false)}
+          initialFocusRef={closeRef}
+          printable={printing}
+          size={focus ? "focus" : undefined}
+        >
+          {header(true)}
+          {focus && (focus.bar || controls) && (
+            <div data-focus-bar="" className="flex shrink-0 flex-col gap-2 print:hidden">
+              {focus.bar && <div className="flex flex-wrap items-center gap-2">{focus.bar}</div>}
+              {controls}
+            </div>
+          )}
+          {/* Accordion round Part 4 (first draft): the main area -- view rail, figure,
+              conclusion, source -- and, beside it, a narrow rail for what the panel has
+              that reads as a flag or a note. A 15rem rail against the ~1150px modal on a
+              laptop is roughly the "7-column main, narrow rail" steer; below lg it stacks
+              under the main area. The compact card is untouched and stays icon-driven. */}
+          {/* 0.6.2 S5: stacked (below lg) the area never shrinks below its content and the modal
+              scrolls, rather than squeezing the figure under a long source line (the trend
+              note) until a fixed-height chart spilled over its own caption. */}
+          <div className={`mt-1 grid min-h-0 flex-1 gap-4 max-lg:min-h-min ${legend || flag || note ? "lg:grid-cols-[minmax(0,1fr)_15rem]" : ""}`}>
+            <div className="flex min-h-0 min-w-0 flex-col gap-2">
+              <div className="flex min-h-0 flex-1 items-stretch">
+                {actions && (
+                  <div className="mr-3 flex shrink-0 flex-col gap-1 border-r border-[var(--panel-border)] pr-3 print:hidden">{actions}</div>
+                )}
+                <div className="flex min-w-0 flex-grow flex-col">{children({ fullscreen: true })}</div>
+              </div>
+              {focus ? <div className="hidden print:block">{captionLine}</div> : captionLine}
+              {/* The source is plain text here, on screen AND in print -- the same line
+                  in both, rather than a print-only copy of what the card hides behind "i". */}
+              {source && <p className={`text-[11px] leading-relaxed text-[var(--source)]${focus ? " hidden print:block" : ""}`}>{source}</p>}
+            </div>
+            {(legend || flag || note) && (
+              <aside className="flex min-h-0 flex-col gap-4 border-t border-[var(--panel-border)] pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+                {legend && (
+                  <section className="flex min-h-0 flex-col">
+                    <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Subjects shown</h4>
+                    <div className="mt-2 min-h-0 overflow-y-auto">{legend}</div>
+                  </section>
+                )}
+                {/* The flag and note sit below a rule, apart from the legend's controls --
+                    the same panel-border line that divides the rail from the chart. */}
+                {(flag || note) && (
+                  <div className={`flex flex-col gap-4 ${legend ? "border-t border-[var(--panel-border)] pt-4" : ""}`}>
+                    {flag && (
+                      <section>
+                        <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Flag</h4>
+                        <p className="mt-1.5 text-[13px] font-bold">{flag}</p>
+                      </section>
+                    )}
+                    {note && (
+                      // Private to its author, so it stays off a printout that may be handed on.
+                      <section className="print:hidden">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted3)]">Your note &middot; private</h4>
+                          <PanelNote body={note.body} onSave={note.onSave} variant="rail" />
+                        </div>
+                        <p className={`mt-1.5 whitespace-pre-wrap text-[12.5px] leading-relaxed ${note.body?.trim() ? "text-[var(--fg)]" : "italic text-[var(--muted3)]"}`}>
+                          {note.body?.trim() ? note.body : "No note on this panel yet."}
+                        </p>
+                      </section>
+                    )}
+                  </div>
+                )}
+              </aside>
+            )}
+          </div>
+          {/* What is left for the footer: Trend's line toggle and Export. The source is
+              above as text, the flag and note are in the rail. */}
+          <div className="flex items-center gap-1.5 print:hidden">
+            {footerLead}
+            {focus && <SourceNote>{source}</SourceNote>}
+            {focus && <CaptionNote>{caption}</CaptionNote>}
+            {footerActions?.({ print: printPanel, fullscreen: true })}
+          </div>
+        </TeacherModal>
+      )}
+    </div>
+  );
+}

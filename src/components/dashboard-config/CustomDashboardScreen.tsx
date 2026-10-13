@@ -41,11 +41,11 @@ import { DashboardUpdates } from "@/components/editor/DashboardUpdates";
 import { mySchool } from "@/lib/meeting-store";
 import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
 import { PHASE_LABELS, type TeacherPhase } from "@/lib/teacher-view-phases";
-import { PHASE_ACCENT } from "@/lib/teacher-view-theme";
 import { useTeacherTheme, type Theme } from "@/components/teacher/TeacherChrome";
 import { TeacherNav } from "@/components/teacher/TeacherNav";
 import { TeacherDashboard } from "./TeacherDashboard";
 import { GroupSwitcher } from "./ConfigDashboard";
+import { accentVars, productAccent } from "@/components/shell/accent";
 import { dashboardPhase } from "./embed";
 
 type School = { urn: string; name: string };
@@ -190,15 +190,15 @@ export function CustomDashboardView({
 }) {
   const router = useRouter();
   const phase = dashboardPhase(config);
-  const accent = PHASE_ACCENT[phase];
   const [labelsOn, setLabelsOn] = useState(true);
   const navPhases = useMemo(() => (["ks4", "ks5"] as TeacherPhase[]).filter((p) => p === phase || phases.includes(p)), [phase, phases]);
+  const accent = productAccent("teacher", phase);
   return (
     <main
       id={hidden ? undefined : "teacher-root"}
       hidden={hidden}
       data-theme={theme}
-      style={(accent ? { "--accent": accent.hex, "--accent-rgb": accent.rgb } : {}) as React.CSSProperties}
+      style={accentVars(accent)}
       className="mx-auto max-w-7xl bg-[var(--bg)] p-4 text-[var(--fg)] sm:p-6"
     >
       <ViewAsBanner />

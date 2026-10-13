@@ -12,12 +12,12 @@ import { fetchOnboardedPhases } from "@/lib/teacher-view-data";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { TeacherNav, useNavLabels } from "@/components/teacher/TeacherNav";
 import type { Theme } from "@/components/teacher/TeacherChrome";
-import { PanelMenu, MenuRow, useDismiss } from "@/components/teacher/PanelMenu";
 import { GroupSwitcher } from "@/components/dashboard-config/ConfigDashboard";
 import { ADMISSIONS_DASHBOARDS } from "@/catalogue/dashboards/admissions";
 import type { DashboardConfig } from "@/catalogue/types";
 import type { Filters } from "./api";
-import { EntryChip, FChip } from "./ui";
+import { EntryChip } from "./ui";
+import { MenuChip } from "@/components/shell/FilterPills";
 
 export type DashKey = "pipelines" | "market-share";
 export const DASH_ID: Record<DashKey, string> = { pipelines: ADMISSIONS_DASHBOARDS[0].id, "market-share": ADMISSIONS_DASHBOARDS[1].id };
@@ -50,35 +50,6 @@ export function DashSwitch({ active, onSwitch, configs }: { active: DashKey; onS
 export const ADMISSIONS_BADGE = <span className="text-[19px] font-extrabold leading-none">A</span>;
 
 export const Divider = () => <span aria-hidden="true" className="mx-1 h-[18px] w-px bg-[var(--adm-rail-on)]" />;
-
-function MenuChip<T extends string>({ value, options, onPick, label }: { value: T; options: { id: T; label: string; title?: string }[]; onPick: (v: T) => void; label: string }) {
-  const [open, setOpen] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
-  const current = options.find((o) => o.id === value) ?? options[0];
-  return (
-    <span className="relative" ref={ref}>
-      <FChip onClick={() => setOpen(!open)} title={label} active={value !== options[0].id}>
-        {current.label}
-      </FChip>
-      {open && (
-        <PanelMenu label={label} align="right" width={210}>
-          {options.map((o) => (
-            <MenuRow
-              key={o.id}
-              label={o.label}
-              selected={o.id === value}
-              title={o.title}
-              onClick={() => {
-                setOpen(false);
-                onPick(o.id);
-              }}
-            />
-          ))}
-        </PanelMenu>
-      )}
-    </span>
-  );
-}
 
 // 0.7 r3 (F2): the filters stay where they are; Day + boarding (and Market share's rivals with
 // boarders) only for a boarding school. For a day school it isn't drawn and the others close up.
@@ -132,16 +103,8 @@ export function FilterChips({ dash, filters, onFilters, rivalsChip, boardingScho
   );
 }
 
-export function RowHead({ title, context, open, onToggle }: { title: string; context: string; open: boolean; onToggle: () => void }) {
-  return (
-    <button type="button" onClick={onToggle} aria-expanded={open} className="flex items-center gap-2 px-[2px] py-1 text-left text-[12.5px] font-bold text-[var(--fg)]">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ transform: open ? undefined : "rotate(-90deg)" }}>
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-      {title} <span className="text-[11px] font-medium text-[var(--muted2)]">&middot; {context}</span>
-    </button>
-  );
-}
+// 0.8 shell (Part A): the row head moved to src/components/shell/Rows.tsx.
+export { RowHead } from "@/components/shell/Rows";
 
 export function PhoneHeader({ dash, onDash, entries, entry, onEntry, onEditEntries }: { dash: DashKey; onDash: (d: DashKey) => void; entries: { id: string; label: string }[]; entry: string; onEntry: (id: string) => void; onEditEntries: (() => void) | null }) {
   return (

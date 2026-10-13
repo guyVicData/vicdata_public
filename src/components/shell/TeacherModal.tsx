@@ -1,0 +1,152 @@
+"use client";
+
+// Teacher view's one modal shell, shared by CardBox's fullscreen and the dashboard's
+// subject picker so there is a single modal behaviour rather than two lookalikes:
+//   - a dimmed, blurred backdrop over the page that is a real <button>, so clicking it
+//     is an ordinary, keyboard-reachable dismissal rather than a click handler on a div;
+//   - Escape closes;
+//   - the page behind does not scroll under the wheel (the panel scrolls itself);
+//   - focus moves to the given control (the panel's close button) on open;
+//   - a floating panel at ~5% margin on desktop, 3% on a phone (round 5 brief) -- or, at
+//     size "compact", a panel no wider than a phone, centred, for a picker: the full-size
+//     panel suits a chart, but spreads a checklist across a laptop screen. One shell, two
+//     sizes, rather than a second modal that would drift from this one;
+//   - or, at size "chooser", the comparator chooser's own panel from its wireframe
+//     (docs/wireframes/comparator-chooser-v29): 390x736 centred over a flat
+//     rgba(20,20,19,0.45) backdrop, the same panel "laptop, tablet or phone" -- on a
+//     phone 12px clear of every edge. The chooser draws its own header, body and
+//     footer inside it, so this size adds no padding, border or background of its own.
+//
+// The caller renders it only while open (`{open && <TeacherModal … />}`), and renders it
+// INSIDE #teacher-root rather than through a portal: Teacher view's theme is an attribute
+// on that element (Q15), so a portal to <body> would escape it. z-[1500] clears Leaflet's
+// panes and controls (up to 1000).
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+
+// The expand/exit-full-screen glyph. `expanded` draws the exit form, which is also the
+// modal's close control.
+//
+// Round 7 §3 swapped in the round-6 wireframe's own mark: two opposite corners with a
+// diagonal running out of each, rather than the four-bracket box shipped before. It reads
+// as a direction at 14px, where four symmetrical brackets read as a noisy square. One
+// copy, used by every fullscreen control and by the modal's own close button, so the
+// gesture looks the same wherever it appears (§14).
+export function ExpandIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {expanded ? (
+        // Collapsing: the corners sit inside and the diagonals run outward to them.
+        <>
+          <polyline points="8,3 8,8 3,8" />
+          <polyline points="12,17 12,12 17,12" />
+          <line x1="8" y1="8" x2="2.5" y2="2.5" />
+          <line x1="12" y1="12" x2="17.5" y2="17.5" />
+        </>
+      ) : (
+        <>
+          <polyline points="7,2 2,2 2,7" />
+          <polyline points="13,18 18,18 18,13" />
+          <line x1="2" y1="2" x2="8" y2="8" />
+          <line x1="18" y1="18" x2="12" y2="12" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+// The close control's look inside a modal (mockup: the exit icon on a faint accent tint,
+// in the accent colour; --accent is set per phase on #teacher-root, KS2 falls back).
+export const MODAL_CLOSE_BUTTON_CLASS =
+  "flex h-6 w-6 items-center justify-center rounded-md bg-[rgba(var(--accent-rgb,96,165,250),0.12)] text-[var(--accent,var(--muted2))]";
+
+export function TeacherModal({
+  label,
+  backdropLabel,
+  onClose,
+  initialFocusRef,
+  printable = false,
+  size = "fullscreen",
+  children,
+}: {
+  label: string;
+  backdropLabel: string;
+  onClose: () => void;
+  initialFocusRef?: RefObject<HTMLElement | null>;
+  // Round 8 §5: "Print this graph" isolates one panel by opening it fullscreen and
+  // printing only this subtree. The modal is normally print:hidden -- the whole point of
+  // the page-level Export is to print the dashboard, not whatever happens to be open --
+  // so a panel print opts back in and marks itself as the one thing to show.
+  printable?: boolean;
+  // 0.6.1 S4: "wide" -- Edit view's desktop panel (docs/wireframes/v0.6/EditWide): 1080x700
+  // centred, 12px clear of a smaller window's edges, over the chooser's flat backdrop; like
+  // "chooser" it draws its own header, body and footer.
+  // 0.7 admissions editor s1 (Guy, decision 3): "focus" -- an Admissions panel's full screen as a
+  // focus mode, filling the window 12px clear of its edges at every size (on a phone, the screen).
+  size?: "fullscreen" | "compact" | "chooser" | "wide" | "focus";
+  children: ReactNode;
+}) {
+  // Held in a ref so a caller passing a fresh arrow each render does not re-run the
+  // open effect (re-focusing and re-binding on every render).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    initialFocusRef?.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseRef.current();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+    // Mount/unmount only: the caller mounts this exactly while the modal is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div
+      className={`fixed inset-0 z-[1500] ${printable ? "teacher-print-target" : "print:hidden"}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+    >
+      <button
+        type="button"
+        aria-label={backdropLabel}
+        tabIndex={-1}
+        onClick={() => onCloseRef.current()}
+        className={`absolute inset-0 h-full w-full cursor-default ${
+          size === "chooser" || size === "wide" ? "bg-[rgba(20,20,19,0.45)]" : "bg-neutral-900/40 backdrop-blur-sm dark:bg-black/60"
+        }`}
+      />
+      {size === "chooser" ? (
+        <div className="absolute left-1/2 top-1/2 flex h-[min(736px,calc(100dvh-24px))] w-[min(390px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 flex-col">
+          {children}
+        </div>
+      ) : size === "wide" ? (
+        <div className="absolute left-1/2 top-1/2 flex h-[min(700px,calc(100dvh-24px))] w-[min(1080px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 flex-col">
+          {children}
+        </div>
+      ) : (
+      <div
+        className={`absolute flex flex-col gap-2.5 overflow-auto rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-[var(--fg)] shadow-2xl ${
+          size === "compact"
+            ? // 28rem wide at most, 12px clear of a phone's edges; as tall as its content up
+              // to 12px clear of the top and bottom, then it scrolls itself.
+              "left-1/2 top-1/2 max-h-[calc(100dvh-1.5rem)] w-[min(28rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 sm:p-5"
+            : size === "focus"
+              ? "inset-3 sm:p-5"
+              : "inset-[3%] sm:inset-[5%] sm:p-6"
+        }`}
+      >
+        {children}
+      </div>
+      )}
+    </div>
+  );
+}

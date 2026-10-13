@@ -29,13 +29,14 @@ import { showsOnState, stateDefault } from "@/catalogue/variants";
 import type { EntryPointState } from "@/catalogue/types";
 import { DEFAULT_FILTERS, getJson, query, useRoute, type Filters, type ListsAnswer, type Load, type MarketView, type PipelineOk, type PipelineView, type RivalsView, type ShapeView } from "./api";
 import { loadAdmissionsMember, type AdmissionsMember, type MemberState } from "./member";
-import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, FilterChips, PhoneHeader, RowHead, type DashKey } from "./controls";
+import { ADMISSIONS_BADGE, AdmissionsTeacherNav, DASH_ID, DashSwitch, Divider, FilterChips, PhoneHeader, type DashKey } from "./controls";
+import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { ControlBar } from "@/components/teacher/ControlBar";
 import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import { isPlatformAdminCached } from "@/lib/edit-mode";
 import { openViewAs } from "@/components/view-as/ViewAs";
 import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
-import { Empty, EntryChip, FChip, Panel, Skeleton, Tabs, admissionsVars, cx, fillHeight, fmtN, yearLabel, type PanelMenuAction, type RailItem } from "./ui";
+import { Empty, EntryChip, FChip, Panel, Skeleton, Tabs, admissionsVars, fillHeight, fmtN, yearLabel, type PanelMenuAction, type RailItem } from "./ui";
 import { useWidth } from "./views/charts";
 import { EntryNow, laContext } from "./panels/EntryNow";
 import { MarketNow } from "./panels/MarketNow";
@@ -323,18 +324,18 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
     ) : undefined;
 
   return (
-    <div ref={rootRef} className={cx("mx-auto flex w-full max-w-[1440px] flex-col", phone ? "gap-0" : "gap-[14px] px-7 py-5")}>
+    <ShellPage phone={phone} rootRef={rootRef}>
       <ViewAsBanner />
       {/* F4: Teacher's nav, then Teacher's control bar -- the same components and places. */}
       <div className={phone ? "px-4 pt-4" : undefined}>
         <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
       </div>
       {phone ? (
-        <div className="flex flex-col gap-[10px] px-4 py-3">
+        <PhoneStack>
           <PhoneHeader dash={dash} onDash={(d) => update({ dash: d })} entries={entries.map((id) => ({ id, label: chipLabel(id) }))} entry={entry ?? ""} onEntry={(e) => update({ entry: e })} onEditEntries={editEntries} />
           <Notes member={member} notSetUp={notSetUp} listsMissing={listsMissing} />
           {entry && <PhoneBody config={config} ctx={ctx} />}
-        </div>
+        </PhoneStack>
       ) : (
         <>
           <ControlBar
@@ -362,7 +363,7 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
           {entry ? <DesktopGrid config={config} c={ctx} actions={<Actions member={member} onSetup={() => update({ setup: "entry" })} />} /> : <Empty>Choose an entry point to see its pipeline.</Empty>}
         </>
       )}
-    </div>
+    </ShellPage>
   );
 }
 
@@ -811,23 +812,14 @@ function DesktopGrid({ config, c, actions }: { config: DashboardConfig; c: Ctx; 
   return (
     <>
       {config.rows.map((row) => (
-        <div key={row.id} className="flex flex-col gap-[14px]">
-          <div className="flex items-center gap-3">
-            <RowHead title={row.name} context={ctx[row.id] ?? ""} open={open[row.id] !== false} onToggle={() => setOpen((o) => ({ ...o, [row.id]: o[row.id] === false }))} />
-            <span className="grow" />
-            {row.id === config.rows[0]?.id && actions}
-          </div>
-          {open[row.id] !== false && (
-            <div className="grid grid-cols-3 gap-6">
-              {config.panels
-                .filter((p) => p.row === row.id)
-                .sort((a, b) => config.columns.findIndex((x) => x.id === a.column) - config.columns.findIndex((x) => x.id === b.column))
-                .map((p) => (
-                  <ConfigPanel key={p.id} panel={p} c={c} config={config} height={row.id === "now" ? ROW_NOW : ROW_TRENDS} />
-                ))}
-            </div>
-          )}
-        </div>
+        <ShellRow key={row.id} title={row.name} context={ctx[row.id] ?? ""} open={open[row.id] !== false} onToggle={() => setOpen((o) => ({ ...o, [row.id]: o[row.id] === false }))} actions={row.id === config.rows[0]?.id && actions}>
+          {config.panels
+            .filter((p) => p.row === row.id)
+            .sort((a, b) => config.columns.findIndex((x) => x.id === a.column) - config.columns.findIndex((x) => x.id === b.column))
+            .map((p) => (
+              <ConfigPanel key={p.id} panel={p} c={c} config={config} height={row.id === "now" ? ROW_NOW : ROW_TRENDS} />
+            ))}
+        </ShellRow>
       ))}
     </>
   );

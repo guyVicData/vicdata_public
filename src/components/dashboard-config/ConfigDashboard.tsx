@@ -18,6 +18,7 @@
 //   - phone: columns become a tab strip, one column at a time (G4, PhoneDash board).
 import { Component, Children, useEffect, useMemo, useState, type ReactNode } from "react";
 import { SHOW_COLUMN_EVENT } from "@/components/teacher/showColumn";
+import { GroupSwitcher } from "@/components/shell/GroupSwitcher";
 import { DashboardGrid } from "@/components/teacher/DashboardGrid";
 import { PANEL_HEIGHT } from "@/components/teacher/CardBox";
 import type { DashboardConfig, PanelConfig } from "@/catalogue/types";
@@ -144,43 +145,8 @@ export function PlannedPanel({ panel }: { panel: PanelConfig }) {
   );
 }
 
-// The linked-dashboard switcher (scope brief §4.2): the group's dashboards in group order,
-// replacing the Candidates/Results toggle. Drawn with MeasureToggle's own classes so a
-// flagged page and an unflagged one look the same; the label is the dashboard's name with
-// the group's own label taken off ("GCSE Candidates" -> "Candidates").
-export function GroupSwitcher({
-  dashboards,
-  activeId,
-  onSwitch,
-}: {
-  dashboards: DashboardConfig[];
-  activeId: string;
-  onSwitch: (next: DashboardConfig) => void;
-}) {
-  if (dashboards.length < 2) return null;
-  return (
-    <div className="inline-flex shrink-0 rounded-full border border-[var(--panel-border2)] bg-[var(--box-bg)] p-[3px] print:hidden" role="group" aria-label="Dashboard">
-      {dashboards.map((d) => {
-        const label = d.group && d.name.startsWith(`${d.group.label} `) ? d.name.slice(d.group.label.length + 1) : d.name;
-        const on = d.id === activeId;
-        return (
-          <button
-            key={d.id}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onSwitch(d)}
-            className={[
-              "rounded-full px-4 py-1.5 text-[13px] font-bold",
-              on ? "bg-[var(--accent,var(--fg))] text-[#06120c]" : "text-[var(--muted)] hover:text-[var(--fg)]",
-            ].join(" ")}
-          >
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+// The linked-dashboard switcher moved to the shell (0.8 Part A): src/components/shell/GroupSwitcher.tsx.
+export { GroupSwitcher };
 
 // The page's grid: the hand-coded DashboardGrid, exactly as before, unless a config is
 // given (the flag is on), in which case the same column hosts render through the config.

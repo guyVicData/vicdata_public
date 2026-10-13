@@ -9,14 +9,12 @@
 //   #22d3ee → --accent (ROLE_ACCENT.admissions) · #0f2329 → the accent at 0.14 (--adm-tint)
 // The boards' semantic colours (green flag, red flag, amber, orange, greys) are
 // Admissions variables below, a dark and a light value each, so both themes read.
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { ROLE_ACCENT } from "@/lib/teacher-view-theme";
-import { CardBox } from "@/components/teacher/CardBox";
-import { PanelExport, type PanelMenuItem } from "@/components/teacher/PanelFooter";
-import * as Icons from "@/components/teacher/PanelIcons";
+import type { CSSProperties, ReactNode } from "react";
+import { productAccent } from "@/components/shell/accent";
+import { RailPanel } from "@/components/shell/RailPanel";
 import type { Theme } from "@/components/teacher/TeacherChrome";
 
-const A = ROLE_ACCENT.admissions!;
+const A = productAccent("admissions")!;
 
 export function admissionsVars(theme: Theme): CSSProperties {
   const dark = theme === "dark";
@@ -48,54 +46,9 @@ export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 
 // ------------------------------------------------------------------------- small pieces
 
-const CHEVRON = (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
-/** The boards' .fchip: an 8px-radius filter or set chip, optionally a menu. */
-export function FChip({ children, onClick, title: titleIn, chevron = true, active = false, disabled = false }: { children: ReactNode; onClick?: () => void; title?: string; chevron?: boolean; active?: boolean; disabled?: boolean }) {
-  const title = titleIn ?? (typeof children === "string" ? children : undefined);
-  const cls = cx(
-    "inline-flex min-w-0 max-w-[340px] items-center gap-[5px] whitespace-nowrap rounded-[8px] border px-[10px] py-[5px] text-[11.5px] font-semibold [&>span.t]:truncate",
-    active ? "border-[var(--accent)] text-[var(--fg)]" : "border-[var(--panel-border2)] text-[var(--chip-fg)]",
-    "bg-[var(--box-bg)]",
-    disabled && "opacity-60",
-  );
-  const body = (
-    <>
-      <span className="t min-w-0">{children}</span>
-      {chevron && onClick && CHEVRON}
-    </>
-  );
-  return onClick ? (
-    <button type="button" className={cls} onClick={onClick} title={title} disabled={disabled}>
-      {body}
-    </button>
-  ) : (
-    <span className={cls} title={title}>
-      {body}
-    </span>
-  );
-}
-
-/** The boards' entry-point .chip (pill, the accent when active). */
-export function EntryChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cx(
-        "whitespace-nowrap rounded-full border px-3 py-[5px] text-[12px] font-semibold",
-        active ? "border-[var(--accent)] bg-[var(--adm-tint)] text-[var(--fg)]" : "border-[var(--panel-border2)] bg-[var(--panel-bg)] text-[var(--chip-fg)]",
-      )}
-    >
-      {label}
-    </button>
-  );
-}
+// 0.8 shell (Part A): the filter pill (FChip) and the focus chip (EntryChip) moved to
+// src/components/shell/FilterPills.tsx.
+export { EntryChip, FChip } from "@/components/shell/FilterPills";
 
 export function Tile({ label, value, sub, accent = false, small = false }: { label: string; value: ReactNode; sub: ReactNode; accent?: boolean; small?: boolean }) {
   return (
@@ -143,166 +96,14 @@ export const Muted = ({ children, className = "", size = 11 }: { children: React
 
 export const Lbl = ({ children }: { children: ReactNode }) => <div className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--muted2)]">{children}</div>;
 
-// ------------------------------------------------------------------------- icons
+// 0.8 shell (Part A): the panel, its rail, the phone's tabs and full screen's fill moved to
+// src/components/shell/RailPanel.tsx. Admissions' Panel stays a thin wrapper round it (and so round
+// the shell's CardBox), as round 3 left it.
+export { Rail, Tabs, fillHeight, railGlyph, type RailItem, type PanelMenuAction } from "@/components/shell/RailPanel";
 
-export function railGlyph(name: string): ReactNode {
-  const g = (Icons as unknown as Record<string, ReactNode>)[name];
-  return g && typeof g === "object" ? g : Icons.TilesIcon;
+export function Panel(props: Parameters<typeof RailPanel>[0]) {
+  return <RailPanel {...props} />;
 }
-
-// ------------------------------------------------------------------------- the panel
-
-export type RailItem = { id: string; label: string; icon: string };
-
-/** 0.7 r3 (F1): the rail is Teacher's -- its IconButton, down CardBox's rail column. */
-export function Rail({ items, active, onPick }: { items: RailItem[]; active: string; onPick: (id: string) => void }) {
-  if (items.length < 2) return null;
-  return (
-    <>
-      {items.map((it) => (
-        <Icons.IconButton key={it.id} label={it.label} active={it.id === active} onClick={() => onPick(it.id)}>
-          {railGlyph(it.icon)}
-        </Icons.IconButton>
-      ))}
-    </>
-  );
-}
-
-/** Phone: the large view's views become tabs (Phone.dc.html). */
-export function Tabs({ items, active, onPick }: { items: RailItem[]; active: string; onPick: (id: string) => void }) {
-  return (
-    <div role="tablist" className="flex gap-[14px] overflow-x-auto border-b border-[var(--panel-border)]">
-      {items.map((it) => (
-        <button key={it.id} role="tab" aria-selected={it.id === active} type="button" onClick={() => onPick(it.id)} className={cx("whitespace-nowrap border-b-2 px-[2px] py-2 text-[12px] font-bold", it.id === active ? "border-[var(--accent)] text-[var(--fg)]" : "border-transparent text-[var(--muted2)]")}>
-          {it.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-export type PanelMenuAction = PanelMenuItem;
-
-/** One Admissions panel or large view. 0.7 r3 (F1): Teacher's own CardBox -- the same header
- * and icon row (PanelIconRow: the menu, full screen, a reserved collapse slot), the same rail,
- * the same footer notes (the source "i", the caption behind its button, the flag at the right)
- * and the same full screen. Only the size differs: Admissions' rows are 470 and 330 tall, and
- * the large view spans two columns. Admissions' own header line (tag · context) is the tag, its
- * chips sit right-aligned before the icon row. */
-export function Panel({
-  tag,
-  context,
-  chips,
-  menu = [],
-  rail,
-  railActive,
-  onRail,
-  source,
-  caption,
-  visibleCaption,
-  flag,
-  controls,
-  height,
-  span = 1,
-  title,
-  children,
-  id,
-  onCopy,
-  focusBar,
-}: {
-  tag: string;
-  context?: ReactNode;
-  chips?: ReactNode;
-  menu?: PanelMenuAction[];
-  rail?: RailItem[];
-  railActive?: string;
-  onRail?: (id: string) => void;
-  source?: ReactNode;
-  // The panel's honesty note, behind the footer's caption button (Teacher's CaptionNote).
-  caption?: ReactNode;
-  // A line the panel shows without a click (CardBox's visibleCaption): the LA context, a link.
-  visibleCaption?: ReactNode;
-  flag?: ReactNode;
-  // A row under the header (CardBox's controls): the phone's tabs.
-  controls?: ReactNode;
-  height: number | "auto";
-  span?: 1 | 2;
-  title: string;
-  // `height`: in full screen on a desktop, the room the figure has (FocusFill), for a chart to fill.
-  children: (o: { fullscreen: boolean; height?: number }) => ReactNode;
-  id?: string;
-  // D8: "Copy this view…" (meeting slides; absent in View as and wherever a copy can't be saved).
-  onCopy?: () => void;
-  // 0.7 admissions editor s1 (Guy, decision 3): full screen is a focus mode on every Admissions
-  // panel -- the rail, the panel's chips, the notes, the menu and this bar (the entry-point chips),
-  // so a member can change view and entry point without leaving it.
-  focusBar?: ReactNode;
-}) {
-  return (
-    <section
-      id={id}
-      aria-label={title}
-      data-adm-panel={id}
-      className="min-w-0 [&>div]:!mt-0"
-      style={{ gridColumn: span === 2 ? "span 2" : undefined }}
-    >
-      <CardBox
-        title={title}
-        tag={
-          <span className="flex min-w-0 items-center gap-1.5">
-            <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-[var(--fg)]">{tag}</span>
-            {context && <span className="min-w-0 truncate whitespace-nowrap text-[11.5px] text-[var(--muted2)]">{context}</span>}
-          </span>
-        }
-        headerExtra={chips}
-        controls={controls}
-        actions={rail && railActive && onRail && rail.length > 1 ? <Rail items={rail} active={railActive} onPick={onRail} /> : undefined}
-        source={source}
-        caption={caption}
-        visibleCaption={visibleCaption}
-        flag={flag}
-        fixedHeight={height !== "auto"}
-        height={height === "auto" ? undefined : height}
-        menu={({ print }) => <PanelExport onPrint={print} onCopy={onCopy} extra={menu} />}
-        focus={{ bar: focusBar }}
-      >
-        {({ fullscreen }) =>
-          fullscreen ? (
-            <FocusFill>{(h) => children({ fullscreen, height: h })}</FocusFill>
-          ) : (
-            <div className={cx("flex min-w-0 grow flex-col gap-2", height !== "auto" && "min-h-0")}>{children({ fullscreen })}</div>
-          )
-        }
-      </CardBox>
-    </section>
-  );
-}
-
-/** Full screen's figure area: it takes the room the modal leaves and says how tall that is, so a
- * chart can fill it (desktop widths; below Teacher's lg the modal stacks and scrolls, and the views
- * keep their full-screen sizes). Content taller than the room scrolls inside it. */
-function FocusFill({ children }: { children: (height: number | undefined) => ReactNode }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [h, setH] = useState<number | undefined>(undefined);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const on = () => setH(window.innerWidth >= 1024 ? Math.floor(el.getBoundingClientRect().height) : undefined);
-    on();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(on);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  return (
-    <div ref={ref} data-focus-fill={h ?? ""} className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
-      {children(h)}
-    </div>
-  );
-}
-
-/** A chart's height in full screen: the room less what sits around it, never below its own size. */
-export const fillHeight = (room: number | undefined, around: number, min: number) => (room ? Math.max(min, room - around) : min);
 
 export const ViewTitle = ({ children }: { children: ReactNode }) => <div className="text-[12.5px] font-bold text-[var(--fg)]">{children}</div>;
 
