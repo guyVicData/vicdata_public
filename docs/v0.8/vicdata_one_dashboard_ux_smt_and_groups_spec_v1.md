@@ -1,6 +1,6 @@
 # VicData — One dashboard UX: Teacher, Admissions, SMT and groups
 
-Written 12 Oct 2026, for Guy to review. Updated 13 Oct: a group as a comparison set (§3.5); Oxbridge inside Destinations. It sets out the shared layout and controls every role's dashboards use, and specifies the SMT dashboards and the group view to match. It follows Guy's round 3 principle: *the core UI is identical; only the column arrangement differs.*
+Written 12 Oct 2026, for Guy to review. Updated 13 Oct: a group as a comparison set (§3.5); the group against other groups and non-group schools (§3.6); Oxbridge inside Destinations. It sets out the shared layout and controls every role's dashboards use, and specifies the SMT dashboards and the group view to match. It follows Guy's round 3 principle: *the core UI is identical; only the column arrangement differs.*
 
 Read with:
 - `docs/v0.7/admissions_r3_report_v1.md` (the shared panel chrome, nav and edit bar);
@@ -161,6 +161,33 @@ For a member school, **its group becomes a comparison set** in the existing choo
 - **A school in several groups** (a MAT and a different sponsor, say) sees each as a separate set.
 - **Built on** `school_groups_lookup` / `group_schools_lookup`, through the same custom-set path as `?set=`. No new chrome.
 
+### 3.6 The group against other groups and non-group schools (Guy, 13 Oct)
+
+The group view's comparisons work like a school's, one level up. The group (pupil-weighted, by phase) is set against:
+- **other groups:** of the same type and size band by default ("MATs with 20–40 schools"), with all groups of that type as the wider set; named groups can be picked side by side ("Harris against Ark and United Learning");
+- **non-group schools:** the schools in no group, matched to the group's sector:
+  - for a MAT: LA-maintained schools plus single-academy trusts (a SAT is one school, so it counts as standalone here);
+  - for an independent group: standalone independent schools;
+- **the group's own areas:** all schools in the LAs and regions where its schools sit, so a London-heavy group isn't flattered by a national average;
+- **England.**
+
+**What's compared, on the same footing:**
+- **population:** combined roll and its change, indexed to 100; share of local places; entry cohorts; the shape by age;
+- **change:** growth or decline over 1, 3 and 5 years, and how many schools grew or shrank;
+- **results:** headline results by phase, results by band (top 25%, middle 50%, bottom 25%) once that's built, and value added where published;
+- later, **SEND and destinations** in the same frame.
+
+**Like for like:**
+- each comparison filters to the same phase, and the counts say how many schools are behind each figure ("Harris: 32 secondaries with GCSE results; non-group: 1,104");
+- results are pupil-weighted; an "average school" (unweighted) option is offered, labelled;
+- a **mix-matched** option reweights the comparison set to the group's phase and region mix, labelled, so the gap isn't just geography;
+- membership follows join dates where the source has them, so a school's results count for the group only from when it joined (the default for change; the "all schools listed now" view is the labelled alternative).
+
+**Where it shows:**
+- **Overview:** the "Group against group" rail becomes **"Against others"**: the group, its peer groups, non-group schools, its areas and England, on population, change and results;
+- **Academic** and **Pupils:** each large view has the same comparison chooser, with "Non-group schools" and "Peer groups" alongside the existing sets;
+- **built on** the groups lookups and a new aggregate per group per year, computed in the database, never in the browser.
+
 ### 3.4 Honesty wording (`GROUP_NOTES`)
 
 - **"Membership as of [date], from [source]."**
@@ -188,5 +215,6 @@ For a member school, **its group becomes a comparison set** in the existing choo
 3. **Value added on SMT's front page:** show A-level VA and Progress 8 on the Overview tiles, with "not published for independent schools" where it applies?
 4. **Context data:** ingest the Indices of Deprivation and the free-school-meals data before SMT Context, or launch Context with population only?
 5. **Who sees the group view:** a member school's SMT and School-Admin first? And is a group account for central teams a product you want to plan now?
-6. **Group against group:** rank groups only against groups of the same type (MAT against MAT, independent against independent)? Or offer a mixed comparison with a clear label?
+6. **Group against group:** rank groups only against groups of the same type (MAT against MAT, independent against independent)? Or offer a mixed comparison with a clear label? (§3.6 assumes same type by default, with named groups pickable.)
+8. **Non-group schools:** count single-academy trusts as standalone (§3.6), or as their own set?
 7. **Wireframes:** draw SMT and the group view on the canvas before any build, as we did for Admissions?
