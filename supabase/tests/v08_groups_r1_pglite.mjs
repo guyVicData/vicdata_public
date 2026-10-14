@@ -234,6 +234,18 @@ check("  Dukes head office doesn't", (await rows("HB", `select * from group_admi
 check("  X's teacher reads the setting; Y's School-Admin doesn't", (await rows("ST", `select * from group_admissions_shares`)).length === 1 && (await rows("OA", `select * from group_admissions_shares`)).length === 0);
 check("  and turns it off again", (await err(() => as("SA", () => q(`select school_set_group_admissions_share('100001','${GA}', false)`)))) === null && (await q(`select shared from group_admissions_shares`)).rows[0].shared === false);
 
+console.log("\n-- preview accounts (the testing route) never take a real group's place");
+e = await err(() => asService(() => q(`insert into group_accounts (group_id, display_name, preview, preview_of) values ('club_iss:dukes-education', 'Dukes (preview)', true, 'club_iss:dukes-education')`)));
+check("a preview account can't hold a real group id", !!e, e);
+e = await err(() => asService(() => q(`insert into group_accounts (group_id, display_name) values ('preview:9999', 'Fake')`)));
+check("only a preview account has a preview: id", !!e, e);
+const GP = (await asService(() => q(`insert into group_accounts (group_id, display_name, preview, preview_of) values ('preview:3320', 'Harris (preview)', true, '3320') returning id`))).rows[0].id;
+check("the preview account sits beside the real Harris account", !!GP && (await q(`select count(*)::int n from group_accounts where preview_of = '3320' or group_id = '3320'`)).rows[0].n === 2);
+e = await err(() => as("PA", () => q(`select platform_create_group_account('preview:4000', 'Fake')`)));
+check("a platform admin can't make a preview account", !!e && /testing route/.test(e), e);
+e = await err(() => as("SA", () => q(`select school_set_group_admissions_share('100001','${GP}', true)`)));
+check("a School-Admin can't share Admissions with a preview account", !!e && /no such group account/.test(e), e);
+
 console.log("\n-- the Platform page's overview");
 e = await err(() => as("HA", () => q(`select * from platform_group_accounts_overview()`)));
 check("head office can't read the platform overview", !!e && /platform admin only/.test(e), e);

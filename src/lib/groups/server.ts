@@ -10,7 +10,7 @@ import { isPlatformAdmin } from "../view-as";
 import { canSeeSmt } from "../smt/auth-rules";
 import { parseViewAsGroupCookie } from "./view-as-group";
 import { groupMembers, type GroupMember } from "./production";
-import { headOfficeSchoolAccess, predates, type Grant, type GroupAccount, type HeadOffice, type SchoolAccessRefusal } from "./access-rules";
+import { headOfficeSchoolAccess, membersOf, predates, type Grant, type GroupAccount, type HeadOffice, type SchoolAccessRefusal } from "./access-rules";
 
 export type GroupCaller = { userId: string; supabase: SupabaseClient; offices: HeadOffice[]; viewAs: boolean };
 
@@ -34,12 +34,12 @@ export async function userFrom(request: NextRequest): Promise<{ userId: string; 
   return { userId: data.user.id, supabase };
 }
 
-type AccountRow = { id: string; group_id: string; display_name: string; status: "active" | "suspended" };
-const toAccount = (a: AccountRow): GroupAccount => ({ id: a.id, groupId: a.group_id, name: a.display_name, status: a.status });
+type AccountRow = { id: string; group_id: string; display_name: string; status: "active" | "suspended"; preview_of?: string | null };
+const toAccount = (a: AccountRow): GroupAccount => ({ id: a.id, groupId: a.group_id, name: a.display_name, status: a.status, membersOf: a.preview_of ?? a.group_id });
 
 /** The caller's own head-office memberships (RLS: their own rows only). */
 export async function officesOf(supabase: SupabaseClient, userId: string): Promise<HeadOffice[]> {
-  const { data, error } = await supabase.from("group_memberships").select("role, group_accounts!inner(id, group_id, display_name, status)").eq("profile_id", userId);
+  const { data, error } = await supabase.from("group_memberships").select("role, group_accounts!inner(id, group_id, display_name, status, preview_of)").eq("profile_id", userId);
   if (error) {
     if (isMissing(error)) return [];
     throw error;
@@ -53,7 +53,7 @@ export async function groupCaller(request: NextRequest): Promise<GroupCaller | N
   if (u instanceof NextResponse) return u;
   const v = parseViewAsGroupCookie(request.headers.get("cookie"));
   if (v && (await isPlatformAdmin(u.supabase))) {
-    const { data, error } = await createServiceRoleSupabaseClient().from("group_accounts").select("id, group_id, display_name, status").eq("id", v.accountId).maybeSingle<AccountRow>();
+    const { data, error } = await createServiceRoleSupabaseClient().from("group_accounts").select("id, group_id, display_name, status, preview_of").eq("id", v.accountId).maybeSingle<AccountRow>();
     if (error && !isMissing(error)) throw error;
     // View as is read-only whatever the role: canManageAccess refuses it.
     return { ...u, offices: data ? [{ ...toAccount(data), role: "head_office_admin" }] : [], viewAs: true };
@@ -124,14 +124,14 @@ export async function headOfficeAccess(supabase: SupabaseClient, userId: string,
   const offices = given ?? (await officesOf(supabase, userId));
   if (!offices.length) return { ok: false, reason: "not-head-office" };
   const byGroup = new Map<string, GroupMember[]>();
-  await Promise.all(offices.map(async (o) => byGroup.set(o.groupId, await groupMembers(o.groupId))));
+  await Promise.all(offices.map(async (o) => byGroup.set(membersOf(o), await groupMembers(membersOf(o)))));
   const accounts = await schoolAccounts([urn]);
   const r = headOfficeSchoolAccess(offices, byGroup, urn, accounts.has(urn));
   if (!r.ok) return r;
-  const schoolName = byGroup.get(r.office.groupId)?.find((m) => m.urn === urn)?.name ?? urn;
+  const schoolName = byGroup.get(membersOf(r.office))?.find((m) => m.urn === urn)?.name ?? urn;
   const { data } = await createServiceRoleSupabaseClient().from("group_admissions_shares").select("shared, set_at").eq("school_account_id", accounts.get(urn)!.accountId).eq("group_account_id", r.office.id).maybeSingle<{ shared: boolean; set_at: string }>();
   // A share set before the school's current membership began (it left and rejoined) is a decision about
   // a different membership: not shared until the School-Admin decides again.
-  const joined = byGroup.get(r.office.groupId)?.find((m) => m.urn === urn)?.joined ?? null;
+  const joined = byGroup.get(membersOf(r.office))?.find((m) => m.urn === urn)?.joined ?? null;
   return { ...r, schoolName, shared: data?.shared === true && !predates(data.set_at, joined) };
 }

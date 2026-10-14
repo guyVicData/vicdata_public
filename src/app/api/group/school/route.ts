@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const groups = await schoolGroups(urn);
     if (!groups.length) return NextResponse.json({ groups: [], schoolAdmin: m.is_admin || holder });
     const sb = createServiceRoleSupabaseClient();
-    const { data: accs, error } = await sb.from("group_accounts").select("id, group_id, display_name, status").in("group_id", groups.map((g) => g.groupId));
+    const { data: accs, error } = await sb.from("group_accounts").select("id, group_id, display_name, status").eq("preview", false).in("group_id", groups.map((g) => g.groupId));
     if (error) {
       if (isMissing(error)) return NextResponse.json({ groups: [], schoolAdmin: m.is_admin || holder });
       throw error;
@@ -36,14 +36,14 @@ export async function GET(request: NextRequest) {
     const accounts = ((accs ?? []) as { id: string; group_id: string; display_name: string; status: "active" | "suspended" }[]).map((a): GroupAccount => ({ id: a.id, groupId: a.group_id, name: a.display_name, status: a.status }));
     const ids = accounts.map((a) => a.id);
     const grantsByAccount = new Map<string, Grant[]>();
-    const shares = new Map<string, boolean>();
+    const shares = new Map<string, { shared: boolean; setAt: string }>();
     if (ids.length) {
       const { data: gr } = await sb.from("group_view_grants").select("group_account_id, school_urn, granted_at, revoked_at, likely_member").eq("school_urn", urn).is("revoked_at", null).in("group_account_id", ids);
       for (const r of (gr ?? []) as { group_account_id: string; school_urn: string; granted_at: string; revoked_at: string | null; likely_member: boolean }[]) (grantsByAccount.get(r.group_account_id) ?? grantsByAccount.set(r.group_account_id, []).get(r.group_account_id)!).push({ schoolUrn: r.school_urn, grantedAt: r.granted_at, revokedAt: r.revoked_at, likely: r.likely_member });
-      const { data: sh } = await sb.from("group_admissions_shares").select("group_account_id, shared").eq("school_account_id", m.school_account_id).in("group_account_id", ids);
-      for (const r of (sh ?? []) as { group_account_id: string; shared: boolean }[]) shares.set(r.group_account_id, r.shared);
+      const { data: sh } = await sb.from("group_admissions_shares").select("group_account_id, shared, set_at").eq("school_account_id", m.school_account_id).in("group_account_id", ids);
+      for (const r of (sh ?? []) as { group_account_id: string; shared: boolean; set_at: string }[]) shares.set(r.group_account_id, { shared: r.shared, setAt: r.set_at });
     }
-    return NextResponse.json({ groups: schoolSide(urn, groups.map((g) => ({ groupId: g.groupId, name: g.name, confidence: g.confidence })), accounts, grantsByAccount, shares), schoolAdmin: m.is_admin || holder });
+    return NextResponse.json({ groups: schoolSide(urn, groups.map((g) => ({ groupId: g.groupId, name: g.name, confidence: g.confidence, joined: g.joined })), accounts, grantsByAccount, shares), schoolAdmin: m.is_admin || holder });
   } catch (err) {
     console.error("[group/school] failed:", err);
     return NextResponse.json({ error: "Could not read the school's groups." }, { status: 502 });

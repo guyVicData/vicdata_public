@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { accountGrants, groupCaller, groupViewUsage, NOT_FOUND, officeFor, schoolAccounts } from "@/lib/groups/server";
 import { groupMembers } from "@/lib/groups/production";
-import { accessTable, canManageAccess, grantable } from "@/lib/groups/access-rules";
+import { accessTable, canManageAccess, grantable, membersOf, openGrant, predates } from "@/lib/groups/access-rules";
 
 // VicData 0.8 groups r1 (G4): the Access page. GET ?account= -- the table (head-office admin, or a
 // platform admin in View as, read-only; plain head office sees only the home's count). POST
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     if (caller instanceof NextResponse) return caller;
     const office = officeFor(caller, request.nextUrl.searchParams.get("account"));
     if (!office || (office.role !== "head_office_admin" && !caller.viewAs)) return NOT_FOUND();
-    const members = await groupMembers(office.groupId);
+    const members = await groupMembers(membersOf(office));
     const grants = await accountGrants(office.id);
     const urns = Array.from(new Set([...members.map((m) => m.urn), ...grants.map((g) => g.schoolUrn)]));
     const [accounts, usage] = await Promise.all([schoolAccounts(members.map((m) => m.urn)), groupViewUsage(members.map((m) => m.urn))]);
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const office = officeFor(caller, body.account);
     if (!office) return NOT_FOUND();
     if (!canManageAccess(office, caller.viewAs)) return NextResponse.json({ error: caller.viewAs ? "View as: read-only" : office.status !== "active" ? "This group account is suspended." : "Only the group's head-office admin can change access." }, { status: 403 });
-    const members = await groupMembers(office.groupId);
+    const members = await groupMembers(membersOf(office));
     const accounts = await schoolAccounts(members.map((m) => m.urn));
     // A school without its own VicData membership has no staff to sign in: no switch, no grant.
     // "Give all schools access": confirmed members with VicData (a likely member is switched on by
@@ -59,11 +59,19 @@ export async function POST(request: NextRequest) {
     const targets = body.all === true ? members.filter((m) => !body.on || (accounts.has(m.urn) && m.confidence === "confirmed")).map((m) => m.urn) : [body.urn as string];
     const sb = createServiceRoleSupabaseClient();
     const results: Record<string, string> = {};
+    const grants = body.on ? await accountGrants(office.id) : [];
     for (const urn of targets) {
       // Granting: current members only. Revoking: any school, so a school that left can be tidied away.
       const ok = grantable(members, urn);
       if (!ok.ok && body.on) return NextResponse.json({ error: "That school isn't a current member of the group." }, { status: 409 });
       if (body.on && !accounts.has(urn)) return NextResponse.json({ error: "That school doesn't have its own VicData membership yet." }, { status: 409 });
+      // A school that left and rejoined: its old grant is still open but no longer counts. Close it, then
+      // grant afresh, or the switch could never come back on.
+      const old = body.on ? openGrant(grants, urn) : null;
+      if (old && predates(old.grantedAt, members.find((m) => m.urn === urn)?.joined ?? null)) {
+        const { error: e0 } = await sb.rpc("group_set_view_grant", { p_actor: caller.userId, p_account: office.id, p_urn: urn, p_on: false, p_likely: false });
+        if (e0) throw e0;
+      }
       const { data, error } = await sb.rpc("group_set_view_grant", { p_actor: caller.userId, p_account: office.id, p_urn: urn, p_on: body.on, p_likely: ok.ok && ok.likely });
       if (error) throw error;
       results[urn] = data as string;

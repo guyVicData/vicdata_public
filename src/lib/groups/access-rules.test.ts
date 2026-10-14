@@ -89,6 +89,20 @@ test("a school's own view: its groups with an active account, its grant and shar
   assert.deepEqual(out, [{ accountId: "a1", groupId: "3320", name: "Harris Federation", likely: false, groupView: { since: "2026-10-01" }, shared: false }]);
 });
 
+test("the school's own card applies the same rule: a grant or share from before it rejoined doesn't count", () => {
+  const accounts = [{ id: "a1", groupId: "3320", name: "Harris Federation", status: "active" as const }];
+  const out = schoolSide("140985", [{ groupId: "3320", name: "Harris Federation", confidence: "confirmed", joined: "2026-09-15" }], accounts, new Map([["a1", [g("140985", "2026-05-01")]]]), new Map([["a1", { shared: true, setAt: "2026-05-02T10:00:00Z" }]]));
+  assert.equal(out[0].groupView, null);
+  assert.equal(out[0].shared, false);
+});
+
+test("a preview account reads its borrowed group's members, so head office's checks follow them", () => {
+  const preview: HeadOffice = { id: "p1", groupId: "preview:3320", membersOf: "3320", name: "Harris Federation (preview)", status: "active", role: "head_office_admin" };
+  assert.equal(headOfficeSchoolAccess([preview], byGroup, "140985", true).ok, true);
+  // ...but a school's own side matches only real group ids: the preview account never appears there.
+  assert.deepEqual(schoolSide("140985", [{ groupId: "3320", name: "Harris Federation", confidence: "confirmed" }], [preview], new Map(), new Map()), []);
+});
+
 test("the home's summary line: combined roll this census against last, and how many grew", () => {
   assert.deepEqual(rollSummary([{ urn: "1", now: 110, before: 100 }, { urn: "2", now: 90, before: 100 }, { urn: "3", now: 50, before: null }]), { schools: 3, changePct: 0, growing: 1, compared: 2 });
 });

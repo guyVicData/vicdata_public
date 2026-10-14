@@ -31,12 +31,18 @@ create table public.group_accounts (
     group_id text not null unique check (group_id ~ '^[A-Za-z0-9_:.-]{1,80}$'),
     display_name text not null check (length(btrim(display_name)) between 1 and 160),
     status text not null default 'active' check (status in ('active', 'suspended')),
-    -- A test account made by the preview route (G6). The seeder touches only these, never a customer's.
+    -- A test account made by the preview route (G6). It never takes a real group's id: its group_id is
+    -- 'preview:<id>' and it borrows that group's member list (preview_of), so no school ever matches it
+    -- (no school sees it as its head office, nor can share with it) and the real group's own account
+    -- can still be created. The seeder touches only these.
     preview boolean not null default false,
+    preview_of text check (preview_of is null or preview_of ~ '^[A-Za-z0-9_:.-]{1,80}$'),
     created_by uuid references public.profiles (id) on delete set null,
     created_at timestamptz not null default now(),
     status_changed_at timestamptz,
-    status_changed_by uuid references public.profiles (id) on delete set null
+    status_changed_by uuid references public.profiles (id) on delete set null,
+    check (preview = (preview_of is not null)),
+    check (preview = (group_id like 'preview:%'))
 );
 
 -- 2. Head-office members -----------------------------------------------------------------------
@@ -191,6 +197,9 @@ declare
 begin
     if not public.is_platform_admin() then
         raise exception 'platform admin only';
+    end if;
+    if p_group_id like 'preview:%' then
+        raise exception 'preview accounts are made by the testing route only';
     end if;
     if exists (select 1 from public.group_accounts where group_id = p_group_id) then
         raise exception 'this group already has an account';
@@ -416,7 +425,7 @@ begin
        or not (public.is_admin_of_school_account(v_school) or public.is_account_holder_of_school_account(v_school)) then
         raise exception 'only the school''s School-Admin can change what head office sees';
     end if;
-    if not exists (select 1 from public.group_accounts where id = p_account) then
+    if not exists (select 1 from public.group_accounts where id = p_account and not preview) then
         raise exception 'no such group account';
     end if;
     insert into public.group_admissions_shares (school_account_id, group_account_id, shared, set_by)

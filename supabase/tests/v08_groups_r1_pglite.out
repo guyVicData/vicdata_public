@@ -108,9 +108,16 @@ PASS   Dukes head office doesn't
 PASS   X's teacher reads the setting; Y's School-Admin doesn't 
 PASS   and turns it off again 
 
+-- preview accounts (the testing route) never take a real group's place
+PASS a preview account can't hold a real group id new row for relation "group_accounts" violates check constraint "group_accounts_check1"
+PASS only a preview account has a preview: id new row for relation "group_accounts" violates check constraint "group_accounts_check1"
+PASS the preview account sits beside the real Harris account 
+PASS a platform admin can't make a preview account preview accounts are made by the testing route only
+PASS a School-Admin can't share Admissions with a preview account no such group account
+
 -- the Platform page's overview
 PASS head office can't read the platform overview platform admin only
-PASS the platform admin sees Harris: 1 admin, 2 members, 2 open grants {"id":"2d880c11-5aa3-4518-b6d0-70429f9c15a3","group_id":"3320","display_name":"Harris Federation","status":"active","created_at":"2026-10-14T07:57:27.040Z","admins":1,"members":2,"open_invitations":2,"open_grants":2}
+PASS the platform admin sees Harris: 1 admin, 2 members, 2 open grants {"id":"6f75fab8-7cd6-4f71-abcb-a868c0c22316","group_id":"3320","display_name":"Harris Federation","status":"active","created_at":"2026-10-14T08:02:04.274Z","admins":1,"members":2,"open_invitations":2,"open_grants":2}
 
 -- the helpers and functions aren't anon's
 PASS anon can't call is_group_member 
@@ -119,4 +126,4 @@ PASS anon can't call group_accept_invitation
 PASS anon can't call platform_group_accounts_overview 
 PASS anon can't call school_set_group_admissions_share 
 
-ALL PASS (97)
+ALL PASS (102)

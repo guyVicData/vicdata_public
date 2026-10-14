@@ -4,7 +4,7 @@
 // token, by the account whose address was invited (group_accept_invitation checks both). Nothing is
 // accepted by visiting any other page.
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { groupVars } from "@/components/groups/ui";
@@ -13,8 +13,12 @@ export default function GroupJoinPage() {
   const [theme] = useTeacherTheme();
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  // The token is read once and taken out of the address bar (and so the browser's history).
+  const [token] = useState(() => (typeof window === "undefined" ? "" : (new URLSearchParams(window.location.search).get("invite") ?? "")));
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("invite")) window.history.replaceState(window.history.state, "", window.location.pathname);
+  }, []);
   async function accept() {
-    const token = new URLSearchParams(window.location.search).get("invite") ?? "";
     setState("busy");
     const supabase = createBrowserSupabaseClient();
     const { data: s } = await supabase.auth.getSession();

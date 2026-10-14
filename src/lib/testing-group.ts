@@ -2,7 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 // VicData 0.8 groups r1 (G6): test group accounts for the demos, behind the preview-session testing
 // route only (never a production data path). Harris Federation (GIAS MAT 3320) and Dukes Education (its
-// Club ISS group), each with its own preview head-office user as head-office admin. Made directly with
+// Club ISS group), each with its own preview head-office user as head-office admin. A preview account
+// never takes the real group's id ('preview:<id>', borrowing its member list), so no real school sees it
+// as its head office and the real group's own account can still be made. Made directly with
 // the service role: no invitation is ever created, so nothing could be sent or taken up by anyone else.
 export const PREVIEW_GROUPS = {
   harris: { groupId: "3320", name: "Harris Federation" },
@@ -22,10 +24,10 @@ export async function seedPreviewGroup(admin: SupabaseClient, profileId: string,
   const g = PREVIEW_GROUPS[key];
   // Only ever a preview account: where a real account for the group exists, the seeder refuses rather
   // than add the preview user to a customer's head office (review finding 2).
-  let { data: acc } = await admin.from("group_accounts").select("id, preview, status").eq("group_id", g.groupId).maybeSingle<{ id: string; preview: boolean; status: string }>();
+  let { data: acc } = await admin.from("group_accounts").select("id, preview, status").eq("group_id", `preview:${g.groupId}`).maybeSingle<{ id: string; preview: boolean; status: string }>();
   if (acc && !acc.preview) return { ok: false, error: `${g.name} has a real group account: not seeding a preview user into it` };
   if (!acc) {
-    const { data, error } = await admin.from("group_accounts").insert({ group_id: g.groupId, display_name: g.name, preview: true }).select("id, preview, status").single<{ id: string; preview: boolean; status: string }>();
+    const { data, error } = await admin.from("group_accounts").insert({ group_id: `preview:${g.groupId}`, preview_of: g.groupId, display_name: `${g.name} (preview)`, preview: true }).select("id, preview, status").single<{ id: string; preview: boolean; status: string }>();
     if (error || !data) return { ok: false, error: error?.message ?? "Could not create the group account" };
     acc = data;
   }

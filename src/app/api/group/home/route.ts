@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { accountGrants, groupCaller, NOT_FOUND, officeFor, schoolAccounts } from "@/lib/groups/server";
 import { groupMembers } from "@/lib/groups/production";
-import { canManageAccess, rollSummary, seeingCount } from "@/lib/groups/access-rules";
+import { canManageAccess, membersOf, rollSummary, seeingCount } from "@/lib/groups/access-rules";
 import { cachedCensus } from "@/lib/admissions/data";
 
 // VicData 0.8 groups r1 (G3): the head-office home. The group's one-line summary (from the production
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (caller instanceof NextResponse) return caller;
     const office = officeFor(caller, request.nextUrl.searchParams.get("account"));
     if (!office) return NOT_FOUND();
-    const members = await groupMembers(office.groupId);
+    const members = await groupMembers(membersOf(office));
     const urns = members.map((m) => m.urn);
     const [grants, accounts, census] = await Promise.all([accountGrants(office.id), schoolAccounts(urns), cachedCensus(urns)]);
     const P = Math.max(...Array.from(census.values()).map((c) => c.latestPeriod ?? 0));

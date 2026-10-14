@@ -6,7 +6,10 @@
 import type { GroupMember } from "./production";
 
 export type GroupRole = "head_office_admin" | "head_office";
-export type GroupAccount = { id: string; groupId: string; name: string; status: "active" | "suspended" };
+// membersOf: whose member list the account reads -- its own group_id, or for a preview account (G6,
+// group_id 'preview:<id>') the real group it borrows. A school ever matches only group_id.
+export type GroupAccount = { id: string; groupId: string; name: string; status: "active" | "suspended"; membersOf?: string };
+export const membersOf = (a: Pick<GroupAccount, "groupId" | "membersOf">): string => a.membersOf ?? a.groupId;
 export type HeadOffice = GroupAccount & { role: GroupRole };
 export type Grant = { schoolUrn: string; grantedAt: string; revokedAt: string | null; likely: boolean };
 
@@ -50,12 +53,12 @@ export function headOfficeSchoolAccess(
   schoolHasAccount: boolean,
 ): { ok: true; office: HeadOffice; likely: boolean } | { ok: false; reason: SchoolAccessRefusal } {
   if (!offices.length) return { ok: false, reason: "not-head-office" };
-  const holding = offices.filter((o) => (membersByGroup.get(o.groupId) ?? []).some((m) => m.urn === urn));
+  const holding = offices.filter((o) => (membersByGroup.get(membersOf(o)) ?? []).some((m) => m.urn === urn));
   if (!holding.length) return { ok: false, reason: "not-a-member" };
   const active = holding.find((o) => o.status === "active");
   if (!active) return { ok: false, reason: "suspended" };
   if (!schoolHasAccount) return { ok: false, reason: "no-vicdata-account" };
-  return { ok: true, office: active, likely: (membersByGroup.get(active.groupId) ?? []).find((m) => m.urn === urn)?.confidence === "likely" };
+  return { ok: true, office: active, likely: (membersByGroup.get(membersOf(active)) ?? []).find((m) => m.urn === urn)?.confidence === "likely" };
 }
 
 /** "Opened, last 30 days": counts only; small numbers never shown (names never are). */
@@ -122,17 +125,21 @@ export function rollSummary(rolls: { urn: string; now: number | null; before: nu
  * else about the group account. */
 export function schoolSide(
   urn: string,
-  groups: { groupId: string; name: string; confidence: "confirmed" | "likely" }[],
+  groups: { groupId: string; name: string; confidence: "confirmed" | "likely"; joined?: string | null }[],
   accounts: GroupAccount[],
   grantsByAccount: Map<string, Grant[]>,
-  shares: Map<string, boolean>,
+  shares: Map<string, boolean | { shared: boolean; setAt: string }>,
 ): { accountId: string; groupId: string; name: string; likely: boolean; groupView: { since: string } | null; shared: boolean }[] {
   const out = [];
   for (const g of groups) {
     const a = accounts.find((x) => x.groupId === g.groupId && x.status === "active");
     if (!a) continue;
-    const grant = openGrant(grantsByAccount.get(a.id) ?? [], urn);
-    out.push({ accountId: a.id, groupId: g.groupId, name: g.name, likely: g.confidence === "likely", groupView: grant ? { since: grant.grantedAt } : null, shared: shares.get(a.id) ?? false });
+    // As head office's side reads them: a grant or share from before this membership began doesn't count.
+    const g0 = openGrant(grantsByAccount.get(a.id) ?? [], urn);
+    const grant = g0 && !predates(g0.grantedAt, g.joined ?? null) ? g0 : null;
+    const sh = shares.get(a.id);
+    const shared = typeof sh === "object" ? sh.shared && !predates(sh.setAt, g.joined ?? null) : (sh ?? false);
+    out.push({ accountId: a.id, groupId: g.groupId, name: g.name, likely: g.confidence === "likely", groupView: grant ? { since: grant.grantedAt } : null, shared });
   }
   return out;
 }
