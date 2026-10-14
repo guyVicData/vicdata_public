@@ -9,7 +9,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { GROUP_SOURCE_LABELS } from "@/catalogue/notes";
+import { GROUP_NOTES, GROUP_SOURCE_LABELS } from "@/catalogue/notes";
+import { InviteLink, inviteLink } from "@/components/groups/InviteLink";
 import { startViewAsGroup } from "@/lib/groups/view-as-group";
 import { SearchBox, Switch } from "./AdminChrome";
 
@@ -39,6 +40,7 @@ export function GroupAccountsSection() {
   const [invite, setInvite] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [link, setLink] = useState<{ email: string; url: string } | null>(null);
 
   const load = useCallback(async () => {
     const { data, error: e } = await supabase.rpc("platform_group_accounts_overview");
@@ -90,8 +92,12 @@ export function GroupAccountsSection() {
     });
   const sendInvite = (a: Account) =>
     act(async () => {
-      const { error: e } = await supabase.rpc("group_invite_member", { p_account: a.id, p_email: invite[a.id] ?? "", p_role: "head_office_admin" });
-      if (!e) setInvite((x) => ({ ...x, [a.id]: "" }));
+      const email = invite[a.id] ?? "";
+      const { data, error: e } = await supabase.rpc("group_invite_member", { p_account: a.id, p_email: email, p_role: "head_office_admin" });
+      if (!e) {
+        setInvite((x) => ({ ...x, [a.id]: "" }));
+        if (typeof data === "string") setLink({ email, url: inviteLink(data) });
+      }
       return { error: e?.message ?? null };
     });
   const setStatus = (a: Account, active: boolean) =>
@@ -117,6 +123,7 @@ export function GroupAccountsSection() {
       </div>
       {missing && <p className="text-[12px] text-[var(--muted2)]">{MIGRATION}</p>}
       {error && <p role="alert" className="text-[12px] text-[var(--muted2)]">{error}</p>}
+      {link && <InviteLink email={link.email} url={link.url} />}
 
       {q.trim().length >= 2 && (
         <div className="overflow-x-auto rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)]" data-group-search="">
@@ -192,7 +199,7 @@ export function GroupAccountsSection() {
           </tbody>
         </table>
       </div>
-      <p className="text-[11.5px] leading-[1.45] text-[var(--muted2)]">An invitation is taken up when that person signs in to VicData with that address; no email is sent. View as opens the head-office home and Access page read-only, and is never counted in the usage log.</p>
+      <p className="text-[11.5px] leading-[1.45] text-[var(--muted2)]">{GROUP_NOTES.inviteHow} View as opens the head-office home and Access page read-only, and is never counted in the usage log.</p>
     </section>
   );
 }

@@ -87,22 +87,33 @@ check("a platform admin creates Harris and Dukes", !!GA && !!GB);
 e = await err(() => as("PA", () => q(`select platform_create_group_account('3320', 'Harris again')`)));
 check("one account per group", !!e && /already has an account/.test(e), e);
 check("creating is audited", (await audits()).filter((a) => a === "group_account_created").length === 2);
-await as("PA", () => q(`select group_invite_member('${GA}', 'HA@Example.org ', 'head_office_admin')`));
-await as("PA", () => q(`select group_invite_member('${GB}', '${email("HB")}', 'head_office_admin')`));
+// An invitation's one-time token comes back to the inviter only; acceptance needs it AND the address.
+const invite = async (by, acc, who, role) => (await as(by, () => q(`select group_invite_member('${acc}', '${who}', '${role}') t`))).rows[0].t;
+const accept = (who, token) => as(who, () => q(`select group_accept_invitation('${token}') a`));
+const tHA = await invite("PA", GA, "HA@Example.org ", "head_office_admin");
+const tHB = await invite("PA", GB, email("HB"), "head_office_admin");
 check("the invitation stores the address lower-cased and trimmed", (await q(`select email from group_invitations where group_account_id='${GA}'`)).rows[0].email === email("HA"));
+check("the token is returned once and stored only as a hash", /^[0-9a-f]{64}$/.test(tHA) && (await q(`select count(*)::int n from group_invitations where token_hash = '${tHA}'`)).rows[0].n === 0);
 check("inviting is audited for a platform admin", (await audits()).includes("group_member_invited"));
 
-console.log("\n-- accepting an invitation (own confirmed address only)");
-check("NB (no invitation) accepts nothing", (await rows("NB", `select group_accept_invitations() n`))[0].n === 0);
-check("HA accepts: Harris head-office admin", (await rows("HA", `select group_accept_invitations() n`))[0].n === 1 && (await q(`select role from group_memberships where profile_id='${P.HA}' and group_account_id='${GA}'`)).rows[0]?.role === "head_office_admin");
+console.log("\n-- accepting an invitation (its link AND the invited address; an explicit act)");
+e = await err(() => accept("NB", tHA));
+check("TAKEOVER: someone else (confirmed email, the link in hand) can't accept HA's invitation", !!e && /isn't valid/.test(e) && (await q(`select count(*)::int n from group_memberships where profile_id='${P.NB}'`)).rows[0].n === 0, e);
+e = await err(() => accept("HA", "0".repeat(64)));
+check("the right address with a wrong token is refused", !!e && /isn't valid/.test(e), e);
+e = await err(() => accept("HA", tHB));
+check("the right person with another group's link is refused", !!e && /isn't valid/.test(e), e);
+check("nothing is taken up without the act: HA isn't a member yet", (await q(`select count(*)::int n from group_memberships where profile_id='${P.HA}'`)).rows[0].n === 0);
+check("HA accepts with the link: Harris head-office admin", (await accept("HA", tHA)).rows[0].a === GA && (await q(`select role from group_memberships where profile_id='${P.HA}' and group_account_id='${GA}'`)).rows[0]?.role === "head_office_admin");
 check("  the platform admin who invited is the approver", (await q(`select approved_by from group_memberships where profile_id='${P.HA}'`)).rows[0].approved_by === P.PA);
-await rows("HB", `select group_accept_invitations()`);
-check("accepting again takes up nothing more", (await rows("HA", `select group_accept_invitations() n`))[0].n === 0);
+await accept("HB", tHB);
+e = await err(() => accept("HA", tHA));
+check("a used link can't be used again", !!e, e);
 
 console.log("\n-- the head-office admin invites and manages members");
-check("HA invites HO (reads) to Harris", (await err(() => as("HA", () => q(`select group_invite_member('${GA}', '${email("HO")}', 'head_office')`))) === null));
-await rows("HO", `select group_accept_invitations()`);
-check("  HO is Harris head office", (await q(`select role from group_memberships where profile_id='${P.HO}' and group_account_id='${GA}'`)).rows[0]?.role === "head_office");
+const tHO = await invite("HA", GA, email("HO"), "head_office");
+await accept("HO", tHO);
+check("HA invites HO (reads) to Harris; HO accepts", (await q(`select role from group_memberships where profile_id='${P.HO}' and group_account_id='${GA}'`)).rows[0]?.role === "head_office");
 e = await err(() => as("HO", () => q(`select group_invite_member('${GA}', '${email("IV")}', 'head_office')`)));
 check("plain head office can't invite", !!e && /head-office admin/.test(e), e);
 e = await err(() => as("HB", () => q(`select group_invite_member('${GA}', '${email("IV")}', 'head_office_admin')`)));
@@ -111,14 +122,19 @@ e = await err(() => as("SA", () => q(`select group_invite_member('${GA}', '${ema
 check("a member school's School-Admin can't make themselves head office", !!e, e);
 e = await err(() => as("HA", () => q(`select group_invite_member('${GA}', '${email("HO")}', 'head_office')`)));
 check("an existing member isn't invited again", !!e && /already/.test(e), e);
-await as("HA", () => q(`select group_invite_member('${GA}', '${email("IU")}', 'head_office')`));
-check("an unconfirmed address can't take up its invitation", (await rows("IU", `select group_accept_invitations() n`))[0].n === 0 && (await q(`select count(*)::int n from group_memberships where profile_id='${P.IU}'`)).rows[0].n === 0);
-await as("HA", () => q(`select group_invite_member('${GA}', '${email("IX")}', 'head_office')`));
+const tIU = await invite("HA", GA, email("IU"), "head_office");
+e = await err(() => accept("IU", tIU));
+check("an unconfirmed address can't accept, even with the link", !!e && (await q(`select count(*)::int n from group_memberships where profile_id='${P.IU}'`)).rows[0].n === 0, e);
+const tIX1 = await invite("HA", GA, email("IX"), "head_office");
+const tIX = await invite("HA", GA, email("IX"), "head_office");
+e = await err(() => accept("IX", tIX1));
+check("inviting again replaces the link: the first stops working", !!e, e);
 const inv = (await q(`select id from group_invitations where email='${email("IX")}'`)).rows[0].id;
 e = await err(() => as("HB", () => q(`select group_cancel_invitation('${inv}')`)));
 check("another group's admin can't cancel Harris's invitation", !!e, e);
 await as("HA", () => q(`select group_cancel_invitation('${inv}')`));
-check("a cancelled invitation can't be taken up", (await rows("IX", `select group_accept_invitations() n`))[0].n === 0);
+e = await err(() => accept("IX", tIX));
+check("a cancelled invitation can't be accepted", !!e, e);
 const HOm = (await q(`select id from group_memberships where profile_id='${P.HO}'`)).rows[0].id;
 const HAm = (await q(`select id from group_memberships where profile_id='${P.HA}'`)).rows[0].id;
 e = await err(() => as("HO", () => q(`select group_set_member_role('${HOm}', 'head_office_admin')`)));
@@ -183,20 +199,24 @@ check("history: a revoke can't be undone", !!e && /only be revoked/.test(e), e);
 e = await err(() => asService(() => q(`update group_view_grants set school_urn = '100009' where revoked_at is null and school_urn='100001'`)));
 check("history: a grant can't be moved to another school", !!e && /only be revoked/.test(e), e);
 
-console.log("\n-- suspended accounts");
+console.log("\n-- suspended accounts: head office is locked out");
 e = await err(() => as("HA", () => q(`select platform_set_group_account_status('${GA}', 'suspended')`)));
 check("head office can't suspend (or unsuspend) its own account", !!e && /platform admin only/.test(e), e);
+const tIV = await invite("PA", GA, email("IV"), "head_office");
 await as("PA", () => q(`select platform_set_group_account_status('${GA}', 'suspended')`));
 check("a platform admin suspends Harris (audited)", (await q(`select status from group_accounts where id='${GA}'`)).rows[0].status === "suspended" && (await audits()).includes("group_account_suspended"));
 e = await err(() => grant("HA", GA, "100003", true));
 check("no grant on a suspended account", !!e && /suspended/.test(e), e);
-e = await err(() => as("HA", () => q(`select group_invite_member('${GA}', '${email("IV")}', 'head_office')`)));
-check("no invitation on a suspended account", !!e && /suspended/.test(e), e);
+e = await err(() => as("HA", () => q(`select group_invite_member('${GA}', '${email("IT")}', 'head_office')`)));
+check("no invitation on a suspended account", !!e, e);
+check("suspended: head office reads no account, grant or other member", (await rows("HA", `select * from group_accounts`)).length === 0 && (await rows("HA", `select * from group_view_grants`)).length === 0 && (await rows("HA", `select * from group_memberships`)).length === 1 && (await rows("HA", `select * from group_invitations`)).length === 0);
+e = await err(() => as("HA", () => q(`select group_set_member_role('${HOm}', 'head_office_admin')`)));
+check("suspended: the admin can't change members", !!e, e);
+e = await err(() => accept("IV", tIV));
+check("suspended: an invitation can't be accepted", !!e, e);
+check("the platform admin still reads it", (await rows("PA", `select * from group_view_grants where group_account_id='${GA}'`)).length === 3);
 await as("PA", () => q(`select platform_set_group_account_status('${GA}', 'active')`));
-await as("PA", () => q(`select group_invite_member('${GB}', '${email("IV")}', 'head_office')`));
-await as("PA", () => q(`select platform_set_group_account_status('${GB}', 'suspended')`));
-check("an invitation to a suspended account isn't taken up", (await rows("IV", `select group_accept_invitations() n`))[0].n === 0);
-await as("PA", () => q(`select platform_set_group_account_status('${GB}', 'active')`));
+check("reactivated: head office reads again", (await rows("HA", `select * from group_accounts`)).length === 1);
 
 console.log("\n-- the Admissions share: the school's School-Admin decides; default off");
 check("no row means not shared", (await q(`select count(*)::int n from group_admissions_shares`)).rows[0].n === 0);
@@ -221,7 +241,7 @@ const ov = (await rows("PA", `select * from platform_group_accounts_overview()`)
 check("the platform admin sees Harris: 1 admin, 2 members, 2 open grants", ov?.admins === 1 && ov?.members === 2 && ov?.open_grants === 2, JSON.stringify(ov));
 
 console.log("\n-- the helpers and functions aren't anon's");
-for (const f of ["is_group_member(null)", "is_group_admin(null)", "group_accept_invitations()", "platform_group_accounts_overview()", `school_set_group_admissions_share('100001', null, true)`])
+for (const f of ["is_group_member(null)", "is_group_admin(null)", "group_accept_invitation('x')", "platform_group_accounts_overview()", `school_set_group_admissions_share('100001', null, true)`])
   check(`anon can't call ${f.replace(/\(.*/, "")}`, denied(await err(() => asAnon(() => q(`select ${f}`)))));
 
 console.log(fails ? `\n${passes} passed, ${fails} FAILED` : `\nALL PASS (${passes})`);

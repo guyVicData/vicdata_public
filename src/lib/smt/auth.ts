@@ -47,7 +47,7 @@ export async function smtCaller(request: NextRequest, urn: string | null): Promi
   const viewed = asGroup ? await groupCaller(request).catch(() => null) : null;
   const offices = viewed && !(viewed instanceof NextResponse) ? viewed.offices : undefined;
   const office = await headOfficeAccess(supabase, userId, urn, offices).catch(() => null);
-  if (!office?.ok && platform) return { supabase, userId, urn, roles, admissions: { supabase }, headOffice: null };
+  // In head-office View as the platform admin sees exactly what head office sees: no fallback.
   if (office?.ok) {
     const admissions: SmtAdmissionsReader = office.shared ? { supabase: createServiceRoleSupabaseClient() } : { supabase: null, privateNote: groupNote("admissionsPrivate", { school: office.schoolName }) };
     return { supabase, userId, urn, roles: [], admissions, headOffice: { groupName: office.office.name } };

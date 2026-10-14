@@ -60,10 +60,11 @@ export async function POST(request: NextRequest) {
     const sb = createServiceRoleSupabaseClient();
     const results: Record<string, string> = {};
     for (const urn of targets) {
+      // Granting: current members only. Revoking: any school, so a school that left can be tidied away.
       const ok = grantable(members, urn);
-      if (!ok.ok) return NextResponse.json({ error: "That school isn't a current member of the group." }, { status: 409 });
+      if (!ok.ok && body.on) return NextResponse.json({ error: "That school isn't a current member of the group." }, { status: 409 });
       if (body.on && !accounts.has(urn)) return NextResponse.json({ error: "That school doesn't have its own VicData membership yet." }, { status: 409 });
-      const { data, error } = await sb.rpc("group_set_view_grant", { p_actor: caller.userId, p_account: office.id, p_urn: urn, p_on: body.on, p_likely: ok.likely });
+      const { data, error } = await sb.rpc("group_set_view_grant", { p_actor: caller.userId, p_account: office.id, p_urn: urn, p_on: body.on, p_likely: ok.ok && ok.likely });
       if (error) throw error;
       results[urn] = data as string;
     }

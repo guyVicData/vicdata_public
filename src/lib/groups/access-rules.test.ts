@@ -5,7 +5,7 @@
 // Run: npx -y tsx --test src/lib/groups/access-rules.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { accessTable, canManageAccess, grantable, headOfficeSchoolAccess, liveGrant, opensLabel, rollSummary, schoolSide, seeingCount, type Grant, type HeadOffice } from "./access-rules";
+import { accessTable, canManageAccess, grantable, headOfficeSchoolAccess, liveGrant, opensLabel, predates, rollSummary, schoolSide, seeingCount, type Grant, type HeadOffice } from "./access-rules";
 import type { GroupMember } from "./production";
 
 const m = (groupId: string, urn: string, name: string, confidence: "confirmed" | "likely" = "confirmed"): GroupMember => ({ groupId, urn, name, status: "open", source: confidence === "likely" ? "companies_house" : "gias_groups", confidence, joined: null, lastSeen: "2026-10-13" });
@@ -41,6 +41,17 @@ test("a grant counts only while open, on an active account, for a current member
   assert.equal(liveGrant(harrisAdmin, grants, "200000", HARRIS), null, "left the group: open, but no longer counts");
   assert.equal(liveGrant({ status: "suspended" }, grants, "140985", HARRIS), null, "suspended account");
   assert.deepEqual(seeingCount(harrisAdmin, HARRIS, grants), { seeing: 1, of: 3 });
+});
+
+test("a school that left and rejoined starts again: an older grant doesn't count (nor show as on)", () => {
+  const rejoined = [{ ...HARRIS[0], joined: "2026-09-15" }, ...HARRIS.slice(1)];
+  const grants = [g("140985", "2026-05-01")];
+  assert.equal(liveGrant(harrisAdmin, grants, "140985", rejoined), null);
+  assert.ok(liveGrant(harrisAdmin, [g("140985", "2026-09-20")], "140985", rejoined));
+  const t = accessTable(rejoined, grants, new Map([["140985", { smtMembers: 2 }]]), new Map(), new Map());
+  assert.equal(t.current.find((r) => r.urn === "140985")!.on, false);
+  assert.equal(predates("2026-05-01T09:00:00Z", "2026-09-15"), true);
+  assert.equal(predates("2026-05-01T09:00:00Z", null), false, "no join date: can't tell, so it counts");
 });
 
 test("grants are made only for current members; a likely member is labelled", () => {

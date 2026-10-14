@@ -202,6 +202,7 @@ export const GROUP_NOTES = {
   usage: "Usage counts come from the usage log (counts only; names are never shown across schools).",
   notMember: "not a member",
   invite: "invite to VicData",
+  inviteHow: "VicData sends no email: send the person the invitation link. It works once, only for that address, and only when they choose to accept it.",
   likely: "likely member",
   likelyWhy: "Companies House links this school to the group; no second source has confirmed it yet.",
   left: "Left the group",

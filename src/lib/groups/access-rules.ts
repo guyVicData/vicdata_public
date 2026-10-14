@@ -13,12 +13,19 @@ export type Grant = { schoolUrn: string; grantedAt: string; revokedAt: string | 
 /** The open grant for a school, whatever its membership (for the history). */
 export const openGrant = (grants: Grant[], urn: string): Grant | null => grants.find((g) => g.schoolUrn === urn && g.revokedAt === null) ?? null;
 
+/** Was this decision (a grant, a share) made before the school's current membership began? Then it
+ * belonged to an earlier membership: a school that left and rejoined starts again. */
+export const predates = (at: string, joined: string | null): boolean => !!joined && at.slice(0, 10) < joined;
+
 /** The grant that counts now: open, on an active account, for a school that is still a current member
- * of the group. A school that left loses the group view without anyone revoking it. */
+ * of the group, made during this membership. A school that left loses the group view without anyone
+ * revoking it, and doesn't get it back by rejoining. */
 export function liveGrant(account: Pick<GroupAccount, "status">, grants: Grant[], urn: string, members: GroupMember[]): Grant | null {
   if (account.status !== "active") return null;
-  if (!members.some((m) => m.urn === urn)) return null;
-  return openGrant(grants, urn);
+  const m = members.find((x) => x.urn === urn);
+  if (!m) return null;
+  const g = openGrant(grants, urn);
+  return g && !predates(g.grantedAt, m.joined) ? g : null;
 }
 
 /** Can a grant be made for this school now? Current members only; a likely member is labelled. */
@@ -82,7 +89,8 @@ export function accessTable(
 ): { current: AccessRow[]; likely: AccessRow[]; left: LeftRow[] } {
   const row = (m: GroupMember): AccessRow => {
     const acc = schools.get(m.urn);
-    const g = acc ? openGrant(grants, m.urn) : null;
+    const g0 = acc ? openGrant(grants, m.urn) : null;
+    const g = g0 && !predates(g0.grantedAt, m.joined) ? g0 : null;
     return { urn: m.urn, name: m.name, likely: m.confidence === "likely", member: !!acc, smtMembers: acc ? acc.smtMembers : null, on: !!g, since: g?.grantedAt ?? null, opened: acc ? opensLabel(usage.get(m.urn)) : "—" };
   };
   const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);

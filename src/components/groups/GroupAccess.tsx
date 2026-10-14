@@ -19,6 +19,7 @@ import type { AccessRow, HeadOffice, LeftRow } from "@/lib/groups/access-rules";
 import { groupVars } from "./ui";
 import { GroupViewAsBanner } from "./GroupViewAsBanner";
 import { useGroupOffices } from "./useGroupOffices";
+import { InviteLink, inviteLink } from "./InviteLink";
 
 type AccessData = {
   office: HeadOffice;
@@ -232,6 +233,11 @@ export function GroupAccess() {
                           group view from {date(r.grantedAt)}
                           {r.revokedAt ? `, removed ${date(r.revokedAt)}` : ", ended when the school left"}
                         </span>
+                        {!r.revokedAt && can && (
+                          <button type="button" disabled={busy !== null} className="ml-auto text-[12px] font-bold text-[var(--group-accent-text)] disabled:opacity-50" onClick={() => change({ urn: r.urn, on: false }, r.urn)}>
+                            Remove
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -283,10 +289,12 @@ function HeadOfficeMembers({ d, can, reload }: { d: AccessData; can: boolean; re
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"head_office" | "head_office_admin">("head_office");
   const [error, setError] = useState<string | null>(null);
+  const [link, setLink] = useState<{ email: string; url: string } | null>(null);
   const run = async (fn: string, args: Record<string, unknown>) => {
     setError(null);
-    const { error: e } = await createBrowserSupabaseClient().rpc(fn, args);
+    const { data, error: e } = await createBrowserSupabaseClient().rpc(fn, args);
     if (e) setError(e.message);
+    else if (fn === "group_invite_member" && typeof data === "string") setLink({ email: String(args.p_email), url: inviteLink(data) });
     await reload();
   };
   const roleWord = (r: string) => (r === "head_office_admin" ? "Head-office admin" : "Head office");
@@ -341,9 +349,10 @@ function HeadOfficeMembers({ d, can, reload }: { d: AccessData; can: boolean; re
           <button type="submit" className={BTN}>
             Invite
           </button>
-          <span className="basis-full text-[11.5px] text-[var(--muted2)]">The invitation is taken up when that person signs in to VicData with this address. No email is sent.</span>
+          <span className="basis-full text-[11.5px] text-[var(--muted2)]">{GROUP_NOTES.inviteHow}</span>
         </form>
       )}
+      {link && <InviteLink email={link.email} url={link.url} />}
       {error && <p role="alert" className="text-[12px] text-[var(--muted2)]">{error}</p>}
     </section>
   );

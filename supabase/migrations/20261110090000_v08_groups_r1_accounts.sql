@@ -31,6 +31,8 @@ create table public.group_accounts (
     group_id text not null unique check (group_id ~ '^[A-Za-z0-9_:.-]{1,80}$'),
     display_name text not null check (length(btrim(display_name)) between 1 and 160),
     status text not null default 'active' check (status in ('active', 'suspended')),
+    -- A test account made by the preview route (G6). The seeder touches only these, never a customer's.
+    preview boolean not null default false,
     created_by uuid references public.profiles (id) on delete set null,
     created_at timestamptz not null default now(),
     status_changed_at timestamptz,
@@ -39,7 +41,10 @@ create table public.group_accounts (
 
 -- 2. Head-office members -----------------------------------------------------------------------
 -- A membership exists only once approved: it is made when an invited person accepts, and the
--- invitation (from a platform admin or the account's head-office admin) is the approval.
+-- invitation (from a platform admin or the account's head-office admin) is the approval. Accepting
+-- needs BOTH the invitation's one-time link (its token, stored only as a hash) AND the invited address
+-- on the accepting account, and is an explicit act: an address alone proves nothing where sign-up
+-- confirms email automatically (review finding 1).
 
 create table public.group_memberships (
     id uuid primary key default gen_random_uuid(),
@@ -57,6 +62,7 @@ create table public.group_invitations (
     group_account_id uuid not null references public.group_accounts (id) on delete cascade,
     email text not null check (email = lower(btrim(email)) and email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' and length(email) <= 254),
     role text not null check (role in ('head_office_admin', 'head_office')),
+    token_hash text not null check (token_hash ~ '^[0-9a-f]{64}$'),
     invited_by uuid references public.profiles (id) on delete set null,
     invited_at timestamptz not null default now(),
     accepted_at timestamptz,
@@ -122,6 +128,8 @@ create table public.group_admissions_shares (
 );
 
 -- 5. Who is the caller? ------------------------------------------------------------------------
+-- Head office of an ACTIVE account only: a suspended account's head office reads and changes nothing
+-- (platform admins still can).
 
 create or replace function public.is_group_member(p_account uuid)
 returns boolean
@@ -130,7 +138,8 @@ stable
 security definer
 set search_path = public
 as $$
-    select exists (select 1 from public.group_memberships where group_account_id = p_account and profile_id = auth.uid());
+    select exists (select 1 from public.group_memberships m join public.group_accounts a on a.id = m.group_account_id
+                   where m.group_account_id = p_account and m.profile_id = auth.uid() and a.status = 'active');
 $$;
 
 create or replace function public.is_group_admin(p_account uuid)
@@ -140,8 +149,8 @@ stable
 security definer
 set search_path = public
 as $$
-    select exists (select 1 from public.group_memberships
-                   where group_account_id = p_account and profile_id = auth.uid() and role = 'head_office_admin');
+    select exists (select 1 from public.group_memberships m join public.group_accounts a on a.id = m.group_account_id
+                   where m.group_account_id = p_account and m.profile_id = auth.uid() and m.role = 'head_office_admin' and a.status = 'active');
 $$;
 
 -- 6. RLS: reads only; every write is a function below ------------------------------------------
@@ -217,8 +226,10 @@ end;
 $$;
 
 -- One function for platform admins and head-office admins: who may invite is checked inside.
+-- Returns the invitation's one-time token, once: the inviter sends the link (no email is sent by VicData).
+-- Inviting the same address again replaces the token, so an earlier link stops working.
 create or replace function public.group_invite_member(p_account uuid, p_email text, p_role text)
-returns uuid
+returns text
 language plpgsql
 security definer
 set search_path = public
@@ -226,7 +237,8 @@ as $$
 declare
     v_email text := lower(btrim(coalesce(p_email, '')));
     v_platform boolean := public.is_platform_admin();
-    v_id uuid;
+    v_token text := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+    v_hash text := encode(sha256(convert_to(v_token, 'UTF8')), 'hex');
 begin
     if auth.uid() is null then
         raise exception 'not authenticated';
@@ -244,15 +256,14 @@ begin
                where gm.group_account_id = p_account and lower(u.email) = v_email) then
         raise exception 'already a head-office member';
     end if;
-    insert into public.group_invitations (group_account_id, email, role, invited_by)
-    values (p_account, v_email, p_role, auth.uid())
+    insert into public.group_invitations (group_account_id, email, role, token_hash, invited_by)
+    values (p_account, v_email, p_role, v_hash, auth.uid())
     on conflict (group_account_id, email) where accepted_at is null and cancelled_at is null
-    do update set role = excluded.role, invited_by = excluded.invited_by, invited_at = now()
-    returning id into v_id;
+    do update set role = excluded.role, token_hash = excluded.token_hash, invited_by = excluded.invited_by, invited_at = now();
     if v_platform then
         perform public.log_platform_action('group_member_invited', null, jsonb_build_object('group_account_id', p_account, 'role', p_role));
     end if;
-    return v_id;
+    return v_token;
 end;
 $$;
 
@@ -274,35 +285,36 @@ begin
 end;
 $$;
 
--- The signed-in person takes up every open invitation to their own, confirmed email address (from
--- auth.users, never from anything the caller sends). Returns how many it took up.
-create or replace function public.group_accept_invitations()
-returns integer
+-- The signed-in person accepts ONE invitation: its link's token, and their own account's address (from
+-- auth.users, never from anything the caller sends) must both match. One message for every refusal (no
+-- oracle). Returns the group account joined.
+create or replace function public.group_accept_invitation(p_token text)
+returns uuid
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
     v_email text;
-    v_n integer := 0;
-    r record;
+    v public.group_invitations%rowtype;
+    v_denied constant text := 'this invitation link isn''t valid for your account';
 begin
-    select lower(email) into v_email from auth.users where id = auth.uid() and email_confirmed_at is not null;
-    if v_email is null then
-        return 0;
+    if auth.uid() is null or p_token is null or length(p_token) <> 64 then
+        raise exception '%', v_denied;
     end if;
-    for r in
-        select i.* from public.group_invitations i join public.group_accounts a on a.id = i.group_account_id
-        where i.email = v_email and i.accepted_at is null and i.cancelled_at is null and a.status = 'active'
-        for update of i
-    loop
-        insert into public.group_memberships (group_account_id, profile_id, role, approved_by)
-        values (r.group_account_id, auth.uid(), r.role, r.invited_by)
-        on conflict (group_account_id, profile_id) do nothing;
-        update public.group_invitations set accepted_at = now(), accepted_profile_id = auth.uid() where id = r.id;
-        v_n := v_n + 1;
-    end loop;
-    return v_n;
+    select lower(email) into v_email from auth.users where id = auth.uid() and email_confirmed_at is not null;
+    select i.* into v from public.group_invitations i join public.group_accounts a on a.id = i.group_account_id
+    where i.token_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex')
+      and i.accepted_at is null and i.cancelled_at is null and a.status = 'active'
+    for update of i;
+    if not found or v_email is null or v.email <> v_email then
+        raise exception '%', v_denied;
+    end if;
+    insert into public.group_memberships (group_account_id, profile_id, role, approved_by)
+    values (v.group_account_id, auth.uid(), v.role, v.invited_by)
+    on conflict (group_account_id, profile_id) do nothing;
+    update public.group_invitations set accepted_at = now(), accepted_profile_id = auth.uid() where id = v.id;
+    return v.group_account_id;
 end;
 $$;
 
@@ -452,7 +464,7 @@ $$;
 
 revoke all on function public.is_group_member(uuid), public.is_group_admin(uuid),
     public.platform_create_group_account(text, text), public.platform_set_group_account_status(uuid, text),
-    public.group_invite_member(uuid, text, text), public.group_cancel_invitation(uuid), public.group_accept_invitations(),
+    public.group_invite_member(uuid, text, text), public.group_cancel_invitation(uuid), public.group_accept_invitation(text),
     public.group_set_member_role(uuid, text), public.group_remove_member(uuid),
     public.group_set_view_grant(uuid, uuid, text, boolean, boolean),
     public.school_set_group_admissions_share(text, uuid, boolean), public.platform_group_accounts_overview(),
@@ -460,7 +472,7 @@ revoke all on function public.is_group_member(uuid), public.is_group_admin(uuid)
     from public, anon, authenticated;
 grant execute on function public.is_group_member(uuid), public.is_group_admin(uuid),
     public.platform_create_group_account(text, text), public.platform_set_group_account_status(uuid, text),
-    public.group_invite_member(uuid, text, text), public.group_cancel_invitation(uuid), public.group_accept_invitations(),
+    public.group_invite_member(uuid, text, text), public.group_cancel_invitation(uuid), public.group_accept_invitation(text),
     public.group_set_member_role(uuid, text), public.group_remove_member(uuid),
     public.school_set_group_admissions_share(text, uuid, boolean), public.platform_group_accounts_overview()
     to authenticated;

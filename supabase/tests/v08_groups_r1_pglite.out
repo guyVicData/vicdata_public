@@ -9,24 +9,28 @@ PASS a platform admin creates Harris and Dukes
 PASS one account per group this group already has an account
 PASS creating is audited 
 PASS the invitation stores the address lower-cased and trimmed 
+PASS the token is returned once and stored only as a hash 
 PASS inviting is audited for a platform admin 
 
--- accepting an invitation (own confirmed address only)
-PASS NB (no invitation) accepts nothing 
-PASS HA accepts: Harris head-office admin 
+-- accepting an invitation (its link AND the invited address; an explicit act)
+PASS TAKEOVER: someone else (confirmed email, the link in hand) can't accept HA's invitation this invitation link isn't valid for your account
+PASS the right address with a wrong token is refused this invitation link isn't valid for your account
+PASS the right person with another group's link is refused this invitation link isn't valid for your account
+PASS nothing is taken up without the act: HA isn't a member yet 
+PASS HA accepts with the link: Harris head-office admin 
 PASS   the platform admin who invited is the approver 
-PASS accepting again takes up nothing more 
+PASS a used link can't be used again this invitation link isn't valid for your account
 
 -- the head-office admin invites and manages members
-PASS HA invites HO (reads) to Harris 
-PASS   HO is Harris head office 
+PASS HA invites HO (reads) to Harris; HO accepts 
 PASS plain head office can't invite only the group's head-office admin can invite head-office members
 PASS another group's admin can't invite to Harris only the group's head-office admin can invite head-office members
 PASS a member school's School-Admin can't make themselves head office only the group's head-office admin can invite head-office members
 PASS an existing member isn't invited again already a head-office member
-PASS an unconfirmed address can't take up its invitation 
+PASS an unconfirmed address can't accept, even with the link this invitation link isn't valid for your account
+PASS inviting again replaces the link: the first stops working this invitation link isn't valid for your account
 PASS another group's admin can't cancel Harris's invitation no such open invitation
-PASS a cancelled invitation can't be taken up 
+PASS a cancelled invitation can't be accepted this invitation link isn't valid for your account
 PASS plain head office can't promote itself only the group's head-office admin can change head-office members
 PASS another group's admin can't remove a Harris member only the group's head-office admin can remove head-office members
 PASS an admin can't change their own role (no lockout) your own role is another admin's to change
@@ -81,12 +85,16 @@ PASS history: even the service role can't delete a grant group view grants are h
 PASS history: a revoke can't be undone a group view grant can only be revoked
 PASS history: a grant can't be moved to another school a group view grant can only be revoked
 
--- suspended accounts
+-- suspended accounts: head office is locked out
 PASS head office can't suspend (or unsuspend) its own account platform admin only
 PASS a platform admin suspends Harris (audited) 
 PASS no grant on a suspended account this group account is suspended
-PASS no invitation on a suspended account this group account is suspended
-PASS an invitation to a suspended account isn't taken up 
+PASS no invitation on a suspended account only the group's head-office admin can invite head-office members
+PASS suspended: head office reads no account, grant or other member 
+PASS suspended: the admin can't change members only the group's head-office admin can change head-office members
+PASS suspended: an invitation can't be accepted this invitation link isn't valid for your account
+PASS the platform admin still reads it 
+PASS reactivated: head office reads again 
 
 -- the Admissions share: the school's School-Admin decides; default off
 PASS no row means not shared 
@@ -102,13 +110,13 @@ PASS   and turns it off again
 
 -- the Platform page's overview
 PASS head office can't read the platform overview platform admin only
-PASS the platform admin sees Harris: 1 admin, 2 members, 2 open grants {"id":"696ede18-0c15-4ed8-84c6-56440937469a","group_id":"3320","display_name":"Harris Federation","status":"active","created_at":"2026-10-14T07:33:16.331Z","admins":1,"members":2,"open_invitations":1,"open_grants":2}
+PASS the platform admin sees Harris: 1 admin, 2 members, 2 open grants {"id":"2d880c11-5aa3-4518-b6d0-70429f9c15a3","group_id":"3320","display_name":"Harris Federation","status":"active","created_at":"2026-10-14T07:57:27.040Z","admins":1,"members":2,"open_invitations":2,"open_grants":2}
 
 -- the helpers and functions aren't anon's
 PASS anon can't call is_group_member 
 PASS anon can't call is_group_admin 
-PASS anon can't call group_accept_invitations 
+PASS anon can't call group_accept_invitation 
 PASS anon can't call platform_group_accounts_overview 
 PASS anon can't call school_set_group_admissions_share 
 
-ALL PASS (89)
+ALL PASS (97)

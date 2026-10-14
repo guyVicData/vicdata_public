@@ -10,7 +10,7 @@ import { isPlatformAdmin } from "../view-as";
 import { canSeeSmt } from "../smt/auth-rules";
 import { parseViewAsGroupCookie } from "./view-as-group";
 import { groupMembers, type GroupMember } from "./production";
-import { headOfficeSchoolAccess, type Grant, type GroupAccount, type HeadOffice, type SchoolAccessRefusal } from "./access-rules";
+import { headOfficeSchoolAccess, predates, type Grant, type GroupAccount, type HeadOffice, type SchoolAccessRefusal } from "./access-rules";
 
 export type GroupCaller = { userId: string; supabase: SupabaseClient; offices: HeadOffice[]; viewAs: boolean };
 
@@ -63,8 +63,10 @@ export async function groupCaller(request: NextRequest): Promise<GroupCaller | N
 
 /** The caller's office for this account, or null -- another group's account reads as "not found". */
 export function officeFor(caller: GroupCaller, accountId: string | null): HeadOffice | null {
-  if (!accountId) return caller.offices[0] ?? null;
-  return caller.offices.find((o) => o.id === accountId) ?? null;
+  const o = accountId ? caller.offices.find((x) => x.id === accountId) : caller.offices[0];
+  // A suspended account's head office reads nothing (RLS hides it too); a platform admin in View as can.
+  if (!o || (o.status !== "active" && !caller.viewAs)) return null;
+  return o;
 }
 
 /** An account's grants, history included (service role: the caller's office is already checked). */
@@ -127,6 +129,9 @@ export async function headOfficeAccess(supabase: SupabaseClient, userId: string,
   const r = headOfficeSchoolAccess(offices, byGroup, urn, accounts.has(urn));
   if (!r.ok) return r;
   const schoolName = byGroup.get(r.office.groupId)?.find((m) => m.urn === urn)?.name ?? urn;
-  const { data } = await createServiceRoleSupabaseClient().from("group_admissions_shares").select("shared").eq("school_account_id", accounts.get(urn)!.accountId).eq("group_account_id", r.office.id).maybeSingle<{ shared: boolean }>();
-  return { ...r, schoolName, shared: data?.shared === true };
+  const { data } = await createServiceRoleSupabaseClient().from("group_admissions_shares").select("shared, set_at").eq("school_account_id", accounts.get(urn)!.accountId).eq("group_account_id", r.office.id).maybeSingle<{ shared: boolean; set_at: string }>();
+  // A share set before the school's current membership began (it left and rejoined) is a decision about
+  // a different membership: not shared until the School-Admin decides again.
+  const joined = byGroup.get(r.office.groupId)?.find((m) => m.urn === urn)?.joined ?? null;
+  return { ...r, schoolName, shared: data?.shared === true && !predates(data.set_at, joined) };
 }
