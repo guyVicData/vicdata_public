@@ -282,7 +282,9 @@ function Dashboard({ member, theme, onTheme, onDash, reloadTick }: { member: Adm
     return () => window.clearTimeout(t);
   }, [dash, entry, filters]); // eslint-disable-line react-hooks/exhaustive-deps
   // 0.8 B7: the usage log's page view, and the scope CardBox's full screen reads. Draws nothing.
-  const usageScope: UsageScope | null = member.viewAs ? null : { product: "admissions", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: entry, setKind: null };
+  // Groups r1 G0: logged once the entry point is known (the lists and the school's ages read), so
+  // a load is one page view, not a null-level one and then "11+".
+  const usageScope: UsageScope | null = member.viewAs ? null : { product: "admissions", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: entry, setKind: null, resolved: lists.status !== "loading" && ages !== null };
   useUsagePageView(usageScope);
 
   if (url.setup && member.access !== "viewAs")

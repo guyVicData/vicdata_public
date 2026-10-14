@@ -161,6 +161,9 @@ export const SMT_NOTES = {
   differentScale: "different grading scale, not ranked",
   // ---- 0.8 SMT round 2: Pupils
   entryPointsNone: "Admissions hasn't set this school's entry points yet, so there is nothing to show here. The Admissions lead sets them in Admissions.",
+  // 0.8 groups r1 (G0): not "staying on" -- a sixth form that recruits shows more than 100%.
+  y12Label: "Year 12 against Year 11",
+  y12AgainstY11: "Year 12 this year against Year 11 last year: below 100% when pupils leave at 16, above 100% when more join than leave.",
   shapesAround: "Shapes are described, never ranked: a smaller sixth form isn't worse.",
   rollByPhase: "Each phase's roll, and England's pupils aged 5 to 15 in every mainstream school (the census aggregates), indexed to 100 in {base}.",
   pool: "The pool for the main entry point, from Admissions: counted in the schools it draws from, then from births. A pool, not an intake.",

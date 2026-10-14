@@ -230,7 +230,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${member.schoolUrn}&area=${area}` : null, null);
 
   // B7: a page view, once per school, dashboard, level and set kind.
-  const usage: UsageScope | null = useMemo(() => (s ? { product: "smt", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: level.area ? `${level.phase}/${level.area}` : level.phase, setKind: set?.kind ?? null } : null), [s, member.schoolUrn, dash, level.phase, level.area, set?.kind]);
+  const usage: UsageScope | null = useMemo(() => (s ? { product: "smt", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: level.area ? `${level.phase}/${level.area}` : level.phase, setKind: set?.kind ?? null, resolved: !!set } : null), [s, member.schoolUrn, dash, level.phase, level.area, set]);
   useUsagePageView(member.viewAs ? null : usage);
 
   const router = useRouter();
