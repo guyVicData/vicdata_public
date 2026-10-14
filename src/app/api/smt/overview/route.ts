@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const school = await smtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
-    return NextResponse.json(await buildOverview(school, set, filters, { supabase: caller.supabase }));
+    return NextResponse.json(await buildOverview(school, set, filters, caller.admissions));
   } catch (err) {
     console.error("[smt/overview] failed:", err);
     return NextResponse.json({ error: "Could not build the overview." }, { status: 502 });

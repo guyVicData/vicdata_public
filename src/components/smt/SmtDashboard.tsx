@@ -20,6 +20,7 @@ import { MenuChip } from "@/components/shell/FilterPills";
 import { RailPanel, Tabs, type RailItem } from "@/components/shell/RailPanel";
 import { PhoneStack, ShellPage, ShellRow } from "@/components/shell/Rows";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
+import { HeadOfficeBanner } from "@/components/groups/HeadOfficeBanner";
 import { openViewAs } from "@/components/view-as/ViewAs";
 import { AdmissionsTeacherNav, Divider } from "@/components/admissions/controls";
 import { Empty, EntryChip, FChip, Skeleton } from "@/components/admissions/ui";
@@ -108,6 +109,8 @@ export function SmtDashboard({ dash }: { dash: SmtDash }) {
             <div className="rounded-[12px] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-[13px] text-[var(--muted2)]">
               {state.status === "loading" ? (
                 "Loading SMT…"
+              ) : state.status === "not-found" ? (
+                "Not found."
               ) : state.status === "signed-out" ? (
                 <>
                   <Link href={`/login?next=${PATH[dash]}`} className="font-bold text-[var(--adm-accent-text)]">
@@ -231,7 +234,9 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
 
   // B7: a page view, once per school, dashboard, level and set kind.
   const usage: UsageScope | null = useMemo(() => (s ? { product: "smt", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: level.area ? `${level.phase}/${level.area}` : level.phase, setKind: set?.kind ?? null, resolved: !!set } : null), [s, member.schoolUrn, dash, level.phase, level.area, set]);
-  useUsagePageView(member.viewAs ? null : usage);
+  // Never logged: a platform admin in View as, or head office reading a member school (groups r1).
+  const quiet = !!member.viewAs || member.access === "headOffice";
+  useUsagePageView(quiet ? null : usage);
 
   const router = useRouter();
   const go = (d: SmtDash) => {
@@ -355,12 +360,13 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const switcher = <GroupSwitcher dashboards={DASHES.map((d) => configs[d])} activeId={config.id} onSwitch={(d) => go(DASHES.find((x) => configs[x].id === d.id) ?? "overview")} />;
 
   return (
-    <UsageScopeContext.Provider value={member.viewAs ? null : usage}>
+    <UsageScopeContext.Provider value={quiet ? null : usage}>
       <ShellPage phone={phone} rootRef={rootRef}>
         <ViewAsBanner />
         <div className={phone ? "px-4 pt-4" : undefined}>
           <AdmissionsTeacherNav schoolUrn={member.schoolUrn} theme={theme} onTheme={onTheme} />
         </div>
+        {member.headOffice && <HeadOfficeBanner note={member.headOffice.note} className={phone ? "mx-4" : undefined} />}
         {phone ? (
           <PhoneStack>
             <div className="self-start">{switcher}</div>
@@ -508,7 +514,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
         span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1}
         title={title}
         focusBar={c.focusBar}
-        onCopy={c.member.viewAs || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)}
+        onCopy={c.member.viewAs || c.member.access === "headOffice" || !instance || instance.kind !== "view" ? undefined : () => setCopying(true)}
         flag={flagOf(dv, c)}
       >
         {({ fullscreen, height: room }) => <ViewBody dv={dv} c={c} fullscreen={fullscreen} room={room} />}

@@ -187,3 +187,58 @@ export const SMT_NOTES = {
 export function smtNote(key: keyof typeof SMT_NOTES, vars: Record<string, string | number> = {}): string {
   return SMT_NOTES[key].replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
 }
+
+// VicData 0.8 groups round 1: head office, access and the group view's honesty wording (spec §3.4).
+// Text here can change without code (the membership model is still to be confirmed by Guy).
+export const GROUP_NOTES = {
+  headOffice: "{group} · head office",
+  // The Access page.
+  accessTitle: "Access to the group view",
+  accessLead: "head office decides which schools’ SMT see the group dashboards",
+  comparisonSet: "Every member school already sees {set} as a comparison set in its own dashboards. This page adds the {dashboards} (Overview, Schools, Academic, Pupils) for a school’s SMT.",
+  allSchools: "All {group} schools",
+  groupDashboards: "group dashboards",
+  membership: "A school needs its own VicData membership for its staff to sign in; the group membership covers head office and the group view.",
+  usage: "Usage counts come from the usage log (counts only; names are never shown across schools).",
+  notMember: "not a member",
+  invite: "invite to VicData",
+  likely: "likely member",
+  likelyWhy: "Companies House links this school to the group; no second source has confirmed it yet.",
+  left: "Left the group",
+  leftWhy: "No longer a member in {source}: the group view ended when the school left. History only.",
+  giveAllConfirm: "Give the group view to every member school with its own VicData membership ({n} schools)? Likely members are left for you to switch on one by one.",
+  removeAllConfirm: "Remove the group view from every school ({n} now see it)?",
+  // The home.
+  theGroup: "How are our schools doing, and against whom?",
+  ourSchools: "Open any member school’s SMT dashboards",
+  accessCard: "Which schools’ SMT see the group view: {n} of {m}",
+  accessCount: "{n} of {m} schools see the group view",
+  coming: "Coming in the next group rounds",
+  summary: "Combined roll from the school census, {now} against {before}, over the {n} schools with both years; growing = the roll rose.",
+  // Head office on a member school's SMT.
+  headOfficeReadOnly: "{group} head office: read-only",
+  admissionsPrivate: "Private to {school}. Its School-Admin can share its Admissions panels with head office.",
+  // A school's own side.
+  schoolGroupView: "{group}: your SMT sees the group dashboards (from {since}).",
+  schoolNoGroupView: "{group}: head office hasn’t given your SMT the group dashboards.",
+  shareAdmissions: "Share our Admissions panels with {group} head office",
+  shareWhy: "Off: head office sees your SMT dashboards, but not your Admissions entry points or rivals.",
+  // The honesty lines (spec §3.4), for the dashboards to come.
+  membershipAsOf: "Membership as of {date}, from {source}.",
+  combined: "Combined figures add up the schools listed. A school that joined recently counts for every year shown.",
+} as const;
+
+/** A group note with its {placeholders} filled. */
+export function groupNote(key: keyof typeof GROUP_NOTES, vars: Record<string, string | number> = {}): string {
+  return GROUP_NOTES[key].replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
+}
+
+// Production's source labels, as the views say them.
+export const GROUP_SOURCE_LABELS: Record<string, string> = {
+  gias: "GIAS",
+  gias_groups: "GIAS",
+  club_iss: "Club ISS",
+  gias_proprietor: "GIAS (proprietor)",
+  companies_house: "Companies House",
+  charity_commission: "the Charity Commission",
+};

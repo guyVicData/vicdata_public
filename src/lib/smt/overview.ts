@@ -5,7 +5,7 @@
 //
 // The comparison set arrives as URNs (the set Teacher's chooser resolved). Every set rank is
 // level-aware: only the set's schools with the figure are ranked, and the count says so.
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SmtAdmissionsReader } from "./auth-rules";
 import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
 import { smtNote } from "@/catalogue/notes";
 import { lookupAgeBandDistributions } from "../age-band-distributions";
@@ -139,7 +139,7 @@ export async function igcseIn(urns: string[]): Promise<Set<string>> {
 
 const STAGE_LABEL: Record<Stage, string> = { ks2: "KS2", ks4: "GCSE", ks5: "Post-16" };
 
-export async function buildOverview(school: SmtSchool, set: SmtSet, filters: SmtFilters, caller: { supabase: SupabaseClient } | null): Promise<Overview> {
+export async function buildOverview(school: SmtSchool, set: SmtSet, filters: SmtFilters, caller: SmtAdmissionsReader | null): Promise<Overview> {
   const urn = school.urn;
   const setUrns = Array.from(new Set(set.urns.filter((u) => u !== urn)));
   const all = [urn, ...setUrns];
@@ -339,12 +339,13 @@ export async function setNames(urns: string[]): Promise<Record<string, { name: s
 /** Market share at 11+, from Admissions, read-only: the school's share against its saved 11+ rivals,
  * year by year, and the scorecard's row. Empty, with the reason, where the school has no 11+ entry or
  * Admissions has no saved rivals there. Shared by Overview and Pupils. */
-export async function marketAt11(school: SmtSchool, caller: { supabase: SupabaseClient } | null): Promise<{ trend: Overview["trends"]["market"]; row: ScoreRow | null }> {
+export async function marketAt11(school: SmtSchool, caller: SmtAdmissionsReader | null): Promise<{ trend: Overview["trends"]["market"]; row: ScoreRow | null }> {
   const urn = school.urn;
   let row: ScoreRow | null = null;
   const takes11 = (school.low ?? 99) <= 11 && (school.high ?? 0) >= 11 && school.phases.gcse;
   let market: Overview["trends"]["market"] = { status: "empty", reason: smtNote(takes11 ? "marketNoLists" : "marketNoEntry") };
-  if (takes11 && caller) {
+  if (takes11 && caller?.privateNote) market = { status: "empty", reason: caller.privateNote };
+  else if (takes11 && caller?.supabase) {
     const ep = entryPoint("11+")!;
     const lists = await savedLists(caller.supabase, urn, ep.id);
     const rivals = rivalsFromLists(lists);

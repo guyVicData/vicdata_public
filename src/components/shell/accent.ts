@@ -6,16 +6,17 @@
 //   Teacher     by phase: PHASE_ACCENT (GCSE green, Post-16 violet; KS2 none)
 //   Admissions  by role:  ROLE_ACCENT.admissions (cyan)
 //   SMT         by role:  ROLE_ACCENT.smt (violet)
-//   Groups      to come (the group wireframes draw orange, to confirm)
+//   Groups      GROUP_ACCENT (orange, as the group wireframes draw it; to confirm with Guy)
 import type { CSSProperties } from "react";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
-import { PHASE_ACCENT, ROLE_ACCENT } from "@/lib/teacher-view-theme";
+import { GROUP_ACCENT, PHASE_ACCENT, ROLE_ACCENT } from "@/lib/teacher-view-theme";
 
-export type ShellProduct = "teacher" | "admissions" | "smt";
+export type ShellProduct = "teacher" | "admissions" | "smt" | "groups";
 export type Accent = { hex: string; rgb: string };
 
 export function productAccent(product: ShellProduct, phase?: TeacherPhase): Accent | null {
   if (product === "teacher") return phase ? PHASE_ACCENT[phase] : null;
+  if (product === "groups") return GROUP_ACCENT;
   return ROLE_ACCENT[product];
 }
 

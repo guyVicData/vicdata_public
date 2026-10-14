@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const school = await smtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
     const level = parseLevel(new URLSearchParams(body?.level ? { level: body.level } : {}), school.phases, null);
-    return NextResponse.json(await buildPupils(school, set, filters, level, { supabase: caller.supabase }));
+    return NextResponse.json(await buildPupils(school, set, filters, level, caller.admissions));
   } catch (err) {
     console.error("[smt/pupils] failed:", err);
     return NextResponse.json({ error: "Could not build the pupils view." }, { status: 502 });
