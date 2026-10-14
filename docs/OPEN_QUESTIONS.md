@@ -2079,3 +2079,28 @@ Head-office accounts, access rules, the Access page and the group home; two SMT 
 - **Suspended accounts** lock head office out entirely (RLS and routes); platform admins still read them.
 - **Preview accounts (G6)** never take a real group's id: `preview:3320` borrows Harris's member list. No school sees one, nor can share with one, and the real group's account can still be made.
 - **Unit test count.** This round's command (`npx tsx --test` over every tracked `*.test.ts`) gives 346: 330 before plus 16 new. Round 2's report said 407, counted another way.
+
+## 2026-10-14 — 0.8 SMT r3
+
+Context on the ingest's real data: residents within 5 miles, deprivation, free school meals, neighbourhood map. Report: `docs/v0.8/smt_r3_report_v1.md`.
+
+**Calls made**
+- **Boundaries: BGC (generalised, 20 m), not BSC.** BSC is a quarter of the size (7.8 MB against 38.8 MB for England at 5 dp), but draws an LSOA in a median 8 points; at the 5-mile zoom an inner-London LSOA is a few hundred metres across and BSC's shapes overlap and gap. BGC for Acland Burghley's map is 262 kB gzipped.
+- **A second read RPC, `lsoa_boundaries_near(easting, northing, metres)`.** `school_context_lookup` returns how many LSOAs it counts within 5 miles but not which, so the app asks the boundaries table which LSOAs lie near the school, then reads their figures (and population-weighted centroids) from `lsoa_context_lookup`. "Within 5 miles" is the ingest's rule (the centroid), and the count is checked against `lsoa_count` (34, 192 and 1,121 for the three check schools, all equal). **Ingest follow-up:** returning the LSOA codes from `school_context_lookup` would remove the extra call.
+- **The ring: every LSOA whose boundary comes within 6 miles** (1 mile beyond the circle). The map is fitted to the 5-mile circle, so the ring fills most of the frame's corners; the circle is drawn as a thin dashed line.
+- **Children per hectare,** not counts, in five quantile classes of the LSOAs drawn: the boundary area is available (`lsoa_boundaries_geojson` returns it).
+- **Over 200 neighbourhoods draw on one canvas layer** (inner London draws 1,671); fewer stay SVG as before. The map's optional props (`circle`, `fitCircle`, `markerOf`, `redrawKey`) are absent everywhere but SMT Context, so the consortium page and Admissions draw exactly as before.
+- **FSM markers use a blue scale,** deciles a violet one (the SMT accent's family), so a school's marker never reads as the school itself. Neither is red/green.
+- **No district.** No anon lookup returns `postcode_geography.lad_code`, so the place line stays town · LA · region and the Area pill has no district. The LSOA's own name carries it ("Malvern Hills 007B"), if a later round wants it without a new lookup.
+- **Whole school's ages are the school's statutory range,** clamped to 0-18 (The Chase 11-18, Leighton Park 11-18). GCSE 11-15, Post-16 16-17, Primary 4-10.
+- **Ages run to 18** in population by age, beyond the wireframe's 17: ONS's small-area figures run 0-18.
+- **Projection horizons are offsets from the latest LA estimate** (`SMT_PROJECTION_TILE_AHEAD` 7, `SMT_PROJECTION_CHART_AHEAD` 11 in `years.ts`): from mid-2025 they give the wireframe's "by 2032" and "to 2036", and move when ONS publishes mid-2026.
+- **The projection line starts from ONS's own projected figure** for the latest estimate year, not the estimate, so where the 2022-based projection and the mid-year estimate disagree (Camden, 11-18) the dashed line starts a step away. Joining them would splice two sources.
+- **"Children nearby over time" is indexed to 2012,** the first year all three lines hold (LSOA estimates start in 2011, LA estimates in 2012); the within-5-miles line still starts in 2011.
+- **Counties are their districts summed** for ONS population and projections (`SHIRE_COUNTY_DISTRICT_GSS_CODES`), as births already were: neither source has county rows.
+- **FSM "not published"** follows the ingest's rule: GIAS's independent schools less the three state-funded CTCs, plus independent special schools (which GIAS files under "Special schools"). A state school with no FSM row reads `SMT_NOTES.fsmNone`.
+- **England's 20% is by construction** for neighbourhoods; the (i) says so. Children aren't spread evenly across deciles, so England's share of children in deciles 1-2 isn't exactly 20%; computing it would need every LSOA.
+- **Pupils' area line (K5)** is the LA's residents aged 5-15 at Whole school, or the level's ages, from mid-2019 (the census's first year), labelled mid-year.
+- **R-SMT-DATA-GAP is superseded** by R-SMT-CONTEXT-DEPRIVATION (the catalogue's way of retiring a rule; it keeps no runner).
+- **The "Shade by" menu is wider** (`MenuChip`'s new optional `menuWidth`, 210 by default as before), and the map sits in its own stacking context so menus open over it.
+- **The re-seed test (`v061_s2_reseed_pglite.mjs`) fails 5 of 16 on `main` too:** it still expects the original four Teacher dashboards. Not this round's; worth updating.

@@ -62,6 +62,12 @@ export const HISTORIC_GRADE_TO = 2022;
 // "2019/20 = 100".
 export const CENSUS_FIRST_PERIOD = 2019;
 
+// 0.8 SMT r3 (K1, K4): how far ahead Context's ONS projections reach, counted from the latest
+// mid-year LA estimate held (read from the data), so they move on when ONS publishes a year. From
+// mid-2025 they give the wireframe's "11-15s by 2032" (the tile) and "to 2036" (the charts).
+export const SMT_PROJECTION_TILE_AHEAD = 7;
+export const SMT_PROJECTION_CHART_AHEAD = 11;
+
 // Admissions' past pools start with September-2020 entry (the first entry year with a counted
 // rung, census 2019/20).
 export const PAST_FROM_ENTRY_YEAR = CENSUS_FIRST_PERIOD + 1;

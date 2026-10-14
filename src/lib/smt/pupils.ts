@@ -18,7 +18,8 @@ import { pipelineView } from "../admissions/views-api";
 import { nearbyCandidates } from "../admissions/rungs";
 import { percentile } from "../admissions/stats";
 import { englandSchools } from "../admissions/ranks";
-import type { SmtLevel } from "./levels";
+import { agesWordOf, levelAges, type SmtLevel } from "./levels";
+import { laPopulation } from "./area-data";
 import type { SmtSchool } from "./school";
 import { marketAt11, rollAt, type Overview, type Pt, type SmtFilters, type SmtSet } from "./overview";
 
@@ -60,7 +61,8 @@ export type Pupils = {
     phases: { key: string; label: string; pts: Pt[] }[];
     base: number | null;
     pool: { status: "ready"; entry: string; counted: Pt[]; births: Pt[] } | { status: "empty"; reason: string };
-    area: { laName: string | null; pts: Pt[] };
+    // 0.8 SMT r3 (K5): the LA's residents of the ages (ONS mid-year estimates), not census pupils.
+    area: { laName: string | null; pts: Pt[]; ages: [number, number]; agesWord: string };
   };
 };
 
@@ -210,15 +212,19 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFi
     } else pool = { status: "empty", reason: "No pool to draw: no feeder schools with a census for this entry point." };
   }
 
-  // The area's school-age population: pupils aged 5-15 in the LA's mainstream schools, by census year.
-  const area = areaRows;
-  const areaPts = years.map((y) => {
-    const r = area.find((x) => x.scope === "la" && x.key === school.laName && x.period === y);
-    if (!r) return { year: y, value: null };
-    let t = 0;
-    for (let a = 5; a <= 15; a++) t += r.byAge[String(a)] ?? 0;
-    return { year: y, value: t };
-  });
+  // The area's school-age population (K5): the LA's residents aged 5-15 -- or the level's ages -- by
+  // mid-year (ONS estimates; a shire county is its districts summed), from the census's first year.
+  const areaAges: [number, number] = level.phase === "whole" ? [5, 15] : levelAges(level.phase, school.low, school.high);
+  const laPop = await laPopulation(school.laCode);
+  const areaPts = Array.from(laPop.keys())
+    .filter((y) => y >= CENSUS_FIRST_PERIOD)
+    .sort((a, b) => a - b)
+    .map((y) => {
+      const row = laPop.get(y)!;
+      let t = 0;
+      for (let a = areaAges[0]; a <= areaAges[1]; a++) t += row[a] ?? 0;
+      return { year: y, value: t };
+    });
 
   const market = (await marketAt11(school, caller)).trend;
   const highlight = LEVEL_AGES[level.phase];
@@ -255,7 +261,7 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFi
     entries,
     leaving,
     market,
-    trends: { phases, base: ix.base, pool, area: { laName: school.laName, pts: areaPts } },
+    trends: { phases, base: ix.base, pool, area: { laName: school.laName, pts: areaPts, ages: areaAges, agesWord: agesWordOf(areaAges) } },
   };
 }
 

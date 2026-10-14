@@ -93,7 +93,8 @@ test("SMT in the catalogue: after Teacher's and Admissions', no Teacher phase, e
     assert.ok(d.rules.some((r) => r.startsWith("R-SMT-") && ruleIds.has(r)), `${d.id} has an R-SMT rule`);
   }
   for (const m of MEASURES.filter((x) => x.id.startsWith("M-SMT-"))) assert.ok(m.rules.every((r) => ruleIds.has(r)), m.id);
-  for (const r of RULES.filter((x) => x.id.startsWith("R-SMT-"))) assert.ok(r.testCase?.check, `${r.id} has a real-data runner`);
+  // A retired rule (R-SMT-DATA-GAP, superseded in round 3) keeps no runner.
+  for (const r of RULES.filter((x) => x.id.startsWith("R-SMT-") && x.status === "active")) assert.ok(r.testCase?.check, `${r.id} has a real-data runner`);
 });
 
 test("the four SMT dashboards validate, linked as one group, with one large view spanning columns 2-3", () => {
@@ -137,8 +138,23 @@ test("Pupils follows the level by the ages it highlights; staying on is Year 12 
   assert.equal(stayingOnAt(new Map(), 2025), null);
 });
 
-test("Context's main ages follow the school's phase, in the census's held ages", async () => {
-  const { mainAges } = await import("./context");
-  assert.deepEqual(mainAges({ phases: { primary: false, gcse: true, post16: true }, low: 11 }), [11, 15]);
-  assert.deepEqual(mainAges({ phases: { primary: true, gcse: false, post16: false }, low: 4 }), [5, 10]);
+test("Context's ages follow the level: GCSE 11-15, Post-16 16-17, Primary 4-10, Whole school the school's own range", async () => {
+  const { levelAges, agesWordOf } = await import("./levels");
+  assert.deepEqual(levelAges("gcse", 11, 18), [11, 15]);
+  assert.deepEqual(levelAges("post16", 11, 18), [16, 17]);
+  assert.deepEqual(levelAges("primary", 3, 11), [4, 10]);
+  assert.deepEqual(levelAges("whole", 11, 18), [11, 18]);
+  assert.deepEqual(levelAges("whole", 2, 19), [2, 18]);
+  assert.deepEqual(levelAges("whole", null, null), [11, 15]);
+  assert.equal(agesWordOf([11, 15]), "11\u201315");
+  assert.equal(agesWordOf([4, 4]), "4");
+});
+
+test("Context's FSM follows DfE: no figure for independent schools (CTCs and independent special schools included)", async () => {
+  const { fsmNotPublishedFor } = await import("./area-data");
+  assert.equal(fsmNotPublishedFor("Independent schools", "Other independent school"), true);
+  assert.equal(fsmNotPublishedFor("Special schools", "Other independent special school"), true);
+  assert.equal(fsmNotPublishedFor("Independent schools", "City technology college"), false);
+  assert.equal(fsmNotPublishedFor("Academies", "Academy converter"), false);
+  assert.equal(fsmNotPublishedFor("Special schools", "Non-maintained special school"), false);
 });

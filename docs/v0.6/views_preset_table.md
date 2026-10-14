@@ -198,13 +198,14 @@ Read the columns as:
 | 101 | `DV-SMT-P-POOL` | The pool | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | AdmPipelineIcon | The pool for your main entry point | none (draft) |
 | 102 | `DV-SMT-P-AREA` | School-age population | **line** · — | smt.school · follows · year · — · actual · from first, rolls on | all | all | AdmPopulationIcon | The area's school-age population | none (draft) |
 | 103 | `DV-SMT-C-NOW` | The area now | **numbers** · — | smt.area · follows · school · — · actual · latest | all | all | TilesIcon | The area now | none (draft) |
-| 104 | `DV-SMT-C-MAP` | Map | **map** · colour: value | smt.area · follows · school · — · actual · latest | all | all | MapPinIcon | Where the school-age children are | none (draft) |
+| 104 | `DV-SMT-C-MAP` | Map | **map** · colour: value | smt.area · follows · school · — · actual · latest | all | all | MapPinIcon | Where the school-age children live | none (draft) |
 | 105 | `DV-SMT-C-BYAGE` | Population by age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Children by single year of age | none (draft) |
 | 106 | `DV-SMT-C-BIRTHS` | Births and projections | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Births and projections | none (draft) |
-| 107 | `DV-SMT-C-BIRTHS-INDEXED` | Births, indexed | **line** · — | smt.area · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Births, indexed | none (draft) |
-| 108 | `DV-SMT-C-BIRTHS-TABLE` | Births, table | **table** · yearColumns: every; years: down | smt.area · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Births, year by year | none (draft) |
-| 109 | `DV-SMT-C-PROJECTION` | Projection | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | Projected to 2036 | none (draft) |
-| 110 | `DV-SMT-C-AGES` | By single year of age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Population by single year of age | none (draft) |
+| 107 | `DV-SMT-C-NEARBY` | Children nearby over time | **line** · — | smt.area · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Children nearby over time | none (draft) |
+| 108 | `DV-SMT-C-BIRTHS-INDEXED` | Births, indexed | **line** · — | smt.area · follows · year · — · indexed · from first, rolls on | all | all | IndexedLineIcon | Births, indexed | none (draft) |
+| 109 | `DV-SMT-C-BIRTHS-TABLE` | Births, table | **table** · yearColumns: every; years: down | smt.area · follows · year · — · actual · from first, rolls on | all | all | TableIcon | Births, year by year | none (draft) |
+| 110 | `DV-SMT-C-PROJECTION` | Projection | **line** · — | smt.area · follows · year · — · actual · from first, rolls on | all | all | TrendLineIcon | School-age population, projected | none (draft) |
+| 111 | `DV-SMT-C-AGES` | By single year of age | **bar** · orientation: vertical | smt.area · follows · year · — · actual · latest | all | all | VerticalBarsIcon | Population by single year of age | none (draft) |
 
 <!-- preset-table:end -->
 
@@ -337,15 +338,16 @@ Read the columns as:
 | `DV-SMT-P-PHASES` | Each phase's roll and England's pupils aged 5-15, indexed to 100. |
 | `DV-SMT-P-PHASES-TABLE` | As the line, year by year. |
 | `DV-SMT-P-POOL` | Admissions' pool for the main entry point: counted, then from births. |
-| `DV-SMT-P-AREA` | Pupils aged 5-15 in the LA's schools, year by year. |
-| `DV-SMT-C-NOW` | The area now: children of the school's ages around it (or in the LA), births, the projection, schools nearby, the place line, and the data gap. |
-| `DV-SMT-C-MAP` | The region's LAs shaded by pupils of the school's ages; the school and schools nearby. |
-| `DV-SMT-C-BYAGE` | Pupils by single year of age in the LA, the school's ages highlighted. |
-| `DV-SMT-C-BIRTHS` | Births in the LA and the ONS projection of 10-year-olds. |
+| `DV-SMT-P-AREA` | The LA's residents aged 5-15 (or the level's ages), ONS mid-year estimates, year by year. |
+| `DV-SMT-C-NOW` | The area now: children of the level's ages living within 5 miles (or in the LA), the census pupils beside them, births, the projection for the same ages, schools nearby, the place line, and Social context (deprivation, FSM). |
+| `DV-SMT-C-MAP` | Neighbourhoods within 5 miles and a ring, shaded by children per hectare, IMD or IDACI, or schools coloured by FSM; the LA shading before the boundaries are loaded. |
+| `DV-SMT-C-BYAGE` | Residents by single year of age 0-18 within 5 miles (or in the LA), the level's ages highlighted. |
+| `DV-SMT-C-BIRTHS` | Births in the LA and the ONS projection of the level's ages. |
+| `DV-SMT-C-NEARBY` | Children of the level's ages within 5 miles over time, indexed, against the LA and England. |
 | `DV-SMT-C-BIRTHS-INDEXED` | Births, the LA against England, 2012 = 100. |
 | `DV-SMT-C-BIRTHS-TABLE` | As the line, year by year. |
-| `DV-SMT-C-PROJECTION` | ONS's projection of 10-year-olds to 2036. |
-| `DV-SMT-C-AGES` | Pupils by single year of age in the LA. |
+| `DV-SMT-C-PROJECTION` | The LA's residents of the level's ages: estimates, then ONS's projection, dashed. |
+| `DV-SMT-C-AGES` | Residents by single year of age 0-18 within 5 miles (or in the LA). |
 
 ## The awkward cases ([review])
 

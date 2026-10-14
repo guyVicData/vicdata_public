@@ -167,18 +167,62 @@ export const SMT_NOTES = {
   shapesAround: "Shapes are described, never ranked: a smaller sixth form isn't worse.",
   rollByPhase: "Each phase's roll, and England's pupils aged 5 to 15 in every mainstream school (the census aggregates), indexed to 100 in {base}.",
   pool: "The pool for the main entry point, from Admissions: counted in the schools it draws from, then from births. A pool, not an intake.",
-  areaPupils: "Pupils aged 5 to 15 in {la}'s mainstream schools (school census). ONS publishes the LA's population by single year of age, but VicData holds its total only.",
   levelAges: "The level picks the ages: GCSE Years 7 to 11, Post-16 Years 12 and 13, Primary Reception to Year 6.",
+  // 0.8 SMT r3 (K5): the area's school-age population is ONS residents now, not census pupils.
+  areaResidents: "{la}'s residents aged {ages} (ONS mid-year estimates, by local authority): the children living in the area, not pupils.",
+  areaResidentsCaption: "ONS mid-year estimates, residents",
   // ---- 0.8 SMT round 2: Context
-  dataGap: "Deprivation and free school meals: not yet in VicData",
-  dataGapPlanned: "Planned: the English Indices of Deprivation by neighbourhood (LSOA), and DfE's school-level free-school-meals data. Until then, Context shows population only.",
-  shadeLater: "When the deprivation data arrives, \u201cShade by\u201d gains Deprivation and Free school meals (state schools).",
-  shadeByDistrict: "Shading by district: VicData holds pupil numbers by age for each local authority, not for neighbourhoods (LSOA or MSOA), so the map shades whole districts.",
+  shadeByDistrict: "Shading by district: until the neighbourhood boundaries are loaded, the map shades whole local authorities by the pupils of these ages in their schools (school census).",
   aroundSchool: "Around the school: every school within {miles} miles, all sectors.",
   childrenAround: "Pupils aged {ages} in schools within {miles} miles (school census): children who go to school nearby, wherever they live.",
   births: "Births are counted by local authority (ONS), by calendar year.",
-  projection: "A projection, not a forecast for the school: ONS's projection of {age}-year-olds in {area} (county or unitary).",
-  popByAge: "Pupils by single year of age in {la}'s mainstream schools (school census, ages 5 to 15). VicData has no population by age for older children yet.",
+  // ---- 0.8 SMT round 3: Context on real data. The six wording rules (R-SMT-CONTEXT-WORDING), word for word:
+  // 1. Deprivation describes the area, never the school's pupils.
+  wDeprivation: "the area around the school, not its pupils",
+  // 2. Independent schools: never 0%, never a bare dash.
+  wIndependentFsm: "Free school meals are not published for independent schools.",
+  wIndependentDraw: "Independent schools often draw pupils from well beyond 5 miles.",
+  // 3. Residents and pupils are different counts.
+  wResidents: "Children living within 5 miles (ONS estimates) are not pupils at schools within 5 miles (census): two different counts, and neither is divided by the other.",
+  // 4. Deciles.
+  wDeciles: "1 = the most deprived 10% of neighbourhoods in England, 10 = the least.",
+  // 5. Projections.
+  wProjection: "A projection, not a forecast for the school",
+  // 6. Sources and editions (the footer's source "i"), the years and editions filled from the data.
+  wSources: "ONS mid-year population estimates for LSOAs (mid-{lsoaYear}); ONS {snppBase}-based subnational population projections, by local authority; English Indices of Deprivation {iodYear} (MHCLG); DfE \u201cSchools, pupils and their characteristics\u201d ({fsmYear}).",
+  // The area now (K1).
+  childrenLiving: "living within {miles} miles (ONS estimates, mid-{year})",
+  childrenLivingLa: "living in {la} (ONS estimates, mid-{year})",
+  pupilsNearby: "{n} pupils at schools within {miles} miles (census {year})",
+  projectionTile: "ONS projection, by local authority",
+  projection: "A projection, not a forecast for the school: ONS's {base}-based projection of residents aged {ages} in {area}, by local authority.",
+  noDistrict: "Town \u00b7 local authority \u00b7 region: VicData can't yet name a school's district.",
+  // Social context (K2).
+  neighbourhood: "The school's neighbourhood",
+  idaciName: "IDACI: income deprivation affecting children",
+  imdName: "IMD: the Index of Multiple Deprivation",
+  noLsoa: "This school's postcode doesn't place it in an English neighbourhood (LSOA), so there is no deprivation figure for its area.",
+  mixTitle: "Children within {miles} miles, by deprivation",
+  mixLine: "{pct}% of children within {miles} miles live in the most deprived 20% of neighbourhoods (England: 20%)",
+  mixInfo: "The IDACI deciles of the neighbourhoods where children aged 0 to 15 live within {miles} miles (ONS estimates). England's 20% is by construction: deciles 1 and 2 are a fifth of England's neighbourhoods.",
+  fsmTitle: "Free school meals",
+  fsmNone: "DfE publishes no free-school-meals figure for this school.",
+  fsmInfo: "Pupils known to be eligible for free school meals (DfE, January census), with the local authority and England the same year.",
+  // The map (K3).
+  mapTitle: "Where the school-age children live",
+  mapNeighbourhoods: "Neighbourhoods are ONS LSOAs, joined through postcodes",
+  mapChildren: "Neighbourhoods shaded by children aged {ages} per hectare (ONS estimates, mid-{year}): neighbourhoods differ in size, so a count alone would darken the largest.",
+  mapRing: "Shaded a mile beyond the {miles}-mile circle, so the shading has no hard edge; the circle marks the {miles} miles counted.",
+  mapDeprivation: "Neighbourhoods shaded by their {index} decile ({edition}).",
+  mapDecileLegend: "1 = most deprived 10%",
+  mapFsm: "Free school meals aren't published by neighbourhood, so this shades the schools, not the areas: each school's latest figure ({year}). Independent schools, hollow, don't publish one.",
+  mapFsmLegend: "Shades schools, not areas",
+  // Population (K4).
+  popByAgeAround: "Residents by single year of age living within {miles} miles (ONS estimates, mid-{year}): where children live, not where they go to school.",
+  popByAgeLa: "{la}'s residents by single year of age (ONS mid-year estimates, mid-{year}).",
+  nearbyOverTime: "Children aged {ages} living within {miles} miles, against {la} and England (ONS mid-year estimates), indexed to 100 in {base}.",
+  nearbyOverTimeCaption: "residents, not pupils",
+  populationProjected: "{la}'s residents aged {ages}: ONS mid-year estimates to mid-{year}, then ONS's {base}-based projection, dashed.",
   // Small numbers.
   smallEntries: "Subjects with fewer than {min} entries aren't ranked: one or two pupils would decide the rank.",
 } as const;
