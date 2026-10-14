@@ -26,7 +26,16 @@ export async function GET(request: NextRequest) {
       for (const r of (data ?? []) as { urn: string; current_name: string }[]) names.set(r.urn, r.current_name);
     }
     const table = accessTable(members, grants, new Map(Array.from(accounts).map(([u, a]) => [u, { smtMembers: a.smtMembers }])), usage, names);
-    return NextResponse.json({ office, viewAs: caller.viewAs, canManage: canManageAccess(office, caller.viewAs), total: members.length, ...table });
+    // Head office itself (G2: the admin invites, changes and removes members). Names and addresses
+    // only for this account's own admin (or a platform admin in View as).
+    const sb = createServiceRoleSupabaseClient();
+    const { data: hm } = await sb.from("group_memberships").select("id, profile_id, role, approved_at").eq("group_account_id", office.id).order("approved_at");
+    const hmRows = (hm ?? []) as { id: string; profile_id: string; role: string; approved_at: string }[];
+    const { data: profs } = hmRows.length ? await sb.from("profiles").select("id, full_name, email").in("id", hmRows.map((r) => r.profile_id)) : { data: [] };
+    const who = new Map(((profs ?? []) as { id: string; full_name: string | null; email: string | null }[]).map((p) => [p.id, p]));
+    const headOffice = hmRows.map((r) => ({ id: r.id, name: who.get(r.profile_id)?.full_name || who.get(r.profile_id)?.email || "—", email: who.get(r.profile_id)?.email ?? null, role: r.role, self: r.profile_id === caller.userId }));
+    const { data: inv } = await sb.from("group_invitations").select("id, email, role, invited_at").eq("group_account_id", office.id).is("accepted_at", null).is("cancelled_at", null).order("invited_at");
+    return NextResponse.json({ office, viewAs: caller.viewAs, canManage: canManageAccess(office, caller.viewAs), total: members.length, ...table, headOffice, invitations: inv ?? [] });
   } catch (err) {
     console.error("[group/access] failed:", err);
     return NextResponse.json({ error: "Could not read access." }, { status: 502 });
