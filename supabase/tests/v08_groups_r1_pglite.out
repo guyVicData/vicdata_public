@@ -1,0 +1,114 @@
+applied 20261103090000_v06_s1_roles_teams_platform.sql
+applied 20261104090000_v06_membership_insert_hardening.sql
+applied 20261110090000_v08_groups_r1_accounts.sql
+
+-- platform admins create accounts and invite the first admin
+PASS a signed-in non-admin can't create a group account platform admin only
+PASS anon can't create one (permission denied) 
+PASS a platform admin creates Harris and Dukes 
+PASS one account per group this group already has an account
+PASS creating is audited 
+PASS the invitation stores the address lower-cased and trimmed 
+PASS inviting is audited for a platform admin 
+
+-- accepting an invitation (own confirmed address only)
+PASS NB (no invitation) accepts nothing 
+PASS HA accepts: Harris head-office admin 
+PASS   the platform admin who invited is the approver 
+PASS accepting again takes up nothing more 
+
+-- the head-office admin invites and manages members
+PASS HA invites HO (reads) to Harris 
+PASS   HO is Harris head office 
+PASS plain head office can't invite only the group's head-office admin can invite head-office members
+PASS another group's admin can't invite to Harris only the group's head-office admin can invite head-office members
+PASS a member school's School-Admin can't make themselves head office only the group's head-office admin can invite head-office members
+PASS an existing member isn't invited again already a head-office member
+PASS an unconfirmed address can't take up its invitation 
+PASS another group's admin can't cancel Harris's invitation no such open invitation
+PASS a cancelled invitation can't be taken up 
+PASS plain head office can't promote itself only the group's head-office admin can change head-office members
+PASS another group's admin can't remove a Harris member only the group's head-office admin can remove head-office members
+PASS an admin can't change their own role (no lockout) your own role is another admin's to change
+PASS an admin can't remove themselves your own membership is another admin's to remove
+PASS HA promotes and demotes HO 
+
+-- reads: own group only
+PASS HA reads Harris's account, not Dukes' 
+PASS HO reads Harris's account 
+PASS HB reads Dukes', not Harris' 
+PASS HB reads no Harris member 
+PASS HA reads Harris's members (2) 
+PASS a member school's SMT reads no account 
+PASS a member school's School-Admin reads no account or member 
+PASS NB reads nothing 
+PASS invitations (email addresses): HA sees Harris's 
+PASS   plain head office sees none 
+PASS   another group's admin sees none of Harris's 
+PASS the platform admin reads both accounts 
+PASS anon can't read group_accounts 
+PASS anon can't read group_memberships 
+PASS anon can't read group_invitations 
+PASS anon can't read group_view_grants 
+PASS anon can't read group_admissions_shares 
+
+-- writes: never directly
+PASS HA can't insert a grant row 
+PASS HA can't unsuspend or rename the account directly 
+PASS HO can't make itself admin directly 
+PASS HB can't add itself to Harris directly 
+PASS NB can't write an invitation directly 
+PASS SA can't write a share directly 
+
+-- grants: the service role only, for the account's admin
+PASS HA can't call the grant writer (permission denied) 
+PASS the platform admin can't either 
+PASS anon can't either 
+PASS the server grants Harris's view to school X for HA 
+PASS   again: unchanged, one open grant 
+PASS not for plain head office only the group's head-office admin can change access
+PASS not for another group's admin only the group's head-office admin can change access
+PASS not for a school's School-Admin only the group's head-office admin can change access
+PASS a likely member's grant is labelled 
+PASS HA reads Harris's grants (2) 
+PASS HO reads them too 
+PASS HB reads none of them 
+PASS school X's SMT and School-Admin read no grant row (the server answers them) 
+PASS a teacher reads none 
+PASS revoking keeps the row 
+PASS granting again opens a new row (history: 2 rows) 
+PASS history: even the service role can't delete a grant group view grants are history: revoke, never delete
+PASS history: a revoke can't be undone a group view grant can only be revoked
+PASS history: a grant can't be moved to another school a group view grant can only be revoked
+
+-- suspended accounts
+PASS head office can't suspend (or unsuspend) its own account platform admin only
+PASS a platform admin suspends Harris (audited) 
+PASS no grant on a suspended account this group account is suspended
+PASS no invitation on a suspended account this group account is suspended
+PASS an invitation to a suspended account isn't taken up 
+
+-- the Admissions share: the school's School-Admin decides; default off
+PASS no row means not shared 
+PASS SMT can't share only the school's School-Admin can change what head office sees
+PASS a teacher can't share only the school's School-Admin can change what head office sees
+PASS another school's School-Admin can't share X's only the school's School-Admin can change what head office sees
+PASS head office can't share it for the school only the school's School-Admin can change what head office sees
+PASS X's School-Admin shares with Harris 
+PASS   Harris head office reads it 
+PASS   Dukes head office doesn't 
+PASS   X's teacher reads the setting; Y's School-Admin doesn't 
+PASS   and turns it off again 
+
+-- the Platform page's overview
+PASS head office can't read the platform overview platform admin only
+PASS the platform admin sees Harris: 1 admin, 2 members, 2 open grants {"id":"696ede18-0c15-4ed8-84c6-56440937469a","group_id":"3320","display_name":"Harris Federation","status":"active","created_at":"2026-10-14T07:33:16.331Z","admins":1,"members":2,"open_invitations":1,"open_grants":2}
+
+-- the helpers and functions aren't anon's
+PASS anon can't call is_group_member 
+PASS anon can't call is_group_admin 
+PASS anon can't call group_accept_invitations 
+PASS anon can't call platform_group_accounts_overview 
+PASS anon can't call school_set_group_admissions_share 
+
+ALL PASS (89)
