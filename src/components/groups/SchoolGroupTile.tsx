@@ -59,7 +59,7 @@ export function SchoolGroupTile({ urn }: { urn: string | null }) {
                 {g.name}
                 {g.likely && <span title={GROUP_NOTES.likelyWhy} className="ml-2 rounded-[6px] bg-[var(--group-likely-bg)] px-[7px] py-px align-middle text-[10.5px] font-bold text-[var(--group-likely-fg)]">{GROUP_NOTES.likely}</span>}
               </p>
-              <p className="mt-0.5 text-[13px] text-[var(--muted2)]">{g.groupView ? groupNote("schoolGroupView", { group: g.name, since: shortDate(g.groupView.since) }) : groupNote("schoolNoGroupView", { group: g.name })}</p>
+              <p className="mt-0.5 text-[13px] text-[var(--muted2)]">{g.groupView ? groupNote("schoolGroupView", { group: g.name, since: shortDate(g.groupView.since.slice(0, 10)) }) : groupNote("schoolNoGroupView", { group: g.name })}</p>
             </div>
           </div>
           {g.groupView && (
