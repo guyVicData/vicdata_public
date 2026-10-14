@@ -118,8 +118,8 @@ export async function groupViewUsage(urns: string[], days = 30): Promise<Map<str
 /** May this signed-in user open `urn`'s SMT as head office? Their own memberships (RLS), the group's
  * current members (production), and the school's own VicData account. Used by the SMT routes, the
  * chooser-set route and the SMT page. */
-export async function headOfficeAccess(supabase: SupabaseClient, userId: string, urn: string): Promise<{ ok: true; office: HeadOffice; likely: boolean; schoolName: string; shared: boolean } | { ok: false; reason: SchoolAccessRefusal }> {
-  const offices = await officesOf(supabase, userId);
+export async function headOfficeAccess(supabase: SupabaseClient, userId: string, urn: string, given?: HeadOffice[]): Promise<{ ok: true; office: HeadOffice; likely: boolean; schoolName: string; shared: boolean } | { ok: false; reason: SchoolAccessRefusal }> {
+  const offices = given ?? (await officesOf(supabase, userId));
   if (!offices.length) return { ok: false, reason: "not-head-office" };
   const byGroup = new Map<string, GroupMember[]>();
   await Promise.all(offices.map(async (o) => byGroup.set(o.groupId, await groupMembers(o.groupId))));

@@ -16,6 +16,7 @@ import { VIEW_AS_ROLES, type ViewAsRole } from "@/lib/view-as";
 import { openViewAs } from "@/components/view-as/ViewAs";
 import { useTeacherTheme, type Theme } from "@/components/teacher/TeacherChrome";
 import { SearchBox, Switch } from "./AdminChrome";
+import { GroupAccountsSection } from "./GroupAccountsSection";
 
 export type SchoolOverviewRow = {
   school_urn: string;
@@ -246,6 +247,9 @@ export function Platform() {
           </aside>
         )}
       </div>
+
+      {/* 0.8 groups r1 (G5): head-office accounts. */}
+      <GroupAccountsSection />
     </main>
   );
 }
