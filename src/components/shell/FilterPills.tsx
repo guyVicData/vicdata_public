@@ -63,7 +63,8 @@ export function EntryChip({ label, active, onClick }: { label: string; active: b
   );
 }
 
-export function MenuChip<T extends string>({ value, options, onPick, label }: { value: T; options: { id: T; label: string; title?: string }[]; onPick: (v: T) => void; label: string }) {
+// 0.8 SMT r3: `menuWidth` (optional, 210 as before) for Context's longer "Shade by" options.
+export function MenuChip<T extends string>({ value, options, onPick, label, menuWidth = 210 }: { value: T; options: { id: T; label: string; title?: string }[]; onPick: (v: T) => void; label: string; menuWidth?: number }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
   const current = options.find((o) => o.id === value) ?? options[0];
@@ -73,7 +74,7 @@ export function MenuChip<T extends string>({ value, options, onPick, label }: { 
         {current.label}
       </FChip>
       {open && (
-        <PanelMenu label={label} align="right" width={210}>
+        <PanelMenu label={label} align="right" width={menuWidth}>
           {options.map((o) => (
             <MenuRow
               key={o.id}

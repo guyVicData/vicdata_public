@@ -67,3 +67,17 @@ export function pillsFor(s: { mixed: boolean; boarding: boolean }): ("gender" | 
 
 // Context's "around the school" radius, for the page's words (context.ts AROUND_MILES).
 export const AROUND_MILES_UI = 5;
+
+// 0.8 SMT r3 (K1): the ages a level counts in Context's area figures (ONS's single ages, 0-18):
+// GCSE 11-15, Post-16 16-17, Primary 4-10, Whole school the school's own statutory range (clamped
+// to 0-18; a school without one counts as secondary).
+export function levelAges(phase: SmtPhase, low: number | null, high: number | null): [number, number] {
+  if (phase === "gcse") return [11, 15];
+  if (phase === "post16") return [16, 17];
+  if (phase === "primary") return [4, 10];
+  if (low === null || high === null || high < low) return [11, 15];
+  return [Math.max(0, low), Math.min(18, high)];
+}
+
+/** "11–15", "16–17", "4" */
+export const agesWordOf = ([lo, hi]: [number, number]) => (lo === hi ? String(lo) : `${lo}–${hi}`);

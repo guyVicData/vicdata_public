@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import proj4 from "proj4";
+import type * as L from "leaflet";
 import type { Map as LeafletMap, LayerGroup } from "leaflet";
 
 // Group-page map (sixth-form consortium build): deliberately NOT SchoolMap.tsx --
@@ -63,9 +64,20 @@ export type ConsortiumMapMember = {
 // 0.8 SMT r2 (Context): one more OPTIONAL prop, absent everywhere before it --
 //   areas      polygons drawn under the dots (WGS84 GeoJSON), each with its own fill and tooltip;
 //              the map still fits to the dots
+// 0.8 SMT r3 (Context's neighbourhoods): four more OPTIONAL props, absent everywhere else --
+//   circle      a thin ring of `metres` round a point (BNG), drawn under the dots
+//   fitCircle   fit the map to that ring instead of the dots
+//   markerOf    a dot's full style (fill, ring, size), for dots coloured by a figure or hollow
+//   redrawKey   redraw when it changes (a new "Shade by"), not only when the dots do
+// Over 200 areas draw on one canvas layer (a neighbourhood map holds up to ~1,600).
 export type ConsortiumMapArea = { id: string; geometry: GeoJSON.MultiPolygon; fill: string; fillOpacity: number; stroke: string; tooltip: string; weight?: number };
+export type ConsortiumMapMarker = { color: string; fillColor: string; fillOpacity: number; radius: number; weight: number };
 export type ConsortiumMapOptions = {
   areas?: ConsortiumMapArea[];
+  circle?: { easting: number; northing: number; metres: number; colour: string };
+  fitCircle?: boolean;
+  markerOf?: (m: ConsortiumMapMember) => ConsortiumMapMarker | null;
+  redrawKey?: string;
   colourOf?: (m: ConsortiumMapMember) => string;
   targetUrn?: string;
   tooltipOf?: (m: ConsortiumMapMember) => string;
@@ -74,7 +86,7 @@ export type ConsortiumMapOptions = {
   fitPadding?: number;
 };
 
-export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding, areas }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
+export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf, heightClass, onSelect, fitPadding, areas, circle, fitCircle, markerOf, redrawKey }: { members: ConsortiumMapMember[] } & ConsortiumMapOptions) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const router = useRouter();
@@ -90,14 +102,21 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
       mapRef.current = map;
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, subdomains: "abcd", maxZoom: 19 }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
+      // The ring's bounds from its centre and radius; fitting to it first gives the map a view before any
+      // layer is added (a canvas layer needs one).
+      const centre = circle ? bngToLatLng(circle.easting, circle.northing) : null;
+      const ringBounds = circle && centre ? L.latLng(centre[0], centre[1]).toBounds(circle.metres * 2) : null;
+      if (ringBounds && fitCircle) map.fitBounds(ringBounds, { padding: [fitPadding ?? 8, fitPadding ?? 8] });
 
       if (areas?.length) {
+        const renderer = areas.length > 200 ? L.canvas({ padding: 0.3 }) : undefined;
         for (const a of areas) {
-          const layer = L.geoJSON(a.geometry as GeoJSON.GeoJsonObject, { style: { color: a.stroke, weight: a.weight ?? 1, fillColor: a.fill, fillOpacity: a.fillOpacity } });
+          const layer = L.geoJSON(a.geometry as GeoJSON.GeoJsonObject, { style: { color: a.stroke, weight: a.weight ?? 1, fillColor: a.fill, fillOpacity: a.fillOpacity }, ...(renderer ? { renderer } : {}) } as L.GeoJSONOptions);
           layer.bindTooltip(a.tooltip, { sticky: true });
           layer.addTo(map);
         }
       }
+      if (circle && centre) L.circle(centre, { radius: circle.metres, color: circle.colour, weight: 1.5, fill: false, interactive: false, dashArray: "5 4" }).addTo(map);
       const group: LayerGroup = L.layerGroup().addTo(map);
       const rolls = members.map((m) => m.roll).filter((r): r is number => r !== null);
       const minRoll = rolls.length ? Math.min(...rolls) : 0;
@@ -111,13 +130,17 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
         latLngs.push([lat, lng]);
         const isTarget = targetUrn !== undefined && m.urn === targetUrn;
         const colour = colourOf ? colourOf(m) : MARKER_COLOUR;
-        const marker = L.circleMarker([lat, lng], {
-          radius: isTarget ? 8 : rollRadius(m.roll, minRoll, maxRoll),
-          color: isTarget ? colour : colour,
-          fillColor: isTarget ? "#ffffff" : colour,
-          fillOpacity: isTarget ? 1 : 0.55,
-          weight: isTarget ? 3 : 1.5,
-        });
+        const custom = markerOf ? markerOf(m) : null;
+        const marker = L.circleMarker(
+          [lat, lng],
+          custom ?? {
+            radius: isTarget ? 8 : rollRadius(m.roll, minRoll, maxRoll),
+            color: isTarget ? colour : colour,
+            fillColor: isTarget ? "#ffffff" : colour,
+            fillOpacity: isTarget ? 1 : 0.55,
+            weight: isTarget ? 3 : 1.5,
+          },
+        );
         marker.bindTooltip(tooltipOf ? tooltipOf(m) : `${m.name}${m.roll !== null ? ` — ${m.roll.toLocaleString()} pupils` : ""}`, {
           direction: "top",
           offset: [0, -4],
@@ -129,7 +152,9 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
 
       // fitBounds needs >=2 distinct points to mean anything; a lone member just
       // centres on it at a sensible close-in zoom instead.
-      if (latLngs.length === 1) {
+      if (ringBounds && fitCircle) {
+        // Fitted above.
+      } else if (latLngs.length === 1) {
         map.setView(latLngs[0], 14);
       } else {
         map.fitBounds(L.latLngBounds(latLngs), { padding: [fitPadding ?? 32, fitPadding ?? 32] });
@@ -142,7 +167,7 @@ export default function ConsortiumMap({ members, colourOf, targetUrn, tooltipOf,
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [members]);
+  }, [members, redrawKey]);
 
   if (members.length === 0) return null;
 

@@ -96,7 +96,7 @@ async function smtAcademicCase(urn: string, phase: "whole" | "gcse" | "post16" |
   return smtMemo.get(key) as Promise<import("../src/lib/smt/academic").Academic>;
 }
 // Render one SMT view as the page draws it (charts at a fixed width), for the wording checks.
-async function smtRender(urn: string, dv: string, academic?: import("../src/lib/smt/academic").Academic, more: { pupils?: import("../src/lib/smt/pupils").Pupils; context?: import("../src/lib/smt/context").Context } = {}) {
+async function smtRender(urn: string, dv: string, academic?: import("../src/lib/smt/academic").Academic, more: { pupils?: import("../src/lib/smt/pupils").Pupils; context?: import("../src/lib/smt/context").Context; contextMap?: import("../src/lib/smt/context-map").ContextMap; shade?: string } = {}) {
   const { createElement } = await import("react");
   const { renderToStaticMarkup } = await import("react-dom/server");
   const { ViewBody } = await import("../src/components/smt/SmtDashboard");
@@ -108,13 +108,16 @@ async function smtRender(urn: string, dv: string, academic?: import("../src/lib/
     member: { userId: "", token: "", membershipId: "m", schoolAccountId: "a", schoolUrn: urn, schoolName: c.school.name, roles: ["smt"], isAdmin: false, isAccountHolder: false, access: "member", readOnly: false, viewAs: null },
     school: c.school,
     dash: dv.startsWith("DV-SMT-O-") ? "overview" : dv.startsWith("DV-SMT-P-") ? "pupils" : dv.startsWith("DV-SMT-C-") ? "context" : "academic",
-    level: academic?.level ?? { phase: "whole", area: null },
+    level: academic?.level ?? (more.context ? { phase: more.context.level, area: null } : { phase: "whole", area: null }),
     set: c.set,
     filters: { sex: "all", boarding: "all" },
     overview: { status: "ready", data: c.overview },
     academic: academic ? { status: "ready", data: academic } : { status: "loading" },
     pupils: more.pupils ? { status: "ready", data: more.pupils } : { status: "loading" },
     context: more.context ? { status: "ready", data: more.context } : { status: "loading" },
+    contextMap: more.contextMap ? { status: "ready", data: more.contextMap } : { status: "loading" },
+    shade: more.shade ?? "children",
+    onShade: () => undefined,
     onArea: () => undefined,
     focusBar: null,
     phone: false,
@@ -134,13 +137,13 @@ async function smtPupilsCase(urn: string, phase: "whole" | "gcse" | "post16" | "
     }));
   return smtMemo.get(key) as Promise<import("../src/lib/smt/pupils").Pupils>;
 }
-async function smtContextCase(urn: string, area: "around" | "la" = "around") {
-  const key = `context|${urn}|${area}`;
+async function smtContextCase(urn: string, area: "around" | "la" = "around", level: "whole" | "gcse" | "post16" | "primary" = "gcse") {
+  const key = `context|${urn}|${area}|${level}`;
   if (!smtMemo.has(key))
     smtMemo.set(key, (async () => {
       const c = await smtCase(urn);
       const { buildContext } = await import("../src/lib/smt/context");
-      return buildContext(c.school, area);
+      return buildContext(c.school, area, level);
     })().catch((e) => {
       smtMemo.delete(key);
       throw e;
@@ -1490,42 +1493,112 @@ const RUNNERS: Record<string, Runner> = {
     return { pass: ok, detail: fmt({ years: p.leaving.map((r) => `${r.year}:${r.year11}->${r.year12}`).join(" "), matchCensus: ok }) };
   },
   async smtContextGeography() {
+    // Both states, each in a child process: production as it is (no lsoa_boundaries yet), and with the
+    // boundaries served as the loaded table would (scripts/context-preview/install-lsoa-boundaries.ts).
+    const { execFileSync } = await import("node:child_process");
+    const run = (pre: string[], urn: string) => {
+      try {
+        const out = execFileSync("npx", ["-y", "tsx", "--env-file=.env", ...pre, path.join(ROOT, "scripts/context-preview/context-map-check.mts"), urn], { cwd: ROOT, encoding: "utf8", timeout: 900_000, stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n").at(-1) ?? "";
+        return JSON.parse(out) as { state: string; reason?: string; opts: string[]; here?: number; lookup?: number; everyBoundary?: boolean; las?: number };
+      } catch (e) {
+        return { state: `error ${(e as Error).message.slice(0, 120)}`, opts: [] as string[] };
+      }
+    };
+    const without = run([], "137625");
+    const withB = run(["--import=./scripts/context-preview/install-lsoa-boundaries.ts"], "137625");
     const c = await smtContextCase("137625");
-    const { areaByAge } = await import("../src/lib/admissions/screens");
     const { SMT_NOTES } = await import("../src/catalogue/notes");
-    const aggs = await areaByAge();
-    const p = c.map.period!;
-    const sum = (name: string) => { const r = aggs.find((x) => x.scope === "la" && x.key === name && x.period === p); if (!r) return null; let t = 0; for (let a = c.ages[0]; a <= c.ages[1]; a++) t += r.byAge[String(a)] ?? 0; return t; };
-    const mapOk = c.map.las.length > 0 && c.map.las.every((l) => l.geometry !== null && l.value === sum(l.name));
-    const la = aggs.find((x) => x.scope === "la" && x.key === "Worcestershire" && x.period === p)!;
-    const ageOk = c.byAge.ages.every((a) => a.value === (la.byAge[String(a.age)] ?? 0));
-    const html = textOf(await smtRender("137625", "DV-SMT-C-MAP", undefined, { context: c }));
-    const pass = mapOk && ageOk && html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40));
-    return { pass, detail: fmt({ las: c.map.las.length, everyBoundaryAndFigure: mapOk, byAgeMatches: ageOk, districtNote: html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40)) }) };
+    const html = textOf(await smtRender("137625", "DV-SMT-C-MAP", undefined, { context: c, contextMap: { state: "fallback", reason: "test" } }));
+    const fallbackOk = without.state === "fallback" && without.opts.join() === "children,fsm" && (without.las ?? 0) > 0 && html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40));
+    const loadedOk = withB.state === "lsoa" && withB.here === withB.lookup && withB.here === 34 && withB.everyBoundary === true && withB.opts.join() === "children,imd,idaci,fsm";
+    return { pass: fallbackOk && loadedOk, detail: fmt({ withoutBoundaries: `${without.state} (${without.reason ?? ""}), shade ${without.opts.join("/")}, ${without.las} LAs, district note ${html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40))}`, withBoundaries: `${withB.state}: ${withB.here} within 5 miles (lookup ${withB.lookup}), boundaries ${withB.everyBoundary}, shade ${withB.opts.join("/")}` }) };
   },
-  async smtDataGap() {
-    const c = await smtContextCase("137625");
+  async smtContextResidents() {
+    const c = await smtContextCase("137625", "around", "gcse");
+    const { callReferenceRpc } = (await lib()).ref;
+    const rows = (await callReferenceRpc("school_context_lookup", { p_urns: ["137625"] })) as { year: number; children: number[] }[];
+    const last = rows.sort((a, b) => a.year - b.year).at(-1)!;
+    const sum = last.children.slice(11, 16).reduce((a, b) => a + b, 0);
+    const html = textOf(await smtRender("137625", "DV-SMT-C-NOW", undefined, { context: c }));
+    const census = c.now.pupilsNearby;
+    const pass = c.now.children.value === sum && c.now.children.year === last.year && sum === 3354 && !!census && html.includes(census.value.toLocaleString("en-GB")) && /pupils at schools within 5 miles/.test(html) && /living within 5 miles/.test(html);
+    return { pass, detail: fmt({ tile: `${c.now.children.value} (mid-${c.now.children.year})`, lookupAges11to15: sum, censusLine: census ? `${census.value} (${census.period})` : null, bothLabelled: /pupils at schools within 5 miles/.test(html) && /living within 5 miles/.test(html) }) };
+  },
+  async smtContextDeprivation() {
+    const want: Record<string, [number, number]> = { "137625": [8, 3], "110110": [6, 5], "100053": [4, 5] };
+    const got: Record<string, string> = {};
+    let pass = true;
+    for (const [urn, [imd, idaci]] of Object.entries(want)) {
+      const c = await smtContextCase(urn, "around", "whole");
+      const mix = c.social.mix ?? [];
+      const total = mix.reduce((a, b) => a + b, 0);
+      const html = textOf(await smtRender(urn, "DV-SMT-C-NOW", undefined, { context: c }));
+      const ok = c.social.imd === imd && c.social.idaci === idaci && mix.length === 10 && Math.abs(total - 100) < 0.05 && html.includes(`decile ${imd} of 10`) && html.includes(`decile ${idaci} of 10`);
+      pass &&= ok;
+      got[urn] = `IMD ${c.social.imd}, IDACI ${c.social.idaci}, mix ${total.toFixed(2)}%${ok ? "" : " (MISMATCH)"}`;
+    }
+    return { pass, detail: fmt(got) };
+  },
+  async smtContextFsm() {
+    const chase = await smtContextCase("137625", "around", "whole");
+    const acland = await smtContextCase("100053", "around", "whole");
+    const lp = await smtContextCase("110110", "around", "whole");
     const { SMT_NOTES } = await import("../src/catalogue/notes");
-    const now = textOf(await smtRender("137625", "DV-SMT-C-NOW", undefined, { context: c }));
-    const map = textOf(await smtRender("137625", "DV-SMT-C-MAP", undefined, { context: c }));
-    const later = SMT_NOTES.shadeLater.replace(/\u201c|\u201d/g, "");
-    const pass = now.includes(SMT_NOTES.dataGap) && now.includes(SMT_NOTES.dataGapPlanned.slice(0, 50)) && map.replace(/\u201c|\u201d/g, "").includes(later.slice(0, 40));
-    return { pass, detail: fmt({ gapInAreaNow: now.includes(SMT_NOTES.dataGap), plannedSources: now.includes(SMT_NOTES.dataGapPlanned.slice(0, 50)), shadeLaterOnMap: pass }) };
+    const f1 = chase.social.fsm, f2 = acland.social.fsm;
+    const r1 = (v: number | null | undefined) => (v === null || v === undefined ? null : Math.round(v * 10) / 10);
+    const chaseOk = f1.status === "published" && r1(f1.value) === 17.7 && r1(f1.la.value) === 20.8 && r1(f1.england) === 26.5 && f1.period === 2025;
+    const aclandOk = f2.status === "published" && r1(f2.value) === 34 && r1(f2.la.value) === 46.1;
+    const html = textOf(await smtRender("110110", "DV-SMT-C-NOW", undefined, { context: lp }));
+    const fsmBlock = html.slice(html.indexOf(SMT_NOTES.fsmTitle));
+    const lpOk = lp.social.fsm.status === "independent" && html.includes(SMT_NOTES.wIndependentFsm) && html.includes(SMT_NOTES.wIndependentDraw) && !/\d+(\.\d)?%/.test(fsmBlock.slice(0, 200));
+    const shown = textOf(await smtRender("137625", "DV-SMT-C-NOW", undefined, { context: chase }));
+    const shownOk = shown.includes("17.7%") && shown.includes("Worcestershire 20.8%") && shown.includes("England 26.5%");
+    return { pass: chaseOk && aclandOk && lpOk && shownOk, detail: fmt({ chase: f1.status === "published" ? `${f1.value}% (${f1.period}) vs ${f1.la.name} ${r1(f1.la.value)}%, England ${r1(f1.england)}%` : f1.status, acland: f2.status === "published" ? `${f2.value}% vs ${f2.la.name} ${r1(f2.la.value)}%` : f2.status, leighton: `${lp.social.fsm.status}; rule 2 shown ${html.includes(SMT_NOTES.wIndependentFsm)}; no number ${lpOk}`, chaseRendered: shownOk }) };
+  },
+  async smtContextWording() {
+    const { SMT_NOTES } = await import("../src/catalogue/notes");
+    const lp = await smtContextCase("110110", "around", "whole");
+    const chase = await smtContextCase("137625", "around", "gcse");
+    const views = ["DV-SMT-C-NOW", "DV-SMT-C-MAP", "DV-SMT-C-BYAGE", "DV-SMT-C-PROJECTION", "DV-SMT-C-NEARBY"];
+    let text = "";
+    for (const dv of views) text += " " + textOf(await smtRender("110110", dv, undefined, { context: lp, contextMap: { state: "fallback", reason: "test" } }));
+    for (const dv of views) text += " " + textOf(await smtRender("137625", dv, undefined, { context: chase, contextMap: { state: "fallback", reason: "test" } }));
+    // Rule 6 is the source (i): the panels' source line, built from the data's years.
+    text += " " + chase.notes.sources;
+    const rules: Record<string, string> = { "1 deprivation": SMT_NOTES.wDeprivation, "2 independent FSM": SMT_NOTES.wIndependentFsm, "2 draw": SMT_NOTES.wIndependentDraw, "4 deciles": SMT_NOTES.wDeciles, "5 projection": SMT_NOTES.wProjection };
+    const missing = Object.entries(rules).filter(([, v]) => !text.includes(v)).map(([k]) => k);
+    // Rule 3 lives in the captions (the (i) behind the caption button): checked on the notes the panels show.
+    const rule3 = chase.notes.children.includes(SMT_NOTES.wResidents);
+    const rule6 = /ONS mid-year population estimates for LSOAs \(mid-\d{4}\)/.test(chase.notes.sources) && /English Indices of Deprivation \d{4}/.test(chase.notes.sources) && /\(\d{4}\/\d{2}\)\.$/.test(chase.notes.sources);
+    // No "pupils" beside a deprivation figure: the social block's deprivation lines, less the rule's own words.
+    const social = text.split("Social context").slice(1).map((t) => t.split(SMT_NOTES.fsmTitle)[0]).join(" ").replaceAll(SMT_NOTES.wDeprivation, "");
+    const pupilsNearDeprivation = /pupils/i.test(social);
+    const pass = missing.length === 0 && rule3 && rule6 && !pupilsNearDeprivation;
+    return { pass, detail: fmt({ missing: missing.join(", ") || "none", residentsRule: rule3, sources: chase.notes.sources, pupilsNextToDeprivation: pupilsNearDeprivation }) };
   },
   async smtContextNow() {
-    const c = await smtContextCase("137625");
+    const c = await smtContextCase("137625", "around", "gcse");
     const { fetchBirthsByLa } = await import("../src/lib/admissions/data");
     const births = (await fetchBirthsByLa(["885"])).get("885")!;
     const year = Math.max(...births.keys());
-    const pass = c.now.births?.year === year && c.now.births.value === births.get(year) && c.now.schools.count > 0 && c.place.la === "Worcestershire";
-    return { pass, detail: fmt({ births: `${c.now.births?.value} (${c.now.births?.year})`, raw: births.get(year), schoolsNearby: c.now.schools.count, children: c.now.children.value, place: [c.place.town, c.place.la, c.place.region].join(" · ") }) };
+    const { SHIRE_COUNTY_DISTRICT_GSS_CODES } = await import("../src/lib/shire-county-districts");
+    const L = await lib();
+    const facts = await L.ref.lookupReferenceData({ sourceId: "ons_snpp", entityIds: SHIRE_COUNTY_DISTRICT_GSS_CODES["885"], breakdowns: ["age:11", "age:12", "age:13", "age:14", "age:15"] });
+    const at = (y: number) => facts.filter((f) => f.period === y).reduce((t, f) => t + (f.value_numeric ?? 0), 0);
+    const p = c.now.projection;
+    const projOk = !!p && Math.abs(((at(p.to) - at(p.from)) / at(p.from)) * 100 - p.changePct) < 1e-6;
+    const pass = c.now.births?.year === year && c.now.births.value === births.get(year) && c.now.schools.count > 0 && c.place.la === "Worcestershire" && projOk;
+    return { pass, detail: fmt({ births: `${c.now.births?.value} (${c.now.births?.year})`, raw: births.get(year), schoolsNearby: c.now.schools.count, projection: p && `${p.agesWord} ${p.from}->${p.to} ${p.changePct.toFixed(1)}%`, projectionRecomputed: projOk, place: [c.place.town, c.place.la, c.place.region].join(" · ") }) };
   },
   async smtBirths() {
-    const c = await smtContextCase("137625");
+    const c = await smtContextCase("137625", "around", "gcse");
     const base = c.births.base;
     const at = (pts: { year: number; value: number | null }[]) => pts.find((p) => p.year === base)?.value;
-    const pass = base === 2012 && at(c.births.indexed.la) === 100 && at(c.births.indexed.england) === 100 && c.projection.pts.every((p) => p.year <= 2036) && c.projection.pts.length > 1;
-    return { pass, detail: fmt({ base, england2012: c.births.england.find((p) => p.year === 2012)?.value, projectionYears: c.projection.pts.map((p) => p.year).join("/") }) };
+    const { SMT_PROJECTION_CHART_AHEAD } = await import("../src/catalogue/years");
+    const latest = c.population.latestEstimate!;
+    const proj = c.population.projection;
+    const pass = base === 2012 && at(c.births.indexed.la) === 100 && at(c.births.indexed.england) === 100 && proj.length > 1 && proj[0].year === latest && proj.every((p) => p.year <= latest + SMT_PROJECTION_CHART_AHEAD) && proj.at(-1)!.year === latest + SMT_PROJECTION_CHART_AHEAD;
+    return { pass, detail: fmt({ base, england2012: c.births.england.find((p) => p.year === 2012)?.value, latestEstimate: latest, projectionYears: `${proj[0]?.year}-${proj.at(-1)?.year}` }) };
   },
   // ------------------------------------------------------------------ 0.8 SMT round 1
   async smtLevelChips() {
@@ -1613,8 +1686,19 @@ const RUNNERS: Record<string, Runner> = {
       rehearsal = `error ${(e as Error).message.slice(0, 120)}`;
     }
     const r = (() => { try { return JSON.parse(rehearsal) as { a8: number; aps: number; provisional: boolean }; } catch { return null; } })();
-    const pass = today && literal.length === 0 && !!r && r.a8 === 2025 && r.aps === c.school.latest.ks5!.period && r.provisional;
-    return { pass, detail: fmt({ todayA8: a8.period, latestKs4: c.school.latest.ks4!.period, yearLiterals: literal.join(" ") || "none", rehearsal: r ? `A8 ${r.a8}, Post-16 ${r.aps}, provisional=${r.provisional}` : rehearsal }) };
+    // 0.8 SMT r3: ONS adds an LSOA mid-year (install-lsoa-next.ts): Context moves to it with no code change.
+    const ctx = await smtContextCase("137625", "around", "gcse");
+    let lsoa = "";
+    try {
+      lsoa = execFileSync("npx", ["-y", "tsx", "--env-file=.env", "--import=./scripts/year-rehearsal/install-lsoa-next.ts", path.join(ROOT, "scripts/year-rehearsal/smt-context-rehearsal-check.mts")], { cwd: ROOT, encoding: "utf8", timeout: 900_000, stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n").at(-1) ?? "";
+    } catch (e) {
+      lsoa = `error ${(e as Error).message.slice(0, 120)}`;
+    }
+    const l = (() => { try { return JSON.parse(lsoa) as { children: number; byAge: number; sources: number; nearbyLast: number }; } catch { return null; } })();
+    const next = (ctx.now.children.year ?? 0) + 1;
+    const lsoaOk = !!l && l.children === next && l.byAge === next && l.sources === next && l.nearbyLast === next;
+    const pass = today && literal.length === 0 && !!r && r.a8 === 2025 && r.aps === c.school.latest.ks5!.period && r.provisional && lsoaOk;
+    return { pass, detail: fmt({ todayA8: a8.period, latestKs4: c.school.latest.ks4!.period, yearLiterals: literal.join(" ") || "none", rehearsal: r ? `A8 ${r.a8}, Post-16 ${r.aps}, provisional=${r.provisional}` : rehearsal, lsoaRehearsal: l ? `today mid-${ctx.now.children.year}; with a new year: children ${l.children}, by age ${l.byAge}, sources ${l.sources}, nearby to ${l.nearbyLast}` : lsoa }) };
   },
   async smtBoardingOnly() {
     const { pillsFor } = await import("../src/lib/smt/levels");

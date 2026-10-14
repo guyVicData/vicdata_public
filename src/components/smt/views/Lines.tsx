@@ -226,12 +226,12 @@ export function PoolLine({ pool, fullscreen, room, caption }: { pool: { status: 
 }
 
 /** One plain line (the area's school-age pupils), actual figures. */
-export function PlainLine({ title, label, pts, fullscreen, room, caption }: { title: string; label: string; pts: Pt[]; fullscreen: boolean; room?: number; caption: string }) {
+export function PlainLine({ title, label, pts, fullscreen, room, caption, xLabel = yr }: { title: string; label: string; pts: Pt[]; fullscreen: boolean; room?: number; caption: string; xLabel?: (year: number) => string }) {
   if (pts.filter((p) => p.value !== null).length < 2) return <Empty>Not enough years held to draw a trend.</Empty>;
   return (
     <>
       <div className="text-[12.5px] font-bold text-[var(--fg)]">{title}</div>
-      <LineChart height={fullscreen ? fillHeight(room, 150, 300) : 140} yFormat={(v) => fmt(v, "pupils")} xLabels={[yr(pts[0].year), yr(pts[pts.length - 1].year)]} series={[{ id: "a", label, colour: "var(--adm-grey-soft)", points: pts.map((p) => ({ x: p.year, y: p.value })) }]} />
+      <LineChart height={fullscreen ? fillHeight(room, 150, 300) : 140} yFormat={(v) => fmt(v, "pupils")} xLabels={[xLabel(pts[0].year), xLabel(pts[pts.length - 1].year)]} series={[{ id: "a", label, colour: "var(--adm-grey-soft)", points: pts.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${xLabel(pt.x)}: ${fmt(pt.y, "pupils")}` }]} />
       <div className="flex flex-wrap gap-3">
         <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} />}>{label}</Key>
       </div>

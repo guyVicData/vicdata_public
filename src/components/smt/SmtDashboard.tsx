@@ -41,6 +41,7 @@ import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usag
 import { useSmt, type Academic, type Load, type Overview, type SmtFilters, type SmtSchool, type SmtSetChoice } from "./api";
 import type { Pupils } from "@/lib/smt/pupils";
 import type { Context, ContextArea } from "@/lib/smt/context";
+import type { ContextMap } from "@/lib/smt/context-map";
 import { AROUND_MILES_UI } from "@/lib/smt/levels";
 import { loadSmtMember, type SmtMember, type SmtMemberState } from "./member";
 import { DEFAULT_SET_LABEL, useSmtSet } from "./useSmtSet";
@@ -59,7 +60,7 @@ import { GradeProfile } from "./views/Grades";
 import { EntriesMix } from "./views/Mix";
 import { ReservedPanel } from "./views/Reserved";
 import { EntryPoints, LeavingAt16, PupilsNow, ShapeAndSize } from "./views/Pupils";
-import { AgeBars, AreaMap, BirthsAndProjections, BirthsIndexed, BirthsTable, ContextNow, Projection } from "./views/Context";
+import { AgeBars, AreaMap, BirthsAndProjections, BirthsIndexed, BirthsTable, ContextNow, NearbyOverTime, PopulationProjected, shadeOptions, type ShadeBy } from "./views/Context";
 
 const ComparatorSetChooser = lazy(() => import("@/components/teacher/ComparatorSetChooser").then((m) => ({ default: m.ComparatorSetChooser })));
 const EditorScreen = lazy(() => import("@/components/editor/EditorScreen").then((m) => ({ default: m.EditorScreen })));
@@ -192,6 +193,10 @@ export type Ctx = {
   academic: Load<Academic>;
   pupils: Load<Pupils>;
   context: Load<Context>;
+  // 0.8 SMT r3: the map's neighbourhoods (a separate read) and its "Shade by".
+  contextMap: Load<ContextMap>;
+  shade: ShadeBy;
+  onShade: (s: ShadeBy) => void;
   onArea: (stage: "ks4" | "ks5", id: string) => void;
   focusBar: ReactNode;
   phone: boolean;
@@ -230,7 +235,10 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: f } : null);
   // Context: the area pill (around the school, or the LA), held in the address (?area=la).
   const [area, setArea] = useState<ContextArea>(() => (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("near") === "la" ? "la" : "around"));
-  const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${member.schoolUrn}&area=${area}` : null, null);
+  // 0.8 SMT r3: the level picks the ages; the map's neighbourhoods are read only around the school.
+  const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${member.schoolUrn}&area=${area}&level=${level.phase}` : null, null);
+  const contextMap = useSmt<ContextMap>(s && dash === "context" && area === "around" ? `/api/smt/context/map?urn=${member.schoolUrn}&level=${level.phase}` : null, null);
+  const [shade, setShade] = useState<ShadeBy>("children");
 
   // B7: a page view, once per school, dashboard, level and set kind.
   const usage: UsageScope | null = useMemo(() => (s ? { product: "smt", urn: member.schoolUrn, dashboard: DASH_ID[dash], level: level.area ? `${level.phase}/${level.area}` : level.phase, setKind: set?.kind ?? null, resolved: !!set } : null), [s, member.schoolUrn, dash, level.phase, level.area, set]);
@@ -356,7 +364,7 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   );
 
   const config = configs[dash];
-  const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, filters: f, overview, academic, pupils, context, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone } : null;
+  const ctx: Ctx | null = s && set ? { member, school: s, dash, level, set, filters: f, overview, academic, pupils, context, contextMap, shade, onShade: setShade, onArea: (st, id) => setLevel({ phase: st === "ks4" ? "gcse" : "post16", area: id }), focusBar, phone } : null;
   const switcher = <GroupSwitcher dashboards={DASHES.map((d) => configs[d])} activeId={config.id} onSwitch={(d) => go(DASHES.find((x) => configs[x].id === d.id) ?? "overview")} />;
 
   return (
@@ -440,7 +448,8 @@ function rowContext(row: string, c: Ctx): string {
     return `${periodLabel(CENSUS_FIRST_PERIOD)} to ${census !== null ? periodLabel(census) : ""}`;
   }
   if (c.dash === "context") {
-    if (row === "now") return "ONS births and projections, school census by age";
+    const to = c.context.status === "ready" ? c.context.data.population.to : null;
+    if (row === "now") return `ONS mid-year estimates and births${to !== null ? `, projections to ${to}` : ""}`;
     return "indexed to 100, against England";
   }
   const area = c.level.area ? (c.school.areas[c.level.phase === "gcse" ? "gcse" : "post16"].find((a) => a.id === c.level.area)?.label ?? null) : null;
@@ -508,8 +517,9 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
         rail={railOf(panel)}
         railActive={active}
         onRail={setActive}
-        source={sourceOf(dv)}
+        source={sourceOf(dv, c)}
         caption={captionOf(dv, c)}
+        chips={chipsOf(dv, c)}
         height={height}
         span={(panel.span?.cols ?? 1) >= 2 ? 2 : 1}
         title={title}
@@ -528,12 +538,21 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
             instance,
             context: contextFromPanel(config, panel.id, { school: c.member.schoolName }),
             title: `${title} · ${levelLabel(c.level)}`,
-            pinned: { schoolUrn: c.member.schoolUrn, schoolName: c.member.schoolName, params: { level: c.level.phase, area: c.level.area, set: { kind: c.set.kind, label: c.set.label, urns: c.set.urns }, ...(c.context.status === "ready" ? { near: c.context.data.area } : {}) }, keepLive: true },
+            pinned: { schoolUrn: c.member.schoolUrn, schoolName: c.member.schoolName, params: { level: c.level.phase, area: c.level.area, set: { kind: c.set.kind, label: c.set.label, urns: c.set.urns }, ...(c.context.status === "ready" ? { near: c.context.data.area, ...(dv === "DV-SMT-C-MAP" ? { shade: c.shade } : {}) } : {}) }, keepLive: true },
           }}
         />
       )}
     </>
   );
+}
+
+// A view's own header pill: Context's map has "Shade by", listing only what exists (K3).
+function chipsOf(dv: string, c: Ctx): ReactNode {
+  if (dv !== "DV-SMT-C-MAP" || c.context.status !== "ready") return null;
+  const map = c.contextMap.status === "ready" ? c.contextMap.data : null;
+  const opts = shadeOptions(c.context.data, c.context.data.area === "around" ? map : null);
+  const value = opts.some((o) => o.id === c.shade) ? c.shade : "children";
+  return <MenuChip label="Shade by" value={value} onPick={c.onShade} options={opts} menuWidth={300} />;
 }
 
 // The panel's header line: its tag (the view's own name or the panel's) and the context after it.
@@ -594,21 +613,23 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-P-POOL":
       return { tag: "From Admissions", context: `${c.pupils.status === "ready" && c.pupils.data.trends.pool.status === "ready" ? c.pupils.data.trends.pool.entry : "main entry point"}, read-only` };
     case "DV-SMT-P-AREA":
-      return { tag: "Area", context: "school census, ages 5–15" };
+      return { tag: "Area", context: `ONS residents, ages ${c.pupils.status === "ready" ? c.pupils.data.trends.area.agesWord : "5–15"}` };
     // 0.8 SMT round 2: Context
     case "DV-SMT-C-NOW":
       return { tag: "Current", context: c.context.status === "ready" && c.context.data.area === "la" ? (c.school.laName ?? "the LA") : "around the school" };
     case "DV-SMT-C-MAP":
-      return { tag: "Map", context: "the area around the school" };
+      return { tag: "Map", context: c.context.status === "ready" && c.context.data.area === "la" ? (c.school.regionName ?? c.school.laName ?? "") : "the area around the school" };
     case "DV-SMT-C-BYAGE":
-      return { tag: "Population by age", context: c.school.laName ?? "" };
+      return { tag: "Population by age", context: c.context.status === "ready" && c.context.data.byAge.scope === "around" ? "within 5 miles" : (c.school.laName ?? "") };
+    case "DV-SMT-C-NEARBY":
+      return { tag: "Children nearby", context: "residents, indexed" };
     case "DV-SMT-C-BIRTHS":
       return { tag: "Births and projections", context: c.school.laName ?? "" };
     case "DV-SMT-C-BIRTHS-INDEXED":
     case "DV-SMT-C-BIRTHS-TABLE":
       return { tag: "Trends", context: "births, 2012 = 100" };
     case "DV-SMT-C-PROJECTION":
-      return { tag: "Forward", context: "to 2036" };
+      return { tag: "Forward", context: c.context.status === "ready" && c.context.data.population.to !== null ? `to ${c.context.data.population.to}` : "" };
     case "DV-SMT-C-AGES":
       return { tag: "Area", context: "population by age" };
   }
@@ -617,10 +638,17 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
 
 const areaLabelOf = (c: Ctx) => (c.level.area ? (c.school.areas[c.level.phase === "gcse" ? "gcse" : "post16"].find((a) => a.id === c.level.area)?.label ?? null) : null);
 
-/** The source behind each panel's "i": the view's title and its measures' citations. */
-function sourceOf(dv: string): ReactNode {
+/** The source behind each panel's "i": the view's title and its measures' citations; Context's names
+ * its sources and editions, the years read from the data (wording rule 6). */
+function sourceOf(dv: string, c?: Ctx): ReactNode {
   const d = dataviewById(dv);
   if (!d) return null;
+  if (dv.startsWith("DV-SMT-C-") && c && c.context.status === "ready")
+    return (
+      <>
+        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {c.context.data.notes.sources} <span className="opacity-70">({d.measures.join(", ")})</span>
+      </>
+    );
   const cites: Record<string, string> = { "M-SMT-SCHOOL": "DfE school census (January)", "M-SMT-RESULTS": "DfE KS2, KS4 and KS5 performance tables", "M-SMT-VA": "DfE performance tables (value added)", "M-SMT-SUBJECTS": "DfE KS4 and KS5 subject tables", "M-ADM-MARKET": "DfE school census, Admissions' rivals" };
   return (
     <>
@@ -677,19 +705,22 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-P-PHASES-TABLE":
       return smtNote("rollByPhase", { base: periodLabel(CENSUS_FIRST_PERIOD) });
     case "DV-SMT-P-AREA":
-      return smtNote("areaPupils", { la: c.school.laName ?? "the LA" });
+      return c.pupils.status === "ready" ? smtNote("areaResidents", { la: c.school.laName ?? "The LA", ages: c.pupils.data.trends.area.agesWord }) : SMT_NOTES.areaResidentsCaption;
     case "DV-SMT-C-NOW":
-      return c.context.status === "ready" ? `${c.context.data.notes.children} ${c.context.data.notes.births} ${c.context.data.notes.projection}` : null;
+      return c.context.status === "ready" ? `${c.context.data.notes.children} ${c.context.data.notes.births} ${c.context.data.notes.projection} ${SMT_NOTES.wDeciles} ${smtNote("mixInfo", { miles: AROUND_MILES_UI })} ${SMT_NOTES.fsmInfo}` : null;
     case "DV-SMT-C-MAP":
-      return `${SMT_NOTES.shadeByDistrict} ${SMT_NOTES.shadeLater}`;
+      return c.contextMap.status === "ready" && c.contextMap.data.state === "lsoa" && c.context.status === "ready" && c.context.data.area === "around" ? `${SMT_NOTES.mapNeighbourhoods}. ${smtNote("mapRing", { miles: c.contextMap.data.radiusMiles })} ${SMT_NOTES.wDeciles}` : SMT_NOTES.shadeByDistrict;
     case "DV-SMT-C-BYAGE":
     case "DV-SMT-C-AGES":
-      return c.context.status === "ready" ? c.context.data.notes.popByAge : null;
+      return c.context.status === "ready" ? `${c.context.data.notes.popByAge} ${SMT_NOTES.wResidents}` : null;
+    case "DV-SMT-C-NEARBY":
+      return c.context.status === "ready" ? `${c.context.data.notes.nearby} ${SMT_NOTES.wResidents}` : null;
     case "DV-SMT-C-BIRTHS":
     case "DV-SMT-C-BIRTHS-INDEXED":
     case "DV-SMT-C-BIRTHS-TABLE":
-    case "DV-SMT-C-PROJECTION":
       return c.context.status === "ready" ? `${c.context.data.notes.births} ${c.context.data.notes.projection}` : SMT_NOTES.births;
+    case "DV-SMT-C-PROJECTION":
+      return c.context.status === "ready" ? `${c.context.data.notes.population} ${c.context.data.notes.projection}` : null;
   }
   return null;
 }
@@ -809,7 +840,7 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-P-POOL":
           return <PoolLine pool={p.trends.pool} fullscreen={fullscreen} room={room} caption={SMT_NOTES.pool} />;
         case "DV-SMT-P-AREA":
-          return <PlainLine title="The area's school-age population" label={c.school.laName ?? "The LA"} pts={p.trends.area.pts} fullscreen={fullscreen} room={room} caption={smtNote("areaPupils", { la: c.school.laName ?? "the LA" })} />;
+          return <PlainLine title="The area's school-age population" label={`${c.school.laName ?? "The LA"}, residents aged ${p.trends.area.agesWord}`} pts={p.trends.area.pts} fullscreen={fullscreen} room={room} caption={SMT_NOTES.areaResidentsCaption} xLabel={(y) => `mid-${y}`} />;
       }
       return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
     });
@@ -820,7 +851,9 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-C-NOW":
           return <ContextNow c={x} compact={c.phone && !fullscreen} />;
         case "DV-SMT-C-MAP":
-          return <AreaMap c={x} fullscreen={fullscreen} room={room} />;
+          return <AreaMap c={x} map={c.contextMap} shade={c.shade} fullscreen={fullscreen} room={room} />;
+        case "DV-SMT-C-NEARBY":
+          return <NearbyOverTime c={x} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-C-BYAGE":
           return <AgeBars c={x} ages={x.ages} height={fullscreen && room ? Math.max(220, room - 120) : 260} />;
         case "DV-SMT-C-BIRTHS":
@@ -830,7 +863,7 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-C-BIRTHS-TABLE":
           return <BirthsTable c={x} />;
         case "DV-SMT-C-PROJECTION":
-          return <Projection c={x} fullscreen={fullscreen} room={room} />;
+          return <PopulationProjected c={x} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-C-AGES":
           return <AgeBars c={x} ages={x.ages} height={fullscreen && room ? Math.max(200, room - 120) : 130} title="Children by single year of age" />;
       }
@@ -937,12 +970,12 @@ function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
   return (
     <>
       {now && (
-        <RailPanel tag={title} title={title} height="auto" source={sourceOf(nowDv)} caption={captionOf(nowDv, c)} focusBar={c.focusBar}>
+        <RailPanel tag={title} title={title} height="auto" source={sourceOf(nowDv, c)} caption={captionOf(nowDv, c)} focusBar={c.focusBar}>
           {({ fullscreen }) => <ViewBody dv={nowDv} c={c} fullscreen={fullscreen} />}
         </RailPanel>
       )}
       {large && (
-        <RailPanel tag={dataviewById(largeDv)?.label ?? ""} title={dataviewById(largeDv)?.label ?? ""} height="auto" source={sourceOf(largeDv)} caption={captionOf(largeDv, c)} controls={<Tabs items={railOf(large)} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar}>
+        <RailPanel tag={dataviewById(largeDv)?.label ?? ""} title={dataviewById(largeDv)?.label ?? ""} height="auto" source={sourceOf(largeDv, c)} caption={captionOf(largeDv, c)} chips={chipsOf(largeDv, c)} controls={<Tabs items={railOf(large)} active={largeTab || large.defaultView || ""} onPick={setLargeTab} />} focusBar={c.focusBar}>
           {({ fullscreen, height }) => (
             <div className="flex min-h-[200px] flex-col gap-2">
               <ViewBody dv={largeDv} c={c} fullscreen={fullscreen} room={height} />
@@ -951,7 +984,7 @@ function PhoneBody({ config, c }: { config: DashboardConfig; c: Ctx }) {
         </RailPanel>
       )}
       {trendPanel && (
-        <RailPanel tag={tabLabel(trendPanel)} title={tabLabel(trendPanel)} height="auto" source={sourceOf(trendDv)} caption={captionOf(trendDv, c)} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: tabLabel(t), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} flag={flagOf(trendDv, c)}>
+        <RailPanel tag={tabLabel(trendPanel)} title={tabLabel(trendPanel)} height="auto" source={sourceOf(trendDv, c)} caption={captionOf(trendDv, c)} controls={<Tabs items={trends.map((t) => ({ id: t.id, label: tabLabel(t), icon: "" }))} active={trendTab} onPick={setTrendTab} />} focusBar={c.focusBar} flag={flagOf(trendDv, c)}>
           {({ fullscreen, height }) => (
             <div className="flex min-h-[160px] flex-col gap-2">
               <ViewBody dv={trendDv} c={c} fullscreen={fullscreen} room={height} />
@@ -980,11 +1013,14 @@ export function SmtViewPreview({ dataview, urn, schoolName, params, height }: { 
   const overview = useSmt<Overview>(s && body && dash === "overview" ? "/api/smt/overview" : null, body ? { ...body, filters: { sex: "all", boarding: "all" } } : null);
   const academic = useSmt<Academic>(s && body && dash === "academic" ? "/api/smt/academic" : null, body ? { ...body, level: level.phase, area: level.area } : null);
   const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: { sex: "all", boarding: "all" } } : null);
-  const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${urn}&area=${params?.near === "la" ? "la" : "around"}` : null, null);
+  const near = params?.near === "la" ? "la" : "around";
+  const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${urn}&area=${near}&level=${level.phase}` : null, null);
+  const contextMap = useSmt<ContextMap>(s && dash === "context" && near === "around" && dataview === "DV-SMT-C-MAP" ? `/api/smt/context/map?urn=${urn}&level=${level.phase}` : null, null);
+  const shade: ShadeBy = (["children", "imd", "idaci", "fsm"] as const).find((k) => k === params?.shade) ?? "children";
   const member = { userId: "", token: "", membershipId: null, schoolAccountId: "", schoolUrn: urn, schoolName, roles: [], isAdmin: false, isAccountHolder: false, access: "member", readOnly: true, viewAs: null } as SmtMember;
   return (
     <div data-smt-preview={dataview} className="flex min-h-0 flex-col gap-2 overflow-hidden text-[var(--fg)]" style={{ ...smtVars(theme), height }}>
-      {s && set ? <ViewBody dv={dataview} c={{ member, school: s, dash, level, set, filters: { sex: "all", boarding: "all" }, overview, academic, pupils, context, onArea: () => undefined, focusBar: null, phone: false }} fullscreen={false} /> : school.status === "error" ? <Empty>{school.message}</Empty> : <Skeleton />}
+      {s && set ? <ViewBody dv={dataview} c={{ member, school: s, dash, level, set, filters: { sex: "all", boarding: "all" }, overview, academic, pupils, context, contextMap, shade, onShade: () => undefined, onArea: () => undefined, focusBar: null, phone: false }} fullscreen={false} /> : school.status === "error" ? <Empty>{school.message}</Empty> : <Skeleton />}
     </div>
   );
 }

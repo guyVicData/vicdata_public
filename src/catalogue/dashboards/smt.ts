@@ -50,7 +50,7 @@ const PUPILS: Cell[] = [
 
 const CONTEXT: Cell[] = [
   { column: "c1", row: "now", name: "Current", views: ["DV-SMT-C-NOW"], defaultView: "DV-SMT-C-NOW" },
-  { column: "c2", row: "now", span: 2, name: "Map", views: ["DV-SMT-C-MAP", "DV-SMT-C-BYAGE", "DV-SMT-C-BIRTHS"], defaultView: "DV-SMT-C-MAP" },
+  { column: "c2", row: "now", span: 2, name: "Map", views: ["DV-SMT-C-MAP", "DV-SMT-C-BYAGE", "DV-SMT-C-BIRTHS", "DV-SMT-C-NEARBY"], defaultView: "DV-SMT-C-MAP" },
   { column: "c1", row: "trends", name: "Trends", views: ["DV-SMT-C-BIRTHS-INDEXED", "DV-SMT-C-BIRTHS-TABLE"], defaultView: "DV-SMT-C-BIRTHS-INDEXED" },
   { column: "c2", row: "trends", name: "Forward", views: ["DV-SMT-C-PROJECTION"], defaultView: "DV-SMT-C-PROJECTION" },
   { column: "c3", row: "trends", name: "Area", views: ["DV-SMT-C-AGES"], defaultView: "DV-SMT-C-AGES" },

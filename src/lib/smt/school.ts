@@ -25,6 +25,9 @@ export type SmtSchool = {
   regionName: string | null;
   independent: boolean;
   typeGroup: string | null;
+  // GIAS establishment type (0.8 SMT r3: DfE publishes no FSM for "Other independent special school"s,
+  // which GIAS groups under "Special schools", nor for independent schools other than CTCs).
+  establishmentType: string | null;
   // GIAS gender of entry ("Mixed", "Girls", "Boys"): the Gender pill is for mixed schools only.
   gender: string | null;
   mixed: boolean;
@@ -40,7 +43,7 @@ export type SmtSchool = {
   census: RollSnapshot[];
 };
 
-type SchoolRow = { current_name: string | null; town: string | null; la_name: string | null; la_code: string | null; gender: string | null; boarders_name: string | null; establishment_type_group: string | null; statutory_low_age: number | null; statutory_high_age: number | null };
+type SchoolRow = { current_name: string | null; town: string | null; la_name: string | null; la_code: string | null; gender: string | null; boarders_name: string | null; establishment_type_group: string | null; establishment_type: string | null; statutory_low_age: number | null; statutory_high_age: number | null };
 
 export function latestYears(): Promise<LatestYears> {
   return cachedReference("years:latest", () => lookupAcademicLatestYears()) as Promise<LatestYears>;
@@ -71,7 +74,7 @@ export async function schoolAreas(urn: string, stage: "ks4" | "ks5", period: num
 export async function smtSchool(urn: string): Promise<SmtSchool | null> {
   const { data } = await createServerAnonSupabaseClient()
     .from("schools")
-    .select("current_name, town, la_name, la_code, gender, boarders_name, establishment_type_group, statutory_low_age, statutory_high_age")
+    .select("current_name, town, la_name, la_code, gender, boarders_name, establishment_type_group, establishment_type, statutory_low_age, statutory_high_age")
     .eq("urn", urn)
     .maybeSingle<SchoolRow>();
   if (!data) return null;
@@ -106,6 +109,7 @@ export async function smtSchool(urn: string): Promise<SmtSchool | null> {
     regionName: england.get(urn)?.regionName ?? null,
     independent: typeGroup === "Independent schools",
     typeGroup,
+    establishmentType: data.establishment_type,
     gender: data.gender,
     mixed: data.gender === "Mixed",
     boarding: isBoardingSchool(data.boarders_name),
