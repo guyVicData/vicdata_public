@@ -3,6 +3,7 @@
 // the school page's XS-XL, the shared shape classifier, Admissions' pipeline, entry points and
 // market share -- read-only where Admissions owns them. Nothing is ranked by shape (R-ADM-SHAPE-NOT-RANKED).
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SmtAdmissionsReader } from "./auth-rules";
 import { CENSUS_FIRST_PERIOD, CURRENT_CENSUS_PERIOD, periodLabel } from "@/catalogue/years";
 import { ADMISSIONS_NOTES, smtNote } from "@/catalogue/notes";
 import { lookupAgeBandDistributions } from "../age-band-distributions";
@@ -85,7 +86,7 @@ async function savedEntryPoints(supabase: SupabaseClient, urn: string): Promise<
   return ((data ?? []) as { entry_point: string }[]).map((r) => r.entry_point);
 }
 
-export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFilters, level: SmtLevel, caller: { supabase: SupabaseClient } | null): Promise<Pupils> {
+export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFilters, level: SmtLevel, caller: SmtAdmissionsReader | null): Promise<Pupils> {
   const urn = school.urn;
   const setUrns = Array.from(new Set(set.urns.filter((u) => u !== urn)));
   const f: SmtFilters = { sex: school.mixed ? filters.sex : "all", boarding: school.boarding ? filters.boarding : "all" };
@@ -142,12 +143,14 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFi
 
   // ------------------------------------------------------------ entry points at a glance (Admissions, read-only)
   let entries: Pupils["entries"] = { status: "empty", reason: smtNote("entryPointsNone") };
-  if (caller) {
-    const eps = (await savedEntryPoints(caller.supabase, urn)).map((id) => entryPoint(id)).filter((e): e is EntryPoint => !!e);
+  const sb = caller?.supabase ?? null;
+  if (caller?.privateNote) entries = { status: "empty", reason: caller.privateNote };
+  else if (sb) {
+    const eps = (await savedEntryPoints(sb, urn)).map((id) => entryPoint(id)).filter((e): e is EntryPoint => !!e);
     if (eps.length) {
       const rows = await Promise.all(
         eps.map(async (ep): Promise<EntrySummary> => {
-          const pv = await pipelineView(urn, ep, await savedLists(caller.supabase, urn, ep.id));
+          const pv = await pipelineView(urn, ep, await savedLists(sb, urn, ep.id));
           if ("empty" in pv) return { entry: ep.id, label: ep.label, age: ep.age, cohort: null, pool: null, poolYear: null, poolSource: null };
           const next = pv.ladder.future[0];
           return { entry: ep.id, label: ep.label.replace(/ \(.*\)$/, ""), age: ep.age, cohort: pv.now.cohort, pool: next?.pool ?? null, poolYear: next?.entryYear ?? null, poolSource: next?.source ?? null };
@@ -197,7 +200,7 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFi
   if (mainEntry) {
     const ep = entryPoint(mainEntry)!;
     // The lead's saved lists where the caller can read them; else Admissions' nearby defaults.
-    const pv = await pipelineView(urn, ep, caller ? await savedLists(caller.supabase, urn, ep.id) : []);
+    const pv = await pipelineView(urn, ep, sb ? await savedLists(sb, urn, ep.id) : []);
     if (!("empty" in pv)) {
       const counted = [...pv.ladder.past, ...pv.ladder.future.filter((x) => x.source === "counted")].map((x) => ({ year: x.entryYear, value: x.pool }));
       const births = pv.ladder.future.filter((x) => x.source === "births").map((x) => ({ year: x.entryYear, value: x.pool }));

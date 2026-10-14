@@ -3,10 +3,11 @@
 // VicData 0.8 shell + SMT r1, B7: the browser's half of the usage log. A page reports what it showed
 // (product, school, dashboard, view, level, set kind); the server adds who (/api/usage). Fire and
 // forget: no await, no error, no retry, nothing drawn.
-import { createContext, createElement, useContext, useEffect, type ReactNode } from "react";
+import { createContext, createElement, useContext, useEffect, useRef, type ReactNode } from "react";
 import { createBrowserSupabaseClient } from "./supabase";
 import { getActiveViewAs } from "./view-as";
 import type { UsageReport } from "./usage";
+import { createPageViewGate, pageViewKey, type PageViewScope } from "./usage-gate";
 
 export function reportUsage(r: UsageReport): void {
   // A platform admin viewing as someone is not the school's usage: never logged.
@@ -25,18 +26,22 @@ export function reportUsage(r: UsageReport): void {
 
 // What the page in view is: set once by the page (its root), read by the shell's CardBox when a
 // panel opens in full screen. Absent = nothing is logged (a meeting slide, the editor, a preview).
-export type UsageScope = Omit<UsageReport, "event" | "view">;
+// `resolved: false` while the page's level or set is still being read (G0, groups r1).
+export type UsageScope = PageViewScope;
 export const UsageScopeContext = createContext<UsageScope | null>(null);
 export const useUsageScope = () => useContext(UsageScopeContext);
 
-/** A page view, once per product, school, dashboard, level and set kind shown. */
+/** One page view per load, once the level and set are resolved; then one more only when the
+ * dashboard, level or set kind changes (usage-gate.ts). The gate lives as long as the page. */
 export function useUsagePageView(scope: UsageScope | null): void {
-  const key = scope ? JSON.stringify([scope.product, scope.urn, scope.dashboard ?? "", scope.level ?? "", scope.setKind ?? ""]) : "";
+  const gate = useRef<ReturnType<typeof createPageViewGate> | null>(null);
+  const key = scope ? JSON.stringify([scope.resolved !== false, pageViewKey(scope)]) : "";
   useEffect(() => {
-    if (!key) return;
-    const [product, urn, dashboard, level, setKind] = JSON.parse(key) as [UsageReport["product"], string, string, string, string];
-    reportUsage({ product, event: "page_view", urn, dashboard: dashboard || null, level: level || null, setKind: setKind || null });
-  }, [key]);
+    if (!scope) return;
+    gate.current ??= createPageViewGate();
+    const r = gate.current(scope);
+    if (r) reportUsage(r);
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /** The page's scope and its page view, as an element that draws nothing: a page whose hooks can't

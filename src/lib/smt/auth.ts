@@ -6,11 +6,15 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPlatformAdmin } from "../view-as";
-import { canSeeSmt, SMT_ONLY_MESSAGE } from "./auth-rules";
+import { createServiceRoleSupabaseClient } from "../supabase";
+import { groupCaller, headOfficeAccess } from "../groups/server";
+import { parseViewAsGroupCookie } from "../groups/view-as-group";
+import { groupNote } from "@/catalogue/notes";
+import { canSeeSmt, SMT_ONLY_MESSAGE, type SmtAdmissionsReader } from "./auth-rules";
 
-export type SmtCaller = { supabase: SupabaseClient; userId: string; urn: string; roles: string[] };
+export type SmtCaller = { supabase: SupabaseClient; userId: string; urn: string; roles: string[]; admissions: SmtAdmissionsReader; headOffice: { groupName: string } | null };
 
-export { canSeeSmt, SMT_ONLY_MESSAGE } from "./auth-rules";
+export { canSeeSmt, SMT_ONLY_MESSAGE, type SmtAdmissionsReader } from "./auth-rules";
 
 export async function smtCaller(request: NextRequest, urn: string | null): Promise<SmtCaller | NextResponse> {
   const auth = request.headers.get("authorization");
@@ -33,8 +37,22 @@ export async function smtCaller(request: NextRequest, urn: string | null): Promi
   if (error) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
   const roles = data?.roles ?? [];
   const allowed = !!data && canSeeSmt({ roles, isAdmin: !!data.is_admin, isAccountHolder: data.school_accounts?.account_holder_membership_id === data.id });
-  if (!allowed && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: SMT_ONLY_MESSAGE }, { status: 403 });
-  return { supabase, userId, urn, roles };
+  if (allowed) return { supabase, userId, urn, roles, admissions: { supabase }, headOffice: null };
+  const platform = await isPlatformAdmin(supabase);
+  // Groups r1 (G2): head office reads a current member school's SMT, read-only, where the school holds
+  // its own VicData membership (checked in production and here, on every request). A platform admin in
+  // head-office View as sees exactly what that head office sees.
+  const asGroup = platform ? parseViewAsGroupCookie(request.headers.get("cookie")) : null;
+  if (platform && !asGroup) return { supabase, userId, urn, roles, admissions: { supabase }, headOffice: null };
+  const viewed = asGroup ? await groupCaller(request).catch(() => null) : null;
+  const offices = viewed && !(viewed instanceof NextResponse) ? viewed.offices : undefined;
+  const office = await headOfficeAccess(supabase, userId, urn, offices).catch(() => null);
+  // In head-office View as the platform admin sees exactly what head office sees: no fallback.
+  if (office?.ok) {
+    const admissions: SmtAdmissionsReader = office.shared ? { supabase: createServiceRoleSupabaseClient() } : { supabase: null, privateNote: groupNote("admissionsPrivate", { school: office.schoolName }) };
+    return { supabase, userId, urn, roles: [], admissions, headOffice: { groupName: office.office.name } };
+  }
+  return NextResponse.json({ error: SMT_ONLY_MESSAGE }, { status: 403 });
 }
 
 const URN = /^\d{5,7}$/;

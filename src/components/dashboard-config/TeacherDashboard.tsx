@@ -2692,7 +2692,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     : null;
 
   // 0.8 B7: the usage log's page view (and the scope CardBox's full screen reads). Draws nothing.
-  const usageScope: UsageScope | null = schoolUrn && phase ? { product: "teacher", urn: schoolUrn, dashboard: dashboardConfig?.id ?? `teacher.${phase}`, level: focusItem ? focusItem.subject : null, setKind: activeSavedSet ? "saved" : chooserChoice ? chooserChoice.kind : "nearest" } : null;
+  // Groups r1 G0: logged once the subjects and the saved set are read, not before.
+  const usageScope: UsageScope | null = schoolUrn && phase ? { product: "teacher", urn: schoolUrn, dashboard: dashboardConfig?.id ?? `teacher.${phase}`, level: focusItem ? focusItem.subject : null, setKind: activeSavedSet ? "saved" : chooserChoice ? chooserChoice.kind : "nearest", resolved: !loading && storedSaved !== "pending" } : null;
   return (
     <UsageReporter scope={usageScope}>
     {editorHost && dashboardConfig && <InPlaceEditor slug={dashboardConfig.id} host={editorHost} />}

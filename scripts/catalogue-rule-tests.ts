@@ -1445,6 +1445,24 @@ const RUNNERS: Record<string, Runner> = {
     const pass = p.now.roll === c.school.census.at(-1)!.totalRoll && Math.abs((p.now.stayingOn?.pct ?? -1) - pct) < 1e-9 && p.now.boarding === null && !/Day · boarding/.test(html) && /Day · boarding/.test(lpHtml) && /Girls · boys/.test(html);
     return { pass, detail: fmt({ roll: p.now.roll, stayingOn: round(p.now.stayingOn?.pct, 1), recomputed: round(pct, 1), chaseBoardingTile: /Day · boarding/.test(html), leightonBoardingTile: /Day · boarding/.test(lpHtml) }) };
   },
+  async smtY12AgainstY11() {
+    const { SMT_NOTES } = await import("../src/catalogue/notes");
+    const { cachedCensus } = await import("../src/lib/admissions/data");
+    const { cohortAt } = await import("../src/lib/admissions/cohort");
+    const p = await smtPupilsCase("110110");
+    const c = await smtCase("110110");
+    const t = (await cachedCensus(["110110"])).get("110110")!.table;
+    const P = c.school.census.at(-1)!.period;
+    const pct = (cohortAt(t, 16, P)! / cohortAt(t, 15, P - 1)!) * 100;
+    const views: Record<string, string> = {};
+    for (const id of ["DV-SMT-P-NOW", "DV-SMT-P-SHAPE", "DV-SMT-P-LEAVING"]) views[id] = textOf(await smtRender("110110", id, undefined, { pupils: p }));
+    const named = Object.values(views).every((v) => v.includes(SMT_NOTES.y12Label));
+    const staying = Object.entries(views).filter(([, v]) => /staying on/i.test(v)).map(([k]) => k);
+    const caption = views["DV-SMT-P-NOW"].includes(SMT_NOTES.y12AgainstY11);
+    const same = Math.abs((p.now.stayingOn?.pct ?? -1) - pct) < 1e-9;
+    const pass = named && staying.length === 0 && caption && same && pct > 100;
+    return { pass, detail: fmt({ leightonPark: round(p.now.stayingOn?.pct, 1), recomputed: `Y12 ${P} / Y11 ${P - 1} = ${round(pct, 1)}`, namedInAllThree: named, saysStayingOn: staying.join(",") || "none", caption }) };
+  },
   async smtShape() {
     const p = await smtPupilsCase("137625");
     const { cachedCensus } = await import("../src/lib/admissions/data");

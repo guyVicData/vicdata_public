@@ -1,0 +1,12 @@
+import { createRoot } from "react-dom/client";
+import { GroupHome } from "@/components/groups/GroupHome";
+import { GroupAccess } from "@/components/groups/GroupAccess";
+import { Platform } from "@/components/admin/PlatformScreen";
+import { SmtDashboard } from "@/components/smt/SmtDashboard";
+import TeacherHome from "@/app/teacher/page";
+import GroupJoinPage from "@/app/teacher/group/join/page";
+const P = new URLSearchParams(location.search);
+const page = P.get("page");
+createRoot(document.getElementById("root")!).render(
+  page === "access" ? <GroupAccess /> : page === "platform" ? <Platform /> : page === "smt" ? <SmtDashboard dash={(P.get("dash") as "overview" | "pupils") ?? "overview"} /> : page === "teacherhome" ? <TeacherHome /> : page === "join" ? <GroupJoinPage /> : <GroupHome />,
+);

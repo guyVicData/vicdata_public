@@ -34,6 +34,7 @@ import { configRendererRequested } from "@/components/dashboard-config/plan";
 import { ADMISSIONS_DASHBOARDS, TEACHER_DASHBOARDS } from "@/catalogue/dashboards";
 import { AdmissionsTile } from "@/components/admissions/AdmissionsTile";
 import { SchoolTile } from "@/components/smt/SchoolTile";
+import { SchoolGroupTile } from "@/components/groups/SchoolGroupTile";
 import { SMT_DASHBOARDS } from "@/catalogue/dashboards/smt";
 import type { DashboardConfig } from "@/catalogue/types";
 import { loadKeyDashboards } from "@/components/library/data";
@@ -178,6 +179,15 @@ export default function TeacherHomePage() {
           .catch(() => {});
       }
       if (!urn) {
+        // 0.8 groups r1 (G3): head office has no school of its own; its home is the group's.
+        if (!trial) {
+          const g = await fetch("/api/group/me", { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+          const offices = g?.ok ? ((await g.json()) as { offices: unknown[] }).offices : [];
+          if (offices.length) {
+            window.location.replace("/teacher/group");
+            return;
+          }
+        }
         setError("Teacher view is available to verified school staff.");
         setLoading(false);
         return;
@@ -230,6 +240,8 @@ export default function TeacherHomePage() {
           {/* 0.8 SMT r1 (B6): the SMT home opens on The school (its dashboards and a summary line),
               in KeyDashboardsEmpty's place; Admissions follows, read-only for SMT. */}
           {lens === "smt" && <SchoolTile />}
+          {/* 0.8 groups r1: the school's group, where its head office holds a group account. */}
+          {lens === "smt" && <SchoolGroupTile urn={schoolUrn} />}
           {(lens === "admissions" || lens === "smt") && <AdmissionsTile />}
           {(keyDashboards[lens] ?? []).length > 0 ? (
             keyDashboards[lens]!.map((k) => <KeyDashboardTile key={k.href} href={k.href} config={k.config} lens={lens} />)
@@ -283,6 +295,7 @@ export default function TeacherHomePage() {
           {v06 && (keyDashboards.teacher ?? []).map((k) => <KeyDashboardTile key={k.href} href={k.href} config={k.config} lens="teacher" />)}
           {v06 && <LibraryTile lens="teacher" />}
           {v06 && schoolAdmin && <AdmissionsTile />}
+          {v06 && schoolAdmin && !lenses.includes("smt") && <SchoolGroupTile urn={schoolUrn} />}
           <HomeCard
             href="/teacher/recruitment"
             colour={FEATURE_ACCENT.recruitment}

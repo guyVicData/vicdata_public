@@ -31,7 +31,7 @@ export function PupilsNow({ p, school, compact = false }: { p: Pupils; school: S
     <Tile key="since" label={`Since ${periodLabel(CENSUS_FIRST_PERIOD)}`} value={n.changePct === null ? "—" : `${n.changePct >= 0 ? "▲" : "▼"} ${Math.abs(n.changePct).toFixed(0)}%`} sub="whole school" />,
     ...(school.mixed ? [<Tile key="gb" small label="Girls · boys" value={n.girls !== null && n.boys !== null && n.girls + n.boys ? `${Math.round((n.girls / (n.girls + n.boys)) * 100)}% · ${Math.round((n.boys / (n.girls + n.boys)) * 100)}%` : "—"} sub="whole school" />] : []),
     ...(n.boarding ? [<Tile key="db" small label="Day · boarding" value={`${fmt(n.boarding.day, "pupils")} · ${fmt(n.boarding.boarders, "pupils")}`} sub="whole school" />] : []),
-    ...(n.stayingOn ? [<Tile key="stay" small label="Staying on at 16" value={`${Math.round(n.stayingOn.pct)}%`} sub={n.stayingOn.pct > 100 ? "Year 12 against Year 11: more joined than left" : "Year 11 to Year 12"} />] : []),
+    ...(n.stayingOn ? [<Tile key="stay" small label={SMT_NOTES.y12Label} value={`${Math.round(n.stayingOn.pct)}%`} sub={SMT_NOTES.y12AgainstY11} />] : []),
   ];
   // An odd tile out spans both columns, so the grid has no gap (as the Academic board's four tiles).
   const grid = tiles.map((t, i) => (tiles.length % 2 === 1 && i === tiles.length - 1 ? <div key={`w${i}`} className="col-span-2 [&>div]:h-full">{t}</div> : t));
@@ -94,7 +94,7 @@ export function ShapeAndSize({ p, height = 190 }: { p: Pupils; height?: number }
           <span className="text-right font-bold text-[var(--fg)]">{s.around.set.map((x) => `${x.schools} ${shapeName(x.shape)}`).join(" · ") || "—"}</span>
         </div>
         <div className="flex justify-between gap-2 text-[12.5px]">
-          <span className="text-[var(--chip-fg)]">Staying on at 16, {p.set.label}</span>
+          <span className="text-[var(--chip-fg)]">{SMT_NOTES.y12Label}, {p.set.label}</span>
           <span className="font-bold text-[var(--fg)]" title={`The middle of the set's ${s.around.stayingOnSet.schools} schools with a sixth form`}>
             {s.around.stayingOnSet.pct === null ? "—" : `${Math.round(s.around.stayingOnSet.pct)}%`}
           </span>
@@ -167,7 +167,7 @@ export function LeavingAt16({ p, school }: { p: Pupils; school: SmtSchool }) {
               <Th>Year 12 in</Th>
               <Th>Year 11 the year before</Th>
               <Th>Year 12</Th>
-              <Th>Staying on</Th>
+              <Th>{SMT_NOTES.y12Label}</Th>
               <Th>Net leavers</Th>
             </tr>
           </thead>

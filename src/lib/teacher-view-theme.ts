@@ -31,6 +31,10 @@ export const FEATURE_ACCENT = {
 // hidden in the 0.6 UI but keyed for completeness (blue and rose from the existing palette).
 // Teacher and SMT share their hexes with the KS4 and KS5 phase accents; that is the board's
 // choice, logged rather than changed.
+// 0.8 groups r1: the group view's accent, orange as the group wireframes draw it (to confirm with Guy:
+// logged). A product accent, not a role's: head office isn't a role at a school.
+export const GROUP_ACCENT = { hex: "#fb923c", rgb: "251,146,60" } as const;
+
 export const ROLE_ACCENT = {
   teacher: { hex: "#34d399", rgb: "52,211,153" },
   smt: { hex: "#a78bfa", rgb: "167,139,250" },

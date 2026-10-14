@@ -2056,3 +2056,26 @@ Prompt: `docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md`. Report: `do
 
 **The editor and the seed**
 - The re-seed adds the Pupils and Context dashboards and assigns them to SMT. Commands are in the report.
+
+## 2026-10-14 — 0.8 groups r1
+
+Head-office accounts, access rules, the Access page and the group home; two SMT r2 fixes. Report: `docs/v0.8/groups_r1_report_v1.md`.
+
+**Decisions for Guy to confirm**
+- **Admissions sharing defaults to off.** Head office sees a member school's SMT dashboards read-only, but its Admissions panels read "Private to {school}" until the school's School-Admin turns on "Share our Admissions panels with {group} head office" (on the school's home, under its group).
+- **Likely members can be granted, labelled "likely member".** "Give all schools access" skips them; each is switched on by itself. Head office can also open a likely member's SMT read-only (public data; Admissions private unless shared).
+- **The membership model.** The Access page says "A school needs its own VicData membership for its staff to sign in; the group membership covers head office and the group view." The text is `GROUP_NOTES.membership`, so it can change without code.
+- **The groups accent is orange** (`GROUP_ACCENT`, #fb923c), as the wireframes draw it.
+
+**Calls made**
+- **Route: `/teacher/group`** (and `/teacher/group/access`, `/teacher/group/join`), not `/group`, so the shell's nav, theme and Home link work as on every role home. Head office with no school of its own is sent there from `/teacher`.
+- **Invitations are links, not emails.** VicData has no mailer and school accounts aren't invited either (staff join through `/join`). An invitation returns a one-time link, shown once to the inviter. Accepting needs the link, the invited address on the accepting account and a click. The invitation is the approval. (The first version matched the address alone; the security review showed that's a takeover where sign-up auto-confirms email, and it was replaced.)
+- **The Platform search reads every school's groups.** Production has no lookup by group name, so `/api/platform/groups` builds an index from `school_groups_lookup` over every English school, in batches of 300, cached for 6 hours (3,734 groups). **Ingest follow-up:** a `groups_search(p_query)` lookup would replace it.
+- **"Left the group"** comes from grant history: production's lookups return current members only, so a school appears there if it held a grant and is no longer listed. A grant counts only while the school is a current member, and only if it was made during the current membership (`joined_date`). Club ISS memberships have no join dates, so for them a leave-and-rejoin can't be detected. **Ingest follow-up:** expose `first_seen` in `group_schools_lookup`.
+- **Membership freshness:** the server caches each group's members for 10 minutes, so a school that leaves loses head office's access within 10 minutes of production updating.
+- **"Opened, last 30 days"** counts usage events with product `groups`. None exist until the group dashboards do (rounds 2–3, which add `groups` to the usage log's vocabulary). Fewer than 5 opens shows "fewer than 5 times"; fewer than 5 staff shows "fewer than 5 staff".
+- **The home's summary line** compares the combined census roll this year against last, over schools with both years; "growing" counts schools whose roll rose. (Dukes reads ▼ 8.9%, 2 of 25 growing: large for a year, worth a look at the census by age for independent preps before it's shown to Dukes.)
+- **Head office isn't logged.** Its views of a member school's SMT write no usage event (it holds no membership there), and nor does a platform admin's head-office View as.
+- **Suspended accounts** lock head office out entirely (RLS and routes); platform admins still read them.
+- **Preview accounts (G6)** never take a real group's id: `preview:3320` borrows Harris's member list. No school sees one, nor can share with one, and the real group's account can still be made.
+- **Unit test count.** This round's command (`npx tsx --test` over every tracked `*.test.ts`) gives 346: 330 before plus 16 new. Round 2's report said 407, counted another way.

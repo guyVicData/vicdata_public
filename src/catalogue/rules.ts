@@ -1411,18 +1411,29 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-PUPILS-NOW",
     statement:
-      "Your pupils now shows the census's roll and its change since 2019/20, girls and boys (mixed schools only), day and boarding (boarding schools only), staying on at 16 (Year 12 now against Year 11 a year before, where the school has both), the school page's XS-XL by phase and the LA context line.",
+      "Your pupils now shows the census's roll and its change since 2019/20, girls and boys (mixed schools only), day and boarding (boarding schools only), Year 12 against Year 11 (Year 12 now against Year 11 a year before, where the school has both), the school page's XS-XL by phase and the LA context line.",
     why: "Tiles a reader can check against the census; the boarding-only and mixed-only rule as everywhere else.",
     appliesTo: "DV-SMT-P-NOW",
     enforcedIn: ["src/lib/smt/pupils.ts:buildPupils, stayingOnAt", "src/components/smt/views/Pupils.tsx:PupilsNow"],
-    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: roll and staying on recomputed from the census (Year 12 2025/26 against Year 11 2024/25); no boarding tile. Leighton Park: the boarding tile.", check: "smtPupilsNow" },
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase: roll and Year 12 against Year 11 recomputed from the census (Year 12 2025/26 against Year 11 2024/25); no boarding tile. Leighton Park: the boarding tile.", check: "smtPupilsNow" },
     origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-Y12-AGAINST-Y11",
+    statement:
+      "The Year 11 to Year 12 figure is called \"Year 12 against Year 11\" wherever it appears (Your pupils now, the set's figure in Shape and size, the Leaving at 16 table), never \"staying on\", with SMT_NOTES.y12AgainstY11 as its caption; it compares the same cohort, Year 11 in year t-1 with Year 12 in year t.",
+    why: "A sixth form that recruits shows more than 100% (Leighton Park 103%), which \"staying on\" can't mean (0.8 groups r1, G0).",
+    appliesTo: "DV-SMT-P-NOW, DV-SMT-P-SHAPE, DV-SMT-P-LEAVING",
+    enforcedIn: ["src/catalogue/notes.ts:SMT_NOTES.y12Label, y12AgainstY11", "src/lib/smt/pupils.ts:stayingOnAt", "src/components/smt/views/Pupils.tsx"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625", phase: "ks4", expect: "Each of the three views shows SMT_NOTES.y12Label and none says \"staying on\"; the tile's caption is SMT_NOTES.y12AgainstY11; Leighton Park's figure is above 100% and equals census age 16 in P over age 15 in P-1.", check: "smtY12AgainstY11" },
+    origin: "0.8 groups round 1, G0 (docs/v0.8/vicdata_0_8_groups_round1_accounts_access_claude_code_prompt_v1.md)",
     status: "active",
   },
   {
     id: "R-SMT-VIEW-SHAPE",
     statement:
-      "Shape and size draws pupils in each year group, the shape and since when, and the shapes around (the LA's schools of the same age range, the comparison set's shapes, staying on in the set's sixth forms) -- described, never ranked.",
+      "Shape and size draws pupils in each year group, the shape and since when, and the shapes around (the LA's schools of the same age range, the comparison set's shapes, Year 12 against Year 11 in the set's sixth forms) -- described, never ranked.",
     why: "R-ADM-SHAPE-NOT-RANKED: shapes are neither better nor worse.",
     appliesTo: "DV-SMT-P-SHAPE",
     enforcedIn: ["src/lib/smt/pupils.ts:buildPupils", "src/components/smt/views/Pupils.tsx:ShapeAndSize"],
@@ -1444,7 +1455,7 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-LEAVING",
     statement:
-      "Leaving at 16 follows Year 11 to Year 12 at the school year by year (the census a year apart): staying on and the net leavers, worded as Admissions' estimate (ADMISSIONS_NOTES.leaving16).",
+      "Leaving at 16 follows Year 11 to Year 12 at the school year by year (the census a year apart): Year 12 against Year 11 and the net leavers, worded as Admissions' estimate (ADMISSIONS_NOTES.leaving16).",
     why: "An estimate of net leavers, not a count of who left.",
     appliesTo: "DV-SMT-P-LEAVING",
     enforcedIn: ["src/lib/smt/pupils.ts:buildPupils"],

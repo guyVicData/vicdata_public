@@ -7,12 +7,14 @@
 //   member       SMT (governors hold the SMT role): everything; edits the comparison sets as in Teacher
 //   schoolAdmin  is_admin / the account holder: the same
 //   viewAs       a platform admin through View as: everything, read-only
+//   headOffice   groups r1 (G2): a member school's group head office, read-only, never logged; reached by
+//                ?headOffice=URN from the group home and confirmed by the server (/api/group/school-access)
 //   none         anyone else (a Teacher): the page says who SMT is for
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { pickMembership, resolveViewAs, viewAsMembership, type ViewAs } from "@/lib/view-as";
 import { canSeeSmt } from "@/lib/smt/auth-rules";
 
-export type SmtAccess = "member" | "schoolAdmin" | "viewAs" | "none";
+export type SmtAccess = "member" | "schoolAdmin" | "viewAs" | "headOffice" | "none";
 export type SmtMember = {
   userId: string;
   token: string;
@@ -26,8 +28,28 @@ export type SmtMember = {
   access: SmtAccess;
   readOnly: boolean;
   viewAs: ViewAs | null;
+  headOffice?: { groupName: string; accountId: string; note: string; admissions: "shared" | "private" } | null;
 };
-export type SmtMemberState = { status: "loading" } | { status: "signed-out" } | { status: "no-school" } | { status: "ready"; member: SmtMember };
+export type SmtMemberState = { status: "loading" } | { status: "signed-out" } | { status: "no-school" } | { status: "not-found" } | { status: "ready"; member: SmtMember };
+
+// The member school head office opened from the group home, for this tab (SMT's own links don't carry
+// the address's ?headOffice=).
+const HEAD_OFFICE_KEY = "vicdata.smt.headOffice";
+
+async function headOfficeMember(urn: string, session: { user: { id: string }; access_token: string }): Promise<SmtMemberState> {
+  const res = await fetch(`/api/group/school-access?urn=${encodeURIComponent(urn)}`, { headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => null);
+  if (!res || !res.ok) return { status: "not-found" };
+  const b = (await res.json()) as { urn: string; schoolName: string; accountId: string; groupName: string; note: string; admissions: "shared" | "private" };
+  try {
+    window.sessionStorage.setItem(HEAD_OFFICE_KEY, urn);
+  } catch {
+    // This page only.
+  }
+  return {
+    status: "ready",
+    member: { userId: session.user.id, token: session.access_token, membershipId: null, schoolAccountId: "", schoolUrn: b.urn, schoolName: b.schoolName, roles: [], isAdmin: false, isAccountHolder: false, access: "headOffice", readOnly: true, viewAs: null, headOffice: { groupName: b.groupName, accountId: b.accountId, note: b.note, admissions: b.admissions } },
+  };
+}
 
 type Row = { id: string; roles: string[] | null; is_admin: boolean; approved_at: string | null; school_account_id: string; school_accounts: { id: string; school_urn: string; account_holder_membership_id: string | null; schools: { current_name: string } | null } | null };
 const SELECT = "id, roles, is_admin, approved_at, school_account_id, school_accounts!school_memberships_school_account_id_fkey(id, school_urn, account_holder_membership_id, schools(current_name))";
@@ -52,10 +74,21 @@ export async function loadSmtMember(): Promise<SmtMemberState> {
     const access = smtAccessOf(base);
     return { status: "ready", member: { userId: session.user.id, token: session.access_token, membershipId: null, schoolAccountId: account.id, schoolUrn: viewAs.urn, schoolName: viewAs.schoolName, ...base, access: access === "none" ? "none" : "viewAs", readOnly: true, viewAs } };
   }
+  const asked = new URLSearchParams(window.location.search).get("headOffice");
+  if (asked && /^\d{5,7}$/.test(asked)) return headOfficeMember(asked, session);
   const { data } = await supabase.from("school_memberships").select(SELECT).eq("profile_id", session.user.id).eq("status", "approved");
   const row = pickMembership(((data ?? []) as unknown as Row[]));
   const account = row?.school_accounts;
-  if (!row || !account) return { status: "no-school" };
+  if (!row || !account) {
+    // Head office (no school of its own) moving between a member school's SMT dashboards.
+    let stored: string | null = null;
+    try {
+      stored = window.sessionStorage.getItem(HEAD_OFFICE_KEY);
+    } catch {
+      stored = null;
+    }
+    return stored ? headOfficeMember(stored, session) : { status: "no-school" };
+  }
   const base = { roles: row.roles ?? [], isAdmin: row.is_admin, isAccountHolder: account.account_holder_membership_id === row.id };
   const access = smtAccessOf(base);
   return { status: "ready", member: { userId: session.user.id, token: session.access_token, membershipId: row.id, schoolAccountId: account.id, schoolUrn: account.school_urn, schoolName: account.schools?.current_name ?? account.school_urn, ...base, access, readOnly: false, viewAs: null } };

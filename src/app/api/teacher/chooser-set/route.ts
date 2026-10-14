@@ -1,6 +1,7 @@
 import { isPlatformAdmin } from "@/lib/view-as";
+import { headOfficeAccess } from "@/lib/groups/server";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
 import { resolveDefaultNearest, resolveFixedSet, resolveRankingSet } from "@/lib/chooser-sets";
 import type { RankingFilters } from "@/lib/comparator-chooser";
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     .limit(1)
     .maybeSingle();
   if (membershipError) return NextResponse.json({ error: "Could not verify your membership. Try again." }, { status: 502 });
-  if (!membership && !(await isPlatformAdmin(supabase))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
+  if (!membership && !(await isPlatformAdmin(supabase)) && !(await headOfficeMayRead(supabase, authHeader, body.urn))) return NextResponse.json({ error: "Teacher view is available to verified school staff." }, { status: 403 });
 
   // 0.6.7 B1: at GCSE and Post-16 the answer carries the set's lean school details too
   // (teacher-comparator-profiles.ts), for exactly the schools the page would otherwise ask
@@ -74,5 +75,17 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("[teacher/chooser-set] failed:", err);
     return NextResponse.json({ error: "Could not load these schools." }, { status: 502 });
+  }
+}
+
+// 0.8 groups r1 (G2): head office reading a current member school's SMT (read-only) resolves its sets
+// here too. Asked only after the member and platform-admin checks fail, so a member's path is unchanged.
+async function headOfficeMayRead(supabase: SupabaseClient, authHeader: string, urn: string): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.getUser(authHeader.replace(/^Bearer\s+/i, ""));
+    if (!data.user?.id) return false;
+    return (await headOfficeAccess(supabase, data.user.id, urn)).ok;
+  } catch {
+    return false;
   }
 }
