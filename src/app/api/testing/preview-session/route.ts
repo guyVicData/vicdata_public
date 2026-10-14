@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { timingSafeEqual, sha256Hex, PREVIEW_GATE_COOKIE } from "@/lib/timing-safe";
 import { grantApprovedMembership } from "@/lib/testing-membership";
+import { isPreviewGroup, previewGroupEmail, seedPreviewGroup } from "@/lib/testing-group";
 
 // Passwordless preview access for automated browser agents
 // (docs/vicdata_phase3_agent_preview_access_brief_v1.md).
@@ -62,8 +63,15 @@ export async function GET(request: NextRequest) {
   // Only ever a path on this origin. An open redirect here would be handed a valid gate
   // cookie on the way out, so the check is not cosmetic: reject anything that could be
   // read as absolute or protocol-relative.
+  // 0.8 groups r1 (G6): ?group=harris|dukes signs in that group's own preview head-office user instead
+  // (no school membership: its home is the group's), with the test group account seeded.
+  const groupParam = request.nextUrl.searchParams.get("group");
+  if (groupParam !== null && !isPreviewGroup(groupParam)) return notFound();
+  const group = isPreviewGroup(groupParam) ? groupParam : null;
+  const signInEmail = group ? previewGroupEmail(previewEmail, group) : previewEmail;
+
   const requested = request.nextUrl.searchParams.get("redirect");
-  const redirectPath = requested && requested.startsWith("/") && !requested.startsWith("//") ? requested : "/teacher";
+  const redirectPath = requested && requested.startsWith("/") && !requested.startsWith("//") ? requested : group ? "/teacher/group" : "/teacher";
 
   const admin = createServiceRoleSupabaseClient();
 
@@ -76,11 +84,11 @@ export async function GET(request: NextRequest) {
     console.error("[preview-session] could not list users:", listError.message);
     return notFound();
   }
-  userId = list.users.find((u) => u.email?.toLowerCase() === previewEmail.toLowerCase())?.id ?? null;
+  userId = list.users.find((u) => u.email?.toLowerCase() === signInEmail.toLowerCase())?.id ?? null;
 
   if (!userId) {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
-      email: previewEmail,
+      email: signInEmail,
       email_confirm: true,
     });
     if (createError || !created.user) {
@@ -93,14 +101,23 @@ export async function GET(request: NextRequest) {
   // A starter school so /teacher has something real to show on arrival. Only granted when
   // this profile has no membership at all -- otherwise every visit would yank the account
   // back to the starter school and break the school-switcher's whole purpose.
-  const { data: existing } = await admin
-    .from("school_memberships")
-    .select("id")
-    .eq("profile_id", userId)
-    .limit(1);
-  if (!existing || existing.length === 0) {
-    const granted = await grantApprovedMembership(admin, userId, PREVIEW_STARTER_URN);
-    if (!granted.ok) console.error("[preview-session] starter membership failed:", granted.error);
+  if (group) {
+    const seeded = await seedPreviewGroup(admin, userId, group);
+    if (!seeded.ok) {
+      console.error("[preview-session] group seed failed:", seeded.error);
+      return notFound();
+    }
+  }
+  if (!group) {
+    const { data: existing } = await admin
+      .from("school_memberships")
+      .select("id")
+      .eq("profile_id", userId)
+      .limit(1);
+    if (!existing || existing.length === 0) {
+      const granted = await grantApprovedMembership(admin, userId, PREVIEW_STARTER_URN);
+      if (!granted.ok) console.error("[preview-session] starter membership failed:", granted.error);
+    }
   }
 
   // A real magic link, verified by Supabase itself. redirectTo must be registered in the
@@ -120,7 +137,7 @@ export async function GET(request: NextRequest) {
   const origin = siteUrl.replace(/\/+$/, "");
   const { data: link, error: linkError } = await admin.auth.admin.generateLink({
     type: "magiclink",
-    email: previewEmail,
+    email: signInEmail,
     options: { redirectTo: `${origin}${redirectPath}` },
   });
   if (linkError || !link.properties?.action_link) {
