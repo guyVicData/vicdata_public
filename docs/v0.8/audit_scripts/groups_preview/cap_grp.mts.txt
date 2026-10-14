@@ -1,0 +1,60 @@
+// Group preview fixtures: the routes' own server functions, read-only (production lookups, the census,
+// the app's school accounts). Grants, SMT counts and usage are a labelled DEMO overlay where ?demo=1:
+// the G1 migration isn't applied, so no real grant exists.
+import { writeFileSync } from "node:fs";
+import { groupMembers } from "/Users/guy/dev/vicdata_public/src/lib/groups/production";
+import { schoolAccounts } from "/Users/guy/dev/vicdata_public/src/lib/groups/server";
+import { accessTable, canManageAccess, rollSummary, seeingCount, schoolSide, type Grant, type HeadOffice } from "/Users/guy/dev/vicdata_public/src/lib/groups/access-rules";
+import { cachedCensus } from "/Users/guy/dev/vicdata_public/src/lib/admissions/data";
+import { groupIndex } from "/Users/guy/dev/vicdata_public/src/lib/groups/production";
+const G = [
+  { key: "harris", id: "a0000000-0000-4000-8000-000000003320", groupId: "3320", name: "Harris Federation", demo: { accounts: 9, grants: 6, likely: 1, left: "137121" } },
+  { key: "dukes", id: "a0000000-0000-4000-8000-0000000d0e55", groupId: "club_iss:dukes-education", name: "Dukes Education", demo: { accounts: 8, grants: 5, likely: 1, left: null } },
+];
+const out: Record<string, unknown> = {};
+for (const g of G) {
+  const office: HeadOffice = { id: g.id, groupId: g.groupId, name: g.name, status: "active", role: "head_office_admin" };
+  let members = await groupMembers(g.groupId);
+  const urns = members.map((m) => m.urn);
+  const census = await cachedCensus(urns);
+  const P = Math.max(...Array.from(census.values()).map((c) => c.latestPeriod ?? 0));
+  const roll = (u: string, p: number) => { const ag = census.get(u)?.ageGenderByPeriod.get(p); if (!ag) return null; let t = 0; for (const v of ag.values()) t += v.male + v.female; return t; };
+  const summary = { ...rollSummary(urns.map((u) => ({ urn: u, now: roll(u, P), before: roll(u, P - 1) }))), period: P };
+  const realAcc = await schoolAccounts(urns);
+  const build = (demo: boolean) => {
+    let mem = members;
+    const acc = new Map(Array.from(realAcc).map(([u, a]) => [u, { smtMembers: a.smtMembers }]));
+    let grants: Grant[] = [];
+    const usage = new Map<string, { times: number; staff: number }>();
+    const names = new Map<string, string>();
+    if (demo) {
+      const sorted = [...mem].sort((a, b) => a.name.localeCompare(b.name));
+      sorted.slice(0, g.demo.accounts).forEach((m, i) => acc.set(m.urn, { smtMembers: [3, 2, 4, 1, 5, 2, 3, 6, 2][i] ?? 2 }));
+      sorted.slice(0, g.demo.grants).forEach((m, i) => { grants.push({ schoolUrn: m.urn, grantedAt: `2026-09-${String(8 + i * 3).padStart(2, "0")}T09:00:00Z`, revokedAt: null, likely: false }); usage.set(m.urn, [{ times: 23, staff: 6 }, { times: 3, staff: 2 }, { times: 41, staff: 9 }, { times: 12, staff: 3 }, { times: 0, staff: 0 }, { times: 7, staff: 5 }][i] ?? { times: 0, staff: 0 }); });
+      const lk = sorted[sorted.length - 1];
+      mem = mem.map((m) => (m.urn === lk.urn ? { ...m, confidence: "likely" as const, source: "companies_house" } : m));
+      acc.set(lk.urn, { smtMembers: 1 });
+      if (g.demo.left) { const lm = mem.find((m) => m.urn === g.demo.left)!; names.set(lm.urn, lm.name); mem = mem.filter((m) => m.urn !== g.demo.left); grants.push({ schoolUrn: lm.urn, grantedAt: "2026-05-04T09:00:00Z", revokedAt: null, likely: false }); }
+    }
+    const table = accessTable(mem, grants, acc, usage, names);
+    const home = { office, viewAs: false, canManage: canManageAccess(office, false), summary, access: seeingCount(office, mem, grants), schools: mem.map((m) => ({ urn: m.urn, name: m.name, likely: m.confidence === "likely", vicdata: acc.has(m.urn) })).sort((a, b) => a.name.localeCompare(b.name)), source: members[0]?.source ?? null, lastSeen: members.reduce<string | null>((d, m) => (m.lastSeen && (!d || m.lastSeen > d) ? m.lastSeen : d), null) };
+    const access = { office, viewAs: false, canManage: true, total: mem.length, ...table, headOffice: [{ id: "h1", name: "Sam Morgan", email: `sam.morgan@${g.key}.example`, role: "head_office_admin", self: true }, { id: "h2", name: "Priya Shah", email: `priya.shah@${g.key}.example`, role: "head_office", self: false }], invitations: [{ id: "i1", email: `finance@${g.key}.example`, role: "head_office", invited_at: "2026-10-12T10:00:00Z" }] };
+    return { home, access, firstGranted: grants[0]?.schoolUrn ?? null };
+  };
+  out[g.key] = { real: build(false), demo: build(true), office };
+}
+// A Harris school's own side (its SMT home): the demo's first granted school.
+const h = (out.harris as { demo: { firstGranted: string }; office: HeadOffice }).demo.firstGranted;
+const hm = (await groupMembers("3320")).find((m) => m.urn === h)!;
+out.schoolSide = { urn: h, name: hm.name, groups: schoolSide(h, [{ groupId: "3320", name: "Harris Federation", confidence: "confirmed" }], [{ id: "a0000000-0000-4000-8000-000000003320", groupId: "3320", name: "Harris Federation", status: "active" }], new Map([["a0000000-0000-4000-8000-000000003320", [{ schoolUrn: h, grantedAt: "2026-09-08T09:00:00Z", revokedAt: null, likely: false }]]]), new Map()), schoolAdmin: true };
+// The Platform page: two accounts, and a search.
+const idx = await groupIndex();
+out.platform = {
+  accounts: [
+    { id: "a0000000-0000-4000-8000-0000000d0e55", group_id: "club_iss:dukes-education", display_name: "Dukes Education", status: "active", created_at: "2026-10-14T09:00:00Z", admins: 1, members: 2, open_invitations: 1, open_grants: 5 },
+    { id: "a0000000-0000-4000-8000-000000003320", group_id: "3320", display_name: "Harris Federation", status: "active", created_at: "2026-10-14T09:00:00Z", admins: 0, members: 0, open_invitations: 0, open_grants: 0 },
+  ],
+  search: { harris: idx.filter((x) => x.name.toLowerCase().includes("harris")).sort((a, b) => b.schools - a.schools).slice(0, 8) },
+};
+writeFileSync(process.argv[2], `window.__GRPFX = ${JSON.stringify(out)};\n`);
+console.log("wrote", process.argv[2], Object.keys(out), "index", idx.length);
