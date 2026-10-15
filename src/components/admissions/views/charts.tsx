@@ -60,7 +60,11 @@ export function path(points: Pt[], sx: (v: number) => number, sy: (v: number) =>
   return d;
 }
 
-export type Series = { id: string; label: string; colour: string; width?: number; dashed?: string; points: Pt[]; title?: (p: Pt) => string; dots?: boolean };
+export type Series = { id: string; label: string; colour: string; width?: number; dashed?: string; points: Pt[]; title?: (p: Pt) => string; dots?: boolean; opacity?: number };
+// 0.8 SMT r4 (F1): a shaded range under the lines (a projection's band), and a labelled vertical marker
+// (where the years start to include children not yet born). Optional: absent, the chart is as before.
+export type Band = { id: string; colour: string; opacity?: number; points: { x: number; lo: number | null; hi: number | null }[] };
+export type Marker = { x: number; label: string };
 
 /** The boards' row-2 line chart: an axis line, optional dashed reference, lines, first/last year labels. */
 export function LineChart({
@@ -71,9 +75,13 @@ export function LineChart({
   fromZero = false,
   yFormat = (v: number) => Math.round(v).toLocaleString("en-GB"),
   endLabels = false,
+  bands = [],
+  markers = [],
   children,
 }: {
   series: Series[];
+  bands?: Band[];
+  markers?: Marker[];
   height: number;
   reference?: { y: number; label?: string } | null;
   xLabels?: [string, string] | null;
@@ -84,8 +92,8 @@ export function LineChart({
   children?: ReactNode;
 }) {
   const [ref, w] = useWidth<HTMLDivElement>();
-  const xs = series.flatMap((s) => s.points.map((p) => p.x));
-  const ys = [...series.flatMap((s) => s.points.map((p) => p.y)), reference?.y ?? null];
+  const xs = [...series.flatMap((s) => s.points.map((p) => p.x)), ...bands.flatMap((b) => b.points.map((p) => p.x))];
+  const ys = [...series.flatMap((s) => s.points.map((p) => p.y)), ...bands.flatMap((b) => b.points.flatMap((p) => [p.lo, p.hi])), reference?.y ?? null];
   const xd: [number, number] = xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 1];
   const yd = extent(ys, 0.12, fromZero);
   const W = Math.max(w, 10);
@@ -98,8 +106,22 @@ export function LineChart({
         <svg width={W} height={height} role="img" aria-label={series.map((s) => s.label).join(", ")}>
           <line x1={0} x2={W} y1={height - 1} y2={height - 1} stroke="var(--adm-axis)" />
           {reference && <line x1={0} x2={W} y1={sy(reference.y)} y2={sy(reference.y)} stroke="var(--adm-grid)" strokeDasharray="2 4" />}
+          {bands.map((b) => {
+            const pts = b.points.filter((p) => p.lo !== null && p.hi !== null) as { x: number; lo: number; hi: number }[];
+            if (pts.length < 2) return null;
+            const d = `M${pts.map((p) => `${sx(p.x).toFixed(1)},${sy(p.hi).toFixed(1)}`).join("L")}L${[...pts].reverse().map((p) => `${sx(p.x).toFixed(1)},${sy(p.lo).toFixed(1)}`).join("L")}Z`;
+            return <path key={b.id} data-band={b.id} d={d} fill={b.colour} fillOpacity={b.opacity ?? 0.18} stroke="none" />;
+          })}
+          {markers.map((m) => (
+            <g key={`m-${m.x}`} data-marker={m.label}>
+              <line x1={sx(m.x)} x2={sx(m.x)} y1={pad.t} y2={height - 1} stroke="var(--adm-grid)" strokeDasharray="3 3" />
+              <text x={sx(m.x) + 4} y={pad.t + 9} fontSize={10} fill="var(--muted)">
+                {m.label}
+              </text>
+            </g>
+          ))}
           {series.map((s) => (
-            <g key={s.id}>
+            <g key={s.id} opacity={s.opacity}>
               <path d={path(s.points, sx, sy)} fill="none" stroke={s.colour} strokeWidth={s.width ?? 2.6} strokeDasharray={s.dashed} strokeLinejoin="round" strokeLinecap="round" />
               {s.points.map((p) =>
                 p.y === null ? null : (

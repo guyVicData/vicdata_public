@@ -1,0 +1,1419 @@
+[
+  {
+    "id": "DV-ADM-P-NOW",
+    "label": "Entry point now",
+    "currentInfo": "(i): \"Your … entry point now. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none. Visible caption: \"LA context: {Larger/Smaller ...} than the {LA} average\" (the school page's comparisonCaption, first clause, on the entry point's phase band).",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 and 2025/26",
+        "DfE school census (January) 2025/26: boarders (boarders_total, or boarders_male + boarders_female), whole school",
+        "GIAS: boarding status (boarders_name = \"Boarding school\")",
+        "Age-band roll distributions (age_band_pupil_distributions), 2025/26: national fifths (p20-p80) and the LA mean",
+        "The shared shape classifier on the school's census age profile"
+      ],
+      "geography": "Your school only. Size badges are against every school in England teaching that phase (national fifths); the hover/visible caption compares with the LA average and the national average.",
+      "years": "The January 2026 census (2025/26) against the January 2020 census (2019/20). Shape and size read the school's latest census year with any pupils.",
+      "leftOut": [
+        "Part-time pupils aged 4 and over are not in the entry cohort (full-time only from age 4; full- and part-time at ages 2-3).",
+        "The census has no boarders by age, so day and boarding are for the whole school; a day school's tile shows Day only.",
+        "Ages 18 and over are not drawn in the mini profile.",
+        "The top bar's girls/boys filter does not change these tiles: they are always all pupils.",
+        "An FE college with no school census shows its ILR learners under 19 (last four years) instead, with no cohort, share or rank."
+      ],
+      "steps": [
+        "Take your pupils at the entry age in the January 2026 census (2025/26). From age 4 only full-time pupils count; at ages 2-3, full-time and part-time.",
+        "Take the same count from the January 2020 census (2019/20) and give the change as a percentage of the 2019/20 figure.",
+        "Split this year's entry-age pupils into girls and boys, each as a percentage of the whole cohort.",
+        "Day pupils: your whole roll (every age, full- and part-time) in the 2025/26 census minus the boarders recorded in that census.",
+        "Size by phase: add up your pupils in each phase band (Early Years 0-4, Primary 5-10, Secondary 11-15, Sixth Form 16-18) and place each against national fifths of schools teaching that phase: XS bottom fifth, then S, M, L, XL top fifth.",
+        "Shape: the shared classifier names the shape of your year groups (ages 5-17) and the line says since which year it has held."
+      ],
+      "rounding": [
+        "Pupil counts to whole numbers.",
+        "Change since 2019/20 and the girls/boys split to the whole per cent."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i) gives the pool wording, but this panel shows no pool: it is your own entry cohort now.",
+      "That the cohort counts full-time pupils only from age 4.",
+      "That the change is measured against 2019/20 (only the tile label says so).",
+      "That boarders are whole-school figures (the census has no boarders by age).",
+      "That XS-XL is your roll in each phase band against national fifths of schools with that phase.",
+      "That the girls/boys filter is ignored here.",
+      "That the shape and size read your latest census year with pupils, while the cohort is fixed to 2025/26."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:60 entryNow (series 2019..2025, changePct, girls/boys %, roll, day = roll - boarders)",
+      "src/lib/admissions/screens.ts:89 boardersOf; :26 rollOf",
+      "src/components/admissions/panels/EntryNow.tsx:67 EntryNow (tiles, toFixed(0)), :122 laContext",
+      "src/lib/admissions/views-api.ts:207 shapeView (size via shape.ts:31 sizeByBand, shapeByYear)",
+      "src/lib/age-band-distributions.ts:21 sizeBadgeForValue, :48 lookupAgeBandDistributions (national quintiles)",
+      "src/lib/roll-data.ts:23 AGE_BANDS, :189 shape classification ages 5-17",
+      "src/lib/admissions/cohort.ts:24 cohortTable (full-time from age 4; part-time added only at ages 2-3) and :45 cohortAt (null where the school has no census that year)",
+      "src/lib/admissions/data.ts:45 fetchCensus (predecessor URN fills years before a school's first own census year; latest year = latest with any pupils)",
+      "src/catalogue/years.ts:63 CENSUS_FIRST_PERIOD=2019, :73 PAST_FROM_ENTRY_YEAR=2020, :83 CURRENT_CENSUS_PERIOD=2025, :35 TREND_BASE_PERIOD=2022",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-PIPELINE",
+    "label": "Pipeline",
+    "currentInfo": "(i): \"Children who will reach … entry, by September. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-POOL)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"A pipeline shows the pool of children, not who will join. Ranges widen with distance.\". Chips: \"Feeders: your list ({n}) / Day list ({n}) + Boarding list ({n}) / nearby schools ({n})\" and \"Births: {LA} {w}% · ...\". Legend hovers: Counted = ADMISSIONS_NOTES.counted; From births = ADMISSIONS_NOTES.births + drift; Projection = ADMISSIONS_NOTES.projection. Headline hover: \"{from} in {year}, {to} by {year}.\" + the pool note.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "ONS births by local authority, calendar years (shire counties as the sum of their districts)",
+        "ONS subnational population projections, age 10, by upper-tier LA (11+ only; off unless switched on)",
+        "GIAS: nearest schools (nearest_schools, 400 candidates), sector, age range, LA"
+      ],
+      "geography": "The feeder set: the Admissions lead's confirmed lists, else the nearest 15 state schools teaching Reception to Year 6. At 16+ the default for ages 11-15 is the nearest 10 state secondaries (11-16 schools first) plus your own school's Year 11, with the 15 nearest primaries below. Births come from the LAs those schools are in, weighted by their Reception pupils, or the lead's LA blend.",
+      "years": "Past pools: September 2020 to September 2026 entry (each counted a year before entry, censuses 2019/20 to 2025/26). Forward: 10 entry years from September 2027 at 11+ and 16+; at 4+ (and younger) up to the last birth year held (unclear exactly which year: it depends on the births data loaded). Drift and calibration use every census year 2019/20 to 2025/26.",
+      "leftOut": [
+        "Independent schools are not in the default nearby set (state schools only); they come in only through the lead's lists.",
+        "A school with no census in a year adds nothing to that year's past pool or counted pool (no scaling up).",
+        "In the drift range only schools counted in both years are used, and a ratio needs at least 10 pupils under it.",
+        "A Reception-to-births ratio is used only when schools with a census make up at least 90% of the set (then scaled up for the missing ones).",
+        "Years beyond the last birth year held are left blank, never filled.",
+        "The ONS projection is off by default and offered at 11+ only.",
+        "Sector and boarding filters narrow the set before the sums (your own Year 11 always stays at 16+)."
+      ],
+      "steps": [
+        "Choose the schools that hold these children now: the lead's lists, or by default the nearest 15 state primaries (at 16+, the nearest 10 state secondaries, 11-16 schools first, plus your own Year 11, with the primaries below).",
+        "Past years: for each September from 2020 to 2026, add up these schools' pupils one year below the entry age in the January census before it (for example Year 6 in January 2026 for September 2026 at 11+).",
+        "Counted years: for each September from 2027, find the age those children are now (entry age minus years to go) and add up these schools' pupils at that age in the January 2026 census. That count is the line. At 16+, the move from the primaries to the secondaries is scaled by the average ratio seen between them in past years.",
+        "Range for counted years: take every year-on-year change in these schools' year groups since 2019/20 (same schools in both years), keep the middle 80% (10th to 90th percentile), and apply the low and high ends once for each year still to go, so the range widens.",
+        "Years beyond the youngest counted age, from births: blend each LA's births by its weight (a weighted average). A school year is 8/12 of calendar year X plus 4/12 of year X-1. Scale this to your schools by the average ratio of their Reception pupils to those births in past years, then follow it forward as in step 4; the range also uses the low and high Reception ratios. For girls or boys, births are taken as 49% or 51%.",
+        "At 4+ (and younger entry ages) the blended births are the pool itself, not scaled to the schools; the range is the spread of the Reception-to-births ratio around its average.",
+        "Headline: the change from the September 2026 pool to the pool three years after the first forward year (or the last year shown, if sooner)."
+      ],
+      "rounding": [
+        "Pools and ranges shown to whole pupils (hover text).",
+        "Headline change to the whole per cent.",
+        "Percentiles interpolated between values (numpy's default method)."
+      ]
+    },
+    "notInInfoNow": [
+      "Which schools make up the set by default (nearest 15 state primaries; at 16+ nearest 10 state secondaries plus your own Year 11). The chip gives only the count.",
+      "That the counted line is today's count unchanged; only the range moves with the drift.",
+      "That births from several LAs are a weighted average, weighted by the feeder schools' Reception pupils.",
+      "The 8/12 + 4/12 split and the Reception-to-births scaling (only in a legend hover, and only in the births note).",
+      "That the range is the 10th to 90th percentile of year-on-year ratios with at least 10 pupils under each (legend hover only).",
+      "That at 4+ the pool is the LA blend's whole births, not scaled to the schools; the births hover says it is scaled to these schools, which is not true at 4+.",
+      "The 49% / 51% girls/boys estimate for births.",
+      "That years after the last birth year are left blank.",
+      "That past pools use today's set of schools in earlier censuses, and a converted school's earlier years come from its predecessor.",
+      "The feeder flags shown under the chart (see DV-ADM-P-TABLE for their rules)."
+    ],
+    "evidence": [
+      "src/lib/admissions/pipeline.ts:36 buildPipeline (sets, autoBlend on age-4 set pupils, births, projections, ladder, hold, change to first forward year + 3)",
+      "src/lib/admissions/ladder.ts:188 buildLadder (past: sumAt age E-1 in census Y-1; future rung age a = E-1-(Y-1-P); carry: drift changes low/high only, handovers multiply pool by mean)",
+      "src/lib/admissions/ladder.ts:127 driftFor, :94 matchedRatio (MIN_DRIFT_COHORT 10), :75 coveredSum (MIN_COVERAGE 0.9), :114 spreadOf (10th/90th percentile, mean)",
+      "src/lib/admissions/ladder.ts:154 academicBirths (8/12 X + 4/12 X-1), :164 birthCalibration, :223 birthsPoint (E<=4: births are the pool; range raw*cal.low/mean..high/mean)",
+      "src/lib/admissions/ladder.ts:28 BIRTH_SEX_SHARE male 0.51 female 0.49; :275 projection overlay (11+ only)",
+      "src/lib/admissions/blend.ts:10 autoBlend, :26 blendBirths (weighted average)",
+      "src/lib/admissions/data.ts:95 fetchBirthsByLa (shire county = sum of districts), :126 fetchAge10Projections",
+      "src/lib/admissions/entry-points.ts:47 horizonYears (10 years; 4+ to last birth year), :59 firstEntryYear",
+      "src/lib/admissions/stats.ts:4 percentile (type 7)",
+      "src/lib/admissions/views-api.ts:33 pipelineView (filters, lists, changeYear)",
+      "src/components/admissions/views/PipelineChart.tsx:58 tip, :183-207 legend and headline (toFixed(0))",
+      "src/lib/admissions/rungs.ts:43 defaultRungSets (nearest 15 state schools teaching any of ages 4-10 with low age <=10; 16+: nearest 10 state secondaries holding 11 and 15, 11-16 schools first, plus the school itself), :23 isState",
+      "src/lib/admissions/lists.ts:12 rungSetsFromLists (saved rung list, else day+boarding feeder lists for primary ages, and for all ages at 16+)",
+      "src/lib/admissions/cohort.ts:24 cohortTable (full-time from age 4; part-time added only at ages 2-3) and :45 cohortAt (null where the school has no census that year)",
+      "src/lib/admissions/data.ts:45 fetchCensus (predecessor URN fills years before a school's first own census year; latest year = latest with any pupils)",
+      "src/catalogue/years.ts:63 CENSUS_FIRST_PERIOD=2019, :73 PAST_FROM_ENTRY_YEAR=2020, :83 CURRENT_CENSUS_PERIOD=2025, :35 TREND_BASE_PERIOD=2022",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-FUNNEL",
+    "label": "Funnel",
+    "currentInfo": "(i): \"From births to your …. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-POOL, M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Each bar is its own count from its own source, for the same area: not a flow of the same children.\". Chip: \"Area: {LA}\" or \"Area: {LA} {w}% · {LA} {w}%\". Bar labels: births \"in {area} · born Sept {from} – Aug {to} · worked out from calendar-year births\"; pool \"in all {area} schools, state and independent · {year}\"; entry \"entry cohort · {year}\". Bar hovers carry the method (birth split, pool method, undercount). Boarding schools also see the ISC/boarders note.",
+    "method": {
+      "sources": [
+        "ONS births by local authority, calendar years (shire counties as the sum of their districts)",
+        "DfE school census (January) 2024/25 via age_profile_aggregates: pupils by single age in every school in the LA",
+        "DfE school census (January), pupils by single age and sex, 2025/26 (your own school)"
+      ],
+      "geography": "One area for births and pool: your school's own LA, or the lead's LA blend with the same weights. Not the feeder set.",
+      "years": "Entrants: the January 2026 census (2025/26). Pool: the January 2025 census (2024/25). Births: the school year September X-1 to August X, where X = 2025 minus the entry age.",
+      "leftOut": [
+        "No funnel at 4+.",
+        "The pool bar is not held for girls or boys (the area figures have no split) and reads 'not held'.",
+        "There is a pool bar only when the age a year below entry is 5 to 15.",
+        "Area figures for past years count only schools still open, so they slightly undercount.",
+        "If any LA in a blend has no births for a year or no pool figure, that bar is left empty rather than part-filled."
+      ],
+      "steps": [
+        "Pick the area: your school's LA, or the lead's LA blend and its weights.",
+        "Births: take ONS births in the area for calendar years X and X-1 (X = 2025 minus the entry age) and combine them as 8/12 of X plus 4/12 of X-1, to match a September-to-August school year. For a blend, each LA's births are weighted and added (a weighted average). For girls or boys, 49% or 51%.",
+        "Pool: take every pupil one year below the entry age (for example age 10, Year 6, at 11+) in every mainstream school in the area, state and independent, in the 2024/25 census. For a blend, each LA's count is weighted the same way.",
+        "Entry: your own pupils at the entry age in the 2025/26 census.",
+        "Draw each bar to scale against the largest of the three; each is a separate count, not the same children."
+      ],
+      "rounding": [
+        "Births and pool rounded to whole numbers.",
+        "Weights shown to the whole per cent on the chip."
+      ]
+    },
+    "notInInfoNow": [
+      "That 'this September's entrants' are September 2025's (the 2025/26 census), not September 2026's.",
+      "That the funnel covers the whole LA (or blend), not the feeder schools the (i)'s 'these schools' suggests.",
+      "The 8/12 + 4/12 split (bar hover only).",
+      "That the pool is every mainstream school in the LA, state and independent, a year before entry.",
+      "That a blend's births and pool are weighted averages.",
+      "Girls/boys: births as 49% / 51%; the pool not held."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:197 funnel (X = P - E; pool age E-1, year P-1, ages 5-15 only; sex: pool not held; Math.round)",
+      "src/lib/admissions/screens.ts:230 funnelArea (override blend else own LA weight 1), :294 areaByAge",
+      "src/lib/admissions/ladder.ts:154 academicBirths; src/lib/admissions/blend.ts:26 blendBirths",
+      "src/components/admissions/views/Funnel.tsx:28 stageWords, :35 method, :42 Funnel",
+      "src/catalogue/notes.ts:111-117 funnel notes",
+      "src/catalogue/rules.ts R-ADM-FUNNEL-SAME-AREA, R-ADM-VIEW-FUNNEL",
+      "src/catalogue/years.ts:63 CENSUS_FIRST_PERIOD=2019, :73 PAST_FROM_ENTRY_YEAR=2020, :83 CURRENT_CENSUS_PERIOD=2025, :35 TREND_BASE_PERIOD=2022",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-MAP",
+    "label": "Map of feeders",
+    "currentInfo": "(i): \"Your feeders, sized by pupils aged …, coloured by trend. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-POOL, M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"A pipeline shows the pool of children, not who will join. Ranges widen with distance.\". Chips: feeders and births, as on the Pipeline.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2023/24 and 2025/26",
+        "GIAS: school locations (easting/northing)",
+        "National flag thresholds (admissions_flag_thresholds): the minimum cohort only"
+      ],
+      "geography": "The feeder set at the age a year below entry, without your own school; only schools with a map location.",
+      "years": "2023/24 and 2025/26 censuses (a two-year change).",
+      "leftOut": [
+        "Schools with no location.",
+        "Your own school.",
+        "Flags for schools under the minimum cohort.",
+        "The girls/boys filter does not change the map."
+      ],
+      "steps": [
+        "Take the feeder set's schools that hold children one year below the entry age (Reception at 4+; at 16+ the secondaries' Year 11), leaving out your own school.",
+        "For each school, count its pupils at that age in the January 2026 census (2025/26) and two years earlier (2023/24), and work out the change as a percentage.",
+        "Add the same counts across the whole set (schools with both years) to get the set's own change: this is 'the area'.",
+        "Flag: red ('falling faster than the area') when a school fell and its change is more than 5 percentage points below the area's; focus ('rising' above +2%, 'stable' from -2% to +2%) when its change is -2% or better; otherwise no flag. No flag when the school had fewer pupils two years ago than the minimum cohort (the national threshold's minimum for the phase, else 10).",
+        "Draw each school as a dot sized by its 2025/26 count and coloured green (focus), red (red flag) or grey (neither). In the 'value' look, dots are coloured by thirds of the set by pupils instead."
+      ],
+      "rounding": [
+        "Pupils to whole numbers; the two-year change in the hover to the whole per cent."
+      ]
+    },
+    "notInInfoNow": [
+      "That 'trend' is the two-year change, 2023/24 to 2025/26.",
+      "The flag rules (more than 5 points worse than the set = red; -2% or better = focus) and the minimum cohort.",
+      "That 'the area' is the feeder set itself, not the LA.",
+      "That the flag compares one age only (a year below entry), although R-ADM-FLAG-FEEDER says 'across the rung ages it holds'.",
+      "The (i)'s pool wording describes the pipeline, not this map."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:128 feederTable (age = max(4, E-1); school removed; feederFlags with [age], period P)",
+      "src/lib/admissions/feeders.ts:9 feederFlags (period-2 vs period; area = sum of schools with both)",
+      "src/lib/admissions/flags.ts:101 feederFlag, :8 FLAG_RULES (feederMarginPts 5, feederStablePct -2)",
+      "src/lib/admissions/views-api.ts:61-62 minCohort from thresholds entry_cohort, else 10",
+      "src/components/admissions/views/AdmissionsMap.tsx:24 FeederMap (located only; colour by flag or thirds)",
+      "src/lib/admissions/rungs.ts:43 defaultRungSets (nearest 15 state schools teaching any of ages 4-10 with low age <=10; 16+: nearest 10 state secondaries holding 11 and 15, 11-16 schools first, plus the school itself), :23 isState",
+      "src/lib/admissions/lists.ts:12 rungSetsFromLists (saved rung list, else day+boarding feeder lists for primary ages, and for all ages at 16+)",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-TABLE",
+    "label": "Feeder table",
+    "currentInfo": "(i): \"Your feeders: pupils aged …, trend and flags. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-POOL, M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"A pipeline shows the pool of children, not who will join. Ranges widen with distance.\". Under the table: \"The whole set: {from} → {to} aged {age} ({change}). Flags compare each school's trend with the area's (the whole set's).\" Flag pills show their figures on hover.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2023/24 and 2025/26",
+        "GIAS: location, sector, gender, LA",
+        "National flag thresholds (minimum cohort)",
+        "Age-band roll distributions 2025/26 (national fifths) for XS-XL"
+      ],
+      "geography": "The feeder set at the age a year below entry, without your own school.",
+      "years": "2023/24 and 2025/26 censuses.",
+      "leftOut": [
+        "Your own school.",
+        "Flags for schools under the minimum cohort.",
+        "The girls/boys filter does not change the table."
+      ],
+      "steps": [
+        "Take the feeder set's schools that hold children one year below the entry age (Reception at 4+; at 16+ the secondaries' Year 11), leaving out your own school.",
+        "For each school, count its pupils at that age in the January 2026 census (2025/26) and two years earlier (2023/24), and work out the change as a percentage.",
+        "Add the same counts across the whole set (schools with both years) to get the set's own change: this is 'the area'.",
+        "Flag: red ('falling faster than the area') when a school fell and its change is more than 5 percentage points below the area's; focus ('rising' above +2%, 'stable' from -2% to +2%) when its change is -2% or better; otherwise no flag. No flag when the school had fewer pupils two years ago than the minimum cohort (the national threshold's minimum for the phase, else 10).",
+        "Add distance (straight line between school locations, in km), sector, gender, and size: each school's roll in the primary band (top age 11 or under) or secondary band, against national fifths (XS-XL). Sorted nearest first by default."
+      ],
+      "rounding": [
+        "Pupils to whole numbers.",
+        "Each school's trend to the whole per cent; the whole set's to 1 decimal place.",
+        "Distance to 1 decimal place (km)."
+      ]
+    },
+    "notInInfoNow": [
+      "That the trend is 2023/24 to 2025/26 (the title on the view says it; the (i) does not).",
+      "The flag rules and the minimum cohort.",
+      "That distance is a straight line.",
+      "How the size badge is worked out (band by the school's top age, national fifths).",
+      "That only one age (a year below entry) is compared."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:128 feederTable (sizePlaces band: top age <= 11 primary else secondary; rows sorted by distance)",
+      "src/lib/admissions/screens.ts:125 distanceKm (easting/northing, straight line)",
+      "src/lib/admissions/feeders.ts:9 feederFlags; src/lib/admissions/flags.ts:101 feederFlag",
+      "src/components/admissions/views/Tables.tsx:36 FeederTable (fmtSigned(changePct, 0); area 1 dp; km toFixed(1))",
+      "src/lib/admissions/ranks.ts:31 headlinePopulation, :106 placesOf, :99 rankIn (ties share, highest first), :145 sizePlaces",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-SHAPE",
+    "label": "Shape and size",
+    "currentInfo": "(i): \"Shape and size: your school, the local shape, and rivals' shapes. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Shape labels use the shared classifier (Tube, Pyramid, Top step, Funnel, Mushroom, Wineglass, Irregular), the same for schools and areas.\". Chips: \"Ages {from}–{to}\", \"Compare: feeders' area · rivals\". On the view: the local-shape line and \"Described, not ranked\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex (full- and part-time), each school's latest year with pupils",
+        "The shared shape classifier",
+        "Age-band roll distributions 2025/26 (national fifths)"
+      ],
+      "geography": "Your school; the feeder set that holds Reception (the youngest rung); the rival set.",
+      "years": "Each school's latest census year with pupils (normally 2025/26); your shape history from 2019/20.",
+      "leftOut": [
+        "Ages 18 and over are not drawn (the classifier already ignores them).",
+        "The local shape is not narrowed by the sector or boarding filters (the rivals are).",
+        "Whether a day school's old boarding lists are left out of the local shape here is unclear (the pipeline drops them; shapeView does not)."
+      ],
+      "steps": [
+        "Your school: pupils by age and sex (full- and part-time) from your latest census with pupils, drawn up to age 17, with the entry age (and 16, if you have a sixth form) highlighted.",
+        "Shape: the shared classifier names the shape of your year groups from ages 5 to 17, with the year it last changed.",
+        "Size: your roll in each phase band against national fifths of schools teaching that phase (XS to XL).",
+        "Local shape: add up the age profiles of every school in the youngest feeder set (the schools holding Reception) and run the same classifier on the total. Only ages 4 to a year below entry are drawn.",
+        "Rivals: each rival's shape and its size in the entry point's phase band (national fifths), in the rival list's own order. Shapes are described, never ranked."
+      ],
+      "rounding": [
+        "Counts to whole numbers (hover)."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i)'s pool wording does not apply: this view shows shapes and sizes, not a pool.",
+      "Which schools make the local shape (the Reception-age feeder set), and that its label uses those schools' whole profiles, not just the ages drawn.",
+      "At 16+ the local shape is the primaries (unless a feeder list is saved), though the text says 'aged 4–15'.",
+      "That XS-XL is against national fifths.",
+      "Which census year is read (each school's latest)."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:207 shapeView (feeders = set at the youngest rung age; rivals via rivalSet; sizes via sizePlaces in the entry band)",
+      "src/lib/admissions/shape.ts:10 shapeOf, :26 localShape, :31 sizeByBand",
+      "src/lib/admissions/screens.ts:38 PROFILE_MAX_AGE 17",
+      "src/components/admissions/views/ShapeAndSize.tsx:54 ShapeAndSize, :111 SHAPES_NOTE",
+      "src/lib/roll-data.ts:189-190 classifier ages 5-17",
+      "src/lib/admissions/rival-set.ts:10 rivalSet; src/lib/admissions/rungs.ts:65 defaultRivals (10 nearest, either sector, holding entry age and entry age+1); src/lib/admissions/traits.ts:86 narrow",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-ENTRY-LINE",
+    "label": "Your cohort",
+    "currentInfo": "(i): \"Your … cohort, year by year. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Cohort size, not new joiners\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school only.",
+      "years": "January censuses 2019/20 to 2025/26.",
+      "leftOut": [
+        "Part-time pupils aged 4 and over.",
+        "The girls/boys filter is not applied (the bars' hover and the table show both)."
+      ],
+      "steps": [
+        "For each January census from 2019/20 to 2025/26, take your own pupils at the entry age (full-time only from age 4; full- and part-time at ages 2-3).",
+        "Draw one point per census year, joined as a line.",
+        "A year with no census for your school is left as a gap; an earlier year can come from your school's predecessor (for example before an academy conversion).",
+        "At least two years with figures are needed to draw it."
+      ],
+      "rounding": [
+        "Whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i)'s pool wording does not apply: this is your own cohort each year, not a pool.",
+      "That it is the census count on one January day, not the number who joined (only the caption says 'Cohort size, not new joiners').",
+      "That only full-time pupils count from age 4.",
+      "The years covered (2019/20 to 2025/26).",
+      "That the girls/boys filter does not change it."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:60 entryNow (series CENSUS_FIRST_PERIOD..P, cohort/female/male via cohortAt, no sex filter)",
+      "src/components/admissions/views/Lines.tsx:15 EntryTrend (needs >= 2 years)",
+      "src/catalogue/admissions.ts:191-193 dataview defs; :240-242 presets",
+      "src/lib/admissions/cohort.ts:24 cohortTable (full-time from age 4; part-time added only at ages 2-3) and :45 cohortAt (null where the school has no census that year)",
+      "src/lib/admissions/data.ts:45 fetchCensus (predecessor URN fills years before a school's first own census year; latest year = latest with any pupils)",
+      "src/catalogue/years.ts:63 CENSUS_FIRST_PERIOD=2019, :73 PAST_FROM_ENTRY_YEAR=2020, :83 CURRENT_CENSUS_PERIOD=2025, :35 TREND_BASE_PERIOD=2022",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-ENTRY-BARS",
+    "label": "Your cohort, bars",
+    "currentInfo": "(i): \"Your … cohort, year by year. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Cohort size, not new joiners\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school only.",
+      "years": "January censuses 2019/20 to 2025/26.",
+      "leftOut": [
+        "Part-time pupils aged 4 and over.",
+        "The girls/boys filter is not applied (the bars' hover and the table show both)."
+      ],
+      "steps": [
+        "For each January census from 2019/20 to 2025/26, take your own pupils at the entry age (full-time only from age 4; full- and part-time at ages 2-3).",
+        "Draw one bar per census year; the hover splits it into girls and boys.",
+        "A year with no census for your school is left as a gap; an earlier year can come from your school's predecessor (for example before an academy conversion).",
+        "At least two years with figures are needed to draw it."
+      ],
+      "rounding": [
+        "Whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i)'s pool wording does not apply: this is your own cohort each year, not a pool.",
+      "That it is the census count on one January day, not the number who joined (only the caption says 'Cohort size, not new joiners').",
+      "That only full-time pupils count from age 4.",
+      "The years covered (2019/20 to 2025/26).",
+      "That the girls/boys filter does not change it."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:60 entryNow (series CENSUS_FIRST_PERIOD..P, cohort/female/male via cohortAt, no sex filter)",
+      "src/components/admissions/views/Lines.tsx:15 EntryTrend (needs >= 2 years)",
+      "src/catalogue/admissions.ts:191-193 dataview defs; :240-242 presets",
+      "src/lib/admissions/cohort.ts:24 cohortTable (full-time from age 4; part-time added only at ages 2-3) and :45 cohortAt (null where the school has no census that year)",
+      "src/lib/admissions/data.ts:45 fetchCensus (predecessor URN fills years before a school's first own census year; latest year = latest with any pupils)",
+      "src/catalogue/years.ts:63 CENSUS_FIRST_PERIOD=2019, :73 PAST_FROM_ENTRY_YEAR=2020, :83 CURRENT_CENSUS_PERIOD=2025, :35 TREND_BASE_PERIOD=2022",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-ENTRY-TABLE",
+    "label": "Your cohort, table",
+    "currentInfo": "(i): \"Your … cohort, year by year. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Cohort size, not new joiners\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school only.",
+      "years": "January censuses 2019/20 to 2025/26.",
+      "leftOut": [
+        "Part-time pupils aged 4 and over.",
+        "The girls/boys filter is not applied (the bars' hover and the table show both)."
+      ],
+      "steps": [
+        "For each January census from 2019/20 to 2025/26, take your own pupils at the entry age (full-time only from age 4; full- and part-time at ages 2-3).",
+        "List one row per census year with the total, girls and boys.",
+        "A year with no census for your school is left as a gap; an earlier year can come from your school's predecessor (for example before an academy conversion).",
+        "At least two years with figures are needed to draw it."
+      ],
+      "rounding": [
+        "Whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i)'s pool wording does not apply: this is your own cohort each year, not a pool.",
+      "That it is the census count on one January day, not the number who joined (only the caption says 'Cohort size, not new joiners').",
+      "That only full-time pupils count from age 4.",
+      "The years covered (2019/20 to 2025/26).",
+      "That the girls/boys filter does not change it.",
+      "The catalogue lists a % change for this table (numberType pct_change, look extra 'change'), but the table shows no change column."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:60 entryNow (series CENSUS_FIRST_PERIOD..P, cohort/female/male via cohortAt, no sex filter)",
+      "src/components/admissions/views/Tables.tsx:138 EntryTable (Year, pupils, girls, boys; no change column)",
+      "src/catalogue/admissions.ts:191-193 dataview defs; :240-242 presets",
+      "src/lib/admissions/cohort.ts:24 cohortTable (full-time from age 4; part-time added only at ages 2-3) and :45 cohortAt (null where the school has no census that year)",
+      "src/lib/admissions/data.ts:45 fetchCensus (predecessor URN fills years before a school's first own census year; latest year = latest with any pupils)",
+      "src/catalogue/years.ts:63 CENSUS_FIRST_PERIOD=2019, :73 PAST_FROM_ENTRY_YEAR=2020, :83 CURRENT_CENSUS_PERIOD=2025, :35 TREND_BASE_PERIOD=2022",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-POOL-INDEXED",
+    "label": "Pool trends",
+    "currentInfo": "(i): \"…-year-olds: your feeders, … and England. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Also: the school page's area population trend (ages 5–15)\". Header context: \"indexed, 2019/20 = 100\". On the view: \"Earlier years count only schools still open, so they slightly undercount.\" when a past area year is drawn; a note when the area figures hold fewer than two years.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26 (feeder schools)",
+        "DfE school census via age_profile_aggregates: pupils by single age per LA and per region, each year held"
+      ],
+      "geography": "Your feeder set (the set holding the age a year below entry), your school's LA, and England (the nine regions added up).",
+      "years": "Census years 2019/20 onwards, as far as each line has figures.",
+      "leftOut": [
+        "No LA or England line for ages outside 5 to 15; at 4+ there are no counted past pools either, so the view says there are not enough to draw.",
+        "Area figures for past years count only schools still open, so they slightly undercount.",
+        "The girls/boys filter narrows the feeders' line only; LA and England are always all pupils.",
+        "A year the area figures do not hold is a gap, never filled."
+      ],
+      "steps": [
+        "Feeders: the Pipeline's past pools: your feeder set's pupils one year below the entry age in each January census (2019/20 to 2024/25 or 2025/26, the census a year before each September's entry).",
+        "LA: every pupil of that age in all schools in your school's LA (age_profile_aggregates, LA row), for each census year those figures hold.",
+        "England: the same age added up across the nine regions; a year without all nine is left blank.",
+        "Find the first year all three lines have a figure and set each line to 100 there; every other year is its figure divided by that year's, times 100. If no year is shared, each line starts at 100 in its own first year."
+      ],
+      "rounding": [
+        "Index values to whole numbers on the axis; counts in the hover to whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "The base year is the first year all lines share, which may not be 2019/20, although the header says '2019/20 = 100'.",
+      "That England is the nine regions added together.",
+      "That the feeders' line is the past pools (a year below entry, in the census a year before entry).",
+      "That the LA is your school's own LA, not the births blend.",
+      "The (i)'s pool wording is generic; the undercount note shows only on the view."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:277 poolTrends (age E-1; feeders = ladder.past counted; LA by name; England only when 9 regions)",
+      "src/lib/admissions/screens.ts:264 indexTo (first common year, else each line's first year)",
+      "src/components/admissions/views/Lines.tsx:37 PoolTrends",
+      "src/components/admissions/AdmissionsDashboard.tsx:612 headerOf (line 628) ('indexed, 2019/20 = 100' fixed)",
+      "src/lib/admissions/ladder.ts:241-250 past pools",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-POOL-TABLE",
+    "label": "Pool trends, table",
+    "currentInfo": "(i): \"…-year-olds: your feeders, … and England. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Also: the school page's area population trend (ages 5–15)\". On the view: the undercount note when a past area year is shown.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26 (feeder schools)",
+        "DfE school census via age_profile_aggregates: pupils by single age per LA and per region"
+      ],
+      "geography": "Your feeder set, your school's LA, and England (nine regions added up).",
+      "years": "Every census year any of the three lines holds, 2019/20 onwards.",
+      "leftOut": [
+        "No LA or England figures for ages outside 5 to 15.",
+        "Past area years undercount slightly (schools still open only).",
+        "The girls/boys filter narrows the feeders' column only."
+      ],
+      "steps": [
+        "Feeders: the Pipeline's past pools: your feeder set's pupils one year below the entry age in each January census (2019/20 to 2024/25 or 2025/26, the census a year before each September's entry).",
+        "LA: every pupil of that age in all schools in your school's LA (age_profile_aggregates, LA row), for each census year those figures hold.",
+        "England: the same age added up across the nine regions; a year without all nine is left blank.",
+        "List one row per year with the three counts as they are (not indexed); a missing figure shows a dash."
+      ],
+      "rounding": [
+        "Whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "That the counts are not indexed here.",
+      "That England is the nine regions added up.",
+      "That the feeders' column is the past pools.",
+      "That the girls/boys filter changes the feeders' column but not the LA or England."
+    ],
+    "evidence": [
+      "src/lib/admissions/screens.ts:277 poolTrends",
+      "src/components/admissions/views/Lines.tsx:77 PoolTable",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-AREA-POP",
+    "label": "Area population",
+    "currentInfo": "(i): \"Population trends in the area (ages 5-15). This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Also: the school page's area population trend (ages 5–15)\".",
+    "method": {
+      "sources": [
+        "DfE school census 2025/26 via age_profile_aggregates: pupils by single age in all schools in the LA and in the region"
+      ],
+      "geography": "Your school's own LA and its region (from the LA crosswalk). Not the feeder set or births blend.",
+      "years": "One census year: 2025/26.",
+      "leftOut": [
+        "No trend word when fewer than 100 pupils are aged 5 in the area ('Too few pupils to call').",
+        "Ages under 5 and over 15."
+      ],
+      "steps": [
+        "From the 2025/26 census, take the pupils at each age from 5 to 15 in all schools in your school's LA, and the same for its region.",
+        "Draw each age as a bar, from 15 down to 5.",
+        "Compare the youngest with the oldest: (pupils aged 15 minus pupils aged 5) divided by pupils aged 15. It is shown with the sign turned round, so fewer 5-year-olds than 15-year-olds reads as a fall.",
+        "Name it: Growing (more 5-year-olds than 15-year-olds), Stable (up to 2% fewer), Decline (up to 15% fewer), Steep Decline (up to 25% fewer), Severe Decline (more than 25% fewer)."
+      ],
+      "rounding": [
+        "The percentage to 1 decimal place.",
+        "Counts in the hover to whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i)'s pool wording does not apply: this is pupils in the area's schools now, compared across ages.",
+      "That it is one census year (2025/26) comparing age 5 with age 15, not a change over time.",
+      "The tier cut-offs (0%, 2%, 15%, 25%) and the 100-pupil floor.",
+      "That it uses your school's LA and region, not the feeder set."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:80 areaPopulation via lookupPopulationTrend(laName, laCode, CURRENT_CENSUS_PERIOD)",
+      "src/lib/population-trend-lookup.ts:19 lookupPopulationTrend (age_profile_aggregates LA and region rows for the period)",
+      "src/lib/population-trend.ts:41 classifyPopulationTrend, :49 computePopulationTrend (floor age5 >= 100), :69 displayPopulationTrendPct, :73 ageProfileSeries",
+      "src/components/admissions/views/Lines.tsx:118 AreaPopulation (toFixed(1))",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-HOLD-LINE",
+    "label": "Share needed",
+    "currentInfo": "(i): \"Share needed to hold numbers steady. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-POOL)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"A requirement, not a forecast\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "ONS births by local authority (for the later years of the pool)"
+      ],
+      "geography": "Your school against the Pipeline's feeder set (and births blend).",
+      "years": "Now: 2025/26 entry cohort against the September 2025 pool. Forward: September 2027 to the last pool year shown.",
+      "leftOut": [
+        "Years with no pool.",
+        "The range is drawn only in the table view."
+      ],
+      "steps": [
+        "Take your own pupils at the entry age in the January 2026 census (2025/26). With the girls/boys filter on, girls or boys only.",
+        "Now: divide that number by the September 2025 pool (the feeder set's pupils a year below entry in the 2024/25 census) to give your share now.",
+        "For each September from 2027, divide the same number by that year's pool from the Pipeline (counted, then from births). This is the share you would need to take the same number again.",
+        "Range: divide by the top of the pool's range for the low end, and by the bottom of the range for the high end.",
+        "Years with no pool are left out; September 2026 is not shown (it is already past).",
+        "The sentence quotes the share for the year the Pipeline's headline uses (three years after the first forward year), else the fourth year shown; the line is solid for counted years and dashed for years from births, against a dashed line at your share now."
+      ],
+      "rounding": [
+        "Shares to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "What 'now' is: your 2025/26 entry cohort divided by the September 2025 pool.",
+      "That every future year uses the same current cohort.",
+      "That the share is of the feeder set's pool (or the LA's births at 4+), not of all children in the area.",
+      "That the girls/boys filter applies.",
+      "'A requirement, not a forecast' is only on the caption button."
+    ],
+    "evidence": [
+      "src/lib/admissions/shares.ts:19 holdShare (current: cohort E at P / past pool at entryYear P; needed: cohort / future pool; low = cohort/high, high = cohort/low)",
+      "src/components/admissions/views/Lines.tsx:152 ShareNeeded (target year = changeYear else 4th; fmtPct 1 dp)",
+      "src/lib/admissions/views-api.ts:102 changeYear",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-P-HOLD-TABLE",
+    "label": "Share needed, table",
+    "currentInfo": "(i): \"Share needed to hold numbers steady. This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come. (M-ADM-POOL)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"A requirement, not a forecast\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "ONS births by local authority (for the later years of the pool)"
+      ],
+      "geography": "Your school against the Pipeline's feeder set (and births blend).",
+      "years": "Now (September 2025) then September 2027 onwards.",
+      "leftOut": [
+        "Years with no pool."
+      ],
+      "steps": [
+        "Take your own pupils at the entry age in the January 2026 census (2025/26). With the girls/boys filter on, girls or boys only.",
+        "Now: divide that number by the September 2025 pool (the feeder set's pupils a year below entry in the 2024/25 census) to give your share now.",
+        "For each September from 2027, divide the same number by that year's pool from the Pipeline (counted, then from births). This is the share you would need to take the same number again.",
+        "Range: divide by the top of the pool's range for the low end, and by the bottom of the range for the high end.",
+        "Years with no pool are left out; September 2026 is not shown (it is already past).",
+        "List a row for now (marked counted, no range) and a row for each later September with the share needed, its range and its source (counted or births)."
+      ],
+      "rounding": [
+        "Shares and ranges to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "What 'now' is (2025/26 cohort over the September 2025 pool).",
+      "That every year uses the same current cohort.",
+      "How the range is worked out (from the pool's range, turned round).",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/shares.ts:19 holdShare",
+      "src/components/admissions/views/Lines.tsx:159-189 table branch",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-NOW",
+    "label": "Your place now",
+    "currentInfo": "(i): \"Your place among the …, at …. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Share of this group only\". On the view: \"{total} pupils aged {age} across you and {n} rivals: {i} independent, {s} state; {b} with boarding.\" + the group-share note.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "GIAS: nearest schools, sector, boarding, gender, location"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "The latest census year held (2025/26), against the first (2019/20).",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "Rank: order the schools by their latest count, largest first; ties share a place. 'Of' is the number of schools with a figure that year.",
+        "Market share: your count divided by the group's total that year.",
+        "Since 2019/20: your share now minus your share in the first year, in percentage points.",
+        "Whole school: your rank by total roll (every age) among the group in 2025/26.",
+        "This group: the total at the entry age, the number of rivals, and how many schools are independent, state and boarding (your school included in those three counts)."
+      ],
+      "rounding": [
+        "Share to 1 decimal place; change in share to 1 decimal place (points)."
+      ]
+    },
+    "notInInfoNow": [
+      "How the rivals are chosen by default (10 nearest teaching the entry year and the year after).",
+      "That ties share a rank, and 'of' counts only schools with a census that year.",
+      "That the change is against 2019/20, in percentage points.",
+      "That the whole-school rank is by total roll.",
+      "That the independent/state/boarding counts include your own school.",
+      "That the girls/boys filter applies to the counts and share."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:109 marketView (summary: latest/first period, rank, of, share, changePts, total, rollRank, trend vs latest-1, shareChange, rivalsAverage, vsIndexed)",
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/lib/admissions/rival-set.ts:10 rivalSet; src/lib/admissions/rungs.ts:65 defaultRivals (10 nearest, either sector, holding entry age and entry age+1); src/lib/admissions/traits.ts:86 narrow",
+      "src/lib/admissions/market.ts:28 buildMarketShare",
+      "src/lib/admissions/screens.ts:326 rivalExtras (roll, rollRank)",
+      "src/components/admissions/panels/MarketNow.tsx:11 MarketNow (fmtPct 1 dp; changePts toFixed(1))",
+      "src/lib/admissions/cohort.ts:24 cohortTable (full-time from age 4; part-time added only at ages 2-3) and :45 cohortAt (null where the school has no census that year)",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-DONUT",
+    "label": "Share (donut)",
+    "currentInfo": "(i): \"Your share of …-year-olds across this group. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools\". On the view: the group-share note beside the donut.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "GIAS: nearest schools, sector, boarding, gender, location"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "The latest census year held (2025/26).",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "Add the counts for the group total in the latest year.",
+        "Your share is your count divided by that total; the donut fills that share."
+      ],
+      "rounding": [
+        "Share to 1 decimal place; total to whole pupils."
+      ]
+    },
+    "notInInfoNow": [
+      "How the rivals are chosen.",
+      "Which census year (latest, 2025/26).",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:109 marketView (summary: latest/first period, rank, of, share, changePts, total, rollRank, trend vs latest-1, shareChange, rivalsAverage, vsIndexed)",
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/lib/admissions/rival-set.ts:10 rivalSet; src/lib/admissions/rungs.ts:65 defaultRivals (10 nearest, either sector, holding entry age and entry age+1); src/lib/admissions/traits.ts:86 narrow",
+      "src/components/admissions/views/Bars.tsx:107 DonutView",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-BARS",
+    "label": "Ranked bars",
+    "currentInfo": "(i): \"…-year-olds by school, ranked, with where each sits in regional and national results rankings. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET, M-ADM-RIVAL-RESULTS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools\". Chip: \"Measure: entry age ({age})\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "GIAS: nearest schools, sector, boarding, gender, location",
+        "DfE performance tables: KS2 (dfe_ks2_attainment), KS4 and KS5 headlines, latest results year"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector). Results ranks are among all schools in England, and in each school's region.",
+      "years": "Latest census year (2025/26), with the year before for the trend arrow; the latest results year for the ranks.",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank.",
+        "IGCSE-heavy independent schools are not ranked on GCSE (R-IGCSE-EXCL).",
+        "Schools with no published results for the stage are not ranked."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "Rank the schools by their latest count (ties share) and draw each as a bar; share = count divided by the group's total.",
+        "Trend arrow: the change in each school's count from the year before; up or down only if it moved more than 2%, otherwise level.",
+        "Results: each school's place in England and in its own region on the whole-school headline for the entry point's stage (4+: KS2 reading, writing and maths at the expected standard; 11+: GCSE Attainment 8; 16+: A-level points per entry) in the latest results year, among every school with a figure, highest first, ties sharing. An IGCSE-heavy independent school at 11+ shows 'IGCSE' and is not ranked; a school with no published results shows 'none'."
+      ],
+      "rounding": [
+        "Share to the whole per cent.",
+        "Trend hover to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "How the rivals are chosen.",
+      "The 2% band for the trend arrow and that it is against last year.",
+      "Which headline measure the results ranks use, for which year, and that they are among all schools in England and the region.",
+      "Why some rivals are not ranked (IGCSE, no published results).",
+      "That the girls/boys filter changes the counts but not the results ranks."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:109 marketView (summary: latest/first period, rank, of, share, changePts, total, rollRank, trend vs latest-1, shareChange, rivalsAverage, vsIndexed)",
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/lib/admissions/rival-set.ts:10 rivalSet; src/lib/admissions/rungs.ts:65 defaultRivals (10 nearest, either sector, holding entry age and entry age+1); src/lib/admissions/traits.ts:86 narrow",
+      "src/lib/admissions/rivals.ts:66 buildRivals; :28 stageForEntry (<=10 KS2, <=15 GCSE, else Post-16)",
+      "src/lib/admissions/ranks.ts:31 headlinePopulation, :106 placesOf, :99 rankIn (ties share, highest first), :145 sizePlaces",
+      "src/lib/academic-data-view.ts:245 HEADLINE_MEASURE (KS2 RWM expected standard %, GCSE attainment8_average, A level aps_per_entry); :693 igcseExclusionLikely",
+      "src/components/admissions/views/Bars.tsx:49 RankedBars (fmtPct(share, 0); arrow(t, 2)), :15 resultsCell",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-MAP",
+    "label": "Map of rivals",
+    "currentInfo": "(i): \"Your rivals, sized by pupils aged …. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "GIAS: nearest schools, sector, boarding, gender, location"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector). Only schools with a map location.",
+      "years": "Latest census year (2025/26).",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank.",
+        "Schools with no location."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "Size each school's dot by its pupils at the entry age in the 2025/26 census (all pupils).",
+        "Colour by sector (state or independent), your school ringed. In the 'change' look, colour by the change since last year instead (more than 2% up or down).",
+        "The hover gives the count and the share of the group (count divided by the group's total), which follow the girls/boys filter."
+      ],
+      "rounding": [
+        "Share to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "How the rivals are chosen.",
+      "That the dot size is always all pupils, while the hover's count and share follow the girls/boys filter.",
+      "Which census year."
+    ],
+    "evidence": [
+      "src/components/admissions/views/AdmissionsMap.tsx:78 RivalsMap (roll: e.entryNow; colour by sector)",
+      "src/lib/admissions/screens.ts:333 entryNow = cohortAt(E, P) (no sex)",
+      "src/lib/admissions/views-api.ts:109 marketView (summary: latest/first period, rank, of, share, changePts, total, rollRank, trend vs latest-1, shareChange, rivalsAverage, vsIndexed)",
+      "src/lib/admissions/rival-set.ts:10 rivalSet; src/lib/admissions/rungs.ts:65 defaultRivals (10 nearest, either sector, holding entry age and entry age+1); src/lib/admissions/traits.ts:86 narrow",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-TABLE",
+    "label": "Rivals table",
+    "currentInfo": "(i): \"Your rivals at …. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET, M-ADM-RIVAL-RESULTS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools\". Chip: \"Measure: entry age ({age})\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "GIAS: nearest schools, sector, boarding, gender, location",
+        "DfE performance tables (latest results year)",
+        "Age-band roll distributions 2025/26 (national fifths)"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "Latest census year (2025/26); latest results year.",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank.",
+        "IGCSE-heavy and no-results schools are not ranked on results."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "For each school in the latest year: rank by count (ties share), count, share of the group's total, and whole-school roll (every age, full- and part-time).",
+        "Size: the school's roll in the entry point's phase band against national fifths (XS-XL).",
+        "Distance: straight line from your school, in km.",
+        "Results: the school's place in England on the stage's headline (see the ranked bars)."
+      ],
+      "rounding": [
+        "Share to 1 decimal place; distance to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "How the rivals are chosen.",
+      "That 'Roll' is the whole school and 'Size' is the entry point's phase band against national fifths.",
+      "Which results measure and year, and that the rank is among all schools in England.",
+      "That distance is a straight line."
+    ],
+    "evidence": [
+      "src/components/admissions/views/Tables.tsx:91 RivalsTable",
+      "src/lib/admissions/views-api.ts:109 marketView (summary: latest/first period, rank, of, share, changePts, total, rollRank, trend vs latest-1, shareChange, rivalsAverage, vsIndexed)",
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/lib/admissions/screens.ts:326 rivalExtras",
+      "src/lib/admissions/rivals.ts:66 buildRivals; :28 stageForEntry (<=10 KS2, <=15 GCSE, else Post-16)",
+      "src/lib/admissions/ranks.ts:31 headlinePopulation, :106 placesOf, :99 rankIn (ties share, highest first), :145 sizePlaces",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-MOMENTUM",
+    "label": "Rivals' momentum",
+    "currentInfo": "(i): \"Who is gaining pupils, and whose results are rising?. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-RIVAL-RESULTS, M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none. Header context: \"change since 2022/23\". Chips: \"Pupils: aged {age}\", \"Results: Attainment 8 / A-level points / KS2 expected\". Under the flag list: \"Flags appear only when a change is large and lasting (fixed national thresholds, over two or more years), never from one small cohort. Hover a flag for the figures behind it.\" (or the 'not available yet' note) and \"Not on the scatter: {n}\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2022/23 to 2025/26",
+        "DfE performance tables: the whole-school headline, 2022/23 to the latest results year",
+        "National flag thresholds (admissions_flag_thresholds)"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "Pupils: 2022/23 census to 2025/26. Results: 2022/23 to the latest results year. Flags: the last two (or three) years.",
+      "leftOut": [
+        "Schools without both a pupil change and a results change are left off the scatter (listed as 'not on the scatter').",
+        "IGCSE-heavy independent schools have no results change at 11+.",
+        "No threshold flag is ever guessed when thresholds are not loaded."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "Across: each school's change in pupils at the entry age, from the 2022/23 census to 2025/26, as a percentage of the 2022/23 figure.",
+        "Up: each school's change in its whole-school headline (KS2 expected standard %, GCSE Attainment 8, or A-level points per entry) from 2022/23 to the latest results year, in points.",
+        "Plot each school in one of four corners: growing or shrinking, improving or slipping. Dots with a gaining or rising flag are amber, a losing or shrinking flag red.",
+        "Flags use two-year changes against national thresholds for the phase (the top or bottom fifth of all schools' changes); with no thresholds loaded, no threshold flag is shown.",
+        "Results rising fast: the headline rose by at least the national top-fifth threshold over two results years, and the school has at least the minimum cohort at the entry age. Gaining pupils: the whole roll rose by at least the top-fifth threshold over two census years (2023/24 to 2025/26). Year 7 (or Reception, Year 12) shrinking: the entry-age count fell by at least the bottom-fifth threshold over the same two years. Losing pupils three years running: the whole roll fell in each of the last three years (2022/23 to 2025/26). New sixth form (11+ and 16+ only): pupils aged 16 now, at least the minimum cohort, and none in any year up to two years ago. Shape changed: the same shape in the last two censuses, different from three years before (this one needs no threshold)."
+      ],
+      "rounding": [
+        "Changes in hovers to 1 decimal place; pupil changes in the list to the whole per cent; results changes to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i) gives the group-share note, which does not describe this view.",
+      "That both axes run from 2022/23, and which headline measure is used.",
+      "The flag rules, thresholds (top/bottom fifth nationally) and the years each flag compares.",
+      "That 'shape changed' fires without the thresholds.",
+      "That the pupil change ignores the girls/boys filter."
+    ],
+    "evidence": [
+      "src/components/admissions/views/Momentum.tsx:87 Momentum, :29 FlagList",
+      "src/lib/admissions/screens.ts:326 rivalExtras (entryChangePct: TREND_BASE_PERIOD to P)",
+      "src/lib/admissions/views-api.ts:184 resultsChange (TREND_BASE_PERIOD to resultsPeriod, null for IGCSE)",
+      "src/lib/admissions/rivals.ts:105-118 momentum flags (P-2..P, P-3..P, P-6..P)",
+      "src/lib/admissions/flags.ts:34-78 flag functions",
+      "src/lib/admissions/thresholds.ts:16 loadThresholds, :36 phaseForEntryAge",
+      "src/lib/academic-data-view.ts:245 HEADLINE_MEASURE (KS2 RWM expected standard %, GCSE attainment8_average, A level aps_per_entry); :693 igcseExclusionLikely",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-STRENGTHS",
+    "label": "Strengths and weaknesses",
+    "currentInfo": "(i): \"Where you lead and trail your rivals, by subject area. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-RIVAL-RESULTS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none. Header context: \"{GCSE/Post-16} {results year} · average points\". Chips: \"Subject areas\", \"Rivals: {set}\". Under the view: \"Only rivals with that subject area are ranked (“of {n}”). Small entries are left out. Click a subject area ...\".",
+    "method": {
+      "sources": [
+        "DfE KS4 or KS5 subject-family results (average points and entries), 2022/23 to the latest results year",
+        "National flag thresholds (subject_area)"
+      ],
+      "geography": "Your school and the rival set; national and regional places on hover.",
+      "years": "The latest results year, against 2022/23 for the gap's direction, and two years back for your own change.",
+      "leftOut": [
+        "Not at 4+ or other ages up to 10 (KS2 has no subject areas).",
+        "A subject area with fewer than 10 entries at a school is left out for that school.",
+        "IGCSE-heavy rivals are left out of the comparison.",
+        "Areas no rival has are not shown."
+      ],
+      "steps": [
+        "For each subject area you have (at least 10 entries), take your average points in the latest results year.",
+        "Take the same for each rival with that area (at least 10 entries; IGCSE-heavy rivals left out) and average them.",
+        "Your rank: 1 plus the number of rivals above you, out of those rivals plus you. Gap: your figure minus the rivals' average.",
+        "Direction since 2022/23: today's gap minus the 2022/23 gap (rising or falling if it moved more than 0.05 points).",
+        "Flags (only with at least two rivals): Strength = ahead of the average and in the top third; Strength growing = also the gap widened since 2022/23 and your own two-year change is in the national top fifth. Weakness and Weakness widening are the same at the bottom.",
+        "Sorted by gap, biggest lead first."
+      ],
+      "rounding": [
+        "Points and gaps to 2 decimal places (hover)."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i) gives the group-share note, which does not describe this view.",
+      "The 10-entry minimum and the IGCSE exclusion.",
+      "How the gap and its direction are worked out (since 2022/23).",
+      "The flag rules (thirds, national fifth).",
+      "An area with just one rival is shown (and ranked) but cannot be flagged; the empty-state text says two rivals are needed."
+    ],
+    "evidence": [
+      "src/lib/admissions/rivals.ts:122-146 areas (MIN_AREA_ENTRIES 10, rank, gap, gapBase at TREND_BASE_PERIOD)",
+      "src/lib/admissions/flags.ts:82 strengthFlags (third = max(1, floor(n/3)); needs >= 2 rivals)",
+      "src/lib/admissions/ranks.ts:52 familyPopulation, :132 familyPlaces",
+      "src/components/admissions/views/Strengths.tsx:27 Strengths (dir +-0.05; sorted by gap)",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-SHAPE",
+    "label": "Rivals' shapes",
+    "currentInfo": "(i): \"Shape and size: your school and rivals' shapes. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Shape labels use the shared classifier (Tube, Pyramid, Top step, Funnel, Mushroom, Wineglass, Irregular), the same for schools and areas.\". Chips: \"Ages {from}–{to}\", \"Compare: rivals\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex (full- and part-time), each school's latest year with pupils",
+        "The shared shape classifier",
+        "Age-band roll distributions 2025/26 (national fifths)"
+      ],
+      "geography": "Your school and the rival set.",
+      "years": "Each school's latest census year with pupils (normally 2025/26).",
+      "leftOut": [
+        "Ages 18 and over are not drawn."
+      ],
+      "steps": [
+        "Your school: pupils by age and sex (full- and part-time) from your latest census with pupils, drawn up to age 17, with the entry age (and 16, if you have a sixth form) highlighted.",
+        "Shape: the shared classifier names the shape of your year groups from ages 5 to 17, with the year it last changed.",
+        "Size: your roll in each phase band against national fifths of schools teaching that phase (XS to XL).",
+        "Rivals: each rival's shape, its size in the entry point's phase band against national fifths, and a small four-band outline of its year groups, in the rival list's own order. Never ranked."
+      ],
+      "rounding": [
+        "Counts to whole numbers (hover)."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i) gives the group-share note, which does not describe shapes.",
+      "That XS-XL is against national fifths for the phase band.",
+      "Which census year is read."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:207 shapeView",
+      "src/components/admissions/views/ShapeAndSize.tsx:54 (showLocal false)",
+      "src/lib/admissions/shape.ts:10 shapeOf",
+      "src/lib/admissions/rival-set.ts:10 rivalSet; src/lib/admissions/rungs.ts:65 defaultRivals (10 nearest, either sector, holding entry age and entry age+1); src/lib/admissions/traits.ts:86 narrow",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-FLAGS",
+    "label": "Flags",
+    "currentInfo": "(i): \"Rivals' flags: large and lasting changes. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-RIVAL-RESULTS, M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none. Header context: \"change since 2022/23\". Under the list: the flags-rule note (or 'Flags not available yet ...'). Each flag shows its figures on hover.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26",
+        "DfE performance tables (whole-school headline)",
+        "National flag thresholds"
+      ],
+      "geography": "The rival set (your own school is not listed).",
+      "years": "Flags: two- and three-year windows ending 2025/26 (results: ending the latest results year). Columns: since 2022/23.",
+      "leftOut": [
+        "Your own school.",
+        "Rivals with no flag (in the preset; the 'all' look shows them).",
+        "No threshold flag when thresholds are not loaded."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "Flags use two-year changes against national thresholds for the phase (the top or bottom fifth of all schools' changes); with no thresholds loaded, no threshold flag is shown.",
+        "Results rising fast: the headline rose by at least the national top-fifth threshold over two results years, and the school has at least the minimum cohort at the entry age. Gaining pupils: the whole roll rose by at least the top-fifth threshold over two census years (2023/24 to 2025/26). Year 7 (or Reception, Year 12) shrinking: the entry-age count fell by at least the bottom-fifth threshold over the same two years.",
+        "Losing pupils three years running: the whole roll fell in each of the last three years (2022/23 to 2025/26). New sixth form (11+ and 16+ only): pupils aged 16 now, at least the minimum cohort, and none in any year up to two years ago. Shape changed: the same shape in the last two censuses, different from three years before (this one needs no threshold).",
+        "List the flagged rivals, most flags first, with each one's pupil change at the entry age since 2022/23 and its headline change in points since 2022/23."
+      ],
+      "rounding": [
+        "Pupil change to the whole per cent; results change to 1 decimal place; figures in hovers to 2 decimal places."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i) gives the group-share note, which does not describe flags.",
+      "The rules for each flag and the years it compares.",
+      "That 'shape changed' fires without thresholds.",
+      "That the two columns are since 2022/23, not the flags' own two-year windows."
+    ],
+    "evidence": [
+      "src/components/admissions/views/Momentum.tsx:173 FlagsView, :29 FlagList",
+      "src/lib/admissions/rivals.ts:105-118",
+      "src/lib/admissions/flags.ts:34-78",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-VS-LINE",
+    "label": "You and the rivals",
+    "currentInfo": "(i): \"Your … against the …. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET, M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none. Header context: \"indexed, 2019/20 = 100\". On the view: \"Indexed: {base year} = 100.\"",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "Census years 2019/20 to 2025/26.",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "Rivals' average: the mean of the rivals' counts that year (rivals with a figure only; your school not included).",
+        "Set both lines to 100 in the first year they both have a figure; every other year is its figure divided by that year's, times 100."
+      ],
+      "rounding": [
+        "Index to whole numbers on the axis."
+      ]
+    },
+    "notInInfoNow": [
+      "That the grey line is the rivals' average school, not their total.",
+      "That the base year is the first shared year, which the on-view note names but the header fixes as 2019/20.",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:150-156 rivalsAverage and vsIndexed",
+      "src/lib/admissions/screens.ts:264 indexTo",
+      "src/components/admissions/views/Lines.tsx:217 VsRivals",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-VS-BARS",
+    "label": "You and the rivals, bars",
+    "currentInfo": "(i): \"Your … against the …. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET, M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none.",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "Census years 2019/20 to 2025/26.",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "Rivals' average: the mean of the rivals' counts that year (rivals with a figure only; your school not included).",
+        "Draw your count and the rivals' average side by side for each year (actual numbers, not indexed)."
+      ],
+      "rounding": [
+        "Whole numbers in the hover."
+      ]
+    },
+    "notInInfoNow": [
+      "That the grey bar is the rivals' average school.",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:150 rivalsAverage",
+      "src/components/admissions/views/Lines.tsx:221 VsRivals bars",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-ACAD-RANK",
+    "label": "Academic ranking",
+    "currentInfo": "(i): \"Academic: your rank among the rivals. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-RIVAL-RESULTS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none. Visible caption: \"4+ → KS2 · 11+ → GCSE · 16+ → Post-16 · subject explorer →\"; header \"{entry} → {stage} · {results year}\".",
+    "method": {
+      "sources": [
+        "DfE performance tables: KS2 (dfe_ks2_attainment), KS4 and KS5 whole-school headlines and subject-family results, 2022/23 to the latest results year"
+      ],
+      "geography": "Your school and the rival set; your national rank among all schools in England with a figure.",
+      "years": "The latest results year for the stage; change since 2022/23.",
+      "leftOut": [
+        "IGCSE-heavy independent schools at 11+, and schools with no published results, are listed as not ranked."
+      ],
+      "steps": [
+        "Pick the stage from the entry point: 4+ (ages up to 10) KS2 reading, writing and maths at the expected standard; 11+ GCSE Attainment 8; 16+ A-level points per entry.",
+        "Your rank: 1 plus the number of ranked rivals with a higher headline, out of you and the rivals that have a ranked figure.",
+        "Your place in England: among every school with a figure that year, highest first, ties sharing.",
+        "Change: your headline now minus 2022/23, in points.",
+        "Where you lead and trail: the three subject areas with the biggest lead and the two with the biggest gap behind (as in Strengths and weaknesses; not at KS2)."
+      ],
+      "rounding": [
+        "Change to 1 decimal place; gaps to 2 decimal places."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i) gives the group-share note, which does not describe results.",
+      "Which headline measure each entry point uses (only the footer maps entry point to stage).",
+      "That the change is since 2022/23.",
+      "That unranked rivals are left out of the 'of'."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:195-199 overall",
+      "src/components/admissions/panels/Academic.tsx:25 AcademicRanking",
+      "src/lib/admissions/rivals.ts:66 buildRivals; :28 stageForEntry (<=10 KS2, <=15 GCSE, else Post-16)",
+      "src/lib/admissions/ranks.ts:31 headlinePopulation, :106 placesOf, :99 rankIn (ties share, highest first), :145 sizePlaces",
+      "src/lib/academic-data-view.ts:245 HEADLINE_MEASURE (KS2 RWM expected standard %, GCSE attainment8_average, A level aps_per_entry); :693 igcseExclusionLikely",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-ACAD-NUM",
+    "label": "Academic numbers",
+    "currentInfo": "(i): \"Academic: the rivals' headline figures. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-RIVAL-RESULTS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none. Visible caption: \"4+ → KS2 · 11+ → GCSE · 16+ → Post-16 · subject explorer →\"; header \"{entry} → {stage} · {results year}\".",
+    "method": {
+      "sources": [
+        "DfE performance tables: KS2 (dfe_ks2_attainment), KS4 and KS5 whole-school headlines and subject-family results, 2022/23 to the latest results year"
+      ],
+      "geography": "Your school and the rival set; national ranks among all schools in England.",
+      "years": "The latest results year for the stage.",
+      "leftOut": [
+        "IGCSE-heavy schools show 'IGCSE'; schools with no published results show a dash."
+      ],
+      "steps": [
+        "Pick the stage's headline from the entry point (KS2 expected standard %, GCSE Attainment 8, or A-level points per entry).",
+        "List each school's figure in the latest results year, highest first.",
+        "Beside it, its place in England among every school with a figure, ties sharing."
+      ],
+      "rounding": [
+        "Figures to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i) gives the group-share note.",
+      "Which measure and year.",
+      "That the rank is national, among all schools."
+    ],
+    "evidence": [
+      "src/components/admissions/panels/Academic.tsx:61 AcademicNumbers (toFixed(1))",
+      "src/lib/admissions/rivals.ts:66 buildRivals; :28 stageForEntry (<=10 KS2, <=15 GCSE, else Post-16)",
+      "src/lib/admissions/ranks.ts:31 headlinePopulation, :106 placesOf, :99 rankIn (ties share, highest first), :145 sizePlaces",
+      "src/lib/academic-data-view.ts:245 HEADLINE_MEASURE (KS2 RWM expected standard %, GCSE attainment8_average, A level aps_per_entry); :693 igcseExclusionLikely",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-ACAD-CHANGE",
+    "label": "Academic change",
+    "currentInfo": "(i): \"Academic: change since 2022/23. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-RIVAL-RESULTS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: none. Visible caption: \"4+ → KS2 · 11+ → GCSE · 16+ → Post-16 · subject explorer →\"; header \"{entry} → {stage} · {results year}\".",
+    "method": {
+      "sources": [
+        "DfE performance tables: KS2 (dfe_ks2_attainment), KS4 and KS5 whole-school headlines and subject-family results, 2022/23 to the latest results year"
+      ],
+      "geography": "Your school and the rival set.",
+      "years": "2022/23 to the latest results year.",
+      "leftOut": [
+        "IGCSE-heavy schools have no change ('IGCSE').",
+        "Schools without both years have no bar."
+      ],
+      "steps": [
+        "Pick the stage's headline from the entry point.",
+        "For each school, take its headline in the latest results year minus its headline in 2022/23, in points.",
+        "Draw the changes as bars either side of zero, biggest rise first."
+      ],
+      "rounding": [
+        "Changes to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "The (i) gives the group-share note.",
+      "Which headline measure.",
+      "That 2022/23 is used because earlier grades were more generous."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:184-191 resultsChange",
+      "src/components/admissions/panels/Academic.tsx:77 AcademicChange",
+      "src/lib/academic-data-view.ts:245 HEADLINE_MEASURE (KS2 RWM expected standard %, GCSE attainment8_average, A level aps_per_entry); :693 igcseExclusionLikely",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-SHARE-LINE",
+    "label": "Market share",
+    "currentInfo": "(i): \"Your market share at …, year by year. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Roll trends sit on the same rail\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "Census years 2019/20 to 2025/26.",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).",
+        "Draw your share year by year (needs at least two years)."
+      ],
+      "rounding": [
+        "Share to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "How the rivals are chosen.",
+      "That a school missing a census year adds nothing to that year's total, which can lift everyone else's share.",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/lib/admissions/views-api.ts:109 marketView (summary: latest/first period, rank, of, share, changePts, total, rollRank, trend vs latest-1, shareChange, rivalsAverage, vsIndexed)",
+      "src/components/admissions/views/Lines.tsx:271 ShareTrend",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-SHARE-NUM",
+    "label": "Market share numbers",
+    "currentInfo": "(i): \"Your market share at …, year by year. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Roll trends sit on the same rail\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "Census years 2019/20 to 2025/26.",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).",
+        "List a row per year: your count, the group's total and your share."
+      ],
+      "rounding": [
+        "Counts to whole numbers; share to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "How the rivals are chosen.",
+      "That a school missing a census year adds nothing to that year's total.",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/components/admissions/views/Tables.tsx:180 ShareTable",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-SHARE-RANKS",
+    "label": "Market share ranks",
+    "currentInfo": "(i): \"Your rank at …, year by year. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Roll trends sit on the same rail\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "Census years 2019/20 to 2025/26.",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).",
+        "List a row per year: your count, the group's total and your rank 'of' the schools with a figure that year."
+      ],
+      "rounding": [
+        "Whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "That the rank is by the count at the entry age, largest first, ties sharing.",
+      "That 'of' counts only schools with a census that year.",
+      "How the rivals are chosen.",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/lib/admissions/stats.ts:14 ranksOf",
+      "src/components/admissions/views/Tables.tsx:180 ShareTable (ranks)",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-SHARE-CHANGE",
+    "label": "Market share change",
+    "currentInfo": "(i): \"Change since 2019/20: your pupils and share at …. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Roll trends sit on the same rail\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 and 2025/26"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "First census year held (2019/20) to the latest (2025/26).",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank.",
+        "Schools without a share in both years have no bar."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "For each school, count pupils at the entry age in each January census (full-time only from age 4). A school with no census that year has no figure and adds nothing to the total. With the girls/boys filter on, girls or boys only.",
+        "For each year, add up the group's total and divide your count by it for your share; rank the schools by count (ties share).",
+        "For each school, take its share in the latest year minus its share in the first year, in percentage points.",
+        "Draw the changes as bars either side of zero, biggest gain first."
+      ],
+      "rounding": [
+        "Change to 1 decimal place (points)."
+      ]
+    },
+    "notInInfoNow": [
+      "The title says 'your pupils and share', but the view shows only the change in share, in points, for every school.",
+      "That it is percentage points, not a percentage change.",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/views-api.ts:144 shareChange",
+      "src/components/admissions/views/Bars.tsx:120 ShareChange",
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  },
+  {
+    "id": "DV-ADM-M-ROLL-LINE",
+    "label": "Roll trends",
+    "currentInfo": "(i): \"Pupils in the entry point's age band: you and the …. A share of this group: your pupils at this age as a share of the same age across these schools. Not a share of the local market. (M-ADM-MARKET, M-ADM-PUPILS)\" (Each [placeholder] in the title template prints as a literal … in the (i).) Caption button: \"Roll trends sit on the same rail\".",
+    "method": {
+      "sources": [
+        "DfE school census (January), pupils by single age and sex, 2019/20 to 2025/26"
+      ],
+      "geography": "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
+      "years": "Census years 2019/20 to 2025/26.",
+      "leftOut": [
+        "Rivals that do not match the sector or boarding filters.",
+        "An FE college has no census: its ILR learners are shown on their own and never put into the group's total, share or rank.",
+        "Ages outside the band (for example a prep's pupils under 11 at 11+)."
+      ],
+      "steps": [
+        "Take the group: your school plus the rivals (the lead's saved rivals list, else the 10 nearest schools of any sector that teach the entry year and the year after), narrowed by the sector and boarding filters.",
+        "Set the age band from the entry age to the end of its phase: 4+ ages 4-10, 11+ ages 11-15, 16+ ages 16-18 (a custom age runs to 10, 15 or 18).",
+        "For each school and census year, add up its pupils across those ages (full-time from age 4). A year with no census is a gap. With the girls/boys filter on, girls or boys only.",
+        "Draw a line per school: yours in the accent colour, each rival in grey."
+      ],
+      "rounding": [
+        "Whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "The exact ages in the band.",
+      "That it is not the whole-school roll despite the 'Roll trends' label.",
+      "That the girls/boys filter applies."
+    ],
+    "evidence": [
+      "src/lib/admissions/market.ts:23 entryBand, :36 groupShare over band ages",
+      "src/components/admissions/views/Lines.tsx:287 RollTrend (m.ageBand rows)",
+      "src/lib/admissions/shares.ts:40 groupShare (count null where no census; total adds 0; share = count/total*100; ranks via stats.ts:14 ranksOf, ties share)",
+      "src/components/admissions/AdmissionsDashboard.tsx:653 sourceOf (title template with [..] replaced by …, then ADMISSIONS_NOTES.pool for DV-ADM-P*, else groupShare, then measure ids)",
+      "src/components/admissions/AdmissionsDashboard.tsx:636 notesOf (caption button / visible caption per view)"
+    ]
+  }
+]

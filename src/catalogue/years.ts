@@ -62,15 +62,11 @@ export const HISTORIC_GRADE_TO = 2022;
 // "2019/20 = 100".
 export const CENSUS_FIRST_PERIOD = 2019;
 
-// 0.8 SMT r3 (K1, K4): how far ahead Context's ONS projections reach, counted from the latest
-// mid-year LA estimate held (read from the data), so they move on when ONS publishes a year. From
-// mid-2025 they give the wireframe's "11-15s by 2032" (the tile) and "to 2036" (the charts).
-export const SMT_PROJECTION_TILE_AHEAD = 7;
-export const SMT_PROJECTION_CHART_AHEAD = 11;
-
-// SMT r3 snags (fix 3): the projection's join note shows where ONS's projection and the latest mid-year
-// estimate differ by more than this at the join (% of the estimate). Not a year; kept with the horizons.
-export const SMT_PROJECTION_JOIN_GAP_PCT = 2;
+// 0.8 SMT r4 (F5): the projection tile reaches this far past the latest counted year ("11-15s by
+// 2030" from mid-2025). The charts run to the projection's own horizon (area_projection's horizon_end,
+// latest + 11 in the settings), read from the data. (Round 3's SMT_PROJECTION_CHART_AHEAD and the
+// projection-join threshold are retired with ONS's line as the main projection.)
+export const SMT_PROJECTION_TILE_AHEAD = 5;
 
 // Admissions' past pools start with September-2020 entry (the first entry year with a counted
 // rung, census 2019/20).

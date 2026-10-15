@@ -37,6 +37,7 @@ import { renderView, useViewsV2 } from "@/components/views";
 import { instanceRail, isPresetInstance, liveOwnView, ownDefault, shownInstance, type ViewInstance } from "@/components/views/rail";
 import { trendNoteFor, specYears } from "@/catalogue/notes";
 import type { ViewSpec } from "@/catalogue/viewspec";
+import { MethodNote } from "@/components/shell/MethodNote";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -102,6 +103,28 @@ function withTrendNote(source: ReactNode, years: readonly number[] | null): Reac
     <>
       {source}
       <span className="mt-1.5 block">{note}</span>
+    </>
+  );
+}
+
+// 0.8 SMT r4 (stage I): the view a panel is showing, without a plan: its active rail button's dataview,
+// or the host panel's one view when it has no rail (rail.tsx railEntries, the same mapping a config uses).
+function shownDataview(host: HostId | undefined, panel: PanelId, actions: ReactNode): string | null {
+  if (!host) return null;
+  const active = railEntries(actions, host, panel).find((e) => e.active)?.dataview;
+  if (active) return active;
+  const only = DATAVIEWS.filter((d) => d.host.id === host && d.host.panel === panel);
+  return only.length === 1 ? only[0].id : null;
+}
+
+// 0.8 SMT r4 (stage I): how the view is calculated (src/catalogue/methods-teacher.ts), after its source.
+// Only a view the catalogue registers has one; the (i) loads the text when opened.
+function withMethod(source: ReactNode, preset: string | null): ReactNode {
+  if (!source || !preset) return source;
+  return (
+    <>
+      {source}
+      <MethodNote id={preset} />
     </>
   );
 }
@@ -249,7 +272,7 @@ export function ColumnPanels({
             }
             controls={panel.controls}
             caption={panel.summary}
-            source={withTrendNote(panel.source, specYears(spec, panel.gradingYears))}
+            source={withMethod(withTrendNote(panel.source, specYears(spec, panel.gradingYears)), spec?.preset ?? shownDataview(host, id, panel.actions))}
             footerActions={({ fullscreen }) => (
               <>
                 {/* In fullscreen the note has its own place in the side rail (Part 4). */}

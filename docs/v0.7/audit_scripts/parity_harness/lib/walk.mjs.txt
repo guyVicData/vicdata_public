@@ -70,7 +70,7 @@ async function shoot(dir, name, i) {
   writeFileSync(`${dir}/${name}.png`, Buffer.from(shot.data, "base64"));
   // The digest: the panel's words, its rail, and the two footer popovers' words (opened, read, closed).
   const dom = await ev(`(async () => { const p = ${panelEl(i)}; const T = (e) => (e?.innerText || '').trim();
-    const pop = async (label) => { const b = [...p.querySelectorAll('button[aria-label="' + label + '"]')].filter(x => x.offsetParent !== null).pop(); if (!b) return null; b.click(); await new Promise(r => setTimeout(r, 60)); const t = T(b.nextElementSibling); b.click(); await new Promise(r => setTimeout(r, 30)); return t; };
+    const pop = async (label) => { const b = [...p.querySelectorAll('button[aria-label="' + label + '"]')].filter(x => x.offsetParent !== null).pop(); if (!b) return null; b.click(); await new Promise(r => setTimeout(r, 60)); const t = T(b.nextElementSibling) || T(document.querySelector('[data-source-note]')); /* 0.8 SMT r4: the (i) draws in a portal */ b.click(); await new Promise(r => setTimeout(r, 30)); return t; };
     const text = T(p);
     const info = await pop('Where this figure comes from');
     const caption = await pop('What this shows');

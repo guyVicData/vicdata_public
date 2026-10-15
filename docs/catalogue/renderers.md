@@ -2,7 +2,7 @@
 
 # Renderers
 
-Shape requirements only, no rules. 14 renderers.
+Shape requirements only, no rules. 44 renderers.
 
 ### RD-NUMBER-TILES — NumberTiles
 
@@ -213,3 +213,453 @@ Shape requirements only, no rules. 14 renderers.
 | Fullscreen | As MultiTrend / YearTable. |
 | Phone | As MultiTrend / YearTable. |
 | Used by | DV-C1-CAND-TR-GEO-CHART, DV-C1-CAND-TR-GEO-TABLE, DV-C1-RES-TR-GEO-CHART, DV-C1-RES-TR-GEO-TABLE |
+
+### RD-ADM-TILES — EntryNowTiles
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/panels/EntryNow.tsx |
+| Accepts | The entry point now: four tiles, size by phase (XS-XL), the shape line and mini profile. |
+| Empty | No census for this school: the tiles say so (an FE college shows its ILR series instead). |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-NOW, DV-ADM-M-NOW |
+
+### RD-ADM-PIPELINE — PipelineChart
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/PipelineChart.tsx |
+| Accepts | Past pools then the ladder by entry year, styled by certainty (counted solid, births dashed with a range band, projection only on request). |
+| Empty | No feeder set or no census in it: 'No pool to draw'. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-PIPELINE |
+
+### RD-ADM-FUNNEL — Funnel
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Funnel.tsx |
+| Accepts | Births → each kind of school's pool → the school's entry cohort, for this September's entrants. |
+| Empty | A stage without a figure says 'not held'. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-FUNNEL |
+
+### RD-ADM-MAP — AdmissionsMap
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/AdmissionsMap.tsx |
+| Accepts | Schools sized by pupils at the age, coloured by trend (feeders) or by share (rivals); the school ringed. |
+| Empty | No located schools. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-MAP, DV-ADM-M-MAP |
+
+### RD-ADM-TABLE — AdmissionsTable
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Tables.tsx |
+| Accepts | A row per school (or year) with the figures, flags, distance, sector, gender and XS-XL. |
+| Empty | No schools in the set. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-TABLE, DV-ADM-P-ENTRY-TABLE, DV-ADM-P-POOL-TABLE, DV-ADM-P-HOLD-TABLE, DV-ADM-M-TABLE, DV-ADM-M-ACAD-NUM, DV-ADM-M-SHARE-NUM, DV-ADM-M-SHARE-RANKS |
+
+### RD-ADM-SHAPES — ShapeAndSize
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/ShapeAndSize.tsx |
+| Accepts | The school's profile by gender, the local shape, and rivals' shapes as small multiples: described, not ranked. |
+| Empty | No census for a school: its card says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-SHAPE, DV-ADM-M-SHAPE |
+
+### RD-ADM-LINE — AdmLine
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Lines.tsx |
+| Accepts | A series per line over census or entry years (actual or indexed). |
+| Empty | Fewer than two years: 'Not enough years yet'. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-ENTRY-LINE, DV-ADM-P-POOL-INDEXED, DV-ADM-P-HOLD-LINE, DV-ADM-M-VS-LINE, DV-ADM-M-SHARE-LINE, DV-ADM-M-ROLL-LINE |
+
+### RD-ADM-BARS — AdmBars
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Bars.tsx |
+| Accepts | Bars per year or per school; ranked bars with share, trend and results ranks. |
+| Empty | No figures. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-P-ENTRY-BARS, DV-ADM-P-AREA-POP, DV-ADM-M-BARS, DV-ADM-M-VS-BARS, DV-ADM-M-ACAD-CHANGE, DV-ADM-M-SHARE-CHANGE |
+
+### RD-ADM-DONUT — ShareDonut
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Bars.tsx |
+| Accepts | The school's share of this group at the entry age. |
+| Empty | No group total. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-M-DONUT |
+
+### RD-ADM-SCATTER — MomentumScatter
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Momentum.tsx |
+| Accepts | Pupil change (entry age) against results change since 2022/23, four quadrants, with the flag list. |
+| Empty | Thresholds not loaded: 'flags not available yet'; a school without both changes is left off the scatter and said so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-M-MOMENTUM |
+
+### RD-ADM-STRENGTHS — StrengthsBars
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Strengths.tsx |
+| Accepts | Per subject area: rank among the rivals with it, the gap to their average (diverging), its direction since 2022/23, and flags. |
+| Empty | KS2 has no subject areas; no ranked areas: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-M-STRENGTHS, DV-ADM-M-ACAD-RANK |
+
+### RD-ADM-FLAGS — FlagList
+
+| Field | Content |
+| --- | --- |
+| File | src/components/admissions/views/Momentum.tsx |
+| Accepts | Each rival's momentum flags, each with the figures behind it on hover. |
+| Empty | Thresholds not loaded: 'flags not available yet'. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The Admissions panel's body (row 1: 470px boards; row 2: 330px). |
+| Fullscreen | The panel's fullscreen modal, the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-ADM-M-FLAGS |
+
+### RD-SMT-NOW — SchoolNow
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Now.tsx |
+| Accepts | Tiles: roll and change, girls and boys (or day and boarding), headline results with national ranks, value added, Progress 8's reason, XS-XL by phase. |
+| Empty | No census: the tiles say so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-O-NOW, DV-SMT-A-NOW, DV-SMT-P-NOW, DV-SMT-C-NOW |
+
+### RD-SMT-SCORECARD — Scorecard
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Scorecard.tsx |
+| Accepts | A row per headline: you, the set, the region, England, since 2022/23; 'not ranked' rows for IGCSE; the flags line. |
+| Empty | No headline figures. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-O-SCORECARD |
+
+### RD-SMT-MAP — SetMap
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/SetMap.tsx |
+| Accepts | The school and its comparison set, located. |
+| Empty | No located schools. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-O-MAP |
+
+### RD-SMT-FLAGS — SchoolFlags
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Flags.tsx |
+| Accepts | The school's own flags, each with the figures behind it. |
+| Empty | No flags: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-O-FLAGS |
+
+### RD-SMT-LINE — SmtLine
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Lines.tsx |
+| Accepts | Lines by year: indexed rolls, or results with the set's middle half as a band and 2021/22 shaded. |
+| Empty | Fewer than two years: 'Not enough years yet'. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-O-ROLL-LINE, DV-SMT-O-RESULTS-LINE, DV-SMT-O-MARKET-LINE, DV-SMT-A-TREND-LINE, DV-SMT-P-MARKET, DV-SMT-P-PHASES, DV-SMT-P-POOL, DV-SMT-P-AREA, DV-SMT-C-BIRTHS, DV-SMT-C-BIRTHS-INDEXED, DV-SMT-C-PROJECTION |
+
+### RD-SMT-TABLE — SmtTable
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Tables.tsx |
+| Accepts | A row per year, or per subject, with the figures behind the chart. |
+| Empty | No rows. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-O-ROLL-TABLE, DV-SMT-O-RESULTS-TABLE, DV-SMT-O-MARKET-TABLE, DV-SMT-A-TREND-TABLE, DV-SMT-A-MIX-TABLE, DV-SMT-P-PHASES-TABLE, DV-SMT-C-BIRTHS-TABLE |
+
+### RD-SMT-AREAS — SubjectAreas
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Areas.tsx |
+| Accepts | Admissions' strengths and weaknesses against the comparison set. |
+| Empty | No subject area with set schools to compare. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-AREAS |
+
+### RD-SMT-SUBJECTS — Subjects
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Subjects.tsx |
+| Accepts | The area's subjects: entries, average, rank in the set and England, since 2022/23, the subject explorer link. |
+| Empty | No subjects in this area. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-SUBJECTS |
+
+### RD-SMT-VA — ValueAdded
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/ValueAdded.tsx |
+| Accepts | A-level value added by qualification type and by subject with confidence intervals; Progress 8 or its reason. |
+| Empty | Not published: says which reason applies. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-VA |
+
+### RD-SMT-GRADES — GradeProfile
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Grades.tsx |
+| Accepts | The grade profile in bands (9-7, 6-5, 4, 3-1; A*-A, B, C, D-U). |
+| Empty | No graded entries. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-GRADES |
+
+### RD-SMT-MIX — EntriesMix
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Mix.tsx |
+| Accepts | Each area's (or subject's) share of the entries, year by year. |
+| Empty | No entries. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-MIX |
+
+### RD-SMT-RESERVED — ReservedPanel
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Reserved.tsx |
+| Accepts | A reserved panel: the slot exists, the data doesn't yet. |
+| Empty | Always its caption. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-A-BANDS |
+
+### RD-SMT-SHAPE — ShapeAndSize
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Pupils.tsx |
+| Accepts | Pupils in each year group, the shape and since when, and the shapes around: the LA's schools of the same type, the set's shapes, Year 12 against Year 11 in the set. Described, never ranked. |
+| Empty | No census: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-P-SHAPE |
+
+### RD-SMT-ENTRIES — EntryPointsAtAGlance
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Pupils.tsx |
+| Accepts | Each Admissions entry point: its cohort now and its next pool, read-only, with Open in Admissions. |
+| Empty | No entry points set: the reason, and Open in Admissions. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-P-ENTRIES |
+
+### RD-SMT-LEAVING — LeavingAt16
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Pupils.tsx |
+| Accepts | Year 11 to Year 12 at the school, year by year: Year 12 against Year 11 and the net leavers. |
+| Empty | No sixth form, or no Year 11: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-P-LEAVING |
+
+### RD-SMT-AREA-MAP — AreaMap
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Context.tsx |
+| Accepts | Neighbourhoods (LSOAs) within 5 miles and a ring, shaded by children per hectare, IMD or IDACI decile (one sequential scale, decile 1 darkest), or schools coloured by FSM; the 5-mile circle; the school in the accent. Before the boundaries are loaded, and for the LA, round 2's LA shading. |
+| Empty | No located schools: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-C-MAP |
+
+### RD-SMT-AGES — AgeBars
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Context.tsx |
+| Accepts | Residents by single year of age 0-18, within 5 miles or in the LA, the level's ages highlighted. |
+| Empty | No ages held: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-C-BYAGE, DV-SMT-C-AGES |
+
+### RD-SMT-NEARBY — NearbyOverTime
+
+| Field | Content |
+| --- | --- |
+| File | src/components/smt/views/Context.tsx |
+| Accepts | Children of the level's ages within 5 miles over time, indexed, against the LA and England (residents, not pupils). |
+| Empty | No small-area figures: says so. |
+| Suppressed | — |
+| Partial | — |
+| Loading | The panel's skeleton until the route answers. |
+| Min height | The SMT panel's body (row 1: 530px; row 2: 340px, as Admissions'). |
+| Fullscreen | The panel's full screen (focus mode), the same view larger. |
+| Phone | Full width; the large view's views become tabs (Phone.dc.html). |
+| Used by | DV-SMT-C-NEARBY |

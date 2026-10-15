@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -26,7 +26,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | R-BANDS-ENGLAND-BENCH | active | On Grade bands the focused subject's benchmark is England's rate on the same span, from grade geography; peers carry none. | lifted | auto: bandsEnglandBench | — |
 | R-GRADE-SCALE-MATCH | active | A rate is computed only on the scale it was defined on (threshold: GCSE 9-1 / Double Award at KS4, A-level A*-E at KS5; bands: the scale the range was picked on). Vocational, IB and Pre-U rows get no figure. | no | manual | — |
 | R-POST16-BAND-DEFAULT | active | Grade bands opens on a default range on every Post-16 scale, as GCSE opens on 7-9: A level and EPQ A* to A; AS and Core Maths A to B; IB subject 7 to 6; vocational single Distinction* to Distinction, double D*D* to DD, triple D*D*D* to DDD; T Level Distinction* to Merit. The scale is the focus's own (scaleForQualification). A saved range wins while both its ends are on the focus's scale; otherwise the scale's default (never a stale or blank range). The Post-16 defaults are Post-16 only; Pre-U and the KS4 vocational scales stay custom-range only. The Grades menu offers the default plus Custom. | no | auto: post16BandDefault | — |
-| R-POST16-DEFAULT-SET | active | On the Post-16 page the default comparison set is the 10 nearest schools and colleges with Post-16 provision, named '10 nearest with a sixth form or 16+ provision': GCSE's matching rules (the same distance order, sector, phase and gender rules and the same widen-the-net backfill) plus one filter -- KS5 results in either of the latest two published years. An FE college's default (the nearest FE colleges) and a boarding recipe (its schools with KS5 results) follow the same rule. GCSE keeps its own nearest 10; saved sets are never altered; the Data View's default-lists, expand-nearest and boarding-quintile-list calls are unchanged (only the Teacher chooser on its Post-16 page asks with post16=1). | no | auto: post16DefaultSet | — |
+| R-POST16-DEFAULT-SET | active | On the Post-16 page the default comparison set is the 10 nearest schools and colleges with Post-16 provision, named '10 nearest with a sixth form or 16+ provision' in the chooser (the column's pill keeps '10 nearest schools', so Column 3's content and the grid's widths don't change): GCSE's matching rules (the same distance order, sector, phase and gender rules and the same widen-the-net backfill) plus one filter -- KS5 results in either of the latest two published years. An FE college's default (the nearest FE colleges) and a boarding recipe (its schools with KS5 results) follow the same rule. GCSE keeps its own nearest 10; saved sets are never altered; the Data View's default-lists, expand-nearest and boarding-quintile-list calls are unchanged (only the Teacher chooser on its Post-16 page asks with post16=1). | no | auto: post16DefaultSet | — |
 | R-NON-GRADES-EXCL | active | Suppressed, No result, X, Covid impacted and other non-grades (2021/22-2022/23 KS5 too: COVID result, Supp) are excluded from both sides of every grade rate and distribution. | no | none yet | — |
 | R-THRESHOLD-PERIODS | active | Grade-based measures cover 2021/22 on at school level (0.6.2; 2023/24 on before); the axis is shortened to the years a subject has grades, never padded. | lifted | auto: thresholdPeriods | — |
 | R-HISTORIC-GRADE-LABELS | active | 2021/22-2022/23 KS5 grade labels are read in their 2023/24 words: vocational short codes (* D M P HM HP, ** *D DD DM MM MP PP, *** **D *DD DDD DDM DMM MMM MMP MPP PPP) become Distinction* ... Pass-Pass-Pass on BTEC, OCR Cambridge Technical, Other General Qualification and AEA, and on a VRQ set only where it carries a code no A-level-type scale has; never on A level, AS, EPQ, Core Maths, FSMQ, IB or Pre-U. COVID result and Supp are non-grades (R-NON-GRADES-EXCL). KS4's historic labels already match. | no | auto: historicGradeLabels | — |
@@ -54,7 +54,20 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | R-TREND-FROM-2223 | active | On a grade or points measure (Average points, Grade 4+ / A*-E, Grade bands, Grade counts, Comparisons' headline; never Candidates, never KS2), 2021/22 stays on the Trends' graphs and tables, but every trend statement is measured from 2022/23 (TREND_BASE_PERIOD): the direction word (R-TREND-FLAT-4PCT) and the trend sentence ('… since 2022/23'), the group / 'vs:' clause, every year table's Change column (Trend and % change tables, Results' area change table: the card's two year columns are then 2022/23 and the latest, with a '+N more years' cue since 0.6.4; years down and fullscreen show every year, R-TREND-TABLE-YEARS), a fitted Trend line, a short span's ranked change bars, ranked change lists, change and Trend maps, the % change half's summary and collapsed figure, and a slope from the span's first year. Grade counts' change table measures from 2022/23 at the earliest, its 'From' menu from there (since 0.6.4 it lists every year from 2021/22 in years down and fullscreen, the card's two columns still the change's ends); its spread may still be compared with 2021/22. Line charts (Trend, Results' area chart) draw 2021/22 as a normal point. A 'From' year of 2022/23 or later is unchanged. A view whose drawn years include 2021/22 carries TREND_BASE_NOTE after its source: in the panel's 'i', and printed as text in fullscreen and in 'Print this graph'. Never on a latest-year view, on Candidates or at KS2. Indexed lines are entries only (R-INDEX-HEADCOUNTS), so unaffected. | no | auto: trendFrom2223 | — |
 | R-TREND-TABLE-YEARS | active | A trend table shows the same years as its trend chart: 2021/22 onward on a grade measure (Grade 4+ / A*-E, Grade bands, a single grade, a Grade counts selection), at GCSE and Post-16, on Results, Context and Comparisons, card and fullscreen, both drawing paths. Years down and fullscreen show every year; a card with years across may show the change's two ends (2022/23 and the latest, R-TREND-FROM-2223) with a '+N more years' cue naming the rest, which swaps to years down. Grade counts' change table lists every graded year from 2021/22 (or the member's 'From' year) the same way, its change from 2022/23. R-CURRENT-GRADES-FROM-2324 never applies to a Trends view. | no | auto: trendTableYears | — |
 | R-CURRENT-GRADES-FROM-2324 | active | A latest-year view on a grade measure (Grade 4+ / A*-E, Grade bands, Grade counts; Results, Context and Comparisons' rate) reads the school's grade rows from 2023/24 on only: its subject (or school) list, its year menu, its 'vs last year' and an explicit earlier-year spread are exactly as before the rows reached back to 2021/22. A subject with grades only in 2021/22-2022/23 appears on the Trends alone. Never a Trends view, chart or table (R-TREND-TABLE-YEARS). | no | auto: currentGradesFrom2324 | — |
-| R-RANKING-SAMPLE | active | A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure. | lifted | none yet | — |
+| R-RANKING-SAMPLE | active | A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure -- or, with a subject in focus (0.6.6), on the measure in view (R-RANKING-MEASURE). | lifted | none yet | — |
+| R-RANKING-MEASURE | active | With a subject in focus, a national or regional ranking ranks EVERY school in the filtered population on the measure in view: the focused subject (the exact qualification at Post-16; at GCSE a rate is the focus's qualification), on entries, average points, Grade 4+ / A*–E, a band or a Grade counts selection, in the panel's year (a rate's latest from 2023/24). A school needs 5 entries (graded entries on a rate) to be ranked (R-MIN-ENTRIES; entries rank from 1); ties share a rank (R-RANK-TIES); a school its own filters exclude is placed against the population and says so. The table draws a window at real ranks -- the card the top 3 and 5 either side (one block when the school is in the top 8), full screen the top 10, 10 either side and the bottom 3; the change list is the whole population's from 2022/23 in the same window. No subject in focus: the headline ranking, unchanged. | no | auto: rankingOnMeasure | — |
+| R-ADM-LADDER | active | An entry point's pool for a future September is traced back through the schools holding those children now: counted from the census (full-time pupils from age 4; full- plus part-time at nursery ages) at the rung age E - (Y - P), births below age 4, ONS age-10 projections for 11+ only and off by default. Past pools (2020 to next September) are the age E-1 rung in the census a year before. Horizons: 10 years for 11+ and 16+; Reception to its last birth year (two more only with projections we don't hold). | no | auto: admLadder | — |
+| R-ADM-BIRTH-SPLIT | active | A school year runs September to August, so a pool from calendar-year births is 8/12 of year X plus 4/12 of year X-1 (X = entry year - entry age), in the LA blend; births have no sex split, so a girls' or boys' pool from births is 49% / 51% of it, labelled an estimate. | no | auto: admBirthSplit | — |
+| R-ADM-DRIFT-RANGE | active | Beyond the counted rung a pool is a range, never a single point: the set's observed year-on-year cohort ratios 2019/20-2025/26 (schools with a census in both years only; within one kind of school; handovers between kinds measured on their own), their 10th-90th percentile applied for each year still to go, so the range widens with distance. | no | auto: admDriftRange | — |
+| R-ADM-HOLD-SHARE | active | The share needed to hold numbers steady is the school's entry-age cohort now divided by each future pool (its range from the pool's range); the current share is the latest year's. Worded as a requirement, not a forecast. | no | auto: admHoldShare | — |
+| R-ADM-GROUP-SHARE | active | Market share is the school's pupils at the entry age (or across its age band) as a share of the same ages across the rivals plus the school, per census year 2019/20-2025/26, with ranks within the set (ties share a rank). A share of this group, not of the local market. | no | auto: admGroupShare | — |
+| R-ADM-JOINERS-ESTIMATE | active | Following a cohort across census years per school: joiners at age a = max(0, cohort(a, t) - cohort(a-1, t-1)) and the leaving share at 16 = (cohort(15, t-1) - cohort(16, t)) / cohort(15, t-1), with at least 10 at 15. Both are estimates of NET movement and say so. The derived table school_cohort_flow (ingest) holds the same figures. | no | auto: admJoiners | — |
+| R-ADM-SHAPE-NOT-RANKED | active | Size uses the school page's XS-XL badges by phase band (sizeBadgeForValue), never new words; shape is the shared classifier on the page's age-gender counts, and a set's local shape is the classifier on its summed profile. Shapes are described, never ranked. | no | auto: admShape | — |
+| R-ADM-POOL-NOT-INTAKE | active | Every admissions figure about the future is a pool (children who will reach the entry point), never an intake: no field, label or sentence claims who will come. The wording lives in ADMISSIONS_NOTES. | no | auto: admPoolNotIntake | — |
+| R-ADM-RIVAL-RANKS | active | Each rival (and the school) carries its national rank and its rank in its own region, on the whole-school headline for the entry point's stage (4+ KS2, 11+ GCSE Attainment 8, 16+ A-level points per entry), on each subject area (family average points, at least 10 entries), on a subject in view (0.6.6 subjectRanking) and on size (roll in the entry point's age band, with the school page's XS-XL badge). Every school with a figure that year, ties share. A school with no published results for the stage says so; at 11+ an IGCSE-heavy independent school is listed but not ranked. | no | auto: admRivalRanks | — |
+| R-ADM-FLAG-MOMENTUM | active | Rivals' momentum flags, each from a two-year change (pupils in %, results in points) against the NATIONAL thresholds for the phase (top / bottom fifth; admissions_flag_thresholds), never from one small cohort, with the figures behind it: results rising fast (headline), gaining pupils (roll), losing pupils three years running (three falls in a row), the entry year shrinking (Year 7 at 11+), a new sixth form (no pupils at 16 until two years ago), shape changed (the same new shape two years running). Until the thresholds are applied the threshold flags don't fire (none guessed). | no | auto: admMomentum | — |
+| R-ADM-FLAG-STRENGTHS | active | By subject area, the school's rank among the rivals that have that area (at least 10 entries), the gap to their average and its change since 2022/23: Strength (top third, above the average), Strength growing (and the school's own two-year change in the national top fifth), Weakness (bottom third, below), Weakness widening (and in the national bottom fifth). Never against fewer than two rivals. | no | auto: admStrengths | — |
+| R-ADM-FLAG-FEEDER | active | A feeder whose pupils (across the rung ages it holds) fell more than the area's (the whole feeder set) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. | no | auto: admFeeders | — |
 | R-PERIOD-TRIM | active | Leading and trailing periods with no published value are trimmed (2020/21 points are null nationally). | no | manual | — |
 | R-INDEX-HEADCOUNTS | active | Only sum measures (entries) are indexed to 100; points and rates are drawn at real levels. | no | none yet | — |
 | R-RANK-TIES | active | Ties share a rank; the next rank skips; a null is unranked. | no | none yet | — |
@@ -64,6 +77,68 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | R-ROLLS-MAINSTREAM-AGG | active | LA, region and England roll aggregates count mainstream schools only. | no | none yet | yes |
 | R-BIRTHS-FULL-WINDOW | active | The births trend is shown only when all five years (2021-2025) exist for the area; otherwise nothing. | no | none yet | — |
 | R-BIRTHS-SHIRE-SUM | active | A shire county's births are the sum of its districts' births. | no | none yet | — |
+| R-ADM-FAMILY-PUPILS | active | Pupils by age is the census count at one age (full-time from 4, plus part-time at 2-3), per school and census year, and the entry point now reads the school's own count at the entry age, split by sex, against 2019/20. | no | auto: admFamilyPupils | — |
+| R-ADM-FAMILY-PIPELINE | active | The Pipeline family is round 1's pipeline unchanged: with no filter, the screens' answer carries exactly buildPipeline's ladder, share needed, sets and blend; the screens only add what they draw. | no | auto: admFamilyPipeline | — |
+| R-ADM-FAMILY-MARKET | active | The Market share family is round 1's group share unchanged: with no filter the screens' answer carries buildMarketShare's rows and totals; the extras (whole roll and its rank, change since 2022/23) are the census's own figures. | no | auto: admFamilyMarket | — |
+| R-ADM-FAMILY-RIVALS | active | Rivals' results is round 1's rivals unchanged, plus each school's whole-school headline change since 2022/23 in points, from the same headline population the flags read; an IGCSE school, listed but not ranked, has none. | no | auto: admFamilyRivals | — |
+| R-ADM-VIEW-NOW | active | The entry point now shows the school's own entry cohort, its change since 2019/20, girls and boys at the entry age, and day and boarding for the whole school (the census has no boarders by age; a day school's tile reads Day only, 0.7 r3 F2); size is the school page's Roll by phase (XS-XL), never new words. | no | auto: admViewNow | — |
+| R-ADM-VIEW-PIPELINE | active | The pipeline chart draws past pools, then counted years solid, births dashed with their range band, and projection only on request (11+), with every label from ADMISSIONS_NOTES. The styling and wording have no look option. | no | auto: admViewPipeline | — |
+| R-ADM-VIEW-FUNNEL | active | The funnel follows this September's entrants back, like with like: the area's births for their school year (8/12 + 4/12), every pupil a year below the entry age in every mainstream school in the SAME area a year before (age_profile_aggregates), then the school's own entry cohort. Each bar leads with a bold label, then its area and year in plain words (ADMISSIONS_NOTES); the panel's note says it is not a flow of the same children. No funnel at 4+ (0.7 r3, F7). | no | auto: admViewFunnel | — |
+| R-ADM-VIEW-FEEDERS | active | The feeder table and map list the nearest rung's schools with their pupils at that age now and two years ago, each flagged by R-ADM-FLAG-FEEDER against the whole set, with distance, sector, gender and XS-XL; the school itself is not a feeder. | no | auto: admViewFeeders | — |
+| R-ADM-VIEW-SHAPES | active | Shape and size shows the school's profile by gender, the feeders' local shape and the rivals' shapes as small multiples in the rival set's own order, with no rank, score or sort by shape. | no | auto: admViewShapes | — |
+| R-ADM-VIEW-TRENDS | active | Pool trends index the feeders' past pools and the same age across the LA and England (age_profile_aggregates: LA rows, England the sum of the nine regions) to their first common year; a year the aggregates don't hold is a gap, never filled. | no | auto: admViewTrends | — |
+| R-ADM-VIEW-MARKET | active | Market views are shares of this group: each school's pupils at the entry age over the group's total, summing to 100% in a year; ranks within the set; the whole-school rank is by total roll. | no | auto: admViewMarket | — |
+| R-ADM-VIEW-MOMENTUM | active | The momentum scatter plots each rival's change at the entry age (census, since 2022/23, %) against its whole-school headline change (points, same years); flags come only from the national thresholds, and with none loaded the view says flags are not available yet. | no | auto: admViewMomentum | — |
+| R-ADM-VIEW-STRENGTHS | active | Strengths and weaknesses rank the school only among rivals with that subject area (and at least the minimum entries), show the gap to their average and its move since 2022/23, and flag Strength / Weakness by the top or bottom third (R-ADM-FLAG-STRENGTHS). | no | auto: admViewStrengths | — |
+| R-ADM-VIEW-FLAGS | active | A flag list shows each rival's momentum flags with the figures behind each one on hover, never a flag without its figures. | no | auto: admViewFlags | — |
+| R-ADM-VIEW-ACADEMIC | active | The academic panel follows the entry point: 4+ reads KS2, 11+ GCSE, 16+ Post-16; a rival with no published results or an IGCSE-heavy one is listed and not ranked, with the reason. | no | auto: admViewAcademic | — |
+| R-ADM-FE-SOURCE | active | An FE college's own figures come from FE participation data (ILR, learners under 19 over the year), labelled as that source, and are never divided into a census group's total, ranked against schools or shown as a Year 12 count. | no | auto: admFeSource | — |
+| R-ADM-FILTERS | active | The top bar's filters (Day + boarding, State + independent, boarding rivals) narrow the sets on the server before round 1's maths runs; unfiltered, every answer is round 1's. A filter that leaves a list empty says so; another list never stands in for it. Day + boarding is a boarding school's filter only: for a day school it is never drawn and the server ignores it (R-ADM-BOARDING-ONLY-WHERE-BOARDERS). | no | auto: admFilters | — |
+| R-ADM-BOARDING-ONLY-WHERE-BOARDERS | active | A boarding school is one GIAS lists with boarding provision (schools.boarders_name = "Boarding school"; "No boarders" and "Not applicable" are day schools). A day school never has to think about boarders: no tile, filter, chip, column, legend, empty state, note, setup question or step, or editor compare option mentions boarding (column 1's day/boarding tile stays, reading Day only), its saved boarding lists are kept but not used, and the server ignores a boarding filter for it. Its rivals' own figures may still say they board. A boarding school sees every boarding surface: setup's day-and-boarding question and step 3, the filter, the tile's day and boarding, the boarding feeder list and its fuzzy set. | no | auto: admBoardingOnly | — |
+| R-ADM-FUNNEL-SAME-AREA | active | The funnel's births and its pool bar cover the same area with the same weights: the school's own LA, or the lead's LA blend when one is set. The pool is every pupil a year below the entry age (Year 6 = age 10, Year 11 = age 15, at 31 August, the census a year before entry -- the ladder's own age mapping) in every mainstream school in that area: academies, LA-maintained, free and independent (age_profile_aggregates, scope la). The feeder set's pool is not a funnel bar; it stays in the Pipeline. | no | auto: admFunnelSameArea | — |
+| R-ADM-EDITOR-LOOKS-KEEP-NOTES | active | An Admissions view's look options and compare chips change how it draws, never what it must say: under every look and compare an editor can choose (src/catalogue/admissions-editor.ts), each view still renders every R-ADM wording from ADMISSIONS_NOTES that its preset renders (a pool, not an intake; a share of this group; the estimates; the requirement; the flags' rules; the undercount), and its rule-held styling and thresholds don't move. Options left at their defaults draw exactly the preset. A day school's view never draws a boarding feeder set, whatever its spec asks. | no | auto: admEditorLooks | — |
+| R-DOUBLE-AWARD-POINTS | active | A GCSE Double Award (grades published as pairs, "98" ... "11") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say "different grading scale, not ranked". | no | auto: doubleAwardPoints | — |
+| R-SMT-PUPILS-LEVEL | active | Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-16), Post-16 Years 12 and 13 (16-18), Primary Reception to Year 6 (4-11); Whole school highlights nothing. The figures don't change with the level; the year groups in focus do. | no | auto: smtPupilsLevel | — |
+| R-SMT-VIEW-PUPILS-NOW | active | Your pupils now shows the census's roll and its change since 2019/20, girls and boys (mixed schools only), day and boarding (boarding schools only), Year 12 against Year 11 (Year 12 now against Year 11 a year before, where the school has both), the school page's XS-XL by phase and the LA context line. | no | auto: smtPupilsNow | — |
+| R-SMT-Y12-AGAINST-Y11 | active | The Year 11 to Year 12 figure is called "Year 12 against Year 11" wherever it appears (Your pupils now, the set's figure in Shape and size, the Leaving at 16 table), never "staying on", with SMT_NOTES.y12AgainstY11 as its caption; it compares the same cohort, Year 11 in year t-1 with Year 12 in year t. | no | auto: smtY12AgainstY11 | — |
+| R-SMT-VIEW-SHAPE | active | Shape and size draws pupils in each year group, the shape and since when, and the shapes around (the LA's schools of the same age range, the comparison set's shapes, Year 12 against Year 11 in the set's sixth forms) -- described, never ranked. | no | auto: smtShape | — |
+| R-SMT-ADMISSIONS-READ-ONLY | active | Views from Admissions (entry points at a glance, the pool, market share) are read-only in SMT: no setup, no list editing, each with Open in Admissions; where Admissions has no entry points or no saved rivals, an empty state says why. | no | auto: smtAdmissionsReadOnly | — |
+| R-SMT-VIEW-LEAVING | active | Leaving at 16 follows Year 11 to Year 12 at the school year by year (the census a year apart): Year 12 against Year 11 and the net leavers, worded as Admissions' estimate (ADMISSIONS_NOTES.leaving16). | no | auto: smtLeaving | — |
+| R-SMT-CONTEXT-PLACE | active | Context's place line (town · LA · region) drops any part that names the same place as the part before it, compared case-insensitively and ignoring "City of" / "Borough of" (prefix, or GIAS's ", City of" suffix). | no | auto: smtContextPlace | — |
+| R-SMT-CONTEXT-PROJECTION-JOIN | superseded by R-SMT-FORWARD | Context's school-age population draws both sources as published: ONS mid-year estimates, then ONS's projection from its own figure for the latest estimate year. Where the two differ there by more than SMT_PROJECTION_JOIN_GAP_PCT (2%) of the estimate, the panel's source (i) adds SMT_NOTES.projectionJoin ("The projection starts from ONS's {base} base, not the latest estimate, so the two lines may not meet."); otherwise it says nothing. | no | manual | — |
+| R-SMT-CONTEXT-RESIDENTS | active | Context's children within the school's catchment radius are ONS residents (area_context: LSOAs whose population-weighted centroid is within the radius, the latest mid-year held; at 5 miles exactly school_context_lookup's figures), summed over the level's single ages (GCSE 11-15, Post-16 16-17, Primary 4-10, Whole school the school's range), with the change since the first year held; the census's pupils at schools within the radius sit beside them, labelled, and neither is divided by the other. | no | auto: smtContextResidents | — |
+| R-SMT-CONTEXT-DEPRIVATION | active | Context shows the IMD and IDACI deciles of the school's own LSOA, each "decile n of 10", and the IDACI mix of the children within 5 miles as one bar, decile 1 to 10, with the share in deciles 1-2 against England's 20% (by construction, said in the (i)). A school whose postcode places it in no English LSOA says so. Deprivation always describes the area, never the pupils. | no | auto: smtContextDeprivation | — |
+| R-SMT-CONTEXT-FSM | active | A state school shows its latest FSM % (fsm_eligible_percent) with its LA (through la_gss_crosswalk) and England the same year, to 1 dp, and the change since the first year held. An independent school (GIAS's independent schools less CTCs, and independent special schools) shows "Free school meals are not published for independent schools." and "Independent schools often draw pupils from well beyond 5 miles." -- never a number, never 0%, never a bare dash. | no | auto: smtContextFsm | — |
+| R-SMT-CONTEXT-WORDING | active | Context's six wording rules come from SMT_NOTES, word for word: deprivation is "the area around the school, not its pupils"; independent schools' FSM; residents are not pupils; deciles (1 = the most deprived 10%); "A projection, not a forecast for the school", by local authority; the sources and editions in the source (i), their years read from the data. No "pupils" next to a deprivation figure. | no | auto: smtContextWording | — |
+| R-SMT-CONTEXT-GEOGRAPHY | active | Context's map shades neighbourhoods (ONS LSOAs 2021, joined through postcodes): those the ingest counts within 5 miles (population-weighted centroid) plus a one-mile ring, with the 5-mile circle drawn; the count within 5 miles equals school_context_lookup's. Until lsoa_boundaries has rows (before K0's migration and load), and for the Area pill's LA, the map draws round 2's LA shading and says "shading by district". "Shade by" lists only what exists. | no | auto: smtContextGeography | — |
+| R-SMT-DATA-GAP | superseded by R-SMT-CONTEXT-DEPRIVATION | Retired in SMT round 3: Context showed the data gap ("Deprivation and free school meals: not yet in VicData") where the figures would be. The ingest has loaded both; the dashed block is gone, and the figures are R-SMT-CONTEXT-DEPRIVATION's and R-SMT-CONTEXT-FSM's. | no | none yet | — |
+| R-SMT-VIEW-CONTEXT-NOW | active | The area now shows children of the level's ages living within the catchment radius (or in the LA) with the change since the first year held, the authority mix under it (0.8 SMT r4), the census's pupils at schools within the radius beside them, births last year and since 2012, the projection tile (the area's children of the ages, latest count to five years on, with its range: area_projection, or la_projection_lookup for the LA), the schools nearby of the same phase (all sectors), the place line (town · LA · region), and the Social context block. | no | auto: smtContextNow | — |
+| R-SMT-VIEW-BIRTHS | active | Births are drawn by LA against England (every English district and unitary summed), indexed to 2012 = 100, said to be by LA. The school-age population (0.8 SMT r4) is the area's children of the level's ages, within the radius or in the LA: estimates to the latest count, then the projection from that count to the settings' horizon (latest + horizon_years). | no | auto: smtBirths | — |
+| R-SMT-RADIUS | active | Context draws at one radius, in whole km: this view's own (?km=), else the school's saved catchment (school_catchment, app DB), else the default by type (5 km state, 15 km independent); never past the cap by type (15 km a state school without a sixth form, 30 km otherwise; a saved catchment over it draws at the cap and says so). The whole board follows it -- the map circle and ring, children now, the deprivation mix, population by age, children nearby over time, the forward view, schools nearby and the census line -- and no caption names another radius. The school's own School-Admin (or account holder) saves it; its approved members read it; nobody else does. | no | auto: smtRadius | — |
+| R-SMT-FORWARD | active | The forward view is the ingest's children-in-an-area projection (docs/v0.8/vicdata_area_projection_method_v1.md): area_projection at the radius, or la_projection_lookup for the LA (a county's districts summed), for the level's ages. Estimates, solid, to the latest count, then the middle line from that count to the horizon, its band (the lowest and highest of whole single-year projections, taken over the ages' sum) shaded, the years whose ages include children not yet born drawn lighter and labelled at the change. ONS's 2022-based projection (its change, applied by authority around the school) and the scenario are faint lines, off by default. | no | auto: smtForward | — |
+| R-SMT-NOT-A-FORECAST | active | The projection's wording is the method note's, from SMT_NOTES: "A projection of children living in the area, not a forecast for the school." on every view that draws it, and what it is and isn't (SMT_NOTES.whatItIs). Never "forecast" except as "not a forecast", never "your roll", never a school-level number from it. | no | auto: smtNotAForecast | — |
+| R-METHOD-PRESENT | active | Every catalogue view (Teacher, Admissions, SMT; groups' views are SMT's) has a method (src/catalogue/methods.ts): the sources with their editions, read from the data where it carries them; the area; the years used and any left out, with the reason; the calculation as numbered plain-English steps; and any rounding or suppression. The footer's source (i) shows it, the steps under a collapsible "How it is calculated", scrolling, never cut off, on the phone too. Where the code does something the (i) didn't say (a rounding, a filter, an exclusion, double award as two entries, a small-number rule), the method says it. | no | auto: methodPresent | — |
+| R-METHOD-SETTINGS | active | A view whose numbers come from stored settings has its method generated from them, never typed: the forward view's (projectionMethod) is built from area_projection's settings in the method note's (i) shape, so every setting value appears in the text and changing a setting changes it. | no | auto: methodSettings | — |
+| R-SMT-LEVEL-CHIPS | active | The level chips are Whole school (the default) then only the phases the school has, from the census as the school page's Roll by phase decides them (Primary, GCSE, Post-16); an IGCSE school's GCSE chip is shown, marked, with the reason in its tooltip. Subject areas sit under GCSE or Post-16 only, as a second row with All areas first; Whole school and Primary have none. The level is held in the address (?level=, &area=) and remembered for the user; a level the school can't show falls back, never errors. | no | auto: smtLevelChips | — |
+| R-SMT-SET-RANKS | active | One comparison set drives the whole SMT dashboard: Teacher's sets (10 nearest, the LA, saved sets, the school's sets, rankings), resolved by Teacher's own route. Every rank among the set is level-aware: only the set's schools with that result are ranked (IGCSE schools left out at GCSE), the school counted too, highest first, ties sharing a place, and the count says so ("2 of 11 with GCSE results"). Regional and England ranks are 0.6.6's whole-population ranks. | no | auto: smtSetRanks | — |
+| R-SMT-IGCSE-WORDING | active | An IGCSE school (R-IGCSE-EXCL) is never shown a GCSE zero or rank: its GCSE rows read "IGCSE · not ranked", its column-1 tile "IGCSE school, no comparable GCSE results", every GCSE view says why in its own space (SMT_NOTES.igcseView), and its set is chosen in Post-16. Post-16 is compared as usual. | no | auto: smtIgcse | — |
+| R-SMT-P8-REASON | active | Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. | no | auto: smtP8 | — |
+| R-SMT-VA-HONEST | active | Value added is shown as DfE publishes it -- A-level value added by qualification type and by subject, with DfE's 95% interval and banding -- and worded from SMT_NOTES: 0 is the national average; a range crossing 0 isn't clearly different from average; GCSE value added by subject has never been published. | no | auto: smtVa | — |
+| R-SMT-YEARS | active | Every SMT year comes from the data or years.ts, never the code: each key stage's latest from academic_current_periods (with "(provisional)" where the ingest says so), change measured from TREND_BASE_PERIOD, the census from CENSUS_FIRST_PERIOD; Context's small-area, LA, projection and FSM years from what the lookups return. When GCSE's latest moves on and Post-16's doesn't, each view labels its own year; when ONS adds an LSOA year, Context moves to it. | no | auto: smtYears | — |
+| R-SMT-BOARDING-ONLY | active | SMT's filters are pills, only where they apply: Gender for a mixed school, Day + boarding for a boarding school (isBoardingSchool). A day school's request for boarding figures is ignored on the server; results aren't split by either, and the views say so. | no | auto: smtBoardingOnly | — |
+| R-SMT-FLAGS | active | Flags on the school appear only for large and lasting changes, with the figures behind them: the roll falling three years running (Admissions' losingPupils), the entry cohort shrinking past the national threshold (entryYearShrinking), and results moving faster than the set's middle by at least SMT_FLAG_RULES.resultsGap over two years, with at least SMT_FLAG_RULES.resultsMinSchools set schools. The thresholds live in src/lib/smt/flags-rules.ts only. | no | auto: smtFlags | — |
+| R-SMT-NOTES | active | SMT's honesty wording comes from one file, SMT_NOTES (src/catalogue/notes.ts), behind each panel's caption button or in the view's own space; no SMT component words a caveat of its own. | no | auto: smtNotes | — |
+| R-SMT-SMALL-ENTRIES | active | A subject with fewer than MIN_SUBJECT_ENTRIES (5) entries isn't ranked and says so; ranks come from Teacher's subjectRanking, so a subject's figures match the subject explorer's. | no | auto: smtSubjects | — |
+| R-SMT-VIEW-NOW | active | The school now shows the census's roll and its change since 2019/20, girls and boys (day and boarding at a boarding school), each phase's headline with its national rank, A-level value added, Progress 8 or its reason, and the school page's XS-XL by phase -- never new words for size. | no | auto: smtViewNow | — |
+| R-SMT-VIEW-SCORECARD | active | The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its change since 2022/23 (roll since 2019/20); IGCSE rows say not ranked; the flags line follows. | no | auto: smtSetRanks | — |
+| R-SMT-VIEW-MAP | active | The map draws the school and every located school in the comparison set; the school ringed. | no | auto: smtViewMap | — |
+| R-SMT-VIEW-TRENDS | active | Trends draw indexed rolls against the LA and England (pupils aged 5-15, said so), results against the set's middle half with 2021/22 shaded and the trend note, and market share from Admissions read-only (an empty state with the reason where the school has no 11+ rivals). | no | auto: smtViewTrends | — |
+| R-SMT-VIEW-ACADEMIC-NOW | active | The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile. With a subject area chosen the tiles are four, as the Academic board draws them: entries, the average, the top grades, and the rank in the set as its own tile. | no | auto: smtAcademicNow | — |
+| R-SMT-VIEW-AREAS | active | Subject areas are Admissions' strengths and weaknesses (buildRivals), against the comparison set instead of the rivals. | no | auto: smtAreas | — |
+| R-SMT-VIEW-SUBJECTS | active | Subjects list the area's subjects with entries, average, rank in the set and England, since 2022/23, and the subject explorer link carrying ?set=. | no | auto: smtSubjects | — |
+| R-SMT-VIEW-GRADES | active | The grade profile bands the main qualification's latest graded entries (GCSE 9-7, 6-5, 4, 3-1; A level A*-A, B, C, D-U); the bands add up to all of them. | no | auto: smtGrades | — |
+| R-SMT-VIEW-MIX | active | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from 2021/22 (the subject rollup), as the results trend beside it does; entries count from the first year (not graded, so no 2021/22 note). | no | auto: smtMix | — |
+| R-SMT-VIEW-RESERVED | active | Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its caption and body -- "the top 25%, middle 50% and bottom 25% of entries" (the bands are of entries, not pupils) -- and no figure. | no | auto: smtReserved | — |
 
 ## Cards
 
@@ -91,7 +166,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | A-level, BTEC and IB points sit on different challenge tables; one bar chart or average across them compares unlike scales. |
 | Applies to | M-KS4-POINTS, M-KS5-POINTS; map chips, Column 1 category, Context |
 | Enforced in | - src/lib/teacher-view-catalogue.ts:comparabilityKey (124-127)<br>- src/app/api/teacher/dashboard/route.ts:englandAverages (56-72, exact qualification)<br>- src/app/teacher/[phase]/page.tsx:candidateItems (1063-1099, via R-QUAL-FAMILY-MATCH)<br>- src/lib/teacher-view-measures.ts:contextKeepsToFamily, onFocusPointsScale, contextGroupValue (Post-16 points rows in the focus's family only)<br>- src/lib/teacher-view-populations.ts:contextItemsOf (keepToFamily: All subjects on Post-16 points)<br>- src/app/api/teacher/comparator-qualifications/route.ts; src/lib/teacher-view-comparator-quals.ts (0.6.5 S3)<br>- src/components/dashboard-config/TeacherDashboard.tsx:exactQuals, comparatorSubjectSeries, mapChips (exact at Post-16), exactQualsNote |
-| Tagged at | - src/app/api/teacher/comparator-qualifications/route.ts<br>- src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/comparator-quals.test.ts<br>- src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-comparator-quals.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts<br>- src/lib/teacher-view-theme.ts |
+| Tagged at | - src/app/api/teacher/comparator-qualifications/route.ts<br>- src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/comparator-quals.test.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-comparator-quals.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/teacher-view-populations.ts<br>- src/lib/teacher-view-theme.ts |
 | Test case | Croydon College (130432), ks5, Business Studies, 2024/25: Context on Average point score: Business Studies (A level + five BTEC sizes) has one group value per family -- the A-level family's is the A-level row's own 26.36, the BTEC family's is the BTEC rows' weighted mean; no focus = no value. With A-level Computer Science focused, All subjects draws 20 A-level subjects (was 55 across every family) and its average is 25.6 (was a 24.7 blend). Comparisons on A level Maths 2024/25: Croydon's own figure is its exact A level row (24.00), not the A-level bucket's 21.45, and every comparator's comes from the same exact-qualification rows. [runner: pointsSameQual] |
 | Origin | Academic Results phase; Post-16 Part C and Part D |
 | Status | active |
@@ -268,7 +343,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Applies to | Every over-time view |
 | Enforced in | - src/lib/teacher-view-panels.ts:TREND_LINE_MIN_YEARS, trendChartKind (311-315)<br>- src/components/teacher/SeriesViews.tsx:multiTrendHasLine (48-49), MultiTrend fallback (76-90)<br>- src/components/teacher/TrendChart.tsx:185<br>- src/components/teacher/ComparisonsPanels.tsx:614-616, 649 (table only)<br>- src/components/teacher/CandidatesPanels.tsx:284, 292<br>- src/components/teacher/SubjectPanels.tsx:789, 798 |
 | Tagged at | - src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/series.ts<br>- src/lib/view-series/subjects.ts |
-| Test case | Acland Burghley School (100053), ks4, Maths (General): Average points has 4 real years (2021/22-2024/25) -> line; Grade 4+ has 4 too since 0.6.2 (2021/22-2024/25) -> line (it had 2, 2023/24-2024/25 -> bars / change list, before). [runner: trendLine] |
+| Test case | Acland Burghley School (100053), ks4, Mathematics: Average points has 4 real years (2021/22-2024/25) -> line; Grade 4+ has 4 too since 0.6.2 (2021/22-2024/25) -> line (it had 2, 2023/24-2024/25 -> bars / change list, before). [runner: trendLine] |
 | Origin | Teacher view round 7 §4 |
 | Status | active |
 | Must lift | — |
@@ -359,7 +434,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 
 | Field | Content |
 | --- | --- |
-| Statement | On the Post-16 page the default comparison set is the 10 nearest schools and colleges with Post-16 provision, named '10 nearest with a sixth form or 16+ provision': GCSE's matching rules (the same distance order, sector, phase and gender rules and the same widen-the-net backfill) plus one filter -- KS5 results in either of the latest two published years. An FE college's default (the nearest FE colleges) and a boarding recipe (its schools with KS5 results) follow the same rule. GCSE keeps its own nearest 10; saved sets are never altered; the Data View's default-lists, expand-nearest and boarding-quintile-list calls are unchanged (only the Teacher chooser on its Post-16 page asks with post16=1). |
+| Statement | On the Post-16 page the default comparison set is the 10 nearest schools and colleges with Post-16 provision, named '10 nearest with a sixth form or 16+ provision' in the chooser (the column's pill keeps '10 nearest schools', so Column 3's content and the grid's widths don't change): GCSE's matching rules (the same distance order, sector, phase and gender rules and the same widen-the-net backfill) plus one filter -- KS5 results in either of the latest two published years. An FE college's default (the nearest FE colleges) and a boarding recipe (its schools with KS5 results) follow the same rule. GCSE keeps its own nearest 10; saved sets are never altered; the Data View's default-lists, expand-nearest and boarding-quintile-list calls are unchanged (only the Teacher chooser on its Post-16 page asks with post16=1). |
 | Why | Guy, 7 Oct 2026 (the 0.6.4 audit's change 6): the GCSE nearest 10 left few comparators sharing a Post-16 qualification (3 for King's Worcester's A level Maths). |
 | Applies to | The Comparisons column's default set at Post-16; the comparator chooser's 10 nearest on the Post-16 page |
 | Enforced in | - src/lib/default-comparator-lists.ts:buildDefaultComparatorLists (post16), withKs5Results, keepWithKs5Results<br>- src/lib/chooser-sets.ts:resolveDefaultNearest<br>- src/app/api/data-view/default-lists, expand-nearest, boarding-quintile-list (post16=1, opt-in)<br>- src/components/teacher/ComparatorSetChooser.tsx:nearestName; src/components/dashboard-config/TeacherDashboard.tsx:DEFAULT_CHOICE_LABEL_POST16 |
@@ -411,7 +486,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | '*' and 'D' are A-level grades too: read raw, a 2021/22 BTEC lands on the A-level scale, its bands give no figure and Grade counts shows letters; an unmapped COVID result left about 9% of 2021/22 A-level sets with no A*-E figure. |
 | Applies to | M-KS5-THRESHOLD, M-KS5-BANDS, M-KS5-COUNTS (2021/22-2022/23) |
 | Enforced in | - src/lib/grade-rows.ts:mapHistoricKs5Grade, parseSubjectGradeDistribution<br>- src/lib/subject-grades.ts:NON_GRADE_VALUES (88) |
-| Tagged at | - src/app/api/teacher/comparator-grades/route.ts<br>- src/app/api/teacher/subject-grade-geography/route.ts<br>- src/lib/academic-data-view.ts<br>- src/lib/grade-rows.test.ts<br>- src/lib/grade-rows.ts<br>- src/lib/post16-safeguards.test.ts<br>- src/lib/subject-grades.ts |
+| Tagged at | - src/app/api/teacher/comparator-grades/route.ts<br>- src/app/api/teacher/subject-grade-geography/route.ts<br>- src/lib/academic-data-view.ts<br>- src/lib/grade-rows.test.ts<br>- src/lib/grade-rows.ts<br>- src/lib/post16-safeguards.test.ts<br>- src/lib/subject-grades.ts<br>- src/lib/subject-ranking.ts |
 | Test case | Croydon College (130432), ks5, Business Studies (BTEC Extended Certificate), 2021/22: 2021/22 reads Distinction* 2, Distinction 9, Merit 31, Pass 9 on the vocational scale (no '*' or 'D' rows, COVID result 44 a non-grade); King's Worcester (117037) A-level Maths 2021/22 keeps its '*' rows on the A-level scale -- read as A* (20) since 0.6.3, R-ALEVEL-STAR -- A*-E 100% of 45. [runner: historicGradeLabels] |
 | Origin | 0.6.2 S1 §4 (docs/v0.6/grade_rollup_reconciliation_v1.md); S2 |
 | Status | active |
@@ -571,7 +646,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | A share of one or two entries swings by tens of points and ranks noise. |
 | Applies to | Context and Comparisons on a Grade counts selection |
 | Enforced in | - src/lib/academic-data-view.ts:MINIMUM_SUBJECT_N<br>- src/components/dashboard-config/TeacherDashboard.tsx:selectionRateOf<br>- src/components/teacher/ComparisonsPanels.tsx:tooFewUrns; src/lib/view-series/ranking.ts:schoolRanking (tooFew) |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/ranking.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/lib/subject-ranking.test.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/ranking.ts |
 | Test case | — |
 | Origin | 0.6.3 grade counts, maps, tables round (S1) |
 | Status | active |
@@ -603,7 +678,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | Read raw, every A* before 2024/25 fell out of an A* range: a false fall (King's Worcester's Maths A* went from 20 to 8). |
 | Applies to | Post-16 grade rows: Grade counts, Grade bands, a counts selection, A*-E, comparator rates, England's grade rows |
 | Enforced in | - src/lib/grade-rows.ts:starIsAStar (gradeRowsFromFacts at KS5), normaliseKs5AreaRows (/api/teacher/subject-grade-geography) |
-| Tagged at | - src/app/api/teacher/subject-grade-geography/route.ts<br>- src/lib/grade-rows.ts<br>- src/lib/grade-selection.ts<br>- src/lib/post16-safeguards.test.ts |
+| Tagged at | - src/app/api/teacher/subject-grade-geography/route.ts<br>- src/lib/grade-rows.ts<br>- src/lib/grade-selection.ts<br>- src/lib/post16-safeguards.test.ts<br>- src/lib/subject-ranking.ts |
 | Test case | King's Worcester (117037), ks5, Mathematics, 2021/22-2024/25: A* has entries in every year (20, 14, 22, 8) and England has an A* share in every year; no '*' row remains. [runner: aLevelStar] |
 | Origin | 0.6.3 grade counts, maps, tables round (S3) |
 | Status | active |
@@ -683,7 +758,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | Schools sitting IGCSEs show artificially low DfE GCSE figures; ranking them against GCSE schools misleads. |
 | Applies to | Comparisons (all GCSE measures); comparator maps |
 | Enforced in | - src/lib/teacher-view-comparator-series.ts:130, 143, 159, 175, 186, 199<br>- src/components/teacher/RankingsMap.tsx:90<br>- src/lib/academic-data-view.ts:igcseExclusionLikely (679) |
-| Tagged at | - src/components/teacher/RankingsMap.tsx<br>- src/lib/teacher-view-comparator-series.ts |
+| Tagged at | - src/components/admissions/views/Bars.tsx<br>- src/components/smt/views/Scorecard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/smt/levels.ts<br>- src/lib/smt/overview.ts<br>- src/lib/smt/school.ts<br>- src/lib/teacher-view-comparator-series.ts |
 | Test case | The King's School Worcester (117037), ks4: Malvern College / Malvern St James absent from the set (unconfirmed, content round report :152). [manual] |
 | Origin | Commit 514e285; content round S4 |
 | Status | active |
@@ -712,7 +787,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Field | Content |
 | --- | --- |
 | Statement | Comparator rates are scored per subject and exact qualification, with the page's own rate function. |
-| Why | Pooling a comparator's qualifications mixes grade scales (Maths (General) moved +5pp when fixed). |
+| Why | Pooling a comparator's qualifications mixes grade scales (Mathematics moved +5pp when fixed). |
 | Applies to | Comparisons on Grade 4+ / A*-E / bands; since 0.6.2 S3 also a subject column's 'Add an average' across schools on them |
 | Enforced in | - src/components/teacher/ComparisonsPanels.tsx:199-207<br>- src/app/teacher/[phase]/page.tsx:2043-2053<br>- src/components/dashboard-config/TeacherDashboard.tsx:setGradeRowsFor, schoolSetGradesOn |
 | Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/teacher-view-comparator-grades.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-editor.test.ts<br>- src/lib/view-series.test.ts |
@@ -763,7 +838,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | 2021/22 (summer 2022) was the first year back to exams after the pandemic: Ofqual set grading roughly midway between 2021 and 2019, so a trend measured from it would make most schools look as if results had fallen. |
 | Applies to | M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS, Comparisons' headline (Attainment 8, A level points per entry): over-time views |
 | Enforced in | - src/catalogue/notes.ts:TREND_BASE_PERIOD, TREND_BASE_NOTE, trendBaseApplies, trendBaseFor, trendNoteFor, specYears<br>- src/lib/teacher-view-panels.ts:PanelData.statementFrom, withTrendBase, statementSpan, countedValues<br>- src/components/teacher/SeriesViews.tsx:MultiTrend (short span), YearTable (Change column, card columns)<br>- src/components/teacher/TrendChart.tsx:fit<br>- src/components/teacher/ColumnPanels.tsx:withTrendNote (PanelRender.gradingYears)<br>- src/components/teacher/SubjectPanels.tsx:trendFull, trendSpan, changeFull, changeSpan<br>- src/components/teacher/ComparisonsPanels.tsx:full, trendSpan, changeSpanData, changeTableSpan, trendMapSpan<br>- src/components/teacher/GeographyComparison.tsx:GeographyView statementFrom<br>- src/components/teacher/GradeCountsPanels.tsx:changeEarlier<br>- src/lib/grade-spread.ts:gradeCounts (changeEarlier)<br>- src/lib/view-series/subjects.ts:trendData, changeData<br>- src/lib/view-series/comparisons.ts:series, changeDrawn, changeSpan<br>- src/lib/view-series/geography.ts:buildGeography (table statementFrom)<br>- src/lib/view-series/map.ts:changeMap<br>- src/lib/view-series/slope.ts:slopeYears |
-| Tagged at | - src/components/teacher/ColumnPanels.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/GeographyComparison.tsx<br>- src/components/teacher/GradeCountsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/components/teacher/TrendChart.tsx<br>- src/components/teacher/tableLayout.ts<br>- src/lib/grade-spread.ts<br>- src/lib/grading-note.test.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/slope.ts<br>- src/lib/view-series/subjects.ts |
+| Tagged at | - src/components/smt/views/Lines.tsx<br>- src/components/teacher/ColumnPanels.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/GeographyComparison.tsx<br>- src/components/teacher/GradeCountsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/components/teacher/TrendChart.tsx<br>- src/components/teacher/tableLayout.ts<br>- src/lib/grade-spread.ts<br>- src/lib/grading-note.test.ts<br>- src/lib/subject-ranking.test.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/slope.ts<br>- src/lib/view-series/subjects.ts |
 | Test case | The Chase (137625), ks4, History, 2021/22-2024/25: Grade bands and Average points Trends draw 2021/22-2024/25 and carry the note; their sentence and direction word are measured 2022/23-2024/25 ('since 2022/23'); a Trend from 2023/24 and the latest year are unchanged; Candidates and KS2 never (src/lib/trend-base.test.ts and src/lib/grading-note.test.ts, on the real hosts). [runner: trendFrom2223] |
 | Origin | 0.6.2 S4b (Guy's decision B, 6 Oct 2026), replacing S4's R-2122-GRADING-NOTE |
 | Status | active |
@@ -795,7 +870,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | The grade rows' two older years are for the trends. Read by a latest-year view, they listed subjects with no current figure ('no published figure' rows) and let 'vs last year' reach back past a missing 2023/24 to 2022/23 -- latest-year figures this round must not change (S5). |
 | Applies to | M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS: latest-year views |
 | Enforced in | - src/lib/teacher-view-panels.ts:latestYearFrom, latestYearSeries<br>- src/components/teacher/SubjectPanels.tsx:currentSubjects, currentFrame<br>- src/components/teacher/ComparisonsPanels.tsx:currentFrom, currentFrame<br>- src/lib/grade-spread.ts:gradeCounts (latest)<br>- src/lib/view-series/grades.ts:earlierCounts, buildGrades<br>- src/components/dashboard-config/TeacherDashboard.tsx:focusScale (the band scale, since S2) |
-| Tagged at | - src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/grade-spread.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series/grades.ts |
+| Tagged at | - src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/grade-spread.ts<br>- src/lib/subject-ranking.test.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series/grades.ts |
 | Test case | Acland Burghley School (100053), ks4: On Grade 4+ the Current subject lists match the 2023/24-on rows (no Turkish 'no figure' row), and Latin's 'vs last year' is '—' (no 2023/24), not 2024/25 against 2022/23 (src/lib/trend-base.test.ts). [runner: currentGradesFrom2324] |
 | Origin | 0.6.2 S4b (Guy's decision A, 6 Oct 2026), after S5's first parity run |
 | Status | active |
@@ -807,15 +882,223 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 
 | Field | Content |
 | --- | --- |
-| Statement | A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure. |
+| Statement | A national or regional ranking set is a sample: no map or change maps; rank and average come from the whole population on the ranking's own (headline) measure -- or, with a subject in focus (0.6.6), on the measure in view (R-RANKING-MEASURE). |
 | Why | A map of a sample of schools across England is not a local picture, and a rank within the sample is not the school's real rank. |
 | Applies to | Comparisons with a ranking set |
 | Enforced in | - src/components/teacher/ComparisonsPanels.tsx:213, 287-297, 494-506, 615, 713<br>- src/lib/chooser-sets.ts:46-61 |
-| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/dashboard-config/runtime.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/variants.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/tiles.ts |
+| Tagged at | - src/components/dashboard-config/TeacherDashboard.tsx<br>- src/components/dashboard-config/runtime.ts<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/lib/chooser-sets.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-comparisons.ts<br>- src/lib/variants.test.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/frames.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/tiles.ts |
 | Test case | — |
 | Origin | Snagging round 1 Part 4 |
 | Status | active |
 | Must lift | src/components/teacher/ComparisonsPanels.tsx:213, 287-297, 494-506, 615, 713 → src/lib/teacher-view-comparisons.ts:comparisonsCurrentView, onRankingMeasure, sampleAllowsMap (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
+| Open issue | — |
+| Fixed | — |
+
+### R-RANKING-MEASURE
+
+| Field | Content |
+| --- | --- |
+| Statement | With a subject in focus, a national or regional ranking ranks EVERY school in the filtered population on the measure in view: the focused subject (the exact qualification at Post-16; at GCSE a rate is the focus's qualification), on entries, average points, Grade 4+ / A*–E, a band or a Grade counts selection, in the panel's year (a rate's latest from 2023/24). A school needs 5 entries (graded entries on a rate) to be ranked (R-MIN-ENTRIES; entries rank from 1); ties share a rank (R-RANK-TIES); a school its own filters exclude is placed against the population and says so. The table draws a window at real ranks -- the card the top 3 and 5 either side (one block when the school is in the top 8), full screen the top 10, 10 either side and the bottom 3; the change list is the whole population's from 2022/23 in the same window. No subject in focus: the headline ranking, unchanged. |
+| Why | A ranking within a sample of 25 schools on a subject is not the school's real rank in the country, and 'not ranked' on a subject the school teaches says nothing. |
+| Applies to | Comparisons with a ranking set and a subject in focus |
+| Enforced in | - src/lib/subject-ranking.ts:rankFigures (the definition), fallbackFigures, subjectRanking<br>- vicdata ingest repo supabase/migrations/20261007200000_academic_subject_rank_lookup.sql (the same definition, one query)<br>- src/app/api/teacher/subject-ranking/route.ts<br>- src/lib/subject-ranking-view.ts:windowCut, subjectRankRows, subjectChangeRows, subjectTileDetails, subjectRankingNote<br>- src/components/teacher/ComparisonsPanels.tsx (subjectRanking)<br>- src/lib/view-series/ranking.ts:schoolRanking, comparisons.ts:subjectChangeBars, tiles.ts:rankingTiles |
+| Tagged at | - src/lib/admissions/ranks.ts<br>- src/lib/subject-ranking-view.test.ts<br>- src/lib/subject-ranking.test.ts |
+| Test case | The Chase (137625), ks4: GCSE History Grade 4+ nationally: The Chase's figure in the ranking equals Column 1's (its own grade rows, thresholdRate); the ranking counts thousands of schools, its window carries the school at its real rank, and ranks are shared on ties. King's Worcester 117037 A level Mathematics points: 41.71, as Column 1. [runner: rankingOnMeasure] |
+| Origin | 0.6.6 (docs/v0.6/vicdata_0_6_rankings_then_speed_claude_code_prompt_v1.md, Part 1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-LADDER
+
+| Field | Content |
+| --- | --- |
+| Statement | An entry point's pool for a future September is traced back through the schools holding those children now: counted from the census (full-time pupils from age 4; full- plus part-time at nursery ages) at the rung age E - (Y - P), births below age 4, ONS age-10 projections for 11+ only and off by default. Past pools (2020 to next September) are the age E-1 rung in the census a year before. Horizons: 10 years for 11+ and 16+; Reception to its last birth year (two more only with projections we don't hold). |
+| Why | One mechanism for every entry point, honest about where each year's figure comes from. |
+| Applies to | Admissions Pipelines |
+| Enforced in | - src/lib/admissions/ladder.ts:buildLadder<br>- src/lib/admissions/pipeline.ts<br>- src/catalogue/notes.ts:ADMISSIONS_NOTES |
+| Tagged at | - src/components/admissions/views/PipelineChart.tsx<br>- src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/blend.ts<br>- src/lib/admissions/entry-points.ts |
+| Test case | The Chase (137625), ks4: 11+: the 2026 pool equals the 15 nearest state primaries' age-10 pupils in the 2025/26 census, recomputed from raw census rows; 2027 is the age-9 rung, counted; births take over at 2033; ten years in all. [runner: admLadder] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-BIRTH-SPLIT
+
+| Field | Content |
+| --- | --- |
+| Statement | A school year runs September to August, so a pool from calendar-year births is 8/12 of year X plus 4/12 of year X-1 (X = entry year - entry age), in the LA blend; births have no sex split, so a girls' or boys' pool from births is 49% / 51% of it, labelled an estimate. |
+| Why | Calendar births straddle two school cohorts. |
+| Applies to | Admissions Pipelines (births rungs) |
+| Enforced in | - src/lib/admissions/ladder.ts:academicBirths, birthsPoint |
+| Tagged at | - src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/ladder.ts<br>- src/lib/admissions/screens.ts |
+| Test case | Great Malvern Primary School (136984): 4+: the 2027 pool equals 8/12 of 2023's plus 4/12 of 2022's births in the blend, recomputed from raw ONS births. [runner: admBirthSplit] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-DRIFT-RANGE
+
+| Field | Content |
+| --- | --- |
+| Statement | Beyond the counted rung a pool is a range, never a single point: the set's observed year-on-year cohort ratios 2019/20-2025/26 (schools with a census in both years only; within one kind of school; handovers between kinds measured on their own), their 10th-90th percentile applied for each year still to go, so the range widens with distance. |
+| Why | Families move; the spread of what actually happened is the honest uncertainty. |
+| Applies to | Admissions Pipelines |
+| Enforced in | - src/lib/admissions/ladder.ts:driftFor, handoverFor, carry |
+| Tagged at | - src/components/admissions/views/PipelineChart.tsx<br>- src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/ladder.ts |
+| Test case | The Chase (137625), ks4: 16+: every future year has a low and a high, the relative width never narrows with distance, the drift is measured over 2019-2025 and the primary-to-secondary handover is scaled by its own observed ratio. [runner: admDriftRange] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-HOLD-SHARE
+
+| Field | Content |
+| --- | --- |
+| Statement | The share needed to hold numbers steady is the school's entry-age cohort now divided by each future pool (its range from the pool's range); the current share is the latest year's. Worded as a requirement, not a forecast. |
+| Why | A decision-useful figure that predicts nothing. |
+| Applies to | Admissions Pipelines and Market share |
+| Enforced in | - src/lib/admissions/shares.ts:holdShare<br>- src/catalogue/notes.ts:ADMISSIONS_NOTES.holdShare |
+| Tagged at | - src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/shares.ts |
+| Test case | The Chase (137625), ks4: 11+: the current share is The Chase's age-11 pupils in 2025/26 over the 2025 entry pool (the set's age-10 pupils in 2024/25), from raw rows; each future share is that cohort over the year's pool. [runner: admHoldShare] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-GROUP-SHARE
+
+| Field | Content |
+| --- | --- |
+| Statement | Market share is the school's pupils at the entry age (or across its age band) as a share of the same ages across the rivals plus the school, per census year 2019/20-2025/26, with ranks within the set (ties share a rank). A share of this group, not of the local market. |
+| Why | Matches the Data View's group share; says what it is a share of. |
+| Applies to | Admissions Market share |
+| Enforced in | - src/lib/admissions/shares.ts:groupShare<br>- src/lib/admissions/market.ts |
+| Tagged at | - src/app/api/admissions/market-share/route.ts<br>- src/components/admissions/panels/MarketNow.tsx<br>- src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/market.ts<br>- src/lib/admissions/shares.ts |
+| Test case | King's School, Worcester (117037), ks4: 11+: the shares across the 11 schools sum to 100% each year, and King's share equals its age-11 pupils over the group's, from raw rows. [runner: admGroupShare] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-JOINERS-ESTIMATE
+
+| Field | Content |
+| --- | --- |
+| Statement | Following a cohort across census years per school: joiners at age a = max(0, cohort(a, t) - cohort(a-1, t-1)) and the leaving share at 16 = (cohort(15, t-1) - cohort(16, t)) / cohort(15, t-1), with at least 10 at 15. Both are estimates of NET movement and say so. The derived table school_cohort_flow (ingest) holds the same figures. |
+| Why | The census counts cohorts, not joiners. |
+| Applies to | Admissions (pipeline, fuzzy sets) |
+| Enforced in | - src/lib/admissions/flow.ts:cohortFlow<br>- ingest: school_cohort_flow |
+| Tagged at | - src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/flow.ts |
+| Test case | The Chase (137625), ks4: The 2025/26 leaving share at 16 and joiners at 11 equal the same arithmetic on raw census rows. [runner: admJoiners] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-SHAPE-NOT-RANKED
+
+| Field | Content |
+| --- | --- |
+| Statement | Size uses the school page's XS-XL badges by phase band (sizeBadgeForValue), never new words; shape is the shared classifier on the page's age-gender counts, and a set's local shape is the classifier on its summed profile. Shapes are described, never ranked. |
+| Why | A shape is not better or worse. |
+| Applies to | Admissions (shape and size) |
+| Enforced in | - src/lib/admissions/shape.ts |
+| Tagged at | - src/app/api/admissions/shape/route.ts<br>- src/components/admissions/views/ShapeAndSize.tsx<br>- src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/shape.ts<br>- src/lib/admissions/views-api.ts<br>- src/lib/smt/pupils.ts |
+| Test case | The Chase (137625), ks4: The Chase's shape from the admissions code equals the school page's classification on the same counts. [runner: admShape] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-POOL-NOT-INTAKE
+
+| Field | Content |
+| --- | --- |
+| Statement | Every admissions figure about the future is a pool (children who will reach the entry point), never an intake: no field, label or sentence claims who will come. The wording lives in ADMISSIONS_NOTES. |
+| Why | Admissions can't know who will choose them; the pool is what the data can say. |
+| Applies to | Admissions Pipelines |
+| Enforced in | - src/catalogue/notes.ts:ADMISSIONS_NOTES.pool<br>- src/lib/admissions/ladder.ts |
+| Tagged at | - src/lib/admissions-ladder.test.ts<br>- src/lib/admissions/ladder.ts |
+| Test case | The Chase (137625), ks4: The pipeline's points carry a source (counted / births / projection) and no 'intake' field; the pool note says 'pool, not an intake'. [runner: admPoolNotIntake] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A1) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-RIVAL-RANKS
+
+| Field | Content |
+| --- | --- |
+| Statement | Each rival (and the school) carries its national rank and its rank in its own region, on the whole-school headline for the entry point's stage (4+ KS2, 11+ GCSE Attainment 8, 16+ A-level points per entry), on each subject area (family average points, at least 10 entries), on a subject in view (0.6.6 subjectRanking) and on size (roll in the entry point's age band, with the school page's XS-XL badge). Every school with a figure that year, ties share. A school with no published results for the stage says so; at 11+ an IGCSE-heavy independent school is listed but not ranked. |
+| Why | Where local schools sit regionally and nationally (Guy, 7 Oct 19:35). |
+| Applies to | Admissions rivals |
+| Enforced in | - src/lib/admissions/ranks.ts<br>- src/lib/admissions/rivals.ts |
+| Tagged at | - src/components/admissions/views/Bars.tsx |
+| Test case | The Chase (137625), ks4: The Chase's national and regional Attainment 8 ranks equal a count over the whole population's raw 2024 headline rows; the preps have no published results; Malvern St James (IGCSE) is listed but not ranked. [runner: admRivalRanks] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FLAG-MOMENTUM
+
+| Field | Content |
+| --- | --- |
+| Statement | Rivals' momentum flags, each from a two-year change (pupils in %, results in points) against the NATIONAL thresholds for the phase (top / bottom fifth; admissions_flag_thresholds), never from one small cohort, with the figures behind it: results rising fast (headline), gaining pupils (roll), losing pupils three years running (three falls in a row), the entry year shrinking (Year 7 at 11+), a new sixth form (no pupils at 16 until two years ago), shape changed (the same new shape two years running). Until the thresholds are applied the threshold flags don't fire (none guessed). |
+| Why | A change that is large and lasting, set nationally and tuned later (Guy, 7 Oct 19:40). |
+| Applies to | Admissions rivals |
+| Enforced in | - src/lib/admissions/flags.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/admissions/thresholds.ts<br>- ingest: admissions_flag_thresholds |
+| Tagged at | - src/components/admissions/views/Momentum.tsx<br>- src/lib/admissions-flags.test.ts |
+| Test case | The Chase (137625), ks4: Each flag fires exactly when its figures cross the national threshold: recomputed from raw rows for The Chase's rivals. [runner: admMomentum] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FLAG-STRENGTHS
+
+| Field | Content |
+| --- | --- |
+| Statement | By subject area, the school's rank among the rivals that have that area (at least 10 entries), the gap to their average and its change since 2022/23: Strength (top third, above the average), Strength growing (and the school's own two-year change in the national top fifth), Weakness (bottom third, below), Weakness widening (and in the national bottom fifth). Never against fewer than two rivals. |
+| Why | Strengths and weaknesses against rivals (Guy, 7 Oct 19:32). |
+| Applies to | Admissions rivals |
+| Enforced in | - src/lib/admissions/flags.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/admissions/thresholds.ts<br>- ingest: admissions_flag_thresholds |
+| Tagged at | - src/components/admissions/panels/Academic.tsx<br>- src/components/admissions/views/Strengths.tsx<br>- src/components/smt/views/Areas.tsx<br>- src/lib/admissions-flags.test.ts |
+| Test case | The Chase (137625), ks4: Each area's rank and gap equal the raw family rows' arithmetic for The Chase and its rivals; flags follow the rule. [runner: admStrengths] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FLAG-FEEDER
+
+| Field | Content |
+| --- | --- |
+| Statement | A feeder whose pupils (across the rung ages it holds) fell more than the area's (the whole feeder set) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. |
+| Why | Pipeline schools to watch and to court. |
+| Applies to | Admissions Pipelines |
+| Enforced in | - src/lib/admissions/feeders.ts<br>- src/lib/admissions/flags.ts:feederFlag |
+| Tagged at | - src/components/admissions/views/Tables.tsx<br>- src/lib/admissions-flags.test.ts<br>- src/lib/admissions/feeders.ts<br>- src/lib/admissions/screens.ts<br>- src/lib/admissions/views-api.ts |
+| Test case | The Chase (137625), ks4: The Chase's 11+ feeders' flags equal the rule applied to their raw census counts. [runner: admFeeders] |
+| Origin | 0.7 admissions r1 (docs/v0.7/vicdata_0_7_admissions_round1_data_layer_claude_code_prompt_v1.md, A4) |
+| Status | active |
+| Must lift | — |
 | Open issue | — |
 | Fixed | — |
 
@@ -859,7 +1142,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | Standard competition ranking; a missing figure is not a position. |
 | Applies to | Every rank |
 | Enforced in | - src/lib/teacher-view-panels.ts:rankByValue (325-333) |
-| Tagged at | - src/lib/teacher-view-panels.ts |
+| Tagged at | - src/lib/admissions/ranks.ts<br>- src/lib/admissions/stats.ts<br>- src/lib/teacher-view-panels.ts |
 | Test case | — |
 | Origin | Teacher view round 7 §9 |
 | Status | active |
@@ -891,7 +1174,7 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Why | A % change of an average or a rate misleads: 60% -> 66% is +6pp, not +10%. |
 | Applies to | Every view on M-*-POINTS, M-*-THRESHOLD, M-*-BANDS, M-*-HEADLINE |
 | Enforced in | - src/catalogue/measures.ts (numberTypes)<br>- src/catalogue/matching.ts (offer filter, via dataview supports.numberType)<br>- src/lib/teacher-view-panels.ts:ChangeKind, Measure.changeKind, changeOf, formatChange, changeMagnitude, changeTitle, changeInTitle, trendSentence<br>- src/components/teacher/SeriesViews.tsx:YearTable (Change column, ranked by the honest change)<br>- src/components/teacher/ChangeChart.tsx (format, axis units)<br>- src/components/teacher/SubjectPanels.tsx:change half (ChangeList, titles, summary, headline)<br>- src/components/teacher/ComparisonsPanels.tsx:change half (ChangeList, change map trend vs trend_absolute, titles, summary, headline) |
-| Tagged at | - src/components/teacher/ChangeChart.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/teacher-map.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/ranking.ts |
+| Tagged at | - src/components/teacher/ChangeChart.tsx<br>- src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/subject-ranking.test.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-map.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/map.ts<br>- src/lib/view-series/ranking.ts |
 | Test case | — |
 | Origin | Catalogue doc §3; decision C3 |
 | Status | active |
@@ -958,6 +1241,998 @@ What a number is allowed to be. 56 rules: 54 active, 2 superseded; 22 must lift 
 | Tagged at | — |
 | Test case | — |
 | Origin | Population trend section (public school page) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FAMILY-PUPILS
+
+| Field | Content |
+| --- | --- |
+| Statement | Pupils by age is the census count at one age (full-time from 4, plus part-time at 2-3), per school and census year, and the entry point now reads the school's own count at the entry age, split by sex, against 2019/20. |
+| Why | One definition of a cohort across every Admissions view. |
+| Applies to | Admissions family: Pupils by age (M-ADM-PUPILS) |
+| Enforced in | - src/lib/admissions/screens.ts:entryNow<br>- src/lib/admissions/cohort.ts:cohortAt |
+| Tagged at | — |
+| Test case | The Chase (137625), ks4: Year 7 now = the raw census's full-time 11-year-olds (124 girls + 112 boys = 236); since 2019/20 from 208. [runner: admFamilyPupils] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FAMILY-PIPELINE
+
+| Field | Content |
+| --- | --- |
+| Statement | The Pipeline family is round 1's pipeline unchanged: with no filter, the screens' answer carries exactly buildPipeline's ladder, share needed, sets and blend; the screens only add what they draw. |
+| Why | Round 2 draws round 1's figures; it never recomputes them. |
+| Applies to | Admissions family: Pipeline (M-ADM-POOL) |
+| Enforced in | - src/lib/admissions/views-api.ts:pipelineView |
+| Tagged at | — |
+| Test case | The Chase (137625), ks4: pipelineView's ladder, hold, change, sets and blend equal buildPipeline's for 11+. [runner: admFamilyPipeline] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FAMILY-MARKET
+
+| Field | Content |
+| --- | --- |
+| Statement | The Market share family is round 1's group share unchanged: with no filter the screens' answer carries buildMarketShare's rows and totals; the extras (whole roll and its rank, change since 2022/23) are the census's own figures. |
+| Why | A share of this group, computed once. |
+| Applies to | Admissions family: Market share (M-ADM-MARKET) |
+| Enforced in | - src/lib/admissions/views-api.ts:marketView<br>- src/lib/admissions/screens.ts:rivalExtras |
+| Tagged at | — |
+| Test case | King's Worcester (117037), ks4: marketView's entry-age rows equal buildMarketShare's; King's 2025/26 share 6.60% of 1,531. [runner: admFamilyMarket] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FAMILY-RIVALS
+
+| Field | Content |
+| --- | --- |
+| Statement | Rivals' results is round 1's rivals unchanged, plus each school's whole-school headline change since 2022/23 in points, from the same headline population the flags read; an IGCSE school, listed but not ranked, has none. |
+| Why | The momentum scatter's y must be the figure the flags were judged on. |
+| Applies to | Admissions family: Rivals' results (M-ADM-RIVAL-RESULTS) |
+| Enforced in | - src/lib/admissions/views-api.ts:rivalsView |
+| Tagged at | — |
+| Test case | The Chase (137625), ks4: The Chase's results change = its 2024 Attainment 8 minus its 2022 (raw headline rows); IGCSE rivals null. [runner: admFamilyRivals] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-NOW
+
+| Field | Content |
+| --- | --- |
+| Statement | The entry point now shows the school's own entry cohort, its change since 2019/20, girls and boys at the entry age, and day and boarding for the whole school (the census has no boarders by age; a day school's tile reads Day only, 0.7 r3 F2); size is the school page's Roll by phase (XS-XL), never new words. |
+| Why | Tiles a reader can check against the census. |
+| Applies to | DV-ADM-P-NOW, DV-ADM-M-NOW |
+| Enforced in | - src/components/admissions/panels/EntryNow.tsx<br>- src/lib/admissions/screens.ts:entryNow |
+| Tagged at | - src/components/admissions/panels/EntryNow.tsx |
+| Test case | The Chase (137625), ks4: girls + boys = cohort; boarders = the census's boarders_total; day = roll - boarders. [runner: admViewNow] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-PIPELINE
+
+| Field | Content |
+| --- | --- |
+| Statement | The pipeline chart draws past pools, then counted years solid, births dashed with their range band, and projection only on request (11+), with every label from ADMISSIONS_NOTES. The styling and wording have no look option. |
+| Why | Certainty must be visible and can't be edited away. |
+| Applies to | DV-ADM-P-PIPELINE |
+| Enforced in | - src/components/admissions/views/PipelineChart.tsx<br>- src/catalogue/admissions.ts:PipelineLook |
+| Tagged at | - src/components/admissions/views/PipelineChart.tsx |
+| Test case | The Chase (137625), ks4: Every future year's source is counted, births or projection; no projection unless asked; the chart reads its labels from ADMISSIONS_NOTES. [runner: admViewPipeline] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-FUNNEL
+
+| Field | Content |
+| --- | --- |
+| Statement | The funnel follows this September's entrants back, like with like: the area's births for their school year (8/12 + 4/12), every pupil a year below the entry age in every mainstream school in the SAME area a year before (age_profile_aggregates), then the school's own entry cohort. Each bar leads with a bold label, then its area and year in plain words (ADMISSIONS_NOTES); the panel's note says it is not a flow of the same children. No funnel at 4+ (0.7 r3, F7). |
+| Why | Births, pools and an entry cohort are different counts. |
+| Applies to | DV-ADM-P-FUNNEL |
+| Enforced in | - src/lib/admissions/screens.ts:funnel<br>- src/components/admissions/views/Funnel.tsx |
+| Tagged at | - src/components/admissions/views/Funnel.tsx<br>- src/lib/admissions/screens.ts |
+| Test case | The Chase (137625), ks4: Births = 8/12 of 2014 + 4/12 of 2013 in Worcestershire; Year 6 = Worcestershire's age-10 pupils in 2024/25 (age_profile_aggregates); entry = 236; three bars, labelled Births / Year 6 / Your Year 7; 4+ has none. [runner: admViewFunnel] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-FEEDERS
+
+| Field | Content |
+| --- | --- |
+| Statement | The feeder table and map list the nearest rung's schools with their pupils at that age now and two years ago, each flagged by R-ADM-FLAG-FEEDER against the whole set, with distance, sector, gender and XS-XL; the school itself is not a feeder. |
+| Why | The same flag everywhere a feeder appears. |
+| Applies to | DV-ADM-P-TABLE, DV-ADM-P-MAP, setup's lists |
+| Enforced in | - src/lib/admissions/screens.ts:feederTable<br>- src/app/api/admissions/candidates/route.ts |
+| Tagged at | - src/components/admissions/views/Tables.tsx |
+| Test case | The Chase (137625), ks4: Each row's flag equals feederFlags on the raw census at age 10; the area change = (382 - 363) / 363. [runner: admViewFeeders] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-SHAPES
+
+| Field | Content |
+| --- | --- |
+| Statement | Shape and size shows the school's profile by gender, the feeders' local shape and the rivals' shapes as small multiples in the rival set's own order, with no rank, score or sort by shape. |
+| Why | Shapes are described, never ranked. |
+| Applies to | DV-ADM-P-SHAPE, DV-ADM-M-SHAPE |
+| Enforced in | - src/lib/admissions/views-api.ts:shapeView<br>- src/components/admissions/views/ShapeAndSize.tsx |
+| Tagged at | - src/components/admissions/views/ShapeAndSize.tsx |
+| Test case | The Chase (137625), ks4: The rivals come back in the rival set's order and carry no rank field. [runner: admViewShapes] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-TRENDS
+
+| Field | Content |
+| --- | --- |
+| Statement | Pool trends index the feeders' past pools and the same age across the LA and England (age_profile_aggregates: LA rows, England the sum of the nine regions) to their first common year; a year the aggregates don't hold is a gap, never filled. |
+| Why | An index needs the same years on every line. |
+| Applies to | DV-ADM-P-POOL-INDEXED, DV-ADM-P-POOL-TABLE, DV-ADM-P-ENTRY-*, DV-ADM-M-VS-* |
+| Enforced in | - src/lib/admissions/screens.ts:poolTrends<br>- src/components/admissions/views/Lines.tsx |
+| Tagged at | - src/components/admissions/views/Lines.tsx |
+| Test case | The Chase (137625), ks4: Feeders = the ladder's counted past pools; the LA's 2025 value = age_profile_aggregates Worcestershire age 10; past area years are flagged for the undercount note, and England in the first of them is the sum of the nine regions. [runner: admViewTrends] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-MARKET
+
+| Field | Content |
+| --- | --- |
+| Statement | Market views are shares of this group: each school's pupils at the entry age over the group's total, summing to 100% in a year; ranks within the set; the whole-school rank is by total roll. |
+| Why | Not a share of the local market. |
+| Applies to | DV-ADM-M-* |
+| Enforced in | - src/lib/admissions/views-api.ts:marketView |
+| Tagged at | - src/components/admissions/panels/MarketNow.tsx |
+| Test case | King's Worcester (117037), ks4: The latest year's shares sum to 100%; King's whole-school rank equals its place by roll among the 11. [runner: admViewMarket] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-MOMENTUM
+
+| Field | Content |
+| --- | --- |
+| Statement | The momentum scatter plots each rival's change at the entry age (census, since 2022/23, %) against its whole-school headline change (points, same years); flags come only from the national thresholds, and with none loaded the view says flags are not available yet. |
+| Why | Never a guessed flag. |
+| Applies to | DV-ADM-M-MOMENTUM |
+| Enforced in | - src/components/admissions/views/Momentum.tsx<br>- src/lib/admissions/views-api.ts:rivalsView |
+| Tagged at | - src/components/admissions/views/Momentum.tsx |
+| Test case | The Chase (137625), ks4: Each rival's x and y equal the raw census and headline changes; with thresholds absent no momentum flag is returned. [runner: admViewMomentum] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-STRENGTHS
+
+| Field | Content |
+| --- | --- |
+| Statement | Strengths and weaknesses rank the school only among rivals with that subject area (and at least the minimum entries), show the gap to their average and its move since 2022/23, and flag Strength / Weakness by the top or bottom third (R-ADM-FLAG-STRENGTHS). |
+| Why | Only like-for-like comparisons. |
+| Applies to | DV-ADM-M-STRENGTHS, DV-ADM-M-ACAD-* |
+| Enforced in | - src/lib/admissions/rivals.ts:buildRivals<br>- src/components/admissions/views/Strengths.tsx |
+| Tagged at | - src/components/admissions/views/Strengths.tsx |
+| Test case | The Chase (137625), ks4: Every Strength has a positive gap and a rank in the top third; every Weakness the opposite. [runner: admViewStrengths] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-FLAGS
+
+| Field | Content |
+| --- | --- |
+| Statement | A flag list shows each rival's momentum flags with the figures behind each one on hover, never a flag without its figures. |
+| Why | Every flag must be checkable. |
+| Applies to | DV-ADM-M-FLAGS, DV-ADM-M-MOMENTUM |
+| Enforced in | - src/components/admissions/views/Momentum.tsx |
+| Tagged at | - src/components/admissions/ui.tsx<br>- src/components/admissions/views/Momentum.tsx |
+| Test case | King's Worcester (117037), ks4: Every flag returned has an id from FLAG ids and non-empty figures. [runner: admViewFlags] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-VIEW-ACADEMIC
+
+| Field | Content |
+| --- | --- |
+| Statement | The academic panel follows the entry point: 4+ reads KS2, 11+ GCSE, 16+ Post-16; a rival with no published results or an IGCSE-heavy one is listed and not ranked, with the reason. |
+| Why | Rivals at 4+ are mostly preps that don't sit SATs: say so. |
+| Applies to | DV-ADM-M-ACAD-* |
+| Enforced in | - src/lib/admissions/rivals.ts:stageForEntry<br>- src/components/admissions/panels/Academic.tsx |
+| Tagged at | - src/components/admissions/panels/Academic.tsx |
+| Test case | King's Worcester (117037), ks5: stageForEntry(4, 11, 16) = ks2, ks4, ks5; King's 16+ rivals read Post-16. [runner: admViewAcademic] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FE-SOURCE
+
+| Field | Content |
+| --- | --- |
+| Statement | An FE college's own figures come from FE participation data (ILR, learners under 19 over the year), labelled as that source, and are never divided into a census group's total, ranked against schools or shown as a Year 12 count. |
+| Why | Two sources measuring different things must not be blended. |
+| Applies to | Admissions for FE colleges (decision 6) |
+| Enforced in | - src/lib/admissions/screens.ts:feParticipation |
+| Tagged at | — |
+| Test case | Croydon College (130432), ks5: Croydon's market view has an ILR series labelled FE participation data, and no census count or share of its own. [runner: admFeSource] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FILTERS
+
+| Field | Content |
+| --- | --- |
+| Statement | The top bar's filters (Day + boarding, State + independent, boarding rivals) narrow the sets on the server before round 1's maths runs; unfiltered, every answer is round 1's. A filter that leaves a list empty says so; another list never stands in for it. Day + boarding is a boarding school's filter only: for a day school it is never drawn and the server ignores it (R-ADM-BOARDING-ONLY-WHERE-BOARDERS). |
+| Why | The figures change only by the schools they count. |
+| Applies to | Admissions top bar |
+| Enforced in | - src/lib/admissions/traits.ts:narrow<br>- src/lib/admissions/rival-set.ts:rivalSet<br>- src/lib/admissions/views-api.ts:pipelineView |
+| Tagged at | — |
+| Test case | The Chase (137625), ks4: sector=independent leaves only independent schools (and the school's own Year 11 at 16+); for a boarding school (Beaudesert Park 115786) boarding-only with no boarding list returns the empty state; for The Chase (a day school) it is ignored. [runner: admFilters] |
+| Origin | 0.7 admissions r2 (docs/v0.7/vicdata_0_7_admissions_round2_views_claude_code_prompt_v1.md, D7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-BOARDING-ONLY-WHERE-BOARDERS
+
+| Field | Content |
+| --- | --- |
+| Statement | A boarding school is one GIAS lists with boarding provision (schools.boarders_name = "Boarding school"; "No boarders" and "Not applicable" are day schools). A day school never has to think about boarders: no tile, filter, chip, column, legend, empty state, note, setup question or step, or editor compare option mentions boarding (column 1's day/boarding tile stays, reading Day only), its saved boarding lists are kept but not used, and the server ignores a boarding filter for it. Its rivals' own figures may still say they board. A boarding school sees every boarding surface: setup's day-and-boarding question and step 3, the filter, the tile's day and boarding, the boarding feeder list and its fuzzy set. |
+| Why | "Non-boarding schools must not have to think about boarders, but boarding schools must" (Guy, 12 Oct 2026). |
+| Applies to | Admissions: every view, the top bar, setup, the editor's compare options |
+| Enforced in | - src/lib/admissions/boarding.ts:isBoardingSchool<br>- src/lib/admissions/views-api.ts:pipelineView<br>- src/components/admissions/AdmissionsDashboard.tsx<br>- src/components/admissions/setup/Setup.tsx<br>- src/components/view-editor/AdmissionsSteps.tsx |
+| Tagged at | - src/components/admissions/AdmissionsDashboard.tsx<br>- src/lib/admissions/boarding.ts |
+| Test case | The Chase, Nunnery Wood High (137051), Beaudesert Park (115786) (137625), ks4: Every Pipelines view, column 1, the top bar's filters and every setup step rendered on real data: no boarding text or control for The Chase (11+, 16+) or Nunnery Wood (11+); every boarding surface present for Beaudesert Park (4+, 11+), whose boarding feeder search returns preps with boarders that make a non-empty boarding-only pool. The editor's 1 · Data for every feeder view offers the feeder set (Boarding feeders) for Beaudesert Park only (0.7 editor s2); a day school's previews ignore a boarding feeder spec (R-ADM-EDITOR-LOOKS-KEEP-NOTES). [runner: admBoardingOnly] |
+| Origin | 0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F2) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-FUNNEL-SAME-AREA
+
+| Field | Content |
+| --- | --- |
+| Statement | The funnel's births and its pool bar cover the same area with the same weights: the school's own LA, or the lead's LA blend when one is set. The pool is every pupil a year below the entry age (Year 6 = age 10, Year 11 = age 15, at 31 August, the census a year before entry -- the ladder's own age mapping) in every mainstream school in that area: academies, LA-maintained, free and independent (age_profile_aggregates, scope la). The feeder set's pool is not a funnel bar; it stays in the Pipeline. |
+| Why | "This is great but needs like with like" (Guy, 12 Oct 2026): births in one area against a hand-picked set's pupils compared two different areas. |
+| Applies to | DV-ADM-P-FUNNEL |
+| Enforced in | - src/lib/admissions/screens.ts:funnel, funnelArea<br>- src/components/admissions/views/Funnel.tsx |
+| Tagged at | - src/components/admissions/views/Funnel.tsx<br>- src/lib/admissions/screens.ts |
+| Test case | The Chase (11+, 16+), King's Worcester 117037 (11+) (137625), ks4: The births and pool bars carry the same LA set and weights (the school's own LA); births recomputed from raw ONS births, the pool from raw age_profile_aggregates rows at age 10 (or 15) in 2024/25. [runner: admFunnelSameArea] |
+| Origin | 0.7 admissions r3 (docs/v0.7/vicdata_0_7_admissions_round3_teacher_parity_claude_code_prompt_v1.md, F7) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-ADM-EDITOR-LOOKS-KEEP-NOTES
+
+| Field | Content |
+| --- | --- |
+| Statement | An Admissions view's look options and compare chips change how it draws, never what it must say: under every look and compare an editor can choose (src/catalogue/admissions-editor.ts), each view still renders every R-ADM wording from ADMISSIONS_NOTES that its preset renders (a pool, not an intake; a share of this group; the estimates; the requirement; the flags' rules; the undercount), and its rule-held styling and thresholds don't move. Options left at their defaults draw exactly the preset. A day school's view never draws a boarding feeder set, whatever its spec asks. |
+| Why | The editor may change a view's look, not its honesty (ADMISSIONS_FIXED; Guy's decision on the editor plan, 12 Oct 2026: a look option must never switch a note off). |
+| Applies to | Every Admissions view, through the editor's looks and compare chips |
+| Enforced in | - src/catalogue/admissions-editor.ts:ADMISSIONS_LOOKS, ADMISSIONS_VIEW_COMPARE<br>- src/components/admissions/AdmissionsDashboard.tsx:viewBody, InstanceBody |
+| Tagged at | - src/components/admissions/AdmissionsDashboard.tsx<br>- src/components/admissions/views/charts.tsx |
+| Test case | The Chase (11+, 16+), King's Worcester 117037 (11+), Beaudesert Park 115786 (11+) (137625), ks4: Every view of both dashboards and the flag list, rendered on real data under each look and compare value in turn: the ADMISSIONS_NOTES wording the preset renders is all still there; with every option at its default the render is the preset's, byte for byte; a day school asked for boarding feeders draws its preset, with no boarding words. [runner: admEditorLooks] |
+| Origin | 0.7 admissions editor stages 1-2 (docs/v0.7/vicdata_0_7_admissions_editor_stages1_2_claude_code_prompt_v1.md, S2.6) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-DOUBLE-AWARD-POINTS
+
+| Field | Content |
+| --- | --- |
+| Statement | A GCSE Double Award (grades published as pairs, "98" ... "11") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say "different grading scale, not ranked". |
+| Why | The subject rollup scores single GCSE grades only, so Combined Science -- often a school's largest science entry -- read no average and was never ranked, in Teacher and SMT alike (SMT round 1 snag). |
+| Applies to | Teacher's subject points and rankings at GCSE; SMT's Subjects (DV-SMT-A-SUBJECTS) |
+| Enforced in | - src/lib/subject-grades.ts:doubleAwardPoints<br>- src/lib/academic-data-view.ts:fillDoubleAwardPoints<br>- src/lib/subject-ranking.ts:subjectRanking, figuresFor, rankByFunction |
+| Tagged at | - src/lib/smt/smt.test.ts |
+| Test case | The Chase; Acland Burghley 100053; Nunnery Wood 137051 (137625), ks4, Combined Science: Each school's Combined Science 2024/25 average equals the mean of its pair grades recomputed from the raw grade rows (each pair's two digits averaged, weighted by entries); the subject is ranked in its set and in England. [runner: doubleAwardPoints] |
+| Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-PUPILS-LEVEL
+
+| Field | Content |
+| --- | --- |
+| Statement | Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-16), Post-16 Years 12 and 13 (16-18), Primary Reception to Year 6 (4-11); Whole school highlights nothing. The figures don't change with the level; the year groups in focus do. |
+| Why | The level is the dashboard's focus, as the subject is Teacher's (spec §2.2). |
+| Applies to | DV-SMT-P-SHAPE, DV-SMT-P-NOW |
+| Enforced in | - src/lib/smt/pupils.ts:LEVEL_AGES<br>- src/components/smt/views/Pupils.tsx:ShapeAndSize |
+| Tagged at | - src/components/smt/views/Pupils.tsx<br>- src/lib/smt/pupils.ts |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase at GCSE: Y7-Y11 highlighted (ages 11-15 held), Y12-Y13 not; at Post-16 the reverse; Whole school none. [runner: smtPupilsLevel] |
+| Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-PUPILS-NOW
+
+| Field | Content |
+| --- | --- |
+| Statement | Your pupils now shows the census's roll and its change since 2019/20, girls and boys (mixed schools only), day and boarding (boarding schools only), Year 12 against Year 11 (Year 12 now against Year 11 a year before, where the school has both), the school page's XS-XL by phase and the LA context line. |
+| Why | Tiles a reader can check against the census; the boarding-only and mixed-only rule as everywhere else. |
+| Applies to | DV-SMT-P-NOW |
+| Enforced in | - src/lib/smt/pupils.ts:buildPupils, stayingOnAt<br>- src/components/smt/views/Pupils.tsx:PupilsNow |
+| Tagged at | - src/components/smt/views/Pupils.tsx |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: roll and Year 12 against Year 11 recomputed from the census (Year 12 2025/26 against Year 11 2024/25); no boarding tile. Leighton Park: the boarding tile. [runner: smtPupilsNow] |
+| Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-Y12-AGAINST-Y11
+
+| Field | Content |
+| --- | --- |
+| Statement | The Year 11 to Year 12 figure is called "Year 12 against Year 11" wherever it appears (Your pupils now, the set's figure in Shape and size, the Leaving at 16 table), never "staying on", with SMT_NOTES.y12AgainstY11 as its caption; it compares the same cohort, Year 11 in year t-1 with Year 12 in year t. |
+| Why | A sixth form that recruits shows more than 100% (Leighton Park 103%), which "staying on" can't mean (0.8 groups r1, G0). |
+| Applies to | DV-SMT-P-NOW, DV-SMT-P-SHAPE, DV-SMT-P-LEAVING |
+| Enforced in | - src/catalogue/notes.ts:SMT_NOTES.y12Label, y12AgainstY11<br>- src/lib/smt/pupils.ts:stayingOnAt<br>- src/components/smt/views/Pupils.tsx |
+| Tagged at | — |
+| Test case | Leighton Park; The Chase 137625 (110110), ks4: Each of the three views shows SMT_NOTES.y12Label and none says "staying on"; the tile's caption is SMT_NOTES.y12AgainstY11; Leighton Park's figure is above 100% and equals census age 16 in P over age 15 in P-1. [runner: smtY12AgainstY11] |
+| Origin | 0.8 groups round 1, G0 (docs/v0.8/vicdata_0_8_groups_round1_accounts_access_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-SHAPE
+
+| Field | Content |
+| --- | --- |
+| Statement | Shape and size draws pupils in each year group, the shape and since when, and the shapes around (the LA's schools of the same age range, the comparison set's shapes, Year 12 against Year 11 in the set's sixth forms) -- described, never ranked. |
+| Why | R-ADM-SHAPE-NOT-RANKED: shapes are neither better nor worse. |
+| Applies to | DV-SMT-P-SHAPE |
+| Enforced in | - src/lib/smt/pupils.ts:buildPupils<br>- src/components/smt/views/Pupils.tsx:ShapeAndSize |
+| Tagged at | - src/components/smt/views/Pupils.tsx |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: year groups equal the census by age; the shape is the shared classifier's; no rank appears in the view. [runner: smtShape] |
+| Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-ADMISSIONS-READ-ONLY
+
+| Field | Content |
+| --- | --- |
+| Statement | Views from Admissions (entry points at a glance, the pool, market share) are read-only in SMT: no setup, no list editing, each with Open in Admissions; where Admissions has no entry points or no saved rivals, an empty state says why. |
+| Why | Admissions owns its lists; SMT reads them (spec §2.4). |
+| Applies to | DV-SMT-P-ENTRIES, DV-SMT-P-POOL, DV-SMT-P-MARKET, DV-SMT-O-MARKET-* |
+| Enforced in | - src/lib/smt/pupils.ts:buildPupils<br>- src/lib/smt/overview.ts:marketAt11<br>- src/components/smt/views/Pupils.tsx:EntryPoints |
+| Tagged at | - src/components/smt/views/Pupils.tsx |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: With no entry points readable, Entry points says SMT_NOTES.entryPointsNone and links to Admissions; no edit control is drawn; the pool is Admissions' own ladder. [runner: smtAdmissionsReadOnly] |
+| Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-LEAVING
+
+| Field | Content |
+| --- | --- |
+| Statement | Leaving at 16 follows Year 11 to Year 12 at the school year by year (the census a year apart): Year 12 against Year 11 and the net leavers, worded as Admissions' estimate (ADMISSIONS_NOTES.leaving16). |
+| Why | An estimate of net leavers, not a count of who left. |
+| Applies to | DV-SMT-P-LEAVING |
+| Enforced in | - src/lib/smt/pupils.ts:buildPupils |
+| Tagged at | - src/components/smt/views/Pupils.tsx |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: each year's Year 11 and Year 12 equal the census at ages 15 and 16 a year apart. [runner: smtLeaving] |
+| Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-CONTEXT-PLACE
+
+| Field | Content |
+| --- | --- |
+| Statement | Context's place line (town · LA · region) drops any part that names the same place as the part before it, compared case-insensitively and ignoring "City of" / "Borough of" (prefix, or GIAS's ", City of" suffix). |
+| Why | Leighton Park read "Reading · Reading · South East" (SMT r3 snags, fix 1). |
+| Applies to | DV-SMT-C-NOW |
+| Enforced in | - src/lib/place-line.ts:placeLine<br>- src/components/smt/views/Context.tsx:ContextNow |
+| Tagged at | - src/lib/smt/smt.test.ts |
+| Test case | Leighton Park; The Chase 137625; Acland Burghley 100053 (110110), ks4: Leighton Park shows "Reading · South East"; The Chase "Malvern · Worcestershire · West Midlands" and Acland Burghley "London · Camden · London", unchanged. [runner: smtContextPlace] |
+| Origin | 0.8 SMT r3 snags (2026-10-15) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-CONTEXT-PROJECTION-JOIN
+
+| Field | Content |
+| --- | --- |
+| Statement | Context's school-age population draws both sources as published: ONS mid-year estimates, then ONS's projection from its own figure for the latest estimate year. Where the two differ there by more than SMT_PROJECTION_JOIN_GAP_PCT (2%) of the estimate, the panel's source (i) adds SMT_NOTES.projectionJoin ("The projection starts from ONS's {base} base, not the latest estimate, so the two lines may not meet."); otherwise it says nothing. |
+| Why | Camden and Wandsworth at 11-18 show a visible step (SMT r3 snags, fix 3). |
+| Applies to | DV-SMT-C-PROJECTION |
+| Enforced in | - src/lib/smt/context.ts:buildContext (population.join)<br>- src/components/smt/SmtDashboard.tsx:sourceOf<br>- src/catalogue/years.ts:SMT_PROJECTION_JOIN_GAP_PCT |
+| Tagged at | - src/components/smt/SmtDashboard.tsx |
+| Test case | Acland Burghley (Camden); The Chase 137625 (Worcestershire) (100053), ks4: Ages 11-18: Camden's gap, recomputed from ons_population_age and ons_snpp, is over 2% and the note shows; Worcestershire's gap is recomputed the same way and the note shows exactly when it is over 2%. [manual] |
+| Origin | 0.8 SMT r3 snags (2026-10-15) |
+| Status | superseded by R-SMT-FORWARD |
+| Must lift | — |
+| Open issue | — |
+| Fixed | - 0.8 SMT r4 (F2): the forward view's projection starts from the latest count, so estimates and line always meet; ONS's projection is a faint comparison line. The note (SMT_NOTES.projectionJoin) and SMT_PROJECTION_JOIN_GAP_PCT are removed. |
+
+### R-SMT-CONTEXT-RESIDENTS
+
+| Field | Content |
+| --- | --- |
+| Statement | Context's children within the school's catchment radius are ONS residents (area_context: LSOAs whose population-weighted centroid is within the radius, the latest mid-year held; at 5 miles exactly school_context_lookup's figures), summed over the level's single ages (GCSE 11-15, Post-16 16-17, Primary 4-10, Whole school the school's range), with the change since the first year held; the census's pupils at schools within the radius sit beside them, labelled, and neither is divided by the other. |
+| Why | Residents and pupils are different counts (wording rule 3): where children live, not where they are taught. |
+| Applies to | DV-SMT-C-NOW, DV-SMT-C-BYAGE, DV-SMT-C-AGES, DV-SMT-C-NEARBY |
+| Enforced in | - src/lib/smt/context.ts:buildContext<br>- src/lib/smt/area-data.ts:areaContext<br>- src/lib/smt/levels.ts:levelAges<br>- src/components/smt/views/Context.tsx:ContextNow |
+| Tagged at | - src/components/smt/views/Context.tsx |
+| Test case | The Chase (137625), ks4: At GCSE and exactly 5 miles, children aged 11-15 (read through area_context) equal school_context_lookup's sum of ages 11-15 for its latest year (3,354 for mid-2024); the census line is shown beside it, both labelled with the radius, and no figure is a ratio of the two. [runner: smtContextResidents] |
+| Origin | 0.8 SMT round 3 (docs/v0.8/vicdata_0_8_smt_round3_context_data_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-CONTEXT-DEPRIVATION
+
+| Field | Content |
+| --- | --- |
+| Statement | Context shows the IMD and IDACI deciles of the school's own LSOA, each "decile n of 10", and the IDACI mix of the children within 5 miles as one bar, decile 1 to 10, with the share in deciles 1-2 against England's 20% (by construction, said in the (i)). A school whose postcode places it in no English LSOA says so. Deprivation always describes the area, never the pupils. |
+| Why | IoD2025 is published by neighbourhood; the school's figure is its area's (wording rules 1 and 4). |
+| Applies to | DV-SMT-C-NOW, DV-SMT-C-MAP |
+| Enforced in | - src/lib/smt/area-data.ts:schoolContext<br>- src/lib/smt/context.ts:buildContext<br>- src/components/smt/views/Context.tsx:SocialContext |
+| Tagged at | — |
+| Test case | The Chase; Leighton Park 110110; Acland Burghley 100053 (137625), ks4: The Chase IMD 8, IDACI 3; Leighton Park 6, 5; Acland Burghley 4, 5. Each IDACI mix sums to 100% (within rounding). [runner: smtContextDeprivation] |
+| Origin | 0.8 SMT round 3 (docs/v0.8/vicdata_0_8_smt_round3_context_data_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-CONTEXT-FSM
+
+| Field | Content |
+| --- | --- |
+| Statement | A state school shows its latest FSM % (fsm_eligible_percent) with its LA (through la_gss_crosswalk) and England the same year, to 1 dp, and the change since the first year held. An independent school (GIAS's independent schools less CTCs, and independent special schools) shows "Free school meals are not published for independent schools." and "Independent schools often draw pupils from well beyond 5 miles." -- never a number, never 0%, never a bare dash. |
+| Why | DfE publishes no FSM for independent schools; the ingest leaves them no row (wording rule 2). Leighton Park reads this on 27 Nov. |
+| Applies to | DV-SMT-C-NOW, DV-SMT-C-MAP |
+| Enforced in | - src/lib/smt/area-data.ts:schoolFsm, areaFsm, fsmNotPublishedFor<br>- src/lib/smt/context.ts:buildContext<br>- src/components/smt/views/Context.tsx:Fsm |
+| Tagged at | — |
+| Test case | The Chase; Acland Burghley 100053; Leighton Park 110110 (137625), ks4: The Chase 17.7% against Worcestershire 20.8% and England 26.5% (2025/26); Acland Burghley 34.0% against Camden 46.1%; Leighton Park shows wording rule 2 and no percentage. [runner: smtContextFsm] |
+| Origin | 0.8 SMT round 3 (docs/v0.8/vicdata_0_8_smt_round3_context_data_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-CONTEXT-WORDING
+
+| Field | Content |
+| --- | --- |
+| Statement | Context's six wording rules come from SMT_NOTES, word for word: deprivation is "the area around the school, not its pupils"; independent schools' FSM; residents are not pupils; deciles (1 = the most deprived 10%); "A projection, not a forecast for the school", by local authority; the sources and editions in the source (i), their years read from the data. No "pupils" next to a deprivation figure. |
+| Why | The board Leighton Park and every SMT reads must never describe a school's pupils by its area. |
+| Applies to | DV-SMT-C-* |
+| Enforced in | - src/catalogue/notes.ts:SMT_NOTES (wDeprivation, wIndependentFsm, wIndependentDraw, wResidents, wDeciles, wProjection, wSources)<br>- src/components/smt/views/Context.tsx<br>- src/components/smt/SmtDashboard.tsx:captionOf, sourceOf |
+| Tagged at | - src/components/smt/views/Context.tsx |
+| Test case | Leighton Park; The Chase 137625 (110110), ks4: The rendered Context views carry each rule verbatim from SMT_NOTES; no deprivation figure has "pupils" beside it except in the rule's own "not its pupils". [runner: smtContextWording] |
+| Origin | 0.8 SMT round 3 (docs/v0.8/vicdata_0_8_smt_round3_context_data_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-CONTEXT-GEOGRAPHY
+
+| Field | Content |
+| --- | --- |
+| Statement | Context's map shades neighbourhoods (ONS LSOAs 2021, joined through postcodes): those the ingest counts within 5 miles (population-weighted centroid) plus a one-mile ring, with the 5-mile circle drawn; the count within 5 miles equals school_context_lookup's. Until lsoa_boundaries has rows (before K0's migration and load), and for the Area pill's LA, the map draws round 2's LA shading and says "shading by district". "Shade by" lists only what exists. |
+| Why | LSOA is the finest geography the data holds; the app must work before the migration and the load. |
+| Applies to | DV-SMT-C-MAP |
+| Enforced in | - src/lib/smt/context-map.ts:buildContextMap<br>- src/lib/smt/area-data.ts:lsoasNear<br>- src/components/smt/views/Context.tsx:AreaMap, shadeOptions |
+| Tagged at | — |
+| Test case | The Chase; Acland Burghley 100053 (137625), ks4: Without boundaries (the boundary RPCs answering as before K0's migration): the map falls back to the LA shading with the district note, and Shade by offers only children and FSM. With boundaries (production, loaded): the LSOAs counted within 5 miles equal school_context_lookup's lsoa_count (34 for The Chase), every one has a boundary, and Shade by adds IMD and IDACI. [runner: smtContextGeography] |
+| Origin | 0.8 SMT round 2; round 3 (docs/v0.8/vicdata_0_8_smt_round3_context_data_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-DATA-GAP
+
+| Field | Content |
+| --- | --- |
+| Statement | Retired in SMT round 3: Context showed the data gap ("Deprivation and free school meals: not yet in VicData") where the figures would be. The ingest has loaded both; the dashed block is gone, and the figures are R-SMT-CONTEXT-DEPRIVATION's and R-SMT-CONTEXT-FSM's. |
+| Why | Superseded: the data arrived (docs/vicdata_context_data_ingest_report_v1.md). |
+| Applies to | DV-SMT-C-NOW, DV-SMT-C-MAP (round 2) |
+| Enforced in | — |
+| Tagged at | - src/lib/smt/smt.test.ts |
+| Test case | — |
+| Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
+| Status | superseded by R-SMT-CONTEXT-DEPRIVATION |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-CONTEXT-NOW
+
+| Field | Content |
+| --- | --- |
+| Statement | The area now shows children of the level's ages living within the catchment radius (or in the LA) with the change since the first year held, the authority mix under it (0.8 SMT r4), the census's pupils at schools within the radius beside them, births last year and since 2012, the projection tile (the area's children of the ages, latest count to five years on, with its range: area_projection, or la_projection_lookup for the LA), the schools nearby of the same phase (all sectors), the place line (town · LA · region), and the Social context block. |
+| Why | Each tile names its source and its area. |
+| Applies to | DV-SMT-C-NOW |
+| Enforced in | - src/lib/smt/context.ts:buildContext<br>- src/components/smt/views/Context.tsx:ContextNow |
+| Tagged at | - src/components/smt/views/Context.tsx |
+| Test case | The Chase (137625), ks4: Births last year equal ONS births for Worcestershire's districts; schools nearby are those within the radius teaching at least three of the ages; the projection tile's change equals area_projection's own 11-15 rows, latest count to five years on (5 miles). [runner: smtContextNow] |
+| Origin | 0.8 SMT round 2; round 3; round 4 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-BIRTHS
+
+| Field | Content |
+| --- | --- |
+| Statement | Births are drawn by LA against England (every English district and unitary summed), indexed to 2012 = 100, said to be by LA. The school-age population (0.8 SMT r4) is the area's children of the level's ages, within the radius or in the LA: estimates to the latest count, then the projection from that count to the settings' horizon (latest + horizon_years). |
+| Why | Two sources, two areas: each line says which. |
+| Applies to | DV-SMT-C-BIRTHS*, DV-SMT-C-PROJECTION |
+| Enforced in | - src/lib/smt/context.ts:buildContext<br>- src/components/smt/views/Context.tsx:PopulationProjected, BirthsAndProjections |
+| Tagged at | - src/components/smt/views/Context.tsx |
+| Test case | The Chase (137625), ks4: Both births lines are 100 in 2012; the projection runs from the latest count to the horizon, latest + the settings' horizon_years (11). [runner: smtBirths] |
+| Origin | 0.8 SMT round 2; round 3; round 4 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-RADIUS
+
+| Field | Content |
+| --- | --- |
+| Statement | Context draws at one radius, in whole km: this view's own (?km=), else the school's saved catchment (school_catchment, app DB), else the default by type (5 km state, 15 km independent); never past the cap by type (15 km a state school without a sixth form, 30 km otherwise; a saved catchment over it draws at the cap and says so). The whole board follows it -- the map circle and ring, children now, the deprivation mix, population by age, children nearby over time, the forward view, schools nearby and the census line -- and no caption names another radius. The school's own School-Admin (or account holder) saves it; its approved members read it; nobody else does. |
+| Why | One area per board, the same for every view; the school chooses its usual catchment (Guy, 15 Oct 2026: km, caps by type, Admissions' pools left nearest-N). |
+| Applies to | Every SMT Context view; /api/smt/catchment; Admissions' list editor radius |
+| Enforced in | - src/lib/smt/catchment.ts:resolveCatchment, catchmentCapKm, catchmentDefaultKm<br>- src/lib/smt/catchment-server.ts<br>- src/app/api/smt/catchment/route.ts<br>- src/app/api/smt/context/route.ts<br>- src/lib/smt/context.ts:buildContext<br>- src/lib/smt/context-map.ts:buildContextMap<br>- src/components/smt/Catchment.tsx:AreaPill<br>- supabase/migrations/20261113090000_v08_smt_r4_catchment.sql |
+| Tagged at | - src/components/smt/Catchment.tsx<br>- src/components/smt/views/Context.tsx<br>- src/lib/smt/catchment.test.ts<br>- src/lib/smt/catchment.ts |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: Defaults 5 km (The Chase) and 15 km (Leighton Park); a saved 8 km draws 8 km, a view's 3 km beats it; a state 11-16 school is capped at 15 km and a saved 20 km draws 15 km, capped; at 3 km every Context caption says 3 km and none another radius; RLS (v08_smt_r4_catchment_pglite.mjs, 28 checks): School-Admin and holder write, members read, pending members, another school and anon neither. [runner: smtRadius] |
+| Origin | 0.8 SMT round 4 (docs/v0.8/vicdata_0_8_smt_round4_area_projection_radius_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-FORWARD
+
+| Field | Content |
+| --- | --- |
+| Statement | The forward view is the ingest's children-in-an-area projection (docs/v0.8/vicdata_area_projection_method_v1.md): area_projection at the radius, or la_projection_lookup for the LA (a county's districts summed), for the level's ages. Estimates, solid, to the latest count, then the middle line from that count to the horizon, its band (the lowest and highest of whole single-year projections, taken over the ages' sum) shaded, the years whose ages include children not yet born drawn lighter and labelled at the change. ONS's 2022-based projection (its change, applied by authority around the school) and the scenario are faint lines, off by default. |
+| Why | Almost every child of school age in the next ten years is already born: the line starts from them, and ONS's own projection has drifted (Camden 11-15 +17% by 2025). |
+| Applies to | DV-SMT-C-PROJECTION, DV-SMT-C-NOW (the tile), DV-SMT-C-BIRTHS, DV-SMT-P-AREA |
+| Enforced in | - src/lib/smt/area-data.ts:areaProjection, laAreaProjection<br>- src/lib/smt/context.ts:buildContext, forwardFrom, mixLine<br>- src/components/smt/views/Context.tsx:PopulationProjected<br>- src/lib/smt/pupils.ts:buildPupils<br>- src/components/smt/views/Lines.tsx:PlainLine |
+| Tagged at | - src/components/smt/views/Context.tsx<br>- src/lib/smt/catchment.test.ts |
+| Test case | Leighton Park; The Chase 137625; Acland Burghley 100053 (110110), ks4: Ages 11-15 at 3, 5 and 10 miles, mid-2025, 2030 and 2035 (middle, low, high): equal to the ingest report's P5 spot checks, nine of nine; the estimates meet the line at the latest count; the band contains the line; at Primary the years from latest + 5 are flagged and labelled; Leighton Park's mix names Reading and Wokingham. [runner: smtForward] |
+| Origin | 0.8 SMT round 4 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-NOT-A-FORECAST
+
+| Field | Content |
+| --- | --- |
+| Statement | The projection's wording is the method note's, from SMT_NOTES: "A projection of children living in the area, not a forecast for the school." on every view that draws it, and what it is and isn't (SMT_NOTES.whatItIs). Never "forecast" except as "not a forecast", never "your roll", never a school-level number from it. |
+| Why | It is the children living in the area, not the school's intake; school roll projection is Victoria Consultancy's work, not the platform's. |
+| Applies to | Every view that draws the projection |
+| Enforced in | - src/catalogue/notes.ts:SMT_NOTES (wProjection, whatItIs, projectionTile)<br>- src/components/smt/views/Context.tsx<br>- src/components/smt/SmtDashboard.tsx |
+| Tagged at | - src/components/smt/views/Context.tsx |
+| Test case | Leighton Park (110110), ks4: No "forecast" but "not a forecast" and no "your roll" in SMT_NOTES or the drawn views (Context's now, forward, births; Pupils' area line); the two sentences are SMT_NOTES' word for word and on the views. [runner: smtNotAForecast] |
+| Origin | 0.8 SMT round 4 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-METHOD-PRESENT
+
+| Field | Content |
+| --- | --- |
+| Statement | Every catalogue view (Teacher, Admissions, SMT; groups' views are SMT's) has a method (src/catalogue/methods.ts): the sources with their editions, read from the data where it carries them; the area; the years used and any left out, with the reason; the calculation as numbered plain-English steps; and any rounding or suppression. The footer's source (i) shows it, the steps under a collapsible "How it is calculated", scrolling, never cut off, on the phone too. Where the code does something the (i) didn't say (a rounding, a filter, an exclusion, double award as two entries, a small-number rule), the method says it. |
+| Why | A standing rule from 0.8 SMT r4: every chart says exactly how it was calculated. |
+| Applies to | Every dataview |
+| Enforced in | - src/catalogue/methods.ts, methods-teacher.ts, methods-admissions.ts, methods-smt.ts<br>- src/components/shell/MethodNote.tsx<br>- src/components/shell/PanelFooter.tsx:SourceNote<br>- src/components/teacher/ColumnPanels.tsx:withMethod<br>- src/components/admissions/AdmissionsDashboard.tsx:sourceOf<br>- src/components/smt/SmtDashboard.tsx:sourceOf |
+| Tagged at | — |
+| Test case | (the catalogue) (137625): Every DATAVIEWS id has a method with at least one source, an area, years and at least one numbered step, and none is left with a bare {placeholder}; no method names a view the catalogue doesn't hold. [runner: methodPresent] |
+| Origin | 0.8 SMT round 4 (stage I) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-METHOD-SETTINGS
+
+| Field | Content |
+| --- | --- |
+| Statement | A view whose numbers come from stored settings has its method generated from them, never typed: the forward view's (projectionMethod) is built from area_projection's settings in the method note's (i) shape, so every setting value appears in the text and changing a setting changes it. |
+| Why | The text can't drift from the maths. |
+| Applies to | DV-SMT-C-PROJECTION |
+| Enforced in | - src/catalogue/methods.ts:projectionMethod<br>- src/components/smt/SmtDashboard.tsx:sourceOf |
+| Tagged at | - src/components/shell/MethodNote.tsx |
+| Test case | (a fixture) (110110): Every setting of version 2 (exceptional years and reason, first rate year, the five pre years at weight 1, 2025 at weight 2, the band years, the scenario years and label, the horizon, the version) appears in the text; one more exceptional year, weight 3, an 8-year horizon and a normal-years band change it to match. [runner: methodSettings] |
+| Origin | 0.8 SMT round 4 (stage I) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-LEVEL-CHIPS
+
+| Field | Content |
+| --- | --- |
+| Statement | The level chips are Whole school (the default) then only the phases the school has, from the census as the school page's Roll by phase decides them (Primary, GCSE, Post-16); an IGCSE school's GCSE chip is shown, marked, with the reason in its tooltip. Subject areas sit under GCSE or Post-16 only, as a second row with All areas first; Whole school and Primary have none. The level is held in the address (?level=, &area=) and remembered for the user; a level the school can't show falls back, never errors. |
+| Why | SMT reads top-down (Guy, 3 Oct; spec §2.2, confirmed 13 Oct): the same chips, in the same place, as Teacher's subjects and Admissions' entry points. |
+| Applies to | The SMT control bar; every SMT view |
+| Enforced in | - src/lib/smt/levels.ts:levelChips, parseLevel<br>- src/lib/smt/school.ts:smtSchool<br>- src/components/smt/SmtDashboard.tsx:Dashboard |
+| Tagged at | - src/lib/smt/smt.test.ts |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: Whole school, GCSE, Post-16 (no Primary); its GCSE areas are the areas it entered. Leighton Park: GCSE shown, marked IGCSE, no GCSE areas. ?level=primary at The Chase falls back to Whole school. [runner: smtLevelChips] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-SET-RANKS
+
+| Field | Content |
+| --- | --- |
+| Statement | One comparison set drives the whole SMT dashboard: Teacher's sets (10 nearest, the LA, saved sets, the school's sets, rankings), resolved by Teacher's own route. Every rank among the set is level-aware: only the set's schools with that result are ranked (IGCSE schools left out at GCSE), the school counted too, highest first, ties sharing a place, and the count says so ("2 of 11 with GCSE results"). Regional and England ranks are 0.6.6's whole-population ranks. |
+| Why | A rank is only honest with its count, and a set's preps don't count in a GCSE ranking (spec §2.2, §3.5). |
+| Applies to | DV-SMT-O-SCORECARD, DV-SMT-A-NOW, DV-SMT-A-AREAS, DV-SMT-A-SUBJECTS |
+| Enforced in | - src/lib/smt/population.ts:setPlace, placesOn<br>- src/lib/smt/overview.ts:buildOverview<br>- src/lib/smt/academic.ts:stagePart |
+| Tagged at | - src/components/smt/views/Scorecard.tsx<br>- src/lib/smt/smt.test.ts |
+| Test case | The Chase (137625), ks4: Attainment 8's set rank and count recomputed from the raw headline rows of the set's schools with a GCSE figure (IGCSE schools out) equal the scorecard's; England's equals the whole-population rank. [runner: smtSetRanks] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-IGCSE-WORDING
+
+| Field | Content |
+| --- | --- |
+| Statement | An IGCSE school (R-IGCSE-EXCL) is never shown a GCSE zero or rank: its GCSE rows read "IGCSE · not ranked", its column-1 tile "IGCSE school, no comparable GCSE results", every GCSE view says why in its own space (SMT_NOTES.igcseView), and its set is chosen in Post-16. Post-16 is compared as usual. |
+| Why | Leighton Park and Sevenoaks sit IGCSEs: DfE's tables would read them as near zero. |
+| Applies to | Every SMT view at GCSE or Whole school |
+| Enforced in | - src/lib/smt/overview.ts:buildOverview<br>- src/lib/smt/academic.ts:stagePart<br>- src/components/smt/views/Scorecard.tsx<br>- src/components/smt/views/Now.tsx |
+| Tagged at | — |
+| Test case | Leighton Park (110110), ks4: Its Attainment 8 and grade 5+ rows have no value or rank and note igcse; its A-level rows are ranked; its set phase is Post-16; GCSE views carry SMT_NOTES.igcseView. [runner: smtIgcse] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-P8-REASON
+
+| Field | Content |
+| --- | --- |
+| Statement | Progress 8 shows only where DfE published it (state schools, to 2023/24), with its year and interval; otherwise the view says which reason applies, from SMT_NOTES: not published for independent schools; not published for 2024/25 or 2025/26 (no KS2 baseline); no GCSE results. Never a blank, never a zero. |
+| Why | Two different absences -- a school type and two lost cohorts -- read the same as a missing figure unless said. |
+| Applies to | DV-SMT-O-NOW, DV-SMT-A-NOW, DV-SMT-A-VA |
+| Enforced in | - src/lib/smt/overview.ts:p8Of<br>- src/components/smt/views/Now.tsx<br>- src/components/smt/views/ValueAdded.tsx |
+| Tagged at | - src/components/smt/views/AcademicNow.tsx<br>- src/components/smt/views/Now.tsx<br>- src/components/smt/views/ValueAdded.tsx<br>- src/lib/smt/overview.ts<br>- src/lib/smt/smt.test.ts |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase: published, 2023/24, +0.08, the text naming 2024/25 as not published; Leighton Park: the independent reason. [runner: smtP8] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VA-HONEST
+
+| Field | Content |
+| --- | --- |
+| Statement | Value added is shown as DfE publishes it -- A-level value added by qualification type and by subject, with DfE's 95% interval and banding -- and worded from SMT_NOTES: 0 is the national average; a range crossing 0 isn't clearly different from average; GCSE value added by subject has never been published. |
+| Why | A value-added figure without its interval overstates what it can tell. |
+| Applies to | DV-SMT-A-VA, DV-SMT-A-NOW, DV-SMT-O-NOW |
+| Enforced in | - src/lib/smt/academic.ts:buildAcademic<br>- src/components/smt/views/ValueAdded.tsx |
+| Tagged at | - src/components/smt/views/AcademicNow.tsx<br>- src/components/smt/views/ValueAdded.tsx |
+| Test case | The Chase (137625), ks4: A-level value added 2024/25 equals the headline snapshot's A level::value_added (0.1, interval -0.03 to 0.24) and its banding. [runner: smtVa] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-YEARS
+
+| Field | Content |
+| --- | --- |
+| Statement | Every SMT year comes from the data or years.ts, never the code: each key stage's latest from academic_current_periods (with "(provisional)" where the ingest says so), change measured from TREND_BASE_PERIOD, the census from CENSUS_FIRST_PERIOD; Context's small-area, LA, projection and FSM years from what the lookups return. When GCSE's latest moves on and Post-16's doesn't, each view labels its own year; when ONS adds an LSOA year, Context moves to it. |
+| Why | GCSE 2025/26 lands on Thursday; nothing in SMT may hard-code a year (prompt, Read first). |
+| Applies to | Every SMT view |
+| Enforced in | - src/lib/smt/school.ts:latestYears<br>- src/lib/smt/overview.ts<br>- src/lib/smt/academic.ts<br>- src/lib/smt/context.ts:buildContext<br>- src/catalogue/years.ts:SMT_PROJECTION_TILE_AHEAD, SMT_PROJECTION_CHART_AHEAD |
+| Tagged at | — |
+| Test case | The Chase (137625), ks4: Today: the GCSE rows read 2024/25. With a synthetic GCSE 2025/26 (scripts/year-rehearsal, provisional), the Attainment 8 row reads 2025, Post-16's stays 2024, and no SMT source line holds a year literal. With a synthetic extra LSOA year (install-lsoa-next.ts), Context's children, population by age and sources read the new year. [runner: smtYears] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-BOARDING-ONLY
+
+| Field | Content |
+| --- | --- |
+| Statement | SMT's filters are pills, only where they apply: Gender for a mixed school, Day + boarding for a boarding school (isBoardingSchool). A day school's request for boarding figures is ignored on the server; results aren't split by either, and the views say so. |
+| Why | 0.7 r3 F2's rule, carried to SMT (spec §2.2). |
+| Applies to | The SMT control bar; DV-SMT-O-NOW, DV-SMT-O-SCORECARD, DV-SMT-O-ROLL-* |
+| Enforced in | - src/lib/smt/levels.ts:pillsFor<br>- src/lib/smt/overview.ts:buildOverview |
+| Tagged at | - src/lib/smt/levels.ts<br>- src/lib/smt/smt.test.ts |
+| Test case | The Chase (day); Leighton Park 110110 (boarding) (137625), ks4: The Chase: Gender only; a boarding filter is ignored (no boarders row, filters all). Leighton Park: both pills, a boarders row, day and boarding roll lines. [runner: smtBoardingOnly] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-FLAGS
+
+| Field | Content |
+| --- | --- |
+| Statement | Flags on the school appear only for large and lasting changes, with the figures behind them: the roll falling three years running (Admissions' losingPupils), the entry cohort shrinking past the national threshold (entryYearShrinking), and results moving faster than the set's middle by at least SMT_FLAG_RULES.resultsGap over two years, with at least SMT_FLAG_RULES.resultsMinSchools set schools. The thresholds live in src/lib/smt/flags-rules.ts only. |
+| Why | Admissions' rule: a flag is never one small cohort or a hunch. |
+| Applies to | DV-SMT-O-FLAGS, DV-SMT-O-SCORECARD |
+| Enforced in | - src/lib/smt/flags.ts<br>- src/lib/smt/flags-rules.ts:SMT_FLAG_RULES<br>- src/lib/smt/overview.ts:buildOverview |
+| Tagged at | - src/components/smt/views/Flags.tsx<br>- src/lib/smt/flags-rules.ts<br>- src/lib/smt/flags.ts<br>- src/lib/smt/smt.test.ts |
+| Test case | The Chase (137625), ks4: GCSE results rising faster than the set: The Chase's 2022/23-2024/25 Attainment 8 change against the set's median change, recomputed from raw rows, past the threshold; no roll-falling flag (its roll rose). [runner: smtFlags] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-NOTES
+
+| Field | Content |
+| --- | --- |
+| Statement | SMT's honesty wording comes from one file, SMT_NOTES (src/catalogue/notes.ts), behind each panel's caption button or in the view's own space; no SMT component words a caveat of its own. |
+| Why | One place to read and edit what SMT says about its figures, as ADMISSIONS_NOTES is for Admissions. |
+| Applies to | Every SMT view |
+| Enforced in | - src/catalogue/notes.ts:SMT_NOTES, smtNote<br>- src/components/smt/SmtDashboard.tsx:captionOf |
+| Tagged at | - src/components/smt/SmtDashboard.tsx |
+| Test case | Leighton Park (110110), ks4: The rendered views carry SMT_NOTES' Progress 8 and IGCSE lines; the SMT components hold no copy of a SMT_NOTES sentence. [runner: smtNotes] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-SMALL-ENTRIES
+
+| Field | Content |
+| --- | --- |
+| Statement | A subject with fewer than MIN_SUBJECT_ENTRIES (5) entries isn't ranked and says so; ranks come from Teacher's subjectRanking, so a subject's figures match the subject explorer's. |
+| Why | One or two pupils would decide a rank. |
+| Applies to | DV-SMT-A-SUBJECTS |
+| Enforced in | - src/lib/smt/academic.ts:stagePart<br>- src/components/smt/views/Subjects.tsx |
+| Tagged at | - src/lib/smt/academic.ts |
+| Test case | The Chase, GCSE Sciences & Maths (137625), ks4: Every subject under 5 entries is unranked; Biology's set and England ranks equal subjectRanking's own. [runner: smtSubjects] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-NOW
+
+| Field | Content |
+| --- | --- |
+| Statement | The school now shows the census's roll and its change since 2019/20, girls and boys (day and boarding at a boarding school), each phase's headline with its national rank, A-level value added, Progress 8 or its reason, and the school page's XS-XL by phase -- never new words for size. |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-O-NOW |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/Now.tsx |
+| Test case | The Chase (137625), ks4: Roll and girls + boys equal the census; the bands are the school page's. [runner: smtViewNow] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-SCORECARD
+
+| Field | Content |
+| --- | --- |
+| Statement | The scorecard lists each headline with the school's figure, its rank in the set (with the count), in the region and in England, and its change since 2022/23 (roll since 2019/20); IGCSE rows say not ranked; the flags line follows. |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-O-SCORECARD |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/Scorecard.tsx |
+| Test case | The Chase (137625), ks4: As R-SMT-SET-RANKS. [runner: smtSetRanks] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-MAP
+
+| Field | Content |
+| --- | --- |
+| Statement | The map draws the school and every located school in the comparison set; the school ringed. |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-O-MAP |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/SetMap.tsx |
+| Test case | The Chase (137625), ks4: Every set school with coordinates is a marker. [runner: smtViewMap] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-TRENDS
+
+| Field | Content |
+| --- | --- |
+| Statement | Trends draw indexed rolls against the LA and England (pupils aged 5-15, said so), results against the set's middle half with 2021/22 shaded and the trend note, and market share from Admissions read-only (an empty state with the reason where the school has no 11+ rivals). |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-O-*-LINE, DV-SMT-O-*-TABLE, DV-SMT-A-TREND-* |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/Lines.tsx<br>- src/components/smt/views/Tables.tsx |
+| Test case | The Chase (137625), ks4: The roll lines are 100 in the base year; each band's quartiles are the set's own, recomputed. [runner: smtViewTrends] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-ACADEMIC-NOW
+
+| Field | Content |
+| --- | --- |
+| Statement | The level now shows the level's headlines (both phases at Whole school), value added in its own block with its reason, and the grade profile. With a subject area chosen the tiles are four, as the Academic board draws them: entries, the average, the top grades, and the rank in the set as its own tile. |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-A-NOW |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/AcademicNow.tsx |
+| Test case | The Chase (137625), ks4: The GCSE Sciences & Maths entries equal the area's family entries; the area's average equals the family's average points. [runner: smtAcademicNow] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-AREAS
+
+| Field | Content |
+| --- | --- |
+| Statement | Subject areas are Admissions' strengths and weaknesses (buildRivals), against the comparison set instead of the rivals. |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-A-AREAS |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/Areas.tsx |
+| Test case | The Chase (137625), ks4: The areas equal buildRivals' for the set. [runner: smtAreas] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-SUBJECTS
+
+| Field | Content |
+| --- | --- |
+| Statement | Subjects list the area's subjects with entries, average, rank in the set and England, since 2022/23, and the subject explorer link carrying ?set=. |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-A-SUBJECTS |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/Subjects.tsx |
+| Test case | The Chase (137625), ks4: As R-SMT-SMALL-ENTRIES. [runner: smtSubjects] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-GRADES
+
+| Field | Content |
+| --- | --- |
+| Statement | The grade profile bands the main qualification's latest graded entries (GCSE 9-7, 6-5, 4, 3-1; A level A*-A, B, C, D-U); the bands add up to all of them. |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-A-GRADES |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/Grades.tsx |
+| Test case | The Chase (137625), ks4: The bands' entries add up to the graded entries and their shares to 100%. [runner: smtGrades] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-MIX
+
+| Field | Content |
+| --- | --- |
+| Statement | The entries mix shows each area's (or subject's) share of the entries for every year the data has, from 2021/22 (the subject rollup), as the results trend beside it does; entries count from the first year (not graded, so no 2021/22 note). |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/Mix.tsx<br>- src/components/smt/views/Tables.tsx<br>- src/lib/smt/academic.ts |
+| Test case | The Chase (137625), ks4: The GCSE mix runs from 2021/22 to the latest year, as the results trend does; each year's shares add up to 100%. [runner: smtMix] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-SMT-VIEW-RESERVED
+
+| Field | Content |
+| --- | --- |
+| Statement | Results by band is a reserved panel: the slot exists, with SMT_NOTES.bandReserved as its caption and body -- "the top 25%, middle 50% and bottom 25% of entries" (the bands are of entries, not pupils) -- and no figure. |
+| Why | A view says what it shows and why, as Admissions' views do. |
+| Applies to | DV-SMT-A-BANDS |
+| Enforced in | - src/components/smt/SmtDashboard.tsx:ViewBody<br>- src/components/smt/views |
+| Tagged at | - src/components/smt/views/Reserved.tsx |
+| Test case | The Chase (137625), ks4: The panel draws SMT_NOTES.bandReserved and no number. [runner: smtReserved] |
+| Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |

@@ -42,7 +42,9 @@ import { useSmt, type Academic, type Load, type Overview, type SmtFilters, type 
 import type { Pupils } from "@/lib/smt/pupils";
 import type { Context, ContextArea } from "@/lib/smt/context";
 import type { ContextMap } from "@/lib/smt/context-map";
-import { AROUND_MILES_UI } from "@/lib/smt/levels";
+import { AreaPill, type CatchmentInfo } from "./Catchment";
+import { MethodNote } from "@/components/shell/MethodNote";
+import { freshToken } from "@/components/admissions/member";
 import { loadSmtMember, type SmtMember, type SmtMemberState } from "./member";
 import { DEFAULT_SET_LABEL, useSmtSet } from "./useSmtSet";
 import { smtVars, yearOf } from "./ui";
@@ -235,9 +237,18 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
   const pupils = useSmt<Pupils>(s && body && dash === "pupils" ? "/api/smt/pupils" : null, body ? { ...body, level: level.phase, filters: f } : null);
   // Context: the area pill (around the school, or the LA), held in the address (?area=la).
   const [area, setArea] = useState<ContextArea>(() => (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("near") === "la" ? "la" : "around"));
+  // 0.8 SMT r4 (R): this view's own radius (?km=), else the school's usual catchment, else the default
+  // (the routes resolve it, within the school's cap). `catchTick` re-reads both after a save.
+  const [viewKm, setViewKm] = useState<number | null>(() => {
+    const k = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("km") : null;
+    return k && /^\d{1,2}$/.test(k) ? Number(k) : null;
+  });
+  const [catchTick, setCatchTick] = useState(0);
+  const kmQ = `${viewKm !== null ? `&km=${viewKm}` : ""}&c=${catchTick}`;
+  const catchInfo = useSmt<CatchmentInfo>(s && dash === "context" ? `/api/smt/catchment?urn=${member.schoolUrn}&c=${catchTick}` : null, null);
   // 0.8 SMT r3: the level picks the ages; the map's neighbourhoods are read only around the school.
-  const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${member.schoolUrn}&area=${area}&level=${level.phase}` : null, null);
-  const contextMap = useSmt<ContextMap>(s && dash === "context" && area === "around" ? `/api/smt/context/map?urn=${member.schoolUrn}&level=${level.phase}` : null, null);
+  const context = useSmt<Context>(s && dash === "context" ? `/api/smt/context?urn=${member.schoolUrn}&area=${area}&level=${level.phase}${kmQ}` : null, null);
+  const contextMap = useSmt<ContextMap>(s && dash === "context" && area === "around" ? `/api/smt/context/map?urn=${member.schoolUrn}&level=${level.phase}${kmQ}` : null, null);
   const [shade, setShade] = useState<ShadeBy>("children");
 
   // B7: a page view, once per school, dashboard, level and set kind.
@@ -317,18 +328,38 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     else sp.delete("near");
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`);
   };
+  const setKm = (km: number | null) => {
+    setViewKm(km);
+    const sp = new URLSearchParams(window.location.search);
+    if (km === null) sp.delete("km");
+    else sp.set("km", String(km));
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`);
+  };
+  const saveKm = async (km: number | null): Promise<string | null> => {
+    const token = await freshToken();
+    if (!token) return "Sign in again.";
+    const res = await fetch(`/api/smt/catchment?urn=${member.schoolUrn}`, { method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ km }) });
+    if (!res.ok) return ((await res.json().catch(() => null)) as { error?: string } | null)?.error ?? "Could not save.";
+    setKm(null);
+    setCatchTick((t) => t + 1);
+    return null;
+  };
+  const areaPill = (
+    <AreaPill
+        area={area}
+        laName={s?.laName ?? null}
+        catchment={context.status === "ready" ? context.data.catchment : null}
+        info={catchInfo.status === "ready" ? catchInfo.data : null}
+        independent={!!s?.independent}
+        onArea={setArea2}
+        onKm={setKm}
+        onSave={saveKm}
+    />
+  );
   const contextPills = (
     <>
       <Divider />
-      <MenuChip
-        label="Area"
-        value={area}
-        onPick={setArea2}
-        options={[
-          { id: "around", label: "Area: around the school", title: smtNote("aroundSchool", { miles: AROUND_MILES_UI }) },
-          { id: "la", label: `Area: ${s?.laName ?? "the LA"}` },
-        ]}
-      />
+      {areaPill}
       <FChip title="Context compares the area with England">Compared against: England</FChip>
     </>
   );
@@ -383,6 +414,8 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
                 <EntryChip key={c.key} label={c.label} active={c.key === level.phase} onClick={() => onLevel(c.key)} />
               ))}
             </div>
+            {/* 0.8 SMT r4 (R1): the radius on the phone too, on Context only (the other pills stay desktop). */}
+            {dash === "context" && <div className="flex flex-wrap gap-[6px]">{areaPill}</div>}
             {ctx ? <PhoneBody config={config} c={ctx} /> : <Skeleton />}
           </PhoneStack>
         ) : (
@@ -448,8 +481,8 @@ function rowContext(row: string, c: Ctx): string {
     return `${periodLabel(CENSUS_FIRST_PERIOD)} to ${census !== null ? periodLabel(census) : ""}`;
   }
   if (c.dash === "context") {
-    const to = c.context.status === "ready" ? c.context.data.population.to : null;
-    if (row === "now") return `ONS mid-year estimates and births${to !== null ? `, projections to ${to}` : ""}`;
+    const to = c.context.status === "ready" ? (c.context.data.forward?.horizonEnd ?? null) : null;
+    if (row === "now") return `ONS mid-year estimates and births${to !== null ? `, projected to ${to}` : ""}`;
     return "indexed to 100, against England";
   }
   const area = c.level.area ? (c.school.areas[c.level.phase === "gcse" ? "gcse" : "post16"].find((a) => a.id === c.level.area)?.label ?? null) : null;
@@ -629,7 +662,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-C-BIRTHS-TABLE":
       return { tag: "Trends", context: "births, 2012 = 100" };
     case "DV-SMT-C-PROJECTION":
-      return { tag: "Forward", context: c.context.status === "ready" && c.context.data.population.to !== null ? `to ${c.context.data.population.to}` : "" };
+      return { tag: "Forward", context: c.context.status === "ready" && c.context.data.forward ? `${c.context.data.forward.where}, to ${c.context.data.forward.horizonEnd}` : "" };
     case "DV-SMT-C-AGES":
       return { tag: "Area", context: "population by age" };
   }
@@ -638,25 +671,60 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
 
 const areaLabelOf = (c: Ctx) => (c.level.area ? (c.school.areas[c.level.phase === "gcse" ? "gcse" : "post16"].find((a) => a.id === c.level.area)?.label ?? null) : null);
 
+// 0.8 SMT r4 (stage I): what the methods' {placeholders} read on SMT (src/catalogue/methods-smt.ts).
+function methodVars(c: Ctx): Record<string, string | number | null> {
+  const x = c.context.status === "ready" ? c.context.data : null;
+  const stage = c.level.phase === "gcse" ? "ks4" : c.level.phase === "post16" ? "ks5" : c.level.phase === "primary" ? "ks2" : null;
+  const latest = stage ? c.school.latest[stage]?.period : undefined;
+  return {
+    setLabel: c.set.label,
+    la: c.school.laName,
+    radius: x?.radius ?? null,
+    ages: x?.agesWord ?? null,
+    year: latest !== undefined ? periodLabel(latest) : null,
+    census: c.school.census.at(-1) ? periodLabel(c.school.census.at(-1)!.period) : null,
+    lsoaYear: x?.sources.lsoaYear ?? null,
+    laYear: x?.sources.laYear ?? null,
+    iodYear: x?.sources.iodYear ?? null,
+    fsmYear: x?.sources.fsmYear !== null && x?.sources.fsmYear !== undefined ? periodLabel(x.sources.fsmYear) : null,
+  };
+}
+
 /** The source behind each panel's "i": the view's title and its measures' citations; Context's names
  * its sources and editions, the years read from the data (wording rule 6). */
 function sourceOf(dv: string, c?: Ctx): ReactNode {
   const d = dataviewById(dv);
   if (!d) return null;
   if (dv.startsWith("DV-SMT-C-") && c && c.context.status === "ready") {
-    // SMT r3 snags (fix 3): the projection panel says where its two lines don't meet (R-SMT-CONTEXT-PROJECTION-JOIN).
-    const join = dv === "DV-SMT-C-PROJECTION" ? c.context.data.population.join?.note : null;
+    // 0.8 SMT r4 (F2): the projection starts from the latest count, so the two lines always meet: round
+    // 3's join note (R-SMT-CONTEXT-PROJECTION-JOIN) is retired.
+    const x = c.context.data;
+    const f = x.forward;
     return (
       <>
-        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {c.context.data.notes.sources}
-        {join ? <span data-projection-join=""> {join}</span> : null} <span className="opacity-70">({d.measures.join(", ")})</span>
+        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {x.notes.sources} <span className="opacity-70">({d.measures.join(", ")})</span>
+        {dv === "DV-SMT-C-PROJECTION" && f ? (
+          <MethodNote projection={{ scope: f.scope, radius: x.area === "around" ? x.radius : null, laName: c.school.laName, ages: x.agesWord, lsoaCount: f.lsoaCount, mixLine: x.now.mix?.line ?? null, latestYear: f.latestYear, horizonEnd: f.horizonEnd, bandMissing: f.bandMissing, settingsVersion: f.settingsVersion, settings: f.settings, yearsUsed: f.yearsUsed, sources: f.sources }} />
+        ) : (
+          <MethodNote id={dv} vars={methodVars(c)} />
+        )}
       </>
     );
   }
+  // 0.8 SMT r4 (the (i) audit): Pupils' area line is ONS residents and the projection, not the census its
+  // measure (M-SMT-SCHOOL) would cite.
+  if (dv === "DV-SMT-P-AREA")
+    return (
+      <>
+        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. ONS mid-year population estimates by single year of age, by local authority; the children-in-an-area projection. <span className="opacity-70">({d.measures.join(", ")})</span>
+        {c && <MethodNote id={dv} vars={methodVars(c)} />}
+      </>
+    );
   const cites: Record<string, string> = { "M-SMT-SCHOOL": "DfE school census (January)", "M-SMT-RESULTS": "DfE KS2, KS4 and KS5 performance tables", "M-SMT-VA": "DfE performance tables (value added)", "M-SMT-SUBJECTS": "DfE KS4 and KS5 subject tables", "M-ADM-MARKET": "DfE school census, Admissions' rivals" };
   return (
     <>
       {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {Array.from(new Set(d.measures.map((m) => cites[m]).filter(Boolean))).join("; ")}. <span className="opacity-70">({d.measures.join(", ")})</span>
+      {c && <MethodNote id={dv} vars={methodVars(c)} />}
     </>
   );
 }
@@ -711,14 +779,14 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-P-AREA":
       return c.pupils.status === "ready" ? smtNote("areaResidents", { la: c.school.laName ?? "The LA", ages: c.pupils.data.trends.area.agesWord }) : SMT_NOTES.areaResidentsCaption;
     case "DV-SMT-C-NOW":
-      return c.context.status === "ready" ? `${c.context.data.notes.children} ${c.context.data.notes.births} ${c.context.data.notes.projection} ${SMT_NOTES.wDeciles} ${smtNote("mixInfo", { miles: AROUND_MILES_UI })} ${SMT_NOTES.fsmInfo}` : null;
+      return c.context.status === "ready" ? `${c.context.data.notes.children} ${c.context.data.notes.births} ${c.context.data.notes.projection} ${SMT_NOTES.wDeciles} ${smtNote("mixInfo", { radius: c.context.data.radius })} ${SMT_NOTES.fsmInfo}` : null;
     case "DV-SMT-C-MAP":
-      return c.contextMap.status === "ready" && c.contextMap.data.state === "lsoa" && c.context.status === "ready" && c.context.data.area === "around" ? `${SMT_NOTES.mapNeighbourhoods}. ${smtNote("mapRing", { miles: c.contextMap.data.radiusMiles })} ${SMT_NOTES.wDeciles}` : SMT_NOTES.shadeByDistrict;
+      return c.contextMap.status === "ready" && c.contextMap.data.state === "lsoa" && c.context.status === "ready" && c.context.data.area === "around" ? `${SMT_NOTES.mapNeighbourhoods}. ${smtNote("mapRing", { radius: c.contextMap.data.radius, ring: `${c.contextMap.data.ringKm} km` })} ${SMT_NOTES.wDeciles}` : SMT_NOTES.shadeByDistrict;
     case "DV-SMT-C-BYAGE":
     case "DV-SMT-C-AGES":
-      return c.context.status === "ready" ? `${c.context.data.notes.popByAge} ${SMT_NOTES.wResidents}` : null;
+      return c.context.status === "ready" ? `${c.context.data.notes.popByAge} ${smtNote("wResidents", { radius: c.context.data.radius })}` : null;
     case "DV-SMT-C-NEARBY":
-      return c.context.status === "ready" ? `${c.context.data.notes.nearby} ${SMT_NOTES.wResidents}` : null;
+      return c.context.status === "ready" ? `${c.context.data.notes.nearby} ${smtNote("wResidents", { radius: c.context.data.radius })}` : null;
     case "DV-SMT-C-BIRTHS":
     case "DV-SMT-C-BIRTHS-INDEXED":
     case "DV-SMT-C-BIRTHS-TABLE":
@@ -844,7 +912,18 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-P-POOL":
           return <PoolLine pool={p.trends.pool} fullscreen={fullscreen} room={room} caption={SMT_NOTES.pool} />;
         case "DV-SMT-P-AREA":
-          return <PlainLine title="The area's school-age population" label={`${c.school.laName ?? "The LA"}, residents aged ${p.trends.area.agesWord}`} pts={p.trends.area.pts} fullscreen={fullscreen} room={room} caption={SMT_NOTES.areaResidentsCaption} xLabel={(y) => `mid-${y}`} />;
+          return (
+            <PlainLine
+              title="The area's school-age population"
+              label={`${c.school.laName ?? "The LA"}, residents aged ${p.trends.area.agesWord}`}
+              pts={p.trends.area.pts}
+              fullscreen={fullscreen}
+              room={room}
+              caption={p.trends.area.forward ? `${SMT_NOTES.areaResidentsCaption}, then projected. ${SMT_NOTES.wProjection}` : SMT_NOTES.areaResidentsCaption}
+              xLabel={(y) => `mid-${y}`}
+              forward={p.trends.area.forward ? { ...p.trends.area.forward, label: "Projection", marker: SMT_NOTES.includesUnborn } : null}
+            />
+          );
       }
       return <Empty>This view isn&rsquo;t drawn here yet.</Empty>;
     });

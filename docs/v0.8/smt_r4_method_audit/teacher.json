@@ -1,0 +1,1789 @@
+[
+  {
+    "id": "DV-C1-CAND-CUR-TILES",
+    "label": "Number tiles",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Post-16 page)"
+      ],
+      "geography": "The school only: the focused subject against the school's other subjects (its category, and every subject at the school).",
+      "years": "The latest year the school has entries for the category; the change tile runs from the first year with a published figure (often 2020/21) to the latest.",
+      "leftOut": [
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "Subjects not in the focused subject's own subject category are left out of the category tile.",
+        "The 'rank of N subjects at school' tile counts every subject with entries at the school (one per subject at GCSE; AS/AEA left out at Post-16)."
+      ],
+      "steps": [
+        "We take the school's entries for each subject in the latest year. At GCSE this is every qualification in the subject added together; at Post-16 it is the entries for the one qualification you chose (for example A-level Biology).",
+        "The main figure is the number of entries in your subject that year.",
+        "We rank your subject against the other subjects at the school in the same subject category and qualification family, largest first. Subjects with the same number share a place.",
+        "We also rank it against every subject the school runs that year.",
+        "The change tile compares your subject's entries in the latest year with its first published year, as a percentage."
+      ],
+      "rounding": [
+        "Entries are whole numbers.",
+        "The change is a whole percentage.",
+        "Ties share a rank and the next rank is skipped."
+      ]
+    },
+    "notInInfoNow": [
+      "That the year in the source line is the latest year of the school's subject entries, not taken from the tile itself.",
+      "That at GCSE entries are added up across every qualification in the subject.",
+      "That the change is measured from the first published year (it can be 2020/21), not from 2022/23.",
+      "What the category is and which subjects are ranked against (same subject category and qualification family; AS and AEA left out at Post-16).",
+      "That ties share a rank."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/CandidatesPanels.tsx:189-267 (tiles, rankByValue, changeOver)",
+      "src/lib/teacher-view-populations.ts:35-59 subjectItemsOf, 89-110 categoryItemsOf, 117-121 candidateItemsOf, 139-141 keepFocusOrFigured, 147-149 memberMeans",
+      "src/lib/teacher-view-populations.ts:128-133 schoolSubjectsOf",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1447, 1451-1453 categoryPeriods, 2201-2251 CandidatesPanels props",
+      "src/lib/teacher-view-measures.ts:30-39 ownHeadlineRows, 49-51 carriesOwnPoints, 76-88 subjectPointsAt/subjectEntriesAt, 107-118 englandValueAt, 142-152 subjectThresholdAt/subjectBandAt, 202-214 periodsForMeasure",
+      "src/lib/teacher-view-trend-styles.ts:112-118 changeOver",
+      "src/app/api/teacher/dashboard/route.ts:179-209 (subject entries + grade rows 'four', subject headline, Post-16 exact-qualification headline, England averages)"
+    ]
+  },
+  {
+    "id": "DV-C1-CAND-TR-INDEXED",
+    "label": "Indexed",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note: entries are not graded)",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Post-16 page)"
+      ],
+      "geography": "The school only: your subject and the other subjects in its category at the school.",
+      "years": "2020/21 (or the 'From' year) to the latest year held.",
+      "leftOut": [
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "Subjects not in the focused subject's own subject category are left out of the category tile."
+      ],
+      "steps": [
+        "We take the school's entries for your subject and for the other subjects in its subject category and qualification family, for every year published (at GCSE all qualifications in a subject added together; at Post-16 the one qualification).",
+        "Years at the start or end with no figure for any subject are dropped; you can start the view at a later year with the 'From' menu.",
+        "Each subject's line is set to 100 in its own first year with entries, and later years are shown against that (110 means 10% more entries).",
+        "A line is drawn only with 4 or more years. With fewer, each subject's change in entries from its first to its last year is shown as ranked bars.",
+        "The words under the chart describe your subject's change from its first to its last year: within 4% either way it is 'broadly stable'."
+      ],
+      "rounding": [
+        "Index values are whole numbers.",
+        "The percentage in the trend sentence is a whole number.",
+        "Within ±4% the trend reads 'Broadly stable'."
+      ]
+    },
+    "notInInfoNow": [
+      "That each line starts at 100 in its own first year (said in the chart title, not the (i)).",
+      "That a line needs 4 years; with fewer the view becomes ranked change bars.",
+      "The ±4% 'broadly stable' band.",
+      "That at GCSE entries are added up across every qualification in the subject."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/CandidatesPanels.tsx:155-187 trendFull/trimToData/sliceFrom, 269-347 trend half",
+      "src/components/teacher/SeriesViews.tsx:52-112 MultiTrend (indexTo100, short-span ChangeList)",
+      "src/lib/teacher-view-trend-styles.ts:93-105 indexTo100/shouldIndex",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange",
+      "src/lib/teacher-view-populations.ts:35-59 subjectItemsOf, 89-110 categoryItemsOf, 117-121 candidateItemsOf, 139-141 keepFocusOrFigured, 147-149 memberMeans"
+    ]
+  },
+  {
+    "id": "DV-C1-CAND-TR-ACTUAL",
+    "label": "Actual",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note: entries are not graded)",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Post-16 page)"
+      ],
+      "geography": "The school only: your subject and the other subjects in its category at the school.",
+      "years": "2020/21 (or the 'From' year) to the latest year held.",
+      "leftOut": [
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "Subjects not in the focused subject's own subject category are left out of the category tile."
+      ],
+      "steps": [
+        "We take the school's entries for your subject and for the other subjects in its subject category and qualification family, for every year published (at GCSE all qualifications in a subject added together; at Post-16 the one qualification).",
+        "Years at the start or end with no figure for any subject are dropped; you can start the view at a later year with the 'From' menu.",
+        "Each subject is drawn at its real number of entries each year, all on one scale.",
+        "This view is only offered with 4 or more years of entries; with fewer the button is switched off.",
+        "The words under the chart describe your subject's change from its first to its last year: within 4% either way it is 'broadly stable'."
+      ],
+      "rounding": [
+        "Entries are whole numbers.",
+        "The percentage in the trend sentence is a whole number."
+      ]
+    },
+    "notInInfoNow": [
+      "That it needs 4 years of entries.",
+      "That at GCSE entries are added up across every qualification in the subject.",
+      "The ±4% 'broadly stable' band."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/CandidatesPanels.tsx:300-331 (Actual = index false)",
+      "src/components/teacher/SeriesViews.tsx:52-112 MultiTrend",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C1-CAND-TR-TABLE",
+    "label": "Trend table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note: entries are not graded)",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Post-16 page)"
+      ],
+      "geography": "The school only: your subject and the other subjects in its category at the school.",
+      "years": "2020/21 (or the 'From' year) to the latest year held; the card shows the first and last years, full screen shows every year.",
+      "leftOut": [
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "Subjects not in the focused subject's own subject category are left out of the category tile."
+      ],
+      "steps": [
+        "We take the school's entries for your subject and for the other subjects in its subject category and qualification family, for every year published (at GCSE all qualifications in a subject added together; at Post-16 the one qualification).",
+        "Years at the start or end with no figure for any subject are dropped; you can start the view at a later year with the 'From' menu.",
+        "Each subject is one row with its entries in each year.",
+        "The change column is the difference between the first and last years with a figure, in entries, with the percentage change beneath it.",
+        "Rows are listed by the latest year's entries, largest first (you can re-sort); full screen adds each subject's rank."
+      ],
+      "rounding": [
+        "Entries are whole numbers.",
+        "The percentage change is a whole number."
+      ]
+    },
+    "notInInfoNow": [
+      "How the change column is worked out (first to last published year).",
+      "That at GCSE entries are added up across every qualification in the subject."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/CandidatesPanels.tsx:308-317",
+      "src/components/teacher/SeriesViews.tsx YearTable (changeOver on countedValues, rankByValue on latest)",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C1-CAND-TR-GEO-CHART",
+    "label": "Area chart",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note: entries are not graded). The points-eligible caveat sits in the caption, not the (i).",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Post-16 page)",
+        "LA, region and England figures: VicData's area totals from the same DfE files (GCSE: academic_subject_geography_aggregate; Post-16: academic_subject_qualification_geography_aggregate), 2021/22 to {latest year}"
+      ],
+      "geography": "The school; its local authority; England (the region is in the Change table only).",
+      "years": "2021/22 (the first year with area figures) or the 'From' year, to the latest year held.",
+      "leftOut": [
+        "At GCSE the view applies only when your subject is GCSE (9-1) Full Course; for any other qualification it says the figures aren't available.",
+        "Area rows count points-eligible entries only (full-course GCSE at GCSE; scored qualifications at Post-16 — none for VRQ, AEA or EPQ), so the school's own row is its points-eligible entries too, not its full Candidates count.",
+        "An LA or region figure built from fewer than 5 schools is not shown; England is always shown."
+      ],
+      "steps": [
+        "We take your school's points-eligible entries in the subject each year: its entries multiplied by the share of them that carry points, rounded to a whole number.",
+        "We take the same count for every school in your local authority, your region and England, added together (at Post-16 for the same exact qualification).",
+        "We keep only the years that have an area figure, within the span you have chosen.",
+        "Each line is set to 100 in its first year, so the school, its local authority and England can be compared on one scale (110 means 10% more entries).",
+        "The region's line is left off the chart because it runs almost on top of England's."
+      ],
+      "rounding": [
+        "Points-eligible entries are rounded to whole numbers.",
+        "Index values are whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "That every row counts points-eligible entries only, not all entries (said in the caption, not the (i)).",
+      "The area data set (VicData's LA, region and England totals) is not named; the (i) cites DfE only.",
+      "That an LA or region figure from fewer than 5 schools is not shown.",
+      "That at GCSE it applies only to GCSE (9-1) Full Course."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/CandidatesPanels.tsx:362-445 (geography always replaces the ranked change when a subject is focused)",
+      "src/components/teacher/GeographyComparison.tsx GeographyView (chart drops region, indexed)",
+      "src/lib/teacher-view-geography.ts candidatesGeographyApplies, pointsEligibleEntriesByPeriod, geographyComparison",
+      "src/components/dashboard-config/TeacherDashboard.tsx:2232-2244",
+      "src/app/api/teacher/subject-geography/route.ts fetchRows (LA/region min 5 schools, England min 1); vicdata migrations 20260921120000 / 20260926120000 (entry- or size-weighted averages, entries = points-eligible)"
+    ]
+  },
+  {
+    "id": "DV-C1-CAND-TR-GEO-TABLE",
+    "label": "Change table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note: entries are not graded). The points-eligible caveat sits in the caption, not the (i).",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Post-16 page)",
+        "LA, region and England figures: VicData's area totals from the same DfE files (GCSE: academic_subject_geography_aggregate; Post-16: academic_subject_qualification_geography_aggregate), 2021/22 to {latest year}"
+      ],
+      "geography": "The school; its local authority; its region; England.",
+      "years": "2021/22 (the first year with area figures) or the 'From' year, to the latest year held.",
+      "leftOut": [
+        "At GCSE the view applies only when your subject is GCSE (9-1) Full Course; for any other qualification it says the figures aren't available.",
+        "Area rows count points-eligible entries only (full-course GCSE at GCSE; scored qualifications at Post-16 — none for VRQ, AEA or EPQ), so the school's own row is its points-eligible entries too, not its full Candidates count.",
+        "An LA or region figure built from fewer than 5 schools is not shown; England is always shown."
+      ],
+      "steps": [
+        "We take your school's points-eligible entries in the subject each year: its entries multiplied by the share of them that carry points, rounded to a whole number.",
+        "We take the same count for every school in your local authority, your region and England, added together (at Post-16 for the same exact qualification).",
+        "We keep only the years that have an area figure, within the span you have chosen.",
+        "Each place is one row with its count in each year.",
+        "The change column shows the percentage change from the first to the last year with a figure, with the change in entries beneath it."
+      ],
+      "rounding": [
+        "Points-eligible entries are rounded to whole numbers.",
+        "The percentage change is a whole number."
+      ]
+    },
+    "notInInfoNow": [
+      "That every row counts points-eligible entries only (caption only).",
+      "VicData's area totals are not named as a source.",
+      "That an LA or region figure from fewer than 5 schools is not shown.",
+      "That at GCSE it applies only to GCSE (9-1) Full Course."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/GeographyComparison.tsx YearTable with changeEmphasis 'percent', showRank false",
+      "src/lib/teacher-view-geography.ts pointsEligibleEntriesByPeriod",
+      "src/app/api/teacher/subject-geography/route.ts fetchRows (LA/region min 5 schools, England min 1); vicdata migrations 20260921120000 / 20260926120000 (entry- or size-weighted averages, entries = points-eligible)"
+    ]
+  },
+  {
+    "id": "DV-C1-CAND-TR-CHANGELIST",
+    "label": "Ranked change",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note). Not reachable today: see notInInfoNow.",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Post-16 page)"
+      ],
+      "geography": "The school only: your subject and the other subjects in its category.",
+      "years": "2020/21 (or the 'From' year) to the latest year held.",
+      "leftOut": [
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "Subjects not in the focused subject's own subject category are left out of the category tile."
+      ],
+      "steps": [
+        "We take each subject's entries in its category for every published year.",
+        "Each subject's change is its percentage change from its first to its last year with a figure.",
+        "Subjects are ranked by that change, biggest rise first.",
+        "The category average (the plain average of the subjects' entries each year, your subject included) is drawn as a dashed reference line."
+      ],
+      "rounding": [
+        "The percentage change is a whole number."
+      ]
+    },
+    "notInInfoNow": [
+      "This view is never drawn: whenever a subject is focused the page passes the area comparison, which replaces it (CandidatesPanels.tsx:402-417; catalogue note 'Dead branch')."
+    ],
+    "evidence": [
+      "src/components/teacher/CandidatesPanels.tsx:385-445 (geography ? geographyView : ...)",
+      "src/components/dashboard-config/TeacherDashboard.tsx:2232-2244 (geography always set with a focus)",
+      "src/catalogue/dataviews.ts:220-269"
+    ]
+  },
+  {
+    "id": "DV-C1-CAND-TR-CHANGETABLE",
+    "label": "Change table (category)",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note). Not reachable today: see notInInfoNow.",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Post-16 page)"
+      ],
+      "geography": "The school only: your subject and the other subjects in its category.",
+      "years": "2020/21 (or the 'From' year) to the latest year held.",
+      "leftOut": [
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "Subjects not in the focused subject's own subject category are left out of the category tile."
+      ],
+      "steps": [
+        "We take each subject's entries in its category for every published year.",
+        "Each subject's change is its percentage change from its first to its last year with a figure.",
+        "Each subject is one row with its first and latest year's entries and the change between them."
+      ],
+      "rounding": [
+        "The percentage change is a whole number."
+      ]
+    },
+    "notInInfoNow": [
+      "This view is never drawn: whenever a subject is focused the page passes the area comparison, which replaces it (CandidatesPanels.tsx:402-417; catalogue note 'Dead branch')."
+    ],
+    "evidence": [
+      "src/components/teacher/CandidatesPanels.tsx:385-445 (geography ? geographyView : ...)",
+      "src/components/dashboard-config/TeacherDashboard.tsx:2232-2244 (geography always set with a focus)",
+      "src/catalogue/dataviews.ts:220-269"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-CUR-TILES",
+    "label": "Number tiles",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources + the Results note for the measure: on Grade 4+ / A*–E \"Subjects graded on a vocational scale have no {grade 4 | A*–E} bar and show no figure.\"; on Grade bands \"A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish.\"; none on Average points",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Post-16 page)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E and Grade bands)",
+        "England figure: VicData's national total from the same DfE files (GCSE: academic_subject_geography_aggregate per subject; Post-16: academic_subject_qualification_geography_aggregate per subject and exact qualification) (Average points)",
+        "England grade shares: VicData's national grade totals from the same DfE files (academic_subject_grade_geography_aggregate) (Grade bands, focused subject only)"
+      ],
+      "geography": "The school; the other subjects in its category at the school; England (same subject, same year).",
+      "years": "The latest year your category has a figure; on Grade 4+ / A*–E and Grade bands the latest year from 2023/24 on.",
+      "leftOut": [
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "A subject in the category with no figure at all on the measure is left out (your subject always stays).",
+        "England's Grade 4+ / A*–E rate is not used (no area figure is wired), so on that measure only the rank tile shows."
+      ],
+      "steps": [
+        "The main figure is your subject's result in the latest year: average points per entry, the share of graded entries at grade 4 or above (A*–E at Post-16), or the share inside your chosen grade band.",
+        "Average points at GCSE come from GCSE (9-1) Full Course entries only; at Post-16 from the one qualification you chose, on DfE's points table.",
+        "On Average points and Grade 4+: your subject's rank among the subjects in its category at the school, highest first (ties share a place).",
+        "On Average points: England's average for the same subject (Post-16: same subject and qualification) in the same year, and the gap between yours and England's.",
+        "On Grade bands: how many of your graded entries fall in the band, England's share in the band for the same subject and qualification that year, and the gap."
+      ],
+      "rounding": [
+        "Average points to 1 decimal place.",
+        "Rates and shares as whole percentages; gaps on rates in whole percentage points.",
+        "A gap that rounds to nothing reads 'level with England'."
+      ]
+    },
+    "notInInfoNow": [
+      "The England figure is an entry-weighted average of every school in England (size-weighted at Post-16), and its data set is not named.",
+      "That England's grade-band share leaves out any grade published by fewer than 5 schools (said only on Grade bands' note).",
+      "That at GCSE only GCSE (9-1) Full Course entries carry points.",
+      "That the benchmark is always the same year as your figure.",
+      "Which subjects the rank is among (category, same qualification family, AS/AEA left out).",
+      "A GCSE Double Award item shows no average points in Column 1 (carriesOwnPoints allows GCSE (9-1) Full Course only), although its points are filled from its grades (two entries each) for Comparisons, rankings and Context group averages.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:332-334 withEnglandBandBenchmark, 349 latestYearSeries, 352-360 sourceWithNote, 452-500 tiles",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1406-1407 valueForResults, 1460 resultsPeriods, 1472-1485 resultsSeries, 2078-2199 SubjectPanels props (note, benchmarkLabel)",
+      "src/lib/teacher-view-measures.ts:30-39 ownHeadlineRows, 49-51 carriesOwnPoints, 76-88 subjectPointsAt/subjectEntriesAt, 107-118 englandValueAt, 142-152 subjectThresholdAt/subjectBandAt, 202-214 periodsForMeasure",
+      "src/lib/subject-grades.ts:208-233 thresholdRate, 334-345 bandRate, 88 NON_GRADE_VALUES",
+      "src/lib/teacher-view-grade-geography.ts withEnglandBandBenchmark",
+      "src/app/api/teacher/dashboard/route.ts:59-82 englandAverages",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-CUR-GRADES",
+    "label": "Grade distribution",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources + the Results note for the measure: on Grade 4+ / A*–E \"Subjects graded on a vocational scale have no {grade 4 | A*–E} bar and show no figure.\"; on Grade bands \"A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish.\"",
+    "method": {
+      "sources": [
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year}",
+        "England grade shares: VicData's national grade totals from the same DfE files (academic_subject_grade_geography_aggregate)"
+      ],
+      "geography": "The school (your subject); England (the same subject and qualification).",
+      "years": "The latest year from 2023/24 on with grades for your subject.",
+      "leftOut": [
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "An England grade that fewer than 5 schools publish has no tick."
+      ],
+      "steps": [
+        "We take your school's number of entries at each grade in the subject and qualification for the latest year.",
+        "Each grade's bar is its count as a share of all graded entries.",
+        "Beside each grade, a tick shows England's share of its graded entries at that grade, for the same subject and qualification in the same year.",
+        "The grade band you picked in the top bar is shaded."
+      ],
+      "rounding": [
+        "Shares as whole percentages; counts as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "How England's tick is worked out and that it leaves out grades published by fewer than 5 schools is said only in the Grade bands note.",
+      "That non-grades (Suppressed, X and so on) are left out of the shares.",
+      "VicData's national grade totals are not named as a source.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:511-515 bandDistribution, 576-591",
+      "src/lib/grade-spread.ts bandDistribution",
+      "src/app/api/teacher/subject-grade-geography/route.ts (min 5 schools per grade row)",
+      "src/components/teacher/GradeDistribution.tsx:76,160 rounding"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-CUR-BAR",
+    "label": "Bar chart",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources + the Results note for the measure: on Grade 4+ / A*–E \"Subjects graded on a vocational scale have no {grade 4 | A*–E} bar and show no figure.\"; on Grade bands \"A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish.\"; none on Average points",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Post-16 page)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E and Grade bands)",
+        "England figure: VicData's national total from the same DfE files (GCSE: academic_subject_geography_aggregate per subject; Post-16: academic_subject_qualification_geography_aggregate per subject and exact qualification) (Average points)",
+        "England grade shares: VicData's national grade totals from the same DfE files (academic_subject_grade_geography_aggregate) (Grade bands, focused subject only)"
+      ],
+      "geography": "The school: your subject and the other subjects in its category; England marker per subject (same year).",
+      "years": "The latest year your category has a figure (from 2023/24 on for grade rates and bands).",
+      "leftOut": [
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "A subject in the category with no figure at all on the measure is left out (your subject always stays)."
+      ],
+      "steps": [
+        "We take each subject's result in the latest year: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "Subjects are drawn largest first, with your subject highlighted.",
+        "On Average points each subject carries a marker for England's average in the same subject (Post-16: same qualification) for the same year.",
+        "On Grade bands only your subject carries England's share in the band; on Grade 4+ / A*–E there is no England marker."
+      ],
+      "rounding": [
+        "Average points to 1 decimal place.",
+        "Rates and shares as whole percentages."
+      ]
+    },
+    "notInInfoNow": [
+      "How the England marker is worked out (entry-weighted across every school in England) and that it is the same year.",
+      "That at GCSE only GCSE (9-1) Full Course entries carry points.",
+      "Which subjects are drawn (same category and qualification family).",
+      "A GCSE Double Award item shows no average points here (carriesOwnPoints).",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:631-653 ViewChart rows with marker r.bench",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1472-1485 (benchmark only when hasEnglandPointsBenchmark)",
+      "src/lib/teacher-view-measures.ts:30-39 ownHeadlineRows, 49-51 carriesOwnPoints, 76-88 subjectPointsAt/subjectEntriesAt, 107-118 englandValueAt, 142-152 subjectThresholdAt/subjectBandAt, 202-214 periodsForMeasure",
+      "src/lib/subject-grades.ts:208-233 thresholdRate, 334-345 bandRate, 88 NON_GRADE_VALUES"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-CUR-TABLE",
+    "label": "Sortable table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources + the Results note for the measure: on Grade 4+ / A*–E \"Subjects graded on a vocational scale have no {grade 4 | A*–E} bar and show no figure.\"; on Grade bands \"A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish.\"; none on Average points",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Post-16 page)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E and Grade bands)",
+        "England figure: VicData's national total from the same DfE files (GCSE: academic_subject_geography_aggregate per subject; Post-16: academic_subject_qualification_geography_aggregate per subject and exact qualification) (Average points)",
+        "England grade shares: VicData's national grade totals from the same DfE files (academic_subject_grade_geography_aggregate) (Grade bands, focused subject only)"
+      ],
+      "geography": "The school: your subject and the other subjects in its category; England per subject (same year).",
+      "years": "The latest year your category has a figure (from 2023/24 on for grade rates and bands).",
+      "leftOut": [
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "A subject in the category with no figure at all on the measure is left out (your subject always stays)."
+      ],
+      "steps": [
+        "We take each subject's result in the latest year.",
+        "On Average points the third column is each subject's result minus England's for the same subject in the same year ('vs National').",
+        "On Grade bands the same column compares your subject only with England's share in the band; other subjects show a dash.",
+        "On Grade 4+ / A*–E there is no England figure, so the column is the change from the subject's own previous published year ('vs last year').",
+        "The table opens sorted by that difference, largest first; any column can be sorted."
+      ],
+      "rounding": [
+        "Average points and differences to 1 decimal place.",
+        "Rates as whole percentages; differences in whole percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "That 'vs National' becomes 'vs last year' on Grade 4+ / A*–E.",
+      "That on Grade bands only your subject has an England figure.",
+      "How England's figure is worked out.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:387 currentRowsWithDelta, 418-428 tableRows, 655-672",
+      "src/lib/teacher-view-panels.ts:422-438 currentRowsWithDelta (R-PREV-YEAR-FALLBACK)",
+      "src/lib/teacher-view-measures.ts:30-39 ownHeadlineRows, 49-51 carriesOwnPoints, 76-88 subjectPointsAt/subjectEntriesAt, 107-118 englandValueAt, 142-152 subjectThresholdAt/subjectBandAt, 202-214 periodsForMeasure"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-TR-CHART",
+    "label": "Chart",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + the Results note for the measure: on Grade 4+ / A*–E \"Subjects graded on a vocational scale have no {grade 4 | A*–E} bar and show no figure.\"; on Grade bands \"A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish.\"; none on Average points + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Post-16 page)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year}"
+      ],
+      "geography": "The school only: your subject and the other subjects in its category.",
+      "years": "2021/22 (or the 'From' year) to the latest year held; trends measured from 2022/23.",
+      "leftOut": [
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "A subject in the category with no figure at all on the measure is left out (your subject always stays).",
+        "Subjects with grades only in 2021/22-2022/23 still appear here (they are left out of the Current views only).",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "We take each subject's result for every published year (average points from 2021/22; grade rates and bands from the years the subject has grades, 2021/22 on).",
+        "Each subject is a line at its real level (results are never indexed).",
+        "A line needs 4 or more years; with fewer, each subject's change from 2022/23 to the latest year is shown as ranked bars, in points or percentage points.",
+        "2021/22 is drawn, but the trend sentence, the 'broadly stable' word and the optional fitted line are measured from 2022/23.",
+        "The trend sentence gives your subject's change in points or percentage points; within 4% either way (relative) it reads 'broadly stable'."
+      ],
+      "rounding": [
+        "Average points to 1 decimal place; changes in points to 1 decimal place.",
+        "Rates as whole percentages; changes in whole percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "That a line needs 4 years and fewer years show ranked change bars.",
+      "The ±4% 'broadly stable' band.",
+      "That at GCSE only GCSE (9-1) Full Course entries carry points.",
+      "The category average and England category average lines are built but not drawn in this chart."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/SubjectPanels.tsx:723-733 trendFull withTrendBase, 769-783 statementSpan/trendSentence, 899-916 MultiTrend, 931 gradingYears",
+      "src/components/teacher/SeriesViews.tsx:52-112 MultiTrend",
+      "src/components/teacher/TrendChart.tsx:232-235 fit from statementFrom",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-TR-TABLE",
+    "label": "Trend table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + the Results note for the measure: on Grade 4+ / A*–E \"Subjects graded on a vocational scale have no {grade 4 | A*–E} bar and show no figure.\"; on Grade bands \"A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish.\"; none on Average points + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Post-16 page)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year}"
+      ],
+      "geography": "The school only: your subject and the other subjects in its category.",
+      "years": "2021/22 (or the 'From' year) to the latest year held; the change counts from 2022/23. The card shows the change's two ends (2022/23 and the latest) with '+N more years'; full screen or years-down shows every year.",
+      "leftOut": [
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "Only subjects in the focused subject's own qualification family are compared (at Post-16 the family is the display bucket: A level with A level, not with Core Maths, EPQ or Pre-U).",
+        "A subject in the category with no figure at all on the measure is left out (your subject always stays).",
+        "Subjects with grades only in 2021/22-2022/23 still appear here (they are left out of the Current views only).",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "Each subject is one row with its result in each year.",
+        "The change column is the difference between the subject's first figure from 2022/23 on and its latest, in points or percentage points (never a percentage).",
+        "Rows are listed by the latest year's result, highest first; you can re-sort."
+      ],
+      "rounding": [
+        "Average points and changes to 1 decimal place.",
+        "Rates as whole percentages; changes in whole percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "That the change counts from 2022/23 even when 2021/22 is shown (only the trend note says so, and only when 2021/22 is drawn).",
+      "That at GCSE only GCSE (9-1) Full Course entries carry points."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/SubjectPanels.tsx:885-898",
+      "src/components/teacher/SeriesViews.tsx YearTable (countedValues statementFrom, yearColumnsShown)",
+      "src/components/teacher/tableLayout.ts yearColumnsShown"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-TR-MAP",
+    "label": "Map",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + the Results note for the measure: on Grade 4+ / A*–E \"Subjects graded on a vocational scale have no {grade 4 | A*–E} bar and show no figure.\"; on Grade bands \"A subject on a different grade scale from the one the range was picked on shows no figure. England's figure leaves out any grade fewer than 5 schools publish.\"; none on Average points (no trend note: the map draws from 2022/23 only; gradingYears is null on the map)",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Post-16 page)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year}",
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "School locations (easting and northing) from VicData's schools table"
+      ],
+      "geography": "The school and each school in the comparison set chosen in Comparisons, on a map.",
+      "years": "From 2022/23 (or a later 'From' year) to the latest year held.",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "Schools with no recorded location are not plotted.",
+        "A school with no figure for your subject is a hollow grey dot.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "No small-entries rule is applied on this map."
+      ],
+      "steps": [
+        "For each school in the set we take its result in your subject: average points (GCSE: GCSE (9-1) Full Course; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification, in the same way as your school's.",
+        "For each school we work out the change from its first figure from 2022/23 on to its latest, in points or percentage points.",
+        "Each dot is coloured by that change on one scale centred on zero: green for the biggest rise in the set, red for the biggest fall, pale amber for little change.",
+        "Dot size is the school's entries in the subject in the last year (graded entries on a grade rate).",
+        "Your school wears a thick ring."
+      ],
+      "rounding": [
+        "Changes in points to 1 decimal place; in whole percentage points on rates."
+      ]
+    },
+    "notInInfoNow": [
+      "That the map's schools are the comparison set chosen in Comparisons (and which set).",
+      "That colour is the change since 2022/23, scaled to the set's own largest change.",
+      "That dot size is entries.",
+      "That IGCSE schools are left out of the set at GCSE.",
+      "Location data is not cited.",
+      "With a national or regional ranking chosen in Comparisons, this map still draws the ranking's sample of schools (top 15 and 5 either side) on Average points, and only your school on a rate; R-RANKING-SAMPLE is not applied here (TeacherDashboard.tsx:1811-1857, 2132-2146)."
+    ],
+    "evidence": [
+      "src/components/teacher/SubjectPanels.tsx:770-776 trendMapSpec changeMapFrom(..., 'absolute'), 859-884, 931 gradingYears null on map",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1811-1857 column1MapSeries, 1765-1785 setGradeRowsFor, 2132-2146",
+      "src/lib/teacher-map.ts changeMapFrom, teacherMapFills (diverging scale to maxAbs)",
+      "src/lib/chooser-sets.ts:83-95 resolveDefaultNearest; src/lib/teacher-view-comparator-series.ts:189-228 rankFixedSets (IGCSE drop, no refill); src/lib/academic-data-view.ts:693-700 igcseExclusionLikely; src/lib/surrounding-schools.ts (nearest pipeline comment 61-81)"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-TR-GEO-CHART",
+    "label": "Area chart",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Post-16 page)",
+        "LA, region and England figures: VicData's area totals from the same DfE files (GCSE: academic_subject_geography_aggregate; Post-16: academic_subject_qualification_geography_aggregate), 2021/22 to {latest year}"
+      ],
+      "geography": "The school; its local authority; England (the region is in the Change table only).",
+      "years": "2021/22 (or the 'From' year) to the latest year with area figures.",
+      "leftOut": [
+        "Only on Average points: on Grade 4+ / A*–E or Grade bands the view says no area figures are published for that measure.",
+        "At GCSE only when your subject is GCSE (9-1) Full Course; at Post-16 only scored qualifications (none for VRQ, AEA or EPQ).",
+        "An LA or region figure built from fewer than 5 schools is not shown; England is always shown."
+      ],
+      "steps": [
+        "We take your subject's average points per entry each year (GCSE: GCSE (9-1) Full Course; Post-16: the same exact qualification).",
+        "For your local authority and England we take the average points per entry across all their schools in the same subject, weighted by entries (at Post-16 by size), for the same years.",
+        "Each is drawn as a line at its real level, so the gaps between them can be read directly.",
+        "The region's line is left off the chart because it runs almost on top of England's."
+      ],
+      "rounding": [
+        "Average points to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "That the area averages are weighted by entries across every school in the area.",
+      "VicData's area totals are not named as a source.",
+      "That an LA or region figure from fewer than 5 schools is not shown.",
+      "That it applies to Average points only, and at GCSE only to GCSE (9-1) Full Course."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/SubjectPanels.tsx:994-1007 GeographyView metric avgPointScore, 1052 gradingYears",
+      "src/lib/teacher-view-geography.ts resultsGeographyApplies",
+      "src/components/dashboard-config/TeacherDashboard.tsx:2111-2126",
+      "src/app/api/teacher/subject-geography/route.ts fetchRows (LA/region min 5 schools, England min 1); vicdata migrations 20260921120000 / 20260926120000 (entry- or size-weighted averages, entries = points-eligible)"
+    ]
+  },
+  {
+    "id": "DV-C1-RES-TR-GEO-TABLE",
+    "label": "Change table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (GCSE page)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Post-16 page)",
+        "LA, region and England figures: VicData's area totals from the same DfE files (GCSE: academic_subject_geography_aggregate; Post-16: academic_subject_qualification_geography_aggregate), 2021/22 to {latest year}"
+      ],
+      "geography": "The school; its local authority; its region; England.",
+      "years": "2021/22 (or the 'From' year) to the latest year with area figures; the change counts from 2022/23.",
+      "leftOut": [
+        "Only on Average points: on Grade 4+ / A*–E or Grade bands the view says no area figures are published for that measure.",
+        "At GCSE only when your subject is GCSE (9-1) Full Course; at Post-16 only scored qualifications (none for VRQ, AEA or EPQ).",
+        "An LA or region figure built from fewer than 5 schools is not shown; England is always shown."
+      ],
+      "steps": [
+        "We take your subject's average points per entry each year, and the entry-weighted average for your local authority, region and England in the same subject.",
+        "Each place is one row with its figure in each year.",
+        "The change column is the difference in points between the first figure from 2022/23 on and the latest (never a percentage)."
+      ],
+      "rounding": [
+        "Average points and changes to 1 decimal place."
+      ]
+    },
+    "notInInfoNow": [
+      "That the change counts from 2022/23.",
+      "That the area averages are weighted by entries.",
+      "VicData's area totals are not named.",
+      "That an LA or region figure from fewer than 5 schools is not shown."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/GeographyComparison.tsx YearTable statementFrom",
+      "src/lib/teacher-view-geography.ts geographyComparison",
+      "src/app/api/teacher/subject-geography/route.ts fetchRows (LA/region min 5 schools, England min 1); vicdata migrations 20260921120000 / 20260926120000 (entry- or size-weighted averages, entries = points-eligible)"
+    ]
+  },
+  {
+    "id": "DV-C1-CNT-CUR-DIST",
+    "label": "Grade distribution",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year with grades for the subject} · Sources",
+    "method": {
+      "sources": [
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year}",
+        "England grade shares: VicData's national grade totals from the same DfE files (academic_subject_grade_geography_aggregate)"
+      ],
+      "geography": "The school (your subject); England (the same subject and qualification).",
+      "years": "The latest year from 2023/24 on with grades for your subject.",
+      "leftOut": [
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "An England grade published by fewer than 5 schools has no tick; England's share is over its graded rows only.",
+        "A subject whose grades stop before 2023/24 shows none here."
+      ],
+      "steps": [
+        "We take your school's entries at each grade in the subject and qualification for the latest year.",
+        "Each bar shows the count and its share of all graded entries.",
+        "A tick beside each grade shows England's share at that grade for the same subject and qualification in the same year.",
+        "Clicking grades selects one grade or a range; the line underneath then gives the share of your graded entries in that range, and England's share where England publishes every grade shown."
+      ],
+      "rounding": [
+        "Counts as whole numbers; shares as whole percentages."
+      ]
+    },
+    "notInInfoNow": [
+      "How England's tick is worked out and that grades published by fewer than 5 schools have none.",
+      "That non-grades are left out of the shares.",
+      "That England's share in the answer line is dropped when any grade is suppressed."
+    ],
+    "evidence": [
+      "src/components/teacher/GradeCountsPanels.tsx:84, 115-165 (source(yearText))",
+      "src/lib/grade-spread.ts gradeCounts (latest from MODERN_GRADE_FROM, England over graded rows)",
+      "src/lib/grade-selection.ts:78-102 englandShare, answerLine",
+      "src/components/teacher/GradeDistribution.tsx:76,160"
+    ]
+  },
+  {
+    "id": "DV-C1-CNT-TR-SPREAD",
+    "label": "Spread by year",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {compare year}–{latest year} · Sources + (only when the compare year is 2021/22) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year}"
+      ],
+      "geography": "The school only: your subject, two years side by side.",
+      "years": "The latest year from 2023/24 on, against an earlier year you pick (default the year before; 2021/22 may be picked).",
+      "leftOut": [
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share."
+      ],
+      "steps": [
+        "We take your school's entries at each grade in the latest year and in the earlier year.",
+        "Each year's bars are shown as shares of that year's own graded entries, so years with different cohort sizes can be compared.",
+        "There are no England ticks here: the school is compared with itself.",
+        "With only one year of grades, the view says a second year is needed."
+      ],
+      "rounding": [
+        "Shares as whole percentages; counts as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "That each year is a share of its own graded entries.",
+      "That non-grades are left out."
+    ],
+    "evidence": [
+      "src/components/teacher/GradeCountsPanels.tsx:167-196 (gradingYears [cmpYear, latest])",
+      "src/lib/grade-spread.ts gradeCounts cmpYear, rowsFor(true)"
+    ]
+  },
+  {
+    "id": "DV-C1-CNT-TR-CHANGETABLE",
+    "label": "Change table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {change year}–{latest year} · Sources + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year}"
+      ],
+      "geography": "The school only: your subject, grade by grade.",
+      "years": "Every year with grades from 2021/22 (or your 'From' year) to the latest; the change is measured from 2022/23 at the earliest.",
+      "leftOut": [
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share."
+      ],
+      "steps": [
+        "We take your school's entries at each grade for each year with grades.",
+        "Each grade is one row, in grade order, with its count in each year.",
+        "The change column is the change in entries at that grade from the change year (2022/23 or later) to the latest year, with the percentage change beneath."
+      ],
+      "rounding": [
+        "Counts as whole numbers; percentage change as a whole number."
+      ]
+    },
+    "notInInfoNow": [
+      "That the change counts from 2022/23 even though 2021/22 may be listed (the trend note says so only when 2021/22 is drawn).",
+      "That the source line's years are the change's two ends, while the table can show an earlier year."
+    ],
+    "evidence": [
+      "src/components/teacher/GradeCountsPanels.tsx:198-218",
+      "src/lib/grade-spread.ts gradeCounts changeEarlier/changeData (statementFrom chgYear)",
+      "src/components/teacher/SeriesViews.tsx YearTable"
+    ]
+  },
+  {
+    "id": "DV-C2-CUR-DONUT",
+    "label": "Share (donut)",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources + the Context note for the measure: on Grade bands \"Subjects on a different grade scale from the range's are left out.\" (on a Grade counts selection: \"Subjects on a different grade scale from the selection's are left out, and a subject with fewer than 5 graded entries shows as too few entries.\"); on Average points, where it applies, \"Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points.\" or \"Grade counts has no single figure to compare subjects on, so Context shows average points.\" and, at Post-16, \"Points are on a different scale for each qualification type, so only {family} subjects are compared.\"; none on Candidates or Grade 4+ / A*–E",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (Results, GCSE)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Results, Post-16)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "The latest year with a figure, or a year you pick from the year menu.",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "A subject with no figure on the measure is left out (your subject always stays).",
+        "On Grade bands with no range picked, or Grade counts with no grade selected, Context shows average points (or asks you to pick a grade).",
+        "Only for entries, or for Grade bands once a range is picked; never for averages or rates."
+      ],
+      "steps": [
+        "On Candidates we take your subject's entries in the year (GCSE: all qualifications in the subject; Post-16: the one qualification).",
+        "We add up the entries of every subject in the comparison group, your subject included (at Post-16 every qualification except AS and AEA).",
+        "Your subject's share is its entries divided by the group's total.",
+        "On Grade bands the donut is the whole group instead: graded entries inside your chosen range as a share of all the group's graded entries, counting only qualifications on the range's grade scale."
+      ],
+      "rounding": [
+        "The share as a whole percentage; entries as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "That the group total includes your subject.",
+      "Which qualifications are added into each subject's entries.",
+      "That on Grade bands it is the group's share in the range, not your subject's.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1537-1627 (groupRows, contextGroupTotals, contextBandShare), 2340-2367 donut",
+      "src/lib/teacher-view-measures.ts:261-263 shareApplies, 319-365 contextGroupValue, 373-394 contextBandShareAt",
+      "src/components/teacher/SubjectPanels.tsx:442-450 donut figures, 598-618",
+      "src/lib/teacher-view-populations.ts:172-282"
+    ]
+  },
+  {
+    "id": "DV-C2-CUR-BARS",
+    "label": "Bar chart",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources + the Context note for the measure: on Grade bands \"Subjects on a different grade scale from the range's are left out.\" (on a Grade counts selection: \"Subjects on a different grade scale from the selection's are left out, and a subject with fewer than 5 graded entries shows as too few entries.\"); on Average points, where it applies, \"Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points.\" or \"Grade counts has no single figure to compare subjects on, so Context shows average points.\" and, at Post-16, \"Points are on a different scale for each qualification type, so only {family} subjects are compared.\"; none on Candidates or Grade 4+ / A*–E",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (Results, GCSE)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Results, Post-16)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "The latest year with a figure, or a year you pick (grade rates and bands from 2023/24 on).",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "A subject with no figure on the measure is left out (your subject always stays).",
+        "On Grade bands with no range picked, or Grade counts with no grade selected, Context shows average points (or asks you to pick a grade)."
+      ],
+      "steps": [
+        "Each subject's figure is its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are those in your chosen comparison group (its subject category by default), plus your subject.",
+        "The figures are for the latest year with a figure, or the year you pick (grade rates and bands from 2023/24 on).",
+        "Each subject is an upright bar, largest first, with your subject highlighted."
+      ],
+      "rounding": [
+        "Entries as whole numbers; average points to 1 decimal place; rates as whole percentages."
+      ]
+    },
+    "notInInfoNow": [
+      "Which subjects are in the group and that AS/AEA are left out at Post-16.",
+      "That at GCSE only GCSE (9-1) Full Course entries carry points.",
+      "That grade rates and bands use 2023/24 onwards in this view.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:619-626 VerticalBars",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1611-1661 contextValueFor/contextSeries",
+      "src/lib/teacher-view-populations.ts:224-282 contextMembersOf/contextItemsOf",
+      "src/lib/teacher-view-measures.ts:30-39 ownHeadlineRows, 49-51 carriesOwnPoints, 76-88 subjectPointsAt/subjectEntriesAt, 107-118 englandValueAt, 142-152 subjectThresholdAt/subjectBandAt, 202-214 periodsForMeasure"
+    ]
+  },
+  {
+    "id": "DV-C2-CUR-LIST",
+    "label": "Ranked list",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources + the Context note for the measure: on Grade bands \"Subjects on a different grade scale from the range's are left out.\" (on a Grade counts selection: \"Subjects on a different grade scale from the selection's are left out, and a subject with fewer than 5 graded entries shows as too few entries.\"); on Average points, where it applies, \"Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points.\" or \"Grade counts has no single figure to compare subjects on, so Context shows average points.\" and, at Post-16, \"Points are on a different scale for each qualification type, so only {family} subjects are compared.\"; none on Candidates or Grade 4+ / A*–E",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (Results, GCSE)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Results, Post-16)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "The latest year with a figure, or a year you pick (grade rates and bands from 2023/24 on).",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "A subject with no figure on the measure is left out (your subject always stays).",
+        "On Grade bands with no range picked, or Grade counts with no grade selected, Context shows average points (or asks you to pick a grade)."
+      ],
+      "steps": [
+        "Each subject's figure is its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are those in your chosen comparison group (its subject category by default), plus your subject.",
+        "The figures are for the latest year with a figure, or the year you pick (grade rates and bands from 2023/24 on).",
+        "Subjects are listed from highest to lowest, each with its figure and place; your subject is highlighted."
+      ],
+      "rounding": [
+        "Entries as whole numbers; average points to 1 decimal place; rates as whole percentages.",
+        "Ties share a place."
+      ]
+    },
+    "notInInfoNow": [
+      "Which subjects are in the group.",
+      "That ties share a place.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:627-630 RankedList",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1611-1661"
+    ]
+  },
+  {
+    "id": "DV-C2-CUR-TABLE",
+    "label": "Sortable table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources + the Context note for the measure: on Grade bands \"Subjects on a different grade scale from the range's are left out.\" (on a Grade counts selection: \"Subjects on a different grade scale from the selection's are left out, and a subject with fewer than 5 graded entries shows as too few entries.\"); on Average points, where it applies, \"Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points.\" or \"Grade counts has no single figure to compare subjects on, so Context shows average points.\" and, at Post-16, \"Points are on a different scale for each qualification type, so only {family} subjects are compared.\"; none on Candidates or Grade 4+ / A*–E",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (Results, GCSE)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Results, Post-16)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "The latest year with a figure, or a year you pick (grade rates and bands from 2023/24 on).",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "A subject with no figure on the measure is left out (your subject always stays).",
+        "On Grade bands with no range picked, or Grade counts with no grade selected, Context shows average points (or asks you to pick a grade)."
+      ],
+      "steps": [
+        "Each subject's figure is its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are those in your chosen comparison group (its subject category by default), plus your subject.",
+        "The figures are for the latest year with a figure, or the year you pick (grade rates and bands from 2023/24 on).",
+        "The group average is the plain average of the member subjects' figures (your subject included). For a subject's own figure in the group: entries add up all its qualifications; at Post-16 its points are weighted by points-eligible entries across its qualifications in your subject's family; its grade rate is worked out per qualification and then averaged.",
+        "Each subject's 'vs average' is its figure minus the group average for the same year.",
+        "Subjects are ranked by their figure, highest first (ties share a place); the table shows the rank and the difference, not the figure itself."
+      ],
+      "rounding": [
+        "Differences in entries as whole numbers; in points to 1 decimal place; in whole percentage points on rates.",
+        "Ties share a rank."
+      ]
+    },
+    "notInInfoNow": [
+      "How the group average is worked out (a plain average of subjects, your subject included).",
+      "That the group's points at Post-16 are weighted by points-eligible entries within your subject's family.",
+      "That ties share a rank.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:387 currentRowsWithDelta, 655-672 (leadingRank, showValue false, 'vs average')",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1606-1609 contextGroupAverage, 1653-1661 benchmark",
+      "src/lib/teacher-view-measures.ts:319-365",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C2-TR-INDEXED",
+    "label": "Indexed",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note: entries are not graded; no Context note on Candidates)",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "2020/21 (or the 'From' year) to the latest year held.",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed."
+      ],
+      "steps": [
+        "We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.",
+        "Each subject's line is set to 100 in its own first year with entries (110 means 10% more entries).",
+        "On 'All subjects' the card shows just your subject against the group's average; full screen shows every subject.",
+        "A line needs 4 or more years; with fewer, each subject's change in entries is shown as ranked bars."
+      ],
+      "rounding": [
+        "Index values are whole numbers.",
+        "Within ±4% the trend reads 'Broadly stable'."
+      ]
+    },
+    "notInInfoNow": [
+      "That each line starts at 100 in its own first year.",
+      "That a line needs 4 years.",
+      "That on 'All subjects' the card shows only your subject against the group average."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:723-766 (trendFull, focusVsGroup), 796, 828-837, 899-916",
+      "src/components/dashboard-config/TeacherDashboard.tsx:2306 cardTrend focusVsGroup on whole",
+      "src/components/teacher/SeriesViews.tsx MultiTrend"
+    ]
+  },
+  {
+    "id": "DV-C2-TR-CHART",
+    "label": "Chart",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + the Context note for the measure: on Grade bands \"Subjects on a different grade scale from the range's are left out.\" (on a Grade counts selection: \"Subjects on a different grade scale from the selection's are left out, and a subject with fewer than 5 graded entries shows as too few entries.\"); on Average points, where it applies, \"Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points.\" or \"Grade counts has no single figure to compare subjects on, so Context shows average points.\" and, at Post-16, \"Points are on a different scale for each qualification type, so only {family} subjects are compared.\"; none on Candidates or Grade 4+ / A*–E + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (Results, GCSE)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Results, Post-16)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "2021/22 (or the 'From' year) to the latest year held; trends measured from 2022/23.",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "A subject with no figure on the measure is left out (your subject always stays).",
+        "On Grade bands with no range picked, or Grade counts with no grade selected, Context shows average points (or asks you to pick a grade).",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.",
+        "Each subject is a line at its real level (results are never indexed). On 'All subjects' the card shows your subject against the group average; full screen shows every subject.",
+        "A line needs 4 or more years; with fewer, each subject's change from 2022/23 is shown as ranked bars.",
+        "2021/22 is drawn, but the trend sentence and the fitted line are measured from 2022/23. The group average is the plain average of the member subjects' figures (your subject included). For a subject's own figure in the group: entries add up all its qualifications; at Post-16 its points are weighted by points-eligible entries across its qualifications in your subject's family; its grade rate is worked out per qualification and then averaged."
+      ],
+      "rounding": [
+        "Average points to 1 decimal place; rates as whole percentages; changes in points (1 decimal place) or whole percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "That a line needs 4 years.",
+      "How the group average is worked out.",
+      "The ±4% 'broadly stable' band."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/SubjectPanels.tsx:723-783, 899-916, 931",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1606-1609, 2339",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C2-TR-ACTUAL",
+    "label": "Actual",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources (no trend note: entries are not graded; no Context note on Candidates)",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "2020/21 (or the 'From' year) to the latest year held.",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed."
+      ],
+      "steps": [
+        "We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.",
+        "Each subject is drawn at its real number of entries, all on one scale.",
+        "Offered only with 4 or more years of entries; with fewer the button is off."
+      ],
+      "rounding": [
+        "Entries as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "That it needs 4 years.",
+      "Which subjects are drawn."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/SubjectPanels.tsx:829-837, 907-915 (index false on Actual)"
+    ]
+  },
+  {
+    "id": "DV-C2-TR-TABLE",
+    "label": "Trend table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + the Context note for the measure: on Grade bands \"Subjects on a different grade scale from the range's are left out.\" (on a Grade counts selection: \"Subjects on a different grade scale from the selection's are left out, and a subject with fewer than 5 graded entries shows as too few entries.\"); on Average points, where it applies, \"Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points.\" or \"Grade counts has no single figure to compare subjects on, so Context shows average points.\" and, at Post-16, \"Points are on a different scale for each qualification type, so only {family} subjects are compared.\"; none on Candidates or Grade 4+ / A*–E + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (Results, GCSE)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Results, Post-16)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "2020/21 for entries, 2021/22 for results (or the 'From' year), to the latest year held; on results the change counts from 2022/23.",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "A subject with no figure on the measure is left out (your subject always stays).",
+        "On Grade bands with no range picked, or Grade counts with no grade selected, Context shows average points (or asks you to pick a grade).",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.",
+        "Each subject is one row with its figure in each year.",
+        "The change column is first to latest: a percentage on entries (with the change in entries); on results the difference in points or percentage points from 2022/23.",
+        "Rows are listed by the latest figure, highest first; you can re-sort."
+      ],
+      "rounding": [
+        "Entries as whole numbers; points to 1 decimal place; rates and changes in whole percentages or percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "How the change is worked out and from which year.",
+      "Which subjects are in the group."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/SubjectPanels.tsx:885-898",
+      "src/components/teacher/SeriesViews.tsx YearTable"
+    ]
+  },
+  {
+    "id": "DV-C2-TR-CHANGELIST",
+    "label": "Ranked change",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + the Context note for the measure: on Grade bands \"Subjects on a different grade scale from the range's are left out.\" (on a Grade counts selection: \"Subjects on a different grade scale from the selection's are left out, and a subject with fewer than 5 graded entries shows as too few entries.\"); on Average points, where it applies, \"Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points.\" or \"Grade counts has no single figure to compare subjects on, so Context shows average points.\" and, at Post-16, \"Points are on a different scale for each qualification type, so only {family} subjects are compared.\"; none on Candidates or Grade 4+ / A*–E + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (Results, GCSE)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Results, Post-16)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "The span you choose with 'From'; on results the change is measured from 2022/23.",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "A subject with no figure on the measure is left out (your subject always stays).",
+        "On Grade bands with no range picked, or Grade counts with no grade selected, Context shows average points (or asks you to pick a grade).",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.",
+        "Each subject's change is from its first to its latest figure in the span: a percentage on entries; the difference in points or percentage points on results, from 2022/23.",
+        "Subjects are ranked by that change, biggest rise first, with your subject highlighted.",
+        "A dashed line marks the change in the group average (the plain average of the member subjects each year), worked out the same way."
+      ],
+      "rounding": [
+        "Percentage change as a whole number; points to 1 decimal place; whole percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "That entries change in %, points in points and rates in percentage points.",
+      "How the group average line is worked out.",
+      "That on results the change is from 2022/23."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/SubjectPanels.tsx:945-1050 (changeFull withTrendBase, changeSpan, changeOf, ChangeList group)",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C2-TR-CHANGETABLE",
+    "label": "Change table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + the Context note for the measure: on Grade bands \"Subjects on a different grade scale from the range's are left out.\" (on a Grade counts selection: \"Subjects on a different grade scale from the selection's are left out, and a subject with fewer than 5 graded entries shows as too few entries.\"); on Average points, where it applies, \"Pick a grade range from Grades ▾ in the top bar to compare subjects on it; until then Context shows average points.\" or \"Grade counts has no single figure to compare subjects on, so Context shows average points.\" and, at Post-16, \"Points are on a different scale for each qualification type, so only {family} subjects are compared.\"; none on Candidates or Grade 4+ / A*–E + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} (Candidates, GCSE)",
+        "DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (Candidates, Post-16)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} (Results, GCSE)",
+        "DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (Results, Post-16)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)"
+      ],
+      "geography": "The school only: your subject against a group of the school's own subjects, chosen with 'Compare against': its subject category (default), all subjects, or subjects you select.",
+      "years": "The span you choose with 'From'; on results the change is measured from 2022/23.",
+      "leftOut": [
+        "At Post-16, AS level and Advanced Extension Award subjects are left out of comparison lists, groups and averages (never out of the focused subject's own figure).",
+        "'Subject category' and 'Selected subjects' keep to your subject's qualification family; 'All subjects' crosses families except on Post-16 results, where only your subject's family is compared.",
+        "At GCSE one row per subject: two qualifications in the same subject (say GCSE and BTEC Art) share one entries total, so the subject is counted once.",
+        "The IB Diploma total and IB Core rows are not subjects and are never listed.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "A subject with no figure on the measure is left out (your subject always stays).",
+        "On Grade bands with no range picked, or Grade counts with no grade selected, Context shows average points (or asks you to pick a grade).",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "We take each subject's figure for every published year: its entries (Candidates) or its result on the Results measure: average points per entry, the Grade 4+ / A*–E rate, or the share in your chosen grade band.",
+        "The subjects are your chosen comparison group plus your subject. Years with no figure for any subject at the start or end are dropped; the 'From' menu can start later.",
+        "Each subject is one row with its first and latest figures (full screen: every year).",
+        "The change is a percentage on entries; on results the difference in points or percentage points from 2022/23.",
+        "Rows are ranked by that change, biggest rise first, with a bare rank number."
+      ],
+      "rounding": [
+        "Percentage change as a whole number; points to 1 decimal place; whole percentage points.",
+        "Ties share a rank."
+      ]
+    },
+    "notInInfoNow": [
+      "That rows are ranked by change.",
+      "That on results the change is from 2022/23."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/SubjectPanels.tsx:1008-1023 (YearTable leadingRank)",
+      "src/components/teacher/SeriesViews.tsx YearTable (rankByValue on honest change)"
+    ]
+  },
+  {
+    "id": "DV-C3-CUR-TILES",
+    "label": "Number tiles",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources",
+    "method": {
+      "sources": [
+        "A national or regional ranking: every school of the phase in England or the region (DfE school census and GIAS details), narrowed by the chooser's filters",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year}",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (with a subject in focus, on a rate)"
+      ],
+      "geography": "The school against a whole national or regional ranking population (only shown for a ranking, not a list of schools).",
+      "years": "The latest year with a figure (a grade rate's latest from 2023/24 on). With no subject in focus, each school's latest published headline year.",
+      "leftOut": [
+        "With no subject in focus: schools with no published headline figure are not ranked.",
+        "With a subject in focus: a school needs at least 5 entries (5 graded entries on a rate) to be ranked; any number of entries for the entries ranking.",
+        "The IGCSE rule is NOT applied to the ranking population's rank or average (only to the sample of schools listed).",
+        "A school not in the ranking's own filters is placed against it and the note says so; it does not count in the average."
+      ],
+      "steps": [
+        "We take every school of this phase in England or the region that matches the ranking's filters.",
+        "With no subject in focus: each school's latest published Attainment 8 (GCSE) or A-level average points per entry (Post-16); we rank them highest first and give the school's place and the plain average of every school's latest figure.",
+        "With a subject in focus: each school's figure in that subject on the measure in view (entries, average points, Grade 4+ / A*–E, a band or a selected grade) in one year; schools below 5 entries are left out; we rank them highest first and give the place, the plain average across the ranking's schools, and the whole-school headline rank as a second tile.",
+        "The main tile is the school's own figure in that year."
+      ],
+      "rounding": [
+        "Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "That the rank and average are across the whole ranking population, not the schools listed.",
+      "That on the headline ranking ties do not share a place (schools are ordered by value, then by URN) and each school's latest year is used, so years can differ.",
+      "That with a subject in focus ties do share a place and a school needs 5 entries to be ranked.",
+      "That IGCSE schools are not removed from the ranking population.",
+      "The average is a plain average of schools, not weighted by pupils.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ComparisonsPanels.tsx:505-537",
+      "src/lib/chooser-sets.ts:107-167 resolveRankingSet (rank = idx+1, latest per school, plain mean)",
+      "src/lib/subject-ranking.ts:85-196 rankFigures (min 5, shared ranks, plain mean)",
+      "src/lib/ranking-population.ts buildRankingPopulation (no IGCSE filter)",
+      "src/app/api/teacher/subject-ranking/route.ts:87-90",
+      "src/components/dashboard-config/TeacherDashboard.tsx:2409-2460, 2523-2527"
+    ]
+  },
+  {
+    "id": "DV-C3-CUR-MAP",
+    "label": "Map",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)",
+        "School locations from VicData's schools table"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "The latest year any school in the set has a figure (grade rates from 2023/24 on).",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked.",
+        "Not drawn for a national or regional ranking (its schools are a sample).",
+        "Schools with no recorded location are not plotted."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "On Candidates every dot is one neutral colour and its size is the school's entries.",
+        "On Results each dot is coloured by its rank in the set on the measure in view: deepest purple for the highest, palest blue for the lowest. Size is entries (graded entries on a rate).",
+        "A school with no figure, or too few entries, is a hollow grey dot.",
+        "The 'N of M' beside the map is your school's rank among the plotted schools with a figure (ties share a place)."
+      ],
+      "rounding": [
+        "Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "How the comparison set is chosen and that IGCSE schools are dropped at GCSE.",
+      "That colour is by rank within the set and size is entries.",
+      "That the rank is among the plotted schools.",
+      "Location data is not cited.",
+      "The map's own IGCSE check is inert: the Teacher page's lean comparator profiles carry no headline years, so igcseExclusionLikely always returns false there (teacher-comparator-profiles.ts:62-64); exclusion relies on the set having been built without those schools.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ComparisonsPanels.tsx:385-409 mapSeries/currentMapFrom, 542-573",
+      "src/lib/teacher-map.ts currentMapFrom, teacherMapFills",
+      "src/components/dashboard-config/TeacherDashboard.tsx:1696-1722 comparatorSubjectSeries, 1875-1876",
+      "src/lib/chooser-sets.ts:83-95 resolveDefaultNearest; src/lib/teacher-view-comparator-series.ts:189-228 rankFixedSets (IGCSE drop, no refill); src/lib/academic-data-view.ts:693-700 igcseExclusionLikely; src/lib/surrounding-schools.ts (nearest pipeline comment 61-81)",
+      "src/lib/teacher-view-comparisons.ts:12-33 comparisonSchools/rankedComparisons, 39-60 sampleAllowsMap/onRankingMeasure"
+    ]
+  },
+  {
+    "id": "DV-C3-CUR-BAR",
+    "label": "Bar chart",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "The latest year any school in the set has a figure (grade rates from 2023/24 on).",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "Each school's figure in the latest year is a bar, largest first, with your school highlighted.",
+        "For a national or regional ranking on its headline measure, the chart is just your school against the whole population's average."
+      ],
+      "rounding": [
+        "Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "How the comparison set is chosen and that IGCSE schools are dropped at GCSE.",
+      "That schools with no figure in the latest year are left out.",
+      "On a ranking, that the average is the whole population's.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ComparisonsPanels.tsx:414-417, 574-618",
+      "src/lib/teacher-view-comparisons.ts:12-33 comparisonSchools/rankedComparisons, 39-60 sampleAllowsMap/onRankingMeasure"
+    ]
+  },
+  {
+    "id": "DV-C3-CUR-RANKING",
+    "label": "Ranking",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {latest year of this school's own subject entries, e.g. 2024/25} · Sources",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "The latest year any school in the set has a figure (grade rates from 2023/24 on).",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "Schools are ranked on the latest year, highest first; schools with the same figure share a place and the next place is skipped.",
+        "Each row shows the place, the school, its sector, its figure and its distance from your school.",
+        "On a subject ranking across a whole population, the rows are a window at real places: the top, the schools around yours and the bottom."
+      ],
+      "rounding": [
+        "Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers; distance to 0.1 km.",
+        "Ties share a place."
+      ]
+    },
+    "notInInfoNow": [
+      "How the comparison set is chosen and that IGCSE schools are dropped at GCSE.",
+      "That ties share a place.",
+      "That a school with no figure in the latest year is not ranked.",
+      "With a subject in focus at GCSE, a Double Award subject's points come from its grades on DfE's convention (two entries, each the average of its two grades); this is not said.",
+      "The year in the source line is the latest year of this school's subject entries, which can differ from the year the panel shows ('Data {year}')."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ComparisonsPanels.tsx:436-462, 622-634",
+      "src/components/teacher/SchoolRankingTable.tsx:177",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange",
+      "src/lib/teacher-view-comparisons.ts:12-33 comparisonSchools/rankedComparisons, 39-60 sampleAllowsMap/onRankingMeasure"
+    ]
+  },
+  {
+    "id": "DV-C3-TR-CHART",
+    "label": "Chart",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "The first to the latest year any school has a figure (or the 'From' year); on points and rates trends are measured from 2022/23.",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked.",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "Your school's figure each year is one line.",
+        "The other line is, by default, the plain average of the other schools in the set that have a figure that year (your school not included), or one school you pick with 'vs:'. For a ranking on its headline measure it is the whole population's average.",
+        "A line needs 4 or more years; with fewer the panel shows the table only.",
+        "On points and rates 2021/22 is drawn, but the trend sentence, the 'vs' clause and the fitted line are measured from 2022/23."
+      ],
+      "rounding": [
+        "Attainment 8 and points to 1 decimal place; rates as whole percentages; entries as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "That the set average is a plain average of the other schools with a figure each year, not weighted by pupils, and leaves your school out.",
+      "That a line needs 4 years.",
+      "That IGCSE schools are dropped at GCSE."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/ComparisonsPanels.tsx:665-679 versusValues (meanOf others), 705-719, 786-892",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C3-TR-TABLE",
+    "label": "Trend table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "The first to the latest year any school has a figure (or the 'From' year); on points and rates the change counts from 2022/23.",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked.",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "Every school in the set is one row with its figure in each year.",
+        "The change column is first to latest: a percentage on entries; the difference in points or percentage points on results, from 2022/23.",
+        "Rows are listed by the latest year's figure, highest first; you can re-sort."
+      ],
+      "rounding": [
+        "Attainment 8 and points to 1 decimal place; rates and changes in whole percentages or percentage points; entries as whole numbers."
+      ]
+    },
+    "notInInfoNow": [
+      "How the change is worked out and from which year.",
+      "How the set is chosen."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/ComparisonsPanels.tsx:727-740, 860-869",
+      "src/components/teacher/SeriesViews.tsx YearTable"
+    ]
+  },
+  {
+    "id": "DV-C3-TR-MAP",
+    "label": "Trend map",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year of the Trends span, can be 2021/22}–{latest year} · Sources (no trend note on the map: its years are taken from 2022/23 on points and rates)",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)",
+        "School locations from VicData's schools table"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "From 2022/23 (or a later 'From' year) on points and rates; from the first year on entries; to the latest year.",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked.",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed).",
+        "Not drawn for a national or regional ranking.",
+        "Needs 2 or more years.",
+        "Schools with no recorded location are not plotted."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "For each school we take the plain difference from its first figure in the span to its latest (in entries, points or percentage points).",
+        "Each dot is coloured on one scale centred on zero: green for the biggest rise in the set, red for the biggest fall.",
+        "Dot size is the school's entries in the last year."
+      ],
+      "rounding": [
+        "Changes in entries as whole numbers; points to 1 decimal place; whole percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "That colour is the plain change since the first year, scaled to the set's own largest change.",
+      "That on entries it is a difference in entries, not a percentage.",
+      "Location data is not cited.",
+      "The source line's span is the Trends panel's span and can start at 2021/22, while the map's change starts at 2022/23."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ComparisonsPanels.tsx:802-810, 849-859, 886 gradingYears trendMapSpan",
+      "src/lib/teacher-map.ts changeMapFrom 'absolute', teacherMapFills"
+    ]
+  },
+  {
+    "id": "DV-C3-TR-CHANGELIST",
+    "label": "Ranked bars",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "The span you choose with 'From'; on points and rates the change is measured from 2022/23. On a subject ranking, fixed from 2022/23 to the ranking's year.",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked.",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "For each school we work out the change over the span: a percentage change on entries; on results the difference in points or percentage points, from 2022/23.",
+        "Schools are ranked by that change, biggest rise first, with your school highlighted.",
+        "The dashed line is the change in the set's average: the plain average of the other schools' figures each year, then its change (not the average of the schools' changes). On a subject ranking it is the average of every ranked school's change."
+      ],
+      "rounding": [
+        "Percentage change as a whole number; points to 1 decimal place; whole percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "That the set's average line is the change in the yearly average of the other schools, not the average change.",
+      "That entries change in %, results in points or percentage points.",
+      "That on results the change is from 2022/23."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/ComparisonsPanels.tsx:899-984 (changeRows, averageChange)",
+      "src/lib/subject-ranking.ts:159-178 change list",
+      "src/lib/teacher-view-panels.ts:120-188 measures (points toFixed(1), rates Math.round %, entries whole), 296-307 trimToData, 338-357 withTrendBase/statementSpan/countedValues, 407-415 rankByValue, 461-466 classifyChange (±4%), 488-504 changeOf/formatChange"
+    ]
+  },
+  {
+    "id": "DV-C3-TR-CHANGETABLE",
+    "label": "Change table",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year}–{last year the view draws} · Sources + (only when the years drawn include 2021/22 and the figure is points or a grade rate) \"Trends are measured from 2022/23. 2021/22 is still shown, but its grades were awarded more generously (Ofqual's transition year after the pandemic), so measuring from it would make most schools look as if results had fallen.\"",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "The span you choose with 'From'; on points and rates the change is measured from 2022/23.",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked.",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed)."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "For each school we work out the change over the span: a percentage change on entries; on results the difference in points or percentage points, from 2022/23.",
+        "Each school is one row with its first and latest figures (full screen: every year) and its change.",
+        "Rows are ranked by change, biggest rise first, with a bare rank number. On a subject ranking, the rows are a window of the whole population's change list at real places."
+      ],
+      "rounding": [
+        "Percentage change as a whole number; points to 1 decimal place; whole percentage points.",
+        "Ties share a rank."
+      ]
+    },
+    "notInInfoNow": [
+      "That rows are ranked by change.",
+      "That on results the change is from 2022/23.",
+      "How the set is chosen."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ColumnPanels.tsx:98-108 withTrendNote, 252; src/catalogue/notes.ts:16-17 TREND_BASE_NOTE, 41-44 trendNoteFor",
+      "src/components/teacher/ComparisonsPanels.tsx:741-751, 954-960",
+      "src/components/teacher/SeriesViews.tsx YearTable leadingRank"
+    ]
+  },
+  {
+    "id": "DV-C3-TR-CHANGEMAP",
+    "label": "Change map",
+    "currentInfo": "Source: {DfE Key stage 4 performance (GCSE page) | DfE A level and other 16 to 18 results (Post-16 page)}, {first year of the Trends span, can be 2021/22}–{latest year} · Sources + on the default page (views=v1 host path) the trend note when the span includes 2021/22 on points or rates; under the config renderer (views=v2) no note, because a map's years are taken from 2022/23 (specYears)",
+    "method": {
+      "sources": [
+        "The comparison set: by default VicData's '10 nearest schools' (school locations, sector, phase and gender from VicData's schools table, GIAS; schools with pupils of this age from the DfE school census), or a saved set or a chosen list",
+        "DfE Key stage 4 performance: subject entries by school, every qualification type (the 'Total' row), summed per subject per year in VicData's subject rollup (academic_subject_headline), 2020/21 to {latest year} / DfE A level and other 16 to 18 results: subject entries by school and exact qualification (A level, AS, each BTEC size, IB, T Level), incl. the historic file and DfE T Level results, 2020/21 to {latest year} (with a subject in focus, Candidates)",
+        "DfE Key stage 4 performance: subject points by school (GCSE (9-1) Full Course entries only, DfE 9-1 points table), via VicData's subject rollup, 2021/22 to {latest year} / DfE A level and other 16 to 18 results: average points per entry by school, subject and exact qualification (DfE points table, size-weighted), 2021/22 to {latest year} (with a subject in focus, Average points; GCSE Double Award scored from its grades as two entries)",
+        "DfE grade counts by school, subject and qualification (KS4 subject entries / KS5 subject results, modern and historic files), 2021/22 to {latest year} (Grade 4+ / A*–E, bands, a counts selection)",
+        "DfE Key stage 4 performance: school headline, Attainment 8 average and number of pupils at the end of Key stage 4 (dfe_ks4_headline and historic), 2021/22 to {latest year} / DfE A level and other 16 to 18 results: school headline, A-level average points per entry and number of 16 to 18 students (dfe_ks5_headline and historic), 2021/22 to {latest year} (no subject in focus)",
+        "School locations from VicData's schools table"
+      ],
+      "geography": "The school against the comparison set shown in 'Compared against' (by default the 10 nearest schools of the same sector, phase and a compatible gender; at Post-16 the 10 nearest with Post-16 results in either of the latest two years).",
+      "years": "The span you choose with 'From'; on points and rates from 2022/23.",
+      "leftOut": [
+        "At GCSE, an independent school whose latest published English and maths grade 4+ figure is 0% while its Attainment 8 is above 5 is treated as sitting IGCSEs (which DfE's tables don't count) and is dropped from every comparison set; a saved or chosen list is not refilled, so a '10 nearest' set can hold fewer than 10. The school itself is kept, but its whole-school headline history is withheld.",
+        "A comparison school with no published figure for what is compared (often a school that does not offer the subject) is not listed; one with history but no figure in the latest year is not ranked. Never ranked last.",
+        "At GCSE only GCSE (9-1) Full Course entries carry points: another qualification in the same subject (BTEC, Cambridge National, Double Award) shows no points of its own rather than borrowing the GCSE score.",
+        "A grade rate is worked out only on the scale it belongs to: Grade 4+ on GCSE 9-1 and Double Award pairs (both digits 4 or above); A*–E on the A-level scale at Post-16. Vocational, IB, T Level and Pre-U rows get no figure.",
+        "Non-grades (Suppressed, No result, X, Covid impacted, COVID result, Supp, Not Awarded) are left out of both sides of every grade share.",
+        "On a Grade counts selection a school with fewer than 5 graded entries reads 'too few entries' and is not ranked.",
+        "Leading and trailing years with no published figure are dropped (2020/21 has no points nationally: grades were teacher-assessed).",
+        "Not drawn for a national or regional ranking.",
+        "Needs 2 or more years.",
+        "Schools with no recorded location are not plotted."
+      ],
+      "steps": [
+        "Each school's figure is: with a subject in focus, its entries in the subject (Candidates) or its result in the subject — average points (GCSE: GCSE (9-1) Full Course points; Post-16: the same exact qualification), or a grade rate scored from that school's own grade counts for the same subject and qualification; with no subject, Attainment 8 (GCSE) or A-level average points per entry (Post-16), or the number of pupils at the end of Key stage 4 / 16 to 18 students.",
+        "For each school we work out the change over the span: a percentage change on entries; on results the difference in points or percentage points, from 2022/23.",
+        "Each dot is coloured by that change on one scale centred on zero: green for the biggest rise in the set, red for the biggest fall, pale amber for little change.",
+        "Dot size is the school's entries in the last year."
+      ],
+      "rounding": [
+        "Percentage change as a whole number; points to 1 decimal place; whole percentage points."
+      ]
+    },
+    "notInInfoNow": [
+      "That colour is the change scaled to the set's own largest change.",
+      "That entries change in % and results in points or percentage points.",
+      "Location data is not cited."
+    ],
+    "evidence": [
+      "src/components/dashboard-config/TeacherDashboard.tsx:1947-1953 panelSource; latestPeriod = latest period in subjectData.entries (TeacherDashboard.tsx:1273)",
+      "src/components/teacher/ComparisonsPanels.tsx:918-953",
+      "src/lib/teacher-map.ts changeMapFrom 'honest', teacherMapFills",
+      "src/catalogue/notes.ts:56-58 specYears (map from 2022/23)",
+      "src/components/teacher/ComparisonsPanels.tsx:982-983 (source and gradingYears from changeData, whatever the view)"
+    ]
+  }
+]
