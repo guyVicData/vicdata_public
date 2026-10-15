@@ -24,6 +24,7 @@
 //   R-TREND-FROM-2223  the change list measures from 2022/23.
 //   R-NUMBER-TYPE-HONESTY  entries change in %, points and rates in points / pp.
 //   Ties share a rank; higher is better (entries: more entries rank higher).
+import { igcseEngland } from "./igcse";
 import { callReferenceRpc, type AcademicSubjectHeadlineRow, type AcademicSubjectQualificationHeadlineRow } from "./vicdata-reference";
 import { gradeRowsFromRollup, mapHistoricKs5Grade, starIsAStar, MODERN_GRADE_FROM, HISTORIC_GRADE_FROM, type GradeRollupRow } from "./grade-rows";
 import { DOUBLE_AWARD_QUALIFICATION, GRADE_SCALES, NON_GRADE_VALUES, BOTTOM_RANK, bandRate, doubleAwardPoints, inRange, isDoubleAward, thresholdRate, type GradeRange } from "./subject-grades";
@@ -72,6 +73,10 @@ export type SubjectRanking = {
     window: WindowRow[];
   } | null;
   source: "function" | "fallback";
+  // 0.8 audit fixes (1, R-IGCSE-EVERYWHERE): at GCSE, the population's schools the IGCSE rule took
+  // out, and whether the school itself is one (then it has no rank, no "out of" and no place).
+  igcseOut?: number;
+  targetIgcse?: boolean;
 };
 
 export const RANK_WINDOW = 10;
@@ -412,6 +417,24 @@ function populationFigures(popKey: string, req: SubjectRankingRequest): Promise<
 /** The ranking: the function first, else the fallback. `popKey` names the population
  * (scope and filters), so the fallback's figures are shared between schools. */
 export async function subjectRanking(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
+  if (req.phase !== "ks4") return rankAnswered(req, popKey);
+  // 0.8 audit fixes (1, R-IGCSE-EVERYWHERE): at GCSE the IGCSE rule's schools leave the population,
+  // nationally, regionally and in any set; an IGCSE school itself is never placed.
+  const igcse = await igcseEngland();
+  const urns = req.urns.filter((u) => !igcse.has(u));
+  const out = await rankAnswered({ ...req, urns }, `${popKey}|no-igcse`);
+  const targetIgcse = igcse.has(req.targetUrn);
+  const unplaced = (w: WindowRow[]) => (targetIgcse ? w.filter((r) => r.urn !== req.targetUrn) : w);
+  return {
+    ...out,
+    ...(targetIgcse ? { inRanking: false, targetRank: null, target: null, change: out.change ? { ...out.change, targetRank: null, target: null, window: unplaced(out.change.window) } : null } : {}),
+    window: unplaced(out.window),
+    igcseOut: req.urns.length - urns.length,
+    targetIgcse,
+  };
+}
+
+async function rankAnswered(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
   const out = await rankSubject(req, popKey);
   // 0.8 SMT r2 (S1): Teacher asks for GCSE points with no qualification (the subject's, across its
   // qualifications). A Double Award subject then finds no figure anywhere -- the rollup holds none

@@ -1783,7 +1783,7 @@ const RUNNERS: Record<string, Runner> = {
     const p = row.period!;
     const urns = ["137625", ...c.set.urns];
     const heads = await L.ref.lookupAcademicHeadline({ entityIds: urns, ksStage: "ks4", periodMin: p, periodMax: p });
-    const { igcseIn } = await import("../src/lib/smt/overview");
+    const { igcseAmong: igcseIn } = await import("../src/lib/igcse");
     const igcse = await igcseIn(urns);
     const vals = new Map(heads.filter((h) => !igcse.has(h.entity_id)).map((h) => [h.entity_id, Number(h.measures.attainment8_average)]).filter(([, v]) => Number.isFinite(v as number)) as [string, number][]);
     const mine = vals.get("137625")!;
@@ -1792,6 +1792,50 @@ const RUNNERS: Record<string, Runner> = {
     const labelOk = /with GCSE results$/.test(row.set?.label ?? "");
     const pass = row.set?.rank === rank && row.set?.of === of && labelOk && row.england !== null;
     return { pass, detail: fmt({ value: row.value, scorecard: `${row.set?.rank} of ${row.set?.of}`, recomputed: `${rank} of ${of}`, igcseInSet: igcse.size, label: row.set?.label, england: row.england && `${row.england.rank} of ${row.england.of}` }) };
+  },
+  async igcseEverywhere() {
+    const { igcseEngland } = await import("../src/lib/igcse");
+    const { resolveRankingSet, resolveDefaultNearest, cachedRankingPopulation } = await import("../src/lib/chooser-sets");
+    const { defaultRankingFilters, matchesRanking, NATIONAL } = await import("../src/lib/comparator-chooser");
+    const { subjectRanking } = await import("../src/lib/subject-ranking");
+    const { headlinePlaces, headlinePopulation } = await import("../src/lib/admissions/ranks");
+    const { placesOn, population } = await import("../src/lib/smt/population");
+    const { igcseExcluded } = await import("../src/lib/smt/overview");
+    const L = await lib();
+    const ig = await igcseEngland();
+    const nat = defaultRankingFilters(NATIONAL);
+    // Teacher's headline ranking: the IGCSE school unranked, said; a GCSE school's sample and "out of" clear of them.
+    const lpRank = await resolveRankingSet("110110", "Leighton Park School", "ks4", nat, null);
+    const kw = await resolveRankingSet("137625", "The Chase", "ks4", nat, null);
+    const pop = (await cachedRankingPopulation(null, "ks4", null)).filter((r) => matchesRanking(r, nat)).map((r) => r[0]);
+    const heads = await L.ref.lookupAcademicHeadline({ entityIds: pop, ksStage: "ks4" });
+    const withFigure = new Set(heads.filter((h) => Number.isFinite(Number(h.measures.attainment8_average))).map((h) => h.entity_id));
+    const teacher = {
+      lpUnranked: lpRank.targetRank === null && !!lpRank.targetIgcse && /not ranked at GCSE \(IGCSE\)/.test(lpRank.note ?? ""),
+      sampleClear: kw.rows.every((r) => !ig.has(r.urn)) && lpRank.rows.every((r) => r.isTarget || !ig.has(r.urn)) && !kw.targetIgcse,
+      outOf: kw.ranked === Array.from(withFigure).filter((u) => !ig.has(u)).length && (kw.igcseOut ?? 0) > 0 && /not ranked at GCSE \(mostly IGCSE\)/.test(kw.note ?? ""),
+    };
+    // A GCSE subject ranking (Mathematics, points).
+    const base = { phase: "ks4" as const, subject: "Mathematics", familyId: null, qualificationType: null, measure: { kind: "points" as const }, period: null, urns: pop };
+    const sLp = await subjectRanking({ ...base, targetUrn: "110110" }, "rule:igcse:nation");
+    const sKw = await subjectRanking({ ...base, targetUrn: "137625" }, "rule:igcse:nation");
+    const subject = { lpUnranked: sLp.targetRank === null && !!sLp.targetIgcse, windowClear: sKw.window.every((w) => !ig.has(w.urn)) && sLp.window.every((w) => !ig.has(w.urn)), igcseOut: (sKw.igcseOut ?? 0) > 0 };
+    // Admissions' and SMT's national places: the same population less the IGCSE schools.
+    const period = Math.max(...heads.map((h) => h.period));
+    const hp = await headlinePopulation("ks4", period);
+    const popN = Array.from(hp.keys()).filter((u) => hp.get(u)?.get(period) != null && !ig.has(u)).length;
+    const adm = await headlinePlaces("ks4", period, ["110110", "137625"]);
+    const sp = await population("ks4");
+    const smt = await placesOn(sp, period, "attainment8_average", ["110110", "137625"], await igcseExcluded());
+    const places = {
+      admLp: adm.get("110110")!.national === null, admOf: adm.get("137625")!.national?.of === popN,
+      smtLp: smt.get("110110")!.national === null, smtOf: (smt.get("137625")!.national?.of ?? 0) > 0 && (smt.get("137625")!.national?.of ?? 0) < Array.from(sp.keys()).filter((u) => sp.get(u)?.get(period)?.attainment8_average != null).length,
+    };
+    // 10 nearest at GCSE: 10, none IGCSE; where it filled past them, the reach is named.
+    const near = await Promise.all(["110110", "117037", "137625"].map((u) => resolveDefaultNearest(u, "ks4")));
+    const nearest = { ten: near.every((n) => n.count === 10 && n.rows.filter((r) => !r.isTarget).length === 10), clear: near.every((n) => n.rows.every((r) => r.isTarget || !ig.has(r.urn))), reach: /nearest eligible reach \d+ km/.test(near[0].note ?? "") && near[2].note === null };
+    const all = [teacher, subject, places, nearest].flatMap((o) => Object.values(o));
+    return { pass: all.every(Boolean) && ig.has("110110"), detail: fmt({ igcseEngland: ig.size, teacher: JSON.stringify(teacher), subject: JSON.stringify(subject), places: JSON.stringify(places), nearest: JSON.stringify(nearest), kwOutOf: `${kw.ranked} vs ${Array.from(withFigure).filter((u) => !ig.has(u)).length}`, lpNote: lpRank.note, nearLp: near[0].note }) };
   },
   async smtIgcse() {
     const c = await smtCase("110110");
@@ -1873,7 +1917,7 @@ const RUNNERS: Record<string, Runner> = {
     const c = await smtCase("137625");
     const { SMT_FLAG_RULES } = await import("../src/lib/smt/flags-rules");
     const { percentile } = await import("../src/lib/admissions/stats");
-    const { igcseIn } = await import("../src/lib/smt/overview");
+    const { igcseAmong: igcseIn } = await import("../src/lib/igcse");
     const L = await lib();
     const latest = c.school.latest.ks4!.period;
     const from = Math.max(latest - 2, 2022);
@@ -1938,7 +1982,7 @@ const RUNNERS: Record<string, Runner> = {
     const at100 = roll.lines.every((l) => Math.abs((l.pts.find((p) => p.year === base)?.value ?? 0) - 100) < 1e-9);
     const t = c.overview.trends.results.find((x) => x.stage === "ks4")!;
     const L = await lib();
-    const { igcseIn } = await import("../src/lib/smt/overview");
+    const { igcseAmong: igcseIn } = await import("../src/lib/igcse");
     const { percentile } = await import("../src/lib/admissions/stats");
     const ig = await igcseIn(c.set.urns);
     const y = c.school.latest.ks4!.period;

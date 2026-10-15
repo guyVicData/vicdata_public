@@ -747,6 +747,17 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-IGCSE-EVERYWHERE",
+    statement:
+      "One IGCSE rule in every product: a school igcseExclusionLikely flags (loaded for many schools only by lib/igcse) is left out of every GCSE ranking population -- national, regional, LA, set, '10 nearest', Teacher's headline and subject rankings, Admissions' places and SMT's ranks -- and is never silently dropped from a list: where a list would have shown it, a line says '{n} schools not ranked at GCSE (mostly IGCSE)'. The school itself shows 'not ranked at GCSE (IGCSE)', with no rank, 'out of' or gap. '10 nearest' at GCSE fills to 10 with the next nearest eligible schools and says how far it reached.",
+    why: "The audit (0.8 SMT r4, T1, T4, T6, S4) found the national and regional populations kept IGCSE schools while the sample dropped them, the map's own check never fired, and '10 nearest' fell short. One rule, everywhere (Guy, 15 Oct 2026; Leighton Park is an IGCSE school).",
+    appliesTo: "Every GCSE rank, 'out of' and population in Teacher, Admissions and SMT; Teacher's '10 nearest' at GCSE; the comparator maps",
+    enforcedIn: ["src/lib/igcse.ts:igcseEngland, igcseAmong", "src/lib/igcse-words.ts", "src/lib/academic-data-view.ts:igcseExclusionLikely (ks4IgcseExcluded)", "src/lib/chooser-sets.ts:resolveRankingSet, resolveDefaultNearest", "src/lib/default-comparator-lists.ts:buildDefaultComparatorLists (gcse)", "src/lib/subject-ranking.ts:subjectRanking", "src/lib/admissions/ranks.ts:placesOf", "src/lib/admissions/rivals.ts", "src/lib/smt/overview.ts:igcseExcluded", "src/lib/teacher-comparator-profiles.ts"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625; The King's School Worcester 117037 (also IGCSE)", phase: "ks4", expect: "Leighton Park: no GCSE rank anywhere (Teacher's ranking and subject ranking, Admissions, SMT), 'not ranked at GCSE (IGCSE)'; no IGCSE school in any national or regional population or listed sample; 'out of' counts the population less the IGCSE schools; 10 nearest at GCSE has 10 with none IGCSE, and names its reach where it filled.", check: "igcseEverywhere" },
+    origin: "0.8 audit fixes, item 1 (docs/v0.8/vicdata_0_8_audit_fixes_claude_code_prompt_v1.md)",
+    status: "active",
+  },
+  {
     id: "R-COMPARATOR-NO-FIGURE",
     statement:
       "A comparator with no figure for the measure (or none in the latest year) is not listed and never ranked last. Not applied while loading.",

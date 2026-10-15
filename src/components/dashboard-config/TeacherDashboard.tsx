@@ -22,6 +22,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
+import { igcseTargetLine } from "@/lib/igcse-words";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import type { InPlaceHost } from "@/components/editor/EditorScreen";
@@ -536,6 +537,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               targetSeries: body.targetSeries ?? [],
               averageLatest: body.averageLatest ?? null,
               average: body.average ?? [],
+              igcseOut: body.igcseOut ?? 0,
+              targetIgcse: body.targetIgcse ?? false,
             }
           : null;
       if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking, ...(body.profiles ? { profiles: body.profiles } : {}) });
@@ -2522,7 +2525,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // figures are on the ranking's own measure, the phase headline.
         rankingSet={
           onRanking && chooserSet?.ranking
-            ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure", noFigureNote: noALevelNote }
+            ? { ...chooserSet.ranking, measure: headlineMeasure(phase, headlineLabel), measureName: headlineLabel || "the headline measure", noFigureNote: chooserSet.ranking.targetIgcse ? igcseTargetLine(schoolName ?? "This school") : noALevelNote }
             : null
         }
         subjectRanking={subjectRanking}

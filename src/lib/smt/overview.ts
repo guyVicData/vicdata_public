@@ -11,6 +11,7 @@ import { smtNote } from "@/catalogue/notes";
 import { lookupAgeBandDistributions } from "../age-band-distributions";
 import { AGE_BANDS, CURRENT_CENSUS_PERIOD, type RollSnapshot } from "../roll-data";
 import { englandSchools, rankIn } from "../admissions/ranks";
+import { igcseEngland } from "../igcse";
 import { cachedCensus, fetchSchoolInfo } from "../admissions/data";
 import { cohortAt } from "../admissions/cohort";
 import { areaByAge, indexTo } from "../admissions/screens";
@@ -22,7 +23,7 @@ import { entryPoint } from "../admissions/entry-points";
 import { loadThresholds, phaseForEntryAge } from "../admissions/thresholds";
 import { percentile } from "../admissions/stats";
 import { figure, placesOn, population, setPlace, SMT_MEASURES, type Population } from "./population";
-import { sitsIgcse, type SmtSchool } from "./school";
+import type { SmtSchool } from "./school";
 import { entryShrinking, resultsAgainstSet, rollFalling, type SmtFlag } from "./flags";
 
 export type SmtSet = { kind: string; label: string; urns: string[] };
@@ -126,15 +127,11 @@ export function middleHalf(pop: Population, urns: string[], key: string, years: 
   });
 }
 
-/** The set's IGCSE schools (R-IGCSE-EXCL), left out of every GCSE comparison. */
-export async function igcseIn(urns: string[]): Promise<Set<string>> {
-  const england = await englandSchools();
-  const out = new Set<string>();
-  await Promise.all(urns.map(async (u) => {
-    const group = england.get(u)?.group ?? null;
-    if (group === "Independent schools" && (await sitsIgcse(u, group))) out.add(u);
-  }));
-  return out;
+/** Every school the IGCSE rule takes out of GCSE rankings (R-IGCSE-EVERYWHERE): all of England's, so
+ * national and regional places leave them out as the set does (0.8 audit fixes, 1). A copy: callers add
+ * to it. */
+export async function igcseExcluded(): Promise<Set<string>> {
+  return new Set(await igcseEngland());
 }
 
 const STAGE_LABEL: Record<Stage, string> = { ks2: "KS2", ks4: "GCSE", ks5: "Post-16" };
@@ -146,7 +143,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
   const f = school.boarding ? filters : { ...filters, boarding: "all" as const };
   const ff: SmtFilters = school.mixed ? f : { ...f, sex: "all" };
   const noKs2: Population = new Map();
-  const [ks2, ks4, ks5, igcse, rolls, england] = await Promise.all([school.phases.primary && school.results.ks2 ? population("ks2") : Promise.resolve(noKs2), population("ks4"), population("ks5"), igcseIn(all), setRolls(all), englandSchools()]);
+  const [ks2, ks4, ks5, igcse, rolls, england] = await Promise.all([school.phases.primary && school.results.ks2 ? population("ks2") : Promise.resolve(noKs2), population("ks4"), population("ks5"), igcseExcluded(), setRolls(all), englandSchools()]);
   const schoolIgcse = !!school.phases.igcse;
   if (schoolIgcse) igcse.add(urn);
   const census = school.census;

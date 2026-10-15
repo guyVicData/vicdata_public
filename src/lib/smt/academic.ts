@@ -21,7 +21,7 @@ import { percentile } from "../admissions/stats";
 import { MIN_SUBJECT_ENTRIES_UI, type SmtLevel } from "./levels";
 import { figure, placesOn, population, setPlace, SMT_MEASURES, VA_QUALS, type Population } from "./population";
 import type { SmtSchool } from "./school";
-import { igcseIn, middleHalf, p8Of, type BandPt, type P8, type Pt, type Rank, type SmtSet } from "./overview";
+import { igcseExcluded, middleHalf, p8Of, type BandPt, type P8, type Pt, type Rank, type SmtSet } from "./overview";
 
 export const MIN_SUBJECT_ENTRIES = MIN_SUBJECT_ENTRIES_UI; // R-SMT-SMALL-ENTRIES: a subject needs this many to be ranked
 export const MAX_SUBJECTS = 16;
@@ -264,7 +264,7 @@ export async function buildAcademic(school: SmtSchool, level: SmtLevel, set: Smt
   const urn = school.urn;
   const setUrns = Array.from(new Set(set.urns.filter((u) => u !== urn)));
   const wantsKs2 = (level.phase === "primary" || level.phase === "whole") && school.phases.primary && school.results.ks2;
-  const [ks2pop, ks4, ks5, igcse] = await Promise.all([wantsKs2 ? population("ks2") : Promise.resolve(new Map() as Population), population("ks4"), population("ks5"), igcseIn([urn, ...setUrns])]);
+  const [ks2pop, ks4, ks5, igcse] = await Promise.all([wantsKs2 ? population("ks2") : Promise.resolve(new Map() as Population), population("ks4"), population("ks5"), igcseExcluded()]);
   if (school.phases.igcse) igcse.add(urn);
   const stages: ("ks4" | "ks5")[] = level.phase === "gcse" ? ["ks4"] : level.phase === "post16" ? ["ks5"] : level.phase === "whole" ? ([school.phases.gcse ? "ks4" : null, school.phases.post16 ? "ks5" : null].filter(Boolean) as ("ks4" | "ks5")[]) : [];
   const area = level.phase === "gcse" || level.phase === "post16" ? level.area : null;

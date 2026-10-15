@@ -74,6 +74,10 @@ export type AcademicSchoolProfile = {
   // igcseExclusionLikely to restrict the exclusion gate to independent schools --
   // see that function's own comment for why.
   establishmentTypeGroup: string | null;
+  // 0.8 audit fixes (1, T4): the IGCSE rule's answer, set by the server on profiles built without
+  // headline years (the Teacher comparator profiles, whose ks4 is empty), so igcseExclusionLikely
+  // reads the same answer there as everywhere else (lib/igcse).
+  ks4IgcseExcluded?: boolean;
   // KS5 qualification-type-awareness round: real, ground-truth flags from
   // dfe_ks5_subject_results' own qualification_detailed field (see
   // academic_ks5_qualification_flags_lookup's own migration comment for the exact
@@ -691,6 +695,7 @@ export function latestYear(years: AcademicHeadlineYear[]): AcademicHeadlineYear 
 // genuinely disastrous results, not an IGCSE curriculum, and shouldn't silently
 // vanish from GCSE rankings as if its data weren't real.
 export function igcseExclusionLikely(profile: AcademicSchoolProfile): boolean {
+  if (profile.ks4IgcseExcluded !== undefined) return profile.ks4IgcseExcluded;
   if (profile.establishmentTypeGroup !== "Independent schools") return false;
   const y = latestYear(profile.ks4);
   if (!y) return false;

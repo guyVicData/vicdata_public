@@ -20,6 +20,7 @@
 // history is REAL (§6.4): fetchAcademicProfiles already returned every comparator's whole
 // year series and rankSets threw it away. The wireframe's fabricated genSeries() drift is
 // not used and not needed.
+import { igcseTargetLine } from "@/lib/igcse-words";
 import { useEffect, useState, type ReactNode } from "react";
 import type { AcademicSchoolProfile, KsStage, SubjectGradeCount } from "@/lib/academic-data-view";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -258,7 +259,7 @@ export function ComparisonsPanels({
           average: sr.average,
           measure,
           measureName: subjectRanking.measureName,
-          noFigureNote: null,
+          noFigureNote: sr.targetIgcse ? igcseTargetLine(targetName) : null,
           ...subjectTileDetails(sr, subjectRanking.noun, srYear),
           wholeSchool: subjectRanking.wholeSchool,
         }
