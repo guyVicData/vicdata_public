@@ -1,0 +1,8224 @@
+{
+ "peer": {
+  "band": "41+",
+  "type": "mat",
+  "set_id": "peer:mat:41+",
+  "n_groups": 16
+ },
+ "rows": [
+  {
+   "phase": "all",
+   "period": 2019,
+   "figures": {
+    "las": {
+     "303|Bexley": 2,
+     "315|Merton": 4,
+     "319|Sutton": 2,
+     "305|Bromley": 9,
+     "306|Croydon": 10,
+     "309|Haringey": 3,
+     "311|Havering": 1,
+     "883|Thurrock": 5,
+     "203|Greenwich": 1,
+     "210|Southwark": 6,
+     "212|Wandsworth": 1,
+     "213|Westminster": 2
+    },
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {},
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 33427,
+    "share": {
+     "las": [
+      {
+       "pct": 10.77,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 64634,
+       "group_pupils": 6959
+      },
+      {
+       "pct": 8.78,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 56683,
+       "group_pupils": 4975
+      },
+      {
+       "pct": 15.23,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 29824,
+       "group_pupils": 4543
+      },
+      {
+       "pct": 7.74,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 48881,
+       "group_pupils": 3783
+      },
+      {
+       "pct": 9.15,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 32599,
+       "group_pupils": 2984
+      },
+      {
+       "pct": 5.59,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 44540,
+       "group_pupils": 2489
+      },
+      {
+       "pct": 4.52,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 42112,
+       "group_pupils": 1904
+      },
+      {
+       "pct": 5.97,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 31558,
+       "group_pupils": 1884
+      },
+      {
+       "pct": 2.38,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 48198,
+       "group_pupils": 1146
+      },
+      {
+       "pct": 2.29,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 43749,
+       "group_pupils": 1003
+      },
+      {
+       "pct": 2.3,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 40686,
+       "group_pupils": 937
+      },
+      {
+       "pct": 2,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 40969,
+       "group_pupils": 820
+      }
+     ],
+     "pct": 1.37,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.46,
+       "region_code": "E12000006",
+       "group_pupils": 4543,
+       "region_pupils": 993799
+      },
+      {
+       "pct": 2,
+       "region_code": "E12000007",
+       "group_pupils": 28884,
+       "region_pupils": 1441809
+      }
+     ],
+     "area_pupils": 2435608,
+     "group_pupils": 33427
+    },
+    "regions": {
+     "E12000006": 5,
+     "E12000007": 41
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ]
+    },
+    "n_schools": 46,
+    "confidence": {
+     "confirmed": 46
+    },
+    "size_bands": {
+     "L": 28,
+     "M": 5,
+     "S": 2,
+     "XL": 10
+    },
+    "n_with_roll": 45,
+    "roll_by_age": [
+     0,
+     6,
+     55,
+     328,
+     1123,
+     1056,
+     1007,
+     1130,
+     1146,
+     1045,
+     775,
+     4984,
+     4728,
+     4078,
+     3934,
+     3557,
+     2269,
+     2004,
+     191,
+     11
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 4464,
+     "primary": 6159,
+     "secondary": 21281
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_phase": {
+     "post16": 24,
+     "primary": 20,
+     "secondary": 26
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2019,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {},
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 4461,
+    "share": {
+     "las": [
+      {
+       "pct": 24.82,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 5275,
+       "group_pupils": 1309
+      },
+      {
+       "pct": 21.31,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 4270,
+       "group_pupils": 910
+      },
+      {
+       "pct": 69.11,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 790,
+       "group_pupils": 546
+      },
+      {
+       "pct": 7.27,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 5957,
+       "group_pupils": 433
+      },
+      {
+       "pct": 8.26,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 3523,
+       "group_pupils": 291
+      },
+      {
+       "pct": 8.52,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 3405,
+       "group_pupils": 290
+      },
+      {
+       "pct": 11.76,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 1955,
+       "group_pupils": 230
+      },
+      {
+       "pct": 5.11,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 3838,
+       "group_pupils": 196
+      },
+      {
+       "pct": 6.78,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 2816,
+       "group_pupils": 191
+      },
+      {
+       "pct": 2.33,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 2788,
+       "group_pupils": 65
+      }
+     ],
+     "pct": 2.6,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.87,
+       "region_code": "E12000006",
+       "group_pupils": 546,
+       "region_pupils": 62997
+      },
+      {
+       "pct": 3.6,
+       "region_code": "E12000007",
+       "group_pupils": 3915,
+       "region_pupils": 108766
+      }
+     ],
+     "area_pupils": 171763,
+     "group_pupils": 4461
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ]
+    },
+    "n_schools": 24,
+    "n_with_roll": 23,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2019,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {},
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 6159,
+    "share": {
+     "las": [
+      {
+       "pct": 6.46,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 25370,
+       "group_pupils": 1639
+      },
+      {
+       "pct": 7.37,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 14837,
+       "group_pupils": 1093
+      },
+      {
+       "pct": 3.27,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 29562,
+       "group_pupils": 968
+      },
+      {
+       "pct": 4.24,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 19165,
+       "group_pupils": 813
+      },
+      {
+       "pct": 2.51,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 21042,
+       "group_pupils": 528
+      },
+      {
+       "pct": 2.38,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 15979,
+       "group_pupils": 381
+      },
+      {
+       "pct": 2.34,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 15965,
+       "group_pupils": 374
+      },
+      {
+       "pct": 1.82,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 19918,
+       "group_pupils": 363
+      }
+     ],
+     "pct": 0.55,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.24,
+       "region_code": "E12000006",
+       "group_pupils": 1093,
+       "region_pupils": 459238
+      },
+      {
+       "pct": 0.77,
+       "region_code": "E12000007",
+       "group_pupils": 5066,
+       "region_pupils": 657751
+      }
+     ],
+     "area_pupils": 1116989,
+     "group_pupils": 6159
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 20,
+    "n_with_roll": 20,
+    "value_added": {}
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2019,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {},
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 21278,
+    "share": {
+     "las": [
+      {
+       "pct": 19.88,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 22371,
+       "group_pupils": 4447
+      },
+      {
+       "pct": 15.81,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 17813,
+       "group_pupils": 2817
+      },
+      {
+       "pct": 24.8,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 10409,
+       "group_pupils": 2581
+      },
+      {
+       "pct": 12.53,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 20102,
+       "group_pupils": 2519
+      },
+      {
+       "pct": 22.7,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 9828,
+       "group_pupils": 2231
+      },
+      {
+       "pct": 10.92,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 16499,
+       "group_pupils": 1802
+      },
+      {
+       "pct": 7.45,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 13029,
+       "group_pupils": 971
+      },
+      {
+       "pct": 6.24,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 15298,
+       "group_pupils": 954
+      },
+      {
+       "pct": 6.34,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 14743,
+       "group_pupils": 935
+      },
+      {
+       "pct": 6.33,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 12679,
+       "group_pupils": 802
+      },
+      {
+       "pct": 5.39,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 14463,
+       "group_pupils": 780
+      },
+      {
+       "pct": 2.67,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 16455,
+       "group_pupils": 439
+      }
+     ],
+     "pct": 2.49,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.71,
+       "region_code": "E12000006",
+       "group_pupils": 2581,
+       "region_pupils": 364197
+      },
+      {
+       "pct": 3.82,
+       "region_code": "E12000007",
+       "group_pupils": 18697,
+       "region_pupils": 489772
+      }
+     ],
+     "area_pupils": 853969,
+     "group_pupils": 21278
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ]
+    },
+    "n_schools": 26,
+    "n_with_roll": 25,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2020,
+   "figures": {
+    "las": {
+     "303|Bexley": 2,
+     "315|Merton": 4,
+     "319|Sutton": 2,
+     "208|Lambeth": 1,
+     "305|Bromley": 9,
+     "306|Croydon": 11,
+     "309|Haringey": 3,
+     "311|Havering": 1,
+     "883|Thurrock": 5,
+     "203|Greenwich": 1,
+     "210|Southwark": 6,
+     "212|Wandsworth": 1,
+     "213|Westminster": 2
+    },
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "roll_change_1": {
+       "of": 16,
+       "rank": 5,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 35666,
+    "share": {
+     "las": [
+      {
+       "pct": 11.98,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 63813,
+       "group_pupils": 7642
+      },
+      {
+       "pct": 16.55,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 30325,
+       "group_pupils": 5019
+      },
+      {
+       "pct": 8.6,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 57197,
+       "group_pupils": 4919
+      },
+      {
+       "pct": 7.98,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 48682,
+       "group_pupils": 3883
+      },
+      {
+       "pct": 10.01,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 32104,
+       "group_pupils": 3214
+      },
+      {
+       "pct": 5.77,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 44515,
+       "group_pupils": 2570
+      },
+      {
+       "pct": 5,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 41614,
+       "group_pupils": 2082
+      },
+      {
+       "pct": 6.26,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 31012,
+       "group_pupils": 1942
+      },
+      {
+       "pct": 2.47,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 48037,
+       "group_pupils": 1185
+      },
+      {
+       "pct": 2.47,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 43340,
+       "group_pupils": 1071
+      },
+      {
+       "pct": 2.48,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 41499,
+       "group_pupils": 1029
+      },
+      {
+       "pct": 2.23,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 41042,
+       "group_pupils": 917
+      },
+      {
+       "pct": 0.5,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 38896,
+       "group_pupils": 193
+      }
+     ],
+     "pct": 1.46,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.5,
+       "region_code": "E12000006",
+       "group_pupils": 5019,
+       "region_pupils": 999747
+      },
+      {
+       "pct": 2.13,
+       "region_code": "E12000007",
+       "group_pupils": 30647,
+       "region_pupils": 1437491
+      }
+     ],
+     "area_pupils": 2437238,
+     "group_pupils": 35666
+    },
+    "change": {
+     "1": {
+      "growing": 29,
+      "shrinking": 15,
+      "from_period": 2019,
+      "combined_pct": 6.7,
+      "same_schools": 45,
+      "combined_base": 33427,
+      "same_schools_pct": 4.6
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000006": 5,
+     "E12000007": 43
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ]
+    },
+    "n_schools": 48,
+    "confidence": {
+     "confirmed": 48
+    },
+    "size_bands": {
+     "L": 27,
+     "M": 5,
+     "S": 3,
+     "XL": 12
+    },
+    "n_with_roll": 47,
+    "roll_by_age": [
+     0,
+     1,
+     26,
+     334,
+     1158,
+     1168,
+     1080,
+     1147,
+     1231,
+     1208,
+     1134,
+     4939,
+     4941,
+     4634,
+     4011,
+     3891,
+     2427,
+     2161,
+     170,
+     5
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 4758,
+     "primary": 6968,
+     "secondary": 22416
+    },
+    "subject_areas": {
+     "ks4": [],
+     "ks5": []
+    },
+    "schools_by_phase": {
+     "post16": 23,
+     "primary": 21,
+     "secondary": 27
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2020,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "roll_change_1": {
+       "of": 12,
+       "rank": 7,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 4752,
+    "share": {
+     "las": [
+      {
+       "pct": 24.99,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 5451,
+       "group_pupils": 1362
+      },
+      {
+       "pct": 21.65,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 4411,
+       "group_pupils": 955
+      },
+      {
+       "pct": 71.34,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 928,
+       "group_pupils": 662
+      },
+      {
+       "pct": 6.36,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 6175,
+       "group_pupils": 393
+      },
+      {
+       "pct": 8.25,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 3719,
+       "group_pupils": 307
+      },
+      {
+       "pct": 7.3,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 3754,
+       "group_pupils": 274
+      },
+      {
+       "pct": 11.27,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 2086,
+       "group_pupils": 235
+      },
+      {
+       "pct": 8.22,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 2833,
+       "group_pupils": 233
+      },
+      {
+       "pct": 5.63,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 4034,
+       "group_pupils": 227
+      },
+      {
+       "pct": 3.44,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 3027,
+       "group_pupils": 104
+      }
+     ],
+     "pct": 2.61,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.99,
+       "region_code": "E12000006",
+       "group_pupils": 662,
+       "region_pupils": 66627
+      },
+      {
+       "pct": 3.54,
+       "region_code": "E12000007",
+       "group_pupils": 4090,
+       "region_pupils": 115440
+      }
+     ],
+     "area_pupils": 182067,
+     "group_pupils": 4752
+    },
+    "change": {
+     "1": {
+      "growing": 16,
+      "shrinking": 6,
+      "from_period": 2019,
+      "combined_pct": 6.52,
+      "same_schools": 22,
+      "combined_base": 4461,
+      "same_schools_pct": 6.83
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ]
+    },
+    "n_schools": 23,
+    "n_with_roll": 22,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2020,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "roll_change_1": {
+       "of": 16,
+       "rank": 3,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 6968,
+    "share": {
+     "las": [
+      {
+       "pct": 6.75,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 25349,
+       "group_pupils": 1712
+      },
+      {
+       "pct": 5.11,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 28998,
+       "group_pupils": 1481
+      },
+      {
+       "pct": 8.36,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 14852,
+       "group_pupils": 1242
+      },
+      {
+       "pct": 4.66,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 18530,
+       "group_pupils": 864
+      },
+      {
+       "pct": 2.86,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 20504,
+       "group_pupils": 586
+      },
+      {
+       "pct": 2.38,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 15977,
+       "group_pupils": 381
+      },
+      {
+       "pct": 2.43,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 15461,
+       "group_pupils": 376
+      },
+      {
+       "pct": 1.65,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 19766,
+       "group_pupils": 326
+      }
+     ],
+     "pct": 0.63,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.27,
+       "region_code": "E12000006",
+       "group_pupils": 1242,
+       "region_pupils": 457165
+      },
+      {
+       "pct": 0.88,
+       "region_code": "E12000007",
+       "group_pupils": 5726,
+       "region_pupils": 647163
+      }
+     ],
+     "area_pupils": 1104328,
+     "group_pupils": 6968
+    },
+    "change": {
+     "1": {
+      "growing": 11,
+      "shrinking": 8,
+      "from_period": 2019,
+      "combined_pct": 13.14,
+      "same_schools": 20,
+      "combined_base": 6159,
+      "same_schools_pct": 6.14
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 21,
+    "n_with_roll": 21,
+    "value_added": {}
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2020,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "roll_change_1": {
+       "of": 14,
+       "rank": 6,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 22416,
+    "share": {
+     "las": [
+      {
+       "pct": 19.78,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 22514,
+       "group_pupils": 4454
+      },
+      {
+       "pct": 15.73,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 18299,
+       "group_pupils": 2879
+      },
+      {
+       "pct": 25.93,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 10743,
+       "group_pupils": 2786
+      },
+      {
+       "pct": 24.8,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 9970,
+       "group_pupils": 2473
+      },
+      {
+       "pct": 12.04,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 20467,
+       "group_pupils": 2464
+      },
+      {
+       "pct": 11.64,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 16568,
+       "group_pupils": 1928
+      },
+      {
+       "pct": 7.49,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 13174,
+       "group_pupils": 987
+      },
+      {
+       "pct": 6.04,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 15774,
+       "group_pupils": 952
+      },
+      {
+       "pct": 6.13,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 14938,
+       "group_pupils": 915
+      },
+      {
+       "pct": 6.1,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 14679,
+       "group_pupils": 895
+      },
+      {
+       "pct": 6.53,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 12902,
+       "group_pupils": 842
+      },
+      {
+       "pct": 3.83,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 16936,
+       "group_pupils": 648
+      },
+      {
+       "pct": 1.58,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 12222,
+       "group_pupils": 193
+      }
+     ],
+     "pct": 2.58,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.75,
+       "region_code": "E12000006",
+       "group_pupils": 2786,
+       "region_pupils": 371230
+      },
+      {
+       "pct": 3.94,
+       "region_code": "E12000007",
+       "group_pupils": 19630,
+       "region_pupils": 497683
+      }
+     ],
+     "area_pupils": 868913,
+     "group_pupils": 22416
+    },
+    "change": {
+     "1": {
+      "growing": 18,
+      "shrinking": 7,
+      "from_period": 2019,
+      "combined_pct": 5.35,
+      "same_schools": 25,
+      "combined_base": 21278,
+      "same_schools_pct": 4.44
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2015,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em5": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ]
+    },
+    "n_schools": 27,
+    "n_with_roll": 26,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks4": []
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2021,
+   "figures": {
+    "las": {
+     "303|Bexley": 2,
+     "315|Merton": 4,
+     "316|Newham": 1,
+     "319|Sutton": 2,
+     "208|Lambeth": 2,
+     "305|Bromley": 9,
+     "306|Croydon": 11,
+     "309|Haringey": 3,
+     "311|Havering": 1,
+     "883|Thurrock": 5,
+     "203|Greenwich": 1,
+     "210|Southwark": 6,
+     "212|Wandsworth": 1,
+     "213|Westminster": 2
+    },
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_p8": {
+       "of": 13,
+       "rank": 1,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 7,
+       "tied": false
+      },
+      "ks5_aps_all": {
+       "of": 12,
+       "rank": 7,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 16,
+       "rank": 4,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 12,
+       "rank": 8,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 38735,
+    "share": {
+     "las": [
+      {
+       "pct": 11.68,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 64104,
+       "group_pupils": 7489
+      },
+      {
+       "pct": 17.34,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 30952,
+       "group_pupils": 5367
+      },
+      {
+       "pct": 8.43,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 57696,
+       "group_pupils": 4861
+      },
+      {
+       "pct": 7.91,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 48520,
+       "group_pupils": 3840
+      },
+      {
+       "pct": 10.75,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 31812,
+       "group_pupils": 3419
+      },
+      {
+       "pct": 5.95,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 44485,
+       "group_pupils": 2648
+      },
+      {
+       "pct": 5.21,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 41447,
+       "group_pupils": 2159
+      },
+      {
+       "pct": 3.12,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 65391,
+       "group_pupils": 2042
+      },
+      {
+       "pct": 6.34,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 31158,
+       "group_pupils": 1975
+      },
+      {
+       "pct": 2.96,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 42126,
+       "group_pupils": 1249
+      },
+      {
+       "pct": 2.42,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 48147,
+       "group_pupils": 1165
+      },
+      {
+       "pct": 2.61,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 42830,
+       "group_pupils": 1117
+      },
+      {
+       "pct": 2.16,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 41858,
+       "group_pupils": 906
+      },
+      {
+       "pct": 1.29,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 38509,
+       "group_pupils": 498
+      }
+     ],
+     "pct": 1.58,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.53,
+       "region_code": "E12000006",
+       "group_pupils": 5367,
+       "region_pupils": 1011277
+      },
+      {
+       "pct": 2.31,
+       "region_code": "E12000007",
+       "group_pupils": 33368,
+       "region_pupils": 1441686
+      }
+     ],
+     "area_pupils": 2452963,
+     "group_pupils": 38735
+    },
+    "change": {
+     "1": {
+      "growing": 23,
+      "shrinking": 21,
+      "from_period": 2020,
+      "combined_pct": 8.6,
+      "same_schools": 47,
+      "combined_base": 35666,
+      "same_schools_pct": 2.59
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000006": 5,
+     "E12000007": 45
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 4151,
+      "weighted": 52.65,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 52.64
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 4151,
+      "weighted": 73.87,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 73.71
+     },
+     "ks4_em5": {
+      "weight": 4151,
+      "weighted": 54.14,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 54.21
+     },
+     "ks5_aps_all": {
+      "weight": 5878,
+      "weighted": 35.96,
+      "n_weighted": 21,
+      "n_with_figure": 21,
+      "average_school": 34.44
+     },
+     "ks5_aps_alevel": {
+      "weight": 4611,
+      "weighted": 36.72,
+      "n_weighted": 21,
+      "n_with_figure": 21,
+      "average_school": 34.34
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "140952",
+       "name": "Harris Invictus Academy Croydon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143427",
+       "name": "Harris Academy Orpington",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "148555",
+       "name": "Harris Clapham Sixth Form",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "140952",
+       "name": "Harris Invictus Academy Croydon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "148555",
+       "name": "Harris Clapham Sixth Form",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 50,
+    "confidence": {
+     "confirmed": 50
+    },
+    "size_bands": {
+     "L": 27,
+     "M": 6,
+     "S": 1,
+     "XL": 15
+    },
+    "n_with_roll": 49,
+    "roll_by_age": [
+     0,
+     0,
+     45,
+     370,
+     1209,
+     1238,
+     1249,
+     1227,
+     1217,
+     1296,
+     1276,
+     5219,
+     5119,
+     5068,
+     4736,
+     4156,
+     2740,
+     2434,
+     132,
+     4
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 3858,
+      "weighted": 0.39,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 0.39
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 5306,
+     "primary": 7503,
+     "secondary": 24298
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 11507,
+       "family_id": "languages_literature",
+       "n_schools": 24,
+       "points_per_entry": 5.22
+      },
+      {
+       "shown": true,
+       "entries": 2266,
+       "family_id": "arts_media_design",
+       "n_schools": 24,
+       "points_per_entry": 5.32
+      },
+      {
+       "shown": true,
+       "entries": 1950,
+       "family_id": "enterprise_applied",
+       "n_schools": 23,
+       "points_per_entry": 5.56
+      },
+      {
+       "shown": true,
+       "entries": 1186,
+       "family_id": "technology_eng_construction",
+       "n_schools": 20,
+       "points_per_entry": 5.24
+      },
+      {
+       "shown": true,
+       "entries": 5320,
+       "family_id": "humanities_social",
+       "n_schools": 24,
+       "points_per_entry": 5.36
+      },
+      {
+       "shown": true,
+       "entries": 12939,
+       "family_id": "sciences_maths",
+       "n_schools": 24,
+       "points_per_entry": 5.21
+      },
+      {
+       "shown": true,
+       "entries": 1317,
+       "family_id": "business_law",
+       "n_schools": 21,
+       "points_per_entry": 5.21
+      },
+      {
+       "shown": false,
+       "entries": 287,
+       "family_id": "health_care",
+       "n_schools": 10,
+       "points_per_entry": null
+      }
+     ],
+     "ks5": [
+      {
+       "shown": true,
+       "entries": 2008,
+       "family_id": "sciences_maths",
+       "n_schools": 19,
+       "points_per_entry": 36.91
+      },
+      {
+       "shown": true,
+       "entries": 491,
+       "family_id": "languages_literature",
+       "n_schools": 16,
+       "points_per_entry": 38.67
+      },
+      {
+       "shown": true,
+       "entries": 1533,
+       "family_id": "humanities_social",
+       "n_schools": 20,
+       "points_per_entry": 39.05
+      },
+      {
+       "shown": true,
+       "entries": 1235,
+       "family_id": "business_law",
+       "n_schools": 21,
+       "points_per_entry": 38.1
+      },
+      {
+       "shown": true,
+       "entries": 372,
+       "family_id": "arts_media_design",
+       "n_schools": 13,
+       "points_per_entry": 37.4
+      },
+      {
+       "shown": false,
+       "entries": 215,
+       "family_id": "health_care",
+       "n_schools": 9,
+       "points_per_entry": null
+      },
+      {
+       "shown": true,
+       "entries": 384,
+       "family_id": "enterprise_applied",
+       "n_schools": 14,
+       "points_per_entry": 34.29
+      },
+      {
+       "shown": true,
+       "entries": 217,
+       "family_id": "technology_eng_construction",
+       "n_schools": 9,
+       "points_per_entry": 31.64
+      }
+     ]
+    },
+    "schools_by_phase": {
+     "post16": 25,
+     "primary": 22,
+     "secondary": 28
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2021,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks5_aps_all": {
+       "of": 12,
+       "rank": 7,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 12,
+       "rank": 3,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 12,
+       "rank": 8,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 5298,
+    "share": {
+     "las": [
+      {
+       "pct": 23.2,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 5669,
+       "group_pupils": 1315
+      },
+      {
+       "pct": 20.72,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 4570,
+       "group_pupils": 947
+      },
+      {
+       "pct": 74.23,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 1044,
+       "group_pupils": 775
+      },
+      {
+       "pct": 5.83,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 6223,
+       "group_pupils": 363
+      },
+      {
+       "pct": 8.74,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 3878,
+       "group_pupils": 339
+      },
+      {
+       "pct": 7.67,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 4029,
+       "group_pupils": 309
+      },
+      {
+       "pct": 7.72,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 4004,
+       "group_pupils": 309
+      },
+      {
+       "pct": 10.8,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 2223,
+       "group_pupils": 240
+      },
+      {
+       "pct": 5.91,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 4042,
+       "group_pupils": 239
+      },
+      {
+       "pct": 7.54,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 2998,
+       "group_pupils": 226
+      },
+      {
+       "pct": 4.1,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 3219,
+       "group_pupils": 132
+      },
+      {
+       "pct": 3.51,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 2967,
+       "group_pupils": 104
+      }
+     ],
+     "pct": 2.8,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 1.13,
+       "region_code": "E12000006",
+       "group_pupils": 775,
+       "region_pupils": 68409
+      },
+      {
+       "pct": 3.75,
+       "region_code": "E12000007",
+       "group_pupils": 4523,
+       "region_pupils": 120532
+      }
+     ],
+     "area_pupils": 188941,
+     "group_pupils": 5298
+    },
+    "change": {
+     "1": {
+      "growing": 13,
+      "shrinking": 9,
+      "from_period": 2020,
+      "combined_pct": 11.49,
+      "same_schools": 22,
+      "combined_base": 4752,
+      "same_schools_pct": 2.17
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 5878,
+      "weighted": 35.96,
+      "n_weighted": 21,
+      "n_with_figure": 21,
+      "average_school": 34.44
+     },
+     "ks5_aps_alevel": {
+      "weight": 4611,
+      "weighted": 36.72,
+      "n_weighted": 21,
+      "n_with_figure": 21,
+      "average_school": 34.34
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "140952",
+       "name": "Harris Invictus Academy Croydon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143427",
+       "name": "Harris Academy Orpington",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "148555",
+       "name": "Harris Clapham Sixth Form",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "140952",
+       "name": "Harris Invictus Academy Croydon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "148555",
+       "name": "Harris Clapham Sixth Form",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 25,
+    "n_with_roll": 24,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": [
+      {
+       "shown": true,
+       "entries": 2008,
+       "family_id": "sciences_maths",
+       "n_schools": 19,
+       "points_per_entry": 36.91
+      },
+      {
+       "shown": true,
+       "entries": 491,
+       "family_id": "languages_literature",
+       "n_schools": 16,
+       "points_per_entry": 38.67
+      },
+      {
+       "shown": true,
+       "entries": 1533,
+       "family_id": "humanities_social",
+       "n_schools": 20,
+       "points_per_entry": 39.05
+      },
+      {
+       "shown": true,
+       "entries": 1235,
+       "family_id": "business_law",
+       "n_schools": 21,
+       "points_per_entry": 38.1
+      },
+      {
+       "shown": true,
+       "entries": 372,
+       "family_id": "arts_media_design",
+       "n_schools": 13,
+       "points_per_entry": 37.4
+      },
+      {
+       "shown": false,
+       "entries": 215,
+       "family_id": "health_care",
+       "n_schools": 9,
+       "points_per_entry": null
+      },
+      {
+       "shown": true,
+       "entries": 384,
+       "family_id": "enterprise_applied",
+       "n_schools": 14,
+       "points_per_entry": 34.29
+      },
+      {
+       "shown": true,
+       "entries": 217,
+       "family_id": "technology_eng_construction",
+       "n_schools": 9,
+       "points_per_entry": 31.64
+      }
+     ]
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2021,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "roll_change_1": {
+       "of": 16,
+       "rank": 3,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 7501,
+    "share": {
+     "las": [
+      {
+       "pct": 6.83,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 25386,
+       "group_pupils": 1733
+      },
+      {
+       "pct": 4.97,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 28737,
+       "group_pupils": 1429
+      },
+      {
+       "pct": 8.67,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 15095,
+       "group_pupils": 1308
+      },
+      {
+       "pct": 4.78,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 18204,
+       "group_pupils": 870
+      },
+      {
+       "pct": 2.74,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 19985,
+       "group_pupils": 547
+      },
+      {
+       "pct": 1.89,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 28447,
+       "group_pupils": 538
+      },
+      {
+       "pct": 2.39,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 16229,
+       "group_pupils": 388
+      },
+      {
+       "pct": 2.51,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 14970,
+       "group_pupils": 376
+      },
+      {
+       "pct": 1.59,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 19571,
+       "group_pupils": 312
+      }
+     ],
+     "pct": 0.68,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.29,
+       "region_code": "E12000006",
+       "group_pupils": 1308,
+       "region_pupils": 458532
+      },
+      {
+       "pct": 0.97,
+       "region_code": "E12000007",
+       "group_pupils": 6193,
+       "region_pupils": 639774
+      }
+     ],
+     "area_pupils": 1098306,
+     "group_pupils": 7501
+    },
+    "change": {
+     "1": {
+      "growing": 8,
+      "shrinking": 12,
+      "from_period": 2020,
+      "combined_pct": 7.65,
+      "same_schools": 21,
+      "combined_base": 6968,
+      "same_schools_pct": -0.07
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 22,
+    "n_with_roll": 22,
+    "value_added": {}
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2021,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_p8": {
+       "of": 13,
+       "rank": 1,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 7,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 14,
+       "rank": 3,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 24294,
+    "share": {
+     "las": [
+      {
+       "pct": 19.44,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 22730,
+       "group_pupils": 4419
+      },
+      {
+       "pct": 26.67,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 11095,
+       "group_pupils": 2959
+      },
+      {
+       "pct": 15.56,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 18506,
+       "group_pupils": 2880
+      },
+      {
+       "pct": 26.29,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 10157,
+       "group_pupils": 2670
+      },
+      {
+       "pct": 11.48,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 21056,
+       "group_pupils": 2418
+      },
+      {
+       "pct": 12.06,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 16565,
+       "group_pupils": 1998
+      },
+      {
+       "pct": 7.64,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 13422,
+       "group_pupils": 1025
+      },
+      {
+       "pct": 4.28,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 23735,
+       "group_pupils": 1017
+      },
+      {
+       "pct": 5.8,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 16158,
+       "group_pupils": 937
+      },
+      {
+       "pct": 6.27,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 14905,
+       "group_pupils": 935
+      },
+      {
+       "pct": 6,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 15095,
+       "group_pupils": 906
+      },
+      {
+       "pct": 6.63,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 13197,
+       "group_pupils": 875
+      },
+      {
+       "pct": 4.96,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 17367,
+       "group_pupils": 861
+      },
+      {
+       "pct": 3.18,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 12397,
+       "group_pupils": 394
+      }
+     ],
+     "pct": 2.74,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.78,
+       "region_code": "E12000006",
+       "group_pupils": 2959,
+       "region_pupils": 379663
+      },
+      {
+       "pct": 4.21,
+       "region_code": "E12000007",
+       "group_pupils": 21335,
+       "region_pupils": 506289
+      }
+     ],
+     "area_pupils": 885952,
+     "group_pupils": 24294
+    },
+    "change": {
+     "1": {
+      "growing": 15,
+      "shrinking": 10,
+      "from_period": 2020,
+      "combined_pct": 8.38,
+      "same_schools": 26,
+      "combined_base": 22416,
+      "same_schools_pct": 3.84
+     },
+     "3": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2016,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 4151,
+      "weighted": 52.65,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 52.64
+     },
+     "ks4_em4": {
+      "weight": 4151,
+      "weighted": 73.87,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 73.71
+     },
+     "ks4_em5": {
+      "weight": 4151,
+      "weighted": 54.14,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 54.21
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 28,
+    "n_with_roll": 27,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 3858,
+      "weighted": 0.39,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 0.39
+     }
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 11507,
+       "family_id": "languages_literature",
+       "n_schools": 24,
+       "points_per_entry": 5.22
+      },
+      {
+       "shown": true,
+       "entries": 2266,
+       "family_id": "arts_media_design",
+       "n_schools": 24,
+       "points_per_entry": 5.32
+      },
+      {
+       "shown": true,
+       "entries": 1950,
+       "family_id": "enterprise_applied",
+       "n_schools": 23,
+       "points_per_entry": 5.56
+      },
+      {
+       "shown": true,
+       "entries": 1186,
+       "family_id": "technology_eng_construction",
+       "n_schools": 20,
+       "points_per_entry": 5.24
+      },
+      {
+       "shown": true,
+       "entries": 5320,
+       "family_id": "humanities_social",
+       "n_schools": 24,
+       "points_per_entry": 5.36
+      },
+      {
+       "shown": true,
+       "entries": 12939,
+       "family_id": "sciences_maths",
+       "n_schools": 24,
+       "points_per_entry": 5.21
+      },
+      {
+       "shown": true,
+       "entries": 1317,
+       "family_id": "business_law",
+       "n_schools": 21,
+       "points_per_entry": 5.21
+      },
+      {
+       "shown": false,
+       "entries": 287,
+       "family_id": "health_care",
+       "n_schools": 10,
+       "points_per_entry": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2022,
+   "figures": {
+    "las": {
+     "303|Bexley": 2,
+     "315|Merton": 4,
+     "316|Newham": 2,
+     "319|Sutton": 2,
+     "208|Lambeth": 2,
+     "305|Bromley": 9,
+     "306|Croydon": 11,
+     "309|Haringey": 3,
+     "311|Havering": 1,
+     "883|Thurrock": 5,
+     "203|Greenwich": 1,
+     "210|Southwark": 6,
+     "212|Wandsworth": 1,
+     "213|Westminster": 2
+    },
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_p8": {
+       "of": 13,
+       "rank": 2,
+       "tied": false
+      },
+      "ks2_rwm": {
+       "of": 16,
+       "rank": 3,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 6,
+       "tied": false
+      },
+      "ks5_aps_all": {
+       "of": 13,
+       "rank": 8,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 16,
+       "rank": 8,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 13,
+       "rank": 9,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 40428,
+    "share": {
+     "las": [
+      {
+       "pct": 11.76,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 64605,
+       "group_pupils": 7600
+      },
+      {
+       "pct": 17.85,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 31613,
+       "group_pupils": 5643
+      },
+      {
+       "pct": 8.45,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 57713,
+       "group_pupils": 4879
+      },
+      {
+       "pct": 7.95,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 48320,
+       "group_pupils": 3841
+      },
+      {
+       "pct": 11.27,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 31859,
+       "group_pupils": 3589
+      },
+      {
+       "pct": 6.25,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 44278,
+       "group_pupils": 2767
+      },
+      {
+       "pct": 3.95,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 65642,
+       "group_pupils": 2595
+      },
+      {
+       "pct": 5.29,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 41444,
+       "group_pupils": 2192
+      },
+      {
+       "pct": 6.41,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 30770,
+       "group_pupils": 1972
+      },
+      {
+       "pct": 3.27,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 42617,
+       "group_pupils": 1393
+      },
+      {
+       "pct": 2.4,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 48518,
+       "group_pupils": 1163
+      },
+      {
+       "pct": 2.43,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 42390,
+       "group_pupils": 1031
+      },
+      {
+       "pct": 2.1,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 42745,
+       "group_pupils": 896
+      },
+      {
+       "pct": 2.28,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 37991,
+       "group_pupils": 867
+      }
+     ],
+     "pct": 1.64,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.55,
+       "region_code": "E12000006",
+       "group_pupils": 5643,
+       "region_pupils": 1022517
+      },
+      {
+       "pct": 2.41,
+       "region_code": "E12000007",
+       "group_pupils": 34785,
+       "region_pupils": 1444437
+      }
+     ],
+     "area_pupils": 2466954,
+     "group_pupils": 40428
+    },
+    "change": {
+     "1": {
+      "growing": 32,
+      "shrinking": 17,
+      "from_period": 2021,
+      "combined_pct": 4.37,
+      "same_schools": 49,
+      "combined_base": 38735,
+      "same_schools_pct": 2.94
+     },
+     "3": {
+      "growing": 31,
+      "shrinking": 13,
+      "from_period": 2019,
+      "combined_pct": 20.94,
+      "same_schools": 45,
+      "combined_base": 33427,
+      "same_schools_pct": 9.37
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000006": 5,
+     "E12000007": 46
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 4780,
+      "weighted": 49.84,
+      "n_weighted": 27,
+      "n_with_figure": 27,
+      "average_school": 49.83
+     },
+     "ks2_rwm": {
+      "weight": 1273,
+      "weighted": 72.57,
+      "n_weighted": 22,
+      "n_with_figure": 22,
+      "average_school": 72.59
+     },
+     "ks4_em4": {
+      "weight": 4780,
+      "weighted": 69.18,
+      "n_weighted": 27,
+      "n_with_figure": 27,
+      "average_school": 69.28
+     },
+     "ks4_em5": {
+      "weight": 4780,
+      "weighted": 49.85,
+      "n_weighted": 27,
+      "n_with_figure": 27,
+      "average_school": 50.14
+     },
+     "ks5_aps_all": {
+      "weight": 6942,
+      "weighted": 32.33,
+      "n_weighted": 25,
+      "n_with_figure": 25,
+      "average_school": 30.6
+     },
+     "ks5_aps_alevel": {
+      "weight": 5318,
+      "weighted": 32.69,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 30.77
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 51,
+    "confidence": {
+     "confirmed": 51
+    },
+    "size_bands": {
+     "L": 24,
+     "M": 6,
+     "S": 1,
+     "XL": 19
+    },
+    "n_with_roll": 50,
+    "roll_by_age": [
+     0,
+     2,
+     45,
+     357,
+     1207,
+     1236,
+     1253,
+     1341,
+     1227,
+     1234,
+     1274,
+     5164,
+     5253,
+     5121,
+     5066,
+     4813,
+     2959,
+     2698,
+     174,
+     4
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 4477,
+      "weighted": 0.31,
+      "n_weighted": 27,
+      "n_with_figure": 27,
+      "average_school": 0.3
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 5831,
+     "primary": 7565,
+     "secondary": 25417
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 13331,
+       "family_id": "languages_literature",
+       "n_schools": 27,
+       "points_per_entry": 4.95
+      },
+      {
+       "shown": true,
+       "entries": 2651,
+       "family_id": "arts_media_design",
+       "n_schools": 27,
+       "points_per_entry": 4.81
+      },
+      {
+       "shown": true,
+       "entries": 15322,
+       "family_id": "sciences_maths",
+       "n_schools": 27,
+       "points_per_entry": 4.95
+      },
+      {
+       "shown": true,
+       "entries": 1739,
+       "family_id": "business_law",
+       "n_schools": 25,
+       "points_per_entry": 4.85
+      },
+      {
+       "shown": true,
+       "entries": 1932,
+       "family_id": "enterprise_applied",
+       "n_schools": 26,
+       "points_per_entry": 4.76
+      },
+      {
+       "shown": true,
+       "entries": 1377,
+       "family_id": "technology_eng_construction",
+       "n_schools": 24,
+       "points_per_entry": 4.37
+      },
+      {
+       "shown": true,
+       "entries": 6542,
+       "family_id": "humanities_social",
+       "n_schools": 27,
+       "points_per_entry": 4.87
+      },
+      {
+       "shown": false,
+       "entries": 310,
+       "family_id": "health_care",
+       "n_schools": 13,
+       "points_per_entry": null
+      }
+     ],
+     "ks5": [
+      {
+       "shown": true,
+       "entries": 2296,
+       "family_id": "sciences_maths",
+       "n_schools": 25,
+       "points_per_entry": 34.78
+      },
+      {
+       "shown": true,
+       "entries": 472,
+       "family_id": "languages_literature",
+       "n_schools": 18,
+       "points_per_entry": 35.95
+      },
+      {
+       "shown": true,
+       "entries": 1766,
+       "family_id": "humanities_social",
+       "n_schools": 23,
+       "points_per_entry": 36.12
+      },
+      {
+       "shown": true,
+       "entries": 1415,
+       "family_id": "business_law",
+       "n_schools": 25,
+       "points_per_entry": 35.68
+      },
+      {
+       "shown": true,
+       "entries": 533,
+       "family_id": "arts_media_design",
+       "n_schools": 14,
+       "points_per_entry": 35.68
+      },
+      {
+       "shown": false,
+       "entries": 245,
+       "family_id": "health_care",
+       "n_schools": 13,
+       "points_per_entry": null
+      },
+      {
+       "shown": true,
+       "entries": 341,
+       "family_id": "technology_eng_construction",
+       "n_schools": 13,
+       "points_per_entry": 29.28
+      },
+      {
+       "shown": true,
+       "entries": 491,
+       "family_id": "enterprise_applied",
+       "n_schools": 16,
+       "points_per_entry": 30.25
+      }
+     ]
+    },
+    "schools_by_phase": {
+     "post16": 26,
+     "primary": 22,
+     "secondary": 29
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2022,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks5_aps_all": {
+       "of": 13,
+       "rank": 8,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 12,
+       "rank": 2,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 13,
+       "rank": 9,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 5825,
+    "share": {
+     "las": [
+      {
+       "pct": 23.91,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 5742,
+       "group_pupils": 1373
+      },
+      {
+       "pct": 20.26,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 4655,
+       "group_pupils": 943
+      },
+      {
+       "pct": 76.14,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 1140,
+       "group_pupils": 868
+      },
+      {
+       "pct": 7.11,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 6174,
+       "group_pupils": 439
+      },
+      {
+       "pct": 10.13,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 3948,
+       "group_pupils": 400
+      },
+      {
+       "pct": 9.52,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 3939,
+       "group_pupils": 375
+      },
+      {
+       "pct": 8.11,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 4244,
+       "group_pupils": 344
+      },
+      {
+       "pct": 9.13,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 3121,
+       "group_pupils": 285
+      },
+      {
+       "pct": 7.16,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 3212,
+       "group_pupils": 230
+      },
+      {
+       "pct": 10.25,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 2185,
+       "group_pupils": 224
+      },
+      {
+       "pct": 5.06,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 4048,
+       "group_pupils": 205
+      },
+      {
+       "pct": 4.32,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 3220,
+       "group_pupils": 139
+      }
+     ],
+     "pct": 3.06,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 1.28,
+       "region_code": "E12000006",
+       "group_pupils": 868,
+       "region_pupils": 67965
+      },
+      {
+       "pct": 4.06,
+       "region_code": "E12000007",
+       "group_pupils": 4957,
+       "region_pupils": 122199
+      }
+     ],
+     "area_pupils": 190164,
+     "group_pupils": 5825
+    },
+    "change": {
+     "1": {
+      "growing": 17,
+      "shrinking": 7,
+      "from_period": 2021,
+      "combined_pct": 9.95,
+      "same_schools": 24,
+      "combined_base": 5298,
+      "same_schools_pct": 8.55
+     },
+     "3": {
+      "growing": 17,
+      "shrinking": 4,
+      "from_period": 2019,
+      "combined_pct": 30.58,
+      "same_schools": 22,
+      "combined_base": 4461,
+      "same_schools_pct": 15.56
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 6942,
+      "weighted": 32.33,
+      "n_weighted": 25,
+      "n_with_figure": 25,
+      "average_school": 30.6
+     },
+     "ks5_aps_alevel": {
+      "weight": 5318,
+      "weighted": 32.69,
+      "n_weighted": 24,
+      "n_with_figure": 24,
+      "average_school": 30.77
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 26,
+    "n_with_roll": 25,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": [
+      {
+       "shown": true,
+       "entries": 2296,
+       "family_id": "sciences_maths",
+       "n_schools": 25,
+       "points_per_entry": 34.78
+      },
+      {
+       "shown": true,
+       "entries": 472,
+       "family_id": "languages_literature",
+       "n_schools": 18,
+       "points_per_entry": 35.95
+      },
+      {
+       "shown": true,
+       "entries": 1766,
+       "family_id": "humanities_social",
+       "n_schools": 23,
+       "points_per_entry": 36.12
+      },
+      {
+       "shown": true,
+       "entries": 1415,
+       "family_id": "business_law",
+       "n_schools": 25,
+       "points_per_entry": 35.68
+      },
+      {
+       "shown": true,
+       "entries": 533,
+       "family_id": "arts_media_design",
+       "n_schools": 14,
+       "points_per_entry": 35.68
+      },
+      {
+       "shown": false,
+       "entries": 245,
+       "family_id": "health_care",
+       "n_schools": 13,
+       "points_per_entry": null
+      },
+      {
+       "shown": true,
+       "entries": 341,
+       "family_id": "technology_eng_construction",
+       "n_schools": 13,
+       "points_per_entry": 29.28
+      },
+      {
+       "shown": true,
+       "entries": 491,
+       "family_id": "enterprise_applied",
+       "n_schools": 16,
+       "points_per_entry": 30.25
+      }
+     ]
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2022,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks2_rwm": {
+       "of": 16,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 16,
+       "rank": 11,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 7564,
+    "share": {
+     "las": [
+      {
+       "pct": 6.73,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 25233,
+       "group_pupils": 1698
+      },
+      {
+       "pct": 5.28,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 28843,
+       "group_pupils": 1523
+      },
+      {
+       "pct": 8.99,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 15238,
+       "group_pupils": 1370
+      },
+      {
+       "pct": 5.01,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 17993,
+       "group_pupils": 902
+      },
+      {
+       "pct": 1.89,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 28468,
+       "group_pupils": 539
+      },
+      {
+       "pct": 2.72,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 19409,
+       "group_pupils": 527
+      },
+      {
+       "pct": 2.55,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 14809,
+       "group_pupils": 377
+      },
+      {
+       "pct": 2.17,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 16419,
+       "group_pupils": 357
+      },
+      {
+       "pct": 1.39,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 19441,
+       "group_pupils": 271
+      }
+     ],
+     "pct": 0.69,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.3,
+       "region_code": "E12000006",
+       "group_pupils": 1370,
+       "region_pupils": 460689
+      },
+      {
+       "pct": 0.97,
+       "region_code": "E12000007",
+       "group_pupils": 6194,
+       "region_pupils": 636720
+      }
+     ],
+     "area_pupils": 1097409,
+     "group_pupils": 7564
+    },
+    "change": {
+     "1": {
+      "growing": 13,
+      "shrinking": 8,
+      "from_period": 2021,
+      "combined_pct": 0.84,
+      "same_schools": 22,
+      "combined_base": 7501,
+      "same_schools_pct": 0.84
+     },
+     "3": {
+      "growing": 13,
+      "shrinking": 7,
+      "from_period": 2019,
+      "combined_pct": 22.81,
+      "same_schools": 20,
+      "combined_base": 6159,
+      "same_schools_pct": 8.67
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 1273,
+      "weighted": 72.57,
+      "n_weighted": 22,
+      "n_with_figure": 22,
+      "average_school": 72.59
+     }
+    },
+    "excluded": {},
+    "n_schools": 22,
+    "n_with_roll": 22,
+    "value_added": {}
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2022,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_p8": {
+       "of": 13,
+       "rank": 2,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 6,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 14,
+       "rank": 7,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 25414,
+    "share": {
+     "las": [
+      {
+       "pct": 18.89,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 23199,
+       "group_pupils": 4382
+      },
+      {
+       "pct": 26.68,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 11535,
+       "group_pupils": 3077
+      },
+      {
+       "pct": 15.2,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 18850,
+       "group_pupils": 2865
+      },
+      {
+       "pct": 27.01,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 10577,
+       "group_pupils": 2857
+      },
+      {
+       "pct": 11.27,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 21307,
+       "group_pupils": 2401
+      },
+      {
+       "pct": 12.55,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 16588,
+       "group_pupils": 2082
+      },
+      {
+       "pct": 6.28,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 24109,
+       "group_pupils": 1515
+      },
+      {
+       "pct": 5.83,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 17731,
+       "group_pupils": 1034
+      },
+      {
+       "pct": 7.65,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 13444,
+       "group_pupils": 1028
+      },
+      {
+       "pct": 6.23,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 15058,
+       "group_pupils": 938
+      },
+      {
+       "pct": 5.63,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 16560,
+       "group_pupils": 933
+      },
+      {
+       "pct": 5.75,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 15539,
+       "group_pupils": 894
+      },
+      {
+       "pct": 6.23,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 13260,
+       "group_pupils": 826
+      },
+      {
+       "pct": 4.66,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 12502,
+       "group_pupils": 582
+      }
+     ],
+     "pct": 2.81,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.79,
+       "region_code": "E12000006",
+       "group_pupils": 3077,
+       "region_pupils": 389569
+      },
+      {
+       "pct": 4.33,
+       "region_code": "E12000007",
+       "group_pupils": 22337,
+       "region_pupils": 515298
+      }
+     ],
+     "area_pupils": 904867,
+     "group_pupils": 25414
+    },
+    "change": {
+     "1": {
+      "growing": 18,
+      "shrinking": 9,
+      "from_period": 2021,
+      "combined_pct": 4.61,
+      "same_schools": 27,
+      "combined_base": 24294,
+      "same_schools_pct": 2.64
+     },
+     "3": {
+      "growing": 19,
+      "shrinking": 6,
+      "from_period": 2019,
+      "combined_pct": 19.44,
+      "same_schools": 25,
+      "combined_base": 21278,
+      "same_schools_pct": 9.58
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2017,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 4780,
+      "weighted": 49.84,
+      "n_weighted": 27,
+      "n_with_figure": 27,
+      "average_school": 49.83
+     },
+     "ks4_em4": {
+      "weight": 4780,
+      "weighted": 69.18,
+      "n_weighted": 27,
+      "n_with_figure": 27,
+      "average_school": 69.28
+     },
+     "ks4_em5": {
+      "weight": 4780,
+      "weighted": 49.85,
+      "n_weighted": 27,
+      "n_with_figure": 27,
+      "average_school": 50.14
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 29,
+    "n_with_roll": 28,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 4477,
+      "weighted": 0.31,
+      "n_weighted": 27,
+      "n_with_figure": 27,
+      "average_school": 0.3
+     }
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 13331,
+       "family_id": "languages_literature",
+       "n_schools": 27,
+       "points_per_entry": 4.95
+      },
+      {
+       "shown": true,
+       "entries": 2651,
+       "family_id": "arts_media_design",
+       "n_schools": 27,
+       "points_per_entry": 4.81
+      },
+      {
+       "shown": true,
+       "entries": 15322,
+       "family_id": "sciences_maths",
+       "n_schools": 27,
+       "points_per_entry": 4.95
+      },
+      {
+       "shown": true,
+       "entries": 1739,
+       "family_id": "business_law",
+       "n_schools": 25,
+       "points_per_entry": 4.85
+      },
+      {
+       "shown": true,
+       "entries": 1932,
+       "family_id": "enterprise_applied",
+       "n_schools": 26,
+       "points_per_entry": 4.76
+      },
+      {
+       "shown": true,
+       "entries": 1377,
+       "family_id": "technology_eng_construction",
+       "n_schools": 24,
+       "points_per_entry": 4.37
+      },
+      {
+       "shown": true,
+       "entries": 6542,
+       "family_id": "humanities_social",
+       "n_schools": 27,
+       "points_per_entry": 4.87
+      },
+      {
+       "shown": false,
+       "entries": 310,
+       "family_id": "health_care",
+       "n_schools": 13,
+       "points_per_entry": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2023,
+   "figures": {
+    "las": {
+     "304|Brent": 1,
+     "303|Bexley": 2,
+     "315|Merton": 4,
+     "316|Newham": 2,
+     "319|Sutton": 2,
+     "208|Lambeth": 2,
+     "305|Bromley": 9,
+     "306|Croydon": 12,
+     "309|Haringey": 3,
+     "311|Havering": 2,
+     "883|Thurrock": 5,
+     "203|Greenwich": 1,
+     "210|Southwark": 6,
+     "212|Wandsworth": 1,
+     "213|Westminster": 2
+    },
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 3,
+       "tied": false
+      },
+      "ks4_p8": {
+       "of": 13,
+       "rank": 1,
+       "tied": false
+      },
+      "ks2_rwm": {
+       "of": 16,
+       "rank": 3,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 2,
+       "tied": false
+      },
+      "ks5_aps_all": {
+       "of": 13,
+       "rank": 7,
+       "tied": false
+      },
+      "ks5_va_alevel": {
+       "of": 13,
+       "rank": 11,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 16,
+       "rank": 4,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 13,
+       "rank": 7,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 41998,
+    "share": {
+     "las": [
+      {
+       "pct": 11.75,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 64309,
+       "group_pupils": 7556
+      },
+      {
+       "pct": 17.72,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 31978,
+       "group_pupils": 5668
+      },
+      {
+       "pct": 8.55,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 57678,
+       "group_pupils": 4930
+      },
+      {
+       "pct": 8.27,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 47812,
+       "group_pupils": 3953
+      },
+      {
+       "pct": 11.56,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 31747,
+       "group_pupils": 3670
+      },
+      {
+       "pct": 6.33,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 43987,
+       "group_pupils": 2785
+      },
+      {
+       "pct": 3.83,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 65385,
+       "group_pupils": 2504
+      },
+      {
+       "pct": 5.34,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 41109,
+       "group_pupils": 2194
+      },
+      {
+       "pct": 6.34,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 30477,
+       "group_pupils": 1932
+      },
+      {
+       "pct": 3.52,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 42658,
+       "group_pupils": 1502
+      },
+      {
+       "pct": 2.4,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 48612,
+       "group_pupils": 1167
+      },
+      {
+       "pct": 2.21,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 50703,
+       "group_pupils": 1121
+      },
+      {
+       "pct": 2.95,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 37268,
+       "group_pupils": 1101
+      },
+      {
+       "pct": 2.27,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 43566,
+       "group_pupils": 991
+      },
+      {
+       "pct": 2.21,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 41789,
+       "group_pupils": 924
+      }
+     ],
+     "pct": 1.7,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.55,
+       "region_code": "E12000006",
+       "group_pupils": 5668,
+       "region_pupils": 1028246
+      },
+      {
+       "pct": 2.53,
+       "region_code": "E12000007",
+       "group_pupils": 36330,
+       "region_pupils": 1437100
+      }
+     ],
+     "area_pupils": 2465346,
+     "group_pupils": 41998
+    },
+    "change": {
+     "1": {
+      "growing": 28,
+      "shrinking": 20,
+      "from_period": 2022,
+      "combined_pct": 3.88,
+      "same_schools": 50,
+      "combined_base": 40428,
+      "same_schools_pct": -1.14
+     },
+     "3": {
+      "growing": 26,
+      "shrinking": 21,
+      "from_period": 2020,
+      "combined_pct": 17.75,
+      "same_schools": 47,
+      "combined_base": 35666,
+      "same_schools_pct": 4.09
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "regions": {
+     "E12000006": 5,
+     "E12000007": 49
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 5125,
+      "weighted": 51.03,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 50.74
+     },
+     "ks2_rwm": {
+      "weight": 1272,
+      "weighted": 74.34,
+      "n_weighted": 22,
+      "n_with_figure": 22,
+      "average_school": 75.27
+     },
+     "ks4_em4": {
+      "weight": 5125,
+      "weighted": 70.92,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 70.25
+     },
+     "ks4_em5": {
+      "weight": 5125,
+      "weighted": 54.06,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 53.26
+     },
+     "ks5_aps_all": {
+      "weight": 7622,
+      "weighted": 32.7,
+      "n_weighted": 26,
+      "n_with_figure": 26,
+      "average_school": 30.87
+     },
+     "ks5_aps_alevel": {
+      "weight": 6103,
+      "weighted": 33.18,
+      "n_weighted": 25,
+      "n_with_figure": 25,
+      "average_school": 30.89
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143759",
+       "name": "Harris Rainham Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_va_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143759",
+       "name": "Harris Rainham Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143759",
+       "name": "Harris Rainham Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 54,
+    "confidence": {
+     "confirmed": 54
+    },
+    "size_bands": {
+     "L": 29,
+     "M": 5,
+     "XL": 19
+    },
+    "n_with_roll": 53,
+    "roll_by_age": [
+     0,
+     0,
+     32,
+     345,
+     1226,
+     1237,
+     1269,
+     1346,
+     1365,
+     1271,
+     1273,
+     5320,
+     5293,
+     5308,
+     5195,
+     5181,
+     3212,
+     2949,
+     169,
+     7
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 4752,
+      "weighted": 0.45,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 0.43
+     },
+     "ks5_va_alevel": {
+      "weight": 2302,
+      "weighted": -0.19,
+      "n_weighted": 25,
+      "n_with_figure": 25,
+      "average_school": -0.19
+     }
+    },
+    "roll_by_phase": {
+     "post16": 6330,
+     "primary": 7761,
+     "secondary": 26297
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 2615,
+       "family_id": "arts_media_design",
+       "n_schools": 29,
+       "points_per_entry": 5.06
+      },
+      {
+       "shown": true,
+       "entries": 1871,
+       "family_id": "business_law",
+       "n_schools": 27,
+       "points_per_entry": 5.14
+      },
+      {
+       "shown": true,
+       "entries": 1538,
+       "family_id": "technology_eng_construction",
+       "n_schools": 26,
+       "points_per_entry": 4.89
+      },
+      {
+       "shown": true,
+       "entries": 14265,
+       "family_id": "languages_literature",
+       "n_schools": 29,
+       "points_per_entry": 5.09
+      },
+      {
+       "shown": true,
+       "entries": 6897,
+       "family_id": "humanities_social",
+       "n_schools": 29,
+       "points_per_entry": 4.97
+      },
+      {
+       "shown": true,
+       "entries": 16313,
+       "family_id": "sciences_maths",
+       "n_schools": 29,
+       "points_per_entry": 5.15
+      },
+      {
+       "shown": true,
+       "entries": 2007,
+       "family_id": "enterprise_applied",
+       "n_schools": 27,
+       "points_per_entry": 4.94
+      },
+      {
+       "shown": false,
+       "entries": 303,
+       "family_id": "health_care",
+       "n_schools": 11,
+       "points_per_entry": null
+      }
+     ],
+     "ks5": [
+      {
+       "shown": true,
+       "entries": 2742,
+       "family_id": "sciences_maths",
+       "n_schools": 26,
+       "points_per_entry": 35.05
+      },
+      {
+       "shown": true,
+       "entries": 484,
+       "family_id": "languages_literature",
+       "n_schools": 17,
+       "points_per_entry": 38.16
+      },
+      {
+       "shown": true,
+       "entries": 1952,
+       "family_id": "humanities_social",
+       "n_schools": 24,
+       "points_per_entry": 35.22
+      },
+      {
+       "shown": true,
+       "entries": 1506,
+       "family_id": "business_law",
+       "n_schools": 24,
+       "points_per_entry": 35.58
+      },
+      {
+       "shown": true,
+       "entries": 386,
+       "family_id": "technology_eng_construction",
+       "n_schools": 15,
+       "points_per_entry": 29.55
+      },
+      {
+       "shown": false,
+       "entries": 172,
+       "family_id": "health_care",
+       "n_schools": 10,
+       "points_per_entry": null
+      },
+      {
+       "shown": true,
+       "entries": 396,
+       "family_id": "enterprise_applied",
+       "n_schools": 16,
+       "points_per_entry": 32.89
+      },
+      {
+       "shown": true,
+       "entries": 433,
+       "family_id": "arts_media_design",
+       "n_schools": 15,
+       "points_per_entry": 38.53
+      }
+     ]
+    },
+    "schools_by_phase": {
+     "post16": 30,
+     "primary": 22,
+     "secondary": 31
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2023,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks5_aps_all": {
+       "of": 13,
+       "rank": 7,
+       "tied": false
+      },
+      "ks5_va_alevel": {
+       "of": 13,
+       "rank": 11,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 13,
+       "rank": 7,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 6318,
+    "share": {
+     "las": [
+      {
+       "pct": 22.98,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 5623,
+       "group_pupils": 1292
+      },
+      {
+       "pct": 19.68,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 4741,
+       "group_pupils": 933
+      },
+      {
+       "pct": 69.6,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 1194,
+       "group_pupils": 831
+      },
+      {
+       "pct": 7.96,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 6216,
+       "group_pupils": 495
+      },
+      {
+       "pct": 10.78,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 3895,
+       "group_pupils": 420
+      },
+      {
+       "pct": 9.4,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 4030,
+       "group_pupils": 379
+      },
+      {
+       "pct": 8.7,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 4345,
+       "group_pupils": 378
+      },
+      {
+       "pct": 9.8,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 3409,
+       "group_pupils": 334
+      },
+      {
+       "pct": 12.36,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 2338,
+       "group_pupils": 289
+      },
+      {
+       "pct": 7.54,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 3275,
+       "group_pupils": 247
+      },
+      {
+       "pct": 5.21,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 4144,
+       "group_pupils": 216
+      },
+      {
+       "pct": 3.92,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 4104,
+       "group_pupils": 161
+      },
+      {
+       "pct": 4.15,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 3373,
+       "group_pupils": 140
+      },
+      {
+       "pct": 2.3,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 4694,
+       "group_pupils": 108
+      },
+      {
+       "pct": 5.09,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 1866,
+       "group_pupils": 95
+      }
+     ],
+     "pct": 3.28,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 1.21,
+       "region_code": "E12000006",
+       "group_pupils": 831,
+       "region_pupils": 68958
+      },
+      {
+       "pct": 4.44,
+       "region_code": "E12000007",
+       "group_pupils": 5487,
+       "region_pupils": 123718
+      }
+     ],
+     "area_pupils": 192676,
+     "group_pupils": 6318
+    },
+    "change": {
+     "1": {
+      "growing": 14,
+      "shrinking": 10,
+      "from_period": 2022,
+      "combined_pct": 8.46,
+      "same_schools": 25,
+      "combined_base": 5825,
+      "same_schools_pct": 0.07
+     },
+     "3": {
+      "growing": 12,
+      "shrinking": 10,
+      "from_period": 2020,
+      "combined_pct": 32.95,
+      "same_schools": 22,
+      "combined_base": 4752,
+      "same_schools_pct": 7.66
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 7622,
+      "weighted": 32.7,
+      "n_weighted": 26,
+      "n_with_figure": 26,
+      "average_school": 30.87
+     },
+     "ks5_aps_alevel": {
+      "weight": 6103,
+      "weighted": 33.18,
+      "n_weighted": 25,
+      "n_with_figure": 25,
+      "average_school": 30.89
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143759",
+       "name": "Harris Rainham Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_va_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143759",
+       "name": "Harris Rainham Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143706",
+       "name": "Harris Academy Sutton",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "143759",
+       "name": "Harris Rainham Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145860",
+       "name": "Harris Academy Wimbledon",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 30,
+    "n_with_roll": 29,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 2302,
+      "weighted": -0.19,
+      "n_weighted": 25,
+      "n_with_figure": 25,
+      "average_school": -0.19
+     }
+    },
+    "subject_areas": {
+     "ks5": [
+      {
+       "shown": true,
+       "entries": 2742,
+       "family_id": "sciences_maths",
+       "n_schools": 26,
+       "points_per_entry": 35.05
+      },
+      {
+       "shown": true,
+       "entries": 484,
+       "family_id": "languages_literature",
+       "n_schools": 17,
+       "points_per_entry": 38.16
+      },
+      {
+       "shown": true,
+       "entries": 1952,
+       "family_id": "humanities_social",
+       "n_schools": 24,
+       "points_per_entry": 35.22
+      },
+      {
+       "shown": true,
+       "entries": 1506,
+       "family_id": "business_law",
+       "n_schools": 24,
+       "points_per_entry": 35.58
+      },
+      {
+       "shown": true,
+       "entries": 386,
+       "family_id": "technology_eng_construction",
+       "n_schools": 15,
+       "points_per_entry": 29.55
+      },
+      {
+       "shown": false,
+       "entries": 172,
+       "family_id": "health_care",
+       "n_schools": 10,
+       "points_per_entry": null
+      },
+      {
+       "shown": true,
+       "entries": 396,
+       "family_id": "enterprise_applied",
+       "n_schools": 16,
+       "points_per_entry": 32.89
+      },
+      {
+       "shown": true,
+       "entries": 433,
+       "family_id": "arts_media_design",
+       "n_schools": 15,
+       "points_per_entry": 38.53
+      }
+     ]
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2023,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks2_rwm": {
+       "of": 16,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 16,
+       "rank": 4,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 7760,
+    "share": {
+     "las": [
+      {
+       "pct": 6.87,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 25211,
+       "group_pupils": 1731
+      },
+      {
+       "pct": 5.48,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 28720,
+       "group_pupils": 1573
+      },
+      {
+       "pct": 8.89,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 15357,
+       "group_pupils": 1366
+      },
+      {
+       "pct": 5.14,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 17755,
+       "group_pupils": 913
+      },
+      {
+       "pct": 3.31,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 18980,
+       "group_pupils": 628
+      },
+      {
+       "pct": 1.9,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 28240,
+       "group_pupils": 536
+      },
+      {
+       "pct": 2.59,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 14646,
+       "group_pupils": 380
+      },
+      {
+       "pct": 2.22,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 16173,
+       "group_pupils": 359
+      },
+      {
+       "pct": 1.42,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 19353,
+       "group_pupils": 274
+      }
+     ],
+     "pct": 0.71,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.3,
+       "region_code": "E12000006",
+       "group_pupils": 1366,
+       "region_pupils": 460097
+      },
+      {
+       "pct": 1.02,
+       "region_code": "E12000007",
+       "group_pupils": 6394,
+       "region_pupils": 629663
+      }
+     ],
+     "area_pupils": 1089760,
+     "group_pupils": 7760
+    },
+    "change": {
+     "1": {
+      "growing": 14,
+      "shrinking": 7,
+      "from_period": 2022,
+      "combined_pct": 2.59,
+      "same_schools": 22,
+      "combined_base": 7564,
+      "same_schools_pct": 2.59
+     },
+     "3": {
+      "growing": 11,
+      "shrinking": 8,
+      "from_period": 2020,
+      "combined_pct": 11.37,
+      "same_schools": 21,
+      "combined_base": 6968,
+      "same_schools_pct": 3.67
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 1272,
+      "weighted": 74.34,
+      "n_weighted": 22,
+      "n_with_figure": 22,
+      "average_school": 75.27
+     }
+    },
+    "excluded": {},
+    "n_schools": 22,
+    "n_with_roll": 22,
+    "value_added": {}
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2023,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 3,
+       "tied": false
+      },
+      "ks4_p8": {
+       "of": 13,
+       "rank": 1,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 14,
+       "rank": 6,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 26295,
+    "share": {
+     "las": [
+      {
+       "pct": 18.82,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 23113,
+       "group_pupils": 4349
+      },
+      {
+       "pct": 26.88,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 11708,
+       "group_pupils": 3147
+      },
+      {
+       "pct": 26.86,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 10761,
+       "group_pupils": 2890
+      },
+      {
+       "pct": 14.93,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 19030,
+       "group_pupils": 2842
+      },
+      {
+       "pct": 11.09,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 21377,
+       "group_pupils": 2371
+      },
+      {
+       "pct": 12.48,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 16382,
+       "group_pupils": 2045
+      },
+      {
+       "pct": 5.99,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 24158,
+       "group_pupils": 1446
+      },
+      {
+       "pct": 5.74,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 18002,
+       "group_pupils": 1034
+      },
+      {
+       "pct": 7.45,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 13407,
+       "group_pupils": 999
+      },
+      {
+       "pct": 6.24,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 14914,
+       "group_pupils": 930
+      },
+      {
+       "pct": 5.41,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 17006,
+       "group_pupils": 920
+      },
+      {
+       "pct": 5.08,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 17808,
+       "group_pupils": 905
+      },
+      {
+       "pct": 5.6,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 15880,
+       "group_pupils": 890
+      },
+      {
+       "pct": 6.23,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 12269,
+       "group_pupils": 764
+      },
+      {
+       "pct": 5.84,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 13069,
+       "group_pupils": 763
+      }
+     ],
+     "pct": 2.87,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.79,
+       "region_code": "E12000006",
+       "group_pupils": 3147,
+       "region_pupils": 396273
+      },
+      {
+       "pct": 4.47,
+       "region_code": "E12000007",
+       "group_pupils": 23148,
+       "region_pupils": 518420
+      }
+     ],
+     "area_pupils": 914693,
+     "group_pupils": 26295
+    },
+    "change": {
+     "1": {
+      "growing": 11,
+      "shrinking": 16,
+      "from_period": 2022,
+      "combined_pct": 3.47,
+      "same_schools": 28,
+      "combined_base": 25414,
+      "same_schools_pct": -3.29
+     },
+     "3": {
+      "growing": 16,
+      "shrinking": 8,
+      "from_period": 2020,
+      "combined_pct": 17.3,
+      "same_schools": 26,
+      "combined_base": 22416,
+      "same_schools_pct": 3.19
+     },
+     "5": {
+      "growing": 0,
+      "shrinking": 0,
+      "from_period": 2018,
+      "combined_pct": null,
+      "same_schools": 0,
+      "combined_base": null,
+      "same_schools_pct": null
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 5125,
+      "weighted": 51.03,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 50.74
+     },
+     "ks4_em4": {
+      "weight": 5125,
+      "weighted": 70.92,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 70.25
+     },
+     "ks4_em5": {
+      "weight": 5125,
+      "weighted": 54.06,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 53.26
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_p8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "147543",
+       "name": "Harris Academy Clapham",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 31,
+    "n_with_roll": 30,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 4752,
+      "weighted": 0.45,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 0.43
+     }
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 2615,
+       "family_id": "arts_media_design",
+       "n_schools": 29,
+       "points_per_entry": 5.06
+      },
+      {
+       "shown": true,
+       "entries": 1871,
+       "family_id": "business_law",
+       "n_schools": 27,
+       "points_per_entry": 5.14
+      },
+      {
+       "shown": true,
+       "entries": 1538,
+       "family_id": "technology_eng_construction",
+       "n_schools": 26,
+       "points_per_entry": 4.89
+      },
+      {
+       "shown": true,
+       "entries": 14265,
+       "family_id": "languages_literature",
+       "n_schools": 29,
+       "points_per_entry": 5.09
+      },
+      {
+       "shown": true,
+       "entries": 6897,
+       "family_id": "humanities_social",
+       "n_schools": 29,
+       "points_per_entry": 4.97
+      },
+      {
+       "shown": true,
+       "entries": 16313,
+       "family_id": "sciences_maths",
+       "n_schools": 29,
+       "points_per_entry": 5.15
+      },
+      {
+       "shown": true,
+       "entries": 2007,
+       "family_id": "enterprise_applied",
+       "n_schools": 27,
+       "points_per_entry": 4.94
+      },
+      {
+       "shown": false,
+       "entries": 303,
+       "family_id": "health_care",
+       "n_schools": 11,
+       "points_per_entry": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2024,
+   "figures": {
+    "las": {
+     "304|Brent": 2,
+     "303|Bexley": 2,
+     "315|Merton": 4,
+     "316|Newham": 2,
+     "319|Sutton": 2,
+     "208|Lambeth": 2,
+     "305|Bromley": 9,
+     "306|Croydon": 12,
+     "309|Haringey": 3,
+     "311|Havering": 2,
+     "883|Thurrock": 5,
+     "203|Greenwich": 1,
+     "210|Southwark": 6,
+     "212|Wandsworth": 1,
+     "213|Westminster": 2
+    },
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 3,
+       "tied": false
+      },
+      "ks2_rwm": {
+       "of": 16,
+       "rank": 2,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      },
+      "ks5_aps_all": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      },
+      "ks5_va_alevel": {
+       "of": 13,
+       "rank": 8,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 16,
+       "rank": 5,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 43007,
+    "share": {
+     "las": [
+      {
+       "pct": 11.89,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 63207,
+       "group_pupils": 7514
+      },
+      {
+       "pct": 17.81,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 31712,
+       "group_pupils": 5649
+      },
+      {
+       "pct": 8.59,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 57550,
+       "group_pupils": 4943
+      },
+      {
+       "pct": 11.99,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 31333,
+       "group_pupils": 3756
+      },
+      {
+       "pct": 7.99,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 46919,
+       "group_pupils": 3747
+      },
+      {
+       "pct": 6.47,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 43604,
+       "group_pupils": 2822
+      },
+      {
+       "pct": 3.87,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 64169,
+       "group_pupils": 2485
+      },
+      {
+       "pct": 5.41,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 40355,
+       "group_pupils": 2183
+      },
+      {
+       "pct": 6.56,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 29546,
+       "group_pupils": 1938
+      },
+      {
+       "pct": 3.64,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 50476,
+       "group_pupils": 1838
+      },
+      {
+       "pct": 3.89,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 42469,
+       "group_pupils": 1650
+      },
+      {
+       "pct": 3.51,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 36346,
+       "group_pupils": 1274
+      },
+      {
+       "pct": 2.46,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 47678,
+       "group_pupils": 1172
+      },
+      {
+       "pct": 2.6,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 43851,
+       "group_pupils": 1141
+      },
+      {
+       "pct": 2.19,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 40929,
+       "group_pupils": 895
+      }
+     ],
+     "pct": 1.76,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.55,
+       "region_code": "E12000006",
+       "group_pupils": 5649,
+       "region_pupils": 1023561
+      },
+      {
+       "pct": 2.63,
+       "region_code": "E12000007",
+       "group_pupils": 37358,
+       "region_pupils": 1418623
+      }
+     ],
+     "area_pupils": 2442184,
+     "group_pupils": 43007
+    },
+    "change": {
+     "1": {
+      "growing": 25,
+      "shrinking": 27,
+      "from_period": 2023,
+      "combined_pct": 2.4,
+      "same_schools": 53,
+      "combined_base": 41998,
+      "same_schools_pct": 0.69
+     },
+     "3": {
+      "growing": 29,
+      "shrinking": 19,
+      "from_period": 2021,
+      "combined_pct": 11.03,
+      "same_schools": 49,
+      "combined_base": 38735,
+      "same_schools_pct": 1.87
+     },
+     "5": {
+      "growing": 26,
+      "shrinking": 19,
+      "from_period": 2019,
+      "combined_pct": 28.66,
+      "same_schools": 45,
+      "combined_base": 33427,
+      "same_schools_pct": 6.9
+     }
+    },
+    "regions": {
+     "E12000006": 5,
+     "E12000007": 50
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 5115,
+      "weighted": 50.08,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 50.01
+     },
+     "ks2_rwm": {
+      "weight": 1388,
+      "weighted": 78.44,
+      "n_weighted": 23,
+      "n_with_figure": 23,
+      "average_school": 78.87
+     },
+     "ks4_em4": {
+      "weight": 5115,
+      "weighted": 70.02,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 69.78
+     },
+     "ks4_em5": {
+      "weight": 5115,
+      "weighted": 52,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 51.7
+     },
+     "ks5_aps_all": {
+      "weight": 8156,
+      "weighted": 34.29,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 32.66
+     },
+     "ks5_aps_alevel": {
+      "weight": 6702,
+      "weighted": 34.54,
+      "n_weighted": 28,
+      "n_with_figure": 28,
+      "average_school": 32.71
+     }
+    },
+    "boarders": 0,
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150055",
+       "name": "Harris Academy Beulah Hill",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_va_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150055",
+       "name": "Harris Academy Beulah Hill",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150055",
+       "name": "Harris Academy Beulah Hill",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 55,
+    "confidence": {
+     "confirmed": 55
+    },
+    "size_bands": {
+     "L": 28,
+     "M": 5,
+     "XL": 21
+    },
+    "n_with_roll": 54,
+    "roll_by_age": [
+     0,
+     0,
+     40,
+     383,
+     1266,
+     1365,
+     1328,
+     1469,
+     1478,
+     1446,
+     1388,
+     5196,
+     5245,
+     5282,
+     5248,
+     5099,
+     3488,
+     3097,
+     186,
+     3
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 2572,
+      "weighted": -0.06,
+      "n_weighted": 28,
+      "n_with_figure": 28,
+      "average_school": -0.04
+     }
+    },
+    "roll_by_phase": {
+     "post16": 6771,
+     "primary": 8474,
+     "secondary": 26070
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 7111,
+       "family_id": "humanities_social",
+       "n_schools": 30,
+       "points_per_entry": 4.93
+      },
+      {
+       "shown": true,
+       "entries": 2483,
+       "family_id": "arts_media_design",
+       "n_schools": 30,
+       "points_per_entry": 4.94
+      },
+      {
+       "shown": true,
+       "entries": 1656,
+       "family_id": "business_law",
+       "n_schools": 27,
+       "points_per_entry": 4.85
+      },
+      {
+       "shown": true,
+       "entries": 1546,
+       "family_id": "technology_eng_construction",
+       "n_schools": 28,
+       "points_per_entry": 4.77
+      },
+      {
+       "shown": true,
+       "entries": 13988,
+       "family_id": "languages_literature",
+       "n_schools": 30,
+       "points_per_entry": 5.06
+      },
+      {
+       "shown": true,
+       "entries": 2173,
+       "family_id": "enterprise_applied",
+       "n_schools": 30,
+       "points_per_entry": 4.76
+      },
+      {
+       "shown": true,
+       "entries": 16522,
+       "family_id": "sciences_maths",
+       "n_schools": 30,
+       "points_per_entry": 5.01
+      },
+      {
+       "shown": false,
+       "entries": 267,
+       "family_id": "health_care",
+       "n_schools": 11,
+       "points_per_entry": null
+      }
+     ],
+     "ks5": [
+      {
+       "shown": true,
+       "entries": 426,
+       "family_id": "arts_media_design",
+       "n_schools": 16,
+       "points_per_entry": 37.2
+      },
+      {
+       "shown": true,
+       "entries": 2859,
+       "family_id": "sciences_maths",
+       "n_schools": 28,
+       "points_per_entry": 36.34
+      },
+      {
+       "shown": true,
+       "entries": 1658,
+       "family_id": "business_law",
+       "n_schools": 28,
+       "points_per_entry": 35.17
+      },
+      {
+       "shown": true,
+       "entries": 535,
+       "family_id": "languages_literature",
+       "n_schools": 18,
+       "points_per_entry": 37.17
+      },
+      {
+       "shown": true,
+       "entries": 2163,
+       "family_id": "humanities_social",
+       "n_schools": 26,
+       "points_per_entry": 36.08
+      },
+      {
+       "shown": false,
+       "entries": 150,
+       "family_id": "health_care",
+       "n_schools": 9,
+       "points_per_entry": null
+      },
+      {
+       "shown": true,
+       "entries": 536,
+       "family_id": "enterprise_applied",
+       "n_schools": 24,
+       "points_per_entry": 28
+      },
+      {
+       "shown": true,
+       "entries": 358,
+       "family_id": "technology_eng_construction",
+       "n_schools": 14,
+       "points_per_entry": 32.82
+      }
+     ]
+    },
+    "schools_by_phase": {
+     "post16": 31,
+     "primary": 23,
+     "secondary": 31
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2024,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks5_aps_all": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      },
+      "ks5_va_alevel": {
+       "of": 13,
+       "rank": 8,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 13,
+       "rank": 3,
+       "tied": false
+      },
+      "ks5_aps_alevel": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 6767,
+    "share": {
+     "las": [
+      {
+       "pct": 22.65,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 5359,
+       "group_pupils": 1214
+      },
+      {
+       "pct": 19.42,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 4810,
+       "group_pupils": 934
+      },
+      {
+       "pct": 65.68,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 1154,
+       "group_pupils": 758
+      },
+      {
+       "pct": 8.76,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 6299,
+       "group_pupils": 552
+      },
+      {
+       "pct": 10.92,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 4019,
+       "group_pupils": 439
+      },
+      {
+       "pct": 10.34,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 4186,
+       "group_pupils": 433
+      },
+      {
+       "pct": 9,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 4569,
+       "group_pupils": 411
+      },
+      {
+       "pct": 10.54,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 3625,
+       "group_pupils": 382
+      },
+      {
+       "pct": 14.29,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 2604,
+       "group_pupils": 372
+      },
+      {
+       "pct": 5.17,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 4775,
+       "group_pupils": 247
+      },
+      {
+       "pct": 7.26,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 3387,
+       "group_pupils": 246
+      },
+      {
+       "pct": 11.77,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 2039,
+       "group_pupils": 240
+      },
+      {
+       "pct": 5.08,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 4271,
+       "group_pupils": 217
+      },
+      {
+       "pct": 4.71,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 3482,
+       "group_pupils": 164
+      },
+      {
+       "pct": 3.89,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 4059,
+       "group_pupils": 158
+      }
+     ],
+     "pct": 3.46,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 1.1,
+       "region_code": "E12000006",
+       "group_pupils": 758,
+       "region_pupils": 68887
+      },
+      {
+       "pct": 4.75,
+       "region_code": "E12000007",
+       "group_pupils": 6009,
+       "region_pupils": 126445
+      }
+     ],
+     "area_pupils": 195332,
+     "group_pupils": 6767
+    },
+    "change": {
+     "1": {
+      "growing": 18,
+      "shrinking": 11,
+      "from_period": 2023,
+      "combined_pct": 7.11,
+      "same_schools": 29,
+      "combined_base": 6318,
+      "same_schools_pct": 4.07
+     },
+     "3": {
+      "growing": 14,
+      "shrinking": 10,
+      "from_period": 2021,
+      "combined_pct": 27.73,
+      "same_schools": 24,
+      "combined_base": 5298,
+      "same_schools_pct": 6.13
+     },
+     "5": {
+      "growing": 16,
+      "shrinking": 6,
+      "from_period": 2019,
+      "combined_pct": 51.69,
+      "same_schools": 22,
+      "combined_base": 4461,
+      "same_schools_pct": 10.27
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 8156,
+      "weighted": 34.29,
+      "n_weighted": 29,
+      "n_with_figure": 29,
+      "average_school": 32.66
+     },
+     "ks5_aps_alevel": {
+      "weight": 6702,
+      "weighted": 34.54,
+      "n_weighted": 28,
+      "n_with_figure": 28,
+      "average_school": 32.71
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks5_aps_all": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150055",
+       "name": "Harris Academy Beulah Hill",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_va_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150055",
+       "name": "Harris Academy Beulah Hill",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks5_aps_alevel": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "145197",
+       "name": "Harris Professional Skills Sixth Form",
+       "reason": "no_results_published"
+      },
+      {
+       "urn": "150055",
+       "name": "Harris Academy Beulah Hill",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 31,
+    "n_with_roll": 30,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 2572,
+      "weighted": -0.06,
+      "n_weighted": 28,
+      "n_with_figure": 28,
+      "average_school": -0.04
+     }
+    },
+    "subject_areas": {
+     "ks5": [
+      {
+       "shown": true,
+       "entries": 426,
+       "family_id": "arts_media_design",
+       "n_schools": 16,
+       "points_per_entry": 37.2
+      },
+      {
+       "shown": true,
+       "entries": 2859,
+       "family_id": "sciences_maths",
+       "n_schools": 28,
+       "points_per_entry": 36.34
+      },
+      {
+       "shown": true,
+       "entries": 1658,
+       "family_id": "business_law",
+       "n_schools": 28,
+       "points_per_entry": 35.17
+      },
+      {
+       "shown": true,
+       "entries": 535,
+       "family_id": "languages_literature",
+       "n_schools": 18,
+       "points_per_entry": 37.17
+      },
+      {
+       "shown": true,
+       "entries": 2163,
+       "family_id": "humanities_social",
+       "n_schools": 26,
+       "points_per_entry": 36.08
+      },
+      {
+       "shown": false,
+       "entries": 150,
+       "family_id": "health_care",
+       "n_schools": 9,
+       "points_per_entry": null
+      },
+      {
+       "shown": true,
+       "entries": 536,
+       "family_id": "enterprise_applied",
+       "n_schools": 24,
+       "points_per_entry": 28
+      },
+      {
+       "shown": true,
+       "entries": 358,
+       "family_id": "technology_eng_construction",
+       "n_schools": 14,
+       "points_per_entry": 32.82
+      }
+     ]
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2024,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks2_rwm": {
+       "of": 16,
+       "rank": 2,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 16,
+       "rank": 2,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 8474,
+    "share": {
+     "las": [
+      {
+       "pct": 6.98,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 25112,
+       "group_pupils": 1754
+      },
+      {
+       "pct": 5.81,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 28343,
+       "group_pupils": 1648
+      },
+      {
+       "pct": 9.25,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 15204,
+       "group_pupils": 1406
+      },
+      {
+       "pct": 5.17,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 17364,
+       "group_pupils": 897
+      },
+      {
+       "pct": 2.88,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 22486,
+       "group_pupils": 647
+      },
+      {
+       "pct": 2.9,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 18490,
+       "group_pupils": 536
+      },
+      {
+       "pct": 1.95,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 27541,
+       "group_pupils": 536
+      },
+      {
+       "pct": 2.71,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 14195,
+       "group_pupils": 384
+      },
+      {
+       "pct": 2.22,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 15978,
+       "group_pupils": 354
+      },
+      {
+       "pct": 1.62,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 19284,
+       "group_pupils": 312
+      }
+     ],
+     "pct": 0.79,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.31,
+       "region_code": "E12000006",
+       "group_pupils": 1406,
+       "region_pupils": 455891
+      },
+      {
+       "pct": 1.14,
+       "region_code": "E12000007",
+       "group_pupils": 7068,
+       "region_pupils": 617431
+      }
+     ],
+     "area_pupils": 1073322,
+     "group_pupils": 8474
+    },
+    "change": {
+     "1": {
+      "growing": 12,
+      "shrinking": 9,
+      "from_period": 2023,
+      "combined_pct": 9.2,
+      "same_schools": 22,
+      "combined_base": 7760,
+      "same_schools_pct": 0.86
+     },
+     "3": {
+      "growing": 12,
+      "shrinking": 9,
+      "from_period": 2021,
+      "combined_pct": 12.97,
+      "same_schools": 22,
+      "combined_base": 7501,
+      "same_schools_pct": 4.35
+     },
+     "5": {
+      "growing": 12,
+      "shrinking": 8,
+      "from_period": 2019,
+      "combined_pct": 37.59,
+      "same_schools": 20,
+      "combined_base": 6159,
+      "same_schools_pct": 13.2
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 1388,
+      "weighted": 78.44,
+      "n_weighted": 23,
+      "n_with_figure": 23,
+      "average_school": 78.87
+     }
+    },
+    "excluded": {},
+    "n_schools": 23,
+    "n_with_roll": 23,
+    "value_added": {}
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2024,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 3,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 5,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 14,
+       "rank": 10,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 26066,
+    "share": {
+     "las": [
+      {
+       "pct": 18.71,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 22741,
+       "group_pupils": 4255
+      },
+      {
+       "pct": 27.16,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 11622,
+       "group_pupils": 3157
+      },
+      {
+       "pct": 26.94,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 10731,
+       "group_pupils": 2891
+      },
+      {
+       "pct": 14.41,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 18773,
+       "group_pupils": 2705
+      },
+      {
+       "pct": 10.84,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 21306,
+       "group_pupils": 2309
+      },
+      {
+       "pct": 12.62,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 16194,
+       "group_pupils": 2043
+      },
+      {
+       "pct": 5.83,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 23774,
+       "group_pupils": 1385
+      },
+      {
+       "pct": 5.83,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 18003,
+       "group_pupils": 1049
+      },
+      {
+       "pct": 7.67,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 13086,
+       "group_pupils": 1004
+      },
+      {
+       "pct": 5.41,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 17109,
+       "group_pupils": 926
+      },
+      {
+       "pct": 6.28,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 14511,
+       "group_pupils": 912
+      },
+      {
+       "pct": 5.04,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 17925,
+       "group_pupils": 903
+      },
+      {
+       "pct": 5.59,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 16068,
+       "group_pupils": 899
+      },
+      {
+       "pct": 7.42,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 12000,
+       "group_pupils": 891
+      },
+      {
+       "pct": 5.73,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 12856,
+       "group_pupils": 737
+      }
+     ],
+     "pct": 2.86,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.79,
+       "region_code": "E12000006",
+       "group_pupils": 3157,
+       "region_pupils": 397200
+      },
+      {
+       "pct": 4.45,
+       "region_code": "E12000007",
+       "group_pupils": 22909,
+       "region_pupils": 514383
+      }
+     ],
+     "area_pupils": 911583,
+     "group_pupils": 26066
+    },
+    "change": {
+     "1": {
+      "growing": 12,
+      "shrinking": 18,
+      "from_period": 2023,
+      "combined_pct": -0.87,
+      "same_schools": 30,
+      "combined_base": 26295,
+      "same_schools_pct": -0.87
+     },
+     "3": {
+      "growing": 12,
+      "shrinking": 15,
+      "from_period": 2021,
+      "combined_pct": 7.29,
+      "same_schools": 27,
+      "combined_base": 24294,
+      "same_schools_pct": -1.28
+     },
+     "5": {
+      "growing": 13,
+      "shrinking": 12,
+      "from_period": 2019,
+      "combined_pct": 22.5,
+      "same_schools": 25,
+      "combined_base": 21278,
+      "same_schools_pct": 3.63
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 5115,
+      "weighted": 50.08,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 50.01
+     },
+     "ks4_em4": {
+      "weight": 5115,
+      "weighted": 70.02,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 69.78
+     },
+     "ks4_em5": {
+      "weight": 5115,
+      "weighted": 52,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 51.7
+     }
+    },
+    "excluded": {
+     "roll": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_census"
+      }
+     ],
+     "ks4_a8": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em4": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      }
+     ],
+     "ks4_em5": [
+      {
+       "urn": "139829",
+       "name": "Harris Aspire Academy",
+       "reason": "no_results_published"
+      }
+     ]
+    },
+    "n_schools": 31,
+    "n_with_roll": 30,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 7111,
+       "family_id": "humanities_social",
+       "n_schools": 30,
+       "points_per_entry": 4.93
+      },
+      {
+       "shown": true,
+       "entries": 2483,
+       "family_id": "arts_media_design",
+       "n_schools": 30,
+       "points_per_entry": 4.94
+      },
+      {
+       "shown": true,
+       "entries": 1656,
+       "family_id": "business_law",
+       "n_schools": 27,
+       "points_per_entry": 4.85
+      },
+      {
+       "shown": true,
+       "entries": 1546,
+       "family_id": "technology_eng_construction",
+       "n_schools": 28,
+       "points_per_entry": 4.77
+      },
+      {
+       "shown": true,
+       "entries": 13988,
+       "family_id": "languages_literature",
+       "n_schools": 30,
+       "points_per_entry": 5.06
+      },
+      {
+       "shown": true,
+       "entries": 2173,
+       "family_id": "enterprise_applied",
+       "n_schools": 30,
+       "points_per_entry": 4.76
+      },
+      {
+       "shown": true,
+       "entries": 16522,
+       "family_id": "sciences_maths",
+       "n_schools": 30,
+       "points_per_entry": 5.01
+      },
+      {
+       "shown": false,
+       "entries": 267,
+       "family_id": "health_care",
+       "n_schools": 11,
+       "points_per_entry": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "phase": "all",
+   "period": 2025,
+   "figures": {
+    "las": {
+     "304|Brent": 2,
+     "303|Bexley": 2,
+     "315|Merton": 4,
+     "316|Newham": 2,
+     "319|Sutton": 2,
+     "208|Lambeth": 2,
+     "305|Bromley": 9,
+     "306|Croydon": 12,
+     "309|Haringey": 3,
+     "311|Havering": 2,
+     "883|Thurrock": 5,
+     "203|Greenwich": 1,
+     "210|Southwark": 6,
+     "212|Wandsworth": 1,
+     "213|Westminster": 2
+    },
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 1,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 16,
+       "rank": 7,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 42940,
+    "share": {
+     "las": [
+      {
+       "pct": 12.21,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 61774,
+       "group_pupils": 7544
+      },
+      {
+       "pct": 18.41,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 31239,
+       "group_pupils": 5752
+      },
+      {
+       "pct": 8.76,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 56775,
+       "group_pupils": 4972
+      },
+      {
+       "pct": 12.35,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 30802,
+       "group_pupils": 3803
+      },
+      {
+       "pct": 7.7,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 46049,
+       "group_pupils": 3548
+      },
+      {
+       "pct": 6.54,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 42842,
+       "group_pupils": 2800
+      },
+      {
+       "pct": 4.09,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 62532,
+       "group_pupils": 2560
+      },
+      {
+       "pct": 5.5,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 39522,
+       "group_pupils": 2173
+      },
+      {
+       "pct": 6.89,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 28096,
+       "group_pupils": 1936
+      },
+      {
+       "pct": 3.53,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 49849,
+       "group_pupils": 1759
+      },
+      {
+       "pct": 3.92,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 42155,
+       "group_pupils": 1652
+      },
+      {
+       "pct": 2.77,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 43856,
+       "group_pupils": 1217
+      },
+      {
+       "pct": 3.43,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 34911,
+       "group_pupils": 1196
+      },
+      {
+       "pct": 2.45,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 46511,
+       "group_pupils": 1138
+      },
+      {
+       "pct": 2.23,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 39881,
+       "group_pupils": 890
+      }
+     ],
+     "pct": 1.79,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.57,
+       "region_code": "E12000006",
+       "group_pupils": 5752,
+       "region_pupils": 1013632
+      },
+      {
+       "pct": 2.67,
+       "region_code": "E12000007",
+       "group_pupils": 37188,
+       "region_pupils": 1390206
+      }
+     ],
+     "area_pupils": 2403838,
+     "group_pupils": 42940
+    },
+    "change": {
+     "1": {
+      "growing": 25,
+      "shrinking": 28,
+      "from_period": 2024,
+      "combined_pct": -0.16,
+      "same_schools": 54,
+      "combined_base": 43007,
+      "same_schools_pct": -0.16
+     },
+     "3": {
+      "growing": 28,
+      "shrinking": 22,
+      "from_period": 2022,
+      "combined_pct": 6.21,
+      "same_schools": 50,
+      "combined_base": 40428,
+      "same_schools_pct": -1.4
+     },
+     "5": {
+      "growing": 23,
+      "shrinking": 24,
+      "from_period": 2020,
+      "combined_pct": 20.39,
+      "same_schools": 47,
+      "combined_base": 35666,
+      "same_schools_pct": 3.49
+     }
+    },
+    "regions": {
+     "E12000006": 5,
+     "E12000007": 50
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 5144,
+      "weighted": 50.99,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 50.74
+     },
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks4_em4": {
+      "weight": 5144,
+      "weighted": 70.76,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 70.39
+     },
+     "ks4_em5": {
+      "weight": 5144,
+      "weighted": 52.86,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 52.43
+     },
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "boarders": 0,
+    "excluded": {},
+    "n_schools": 55,
+    "confidence": {
+     "confirmed": 55
+    },
+    "size_bands": {
+     "L": 26,
+     "M": 5,
+     "S": 1,
+     "XL": 23
+    },
+    "n_with_roll": 55,
+    "roll_by_age": [
+     0,
+     0,
+     36,
+     414,
+     1224,
+     1266,
+     1337,
+     1408,
+     1478,
+     1455,
+     1444,
+     5197,
+     5182,
+     5192,
+     5191,
+     5162,
+     3413,
+     3354,
+     184,
+     3
+    ],
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "roll_by_phase": {
+     "post16": 6951,
+     "primary": 8388,
+     "secondary": 25924
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 7074,
+       "family_id": "humanities_social",
+       "n_schools": 30,
+       "points_per_entry": 5.1
+      },
+      {
+       "shown": true,
+       "entries": 2431,
+       "family_id": "arts_media_design",
+       "n_schools": 30,
+       "points_per_entry": 4.83
+      },
+      {
+       "shown": true,
+       "entries": 16279,
+       "family_id": "sciences_maths",
+       "n_schools": 30,
+       "points_per_entry": 5.08
+      },
+      {
+       "shown": true,
+       "entries": 1900,
+       "family_id": "business_law",
+       "n_schools": 26,
+       "points_per_entry": 5.03
+      },
+      {
+       "shown": true,
+       "entries": 14050,
+       "family_id": "languages_literature",
+       "n_schools": 30,
+       "points_per_entry": 5.19
+      },
+      {
+       "shown": true,
+       "entries": 2386,
+       "family_id": "enterprise_applied",
+       "n_schools": 30,
+       "points_per_entry": 4.89
+      },
+      {
+       "shown": true,
+       "entries": 1426,
+       "family_id": "technology_eng_construction",
+       "n_schools": 27,
+       "points_per_entry": 5.13
+      },
+      {
+       "shown": false,
+       "entries": 272,
+       "family_id": "health_care",
+       "n_schools": 10,
+       "points_per_entry": null
+      }
+     ],
+     "ks5": []
+    },
+    "schools_by_phase": {
+     "post16": 30,
+     "primary": 23,
+     "secondary": 30
+    }
+   }
+  },
+  {
+   "phase": "post16",
+   "period": 2025,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "roll_change_1": {
+       "of": 13,
+       "rank": 6,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 6945,
+    "share": {
+     "las": [
+      {
+       "pct": 22.83,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 5326,
+       "group_pupils": 1216
+      },
+      {
+       "pct": 18.87,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 4822,
+       "group_pupils": 910
+      },
+      {
+       "pct": 67.61,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 1161,
+       "group_pupils": 785
+      },
+      {
+       "pct": 9.01,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 6294,
+       "group_pupils": 567
+      },
+      {
+       "pct": 11.44,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 4457,
+       "group_pupils": 510
+      },
+      {
+       "pct": 10.83,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 4063,
+       "group_pupils": 440
+      },
+      {
+       "pct": 8.4,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 4811,
+       "group_pupils": 404
+      },
+      {
+       "pct": 11.87,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 3319,
+       "group_pupils": 394
+      },
+      {
+       "pct": 14.42,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 2683,
+       "group_pupils": 387
+      },
+      {
+       "pct": 14.5,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 2096,
+       "group_pupils": 304
+      },
+      {
+       "pct": 5.08,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 4878,
+       "group_pupils": 248
+      },
+      {
+       "pct": 6.71,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 3502,
+       "group_pupils": 235
+      },
+      {
+       "pct": 4.99,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 4348,
+       "group_pupils": 217
+      },
+      {
+       "pct": 4.59,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 4008,
+       "group_pupils": 184
+      },
+      {
+       "pct": 4.13,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 3487,
+       "group_pupils": 144
+      }
+     ],
+     "pct": 3.52,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 1.14,
+       "region_code": "E12000006",
+       "group_pupils": 785,
+       "region_pupils": 68958
+      },
+      {
+       "pct": 4.8,
+       "region_code": "E12000007",
+       "group_pupils": 6160,
+       "region_pupils": 128446
+      }
+     ],
+     "area_pupils": 197404,
+     "group_pupils": 6945
+    },
+    "change": {
+     "1": {
+      "growing": 15,
+      "shrinking": 14,
+      "from_period": 2024,
+      "combined_pct": 2.63,
+      "same_schools": 30,
+      "combined_base": 6767,
+      "same_schools_pct": 2.63
+     },
+     "3": {
+      "growing": 14,
+      "shrinking": 11,
+      "from_period": 2022,
+      "combined_pct": 19.23,
+      "same_schools": 25,
+      "combined_base": 5825,
+      "same_schools_pct": -0.34
+     },
+     "5": {
+      "growing": 12,
+      "shrinking": 10,
+      "from_period": 2020,
+      "combined_pct": 46.15,
+      "same_schools": 22,
+      "combined_base": 4752,
+      "same_schools_pct": 3.14
+     }
+    },
+    "results": {
+     "ks5_aps_all": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     },
+     "ks5_aps_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 30,
+    "n_with_roll": 30,
+    "value_added": {
+     "ks5_va_alevel": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks5": []
+    }
+   }
+  },
+  {
+   "phase": "primary",
+   "period": 2025,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "roll_change_1": {
+       "of": 16,
+       "rank": 7,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 8388,
+    "share": {
+     "las": [
+      {
+       "pct": 6.95,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 24833,
+       "group_pupils": 1726
+      },
+      {
+       "pct": 6.04,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 27651,
+       "group_pupils": 1671
+      },
+      {
+       "pct": 9.52,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 15046,
+       "group_pupils": 1433
+      },
+      {
+       "pct": 5.36,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 17001,
+       "group_pupils": 911
+      },
+      {
+       "pct": 2.55,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 22114,
+       "group_pupils": 565
+      },
+      {
+       "pct": 2.03,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 26492,
+       "group_pupils": 538
+      },
+      {
+       "pct": 2.87,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 17788,
+       "group_pupils": 511
+      },
+      {
+       "pct": 2.79,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 13704,
+       "group_pupils": 383
+      },
+      {
+       "pct": 2.27,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 15780,
+       "group_pupils": 358
+      },
+      {
+       "pct": 1.56,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 18744,
+       "group_pupils": 292
+      }
+     ],
+     "pct": 0.8,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.32,
+       "region_code": "E12000006",
+       "group_pupils": 1433,
+       "region_pupils": 447800
+      },
+      {
+       "pct": 1.16,
+       "region_code": "E12000007",
+       "group_pupils": 6955,
+       "region_pupils": 600857
+      }
+     ],
+     "area_pupils": 1048657,
+     "group_pupils": 8388
+    },
+    "change": {
+     "1": {
+      "growing": 9,
+      "shrinking": 13,
+      "from_period": 2024,
+      "combined_pct": -1.01,
+      "same_schools": 23,
+      "combined_base": 8474,
+      "same_schools_pct": -1.01
+     },
+     "3": {
+      "growing": 14,
+      "shrinking": 7,
+      "from_period": 2022,
+      "combined_pct": 10.89,
+      "same_schools": 22,
+      "combined_base": 7564,
+      "same_schools_pct": 3.42
+     },
+     "5": {
+      "growing": 10,
+      "shrinking": 11,
+      "from_period": 2020,
+      "combined_pct": 20.38,
+      "same_schools": 21,
+      "combined_base": 6968,
+      "same_schools_pct": 4.55
+     }
+    },
+    "results": {
+     "ks2_rwm": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "excluded": {},
+    "n_schools": 23,
+    "n_with_roll": 23,
+    "value_added": {}
+   }
+  },
+  {
+   "phase": "secondary",
+   "period": 2025,
+   "figures": {
+    "peer": {
+     "band": "41+",
+     "type": "mat",
+     "places": {
+      "ks4_a8": {
+       "of": 13,
+       "rank": 1,
+       "tied": false
+      },
+      "ks4_em4": {
+       "of": 13,
+       "rank": 4,
+       "tied": false
+      },
+      "ks4_em5": {
+       "of": 13,
+       "rank": 3,
+       "tied": false
+      },
+      "roll_change_1": {
+       "of": 14,
+       "rank": 9,
+       "tied": false
+      }
+     },
+     "set_id": "peer:mat:41+",
+     "n_groups": 16
+    },
+    "roll": 25917,
+    "share": {
+     "las": [
+      {
+       "pct": 18.96,
+       "la_code": "306",
+       "la_name": "Croydon",
+       "la_pupils": 22405,
+       "group_pupils": 4247
+      },
+      {
+       "pct": 28.03,
+       "la_code": "883",
+       "la_name": "Thurrock",
+       "la_pupils": 11419,
+       "group_pupils": 3201
+      },
+      {
+       "pct": 27.31,
+       "la_code": "315",
+       "la_name": "Merton",
+       "la_pupils": 10729,
+       "group_pupils": 2930
+      },
+      {
+       "pct": 13.79,
+       "la_code": "210",
+       "la_name": "Southwark",
+       "la_pupils": 18519,
+       "group_pupils": 2553
+      },
+      {
+       "pct": 11.24,
+       "la_code": "305",
+       "la_name": "Bromley",
+       "la_pupils": 20908,
+       "group_pupils": 2351
+      },
+      {
+       "pct": 12.65,
+       "la_code": "303",
+       "la_name": "Bexley",
+       "la_pupils": 16009,
+       "group_pupils": 2025
+      },
+      {
+       "pct": 5.92,
+       "la_code": "316",
+       "la_name": "Newham",
+       "la_pupils": 23245,
+       "group_pupils": 1377
+      },
+      {
+       "pct": 5.84,
+       "la_code": "319",
+       "la_name": "Sutton",
+       "la_pupils": 17904,
+       "group_pupils": 1046
+      },
+      {
+       "pct": 8.13,
+       "la_code": "213",
+       "la_name": "Westminster",
+       "la_pupils": 12608,
+       "group_pupils": 1025
+      },
+      {
+       "pct": 5.21,
+       "la_code": "304",
+       "la_name": "Brent",
+       "la_pupils": 17894,
+       "group_pupils": 932
+      },
+      {
+       "pct": 5.66,
+       "la_code": "311",
+       "la_name": "Havering",
+       "la_pupils": 16112,
+       "group_pupils": 912
+      },
+      {
+       "pct": 6.44,
+       "la_code": "309",
+       "la_name": "Haringey",
+       "la_pupils": 14125,
+       "group_pupils": 909
+      },
+      {
+       "pct": 5.34,
+       "la_code": "203",
+       "la_name": "Greenwich",
+       "la_pupils": 16914,
+       "group_pupils": 903
+      },
+      {
+       "pct": 6.85,
+       "la_code": "208",
+       "la_name": "Lambeth",
+       "la_pupils": 11671,
+       "group_pupils": 800
+      },
+      {
+       "pct": 5.55,
+       "la_code": "212",
+       "la_name": "Wandsworth",
+       "la_pupils": 12719,
+       "group_pupils": 706
+      }
+     ],
+     "pct": 2.87,
+     "sector": "all",
+     "regions": [
+      {
+       "pct": 0.81,
+       "region_code": "E12000006",
+       "group_pupils": 3201,
+       "region_pupils": 396469
+      },
+      {
+       "pct": 4.48,
+       "region_code": "E12000007",
+       "group_pupils": 22716,
+       "region_pupils": 506714
+      }
+     ],
+     "area_pupils": 903183,
+     "group_pupils": 25917
+    },
+    "change": {
+     "1": {
+      "growing": 13,
+      "shrinking": 17,
+      "from_period": 2024,
+      "combined_pct": -0.57,
+      "same_schools": 30,
+      "combined_base": 26066,
+      "same_schools_pct": -0.57
+     },
+     "3": {
+      "growing": 13,
+      "shrinking": 15,
+      "from_period": 2022,
+      "combined_pct": 1.98,
+      "same_schools": 28,
+      "combined_base": 25414,
+      "same_schools_pct": -4.91
+     },
+     "5": {
+      "growing": 15,
+      "shrinking": 11,
+      "from_period": 2020,
+      "combined_pct": 15.62,
+      "same_schools": 26,
+      "combined_base": 22416,
+      "same_schools_pct": 1.66
+     }
+    },
+    "results": {
+     "ks4_a8": {
+      "weight": 5144,
+      "weighted": 50.99,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 50.74
+     },
+     "ks4_em4": {
+      "weight": 5144,
+      "weighted": 70.76,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 70.39
+     },
+     "ks4_em5": {
+      "weight": 5144,
+      "weighted": 52.86,
+      "n_weighted": 30,
+      "n_with_figure": 30,
+      "average_school": 52.43
+     }
+    },
+    "excluded": {},
+    "n_schools": 30,
+    "n_with_roll": 30,
+    "value_added": {
+     "ks4_p8": {
+      "weight": 0,
+      "weighted": null,
+      "n_weighted": 0,
+      "n_with_figure": 0,
+      "average_school": null
+     }
+    },
+    "subject_areas": {
+     "ks4": [
+      {
+       "shown": true,
+       "entries": 7074,
+       "family_id": "humanities_social",
+       "n_schools": 30,
+       "points_per_entry": 5.1
+      },
+      {
+       "shown": true,
+       "entries": 2431,
+       "family_id": "arts_media_design",
+       "n_schools": 30,
+       "points_per_entry": 4.83
+      },
+      {
+       "shown": true,
+       "entries": 16279,
+       "family_id": "sciences_maths",
+       "n_schools": 30,
+       "points_per_entry": 5.08
+      },
+      {
+       "shown": true,
+       "entries": 1900,
+       "family_id": "business_law",
+       "n_schools": 26,
+       "points_per_entry": 5.03
+      },
+      {
+       "shown": true,
+       "entries": 14050,
+       "family_id": "languages_literature",
+       "n_schools": 30,
+       "points_per_entry": 5.19
+      },
+      {
+       "shown": true,
+       "entries": 2386,
+       "family_id": "enterprise_applied",
+       "n_schools": 30,
+       "points_per_entry": 4.89
+      },
+      {
+       "shown": true,
+       "entries": 1426,
+       "family_id": "technology_eng_construction",
+       "n_schools": 27,
+       "points_per_entry": 5.13
+      },
+      {
+       "shown": false,
+       "entries": 272,
+       "family_id": "health_care",
+       "n_schools": 10,
+       "points_per_entry": null
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "build": {
+  "meta": {
+   "bands": [
+    "peer:independent_company:21-40",
+    "peer:mat:41+"
+   ],
+   "focus": [
+    "3320",
+    "club_iss:dukes-education"
+   ],
+   "commit": "7c4b423",
+   "periods": [
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "reasons": {
+    "igcse": "IGCSE: not ranked at GCSE",
+    "closed": "closed",
+    "no_census": "no census return",
+    "prep_no_ks2": "prep: no KS2 published",
+    "not_yet_open": "not yet open",
+    "not_published": "not published (independent)",
+    "outside_england": "outside England",
+    "no_results_published": "no results published"
+   },
+   "measures": {
+    "ks4_a8": "GCSE Attainment 8",
+    "ks4_p8": "Progress 8",
+    "ks2_rwm": "KS2 reading, writing and maths at the expected standard (%)",
+    "ks4_em4": "GCSE grade 4+ in English and maths (%)",
+    "ks4_em5": "GCSE grade 5+ in English and maths (%)",
+    "ks5_aps_all": "Post-16 average points per entry, all qualifications",
+    "ks5_va_alevel": "A level value added",
+    "ks5_aps_alevel": "A level average points per entry"
+   },
+   "available": {
+    "roll": [
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_a8": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_p8": [
+     2021,
+     2022,
+     2023
+    ],
+    "ks2_rwm": [
+     2022,
+     2023,
+     2024
+    ],
+    "ks4_em4": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks4_em5": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ],
+    "ks5_aps_all": [
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "ks5_va_alevel": [
+     2023,
+     2024
+    ],
+    "ks5_aps_alevel": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "census_day": "15 January of the academic year's second calendar year",
+   "peer_types": {
+    "mat": "MATs",
+    "federation": "federations",
+    "independent_charity": "independent charities",
+    "independent_company": "independent companies"
+   },
+   "phase_ages": {
+    "post16": [
+     16,
+     18
+    ],
+    "primary": [
+     5,
+     10
+    ],
+    "secondary": [
+     11,
+     15
+    ]
+   },
+   "size_bands": [
+    "2-5",
+    "6-10",
+    "11-20",
+    "21-40",
+    "41+"
+   ],
+   "subject_min": {
+    "entries": 10,
+    "schools": 2
+   },
+   "phase_min_pupils": 10,
+   "subject_families": [
+    {
+     "sort": 0,
+     "label": "Sciences & Maths",
+     "family_id": "sciences_maths"
+    },
+    {
+     "sort": 1,
+     "label": "Humanities & Social Sciences",
+     "family_id": "humanities_social"
+    },
+    {
+     "sort": 2,
+     "label": "Languages & Literature",
+     "family_id": "languages_literature"
+    },
+    {
+     "sort": 3,
+     "label": "Arts, Media & Design",
+     "family_id": "arts_media_design"
+    },
+    {
+     "sort": 4,
+     "label": "Business & Law",
+     "family_id": "business_law"
+    },
+    {
+     "sort": 5,
+     "label": "Technology, Engineering & Construction",
+     "family_id": "technology_eng_construction"
+    },
+    {
+     "sort": 6,
+     "label": "Health & Care",
+     "family_id": "health_care"
+    },
+    {
+     "sort": 7,
+     "label": "Enterprise & Applied Studies",
+     "family_id": "enterprise_applied"
+    }
+   ],
+   "inputs_fetched_at": "2026-10-15 23:35:20",
+   "min_group_schools": 2
+  },
+  "build_id": 1,
+  "computed_at": "2026-10-15T22:56:28.276+00:00"
+ },
+ "group": {
+  "name": "HARRIS FEDERATION",
+  "type": "mat",
+  "source": "gias_groups",
+  "group_id": "3320"
+ },
+ "reading": "at_time",
+ "membership": {
+  "as_of": "2026-10-13",
+  "likely": 0,
+  "sources": [
+   "gias_groups"
+  ],
+  "confirmed": 59,
+  "outside_england": 0
+ }
+}

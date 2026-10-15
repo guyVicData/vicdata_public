@@ -1,0 +1,28 @@
+{
+ "note": "Dry-run results in the exact shape the production lookups return (PostgREST: jsonb as is; table functions as json_agg of the rows). For the app's tests, parity harnesses and screenshots until the promote; the same tests then run against production unchanged.",
+ "ingest_commit": "7c4b423",
+ "inputs_fetched_at": "2026-10-15 23:35:20",
+ "migration": "20261017090000_group_aggregates.sql",
+ "calls": {
+  "group_aggregate_lookup('3320', 'at_time' | 'listed_now')": "harris_group_aggregate_lookup_<reading>.json",
+  "group_comparison_lookup('3320', [\"peer_band\",\"non_group\",\"areas\",\"england\",\"mix_matched\"])": "harris_group_comparison_lookup.json",
+  "group_comparison_lookup('3320', [\"peer_named:2157\",\"peer_named:5143\"])": "harris_group_comparison_lookup_named.json",
+  "group_schools_year_lookup('3320')": "harris_group_schools_year_lookup.json",
+  "group_aggregate_lookup('club_iss:dukes-education', 'at_time' | 'listed_now')": "dukes_group_aggregate_lookup_<reading>.json",
+  "group_comparison_lookup('club_iss:dukes-education', [\"peer_band\",\"non_group\",\"areas\",\"england\",\"mix_matched\"])": "dukes_group_comparison_lookup.json",
+  "group_comparison_lookup('club_iss:dukes-education', [\"peer_named:ch:01550681\"])": "dukes_group_comparison_lookup_named.json",
+  "group_schools_year_lookup('club_iss:dukes-education')": "dukes_group_schools_year_lookup.json"
+ },
+ "files": [
+  "harris_group_aggregate_lookup_at_time.json",
+  "harris_group_aggregate_lookup_listed_now.json",
+  "harris_group_comparison_lookup.json",
+  "harris_group_schools_year_lookup.json",
+  "dukes_group_aggregate_lookup_at_time.json",
+  "dukes_group_aggregate_lookup_listed_now.json",
+  "dukes_group_comparison_lookup.json",
+  "dukes_group_schools_year_lookup.json",
+  "harris_group_comparison_lookup_named.json",
+  "dukes_group_comparison_lookup_named.json"
+ ]
+}
