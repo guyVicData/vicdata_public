@@ -259,6 +259,9 @@ export const SMT_NOTES = {
   oneNeighbourhood: "One neighbourhood only: figures below 5 are not shown.",
   // Small numbers.
   smallEntries: "Subjects with fewer than {min} entries aren't ranked: one or two pupils would decide the rank.",
+  // 0.8 audit fixes (7): the one minimum for a subject area (SUBJECT_AREA_MIN), the rows and the rank tile alike.
+  areasNone: "No subject area to compare: each needs at least {schools} schools in the set with {entries} or more entries in it.",
+  areaRankNone: "fewer than {schools} set schools with {entries}+ entries in {area}",
 } as const;
 
 /** An SMT note with its {placeholders} filled. */
@@ -321,3 +324,8 @@ export const GROUP_SOURCE_LABELS: Record<string, string> = {
   companies_house: "Companies House",
   charity_commission: "the Charity Commission",
 };
+
+// 0.8 audit fixes (7): a subject area is compared with the set (a row in Strengths and weaknesses, and
+// the Academic board's rank tile) only when at least `schools` set schools have at least `entries`
+// entries in it, and the school does too.
+export const SUBJECT_AREA_MIN = { schools: 2, entries: 10 } as const;

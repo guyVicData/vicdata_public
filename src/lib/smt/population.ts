@@ -9,6 +9,7 @@ import { lookupAcademicHeadline, lookupReferenceData } from "../vicdata-referenc
 import { englandSchools, rankIn, type Place } from "../admissions/ranks";
 import { KS2_HEADLINE } from "../admissions/ranks";
 import { HISTORIC_GRADE_FROM } from "@/catalogue/years";
+import { SUBJECT_AREA_MIN } from "@/catalogue/notes";
 
 // The measures SMT reads, by key stage, as academic_headline_snapshot names them.
 export const SMT_MEASURES = {
@@ -93,3 +94,15 @@ export function setPlace(values: Map<string, number | null>, urn: string, exclud
 }
 
 export type { Place };
+
+/** 0.8 audit fixes (7): the school's place in the set on one subject area -- only schools with at
+ * least SUBJECT_AREA_MIN.entries entries count, and only when at least SUBJECT_AREA_MIN.schools other
+ * set schools do; else null. `exclude` (IGCSE schools at GCSE) left out. */
+export function areaSetPlace(values: Map<string, { value: number | null; entries: number }>, urn: string, exclude: Set<string> = new Set()): { rank: number; of: number } | null {
+  const ok = (x: { value: number | null; entries: number } | undefined) => !!x && x.value !== null && x.entries >= SUBJECT_AREA_MIN.entries;
+  const mine = values.get(urn);
+  if (!ok(mine) || exclude.has(urn)) return null;
+  const others = Array.from(values).filter(([u, x]) => u !== urn && !exclude.has(u) && ok(x)).map(([, x]) => x.value as number);
+  if (others.length < SUBJECT_AREA_MIN.schools) return null;
+  return rankIn([...others, mine!.value as number], mine!.value as number);
+}

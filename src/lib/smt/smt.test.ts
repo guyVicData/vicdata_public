@@ -6,11 +6,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { levelChips, levelQuery, parseLevel, pillsFor, setPhaseOf } from "./levels";
-import { setPlace, type Population } from "./population";
+import { areaSetPlace, setPlace, type Population } from "./population";
 import { resultsAgainstSet } from "./flags";
 import { flagsRuleText, SMT_FLAG_RULES } from "./flags-rules";
 import { p8Of } from "./overview";
-import { SMT_NOTES, smtNote } from "../../catalogue/notes";
+import { SMT_NOTES, smtNote, SUBJECT_AREA_MIN } from "../../catalogue/notes";
 import { DATAVIEWS } from "../../catalogue/dataviews";
 import { MEASURES } from "../../catalogue/measures";
 import { RULES } from "../../catalogue/rules";
@@ -202,3 +202,18 @@ test("flags caption (0.8 audit fixes, 3, S1): no placeholder left, no phrase whe
       assert.match(t, /^Flags appear only when .+\. Hover a flag for the figures\.$/);
     }
   });
+
+test("one minimum for a subject area, rows and rank tile alike (0.8 audit fixes, 7)", () => {
+  assert.deepEqual(SUBJECT_AREA_MIN, { schools: 2, entries: 10 });
+  const v = (pairs: [string, number | null, number][]) => new Map(pairs.map(([u, value, entries]) => [u, { value, entries }]));
+  // Two set schools with 10+ entries: ranked among the three.
+  assert.deepEqual(areaSetPlace(v([["me", 5, 12], ["a", 6, 10], ["b", 4, 30]]), "me"), { rank: 2, of: 3 });
+  // One of them has 9 entries: only one left, so no rank.
+  assert.equal(areaSetPlace(v([["me", 5, 12], ["a", 6, 9], ["b", 4, 30]]), "me"), null);
+  // The school itself under 10 entries: no rank.
+  assert.equal(areaSetPlace(v([["me", 5, 9], ["a", 6, 10], ["b", 4, 30]]), "me"), null);
+  // An excluded (IGCSE) school doesn't count towards the two.
+  assert.equal(areaSetPlace(v([["me", 5, 12], ["a", 6, 10], ["b", 4, 30]]), "me", new Set(["b"])), null);
+  // The empty state says the same numbers.
+  assert.match(smtNote("areasNone", { schools: SUBJECT_AREA_MIN.schools, entries: SUBJECT_AREA_MIN.entries }), /at least 2 schools in the set with 10 or more entries/);
+});

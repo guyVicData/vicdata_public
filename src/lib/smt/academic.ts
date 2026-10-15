@@ -6,6 +6,7 @@
 //   subjects                    Teacher's own subject ranking (subjectRanking: points, set and England)
 //   grade profile               the school's grade rows (fetchSubjectLevelDataForSchools, as Teacher)
 //   entries mix                 the subject rows' entries, year by year
+import { SUBJECT_AREA_MIN } from "@/catalogue/notes";
 import { HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
 import { smtNote } from "@/catalogue/notes";
 import { cachedReference } from "../server-cache";
@@ -19,7 +20,7 @@ import { familyLabels } from "../admissions/family-labels";
 import { entryPoint } from "../admissions/entry-points";
 import { percentile } from "../admissions/stats";
 import { MIN_SUBJECT_ENTRIES_UI, type SmtLevel } from "./levels";
-import { figure, placesOn, population, setPlace, SMT_MEASURES, VA_QUALS, type Population } from "./population";
+import { areaSetPlace, figure, placesOn, population, setPlace, SMT_MEASURES, VA_QUALS, type Population } from "./population";
 import type { SmtSchool } from "./school";
 import { igcseExcluded, middleHalf, p8Of, type BandPt, type P8, type Pt, type Rank, type SmtSet } from "./overview";
 
@@ -144,12 +145,14 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
   tiles.push({ key: "entries", label: "Entries", value: entriesNow, unit: "pupils", period, sub: area && allEntries ? `${Math.round((entriesNow / allEntries) * 100)}% of all ${stageWord} entries` : `${stageWord} entries, ${periodLabel(period)}`, set: null, england: null, note: null });
   if (area) {
     const v = famVal(urn, period);
-    const setVals = new Map(all.map((u) => [u, famVal(u, period)]));
+    const setVals = new Map(all.map((u) => [u, { value: famVal(u, period), entries: famEntries(u, period) }]));
     tiles.push({ key: "area_avg", label: stage === "ks4" ? "Average grade" : "Points per entry", value: v, unit: stage === "ks4" ? "grade" : "points", period, sub: `the area's subjects, ${periodLabel(period)}`, set: null, england: null, note: v === null ? "none" : null });
     // S4 (the Academic board): the rank in the set is its own tile, the fourth.
-    const r = setPlace(setVals, urn, exclude);
+    // 0.8 audit fixes (7): the same minimum as the rows (SUBJECT_AREA_MIN): 10+ entries, 2+ set schools.
+    const r = areaSetPlace(setVals, urn, exclude);
     const areaName = school.areas[stage === "ks4" ? "gcse" : "post16"].find((a) => a.id === area)?.label ?? "this area";
-    tiles.push({ key: "area_rank", label: `Rank in ${set.label}`, value: r?.rank ?? null, unit: "rank", period, sub: r ? `of ${r.of}, schools with ${areaName} results` : `no ${areaName} figure to rank`, set: r ? { ...r, label: `${set.label} with ${areaName} results` } : null, england: null, note: r ? null : "none" });
+    const why = setVals.get(urn)!.value === null ? `no ${areaName} figure to rank` : smtNote("areaRankNone", { schools: SUBJECT_AREA_MIN.schools, entries: SUBJECT_AREA_MIN.entries, area: areaName });
+    tiles.push({ key: "area_rank", label: `Rank in ${set.label}`, value: r?.rank ?? null, unit: "rank", period, sub: r ? `of ${r.of}, schools with ${SUBJECT_AREA_MIN.entries}+ ${areaName} entries` : why, set: r ? { ...r, label: `${set.label} with ${areaName} results` } : null, england: null, note: r ? null : "none" });
   } else {
     const places = await placesOn(pop, period, headKey, [urn], exclude);
     const p = places.get(urn)!;
@@ -187,7 +190,9 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
     const ep = entryPoint(stage === "ks4" ? "11+" : "16+")!;
     const r = await cachedReference(`smt:strengths:${urn}:${stage}:${setUrns.slice().sort().join(",")}`, () => buildRivals(urn, ep, { rivals: setUrns }));
     const labels = r.resultsPeriod !== null ? await familyLabels(urn, stage, r.resultsPeriod) : {};
-    areas = r.areas.map((a) => ({ familyId: a.familyId, label: labels[a.familyId] ?? a.familyId, mine: a.mine, rank: a.rank, of: a.of, gap: a.gap, gapSince2223: a.gapSince2223, flags: a.flags.map((f) => ({ id: f.id, label: f.label })) }));
+    // 0.8 audit fixes (7): a row needs SUBJECT_AREA_MIN.schools set schools with enough entries (Admissions'
+    // builder counts every set school with 10+; `of` includes the school).
+    areas = r.areas.filter((a) => a.of - 1 >= SUBJECT_AREA_MIN.schools).map((a) => ({ familyId: a.familyId, label: labels[a.familyId] ?? a.familyId, mine: a.mine, rank: a.rank, of: a.of, gap: a.gap, gapSince2223: a.gapSince2223, flags: a.flags.map((f) => ({ id: f.id, label: f.label })) }));
     const me = r.rows.find((x) => x.isSchool);
     const ranked = r.rows.filter((x) => x.results.value !== null && x.results.note === null);
     if (me && me.results.value !== null && me.results.note === null) overall = `${ranked.filter((x) => (x.results.value ?? 0) > me.results.value!).length + 1} of ${ranked.length}`;

@@ -6,6 +6,7 @@
 // Honest gaps: a school with no published results for the entry point's stage says "no
 // published results" (most preps at KS2); at 11+ an IGCSE-heavy independent school is listed
 // but not ranked (igcseExclusionLikely, the existing GCSE rule, through lib/igcse).
+import { SUBJECT_AREA_MIN } from "@/catalogue/notes";
 import { cachedReference } from "../server-cache";
 import { lookupAcademicLatestYears } from "../vicdata-reference";
 import type { KsStage } from "../academic-data-view";
@@ -24,7 +25,7 @@ import { cachedRankingPopulation } from "../chooser-sets";
 import { defaultRankingFilters, matchesRanking, NATIONAL } from "../comparator-chooser";
 import { entryYearShrinking, gainingPupils, losingPupils, newSixthForm, pointsChange, resultsRisingFast, shapeChanged, strengthFlags, type Flag } from "./flags";
 
-export const MIN_AREA_ENTRIES = 10; // a subject area needs this many entries to be ranked
+export const MIN_AREA_ENTRIES = SUBJECT_AREA_MIN.entries; // a subject area needs this many entries to be ranked (the one constant, 0.8 audit fixes 7)
 
 export const stageForEntry = (age: number): KsStage => (age <= 10 ? "ks2" : age <= 15 ? "ks4" : "ks5");
 const bandForEntry = (age: number): AgeBandKey => (age <= 4 ? "early_years" : age <= 10 ? "primary" : age <= 15 ? "secondary" : "sixth_form");
