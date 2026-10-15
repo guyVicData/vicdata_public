@@ -2128,3 +2128,24 @@ Projections from children already born, a catchment radius the school controls, 
   - The ingest's lookups take miles (1–25); the app converts (5 km = 3.107 miles). The checks against the ingest's figures call them at its own 3, 5 and 10 miles.
   - **Why km:** Admissions already works in kilometres (its list editor's radius, default 5 km), so the two products use one unit.
 - **Admissions' default pools stay the nearest schools** (15 feeders, 10 rivals): its figures don't change. Its list editor's radius starts at the school's catchment, and a line says how many of the set lie within it. Pools drawn from the catchment are left for a round of their own (in London 5 km holds 100+ primaries, in the country a handful; rivals travel further than the catchment).
+
+**Calls made**
+- **An ingest change for the school's own ages:** `area_projection` and `la_projection_lookup` take an optional age range (`vicdata` migration `20261016120000`, branch `feat/area-projection-age-range`). Until it is applied, Whole school's and Pupils' ranges draw their exact middle line without a band, and say so.
+- **The board reads `area_context` / `area_projection` at the radius** (miles to the ingest; km in the app). At exactly 5 miles `area_context` gives `school_context_lookup`'s figures (round 3's rules still pass through it).
+- **Head office reads no saved catchment** (members only, as the prompt says): it draws the school's default. Question for Guy in the report.
+- **Every school within 30 km** is read for schools nearby and the census line (`nearest_schools` in pages; round 3 read the nearest 400). The census line reads only the ages and the latest census year.
+- **The census line counts the latest census year only** (round 3 took each school's own latest year with pupils; the same for every open school).
+- **The map's ring is 2 km beyond the circle** (round 3: a mile). Over 2,500 neighbourhoods it draws dots at the population-weighted centres (Acland Burghley at 25 km and up).
+- **`lsoa_boundaries_near` to 32 km** (a 30 km catchment and its ring), in the app migration.
+- **One retry on a statement timeout** for the area lookups: a wide radius read cold can pass the anon role's limit once (0.6 s warm).
+- **The authority mix** shows at most five authorities of 1% or more; for a school's own range it combines two of the lookup's bands (11–18 = 11–15 + 16–18) weighted by the area's children, else ages 0–18 (said).
+- **ONS's comparison line around the school** is ONS's own change by authority applied to the area's children in each (ONS projects authorities only); for the LA it is ONS's own figure.
+- **The projection tile reaches latest + 5** (`SMT_PROJECTION_TILE_AHEAD` 7 → 5, the prompt's); the charts run to the projection's horizon. `SMT_PROJECTION_CHART_AHEAD` and `SMT_PROJECTION_JOIN_GAP_PCT` are removed with the join note.
+- **The methods live in their own module,** keyed by dataview id, loaded when an (i) opens, rather than on the dataview objects (~200 kB of text on every page otherwise).
+- **The methods were written from three code audits** (kept in `docs/v0.8/smt_r4_method_audit/`). Where the code and a label or rule disagree, the method says what the code does and the report lists the disagreement; nothing outside SMT Context and Pupils was changed to match.
+- **The (i) opens in a portal** (as the panel menu does), so it is never clipped; closed, every panel is as before.
+- **Teacher's default page** finds the view on show from the active rail button for its method (no view spec without a config plan).
+- **The Area pill is on the phone** for Context (SMT's other pills stay desktop-only).
+- **The Teacher parity harness's page** (`h/index.html`) was missing from the saved harness; restored from an earlier session's copy and saved (`h_index.html.txt`).
+- **Teacher parity compares with the (i)'s text set aside** (`cmp6_noinfo.py`, the prompt's "the (i) panel closed"): every (i) now carries its method, so that text differs on every panel by design. The walker reads the (i) from its portal.
+- **Five rule tests fail on `main` and the branch alike** after today's GCSE 2025/26 promote (R-TREND-LINE-4YR, R-THRESHOLD-PERIODS, R-TREND-TABLE-YEARS, R-CURRENT-GRADES-FROM-2324, R-SMT-FLAGS): their expected values predate 2025/26.

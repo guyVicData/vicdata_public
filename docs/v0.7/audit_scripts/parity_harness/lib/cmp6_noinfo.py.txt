@@ -1,0 +1,59 @@
+# python3 cmp6.py <outRoot> [branchDirName=br]: parity, main vs branch, every shot paired by view (case + panel + pressed rail view).
+# Rebuilt 2026-10-12 from cmp5.py (docs/v0.6/audit_scripts/v065/cmp5.py.txt) with the 0.6.6 cmp6 patch,
+# minus the round-specific expected classes: no change is expected, so
+#   IDENTICAL     pixels and words (panel text, "i" popover, caption popover) equal
+#   NOISE         words equal, max channel diff <= 8/255
+#   NOISE-render  words equal, same size, at most 0.1% of pixels differ by more than 8/255
+#   UNEXPECTED    anything else
+# Also lists views only on one side, and each side's __errors / __failed / __unstubbed files.
+import json, os, re, sys
+from collections import Counter
+from PIL import Image, ImageChops
+root = sys.argv[1]
+A, B = os.path.join(root, "main"), os.path.join(root, sys.argv[2] if len(sys.argv) > 2 else "br")
+NONVIEW = re.compile(r"^(Full screen|Exit full screen|Collapse|Open:|Where this figure|What this shows|Add a private note|Edit note|Export|Swap rows)")
+def canon(d):
+    m = {}
+    for f in os.listdir(d):
+        if not f.endswith(".json") or "__" not in f: continue
+        n = f[:-5]
+        try: j = json.load(open(os.path.join(d, f)))
+        except Exception: continue
+        if not os.path.exists(os.path.join(d, n + ".png")): continue
+        pressed = [r[:-1] for r in j.get("rail", []) if r.endswith("*") and not NONVIEW.match(r)]
+        m.setdefault(n.rsplit("__", 1)[0] + "__" + (pressed[0] if pressed else "only"), n)
+    return m
+CA, CB = canon(A), canon(B)
+def c1text(d, case):
+    out = []
+    for f in os.listdir(d):
+        if f.startswith(case + "__") and "c1.current" in f and f.endswith(".json"):
+            out.append(json.load(open(os.path.join(d, f)))["text"])
+    return " ".join(out)
+switched = {}
+cls = Counter(); per = Counter(); unexpected = []
+for n in sorted(CA):
+    if n not in CB: continue
+    fa, fb = CA[n], CB[n]
+    ia, ib = Image.open(os.path.join(A, fa + ".png")).convert("RGB"), Image.open(os.path.join(B, fb + ".png")).convert("RGB")
+    da, db = json.load(open(os.path.join(A, fa + ".json"))), json.load(open(os.path.join(B, fb + ".json")))
+    pix = ia.size == ib.size and ImageChops.difference(ia, ib).getbbox() is None
+    words = da["text"] == db["text"] and da.get("caption") == db.get("caption")
+    maxch = 999
+    if ia.size == ib.size: maxch = max(e[1] for e in ImageChops.difference(ia, ib).getextrema())
+    case = n.split("__")[0]
+    panel = ([p for p in n.split("__") if re.match(r"^c\d\.(current|trends)$", p)] or ["c?"])[0]
+    if pix and words: k = "IDENTICAL"
+    elif words and maxch <= 8: k = "NOISE"
+    elif words and ia.size == ib.size and sum(1 for px in ImageChops.difference(ia, ib).getdata() if max(px) > 8) <= ia.size[0] * ia.size[1] * 0.001: k = "NOISE-render"
+    else: k = "UNEXPECTED"
+    if k.startswith("UNEXPECTED"): unexpected.append(n)
+    cls[k] += 1; per[(panel[:2], k)] += 1
+missing = [k for k in CA if k not in CB]; extra = [k for k in CB if k not in CA]
+print(f"SUMMARY pairs={sum(cls.values())} identical={cls['IDENTICAL']} noise={cls['NOISE'] + cls['NOISE-render']} unexpected={cls['UNEXPECTED']} only_main={len(missing)} only_branch={len(extra)}")
+print(f"pairs {sum(cls.values())}  " + "  ".join(f"{k} {v}" for k, v in sorted(cls.items())) + f"  only-main {len(missing)}  only-branch {len(extra)}")
+for key in sorted(per): print("  ", key, per[key])
+print("UNEXPECTED:"); [print("  ", x) for x in unexpected[:80]]
+print("only-main:", missing[:30]); print("only-branch:", extra[:30])
+for d in (A, B):
+    print(os.path.basename(d), "errors/failed:", [f for f in os.listdir(d) if f.endswith("__errors.txt") or f.endswith("__failed.txt") or f.endswith("__unstubbed.txt")])

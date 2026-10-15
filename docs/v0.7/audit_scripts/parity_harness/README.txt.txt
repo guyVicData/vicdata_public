@@ -84,3 +84,10 @@ labels from the digest, so a pair differs only if something outside the icon row
 and without the mask: unmasked counts every pair the icon row changes, masked shows nothing else did.
 Geometry check for a pair that still differs: admissions_preview/geo.js.txt (element rects inside the
 panel, icon row skipped) on both bundles, then diff.
+
+0.8 SMT r4 (15 Oct 2026)
+  h/index.html was never saved with the harness: it is h_index.html.txt here (copy it to h/index.html; leaflet-all.css
+  is the leaflet and markercluster CSS from node_modules concatenated).
+  The source (i) now draws in a portal ([data-source-note]); walk.mjs reads it there too. cmp6_noinfo.py compares with
+  the (i)'s text set aside (the prompt's "pages with the (i) panel closed"), when the (i) texts change on purpose.
+
