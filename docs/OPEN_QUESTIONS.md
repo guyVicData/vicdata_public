@@ -2149,3 +2149,10 @@ Projections from children already born, a catchment radius the school controls, 
 - **The Teacher parity harness's page** (`h/index.html`) was missing from the saved harness; restored from an earlier session's copy and saved (`h_index.html.txt`).
 - **Teacher parity compares with the (i)'s text set aside** (`cmp6_noinfo.py`, the prompt's "the (i) panel closed"): every (i) now carries its method, so that text differs on every panel by design. The walker reads the (i) from its portal.
 - **Five rule tests fail on `main` and the branch alike** after today's GCSE 2025/26 promote (R-TREND-LINE-4YR, R-THRESHOLD-PERIODS, R-TREND-TABLE-YEARS, R-CURRENT-GRADES-FROM-2324, R-SMT-FLAGS): their expected values predate 2025/26.
+
+## 2026-10-16 — 0.8 audit fixes
+
+Where the code and a view's label disagreed (SMT round 4's audit), plus the rules after GCSE 2025/26. Prompt: `docs/v0.8/vicdata_0_8_audit_fixes_claude_code_prompt_v1.md`. Report: `docs/v0.8/audit_fixes_report_v1.md`.
+
+**Calls made**
+- **(9) Head office reads a member school's saved catchment through the server, with the service key**, once `smtCaller` has checked its access (the pattern Admissions' shared reads already use), rather than a new RLS helper: this database can't see whether the school is still a member of the group (that lives in production), so an RLS policy couldn't make the check the server makes on every request. Its own token still reads and writes nothing (the RLS test), and the route refuses its saves.

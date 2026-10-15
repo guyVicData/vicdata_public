@@ -4,7 +4,7 @@
 // Run: npx -y tsx --test src/lib/smt/catchment.test.ts
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { catchmentCapKm, catchmentDefaultKm, catchmentPresets, clampKm, hasSixthForm, kmToMiles, resolveCatchment } from "./catchment";
+import { catchmentCapKm, catchmentDefaultKm, catchmentPresets, catchmentRights, clampKm, hasSixthForm, kmToMiles, resolveCatchment } from "./catchment";
 import { mixLine } from "./context";
 
 const state1116 = { independent: false, high: 16, phases: { post16: false } };
@@ -82,5 +82,14 @@ describe("the authority mix line (R5)", () => {
   });
   it("no mix (the LA, or no neighbourhoods): no line", () => {
     assert.equal(mixLine([], [11, 15], () => null, "5 km"), null);
+  });
+});
+
+describe("head office and the saved catchment (0.8 audit fixes, 9)", () => {
+  it("head office reads the school's saved catchment through the server, and never saves it", () => {
+    assert.deepEqual(catchmentRights({ headOffice: { groupName: "Harris Federation" } }), { read: "server", mayTrySave: false });
+  });
+  it("the school's own members read with their own token; saving is left to RLS (its School-Admin)", () => {
+    assert.deepEqual(catchmentRights({ headOffice: null }), { read: "own-token", mayTrySave: true });
   });
 });

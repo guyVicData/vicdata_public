@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const school = await smtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
     const level = parseLevel(sp, school.phases, null).phase;
-    const catchment = resolveCatchment(school, sp.get("km"), await savedCatchmentKm(caller.supabase, caller.urn));
+    const catchment = resolveCatchment(school, sp.get("km"), await savedCatchmentKm(caller, caller.urn));
     const c = await buildContext(school, "around", level, catchment);
     return NextResponse.json(await buildContextMap(school, level, c.map.schools, catchment.km));
   } catch (err) {

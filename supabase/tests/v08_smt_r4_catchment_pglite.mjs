@@ -9,6 +9,7 @@
 //   - a School-Admin and the account holder save, change and clear their own school's catchment;
 //   - an approved member reads it but can't write it; a pending member reads nothing;
 //   - another school's School-Admin can neither read nor write it, nor move a row to their school;
+//   - head office (not a member) reads and writes nothing with its own token (the server reads for it);
 //   - anon reads and writes nothing; the table holds only 2-30 km;
 //   - lsoa_boundaries_near answers to 32 km (a 30 km catchment and its one-mile ring), not beyond;
 //   - the migration can be applied twice.
@@ -88,7 +89,7 @@ ok("the migration applies twice", true);
 // a pending member. The Chase (B): its School-Admin.
 const id = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
 const [SA, SB] = [id(101), id(102)];
-const P = { adminA: id(1), holderA: id(2), smtA: id(3), pendingA: id(4), adminB: id(5) };
+const P = { adminA: id(1), holderA: id(2), smtA: id(3), pendingA: id(4), adminB: id(5), headOffice: id(6) };
 await ex(`
 insert into public.schools values ('110110'), ('137625');
 insert into public.profiles values ${Object.values(P).map((p) => `('${p}')`).join(", ")};
@@ -117,6 +118,13 @@ ok("an SMT member reads it", JSON.stringify(await read(P.smtA)) === "[12]");
 ok("the School-Admin reads it", JSON.stringify(await read(P.adminA)) === "[12]");
 ok("a pending member reads nothing", JSON.stringify(await read(P.pendingA)) === "[]");
 ok("another school's School-Admin reads nothing", JSON.stringify(await read(P.adminB)) === "[]");
+// Head office (0.8 audit fixes, 9): not a member, so its own token reads nothing and writes nothing.
+// The server reads the row for it, read-only, after checking its access (catchmentRights).
+ok("head office's own token reads nothing", JSON.stringify(await read(P.headOffice)) === "[]");
+const rh = await save(P.headOffice, SA, 20);
+ok("head office can't save", rh.error !== undefined && JSON.stringify(await read(P.adminA)) === "[12]", rh.error);
+const rh2 = await tryAs(auth, P.headOffice, "update public.school_catchment set km = 20 where school_account_id = $1 returning km", [SA]);
+ok("head office can't change it", (rh2.rows?.length ?? 0) === 0 && JSON.stringify(await read(P.adminA)) === "[12]");
 ok("anon can't read", (await tryAs("anon", null, "select km from public.school_catchment")).error !== undefined);
 
 // Writes: the member, the pending admin, another school's admin, anon -- none.
