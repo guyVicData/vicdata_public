@@ -11,8 +11,13 @@
 //
 // Every subject the app reads goes through here: the raw facts and rollup rows
 // (vicdata-reference.ts), saved choices (Teacher's ticked subjects and pinned views, dashboard
-// and meeting configs, dashboard state, recruitment subjects) and links. None of the old names
-// is a KS5 subject (checked against every KS5 label, 2026-10-15), so a stage-blind swap is safe.
+// and meeting configs, dashboard state, recruitment subjects) and links. One map for every key
+// stage: none of the GCSE old names is a KS5 subject and none of the KS5 old names is a GCSE subject
+// (checked against every stored label, 2026-10-15), so a stage-blind swap is safe.
+//
+// KS5 (vicdata migration 20261015130000_ks5_subject_latest_names.sql): the names DfE changed in its
+// 2024/25 release, paired from the files (no subject code there); "Business Studies:Single" (A level
+// and AS) is a merge into "Business Studies", where DfE has filed it since 2024/25.
 //
 // One rename depends on the qualification: in 2025/26 DfE gave the BTEC / vocational
 // Construction subject the name the small VRQ subject had until 2024/25, "Construction and the
@@ -22,7 +27,7 @@
 
 export const CONSTRUCTION_VRQ = { stored: "Construction and the Built Environment", qualification: "VRQ Level 2", latest: "Constructing and Maintaining the Built Environment" } as const;
 
-// Stored label -> latest name, for every qualification. KS4.
+// Stored label -> latest name, for every qualification. KS4, then KS5.
 export const SUBJECT_LATEST_NAMES: Readonly<Record<string, string>> = {
   "Additional Maths (FSMQ)": "Mathematics (Additional)",
   "Art & Design": "Art and Design",
@@ -55,6 +60,23 @@ export const SUBJECT_LATEST_NAMES: Readonly<Record<string, string>> = {
   "Science Double Award": "Combined Science",
   "Speech & Drama": "Speech and Drama",
   "Tourism": "Travel and Tourism",
+  // KS5 (2024/25 renames)
+  "Accounting / Finance": "Accounting and Finance",
+  "Additional Mathematics FSMQ": "Mathematics (Additional)",
+  "Animal Care (Non-Agricultural)": "Animal Care",
+  "Applied Sciences": "Applied Science",
+  "Art and Design (3d Studies)": "3D Studies",
+  "Art and Design (Critical Studies)": "Critical Studies",
+  "Art and Design (Fine Art)": "Fine Art",
+  "Art and Design (Graphics)": "Graphics",
+  "Art and Design (Photography)": "Photography",
+  "Art and Design (Textiles)": "Textiles",
+  "Business Studies:Single": "Business Studies",
+  "Computer Studies / Computing": "Computer Science",
+  "Electrical installation (Buildings / Construction)": "Electrical Installation (Buildings / Construction)",
+  "Finance / Accounting (General)": "Finance",
+  "Media/Film/Tv Studies": "Media / Film / TV Studies",
+  "Music performance (Group)": "Music Performance (Group)",
 };
 
 // A subject's latest name. `qualification` (DfE's qualification_detailed) only matters for the
