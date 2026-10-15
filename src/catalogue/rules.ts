@@ -1537,7 +1537,7 @@ export const RULES: Rule[] = [
     why: "LSOA is the finest geography the data holds; the app must work before the migration and the load.",
     appliesTo: "DV-SMT-C-MAP",
     enforcedIn: ["src/lib/smt/context-map.ts:buildContextMap", "src/lib/smt/area-data.ts:lsoasNear", "src/components/smt/views/Context.tsx:AreaMap, shadeOptions"],
-    testCase: { urn: "137625", school: "The Chase; Acland Burghley 100053", phase: "ks4", expect: "Without boundaries (production today): the map falls back to the LA shading with the district note, and Shade by offers only children and FSM. With boundaries (ONS's own, served as lsoa_boundaries would): the LSOAs counted within 5 miles equal school_context_lookup's lsoa_count (34 for The Chase), every one has a boundary, and Shade by adds IMD and IDACI.", check: "smtContextGeography" },
+    testCase: { urn: "137625", school: "The Chase; Acland Burghley 100053", phase: "ks4", expect: "Without boundaries (the boundary RPCs answering as before K0's migration): the map falls back to the LA shading with the district note, and Shade by offers only children and FSM. With boundaries (production, loaded): the LSOAs counted within 5 miles equal school_context_lookup's lsoa_count (34 for The Chase), every one has a boundary, and Shade by adds IMD and IDACI.", check: "smtContextGeography" },
     origin: "0.8 SMT round 2; round 3 (docs/v0.8/vicdata_0_8_smt_round3_context_data_claude_code_prompt_v1.md)",
     status: "active",
   },

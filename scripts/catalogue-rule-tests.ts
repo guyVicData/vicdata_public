@@ -1493,8 +1493,9 @@ const RUNNERS: Record<string, Runner> = {
     return { pass: ok, detail: fmt({ years: p.leaving.map((r) => `${r.year}:${r.year11}->${r.year12}`).join(" "), matchCensus: ok }) };
   },
   async smtContextGeography() {
-    // Both states, each in a child process: production as it is (no lsoa_boundaries yet), and with the
-    // boundaries served as the loaded table would (scripts/context-preview/install-lsoa-boundaries.ts).
+    // Both states, each in a child process: before the boundaries (install-no-boundaries.ts makes the
+    // boundary RPCs answer as before K0's migration), and production as it is (lsoa_boundaries loaded,
+    // 15 Oct). SMT r3 snags: the first state was production itself until Guy applied K0.
     const { execFileSync } = await import("node:child_process");
     const run = (pre: string[], urn: string) => {
       try {
@@ -1504,8 +1505,8 @@ const RUNNERS: Record<string, Runner> = {
         return { state: `error ${(e as Error).message.slice(0, 120)}`, opts: [] as string[] };
       }
     };
-    const without = run([], "137625");
-    const withB = run(["--import=./scripts/context-preview/install-lsoa-boundaries.ts"], "137625");
+    const without = run(["--import=./scripts/context-preview/install-no-boundaries.ts"], "137625");
+    const withB = run([], "137625");
     const c = await smtContextCase("137625");
     const { SMT_NOTES } = await import("../src/catalogue/notes");
     const html = textOf(await smtRender("137625", "DV-SMT-C-MAP", undefined, { context: c, contextMap: { state: "fallback", reason: "test" } }));
