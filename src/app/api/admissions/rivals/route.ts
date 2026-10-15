@@ -3,6 +3,7 @@ import { admissionsCaller, savedLists } from "@/lib/admissions/auth";
 import { entryPoint } from "@/lib/admissions/entry-points";
 import { filtersFrom } from "@/lib/admissions/traits";
 import { rivalsView } from "@/lib/admissions/views-api";
+import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 
 // VicData 0.7 admissions r1 (A5): the rivals -- ranks (headline, subject area; subject when one is
 // asked for), size, shape, momentum flags, and the school's strengths and weaknesses by area.
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   if (!ep) return NextResponse.json({ error: "entry must be 4+, 11+, 16+ or age:2-17" }, { status: 400 });
   try {
     const lists = await savedLists(caller.supabase, caller.urn, ep.id);
-    return NextResponse.json(await rivalsView(caller.urn, ep, lists, { filters: filtersFrom(sp), subject: sp.get("subject"), family: sp.get("family"), qual: sp.get("qual"), measure: sp.get("measure") }));
+    return NextResponse.json(await rivalsView(caller.urn, ep, lists, { filters: filtersFrom(sp), subject: latestSubjectNameOrNull(sp.get("subject")), family: sp.get("family"), qual: sp.get("qual"), measure: sp.get("measure") }));
   } catch (err) {
     console.error("[admissions/rivals] failed:", err);
     return NextResponse.json({ error: "Could not build the rivals." }, { status: 502 });

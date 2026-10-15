@@ -449,7 +449,7 @@ export function compareLabel(ctx: PickPanelContext): string {
   return `vs ${parts.join(" + ")}`;
 }
 
-// "Average points · Maths (General) · vs 10 nearest + 3 averages" (Ch3Pick's "From this
+// "Average points · Mathematics · vs 10 nearest + 3 averages" (Ch3Pick's "From this
 // column"); Ch3Empty adds the time.
 export function summaryLine(ctx: PickPanelContext, withTime = false): string {
   const parts = [measureLabel(ctx), focusLabel(ctx), compareLabel(ctx)];

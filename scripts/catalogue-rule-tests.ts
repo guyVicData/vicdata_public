@@ -827,15 +827,15 @@ const RUNNERS: Record<string, Runner> = {
     };
   },
 
-  // R-TREND-LINE-4YR: Acland Burghley 100053 GCSE Maths (General) (the rollup's subject name). Points: 4 real years -> line;
+  // R-TREND-LINE-4YR: Acland Burghley 100053 GCSE Mathematics (the rollup's subject name). Points: 4 real years -> line;
   // Grade 4+ (from the dashboard's grade rows, gradeYears "four"): 4 years -> line since 0.6.2 (2 years -> bars before).
   async trendLine({ adv, sg, tvp }) {
     const urn = "100053";
-    const headline = ((await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? []).filter((h) => h.subject === "Maths (General)");
+    const headline = ((await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? []).filter((h) => h.subject === "Mathematics");
     const periods = [...new Set(headline.map((h) => h.period))].sort();
     const points = { periods, series: [{ key: "m", label: "Mathematics", colour: "#000", values: periods.map((p) => headline.find((h) => h.period === p)?.avgPointScore ?? null) }] };
     const grades = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter(
-      (r) => r.subject === "Maths (General)" && r.qualificationType === "GCSE (9-1) Full Course",
+      (r) => r.subject === "Mathematics" && r.qualificationType === "GCSE (9-1) Full Course",
     );
     const gp = [...new Set(grades.map((r) => r.period))].sort();
     const rate = { periods: gp, series: [{ key: "m", label: "Mathematics", colour: "#000", values: gp.map((p) => sg.thresholdRate(grades.filter((r) => r.period === p), "ks4")?.rate ?? null) }] };
@@ -1387,27 +1387,27 @@ const RUNNERS: Record<string, Runner> = {
       let sum = 0;
       let n = 0;
       for (const r of raw) {
-        if (r.subject !== "Science Double Award") continue;
+        if (r.subject !== "Combined Science") continue;
         const m = /^([1-9])([1-9])$/.exec(r.grade);
         const e = Number(r.entries);
         if (m) { sum += ((Number(m[1]) + Number(m[2])) / 2) * e; n += e; } else if (r.grade === "U") n += e;
       }
       const expect = n ? Math.round((sum / n) * 100) / 100 : null;
-      const head = (await fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn)?.find((x) => x.subject === "Science Double Award" && x.period === 2024);
-      const fn = doubleAwardPoints(raw.filter((r) => r.subject === "Science Double Award").map((r) => ({ grade: r.grade, entries: Number(r.entries) })));
+      const head = (await fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn)?.find((x) => x.subject === "Combined Science" && x.period === 2024);
+      const fn = doubleAwardPoints(raw.filter((r) => r.subject === "Combined Science").map((r) => ({ grade: r.grade, entries: Number(r.entries) })));
       const ok = expect !== null && head?.avgPointScore === expect && fn?.points === expect;
       pass &&= ok;
       out.push(`${urn} ${head?.avgPointScore} (recomputed ${expect}) ${ok ? "ok" : "MISMATCH"}`);
     }
     // Ranked in a set and in England (SMT's Subjects, Teacher's subjectRanking).
     const a = await smtAcademicCase("137625", "gcse", "sciences_maths");
-    const dbl = a.parts[0].subjects.find((x) => x.subject === "Science Double Award");
+    const dbl = a.parts[0].subjects.find((x) => x.subject === "Combined Science");
     const fsmq = a.parts[0].subjects.find((x) => /FSMQ/.test(x.qualification) || /FSMQ/.test(x.subject));
     pass &&= !!dbl?.set && !!dbl?.england && dbl.avg !== null && (!fsmq || fsmq.reason === "scale");
     // Teacher's Comparisons asks for GCSE points with no qualification: still ranked.
     const { subjectRanking } = await import("../src/lib/subject-ranking");
     const c = await smtCase("137625");
-    const t = await subjectRanking({ urns: ["137625", ...c.set.urns], targetUrn: "137625", phase: "ks4", subject: "Science Double Award", familyId: "sciences_maths", qualificationType: null, measure: { kind: "points" }, period: null }, "rule:teacher-ask");
+    const t = await subjectRanking({ urns: ["137625", ...c.set.urns], targetUrn: "137625", phase: "ks4", subject: "Combined Science", familyId: "sciences_maths", qualificationType: null, measure: { kind: "points" }, period: null }, "rule:teacher-ask");
     pass &&= t.targetRank !== null && t.target?.value === dbl?.avg;
     return { pass, detail: fmt({ schools: out.join("; "), chaseRanked: dbl?.set && `${dbl.set.rank} of ${dbl.set.of}, England ${dbl.england?.rank} of ${dbl.england?.of}`, teacherAsk: `${t.targetRank} of ${t.ranked} (${t.target?.value})`, fsmq: fsmq ? `${fsmq.subject}: ${fsmq.reason}` : "none" }) };
   },

@@ -33,7 +33,7 @@ import { dataviewById } from "@/catalogue";
 import { viewInstance } from "@/catalogue/viewspec";
 
 const inst = (id: string, dataview = "DV-C1-RES-TR-CHART"): DataviewInstance => viewInstance(id, dataview as `DV-${string}`);
-const slot = (id: string, dataview?: string, subject = "Maths (General)"): SlideConfig["slots"][number] => ({
+const slot = (id: string, dataview?: string, subject = "Mathematics"): SlideConfig["slots"][number] => ({
   id,
   view: { ...inst(`v${id}`, dataview), pinned: { phase: "ks4", subjectLabel: subject, year: "2024/25" }, keepLive: false },
 });
@@ -147,17 +147,17 @@ test("undo and redo, 30 deep; typing a title is one step", () => {
 
 test("suggested titles name the shared subject and the kinds", () => {
   const sl: SlideConfig = { id: "x", title: "", layout: "auto", slots: [slot("a", "DV-C1-RES-TR-CHART"), slot("b", "DV-C3-CUR-MAP"), slot("c", "DV-C3-CUR-RANKING")] };
-  assert.equal(suggestedTitle(sl), "Maths (General): graph, map and table");
+  assert.equal(suggestedTitle(sl), "Mathematics: graph, map and table");
   const mixed: SlideConfig = { ...sl, slots: [slot("a", "DV-C3-CUR-MAP", "Maths"), slot("b", "DV-C3-CUR-MAP", "Biology")] };
   assert.equal(suggestedTitle(mixed), "Map");
   assert.equal(suggestedTitle({ ...sl, slots: [] }), null);
   const s = applySuggestedTitle(initEditor([sl]));
-  assert.equal(s.slides[0].title, "Maths (General): graph, map and table");
+  assert.equal(s.slides[0].title, "Mathematics: graph, map and table");
 });
 
 test("addViewToMeeting: next free slot, the slide re-arranges", () => {
   const cfg = newMeetingConfig({ id: "m1", name: "Governors", meetingDate: "2026-11-14", slides: [slide("s1", ["a"]), slide("s2", ["1", "2", "3", "4", "5", "6"])] });
-  const r = addViewToMeeting(cfg, "s1", inst("new"), { phase: "ks4", subjectLabel: "Maths (General)", year: "2024/25", keepLive: true });
+  const r = addViewToMeeting(cfg, "s1", inst("new"), { phase: "ks4", subjectLabel: "Mathematics", year: "2024/25", keepLive: true });
   assert.ok(r.ok);
   if (!r.ok) return;
   assert.equal(r.count, 2);
@@ -180,7 +180,7 @@ test("addViewToMeeting: next free slot, the slide re-arranges", () => {
 test("pinned views: resolved title, pin line, citation, moving on to the latest data", () => {
   const s = slot("a", "DV-C3-CUR-MAP");
   (s.view!.pinned as Record<string, unknown>).compare = { kind: "schools", name: "10 nearest schools" };
-  assert.match(slotTitle(s), /^Maths \(General\) .* by school, on the map$/);
+  assert.match(slotTitle(s), /^Mathematics .* by school, on the map$/);
   assert.equal(pinLine(s), "Pinned · as of 2024/25");
   assert.equal(citationOf(s), "DfE Key stage 4 performance");
   assert.equal(pinLine({ ...s, view: { ...s.view!, keepLive: true } }), "Live · latest data");

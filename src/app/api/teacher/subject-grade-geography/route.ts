@@ -7,6 +7,7 @@ import { normaliseKs5AreaRows } from "@/lib/grade-rows";
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
 import type { GradeGeographyPayload, GradeGeographyRow } from "@/lib/teacher-view-grade-geography";
+import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 
 // Grade bands frontend round: one subject's entries per EXACT grade in the school's own LA,
 // its region and England, per year -- the benchmark every Grade bands rate and Grade counts
@@ -24,7 +25,8 @@ import type { GradeGeographyPayload, GradeGeographyRow } from "@/lib/teacher-vie
 // panel says the area figure is not shown, rather than a figure from one or two schools.
 export async function GET(request: NextRequest) {
   const urn = request.nextUrl.searchParams.get("urn");
-  const subject = request.nextUrl.searchParams.get("subject");
+  // Subject latest names round: a link or saved choice may carry an old name.
+  const subject = latestSubjectNameOrNull(request.nextUrl.searchParams.get("subject"));
   const qualificationType = request.nextUrl.searchParams.get("qualificationType");
   const phase = request.nextUrl.searchParams.get("phase") === "ks5" ? "ks5" : "ks4";
   const authHeader = request.headers.get("authorization");

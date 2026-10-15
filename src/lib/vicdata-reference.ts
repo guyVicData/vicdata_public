@@ -6,6 +6,7 @@
 
 import type { GradeRollupRow } from "./grade-rows";
 import { latestYearsFromRows, type LatestYears } from "../catalogue/years";
+import { latestBreakdown, latestSubjectName, latestSubjectNameOrNull } from "./subject-latest-names";
 
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 50;
@@ -57,6 +58,10 @@ async function fetchPage(
   return res.json();
 }
 
+// Subject latest names round: the KS4 subject facts are stored under the labels DfE used at the
+// time; every subject in them is read as its latest name here, once, for every caller.
+const KS4_SUBJECT_SOURCES = new Set(["dfe_ks4_subject_entries", "dfe_ks4_subject_entries_historic"]);
+
 export async function lookupReferenceData(params: {
   sourceId: string;
   entityIds?: string[];
@@ -86,7 +91,11 @@ export async function lookupReferenceData(params: {
     // batched read. It still stops (no figure changes here), but now says so.
     if (page === MAX_PAGES - 1) console.warn(`[reference_data_lookup] ${params.sourceId}: stopped at ${MAX_PAGES} pages (${rows.length} rows) for ${params.entityIds?.length ?? "all"} entities; later rows were not read`);
   }
-  return rows;
+  if (!KS4_SUBJECT_SOURCES.has(params.sourceId)) return rows;
+  return rows.map((r) => {
+    const breakdown = latestBreakdown(r.breakdown);
+    return breakdown === r.breakdown ? r : { ...r, breakdown };
+  });
 }
 
 // 0.6.2: academic_subject_grade_rollup through the PROPOSED anon RPC
@@ -136,7 +145,7 @@ export async function lookupAcademicSubjectGradeRollup(params: {
         {
           p_entity_ids: params.entityIds,
           p_ks_stage: params.ksStage,
-          p_subject: params.subject ?? null,
+          p_subject: latestSubjectNameOrNull(params.subject ?? null),
           p_qualification_type: params.qualificationType ?? null,
           p_period_min: params.periodMin ?? null,
           p_period_max: params.periodMax ?? null,
@@ -158,7 +167,14 @@ export async function lookupAcademicSubjectGradeRollup(params: {
     if (batch.length < PAGE_SIZE) break;
     if (page === MAX_PAGES - 1) console.warn(`[academic_subject_grade_rollup_lookup] stopped at ${MAX_PAGES} pages (${rows.length} rows)`);
   }
-  return rows;
+  return rows.map((r) => withLatestSubject(r, r.qualification_type));
+}
+
+// A rollup or lookup row with its subject read as the latest name (the rollups hold the
+// stored labels until they are rebuilt). The same row when nothing changes.
+function withLatestSubject<R extends { subject: string }>(row: R, qualification?: string | null): R {
+  const subject = latestSubjectName(row.subject, qualification);
+  return subject === row.subject ? row : { ...row, subject };
 }
 
 // Age-aggregated roll totals for a batch of schools -- reference_data_age_gender_totals
@@ -425,9 +441,10 @@ export async function lookupAcademicSubjectHeadline(params: {
   bucket?: string | null;
   signal?: AbortSignal;
 }): Promise<AcademicSubjectHeadlineRow[]> {
-  return inEntityChunks("academic_subject_headline_lookup", params.entityIds ?? null, params, (chunk) =>
+  const rows = await inEntityChunks("academic_subject_headline_lookup", params.entityIds ?? null, params, (chunk) =>
     lookupAcademicSubjectHeadlineChunk(chunk, params),
   );
+  return rows.map((r) => (r.ks_stage === "ks5" ? r : withLatestSubject(r)));
 }
 
 // Post-16 Part C: the school's own figure per subject AND exact qualification type, from
@@ -510,7 +527,18 @@ export async function lookupAcademicSubjectFamilyMap(params: {
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
   }
-  return rows;
+  // The map has a row for both a subject's stored label and its latest name (same family):
+  // read as latest names, one row each.
+  const seen = new Set<string>();
+  const out: AcademicSubjectFamilyMapRow[] = [];
+  for (const r of rows) {
+    const raw_subject = r.ks_stage === "ks5" ? r.raw_subject : latestSubjectName(r.raw_subject);
+    const key = `${r.ks_stage}\u0000${raw_subject}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(raw_subject === r.raw_subject ? r : { ...r, raw_subject });
+  }
+  return out;
 }
 
 export type AcademicGeographyRow = {
@@ -598,7 +626,7 @@ export async function lookupAcademicSubjectGeography(params: {
         p_measure: params.measure ?? null,
         p_grouping_type: params.groupingType ?? null,
         p_grouping_keys: params.groupingKeys ?? null,
-        p_subject: params.subject ?? null,
+        p_subject: latestSubjectNameOrNull(params.subject ?? null),
         p_family_id: params.familyId ?? null,
         p_period_min: params.periodMin ?? null,
         p_period_max: params.periodMax ?? null,
@@ -611,7 +639,7 @@ export async function lookupAcademicSubjectGeography(params: {
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
   }
-  return rows;
+  return rows.map((r) => withLatestSubject(r));
 }
 
 // Post-16 Part C: LA/region/national average point score per subject AND exact
@@ -699,7 +727,7 @@ export async function lookupAcademicSubjectGradeGeography(params: {
         p_ks_stage: params.ksStage,
         p_grouping_type: params.groupingType ?? null,
         p_grouping_keys: params.groupingKeys ?? null,
-        p_subject: params.subject ?? null,
+        p_subject: latestSubjectNameOrNull(params.subject ?? null),
         p_qualification_type: params.qualificationType ?? null,
         p_grade: params.grades ?? null,
         p_family_id: null,
@@ -716,7 +744,7 @@ export async function lookupAcademicSubjectGradeGeography(params: {
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) break;
   }
-  return rows;
+  return rows.map((r) => withLatestSubject(r, r.qualification_type));
 }
 
 export async function lookupAcademicGeography(params: {

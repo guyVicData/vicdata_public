@@ -76,7 +76,7 @@ export type DashboardEditorProps = {
   // The panel body. Default: the data-free stand-in; E's LiveViewPreview drops in here.
   Preview?: PanelPreviewComponent;
   onCopyView?: CopyViewHandler;
-  // Title labels when the host has a school ("[subject]" -> "Maths (General)").
+  // Title labels when the host has a school ("[subject]" -> "Mathematics").
   labels?: PanelLabels;
   // 0.6 integration: the school Add a view previews live for, and its subjects (2a / 2b).
   school?: PinSchool;

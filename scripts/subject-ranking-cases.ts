@@ -56,7 +56,7 @@ CASES.push(
   { name: "Chase GCSE History Grade 4+ (national, independent only: excluded)", ...CHASE, qual: GCSE, measure: { kind: "threshold" }, scope: "national", filters: { sectors: ["Independent"] } },
   // The largest subjects nationally (timing), and a VRQ with historic short codes (the set-level mapping)
   { name: "Chase GCSE English Language Grade 4+ (national)", urn: "137625", phase: "ks4", subject: "English Language", family: "languages_literature", qual: GCSE, measure: { kind: "threshold" }, scope: "national" },
-  { name: "Chase GCSE Maths band 9-7 (national)", urn: "137625", phase: "ks4", subject: "Maths (General)", family: "sciences_maths", qual: GCSE, measure: band(0, "9", "7"), scope: "national" },
+  { name: "Chase GCSE Maths band 9-7 (national)", urn: "137625", phase: "ks4", subject: "Mathematics", family: "sciences_maths", qual: GCSE, measure: band(0, "9", "7"), scope: "national" },
   { name: "VRQ L3 Nutrition / Diet D*-D (national)", urn: "144888", phase: "ks5", subject: "Nutrition / Diet", family: "health_care", qual: "VRQ Level 3", measure: band(5, "Distinction*", "Distinction"), scope: "national" },
 );
 

@@ -92,7 +92,7 @@ export function AddViewFallback({
       </label>
       <label className="flex flex-col gap-1 text-[12px] font-semibold text-[var(--muted)]">
         Subject
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Maths (General); blank for the whole school" className={INPUT} />
+        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Mathematics; blank for the whole school" className={INPUT} />
       </label>
       <label className="flex flex-col gap-1 text-[12px] font-semibold text-[var(--muted)]">
         Compared with

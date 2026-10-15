@@ -47,7 +47,7 @@ export type CopyViewSource = {
   context: PickPanelContext;
   // The settings resolved from the panel's current state, for a meeting slot (S7).
   pinned: PinInput;
-  // The resolved title, as the panel shows it ("Maths (General) points against 10
+  // The resolved title, as the panel shows it ("Mathematics points against 10
   // nearest, since 2021/22").
   title: string;
 };
@@ -401,7 +401,7 @@ export function meetingBanner(slides: SlideConfig[], slideId: string | "new", ne
   return { lead: `Slide ${i + 1} has ${has}. Adding the ${newKind} makes it `, strong: arrangementName(n + 1), tail: "." + tail };
 }
 
-// "Maths (General), 10 nearest schools, 2021/22 to 2024/25" -- what goes in pinned.
+// "Mathematics, 10 nearest schools, 2021/22 to 2024/25" -- what goes in pinned.
 export function pinSummary(p: PinnedSettings & { keepLive?: boolean }): string {
   const parts = [p.subjectLabel || p.subject, p.compare?.name, p.yearRange ? `${p.yearRange.from} to ${p.yearRange.to}` : p.year].filter((x): x is string => !!x);
   if (p.keepLive) parts.push("kept live");

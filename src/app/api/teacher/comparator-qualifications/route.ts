@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lookupAcademicSubjectQualificationHeadline } from "@/lib/vicdata-reference";
 import type { ComparatorQualificationRow } from "@/lib/teacher-view-comparator-quals";
+import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 
 // VicData 0.6.5 S3 (the 0.6.4 audit's change 5, R-POINTS-SAME-QUAL): Comparisons and the maps
 // at Post-16, on points and entries, read each comparator school's figure for the focus's
@@ -19,7 +20,8 @@ import type { ComparatorQualificationRow } from "@/lib/teacher-view-comparator-q
 export async function GET(request: NextRequest) {
   const anchorUrn = request.nextUrl.searchParams.get("anchorUrn");
   const urnsParam = request.nextUrl.searchParams.get("urns");
-  const subject = request.nextUrl.searchParams.get("subject");
+  // Subject latest names round: a link or saved choice may carry an old name.
+  const subject = latestSubjectNameOrNull(request.nextUrl.searchParams.get("subject"));
   const qualificationType = request.nextUrl.searchParams.get("qualificationType");
   const authHeader = request.headers.get("authorization");
   if (!anchorUrn || !urnsParam || !subject || !qualificationType || !authHeader) {

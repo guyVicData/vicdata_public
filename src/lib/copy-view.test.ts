@@ -26,7 +26,7 @@ import {
 import { viewInstance } from "@/catalogue/viewspec";
 
 const results = teacherDashboardFor("ks4", "results");
-const labels = { results: "points" as const, subject: { label: "Maths (General)", key: "Maths" }, school: "The Chase", category: "Sciences & Maths", setLabel: "10 nearest" };
+const labels = { results: "points" as const, subject: { label: "Mathematics", key: "Maths" }, school: "The Chase", category: "Sciences & Maths", setLabel: "10 nearest" };
 
 // The board's source: Comparisons · Trends, the trend chart, "Maths points against 10 nearest".
 function sourceFrom(config: DashboardConfig, panelId: string, dataview: string): CopyViewSource {
@@ -34,8 +34,8 @@ function sourceFrom(config: DashboardConfig, panelId: string, dataview: string):
   return {
     instance: viewInstance(`${panelId}/${dataview}`, dataview as `DV-${string}`),
     context,
-    pinned: { phase: "ks4", subject: "Maths", subjectLabel: "Maths (General)", compare: { kind: "schools", name: "10 nearest" }, yearRange: { from: "2021/22", to: "2024/25" } },
-    title: "Maths (General) points against 10 nearest, since 2021/22",
+    pinned: { phase: "ks4", subject: "Maths", subjectLabel: "Mathematics", compare: { kind: "schools", name: "10 nearest" }, yearRange: { from: "2021/22", to: "2024/25" } },
+    title: "Mathematics points against 10 nearest, since 2021/22",
   };
 }
 
@@ -157,7 +157,7 @@ test("copy refuses a VicData-shaped meeting and a missing slot", () => {
 });
 
 test("new dashboard from a view: its settings become column 1's", () => {
-  const d = newDashboardFromView(trendSource, { id: "new-1", name: "Maths (General)" });
+  const d = newDashboardFromView(trendSource, { id: "new-1", name: "Mathematics" });
   assert.equal(d.columns.length, 1);
   assert.deepEqual(d.columns[0].compare?.kinds, ["schools"]);
   assert.equal(d.columns[0].data.data, "academic.results");
@@ -170,8 +170,8 @@ test("new dashboard from a view: its settings become column 1's", () => {
 });
 
 test("new dashboard names are numbered past ones you have", () => {
-  assert.equal(newDashboardName(trendSource, []), "Maths (General)");
-  assert.equal(newDashboardName(trendSource, ["maths (general)", "Maths (General) 2"]), "Maths (General) 3");
+  assert.equal(newDashboardName(trendSource, []), "Mathematics");
+  assert.equal(newDashboardName(trendSource, ["mathematics", "Mathematics 2"]), "Mathematics 3");
 });
 
 test("who can edit: super-admin all; School-Admin their school's; anyone their own", () => {
@@ -231,7 +231,7 @@ test("copy to a meeting goes in the next free slot and re-arranges (via addViewT
 });
 
 test("pin summary", () => {
-  assert.equal(pinSummary(trendSource.pinned), "Maths (General), 10 nearest, 2021/22 to 2024/25");
+  assert.equal(pinSummary(trendSource.pinned), "Mathematics, 10 nearest, 2021/22 to 2024/25");
   assert.equal(pinSummary({ subject: "History", year: "2024/25", keepLive: true }), "History, 2024/25, kept live");
 });
 
