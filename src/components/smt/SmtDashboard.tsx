@@ -7,6 +7,7 @@
 // this view…. Every view is a catalogue entry (src/catalogue/smt.ts) plus a component (./views).
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
+import { flagsRuleText } from "@/lib/smt/flags-rules";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -659,8 +660,9 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-C-BIRTHS":
       return { tag: "Births and projections", context: c.school.laName ?? "" };
     case "DV-SMT-C-BIRTHS-INDEXED":
-    case "DV-SMT-C-BIRTHS-TABLE":
       return { tag: "Trends", context: "births, 2012 = 100" };
+    case "DV-SMT-C-BIRTHS-TABLE":
+      return { tag: "Trends", context: "births, and indexed" };
     case "DV-SMT-C-PROJECTION":
       return { tag: "Forward", context: c.context.status === "ready" && c.context.data.forward ? `${c.context.data.forward.where}, to ${c.context.data.forward.horizonEnd}` : "" };
     case "DV-SMT-C-AGES":
@@ -739,7 +741,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-O-SCORECARD":
       return `${SMT_NOTES.ranks} ${smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) })}${igcse}`;
     case "DV-SMT-O-FLAGS":
-      return SMT_NOTES.flagsRule.replace("{gap}", "the set's middle by a fixed margin");
+      return flagsRuleText(c.school.phases);
     case "DV-SMT-O-ROLL-LINE":
     case "DV-SMT-O-ROLL-TABLE":
       return c.overview.status === "ready" ? `${c.overview.data.notes.rollIndexed} ${SMT_NOTES.rollAreaUndercount}` : null;
@@ -857,7 +859,7 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-O-MAP":
           return <SetMap o={o} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-O-FLAGS":
-          return <SchoolFlags o={o} />;
+          return <SchoolFlags o={o} phases={c.school.phases} />;
         case "DV-SMT-O-ROLL-LINE":
           return <RollIndexed o={o} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-O-ROLL-TABLE":
@@ -908,7 +910,7 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-P-PHASES":
           return <IndexedLines title="Roll by phase, indexed" lines={p.trends.phases} fullscreen={fullscreen} room={room} caption={smtNote("rollByPhase", { base: periodLabel(p.trends.base ?? CENSUS_FIRST_PERIOD) })} />;
         case "DV-SMT-P-PHASES-TABLE":
-          return <RollTable o={{ trends: { roll: { lines: p.trends.phases, base: p.trends.base, laName: c.school.laName } } } as never} />;
+          return <RollTable title="Roll by phase" o={{ trends: { roll: { lines: p.trends.phases, base: p.trends.base, laName: c.school.laName } } } as never} />;
         case "DV-SMT-P-POOL":
           return <PoolLine pool={p.trends.pool} fullscreen={fullscreen} room={room} caption={SMT_NOTES.pool} />;
         case "DV-SMT-P-AREA":

@@ -19,29 +19,29 @@ function Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function RollTable({ o }: { o: Overview }) {
+// 0.8 audit fixes (3, S3): the chart is indexed, so each line shows its pupils and its index, in
+// two labelled columns -- never index values under a label that reads as pupils.
+export function RollTable({ o, title = "Roll" }: { o: Overview; title?: string }) {
   const lines = o.trends.roll.lines;
   if (!lines.length) return <Empty>No census years.</Empty>;
   const years = lines[0].pts.map((p) => p.year);
+  const base = o.trends.roll.base !== null ? periodLabel(o.trends.roll.base) : "each line's first year";
+  const cell = (v: number | null | undefined, digits: number) => (v === null || v === undefined ? "—" : v.toLocaleString("en-GB", { maximumFractionDigits: digits }));
   return (
     <>
-      <div className="text-[12.5px] font-bold text-[var(--fg)]">Roll, indexed ({o.trends.roll.base !== null ? periodLabel(o.trends.roll.base) : "first year"} = 100)</div>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">{title}: pupils, and indexed ({base} = 100)</div>
       <Frame>
         <thead className="border-b border-[var(--panel-border)]">
           <tr>
             <Th>Year</Th>
-            {lines.map((l) => (
-              <Th key={l.key}>{l.label}</Th>
-            ))}
+            {lines.flatMap((l) => [<Th key={`${l.key}-n`}>{l.label}: pupils</Th>, <Th key={`${l.key}-i`}>{l.label}: index</Th>])}
           </tr>
         </thead>
         <tbody>
           {years.map((y, i) => (
             <tr key={y} className="border-b border-[var(--panel-border)] last:border-0">
               <Td>{periodLabel(y)}</Td>
-              {lines.map((l) => (
-                <Td key={l.key}>{l.pts[i]?.value === null || l.pts[i]?.value === undefined ? "—" : l.pts[i].value!.toFixed(0)}</Td>
-              ))}
+              {lines.flatMap((l) => [<Td key={`${l.key}-n`}>{cell(l.actual?.[i]?.value, 0)}</Td>, <Td key={`${l.key}-i`}>{cell(l.pts[i]?.value, 0)}</Td>])}
             </tr>
           ))}
         </tbody>

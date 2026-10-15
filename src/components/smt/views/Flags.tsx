@@ -6,10 +6,11 @@
 import { FlagPill } from "@/components/admissions/ui";
 import { figuresOf } from "@/components/admissions/views/Momentum";
 import { smtNote } from "@/catalogue/notes";
-import { SMT_FLAG_RULES } from "@/lib/smt/flags-rules";
+import { flagsRuleText } from "@/lib/smt/flags-rules";
+import type { SchoolPhases } from "@/lib/smt/levels";
 import type { Overview } from "../api";
 
-export function SchoolFlags({ o }: { o: Overview }) {
+export function SchoolFlags({ o, phases }: { o: Overview; phases: SchoolPhases }) {
   return (
     <>
       <div className="text-[13px] font-bold text-[var(--fg)]">Flags: large and lasting changes</div>
@@ -29,7 +30,7 @@ export function SchoolFlags({ o }: { o: Overview }) {
       ) : (
         <div className="rounded-[9px] border border-dashed border-[var(--panel-border2)] p-4 text-center text-[12px] text-[var(--muted2)]">{o.flagsLoaded ? smtNote("flagsNone") : "Flags not available yet: the national thresholds aren't loaded, and no flag is ever guessed."}</div>
       )}
-      <div className="mt-auto text-[11px] leading-[1.4] text-[var(--muted2)]">{smtNote("flagsRule", { gap: `${SMT_FLAG_RULES.resultsGap.ks4} Attainment 8 points or ${SMT_FLAG_RULES.resultsGap.ks5} A-level points` })}</div>
+      <div className="mt-auto text-[11px] leading-[1.4] text-[var(--muted2)]">{flagsRuleText(phases)}</div>
     </>
   );
 }

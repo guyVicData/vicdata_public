@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { levelChips, levelQuery, parseLevel, pillsFor, setPhaseOf } from "./levels";
 import { setPlace, type Population } from "./population";
 import { resultsAgainstSet } from "./flags";
-import { SMT_FLAG_RULES } from "./flags-rules";
+import { flagsRuleText, SMT_FLAG_RULES } from "./flags-rules";
 import { p8Of } from "./overview";
 import { SMT_NOTES, smtNote } from "../../catalogue/notes";
 import { DATAVIEWS } from "../../catalogue/dataviews";
@@ -132,7 +132,15 @@ test("R-DOUBLE-AWARD-POINTS: two entries per award, each the average of its two 
 
 test("Pupils follows the level by the ages it highlights; staying on is Year 12 against Year 11 a year before", async () => {
   const { LEVEL_AGES, stayingOnAt } = await import("./pupils");
-  assert.deepEqual(LEVEL_AGES, { whole: null, primary: [4, 11], gcse: [11, 16], post16: [16, 18] });
+  assert.deepEqual(LEVEL_AGES, { whole: null, primary: [4, 10], gcse: [11, 15], post16: [16, 17] });
+  // 0.8 audit fixes (3, S2): both edges. GCSE lights Y7 (11) to Y11 (15), not Y6 or Y12; Primary R (4)
+  // to Y6 (10), not Y7; Post-16 Y12 and Y13; Whole school nothing.
+  const { inLevelAges } = await import("./levels");
+  const lit = (h: [number, number] | null) => Array.from({ length: 15 }, (_, i) => i + 3).filter((a) => inLevelAges(a, h));
+  assert.deepEqual(lit(LEVEL_AGES.gcse), [11, 12, 13, 14, 15]);
+  assert.deepEqual(lit(LEVEL_AGES.primary), [4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(lit(LEVEL_AGES.post16), [16, 17]);
+  assert.deepEqual(lit(LEVEL_AGES.whole), []);
   const t = new Map([[2024, new Map([[15, { male: 50, female: 50 }]])], [2025, new Map([[16, { male: 30, female: 30 }]])]]);
   assert.deepEqual(stayingOnAt(t, 2025), { pct: 60, from: 100, to: 60, year: 2025 });
   assert.equal(stayingOnAt(new Map(), 2025), null);
@@ -169,3 +177,28 @@ test("The place line drops a part that repeats the one before it (R-SMT-CONTEXT-
   assert.equal(placeLine(["WIGAN", "Wigan", ""]), "WIGAN");
   assert.equal(placeLine([null, "Camden", "London"]), "Camden \u00b7 London");
 });
+
+const flagForms = {
+    gcse: flagsRuleText({ gcse: true, post16: false }),
+    post16: flagsRuleText({ gcse: false, post16: true }),
+    both: flagsRuleText({ gcse: true, post16: true }),
+    igcseWithSixthForm: flagsRuleText({ gcse: true, post16: true, igcse: true }),
+    primary: flagsRuleText({ gcse: false, post16: false }),
+  };
+test("flags caption (0.8 audit fixes, 3, S1): names the school's own measures and sizes", () => {
+    assert.match(flagForms.gcse, /differs from the set's middle change by at least 2 Attainment 8 points \(with at least 4 set schools to compare\)/);
+    assert.match(flagForms.post16, /by at least 3 A-level points per entry \(/);
+    assert.match(flagForms.both, /by at least 2 Attainment 8 points at GCSE or 3 A-level points per entry at Post-16 \(/);
+    assert.equal(flagForms.igcseWithSixthForm, flagForms.post16);
+  });
+test("flags caption (0.8 audit fixes, 3, S1): a school with no GCSE or Post-16 results has no results clause", () => {
+    assert.doesNotMatch(flagForms.primary, /results/);
+    assert.match(flagForms.primary, /three years of falling roll, or an entry year shrinking/);
+  });
+test("flags caption (0.8 audit fixes, 3, S1): no placeholder left, no phrase where a size belongs, one 'set's middle'", () => {
+    for (const t of Object.values(flagForms)) {
+      assert.doesNotMatch(t, /[{}]/);
+      assert.ok((t.match(/the set's middle/g) ?? []).length <= 1, t);
+      assert.match(t, /^Flags appear only when .+\. Hover a flag for the figures\.$/);
+    }
+  });

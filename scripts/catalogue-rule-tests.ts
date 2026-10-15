@@ -1438,14 +1438,15 @@ const RUNNERS: Record<string, Runner> = {
   async smtPupilsLevel() {
     const out: string[] = [];
     let pass = true;
-    for (const [phase, want] of [["gcse", [11, 16]], ["post16", [16, 18]], ["whole", null]] as const) {
+    // 0.8 audit fixes (3, S2): the ages are first and last inclusive -- GCSE Y7-Y11, Post-16 Y12-Y13.
+    for (const [phase, want, labels] of [["gcse", [11, 15], "Y7,Y8,Y9,Y10,Y11"], ["post16", [16, 17], "Y12,Y13"], ["whole", null, ""]] as const) {
       const p = await smtPupilsCase("137625", phase);
       const html = await smtRender("137625", "DV-SMT-P-SHAPE", undefined, { pupils: p });
       const on = (html.match(/data-level-age="on"/g) ?? []).length;
-      const held = p.shape.yearGroups.filter((y) => want && y.age >= want[0] && y.age <= want[1]).length;
-      const ok = JSON.stringify(p.highlight) === JSON.stringify(want) && on === held;
+      const lit = p.shape.yearGroups.filter((y) => want && y.age >= want[0] && y.age <= want[1]);
+      const ok = JSON.stringify(p.highlight) === JSON.stringify(want) && on === lit.length && lit.map((y) => y.label).join() === labels;
       pass &&= ok;
-      out.push(`${phase}: ${JSON.stringify(p.highlight)} ${on} bars ${ok ? "ok" : "MISMATCH"}`);
+      out.push(`${phase}: ${JSON.stringify(p.highlight)} ${on} bars (${lit.map((y) => y.label).join(" ")}) ${ok ? "ok" : "MISMATCH"}`);
     }
     return { pass, detail: out.join("; ") };
   },

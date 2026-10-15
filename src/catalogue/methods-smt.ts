@@ -48,8 +48,8 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     geography: "The school, its local authority, and England",
     years: "Every census year from 2019/20 to the school's latest",
     leftOut: ["England in a year when not all nine regions are held"],
-    steps: ["The table shows the same figures as the Roll, indexed chart, one row per census year.", "Each column is a line (the school, or day and boarding, then the LA and England), set to 100 in the first year all lines share.", "The LA and England columns are pupils aged 5 to 15 in the census aggregates, not total rolls."],
-    rounding: ["Index values to whole numbers"],
+    steps: ["The table shows the figures behind the Roll, indexed chart, one row per census year.", "Each line (the school, or day and boarding, then the LA and England) has two columns: its pupils, and its index, set to 100 in the first year all lines share.", "The LA and England columns are pupils aged 5 to 15 in the census aggregates, not total rolls."],
+    rounding: ["Pupils and index values to whole numbers"],
   },
   "DV-SMT-O-RESULTS-LINE": {
     sources: ["DfE KS4 and KS5 performance tables (Attainment 8; A-level points per entry)"],
@@ -176,7 +176,7 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     geography: "The school; same-age-range schools in its LA from Admissions' nearby pool; the comparison set",
     years: "The latest census; the shape history over every census year held",
     leftOut: ["Ages under 4 and over 17 from the bars", "Set schools without a census", "For the set's Year 12 against Year 11, schools whose top age is under 17"],
-    steps: ["Bars show the school's pupils at each age from Reception (age 4) to Year 13 (age 17) in the latest census; the level's ages are highlighted.", "The shape is the shared classifier's label for the school's pupils by age; 'since' is the year after the last census when it was different.", "For the LA we take nearby schools in the same LA with exactly the same age range and show the most common shape and how many had it.", "For the set we count how many schools have each shape, never ranking them.", "The set's Year 12 against Year 11 is the middle (median) of that figure across set schools whose top age is 17 or more."],
+    steps: ["Bars show the school's pupils at each age from Reception (age 4) to Year 13 (age 17) in the latest census; the level's ages are highlighted: GCSE Years 7 to 11 (ages 11 to 15), Post-16 Years 12 and 13 (16 and 17), Primary Reception to Year 6 (4 to 10).", "The shape is the shared classifier's label for the school's pupils by age; 'since' is the year after the last census when it was different.", "For the LA we take nearby schools in the same LA with exactly the same age range and show the most common shape and how many had it.", "For the set we count how many schools have each shape, never ranking them.", "The set's Year 12 against Year 11 is the middle (median) of that figure across set schools whose top age is 17 or more."],
     rounding: ["Year 12 against Year 11 to a whole per cent"],
   },
   "DV-SMT-P-ENTRIES": {
@@ -216,8 +216,8 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     geography: "The school's phases and England",
     years: "Every census year from 2019/20 to the latest",
     leftOut: ["Phases with no pupils now", "England in a year when not all nine regions are held"],
-    steps: ["One row per census year.", "Each column is a phase's roll (or England's pupils aged 5 to 15), set to 100 in the first year all columns have a figure.", "England's column is pupils aged 5 to 15 in the census aggregates, the nine regions added together."],
-    rounding: ["Index values to whole numbers"],
+    steps: ["One row per census year.", "Each phase (and England) has two columns: its pupils, and its index, set to 100 in the first year all lines have a figure.", "England's columns are pupils aged 5 to 15 in the census aggregates, the nine regions added together."],
+    rounding: ["Pupils and index values to whole numbers"],
   },
   "DV-SMT-P-POOL": {
     sources: ["Admissions' pipeline: census counts in feeder schools, then ONS births by LA", "Admissions' saved feeder lists, else its nearby defaults"],
@@ -288,8 +288,8 @@ export const METHODS_SMT: Record<string, ViewMethod> = {
     geography: "The school's LA, and England",
     years: "Calendar years from 2012 to the latest held",
     leftOut: ["Years before 2012"],
-    steps: ["One row per calendar year from 2012.", "The columns are the LA's births and England's births (the sum of every English district and unitary).", "The figures are actual births, not indexed."],
-    rounding: ["Whole births"],
+    steps: ["One row per calendar year from 2012.", "The LA and England (the sum of every English district and unitary) each have two columns: actual births, and the index the chart draws, set to 100 in the first year both have a figure."],
+    rounding: ["Whole births; index values to whole numbers"],
   },
   "DV-SMT-C-PROJECTION": {
     // The forward view draws projectionMethod(), generated from the projection's settings; this is said only

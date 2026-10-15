@@ -1411,11 +1411,11 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-PUPILS-LEVEL",
     statement:
-      "Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-16), Post-16 Years 12 and 13 (16-18), Primary Reception to Year 6 (4-11); Whole school highlights nothing. The figures don't change with the level; the year groups in focus do.",
+      "Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-15), Post-16 Years 12 and 13 (16-17), Primary Reception to Year 6 (4-10), first and last age inclusive; Whole school highlights nothing. The figures don't change with the level; the year groups in focus do.",
     why: "The level is the dashboard's focus, as the subject is Teacher's (spec §2.2).",
     appliesTo: "DV-SMT-P-SHAPE, DV-SMT-P-NOW",
     enforcedIn: ["src/lib/smt/pupils.ts:LEVEL_AGES", "src/components/smt/views/Pupils.tsx:ShapeAndSize"],
-    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase at GCSE: Y7-Y11 highlighted (ages 11-15 held), Y12-Y13 not; at Post-16 the reverse; Whole school none.", check: "smtPupilsLevel" },
+    testCase: { urn: "137625", school: "The Chase; Leighton Park 110110", phase: "ks4", expect: "The Chase at GCSE: exactly Y7-Y11 highlighted (ages 11-15), not Y6 or Y12; at Post-16 exactly Y12-Y13; Whole school none.", check: "smtPupilsLevel" },
     origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
     status: "active",
   },

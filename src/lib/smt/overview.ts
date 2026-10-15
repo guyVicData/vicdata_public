@@ -80,7 +80,8 @@ export type Overview = {
   flags: SmtFlag[];
   flagsLoaded: boolean;
   trends: {
-    roll: { lines: { key: string; label: string; pts: Pt[] }[]; base: number | null; laName: string | null };
+    // pts indexed to `base` = 100; actual the pupils behind them (the table shows both, 0.8 audit fixes, 3).
+    roll: { lines: { key: string; label: string; pts: Pt[]; actual: Pt[] }[]; base: number | null; laName: string | null };
     results: { stage: "ks4" | "ks5"; label: string; school: Pt[]; band: BandPt[] }[];
     market: { status: "ready"; school: Pt[]; rival: Pt[]; rivalName: string | null; rivals: number } | { status: "empty"; reason: string };
   };
@@ -274,7 +275,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
   const laPts = years.map((y) => ({ year: y, value: school.laName ? areaSum("la", school.laName, y) : null }));
   const engPts = years.map((y) => ({ year: y, value: areaSum("region", null, y) }));
   const ix = indexTo([...lines.map((l) => l.pts), laPts, engPts]);
-  const rollLines = [...lines.map((l, i) => ({ ...l, pts: ix.out[i] })), { key: "la", label: school.laName ?? "The LA", pts: ix.out[lines.length] }, { key: "england", label: "England", pts: ix.out[lines.length + 1] }];
+  const rollLines = [...lines.map((l, i) => ({ ...l, pts: ix.out[i], actual: l.pts })), { key: "la", label: school.laName ?? "The LA", pts: ix.out[lines.length], actual: laPts }, { key: "england", label: "England", pts: ix.out[lines.length + 1], actual: engPts }];
 
   const resultTrends: Overview["trends"]["results"] = [];
   for (const r of results.filter((x) => x.trend && x.stage !== "ks2") as { stage: "ks4" | "ks5"; key: string; label: string; pop: Population }[]) {

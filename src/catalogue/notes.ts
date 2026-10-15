@@ -151,7 +151,10 @@ export const SMT_NOTES = {
   marketNoEntry: "This school has no 11+ entry, so it has no market share at 11+.",
   marketShort: "A share of the rivals Admissions chose: not a share of the local market.",
   // Flags (R-SMT-FLAGS).
-  flagsRule: "Flags appear only when a change is large and lasting: three years of falling roll, results moving at least {gap} faster than the set's middle over two years, or an entry year shrinking past the national threshold. Hover a flag for the figures.",
+  // 0.8 audit fixes (3, S1): {gap} is the measure and its size ("2 Attainment 8 points"), filled by
+  // flagsRuleText only, so every filled form reads as a sentence.
+  flagsRule: "Flags appear only when a change is large and lasting: three years of falling roll, results whose two-year change differs from the set's middle change by at least {gap} (with at least {min} set schools to compare), or an entry year shrinking past the national threshold. Hover a flag for the figures.",
+  flagsRuleNoResults: "Flags appear only when a change is large and lasting: three years of falling roll, or an entry year shrinking past the national threshold. Hover a flag for the figures.",
   flagsNone: "No flags: nothing has moved far enough, for long enough.",
   // The size badges, as the school page says them.
   size: "XS to XL: this school's pupils in each phase against every school with that phase in England (fifths). The school page's Roll by phase.",
