@@ -711,6 +711,15 @@ function sourceOf(dv: string, c?: Ctx): ReactNode {
       </>
     );
   }
+  // 0.8 SMT r4 (the (i) audit): Pupils' area line is ONS residents and the projection, not the census its
+  // measure (M-SMT-SCHOOL) would cite.
+  if (dv === "DV-SMT-P-AREA")
+    return (
+      <>
+        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. ONS mid-year population estimates by single year of age, by local authority; the children-in-an-area projection. <span className="opacity-70">({d.measures.join(", ")})</span>
+        {c && <MethodNote id={dv} vars={methodVars(c)} />}
+      </>
+    );
   const cites: Record<string, string> = { "M-SMT-SCHOOL": "DfE school census (January)", "M-SMT-RESULTS": "DfE KS2, KS4 and KS5 performance tables", "M-SMT-VA": "DfE performance tables (value added)", "M-SMT-SUBJECTS": "DfE KS4 and KS5 subject tables", "M-ADM-MARKET": "DfE school census, Admissions' rivals" };
   return (
     <>

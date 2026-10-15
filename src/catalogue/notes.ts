@@ -189,7 +189,7 @@ export const SMT_NOTES = {
   // 5. Projections (0.8 SMT r4: the method note's own sentence, on every chart that uses it).
   wProjection: "A projection of children living in the area, not a forecast for the school.",
   // 6. Sources and editions (the footer's source "i"), the years and editions filled from the data.
-  wSources: "ONS mid-year population estimates for LSOAs (mid-{lsoaYear}) and local authorities (mid-{laYear}); the children-in-an-area projection (settings version {settingsVersion}), and ONS's {snppBase}-based subnational projections for births' change and the comparison line; English Indices of Deprivation {iodYear} (MHCLG); DfE \u201cSchools, pupils and their characteristics\u201d ({fsmYear}).",
+  wSources: "ONS mid-year population estimates for LSOAs (mid-{lsoaYear}) and local authorities (mid-{laYear}); the children-in-an-area projection (settings version {settingsVersion}), and ONS's {snppBase}-based subnational projections for births' change and the comparison line; ONS births by local authority; DfE school census (pupils at schools nearby); English Indices of Deprivation {iodYear} (MHCLG); DfE \u201cSchools, pupils and their characteristics\u201d ({fsmYear}).",
   // The area now (K1).
   childrenLiving: "living within {radius} (ONS estimates, mid-{year})",
   childrenLivingLa: "living in {la} (ONS estimates, mid-{year})",
