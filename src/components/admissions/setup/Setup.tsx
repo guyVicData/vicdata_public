@@ -20,6 +20,7 @@ import { getJson, sendJson, query, DEFAULT_FILTERS, type CandidateRow, type Cand
 import type { AdmissionsMember } from "../member";
 import { FeederFlag } from "../views/Tables";
 import { cx, fmtN } from "../ui";
+import { useSchoolCatchment } from "@/lib/smt/catchment-client";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
 
@@ -282,7 +283,12 @@ async function saveList(member: AdmissionsMember, ep: string, kind: ListRow["kin
 function StepFeeders({ kind, of, boardingSchool, nextLabel, ep, readOnly, list, names, onBack, onSkip, onNext, member }: { kind: "day" | "boarding"; of: number; boardingSchool: boolean; nextLabel: "boarding" | "rivals"; ep: string; readOnly: string | null; list: ListRow | undefined; names?: Record<string, string>; onBack: () => void; onSkip: () => void; onNext: () => void; member: AdmissionsMember }) {
   const age = Math.max(4, ageOf(ep) - 1);
   const [mode, setMode] = useState<"nearest" | "radius" | "la">("nearest");
-  const [km, setKm] = useState(5);
+  // 0.8 SMT r4 (Guy, 15 Oct): the radius starts at the school's catchment (SMT Context's), until the lead
+  // changes it here; the default pools stay the nearest schools.
+  const catchment = useSchoolCatchment(member.schoolUrn);
+  const [kmTouched, setKmTouched] = useState(false);
+  const [kmOwn, setKm] = useState(5);
+  const km = kmTouched || !catchment ? kmOwn : catchment.km;
   const [sector, setSector] = useState<"all" | "state" | "independent">("all");
   const [gender, setGender] = useState(false);
   const [extra, setExtra] = useState<string[]>([]);
@@ -358,7 +364,7 @@ function StepFeeders({ kind, of, boardingSchool, nextLabel, ep, readOnly, list, 
             <Pill on={mode === "nearest"} onClick={() => setMode("nearest")}>Nearest 15</Pill>
             <Pill on={mode === "radius"} onClick={() => setMode("radius")}>
               Within{" "}
-              <input type="number" min={1} max={80} value={km} onClick={(e) => e.stopPropagation()} onChange={(e) => { setKm(Number(e.target.value) || 5); setMode("radius"); }} className="w-9 bg-transparent text-center" aria-label="Kilometres" />
+              <input type="number" min={1} max={80} value={km} onClick={(e) => e.stopPropagation()} onChange={(e) => { setKm(Number(e.target.value) || 5); setKmTouched(true); setMode("radius"); }} className="w-9 bg-transparent text-center" aria-label="Kilometres" />
               km
             </Pill>
             <LaPicker las={las} setLas={(l) => { setLas(l); setMode("la"); }} options={laOptions} on={mode === "la"} label="By LA" />
@@ -399,6 +405,13 @@ function StepFeeders({ kind, of, boardingSchool, nextLabel, ep, readOnly, list, 
             </button>
           ))}
         </div>
+      )}
+      {isDay && catchment && tickedRows.length > 0 && (
+        <S>
+          <span data-catchment-count="">
+            {tickedRows.filter((r) => r.distanceKm !== null && r.distanceKm <= catchment.km).length} of the {tickedRows.length} ticked {tickedRows.length === 1 ? "school is" : "schools are"} within your {catchment.km} km catchment{catchment.saved ? "" : " (the default until your School-Admin sets one)"}.
+          </span>
+        </S>
       )}
       {isDay && <MiniMap answer={c.answer} ticked={tick} />}
       {c.error ? <S>{c.error}</S> : !c.answer ? <S>Finding schools…</S> : <SchoolRows rows={rows} ticked={tick} onTick={onTick} age={age} kind={kind} readOnly={!!readOnly || (!isDay && fuzzy)} />}

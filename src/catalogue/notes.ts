@@ -173,38 +173,40 @@ export const SMT_NOTES = {
   areaResidentsCaption: "ONS mid-year estimates, residents",
   // ---- 0.8 SMT round 2: Context
   shadeByDistrict: "Shading by district: until the neighbourhood boundaries are loaded, the map shades whole local authorities by the pupils of these ages in their schools (school census).",
-  aroundSchool: "Around the school: every school within {miles} miles, all sectors.",
-  childrenAround: "Pupils aged {ages} in schools within {miles} miles (school census): children who go to school nearby, wherever they live.",
+  aroundSchool: "Around the school: every school within {radius}, all sectors.",
+  childrenAround: "Pupils aged {ages} in schools within {radius} (school census): children who go to school nearby, wherever they live.",
   births: "Births are counted by local authority (ONS), by calendar year.",
   // ---- 0.8 SMT round 3: Context on real data. The six wording rules (R-SMT-CONTEXT-WORDING), word for word:
   // 1. Deprivation describes the area, never the school's pupils.
   wDeprivation: "the area around the school, not its pupils",
   // 2. Independent schools: never 0%, never a bare dash.
   wIndependentFsm: "Free school meals are not published for independent schools.",
-  wIndependentDraw: "Independent schools often draw pupils from well beyond 5 miles.",
+  wIndependentDraw: "Independent schools often draw pupils from well beyond {radius}.",
   // 3. Residents and pupils are different counts.
-  wResidents: "Children living within 5 miles (ONS estimates) are not pupils at schools within 5 miles (census): two different counts, and neither is divided by the other.",
+  wResidents: "Children living within {radius} (ONS estimates) are not pupils at schools within {radius} (census): two different counts, and neither is divided by the other.",
   // 4. Deciles.
   wDeciles: "1 = the most deprived 10% of neighbourhoods in England, 10 = the least.",
-  // 5. Projections.
-  wProjection: "A projection, not a forecast for the school",
+  // 5. Projections (0.8 SMT r4: the method note's own sentence, on every chart that uses it).
+  wProjection: "A projection of children living in the area, not a forecast for the school.",
   // 6. Sources and editions (the footer's source "i"), the years and editions filled from the data.
-  wSources: "ONS mid-year population estimates for LSOAs (mid-{lsoaYear}); ONS {snppBase}-based subnational population projections, by local authority; English Indices of Deprivation {iodYear} (MHCLG); DfE \u201cSchools, pupils and their characteristics\u201d ({fsmYear}).",
+  wSources: "ONS mid-year population estimates for LSOAs (mid-{lsoaYear}) and local authorities (mid-{laYear}); the children-in-an-area projection (settings version {settingsVersion}), and ONS's {snppBase}-based subnational projections for births' change and the comparison line; English Indices of Deprivation {iodYear} (MHCLG); DfE \u201cSchools, pupils and their characteristics\u201d ({fsmYear}).",
   // The area now (K1).
-  childrenLiving: "living within {miles} miles (ONS estimates, mid-{year})",
+  childrenLiving: "living within {radius} (ONS estimates, mid-{year})",
   childrenLivingLa: "living in {la} (ONS estimates, mid-{year})",
-  pupilsNearby: "{n} pupils at schools within {miles} miles (census {year})",
-  projectionTile: "ONS projection, by local authority",
-  projection: "A projection, not a forecast for the school: ONS's {base}-based projection of residents aged {ages} in {area}, by local authority.",
+  pupilsNearby: "{n} pupils at schools within {radius} (census {year})",
+  // 0.8 SMT r4 (F5): the projection tile's caption.
+  projectionTile: "children living within {radius}, projected; not a forecast for the school",
+  projectionTileLa: "children living in {la}, projected; not a forecast for the school",
+  projection: "A projection of children living in the area, not a forecast for the school: children aged {ages} living {where}, aged forward a year at a time from those already counted, at the area's own record of families moving in and out.",
   noDistrict: "Town \u00b7 local authority \u00b7 region: VicData can't yet name a school's district.",
   // Social context (K2).
   neighbourhood: "The school's neighbourhood",
   idaciName: "IDACI: income deprivation affecting children",
   imdName: "IMD: the Index of Multiple Deprivation",
   noLsoa: "This school's postcode doesn't place it in an English neighbourhood (LSOA), so there is no deprivation figure for its area.",
-  mixTitle: "Children within {miles} miles, by deprivation",
-  mixLine: "{pct}% of children within {miles} miles live in the most deprived 20% of neighbourhoods (England: 20%)",
-  mixInfo: "The IDACI deciles of the neighbourhoods where children aged 0 to 15 live within {miles} miles (ONS estimates). England's 20% is by construction: deciles 1 and 2 are a fifth of England's neighbourhoods.",
+  mixTitle: "Children within {radius}, by deprivation",
+  mixLine: "{pct}% of children within {radius} live in the most deprived 20% of neighbourhoods (England: 20%)",
+  mixInfo: "The IDACI deciles of the neighbourhoods where children aged 0 to 15 live within {radius} (ONS estimates). England's 20% is by construction: deciles 1 and 2 are a fifth of England's neighbourhoods.",
   fsmTitle: "Free school meals",
   fsmNone: "DfE publishes no free-school-meals figure for this school.",
   fsmInfo: "Pupils known to be eligible for free school meals (DfE, January census), with the local authority and England the same year.",
@@ -212,20 +214,38 @@ export const SMT_NOTES = {
   mapTitle: "Where the school-age children live",
   mapNeighbourhoods: "Neighbourhoods are ONS LSOAs, joined through postcodes",
   mapChildren: "Neighbourhoods shaded by children aged {ages} per hectare (ONS estimates, mid-{year}): neighbourhoods differ in size, so a count alone would darken the largest.",
-  mapRing: "Shaded a mile beyond the {miles}-mile circle, so the shading has no hard edge; the circle marks the {miles} miles counted.",
+  mapRing: "Shaded {ring} beyond the {radius} circle, so the shading has no hard edge; the circle marks the {radius} counted.",
+  // 0.8 SMT r4 (R4): over context-map.ts DOTS_FROM neighbourhoods.
+  mapDots: "At {radius} there are too many neighbourhoods to draw their boundaries, so each is a dot at its population-weighted centre.",
   mapDeprivation: "Neighbourhoods shaded by their {index} decile ({edition}).",
   mapDecileLegend: "1 = most deprived 10%",
   mapFsm: "Free school meals aren't published by neighbourhood, so this shades the schools, not the areas: each school's latest figure ({year}). Independent schools, hollow, don't publish one.",
   mapFsmLegend: "Shades schools, not areas",
   // Population (K4).
-  popByAgeAround: "Residents by single year of age living within {miles} miles (ONS estimates, mid-{year}): where children live, not where they go to school.",
+  popByAgeAround: "Residents by single year of age living within {radius} (ONS estimates, mid-{year}): where children live, not where they go to school.",
   popByAgeLa: "{la}'s residents by single year of age (ONS mid-year estimates, mid-{year}).",
-  nearbyOverTime: "Children aged {ages} living within {miles} miles, against {la} and England (ONS mid-year estimates), indexed to 100 in {base}.",
+  nearbyOverTime: "Children aged {ages} living within {radius}, against {la} and England (ONS mid-year estimates), indexed to 100 in {base}.",
   nearbyOverTimeCaption: "residents, not pupils",
-  // SMT r3 snags (fix 3): said only where the projection and the latest estimate are more than
-  // SMT_PROJECTION_JOIN_GAP_PCT apart at the join (R-SMT-CONTEXT-PROJECTION-JOIN).
-  projectionJoin: "The projection starts from ONS's {base} base, not the latest estimate, so the two lines may not meet.",
-  populationProjected: "{la}'s residents aged {ages}: ONS mid-year estimates to mid-{year}, then ONS's {base}-based projection, dashed.",
+  // 0.8 SMT r4 (F2): the projection starts from the latest count, so the estimates and the line always
+  // meet; round 3's join note (projectionJoin, R-SMT-CONTEXT-PROJECTION-JOIN) is retired.
+  populationProjected: "Children aged {ages} living {where}: estimates to mid-{year}, then the projection to {to}, its band shaded.",
+  // 0.8 SMT r4 (F): the forward view. The method note's "What it is, and isn't", word for word in sense
+  // (R-SMT-NOT-A-FORECAST: never "forecast" but "not a forecast", never "your roll", never a school number).
+  whatItIs: "It is the children living in the area, projected from children already counted, at the area's own record of families moving in and out. It is not a forecast of any school's roll.",
+  includesUnborn: "includes children not yet born",
+  onsToggle: "Compare with ONS's projection",
+  onsLine: "ONS {base}-based projection",
+  onsAround: "ONS's {base}-based change for each local authority, applied to the area's children of these ages in it (ONS projects local authorities only).",
+  bandMissing: "The band for ages {ages} needs the ingest's age-range update; the middle line is exact.",
+  // 0.8 SMT r4 (R): the catchment.
+  areaMix: "Within {radius}: {mix}",
+  areaMixAges: "children aged {ages}",
+  catchmentSaved: "Our usual catchment: {radius}",
+  catchmentDefault: "The default for {kind} school, until the School-Admin saves the school's usual catchment: {radius}.",
+  catchmentCapped: "The saved catchment is {saved}; the widest this board draws for a school of this type is {cap}.",
+  catchmentView: "This view only: {radius}. The school's usual catchment is {usual}.",
+  catchmentCap: "Up to {cap} for {kind} school.",
+  oneNeighbourhood: "One neighbourhood only: figures below 5 are not shown.",
   // Small numbers.
   smallEntries: "Subjects with fewer than {min} entries aren't ranked: one or two pupils would decide the rank.",
 } as const;

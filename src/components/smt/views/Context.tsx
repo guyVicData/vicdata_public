@@ -1,12 +1,14 @@
 "use client";
 
-// VicData 0.8 SMT: Context, the area around the school (the Context board). Round 3 draws it on real
-// data: residents within 5 miles and by LA (ONS), deprivation of the school's neighbourhood and of the
-// children around it (IoD), and free school meals (DfE). Every figure is /api/smt/context's or
-// /api/smt/context/map's; every caveat is SMT_NOTES' (the six wording rules, R-SMT-CONTEXT-WORDING).
+// VicData 0.8 SMT: Context, the area around the school (the Context board). Round 3 drew it on real
+// data at 5 miles; round 4 draws the whole board at the school's catchment (km, R-SMT-RADIUS) and the
+// forward view from children already born (R-SMT-FORWARD): residents within the radius and by LA (ONS),
+// deprivation of the school's neighbourhood and of the children around it (IoD), free school meals
+// (DfE), and the projection. Every figure is /api/smt/context's or /api/smt/context/map's; every caveat
+// is SMT_NOTES' (the wording rules, R-SMT-CONTEXT-WORDING, R-SMT-NOT-A-FORECAST).
 // R-SMT-CONTEXT-RESIDENTS, -DEPRIVATION, -FSM, -GEOGRAPHY, R-SMT-VIEW-CONTEXT-NOW, R-SMT-VIEW-BIRTHS.
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ConsortiumMapArea, ConsortiumMapMarker, ConsortiumMapMember } from "@/components/ConsortiumMap";
 import { Empty, Key, Lbl, LineSwatch, Tile, cx, fillHeight } from "@/components/admissions/ui";
 import { LineChart } from "@/components/admissions/views/charts";
@@ -35,6 +37,9 @@ const GREY = "#9ca3af";
 export type ShadeBy = "children" | "imd" | "idaci" | "fsm";
 
 const changeWord = (pct: number, dp = 0) => `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct).toFixed(dp)}%`;
+const signed = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}%`;
+// "(range −8.1% to +3.4%) " -- the band at the tile's year, as change from the latest count.
+const rangeWord = (lo: number | null, hi: number | null) => (lo !== null && hi !== null ? `(range ${signed(lo)} to ${signed(hi)}) ` : "");
 const pctText = (v: number | null | undefined) => (v === null || v === undefined ? "—" : `${v.toFixed(1)}%`);
 
 // ------------------------------------------------------------------- column 1: the area now (K1, K2)
@@ -55,15 +60,45 @@ export function ContextNow({ c, compact = false }: { c: Context; compact?: boole
       accent
     />,
     <Tile key="births" label="Births, last year" value={n.births ? fmt(n.births.value, "pupils") : "—"} sub={n.births?.since ? `${changeWord(n.births.since.changePct)} since ${n.births.since.from} · ${c.place.la}` : (c.place.la ?? "")} />,
-    <Tile key="proj" small label={n.projection ? `${n.projection.agesWord}s by ${n.projection.to}` : "Projection"} value={n.projection ? changeWord(n.projection.changePct) : "—"} sub={n.projection ? <span title={`${SMT_NOTES.projectionTile}: ${n.projection.area}`}>{SMT_NOTES.projectionTile}</span> : "no ONS projection held"} />,
+    <Tile
+      key="proj"
+      small
+      label={n.projection ? `${n.projection.agesWord} by ${n.projection.to}` : "Projection"}
+      value={n.projection ? changeWord(n.projection.changePct, 1) : "—"}
+      sub={
+        n.projection ? (
+          <span data-projection-tile="" title={SMT_NOTES.wProjection}>
+            {rangeWord(n.projection.lowPct, n.projection.highPct)}
+            {n.projection.caption}
+          </span>
+        ) : (
+          "no projection held for this area"
+        )
+      }
+    />,
     <Tile key="schools" small label="Schools nearby" value={fmt(n.schools.count, "pupils")} sub={`${n.schools.phaseWord === "all" ? "all phases" : n.schools.phaseWord}, all sectors, ${n.schools.scope}`} />,
   ];
-  // The census count beside the residents, never divided by them (wording rule 3).
-  const pupils = n.pupilsNearby ? (
-    <div data-pupils-nearby="" className="text-[11px] leading-snug text-[var(--muted2)]">
-      {smtNote("pupilsNearby", { n: fmt(n.pupilsNearby.value, "pupils"), miles: 5, year: n.pupilsNearby.period !== null ? periodLabel(n.pupilsNearby.period) : "" })}
-    </div>
-  ) : null;
+  // The census count beside the residents, never divided by them (wording rule 3). R4 (R5): the
+  // authority mix under the children tile, one line, anything under 1% folded into "other".
+  const pupils = (
+    <>
+      {n.mix && (
+        <div data-area-mix="" className="text-[11px] leading-snug text-[var(--chip-fg)]" title={n.mix.ages}>
+          {n.mix.line} <span className="text-[var(--muted2)]">({n.mix.ages})</span>
+        </div>
+      )}
+      {n.pupilsNearby && (
+        <div data-pupils-nearby="" className="text-[11px] leading-snug text-[var(--muted2)]">
+          {smtNote("pupilsNearby", { n: fmt(n.pupilsNearby.value, "pupils"), radius: c.radius, year: n.pupilsNearby.period !== null ? periodLabel(n.pupilsNearby.period) : "" })}
+        </div>
+      )}
+      {n.oneNeighbourhood && (
+        <div data-one-neighbourhood="" className="text-[10.5px] leading-snug text-[var(--muted)]">
+          {SMT_NOTES.oneNeighbourhood}
+        </div>
+      )}
+    </>
+  );
   if (compact)
     return (
       <>
@@ -105,7 +140,7 @@ export function SocialContext({ c }: { c: Context }) {
           {SMT_NOTES.noLsoa}
         </div>
       )}
-      {s.mix && s.deprived20 !== null && <MixBar mix={s.mix} deprived20={s.deprived20} />}
+      {s.mix && s.deprived20 !== null && <MixBar mix={s.mix} deprived20={s.deprived20} radius={c.radius} />}
       {(s.lsoa || s.mix) && (
         <div data-deprivation-note="" className="text-[10.5px] leading-snug text-[var(--muted)]">
           Deprivation: {SMT_NOTES.wDeprivation}. {SMT_NOTES.wDeciles}
@@ -127,9 +162,9 @@ function Decile({ label, title, decile }: { label: string; title: string; decile
   );
 }
 
-function MixBar({ mix, deprived20 }: { mix: number[]; deprived20: number }) {
+function MixBar({ mix, deprived20, radius }: { mix: number[]; deprived20: number; radius: string }) {
   return (
-    <div className="flex flex-col gap-1" data-idaci-mix="" title={smtNote("mixTitle", { miles: 5 })}>
+    <div className="flex flex-col gap-1" data-idaci-mix="" title={smtNote("mixTitle", { radius })}>
       <div className="flex items-center gap-[6px] text-[9.5px] text-[var(--muted)]">
         <span>1</span>
         <div className="flex h-[10px] grow overflow-hidden rounded-[3px]" role="img" aria-label={mix.map((v, i) => `decile ${i + 1}: ${v.toFixed(1)}%`).join(", ")}>
@@ -139,8 +174,8 @@ function MixBar({ mix, deprived20 }: { mix: number[]; deprived20: number }) {
         </div>
         <span>10</span>
       </div>
-      <div className="text-[11.5px] leading-snug text-[var(--chip-fg)]" title={smtNote("mixInfo", { miles: 5 })}>
-        {smtNote("mixLine", { pct: deprived20.toFixed(0), miles: 5 })}
+      <div className="text-[11.5px] leading-snug text-[var(--chip-fg)]" title={smtNote("mixInfo", { radius })}>
+        {smtNote("mixLine", { pct: deprived20.toFixed(0), radius })}
       </div>
     </div>
   );
@@ -152,7 +187,7 @@ function Fsm({ c }: { c: Context }) {
   if (f.status === "independent")
     return (
       <div data-fsm="independent" className={cx(box, "text-[var(--chip-fg)]")}>
-        <b className="font-semibold text-[var(--fg)]">{SMT_NOTES.wIndependentFsm}</b> {SMT_NOTES.wIndependentDraw}
+        <b className="font-semibold text-[var(--fg)]">{SMT_NOTES.wIndependentFsm}</b> {smtNote("wIndependentDraw", { radius: c.radius })}
       </div>
     );
   if (f.status === "none")
@@ -225,9 +260,9 @@ function NeighbourhoodMap({ c, m, shade, fullscreen, room }: { c: Context; m: Ex
   const areas: ConsortiumMapArea[] = useMemo(
     () =>
       m.lsoas.map((l: MapLsoa, i) => {
-        const tip = `${l.name}: ${fmt(l.children, "pupils")} children aged ${c.agesWord} (mid-${m.year}) · IMD decile ${l.imd ?? "—"} · IDACI decile ${l.idaci ?? "—"}${l.within ? "" : ` · beyond ${m.radiusMiles} miles`}`;
+        const tip = `${l.name}: ${fmt(l.children, "pupils")} children aged ${c.agesWord} (mid-${m.year}) · IMD decile ${l.imd ?? "—"} · IDACI decile ${l.idaci ?? "—"}${l.within ? "" : ` · beyond ${m.radius}`}`;
         const fill = shade === "imd" ? (l.imd ? DECILE_RAMP[l.imd - 1] : GREY) : shade === "idaci" ? (l.idaci ? DECILE_RAMP[l.idaci - 1] : GREY) : shade === "fsm" ? GREY : DENSITY_RAMP[classOf(density[i], breaks)];
-        return { id: l.code, geometry: l.geometry, fill, fillOpacity: shade === "fsm" ? 0.04 : 0.62, stroke: "#ffffff", weight: 0.4, tooltip: tip };
+        return { id: l.code, geometry: l.geometry, fill, fillOpacity: shade === "fsm" ? 0.04 : m.dots ? 0.85 : 0.62, stroke: m.dots ? fill : "#ffffff", weight: m.dots ? 0 : 0.4, tooltip: tip };
       }),
     [m, shade, density, breaks, c.agesWord],
   );
@@ -235,15 +270,15 @@ function NeighbourhoodMap({ c, m, shade, fullscreen, room }: { c: Context; m: Ex
   const f = frame(fullscreen, room);
   const others = c.now.schools.phaseWord === "all" ? "schools" : `${c.now.schools.phaseWord} schools`;
   return (
-    <div className="flex min-h-0 grow flex-col gap-5 lg:flex-row" data-map-state="lsoa" data-shade={shade}>
+    <div className="flex min-h-0 grow flex-col gap-5 lg:flex-row" data-map-state="lsoa" data-shade={shade} data-map-dots={m.dots ? "" : undefined} data-radius-km={m.radiusKm}>
       <div className="isolate min-w-0 grow" style={f.style}>
         <ConsortiumMap
           members={members}
           areas={areas}
           targetUrn={c.urn}
-          circle={{ easting: m.centre.easting, northing: m.centre.northing, metres: m.radiusMiles * 1609.344, colour: S.hex }}
+          circle={{ easting: m.centre.easting, northing: m.centre.northing, metres: m.radiusKm * 1000, colour: S.hex }}
           fitCircle
-          redrawKey={`${shade}:${c.agesWord}`}
+          redrawKey={`${shade}:${c.agesWord}:${m.radiusKm}`}
           heightClass={f.heightClass}
           colourOf={(x) => (x.urn === c.urn ? S.hex : GREY)}
           markerOf={(x) => (shade === "fsm" ? fsmMarker(byUrn.get(x.urn), x.urn === c.urn) : x.urn === c.urn ? null : { color: "#6b7280", fillColor: GREY, fillOpacity: 0.95, radius: 5, weight: 1 })}
@@ -257,7 +292,10 @@ function NeighbourhoodMap({ c, m, shade, fullscreen, room }: { c: Context; m: Ex
       <div className="flex w-full shrink-0 flex-col gap-2 lg:w-[300px]" data-map-legend="">
         <div className="text-[13px] font-bold text-[var(--fg)]">{SMT_NOTES.mapTitle}</div>
         <MapLegend c={c} m={m} shade={shade} breaks={breaks} others={others} />
-        <div className="mt-auto text-[11px] leading-snug text-[var(--muted2)]">{smtNote("mapRing", { miles: m.radiusMiles })}</div>
+        <div className="mt-auto text-[11px] leading-snug text-[var(--muted2)]">
+          {smtNote("mapRing", { radius: m.radius, ring: `${m.ringKm} km` })}
+          {m.dots && <> {smtNote("mapDots", { radius: m.radius })}</>}
+        </div>
       </div>
     </div>
   );
@@ -267,8 +305,8 @@ function MapLegend({ c, m, shade, breaks, others }: { c: Context; m: Extract<Con
   const marks = (
     <>
       <Key swatch={<span className="h-[9px] w-[9px] rounded-full border-2" style={{ borderColor: S.hex }} />}>The school</Key>
-      {shade !== "fsm" && <Key swatch={<span className="h-[8px] w-[8px] rounded-full" style={{ background: GREY }} />}>Other {others} within {m.radiusMiles} miles</Key>}
-      <Key swatch={<span className="w-[14px] border-t-[1.5px] border-dashed" style={{ borderColor: S.hex }} />}>{m.radiusMiles} miles</Key>
+      {shade !== "fsm" && <Key swatch={<span className="h-[8px] w-[8px] rounded-full" style={{ background: GREY }} />}>Other {others} within {m.radius}</Key>}
+      <Key swatch={<span className="w-[14px] border-t-[1.5px] border-dashed" style={{ borderColor: S.hex }} />}>{m.radius}</Key>
     </>
   );
   if (shade === "imd" || shade === "idaci")
@@ -377,7 +415,7 @@ export function AgeBars({ c, ages, height = 150, title = "Children by single yea
   const rows = c.byAge.ages;
   if (!rows.length) return <Empty>No population by age held for {c.byAge.scope === "around" ? "the area around this school" : (c.byAge.laName ?? "this LA")}.</Empty>;
   const max = Math.max(...rows.map((r) => r.value));
-  const where = c.byAge.scope === "around" ? `within 5 miles` : (c.byAge.laName ?? "the LA");
+  const where = c.byAge.scope === "around" ? `within ${c.radius}` : (c.byAge.laName ?? "the LA");
   return (
     <>
       <div className="text-[12.5px] font-bold text-[var(--fg)]">
@@ -455,41 +493,77 @@ export function BirthsTable({ c }: { c: Context }) {
 
 const phaseTitle = (c: Context) => (c.ages[1] <= 10 ? "Primary-age" : c.ages[0] >= 16 ? "Sixth-form-age" : "Secondary-age");
 
-/** Row 2, "Forward": the LA's residents of the school's ages -- estimates, then the ONS projection,
- * dashed (the wireframe's "Estimates" and "ONS projection"). */
+/** Row 2, "Forward" (0.8 SMT r4, F): the children of the school's ages living in the area (within the
+ * radius, or the LA with the Area pill on it) -- estimates, solid, to the latest count, then the
+ * projection from that count, its band shaded, the years that include children not yet born lighter and
+ * labelled at the change. ONS's 2022-based projection and the scenario are faint lines, off until asked
+ * for. R-SMT-FORWARD, R-SMT-NOT-A-FORECAST. */
 export function PopulationProjected({ c, fullscreen, room }: { c: Context; fullscreen: boolean; room?: number }) {
-  const p = c.population;
-  if (p.estimates.filter((x) => x.value !== null).length < 2) return <Empty>No ONS population by age held for {p.area ?? "this LA"}.</Empty>;
-  const first = p.estimates[0]?.year;
-  const last = p.projection.at(-1)?.year ?? p.estimates.at(-1)?.year;
+  const f = c.forward;
+  const [ons, setOns] = useState(false);
+  const [scenario, setScenario] = useState(false);
+  if (!f || f.estimates.filter((x) => x.value !== null).length < 2 || f.projection.length < 2) return <Empty>No projection held for the children {c.area === "around" ? `within ${c.radius}` : `in ${c.place.la ?? "this LA"}`}.</Empty>;
+  const first = f.estimates[0]?.year;
+  // The line splits where its ages start to include children not yet born; the two parts share that year.
+  const split = f.unbornFrom;
+  const born = f.projection.filter((p) => split === null || p.year < split);
+  const unborn = split === null ? [] : f.projection.filter((p) => p.year >= split - 1);
+  const pts = (xs: typeof f.projection, k: "middle" | "scenario" | "ons") => xs.map((p) => ({ x: p.year, y: p[k] }));
+  const title = (label: string) => (pt: { x: number; y: number | null }) => `${pt.x}: ${fmt(pt.y, "pupils")} aged ${c.agesWord} (${label})`;
+  const series = [
+    { id: "e", label: "Estimates", colour: "var(--accent)", points: f.estimates.map((x) => ({ x: x.year, y: x.value })), title: title("estimate") },
+    { id: "p", label: "Projection", colour: "var(--accent)", width: 2.4, points: pts(born, "middle"), title: title("projection") },
+    ...(unborn.length ? [{ id: "u", label: "Projection, includes children not yet born", colour: "var(--accent)", width: 2.4, opacity: 0.45, points: pts(unborn, "middle"), title: title(`projection, ${SMT_NOTES.includesUnborn}`) }] : []),
+    ...(scenario ? [{ id: "s", label: f.scenarioLabel, colour: "var(--adm-grey-soft)", width: 1.6, dashed: "2 3", points: pts(f.projection, "scenario"), title: title(f.scenarioLabel) }] : []),
+    ...(ons && f.ons ? [{ id: "o", label: smtNote("onsLine", { base: f.ons.base ?? "" }), colour: "var(--adm-grey-2)", width: 1.6, dashed: "5 4", points: pts(f.projection, "ons"), title: title(smtNote("onsLine", { base: f.ons.base ?? "" })) }] : []),
+  ];
+  const toggle = (on: boolean, set: (v: boolean) => void, label: string, id: string) => (
+    <button
+      type="button"
+      data-toggle={id}
+      aria-pressed={on}
+      onClick={() => set(!on)}
+      className={cx("h-[20px] rounded-full border px-2 text-[10.5px] font-semibold", on ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--panel-border2)] text-[var(--muted)] hover:text-[var(--fg)]")}
+    >
+      {label}
+    </button>
+  );
   return (
-    <>
+    <div data-forward={f.scope} className="flex min-h-0 grow flex-col gap-2">
       <div className="text-[12.5px] font-bold text-[var(--fg)]">
-        {phaseTitle(c)} population, projected <span className="text-[11px] font-medium text-[var(--muted2)]">· {c.agesWord}, {p.area}</span>
+        {phaseTitle(c)} population, projected <span className="text-[11px] font-medium text-[var(--muted2)]">· {c.agesWord}, {f.where}</span>
       </div>
       <LineChart
         height={fullscreen ? fillHeight(room, 150, 300) : 140}
         yFormat={(v) => fmt(v, "pupils")}
-        xLabels={first !== undefined && last !== undefined ? [String(first), String(last)] : null}
-        series={[
-          { id: "e", label: "Estimates", colour: "var(--accent)", points: p.estimates.map((x) => ({ x: x.year, y: x.value })), title: (pt) => `mid-${pt.x}: ${fmt(pt.y, "pupils")} aged ${c.agesWord} (ONS estimate)` },
-          { id: "p", label: "ONS projection", colour: "var(--accent)", width: 2.2, dashed: "6 5", points: p.projection.map((x) => ({ x: x.year, y: x.value })), title: (pt) => `${pt.x}: ${fmt(pt.y, "pupils")} aged ${c.agesWord} (ONS projection)` },
-        ]}
+        xLabels={first !== undefined ? [String(first), String(f.horizonEnd)] : null}
+        bands={f.bandMissing ? [] : [{ id: "band", colour: "var(--accent)", opacity: 0.16, points: f.projection.map((p) => ({ x: p.year, lo: p.low, hi: p.high })) }]}
+        markers={split !== null ? [{ x: split, label: SMT_NOTES.includesUnborn }] : []}
+        series={series}
       />
-      <div className="flex flex-wrap gap-3">
-        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Estimates</Key>
-        <Key swatch={<LineSwatch colour="var(--accent)" width={14} dashed />}>ONS projection{p.base !== null ? ` (${p.base}-based)` : ""}</Key>
+      <div className="flex flex-wrap items-center gap-3">
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Estimates, then the projection</Key>
+        {!f.bandMissing && <Key swatch={<span className="h-[9px] w-[14px] rounded-[2px]" style={{ background: "var(--accent)", opacity: 0.25 }} />}>Range</Key>}
+        {split !== null && <Key swatch={<span className="h-[3px] w-[14px] rounded" style={{ background: "var(--accent)", opacity: 0.45 }} />}>{SMT_NOTES.includesUnborn}</Key>}
+        <span className="ml-auto flex gap-2">
+          {f.ons && toggle(ons, setOns, SMT_NOTES.onsToggle, "ons")}
+          {toggle(scenario, setScenario, f.scenarioLabel.charAt(0).toUpperCase() + f.scenarioLabel.slice(1), "scenario")}
+        </span>
       </div>
-      <div className="text-[10.5px] text-[var(--muted)]">{SMT_NOTES.wProjection}</div>
-    </>
+      <div className="text-[10.5px] text-[var(--muted)]">
+        {SMT_NOTES.wProjection}
+        {f.bandMissing && <> {smtNote("bandMissing", { ages: c.agesWord })}</>}
+      </div>
+    </div>
   );
 }
 
 /** The large view's "Births and projections": births, and the projection for the school's ages. */
 export function BirthsAndProjections({ c, fullscreen, room }: { c: Context; fullscreen: boolean; room?: number }) {
   const b = c.births.la;
-  const proj = c.population.projection;
+  const proj = (c.forward?.projection ?? []).map((p) => ({ year: p.year, value: p.middle }));
   const lastYear = Math.max(b.at(-1)?.year ?? 0, proj.at(-1)?.year ?? 0);
+  const where = c.forward?.where ?? "";
   return (
     <div className="flex min-h-0 grow flex-col gap-3">
       <div className="text-[13px] font-bold text-[var(--fg)]">Births and projections, {c.place.la}</div>
@@ -499,12 +573,14 @@ export function BirthsAndProjections({ c, fullscreen, room }: { c: Context; full
         xLabels={b.length ? [String(b[0].year), String(lastYear)] : null}
         series={[
           { id: "b", label: "Births", colour: "var(--accent)", points: b.map((p) => ({ x: p.year, y: p.value })) },
-          { id: "p", label: `Residents aged ${c.agesWord} (ONS projection)`, colour: "var(--adm-grey-soft)", dashed: "5 4", dots: true, points: proj.map((p) => ({ x: p.year, y: p.value })) },
+          { id: "p", label: `Children aged ${c.agesWord} ${where} (projection)`, colour: "var(--adm-grey-soft)", dashed: "5 4", dots: true, points: proj.map((p) => ({ x: p.year, y: p.value })) },
         ]}
       />
       <div className="flex flex-wrap gap-3">
-        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Births</Key>
-        <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} dashed />}>Residents aged {c.agesWord}, ONS projection</Key>
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Births, {c.place.la}</Key>
+        <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} dashed />}>
+          Children aged {c.agesWord} {where}, projected
+        </Key>
       </div>
       <div className={cx("text-[11px] leading-[1.4] text-[var(--muted2)]")}>
         {c.notes.births} {c.notes.projection}
@@ -513,7 +589,7 @@ export function BirthsAndProjections({ c, fullscreen, room }: { c: Context; full
   );
 }
 
-/** New in the rail (K4): children of the school's ages within 5 miles over time, indexed, against the
+/** New in the rail (K4): children of the school's ages within the radius over time, indexed, against the
  * LA and England. Residents, not pupils. */
 export function NearbyOverTime({ c, fullscreen, room }: { c: Context; fullscreen: boolean; room?: number }) {
   const ix = c.nearby.indexed;
@@ -531,10 +607,10 @@ export function NearbyOverTime({ c, fullscreen, room }: { c: Context; fullscreen
         reference={{ y: 100 }}
         yFormat={(v) => v.toFixed(0)}
         xLabels={[String(Math.min(...ys)), String(Math.max(...ys))]}
-        series={[line("s", `Within 5 miles`, "var(--accent)", ix.school, c.nearby.school), line("l", c.place.la ?? "LA", "var(--adm-grey-soft)", ix.la, c.nearby.la, "5 4", 1.8), line("e", "England", "var(--adm-grey-2)", ix.england, c.nearby.england, "2 3", 1.6)]}
+        series={[line("s", `Within ${c.radius}`, "var(--accent)", ix.school, c.nearby.school), line("l", c.place.la ?? "LA", "var(--adm-grey-soft)", ix.la, c.nearby.la, "5 4", 1.8), line("e", "England", "var(--adm-grey-2)", ix.england, c.nearby.england, "2 3", 1.6)]}
       />
       <div className="flex flex-wrap gap-3">
-        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Within 5 miles</Key>
+        <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Within {c.radius}</Key>
         <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} dashed />}>{c.place.la}</Key>
         <Key swatch={<LineSwatch colour="var(--adm-grey-2)" width={14} weight={2} dashed />}>England</Key>
       </div>

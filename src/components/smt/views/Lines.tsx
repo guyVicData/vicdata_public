@@ -226,14 +226,32 @@ export function PoolLine({ pool, fullscreen, room, caption }: { pool: { status: 
 }
 
 /** One plain line (the area's school-age pupils), actual figures. */
-export function PlainLine({ title, label, pts, fullscreen, room, caption, xLabel = yr }: { title: string; label: string; pts: Pt[]; fullscreen: boolean; room?: number; caption: string; xLabel?: (year: number) => string }) {
+// 0.8 SMT r4 (F6): `forward`, optional, continues the line with a projection (dashed; the years that include
+// children not yet born lighter, marked at the change). Absent, the chart is exactly as before.
+export function PlainLine({ title, label, pts, fullscreen, room, caption, xLabel = yr, forward }: { title: string; label: string; pts: Pt[]; fullscreen: boolean; room?: number; caption: string; xLabel?: (year: number) => string; forward?: { pts: Pt[]; unbornFrom: number | null; label: string; marker: string } | null }) {
   if (pts.filter((p) => p.value !== null).length < 2) return <Empty>Not enough years held to draw a trend.</Empty>;
+  const f = forward && forward.pts.length > 1 ? forward : null;
+  const split = f?.unbornFrom ?? null;
+  const born = f ? f.pts.filter((p) => split === null || p.year < split) : [];
+  const unborn = f && split !== null ? f.pts.filter((p) => p.year >= split - 1) : [];
+  const last = f ? f.pts[f.pts.length - 1].year : pts[pts.length - 1].year;
+  const proj = (id: string, xs: Pt[], opacity?: number) => ({ id, label: f!.label, colour: "var(--adm-grey-soft)", dashed: "6 4", opacity, points: xs.map((p) => ({ x: p.year, y: p.value })), title: (pt: { x: number; y: number | null }) => `${pt.x}: ${fmt(pt.y, "pupils")} (${f!.label})` });
   return (
     <>
       <div className="text-[12.5px] font-bold text-[var(--fg)]">{title}</div>
-      <LineChart height={fullscreen ? fillHeight(room, 150, 300) : 140} yFormat={(v) => fmt(v, "pupils")} xLabels={[xLabel(pts[0].year), xLabel(pts[pts.length - 1].year)]} series={[{ id: "a", label, colour: "var(--adm-grey-soft)", points: pts.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${xLabel(pt.x)}: ${fmt(pt.y, "pupils")}` }]} />
+      <LineChart
+        height={fullscreen ? fillHeight(room, 150, 300) : 140}
+        yFormat={(v) => fmt(v, "pupils")}
+        xLabels={[xLabel(pts[0].year), f ? String(last) : xLabel(last)]}
+        markers={f && split !== null ? [{ x: split, label: f.marker }] : undefined}
+        series={[
+          { id: "a", label, colour: "var(--adm-grey-soft)", points: pts.map((p) => ({ x: p.year, y: p.value })), title: (pt) => `${xLabel(pt.x)}: ${fmt(pt.y, "pupils")}` },
+          ...(f ? [proj("f", born), ...(unborn.length ? [proj("fu", unborn, 0.45)] : [])] : []),
+        ]}
+      />
       <div className="flex flex-wrap gap-3">
         <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} />}>{label}</Key>
+        {f && <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} dashed />}>{f.label}</Key>}
       </div>
       <div className="text-[10.5px] leading-snug text-[var(--muted)]">{caption}</div>
     </>

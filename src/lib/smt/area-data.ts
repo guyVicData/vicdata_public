@@ -9,6 +9,7 @@ import { cachedReference } from "../server-cache";
 import { createServerAnonSupabaseClient } from "../supabase";
 import { callReferenceRpc, lookupReferenceData } from "../vicdata-reference";
 import { SHIRE_COUNTY_DISTRICT_GSS_CODES } from "../shire-county-districts";
+import { kmToMiles } from "./catchment";
 
 export const ENGLAND_GSS = "E92000001";
 // The ages ONS's small-area figures run to (school_context_lookup's children[19]: 0-18).
@@ -189,4 +190,157 @@ export function areaFsm(gss: string | null): Promise<{ la: Map<number, number>; 
  * schools, which GIAS files under "Special schools") -- the ingest's own rule. */
 export function fsmNotPublishedFor(typeGroup: string | null, type: string | null): boolean {
   return (typeGroup === "Independent schools" && type !== "City technology college") || type === "Other independent special school";
+}
+
+// ------------------------------------------------------------------- 0.8 SMT r4: any radius, projected
+
+// The ingest's area-projection lookups (docs/vicdata_area_projection_report_v1.md, "What the app can
+// call"; the method: docs/v0.8/vicdata_area_projection_method_v1.md). They take miles; the board's
+// catchment is in km (catchment.ts), converted here. Every figure is whole children; a single
+// neighbourhood's figures below 5 come back null.
+
+export type AreaRow = { year: number; ageFrom: number; ageTo: number; middle: number | null; low: number | null; high: number | null; scenario: number | null; includesUnborn: boolean };
+// "0-3", "4-10", "11-15", "16-17", "16-18", "0-18" -> % of the area's children of those ages in this authority.
+export type AreaMix = { lad: string; name: string; share: Record<string, number | null> };
+// The settings row the results were made with (area_projection_settings.settings), as stored.
+export type ProjectionSettings = {
+  version: number;
+  exceptional_years: number[];
+  exceptional_reason: string;
+  first_rate_year: number;
+  middle_pre_years: number;
+  weight_pre: number;
+  weight_post: number;
+  band_includes_exceptional?: boolean;
+  scenario_years: number[];
+  scenario_label: string;
+  horizon_years: number;
+  births: string;
+};
+export type ProjectionYearsUsed = { normal: number[]; middle_weights: Record<string, number>; band: number[]; scenario: number[]; births_middle?: string };
+export type ProjectionSource = { source_id: string; edition: string; first?: number; latest?: number; loaded?: string; use?: string; editions_by_year?: Record<string, string> };
+export type AreaProjection = {
+  scope: "around" | "la";
+  lsoaCount: number | null; // around the school only
+  latestYear: number;
+  lsoaYear: number | null;
+  horizonEnd: number;
+  settingsVersion: number;
+  settings: ProjectionSettings;
+  yearsUsed: ProjectionYearsUsed;
+  sources: Record<string, ProjectionSource>;
+  mix: AreaMix[]; // around the school only, the latest year, largest first
+  rows: AreaRow[];
+  // The caller's own age range was asked for but the ingest's lookups don't take one yet (before
+  // migration 20261016120000): its middle and scenario are summed from the single ages (exact), its band
+  // is left out (summing single ages' lows would overstate it).
+  rangeBandMissing: boolean;
+};
+
+type RawRow = { year: number; age_from: number; age_to: number; middle: number | null; low: number | null; high: number | null; scenario: number | null; includes_unborn: boolean };
+type RawProjection = {
+  lsoa_count?: number; latest_year: number; lsoa_year?: number; horizon_end: number; settings_version: number; settings: ProjectionSettings;
+  years_used: ProjectionYearsUsed; sources: Record<string, ProjectionSource>; authority_mix?: { lad_code: string; lad_name: string; share: Record<string, number | null> }[]; rows: RawRow[];
+};
+
+const isMissingSignature = (e: unknown) => /PGRST202|Could not find the function/i.test(String((e as Error)?.message ?? e));
+const rowOf = (r: RawRow): AreaRow => ({ year: r.year, ageFrom: r.age_from, ageTo: r.age_to, middle: r.middle, low: r.low, high: r.high, scenario: r.scenario, includesUnborn: r.includes_unborn });
+
+/** A range's rows summed from the single ages: middle and scenario exactly; no band (see rangeBandMissing). */
+function summedRange(rows: AreaRow[], [lo, hi]: [number, number], latestYear: number): AreaRow[] {
+  const years = Array.from(new Set(rows.map((r) => r.year))).sort((a, b) => a - b);
+  return years.map((y) => {
+    const singles = rows.filter((r) => r.year === y && r.ageFrom === r.ageTo && r.ageFrom >= lo && r.ageFrom <= hi);
+    const sum = (k: "middle" | "scenario") => (singles.some((r) => r[k] === null) ? null : singles.reduce((t, r) => t + (r[k] ?? 0), 0));
+    return { year: y, ageFrom: lo, ageTo: hi, middle: sum("middle"), low: null, high: null, scenario: sum("scenario"), includesUnborn: lo < y - latestYear };
+  });
+}
+
+function toProjection(raw: RawProjection, scope: "around" | "la", ages: [number, number] | null, rangeBandMissing: boolean): AreaProjection {
+  let rows = raw.rows.map(rowOf);
+  if (ages && rangeBandMissing && !rows.some((r) => r.ageFrom === ages[0] && r.ageTo === ages[1])) rows = [...rows, ...summedRange(rows, ages, raw.latest_year)];
+  return {
+    scope,
+    lsoaCount: raw.lsoa_count ?? null,
+    latestYear: raw.latest_year,
+    lsoaYear: raw.lsoa_year ?? null,
+    horizonEnd: raw.horizon_end,
+    settingsVersion: raw.settings_version,
+    settings: raw.settings,
+    yearsUsed: raw.years_used,
+    sources: raw.sources,
+    mix: (raw.authority_mix ?? []).map((m) => ({ lad: m.lad_code, name: m.lad_name, share: m.share })),
+    rows,
+    rangeBandMissing: rangeBandMissing && !!ages && !(raw.rows ?? []).some((r) => r.age_from === ages[0] && r.age_to === ages[1]),
+  };
+}
+
+/** area_projection for a school at a radius (km), with the school's own age range as one more row set. */
+export function areaProjection(urn: string, km: number, ages: [number, number] | null = null): Promise<AreaProjection | null> {
+  return cachedReference(`smt:area-projection:${urn}:${km}:${ages?.join("-") ?? ""}`, async () => {
+    const base = { p_urn: urn, p_radius_miles: kmToMiles(km) };
+    try {
+      const raw = (await callReferenceRpc("area_projection", ages ? { ...base, p_age_from: ages[0], p_age_to: ages[1] } : base)) as unknown as RawProjection | null;
+      return raw ? toProjection(raw, "around", ages, false) : null;
+    } catch (e) {
+      if (!ages || !isMissingSignature(e)) throw e;
+      const raw = (await callReferenceRpc("area_projection", base)) as unknown as RawProjection | null;
+      return raw ? toProjection(raw, "around", ages, true) : null;
+    }
+  });
+}
+
+/** The authority view (la_projection_lookup): one LA, or a shire county's districts summed. */
+export function laAreaProjection(dfeCode: string | null, ages: [number, number] | null = null): Promise<AreaProjection | null> {
+  return cachedReference(`smt:la-area-projection:${dfeCode}:${ages?.join("-") ?? ""}`, async () => {
+    const districts = (await laCodes(dfeCode)).districts;
+    if (!districts.length) return null;
+    const base = { p_lad_codes: districts };
+    try {
+      const raw = (await callReferenceRpc("la_projection_lookup", ages ? { ...base, p_age_from: ages[0], p_age_to: ages[1] } : base)) as unknown as RawProjection | null;
+      return raw ? toProjection(raw, "la", ages, false) : null;
+    } catch (e) {
+      if (!ages || !isMissingSignature(e)) throw e;
+      const raw = (await callReferenceRpc("la_projection_lookup", base)) as unknown as RawProjection | null;
+      return raw ? toProjection(raw, "la", ages, true) : null;
+    }
+  });
+}
+
+export type AreaContextData = {
+  urn: string;
+  km: number;
+  lsoaCount: number;
+  lsoaYear: number | null;
+  own: { lsoa: string | null; imd: number | null; idaci: number | null } | null;
+  edition: string | null;
+  idaciMix: number[] | null; // children 0-15, % in each IDACI decile 1..10
+  mix: AreaMix[]; // the latest LSOA year
+  years: SchoolContextYear[]; // oldest first; ages 0-18 (a single neighbourhood's figures below 5 are null -> 0 here, flagged)
+  suppressed: boolean; // one neighbourhood: some figures below 5 were withheld
+};
+type RawContext = {
+  lsoa_count: number; lsoa_year: number | null; own: { lsoa21_code: string | null; imd_decile: number | null; idaci_decile: number | null } | null; deprivation_edition: string | null;
+  idaci_mix: number[] | null; authority_mix: { lad_code: string; lad_name: string; share: Record<string, number | null> }[]; years: { year: number; children: (number | null)[] }[];
+};
+
+/** area_context: what school_context_lookup gave at 5 miles, at any radius (km). */
+export function areaContext(urn: string, km: number): Promise<AreaContextData | null> {
+  return cachedReference(`smt:area-context:${urn}:${km}`, async () => {
+    const raw = (await callReferenceRpc("area_context", { p_urn: urn, p_radius_miles: kmToMiles(km) })) as unknown as RawContext | null;
+    if (!raw) return null;
+    const suppressed = raw.years.some((y) => y.children.some((c) => c === null));
+    return {
+      urn,
+      km,
+      lsoaCount: raw.lsoa_count,
+      lsoaYear: raw.lsoa_year,
+      own: raw.own ? { lsoa: raw.own.lsoa21_code, imd: raw.own.imd_decile, idaci: raw.own.idaci_decile } : null,
+      edition: raw.deprivation_edition,
+      idaciMix: raw.idaci_mix ? raw.idaci_mix.map(Number) : null,
+      mix: (raw.authority_mix ?? []).map((m) => ({ lad: m.lad_code, name: m.lad_name, share: m.share })),
+      years: raw.years.map((y) => ({ year: y.year, children: y.children.map((c) => (c === null ? 0 : Number(c))), lsoaCount: raw.lsoa_count })),
+      suppressed,
+    };
+  });
 }

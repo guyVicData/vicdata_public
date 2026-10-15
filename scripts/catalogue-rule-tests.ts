@@ -137,13 +137,16 @@ async function smtPupilsCase(urn: string, phase: "whole" | "gcse" | "post16" | "
     }));
   return smtMemo.get(key) as Promise<import("../src/lib/smt/pupils").Pupils>;
 }
-async function smtContextCase(urn: string, area: "around" | "la" = "around", level: "whole" | "gcse" | "post16" | "primary" = "gcse") {
-  const key = `context|${urn}|${area}|${level}`;
+// 0.8 SMT r4: the board at a radius in km. By default exactly the ingest's 5 miles (school_context_lookup's
+// radius), so round 3's figures still hold through area_context, the read the board now uses.
+const FIVE_MILES_KM = 5 * 1.609344;
+async function smtContextCase(urn: string, area: "around" | "la" = "around", level: "whole" | "gcse" | "post16" | "primary" = "gcse", km = FIVE_MILES_KM) {
+  const key = `context|${urn}|${area}|${level}|${km}`;
   if (!smtMemo.has(key))
     smtMemo.set(key, (async () => {
       const c = await smtCase(urn);
       const { buildContext } = await import("../src/lib/smt/context");
-      return buildContext(c.school, area, level);
+      return buildContext(c.school, area, level, { km, savedKm: null, defaultKm: km, capKm: 30, from: "view", capped: false });
     })().catch((e) => {
       smtMemo.delete(key);
       throw e;
@@ -1514,32 +1517,6 @@ const RUNNERS: Record<string, Runner> = {
     const loadedOk = withB.state === "lsoa" && withB.here === withB.lookup && withB.here === 34 && withB.everyBoundary === true && withB.opts.join() === "children,imd,idaci,fsm";
     return { pass: fallbackOk && loadedOk, detail: fmt({ withoutBoundaries: `${without.state} (${without.reason ?? ""}), shade ${without.opts.join("/")}, ${without.las} LAs, district note ${html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40))}`, withBoundaries: `${withB.state}: ${withB.here} within 5 miles (lookup ${withB.lookup}), boundaries ${withB.everyBoundary}, shade ${withB.opts.join("/")}` }) };
   },
-  async smtProjectionJoin() {
-    const { SHIRE_COUNTY_DISTRICT_GSS_CODES } = await import("../src/lib/shire-county-districts");
-    const { SMT_NOTES, smtNote } = await import("../src/catalogue/notes");
-    const { SMT_PROJECTION_JOIN_GAP_PCT } = await import("../src/catalogue/years");
-    const L = await lib();
-    const ages = Array.from({ length: 8 }, (_, i) => `age:${11 + i}`);
-    const cases: [string, string, string[]][] = [["100053", "Camden", ["E09000007"]], ["137625", "Worcestershire", SHIRE_COUNTY_DISTRICT_GSS_CODES["885"]]];
-    const out: Record<string, string> = {};
-    let pass = true;
-    for (const [urn, la, codes] of cases) {
-      const c = await smtContextCase(urn, "around", "whole");
-      const est = await L.ref.lookupReferenceData({ sourceId: "ons_population_age", entityIds: codes, breakdowns: ages });
-      const y = Math.max(...est.map((f) => f.period));
-      const e = est.filter((f) => f.period === y).reduce((t, f) => t + (f.value_numeric ?? 0), 0);
-      const pr = (await L.ref.lookupReferenceData({ sourceId: "ons_snpp", entityIds: codes, breakdowns: ages, periodMin: y, periodMax: y })).reduce((t, f) => t + (f.value_numeric ?? 0), 0);
-      const base = Math.min(...(await L.ref.lookupReferenceData({ sourceId: "ons_snpp", entityIds: [codes[0]], breakdowns: ["age:11"] })).map((f) => f.period));
-      const gap = ((pr - e) / e) * 100;
-      const shows = Math.abs(gap) > SMT_PROJECTION_JOIN_GAP_PCT;
-      const j = c.population.join;
-      const ok = c.ages.join() === "11,18" && !!j && j.year === y && Math.abs(j.gapPct - gap) < 1e-9 && (shows ? j.note === smtNote("projectionJoin", { base }) : j.note === null);
-      pass &&= ok;
-      out[la] = `mid-${y} estimate ${Math.round(e)}, projection ${Math.round(pr)}: gap ${gap.toFixed(1)}% -> ${shows ? "shows" : "omitted"}${ok ? "" : " (MISMATCH)"}`;
-    }
-    pass &&= out.Camden.endsWith("shows") && SMT_NOTES.projectionJoin.includes("{base}");
-    return { pass, detail: fmt({ ...out, note: smtNote("projectionJoin", { base: 2022 }) }) };
-  },
   async smtContextPlace() {
     const want: Record<string, string> = { "110110": "Reading · South East", "137625": "Malvern · Worcestershire · West Midlands", "100053": "London · Camden · London" };
     const got: Record<string, string> = {};
@@ -1559,8 +1536,10 @@ const RUNNERS: Record<string, Runner> = {
     const sum = last.children.slice(11, 16).reduce((a, b) => a + b, 0);
     const html = textOf(await smtRender("137625", "DV-SMT-C-NOW", undefined, { context: c }));
     const census = c.now.pupilsNearby;
-    const pass = c.now.children.value === sum && c.now.children.year === last.year && sum === 3354 && !!census && html.includes(census.value.toLocaleString("en-GB")) && /pupils at schools within 5 miles/.test(html) && /living within 5 miles/.test(html);
-    return { pass, detail: fmt({ tile: `${c.now.children.value} (mid-${c.now.children.year})`, lookupAges11to15: sum, censusLine: census ? `${census.value} (${census.period})` : null, bothLabelled: /pupils at schools within 5 miles/.test(html) && /living within 5 miles/.test(html) }) };
+    // 0.8 SMT r4: read through area_context at exactly 5 miles, the radius school_context_lookup counts at.
+    const labelled = html.includes(`pupils at schools within ${c.radius}`) && html.includes(`living within ${c.radius}`);
+    const pass = c.now.children.value === sum && c.now.children.year === last.year && sum === 3354 && !!census && html.includes(census.value.toLocaleString("en-GB")) && labelled;
+    return { pass, detail: fmt({ tile: `${c.now.children.value} (mid-${c.now.children.year})`, lookupAges11to15: sum, censusLine: census ? `${census.value} (${census.period})` : null, bothLabelled: labelled }) };
   },
   async smtContextDeprivation() {
     const want: Record<string, [number, number]> = { "137625": [8, 3], "110110": [6, 5], "100053": [4, 5] };
@@ -1588,13 +1567,14 @@ const RUNNERS: Record<string, Runner> = {
     const aclandOk = f2.status === "published" && r1(f2.value) === 34 && r1(f2.la.value) === 46.1;
     const html = textOf(await smtRender("110110", "DV-SMT-C-NOW", undefined, { context: lp }));
     const fsmBlock = html.slice(html.indexOf(SMT_NOTES.fsmTitle));
-    const lpOk = lp.social.fsm.status === "independent" && html.includes(SMT_NOTES.wIndependentFsm) && html.includes(SMT_NOTES.wIndependentDraw) && !/\d+(\.\d)?%/.test(fsmBlock.slice(0, 200));
+    const { smtNote } = await import("../src/catalogue/notes");
+    const lpOk = lp.social.fsm.status === "independent" && html.includes(SMT_NOTES.wIndependentFsm) && html.includes(smtNote("wIndependentDraw", { radius: lp.radius })) && !/\d+(\.\d)?%/.test(fsmBlock.slice(0, 200));
     const shown = textOf(await smtRender("137625", "DV-SMT-C-NOW", undefined, { context: chase }));
     const shownOk = shown.includes("17.7%") && shown.includes("Worcestershire 20.8%") && shown.includes("England 26.5%");
     return { pass: chaseOk && aclandOk && lpOk && shownOk, detail: fmt({ chase: f1.status === "published" ? `${f1.value}% (${f1.period}) vs ${f1.la.name} ${r1(f1.la.value)}%, England ${r1(f1.england)}%` : f1.status, acland: f2.status === "published" ? `${f2.value}% vs ${f2.la.name} ${r1(f2.la.value)}%` : f2.status, leighton: `${lp.social.fsm.status}; rule 2 shown ${html.includes(SMT_NOTES.wIndependentFsm)}; no number ${lpOk}`, chaseRendered: shownOk }) };
   },
   async smtContextWording() {
-    const { SMT_NOTES } = await import("../src/catalogue/notes");
+    const { SMT_NOTES, smtNote } = await import("../src/catalogue/notes");
     const lp = await smtContextCase("110110", "around", "whole");
     const chase = await smtContextCase("137625", "around", "gcse");
     const views = ["DV-SMT-C-NOW", "DV-SMT-C-MAP", "DV-SMT-C-BYAGE", "DV-SMT-C-PROJECTION", "DV-SMT-C-NEARBY"];
@@ -1603,10 +1583,10 @@ const RUNNERS: Record<string, Runner> = {
     for (const dv of views) text += " " + textOf(await smtRender("137625", dv, undefined, { context: chase, contextMap: { state: "fallback", reason: "test" } }));
     // Rule 6 is the source (i): the panels' source line, built from the data's years.
     text += " " + chase.notes.sources;
-    const rules: Record<string, string> = { "1 deprivation": SMT_NOTES.wDeprivation, "2 independent FSM": SMT_NOTES.wIndependentFsm, "2 draw": SMT_NOTES.wIndependentDraw, "4 deciles": SMT_NOTES.wDeciles, "5 projection": SMT_NOTES.wProjection };
+    const rules: Record<string, string> = { "1 deprivation": SMT_NOTES.wDeprivation, "2 independent FSM": SMT_NOTES.wIndependentFsm, "2 draw": smtNote("wIndependentDraw", { radius: lp.radius }), "4 deciles": SMT_NOTES.wDeciles, "5 projection": SMT_NOTES.wProjection };
     const missing = Object.entries(rules).filter(([, v]) => !text.includes(v)).map(([k]) => k);
     // Rule 3 lives in the captions (the (i) behind the caption button): checked on the notes the panels show.
-    const rule3 = chase.notes.children.includes(SMT_NOTES.wResidents);
+    const rule3 = chase.notes.children.includes(smtNote("wResidents", { radius: chase.radius }));
     const rule6 = /ONS mid-year population estimates for LSOAs \(mid-\d{4}\)/.test(chase.notes.sources) && /English Indices of Deprivation \d{4}/.test(chase.notes.sources) && /\(\d{4}\/\d{2}\)\.$/.test(chase.notes.sources);
     // No "pupils" beside a deprivation figure: the social block's deprivation lines, less the rule's own words.
     const social = text.split("Social context").slice(1).map((t) => t.split(SMT_NOTES.fsmTitle)[0]).join(" ").replaceAll(SMT_NOTES.wDeprivation, "");
@@ -1619,12 +1599,13 @@ const RUNNERS: Record<string, Runner> = {
     const { fetchBirthsByLa } = await import("../src/lib/admissions/data");
     const births = (await fetchBirthsByLa(["885"])).get("885")!;
     const year = Math.max(...births.keys());
-    const { SHIRE_COUNTY_DISTRICT_GSS_CODES } = await import("../src/lib/shire-county-districts");
     const L = await lib();
-    const facts = await L.ref.lookupReferenceData({ sourceId: "ons_snpp", entityIds: SHIRE_COUNTY_DISTRICT_GSS_CODES["885"], breakdowns: ["age:11", "age:12", "age:13", "age:14", "age:15"] });
-    const at = (y: number) => facts.filter((f) => f.period === y).reduce((t, f) => t + (f.value_numeric ?? 0), 0);
+    // 0.8 SMT r4 (F5): the tile is the area's projection (area_projection at the radius, ages 11-15), from
+    // the latest count to five years on, recomputed from the lookup's own rows.
+    const raw = (await L.ref.callReferenceRpc("area_projection", { p_urn: "137625", p_radius_miles: 5 })) as unknown as { latest_year: number; rows: { year: number; age_from: number; age_to: number; middle: number }[] };
+    const at = (y: number) => raw.rows.find((r) => r.year === y && r.age_from === 11 && r.age_to === 15)?.middle ?? NaN;
     const p = c.now.projection;
-    const projOk = !!p && Math.abs(((at(p.to) - at(p.from)) / at(p.from)) * 100 - p.changePct) < 1e-6;
+    const projOk = !!p && p.from === raw.latest_year && p.to === raw.latest_year + 5 && Math.abs(((at(p.to) - at(p.from)) / at(p.from)) * 100 - p.changePct) < 1e-6;
     const pass = c.now.births?.year === year && c.now.births.value === births.get(year) && c.now.schools.count > 0 && c.place.la === "Worcestershire" && projOk;
     return { pass, detail: fmt({ births: `${c.now.births?.value} (${c.now.births?.year})`, raw: births.get(year), schoolsNearby: c.now.schools.count, projection: p && `${p.agesWord} ${p.from}->${p.to} ${p.changePct.toFixed(1)}%`, projectionRecomputed: projOk, place: [c.place.town, c.place.la, c.place.region].join(" · ") }) };
   },
@@ -1632,11 +1613,111 @@ const RUNNERS: Record<string, Runner> = {
     const c = await smtContextCase("137625", "around", "gcse");
     const base = c.births.base;
     const at = (pts: { year: number; value: number | null }[]) => pts.find((p) => p.year === base)?.value;
-    const { SMT_PROJECTION_CHART_AHEAD } = await import("../src/catalogue/years");
-    const latest = c.population.latestEstimate!;
-    const proj = c.population.projection;
-    const pass = base === 2012 && at(c.births.indexed.la) === 100 && at(c.births.indexed.england) === 100 && proj.length > 1 && proj[0].year === latest && proj.every((p) => p.year <= latest + SMT_PROJECTION_CHART_AHEAD) && proj.at(-1)!.year === latest + SMT_PROJECTION_CHART_AHEAD;
-    return { pass, detail: fmt({ base, england2012: c.births.england.find((p) => p.year === 2012)?.value, latestEstimate: latest, projectionYears: `${proj[0]?.year}-${proj.at(-1)?.year}` }) };
+    // 0.8 SMT r4: the projection runs from the latest count to the settings' horizon (latest + 11).
+    const f = c.forward!;
+    const proj = f.projection;
+    const pass = base === 2012 && at(c.births.indexed.la) === 100 && at(c.births.indexed.england) === 100 && proj.length > 1 && proj[0].year === f.latestYear && proj.at(-1)!.year === f.horizonEnd && f.horizonEnd === f.latestYear + f.settings.horizon_years;
+    return { pass, detail: fmt({ base, england2012: c.births.england.find((p) => p.year === 2012)?.value, latestCount: f.latestYear, projectionYears: `${proj[0]?.year}-${proj.at(-1)?.year}`, horizon: f.settings.horizon_years }) };
+  },
+  // ------------------------------------------------------------------ 0.8 SMT round 4
+  // R-SMT-RADIUS: the default from the saved setting, else by the school's type; the whole board follows
+  // N, and no caption says another radius; the setting's RLS (supabase/tests/v08_smt_r4_catchment_pglite.mjs,
+  // run here when PGLITE_POSTGIS_DIR names a folder with PGlite and PostGIS, as its header says).
+  async smtRadius() {
+    const K = await import("../src/lib/smt/catchment");
+    const chase = (await smtCase("137625")).school;
+    const lp = (await smtCase("110110")).school;
+    const state16 = { independent: false, high: 16, phases: { post16: false } };
+    const rules = {
+      chaseDefault: K.resolveCatchment(chase, null, null).km === 5 && K.catchmentCapKm(chase) === 30,
+      leightonDefault: K.resolveCatchment(lp, null, null).km === 15 && K.catchmentCapKm(lp) === 30,
+      state16Cap: K.catchmentCapKm(state16) === 15 && K.catchmentPresets(state16).join() === "2,3,5,8,10,15",
+      saved: K.resolveCatchment(chase, null, 8).km === 8 && K.resolveCatchment(chase, null, 8).from === "saved",
+      viewBeatsSaved: K.resolveCatchment(chase, "3", 8).km === 3 && K.resolveCatchment(chase, "3", 8).from === "view",
+      cappedSaved: K.resolveCatchment(state16, null, 20).km === 15 && K.resolveCatchment(state16, null, 20).capped,
+      clamp: K.clampKm("99", chase) === 30 && K.clampKm("0", chase) === 2 && K.clampKm("x", chase) === null,
+    };
+    // The whole board at 3 km: every caption the Context views draw says 3 km, none another radius.
+    const c = await smtContextCase("137625", "around", "gcse", 3);
+    const views = ["DV-SMT-C-NOW", "DV-SMT-C-BYAGE", "DV-SMT-C-PROJECTION", "DV-SMT-C-NEARBY"];
+    let text = Object.values(c.notes).join(" ");
+    for (const dv of views) text += " " + textOf(await smtRender("137625", dv, undefined, { context: c, contextMap: { state: "fallback", reason: "test" } }));
+    const follows = c.radius === "3 km" && text.includes("within 3 km") && !/\b(5|five) miles\b|\b5 km\b|\b8\.\d+ km\b/.test(text) && c.now.schools.scope === "within 3 km";
+    const pure = Object.values(rules).every(Boolean);
+    let rls = "not run (set PGLITE_POSTGIS_DIR)";
+    let rlsOk = true;
+    if (process.env.PGLITE_POSTGIS_DIR) {
+      const { execFileSync } = await import("node:child_process");
+      try {
+        const out = execFileSync("node", [path.join(ROOT, "supabase/tests/v08_smt_r4_catchment_pglite.mjs")], { cwd: ROOT, encoding: "utf8", env: { ...process.env, PGLITE_DIR: process.env.PGLITE_POSTGIS_DIR }, timeout: 600_000 });
+        rls = out.trim().split("\n").at(-1) ?? "";
+      } catch (e) {
+        rls = `FAILED ${(e as Error).message.slice(0, 120)}`;
+        rlsOk = false;
+      }
+    }
+    return { pass: pure && follows && rlsOk, detail: fmt({ ...rules, boardFollows3km: follows, rls }) };
+  },
+  // R-SMT-FORWARD: the line starts at the latest count; the band contains the line; the unborn years are
+  // flagged; Leighton Park's authority mix names Reading and Wokingham; and the figures equal the ingest's
+  // P5 spot checks exactly (docs/vicdata_area_projection_report_v1.md, settings version 2, as production
+  // returned them on 15 Oct). If they differ, the rule fails: the expected figures are never edited to match.
+  async smtForward() {
+    const P5: Record<string, number[][]> = {
+      "137625:3": [[2379, 2379, 2379], [2225, 2122, 2361], [1985, 1784, 2231]],
+      "137625:5": [[3326, 3326, 3326], [3295, 3142, 3497], [3043, 2734, 3418]],
+      "137625:10": [[12729, 12729, 12729], [12310, 11737, 12778], [11153, 10391, 12529]],
+      "110110:3": [[13145, 13145, 13145], [13143, 12757, 14581], [11988, 11548, 15189]],
+      "110110:5": [[23156, 23156, 23156], [22557, 21966, 24989], [19986, 19456, 25214]],
+      "110110:10": [[43229, 43229, 43229], [41316, 40544, 44740], [36736, 35200, 44280]],
+      "100053:3": [[35426, 35426, 35426], [31221, 28749, 32987], [28342, 24464, 32174]],
+      "100053:5": [[97228, 97228, 97228], [87588, 81309, 91904], [79229, 70534, 91874]],
+      "100053:10": [[317672, 317672, 317672], [293246, 273282, 306214], [267567, 240695, 300163]],
+    };
+    const { areaProjection } = await import("../src/lib/smt/area-data");
+    const mismatch: string[] = [];
+    for (const [k, want] of Object.entries(P5)) {
+      const [urn, miles] = k.split(":");
+      const p = (await areaProjection(urn, Number(miles) * 1.609344, [11, 15]))!;
+      const got = [2025, 2030, 2035].map((y) => {
+        const r = p.rows.find((x) => x.year === y && x.ageFrom === 11 && x.ageTo === 15)!;
+        return [r.middle, r.low, r.high];
+      });
+      if (JSON.stringify(got) !== JSON.stringify(want)) mismatch.push(`${k} ${JSON.stringify(got)}`);
+    }
+    // The board: the Chase at 5 miles (GCSE) and at Primary (4-10, whose later years include the unborn).
+    const c = await smtContextCase("137625", "around", "gcse");
+    const f = c.forward!;
+    const first = f.projection[0];
+    const meets = f.estimates.at(-1)!.year === f.latestYear && f.estimates.at(-1)!.value === first.middle && first.low === first.middle && first.high === first.middle;
+    const contains = f.projection.every((x) => x.low !== null && x.high !== null && x.middle !== null && x.low <= x.middle && x.middle <= x.high);
+    const pr = await smtContextCase("137625", "around", "primary");
+    const fp = pr.forward!;
+    const unborn = fp.unbornFrom === fp.latestYear + 5 && fp.projection.every((x) => x.includesUnborn === x.year - fp.latestYear > 4) && !f.projection.some((x) => x.includesUnborn);
+    const lp = await smtContextCase("110110", "around", "gcse");
+    const mix = lp.now.mix?.line ?? "";
+    const mixOk = /Reading \d+%/.test(mix) && /Wokingham \d+%/.test(mix);
+    const html = textOf(await smtRender("137625", "DV-SMT-C-PROJECTION", undefined, { context: pr }));
+    const drawn = html.includes("includes children not yet born");
+    const pass = mismatch.length === 0 && meets && contains && unborn && mixOk && drawn;
+    return { pass, detail: fmt({ p5: mismatch.length ? `DIFFERS: ${mismatch.join("; ")}` : "9 / 9 equal", meetsAtLatestCount: meets, bandContainsLine: contains, unbornFlagged: `${unborn} (primary from ${fp.unbornFrom})`, labelDrawn: drawn, leightonMix: mix }) };
+  },
+  // R-SMT-NOT-A-FORECAST: the wording rule. "forecast" only in "not a forecast", never "your roll", and
+  // the method note's sentences, word for word, in SMT_NOTES (locked) and on the forward views.
+  async smtNotAForecast() {
+    const { SMT_NOTES } = await import("../src/catalogue/notes");
+    const notes = Object.values(SMT_NOTES).join(" ");
+    const c = await smtContextCase("110110", "around", "gcse");
+    let text = Object.values(c.notes).join(" ");
+    for (const dv of ["DV-SMT-C-NOW", "DV-SMT-C-PROJECTION", "DV-SMT-C-BIRTHS"]) text += " " + textOf(await smtRender("110110", dv, undefined, { context: c, contextMap: { state: "fallback", reason: "test" } }));
+    const pupils = await smtPupilsCase("110110", "whole");
+    text += " " + textOf(await smtRender("110110", "DV-SMT-P-AREA", undefined, { pupils }));
+    const all = `${notes} ${text}`;
+    const forecastOk = !/forecast/i.test(all.replace(/not a forecast/gi, ""));
+    const rollOk = !/your roll/i.test(all);
+    const locked = SMT_NOTES.wProjection === "A projection of children living in the area, not a forecast for the school." && SMT_NOTES.whatItIs.startsWith("It is the children living in the area, projected from children already counted");
+    const shown = text.includes(SMT_NOTES.wProjection);
+    return { pass: forecastOk && rollOk && locked && shown, detail: fmt({ forecastOnlyAsNot: forecastOk, noYourRoll: rollOk, notesLocked: locked, onTheViews: shown }) };
   },
   // ------------------------------------------------------------------ 0.8 SMT round 1
   async smtLevelChips() {

@@ -19,7 +19,7 @@ import { nearbyCandidates } from "../admissions/rungs";
 import { percentile } from "../admissions/stats";
 import { englandSchools } from "../admissions/ranks";
 import { agesWordOf, levelAges, type SmtLevel } from "./levels";
-import { laPopulation } from "./area-data";
+import { laAreaProjection, laPopulation } from "./area-data";
 import type { SmtSchool } from "./school";
 import { marketAt11, rollAt, type Overview, type Pt, type SmtFilters, type SmtSet } from "./overview";
 
@@ -62,7 +62,9 @@ export type Pupils = {
     base: number | null;
     pool: { status: "ready"; entry: string; counted: Pt[]; births: Pt[] } | { status: "empty"; reason: string };
     // 0.8 SMT r3 (K5): the LA's residents of the ages (ONS mid-year estimates), not census pupils.
-    area: { laName: string | null; pts: Pt[]; ages: [number, number]; agesWord: string };
+    // 0.8 SMT r4 (F6): `forward` is the same middle line as Context's forward view (the LA's, these ages),
+    // from the latest count to the horizon; the years whose ages include children not yet born from unbornFrom.
+    area: { laName: string | null; pts: Pt[]; ages: [number, number]; agesWord: string; forward: { pts: Pt[]; unbornFrom: number | null } | null };
   };
 };
 
@@ -226,6 +228,10 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFi
       return { year: y, value: t };
     });
 
+  const proj = await laAreaProjection(school.laCode, areaAges).catch(() => null);
+  const fwdRows = proj ? proj.rows.filter((r) => r.ageFrom === areaAges[0] && r.ageTo === areaAges[1]).sort((a, b) => a.year - b.year) : [];
+  const forward = fwdRows.length > 1 ? { pts: fwdRows.map((r) => ({ year: r.year, value: r.middle })), unbornFrom: fwdRows.find((r) => r.includesUnborn)?.year ?? null } : null;
+
   const market = (await marketAt11(school, caller)).trend;
   const highlight = LEVEL_AGES[level.phase];
   void info;
@@ -261,7 +267,7 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFi
     entries,
     leaving,
     market,
-    trends: { phases, base: ix.base, pool, area: { laName: school.laName, pts: areaPts, ages: areaAges, agesWord: agesWordOf(areaAges) } },
+    trends: { phases, base: ix.base, pool, area: { laName: school.laName, pts: areaPts, ages: areaAges, agesWord: agesWordOf(areaAges), forward } },
   };
 }
 

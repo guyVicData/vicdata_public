@@ -4,9 +4,12 @@ import { smtSchool } from "@/lib/smt/school";
 import { buildContext } from "@/lib/smt/context";
 import { buildContextMap } from "@/lib/smt/context-map";
 import { parseLevel } from "@/lib/smt/levels";
+import { resolveCatchment } from "@/lib/smt/catchment";
+import { savedCatchmentKm } from "@/lib/smt/catchment-server";
 
 // VicData 0.8 SMT r3 (K3): Context's neighbourhood map -- the LSOAs around the school with their
-// boundaries and figures, and the schools nearby with their FSM. GET ?urn&level=. Answers
+// boundaries and figures, and the schools nearby with their FSM. GET ?urn&level=&km= (0.8 SMT r4: the
+// catchment, as /api/smt/context resolves it). Answers
 // { state: "fallback" } until the LSOA boundaries are loaded (the map then draws round 2's LAs).
 // Public data behind the SMT gate, as /api/smt/context.
 export async function GET(request: NextRequest) {
@@ -17,8 +20,9 @@ export async function GET(request: NextRequest) {
     const school = await smtSchool(caller.urn);
     if (!school) return NextResponse.json({ error: "No such school." }, { status: 404 });
     const level = parseLevel(sp, school.phases, null).phase;
-    const c = await buildContext(school, "around", level);
-    return NextResponse.json(await buildContextMap(school, level, c.map.schools));
+    const catchment = resolveCatchment(school, sp.get("km"), await savedCatchmentKm(caller.supabase, caller.urn));
+    const c = await buildContext(school, "around", level, catchment);
+    return NextResponse.json(await buildContextMap(school, level, c.map.schools, catchment.km));
   } catch (err) {
     console.error("[smt/context/map] failed:", err);
     return NextResponse.json({ error: "Could not build the map." }, { status: 502 });
