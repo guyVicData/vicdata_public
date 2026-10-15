@@ -252,12 +252,13 @@ export function buildPupils(input: { agg: GroupAggregate; comps: ComparisonRow[]
   const f = (s: SchoolYearRow, p: number) => (memberOf(s, p, reading) ? (s.years.find((y) => y.period === p)?.figures ?? null) : null);
 
   // Year 12 against Year 11 (SMT round 2's wording): pupils aged 16 this year against those aged 15 last
-  // year, over the group's schools with a sixth form both years.
+  // year, over the group's schools with a sixth form this year and a Year 11 last year.
   let y12 = 0, y11 = 0, n6 = 0;
   for (const s of members) {
     const a = f(s, census);
     const b = f(s, census - 1);
-    if (!a || !b || !a.phases.includes("post16")) continue;
+    // A sixth-form-only college has no Year 11 of its own: it is left out, as in the table.
+    if (!a || !b || !a.phases.includes("post16") || !(b.roll_by_age[15] > 0)) continue;
     y12 += a.roll_by_age[16] ?? 0;
     y11 += b.roll_by_age[15] ?? 0;
     n6++;

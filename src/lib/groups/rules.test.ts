@@ -123,3 +123,57 @@ test("R-GROUP-DUKES: Dukes' roll and change are G0's corrected figures, Cardiff 
   const cardiff = s.rows.find((r) => r.urn === CARDIFF);
   assert.ok(cardiff && cardiff.outsideEngland && /outside England/.test(cardiff.reason ?? ""), "the Schools table says why");
 });
+
+// ------------------------------------------------------------------------------- groups r3 (A, P)
+import { buildAcademic, buildPupils } from "./dash-r3";
+
+const r3 = async (g: string, focus: "all" | "secondary" | "post16" | "primary") => {
+  const agg = await groupAggregate(g, "at_time");
+  const comps = await groupComparisons(g, kindsFor(DEFAULT_COMPARE));
+  const schools = await groupSchoolsYear(g);
+  return { a: buildAcademic({ agg: agg!, comps, schools, compare: DEFAULT_COMPARE, focus }), p: buildPupils({ agg: agg!, comps, schools, compare: DEFAULT_COMPARE, focus }), schools, agg: agg! };
+};
+
+test("R-GROUP-VA-SEPARATE: value added never appears in a results chart", async () => {
+  for (const g of [HARRIS, DUKES])
+    for (const focus of ["all", "secondary", "post16"] as const) {
+      const { a } = await r3(g, focus);
+      const charted = [...a.overview.trends.results.map((r) => r.measure), ...(a.post16 ?? []).map((r) => r.measure)];
+      assert.ok(!charted.some((m) => m === "ks4_p8" || m === "ks5_va_alevel"), `${g} ${focus}: ${charted.join(" ")}`);
+      assert.ok(a.headlines.every((h) => h.measures.every((m) => m.measure !== "ks4_p8" && m.measure !== "ks5_va_alevel")), `${g} ${focus}: no VA among the headlines`);
+    }
+});
+
+test("R-GROUP-IGCSE: at group level, IGCSE schools are listed 'not ranked at GCSE', never ranked or counted", async () => {
+  const { a, schools } = await r3(DUKES, "secondary");
+  const igcse = new Set(schools.filter((s) => s.years.some((y) => y.figures?.igcse)).map((s) => s.urn));
+  assert.ok(igcse.size >= 4, `Dukes has IGCSE schools (${igcse.size})`);
+  for (const r of a.ranked.rows.filter((x) => igcse.has(x.urn))) {
+    assert.equal(r.value, null, `${r.name}: no value`);
+    assert.equal(r.inGroup, null, `${r.name}: no rank in the group`);
+    assert.match(r.reason ?? "", /IGCSE: not ranked at GCSE/);
+  }
+  const ranked = a.ranked.rows.filter((x) => x.inGroup);
+  assert.ok(ranked.every((x) => x.inGroup!.of === ranked.length), "ranks counted over schools with a figure only");
+  const h = a.headlines.find((x) => x.phase === "secondary")!;
+  assert.equal(h.withFigure, h.measures[0].group?.n_with_figure ?? 0, "the n is the lookup's");
+  assert.ok(h.excluded.filter((e) => e.reason === "igcse").length >= 4, "IGCSE schools in the excluded list, with the reason");
+});
+
+test("subject areas: the audit-fixes minimum, n per area, the lookup's figures", async () => {
+  const { a, agg } = await r3(HARRIS, "secondary");
+  assert.equal(a.areas.stage, "ks4");
+  const raw = agg.rows.find((r) => r.period === a.areas.year && r.phase === "secondary")!.figures.subject_areas!.ks4!;
+  for (const r of a.areas.rows) {
+    const x = raw.find((y) => y.family_id === r.familyId)!;
+    assert.equal(r.group?.points_per_entry, x.points_per_entry);
+    assert.ok(x.shown ? x.n_schools >= 2 : x.points_per_entry === null, `${r.label}: shown only with 2+ schools`);
+  }
+});
+
+test("Pupils: Year 12 against Year 11 adds up from the schools' own rows; the shape is the lookup's", async () => {
+  const { p, agg } = await r3(HARRIS, "all");
+  assert.equal(p.leaving.reduce((t, r) => t + (r.y12 ?? 0), 0), p.stayingOn.y12);
+  assert.equal(p.leaving.reduce((t, r) => t + (r.y11 ?? 0), 0), p.stayingOn.y11);
+  assert.deepEqual(p.shape.ages, agg.rows.find((r) => r.period === p.shape.year && r.phase === "all")!.figures.roll_by_age);
+});

@@ -350,7 +350,7 @@ export function LeavingAt16({ p, fullscreen }: { p: GroupPupils; fullscreen: boo
           ))}
         </tbody>
       </table>
-      <div className="text-[11px] text-[var(--muted2)]">Over 100%: the sixth form takes more pupils in than its own Year 11 had. Group: {p.stayingOn.pct === null ? "—" : `${p.stayingOn.pct.toFixed(1)}%`} across {p.stayingOn.schools} schools.</div>
+      <div className="text-[11px] text-[var(--muted2)]">Over 100%: the sixth form takes more pupils in than its own Year 11 had. Sixth-form-only colleges (no Year 11) are left out. Group: {p.stayingOn.pct === null ? "—" : `${p.stayingOn.pct.toFixed(1)}%`} across {p.stayingOn.schools} schools.</div>
     </div>
   );
 }
