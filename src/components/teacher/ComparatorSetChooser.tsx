@@ -45,6 +45,7 @@ import {
   type SavedSetsPayload,
 } from "@/lib/teacher-view-saved-sets";
 import { TeacherModal } from "./TeacherModal";
+import { groupSetCount } from "@/lib/groups/set-count";
 import { Panel, PrimaryButton, SecondaryButton, DangerGhostButton, FooterCount, SaveBox } from "./chooser/ui";
 import { CustomScreen, HubScreen, LaScreen, NearestScreen, RankingScreen, plural, type GroupBy, type HubPick, type Theme } from "./chooser/screens";
 import {
@@ -210,11 +211,14 @@ export function ComparatorSetChooser({
   const [pick, setPick] = useState<HubPick>(initialEdit ? "mine" : "nearest");
   const [setSub, setSetSub] = useState<string | null>(initialEdit?.id ?? null);
   const mine = payload.sets.filter((s) => s.mine);
-  const school = payload.sets.filter((s) => s.shared && !s.vc);
+  const school = payload.sets.filter((s) => s.shared && !s.vc && !s.group);
   // Victoria Consultancy Sets: present only when VC has switched at least one on for this
   // school (the route returns none otherwise), so the row renders only then.
   const vcSets = payload.sets.filter((s) => s.vc);
-  const listFor = (p: HubPick) => (p === "mine" ? mine : p === "school" ? school : p === "vc" ? vcSets : []);
+  // 0.8 groups r3 (S): the school's own groups (present only for a member school, so the row renders
+  // only then), each a read-only set; the count is phase-filtered ("9 with GCSE results · 26 in all").
+  const groupSets = payload.sets.filter((s) => s.group);
+  const listFor = (p: HubPick) => (p === "mine" ? mine : p === "school" ? school : p === "vc" ? vcSets : p === "group" ? groupSets : []);
   const choosePick = (p: HubPick) => {
     setPick(p);
     const list = listFor(p);
@@ -685,6 +689,7 @@ export function ComparatorSetChooser({
         onEditSet={(s) => void editSet(s)}
         onDeleteSet={(s) => void removeSet(s)}
         vc={vcSets.length ? { sets: vcSets } : null}
+        {...(groupSets.length ? { groups: { sets: groupSets, countOf: (g: SavedComparatorSet) => groupSetCount(g, phase) } } : {})}
         count={hubCount()}
         action={hubAction()}
       />

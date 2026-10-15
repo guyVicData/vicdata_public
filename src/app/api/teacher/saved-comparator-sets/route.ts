@@ -6,6 +6,7 @@ import { neighbourPool, rankFixedSets, type NeighbourRow } from "@/lib/teacher-v
 import { PERSONAL_COMPARATOR_CAP, readViewAsStore, type SavedRanking } from "@/lib/teacher-view-saved-sets";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase";
 import { viewAsForRequest, viewAsMembership } from "@/lib/view-as";
+import { schoolGroupSets } from "@/lib/groups/school-sets";
 
 // Teacher view, accordion round Part 3: the saved comparator sets a teacher can compare
 // against, ranked exactly like the four algorithmic ones, plus what the chooser needs to
@@ -186,9 +187,13 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // 0.8 groups r3 (S): the school's own groups, each a read-only set (src/lib/groups/school-sets.ts).
+  // A school in no group gets none, and the payload is exactly as before.
+  const groupSets = await schoolGroupSets(urn, supabase);
+
   const { ranked, seriesByUrn, excludedUrns } = await rankFixedSets(
     urn,
-    sets.map((s) => ({ id: s.id, urns: s.members.map((m) => m.urn) })),
+    [...sets, ...groupSets].map((s) => ({ id: s.id, urns: s.members.map((m) => m.urn) })),
     phase,
   );
 
@@ -208,7 +213,7 @@ export async function GET(request: NextRequest) {
     ...(ctx.rankings ? { rankings: ctx.rankings } : {}),
     cap: PERSONAL_COMPARATOR_CAP,
     personalCount: sets.filter((s) => s.mine).length,
-    sets: sets.map((s) => ({ ...s, rows: ranked[s.id] ?? [] })),
+    sets: [...sets, ...groupSets].map((s) => ({ ...s, rows: ranked[s.id] ?? [] })),
     seriesByUrn,
     // GCSE schools left out of comparison entirely (igcseExclusionLikely) -- the chooser
     // can say so beside a ticked school rather than let it silently vanish.

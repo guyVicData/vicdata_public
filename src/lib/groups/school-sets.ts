@@ -11,8 +11,10 @@
 //     ready and tested with a fixture);
 //   - single-academy trusts aren't groups here; a group of no other school isn't offered;
 //   - two records of the same body (Harris' MAT 3320 and sponsor 3319) are shown once.
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { groupNote } from "@/catalogue/notes";
 import { displayName } from "./dash";
-import type { GroupMember, SchoolGroup } from "./production";
+import { groupMembers, schoolGroups, type GroupMember, type SchoolGroup } from "./production";
 
 export const GROUP_SET_PREFIX = "group:";
 const NOT_SETS = new Set(["sat", "secure_sat"]);
@@ -34,8 +36,10 @@ const SOURCE_LABEL: Record<string, string> = { gias_groups: "GIAS", gias: "GIAS"
 
 /** "All Dukes schools", "All Harris Federation schools" (§3.5's labels). */
 export function groupSetLabel(name: string): string {
-  const n = displayName(name).replace(/\s+(Limited|Ltd)\.?$/i, "");
-  return `All ${n.replace(/^The /, "")}${/schools$/i.test(n) ? "" : " schools"}`;
+  // As round 1's Access page words it: a trailing "Education" or "Group" goes ("All Dukes schools");
+  // "Federation" and "Trust" stay ("All Harris Federation schools").
+  const n = displayName(name).replace(/\s+(Limited|Ltd)\.?$/i, "").replace(/^The /, "").replace(/ (Education|Group)$/i, "");
+  return /schools$/i.test(n) ? `All ${n}` : groupNote("allSchools", { group: n });
 }
 
 /** The school's groups as comparison sets. `groups` is the school's own (school_groups_lookup);
@@ -72,4 +76,25 @@ export async function groupSetsFor(
     });
   }
   return out;
+}
+
+// ------------------------------------------------------------------------------------ the server
+
+/** The chooser payload's group sets for one school (production's lookups; the app's schools table for
+ * each member's LA and sector). Never throws: a failed read means no group sets, as before. */
+export async function schoolGroupSets(urn: string, supabase: SupabaseClient): Promise<GroupSet[]> {
+  try {
+    const groups = await schoolGroups(urn);
+    if (!groups.length) return [];
+    return await groupSetsFor(urn, groups, groupMembers, async (urns) => {
+      const out = new Map<string, { laName: string | null; independent: boolean }>();
+      for (let i = 0; i < urns.length; i += 200) {
+        const { data } = await supabase.from("schools").select("urn, la_name, establishment_type_group").in("urn", urns.slice(i, i + 200));
+        for (const r of (data ?? []) as { urn: string; la_name: string | null; establishment_type_group: string | null }[]) out.set(r.urn, { laName: r.la_name, independent: r.establishment_type_group === "Independent schools" });
+      }
+      return out;
+    });
+  } catch {
+    return [];
+  }
 }
