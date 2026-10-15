@@ -145,7 +145,7 @@ export function percentile(rank: number, total: number): number {
 // mechanism built for a different template with different discourse goals; brief
 // explicitly allows shipping a plain factual line here and logging the gap rather
 // than inventing marketing copy for a shape-change event).
-const SHAPE_LABELS: Record<ShapeLabel, string> = {
+export const SHAPE_LABELS: Record<ShapeLabel, string> = {
   tube: "Tube",
   pyramid: "Pyramid",
   top_step: "Top-step",

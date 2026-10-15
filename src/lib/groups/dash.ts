@@ -5,6 +5,7 @@
 // figures, ties sharing a place, IGCSE schools out at GCSE (the audit-fixes rules).
 import { periodLabel } from "@/catalogue/years";
 import { shapeOf } from "../admissions/shape";
+import { SHAPE_LABELS } from "../data-view-cards";
 import type { AgeGenderCounts } from "../roll-data";
 import type { ComparisonKind, ComparisonRow, Excluded, Figures, GroupAggregate, MeasureFig, Phase, Place, Reading, SchoolYearRow } from "./aggregates";
 
@@ -56,6 +57,27 @@ export const PHASE_NOUN: Record<Exclude<Phase, "all">, [string, string]> = { pri
 
 // "Growing" counts schools over three years (the wireframe's "since 2022/23" in the latest census).
 export const GROWING_SPAN = "3" as const;
+
+/** GIAS writes trust names in capitals ("HARRIS FEDERATION"): shown in title case, short words lower,
+ * known acronyms kept. A name already in mixed case is left as it is. */
+export function displayName(name: string): string {
+  if (name !== name.toUpperCase()) return name;
+  const small = new Set(["and", "of", "the", "for", "in", "on", "at", "to", "&"]);
+  return name
+    .toLowerCase()
+    .split(/(\s+|-)/)
+    .map((w, i) => {
+      const up = w.toUpperCase();
+      if (["CE", "RC", "GLF", "TKAT", "STEM", "UK"].includes(up)) return up;
+      if (up === "ARK") return "Ark";
+      if (i > 0 && small.has(w)) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    })
+    .join("")
+    .replace(/\bReach2\b/i, "REAch2")
+    .replace(/\((uk)\)/i, "(UK)")
+    .replace(/\bMulti-academy\b/, "Multi-Academy");
+}
 
 // ----------------------------------------------------------------------------- the comparison choice
 
@@ -150,7 +172,7 @@ export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Re
   for (const r of comps) {
     if (r.reading !== reading) continue;
     const key = r.kind === "peer_named" ? `peer_named:${r.variant}` : `${r.kind}:${r.variant}`;
-    const s = by.get(key) ?? { key, label: r.label, kind: r.kind, variant: r.variant, rows: [] };
+    const s = by.get(key) ?? { key, label: r.kind === "peer_named" ? displayName(r.label) : r.label, kind: r.kind, variant: r.variant, rows: [] };
     s.rows.push({ period: r.period, phase: r.phase, figures: r.figures });
     by.set(key, s);
   }
@@ -231,16 +253,16 @@ function againstRows(sets: SetRef[], focus: Focus, measures: string[], latest: R
   });
 }
 
-export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow[]; compare: CompareKey; focus: Focus; namedLabels?: Record<string, string> }): GroupOverview {
+export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow[]; compare: CompareKey; focus: Focus; namedLabels?: Record<string, string>; name?: string }): GroupOverview {
   const { agg, comps, focus } = input;
   const reading = agg.reading;
-  const name = agg.group.name;
+  const name = input.name ?? displayName(agg.group.name);
   const census = latestCensus(agg);
   const first = firstCensus(agg);
   const all = figOf(agg, census, "all");
   if (!all) throw new Error("no figures for the latest census year");
   const sets = setsFor(agg, comps, reading, name);
-  const measures = focus === "all" ? ["ks4_a8", "ks5_aps_alevel", "ks5_va_alevel", "ks2_rwm"] : focus === "secondary" ? ["ks4_a8", "ks4_em5", "ks4_p8"] : focus === "post16" ? ["ks5_aps_alevel", "ks5_aps_all", "ks5_va_alevel"] : ["ks2_rwm"];
+  const measures = focus === "all" ? ["ks4_a8", "ks5_aps_alevel", "ks5_va_alevel"] : focus === "secondary" ? ["ks4_a8", "ks4_em5", "ks4_p8"] : focus === "post16" ? ["ks5_aps_alevel", "ks5_aps_all", "ks5_va_alevel"] : ["ks2_rwm"];
   const latest: Record<string, number | null> = {};
   for (const m of [...new Set([...measures, "ks4_a8", "ks4_em5", "ks4_em4", "ks4_p8", "ks5_aps_alevel", "ks5_aps_all", "ks5_va_alevel", "ks2_rwm"])]) latest[m] = latestFor(agg, m);
   const ph = focus === "all" ? all : (figOf(agg, census, focus) ?? all);
@@ -299,7 +321,7 @@ export function buildOverview(input: { agg: GroupAggregate; comps: ComparisonRow
       unit: MEASURE_UNIT[m],
       lines: [sets[0], ...chosen].map((s) => {
         const rs = s.rows.filter((r) => r.phase === MEASURE_PHASE[m]).sort((a, b) => a.period - b.period);
-        const ys = agg.rows.filter((r) => r.phase === MEASURE_PHASE[m]).map((r) => r.period);
+        const ys = agg.rows.filter((r) => r.phase === MEASURE_PHASE[m] && fig(r.figures, m)?.n_with_figure).map((r) => r.period);
         const years = [...new Set(ys)].sort((a, b) => a - b);
         const pick = (y: number) => fig(rs.find((r) => r.period === y)?.figures, m);
         return { key: s.key, label: s.label, pts: years.map((y) => ({ year: y, value: pick(y)?.weighted ?? null })), average: years.map((y) => ({ year: y, value: pick(y)?.average_school ?? null })), n: years.map((y) => pick(y)?.n_with_figure ?? null) };
@@ -407,20 +429,22 @@ function shapeLabel(byAge: number[]): string | null {
     if (n > 0) counts.set(a, { male: n, female: 0 });
   });
   try {
-    return shapeOf(counts);
+    const l = shapeOf(counts);
+    return l ? SHAPE_LABELS[l] : null;
   } catch {
     return null;
   }
 }
 
-/** The headline a school shows in a focus: the phase's own; on All phases, its main phase's. */
-function headlineMeasure(focus: Focus, phases: string[], has: (m: string) => boolean): string | null {
+/** The headline a school shows in a focus: the phase's own; on All phases, the headline it has (GCSE,
+ * then A level, then KS2), else its main phase's (the phase with most pupils), so a prep reads "prep: no
+ * KS2 published" rather than a missing GCSE. */
+function headlineMeasure(focus: Focus, byPhase: Record<string, number> | null, has: (m: string) => boolean): string | null {
   if (focus !== "all") return HEADLINE[focus];
   for (const m of ["ks4_a8", "ks5_aps_alevel", "ks2_rwm"]) if (has(m)) return m;
-  if (phases.includes("secondary")) return "ks4_a8";
-  if (phases.includes("post16")) return "ks5_aps_alevel";
-  if (phases.includes("primary")) return "ks2_rwm";
-  return null;
+  if (!byPhase) return null;
+  const main = (["primary", "secondary", "post16"] as const).reduce((a, b) => ((byPhase[b] ?? 0) > (byPhase[a] ?? 0) ? b : a));
+  return (byPhase[main] ?? 0) > 0 ? HEADLINE[main] : null;
 }
 
 export function buildSchools(input: {
@@ -432,6 +456,7 @@ export function buildSchools(input: {
   // Head office (and View as) opens a member school's SMT read-only (round 1's rule); a member school's
   // SMT opens the public page of every other school.
   headOffice?: boolean;
+  name?: string;
 }): GroupSchools {
   const { agg, focus } = input;
   const reading = agg.reading;
@@ -474,9 +499,10 @@ export function buildSchools(input: {
     const byAge = (f ?? lastWith)?.roll_by_age ?? [];
     const has = (m: string) => {
       const y = latest[m];
-      return y !== null && !!s.years.find((x) => x.period === y)?.figures?.results[m];
+      const yf = y !== null ? s.years.find((x) => x.period === y)?.figures : null;
+      return !!yf?.results[m] && !(m.startsWith("ks4") && yf.igcse);
     };
-    const hm = headlineMeasure(focus, phases, has);
+    const hm = headlineMeasure(focus, (f ?? lastWith)?.roll_by_phase ?? null, has);
     let headline: SchoolRow["headline"] = null;
     let reason: string | null = null;
     let national: Place | null = null;
@@ -528,7 +554,7 @@ export function buildSchools(input: {
   shown.sort((a, b) => (b.roll ?? -1) - (a.roll ?? -1) || a.name.localeCompare(b.name));
   return {
     kind: "schools",
-    group: { id: agg.group.group_id, name: agg.group.name, typeLabel: GROUP_TYPE_LABEL[agg.group.type] ?? agg.group.type, type: agg.group.type, sources: agg.membership.sources, asOf: agg.membership.as_of, confirmed: agg.membership.confirmed, likely: agg.membership.likely, outsideEngland: agg.membership.outside_england },
+    group: { id: agg.group.group_id, name: input.name ?? displayName(agg.group.name), typeLabel: GROUP_TYPE_LABEL[agg.group.type] ?? agg.group.type, type: agg.group.type, sources: agg.membership.sources, asOf: agg.membership.as_of, confirmed: agg.membership.confirmed, likely: agg.membership.likely, outsideEngland: agg.membership.outside_england },
     reading,
     focus,
     years: { census, first, results: latest },

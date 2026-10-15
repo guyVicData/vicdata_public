@@ -7,6 +7,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { cachedReference } from "../server-cache";
 import { groupFixturesDir } from "./fixture-switch";
+import { groupIndex } from "./production";
+import { displayName } from "./dash";
 
 export type Reading = "at_time" | "listed_now";
 export type Phase = "all" | "primary" | "secondary" | "post16";
@@ -193,5 +195,28 @@ export async function lookupsAnswer(groupId: string): Promise<boolean> {
     return (await groupAggregate(groupId, "at_time")) !== null;
   } catch {
     return false;
+  }
+}
+
+/** Named groups a group can be set beside (§3.6, "Harris against Ark and United Learning"): groups of
+ * the same type, nearest in size first. The fixtures hold only the named groups they were cut with. */
+export async function namedCandidates(groupId: string, type: string, schools: number): Promise<{ id: string; label: string; schools: number }[]> {
+  const dir = groupFixturesDir(process.env);
+  if (dir) {
+    const tag = FIXTURE_TAG[groupId];
+    const named = tag ? (fixture<ComparisonRow[]>(dir, `${tag}_group_comparison_lookup_named.json`) ?? []) : [];
+    const by = new Map<string, { id: string; label: string; schools: number }>();
+    for (const r of named) if (r.phase === "all" && !by.has(r.variant)) by.set(r.variant, { id: r.variant, label: displayName(r.label), schools: r.figures.n_schools });
+    return Array.from(by.values());
+  }
+  try {
+    const all = await groupIndex();
+    return all
+      .filter((g) => g.groupId !== groupId && g.type === type && g.source !== "self_declared" && g.schools >= 2)
+      .sort((a, b) => Math.abs(a.schools - schools) - Math.abs(b.schools - schools) || b.schools - a.schools)
+      .slice(0, 12)
+      .map((g) => ({ id: g.groupId, label: displayName(g.name), schools: g.schools }));
+  } catch {
+    return [];
   }
 }

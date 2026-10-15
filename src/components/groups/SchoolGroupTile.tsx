@@ -11,7 +11,7 @@ import { GROUP_ACCENT } from "@/lib/teacher-view-theme";
 import { GROUP_NOTES, groupNote } from "@/catalogue/notes";
 import { shortDate } from "@/lib/meeting-ops";
 import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
-import { GROUP_DASHBOARD_NAMES, GroupGlyph } from "./GroupHome";
+import { GroupDashChips, GroupGlyph } from "./GroupHome";
 import { groupVars } from "./ui";
 import { groupToken } from "./useGroupOffices";
 
@@ -64,11 +64,7 @@ export function SchoolGroupTile({ urn }: { urn: string | null }) {
           </div>
           {g.groupView && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {GROUP_DASHBOARD_NAMES.map((n) => (
-                <span key={n} title={GROUP_NOTES.coming} className="rounded-full border border-dashed border-[var(--group-chip-border)] bg-[var(--group-chip-bg)] px-[11px] py-[5px] text-[12px] font-bold text-[var(--group-chip-fg)]">
-                  {n}
-                </span>
-              ))}
+              <GroupDashChips accountId={g.accountId} size="sm" />
             </div>
           )}
           {data.schoolAdmin && (

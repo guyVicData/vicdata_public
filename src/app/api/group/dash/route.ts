@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dashViewer, vicdataSchools } from "@/lib/groups/dash-server";
-import { groupAggregate, groupComparisons, groupDataSource, groupSchoolsYear, type Reading } from "@/lib/groups/aggregates";
+import { groupAggregate, groupComparisons, groupDataSource, groupSchoolsYear, namedCandidates, type Reading } from "@/lib/groups/aggregates";
 import { buildOverview, buildSchools, FOCI, kindsFor, parseCompare, type Focus } from "@/lib/groups/dash";
 import { groupMembers } from "@/lib/groups/production";
 
@@ -27,23 +27,25 @@ export async function GET(request: NextRequest) {
       source: groupDataSource(),
       membership: members.map((m) => ({ urn: m.urn, name: m.name, confidence: m.confidence, joined: m.joined, lastSeen: m.lastSeen, source: m.source })),
     };
-    if (dash === "schools") {
-      const schools = await groupSchoolsYear(viewer.groupId);
-      const headOffice = viewer.as !== "school";
-      const vicdata = headOffice ? await vicdataSchools(schools.filter((s) => s.role === "member").map((s) => s.urn)) : new Set<string>();
-      return NextResponse.json({ ...base, schools: buildSchools({ agg, schools, focus, members, vicdata, headOffice }) });
-    }
-    const [comps, schools] = await Promise.all([groupComparisons(viewer.groupId, kindsFor(compare)), groupSchoolsYear(viewer.groupId)]);
-    const overview = buildOverview({ agg, comps, compare, focus });
-    // The map: member schools sized by roll, coloured by trend; outside England listed beside it.
-    const census = overview.years.census;
-    const map = schools
+    const mapOf = (census: number, schools: Awaited<ReturnType<typeof groupSchoolsYear>>) =>
+      schools
       .filter((s) => s.role === "member" && s.years.some((y) => y.listed_now))
       .map((s) => {
         const f = s.years.find((y) => y.period === census)?.figures ?? null;
         return { urn: s.urn, name: s.name ?? s.urn, easting: s.easting, northing: s.northing, roll: f?.roll ?? null, trend: f?.trend["1"] ?? null, outside: s.outside_england, likely: s.confidence === "likely", phases: f?.phases ?? [] };
       });
-    return NextResponse.json({ ...base, overview, map });
+    if (dash === "schools") {
+      const schools = await groupSchoolsYear(viewer.groupId);
+      const headOffice = viewer.as !== "school";
+      const vicdata = headOffice ? await vicdataSchools(schools.filter((s) => s.role === "member").map((s) => s.urn)) : new Set<string>();
+      // The group-now figures as Overview counts them (no comparison needed here).
+      const now = buildOverview({ agg, comps: [], compare: "peer_band", focus });
+      return NextResponse.json({ ...base, now, map: mapOf(now.years.census, schools), schools: buildSchools({ agg, schools, focus, members, vicdata, headOffice }) });
+    }
+    const [comps, schools, candidates] = await Promise.all([groupComparisons(viewer.groupId, kindsFor(compare)), groupSchoolsYear(viewer.groupId), namedCandidates(agg.group.group_id, agg.group.type, agg.rows.find((r) => r.phase === "all")?.figures.n_schools ?? 0)]);
+    const overview = buildOverview({ agg, comps, compare, focus, namedLabels: Object.fromEntries(candidates.map((c) => [c.id, c.label])) });
+    // The map: member schools sized by roll, coloured by trend; outside England listed beside it.
+    return NextResponse.json({ ...base, overview, map: mapOf(overview.years.census, schools), candidates });
   } catch (err) {
     console.error("[group/dash] failed:", err);
     return NextResponse.json({ error: "Could not build the group dashboard." }, { status: 502 });

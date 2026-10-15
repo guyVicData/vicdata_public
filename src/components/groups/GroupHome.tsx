@@ -25,6 +25,29 @@ const SCHOOLS_TILE: TileColour = { hex: "#a78bfa", rgb: "167,139,250" };
 const ACCESS_TILE: TileColour = { hex: "#fbbf24", rgb: "251,191,36" };
 const DASHBOARDS_TILE: TileColour = { hex: "#c4b5fd", rgb: "167,139,250" };
 export const GROUP_DASHBOARD_NAMES = ["Overview", "Schools", "Academic", "Pupils"] as const;
+// 0.8 groups r2: Overview and Schools are live; Academic and Pupils stay "coming" until round 3.
+export const GROUP_DASHBOARD_LIVE: Record<(typeof GROUP_DASHBOARD_NAMES)[number], string | null> = { Overview: "/teacher/group/overview", Schools: "/teacher/group/schools", Academic: null, Pupils: null };
+
+/** The group card's dashboard chips: a live one opens that dashboard for this account; a coming one is dashed. */
+export function GroupDashChips({ accountId, size = "md" }: { accountId: string; size?: "md" | "sm" }) {
+  const pad = size === "sm" ? "py-[5px]" : "py-[6px]";
+  return (
+    <>
+      {GROUP_DASHBOARD_NAMES.map((n) => {
+        const href = GROUP_DASHBOARD_LIVE[n];
+        return href ? (
+          <Link key={n} href={`${href}?account=${accountId}`} data-group-dash={n} className={`rounded-full border border-[var(--group-card-edge)] bg-[var(--group-switch-on)] px-[11px] ${pad} text-[12px] font-bold text-[var(--group-switch-knob-on)]`}>
+            {n}
+          </Link>
+        ) : (
+          <span key={n} title={GROUP_NOTES.coming} className={`rounded-full border border-dashed border-[var(--group-chip-border)] bg-[var(--group-chip-bg)] px-[11px] ${pad} text-[12px] font-bold text-[var(--group-chip-fg)]`}>
+            {n}
+          </span>
+        );
+      })}
+    </>
+  );
+}
 
 export type GroupHomeData = {
   office: HeadOffice;
@@ -184,11 +207,7 @@ function Body({ offices }: { offices: OfficesState }) {
       <div className="mt-[18px] flex flex-col gap-[10px]">
         <Card colour={GROUP_ACCENT} icon={<GroupGlyph />} title="The group" description={GROUP_NOTES.theGroup} edge>
           <span className="mt-3 flex flex-wrap gap-1.5">
-            {GROUP_DASHBOARD_NAMES.map((n) => (
-              <span key={n} title={GROUP_NOTES.coming} className="rounded-full border border-dashed border-[var(--group-chip-border)] bg-[var(--group-chip-bg)] px-[11px] py-[6px] text-[12px] font-bold text-[var(--group-chip-fg)]">
-                {n}
-              </span>
-            ))}
+            <GroupDashChips accountId={o.id} />
           </span>
           <span className="mt-2.5 block text-[12px] text-[var(--muted)]" title={d?.summary.period ? groupNote("summary", { now: periodLabel(d.summary.period), before: periodLabel(d.summary.period - 1), n: d.summary.compared }) : undefined}>
             {d ? summaryLine(d) : "…"}
