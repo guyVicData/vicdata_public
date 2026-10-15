@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>
+const q=new URLSearchParams(location.search);const BT=q.get('b')||'br';
+document.write('<link rel="stylesheet" href="leaflet-all.css"><link rel="stylesheet" href="app-'+BT+'.css">');
+document.write('<script src="fix/fix_'+(q.get("b")||"br")+"_"+(q.get("urn")||"100053")+"_"+(q.get("phase")||"ks4")+(q.get("fx")||"")+'.js"><\/script>');
+if(q.get("ranking"))document.write('<script src="fix/fix_rk_'+(q.get("urn")||"100053")+"_"+(q.get("phase")||"ks4")+(q.get("fx")||"")+'.js"><\/script>');
+</script>
+<script>
+window.process={env:{NODE_ENV:"production"}};
+try{localStorage.clear();sessionStorage.clear();localStorage.setItem("vicdata.teacher.theme",q.get("theme")||"dark");if(q.get("edit")==="1")localStorage.setItem("vicdata.editMode","1")}catch(e){}
+window.__errs=[];window.onerror=function(m,s,l,c,e){window.__errs.push(String(m)+" "+(e&&e.stack));};
+window.addEventListener("unhandledrejection",e=>window.__errs.push("rej "+String(e.reason&&e.reason.stack||e.reason)));
+window.__inflight=0;window.__last=Date.now();
+const J=(o,s)=>new Response(JSON.stringify(o),{status:s||200,headers:{"Content-Type":"application/json"}});
+const realFetch=window.fetch;
+window.fetch=async function(input,init){
+  const url=new URL(typeof input==="string"?input:input.url,location.href);
+  if(!url.pathname.startsWith("/api/")) return realFetch(input,init);
+  window.__inflight++;window.__last=Date.now();
+  try{
+    await new Promise(r=>setTimeout(r,20));
+    const F=window.__FIX,p=url.pathname,sp=url.searchParams;
+    if(p==="/api/teacher/phases") return J({phases:["ks4","ks5"]});
+    if(p==="/api/teacher/dashboard") return J(Object.assign({},F.dashboard,{headlineLabel:F.phase==="ks4"?"Attainment 8 average score":"average points per A-level entry"}));
+    const SK=(o)=>JSON.stringify(o,(k,v)=>v&&typeof v==="object"&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v);
+    const BODY=init&&init.body?JSON.parse(init.body):null;
+    window.__rkMissing=window.__rkMissing||[];
+    if(p==="/api/teacher/chooser-set"){ if(BODY&&BODY.set&&BODY.set.kind==="ranking"){const RK=window.__RK||{chooser:{}};const k=SK(BODY.set.filters);if(RK.chooser[k])return J(Object.assign({},RK.chooser[k],RK.chooserProfiles&&RK.chooserProfiles[k]?{profiles:RK.chooserProfiles[k]}:{}));window.__rkMissing.push({chooser:BODY});return J({error:"nofix"},404);} return J(Object.assign({},F.nearest,F.leanProfiles?{profiles:F.leanProfiles}:{})); }
+    if(p==="/api/teacher/subject-ranking"){ const RK=window.__RK||{subject:{}};const k=SK(BODY);if(q.get("rkpending")!=="1"&&RK.subject&&RK.subject[k])return J(RK.subject[k]);if(q.get("rkpending")!=="1")window.__rkMissing.push({subject:BODY});return J({pending:true}); }
+    if(p==="/api/data-view/academic-schools"){const u=new Set((sp.get("urns")||"").split(","));const RK=window.__RK||{};const exact=Object.values(RK.chooserFullProfiles||{}).find(l=>l.length===u.size&&l.every(x=>u.has(x.urn)));if(exact)return J({profiles:exact});const all=[].concat(F.profiles,...Object.values(RK.chooserFullProfiles||{}));const seen=new Set();return J({profiles:all.filter(x=>u.has(x.urn)&&!seen.has(x.urn)&&seen.add(x.urn))});}
+    if(p==="/api/teacher/comparator-profiles"){const u=new Set((sp.get("urns")||"").split(",").concat([sp.get("anchorUrn")]));const RK=window.__RK||{};const all=[].concat(F.leanProfiles||[],...Object.values(RK.chooserProfiles||{}));const seen=new Set();window.__leanRoute=(window.__leanRoute||0)+1;return J({profiles:all.filter(x=>u.has(x.urn)&&!seen.has(x.urn)&&seen.add(x.urn))});}
+    if(p==="/api/teacher/comparator-grades"){const u=(sp.get("urns")||"").split(",").concat([sp.get("anchorUrn")]);const s=sp.get("subject");const o={};for(const k of u){if(F.gradeRowsByUrn[k])o[k]=F.gradeRowsByUrn[k].filter(g=>g.subject===s);}return J({gradeRowsByUrn:o});}
+    if(p==="/api/teacher/subject-geography"||p==="/api/teacher/subject-grade-geography"){const src=p.endsWith("grade-geography")?F.gradeGeo:F.geo;const s=sp.get("subject"),qt=sp.get("qualificationType");const k=Object.keys(src).find(k=>{const [a,b]=k.split("::");return a===s&&(!qt||b===qt);});return k?J(src[k]):J({error:"nofix"},404);}
+    if(p==="/api/teacher/comparator-qualifications"){const u=(sp.get("urns")||"").split(",").concat([sp.get("anchorUrn")]);const s=sp.get("subject"),qt=sp.get("qualificationType");const o={};for(const k of u){o[k]=((F.qualRowsByUrn||{})[k]||[]).filter(r=>r.subject===s&&r.qualificationType===qt).map(r=>({period:r.period,entries:r.entries,avgPointScore:r.avgPointScore})).sort((a,b)=>a.period-b.period);}return J({rowsByUrn:o});}
+    if(p==="/api/teacher/saved-comparator-sets") return J({me:{membershipId:"m1",schoolAccountId:"a1",canEditShared:false},cap:8,personalCount:q.get("saved")==="1"?1:0,sets:q.get("saved")==="1"?[{id:"s1",name:"My ten",shared:false,mine:true,editable:true,config:{},members:[],rows:F.nearest.rows}]:[],seriesByUrn:q.get("saved")==="1"?F.nearest.seriesByUrn:{},excludedUrns:[],candidates:[],target:{laName:null,independent:false}});
+    (window.__unstubbed=window.__unstubbed||[]).push(p);
+    return J({error:"not stubbed"},404);
+  } finally { window.__inflight--;window.__last=Date.now(); }
+};
+</script></head>
+<body style="margin:0">
+<div id="root" class="flex min-h-full flex-col"></div>
+<script>document.write('<script src="bundle-'+BT+'.js"><\/script>');</script></body></html>

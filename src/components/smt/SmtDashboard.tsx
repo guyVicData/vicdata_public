@@ -344,10 +344,8 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
     setCatchTick((t) => t + 1);
     return null;
   };
-  const contextPills = (
-    <>
-      <Divider />
-      <AreaPill
+  const areaPill = (
+    <AreaPill
         area={area}
         laName={s?.laName ?? null}
         catchment={context.status === "ready" ? context.data.catchment : null}
@@ -356,7 +354,12 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
         onArea={setArea2}
         onKm={setKm}
         onSave={saveKm}
-      />
+    />
+  );
+  const contextPills = (
+    <>
+      <Divider />
+      {areaPill}
       <FChip title="Context compares the area with England">Compared against: England</FChip>
     </>
   );
@@ -411,6 +414,8 @@ function Dashboard({ member, dash, theme, onTheme, reloadTick }: { member: SmtMe
                 <EntryChip key={c.key} label={c.label} active={c.key === level.phase} onClick={() => onLevel(c.key)} />
               ))}
             </div>
+            {/* 0.8 SMT r4 (R1): the radius on the phone too, on Context only (the other pills stay desktop). */}
+            {dash === "context" && <div className="flex flex-wrap gap-[6px]">{areaPill}</div>}
             {ctx ? <PhoneBody config={config} c={ctx} /> : <Skeleton />}
           </PhoneStack>
         ) : (

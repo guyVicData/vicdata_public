@@ -24,13 +24,35 @@ const CopyViewDialog = lazy(() => import("@/components/copy-view/CopyViewDialog"
 // CardBox has always been given, just no longer printed at 9.5px under every panel.
 export function SourceNote({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
+  const popRef = useRef<HTMLSpanElement | null>(null);
+  const ref = useDismiss(open, () => setOpen(false), popRef);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  // 0.8 SMT r4 (stage I): the (i) now holds "How it is calculated", taller than a panel. Drawn in a portal
+  // at the button's place (as the panel menu is), so no panel clips it: it opens upward, as tall as the
+  // space above the button allows, and scrolls -- never cut off. Scrolling the page or resizing closes it.
+  const [anchor, setAnchor] = useState<{ left: number; bottom: number; maxHeight: number } | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("resize", close);
+    return () => window.removeEventListener("resize", close);
+  }, [open]);
   if (!children) return null;
+  const toggle = () => {
+    if (open) return setOpen(false);
+    const r = buttonRef.current?.getBoundingClientRect();
+    if (r) {
+      const width = Math.min(320, window.innerWidth * 0.86);
+      setAnchor({ left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)), bottom: window.innerHeight - r.top + 6, maxHeight: Math.max(160, r.top - 12) });
+    }
+    setOpen(true);
+  };
   return (
     <span className="relative" ref={ref}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggle}
         aria-expanded={open}
         aria-label="Where this figure comes from"
         title="Where this figure comes from"
@@ -38,14 +60,18 @@ export function SourceNote({ children }: { children: ReactNode }) {
       >
         i
       </button>
-      {open && (
-        // Opens upward: the footer is pinned to the panel's bottom edge, so a menu
-        // dropping down would fall outside the panel entirely.
-        // 0.8 SMT r4 (stage I): wider, and scrolling rather than cut off, for "How it is calculated".
-        <span className="absolute bottom-6 left-0 z-30 block max-h-[70vh] w-[20rem] max-w-[86vw] overflow-y-auto rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-3 text-[11px] leading-relaxed text-[var(--muted2)] shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
-          {children}
-        </span>
-      )}
+      {open &&
+        anchor &&
+        portalTo(
+          <span
+            ref={popRef}
+            data-source-note=""
+            className="fixed z-[1600] block w-[20rem] max-w-[86vw] overflow-y-auto rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-3 text-[11px] leading-relaxed text-[var(--muted2)] shadow-[0_10px_24px_rgba(0,0,0,0.3)]"
+            style={{ left: anchor.left, bottom: anchor.bottom, maxHeight: anchor.maxHeight }}
+          >
+            {children}
+          </span>,
+        )}
     </span>
   );
 }

@@ -537,7 +537,7 @@ export function PopulationProjected({ c, fullscreen, room }: { c: Context; fulls
         height={fullscreen ? fillHeight(room, 150, 300) : 140}
         yFormat={(v) => fmt(v, "pupils")}
         xLabels={first !== undefined ? [String(first), String(f.horizonEnd)] : null}
-        bands={f.bandMissing ? [] : [{ id: "band", colour: "var(--accent)", opacity: 0.16, points: f.projection.map((p) => ({ x: p.year, lo: p.low, hi: p.high })) }]}
+        bands={f.bandMissing ? [] : [{ id: "band", colour: "var(--accent)", opacity: 0.24, points: f.projection.map((p) => ({ x: p.year, lo: p.low, hi: p.high })) }]}
         markers={split !== null ? [{ x: split, label: SMT_NOTES.includesUnborn }] : []}
         series={series}
       />
@@ -545,6 +545,8 @@ export function PopulationProjected({ c, fullscreen, room }: { c: Context; fulls
         <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>Estimates, then the projection</Key>
         {!f.bandMissing && <Key swatch={<span className="h-[9px] w-[14px] rounded-[2px]" style={{ background: "var(--accent)", opacity: 0.25 }} />}>Range</Key>}
         {split !== null && <Key swatch={<span className="h-[3px] w-[14px] rounded" style={{ background: "var(--accent)", opacity: 0.45 }} />}>{SMT_NOTES.includesUnborn}</Key>}
+        {ons && f.ons && <Key swatch={<LineSwatch colour="var(--adm-grey-2)" width={14} dashed />}>{smtNote("onsLine", { base: f.ons.base ?? "" })}</Key>}
+        {scenario && <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} dashed />}>{f.scenarioLabel.charAt(0).toUpperCase() + f.scenarioLabel.slice(1)}</Key>}
         <span className="ml-auto flex gap-2">
           {f.ons && toggle(ons, setOns, SMT_NOTES.onsToggle, "ons")}
           {toggle(scenario, setScenario, f.scenarioLabel.charAt(0).toUpperCase() + f.scenarioLabel.slice(1), "scenario")}

@@ -107,8 +107,18 @@ function withTrendNote(source: ReactNode, years: readonly number[] | null): Reac
   );
 }
 
+// 0.8 SMT r4 (stage I): the view a panel is showing, without a plan: its active rail button's dataview,
+// or the host panel's one view when it has no rail (rail.tsx railEntries, the same mapping a config uses).
+function shownDataview(host: HostId | undefined, panel: PanelId, actions: ReactNode): string | null {
+  if (!host) return null;
+  const active = railEntries(actions, host, panel).find((e) => e.active)?.dataview;
+  if (active) return active;
+  const only = DATAVIEWS.filter((d) => d.host.id === host && d.host.panel === panel);
+  return only.length === 1 ? only[0].id : null;
+}
+
 // 0.8 SMT r4 (stage I): how the view is calculated (src/catalogue/methods-teacher.ts), after its source.
-// Only a view the catalogue registers (spec.preset) has one; the (i) loads the text when opened.
+// Only a view the catalogue registers has one; the (i) loads the text when opened.
 function withMethod(source: ReactNode, preset: string | null): ReactNode {
   if (!source || !preset) return source;
   return (
@@ -262,7 +272,7 @@ export function ColumnPanels({
             }
             controls={panel.controls}
             caption={panel.summary}
-            source={withMethod(withTrendNote(panel.source, specYears(spec, panel.gradingYears)), spec?.preset ?? null)}
+            source={withMethod(withTrendNote(panel.source, specYears(spec, panel.gradingYears)), spec?.preset ?? shownDataview(host, id, panel.actions))}
             footerActions={({ fullscreen }) => (
               <>
                 {/* In fullscreen the note has its own place in the side rail (Part 4). */}
