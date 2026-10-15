@@ -432,8 +432,11 @@ const RUNNERS: Record<string, Runner> = {
     const { entryPoint } = await import("../src/lib/admissions/entry-points");
     const r = await buildRivals("137625", entryPoint("11+")!);
     const me = r.rows.find((x) => x.isSchool)!;
-    // The whole population's raw 2024 Attainment 8, counted here.
-    const rows = await ref.lookupAcademicHeadline({ ksStage: "ks4", periodMin: r.resultsPeriod!, periodMax: r.resultsPeriod! });
+    // The whole population's raw Attainment 8 in the results year, counted here, less the IGCSE rule's
+    // schools (R-IGCSE-EVERYWHERE, 0.8 audit fixes 1).
+    const { igcseEngland } = await import("../src/lib/igcse");
+    const ig = await igcseEngland();
+    const rows = (await ref.lookupAcademicHeadline({ ksStage: "ks4", periodMin: r.resultsPeriod!, periodMax: r.resultsPeriod! })).filter((h) => !ig.has(h.entity_id));
     const vals = rows.map((x) => Number(x.measures.attainment8_average)).filter((v) => x(v));
     function x(v: number) { return Number.isFinite(v); }
     const mine = Number(rows.find((x) => x.entity_id === "137625")!.measures.attainment8_average);
