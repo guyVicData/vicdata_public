@@ -629,7 +629,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
   if (panel.row === "now") return { tag: "Rivals", context: `Data ${yearLabel(census)} · pupils aged ${ep?.age ?? ""}` };
   if (dv.startsWith("DV-ADM-P-HOLD")) return { tag: "Forward", context: p ? `${p.ladder.future[0]?.entryYear}–${p.ladder.future[p.ladder.future.length - 1]?.entryYear}` : "" };
   // 0.8 audit fixes (4): the year the lines are actually indexed to (lib/index-base).
-  if (dv === "DV-ADM-P-POOL-INDEXED") return { tag: "Trends", context: p ? `indexed, ${indexedLabel(p.poolTrends.base)}` : "indexed" };
+  if (dv === "DV-ADM-P-POOL-INDEXED") return { tag: "Trends", context: p && p.poolTrends.feeders.length + p.poolTrends.la.length + p.poolTrends.england.length > 0 ? `indexed, ${indexedLabel(p.poolTrends.base)}` : "indexed" };
   if (dv === "DV-ADM-M-VS-LINE") return { tag: "Trends", context: c.market.status === "ready" && !("empty" in c.market.data) ? `indexed, ${indexedLabel(c.market.data.summary.vsIndexed.base)}` : "indexed" };
   if (dv.startsWith("DV-ADM-M-ACAD")) return { tag: "Academic", context: r && ep ? `${ep.label.replace(/ \(.*\)$/, "")} → ${STAGE_WORD[r.stage]} · ${r.resultsPeriod ? resultsYearLabel(r) : ""}` : "" };
   return { tag: "Trends", context: `from ${yearLabel(CENSUS_FIRST_PERIOD)}` };
