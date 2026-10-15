@@ -31,14 +31,16 @@ import { indexTo, indexBaseWords } from "@/lib/index-base";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
 import { FOCI, FOCUS_LABEL, MEASURE_LABEL, parseCompare, type CompareKey, type Focus, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
 import type { Reading } from "@/lib/groups/aggregates";
+import { AcademicNow, BandsReserved, EntryCohorts, GroupShape, GrowingShrinking, ImprovingDeclining, LeavingAt16, MarketShare, ProjectionPerSchool, PupilsNow, SchoolsRanked, SubjectAreasAcross, ValueAddedPanel, type ProjectionRow } from "./views-r3";
+import type { GroupAcademic, GroupPupils } from "@/lib/groups/dash-r3";
 import { AgainstOthers, dateText, MAIN_ROWS, GroupMap, GroupNow, JoinedLeft, ResultsTrend, RollTrend, SchoolsNow, SchoolsTable, ShareOfPlaces, Shapes, SizeAndResults, WhoIsGrowing, shareFlag, sourcesWord, type MapSchool, type MembershipRow } from "./views";
 
 export type GroupDash = "overview" | "schools" | "academic" | "pupils";
 export const GROUP_DASHES: { key: GroupDash; label: string; live: boolean }[] = [
   { key: "overview", label: "Overview", live: true },
   { key: "schools", label: "Schools", live: true },
-  { key: "academic", label: "Academic", live: false },
-  { key: "pupils", label: "Pupils", live: false },
+  { key: "academic", label: "Academic", live: true },
+  { key: "pupils", label: "Pupils", live: true },
 ];
 const PATH: Record<GroupDash, string> = { overview: "/teacher/group/overview", schools: "/teacher/group/schools", academic: "/teacher/group/academic", pupils: "/teacher/group/pupils" };
 const DASH_ID: Record<GroupDash, string> = { overview: "vicdata.groups.overview", schools: "vicdata.groups.schools", academic: "vicdata.groups.academic", pupils: "vicdata.groups.pupils" };
@@ -48,7 +50,7 @@ const ROW_TRENDS = 340;
 export const GROUP_BADGE = <span className="text-[19px] font-extrabold leading-none">G</span>;
 
 type Viewer = { as: "head_office" | "view_as" | "school"; accountId: string; groupId: string; name: string; urn: string | null };
-export type DashResponse = { viewer: Viewer; source: "production" | "fixtures"; membership: MembershipRow[]; overview?: GroupOverview; map?: MapSchool[]; schools?: GroupSchools; now?: GroupOverview; candidates?: { id: string; label: string; schools: number }[] };
+export type DashResponse = { viewer: Viewer; source: "production" | "fixtures"; membership: MembershipRow[]; overview?: GroupOverview; map?: MapSchool[]; schools?: GroupSchools; now?: GroupOverview; candidates?: { id: string; label: string; schools: number }[]; academic?: GroupAcademic; pupils?: GroupPupils };
 
 /** The page root's variables: Admissions' semantic colours, the group accent (orange). */
 export function groupDashVars(theme: Theme): CSSProperties {
@@ -97,7 +99,7 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
     setParamsState(next);
     writeParams(next);
   };
-  const q = new URLSearchParams({ dash: dash === "schools" ? "schools" : "overview", reading: params.reading, compare: params.compare, focus: params.focus });
+  const q = new URLSearchParams({ dash, reading: params.reading, compare: params.compare, focus: params.focus });
   if (params.account) q.set("account", params.account);
   const load = useSmt<DashResponse>(`/api/group/dash?${q.toString()}`, null);
   return (
@@ -132,7 +134,7 @@ export function GroupDashboard({ dash }: { dash: GroupDash }) {
 
 // ---------------------------------------------------------------------------------- dashboard
 
-type Ctx = { d: DashResponse; o: GroupOverview; s: GroupSchools | null; dash: GroupDash; params: Params; average: boolean; phone: boolean; focusBar: ReactNode; highlight: (urn: string | null) => void; setNamed: (ids: string[]) => void };
+type Ctx = { d: DashResponse; o: GroupOverview; s: GroupSchools | null; dash: GroupDash; params: Params; average: boolean; phone: boolean; focusBar: ReactNode; highlight: (urn: string | null) => void; setNamed: (ids: string[]) => void; projection: ProjectionRow[] | null };
 
 function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResponse; dash: GroupDash; params: Params; setParams: (p: Partial<Params>) => void; theme: Theme; onTheme: (t: Theme) => void }) {
   const [rootRef, width] = useWidth<HTMLDivElement>();
@@ -140,6 +142,9 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
   const router = useRouter();
   const [average, setAverage] = useState(false);
   const o = (dash === "schools" ? d.now : d.overview)!;
+  // Pupils' projection: one area projection per member school, read apart (slower).
+  const projQ = new URLSearchParams(params.account ? { account: params.account } : {});
+  const proj = useSmt<{ rows: ProjectionRow[] }>(dash === "pupils" ? `/api/group/projection?${projQ.toString()}` : null, null);
   const s = d.schools ?? null;
   const quiet = d.viewer.as === "view_as";
   const usage: UsageScope | null = useMemo(
@@ -258,16 +263,18 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
     </>
   );
 
-  const ctx: Ctx = { d, o, s, dash, params, average, phone, focusBar, highlight: (urn) => setParams({ school: urn }), setNamed: (ids) => setParams({ compare: ids.length ? (`peer_named:${ids.join(",")}` as CompareKey) : "peer_band" }) };
-  const layout = LAYOUT[dash === "schools" ? "schools" : "overview"];
+  const ctx: Ctx = { d, o, s, dash, params, average, phone, focusBar, highlight: (urn) => setParams({ school: urn }), setNamed: (ids) => setParams({ compare: ids.length ? (`peer_named:${ids.join(",")}` as CompareKey) : "peer_band" }), projection: proj.status === "ready" ? proj.data.rows : proj.status === "error" ? [] : null };
+  const layout = LAYOUT[dash];
   const [open, setOpen] = useState<Record<string, boolean>>({ now: true, trends: true });
   const census = o.years.census;
   const rowContext = (row: "now" | "trends") =>
     row === "now"
       ? `January ${census + 1} census · ${groupNote("membershipAsOf", { date: dateText(o.group.asOf), source: sourcesWord(o.group.sources) }).replace(/\.$/, "")} · ${params.reading === "at_time" ? GROUP_NOTES.readingAtTime.toLowerCase() : GROUP_NOTES.readingListed.toLowerCase()}`
-      : dash === "schools"
-        ? `${periodLabel(o.years.first)} to ${periodLabel(census)}`
-        : `indexed, like for like, against ${cmp.label}`;
+      : dash === "schools" || dash === "pupils"
+        ? `${periodLabel(o.years.first)} to ${periodLabel(census)}${dash === "pupils" ? `, against ${cmp.label}` : ""}`
+        : dash === "academic"
+          ? `pupil-weighted, by phase, against ${cmp.label}`
+          : `indexed, like for like, against ${cmp.label}`;
 
   return (
     <UsageScopeContext.Provider value={quiet ? null : usage}>
@@ -322,7 +329,11 @@ function Dashboard({ d, dash, params, setParams, theme, onTheme }: { d: DashResp
 
 // -------------------------------------------------------------------------------- the layout
 
-type ViewId = "GRP-O-NOW" | "GRP-O-AGAINST" | "GRP-O-MAP" | "GRP-O-JOINED" | "GRP-O-ROLL" | "GRP-O-RESULTS" | "GRP-O-SHARE" | "GRP-S-NOW" | "GRP-S-TABLE" | "GRP-S-GROWING" | "GRP-S-SCATTER" | "GRP-S-SHAPES";
+type ViewId =
+  | "GRP-O-NOW" | "GRP-O-AGAINST" | "GRP-O-MAP" | "GRP-O-JOINED" | "GRP-O-ROLL" | "GRP-O-RESULTS" | "GRP-O-SHARE"
+  | "GRP-S-NOW" | "GRP-S-TABLE" | "GRP-S-GROWING" | "GRP-S-SCATTER" | "GRP-S-SHAPES"
+  | "GRP-A-NOW" | "GRP-A-RANKED" | "GRP-A-AREAS" | "GRP-A-VA" | "GRP-A-TREND" | "GRP-A-POST16" | "GRP-A-IMPROVING" | "GRP-A-BANDS"
+  | "GRP-P-NOW" | "GRP-P-SHAPE" | "GRP-P-ENTRIES" | "GRP-P-LEAVING" | "GRP-P-MARKET" | "GRP-P-ROLL" | "GRP-P-PROJECTION" | "GRP-P-GROWING";
 type CellDef = { id: string; span: 1 | 2; views: { id: ViewId; label: string; icon: string }[] };
 export const GROUP_VIEWS: Record<ViewId, { label: string; icon: string }> = {
   "GRP-O-NOW": { label: "The group now", icon: "TilesIcon" },
@@ -337,9 +348,47 @@ export const GROUP_VIEWS: Record<ViewId, { label: string; icon: string }> = {
   "GRP-S-GROWING": { label: "Who is growing", icon: "TrendLineIcon" },
   "GRP-S-SCATTER": { label: "Size and results", icon: "AdmScatterIcon" },
   "GRP-S-SHAPES": { label: "Shapes", icon: "AdmShapeIcon" },
+  "GRP-A-NOW": { label: "Results now", icon: "TilesIcon" },
+  "GRP-A-RANKED": { label: "Schools ranked", icon: "RankListIcon" },
+  "GRP-A-AREAS": { label: "Subject areas", icon: "AdmStrengthsIcon" },
+  "GRP-A-VA": { label: "Value added", icon: "ChangeArrowIcon" },
+  "GRP-A-TREND": { label: "Results trend", icon: "TrendLineIcon" },
+  "GRP-A-POST16": { label: "Post-16 trend", icon: "TrendLineIcon" },
+  "GRP-A-IMPROVING": { label: "Improving and declining", icon: "VerticalBarsIcon" },
+  "GRP-A-BANDS": { label: "Results by band", icon: "GradesIcon" },
+  "GRP-P-NOW": { label: "Pupils now", icon: "TilesIcon" },
+  "GRP-P-SHAPE": { label: "The group's shape", icon: "AdmShapeIcon" },
+  "GRP-P-ENTRIES": { label: "Entry cohorts", icon: "AdmPipelineIcon" },
+  "GRP-P-LEAVING": { label: "Leaving at 16", icon: "TableIcon" },
+  "GRP-P-MARKET": { label: "Market share", icon: "HorizontalBarsIcon" },
+  "GRP-P-ROLL": { label: "Roll, indexed", icon: "IndexedLineIcon" },
+  "GRP-P-PROJECTION": { label: "Children around the schools", icon: "AdmPopulationIcon" },
+  "GRP-P-GROWING": { label: "Growing and shrinking", icon: "VerticalBarsIcon" },
 };
 const v = (id: ViewId) => ({ id, ...GROUP_VIEWS[id] });
-const LAYOUT: Record<"overview" | "schools", { now: CellDef[]; trends: CellDef[] }> = {
+const LAYOUT: Record<GroupDash, { now: CellDef[]; trends: CellDef[] }> = {
+  academic: {
+    now: [
+      { id: "a-now", span: 1, views: [v("GRP-A-NOW")] },
+      { id: "a-large", span: 2, views: [v("GRP-A-RANKED"), v("GRP-A-AREAS"), v("GRP-A-VA")] },
+    ],
+    trends: [
+      { id: "a-trend", span: 1, views: [v("GRP-A-TREND")] },
+      { id: "a-post16", span: 1, views: [v("GRP-A-POST16")] },
+      { id: "a-improving", span: 1, views: [v("GRP-A-IMPROVING"), v("GRP-A-BANDS")] },
+    ],
+  },
+  pupils: {
+    now: [
+      { id: "p-now", span: 1, views: [v("GRP-P-NOW")] },
+      { id: "p-large", span: 2, views: [v("GRP-P-SHAPE"), v("GRP-P-ENTRIES"), v("GRP-P-LEAVING"), v("GRP-P-MARKET")] },
+    ],
+    trends: [
+      { id: "p-roll", span: 1, views: [v("GRP-P-ROLL")] },
+      { id: "p-projection", span: 1, views: [v("GRP-P-PROJECTION")] },
+      { id: "p-growing", span: 1, views: [v("GRP-P-GROWING")] },
+    ],
+  },
   overview: {
     now: [
       { id: "o-now", span: 1, views: [v("GRP-O-NOW")] },
@@ -369,7 +418,7 @@ function Cell({ cell, c, height, onAverage }: { cell: CellDef; c: Ctx; height: n
   const rail: RailItem[] = cell.views.map((x) => ({ id: x.id, label: x.label, icon: x.icon }));
   const h = headerOf(active, c);
   const weighting =
-    active === "GRP-O-AGAINST" || active === "GRP-O-RESULTS" ? (
+    active === "GRP-O-AGAINST" || active === "GRP-O-RESULTS" || active === "GRP-A-NOW" || active === "GRP-A-TREND" || active === "GRP-A-POST16" ? (
       <MenuChip label="Weighting" value={c.average ? "average" : "pupil"} onPick={(x) => onAverage(x === "average")} options={[{ id: "pupil", label: "Pupil-weighted" }, { id: "average", label: "Average school" }]} />
     ) : null;
   return (
@@ -422,6 +471,40 @@ function headerOf(id: ViewId, c: Ctx): { tag: string; context: ReactNode } {
       return { tag: "Size and results", context: FOCUS_LABEL[c.params.focus] };
     case "GRP-S-SHAPES":
       return { tag: "Shapes", context: "each school by age" };
+    case "GRP-A-NOW":
+      return { tag: "Current", context: f };
+    case "GRP-A-RANKED":
+      return { tag: "Schools ranked", context: `each school against the group, ${c.o.compare.label} and England` };
+    case "GRP-A-AREAS":
+      return { tag: "Subject areas", context: "gap to England" };
+    case "GRP-A-VA":
+      return { tag: "Value added", context: "DfE, where published" };
+    case "GRP-A-TREND":
+      return { tag: "Trends", context: "pupil-weighted, by phase" };
+    case "GRP-A-POST16":
+      return { tag: "Trends", context: "Post-16" };
+    case "GRP-A-IMPROVING":
+      return { tag: "Change by school", context: `since ${periodLabel(c.d.academic?.improving.from ?? 2022)}` };
+    case "GRP-A-BANDS":
+      return { tag: "Trends", context: "results by band" };
+    case "GRP-P-NOW":
+      return { tag: "Current", context: f };
+    case "GRP-P-SHAPE":
+      return { tag: "Shape", context: "the group's pupils by age" };
+    case "GRP-P-ENTRIES":
+      return { tag: "Entry cohorts", context: "each school, read-only" };
+    case "GRP-P-LEAVING":
+      return { tag: "Leaving at 16", context: "Year 11 to Year 12" };
+    case "GRP-P-MARKET":
+      return { tag: "Market share", context: "each school in its own area" };
+    case "GRP-P-ROLL": {
+      const { base } = indexTo(c.o.trends.roll.lines.map((l) => l.pts));
+      return { tag: "Trends", context: `${indexBaseWords(base)} = 100` };
+    }
+    case "GRP-P-PROJECTION":
+      return { tag: "Forward", context: "each school's area, not a forecast" };
+    case "GRP-P-GROWING":
+      return { tag: "Trends", context: "schools growing and shrinking" };
   }
 }
 
@@ -513,6 +596,43 @@ function ViewBody({ id, c, fullscreen, room }: { id: ViewId; c: Ctx; fullscreen:
     case "GRP-S-SHAPES":
       return c.s ? <Shapes s={c.s} highlight={hl} fullscreen={fullscreen} /> : <Skeleton />;
   }
+  const a = c.d.academic;
+  const p = c.d.pupils;
+  switch (id) {
+    case "GRP-A-NOW":
+      return a ? <AcademicNow a={a} average={c.average} /> : <Skeleton />;
+    case "GRP-A-RANKED":
+      return a ? <SchoolsRanked a={a} highlight={hl} fullscreen={fullscreen} /> : <Skeleton />;
+    case "GRP-A-AREAS":
+      return a ? <SubjectAreasAcross a={a} /> : <Skeleton />;
+    case "GRP-A-VA":
+      return a ? <ValueAddedPanel a={a} fullscreen={fullscreen} /> : <Skeleton />;
+    case "GRP-A-TREND":
+      return <ResultsTrend o={c.o} average={c.average} fullscreen={fullscreen} room={room} />;
+    case "GRP-A-POST16":
+      return a && a.post16 ? <ResultsTrend o={{ ...c.o, trends: { ...c.o.trends, results: a.post16 } }} average={c.average} fullscreen={fullscreen} room={room} /> : <Empty>No sixth-form results in the group.</Empty>;
+    case "GRP-A-IMPROVING":
+      return a ? <ImprovingDeclining a={a} /> : <Skeleton />;
+    case "GRP-A-BANDS":
+      return <BandsReserved />;
+    case "GRP-P-NOW":
+      return p ? <PupilsNow p={p} compact={c.phone && !fullscreen} /> : <Skeleton />;
+    case "GRP-P-SHAPE":
+      return p ? <GroupShape p={p} fullscreen={fullscreen} room={room} /> : <Skeleton />;
+    case "GRP-P-ENTRIES":
+      return p ? <EntryCohorts p={p} highlight={hl} fullscreen={fullscreen} room={room} /> : <Skeleton />;
+    case "GRP-P-LEAVING":
+      return p ? <LeavingAt16 p={p} fullscreen={fullscreen} /> : <Skeleton />;
+    case "GRP-P-MARKET":
+      return p ? <MarketShare p={p} fullscreen={fullscreen} /> : <Skeleton />;
+    case "GRP-P-ROLL":
+      return <RollTrend o={c.o} fullscreen={fullscreen} room={room} />;
+    case "GRP-P-PROJECTION":
+      return <ProjectionPerSchool rows={c.projection} fullscreen={fullscreen} />;
+    case "GRP-P-GROWING":
+      return p ? <GrowingShrinking p={p} /> : <Skeleton />;
+  }
+  return null;
 }
 
 // -------------------------------------------------------------------------------------- phone
@@ -522,7 +642,7 @@ function PhoneBody({ c, layout }: { c: Ctx; layout: { now: CellDef[]; trends: Ce
   const large = layout.now[1];
   const [tab, setTab] = useState<ViewId>(large.views[0].id);
   const [trendTab, setTrendTab] = useState<ViewId>(layout.trends[0].views[0].id);
-  const SHORT: Partial<Record<ViewId, string>> = { "GRP-O-ROLL": "Roll", "GRP-O-RESULTS": "Results", "GRP-O-SHARE": "Share", "GRP-S-GROWING": "Growing", "GRP-S-SCATTER": "Size and results", "GRP-S-SHAPES": "Shapes" };
+  const SHORT: Partial<Record<ViewId, string>> = { "GRP-O-ROLL": "Roll", "GRP-O-RESULTS": "Results", "GRP-O-SHARE": "Share", "GRP-S-GROWING": "Growing", "GRP-S-SCATTER": "Size and results", "GRP-S-SHAPES": "Shapes", "GRP-A-TREND": "Results", "GRP-A-POST16": "Post-16", "GRP-A-IMPROVING": "By school", "GRP-P-ROLL": "Roll", "GRP-P-PROJECTION": "Forward", "GRP-P-GROWING": "Growing" };
   const trendItems: RailItem[] = layout.trends.map((t) => ({ id: t.views[0].id, label: SHORT[t.views[0].id] ?? t.views[0].label, icon: "" }));
   return (
     <>
