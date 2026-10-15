@@ -7,6 +7,7 @@ import { matchesRanking, type RankingFilters } from "@/lib/comparator-chooser";
 import { GRADE_SCALES } from "@/lib/subject-grades";
 import { subjectRanking, type RankMeasure, type SubjectRanking } from "@/lib/subject-ranking";
 import type { SubjectRankingBody, SubjectRankingPayload } from "@/lib/subject-ranking-view";
+import { latestSubjectName } from "@/lib/subject-latest-names";
 
 // VicData 0.6.6: a national or regional ranking on the measure in view -- the focused subject
 // (the exact qualification at Post-16), points / entries / Grade 4+ / A*-E / a band or a
@@ -63,6 +64,8 @@ export async function POST(request: NextRequest) {
   ) {
     return NextResponse.json({ error: "urn, phase, filters, subject, measure and Authorization are required" }, { status: 400 });
   }
+  // Subject latest names round: a saved choice may carry a subject's old name.
+  body.subject = latestSubjectName(body.subject);
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false },

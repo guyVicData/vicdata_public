@@ -26,6 +26,9 @@ export const SUBJECT_ABBREVIATIONS: Record<string, string> = {
   "Chemistry": "Chem",
   "Physics": "Phys",
   "Additional Science": "Add Sci",
+  // Subject latest names round (2026-10-15): DfE's "Mathematics (Additional)", which the
+  // word-initial fallback shortened to "Mathem.".
+  "Additional Mathematics": "Add Maths",
   "Computer Science": "Comp Sci",
   "Statistics": "Stats",
   "History": "History",
@@ -94,6 +97,9 @@ export const SUBJECT_ABBREVIATION_ALIASES: Record<string, string> = {
   "Art & Design": "Art and Design",
   "French Language": "French",
   "Music Studies (General)": "Music",
+  "Music Studies": "Music",
+  "Mathematics (Additional)": "Additional Mathematics",
+  "Additional Maths (FSMQ)": "Additional Mathematics",
   "Music Technology (Electronic)": "Music Technology",
   "Speech & Drama": "Drama",
   "Speech and Drama": "Drama",

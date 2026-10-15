@@ -11,7 +11,7 @@ const school = { urn: "100053", name: "Acland Burghley School" };
 const rt: RuntimeLabels = {
   school,
   results: "points",
-  focus: { key: "Maths (General)::GCSE (9-1) Full Course", label: "Maths (General)" },
+  focus: { key: "Mathematics::GCSE (9-1) Full Course", label: "Mathematics" },
   category: "Sciences & Maths",
   contextAgainst: "whole",
   contextGroupLabel: "All subjects",
@@ -39,7 +39,7 @@ test("Comparisons panel: pinned to the school, the focus, the named set and the 
   assert.equal(v.kind, "view");
   const src = copySourceFor(d, p.id, v as Extract<typeof v, { kind: "view" }>, rt);
   assert.equal(src.pinned.schoolUrn, "100053");
-  assert.equal(src.pinned.subject, "Maths (General)");
+  assert.equal(src.pinned.subject, "Mathematics");
   assert.equal(src.pinned.qualificationType, "GCSE (9-1) Full Course");
   assert.equal(src.pinned.data, "academic.results");
   assert.equal(src.pinned.results, "points");
@@ -74,12 +74,12 @@ test("meeting: Add a view starts at no column, and the pick is pinned for the sc
   assert.deepEqual(base.compare.kinds, ["subjects"]);
   assert.ok(pickResults(base).length > 0, "the meeting's start context offers views");
   assert.equal(base.labels.school, "Acland Burghley School");
-  const ctx = { ...base, focus: { kind: "subject" as const, subject: { mode: "always" as const, label: "Maths (General)", key: "Maths (General)::GCSE (9-1) Full Course" } } };
+  const ctx = { ...base, focus: { kind: "subject" as const, subject: { mode: "always" as const, label: "Mathematics", key: "Mathematics::GCSE (9-1) Full Course" } } };
   const instance = viewInstance("v1", "DV-C3-CUR-BAR" as const);
   assert.ok(dataviewById(instance.dataview), "a registered view");
   const pin = meetingPin(instance, ctx, school);
   assert.equal(pin.schoolUrn, "100053");
-  assert.equal(pin.subject, "Maths (General)");
+  assert.equal(pin.subject, "Mathematics");
   assert.equal(pin.keepLive, false);
   assert.ok(pin.year || pin.yearRange, "a year is pinned");
   // Customise's roll-forward keeps it live.

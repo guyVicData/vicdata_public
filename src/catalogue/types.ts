@@ -335,7 +335,7 @@ export type PlaceholderContext = {
   focus: FocusKind;
   compare: CompareKind[];
   time: RowTime;
-  // "Average points · Maths (General) · vs 10 nearest · over time"
+  // "Average points · Mathematics · vs 10 nearest · over time"
   summary?: string;
   // "GCSE Results · Comparisons · Trends"
   where?: string;

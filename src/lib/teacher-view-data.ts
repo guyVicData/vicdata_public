@@ -13,6 +13,7 @@
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { TeacherPhase } from "./teacher-view-phases";
 import { getActiveViewAs, isMissingColumn, stateUrn, VIEW_AS_NEEDS_UPDATE } from "./view-as";
+import { latestNamesInKey, latestNamesInSaved, latestSubjectName } from "./subject-latest-names";
 
 type Supa = ReturnType<typeof createBrowserSupabaseClient>;
 
@@ -68,9 +69,11 @@ export async function fetchPreferences(
     .eq("phase", phase)
     .maybeSingle();
   if (error || !data) return EMPTY_PREFERENCES;
+  // Subject latest names round: ticked subjects ("{subject}::{qualificationType}") and pinned
+  // view ids saved under a subject's old name are read under its latest one.
   return {
-    subjects: Array.isArray(data.subjects) ? (data.subjects as string[]) : [],
-    columns: (data.columns as ColumnState) ?? {},
+    subjects: Array.isArray(data.subjects) ? Array.from(new Set((data.subjects as string[]).map(latestNamesInKey))) : [],
+    columns: latestNamesInSaved((data.columns as ColumnState) ?? {}),
     lastSeenPeriod: (data.last_seen_period as number | null) ?? null,
   };
 }
@@ -263,7 +266,8 @@ export async function fetchJobs(supabase: Supa): Promise<RecruitmentJob[]> {
     if (trial) return [];
     ({ data, error } = await base());
   }
-  return error || !data ? [] : (data as RecruitmentJob[]);
+  // Subject latest names round: a job saved with a subject's old name reads its latest one.
+  return error || !data ? [] : (data as RecruitmentJob[]).map((j) => (j.subject ? { ...j, subject: latestSubjectName(j.subject) } : j));
 }
 
 export async function createJob(
@@ -356,7 +360,7 @@ export async function fetchSlides(supabase: Supa, meetingId: string): Promise<Me
     .select("id, meeting_id, position, chart_key, caption")
     .eq("meeting_id", meetingId)
     .order("position", { ascending: true });
-  return error || !data ? [] : (data as MeetingSlide[]);
+  return error || !data ? [] : (data as MeetingSlide[]).map((s) => ({ ...s, chart_key: latestNamesInKey(s.chart_key) }));
 }
 
 export async function addSlide(

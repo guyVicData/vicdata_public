@@ -2,6 +2,7 @@ import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchSchoolGradeRows, type KsStage, type SubjectGradeCount } from "@/lib/academic-data-view";
+import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 
 // Teacher view, Comparisons on a grade threshold (Grade 4+ / A*-E rate): each comparator
 // school's per-grade entry counts for ONE subject, so the page can score every school's
@@ -22,7 +23,8 @@ export async function GET(request: NextRequest) {
   const anchorUrn = request.nextUrl.searchParams.get("anchorUrn");
   const urnsParam = request.nextUrl.searchParams.get("urns");
   const stage = request.nextUrl.searchParams.get("stage") as KsStage | null;
-  const subject = request.nextUrl.searchParams.get("subject");
+  // Subject latest names round: a link or saved choice may carry an old name.
+  const subject = latestSubjectNameOrNull(request.nextUrl.searchParams.get("subject"));
   const authHeader = request.headers.get("authorization");
   if (!anchorUrn || !urnsParam || !stage || !subject || !authHeader) {
     return NextResponse.json({ error: "anchorUrn, urns, stage, subject and Authorization are required" }, { status: 400 });

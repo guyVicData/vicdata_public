@@ -20,7 +20,7 @@ const KS4: PickerItem[] = [
   item("Biology", "gcse", CAT.sci, 41),
   item("Chemistry", "gcse", CAT.sci, 40),
   item("Combined Science", "gcse", CAT.sci, 112),
-  item("Maths (General)", "gcse", CAT.sci, 154),
+  item("Mathematics", "gcse", CAT.sci, 154),
   item("Physics", "gcse", CAT.sci, 39),
   item("Statistics", "gcse", CAT.sci, 22),
   item("Geography", "gcse", CAT.hum, 61),
@@ -31,7 +31,7 @@ const KS4: PickerItem[] = [
   item("English Literature", "gcse", CAT.lang, 150),
   item("French", "gcse", CAT.lang, 33),
   item("Spanish", "gcse", CAT.lang, 41),
-  item("Art & Design", "gcse", CAT.art, 28),
+  item("Art and Design", "gcse", CAT.art, 28),
   item("Drama", "gcse", CAT.art, 17),
   item("Music", "gcse", CAT.art, 12),
   item("Computer Science", "gcse", CAT.tech, 30),
@@ -54,12 +54,12 @@ const KS5: PickerItem[] = [
   item("History", "alevel", CAT.hum, 18),
   item("Psychology", "alevel", CAT.hum, 33),
   item("English Literature", "alevel", CAT.lang, 16),
-  item("Art & Design", "alevel", CAT.art, 10),
+  item("Art and Design", "alevel", CAT.art, 10),
   item("Business", "btec_ocr", CAT.biz, 14),
   item("Applied Science", "btec_ocr", CAT.sci, 8),
 ];
 
 export const LAB_SUBJECTS: Record<"ks4" | "ks5", SubjectSource> = {
-  ks4: { items: KS4, families: QUALIFICATION_FAMILIES.ks4.filter((f) => KS4.some((i) => i.familyId === f.id)), mine: ["gcse:Maths (General)", "gcse:Statistics", "gcse:Physics"] },
+  ks4: { items: KS4, families: QUALIFICATION_FAMILIES.ks4.filter((f) => KS4.some((i) => i.familyId === f.id)), mine: ["gcse:Mathematics", "gcse:Statistics", "gcse:Physics"] },
   ks5: { items: KS5, families: QUALIFICATION_FAMILIES.ks5.filter((f) => KS5.some((i) => i.familyId === f.id)), mine: ["alevel:Mathematics", "alevel:Physics"] },
 };

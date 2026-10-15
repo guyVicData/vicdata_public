@@ -3,7 +3,7 @@
 // data". Pure; reads only the catalogue.
 //
 // A slot holds ONE specific view, literally (scope brief §7.5): every setting resolved
-// ("[subject]" -> "Maths (General)", the compare set -> its name), the year pinned to the
+// ("[subject]" -> "Mathematics", the compare set -> its name), the year pinned to the
 // moment it was added ("as of 2024/25") unless the view is kept live.
 import { changeKind, changeOfMeasure, changeWord } from "@/catalogue/titles";
 import { dataviewById } from "@/catalogue/dataviews";
@@ -18,7 +18,7 @@ export type PinnedSettings = {
   phase?: Phase;
   data?: DataId;
   results?: ResultsMeasure;
-  // The raw subject and its resolved label ("Maths" / "Maths (General)").
+  // The raw subject and its resolved label ("Maths" / "Mathematics").
   subject?: string | null;
   subjectLabel?: string | null;
   qualificationType?: string | null;

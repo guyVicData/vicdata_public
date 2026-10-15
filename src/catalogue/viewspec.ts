@@ -20,6 +20,7 @@
 import { DATAVIEWS } from "./dataviews";
 import { ADMISSIONS_BODIES } from "./admissions";
 import { SMT_BODIES } from "./smt";
+import { latestNamesInSaved } from "@/lib/subject-latest-names";
 import { CONFIG_SCHEMA_VERSION, type DashboardConfig, type DataId, type Dataview, type DataviewId, type DataviewInstance, type ResultsMeasure, type VariantSets } from "./types";
 
 // ---------------------------------------------------------------------------------- data
@@ -403,7 +404,11 @@ const withSpec = <T extends DataviewInstance>(v: T): T => {
 // changes (ids, params, titles, per-instance resultsMeasures / variants, defaults, text
 // slots, pins). A current config comes back as it is. VicData's own dashboards are NOT read
 // through here on members' pages (D9: published-vicdata.ts draws the code copy instead).
-export function upgradeConfig(stored: StoredConfig | DashboardConfig): DashboardConfig {
+// Subject latest names round: every subject name in it is read as its latest name first
+// (src/lib/subject-latest-names.ts), so a meeting or dashboard saved with "Maths (General)"
+// still finds "Mathematics".
+export function upgradeConfig(saved: StoredConfig | DashboardConfig): DashboardConfig {
+  const stored = latestNamesInSaved(saved);
   if (stored.schema_version === CONFIG_SCHEMA_VERSION && stored.panels.every((p) => p.dataviews.every((v) => v.kind !== "view" || v.spec))) return stored as DashboardConfig;
   if (stored.schema_version > CONFIG_SCHEMA_VERSION || !Array.isArray(stored.panels)) return stored as DashboardConfig;
   return {

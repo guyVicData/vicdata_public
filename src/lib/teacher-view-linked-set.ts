@@ -10,6 +10,8 @@
 //   &setLabel=<name>       0.8 SMT: optional, the set's name ("10 nearest schools", a saved set's) for
 //                          the Compared against pill; absent = "Admissions rivals", as before.
 // With no usable `set`, null: the page is exactly as it is without the parameter.
+import { latestSubjectNameOrNull } from "./subject-latest-names";
+
 export const LINKED_SET_LABEL = "Admissions rivals";
 export const LINKED_SET_MAX = 30;
 
@@ -20,7 +22,8 @@ export function parseLinkedSet(search: URLSearchParams): LinkedSet | null {
   if (!raw) return null;
   const urns = Array.from(new Set(raw.split(",").map((u) => u.trim()).filter((u) => /^\d{6}$/.test(u)))).slice(0, LINKED_SET_MAX);
   if (!urns.length) return null;
-  const subject = search.get("subject")?.trim() || null;
+  // Subject latest names round: an old link may carry a subject's old name.
+  const subject = latestSubjectNameOrNull(search.get("subject")?.trim() || null);
   const label = search.get("setLabel")?.trim().slice(0, 80) || null;
   return label ? { urns, subject, label } : { urns, subject };
 }

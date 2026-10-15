@@ -2,6 +2,7 @@ import { isPlatformAdmin } from "@/lib/view-as";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchSubjectHeadlineForSchools, type KsStage } from "@/lib/academic-data-view";
+import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 
 // Teacher view, Phase 6: the automatic school-vs-school comparison behind a candidate
 // (design brief v2 §10).
@@ -40,7 +41,8 @@ type PhaseComparison = {
 export async function GET(request: NextRequest) {
   const anchorUrn = request.nextUrl.searchParams.get("anchorUrn");
   const candidateUrn = request.nextUrl.searchParams.get("candidateUrn");
-  const subject = request.nextUrl.searchParams.get("subject");
+  // Subject latest names round: a link or saved choice may carry an old name.
+  const subject = latestSubjectNameOrNull(request.nextUrl.searchParams.get("subject"));
   const authHeader = request.headers.get("authorization");
   if (!anchorUrn || !candidateUrn || !authHeader) {
     return NextResponse.json({ error: "anchorUrn, candidateUrn and Authorization are required" }, { status: 400 });

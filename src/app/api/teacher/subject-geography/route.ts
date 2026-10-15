@@ -6,6 +6,7 @@ import { lookupAcademicSubjectGeography, lookupAcademicSubjectQualificationGeogr
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { resolveTargetRegionNation } from "@/lib/region-nation-comparator";
 import type { GeographyPayload } from "@/lib/teacher-view-geography";
+import { latestSubjectNameOrNull } from "@/lib/subject-latest-names";
 
 // Teacher view, Candidates live review Part 5: one GCSE subject's entries in the school's
 // own LA, its region and England, per year -- what the % Change TABLE compares the focused
@@ -27,7 +28,8 @@ import type { GeographyPayload } from "@/lib/teacher-view-geography";
 
 export async function GET(request: NextRequest) {
   const urn = request.nextUrl.searchParams.get("urn");
-  const subject = request.nextUrl.searchParams.get("subject");
+  // Subject latest names round: a link or saved choice may carry an old name.
+  const subject = latestSubjectNameOrNull(request.nextUrl.searchParams.get("subject"));
   const phase = request.nextUrl.searchParams.get("phase") === "ks5" ? "ks5" : "ks4";
   const qualificationType = request.nextUrl.searchParams.get("qualificationType");
   const authHeader = request.headers.get("authorization");

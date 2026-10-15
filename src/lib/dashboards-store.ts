@@ -12,6 +12,7 @@ import type { DashboardConfig } from "@/catalogue/types";
 import { DASHBOARDS } from "@/catalogue/dashboards";
 import { upgradeConfig } from "@/catalogue/viewspec";
 import { getActiveViewAs, isMissingColumn, stateUrn, VIEW_AS_NEEDS_UPDATE } from "./view-as";
+import { latestNamesInSaved } from "./subject-latest-names";
 
 export type OwnerScope = "vicdata" | "school" | "user";
 
@@ -267,7 +268,8 @@ export async function loadUserState(supabase: SupabaseClient, dashboardId: strin
     .maybeSingle<{ seen_version: number | null; state: Record<string, unknown> }>();
   if (isMissingTable(error)) return null;
   if (error) throw error;
-  return data;
+  // Subject latest names round: view ids in the state may carry old subject names.
+  return data ? { ...data, state: latestNamesInSaved(data.state) } : data;
 }
 
 export async function saveUserState(supabase: SupabaseClient, dashboardId: string, schoolUrn: string, patch: { seen_version?: number; state?: Record<string, unknown> }) {

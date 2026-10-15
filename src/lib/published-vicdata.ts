@@ -10,6 +10,7 @@ import { CONFIG_SCHEMA_VERSION, type DashboardConfig, type DataviewId } from "@/
 import { validateConfig } from "@/catalogue/config";
 import { DATAVIEWS } from "@/catalogue/dataviews";
 import { isMissingTable } from "./dashboards-store";
+import { latestNamesInSaved } from "./subject-latest-names";
 
 export type PublishedLoad = { config: DashboardConfig; source: "store" | "code"; version: number | null; reason?: string };
 
@@ -45,7 +46,8 @@ export async function loadPublishedVicData(supabase: SupabaseClient, slug: strin
     }
     // The page, the Edit link and the Updated line all key on the slug, so the drawn
     // config carries it whatever id the editor wrote into the JSON.
-    const config: DashboardConfig = { ...version.config, id: slug };
+    // Subject latest names round: old subject names read as their latest names.
+    const config: DashboardConfig = { ...latestNamesInSaved(version.config), id: slug };
     const problems = validateConfig(config, KNOWN);
     if (problems.length) return fall(`invalid config: ${problems.map((p) => `${p.path} ${p.message}`).join("; ")}`);
     return { config, source: "store", version: version.version };
@@ -67,7 +69,7 @@ export async function loadDraftVicData(supabase: SupabaseClient, slug: string, f
     if (error || !row || row.owner_scope !== "vicdata") return loadPublishedVicData(supabase, slug, fallback);
     const { data: draft } = await supabase.from("dashboard_drafts").select("config").eq("dashboard_id", row.id).maybeSingle<{ config: DashboardConfig }>();
     if (!draft?.config || draft.config.schema_version !== CONFIG_SCHEMA_VERSION) return loadPublishedVicData(supabase, slug, fallback);
-    const config: DashboardConfig = { ...draft.config, id: slug };
+    const config: DashboardConfig = { ...latestNamesInSaved(draft.config), id: slug };
     if (validateConfig(config, KNOWN).length) return loadPublishedVicData(supabase, slug, fallback);
     return { config, source: "store", version: null, reason: "draft" };
   } catch {

@@ -58,7 +58,7 @@ export function ChooserLab() {
   const [dashId, setDashId] = useState(DASHBOARDS[1]?.id ?? DASHBOARDS[0].id);
   const dash = DASHBOARDS.find((d) => d.id === dashId) ?? DASHBOARDS[0];
   const [panelId, setPanelId] = useState(`${dash.id}.c3.trends`);
-  const [labels, setLabels] = useState<Labels>({ subject: "Maths (General)", category: "Sciences & Maths", school: "The Chase", setLabel: "10 nearest", la: "Surrey", region: "South East", results: "points" });
+  const [labels, setLabels] = useState<Labels>({ subject: "Mathematics", category: "Sciences & Maths", school: "The Chase", setLabel: "10 nearest", la: "Surrey", region: "South East", results: "points" });
   const [custom, setCustom] = useState<Custom>({ data: "rolls", phase: "ks4", results: "points", focus: "school", compare: ["schools"], time: "over_time", dashboard: "Admissions overview", column: "Our roll", row: "Trends" });
   const [superAdmin, setSuperAdmin] = useState(true);
   const [teacherPalette, setTeacherPalette] = useState(false);
