@@ -184,7 +184,7 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
             <span title={notes.counted}>Counted</span>
           </Key>
           <Key swatch={<LineSwatch colour="var(--accent)" dashed />}>
-            <span title={`${notes.births} ${notes.drift}`}>From births, with range</span>
+            <span title={`${p.entry.age <= 4 ? notes.births : (notes.birthsScaled ?? notes.births)} ${notes.drift}`}>From births, with range</span>
           </Key>
           {canProject && projectionMode === "off" ? (
             <Key muted swatch={<span aria-hidden="true" className="h-[9px] w-[14px] border border-dashed border-[var(--adm-range-edge)] bg-[var(--adm-tint)]" />}>
