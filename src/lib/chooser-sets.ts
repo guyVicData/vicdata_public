@@ -10,6 +10,7 @@
 //     and the column is given the top 15 and the ten schools either side of this one --
 //     a population of thousands cannot be drawn school by school, and the note says
 //     where the school actually stands in the whole of it.
+import { placeWord } from "./view-series/tiles";
 import { igcseEngland } from "./igcse";
 import { igcseNotRankedLine, igcseTargetLine } from "./igcse-words";
 import { lookupAcademicHeadline } from "./vicdata-reference";
@@ -65,6 +66,8 @@ export type RankingFigures = {
   // 0.8 audit fixes (1): at GCSE, the ranking's schools the IGCSE rule took out; the school is one.
   igcseOut?: number;
   targetIgcse?: boolean;
+  // 0.8 audit fixes (8): the school shares its place with another ("=3rd").
+  targetTied?: boolean;
 };
 
 // Comparator dropdown round (option A): what the Comparisons column shows until a teacher
@@ -97,11 +100,6 @@ export async function resolveDefaultNearest(targetUrn: string, phase: KsStage): 
 const TOP = 15;
 const EITHER_SIDE = 5;
 
-const ordinal = (n: number) => {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
-};
 
 export async function resolveRankingSet(
   targetUrn: string,
@@ -140,6 +138,11 @@ export async function resolveRankingSet(
     .filter((u) => latest.has(u))
     .sort((a, b) => latest.get(b)!.value - latest.get(a)!.value || a.localeCompare(b));
   const idx = order.indexOf(targetUrn);
+  // 0.8 audit fixes (8, T2): tied schools share a place (standard competition ranking: two at 3rd,
+  // then 5th), as subject rankings do; `idx` stays the position, for the schools listed around it.
+  const mine = idx >= 0 ? latest.get(targetUrn)!.value : null;
+  const place = mine === null ? null : 1 + order.filter((u) => latest.get(u)!.value > mine).length;
+  const tied = mine !== null && order.some((u) => u !== targetUrn && latest.get(u)!.value === mine);
   const shown = new Set(order.slice(0, TOP));
   if (idx >= 0) for (const u of order.slice(Math.max(0, idx - EITHER_SIDE), idx + EITHER_SIDE + 1)) shown.add(u);
   shown.delete(targetUrn);
@@ -154,8 +157,8 @@ export async function resolveRankingSet(
       : idx < 0
       ? `${targetName} has no published figure to rank. Showing the top ${TOP} of ${order.length.toLocaleString()} with one (${matched.length.toLocaleString()} in this ranking).`
       : inRanking
-        ? `${targetName} ranks ${ordinal(idx + 1)} of ${order.length.toLocaleString()} with a published figure (${matched.length.toLocaleString()} in this ranking). ${showing}`
-        : `${targetName} is not itself in this ranking. Placed against its ${others.toLocaleString()} schools with a published figure, it would be ${ordinal(idx + 1)}. ${showing}`,
+        ? `${targetName} ranks ${placeWord(place!, tied)} of ${order.length.toLocaleString()} with a published figure (${matched.length.toLocaleString()} in this ranking). ${showing}`
+        : `${targetName} is not itself in this ranking. Placed against its ${others.toLocaleString()} schools with a published figure, it would be ${placeWord(place!, tied)}. ${showing}`,
     igcseLine ? `${igcseLine}.` : null,
   ].filter(Boolean).join(" ");
   // The set's average -- the ranking's own schools only: the school itself counts where it
@@ -180,7 +183,8 @@ export async function resolveRankingSet(
     ranked: order.length,
     igcseOut,
     targetIgcse,
-    targetRank: idx >= 0 ? idx + 1 : null,
+    targetRank: place,
+    targetTied: tied,
     target: latest.get(targetUrn) ?? null,
     targetSeries: targetSeries.sort((a, b) => a.period - b.period),
     averageLatest: mean(memberLatest),

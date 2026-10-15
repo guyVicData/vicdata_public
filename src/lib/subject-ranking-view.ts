@@ -125,8 +125,8 @@ export function subjectRankingNote(d: SubjectRanking, targetName: string, noun: 
     : !d.target || d.targetRank === null
     ? `${targetName} has no ${noun.replace(/ (results|entries)$/, "")} figure${inYear} to rank.`
     : d.inRanking
-      ? `${targetName} ranks ${nth(d.targetRank)} of ${populationPhrase(d, noun)}${inYear}.`
-      : `${targetName} is not itself in this ranking. Placed against its ${populationPhrase(d, noun)}${inYear}, it would be ${nth(d.targetRank)}.`;
+      ? `${targetName} ranks ${d.targetTied ? "=" : ""}${nth(d.targetRank)} of ${populationPhrase(d, noun)}${inYear}.`
+      : `${targetName} is not itself in this ranking. Placed against its ${populationPhrase(d, noun)}${inYear}, it would be ${d.targetTied ? "=" : ""}${nth(d.targetRank)}.`;
   const left: string[] = [];
   if (d.noFigure) left.push(`${d.noFigure.toLocaleString()} have no figure that year`);
   if (d.belowMin) left.push(`${d.belowMin.toLocaleString()} have fewer than ${minEntries} entries`);

@@ -1062,7 +1062,7 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-FLAG-FEEDER",
     statement:
-      "A feeder whose pupils (across the rung ages it holds) fell more than the area's (the whole feeder set) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum.",
+      "A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age, as the feeder table and map compare it; the pipeline chart's own flags still read every age the feeder set holds, listed for him.)",
     why: "Pipeline schools to watch and to court.",
     appliesTo: "Admissions Pipelines",
     enforcedIn: ["src/lib/admissions/feeders.ts", "src/lib/admissions/flags.ts:feederFlag"],
@@ -1097,11 +1097,11 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-RANK-TIES",
-    statement: "Ties share a rank; the next rank skips; a null is unranked.",
-    why: "Standard competition ranking; a missing figure is not a position.",
+    statement: "Ties share a rank; the next rank skips; a null is unranked. A ranking's place reads '=3rd' where the school shares it (headline and subject rankings, and the whole-school tile).",
+    why: "Standard competition ranking; a missing figure is not a position. 0.8 audit fixes (8, T2): headline rankings numbered by position, so tied schools didn't share a place.",
     appliesTo: "Every rank",
-    enforcedIn: [`${TVP}:rankByValue (325-333)`],
-    testCase: null,
+    enforcedIn: [`${TVP}:rankByValue`, "src/lib/chooser-sets.ts:resolveRankingSet", "src/lib/subject-ranking.ts:subjectRanking (targetTied)", "src/lib/view-series/tiles.ts:placeWord"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Nationally on Attainment 8 (one decimal, so ties are common) the place is 1 + the schools above, shared with every school on the same figure, and reads '=Nth' when shared; placeWord(3, true) is '=3rd'.", check: "rankTies" },
     origin: "Teacher view round 7 §9",
     status: "active",
   },

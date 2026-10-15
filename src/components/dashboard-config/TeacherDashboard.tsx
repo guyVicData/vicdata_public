@@ -539,6 +539,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               average: body.average ?? [],
               igcseOut: body.igcseOut ?? 0,
               targetIgcse: body.targetIgcse ?? false,
+              targetTied: body.targetTied ?? false,
             }
           : null;
       if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking, ...(body.profiles ? { profiles: body.profiles } : {}) });
@@ -2457,7 +2458,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           // The headline ranking's own rank, kept as a second tile.
           wholeSchool:
             chooserSet?.ranking?.targetRank
-              ? { rank: chooserSet.ranking.targetRank, total: chooserSet.ranking.ranked, measureName: headlineLabel || "the headline measure" }
+              ? { rank: chooserSet.ranking.targetRank, total: chooserSet.ranking.ranked, measureName: headlineLabel || "the headline measure", tied: chooserSet.ranking.targetTied }
               : null,
         }
       : null;

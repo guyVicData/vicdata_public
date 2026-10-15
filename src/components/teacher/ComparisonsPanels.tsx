@@ -59,7 +59,7 @@ import { ChangeList, ViewTitle, YearTable, type ChangeRow } from "./SeriesViews"
 import { DIRECTION_COLOUR, changeOver } from "@/lib/teacher-view-trend-styles";
 import { TrendLineToggle } from "./PanelFooter";
 import { AverageIcon, HorizontalBarsIcon, IconButton, MapPinIcon, Pill, PodiumIcon, RankListIcon, SchoolIcon, TableIcon, TilesIcon, TrendLineIcon } from "./PanelIcons";
-import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, placeWord, type NumberTile } from "./NumberTiles";
 import type { RankingFigures } from "@/lib/chooser-sets";
 import { PillMenu } from "./PillMenu";
 import { MenuHeading, MenuRow, PanelMenu, useDismiss } from "./PanelMenu";
@@ -210,7 +210,7 @@ export function ComparisonsPanels({
   // on the ranking's own measure (`measure`, the phase headline).
   // 0.6.5 S5: `noFigureNote` -- the school has no figure on the ranking's measure for a known
   // reason (no A-level entries at Post-16): the tiles and the rank chip give way to it.
-  rankingSet?: (RankingFigures & { measure: Measure; measureName: string; noFigureNote?: string | null; rankDetail?: string; averageDetail?: string; wholeSchool?: { rank: number; total: number; measureName: string } | null }) | null;
+  rankingSet?: (RankingFigures & { measure: Measure; measureName: string; noFigureNote?: string | null; rankDetail?: string; averageDetail?: string; wholeSchool?: { rank: number; total: number; measureName: string; tied?: boolean } | null }) | null;
   // 0.6.6: a ranking with a subject in focus is a ranking on the measure in view -- the focused
   // subject (exact qualification at Post-16), on the column's measure, across the WHOLE
   // filtered population (/api/teacher/subject-ranking, R-RANKING-SAMPLE). The column then
@@ -253,6 +253,7 @@ export function ComparisonsPanels({
           matched: sr.matched,
           ranked: sr.ranked,
           targetRank: sr.targetRank,
+          targetTied: sr.targetTied,
           target: sr.target ? { period: sr.target.period, value: sr.target.value } : null,
           targetSeries: sr.targetSeries,
           averageLatest: sr.averageLatest,
@@ -516,13 +517,13 @@ export function ComparisonsPanels({
           );
         }
         const tiles: NumberTile[] = [];
-        if (rs.targetRank) tiles.push({ key: "rank", icon: PodiumIcon, figure: ordinal(rs.targetRank), detail: rs.rankDetail ?? `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
+        if (rs.targetRank) tiles.push({ key: "rank", icon: PodiumIcon, figure: placeWord(rs.targetRank, rs.targetTied), detail: rs.rankDetail ?? `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
         // The set's average for the SAME year as the main figure (the graphs' figure too);
         // the latest-of-each average the rank is on only where that year has none.
         const avg = (rs.target ? rankingAverageAt(rs.target.period) : null) ?? rs.averageLatest;
         if (avg !== null) tiles.push({ key: "average", icon: AverageIcon, figure: rs.measure.format(avg), detail: rs.averageDetail ?? "average across this set" });
         // 0.6.6: the whole-school headline rank beside a subject ranking (view-series/tiles.ts' wholeSchoolTile).
-        if (rs.wholeSchool) tiles.push({ key: "whole-school", icon: SchoolIcon, figure: ordinal(rs.wholeSchool.rank), detail: `whole school: of ${rs.wholeSchool.total.toLocaleString()} on ${rs.wholeSchool.measureName}`, vars: { total: rs.wholeSchool.total } });
+        if (rs.wholeSchool) tiles.push({ key: "whole-school", icon: SchoolIcon, figure: placeWord(rs.wholeSchool.rank, rs.wholeSchool.tied), detail: `whole school: of ${rs.wholeSchool.total.toLocaleString()} on ${rs.wholeSchool.measureName}`, vars: { total: rs.wholeSchool.total } });
         // Pick, order, relabel and hide per the view's settings; unset = as built above.
         const tileVars = { subject: subjectLabel, school: targetName, year: rs.target ? academicYearLabel(rs.target.period) : undefined, measure: rs.measureName };
         return (
@@ -1065,6 +1066,7 @@ export function ComparisonsPanels({
           figures: {
             ranked: rankingSet.ranked,
             targetRank: rankingSet.targetRank,
+            targetTied: rankingSet.targetTied,
             target: rankingSet.target,
             averageLatest: rankingSet.averageLatest,
             measure: rankingSet.measure,

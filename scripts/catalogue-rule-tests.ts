@@ -961,6 +961,29 @@ const RUNNERS: Record<string, Runner> = {
   // ---------------------------------------------------------------- 0.7 admissions r2 (D7)
   // Every runner reads the screens' own functions (views-api.ts: what the routes answer) for a
   // real school and checks them against raw rows or round 1's own builders.
+  async rankTies({ ref }) {
+    const { resolveRankingSet, cachedRankingPopulation } = await import("../src/lib/chooser-sets");
+    const { defaultRankingFilters, matchesRanking, NATIONAL } = await import("../src/lib/comparator-chooser");
+    const { placeWord } = await import("../src/lib/view-series/tiles");
+    const { igcseEngland } = await import("../src/lib/igcse");
+    const nat = defaultRankingFilters(NATIONAL);
+    const r = await resolveRankingSet("137625", "The Chase", "ks4", nat, null);
+    const ig = await igcseEngland();
+    const pop = (await cachedRankingPopulation(null, "ks4", null)).filter((x) => matchesRanking(x, nat)).map((x) => x[0]).filter((u) => !ig.has(u));
+    const heads = await ref.lookupAcademicHeadline({ entityIds: pop, ksStage: "ks4" });
+    const latest = new Map<string, { period: number; value: number }>();
+    for (const h of heads) {
+      const v = Number(h.measures.attainment8_average);
+      if (!Number.isFinite(v)) continue;
+      const cur = latest.get(h.entity_id);
+      if (!cur || h.period > cur.period) latest.set(h.entity_id, { period: h.period, value: v });
+    }
+    const mine = latest.get("137625")!.value;
+    const above = Array.from(latest.values()).filter((x) => x.value > mine).length;
+    const same = Array.from(latest).filter(([u, x]) => u !== "137625" && x.value === mine).length;
+    const pass = r.targetRank === above + 1 && r.targetTied === same > 0 && (same === 0 || (r.note ?? "").includes(`ranks =${placeWord(above + 1).replace(/^=/, "")}`)) && placeWord(3, true) === "=3rd" && placeWord(5) === "5th";
+    return { pass, detail: fmt({ value: mine, place: r.targetRank, recomputed: above + 1, sharedWith: same, tied: String(r.targetTied), note: r.note }) };
+  },
   async admSexFilter() {
     // 0.8 audit fixes (6): every Admissions view is either split by the girls/boys filter throughout or
     // says it isn't; the split views' figures are girls' (or boys') at every point.

@@ -77,6 +77,8 @@ export type SubjectRanking = {
   // out, and whether the school itself is one (then it has no rank, no "out of" and no place).
   igcseOut?: number;
   targetIgcse?: boolean;
+  // 0.8 audit fixes (8): the school shares its place with another school in the window ("=3rd").
+  targetTied?: boolean;
 };
 
 export const RANK_WINDOW = 10;
@@ -417,6 +419,14 @@ function populationFigures(popKey: string, req: SubjectRankingRequest): Promise<
 /** The ranking: the function first, else the fallback. `popKey` names the population
  * (scope and filters), so the fallback's figures are shared between schools. */
 export async function subjectRanking(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
+  const out = await rankedWithIgcse(req, popKey);
+  // 0.8 audit fixes (8, T2): ties already share a place here; say so ("=3rd"). A tied school is
+  // next to the school in the order, so inside the window.
+  const tied = out.targetRank !== null && out.window.some((w) => w.urn !== req.targetUrn && w.rank === out.targetRank);
+  return { ...out, targetTied: tied };
+}
+
+async function rankedWithIgcse(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
   if (req.phase !== "ks4") return rankAnswered(req, popKey);
   // 0.8 audit fixes (1, R-IGCSE-EVERYWHERE): at GCSE the IGCSE rule's schools leave the population,
   // nationally, regionally and in any set; an IGCSE school itself is never placed.

@@ -25,7 +25,7 @@ export type NumberTile = {
 
 // 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd" (0.6.1 S3b: lives with the tiles'
 // series builder, which the hosts' tiles and the v2 renderer share).
-export { ordinal } from "@/lib/view-series/tiles";
+export { ordinal, placeWord } from "@/lib/view-series/tiles";
 
 // 0.6 snag 3 / 01, 0.6.1 S2 (D10): the tiles as the showing view's own Figures set them --
 // that view's params, by instance id (useActiveViewParams), picked, ordered, relabelled and
