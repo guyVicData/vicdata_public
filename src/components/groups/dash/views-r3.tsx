@@ -59,7 +59,8 @@ export function AcademicNow({ a, average }: { a: GroupAcademic; average: boolean
       })}
       <div className="border-t border-[var(--panel-border)] pt-2 text-[11.5px] leading-snug text-[var(--muted2)]">
         <Lbl>Value added</Lbl>
-        Progress 8 is published to {yr(a.va.p8.year)} (none since: no KS2 baseline); A-level value added to {yr(a.va.alevel.year)}. Both sit in the Value added view, never in a results chart.
+        {a.va.p8.year !== null ? `Progress 8 is published to ${yr(a.va.p8.year)} (none since: no KS2 baseline). ` : "Progress 8 isn't published for independent schools. "}
+        {a.va.alevel.year !== null ? `A-level value added to ${yr(a.va.alevel.year)}. ` : ""}Value added sits in its own view, never in a results chart.
       </div>
     </div>
   );
