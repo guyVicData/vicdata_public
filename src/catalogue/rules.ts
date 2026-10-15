@@ -80,8 +80,8 @@ export const RULES: Rule[] = [
   },
   {
     id: "R-KS4-POINTS-GCSE-FULL",
-    statement: "KS4 points come only from GCSE (9-1) Full Course entries with a clean single grade.",
-    why: "Short courses, Double Award and vocational qualifications have no place on the 9-1 points table; scoring them would invent figures.",
+    statement: "KS4 points come only from GCSE (9-1) Full Course entries with a clean single grade, and from a GCSE Double Award scored from its own grades as two entries, each the average of its two grades (R-DOUBLE-AWARD-POINTS; Column 1 too since 0.8 audit fixes, 2).",
+    why: "Short courses and vocational qualifications have no place on the 9-1 points table; scoring them would invent figures. A Double Award's pairs (\"98\") map onto it two grades at a time, as DfE scores it.",
     appliesTo: "M-KS4-POINTS; Column 1 geography (applicability)",
     enforcedIn: [
       "vicdata:ingest/academic_aggregates.py:139-140,285 (grade in points_table = single grades only)",
@@ -1402,9 +1402,9 @@ export const RULES: Rule[] = [
     statement:
       "A GCSE Double Award (grades published as pairs, \"98\" ... \"11\") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say \"different grading scale, not ranked\".",
     why: "The subject rollup scores single GCSE grades only, so Combined Science -- often a school's largest science entry -- read no average and was never ranked, in Teacher and SMT alike (SMT round 1 snag).",
-    appliesTo: "Teacher's subject points and rankings at GCSE; SMT's Subjects (DV-SMT-A-SUBJECTS)",
-    enforcedIn: ["src/lib/subject-grades.ts:doubleAwardPoints", "src/lib/academic-data-view.ts:fillDoubleAwardPoints", "src/lib/subject-ranking.ts:subjectRanking, figuresFor, rankByFunction"],
-    testCase: { urn: "137625", school: "The Chase; Acland Burghley 100053; Nunnery Wood 137051", phase: "ks4", subject: "Combined Science", expect: "Each school's Combined Science 2024/25 average equals the mean of its pair grades recomputed from the raw grade rows (each pair's two digits averaged, weighted by entries); the subject is ranked in its set and in England.", check: "doubleAwardPoints" },
+    appliesTo: "Teacher's subject points and rankings at GCSE, Column 1 included (0.8 audit fixes, 2); SMT's Subjects (DV-SMT-A-SUBJECTS)",
+    enforcedIn: ["src/lib/subject-grades.ts:doubleAwardPoints", "src/lib/academic-data-view.ts:fillDoubleAwardPoints", "src/lib/subject-ranking.ts:subjectRanking, figuresFor, rankByFunction", "src/lib/teacher-view-measures.ts:carriesOwnPoints"],
+    testCase: { urn: "137625", school: "The Chase; Acland Burghley 100053; Nunnery Wood 137051", phase: "ks4", subject: "Combined Science", expect: "Each school's Combined Science 2024/25 average equals the mean of its pair grades recomputed from the raw grade rows (each pair's two digits averaged, weighted by entries); the subject is ranked in its set and in England; Teacher's Column 1 shows the same latest and yearly average for the Double Award item, and a BTEC in the subject borrows none.", check: "doubleAwardPoints" },
     origin: "0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md)",
     status: "active",
   },

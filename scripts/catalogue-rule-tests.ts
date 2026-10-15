@@ -1412,7 +1412,19 @@ const RUNNERS: Record<string, Runner> = {
     const c = await smtCase("137625");
     const t = await subjectRanking({ urns: ["137625", ...c.set.urns], targetUrn: "137625", phase: "ks4", subject: "Combined Science", familyId: "sciences_maths", qualificationType: null, measure: { kind: "points" }, period: null }, "rule:teacher-ask");
     pass &&= t.targetRank !== null && t.target?.value === dbl?.avg;
-    return { pass, detail: fmt({ schools: out.join("; "), chaseRanked: dbl?.set && `${dbl.set.rank} of ${dbl.set.of}, England ${dbl.england?.rank} of ${dbl.england?.of}`, teacherAsk: `${t.targetRank} of ${t.ranked} (${t.target?.value})`, fsmq: fsmq ? `${fsmq.subject}: ${fsmq.reason}` : "none" }) };
+    // 0.8 audit fixes (2): Teacher's Column 1 scores it the same, its latest and each year; a BTEC
+    // in the same subject still borrows nothing.
+    const M = await import("../src/lib/teacher-view-measures");
+    const rows = (await fetchSubjectHeadlineForSchools(["137625"], "ks4")).get("137625") ?? [];
+    const item = { subject: "Combined Science", qualificationType: DOUBLE_AWARD_QUALIFICATION };
+    const own = M.ownHeadlineRows("ks4", item, rows, []);
+    const col1 = M.latestOwnPoints("ks4", item, own);
+    const col1At = M.subjectPointsAt("ks4", item, own.filter((h) => h.period === col1?.period));
+    const last = own.filter((h) => h.avgPointScore !== null).sort((x, y) => x.period - y.period).at(-1);
+    const btec = M.latestOwnPoints("ks4", { subject: "Combined Science", qualificationType: "BTEC Level 1/Level 2 First Award" }, own);
+    const column1 = col1 !== null && col1.value === last?.avgPointScore && col1At === col1.value && btec === null;
+    pass &&= column1;
+    return { pass, detail: fmt({ schools: out.join("; "), chaseRanked: dbl?.set && `${dbl.set.rank} of ${dbl.set.of}, England ${dbl.england?.rank} of ${dbl.england?.of}`, teacherAsk: `${t.targetRank} of ${t.ranked} (${t.target?.value})`, column1: col1 ? `${col1.value} in ${col1.period}, BTEC ${btec}` : "none", fsmq: fsmq ? `${fsmq.subject}: ${fsmq.reason}` : "none" }) };
   },
   async smtMix() {
     const a = await smtAcademicCase("137625", "gcse", null);
