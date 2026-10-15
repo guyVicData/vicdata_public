@@ -1,6 +1,9 @@
 // VicData 0.8 SMT r4 (stage I): the Admissions views' methods (src/catalogue/methods.ts), written from the code
 // (docs/v0.8/smt_r4_report_v1.md, the (i) audit). {placeholders} are filled by the host from what it drew.
+// 0.8 audit fixes (5, A1): a view's notes are part of its method -- the pool note only where the
+// view shows the pool, the group-share note only where it shows a share of the rivals.
 import type { ViewMethod } from "./methods";
+import { ADMISSIONS_NOTES } from "./notes";
 
 export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
   "DV-ADM-P-NOW": {
@@ -12,6 +15,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Pupil counts to whole numbers.", "Change since 2019/20 and the girls/boys split to the whole per cent."],
   },
   "DV-ADM-P-PIPELINE": {
+    notes: [ADMISSIONS_NOTES.pool],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}", "ONS births by local authority, calendar years (shire counties as the sum of their districts)", "ONS subnational population projections, age 10, by upper-tier LA (11+ only; off unless switched on)", "GIAS (Get Information about Schools): nearest schools, sector, age range, LA"],
     geography: "The feeder set: the Admissions lead's confirmed lists, else the nearest 15 state schools teaching Reception to Year 6. At 16+ the default for ages 11-15 is the nearest 10 state secondaries (11-16 schools first) plus your own school's Year 11, with the 15 nearest primaries below. Births come from the LAs those schools are in, weighted by their Reception pupils, or the lead's LA blend.",
     years: "Past pools: September 2020 to September 2026 entry (each counted a year before entry, censuses 2019/20 to {census}). Forward: 10 entry years from September 2027 at 11+ and 16+; at 4+ (and younger) up to the last year of births ONS has published (the line stops there). Drift and calibration use every census year 2019/20 to {census}.",
@@ -20,6 +24,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Pools and ranges shown to whole pupils (hover text).", "Headline change to the whole per cent.", "Percentiles interpolated between values (numpy's default method)."],
   },
   "DV-ADM-P-FUNNEL": {
+    notes: [ADMISSIONS_NOTES.pool],
     sources: ["ONS births by local authority, calendar years (shire counties as the sum of their districts)", "DfE school census (January) {censusPrev} via DfE school census, summed by area: pupils by single age in every school in the LA", "DfE school census (January), pupils by single age and sex, {census} (your own school)"],
     geography: "One area for births and pool: your school's own LA, or the lead's LA blend with the same weights. Not the feeder set.",
     years: "Entrants: the January {censusJanuary} census ({census}). Pool: the January {censusPrevJanuary} census ({censusPrev}). Births: the school year September X-1 to August X, where X = 2025 minus the entry age.",
@@ -28,6 +33,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Births and pool rounded to whole numbers.", "Weights shown to the whole per cent on the chip."],
   },
   "DV-ADM-P-MAP": {
+    notes: [ADMISSIONS_NOTES.pool],
     sources: ["DfE school census (January), pupils by single age and sex, {census2Before} and {census}", "GIAS (Get Information about Schools): school locations (easting/northing)", "National flag thresholds (VicData's national flag thresholds): the minimum cohort only"],
     geography: "The feeder set at the age a year below entry, without your own school; only schools with a map location.",
     years: "{census2Before} and {census} censuses (a two-year change).",
@@ -36,6 +42,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Pupils to whole numbers; the two-year change in the hover to the whole per cent."],
   },
   "DV-ADM-P-TABLE": {
+    notes: [ADMISSIONS_NOTES.pool],
     sources: ["DfE school census (January), pupils by single age and sex, {census2Before} and {census}", "GIAS (Get Information about Schools): location, sector, gender, LA", "National flag thresholds (minimum cohort)", "Age-band roll distributions {census} (national fifths) for XS-XL"],
     geography: "The feeder set at the age a year below entry, without your own school.",
     years: "{census2Before} and {census} censuses.",
@@ -48,7 +55,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     geography: "Your school; the feeder set that holds Reception (the youngest rung); the rival set.",
     years: "Each school's latest census year with pupils (normally {census}); your shape history from 2019/20.",
     leftOut: ["Ages 18 and over are not drawn (the classifier already ignores them).", "The local shape is not narrowed by the sector or boarding filters (the rivals are).", "The local shape counts every saved feeder list's schools, boarding feeders included, even at a day school (the pipeline leaves a day school's boarding list out)."],
-    steps: ["Your school: pupils by age and sex (full- and part-time) from your latest census with pupils, drawn up to age 17, with the entry age (and 16, if you have a sixth form) highlighted.", "Shape: the shared classifier names the shape of your year groups from ages 5 to 17, with the year it last changed.", "Size: your roll in each phase band against national fifths of schools teaching that phase (XS to XL).", "Local shape: add up the age profiles of every school in the youngest feeder set (the schools holding Reception) and run the same classifier on the total. Only ages 4 to a year below entry are drawn.", "Rivals: each rival's shape and its size in the entry point's phase band (national fifths), in the rival list's own order. Shapes are described, never ranked."],
+    steps: ["Your school: pupils by age and sex (full- and part-time) from your latest census with pupils, drawn up to age 17, with the entry age (and 16, if you have a sixth form) highlighted.", "Shape: the shared classifier names the shape of your year groups from ages 5 to 17, with the year it last changed.", "Size: your roll in each phase band against national fifths of schools teaching that phase (XS to XL).", "Local shape: add up the age profiles of every school in the youngest feeder set (the schools holding Reception) and run the same classifier on the total. Only ages 4 to a year below entry are drawn. At 16+ the caption names the set counted (the nearest primaries, unless a list is saved) and the ages it holds.", "Rivals: each rival's shape and its size in the entry point's phase band (national fifths), in the rival list's own order. Shapes are described, never ranked."],
     rounding: ["Counts to whole numbers (hover)."],
   },
   "DV-ADM-P-ENTRY-LINE": {
@@ -76,6 +83,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Whole numbers."],
   },
   "DV-ADM-P-POOL-INDEXED": {
+    notes: [ADMISSIONS_NOTES.pool],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census} (feeder schools)", "DfE school census via DfE school census, summed by area: pupils by single age per LA and per region, each year held"],
     geography: "Your feeder set (the set holding the age a year below entry), your school's LA, and England (the nine regions added up).",
     years: "Census years 2019/20 onwards, as far as each line has figures.",
@@ -84,6 +92,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Index values to whole numbers on the axis; counts in the hover to whole numbers."],
   },
   "DV-ADM-P-POOL-TABLE": {
+    notes: [ADMISSIONS_NOTES.pool],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census} (feeder schools)", "DfE school census via DfE school census, summed by area: pupils by single age per LA and per region"],
     geography: "Your feeder set, your school's LA, and England (nine regions added up).",
     years: "Every census year any of the three lines holds, 2019/20 onwards.",
@@ -100,6 +109,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["The percentage to 1 decimal place.", "Counts in the hover to whole numbers."],
   },
   "DV-ADM-P-HOLD-LINE": {
+    notes: [ADMISSIONS_NOTES.pool],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}", "ONS births by local authority (for the later years of the pool)"],
     geography: "Your school against the Pipeline's feeder set (and births blend).",
     years: "Now: {census} entry cohort against the September 2025 pool. Forward: September 2027 to the last pool year shown.",
@@ -108,6 +118,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Shares to 1 decimal place."],
   },
   "DV-ADM-P-HOLD-TABLE": {
+    notes: [ADMISSIONS_NOTES.pool],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}", "ONS births by local authority (for the later years of the pool)"],
     geography: "Your school against the Pipeline's feeder set (and births blend).",
     years: "Now (September 2025) then September 2027 onwards.",
@@ -116,6 +127,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Shares and ranges to 1 decimal place."],
   },
   "DV-ADM-M-NOW": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}", "GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
     years: "The latest census year held ({census}), against the first (2019/20).",
@@ -124,6 +136,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Share to 1 decimal place; change in share to 1 decimal place (points)."],
   },
   "DV-ADM-M-DONUT": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}", "GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
     years: "The latest census year held ({census}).",
@@ -132,6 +145,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Share to 1 decimal place; total to whole pupils."],
   },
   "DV-ADM-M-BARS": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}", "GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location", "DfE performance tables: KS2 , KS4 and KS5 headlines, latest results year"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector). Results ranks are among all schools in England, and in each school's region.",
     years: "Latest census year ({census}), with the year before for the trend arrow; the latest results year for the ranks.",
@@ -140,6 +154,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Share to the whole per cent.", "Trend hover to 1 decimal place."],
   },
   "DV-ADM-M-MAP": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}", "GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector). Only schools with a map location.",
     years: "Latest census year ({census}).",
@@ -148,6 +163,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Share to 1 decimal place."],
   },
   "DV-ADM-M-TABLE": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}", "GIAS (Get Information about Schools): nearest schools, sector, boarding, gender, location", "DfE performance tables (latest results year)", "Age-band roll distributions {census} (national fifths)"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
     years: "Latest census year ({census}); latest results year.",
@@ -228,6 +244,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Changes to 1 decimal place."],
   },
   "DV-ADM-M-SHARE-LINE": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
     years: "Census years 2019/20 to {census}.",
@@ -236,6 +253,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Share to 1 decimal place."],
   },
   "DV-ADM-M-SHARE-NUM": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
     years: "Census years 2019/20 to {census}.",
@@ -244,6 +262,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Counts to whole numbers; share to 1 decimal place."],
   },
   "DV-ADM-M-SHARE-RANKS": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 to {census}"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
     years: "Census years 2019/20 to {census}.",
@@ -252,6 +271,7 @@ export const METHODS_ADMISSIONS: Record<string, ViewMethod> = {
     rounding: ["Whole numbers."],
   },
   "DV-ADM-M-SHARE-CHANGE": {
+    notes: [ADMISSIONS_NOTES.groupShare],
     sources: ["DfE school census (January), pupils by single age and sex, 2019/20 and {census}"],
     geography: "Your school plus the rival set (the lead's list, else the 10 nearest schools teaching the entry year and the year after, either sector).",
     years: "First census year held (2019/20) to the latest ({census}).",

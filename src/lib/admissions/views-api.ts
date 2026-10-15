@@ -206,8 +206,13 @@ const bandForEntry = (age: number): AgeBandKey => (age <= 4 ? "early_years" : ag
 
 export async function shapeView(urn: string, ep: EntryPoint, lists: SavedList[], o: { filters?: AdmissionsFilters } = {}) {
   const candidates = await nearbyCandidates(urn);
-  const sets = rungSetsFromLists(ep, lists, defaultRungSets(urn, ep, candidates));
-  const feeders = Array.from(new Set(sets.get(Math.min(...sets.keys())) ?? []));
+  const defaults = defaultRungSets(urn, ep, candidates);
+  const sets = rungSetsFromLists(ep, lists, defaults);
+  const youngest = Math.min(...sets.keys());
+  const feeders = Array.from(new Set(sets.get(youngest) ?? []));
+  // 0.8 audit fixes (5, A8): which set the local shape counts -- a saved list, or the defaults (at 16+
+  // the youngest rung's defaults are primaries) -- so the caption can name it.
+  const localFromSaved = sets.get(youngest) !== defaults.get(youngest);
   const { rivals } = await rivalSet(urn, ep, lists, o.filters ?? DEFAULT_FILTERS);
   const all = Array.from(new Set([urn, ...feeders, ...rivals]));
   const [census, info] = await Promise.all([cachedCensus(all), fetchSchoolInfo(all)]);
@@ -221,7 +226,7 @@ export async function shapeView(urn: string, ep: EntryPoint, lists: SavedList[],
     entry: ep,
     shapeByYear: byYear,
     size: own ? sizeByBand(own.ageGender, dist) : [],
-    localShape: { schools: feeders.length, shape: localShape(feederCounts) },
+    localShape: { schools: feeders.length, shape: localShape(feederCounts), saved: localFromSaved },
     // Described, not ranked (R-ADM-SHAPE-NOT-RANKED): the rivals in the set's own order.
     rivals: rivals.map((u) => ({ urn: u, name: info.get(u)?.name ?? u, shape: census.get(u) ? shapeOf(census.get(u)!.ageGender) : null, profile: profileOf(census.get(u)?.ageGender), size: sizes.get(u)?.badge ?? null })),
     note: ADMISSIONS_NOTES.shape,

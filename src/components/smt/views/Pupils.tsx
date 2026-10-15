@@ -132,7 +132,7 @@ export function EntryPoints({ p }: { p: Pupils }) {
                 <tr key={r.entry} className="border-b border-[var(--panel-border)] last:border-0">
                   <Td className="font-bold text-[var(--fg)]">{r.label}</Td>
                   <Td>{fmt(r.cohort, "pupils")}</Td>
-                  <Td title={r.poolSource ? `${r.poolSource === "counted" ? ADMISSIONS_NOTES.counted : ADMISSIONS_NOTES.births}` : undefined}>
+                  <Td title={r.poolSource ? `${r.poolSource === "counted" ? ADMISSIONS_NOTES.counted : r.age <= 4 ? ADMISSIONS_NOTES.births : ADMISSIONS_NOTES.birthsScaled}` : undefined}>
                     {fmt(r.pool, "pupils")} {r.poolYear ? <span className="text-[var(--muted2)]">· {r.poolYear} entry{r.poolSource === "births" ? ", from births" : ""}</span> : null}
                   </Td>
                   <Td>

@@ -649,7 +649,7 @@ function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode
   if (dv.startsWith("DV-ADM-M-ACAD")) return { visible: <AcademicFooter explorerHref={explorerHref(c)} /> };
   if (dv === "DV-ADM-M-BARS" || dv === "DV-ADM-M-TABLE" || dv === "DV-ADM-M-DONUT" || dv === "DV-ADM-M-MAP")
     return { caption: "Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools" };
-  if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "Roll trends sit on the same rail" };
+  if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "The entry age band's roll sits on the same rail" };
   return {};
 }
 
@@ -659,7 +659,8 @@ function sourceOf(dv: string, vars: Record<string, string | number | null> = {})
   const m = d?.measures.join(", ");
   return (
     <>
-      {d?.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {dv.startsWith("DV-ADM-P") ? ADMISSIONS_NOTES.pool : ADMISSIONS_NOTES.groupShare} <span className="opacity-70">({m})</span>
+      {/* 0.8 audit fixes (5, A1): the pool and group-share notes come with the view's method, only where they apply. */}
+      {d?.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. <span className="opacity-70">({m})</span>
       {/* 0.8 SMT r4 (stage I): how it is calculated (src/catalogue/methods-admissions.ts). */}
       <MethodNote id={dv} vars={vars} />
     </>

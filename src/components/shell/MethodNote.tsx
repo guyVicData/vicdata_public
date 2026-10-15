@@ -30,6 +30,11 @@ export function MethodNote({ id, vars, method, projection }: { id?: string | nul
   if (!m) return null;
   return (
     <span data-method={id ?? "generated"} className="mt-2 block border-t border-[var(--panel-border)] pt-2 text-[11px] leading-relaxed text-[var(--muted2)]">
+      {m.notes?.map((n) => (
+        <span key={n} data-method-note="" className="mb-1 block text-[var(--chip-fg)]">
+          {n}
+        </span>
+      ))}
       <span className="block">
         <b className="font-semibold text-[var(--chip-fg)]">Sources.</b> {m.sources.join("; ")}.
       </span>

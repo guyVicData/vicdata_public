@@ -286,7 +286,7 @@ export function ShareTrend({ m, fullscreen, room }: { m: MarketView; fullscreen:
 }
 
 export function RollTrend({ m, fullscreen, room }: { m: MarketView; fullscreen: boolean; room?: number }) {
-  // Whole-school rolls: the school in the accent, each rival a grey line (the census's own rolls).
+  // The entry point's age band (not the whole roll): the school in the accent, each rival a grey line.
   const series = m.extras.map((e) => {
     const rows = m.ageBand.rows.filter((r) => r.urn === e.urn).sort((a, b) => a.period - b.period);
     return { id: e.urn, label: m.schools[e.urn]?.name ?? e.urn, colour: e.urn === m.urn ? "var(--accent)" : "var(--adm-grey-2)", width: e.urn === m.urn ? 2.6 : 1.2, points: rows.map((r) => ({ x: r.period, y: r.count })) };

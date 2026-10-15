@@ -75,7 +75,11 @@ export const ADMISSIONS_NOTES = {
   pool: "This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come.",
   // R-ADM-LADDER: the certainty of each year, by its source
   counted: "Counted: children in these schools now (the January census), followed forward.",
-  births: "From births: the area's calendar-year births, scaled to these schools by how many of them have reached Reception in past years. A range, not a count.",
+  // 0.8 audit fixes (5, A2): at 4+ (and younger) the births are not scaled to the schools; the ratio
+  // sets only the range. From 11+ the ladder does scale them (ladder.ts birthsPoint), so that entry
+  // keeps its own words (birthsScaled).
+  births: "Births in the local authority blend; the Reception-to-births ratio sets the range.",
+  birthsScaled: "From births: the local authority blend's births, scaled to these schools by the ratio of their Reception pupils to births in past years, then carried forward. A range, not a count.",
   projection: "From ONS projections (age 10, by local authority): a wider band, shown only on request.",
   // R-ADM-BIRTH-SPLIT
   birthSplit: "Births are counted by calendar year; a school year runs September to August, so each year's pool is 8/12 of one year's births plus 4/12 of the year before.",
