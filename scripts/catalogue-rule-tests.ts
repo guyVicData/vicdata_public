@@ -1702,6 +1702,47 @@ const RUNNERS: Record<string, Runner> = {
     const pass = mismatch.length === 0 && meets && contains && unborn && mixOk && drawn;
     return { pass, detail: fmt({ p5: mismatch.length ? `DIFFERS: ${mismatch.join("; ")}` : "9 / 9 equal", meetsAtLatestCount: meets, bandContainsLine: contains, unbornFlagged: `${unborn} (primary from ${fp.unbornFrom})`, labelDrawn: drawn, leightonMix: mix }) };
   },
+  // R-METHOD-PRESENT (0.8 SMT r4, stage I): every registered view -- Teacher, Admissions, SMT (groups'
+  // views are SMT's) -- has a method: sources named, the area, the years, at least one numbered step, and
+  // no unfilled {placeholder} once filled with nothing (the hosts' fallback words).
+  async methodPresent() {
+    const { DATAVIEWS } = await import("../src/catalogue/dataviews");
+    const { METHODS, methodOf, methodText } = await import("../src/catalogue/methods");
+    const missing: string[] = [];
+    const thin: string[] = [];
+    for (const d of DATAVIEWS) {
+      const m = METHODS[d.id];
+      if (!m) {
+        missing.push(d.id);
+        continue;
+      }
+      const filled = methodOf(d.id, {})!;
+      const ok = m.sources.length > 0 && m.sources.every((x) => x.trim().length > 3) && m.geography.trim() && m.years.trim() && m.steps.length >= 1 && m.steps.every((x) => x.trim().length > 10) && !/[{}]/.test(methodText(filled));
+      if (!ok) thin.push(d.id);
+    }
+    const extra = Object.keys(METHODS).filter((k) => !DATAVIEWS.some((d) => d.id === k));
+    return { pass: missing.length === 0 && thin.length === 0 && extra.length === 0, detail: fmt({ views: DATAVIEWS.length, withMethod: DATAVIEWS.length - missing.length, missing: missing.join(" ") || "none", incomplete: thin.join(" ") || "none", notAView: extra.join(" ") || "none" }) };
+  },
+  // R-METHOD-SETTINGS: the forward view's method is generated from the projection's settings -- every
+  // setting value appears in its text, and changing a setting in a fixture changes the text to match.
+  async methodSettings() {
+    const { projectionMethod, methodText } = await import("../src/catalogue/methods");
+    const base = {
+      scope: "around" as const, radius: "5 km", laName: "Reading", ages: "11–15", lsoaCount: 118, mixLine: "Within 5 km: Wokingham 49%, Reading 46%, other 5%", latestYear: 2025, horizonEnd: 2036, bandMissing: false, settingsVersion: 2,
+      settings: { exceptional_years: [2020, 2021, 2022, 2023, 2024], exceptional_reason: "Covid (years to mid-2020 and 2021) and exceptionally high migration (2022-24)", first_rate_year: 2013, middle_pre_years: 5, weight_pre: 1, weight_post: 2, band_includes_exceptional: true, scenario_years: [2022, 2023, 2024], scenario_label: "if migration returned to 2022-24 levels", horizon_years: 11 },
+      yearsUsed: { normal: [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2025], middle_weights: { "2015": 1, "2016": 1, "2017": 1, "2018": 1, "2019": 1, "2025": 2 }, band: [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025], scenario: [2022, 2023, 2024] },
+      sources: { la_estimates: { first: 2012, latest: 2025, edition: "Nomis NM_2002_1" }, lsoa_estimates: { first: 2011, latest: 2024, edition: "mid-2022 (revised Nov 2025) to mid-2024" } },
+    };
+    const t1 = methodText(projectionMethod(base));
+    const values = [String(base.settingsVersion), "2020, 2021, 2022, 2023 and 2024", base.settings.exceptional_reason, String(base.settings.first_rate_year), `weight ${base.settings.weight_pre}`, `weight ${base.settings.weight_post}`, "2022, 2023 and 2024", base.settings.scenario_label, `${base.settings.horizon_years} years on`, String(base.settings.middle_pre_years), "including 2020, 2021, 2022, 2023 and 2024"];
+    const absent = values.filter((v) => !t1.includes(v));
+    // A changed fixture: one more exceptional year (2019), weight 3 for the recent years, an 8-year horizon,
+    // a band of normal years only.
+    const changed = { ...base, horizonEnd: 2033, settings: { ...base.settings, exceptional_years: [2019, 2020, 2021, 2022, 2023, 2024], weight_post: 3, horizon_years: 8, band_includes_exceptional: false } };
+    const t2 = methodText(projectionMethod(changed));
+    const moved = t2 !== t1 && t2.includes("We leave out 2019, 2020, 2021, 2022, 2023 and 2024") && t2.includes("2014, 2015, 2016, 2017 and 2018, at weight 1") && t2.includes("2025 weight 3") && t2.includes("8 years on") && t2.includes("any single normal year's rates since 2013") && !t2.includes("including 2019");
+    return { pass: absent.length === 0 && moved, detail: fmt({ everySettingInText: absent.length ? `missing ${absent.join(" | ")}` : "yes", changedFixtureChangesText: moved }) };
+  },
   // R-SMT-NOT-A-FORECAST: the wording rule. "forecast" only in "not a forecast", never "your roll", and
   // the method note's sentences, word for word, in SMT_NOTES (locked) and on the forward views.
   async smtNotAForecast() {

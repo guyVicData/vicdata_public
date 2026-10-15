@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DATAVIEWS, MEASURES, RENDERERS, RULES, measureById, type DashboardConfig, type Dataview, type Geography } from "../src/catalogue";
+import { methodOf } from "../src/catalogue/methods";
 
 const ROOT = path.resolve(__dirname, "..");
 const OUT = path.join(ROOT, "docs/catalogue");
@@ -199,6 +200,11 @@ function dataviewsMd(used: Map<string, string[]> | null) {
       ["Rules", d.rules],
       ["Used on", used ? (used.get(d.id) ?? ["not placed"]) : "(dashboards not seeded yet)"],
       ["Note", d.note],
+      // 0.8 SMT r4 (stage I, R-METHOD-PRESENT): how the view is calculated, as its (i) shows it.
+      ["Method", (() => {
+        const m = methodOf(d.id, {});
+        return m ? `${m.steps.map((x, i) => `${i + 1}. ${x}`).join("<br>")}<br>Sources: ${m.sources.join("; ")}${m.rounding.length ? `<br>Rounding: ${m.rounding.join(" ")}` : ""}` : "—";
+      })()],
     ]),
   ).join("\n");
   const live = DATAVIEWS.filter((d) => d.status === "live").length;

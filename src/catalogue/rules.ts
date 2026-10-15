@@ -1611,6 +1611,28 @@ export const RULES: Rule[] = [
     origin: "0.8 SMT round 4",
     status: "active",
   },
+  {
+    id: "R-METHOD-PRESENT",
+    statement:
+      "Every catalogue view (Teacher, Admissions, SMT; groups' views are SMT's) has a method (src/catalogue/methods.ts): the sources with their editions, read from the data where it carries them; the area; the years used and any left out, with the reason; the calculation as numbered plain-English steps; and any rounding or suppression. The footer's source (i) shows it, the steps under a collapsible \"How it is calculated\", scrolling, never cut off, on the phone too. Where the code does something the (i) didn't say (a rounding, a filter, an exclusion, double award as two entries, a small-number rule), the method says it.",
+    why: "A standing rule from 0.8 SMT r4: every chart says exactly how it was calculated.",
+    appliesTo: "Every dataview",
+    enforcedIn: ["src/catalogue/methods.ts, methods-teacher.ts, methods-admissions.ts, methods-smt.ts", "src/components/shell/MethodNote.tsx", "src/components/shell/PanelFooter.tsx:SourceNote", "src/components/teacher/ColumnPanels.tsx:withMethod", "src/components/admissions/AdmissionsDashboard.tsx:sourceOf", "src/components/smt/SmtDashboard.tsx:sourceOf"],
+    testCase: { urn: "137625", school: "(the catalogue)", expect: "Every DATAVIEWS id has a method with at least one source, an area, years and at least one numbered step, and none is left with a bare {placeholder}; no method names a view the catalogue doesn't hold.", check: "methodPresent" },
+    origin: "0.8 SMT round 4 (stage I)",
+    status: "active",
+  },
+  {
+    id: "R-METHOD-SETTINGS",
+    statement:
+      "A view whose numbers come from stored settings has its method generated from them, never typed: the forward view's (projectionMethod) is built from area_projection's settings in the method note's (i) shape, so every setting value appears in the text and changing a setting changes it.",
+    why: "The text can't drift from the maths.",
+    appliesTo: "DV-SMT-C-PROJECTION",
+    enforcedIn: ["src/catalogue/methods.ts:projectionMethod", "src/components/smt/SmtDashboard.tsx:sourceOf"],
+    testCase: { urn: "110110", school: "(a fixture)", expect: "Every setting of version 2 (exceptional years and reason, first rate year, the five pre years at weight 1, 2025 at weight 2, the band years, the scenario years and label, the horizon, the version) appears in the text; one more exceptional year, weight 3, an 8-year horizon and a normal-years band change it to match.", check: "methodSettings" },
+    origin: "0.8 SMT round 4 (stage I)",
+    status: "active",
+  },
   // ---------------------------------------------------------------- 0.8 SMT round 1
   {
     id: "R-SMT-LEVEL-CHIPS",

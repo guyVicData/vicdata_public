@@ -43,6 +43,7 @@ import type { Pupils } from "@/lib/smt/pupils";
 import type { Context, ContextArea } from "@/lib/smt/context";
 import type { ContextMap } from "@/lib/smt/context-map";
 import { AreaPill, type CatchmentInfo } from "./Catchment";
+import { MethodNote } from "@/components/shell/MethodNote";
 import { freshToken } from "@/components/admissions/member";
 import { loadSmtMember, type SmtMember, type SmtMemberState } from "./member";
 import { DEFAULT_SET_LABEL, useSmtSet } from "./useSmtSet";
@@ -665,6 +666,25 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
 
 const areaLabelOf = (c: Ctx) => (c.level.area ? (c.school.areas[c.level.phase === "gcse" ? "gcse" : "post16"].find((a) => a.id === c.level.area)?.label ?? null) : null);
 
+// 0.8 SMT r4 (stage I): what the methods' {placeholders} read on SMT (src/catalogue/methods-smt.ts).
+function methodVars(c: Ctx): Record<string, string | number | null> {
+  const x = c.context.status === "ready" ? c.context.data : null;
+  const stage = c.level.phase === "gcse" ? "ks4" : c.level.phase === "post16" ? "ks5" : c.level.phase === "primary" ? "ks2" : null;
+  const latest = stage ? c.school.latest[stage]?.period : undefined;
+  return {
+    setLabel: c.set.label,
+    la: c.school.laName,
+    radius: x?.radius ?? null,
+    ages: x?.agesWord ?? null,
+    year: latest !== undefined ? periodLabel(latest) : null,
+    census: c.school.census.at(-1) ? periodLabel(c.school.census.at(-1)!.period) : null,
+    lsoaYear: x?.sources.lsoaYear ?? null,
+    laYear: x?.sources.laYear ?? null,
+    iodYear: x?.sources.iodYear ?? null,
+    fsmYear: x?.sources.fsmYear !== null && x?.sources.fsmYear !== undefined ? periodLabel(x.sources.fsmYear) : null,
+  };
+}
+
 /** The source behind each panel's "i": the view's title and its measures' citations; Context's names
  * its sources and editions, the years read from the data (wording rule 6). */
 function sourceOf(dv: string, c?: Ctx): ReactNode {
@@ -673,9 +693,16 @@ function sourceOf(dv: string, c?: Ctx): ReactNode {
   if (dv.startsWith("DV-SMT-C-") && c && c.context.status === "ready") {
     // 0.8 SMT r4 (F2): the projection starts from the latest count, so the two lines always meet: round
     // 3's join note (R-SMT-CONTEXT-PROJECTION-JOIN) is retired.
+    const x = c.context.data;
+    const f = x.forward;
     return (
       <>
-        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {c.context.data.notes.sources} <span className="opacity-70">({d.measures.join(", ")})</span>
+        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {x.notes.sources} <span className="opacity-70">({d.measures.join(", ")})</span>
+        {dv === "DV-SMT-C-PROJECTION" && f ? (
+          <MethodNote projection={{ scope: f.scope, radius: x.area === "around" ? x.radius : null, laName: c.school.laName, ages: x.agesWord, lsoaCount: f.lsoaCount, mixLine: x.now.mix?.line ?? null, latestYear: f.latestYear, horizonEnd: f.horizonEnd, bandMissing: f.bandMissing, settingsVersion: f.settingsVersion, settings: f.settings, yearsUsed: f.yearsUsed, sources: f.sources }} />
+        ) : (
+          <MethodNote id={dv} vars={methodVars(c)} />
+        )}
       </>
     );
   }
@@ -683,6 +710,7 @@ function sourceOf(dv: string, c?: Ctx): ReactNode {
   return (
     <>
       {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {Array.from(new Set(d.measures.map((m) => cites[m]).filter(Boolean))).join("; ")}. <span className="opacity-70">({d.measures.join(", ")})</span>
+      {c && <MethodNote id={dv} vars={methodVars(c)} />}
     </>
   );
 }

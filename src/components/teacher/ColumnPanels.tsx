@@ -37,6 +37,7 @@ import { renderView, useViewsV2 } from "@/components/views";
 import { instanceRail, isPresetInstance, liveOwnView, ownDefault, shownInstance, type ViewInstance } from "@/components/views/rail";
 import { trendNoteFor, specYears } from "@/catalogue/notes";
 import type { ViewSpec } from "@/catalogue/viewspec";
+import { MethodNote } from "@/components/shell/MethodNote";
 
 // What each panel is called in its toggle's label.
 const PANEL_NAME: Record<PanelId, string> = { current: "current", trend: "trends" };
@@ -102,6 +103,18 @@ function withTrendNote(source: ReactNode, years: readonly number[] | null): Reac
     <>
       {source}
       <span className="mt-1.5 block">{note}</span>
+    </>
+  );
+}
+
+// 0.8 SMT r4 (stage I): how the view is calculated (src/catalogue/methods-teacher.ts), after its source.
+// Only a view the catalogue registers (spec.preset) has one; the (i) loads the text when opened.
+function withMethod(source: ReactNode, preset: string | null): ReactNode {
+  if (!source || !preset) return source;
+  return (
+    <>
+      {source}
+      <MethodNote id={preset} />
     </>
   );
 }
@@ -249,7 +262,7 @@ export function ColumnPanels({
             }
             controls={panel.controls}
             caption={panel.summary}
-            source={withTrendNote(panel.source, specYears(spec, panel.gradingYears))}
+            source={withMethod(withTrendNote(panel.source, specYears(spec, panel.gradingYears)), spec?.preset ?? null)}
             footerActions={({ fullscreen }) => (
               <>
                 {/* In fullscreen the note has its own place in the side rail (Part 4). */}

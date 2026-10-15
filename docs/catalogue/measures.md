@@ -2,7 +2,7 @@
 
 # Measures
 
-What is counted, at what grain, where, with which honest number types. 14 measures.
+What is counted, at what grain, where, with which honest number types. 23 measures.
 
 ## Summary
 
@@ -22,6 +22,15 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | M-KS5-COUNTS | Post-16 grade counts | academic.results (counts) | ks5 | 2021/22–2024/25 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | totals, rate |
 | M-ROLLS | Rolls | rolls | — | 2019–2025 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | totals, pct_change, market_share, index100 |
 | M-BIRTHS | Live births | social.births | — | 2021–2025 | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | totals, pct_change, index100 |
+| M-ADM-PUPILS | Pupils by age | admissions.pupils | — | 2019–2025 | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | totals, pct_change, index100, rank |
+| M-ADM-POOL | Pipeline (the pool) | admissions.pipeline | — | 2020–2036 | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | totals, pct_change, index100, market_share |
+| M-ADM-MARKET | Market share | admissions.market | — | 2019–2025 | ✓ | ✗ | ✓ | ✗ | ✗ | ✗ | totals, market_share, pct_change, change_pp, index100, rank |
+| M-ADM-RIVAL-RESULTS | Rivals' results | admissions.rivals | — | 2022–2024 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | points, change_points, rank |
+| M-SMT-SCHOOL | The school: roll, phases and size | smt.school | — | 2019–2025 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | totals, pct_change, index100, rank |
+| M-SMT-RESULTS | Headline results and ranks | smt.results | — | 2021–2024 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | points, rate, change_points, change_pp, rank |
+| M-SMT-VA | Value added | smt.value_added | — | 2021–2024 | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | points, rank |
+| M-SMT-SUBJECTS | Subject areas and subjects | smt.subjects | — | 2021–2024 | ✓ | ✗ | ✓ | ✗ | ✗ | ✓ | totals, points, change_points, rank |
+| M-SMT-AREA | The area around the school | smt.area | — | 2011–2025 | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | totals, pct_change, index100 |
 
 ## Cards
 
@@ -346,3 +355,210 @@ What is counted, at what grain, where, with which honest number types. 14 measur
 | Known gaps | - Not in the Data View or Teacher view at all today.<br>- No region or England rows.<br>- No share: capture rate (intake ÷ births) is a future measure, not a share.<br>- No single fetch function; no views registered yet (combinations A10). |
 | Briefing | none |
 | Citation | ONS live births |
+
+### M-ADM-PUPILS — Pupils by age
+
+| Field | Content |
+| --- | --- |
+| Definition | Pupils at one age (the entry age, or a rung age) in the January census: full-time from age 4, plus part-time at 2-3 (src/lib/admissions/cohort.ts). |
+| Data | admissions.pupils |
+| Grain | School × single age × sex × census year |
+| Sources | dfe_school_census |
+| Keying | urn |
+| Years | 2019 → 2025. January census, ages at 31 August. |
+| School | ✓ |
+| Subject area | ✗ Not a subject measure |
+| Set | ✓ |
+| LA | ✓ age_profile_aggregates (ages 5-15; years as synced) |
+| Region | ✓ age_profile_aggregates |
+| England | ✓ the sum of the nine regions |
+| Honest number types | totals, pct_change, index100, rank |
+| Rules | R-ADM-FAMILY-PUPILS, R-ADM-JOINERS-ESTIMATE |
+| Fetched by | - src/lib/admissions/data.ts:cachedCensus<br>- src/app/api/admissions/pipeline/route.ts<br>- src/app/api/admissions/market-share/route.ts |
+| Known gaps | - No boarders by age (whole school only).<br>- LA and England by single age only for the years age_profile_aggregates holds. |
+| Briefing | none |
+| Citation | DfE school census (January), pupils by age |
+
+### M-ADM-POOL — Pipeline (the pool)
+
+| Field | Content |
+| --- | --- |
+| Definition | The children who will reach the entry point each September: counted in the rung schools now, then from births in the LA blend, ranges from observed drift (src/lib/admissions/ladder.ts). A pool, never an intake. |
+| Data | admissions.pipeline |
+| Grain | School's sets × entry year |
+| Sources | dfe_school_census, ons_births, ons_population_projections |
+| Keying | urn |
+| Years | 2020 → 2036. Past pools 2020-2026; forward 10 years (Reception to the last birth year). |
+| School | ✗ Not held |
+| Subject area | ✗ Not a subject measure |
+| Set | ✓ |
+| LA | ✓ births by LA |
+| Region | ✗ Not held |
+| England | ✗ Not held |
+| Honest number types | totals, pct_change, index100, market_share |
+| Rules | R-ADM-FAMILY-PIPELINE, R-ADM-LADDER, R-ADM-BIRTH-SPLIT, R-ADM-DRIFT-RANGE, R-ADM-POOL-NOT-INTAKE, R-ADM-HOLD-SHARE |
+| Fetched by | - src/lib/admissions/pipeline.ts:buildPipeline<br>- src/app/api/admissions/pipeline/route.ts |
+| Known gaps | - No catchment births (LA only).<br>- No Reception projections beyond the last birth year.<br>- Feeder relationships are not in the data: lists are the lead's, defaults are nearby schools. |
+| Briefing | none |
+| Citation | DfE school census (January); ONS births by LA; ONS projections (age 10) |
+
+### M-ADM-MARKET — Market share
+
+| Field | Content |
+| --- | --- |
+| Definition | The school's pupils at the entry age (and its age band) as a share of the same ages across the rivals plus the school, each census year (src/lib/admissions/shares.ts). A share of this group, not the local market. |
+| Data | admissions.market |
+| Grain | Rival set × census year |
+| Sources | dfe_school_census |
+| Keying | urn |
+| Years | 2019 → 2025 |
+| School | ✓ |
+| Subject area | ✗ Not a subject measure |
+| Set | ✓ |
+| LA | ✗ Not held |
+| Region | ✗ Not held |
+| England | ✗ Not held |
+| Honest number types | totals, market_share, pct_change, change_pp, index100, rank |
+| Rules | R-ADM-FAMILY-MARKET, R-ADM-GROUP-SHARE |
+| Fetched by | - src/lib/admissions/market.ts:buildMarketShare<br>- src/app/api/admissions/market-share/route.ts |
+| Known gaps | - FE colleges have no census: their own figures come from ILR participation, labelled, never shared into the group. |
+| Briefing | none |
+| Citation | DfE school census (January), pupils by age |
+
+### M-ADM-RIVAL-RESULTS — Rivals' results
+
+| Field | Content |
+| --- | --- |
+| Definition | Each rival's (and the school's) whole-school headline and subject-area figures, with regional and national ranks on 0.6.6's ranking (src/lib/admissions/rivals.ts, ranks.ts). 4+ → KS2, 11+ → GCSE, 16+ → Post-16. |
+| Data | admissions.rivals |
+| Grain | School × results year |
+| Sources | dfe_ks2_attainment, academic_headline, academic_subject_family |
+| Keying | urn |
+| Years | 2022 → 2024. The latest results year and the two before (changes since 2022/23). |
+| School | ✓ |
+| Subject area | ✗ Not a subject measure |
+| Set | ✓ |
+| LA | ✗ Not held |
+| Region | ✓ school_region_nation |
+| England | ✓ every school with a figure |
+| Honest number types | points, change_points, rank |
+| Rules | R-ADM-FAMILY-RIVALS, R-ADM-RIVAL-RANKS, R-ADM-FLAG-MOMENTUM, R-ADM-FLAG-STRENGTHS, R-IGCSE-EXCL |
+| Fetched by | - src/lib/admissions/rivals.ts:buildRivals<br>- src/app/api/admissions/rivals/route.ts |
+| Known gaps | - KS2 is thin for independent preps (most don't sit SATs): 'no published results'.<br>- IGCSE-heavy schools are listed but not ranked at 11+. |
+| Briefing | none |
+| Citation | DfE KS2, KS4 and KS5 performance tables |
+
+### M-SMT-SCHOOL — The school: roll, phases and size
+
+| Field | Content |
+| --- | --- |
+| Definition | The January census: the whole roll, girls and boys, day and boarding (boarding schools), the phases with pupils, and the school page's XS-XL by phase (src/lib/smt/school.ts, overview.ts). |
+| Data | smt.school |
+| Grain | School × census year |
+| Sources | dfe_school_census, age_band_pupil_distributions, age_profile_aggregates |
+| Keying | urn |
+| Years | 2019 → 2025. Change since 2019/20; the LA and England lines are pupils aged 5-15. |
+| School | ✓ |
+| Subject area | ✗ Not a subject measure |
+| Set | ✓ |
+| LA | ✗ No LA ranks for results (0.6.6 ranks nationally and by region) |
+| Region | ✓ school_region_nation |
+| England | ✓ every school with a figure |
+| Honest number types | totals, pct_change, index100, rank |
+| Rules | R-SMT-SET-RANKS, R-SMT-BOARDING-ONLY, R-SMT-NOTES |
+| Fetched by | - src/lib/smt/school.ts:smtSchool<br>- src/lib/smt/overview.ts:buildOverview<br>- src/app/api/smt/overview/route.ts |
+| Known gaps | - The LA and England roll lines count pupils aged 5-15 only (the per-year area aggregates).<br>- No boarders by age; boarders aren't ranked. |
+| Briefing | none |
+| Citation | DfE school census (January) |
+
+### M-SMT-RESULTS — Headline results and ranks
+
+| Field | Content |
+| --- | --- |
+| Definition | Attainment 8 and grade 5+ in English and maths (GCSE), A-level points per entry (Post-16), reading, writing and maths at the expected standard (KS2): the school's, its rank among the comparison set's schools with that result, in its region and in England (0.6.6's whole-population ranking), and its change since 2022/23 (src/lib/smt/population.ts). |
+| Data | smt.results |
+| Grain | School × results year |
+| Sources | academic_headline_snapshot, dfe_ks2_attainment |
+| Keying | urn |
+| Years | 2021 → 2024. Change measured from 2022/23 (R-TREND-FROM-2223); each key stage's latest from the data. |
+| School | ✓ |
+| Subject area | ✗ Not a subject measure |
+| Set | ✓ |
+| LA | ✗ No LA ranks for results (0.6.6 ranks nationally and by region) |
+| Region | ✓ school_region_nation |
+| England | ✓ every school with a figure |
+| Honest number types | points, rate, change_points, change_pp, rank |
+| Rules | R-SMT-SET-RANKS, R-IGCSE-EXCL, R-SMT-IGCSE-WORDING, R-TREND-FROM-2223, R-SMT-YEARS |
+| Fetched by | - src/lib/smt/population.ts:population<br>- src/lib/smt/overview.ts:buildOverview<br>- src/lib/smt/academic.ts:buildAcademic |
+| Known gaps | - No LA rank for results.<br>- IGCSE schools are listed but not ranked at GCSE.<br>- KS2 is thin for independent preps (most don't sit SATs). |
+| Briefing | none |
+| Citation | DfE KS2, KS4 and KS5 performance tables |
+
+### M-SMT-VA — Value added
+
+| Field | Content |
+| --- | --- |
+| Definition | A-level value added by qualification type (A level, Academic, Applied general, Tech level) with DfE's 95% confidence interval and banding; subject A-level value added; Progress 8 where DfE published it (state schools, to 2023/24). |
+| Data | smt.value_added |
+| Grain | School × qualification type (or subject) × year |
+| Sources | academic_headline_snapshot, dfe_ks5_subject_value_added |
+| Keying | urn |
+| Years | 2021 → 2024. Progress 8 2021/22-2023/24 (none for 2024/25 or 2025/26: no KS2 baseline); A-level value added 2023/24 and 2024/25. |
+| School | ✓ |
+| Subject area | ✗ Not a subject measure |
+| Set | ✓ |
+| LA | ✗ No LA ranks for results (0.6.6 ranks nationally and by region) |
+| Region | ✓ school_region_nation |
+| England | ✓ every school with a figure |
+| Honest number types | points, rank |
+| Rules | R-SMT-P8-REASON, R-SMT-VA-HONEST |
+| Fetched by | - src/lib/smt/overview.ts:p8Of<br>- src/lib/smt/academic.ts:buildAcademic |
+| Known gaps | - Progress 8 is never published for independent schools.<br>- DfE has never published GCSE value added by subject. |
+| Briefing | none |
+| Citation | DfE KS4 and KS5 performance tables (value added) |
+
+### M-SMT-SUBJECTS — Subject areas and subjects
+
+| Field | Content |
+| --- | --- |
+| Definition | Each subject area's average points against the comparison set (Admissions' strengths and weaknesses, buildRivals), and each subject's average points with its rank in the set and in England (Teacher's subjectRanking), its entries, grade profile and entries mix. |
+| Data | smt.subjects |
+| Grain | School × subject (or subject area) × year |
+| Sources | academic_subject_family, dfe_ks4_subject_entries, dfe_ks5_subject_results |
+| Keying | urn |
+| Years | 2021 → 2024 |
+| School | ✓ |
+| Subject area | ✗ Not a subject measure |
+| Set | ✓ |
+| LA | ✗ No LA ranks for results (0.6.6 ranks nationally and by region) |
+| Region | ✗ Not held |
+| England | ✓ every school with a figure |
+| Honest number types | totals, points, change_points, rank |
+| Rules | R-SMT-SET-RANKS, R-SMT-SMALL-ENTRIES, R-ADM-FLAG-STRENGTHS, R-TREND-FROM-2223 |
+| Fetched by | - src/lib/smt/academic.ts:buildAcademic<br>- src/app/api/smt/academic/route.ts |
+| Known gaps | - The subject areas are the data's own families (8), not the spec's illustrative list.<br>- Entries before 2023/24 come from the historic sources; the mix draws the years both hold. |
+| Briefing | none |
+| Citation | DfE KS4 and KS5 subject tables |
+
+### M-SMT-AREA — The area around the school
+
+| Field | Content |
+| --- | --- |
+| Definition | Residents by single year of age 0-18 within 5 miles of the school (ONS LSOA estimates, school_context_lookup) and per LA (ons_population_age; a shire county is its districts), ONS 2022-based projections by single year of age (ons_snpp), the school's neighbourhood deprivation and the IDACI mix of the children within 5 miles (IoD2025), free school meals for the school, its LA and England (dfe_school_fsm, dfe_fsm_geography), births by LA (ONS), census pupils at schools within 5 miles, and the LSOA and LA boundaries for the map (src/lib/smt/context.ts, context-map.ts). |
+| Data | smt.area |
+| Grain | LSOA, the 5-mile area or the LA × year |
+| Sources | school_context_lookup, lsoa_context_lookup, ons_population_age, ons_snpp, dfe_school_fsm, dfe_fsm_geography, ons_births, lsoa_boundaries, la_boundaries, la_gss_crosswalk, age_profile_aggregates, dfe_school_census |
+| Keying | geography |
+| Years | 2011 → 2025. Small-area residents from mid-2011 to the latest mid-year held; LA residents from mid-2012; births from 2012; FSM from 2019/20; projections 11 years past the latest LA estimate. Every latest year is read from the data. |
+| School | ✗ An area measure |
+| Subject area | ✗ Not a subject measure |
+| Set | ✗ An area measure |
+| LA | ✓ age_profile_aggregates, ons_births |
+| Region | ✓ the region's LAs on the map |
+| England | ✓ births: the sum of every English LA |
+| Honest number types | totals, pct_change, index100 |
+| Rules | R-SMT-CONTEXT-RESIDENTS, R-SMT-CONTEXT-DEPRIVATION, R-SMT-CONTEXT-FSM, R-SMT-CONTEXT-WORDING, R-SMT-CONTEXT-GEOGRAPHY, R-SMT-YEARS |
+| Fetched by | - src/lib/smt/context.ts:buildContext<br>- src/lib/smt/context-map.ts:buildContextMap<br>- src/lib/smt/area-data.ts<br>- src/app/api/smt/context/route.ts<br>- src/app/api/smt/context/map/route.ts |
+| Known gaps | - The map shades local authorities until the LSOA boundaries are loaded (K0).<br>- No district for a school: no anon lookup returns postcode_geography.lad_code, so the place line is town · LA · region.<br>- Projections are by local authority only.<br>- FSM is not published for independent schools; “FSM ever 6” isn't in this source. |
+| Briefing | none |
+| Citation | ONS mid-year estimates (LSOA and LA); ONS subnational population projections; English Indices of Deprivation (MHCLG); DfE Schools, pupils and their characteristics; ONS births; DfE school census (January) |

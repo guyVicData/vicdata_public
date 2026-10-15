@@ -17,6 +17,7 @@ import { useTeacherTheme } from "@/components/teacher/TeacherChrome";
 import { ViewAsBanner } from "@/components/view-as/ViewAsBanner";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { dataviewById } from "@/catalogue/dataviews";
+import { MethodNote } from "@/components/shell/MethodNote";
 import { ADMISSIONS_DASHBOARDS } from "@/catalogue/dashboards/admissions";
 import type { DashboardConfig, DataviewId, PanelConfig } from "@/catalogue/types";
 import type { ViewSpec } from "@/catalogue/viewspec";
@@ -650,12 +651,14 @@ function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode
 }
 
 /** The source note behind each panel's "i". */
-function sourceOf(dv: string): ReactNode {
+function sourceOf(dv: string, vars: Record<string, string | number | null> = {}): ReactNode {
   const d = dataviewById(dv);
   const m = d?.measures.join(", ");
   return (
     <>
       {d?.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {dv.startsWith("DV-ADM-P") ? ADMISSIONS_NOTES.pool : ADMISSIONS_NOTES.groupShare} <span className="opacity-70">({m})</span>
+      {/* 0.8 SMT r4 (stage I): how it is calculated (src/catalogue/methods-admissions.ts). */}
+      <MethodNote id={dv} vars={vars} />
     </>
   );
 }

@@ -41,7 +41,8 @@ export function SourceNote({ children }: { children: ReactNode }) {
       {open && (
         // Opens upward: the footer is pinned to the panel's bottom edge, so a menu
         // dropping down would fall outside the panel entirely.
-        <span className="absolute bottom-6 left-0 z-30 block w-[17rem] max-w-[80vw] rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-3 text-[11px] leading-relaxed text-[var(--muted2)] shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+        // 0.8 SMT r4 (stage I): wider, and scrolling rather than cut off, for "How it is calculated".
+        <span className="absolute bottom-6 left-0 z-30 block max-h-[70vh] w-[20rem] max-w-[86vw] overflow-y-auto rounded-[10px] border border-[var(--panel-border2)] bg-[var(--panel-bg)] p-3 text-[11px] leading-relaxed text-[var(--muted2)] shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
           {children}
         </span>
       )}
