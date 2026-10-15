@@ -16,6 +16,7 @@ import { feederFlags } from "./feeders";
 import { pctChange, type Flag } from "./flags";
 import { sizePlaces } from "./ranks";
 import { shapeOf } from "./shape";
+import { indexTo } from "../index-base";
 import type { SchoolTraits } from "./traits";
 
 const P = CURRENT_CENSUS_PERIOD;
@@ -259,20 +260,8 @@ async function laNames(codes: string[]): Promise<Map<string, string>> {
 // schools still open and slightly undercount (ADMISSIONS_NOTES.areaUndercount).
 export type PoolTrends = { age: number; feeders: Pt[]; la: Pt[]; england: Pt[]; laName: string | null; areaYears: number[]; pastAreaYears: number[]; base: number | null; indexed: { feeders: Pt[]; la: Pt[]; england: Pt[] } };
 
-/** Series indexed to 100 at their first COMMON year (an index needs the same base on every line);
- * with no common year each line is indexed to its own first year. */
-export function indexTo(series: Pt[][]): { base: number | null; out: Pt[][] } {
-  const has = (s: Pt[]) => new Set(s.filter((p) => p.value !== null).map((p) => p.year));
-  const sets = series.filter((s) => s.length).map(has);
-  const common = sets.length ? [...sets[0]].filter((y) => sets.every((st) => st.has(y))).sort((a, b) => a - b)[0] ?? null : null;
-  return {
-    base: common,
-    out: series.map((s) => {
-      const b = (common !== null ? s.find((p) => p.year === common) : s.find((p) => p.value !== null))?.value ?? null;
-      return s.map((p) => ({ year: p.year, value: p.value === null || !b ? null : (p.value / b) * 100 }));
-    }),
-  };
-}
+/** Series indexed to 100 at their first common year: the one helper, in lib/index-base (0.8 audit fixes, 4). */
+export { indexTo };
 
 export async function poolTrends(ep: EntryPoint, ladder: Ladder, laName: string | null): Promise<PoolTrends> {
   const age = ep.age - 1;

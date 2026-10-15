@@ -7,6 +7,7 @@
 // (DfE), and the projection. Every figure is /api/smt/context's or /api/smt/context/map's; every caveat
 // is SMT_NOTES' (the wording rules, R-SMT-CONTEXT-WORDING, R-SMT-NOT-A-FORECAST).
 // R-SMT-CONTEXT-RESIDENTS, -DEPRIVATION, -FSM, -GEOGRAPHY, R-SMT-VIEW-CONTEXT-NOW, R-SMT-VIEW-BIRTHS.
+import { indexedLabel } from "@/lib/index-base";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import type { ConsortiumMapArea, ConsortiumMapMarker, ConsortiumMapMember } from "@/components/ConsortiumMap";
@@ -469,7 +470,7 @@ export function BirthsTable({ c }: { c: Context }) {
   const ix = (v: number | null | undefined) => (v === null || v === undefined ? "—" : v.toFixed(0));
   return (
     <>
-      <div className="text-[12.5px] font-bold text-[var(--fg)]">Births, and indexed ({c.births.base ?? "each line's first year"} = 100)</div>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">Births, and indexed ({indexedLabel(c.births.base, "calendar")})</div>
       <div className="min-h-0 overflow-y-auto rounded-[9px] border border-[var(--panel-border)]">
         <table className="w-full border-collapse text-[12px]">
           <thead className="border-b border-[var(--panel-border)] text-[10.5px] uppercase tracking-[0.05em] text-[var(--muted2)]">

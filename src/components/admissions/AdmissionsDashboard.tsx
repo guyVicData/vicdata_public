@@ -10,6 +10,7 @@
 // The entry point plays the subject's part: the chips (the school's admissions_entry_points, else
 // the defaults its age range gives) choose what every view follows. The top bar's filters pass
 // through to the routes. Every figure comes from /api/admissions/* (the browser recomputes none).
+import { indexedLabel } from "@/lib/index-base";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -625,7 +626,9 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
   if (dv === "DV-ADM-M-SHAPE") return { tag: "Shape and size", context: `Data ${yearLabel(census)} · pupils by age` };
   if (panel.row === "now") return { tag: "Rivals", context: `Data ${yearLabel(census)} · pupils aged ${ep?.age ?? ""}` };
   if (dv.startsWith("DV-ADM-P-HOLD")) return { tag: "Forward", context: p ? `${p.ladder.future[0]?.entryYear}–${p.ladder.future[p.ladder.future.length - 1]?.entryYear}` : "" };
-  if (dv === "DV-ADM-P-POOL-INDEXED" || dv === "DV-ADM-M-VS-LINE") return { tag: "Trends", context: `indexed, ${yearLabel(CENSUS_FIRST_PERIOD)} = 100` };
+  // 0.8 audit fixes (4): the year the lines are actually indexed to (lib/index-base).
+  if (dv === "DV-ADM-P-POOL-INDEXED") return { tag: "Trends", context: p ? `indexed, ${indexedLabel(p.poolTrends.base)}` : "indexed" };
+  if (dv === "DV-ADM-M-VS-LINE") return { tag: "Trends", context: c.market.status === "ready" && !("empty" in c.market.data) ? `indexed, ${indexedLabel(c.market.data.summary.vsIndexed.base)}` : "indexed" };
   if (dv.startsWith("DV-ADM-M-ACAD")) return { tag: "Academic", context: r && ep ? `${ep.label.replace(/ \(.*\)$/, "")} → ${STAGE_WORD[r.stage]} · ${r.resultsPeriod ? resultsYearLabel(r) : ""}` : "" };
   return { tag: "Trends", context: `from ${yearLabel(CENSUS_FIRST_PERIOD)}` };
 }

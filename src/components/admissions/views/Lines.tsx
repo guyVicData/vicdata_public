@@ -2,6 +2,7 @@
 
 // VicData 0.7 admissions r2 (D3, D4): the row-2 trend views (Main.dc.html, MarketShare.dc.html),
 // drawn from the routes' series (already indexed on the server where indexed). R-ADM-VIEW-TRENDS.
+import { indexedLabel } from "@/lib/index-base";
 import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import { POPULATION_TREND_LABELS, displayPopulationTrendPct } from "@/lib/population-trend";
 import type { MarketView, PipelineOk } from "../api";
@@ -263,7 +264,7 @@ export function VsRivals({ m, setLabel, as, fullscreen, room }: { m: MarketView;
         <Key swatch={<LineSwatch colour="var(--accent)" width={14} />}>You</Key>
         <Key swatch={<LineSwatch colour="var(--adm-grey-soft)" width={14} weight={2} dashed />}>Rivals&rsquo; average</Key>
       </div>
-      <div className="text-[10.5px] text-[var(--muted)]">Indexed: {v.base ? yr(v.base) : "the first year"} = 100.</div>
+      <div className="text-[10.5px] text-[var(--muted)]">Indexed: {indexedLabel(v.base ?? null)}.</div>
     </>
   );
 }

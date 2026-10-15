@@ -7,6 +7,7 @@
 // this view…. Every view is a catalogue entry (src/catalogue/smt.ts) plus a component (./views).
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
+import { indexBaseWords, indexedLabel } from "@/lib/index-base";
 import { flagsRuleText } from "@/lib/smt/flags-rules";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
@@ -603,7 +604,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
       return { tag: "Flags", context: "on the school itself" };
     case "DV-SMT-O-ROLL-LINE":
     case "DV-SMT-O-ROLL-TABLE":
-      return { tag: "Trends", context: `${periodLabel(CENSUS_FIRST_PERIOD)} = 100` };
+      return { tag: "Trends", context: c.overview.status === "ready" ? indexedLabel(c.overview.data.trends.roll.base) : "indexed" };
     case "DV-SMT-O-RESULTS-LINE":
     case "DV-SMT-O-RESULTS-TABLE": {
       const latest = c.school.latest.ks4?.period ?? c.school.latest.ks5?.period;
@@ -643,7 +644,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
       return { tag: "Market share", context: "from Admissions, read-only" };
     case "DV-SMT-P-PHASES":
     case "DV-SMT-P-PHASES-TABLE":
-      return { tag: "Trends", context: `${periodLabel(CENSUS_FIRST_PERIOD)} = 100` };
+      return { tag: "Trends", context: c.pupils.status === "ready" ? indexedLabel(c.pupils.data.trends.base) : "indexed" };
     case "DV-SMT-P-POOL":
       return { tag: "From Admissions", context: `${c.pupils.status === "ready" && c.pupils.data.trends.pool.status === "ready" ? c.pupils.data.trends.pool.entry : "main entry point"}, read-only` };
     case "DV-SMT-P-AREA":
@@ -660,7 +661,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-C-BIRTHS":
       return { tag: "Births and projections", context: c.school.laName ?? "" };
     case "DV-SMT-C-BIRTHS-INDEXED":
-      return { tag: "Trends", context: "births, 2012 = 100" };
+      return { tag: "Trends", context: c.context.status === "ready" ? `births, ${indexedLabel(c.context.data.births.base, "calendar")}` : "births, indexed" };
     case "DV-SMT-C-BIRTHS-TABLE":
       return { tag: "Trends", context: "births, and indexed" };
     case "DV-SMT-C-PROJECTION":
@@ -777,7 +778,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
       return SMT_NOTES.marketShort;
     case "DV-SMT-P-PHASES":
     case "DV-SMT-P-PHASES-TABLE":
-      return smtNote("rollByPhase", { base: periodLabel(CENSUS_FIRST_PERIOD) });
+      return smtNote("rollByPhase", { base: c.pupils.status === "ready" ? indexBaseWords(c.pupils.data.trends.base) : "the first year every line shares" });
     case "DV-SMT-P-AREA":
       return c.pupils.status === "ready" ? smtNote("areaResidents", { la: c.school.laName ?? "The LA", ages: c.pupils.data.trends.area.agesWord }) : SMT_NOTES.areaResidentsCaption;
     case "DV-SMT-C-NOW":

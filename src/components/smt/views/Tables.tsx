@@ -2,6 +2,7 @@
 
 // VicData 0.8 SMT r1: the tables behind row 2's charts -- a row per year, the figures the chart draws
 // (R-SMT-VIEW-TRENDS, R-SMT-VIEW-MIX). Nothing new is computed.
+import { indexBaseWords } from "@/lib/index-base";
 import { Empty } from "@/components/admissions/ui";
 import { periodLabel } from "@/catalogue/years";
 import type { Overview } from "../api";
@@ -25,7 +26,7 @@ export function RollTable({ o, title = "Roll" }: { o: Overview; title?: string }
   const lines = o.trends.roll.lines;
   if (!lines.length) return <Empty>No census years.</Empty>;
   const years = lines[0].pts.map((p) => p.year);
-  const base = o.trends.roll.base !== null ? periodLabel(o.trends.roll.base) : "each line's first year";
+  const base = indexBaseWords(o.trends.roll.base);
   const cell = (v: number | null | undefined, digits: number) => (v === null || v === undefined ? "—" : v.toLocaleString("en-GB", { maximumFractionDigits: digits }));
   return (
     <>

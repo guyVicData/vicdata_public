@@ -5,6 +5,7 @@
 //
 // The comparison set arrives as URNs (the set Teacher's chooser resolved). Every set rank is
 // level-aware: only the set's schools with the figure are ranked, and the count says so.
+import { indexBaseWords } from "../index-base";
 import type { SmtAdmissionsReader } from "./auth-rules";
 import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
 import { smtNote } from "@/catalogue/notes";
@@ -322,7 +323,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
     notes: {
       since: smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) }),
       middleHalf: smtNote("middleHalf", { setLabel }),
-      rollIndexed: smtNote("rollIndexed", { base: ix.base === null ? periodLabel(CENSUS_FIRST_PERIOD) : periodLabel(ix.base), la: school.laName ?? "The LA" }),
+      rollIndexed: smtNote("rollIndexed", { base: indexBaseWords(ix.base), la: school.laName ?? "The LA" }),
     },
   };
 }
