@@ -19,8 +19,9 @@
 // `--legacy-v1` prints the v1 seed exactly as 0.6 S3 shipped it (insert-if-missing, version
 // 1, specs stripped), for the PGlite re-seed test only.
 import { DASHBOARDS } from "../src/catalogue/dashboards";
-import { ADMISSIONS_SEED_ROLES, isAdmissionsDashboard } from "../src/catalogue/dashboards/admissions";
-import { SMT_SEED_ROLES, isSmtDashboard } from "../src/catalogue/dashboards/smt";
+import { isAdmissionsDashboard } from "../src/catalogue/dashboards/admissions";
+import { isSmtDashboard } from "../src/catalogue/dashboards/smt";
+import { seedRoles } from "../src/catalogue/dashboards/seed-plan";
 import type { DashboardConfig } from "../src/catalogue/types";
 
 const legacy = process.argv.includes("--legacy-v1");
@@ -81,7 +82,8 @@ for (const d of DASHBOARDS) {
   }
   // 0.7 admissions r2: each dashboard to its own roles -- Teacher's to 'teacher' as before, the
   // Admissions dashboards to Admissions and SMT only (never Teacher); 0.8: the SMT dashboards to SMT.
-  for (const role of isSmtDashboard(d.id) ? SMT_SEED_ROLES : isAdmissionsDashboard(d.id) ? ADMISSIONS_SEED_ROLES : (["teacher"] as const))
+  // (seedRoles, src/catalogue/dashboards/seed-plan.ts, which the PGlite test reads too.)
+  for (const role of seedRoles(d.id))
     out.push(`insert into public.dashboard_assignments (dashboard_id, target_kind, role, mode, is_key)
   select id, 'role', ${lit(role)}, 'live', true from public.dashboards where slug = ${lit(d.id)}
     and not exists (select 1 from public.dashboard_assignments a join public.dashboards x on x.id = a.dashboard_id where x.slug = ${lit(d.id)} and a.role = ${lit(role)});`);

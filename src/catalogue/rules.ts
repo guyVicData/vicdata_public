@@ -1465,6 +1465,28 @@ export const RULES: Rule[] = [
   },
   // ---------------------------------------------------------------- 0.8 SMT round 3
   {
+    id: "R-SMT-CONTEXT-PLACE",
+    statement:
+      "Context's place line (town · LA · region) drops any part that names the same place as the part before it, compared case-insensitively and ignoring \"City of\" / \"Borough of\" (prefix, or GIAS's \", City of\" suffix).",
+    why: "Leighton Park read \"Reading · Reading · South East\" (SMT r3 snags, fix 1).",
+    appliesTo: "DV-SMT-C-NOW",
+    enforcedIn: ["src/lib/place-line.ts:placeLine", "src/components/smt/views/Context.tsx:ContextNow"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625; Acland Burghley 100053", phase: "ks4", expect: "Leighton Park shows \"Reading · South East\"; The Chase \"Malvern · Worcestershire · West Midlands\" and Acland Burghley \"London · Camden · London\", unchanged.", check: "smtContextPlace" },
+    origin: "0.8 SMT r3 snags (2026-10-15)",
+    status: "active",
+  },
+  {
+    id: "R-SMT-CONTEXT-PROJECTION-JOIN",
+    statement:
+      "Context's school-age population draws both sources as published: ONS mid-year estimates, then ONS's projection from its own figure for the latest estimate year. Where the two differ there by more than SMT_PROJECTION_JOIN_GAP_PCT (2%) of the estimate, the panel's source (i) adds SMT_NOTES.projectionJoin (\"The projection starts from ONS's {base} base, not the latest estimate, so the two lines may not meet.\"); otherwise it says nothing.",
+    why: "Camden and Wandsworth at 11-18 show a visible step (SMT r3 snags, fix 3).",
+    appliesTo: "DV-SMT-C-PROJECTION",
+    enforcedIn: ["src/lib/smt/context.ts:buildContext (population.join)", "src/components/smt/SmtDashboard.tsx:sourceOf", "src/catalogue/years.ts:SMT_PROJECTION_JOIN_GAP_PCT"],
+    testCase: { urn: "100053", school: "Acland Burghley (Camden); The Chase 137625 (Worcestershire)", phase: "ks4", expect: "Ages 11-18: Camden's gap, recomputed from ons_population_age and ons_snpp, is over 2% and the note shows; Worcestershire's gap is recomputed the same way and the note shows exactly when it is over 2%.", check: "smtProjectionJoin" },
+    origin: "0.8 SMT r3 snags (2026-10-15)",
+    status: "active",
+  },
+  {
     id: "R-SMT-CONTEXT-RESIDENTS",
     statement:
       "Context's children within 5 miles are ONS residents (school_context_lookup: LSOAs whose population-weighted centroid is within 5 miles, the latest mid-year held), summed over the level's single ages (GCSE 11-15, Post-16 16-17, Primary 4-10, Whole school the school's range), with the change since the first year held; the census's pupils at schools within 5 miles sit beside them, labelled, and neither is divided by the other.",
@@ -1515,7 +1537,7 @@ export const RULES: Rule[] = [
     why: "LSOA is the finest geography the data holds; the app must work before the migration and the load.",
     appliesTo: "DV-SMT-C-MAP",
     enforcedIn: ["src/lib/smt/context-map.ts:buildContextMap", "src/lib/smt/area-data.ts:lsoasNear", "src/components/smt/views/Context.tsx:AreaMap, shadeOptions"],
-    testCase: { urn: "137625", school: "The Chase; Acland Burghley 100053", phase: "ks4", expect: "Without boundaries (production today): the map falls back to the LA shading with the district note, and Shade by offers only children and FSM. With boundaries (ONS's own, served as lsoa_boundaries would): the LSOAs counted within 5 miles equal school_context_lookup's lsoa_count (34 for The Chase), every one has a boundary, and Shade by adds IMD and IDACI.", check: "smtContextGeography" },
+    testCase: { urn: "137625", school: "The Chase; Acland Burghley 100053", phase: "ks4", expect: "Without boundaries (the boundary RPCs answering as before K0's migration): the map falls back to the LA shading with the district note, and Shade by offers only children and FSM. With boundaries (production, loaded): the LSOAs counted within 5 miles equal school_context_lookup's lsoa_count (34 for The Chase), every one has a boundary, and Shade by adds IMD and IDACI.", check: "smtContextGeography" },
     origin: "0.8 SMT round 2; round 3 (docs/v0.8/vicdata_0_8_smt_round3_context_data_claude_code_prompt_v1.md)",
     status: "active",
   },

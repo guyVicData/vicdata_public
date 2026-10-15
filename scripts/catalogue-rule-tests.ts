@@ -1493,8 +1493,9 @@ const RUNNERS: Record<string, Runner> = {
     return { pass: ok, detail: fmt({ years: p.leaving.map((r) => `${r.year}:${r.year11}->${r.year12}`).join(" "), matchCensus: ok }) };
   },
   async smtContextGeography() {
-    // Both states, each in a child process: production as it is (no lsoa_boundaries yet), and with the
-    // boundaries served as the loaded table would (scripts/context-preview/install-lsoa-boundaries.ts).
+    // Both states, each in a child process: before the boundaries (install-no-boundaries.ts makes the
+    // boundary RPCs answer as before K0's migration), and production as it is (lsoa_boundaries loaded,
+    // 15 Oct). SMT r3 snags: the first state was production itself until Guy applied K0.
     const { execFileSync } = await import("node:child_process");
     const run = (pre: string[], urn: string) => {
       try {
@@ -1504,14 +1505,51 @@ const RUNNERS: Record<string, Runner> = {
         return { state: `error ${(e as Error).message.slice(0, 120)}`, opts: [] as string[] };
       }
     };
-    const without = run([], "137625");
-    const withB = run(["--import=./scripts/context-preview/install-lsoa-boundaries.ts"], "137625");
+    const without = run(["--import=./scripts/context-preview/install-no-boundaries.ts"], "137625");
+    const withB = run([], "137625");
     const c = await smtContextCase("137625");
     const { SMT_NOTES } = await import("../src/catalogue/notes");
     const html = textOf(await smtRender("137625", "DV-SMT-C-MAP", undefined, { context: c, contextMap: { state: "fallback", reason: "test" } }));
     const fallbackOk = without.state === "fallback" && without.opts.join() === "children,fsm" && (without.las ?? 0) > 0 && html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40));
     const loadedOk = withB.state === "lsoa" && withB.here === withB.lookup && withB.here === 34 && withB.everyBoundary === true && withB.opts.join() === "children,imd,idaci,fsm";
     return { pass: fallbackOk && loadedOk, detail: fmt({ withoutBoundaries: `${without.state} (${without.reason ?? ""}), shade ${without.opts.join("/")}, ${without.las} LAs, district note ${html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40))}`, withBoundaries: `${withB.state}: ${withB.here} within 5 miles (lookup ${withB.lookup}), boundaries ${withB.everyBoundary}, shade ${withB.opts.join("/")}` }) };
+  },
+  async smtProjectionJoin() {
+    const { SHIRE_COUNTY_DISTRICT_GSS_CODES } = await import("../src/lib/shire-county-districts");
+    const { SMT_NOTES, smtNote } = await import("../src/catalogue/notes");
+    const { SMT_PROJECTION_JOIN_GAP_PCT } = await import("../src/catalogue/years");
+    const L = await lib();
+    const ages = Array.from({ length: 8 }, (_, i) => `age:${11 + i}`);
+    const cases: [string, string, string[]][] = [["100053", "Camden", ["E09000007"]], ["137625", "Worcestershire", SHIRE_COUNTY_DISTRICT_GSS_CODES["885"]]];
+    const out: Record<string, string> = {};
+    let pass = true;
+    for (const [urn, la, codes] of cases) {
+      const c = await smtContextCase(urn, "around", "whole");
+      const est = await L.ref.lookupReferenceData({ sourceId: "ons_population_age", entityIds: codes, breakdowns: ages });
+      const y = Math.max(...est.map((f) => f.period));
+      const e = est.filter((f) => f.period === y).reduce((t, f) => t + (f.value_numeric ?? 0), 0);
+      const pr = (await L.ref.lookupReferenceData({ sourceId: "ons_snpp", entityIds: codes, breakdowns: ages, periodMin: y, periodMax: y })).reduce((t, f) => t + (f.value_numeric ?? 0), 0);
+      const base = Math.min(...(await L.ref.lookupReferenceData({ sourceId: "ons_snpp", entityIds: [codes[0]], breakdowns: ["age:11"] })).map((f) => f.period));
+      const gap = ((pr - e) / e) * 100;
+      const shows = Math.abs(gap) > SMT_PROJECTION_JOIN_GAP_PCT;
+      const j = c.population.join;
+      const ok = c.ages.join() === "11,18" && !!j && j.year === y && Math.abs(j.gapPct - gap) < 1e-9 && (shows ? j.note === smtNote("projectionJoin", { base }) : j.note === null);
+      pass &&= ok;
+      out[la] = `mid-${y} estimate ${Math.round(e)}, projection ${Math.round(pr)}: gap ${gap.toFixed(1)}% -> ${shows ? "shows" : "omitted"}${ok ? "" : " (MISMATCH)"}`;
+    }
+    pass &&= out.Camden.endsWith("shows") && SMT_NOTES.projectionJoin.includes("{base}");
+    return { pass, detail: fmt({ ...out, note: smtNote("projectionJoin", { base: 2022 }) }) };
+  },
+  async smtContextPlace() {
+    const want: Record<string, string> = { "110110": "Reading · South East", "137625": "Malvern · Worcestershire · West Midlands", "100053": "London · Camden · London" };
+    const got: Record<string, string> = {};
+    for (const urn of Object.keys(want)) {
+      const c = await smtContextCase(urn, "around", "whole");
+      const html = await smtRender(urn, "DV-SMT-C-NOW", undefined, { context: c });
+      got[urn] = textOf(/<div[^>]*data-place=""[^>]*>([^<]*)<\/div>/.exec(html)?.[1] ?? "").trim();
+    }
+    const pass = Object.entries(want).every(([u, v]) => got[u] === v);
+    return { pass, detail: fmt(got) };
   },
   async smtContextResidents() {
     const c = await smtContextCase("137625", "around", "gcse");

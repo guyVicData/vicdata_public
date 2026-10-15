@@ -643,12 +643,16 @@ const areaLabelOf = (c: Ctx) => (c.level.area ? (c.school.areas[c.level.phase ==
 function sourceOf(dv: string, c?: Ctx): ReactNode {
   const d = dataviewById(dv);
   if (!d) return null;
-  if (dv.startsWith("DV-SMT-C-") && c && c.context.status === "ready")
+  if (dv.startsWith("DV-SMT-C-") && c && c.context.status === "ready") {
+    // SMT r3 snags (fix 3): the projection panel says where its two lines don't meet (R-SMT-CONTEXT-PROJECTION-JOIN).
+    const join = dv === "DV-SMT-C-PROJECTION" ? c.context.data.population.join?.note : null;
     return (
       <>
-        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {c.context.data.notes.sources} <span className="opacity-70">({d.measures.join(", ")})</span>
+        {d.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {c.context.data.notes.sources}
+        {join ? <span data-projection-join=""> {join}</span> : null} <span className="opacity-70">({d.measures.join(", ")})</span>
       </>
     );
+  }
   const cites: Record<string, string> = { "M-SMT-SCHOOL": "DfE school census (January)", "M-SMT-RESULTS": "DfE KS2, KS4 and KS5 performance tables", "M-SMT-VA": "DfE performance tables (value added)", "M-SMT-SUBJECTS": "DfE KS4 and KS5 subject tables", "M-ADM-MARKET": "DfE school census, Admissions' rivals" };
   return (
     <>

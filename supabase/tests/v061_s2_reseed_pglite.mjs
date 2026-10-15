@@ -2,12 +2,18 @@
 // (or point PGLITE_PATH at an installed copy's dist/index.js).
 // 0.6.1 S2, the re-seed (D9). Local only (WASM Postgres), never a real database: stubs the
 // live schema the 0.6 migrations need, applies S1 / S2 / hardening / S4 / S7 / S6 / snag-2 as
-// live has them, seeds the four Teacher dashboards in v1 exactly as 0.6 S3 did
+// live has them, seeds every VicData dashboard in v1 the way 0.6 S3 did
 // (scripts/dashboards-seed-sql.ts --legacy-v1), adds a v1 meeting with a text slide and a v1
 // custom dashboard, then runs the re-seed (scripts/dashboards-seed-sql.ts) twice. Checks:
-// each Teacher dashboard publishes a NEW version in schema_version 2 over its v1 (which stays,
+// each dashboard publishes a NEW version in schema_version 2 over its v1 (which stays,
 // immutable), running it again publishes nothing, only old-format drafts are cleared, and the
 // meeting, the custom dashboard and members' state are untouched.
+//
+// 0.8 SMT r3 snags (fix 2): which dashboards, groups and role assignments to expect comes from the
+// catalogue (src/catalogue/dashboards/seed-plan.ts, which the seed script reads too), never a list
+// here, so a new dashboard can't make this stale. verifySeed() compares a seeded database with that
+// plan -- none missing, none duplicated, one key assignment per role, one group each -- and is
+// proved on two deliberately broken fixtures (a dashboard left out; a dashboard seeded twice).
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
@@ -90,11 +96,42 @@ let fails = 0;
 const check = (name, ok, extra = "") => { console.log(ok ? "PASS" : "FAIL", name, extra); if (!ok) fails++; };
 const n = async (sql) => (await q(sql)).rows[0].n;
 
-// 1. Live as it is today: the v1 seed of the four Teacher dashboards.
+// What the seed should hold, from the catalogue.
+const PLAN = JSON.parse(tsx("-e", "import { seedPlan } from './src/catalogue/dashboards/seed-plan'; console.log(JSON.stringify(seedPlan()))"));
+const SLUGS = PLAN.map((d) => d.slug);
+const GROUPS = [...new Set(PLAN.map((d) => d.group).filter(Boolean))];
+const ROLE_ROWS = PLAN.reduce((t, d) => t + d.roles.length, 0);
+console.log(`plan: ${SLUGS.length} dashboards, ${GROUPS.length} groups, ${ROLE_ROWS} role assignments (from seedPlan)`);
+
+// A seeded database against a plan: every planned dashboard exactly once, none extra, each with its
+// planned key role assignments exactly once, and each planned group exactly once. Returns the problems.
+async function verifySeed(qq, plan) {
+  const problems = [];
+  const planSlugs = plan.map((d) => d.slug);
+  for (const s of new Set(planSlugs)) if (planSlugs.filter((x) => x === s).length > 1) problems.push(`planned twice: ${s}`);
+  const rows = (await qq(`select slug, count(*)::int c from dashboards where slug like 'vicdata.%' group by slug`)).rows;
+  const got = new Map(rows.map((r) => [r.slug, r.c]));
+  for (const s of new Set(planSlugs)) if (!got.has(s)) problems.push(`missing: ${s}`);
+  for (const [s, c] of got) {
+    if (!planSlugs.includes(s)) problems.push(`not planned: ${s}`);
+    if (c > 1) problems.push(`duplicated: ${s} (${c} rows)`);
+  }
+  const roles = (await qq(`select d.slug, a.role, count(*)::int c from dashboard_assignments a join dashboards d on d.id = a.dashboard_id where d.slug like 'vicdata.%' and a.is_key group by 1, 2`)).rows;
+  for (const d of plan) for (const r of d.roles) {
+    const c = roles.find((x) => x.slug === d.slug && x.role === r)?.c ?? 0;
+    if (c !== 1) problems.push(`${d.slug} -> ${r}: ${c} assignments`);
+  }
+  if (roles.length !== plan.reduce((t, d) => t + d.roles.length, 0)) problems.push(`assignments: ${roles.length} (slug, role) pairs`);
+  const groups = (await qq(`select slug, count(*)::int c from dashboard_groups where slug like 'vicdata.%' group by slug`)).rows;
+  const planGroups = [...new Set(plan.map((d) => d.group).filter(Boolean))];
+  if (groups.length !== planGroups.length || groups.some((g) => g.c !== 1 || !planGroups.includes(g.slug))) problems.push(`groups: ${JSON.stringify(groups)}`);
+  return problems;
+}
+
+// 1. The v1 seed of every planned dashboard.
 await ex(tsx("scripts/dashboards-seed-sql.ts", "--legacy-v1"));
-const SLUGS = ["vicdata.ks4.candidates", "vicdata.ks4.results", "vicdata.ks5.candidates", "vicdata.ks5.results"];
-check("the v1 seed: four dashboards, each on version 1 in schema_version 1",
-  (await n(`select count(*)::int n from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.slug like 'vicdata.%' and v.version = 1 and v.schema_version = 1 and v.config->>'schema_version' = '1'`)) === 4);
+check(`the v1 seed: every planned dashboard (${SLUGS.length}), each on version 1 in schema_version 1`,
+  (await n(`select count(*)::int n from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.slug like 'vicdata.%' and v.version = 1 and v.schema_version = 1 and v.config->>'schema_version' = '1'`)) === SLUGS.length);
 
 // Guy's meeting, "Autumn department meeting", with a view slide and a text-box slide (v1), and
 // a v1 custom dashboard of a teacher's own; a v1 draft and a v2 draft on two Teacher dashboards;
@@ -132,19 +169,20 @@ await ex(reseed);
 const code = JSON.parse(tsx("-e", "import { DASHBOARDS } from './src/catalogue/dashboards'; console.log(JSON.stringify(DASHBOARDS.filter((d) => d.owner === 'vicdata')))"));
 const published = async () => (await q(`select d.slug, d.published_version_id, v.version, v.schema_version, v.config, v.label from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.slug like 'vicdata.%' order by d.slug`)).rows;
 const after1 = await published();
-check("each Teacher dashboard now publishes version 2", after1.length === 4 && after1.every((r) => r.version === 2), JSON.stringify(after1.map((r) => [r.slug, r.version])));
+check("each planned dashboard now publishes version 2", after1.length === SLUGS.length && after1.every((r) => r.version === 2), JSON.stringify(after1.map((r) => [r.slug, r.version])));
 check("in schema_version 2 (row and config)", after1.every((r) => r.schema_version === 2 && r.config.schema_version === 2));
 // jsonb keeps its own key order, so compare canonical forms.
 const canon = (x) => (Array.isArray(x) ? `[${x.map(canon).join(",")}]` : x && typeof x === "object" ? `{${Object.keys(x).sort().map((k) => `${JSON.stringify(k)}:${canon(x[k])}`).join(",")}}` : JSON.stringify(x));
-check("each published config is the code copy", SLUGS.every((s) => canon(after1.find((r) => r.slug === s)?.config) === canon(code.find((d) => d.id === s))));
+check("each published config is the code copy", code.length === SLUGS.length && SLUGS.every((s) => canon(after1.find((r) => r.slug === s)?.config) === canon(code.find((d) => d.id === s))));
 check("every view instance carries its preset's spec, same ids as v1", after1.every((r) => r.config.panels.every((p) => p.dataviews.every((v) => v.kind !== "view" || (v.spec?.preset === v.dataview && v.id === `${p.id}/${v.dataview}`)))));
-check("the v1 versions are kept (immutable)", (await n(`select count(*)::int n from dashboard_versions v join dashboards d on d.id = v.dashboard_id where d.slug like 'vicdata.%' and v.version = 1 and v.schema_version = 1`)) === 4);
+check("the v1 versions are kept (immutable)", (await n(`select count(*)::int n from dashboard_versions v join dashboards d on d.id = v.dashboard_id where d.slug like 'vicdata.%' and v.version = 1 and v.schema_version = 1`)) === SLUGS.length);
 check("the old-format draft is cleared", (await n(`select count(*)::int n from dashboard_drafts x join dashboards d on d.id = x.dashboard_id where d.slug = 'vicdata.ks4.candidates'`)) === 0);
 check("a draft already in the new format is kept", (await n(`select count(*)::int n from dashboard_drafts x join dashboards d on d.id = x.dashboard_id where d.slug = 'vicdata.ks5.results'`)) === 1);
 check("the meeting and the custom dashboard are untouched", (await others()) === othersBefore);
 check("the meeting still has its text-box slide", (await q(`select v.config from dashboards d join dashboard_versions v on v.id = d.published_version_id where d.name = 'Autumn department meeting'`)).rows[0].config.presentation.slides[1].slots[0].text.startsWith("1. Revisit"));
 check("members' state rows are untouched", JSON.stringify((await q(`select * from dashboard_user_state`).catch(() => ({ rows: [] }))).rows) === stateBefore);
-check("one key Teacher assignment each", (await n(`select count(*)::int n from dashboard_assignments a join dashboards d on d.id = a.dashboard_id where d.slug like 'vicdata.%' and a.role = 'teacher' and a.is_key`)) === 4);
+const v1 = await verifySeed(q, PLAN);
+check("one key assignment per planned role, every dashboard once (verifySeed)", v1.length === 0, v1.join("; "));
 
 // 3. Idempotent: again publishes nothing.
 const versionsBefore = await n(`select count(*)::int n from dashboard_versions`);
@@ -152,17 +190,47 @@ await ex(reseed);
 const after2 = await published();
 check("running it twice publishes no new version", (await n(`select count(*)::int n from dashboard_versions`)) === versionsBefore);
 check("and the published pointers don't move", JSON.stringify(after2.map((r) => r.published_version_id)) === JSON.stringify(after1.map((r) => r.published_version_id)));
-check("still one assignment each, one group each", (await n(`select count(*)::int n from dashboard_assignments`)) === 4 && (await n(`select count(*)::int n from dashboard_groups where slug like 'vicdata.%'`)) === 2);
+const v2 = await verifySeed(q, PLAN);
+check("still one assignment each, one group each", v2.length === 0 && (await n(`select count(*)::int n from dashboard_assignments`)) === ROLE_ROWS && (await n(`select count(*)::int n from dashboard_groups where slug like 'vicdata.%'`)) === GROUPS.length, v2.join("; "));
 
-// 4. On an empty database the re-seed alone seeds the four in v2 (version 1).
-const fresh = new PGlite();
-await fresh.exec(`create table public.dashboard_groups (id uuid primary key default gen_random_uuid(), slug text unique, label text, owner_scope text);
-create table public.dashboards (id uuid primary key default gen_random_uuid(), slug text unique, kind text, owner_scope text, name text, group_id uuid, group_order int, published_version_id uuid, updated_at timestamptz default now());
+// 4. On an empty database the re-seed alone seeds every planned dashboard in v2 (version 1).
+// `uniqueSlug: false` is the broken schema of the duplicate fixture below.
+const SCHEMA = (uniqueSlug = true) => `create table public.dashboard_groups (id uuid primary key default gen_random_uuid(), slug text unique, label text, owner_scope text);
+create table public.dashboards (id uuid primary key default gen_random_uuid(), slug text ${uniqueSlug ? "unique" : ""}, kind text, owner_scope text, name text, group_id uuid, group_order int, published_version_id uuid, updated_at timestamptz default now());
 create table public.dashboard_versions (id uuid primary key default gen_random_uuid(), dashboard_id uuid, version int, schema_version int, config jsonb, label text, change_summary text, unique (dashboard_id, version));
 create table public.dashboard_drafts (dashboard_id uuid primary key, config jsonb);
-create table public.dashboard_assignments (id uuid primary key default gen_random_uuid(), dashboard_id uuid, target_kind text, role text, mode text, is_key bool);`);
+create table public.dashboard_assignments (id uuid primary key default gen_random_uuid(), dashboard_id uuid, target_kind text, role text, mode text, is_key bool);`;
+const fresh = new PGlite();
+await fresh.exec(SCHEMA());
 await fresh.exec(reseed);
-check("on an empty database it seeds the four at version 1, schema_version 2", (await fresh.query(`select count(*)::int n from dashboards d join dashboard_versions v on v.id = d.published_version_id where v.version = 1 and v.schema_version = 2`)).rows[0].n === 4);
+const vf = await verifySeed((sql, p) => fresh.query(sql, p), PLAN);
+check(`on an empty database it seeds every planned dashboard (${SLUGS.length}) at version 1, schema_version 2, as planned`, (await fresh.query(`select count(*)::int n from dashboards d join dashboard_versions v on v.id = d.published_version_id where v.version = 1 and v.schema_version = 2`)).rows[0].n === SLUGS.length && vf.length === 0, vf.join("; "));
 
-console.log(fails ? `${fails} FAILED` : "ALL PASS");
-process.exit(fails ? 1 : 0);
+// 5. Negative controls: verifySeed must catch a broken seed. Not counted among the checks above; the
+// run fails if either goes uncaught.
+let uncaught = 0;
+const control = (name, problems, expect) => {
+  const caught = problems.some((p) => p.startsWith(expect));
+  console.log(caught ? "CAUGHT" : "MISSED", name, `-> ${problems.join("; ") || "no problem found"}`);
+  if (!caught) uncaught++;
+};
+// (a) A dashboard left out: the seed's statements for one planned slug removed.
+const dropped = SLUGS[SLUGS.length - 1];
+const withoutOne = reseed.split(/;\n/).filter((st) => !st.includes(`'${dropped}'`)).join(";\n");
+const fa = new PGlite();
+await fa.exec(SCHEMA());
+await fa.exec(withoutOne);
+control(`broken fixture (a): ${dropped} left out of the seed`, await verifySeed((sql, p) => fa.query(sql, p), PLAN), "missing:");
+// (b) A dashboard seeded twice: a schema without the unique slug, and one planned dashboard's row
+// inserted a second time (what a seed without "on conflict" would leave).
+const twice = SLUGS[0];
+const fb = new PGlite();
+await fb.exec(SCHEMA(false));
+await fb.exec(reseed.replace(/on conflict \(slug\) do nothing;/g, ";").replace(/insert into public\.dashboard_groups ([^;]*?) on conflict \(slug\) do nothing;/g, "insert into public.dashboard_groups $1;"));
+await fb.query(`insert into dashboards (slug, kind, owner_scope, name) select slug, kind, owner_scope, name from dashboards where slug = $1`, [twice]);
+control(`broken fixture (b): ${twice} seeded twice`, await verifySeed((sql, p) => fb.query(sql, p), PLAN), "duplicated:");
+// (c) The plan itself listing a dashboard twice (a catalogue that duplicates one).
+control("broken fixture (c): a plan listing a dashboard twice", await verifySeed(q, [...PLAN, PLAN[0]]), "planned twice:");
+
+console.log(fails ? `${fails} FAILED` : "ALL PASS", `(${16 - fails} / 16)`, uncaught ? `; ${uncaught} NEGATIVE CONTROL(S) MISSED` : "; negative controls caught");
+process.exit(fails || uncaught ? 1 : 0);
