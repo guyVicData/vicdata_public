@@ -1476,6 +1476,17 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-SMT-CONTEXT-PROJECTION-JOIN",
+    statement:
+      "Context's school-age population draws both sources as published: ONS mid-year estimates, then ONS's projection from its own figure for the latest estimate year. Where the two differ there by more than SMT_PROJECTION_JOIN_GAP_PCT (2%) of the estimate, the panel's source (i) adds SMT_NOTES.projectionJoin (\"The projection starts from ONS's {base} base, not the latest estimate, so the two lines may not meet.\"); otherwise it says nothing.",
+    why: "Camden and Wandsworth at 11-18 show a visible step (SMT r3 snags, fix 3).",
+    appliesTo: "DV-SMT-C-PROJECTION",
+    enforcedIn: ["src/lib/smt/context.ts:buildContext (population.join)", "src/components/smt/SmtDashboard.tsx:sourceOf", "src/catalogue/years.ts:SMT_PROJECTION_JOIN_GAP_PCT"],
+    testCase: { urn: "100053", school: "Acland Burghley (Camden); The Chase 137625 (Worcestershire)", phase: "ks4", expect: "Ages 11-18: Camden's gap, recomputed from ons_population_age and ons_snpp, is over 2% and the note shows; Worcestershire's gap is recomputed the same way and the note shows exactly when it is over 2%.", check: "smtProjectionJoin" },
+    origin: "0.8 SMT r3 snags (2026-10-15)",
+    status: "active",
+  },
+  {
     id: "R-SMT-CONTEXT-RESIDENTS",
     statement:
       "Context's children within 5 miles are ONS residents (school_context_lookup: LSOAs whose population-weighted centroid is within 5 miles, the latest mid-year held), summed over the level's single ages (GCSE 11-15, Post-16 16-17, Primary 4-10, Whole school the school's range), with the change since the first year held; the census's pupils at schools within 5 miles sit beside them, labelled, and neither is divided by the other.",

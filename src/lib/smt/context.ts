@@ -11,7 +11,7 @@
 // The census still gives "pupils at schools within 5 miles", said beside the residents, never
 // divided by them (SMT_NOTES.wResidents). The map's neighbourhoods are context-map.ts.
 import { smtNote } from "@/catalogue/notes";
-import { SMT_PROJECTION_CHART_AHEAD, SMT_PROJECTION_TILE_AHEAD, periodLabel } from "@/catalogue/years";
+import { SMT_PROJECTION_CHART_AHEAD, SMT_PROJECTION_JOIN_GAP_PCT, SMT_PROJECTION_TILE_AHEAD, periodLabel } from "@/catalogue/years";
 import { cachedReference } from "../server-cache";
 import { lookupReferenceData } from "../vicdata-reference";
 import { fetchLaChoropleth } from "../la-choropleth";
@@ -76,7 +76,9 @@ export type Context = {
   byAge: { period: number | null; ages: { age: number; value: number }[]; scope: "around" | "la"; laName: string | null };
   births: { la: Pt[]; england: Pt[]; indexed: { la: Pt[]; england: Pt[] }; base: number | null; laName: string | null };
   // The LA's residents of the school's ages: estimates to the latest year, then the ONS projection.
-  population: { estimates: Pt[]; projection: Pt[]; latestEstimate: number | null; base: number | null; area: string | null; to: number | null };
+  // join: where the two meet (the latest estimate year), the gap as % of the estimate, and the note
+  // (SMT_NOTES.projectionJoin) when it is more than SMT_PROJECTION_JOIN_GAP_PCT -- else null.
+  population: { estimates: Pt[]; projection: Pt[]; latestEstimate: number | null; base: number | null; area: string | null; to: number | null; join: { year: number; estimate: number; projection: number; gapPct: number; note: string | null } | null };
   // Children of the ages within 5 miles over time, against the LA and England, indexed.
   nearby: { school: Pt[]; la: Pt[]; england: Pt[]; indexed: { school: Pt[]; la: Pt[]; england: Pt[] }; base: number | null };
   sources: { lsoaYear: number | null; snppBase: number | null; iodYear: string | null; fsmYear: number | null };
@@ -180,6 +182,11 @@ export async function buildContext(school: SmtSchool, area: ContextArea, level: 
   const projection = tileFrom !== null && tileEnd !== null && tileEnd > tileFrom ? { agesWord, from: tileFrom, to: tileEnd, changePct: pct(projAt(tileFrom), projAt(tileEnd)) ?? 0, area: school.laName ?? "" } : null;
   const estimates = laYears.map((y) => ({ year: y, value: sumAges(laPop.get(y), ages) }));
   const projected = projYears.filter((y) => (laLatest === null || y >= laLatest) && (chartTo === null || y <= chartTo)).map((y) => ({ year: y, value: projAt(y) }));
+  // Where the dashed line starts (ONS's own figure for the latest estimate year) against the estimate.
+  const joinEst = laLatest !== null ? sumAges(laPop.get(laLatest), ages) : null;
+  const joinProj = laLatest !== null && laProj.has(laLatest) ? projAt(laLatest) : null;
+  const joinGap = joinEst && joinProj !== null ? ((joinProj - joinEst) / joinEst) * 100 : null;
+  const join = laLatest !== null && joinEst && joinProj !== null && joinGap !== null ? { year: laLatest, estimate: joinEst, projection: joinProj, gapPct: joinGap, note: Math.abs(joinGap) > SMT_PROJECTION_JOIN_GAP_PCT ? smtNote("projectionJoin", { base: snppBase ?? "" }) : null } : null;
 
   // ------------------------------------------------------------ children nearby over time (indexed)
   const nearbySchool = scYears.map((y) => ({ year: y.year, value: sumAges(y.children, ages) }));
@@ -229,7 +236,7 @@ export async function buildContext(school: SmtSchool, area: ContextArea, level: 
       ? { period: scLast.year, ages: scLast.children.map((v, age) => ({ age, value: v })), scope: "around", laName: school.laName }
       : { period: laLatest, ages: laLatest !== null ? (laPop.get(laLatest) ?? []).map((v, age) => ({ age, value: v })) : [], scope: "la", laName: school.laName },
     births: { la: laPts, england: engPts, indexed: { la: ix.out[0], england: ix.out[1] }, base: ix.base, laName: school.laName },
-    population: { estimates, projection: projected, latestEstimate: laLatest, base: snppBase, area: school.laName, to: chartTo },
+    population: { estimates, projection: projected, latestEstimate: laLatest, base: snppBase, area: school.laName, to: chartTo, join },
     nearby: { school: nearbySchool, la: nearbyLa, england: nearbyEng, indexed: { school: nix.out[0], la: nix.out[1], england: nix.out[2] }, base: nix.base },
     sources,
     notes: {

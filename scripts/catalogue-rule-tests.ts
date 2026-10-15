@@ -1513,6 +1513,32 @@ const RUNNERS: Record<string, Runner> = {
     const loadedOk = withB.state === "lsoa" && withB.here === withB.lookup && withB.here === 34 && withB.everyBoundary === true && withB.opts.join() === "children,imd,idaci,fsm";
     return { pass: fallbackOk && loadedOk, detail: fmt({ withoutBoundaries: `${without.state} (${without.reason ?? ""}), shade ${without.opts.join("/")}, ${without.las} LAs, district note ${html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40))}`, withBoundaries: `${withB.state}: ${withB.here} within 5 miles (lookup ${withB.lookup}), boundaries ${withB.everyBoundary}, shade ${withB.opts.join("/")}` }) };
   },
+  async smtProjectionJoin() {
+    const { SHIRE_COUNTY_DISTRICT_GSS_CODES } = await import("../src/lib/shire-county-districts");
+    const { SMT_NOTES, smtNote } = await import("../src/catalogue/notes");
+    const { SMT_PROJECTION_JOIN_GAP_PCT } = await import("../src/catalogue/years");
+    const L = await lib();
+    const ages = Array.from({ length: 8 }, (_, i) => `age:${11 + i}`);
+    const cases: [string, string, string[]][] = [["100053", "Camden", ["E09000007"]], ["137625", "Worcestershire", SHIRE_COUNTY_DISTRICT_GSS_CODES["885"]]];
+    const out: Record<string, string> = {};
+    let pass = true;
+    for (const [urn, la, codes] of cases) {
+      const c = await smtContextCase(urn, "around", "whole");
+      const est = await L.ref.lookupReferenceData({ sourceId: "ons_population_age", entityIds: codes, breakdowns: ages });
+      const y = Math.max(...est.map((f) => f.period));
+      const e = est.filter((f) => f.period === y).reduce((t, f) => t + (f.value_numeric ?? 0), 0);
+      const pr = (await L.ref.lookupReferenceData({ sourceId: "ons_snpp", entityIds: codes, breakdowns: ages, periodMin: y, periodMax: y })).reduce((t, f) => t + (f.value_numeric ?? 0), 0);
+      const base = Math.min(...(await L.ref.lookupReferenceData({ sourceId: "ons_snpp", entityIds: [codes[0]], breakdowns: ["age:11"] })).map((f) => f.period));
+      const gap = ((pr - e) / e) * 100;
+      const shows = Math.abs(gap) > SMT_PROJECTION_JOIN_GAP_PCT;
+      const j = c.population.join;
+      const ok = c.ages.join() === "11,18" && !!j && j.year === y && Math.abs(j.gapPct - gap) < 1e-9 && (shows ? j.note === smtNote("projectionJoin", { base }) : j.note === null);
+      pass &&= ok;
+      out[la] = `mid-${y} estimate ${Math.round(e)}, projection ${Math.round(pr)}: gap ${gap.toFixed(1)}% -> ${shows ? "shows" : "omitted"}${ok ? "" : " (MISMATCH)"}`;
+    }
+    pass &&= out.Camden.endsWith("shows") && SMT_NOTES.projectionJoin.includes("{base}");
+    return { pass, detail: fmt({ ...out, note: smtNote("projectionJoin", { base: 2022 }) }) };
+  },
   async smtContextPlace() {
     const want: Record<string, string> = { "110110": "Reading · South East", "137625": "Malvern · Worcestershire · West Midlands", "100053": "London · Camden · London" };
     const got: Record<string, string> = {};

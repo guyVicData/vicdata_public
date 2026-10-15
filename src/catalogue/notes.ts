@@ -222,6 +222,9 @@ export const SMT_NOTES = {
   popByAgeLa: "{la}'s residents by single year of age (ONS mid-year estimates, mid-{year}).",
   nearbyOverTime: "Children aged {ages} living within {miles} miles, against {la} and England (ONS mid-year estimates), indexed to 100 in {base}.",
   nearbyOverTimeCaption: "residents, not pupils",
+  // SMT r3 snags (fix 3): said only where the projection and the latest estimate are more than
+  // SMT_PROJECTION_JOIN_GAP_PCT apart at the join (R-SMT-CONTEXT-PROJECTION-JOIN).
+  projectionJoin: "The projection starts from ONS's {base} base, not the latest estimate, so the two lines may not meet.",
   populationProjected: "{la}'s residents aged {ages}: ONS mid-year estimates to mid-{year}, then ONS's {base}-based projection, dashed.",
   // Small numbers.
   smallEntries: "Subjects with fewer than {min} entries aren't ranked: one or two pupils would decide the rank.",

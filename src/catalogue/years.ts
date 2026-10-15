@@ -68,6 +68,10 @@ export const CENSUS_FIRST_PERIOD = 2019;
 export const SMT_PROJECTION_TILE_AHEAD = 7;
 export const SMT_PROJECTION_CHART_AHEAD = 11;
 
+// SMT r3 snags (fix 3): the projection's join note shows where ONS's projection and the latest mid-year
+// estimate differ by more than this at the join (% of the estimate). Not a year; kept with the horizons.
+export const SMT_PROJECTION_JOIN_GAP_PCT = 2;
+
 // Admissions' past pools start with September-2020 entry (the first entry year with a counted
 // rung, census 2019/20).
 export const PAST_FROM_ENTRY_YEAR = CENSUS_FIRST_PERIOD + 1;
