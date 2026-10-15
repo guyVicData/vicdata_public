@@ -77,9 +77,17 @@ export type BoundaryState = { state: "loaded"; codes: string[] } | { state: "non
 /** The LSOAs whose boundary comes within `metres` of a point (lsoa_boundaries_near). "none" before the
  * K0 migration is applied or the boundaries are loaded: the map then falls back to round 2's. */
 export async function lsoasNear(easting: number, northing: number, metres: number): Promise<BoundaryState> {
-  const { data, error } = await createServerAnonSupabaseClient().rpc("lsoa_boundaries_near", { p_easting: easting, p_northing: northing, p_metres: metres });
-  if (error) return { state: "none", reason: `lsoa_boundaries_near: ${error.code ?? error.message}` };
-  const codes = ((data ?? []) as { gss_code: string }[]).map((r) => r.gss_code);
+  // 0.8 SMT r4: read in pages under PostgREST's 1,000-row cap (10 km in London draws 1,700 and more).
+  const codes: string[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await createServerAnonSupabaseClient().rpc("lsoa_boundaries_near", { p_easting: easting, p_northing: northing, p_metres: metres }).order("gss_code").range(from, from + 999);
+    if (error) return { state: "none", reason: `lsoa_boundaries_near: ${error.code ?? error.message}` };
+    const page = ((data ?? []) as { gss_code: string }[]).map((r) => r.gss_code);
+    const before = codes.length;
+    for (const c of page) if (!codes.includes(c)) codes.push(c);
+    // A short page, or one that brings nothing new (a server that ignores the range), ends the read.
+    if (page.length < 1000 || codes.length === before) break;
+  }
   return codes.length ? { state: "loaded", codes } : { state: "none", reason: "no LSOA boundaries loaded near the school" };
 }
 
@@ -244,6 +252,17 @@ type RawProjection = {
 };
 
 const isMissingSignature = (e: unknown) => /PGRST202|Could not find the function/i.test(String((e as Error)?.message ?? e));
+// The data project's anon role has a short statement timeout; a wide radius read cold (after a promote,
+// or a quiet spell) can pass it once and then answers in well under a second (Acland Burghley at
+// 25-30 km: 0.6 s warm). One retry on a statement timeout (57014) only; anything else is thrown.
+async function rpcRetrying(path: string, body: Record<string, unknown>): Promise<unknown> {
+  try {
+    return await callReferenceRpc(path, body);
+  } catch (e) {
+    if (!/57014|statement timeout/i.test(String((e as Error)?.message ?? e))) throw e;
+    return callReferenceRpc(path, body);
+  }
+}
 const rowOf = (r: RawRow): AreaRow => ({ year: r.year, ageFrom: r.age_from, ageTo: r.age_to, middle: r.middle, low: r.low, high: r.high, scenario: r.scenario, includesUnborn: r.includes_unborn });
 
 /** A range's rows summed from the single ages: middle and scenario exactly; no band (see rangeBandMissing). */
@@ -280,11 +299,11 @@ export function areaProjection(urn: string, km: number, ages: [number, number] |
   return cachedReference(`smt:area-projection:${urn}:${km}:${ages?.join("-") ?? ""}`, async () => {
     const base = { p_urn: urn, p_radius_miles: kmToMiles(km) };
     try {
-      const raw = (await callReferenceRpc("area_projection", ages ? { ...base, p_age_from: ages[0], p_age_to: ages[1] } : base)) as unknown as RawProjection | null;
+      const raw = (await rpcRetrying("area_projection", ages ? { ...base, p_age_from: ages[0], p_age_to: ages[1] } : base)) as unknown as RawProjection | null;
       return raw ? toProjection(raw, "around", ages, false) : null;
     } catch (e) {
       if (!ages || !isMissingSignature(e)) throw e;
-      const raw = (await callReferenceRpc("area_projection", base)) as unknown as RawProjection | null;
+      const raw = (await rpcRetrying("area_projection", base)) as unknown as RawProjection | null;
       return raw ? toProjection(raw, "around", ages, true) : null;
     }
   });
@@ -327,7 +346,7 @@ type RawContext = {
 /** area_context: what school_context_lookup gave at 5 miles, at any radius (km). */
 export function areaContext(urn: string, km: number): Promise<AreaContextData | null> {
   return cachedReference(`smt:area-context:${urn}:${km}`, async () => {
-    const raw = (await callReferenceRpc("area_context", { p_urn: urn, p_radius_miles: kmToMiles(km) })) as unknown as RawContext | null;
+    const raw = (await rpcRetrying("area_context", { p_urn: urn, p_radius_miles: kmToMiles(km) })) as unknown as RawContext | null;
     if (!raw) return null;
     const suppressed = raw.years.some((y) => y.children.some((c) => c === null));
     return {

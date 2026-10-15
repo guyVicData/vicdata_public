@@ -54,14 +54,19 @@ export function installLsoaBoundaries(): () => void {
     const body = JSON.parse(init.body) as Record<string, unknown>;
     if (m[1] === "lsoa_boundaries_near") {
       const e = Number(body.p_easting), n = Number(body.p_northing), metres = Number(body.p_metres);
-      if (!(metres > 0 && metres <= 20000)) return Response.json([]);
+      // The cap: 32 km from 0.8 SMT r4 (20261113090000_v08_smt_r4_catchment.sql; 20 km before).
+      if (!(metres > 0 && metres <= 32000)) return Response.json([]);
       const codes: string[] = [];
       for (let offset = 0; ; offset += PAGE) {
         const r = await ons({ where: "LSOA21CD LIKE 'E01%'", geometry: JSON.stringify({ x: e, y: n, spatialReference: { wkid: 27700 } }), geometryType: "esriGeometryPoint", inSR: "27700", distance: String(metres), units: "esriSRUnit_Meter", spatialRel: "esriSpatialRelIntersects", outFields: "LSOA21CD", returnGeometry: "false", orderByFields: "LSOA21CD", resultOffset: String(offset), resultRecordCount: String(PAGE), f: "json" }, real);
         for (const f of r.features) codes.push(String((f.attributes ?? f.properties)!.LSOA21CD));
         if (r.features.length < PAGE) break;
       }
-      return Response.json(codes.map((gss_code) => ({ gss_code })));
+      // PostgREST's Range header (the app reads in pages of 1,000), honoured as the real API does.
+      const hdr = new Headers(init?.headers).get("Range");
+      const rg = hdr ? /^(\d+)-(\d+)$/.exec(hdr) : null;
+      const rows = codes.map((gss_code) => ({ gss_code }));
+      return Response.json(rg ? rows.slice(Number(rg[1]), Number(rg[2]) + 1) : rows);
     }
     const asked = ((body.p_gss_codes as string[]) ?? []).filter((c) => /^E01\d{6}$/.test(c));
     if (asked.length > 5000) return Response.json([]);
