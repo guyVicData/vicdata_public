@@ -1,0 +1,6 @@
+import { createRoot } from "react-dom/client";
+import { GroupDashboard } from "@/components/groups/dash/GroupDashboard";
+import { GroupHome } from "@/components/groups/GroupHome";
+const P = new URLSearchParams(location.search);
+const page = P.get("page") ?? "overview";
+createRoot(document.getElementById("root")!).render(page === "home" ? <GroupHome /> : <GroupDashboard dash={page as "overview" | "schools"} />);

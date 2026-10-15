@@ -1,0 +1,9 @@
+import os, sys, hashlib
+out = sys.argv[1]; a, b = os.path.join(out, "base"), os.path.join(out, "br")
+fa, fb = set(os.listdir(a)), set(os.listdir(b))
+same = diff = 0; bad = []
+for f in sorted(fa & fb):
+    if open(os.path.join(a, f), "rb").read() == open(os.path.join(b, f), "rb").read(): same += 1
+    else: diff += 1; bad.append(f)
+print(f"files: {len(fa & fb)} paired, {same} identical, {diff} differ, only-base {len(fa - fb)}, only-branch {len(fb - fa)}")
+for f in bad[:40]: print("  DIFF", f)

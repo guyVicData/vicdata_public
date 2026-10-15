@@ -1,0 +1,5 @@
+#!/bin/zsh
+# snap.sh <out-name> <query> [width] [height]   (server on 127.0.0.1:3180)
+D=${0:A:h}; cd $D
+PORT=$((9300 + RANDOM % 600))
+LOGS=1 node shot.mjs $PORT shots/$1.png "http://127.0.0.1:3180/index.html?$2" ${3:-1440} ${4:-1300} ${WAIT:-3500}
