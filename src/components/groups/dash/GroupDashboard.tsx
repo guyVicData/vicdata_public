@@ -31,7 +31,7 @@ import { indexTo, indexBaseWords } from "@/lib/index-base";
 import { UsageScopeContext, useUsagePageView, type UsageScope } from "@/lib/usage-client";
 import { FOCI, FOCUS_LABEL, MEASURE_LABEL, parseCompare, type CompareKey, type Focus, type GroupOverview, type GroupSchools } from "@/lib/groups/dash";
 import type { Reading } from "@/lib/groups/aggregates";
-import { AgainstOthers, dateText, GroupMap, GroupNow, JoinedLeft, ResultsTrend, RollTrend, SchoolsNow, SchoolsTable, ShareOfPlaces, Shapes, SizeAndResults, WhoIsGrowing, shareFlag, sourcesWord, type MapSchool, type MembershipRow } from "./views";
+import { AgainstOthers, dateText, MAIN_ROWS, GroupMap, GroupNow, JoinedLeft, ResultsTrend, RollTrend, SchoolsNow, SchoolsTable, ShareOfPlaces, Shapes, SizeAndResults, WhoIsGrowing, shareFlag, sourcesWord, type MapSchool, type MembershipRow } from "./views";
 
 export type GroupDash = "overview" | "schools" | "academic" | "pupils";
 export const GROUP_DASHES: { key: GroupDash; label: string; live: boolean }[] = [
@@ -522,7 +522,8 @@ function PhoneBody({ c, layout }: { c: Ctx; layout: { now: CellDef[]; trends: Ce
   const large = layout.now[1];
   const [tab, setTab] = useState<ViewId>(large.views[0].id);
   const [trendTab, setTrendTab] = useState<ViewId>(layout.trends[0].views[0].id);
-  const trendItems: RailItem[] = layout.trends.map((t) => ({ id: t.views[0].id, label: t.views[0].label, icon: "" }));
+  const SHORT: Partial<Record<ViewId, string>> = { "GRP-O-ROLL": "Roll", "GRP-O-RESULTS": "Results", "GRP-O-SHARE": "Share", "GRP-S-GROWING": "Growing", "GRP-S-SCATTER": "Size and results", "GRP-S-SHAPES": "Shapes" };
+  const trendItems: RailItem[] = layout.trends.map((t) => ({ id: t.views[0].id, label: SHORT[t.views[0].id] ?? t.views[0].label, icon: "" }));
   return (
     <>
       <RailPanel tag={`The group now · ${periodLabel(c.o.years.census)}`} title="The group now" height="auto" source={sourceOf(now, c)} caption={captionOf(now, c)} focusBar={c.focusBar}>
@@ -551,7 +552,7 @@ function PhoneAgainst({ o }: { o: GroupOverview }) {
   const m = o.against.columns[0];
   return (
     <div className="flex flex-col text-[12.5px]">
-      {o.against.rows.map((r, i) => (
+      {o.against.rows.filter((r) => MAIN_ROWS.includes(r.key) || r.kind === "peer_named").map((r, i) => (
         <div key={r.key} className="flex items-baseline justify-between gap-2 border-b border-[var(--panel-border)] py-1.5 last:border-0">
           <span className={i === 0 ? "font-bold text-[var(--adm-accent-text)]" : ""}>{r.label}</span>
           <span className={i === 0 ? "font-bold" : ""}>

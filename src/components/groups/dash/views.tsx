@@ -56,7 +56,7 @@ export function GroupNow({ o, compact }: { o: GroupOverview; compact: boolean })
   const maxBand = Math.max(1, ...bands.map((b) => n.sizeBands[b] ?? 0));
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="text-[13px] font-bold text-[var(--fg)]">The group now</div>
+      {!compact && <div className="text-[13px] font-bold text-[var(--fg)]">The group now</div>}
       <div className="grid grid-cols-2 gap-2">
         <Stat label="Schools" value={<span className="text-[var(--accent)]">{n.schools}</span>} sub={phaseLine || " "} accent />
         <Stat label="Combined roll" value={fmt(n.roll, "pupils")} sub={n.sinceFirst !== null ? `${pctText(n.sinceFirst)} since ${periodLabel(o.years.first)}` : " "} />
@@ -110,7 +110,7 @@ export function GroupNow({ o, compact }: { o: GroupOverview; compact: boolean })
 
 // ------------------------------------------------------------------------------ Against others
 
-const MAIN_ROWS = ["group", "peer_band:band", "non_group:england", "areas:la", "england:england"];
+export const MAIN_ROWS = ["group", "peer_band:band", "non_group:england", "areas:la", "england:england"];
 
 export function AgainstOthers({ o, average, candidates = [], onNamed, highlightNote }: { o: GroupOverview; average: boolean; candidates?: { id: string; label: string; schools: number }[]; onNamed?: (ids: string[]) => void; highlightNote?: ReactNode }) {
   const [mix, setMix] = useState(o.compare.key === "mix_matched");
