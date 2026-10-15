@@ -21,10 +21,14 @@ test("old names read as DfE's latest; others pass through", () => {
   assert.equal(latestSubjectName("History"), "History");
   assert.equal(latestSubjectName("Mathematics"), "Mathematics");
   assert.equal(latestSubjectNameOrNull(null), null);
+  // KS5 (2024/25 renames)
+  assert.equal(latestSubjectName("Computer Studies / Computing"), "Computer Science");
+  assert.equal(latestSubjectName("Business Studies:Single", "GCE A level"), "Business Studies");
+  assert.equal(latestBreakdown("GCE A level::Art and Design (Fine Art)::1::A*"), "GCE A level::Fine Art::1::A*");
 });
 
-test("the map never chains, and has the ingest map's 31 rows for every qualification", () => {
-  assert.equal(Object.keys(SUBJECT_LATEST_NAMES).length, 31);
+test("the map never chains, and has the ingest map's rows for every qualification (31 KS4, 16 KS5)", () => {
+  assert.equal(Object.keys(SUBJECT_LATEST_NAMES).length, 47);
   for (const latest of Object.values(SUBJECT_LATEST_NAMES)) assert.equal(SUBJECT_LATEST_NAMES[latest], undefined, latest);
 });
 
@@ -88,6 +92,20 @@ test("short labels: the same under the latest name, or the new name's own", () =
     "Land based Studies": "Land Based",
     "Persian Language": "Persian",
     Tourism: "Travel & Tourism",
+    // KS5: the six Art and Design titles were all "Art Design" before.
+    "Additional Mathematics FSMQ": "Add Maths",
+    "Art and Design (3d Studies)": "3D Stud",
+    "Art and Design (Critical Studies)": "Crit Stud",
+    "Art and Design (Fine Art)": "Fine Art",
+    "Art and Design (Graphics)": "Graphics",
+    "Art and Design (Photography)": "Photog",
+    "Art and Design (Textiles)": "Textiles",
+    "Business Studies:Single": "Business",
+    "Computer Studies / Computing": "Comp Sci",
+    "Electrical installation (Buildings / Construction)": "Elec Inst",
+    "Finance / Accounting (General)": "Finance",
+    "Media/Film/Tv Studies": "Media",
+    "Music performance (Group)": "Music Perf",
   };
   for (const [old, latest] of Object.entries(SUBJECT_LATEST_NAMES)) {
     assert.equal(shortSubject(latest), renamed[old] ?? shortSubject(old), `${old} -> ${latest}`);
