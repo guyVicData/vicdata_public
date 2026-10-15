@@ -158,3 +158,14 @@ test("Context's FSM follows DfE: no figure for independent schools (CTCs and ind
   assert.equal(fsmNotPublishedFor("Academies", "Academy converter"), false);
   assert.equal(fsmNotPublishedFor("Special schools", "Non-maintained special school"), false);
 });
+
+test("The place line drops a part that repeats the one before it (R-SMT-CONTEXT-PLACE)", async () => {
+  const { placeLine } = await import("../place-line");
+  assert.equal(placeLine(["Reading", "Reading", "South East"]), "Reading \u00b7 South East");
+  assert.equal(placeLine(["Malvern", "Worcestershire", "West Midlands"]), "Malvern \u00b7 Worcestershire \u00b7 West Midlands");
+  assert.equal(placeLine(["London", "Camden", "London"]), "London \u00b7 Camden \u00b7 London");
+  assert.equal(placeLine(["Bristol", "Bristol, City of", "South West"]), "Bristol \u00b7 South West");
+  assert.equal(placeLine(["Kingston upon Hull", "City of Kingston upon Hull", null]), "Kingston upon Hull");
+  assert.equal(placeLine(["WIGAN", "Wigan", ""]), "WIGAN");
+  assert.equal(placeLine([null, "Camden", "London"]), "Camden \u00b7 London");
+});

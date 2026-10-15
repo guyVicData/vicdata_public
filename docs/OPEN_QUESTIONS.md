@@ -2104,3 +2104,10 @@ Context on the ingest's real data: residents within 5 miles, deprivation, free s
 - **R-SMT-DATA-GAP is superseded** by R-SMT-CONTEXT-DEPRIVATION (the catalogue's way of retiring a rule; it keeps no runner).
 - **The "Shade by" menu is wider** (`MenuChip`'s new optional `menuWidth`, 210 by default as before), and the map sits in its own stacking context so menus open over it.
 - **The re-seed test (`v061_s2_reseed_pglite.mjs`) fails 5 of 16 on `main` too:** it still expects the original four Teacher dashboards. Not this round's; worth updating.
+
+## 2026-10-15 — 0.8 SMT r3 snags
+
+Three fixes after SMT round 3.
+
+**Calls made**
+- **Place line (fix 1): only SMT Context uses it.** The public page's line is town and postcode, and Admissions has none, so the helper (`src/lib/place-line.ts`) is used in Context's column 1 only. Besides the "City of" / "Borough of" prefixes, it ignores GIAS's suffix form ("Bristol, City of"), so Bristol's town and LA match too. Only a part repeating the one *before* it is dropped: Acland Burghley's "London · Camden · London" stays as it is.

@@ -1465,6 +1465,17 @@ export const RULES: Rule[] = [
   },
   // ---------------------------------------------------------------- 0.8 SMT round 3
   {
+    id: "R-SMT-CONTEXT-PLACE",
+    statement:
+      "Context's place line (town · LA · region) drops any part that names the same place as the part before it, compared case-insensitively and ignoring \"City of\" / \"Borough of\" (prefix, or GIAS's \", City of\" suffix).",
+    why: "Leighton Park read \"Reading · Reading · South East\" (SMT r3 snags, fix 1).",
+    appliesTo: "DV-SMT-C-NOW",
+    enforcedIn: ["src/lib/place-line.ts:placeLine", "src/components/smt/views/Context.tsx:ContextNow"],
+    testCase: { urn: "110110", school: "Leighton Park; The Chase 137625; Acland Burghley 100053", phase: "ks4", expect: "Leighton Park shows \"Reading · South East\"; The Chase \"Malvern · Worcestershire · West Midlands\" and Acland Burghley \"London · Camden · London\", unchanged.", check: "smtContextPlace" },
+    origin: "0.8 SMT r3 snags (2026-10-15)",
+    status: "active",
+  },
+  {
     id: "R-SMT-CONTEXT-RESIDENTS",
     statement:
       "Context's children within 5 miles are ONS residents (school_context_lookup: LSOAs whose population-weighted centroid is within 5 miles, the latest mid-year held), summed over the level's single ages (GCSE 11-15, Post-16 16-17, Primary 4-10, Whole school the school's range), with the change since the first year held; the census's pupils at schools within 5 miles sit beside them, labelled, and neither is divided by the other.",

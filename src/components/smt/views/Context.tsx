@@ -17,6 +17,7 @@ import type { Context } from "@/lib/smt/context";
 import type { ContextMap, MapLsoa, MapSchool } from "@/lib/smt/context-map";
 import type { Load } from "../api";
 import { fmt, shortYear } from "../ui";
+import { placeLine } from "@/lib/place-line";
 
 const ConsortiumMap = dynamic(() => import("@/components/ConsortiumMap"), { ssr: false });
 const S = productAccent("smt")!;
@@ -77,7 +78,7 @@ export function ContextNow({ c, compact = false }: { c: Context; compact?: boole
       <div className="grid grid-cols-2 gap-2">{tiles}</div>
       {pupils}
       <div className="text-[11.5px] text-[var(--muted2)]" data-place="" title={SMT_NOTES.noDistrict}>
-        {[c.place.town, c.place.la, c.place.region].filter(Boolean).join(" · ")}
+        {placeLine([c.place.town, c.place.la, c.place.region])}
       </div>
       <div className="flex flex-col border-t border-[var(--panel-border)] pt-[6px]">
         <SocialContext c={c} />

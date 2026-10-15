@@ -1513,6 +1513,17 @@ const RUNNERS: Record<string, Runner> = {
     const loadedOk = withB.state === "lsoa" && withB.here === withB.lookup && withB.here === 34 && withB.everyBoundary === true && withB.opts.join() === "children,imd,idaci,fsm";
     return { pass: fallbackOk && loadedOk, detail: fmt({ withoutBoundaries: `${without.state} (${without.reason ?? ""}), shade ${without.opts.join("/")}, ${without.las} LAs, district note ${html.includes(SMT_NOTES.shadeByDistrict.slice(0, 40))}`, withBoundaries: `${withB.state}: ${withB.here} within 5 miles (lookup ${withB.lookup}), boundaries ${withB.everyBoundary}, shade ${withB.opts.join("/")}` }) };
   },
+  async smtContextPlace() {
+    const want: Record<string, string> = { "110110": "Reading · South East", "137625": "Malvern · Worcestershire · West Midlands", "100053": "London · Camden · London" };
+    const got: Record<string, string> = {};
+    for (const urn of Object.keys(want)) {
+      const c = await smtContextCase(urn, "around", "whole");
+      const html = await smtRender(urn, "DV-SMT-C-NOW", undefined, { context: c });
+      got[urn] = textOf(/<div[^>]*data-place=""[^>]*>([^<]*)<\/div>/.exec(html)?.[1] ?? "").trim();
+    }
+    const pass = Object.entries(want).every(([u, v]) => got[u] === v);
+    return { pass, detail: fmt(got) };
+  },
   async smtContextResidents() {
     const c = await smtContextCase("137625", "around", "gcse");
     const { callReferenceRpc } = (await lib()).ref;
