@@ -10,6 +10,7 @@
 // The entry point plays the subject's part: the chips (the school's admissions_entry_points, else
 // the defaults its age range gives) choose what every view follows. The top bar's filters pass
 // through to the routes. Every figure comes from /api/admissions/* (the browser recomputes none).
+import { ADM_SEX_FILTER } from "@/catalogue/admissions";
 import { indexedLabel } from "@/lib/index-base";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
@@ -554,9 +555,10 @@ function viewBody(dv: string, c: Ctx, o: ViewOpts): ReactNode {
     case "DV-ADM-P-ENTRY-TABLE":
       return readyPipe(c.pipeline, (p) => <EntryTable p={p} years={L.years as "down" | "across"} />);
     case "DV-ADM-P-POOL-INDEXED":
-      return readyPipe(c.pipeline, (p) => <PoolTrends p={p} fullscreen={fs} room={o.height} la={lines.has("la")} england={lines.has("england")} endLabels={L.endLabels as boolean} />);
+      // 0.8 audit fixes (6): the LA and England lines can't be split by sex; hidden while it is on.
+      return readyPipe(c.pipeline, (p) => <PoolTrends p={p} fullscreen={fs} room={o.height} la={lines.has("la") && c.filters.sex === "all"} england={lines.has("england") && c.filters.sex === "all"} endLabels={L.endLabels as boolean} />);
     case "DV-ADM-P-POOL-TABLE":
-      return readyPipe(c.pipeline, (p) => <PoolTable p={p} la={lines.has("la")} england={lines.has("england")} />);
+      return readyPipe(c.pipeline, (p) => <PoolTable p={p} la={lines.has("la") && c.filters.sex === "all"} england={lines.has("england") && c.filters.sex === "all"} />);
     case "DV-ADM-P-AREA-POP":
       return readyPipe(c.pipeline, (p) => <AreaPopulation p={p} la={lines.has("la")} region={lines.has("region")} />);
     case "DV-ADM-P-HOLD-LINE":
@@ -651,6 +653,16 @@ function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode
     return { caption: "Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools" };
   if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "The entry age band's roll sits on the same rail" };
   return {};
+}
+
+/** 0.8 audit fixes (6, R-ADM-SEX-FILTER): while the girls/boys filter is on, a panel it doesn't split
+ * says so (ADM_SEX_FILTER), and Pool trends says its area lines are hidden. */
+function withSexNote(dv: string, c: Ctx, notes: { caption?: ReactNode; visible?: ReactNode }): { caption?: ReactNode; visible?: ReactNode } {
+  if (c.filters.sex === "all") return notes;
+  const line = ADM_SEX_FILTER[dv] === "not-split" ? ADMISSIONS_NOTES.notSplitBySex : dv.startsWith("DV-ADM-P-POOL") ? ADMISSIONS_NOTES.poolAreaNotSplit : null;
+  if (!line) return notes;
+  const note = <span data-sex-note="" className="text-[var(--muted)]">{line}</span>;
+  return { ...notes, visible: notes.visible ? <>{notes.visible} {note}</> : note };
 }
 
 /** The source note behind each panel's "i". */
@@ -799,7 +811,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
   const dv = dataviewOf(panel, active) ?? "";
   const h = headerOf(panel, dv, c);
   const title = dataviewById(dv)?.label ?? h.tag;
-  const notes = notesOf(dv, c);
+  const notes = withSexNote(dv, c, notesOf(dv, c));
   const onRailDv = (dvId: string) => {
     const inst = panel.dataviews.find((v) => v.kind === "view" && v.dataview === dvId);
     if (inst) setActive(inst.id);

@@ -75,6 +75,10 @@ export const ADMISSIONS_NOTES = {
   pool: "This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come.",
   // R-ADM-LADDER: the certainty of each year, by its source
   counted: "Counted: children in these schools now (the January census), followed forward.",
+  // 0.8 audit fixes (6, R-ADM-SEX-FILTER): a panel the girls/boys filter doesn't split, and Pool
+  // trends' area lines while it is on.
+  notSplitBySex: "Not split by sex: girls and boys together.",
+  poolAreaNotSplit: "The LA and England lines aren't split by sex, so they are hidden while girls or boys is chosen.",
   // 0.8 audit fixes (5, A2): at 4+ (and younger) the births are not scaled to the schools; the ratio
   // sets only the range. From 11+ the ladder does scale them (ladder.ts birthsPoint), so that entry
   // keeps its own words (birthsScaled).

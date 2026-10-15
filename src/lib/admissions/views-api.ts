@@ -73,8 +73,8 @@ export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList
   const me = traits.get(urn);
   const listMembers = (kind: string) => all.filter((l) => l.kind === kind).flatMap((l) => l.members ?? []);
   const [now, table, stages, trends, area, fe] = await Promise.all([
-    entryNow(urn, ep, own),
-    feederTable(urn, ep, p.sets, traits, minCohort, { day: listMembers("day_feeders"), boarding: listMembers("boarding_feeders") }),
+    entryNow(urn, ep, own, sex),
+    feederTable(urn, ep, p.sets, traits, minCohort, { day: listMembers("day_feeders"), boarding: listMembers("boarding_feeders") }, sex),
     funnelArea(p.blend, p.blendSource === "override", me).then((area) => funnel(urn, ep, area, own?.table ?? new Map(), sex)),
     poolTrends(ep, p.ladder, me?.laName ?? null),
     cachedReference(`adm:area-pop:${me?.laCode ?? ""}:${CURRENT_CENSUS_PERIOD}`, () => lookupPopulationTrend(me?.laName ?? null, me?.laCode ?? null, CURRENT_CENSUS_PERIOD)),
@@ -118,7 +118,7 @@ export async function marketView(urn: string, ep: EntryPoint, lists: SavedList[]
   const latest = Math.max(...m.entryAge.periods);
   const first = Math.min(...m.entryAge.periods);
   const mine = (y: number) => m.entryAge.rows.find((r) => r.urn === urn && r.period === y) ?? null;
-  const extras = rivalExtras(urn, urns, census, traits, ep);
+  const extras = rivalExtras(urn, urns, census, traits, ep, o.sex ?? "all");
   const summary = {
     latest,
     first,

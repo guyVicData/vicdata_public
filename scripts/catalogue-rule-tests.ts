@@ -961,6 +961,30 @@ const RUNNERS: Record<string, Runner> = {
   // ---------------------------------------------------------------- 0.7 admissions r2 (D7)
   // Every runner reads the screens' own functions (views-api.ts: what the routes answer) for a
   // real school and checks them against raw rows or round 1's own builders.
+  async admSexFilter() {
+    // 0.8 audit fixes (6): every Admissions view is either split by the girls/boys filter throughout or
+    // says it isn't; the split views' figures are girls' (or boys') at every point.
+    const { ADM_SEX_FILTER } = await import("../src/catalogue/admissions");
+    const { DATAVIEWS } = await import("../src/catalogue/dataviews");
+    const { ADMISSIONS_NOTES } = await import("../src/catalogue/notes");
+    const v = await import("../src/lib/admissions/views-api");
+    const fs = await import("node:fs");
+    const ids = DATAVIEWS.filter((d) => d.id.startsWith("DV-ADM-")).map((d) => d.id).sort();
+    const registry = ids.join() === Object.keys(ADM_SEX_FILTER).sort().join();
+    const today = new Date("2026-10-12");
+    const ep = v.entryPoint("11+")!;
+    const [all, girls, mAll, mGirls] = await Promise.all([v.pipelineView("137625", ep, [], { today }), v.pipelineView("137625", ep, [], { today, sex: "female" }), v.marketView("137625", ep, []), v.marketView("137625", ep, [], { sex: "female" })]);
+    if ("empty" in all || "empty" in girls) return { pass: false, detail: "empty" };
+    const now = { tiles: girls.now.cohort === all.now.girls && girls.now.cohort !== all.now.cohort && (girls.now.roll ?? 0) < (all.now.roll ?? 0), trend: girls.now.series.every((s, i) => s.cohort === all.now.series[i].female) };
+    const sumOf = (rows: { pupils: number | null }[]) => rows.reduce((t, r) => t + (r.pupils ?? 0), 0);
+    const feeders = { split: sumOf(girls.feederTable.rows) > 0 && sumOf(girls.feederTable.rows) < sumOf(all.feederTable.rows) };
+    const me = (m: typeof mAll, u: string) => m.extras.find((e) => e.urn === u)!;
+    const market = { roll: (me(mGirls, "137625").roll ?? 0) < (me(mAll, "137625").roll ?? 0), momentumWhole: mGirls.extras.every((e) => e.entryChangePctAll === me(mAll, e.urn).entryChangePctAll) };
+    const src = fs.readFileSync("src/components/admissions/AdmissionsDashboard.tsx", "utf8");
+    const notes = { said: !!ADMISSIONS_NOTES.notSplitBySex && !!ADMISSIONS_NOTES.poolAreaNotSplit && /withSexNote\(dv, c, notesOf\(dv, c\)\)/.test(src), poolHidden: /la=\{lines\.has\("la"\) && c\.filters\.sex === "all"\}/.test(src) };
+    const parts = { registry, ...now, ...feeders, ...market, ...notes };
+    return { pass: Object.values(parts).every(Boolean), detail: fmt({ ...Object.fromEntries(Object.entries(parts).map(([k, x]) => [k, String(x)])), notSplit: Object.entries(ADM_SEX_FILTER).filter(([, x]) => x === "not-split").map(([k]) => k.replace("DV-ADM-", "")).join(" ") }) };
+  },
   async admFamilyPupils({ ref }) {
     const v = await import("../src/lib/admissions/views-api");
     const p = await v.pipelineView("137625", v.entryPoint("11+")!, [], { today: new Date("2026-10-12") });

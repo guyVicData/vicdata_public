@@ -1049,6 +1049,17 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-ADM-SEX-FILTER",
+    statement:
+      "Every Admissions panel either applies the girls/boys filter fully -- every pupil figure it draws is girls' or boys' -- or, while the filter is on, says 'Not split by sex'. Never part of a panel: Pool trends hides its LA and England lines (never split) and says so; momentum and flags, which set pupils against results, stay whole and say so. ADM_SEX_FILTER lists every view.",
+    why: "The audit (0.8 SMT r4, A9) found the filter applied to some figures on a panel and not others, unsaid.",
+    appliesTo: "Every DV-ADM view",
+    enforcedIn: ["src/catalogue/admissions.ts:ADM_SEX_FILTER", "src/components/admissions/AdmissionsDashboard.tsx:withSexNote", "src/lib/admissions/screens.ts:entryNow, feederTable, rivalExtras, rollOf", "src/lib/admissions/feeders.ts:feederFlags", "src/lib/admissions/views-api.ts"],
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "Every DV-ADM view is in ADM_SEX_FILTER; with girls chosen the entry tiles' cohort equals the girls figure and the roll is girls only, the entry trend is girls each year, the feeder pupils and the rivals' rolls are girls only; momentum's change is the same either way; the not-split note and Pool trends' hidden lines are wired.", check: "admSexFilter" },
+    origin: "0.8 audit fixes, item 6",
+    status: "active",
+  },
+  {
     id: "R-ADM-FLAG-FEEDER",
     statement:
       "A feeder whose pupils (across the rung ages it holds) fell more than the area's (the whole feeder set) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum.",

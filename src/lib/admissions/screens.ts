@@ -24,11 +24,11 @@ type Pt = { year: number; value: number | null };
 
 /** A single school's roll in one census year (every age, both sexes), as the shape and size
  * pieces read it; null where it has no census that year. */
-export function rollOf(c: SchoolCensus | undefined, year: number): number | null {
+export function rollOf(c: SchoolCensus | undefined, year: number, sex: Sex = "all"): number | null {
   const counts = c?.ageGenderByPeriod.get(year);
   if (!counts) return null;
   let t = 0;
-  for (const v of counts.values()) t += v.male + v.female;
+  for (const v of counts.values()) t += sex === "female" ? v.female : sex === "male" ? v.male : v.male + v.female;
   return t > 0 ? t : null;
 }
 
@@ -58,17 +58,20 @@ export type EntryNow = {
   series: { period: number; cohort: number | null; female: number | null; male: number | null }[]; // the entry-cohort trend (row 2)
 };
 
-export async function entryNow(urn: string, ep: EntryPoint, own: SchoolCensus | undefined): Promise<EntryNow> {
+// 0.8 audit fixes (6): with the girls/boys filter on, every figure on the entry tiles and in the entry
+// trend is girls' or boys' (the cohort, its change, the roll, boarders and day pupils); the girls and
+// boys split itself still shows both.
+export async function entryNow(urn: string, ep: EntryPoint, own: SchoolCensus | undefined, sex: Sex = "all"): Promise<EntryNow> {
   const t: CohortTable = own?.table ?? new Map();
   const series = Array.from({ length: P - CENSUS_FIRST_PERIOD + 1 }, (_, i) => CENSUS_FIRST_PERIOD + i).map((period) => ({
     period,
-    cohort: cohortAt(t, ep.age, period),
+    cohort: cohortAt(t, ep.age, period, sex),
     female: cohortAt(t, ep.age, period, "female"),
     male: cohortAt(t, ep.age, period, "male"),
   }));
   const now = series.find((s) => s.period === P)!;
   const base = series.find((s) => s.period === CENSUS_FIRST_PERIOD)!;
-  const boarders = await boardersOf(urn);
+  const boarders = await boardersOf(urn, sex);
   return {
     age: ep.age,
     period: P,
@@ -78,19 +81,20 @@ export async function entryNow(urn: string, ep: EntryPoint, own: SchoolCensus | 
     girls: now.female,
     boys: now.male,
     boarders,
-    roll: rollOf(own, P),
-    day: rollOf(own, P) !== null && boarders !== null ? rollOf(own, P)! - boarders : null,
-    girlsPct: now.cohort ? ((now.female ?? 0) / now.cohort) * 100 : null,
-    boysPct: now.cohort ? ((now.male ?? 0) / now.cohort) * 100 : null,
+    roll: rollOf(own, P, sex),
+    day: rollOf(own, P, sex) !== null && boarders !== null ? rollOf(own, P, sex)! - boarders : null,
+    girlsPct: (now.female ?? 0) + (now.male ?? 0) ? ((now.female ?? 0) / ((now.female ?? 0) + (now.male ?? 0))) * 100 : null,
+    boysPct: (now.female ?? 0) + (now.male ?? 0) ? ((now.male ?? 0) / ((now.female ?? 0) + (now.male ?? 0))) * 100 : null,
     series,
   };
 }
 
 /** The school's boarders in the latest census (boarders_total, or male + female). */
-function boardersOf(urn: string): Promise<number | null> {
-  return cachedReference(`adm:boarders:${urn}:${P}`, async () => {
+function boardersOf(urn: string, sex: Sex = "all"): Promise<number | null> {
+  return cachedReference(`adm:boarders:${urn}:${P}:${sex}`, async () => {
     const facts = await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: [urn], breakdowns: ["boarders_total", "boarders_male", "boarders_female"], periodMin: P, periodMax: P });
     const at = (b: string) => facts.find((f) => f.breakdown === b && f.period === P)?.value_numeric ?? null;
+    if (sex !== "all") return at(`boarders_${sex}`);
     const total = at("boarders_total");
     if (total !== null) return total;
     const m = at("boarders_male");
@@ -133,6 +137,7 @@ export async function feederTable(
   traits: Map<string, SchoolTraits>,
   minCohort: number,
   lists: { day: string[]; boarding: string[] },
+  sex: Sex = "all",
 ): Promise<FeederTable> {
   const age = Math.max(4, ep.age - 1);
   const set = sets.find((s) => s.age === age) ?? sets.find((s) => s.age === Math.min(...sets.map((x) => x.age)));
@@ -140,7 +145,7 @@ export async function feederTable(
   const ages = sets.filter((s) => s.urns.join() === (set?.urns ?? []).join()).map((s) => s.age);
   const census = await cachedCensus(urns);
   const tables = new Map(urns.map((u) => [u, census.get(u)?.table ?? new Map()]));
-  const flags = feederFlags(tables, [age], P, minCohort);
+  const flags = feederFlags(tables, [age], P, minCohort, sex);
   let from = 0;
   let to = 0;
   for (const f of flags) if (f.from !== null && f.to !== null) { from += f.from; to += f.to; }
@@ -306,21 +311,24 @@ export type RivalExtra = {
   entryNow: number | null;
   entryBase: number | null; // 2022/23
   entryChangePct: number | null;
+  // Girls and boys together whatever the filter: the momentum scatter, which sets pupils against
+  // results (never split by sex), reads these (0.8 audit fixes, 6).
+  entryChangePctAll: number | null;
   traits: Pick<SchoolTraits, "sector" | "gender" | "boarding" | "laName" | "easting" | "northing"> | null;
   distanceKm: number | null;
   shape: string | null;
   profile: { age: number; female: number; male: number }[];
 };
 
-export function rivalExtras(urn: string, urns: string[], census: Map<string, SchoolCensus>, traits: Map<string, SchoolTraits>, ep: EntryPoint): RivalExtra[] {
-  const rolls = urns.map((u) => ({ u, r: rollOf(census.get(u), P) }));
+export function rivalExtras(urn: string, urns: string[], census: Map<string, SchoolCensus>, traits: Map<string, SchoolTraits>, ep: EntryPoint, sex: Sex = "all"): RivalExtra[] {
+  const rolls = urns.map((u) => ({ u, r: rollOf(census.get(u), P, sex) }));
   const me = traits.get(urn);
   return urns.map((u) => {
     const c = census.get(u);
     const t = traits.get(u);
     const roll = rolls.find((x) => x.u === u)!.r;
-    const now = cohortAt(c?.table ?? new Map(), ep.age, P);
-    const base = cohortAt(c?.table ?? new Map(), ep.age, TREND_BASE_PERIOD);
+    const now = cohortAt(c?.table ?? new Map(), ep.age, P, sex);
+    const base = cohortAt(c?.table ?? new Map(), ep.age, TREND_BASE_PERIOD, sex);
     return {
       urn: u,
       roll,
@@ -328,6 +336,7 @@ export function rivalExtras(urn: string, urns: string[], census: Map<string, Sch
       entryNow: now,
       entryBase: base,
       entryChangePct: pctChange(base, now),
+      entryChangePctAll: pctChange(cohortAt(c?.table ?? new Map(), ep.age, TREND_BASE_PERIOD), cohortAt(c?.table ?? new Map(), ep.age, P)),
       traits: t ? { sector: t.sector, gender: t.gender, boarding: t.boarding, laName: t.laName, easting: t.easting, northing: t.northing } : null,
       distanceKm: u === urn ? 0 : distanceKm(me, t),
       shape: c ? shapeOf(c.ageGender) : null,

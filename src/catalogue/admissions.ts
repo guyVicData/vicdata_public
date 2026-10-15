@@ -275,3 +275,44 @@ export const ADMISSIONS_FAMILIES: { id: AdmissionsDataId; label: string }[] = [
 ];
 export const isAdmissionsData = (d: string | undefined | null): d is AdmissionsDataId => !!d && d.startsWith("admissions.");
 export const isAdmissionsHost = (h: string | undefined | null): h is AdmissionsHostId => !!h && h.startsWith("admissions.");
+
+// 0.8 audit fixes (6, R-ADM-SEX-FILTER): how each view takes the girls/boys filter -- never on part of
+// a panel. "applies": every pupil figure it draws is girls' or boys' (Pool trends hides its LA and
+// England lines, which ONS and the census aggregates don't split, and says so). "not-split": nothing
+// on it is split, and it says "Not split by sex" while the filter is on (shapes, area population,
+// results, and momentum and flags, which set pupils against results).
+export const ADM_SEX_FILTER: Record<string, "applies" | "not-split"> = {
+  "DV-ADM-P-NOW": "applies",
+  "DV-ADM-P-PIPELINE": "applies",
+  "DV-ADM-P-FUNNEL": "applies",
+  "DV-ADM-P-MAP": "applies",
+  "DV-ADM-P-TABLE": "applies",
+  "DV-ADM-P-SHAPE": "not-split",
+  "DV-ADM-P-ENTRY-LINE": "applies",
+  "DV-ADM-P-ENTRY-BARS": "applies",
+  "DV-ADM-P-ENTRY-TABLE": "applies",
+  "DV-ADM-P-POOL-INDEXED": "applies",
+  "DV-ADM-P-POOL-TABLE": "applies",
+  "DV-ADM-P-AREA-POP": "not-split",
+  "DV-ADM-P-HOLD-LINE": "applies",
+  "DV-ADM-P-HOLD-TABLE": "applies",
+  "DV-ADM-M-NOW": "applies",
+  "DV-ADM-M-DONUT": "applies",
+  "DV-ADM-M-BARS": "applies",
+  "DV-ADM-M-MAP": "applies",
+  "DV-ADM-M-TABLE": "applies",
+  "DV-ADM-M-MOMENTUM": "not-split",
+  "DV-ADM-M-STRENGTHS": "not-split",
+  "DV-ADM-M-SHAPE": "not-split",
+  "DV-ADM-M-FLAGS": "not-split",
+  "DV-ADM-M-VS-LINE": "applies",
+  "DV-ADM-M-VS-BARS": "applies",
+  "DV-ADM-M-ACAD-RANK": "not-split",
+  "DV-ADM-M-ACAD-NUM": "not-split",
+  "DV-ADM-M-ACAD-CHANGE": "not-split",
+  "DV-ADM-M-SHARE-LINE": "applies",
+  "DV-ADM-M-SHARE-NUM": "applies",
+  "DV-ADM-M-SHARE-RANKS": "applies",
+  "DV-ADM-M-SHARE-CHANGE": "applies",
+  "DV-ADM-M-ROLL-LINE": "applies",
+};
