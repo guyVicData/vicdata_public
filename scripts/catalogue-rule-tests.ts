@@ -155,6 +155,14 @@ async function smtContextCase(urn: string, area: "around" | "la" = "around", lev
 }
 const textOf = (html: string) => html.replace(/<title>[^<]*<\/title>/g, " ").replace(/<[^>]+>/g, " ").replace(/&#x27;|&rsquo;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ");
 
+// 0.8 audit fixes (10): the latest results year, from years.ts (filled from the data as the app fills
+// it), for the rules whose expected values move with it (scripts/rule-year-fixtures.ts).
+async function latestYearOf(L: Awaited<ReturnType<typeof lib>>, stage: "ks4" | "ks5"): Promise<number | null> {
+  const Y = await import("../src/catalogue/years");
+  if (Y.latestPeriodOf(stage) === null) Y.setLatestYears(await L.ref.lookupAcademicLatestYears());
+  return Y.latestPeriodOf(stage);
+}
+
 const RUNNERS: Record<string, Runner> = {
   // R-KS5-ENGLAND-EXACT: 100369 Chemistry 2024/25, own IB HL 58.29; England exact HL 43.13, SL 37.84.
   async englandExact({ adv, ref, agg }) {
@@ -559,7 +567,12 @@ const RUNNERS: Record<string, Runner> = {
   // rows (the dashboard's read, and the nearest set's through the comparator-grades read), each
   // column's frame built from them, then each trend table preset beside its column's trend
   // chart through the series builder, card and fullscreen, years across and years down.
-  async trendTableYears({ adv, sg, tvp }) {
+  async trendTableYears(L) {
+    const { adv, sg, tvp } = L;
+    // A relationship: every chart from HISTORIC_GRADE_FROM to the stage's latest year (years.ts); the
+    // card across shows the change's two ends (TREND_BASE_PERIOD and the latest) and names the rest.
+    const Y = await import("../src/catalogue/years");
+    const { missingFor } = await import("./rule-year-fixtures");
     const { buildSeries } = await import("../src/lib/view-series");
     const { presetSpec } = await import("../src/catalogue/viewspec");
     const { yearColumnsShown } = await import("../src/components/teacher/tableLayout");
@@ -578,6 +591,12 @@ const RUNNERS: Record<string, Runner> = {
       const set = [c.urn, ...nearest.rows.map((r) => r.urn).filter((u) => u !== c.urn)];
       const setRows = (await adv.fetchSchoolGradeRows(set, c.phase, c.subject)).byUrn;
       const periods = [...new Set(own.map((r) => r.period))].sort((a, b) => a - b);
+      const latest = await latestYearOf(L, c.phase);
+      if (latest === null || periods.at(-1) !== latest) {
+        problems.push(`${c.urn} ${c.phase}: ${latest === null ? "no latest year read" : missingFor(latest)}`);
+        continue;
+      }
+      const ends = `${Y.TREND_BASE_PERIOD},${latest}`;
       // The focus and up to three other subjects on the same qualification.
       const subjects = [c.subject, ...[...new Set(own.filter((r) => r.qualificationType === c.qual && r.subject !== c.subject).map((r) => r.subject))].slice(0, 3)];
       const rowsOf = (rows: Rows, subject: string, p: number) => rows.filter((r) => r.subject === subject && r.qualificationType === c.qual && r.period === p);
@@ -625,10 +644,10 @@ const RUNNERS: Record<string, Runner> = {
               const all = [...shownYears, ...hidden.map((i) => data.periods[i])].sort((a, b) => a - b);
               checked++;
               if (data.periods.join() !== chartYears.join()) problems.push(`${tag} ${layout}: table ${data.periods.join(" ")} vs chart ${chartYears.join(" ")}`);
-              else if (chartYears[0] !== 2021) problems.push(`${tag}: chart starts ${chartYears[0]}`);
+              else if (chartYears[0] !== Y.HISTORIC_GRADE_FROM) problems.push(`${tag}: chart starts ${chartYears[0]}`);
               else if (all.join() !== chartYears.join()) problems.push(`${tag} ${layout}: shown + named ${all.join(" ")}`);
               else if ((layout === "down" || fullscreen) && hidden.length) problems.push(`${tag} ${layout}: hides ${hidden.length}`);
-              else if (layout === "across" && !fullscreen && shownYears.join() !== "2022,2024") problems.push(`${tag} card across: ${shownYears.join(" ")}`);
+              else if (layout === "across" && !fullscreen && shownYears.join() !== ends) problems.push(`${tag} card across: ${shownYears.join(" ")}`);
               if (!fullscreen && layout === "across") seen.push(`${shownYears.join("+")} (+${hidden.length})`);
             }
           }
@@ -642,11 +661,11 @@ const RUNNERS: Record<string, Runner> = {
         for (const layout of ["across", "down"] as const) {
           const { shown, hidden } = yearColumnsShown(cd.periods, cd.statementFrom, { yearColumns: "first-latest", fullscreen, layout });
           checked++;
-          const ok = cd.periods.join() === periods.join() && cd.statementFrom === 2022 && (layout === "down" || fullscreen ? hidden.length === 0 : shown.map((i) => cd.periods[i]).join() === "2022,2024" && hidden.length === 2);
+          const ok = cd.periods.join() === periods.join() && cd.statementFrom === Y.TREND_BASE_PERIOD && (layout === "down" || fullscreen ? hidden.length === 0 : shown.map((i) => cd.periods[i]).join() === ends && hidden.length === periods.length - 2);
           if (!ok) problems.push(`${c.urn} Grade counts change table ${layout}${fullscreen ? " fullscreen" : ""}: ${cd.periods.join(" ")} from ${cd.statementFrom}`);
         }
     }
-    return { pass: problems.length === 0 && checked > 0, detail: problems.length ? problems.slice(0, 6).join("; ") : fmt({ checked, cards: [...new Set(seen)].join(" | "), years: "2021/22-2024/25 every chart, every table" }) };
+    return { pass: problems.length === 0 && checked > 0, detail: problems.length ? problems.slice(0, 6).join("; ") : fmt({ checked, cards: [...new Set(seen)].join(" | "), years: `${Y.periodLabel(Y.HISTORIC_GRADE_FROM)} to each stage's latest, every chart, every table` }) };
   },
 
   // R-ALEVEL-STAR (0.6.3 S3): King's Worcester 117037 A level Mathematics -- A* in every year
@@ -832,7 +851,11 @@ const RUNNERS: Record<string, Runner> = {
 
   // R-TREND-LINE-4YR: Acland Burghley 100053 GCSE Mathematics (the rollup's subject name). Points: 4 real years -> line;
   // Grade 4+ (from the dashboard's grade rows, gradeYears "four"): 4 years -> line since 0.6.2 (2 years -> bars before).
-  async trendLine({ adv, sg, tvp }) {
+  async trendLine(L) {
+    const { adv, sg, tvp } = L;
+    const { expectedFor } = await import("./rule-year-fixtures");
+    const want = expectedFor("R-TREND-LINE-4YR", await latestYearOf(L, "ks4"));
+    if (!want.ok) return { pass: false, detail: want.detail };
     const urn = "100053";
     const headline = ((await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? []).filter((h) => h.subject === "Mathematics");
     const periods = [...new Set(headline.map((h) => h.period))].sort();
@@ -848,7 +871,10 @@ const RUNNERS: Record<string, Runner> = {
       grade4Years: tvp.periodsWithData(rate).length,
       grade4Kind: tvp.trendChartKind(rate),
     };
-    return { pass: v.pointsYears === 4 && v.pointsKind === "line" && v.grade4Years === 4 && v.grade4Kind === "line", detail: fmt(v) };
+    // The kind follows the years: a line at TREND_LINE_MIN_YEARS (4) or more, whatever the year.
+    const { TREND_LINE_MIN_YEARS } = await import("../src/catalogue/years");
+    const kind = (n: number) => (n >= TREND_LINE_MIN_YEARS ? "line" : v.pointsKind);
+    return { pass: v.pointsYears === want.value.pointsYears && v.grade4Years === want.value.grade4Years && v.pointsKind === kind(v.pointsYears) && v.pointsKind === "line" && v.grade4Kind === "line", detail: fmt({ ...v, expected: `${want.value.pointsYears}/${want.value.grade4Years} years` }) };
   },
 
   // R-TREND-FROM-2223: The Chase 137625 GCSE History, on its real rows. Its Trends span
@@ -895,7 +921,13 @@ const RUNNERS: Record<string, Runner> = {
   // R-CURRENT-GRADES-FROM-2324: Acland Burghley 100053 GCSE Grade 4+ on its real four-year rows.
   // Read from 2023/24 on, as Current reads them: Turkish (grades only before 2023/24) leaves
   // the list, and Latin (no 2023/24) has no "vs last year" -- not 2024/25 against 2022/23.
-  async currentGradesFrom2324({ adv, sg, tvp }) {
+  async currentGradesFrom2324(L) {
+    const { adv, sg, tvp } = L;
+    const { expectedFor } = await import("./rule-year-fixtures");
+    const Y = await import("../src/catalogue/years");
+    const latest = await latestYearOf(L, "ks4");
+    const want = expectedFor("R-CURRENT-GRADES-FROM-2324", latest);
+    if (!want.ok) return { pass: false, detail: want.detail };
     const urn = "100053";
     const qual = "GCSE (9-1) Full Course";
     const grades = ((await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? []).filter((r) => r.qualificationType === qual);
@@ -913,21 +945,31 @@ const RUNNERS: Record<string, Runner> = {
       latinDelta: latin ? latin.delta : "absent",
       points: tvp.latestYearFrom("points"),
     };
-    return { pass: !v.turkishListed && v.turkishHasOldGrades && latin !== undefined && latin.delta === null && v.points === null && v.periods === "2021 2022 2023 2024", detail: fmt(v) };
+    const yearsOk = v.periods === Array.from({ length: latest! - Y.HISTORIC_GRADE_FROM + 1 }, (_, i) => Y.HISTORIC_GRADE_FROM + i).join(" ");
+    const latinOk = latin !== undefined && (want.value.latinDelta === null ? latin.delta === null : latin.delta !== null && Math.abs(latin.delta - want.value.latinDelta) < 0.01);
+    return { pass: !v.turkishListed && v.turkishHasOldGrades && latinOk && v.points === null && yearsOk, detail: fmt({ ...v, expectedLatinDelta: want.value.latinDelta === null ? "none" : want.value.latinDelta.toFixed(2) }) };
   },
 
   // R-THRESHOLD-PERIODS: Acland Burghley 100053's school grade rows (the dashboard's, gradeYears
   // "four") cover exactly 2021/22-2024/25 since 0.6.2 (2023/24 and 2024/25 before). The Data
   // View's read (no option) is unchanged: still the modern years only.
-  async thresholdPeriods({ adv, ref }) {
+  async thresholdPeriods(L) {
+    const { adv, ref } = L;
+    // A relationship, not a number: the grade rows run from HISTORIC_GRADE_FROM (four-year read) or
+    // MODERN_GRADE_FROM (the Data View read) to the latest year, every year between.
+    const Y = await import("../src/catalogue/years");
+    const { missingFor } = await import("./rule-year-fixtures");
+    const latest = await latestYearOf(L, "ks4");
+    if (latest === null) return { pass: false, detail: "no latest year read" };
+    const range = (from: number) => Array.from({ length: latest - from + 1 }, (_, i) => from + i).join(",");
     const urn = "100053";
     const grades = (await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" })).byUrn.get(urn)?.gradeDistribution ?? [];
     const periods = [...new Set(grades.map((r) => r.period))].sort();
     const dataView = (await adv.fetchSubjectLevelDataForSchools([urn], "ks4")).byUrn.get(urn)?.gradeDistribution ?? [];
     const dvPeriods = [...new Set(dataView.map((r) => r.period))].sort();
     return {
-      pass: periods.join(",") === "2021,2022,2023,2024" && dvPeriods.join(",") === "2023,2024",
-      detail: fmt({ gradePeriods: periods.join(" "), dataViewPeriods: dvPeriods.join(" "), source: ref.gradeRollupRpcState() === "present" ? "rollup" : "facts" }),
+      pass: periods.join(",") === range(Y.HISTORIC_GRADE_FROM) && dvPeriods.join(",") === range(Y.MODERN_GRADE_FROM),
+      detail: periods.at(-1) !== latest ? missingFor(latest) : fmt({ gradePeriods: periods.join(" "), dataViewPeriods: dvPeriods.join(" "), expected: `${range(Y.HISTORIC_GRADE_FROM)} / ${range(Y.MODERN_GRADE_FROM)}`, source: ref.gradeRollupRpcState() === "present" ? "rollup" : "facts" }),
     };
   },
 
@@ -961,6 +1003,33 @@ const RUNNERS: Record<string, Runner> = {
   // ---------------------------------------------------------------- 0.7 admissions r2 (D7)
   // Every runner reads the screens' own functions (views-api.ts: what the routes answer) for a
   // real school and checks them against raw rows or round 1's own builders.
+  async yearsRollover(L, rule) {
+    // 0.8 audit fixes (10): a rehearsal of GCSE 2026/27 arriving. The latest KS4 year moves to 2026
+    // (as academic_current_periods would say) while the data and fixtures stay; every year-dependent
+    // rule must then pass or say "no expected value for 2026/27" -- never fail on a wrong number.
+    const Y = await import("../src/catalogue/years");
+    const { missingFor } = await import("./rule-year-fixtures");
+    await latestYearOf(L, "ks4");
+    const before = { ks4: Y.latestPeriodOf("ks4"), ks5: Y.latestPeriodOf("ks5"), census: Y.latestPeriodOf("census"), ks2: Y.latestPeriodOf("ks2") };
+    const next = (before.ks4 ?? 2025) + 1;
+    const say = missingFor(next);
+    const checks = ["trendLine", "thresholdPeriods", "trendTableYears", "currentGradesFrom2324", "smtFlags"];
+    const out: string[] = [];
+    let ok = true;
+    try {
+      Y.setLatestYears({ ks4: { period: next, provisional: false } });
+      for (const k of checks) {
+        const r = await RUNNERS[k](L, rule);
+        const fine = r.pass || r.detail.includes(say);
+        ok &&= fine;
+        out.push(`${k}: ${r.pass ? "pass" : r.detail.includes(say) ? "says no expected value" : `WRONG (${r.detail.slice(0, 120)})`}`);
+      }
+    } finally {
+      Y.resetLatestYears();
+      Y.setLatestYears(Object.fromEntries(Object.entries(before).filter(([, p]) => p !== null).map(([k, p]) => [k, { period: p as number, provisional: false }])));
+    }
+    return { pass: ok, detail: fmt({ rehearsed: Y.periodLabel(next), checks: out.join("; ") }) };
+  },
   async rankTies({ ref }) {
     const { resolveRankingSet, cachedRankingPopulation } = await import("../src/lib/chooser-sets");
     const { defaultRankingFilters, matchesRanking, NATIONAL } = await import("../src/lib/comparator-chooser");
@@ -1973,7 +2042,10 @@ const RUNNERS: Record<string, Runner> = {
     const pass = pillsFor(chase.school).join() === "gender" && pillsFor(lp.school).join() === "gender,boarding" && ignored.filters.boarding === "all" && !ignored.rows.some((r) => r.key === "boarders") && ignored.now.roll === chase.overview.now.roll && lp.overview.rows.some((r) => r.key === "boarders") && lp.overview.trends.roll.lines.some((l) => l.key === "boarding");
     return { pass, detail: fmt({ chasePills: pillsFor(chase.school).join("+"), leightonPills: pillsFor(lp.school).join("+"), chaseBoardingFilterIgnored: ignored.filters.boarding === "all" && ignored.now.roll === chase.overview.now.roll, leightonBoardersRow: lp.overview.rows.some((r) => r.key === "boarders"), leightonLines: lp.overview.trends.roll.lines.map((l) => l.key).join("/") }) };
   },
-  async smtFlags() {
+  async smtFlags(L0) {
+    const { expectedFor } = await import("./rule-year-fixtures");
+    const want = expectedFor("R-SMT-FLAGS", await latestYearOf(L0, "ks4"));
+    if (!want.ok) return { pass: false, detail: want.detail };
     const c = await smtCase("137625");
     const { SMT_FLAG_RULES } = await import("../src/lib/smt/flags-rules");
     const { percentile } = await import("../src/lib/admissions/stats");
@@ -1991,8 +2063,12 @@ const RUNNERS: Record<string, Runner> = {
     const expect = Math.abs(gap) >= SMT_FLAG_RULES.resultsGap.ks4 && changes.length >= SMT_FLAG_RULES.resultsMinSchools;
     const got = c.overview.flags.some((f) => f.id === "results_rising" || f.id === "results_falling");
     const rollFlag = c.overview.flags.some((f) => /Roll falling/.test(f.label));
-    const pass = got === expect && expect && !rollFlag;
-    return { pass, detail: fmt({ change: round(mine, 2), setMedian: round(percentile(changes, 50), 2), gap: round(gap, 2), threshold: SMT_FLAG_RULES.resultsGap.ks4, schools: changes.length, flagged: got, rollFalling: rollFlag }) };
+    // The app's flag equals the rule recomputed from raw rows, and both equal the year's expected value
+    // (found with SQL); where the fixture holds the figures, they match too.
+    const w = want.value as { flagged: boolean; change?: number; setMedian?: number };
+    const figuresOk = (w.change === undefined || Math.abs(mine - w.change) < 0.01) && (w.setMedian === undefined || Math.abs(percentile(changes, 50)! - w.setMedian) < 0.01);
+    const pass = got === expect && expect === w.flagged && figuresOk && !rollFlag;
+    return { pass, detail: fmt({ change: round(mine, 2), setMedian: round(percentile(changes, 50), 2), gap: round(gap, 2), threshold: SMT_FLAG_RULES.resultsGap.ks4, schools: changes.length, flagged: got, expectedFlag: w.flagged, rollFalling: rollFlag }) };
   },
   async smtNotes() {
     const { SMT_NOTES } = await import("../src/catalogue/notes");
