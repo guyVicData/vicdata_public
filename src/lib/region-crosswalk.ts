@@ -248,6 +248,7 @@ const LA_NAME_TO_REGION: Record<string, string> = {
   Dorset: "South West",
   Gloucestershire: "South West",
   "Isles Of Scilly": "South West",
+  "Isles of Scilly": "South West", // GIAS spelling from Oct 2026; the old one stays for older rows
   "North Somerset": "South West",
   Plymouth: "South West",
   Somerset: "South West",
