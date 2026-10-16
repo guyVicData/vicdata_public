@@ -17,6 +17,7 @@ import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeOver, directionOf, signed } from "@/lib/teacher-view-trend-styles";
 import type { CandidatesFrame, ComparisonsFrame, SubjectsFrame, SeriesFrame } from "./frames";
 import type { BuildContext, TileData, ViewSeries } from "./series";
+import { igcseTileName } from "@/lib/igcse-words";
 import { competitionRanks } from "../rank";
 
 // 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd". (NumberTiles re-exports it.)
@@ -71,7 +72,7 @@ function subjectTiles(f: SubjectsFrame): Built | null {
     const inCategory = competitionRanks(rows.map((r) => ({ key: r.s.key, value: r.value })));
     const place = inCategory.get(tileFocus.s.key);
     if (place && inCategory.size > 1) {
-      tiles.push({ key: "category", icon: "PodiumIcon", figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${f.categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+      tiles.push({ key: "category", icon: "PodiumIcon", figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${igcseTileName(f.categoryLabel ?? "its category")}`, vars: { total: inCategory.size } });
     }
     if (tileFocus.bench !== null) {
       tiles.push({ key: "england-average", icon: "AverageIcon", figure: measure.format(tileFocus.bench), detail: `England average for ${tileFocus.s.label}` });
@@ -113,7 +114,7 @@ function candidateTiles(f: CandidatesFrame): Built | null {
     const inCategory = competitionRanks(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
     const place = inCategory.get(focused.key);
     if (place && inCategory.size > 1) {
-      tiles.push({ key: "category", icon: "PodiumIcon", figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${f.categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+      tiles.push({ key: "category", icon: "PodiumIcon", figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${igcseTileName(f.categoryLabel ?? "its category")}`, vars: { total: inCategory.size } });
     }
     if (f.schoolSubjects?.length) {
       const inSchool = competitionRanks(f.schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));

@@ -34,6 +34,7 @@ import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
 import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, SchoolIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
 import { ConfiguredNumberTiles, type NumberTile } from "./NumberTiles";
+import { igcseTileName } from "@/lib/igcse-words";
 import { competitionRanks } from "@/lib/rank";
 import { placeWord } from "@/lib/view-series/tiles";
 import { CentredOnTarget } from "./CentredOnTarget";
@@ -210,7 +211,7 @@ export function CandidatesPanels({
     const inCategory = competitionRanks(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
     const place = inCategory.get(focused.key);
     if (place && inCategory.size > 1) {
-      tiles.push({ key: "category", icon: PodiumIcon, figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+      tiles.push({ key: "category", icon: PodiumIcon, figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${igcseTileName(categoryLabel ?? "its category")}`, vars: { total: inCategory.size } });
     }
     if (schoolSubjects?.length) {
       const inSchool = competitionRanks(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));

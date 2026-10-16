@@ -54,6 +54,7 @@ import { bandDistribution } from "@/lib/grade-spread";
 import { bandRate, inlineRangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { useSubjectGradeGeography, withEnglandBandBenchmark, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
 import { ConfiguredNumberTiles, type NumberTile } from "./NumberTiles";
+import { igcseTileName } from "@/lib/igcse-words";
 import { competitionRanks } from "@/lib/rank";
 import { placeWord } from "@/lib/view-series/tiles";
 import { RankingsMap } from "./RankingsMap";
@@ -478,7 +479,7 @@ export function SubjectPanels({
     const inCategory = competitionRanks(rows.map((r) => ({ key: r.s.key, value: r.value })));
     const place = inCategory.get(tileFocus.s.key);
     if (place && inCategory.size > 1) {
-      tileRow.push({ key: "category", icon: PodiumIcon, figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+      tileRow.push({ key: "category", icon: PodiumIcon, figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${igcseTileName(categoryLabel ?? "its category")}`, vars: { total: inCategory.size } });
     }
     // The middle tile: England's own figure for this subject, a benchmark beside the main
     // one -- the same England anchor the next tile's gap is taken from.

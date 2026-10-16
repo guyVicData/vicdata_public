@@ -73,6 +73,19 @@ export function igcseGroupLabel(familyId: string, label: string, subjects: Itera
   return m ? `${label} · ${m.short} (IGCSE)` : label;
 }
 
+/**
+ * The rank tile's own form of the label (follow-up 1: the tile must not grow beyond two lines). At 11px in
+ * a third of Column 1, "of 4 in Sciences & Maths" already fills two lines, so the tile names the category
+ * by what it is at the school: "of 4 in Sciences (maths: IGCSE)", "of 7 in Languages (English: IGCSE)".
+ * Read from igcseGroupLabel's short form; any other label is returned unchanged.
+ */
+export function igcseTileName(label: string): string {
+  const m = /^(.+?) · no (maths|Mathematics|English|English Language) \(IGCSE\)$/.exec(label);
+  if (!m) return label;
+  const what = m[2] === "maths" || m[2] === "Mathematics" ? "maths" : "English";
+  return `${m[1].split(" & ")[0]} (${what}: IGCSE)`;
+}
+
 /** The (i)'s full sentence for the same category (null when the label is unchanged). */
 export function igcseGroupNote(familyId: string, label: string, subjects: Iterable<string>, igcse: boolean): string | null {
   const m = missingOf(familyId, subjects, igcse);

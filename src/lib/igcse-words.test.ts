@@ -3,7 +3,7 @@
 // Run: npx -y tsx --test src/lib/igcse-words.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { FAMILY_REQUIRED_SUBJECTS, igcseFamilyIncomplete, igcseGroupLabel, igcseGroupLabelFor, igcseGroupNote, igcseGroupNoteFor, igcseTakenAsIgcse } from "./igcse-words";
+import { FAMILY_REQUIRED_SUBJECTS, igcseFamilyIncomplete, igcseGroupLabel, igcseGroupLabelFor, igcseGroupNote, igcseGroupNoteFor, igcseTakenAsIgcse, igcseTileName } from "./igcse-words";
 
 test("inference: English Language and maths only, and only for an IGCSE school", () => {
   assert.deepEqual([...igcseTakenAsIgcse(true, ["Biology", "Latin"])].sort(), ["English Language", "Mathematics"]);
@@ -55,4 +55,13 @@ test("read from the latest year's rows with entries", () => {
   assert.equal(igcseGroupLabelFor(h, "Biology", true), "Sciences & Maths · no maths (IGCSE)");
   assert.match(igcseGroupNoteFor(h, "Biology", true)!, /sciences only: maths taken as IGCSE/);
   assert.equal(igcseGroupLabelFor(h, "Physics", true), null);
+});
+
+test("the rank tile's compact name (two lines at most): what the category is at the school", () => {
+  assert.equal(igcseTileName("Sciences & Maths · no maths (IGCSE)"), "Sciences (maths: IGCSE)");
+  assert.equal(igcseTileName("Sciences & Maths · no Mathematics (IGCSE)"), "Sciences (maths: IGCSE)");
+  assert.equal(igcseTileName("Languages & Literature · no English (IGCSE)"), "Languages (English: IGCSE)");
+  assert.equal(igcseTileName("Languages & Literature · no English Language (IGCSE)"), "Languages (English: IGCSE)");
+  assert.equal(igcseTileName("Sciences & Maths"), "Sciences & Maths");
+  assert.equal(igcseTileName("its category"), "its category");
 });
