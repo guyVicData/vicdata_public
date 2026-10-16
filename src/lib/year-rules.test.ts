@@ -29,8 +29,10 @@ test("the rules keep their years, and every old name reads years.ts", () => {
   assert.equal(Y.GRADING_2122_PERIOD, 2021);
   assert.equal(Y.TREND_BASE_PERIOD, 2022);
   assert.equal(Y.TREND_LINE_MIN_YEARS, 4);
-  assert.equal(Y.MEETING_TREND_MIN_YEARS, 3);
-  assert.deepEqual(Y.DATA_VIEW_TREND_BASELINE, { ks2: 2022, ks4: 2021, ks5: 2021 });
+  // Year rules follow-ups (Guy, 13 Oct 2026): meetings follow R-TREND-LINE-4YR, and the Data View
+  // measures GCSE and Post-16 change from 2022/23 (R-TREND-FROM-2223), KS2 from its first year.
+  assert.equal(Y.MEETING_TREND_MIN_YEARS, Y.TREND_LINE_MIN_YEARS);
+  assert.deepEqual(Y.DATA_VIEW_TREND_BASELINE, { ks2: 2022, ks4: Y.TREND_BASE_PERIOD, ks5: Y.TREND_BASE_PERIOD });
   assert.equal(Y.MODERN_GRADE_FROM, 2023);
   assert.equal(Y.CENSUS_FIRST_PERIOD, 2019);
   assert.equal(Y.PAST_FROM_ENTRY_YEAR, 2020);

@@ -21,7 +21,8 @@
 //                      a counts selection; here to every measure but entries: 0.6.6 call).
 //   R-POINTS-SAME-QUAL exact qualification at Post-16.
 //   R-CURRENT-GRADES-FROM-2324  a rate's default year is the latest from 2023/24 on.
-//   R-TREND-FROM-2223  the change list measures from 2022/23.
+//   R-TREND-FROM-2223  the change list measures points and rates from 2022/23; entries from the
+//                      first year with data (year rules follow-ups).
 //   R-NUMBER-TYPE-HONESTY  entries change in %, points and rates in points / pp.
 //   Ties share a rank; higher is better (entries: more entries rank higher).
 import { callReferenceRpc, type AcademicSubjectHeadlineRow, type AcademicSubjectQualificationHeadlineRow } from "./vicdata-reference";
@@ -82,6 +83,12 @@ export type SubjectRanking = {
 
 export const RANK_WINDOW = 10;
 export const RANK_BOTTOM = 3;
+
+/** Where the change list starts: entries from the first year with data (`periods`, ascending);
+ * points and rates from 2022/23 (R-TREND-FROM-2223). */
+export function changeFrom(measure: RankMeasure, periods: readonly number[]): number {
+  return measure.kind === "entries" && periods.length > 0 ? periods[0] : TREND_BASE_PERIOD;
+}
 
 // ----------------------------------------------------------------- the definition
 
@@ -158,9 +165,10 @@ export function rankFigures(req: SubjectRankingRequest, figs: Figures): Omit<Sub
     .map((x) => ({ period: x.period, value: mean(x.vs)!, schools: x.vs.length }));
   const seriesOf = (u: string) => periods.map((p) => ({ period: p, value: eligible(u, p)?.value ?? null })).filter((x): x is { period: number; value: number } => x.value !== null);
 
-  // The change list: from 2022/23 (R-TREND-FROM-2223) to the year in view; entries in %,
-  // points and rates as the difference (R-NUMBER-TYPE-HONESTY).
-  const from = TREND_BASE_PERIOD;
+  // The change list, to the year in view: points and rates from 2022/23 (R-TREND-FROM-2223), as
+  // the difference; entries from the first year with data, in % (R-NUMBER-TYPE-HONESTY). 2021/22's
+  // generous grading never touched entry numbers (year rules follow-ups, Guy, 13 Oct 2026).
+  const from = changeFrom(req.measure, periods);
   const changeOf = (u: string): number | null => {
     if (period === null || period <= from) return null;
     const a = eligible(u, from);
@@ -343,7 +351,7 @@ const isMissingFunction = (e: unknown) => {
 
 /** The SQL function's arguments for this request (the app's own scale tables and band
  * grades, so the database applies exactly the app's definitions). */
-export function rankRpcArgs(req: SubjectRankingRequest) {
+export function rankRpcArgs(req: SubjectRankingRequest, trendBase: number = TREND_BASE_PERIOD) {
   const m = req.measure;
   const met = m.kind === "band" ? GRADE_SCALES[m.scaleIndex].filter((g) => inRange({ scale: GRADE_SCALES[m.scaleIndex], top: m.top, bottom: m.bottom }, g)) : null;
   return {
@@ -363,7 +371,7 @@ export function rankRpcArgs(req: SubjectRankingRequest) {
     p_period: req.period,
     p_min_entries: m.kind === "entries" ? 0 : MINIMUM_SUBJECT_N,
     p_modern_from: MODERN_GRADE_FROM,
-    p_trend_base: TREND_BASE_PERIOD,
+    p_trend_base: trendBase,
     p_window: RANK_WINDOW,
     p_bottom: RANK_BOTTOM,
   };
@@ -376,9 +384,20 @@ export async function rankByFunction(req: SubjectRankingRequest): Promise<Subjec
   // for a Double Award; the app-side figures score it (figuresFor, doubleAwardPoints).
   if (req.phase === "ks4" && req.measure.kind === "points" && isDoubleAward(req.qualificationType)) return null;
   try {
-    const out = (await callReferenceRpc("academic_subject_rank_lookup", rankRpcArgs(req))) as unknown;
+    const ask = async (trendBase: number) => {
+      const out = (await callReferenceRpc("academic_subject_rank_lookup", rankRpcArgs(req, trendBase))) as unknown;
+      return (Array.isArray(out) ? out[0] : out) as Omit<SubjectRanking, "source">;
+    };
+    let doc = await ask(TREND_BASE_PERIOD);
     rankRpc = "present";
-    const doc = (Array.isArray(out) ? out[0] : out) as Omit<SubjectRanking, "source">;
+    // Entries: the change list starts at the first year with data (changeFrom), which the function
+    // can't find for itself -- it takes one start year. Its answer carries every year it holds (the
+    // per-year averages and the school's own series), so ask again from the first of them.
+    if (req.measure.kind === "entries") {
+      const years = Array.from(new Set([...doc.average.map((a) => a.period), ...doc.targetSeries.map((t) => t.period)])).sort((a, b) => a - b);
+      const from = changeFrom(req.measure, years);
+      if (from !== TREND_BASE_PERIOD) doc = await ask(from);
+    }
     return { ...doc, source: "function" };
   } catch (e) {
     if (isMissingFunction(e)) {

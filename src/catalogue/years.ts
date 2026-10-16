@@ -38,15 +38,16 @@ export const TREND_BASE_PERIOD = 2022;
 // trend that isn't there.
 export const TREND_LINE_MIN_YEARS = 4;
 
-// R-TREND-3YR (superseded by R-TREND-LINE-4YR everywhere but the meetings slide picker, which
-// still offers a "N-year trend" from 3 years: listed as a question in the year rules report).
-export const MEETING_TREND_MIN_YEARS = 3;
+// The meetings slide picker's "N-year trend" follows R-TREND-LINE-4YR, as every other view does
+// (Guy, 13 Oct 2026: year rules follow-ups). R-TREND-3YR's 3 is retired; the name stays for
+// teacher-view-catalogue.ts.
+export const MEETING_TREND_MIN_YEARS = TREND_LINE_MIN_YEARS;
 
-// The Data View's academic "since" baseline, per key stage: KS4 and KS5 from 2021/22, KS2 from
-// its first year (2022/23: KS2 has no earlier rows). NOT the Teacher rule above -- the Data
-// View still measures KS4/KS5 change from 2021/22. Kept as it is; whether it should follow
-// R-TREND-FROM-2223 is a question for Guy (year rules report).
-export const DATA_VIEW_TREND_BASELINE: Record<"ks2" | "ks4" | "ks5", number> = { ks2: 2022, ks4: 2021, ks5: 2021 };
+// The Data View's academic "since" year, per key stage: GCSE and Post-16 follow R-TREND-FROM-2223
+// (Guy, 13 Oct 2026: year rules follow-ups), as Teacher does; KS2 from its first year (2022/23:
+// KS2 has no earlier rows), as Teacher's KS2 does. Its graphs still draw 2021/22, with the note.
+// Candidates (entries) changes in the Data View are measured from the first year with data.
+export const DATA_VIEW_TREND_BASELINE: Record<"ks2" | "ks4" | "ks5", number> = { ks2: 2022, ks4: TREND_BASE_PERIOD, ks5: TREND_BASE_PERIOD };
 
 // ---------------------------------------------- RULES: where the sources start (source facts)
 

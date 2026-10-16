@@ -3,7 +3,7 @@
 // two on real data (scripts/subject-ranking-cases.ts, the ingest repo's PGlite test).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rankFigures, RANK_BOTTOM, RANK_WINDOW, type Figures, type SubjectRankingRequest } from "./subject-ranking";
+import { changeFrom, rankFigures, RANK_BOTTOM, RANK_WINDOW, type Figures, type SubjectRankingRequest } from "./subject-ranking";
 
 const req = (urns: string[], target: string, kind: "points" | "entries" | "threshold" = "points"): SubjectRankingRequest => ({
   urns,
@@ -65,6 +65,20 @@ test("R-TREND-FROM-2223 / R-NUMBER-TYPE-HONESTY: the change list is from 2022/23
   const ent = rankFigures(req(["a", "b"], "a", "entries"), f);
   assert.equal(ent.change?.target, 50);
   assert.equal(ent.change?.average, (50 - 50) / 2);
+});
+
+test("R-RANKING-ENTRIES-CHANGE: entries change from the first year with data, points still from 2022/23", () => {
+  const f = figs([["a", 2020, 10, 10], ["a", 2022, 12, 12], ["a", 2024, 15, 15], ["b", 2021, 20, 20], ["b", 2022, 20, 20], ["b", 2024, 10, 10]]);
+  const ent = rankFigures(req(["a", "b"], "a", "entries"), f);
+  assert.equal(ent.change?.from, 2020);
+  assert.equal(ent.change?.target, 50); // 10 -> 15
+  assert.equal(ent.change?.ranked, 1); // b has no 2020 figure
+  const pts = rankFigures(req(["a", "b"], "a", "points"), f);
+  assert.equal(pts.change?.from, 2022);
+  assert.equal(changeFrom({ kind: "entries" }, [2020, 2021, 2024]), 2020);
+  assert.equal(changeFrom({ kind: "entries" }, []), 2022);
+  assert.equal(changeFrom({ kind: "threshold" }, [2021, 2024]), 2022);
+  assert.equal(changeFrom({ kind: "points" }, [2020]), 2022);
 });
 
 test("R-RANKING-MEASURE: the window is the top 10, 10 either side of the school and the bottom 3", () => {

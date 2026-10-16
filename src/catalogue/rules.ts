@@ -246,9 +246,9 @@ export const RULES: Rule[] = [
   {
     id: "R-TREND-3YR",
     statement: "Trend views need 3+ years; below that, show the table only.",
-    why: "Superseded: the live threshold for a line is 4 real years (R-TREND-LINE-4YR). TREND_MIN_YEARS = 3 survives only in the round-5 axis catalogue used by /teacher/meetings.",
+    why: "Superseded: the live threshold for a line is 4 real years (R-TREND-LINE-4YR). Retired in the year rules follow-ups (Guy, 13 Oct 2026): the meetings slide picker, the last view on 3, follows R-TREND-LINE-4YR too (R-MEETINGS-TREND-4YR).",
     appliesTo: "Trend views",
-    enforcedIn: ["src/lib/teacher-view-catalogue.ts:TREND_MIN_YEARS (24), used by src/app/teacher/meetings/page.tsx:25,69,76,153"],
+    enforcedIn: [],
     testCase: null,
     origin: "Teacher view round 5 (axis catalogue)",
     status: "superseded",
@@ -310,6 +310,7 @@ export const RULES: Rule[] = [
       `${XP}:614-616, 649 (table only)`,
       `${CP}:284, 292`,
       `${SP}:789, 798`,
+      "src/lib/teacher-view-catalogue.ts:availableViews (the meetings slide picker's trend option, R-MEETINGS-TREND-4YR)",
     ],
     testCase: {
       urn: "100053",
@@ -321,7 +322,24 @@ export const RULES: Rule[] = [
     },
     origin: "Teacher view round 7 §4",
     status: "active",
-    openIssue: "Legacy TREND_MIN_YEARS = 3 (teacher-view-catalogue.ts:24) is still read by /teacher/meetings: retire it or document it.",
+  },
+  {
+    id: "R-MEETINGS-TREND-4YR",
+    statement:
+      "A meeting's trend follows R-TREND-LINE-4YR, as every other view does: a line only with 4 or more real years. The live slide picker (the S4 chooser) offers each view's 'Over time' form and the slide draws it through the host's own panels, so a 3-year series draws as per-year bars, never a line. The round-5 axis catalogue's 'N-year trend' gate (availableViews), no longer called by any page, uses the same 4 (MEETING_TREND_MIN_YEARS = TREND_LINE_MIN_YEARS in years.ts).",
+    why: "Guy, 13 Oct 2026 (year rules follow-ups, Y4 5): the round-5 picker was the last place still on R-TREND-3YR's 3 years.",
+    appliesTo: "/teacher/meetings: trend slides; the round-5 axis catalogue (availableViews)",
+    enforcedIn: ["src/catalogue/years.ts:MEETING_TREND_MIN_YEARS", "src/lib/teacher-view-catalogue.ts:TREND_MIN_YEARS, availableViews", `${TVP}:trendChartKind (the slide's drawing)`],
+    testCase: {
+      urn: "117037",
+      school: "King's Worcester",
+      phase: "ks4",
+      subject: "Computer Science",
+      expect: "Computer Science (3 real years of points): the axis catalogue offers no trend and its series draws as bars; a subject with 4 or more real years is offered a trend, titled with its real span, and draws as a line.",
+      check: "meetingsTrend4yr",
+    },
+    origin: "Year rules follow-ups (16 Oct 2026)",
+    status: "active",
   },
   {
     id: "R-DONUT-COUNTS-ONLY",
@@ -866,6 +884,33 @@ export const RULES: Rule[] = [
     status: "active",
   },
   {
+    id: "R-DV-TREND-FROM-2223",
+    statement:
+      "The Data View follows R-TREND-FROM-2223 at GCSE and Post-16 (DATA_VIEW_TREND_BASELINE = TREND_BASE_PERIOD; KS2 from its first year, 2022/23): every 'since' figure on points or Attainment 8 is measured from 2022/23 -- Graphs' Growth / decline bars, the subject area's sentence and its 'Results, % change since 2022/23' (school, set average, one comparator), the subject deep dive's results change, the large-set chart's index (100 at 2022/23), Rankings' Trend tile, growth ranking and 'Position over time', and the Map's trend colours and popup. The graphs and the rank table still draw 2021/22, and every points trend that draws it carries TREND_BASE_NOTE beneath it. Candidates' changes are measured from the first year with data.",
+    why: "Guy, 13 Oct 2026 (year rules follow-ups, Y4 4): the Data View measured change from 2021/22 while Teacher measured from 2022/23, so the two disagreed on the same school.",
+    appliesTo: "Data View, academic Graphs, Rankings and Map (GCSE and Post-16)",
+    enforcedIn: [
+      "src/catalogue/years.ts:DATA_VIEW_TREND_BASELINE",
+      "src/lib/academic-data-view.ts:TREND_BASELINE_PERIOD",
+      "src/components/data-view/AcademicGraphsView.tsx:growthPoints, allPeriods, familyFirstScore, aggregateDrawnYears",
+      "src/components/data-view/AggregateTrendChart.tsx:indexFrom",
+      "src/components/data-view/SubjectAreaSection.tsx:pointsChangeSince, aggregateFamilyTrend (from), resultsTrendComparisonItems",
+      "src/components/data-view/SubjectDeepDiveDrawer.tsx:Results % change, TrendBaseNote",
+      "src/components/data-view/AcademicRankingsView.tsx:allPeriods, realRanks, growthEntries",
+      "src/components/data-view/AcademicMapView.tsx:rowDataByUrn (anchor)",
+      "src/components/data-view/TrendBaseNote.tsx",
+    ],
+    testCase: {
+      urn: "137625",
+      school: "The Chase",
+      phase: "ks4",
+      expect: "The Data View's GCSE and Post-16 since-year is 2022/23 (KS2 2022/23); a subject area's Results change equals its points from 2022/23 to the latest year, its Candidates change runs from the first year with data; the drawn years still start at 2021/22 and carry the note.",
+      check: "dataViewTrendFrom2223",
+    },
+    origin: "Year rules follow-ups (16 Oct 2026)",
+    status: "active",
+  },
+  {
     id: "R-TREND-TABLE-YEARS",
     statement:
       "A trend table shows the same years as its trend chart: 2021/22 onward on a grade measure (Grade 4+ / A*-E, Grade bands, a single grade, a Grade counts selection), at GCSE and Post-16, on Results, Context and Comparisons, card and fullscreen, both drawing paths. Years down and fullscreen show every year; a card with years across may show the change's two ends (2022/23 and the latest, R-TREND-FROM-2223) with a '+N more years' cue naming the rest, which swaps to years down. Grade counts' change table lists every graded year from 2021/22 (or the member's 'From' year) the same way, its change from 2022/23. R-CURRENT-GRADES-FROM-2324 never applies to a Trends view.",
@@ -928,7 +973,7 @@ export const RULES: Rule[] = [
   {
     id: "R-RANKING-MEASURE",
     statement:
-      "With a subject in focus, a national or regional ranking ranks EVERY school in the filtered population on the measure in view: the focused subject (the exact qualification at Post-16; at GCSE a rate is the focus's qualification), on entries, average points, Grade 4+ / A*–E, a band or a Grade counts selection, in the panel's year (a rate's latest from 2023/24). A school needs 5 entries (graded entries on a rate) to be ranked (R-MIN-ENTRIES; entries rank from 1); ties share a rank (R-RANK-TIES); a school its own filters exclude is placed against the population and says so. The table draws a window at real ranks -- the card the top 3 and 5 either side (one block when the school is in the top 8), full screen the top 10, 10 either side and the bottom 3; the change list is the whole population's from 2022/23 in the same window. No subject in focus: the headline ranking, unchanged.",
+      "With a subject in focus, a national or regional ranking ranks EVERY school in the filtered population on the measure in view: the focused subject (the exact qualification at Post-16; at GCSE a rate is the focus's qualification), on entries, average points, Grade 4+ / A*–E, a band or a Grade counts selection, in the panel's year (a rate's latest from 2023/24). A school needs 5 entries (graded entries on a rate) to be ranked (R-MIN-ENTRIES; entries rank from 1); ties share a rank (R-RANK-TIES); a school its own filters exclude is placed against the population and says so. The table draws a window at real ranks -- the card the top 3 and 5 either side (one block when the school is in the top 8), full screen the top 10, 10 either side and the bottom 3; the change list is the whole population's in the same window: points and rates from 2022/23, entries from the first year with data (R-RANKING-ENTRIES-CHANGE). No subject in focus: the headline ranking, unchanged.",
     why: "A ranking within a sample of 25 schools on a subject is not the school's real rank in the country, and 'not ranked' on a subject the school teaches says nothing.",
     appliesTo: "Comparisons with a ranking set and a subject in focus",
     enforcedIn: [
@@ -947,6 +992,24 @@ export const RULES: Rule[] = [
       check: "rankingOnMeasure",
     },
     origin: "0.6.6 (docs/v0.6/vicdata_0_6_rankings_then_speed_claude_code_prompt_v1.md, Part 1)",
+    status: "active",
+  },
+  {
+    id: "R-RANKING-ENTRIES-CHANGE",
+    statement:
+      "The subject ranking measures its change in entries from the first year with data (the earliest year any school in the ranking has a figure), in %; never from 2022/23. Points and rates keep 2022/23 (R-TREND-FROM-2223). The database function takes one start year, so for entries the app reads the years in its answer and asks again from the first; the app-side fallback applies the same rule (changeFrom).",
+    why: "Guy, 13 Oct 2026 (year rules follow-ups, Y4 6): the 2022/23 start exists because 2021/22's grading was generous, which doesn't touch entry numbers; R-TREND-FROM-2223 never applies to Candidates.",
+    appliesTo: "Comparisons' subject ranking on Candidates (entries): its change list, tiles and bars",
+    enforcedIn: ["src/lib/subject-ranking.ts:changeFrom, rankFigures, rankByFunction, rankRpcArgs"],
+    testCase: {
+      urn: "137625",
+      school: "The Chase",
+      phase: "ks4",
+      subject: "History",
+      expect: "GCSE History entries, national: the change list starts at the first year with data (before 2022/23), the same from the database function and the app's fallback; Average points' starts at 2022/23.",
+      check: "rankingEntriesChange",
+    },
+    origin: "Year rules follow-ups (16 Oct 2026)",
     status: "active",
   },
   {

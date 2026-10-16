@@ -48,7 +48,9 @@ import {
   type SubjectGradeCount,
   type AcademicSubjectHeadlineEntry,
   HEADLINE_LABEL,
+  TREND_BASELINE_PERIOD,
 } from "@/lib/academic-data-view";
+import TrendBaseNote from "./TrendBaseNote";
 import { bucketFor, KS5_BUCKET_LABEL, type Ks5Bucket } from "@/lib/dfe-qualification-buckets";
 // The real grade scales and their ordering, shared with Teacher view's threshold
 // measure rather than kept as a second copy here -- see subject-grades.ts.
@@ -440,7 +442,7 @@ export default function SubjectDeepDiveDrawer({
                     <p className="mb-2 text-xs text-neutral-500">Results, % change ({resultsUnit})</p>
                     <p className="text-sm text-neutral-900 dark:text-neutral-100">
                       {targetRow?.resultsPctChange !== null && targetRow?.resultsPctChange !== undefined
-                        ? `${targetRow.resultsPctChange > 0 ? "+" : ""}${targetRow.resultsPctChange.toFixed(0)}% since ${periods.length > 0 ? academicYearLabel(periods[0]) : "the start of the series"}`
+                        ? `${targetRow.resultsPctChange > 0 ? "+" : ""}${targetRow.resultsPctChange.toFixed(0)}% since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`
                         : "Not enough real history to compute growth/decline."}
                     </p>
                   </div>
@@ -469,6 +471,7 @@ export default function SubjectDeepDiveDrawer({
                   <div>
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Trend since {academicYearLabel(periods[0])}</p>
                     <TargetVsAverageTrend periods={periods} targetSeries={targetTrendSeries} averageSeries={averageTrendSeries} />
+                    <TrendBaseNote years={periods} />
                   </div>
                 )}
                 {periods.length > 1 && bucketActive && ks5Bucket !== "alevel" && (

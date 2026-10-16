@@ -42,6 +42,7 @@ import {
 import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, percentile, type RankedEntry } from "@/lib/data-view-cards";
 import type { AcademicRegionNationRankMetric } from "@/lib/academic-region-nation-rank";
 import { academicYearLabel } from "./TrendPill";
+import TrendBaseNote from "./TrendBaseNote";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 
@@ -202,12 +203,15 @@ export default function AcademicRankingsView({
   // system (absolute pp tiers vs. ratio-based) applies, not a second one here.
   const targetAnchorValue = headlineValueAt(stageYears(targetProfile, stage), baseline, measureKeyFor(targetProfile));
   const targetTrendWording = trendWordingFor(stage, targetCurrentValue, targetAnchorValue);
+  // The rank table draws from the data's own first year (2021/22 at GCSE and Post-16), with the
+  // note; "Position over time" (a direction) is measured from the baseline year, 2022/23
+  // (R-TREND-FROM-2223, year rules follow-ups).
   const allPeriods = Array.from(new Set(groupInScope.flatMap((p) => stageYears(p, stage).map((y) => y.period))))
-    .filter((p) => p >= Math.max(startPeriod, baseline))
+    .filter((p) => p >= startPeriod)
     .sort((a, b) => a - b);
   const ranksByUrn = rankAcrossPeriods(groupInScope, allPeriods, stage, measureKeyFor);
   const targetRankSeries = ranksByUrn.get(targetProfile.urn) ?? [];
-  const realRanks = targetRankSeries.map((r, i) => (r !== null ? { rank: r, period: allPeriods[i] } : null)).filter((x): x is { rank: number; period: number } => x !== null);
+  const realRanks = targetRankSeries.map((r, i) => (r !== null ? { rank: r, period: allPeriods[i] } : null)).filter((x): x is { rank: number; period: number } => x !== null && x.period >= baseline);
   const avgRank = realRanks.length > 0 ? realRanks.reduce((s, r) => s + r.rank, 0) / realRanks.length : null;
   const first = realRanks[0] ?? null;
   const last = realRanks[realRanks.length - 1] ?? null;
@@ -315,7 +319,10 @@ export default function AcademicRankingsView({
           <RankTable title={headlineLabel} ranked={ranked} targetRank={targetRank} total={total} format={(v) => formatHeadline(stage, v)} cohortLabelByUrn={cohortLabelByUrn} />
 
           {allPeriods.length > 0 && (
-            <ComparisonOverTimeTable ranked={ranked} targetRank={targetRank} targetUrn={targetProfile.urn} periods={allPeriods} ranksByUrn={ranksByUrn} />
+            <>
+              <ComparisonOverTimeTable ranked={ranked} targetRank={targetRank} targetUrn={targetProfile.urn} periods={allPeriods} ranksByUrn={ranksByUrn} />
+              <TrendBaseNote years={allPeriods} />
+            </>
           )}
 
           <RankTable

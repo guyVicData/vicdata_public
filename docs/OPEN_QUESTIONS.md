@@ -2272,3 +2272,20 @@ The round for `docs/v0.8/vicdata_0_8_igcse_subject_rankings_claude_code_prompt_v
       - Croydon College (130432) has no zero-point BTEC rows in 2021/22 or 2022/23: each has real points or null.
       - Across every school, BTEC and OCR rows with zero points: 2021/22 none, 2022/23 one, 2023/24 one.
       - The two remaining (132779 Construction Extended Diploma 2022/23, 8 entries; 130681 Computer Architecture Certificate 2023/24, 6 entries) look like genuine all-fail results, not the old bug. Not changed.
+
+## 2026-10-16 — year rules follow-ups
+
+The round for `docs/v0.7/vicdata_0_7_year_rules_followups_claude_code_prompt_v2.md`, on `v0.7-year-rules-followups`. Calls made, for Guy to confirm:
+
+1. **The Data View draws 2021/22 and measures from 2022/23.** Its graphs and rank table keep every year from the data's own first year (2021/22 at GCSE and Post-16), filtered only by its "since" control, and carry the 2021/22 note. Before, the same baseline both started the drawn years and anchored the change; the two are now separate. KS2 stays on its first year, 2022/23, so nothing changes there.
+2. **Second copies in the Data View, aligned:**
+   - the subject area's "Results, % change" (each area, each subject, the set's average), and the deep dive's results change, ran from each series' first real year;
+   - the large-set chart indexed Attainment 8 / A-level points to 100 at 2021/22 (an index is a change from its base): now 100 at 2022/23, still drawing 2021/22;
+   - Rankings' "Position over time" (Up / Down) ran from the first ranked year.
+   Candidates' changes in the Data View still run from the first year with entries.
+3. **The subject-mode set average in "Results, % change" was not a change.** It averaged the comparators' latest points and drew them as a percentage (a 6.0 average read "+6%"). It is now the average of each comparator's own change since 2022/23. **Not fixed (outside this round):** "Candidates, % change" has the same fault in subject mode (it sums the comparators' latest entries and draws the sum as a %).
+4. **Meetings: no visible change.** The 3-year gate (`TREND_MIN_YEARS` in `availableViews`) belongs to the round-5 axis catalogue, which no page calls any more. The live slide picker (the S4 chooser) offers a view's "Over time" form whatever the years, and a slide draws it through the host's panels, which already apply R-TREND-LINE-4YR (3 years: per-year bars, no line). The constant now equals TREND_LINE_MIN_YEARS, so the dead path agrees. No year gate was added to the live chooser, which Teacher's dashboards share. **Suggest:** delete the round-5 axis catalogue (`availableViews`, `yearsOfData`, `TREND_MIN_YEARS`); at Post-16 it no longer even finds a subject's years (its bucket key is "alevel", the headline rows' is "all").
+5. **The ranking's entries change starts at 2020/21 for GCSE History.** "The first year with data" is the first year any school in the ranking has a figure; the subject headline holds 2020/21 entry totals (the teacher-assessed year, no grades). Teacher's Candidates panels start at 2021/22. If the ranking should start where Candidates does, the change is one line in `changeFrom` (the first year with grades, `HISTORIC_GRADE_FROM`).
+6. **The database function takes one start year,** so for entries the app asks it once, reads the years in its answer, and asks again from the first. Entries rankings make two calls (cached as before); no database change.
+7. **Not changed: headcounts measured from 2022/23.** SMT's roll, phases and market-share direction words (`Lines.tsx` `direction`) and Admissions' pupil change in Momentum (`screens.ts`) measure census headcounts from 2022/23. They aren't exam entries, so the entries decision doesn't reach them; the same reasoning (2021/22's grading never touched pupil numbers) would apply. Left for Guy.
+8. **Seen, not changed: "−0%" in the Data View.** Its diverging bars print a small negative change as "−0%" (now visible on the 2022/23 figures). Teacher's 0.8 `signedDelta` fix didn't reach the Data View's formatter; a one-line follow-up.

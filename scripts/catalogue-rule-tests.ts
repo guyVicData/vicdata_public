@@ -941,6 +941,103 @@ const RUNNERS: Record<string, Runner> = {
     return { pass, detail: fmt(v) };
   },
 
+  // R-DV-TREND-FROM-2223 (year rules follow-ups): The Chase 137625, GCSE, on the Data View's own
+  // profile and its own row builder. Every subject area's Results change is its points from 2022/23
+  // to the latest year; its Candidates change runs from the first year with entries; the drawn
+  // years still start at 2021/22 and carry the note.
+  async dataViewTrendFrom2223({ adv, notes }) {
+    const Y = await import("../src/catalogue/years");
+    const { buildCategoryRows } = await import("../src/components/data-view/SubjectAreaSection");
+    const urn = "137625";
+    const [p] = await adv.fetchAcademicProfiles([urn], { includeSubjects: true });
+    const base = adv.TREND_BASELINE_PERIOD;
+    const pct = (a: number | null | undefined, b: number | null | undefined) => (a && b !== null && b !== undefined ? ((b - a) / a) * 100 : null);
+    const same = (a: number | null, b: number | null) => (a === null ? b === null : b !== null && Math.abs(a - b) < 1e-9);
+    const areas = buildCategoryRows(p, "ks4").map((r) => {
+      const ys = adv.familyYearsFor(p, "ks4", r.id);
+      const last = [...ys].reverse().find((y) => y.avgPointScore !== null);
+      const at = ys.find((y) => y.period === base.ks4)?.avgPointScore ?? null;
+      const firstE = ys.find((y) => y.entriesTotal > 0);
+      const lastE = [...ys].reverse().find((y) => y.entriesTotal > 0);
+      return {
+        results: same(r.resultsPctChange, last && last.period > base.ks4 ? pct(at, last.avgPointScore) : null),
+        candidates: same(r.candidatesPctChange, pct(firstE?.entriesTotal, lastE?.entriesTotal)),
+        from2223: at !== null && r.resultsPctChange !== null,
+      };
+    });
+    const drawn = [...new Set(adv.stageYears(p, "ks4").map((y) => y.period))].sort();
+    const v = {
+      since: `ks2 ${base.ks2}, ks4 ${base.ks4}, ks5 ${base.ks5}`,
+      areas: areas.length,
+      resultsFrom2223: areas.every((a) => a.results),
+      measuredFrom2223: areas.filter((a) => a.from2223).length,
+      candidatesFromFirst: areas.every((a) => a.candidates),
+      drawnFrom: drawn[0],
+      note: notes.trendNoteFor(drawn) === notes.TREND_BASE_NOTE,
+    };
+    const pass = base.ks4 === Y.TREND_BASE_PERIOD && base.ks5 === Y.TREND_BASE_PERIOD && base.ks2 === 2022 && v.areas > 0 && v.resultsFrom2223 && v.measuredFrom2223 > 0 && v.candidatesFromFirst && v.drawnFrom === Y.GRADING_2122_PERIOD && v.note;
+    return { pass, detail: fmt(v) };
+  },
+
+  // R-MEETINGS-TREND-4YR (year rules follow-ups): King's Worcester 117037 GCSE. Computer Science has 3
+  // real years of points: the axis catalogue offers it no trend and the slide draws its series as
+  // bars; a subject with 4+ is offered a trend titled with its span and draws as a line.
+  async meetingsTrend4yr({ adv, tvp }) {
+    const Y = await import("../src/catalogue/years");
+    const cat = await import("../src/lib/teacher-view-catalogue");
+    const urn = "117037";
+    const qual = "GCSE (9-1) Full Course";
+    const headline = (await adv.fetchSubjectHeadlineForSchools([urn], "ks4")).get(urn) ?? [];
+    const ref = (subject: string) => ({ key: subject, subject, qualificationType: qual, label: subject });
+    const yearsOf = (subject: string) => cat.yearsOfData(headline, subject, null, "points");
+    const four = [...new Set(headline.map((h) => h.subject))].sort().find((s) => yearsOf(s) >= 4) ?? null;
+    const trendFor = (subject: string) => cat.availableViews("results", "ks4", [ref(subject)], headline).filter((d) => d.trend);
+    const kind = (subject: string) => {
+      const rows = headline.filter((h) => h.subject === subject);
+      const periods = [...new Set(rows.map((h) => h.period))].sort();
+      return tvp.trendChartKind({ periods, series: [{ key: subject, label: subject, colour: "#000", values: periods.map((p) => rows.find((h) => h.period === p)?.avgPointScore ?? null) }] } as never);
+    };
+    const v = {
+      minYears: Y.MEETING_TREND_MIN_YEARS,
+      cs3Years: yearsOf("Computer Science"),
+      cs3Trends: trendFor("Computer Science").length,
+      cs3Draws: kind("Computer Science"),
+      fourYearSubject: four,
+      fourYearTrend: four ? (trendFor(four)[0]?.shortTitle ?? "none") : "none",
+      fourYearDraws: four ? kind(four) : "none",
+    };
+    const pass = v.minYears === Y.TREND_LINE_MIN_YEARS && v.cs3Years === 3 && v.cs3Trends === 0 && v.cs3Draws === "bars" && !!four && v.fourYearTrend.includes(`${yearsOf(four)}-year trend`) && v.fourYearDraws === "line";
+    return { pass, detail: fmt(v) };
+  },
+
+  // R-RANKING-ENTRIES-CHANGE (year rules follow-ups): The Chase 137625 GCSE History, national. The
+  // entries change list starts at the first year with data, the same from the database function and
+  // the app's fallback; Average points' starts at 2022/23.
+  async rankingEntriesChange({ adv }) {
+    const Y = await import("../src/catalogue/years");
+    const SR = await import("../src/lib/subject-ranking");
+    const { cachedRankingPopulation } = await import("../src/lib/chooser-sets");
+    const CC = await import("../src/lib/comparator-chooser");
+    const urn = "137625";
+    const { subjectFamilyMap } = await adv.fetchSubjectLevelDataForSchools([urn], "ks4", { gradeYears: "four" });
+    const urns = (await cachedRankingPopulation(null, "ks4", null)).filter((r) => CC.matchesRanking(r, CC.defaultRankingFilters(CC.NATIONAL))).map((r) => r[0]);
+    const req = (kind: "entries" | "points") => ({ urns, targetUrn: urn, phase: "ks4" as const, subject: "History", familyId: subjectFamilyMap["History"] ?? null, qualificationType: null, measure: { kind }, period: null });
+    const ent = await SR.rankByFunction(req("entries"));
+    const entFb = SR.rankFigures(req("entries"), await SR.fallbackFigures(req("entries")));
+    const pts = await SR.rankByFunction(req("points"));
+    const firstYear = ent ? Math.min(...ent.average.map((a) => a.period)) : null;
+    const v = {
+      function: ent ? "present" : "absent",
+      entriesFrom: ent?.change?.from ?? entFb.change?.from ?? null,
+      firstYearWithData: firstYear,
+      fallbackFrom: entFb.change?.from ?? null,
+      sameWindow: !ent || JSON.stringify(ent.change?.window.map((w) => [w.urn, w.rank])) === JSON.stringify(entFb.change?.window.map((w) => [w.urn, w.rank])),
+      pointsFrom: pts?.change?.from ?? SR.rankFigures(req("points"), await SR.fallbackFigures(req("points"))).change?.from ?? null,
+    };
+    const pass = v.entriesFrom !== null && v.entriesFrom === v.fallbackFrom && (firstYear === null || v.entriesFrom === firstYear) && v.entriesFrom < Y.TREND_BASE_PERIOD && v.sameWindow && v.pointsFrom === Y.TREND_BASE_PERIOD;
+    return { pass, detail: fmt(v) };
+  },
+
   // R-CURRENT-GRADES-FROM-2324: Acland Burghley 100053 GCSE Grade 4+ on its real four-year rows.
   // Read from 2023/24 on, as Current reads them: Turkish (grades only before 2023/24) leaves
   // the list, and Latin (no 2023/24) has no "vs last year" -- not 2024/25 against 2022/23.

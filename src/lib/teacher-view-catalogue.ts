@@ -20,9 +20,9 @@ import type { TeacherPhase } from "@/lib/teacher-view-phases";
 export type ColumnId = "candidates" | "results" | "context" | "rankings";
 
 // §9: "a trend history option in the expanded view once 3+ years of data exist". Not 2,
-// and not "whatever we have" -- two points is a line, not a trend, and the brief is
-// explicit about the number.
-// R-TREND-3YR (superseded by R-TREND-LINE-4YR; meetings slide picker only)
+// and not "whatever we have" -- two points is a line, not a trend. Since the year rules
+// follow-ups (Guy, 13 Oct 2026) the slide picker follows R-TREND-LINE-4YR, as every other
+// view does: a trend from 4 real years.
 export const TREND_MIN_YEARS = MEETING_TREND_MIN_YEARS; // set in src/catalogue/years.ts
 
 // §8's five axes, in the brief's own order and wording. Axis 4 is the only one that needs
