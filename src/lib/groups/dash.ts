@@ -180,7 +180,7 @@ export function setsFor(agg: GroupAggregate, comps: ComparisonRow[], reading: Re
   const sorted = Array.from(by.values()).sort((a, b) => {
     const ia = order.indexOf(a.key);
     const ib = order.indexOf(b.key);
-    return (ia < 0 ? 100 : ia) - (ib < 0 ? 100 : ib) || a.label.localeCompare(b.label);
+    return (ia < 0 ? 100 : ia) - (ib < 0 ? 100 : ib) || a.label.localeCompare(b.label) || a.key.localeCompare(b.key);
   });
   return [...out, ...sorted];
 }

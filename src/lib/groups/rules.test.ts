@@ -10,8 +10,8 @@
 // the round stops: the test is never changed to match.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { COMPARISON_KINDS, groupAggregate, groupComparisons, groupDataSource, groupSchoolsYear, type Figures, type GroupAggregate } from "./aggregates";
-import { buildOverview, buildSchools, kindsFor, FOCI, MEASURE_PHASE, parseCompare, DEFAULT_COMPARE } from "./dash";
+import { COMPARISON_KINDS, groupAggregate, groupComparisons, groupDataSource, groupSchoolsYear, namedCandidates, type ComparisonRow, type Figures, type GroupAggregate } from "./aggregates";
+import { buildOverview, buildSchools, kindsFor, FOCI, MEASURE_PHASE, parseCompare, DEFAULT_COMPARE, type CompareKey } from "./dash";
 
 const HARRIS = "3320";
 const DUKES = "club_iss:dukes-education";
@@ -176,4 +176,67 @@ test("Pupils: Year 12 against Year 11 adds up from the schools' own rows; the sh
   assert.equal(p.leaving.reduce((t, r) => t + (r.y12 ?? 0), 0), p.stayingOn.y12);
   assert.equal(p.leaving.reduce((t, r) => t + (r.y11 ?? 0), 0), p.stayingOn.y11);
   assert.deepEqual(p.shape.ages, agg.rows.find((r) => r.period === p.shape.year && r.phase === "all")!.figures.roll_by_age);
+});
+
+// ------------------------------------------------------------------- comparison rows by key, not order
+// group_comparison_lookup returns its rows in no fixed order (the ingest's verify: the same 448 rows as
+// the fixtures, matched by key). Every view must read a comparison row by its full key (kind, variant,
+// phase, reading, period), never by its position, so the views are the same whatever order the rows come in.
+
+const compKey = (c: ComparisonRow) => `${c.kind}|${c.variant}|${c.phase}|${c.reading}|${c.period}`;
+/** A fixed shuffle (seeded), so a failure reproduces. */
+function shuffled<T>(xs: T[], seed: number): T[] {
+  const out = [...xs];
+  let s = seed;
+  for (let i = out.length - 1; i > 0; i--) {
+    s = (s * 1103515245 + 12345) % 2147483648;
+    const j = s % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+test("R-GROUP-KEYS: each comparison row's key (kind, variant, phase, reading, period) is unique", async () => {
+  for (const g of [HARRIS, DUKES]) {
+    const named = (await namedCandidates(g, (await agg(g, "at_time")).group.type, 0)).slice(0, 3).map((n) => `peer_named:${n.id}`);
+    const comps = await groupComparisons(g, [...COMPARISON_KINDS, ...named]);
+    assert.ok(comps.length > 0, `${g}: comparison rows`);
+    const seen = new Map<string, number>();
+    for (const c of comps) seen.set(compKey(c), (seen.get(compKey(c)) ?? 0) + 1);
+    const dups = [...seen].filter(([, n]) => n > 1).map(([k]) => k);
+    assert.deepEqual(dups, [], `${g}: duplicate comparison keys`);
+  }
+});
+
+test("R-GROUP-KEYS: the views are the same whatever order the comparison and aggregate rows come in", async () => {
+  for (const g of [HARRIS, DUKES]) {
+    const a = await agg(g, "at_time");
+    const named = (await namedCandidates(g, a.group.type, 0)).slice(0, 3).map((n) => n.id);
+    const compares: CompareKey[] = ["peer_band", "non_group", "areas", "england", "mix_matched", ...(named.length ? [`peer_named:${named.join(",")}` as CompareKey] : [])];
+    const kinds = [...new Set(compares.flatMap(kindsFor))];
+    const comps = await groupComparisons(g, kinds);
+    const schools = await groupSchoolsYear(g);
+    const orders: [string, GroupAggregate, ComparisonRow[]][] = [
+      ["reversed", { ...a, rows: [...a.rows].reverse() }, [...comps].reverse()],
+      ["shuffled 1", { ...a, rows: shuffled(a.rows, 1) }, shuffled(comps, 7)],
+      ["shuffled 2", { ...a, rows: shuffled(a.rows, 42) }, shuffled(comps, 2026)],
+    ];
+    for (const compare of compares)
+      for (const focus of FOCI) {
+        if (focus !== "all" && !a.rows.some((r) => r.phase === focus)) continue;
+        const want = JSON.stringify({
+          o: buildOverview({ agg: a, comps, compare, focus }),
+          ac: buildAcademic({ agg: a, comps, schools, compare, focus }),
+          pu: buildPupils({ agg: a, comps, schools, compare, focus }),
+        });
+        for (const [how, a2, c2] of orders) {
+          const got = JSON.stringify({
+            o: buildOverview({ agg: a2, comps: c2, compare, focus }),
+            ac: buildAcademic({ agg: a2, comps: c2, schools, compare, focus }),
+            pu: buildPupils({ agg: a2, comps: c2, schools, compare, focus }),
+          });
+          assert.ok(got === want, `${g} ${compare} ${focus}: the views change when the rows come ${how}`);
+        }
+      }
+  }
 });
