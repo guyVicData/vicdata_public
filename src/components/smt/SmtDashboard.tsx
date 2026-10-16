@@ -655,7 +655,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-C-MAP":
       return { tag: "Map", context: c.context.status === "ready" && c.context.data.area === "la" ? (c.school.regionName ?? c.school.laName ?? "") : "the area around the school" };
     case "DV-SMT-C-BYAGE":
-      return { tag: "Population by age", context: c.context.status === "ready" && c.context.data.byAge.scope === "around" ? "within 5 miles" : (c.school.laName ?? "") };
+      return { tag: "Population by age", context: c.context.status === "ready" && c.context.data.byAge.scope === "around" ? `within ${c.context.data.radius}` : (c.school.laName ?? "") };
     case "DV-SMT-C-NEARBY":
       return { tag: "Children nearby", context: "residents, indexed" };
     case "DV-SMT-C-BIRTHS":
