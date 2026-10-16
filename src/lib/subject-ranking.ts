@@ -30,6 +30,7 @@ import { gradeRowsFromRollup, mapHistoricKs5Grade, starIsAStar, MODERN_GRADE_FRO
 import { DOUBLE_AWARD_QUALIFICATION, GRADE_SCALES, NON_GRADE_VALUES, BOTTOM_RANK, bandRate, doubleAwardPoints, inRange, isDoubleAward, thresholdRate, type GradeRange } from "./subject-grades";
 import { MINIMUM_SUBJECT_N } from "./academic-data-view";
 import { TREND_BASE_PERIOD } from "@/catalogue/notes";
+import { changeStartFor } from "@/catalogue/years";
 
 export type RankMeasure =
   | { kind: "points" }
@@ -84,10 +85,10 @@ export type SubjectRanking = {
 export const RANK_WINDOW = 10;
 export const RANK_BOTTOM = 3;
 
-/** Where the change list starts: entries from the first year with data (`periods`, ascending);
- * points and rates from 2022/23 (R-TREND-FROM-2223). */
+/** Where the change list starts: entries from the first year with data (`periods`; R-ENTRIES-FIRST-YEAR);
+ * points and rates from 2022/23 (R-TREND-FROM-2223). The one rule, in years.ts. */
 export function changeFrom(measure: RankMeasure, periods: readonly number[]): number {
-  return measure.kind === "entries" && periods.length > 0 ? periods[0] : TREND_BASE_PERIOD;
+  return changeStartFor(measure.kind === "entries" ? "entries" : "results", periods);
 }
 
 // ----------------------------------------------------------------- the definition

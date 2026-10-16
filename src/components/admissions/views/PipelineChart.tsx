@@ -13,6 +13,7 @@ import { ADMISSIONS_NOTES } from "@/catalogue/notes";
 import type { PipelineOk } from "../api";
 import { FlagPill, Key, LineSwatch, ViewTitle, Empty, fmtN, cx } from "../ui";
 import { extent, scale, useWidth } from "./charts";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 type PoolPoint = PipelineOk["ladder"]["past"][number];
 
@@ -117,7 +118,7 @@ export function PipelineChart({ p, height = 225, projection, onProjection, onFee
   const focus = flags.filter((r) => r.flag!.id === "feeder_focus");
   const red = flags.filter((r) => r.flag!.id === "feeder_red");
   const names = (rows: typeof flags) => rows.slice(0, 2).map((r) => r.name.replace(/ (Primary|C ?of ?E|CofE|Church of England|Junior|Infant|Academy|School)\b.*$/i, "")).join(", ") + (rows.length > 2 ? ` +${rows.length - 2}` : "");
-  const figures = (rows: typeof flags) => rows.map((r) => `${r.name}: ${fmtN(r.before)} → ${fmtN(r.pupils)} aged ${p.feederTable.age} (${(r.changePct ?? 0) > 0 ? "+" : ""}${(r.changePct ?? 0).toFixed(1)}%)`).join("\n") + `\nThe area (all ${p.feederTable.rows.length}): ${fmtN(p.feederTable.area.from)} → ${fmtN(p.feederTable.area.to)} (${(p.feederTable.area.changePct ?? 0).toFixed(1)}%)`;
+  const figures = (rows: typeof flags) => rows.map((r) => `${r.name}: ${fmtN(r.before)} → ${fmtN(r.pupils)} aged ${p.feederTable.age} (${signedDelta(r.changePct ?? 0, (x) => `${Math.abs(x).toFixed(1)}%`, HYPHEN_SIGN)})`).join("\n") + `\nThe area (all ${p.feederTable.rows.length}): ${fmtN(p.feederTable.area.from)} → ${fmtN(p.feederTable.area.to)} (${signedDelta(p.feederTable.area.changePct ?? 0, (x) => `${Math.abs(x).toFixed(1)}%`, { ...HYPHEN_SIGN, plus: "" })})`;
   const canProject = p.entry.age === 11;
 
   return (

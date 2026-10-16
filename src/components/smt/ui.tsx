@@ -9,6 +9,7 @@ import { accentVars, productAccent } from "@/components/shell/accent";
 import { admissionsVars, cx } from "@/components/admissions/ui";
 import type { Theme } from "@/components/shell/TeacherChrome";
 import { periodLabel, withProvisional, type YearFamily } from "@/catalogue/years";
+import { signedDelta } from "@/lib/signed-delta";
 
 const S = productAccent("smt")!;
 
@@ -37,7 +38,7 @@ export function fmt(v: number | null | undefined, unit: Unit, key?: string): str
     case "share":
       return `${v.toFixed(1).replace(/\.0$/, "")}%`;
     case "va":
-      return `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(2)}`;
+      return signedDelta(v, (x) => Math.abs(x).toFixed(2), { zero: "" });
     case "grade":
       return v.toFixed(2);
     default:
@@ -50,7 +51,7 @@ export function fmtChange(c: { change: number; unit: "pct" | "points" | "pp" } |
   if (!c) return "—";
   const v = c.change;
   const s = `${Math.abs(v).toFixed(c.unit === "pct" ? 0 : dp)}`;
-  return c.unit === "pct" ? `${v > 0.5 ? "▲" : v < -0.5 ? "▼" : "▬"} ${s}%` : `${v > 0 ? "+" : v < 0 ? "−" : "±"}${s} ${c.unit === "pp" ? "pp" : "pts"}`;
+  return c.unit === "pct" ? `${v > 0.5 ? "▲" : v < -0.5 ? "▼" : "▬"} ${s}%` : signedDelta(v, () => `${s} ${c.unit === "pp" ? "pp" : "pts"}`, { zero: "±" });
 }
 
 export const dirClass = (v: number | null | undefined, flat = 0.05) => (v === null || v === undefined ? "text-[var(--muted2)]" : v > flat ? "text-[var(--adm-up-fg)]" : v < -flat ? "text-[var(--adm-down-fg)]" : "text-[var(--muted2)]");

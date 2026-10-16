@@ -91,6 +91,7 @@ import AggregateTrendChart, { AGGREGATE_TARGET_COLOUR, AGGREGATE_REGION_COLOUR, 
 import type { AcademicAggregateTrends } from "@/lib/academic-aggregate-trends";
 import { subjectFamilyColour } from "@/lib/subject-family-colours";
 import { withProvisional } from "@/catalogue/years";
+import { HYPHEN_SIGN_PLUS_ZERO, signedDelta } from "@/lib/signed-delta";
 
 // Round 2, Part B: a small, self-contained N-slice donut for the entries-share
 // breakdown (spec §4, "echoes the gender donut") -- GenderSplitCard.tsx's own Donut is
@@ -528,8 +529,7 @@ export default function AcademicGraphsView({
                   trend popup -- one shared module, not a second inline copy. */}
               {entriesTrendBadge && (
                 <p className="mt-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                  {TREND_LABELS[entriesTrendBadge.direction].adjective} ({entriesTrendBadge.pctChange >= 0 ? "+" : ""}
-                  {entriesTrendBadge.pctChange.toFixed(0)}% since {academicYearLabel(entriesPeriods[0] ?? baseline)})
+                  {TREND_LABELS[entriesTrendBadge.direction].adjective} ({signedDelta(entriesTrendBadge.pctChange, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN_PLUS_ZERO)} since {academicYearLabel(entriesPeriods[0] ?? baseline)})
                 </p>
               )}
             </Card>

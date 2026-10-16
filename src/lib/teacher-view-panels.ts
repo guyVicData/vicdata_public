@@ -14,6 +14,7 @@ import type { TeacherPhase } from "./teacher-view-phases";
 import { MODERN_GRADE_FROM } from "./grade-rows";
 import { TREND_LINE_MIN_YEARS } from "../catalogue/years";
 import { competitionRanks } from "./rank";
+import { signedDelta } from "./signed-delta";
 
 // ---------------------------------------------------------------- the panels
 
@@ -486,17 +487,9 @@ export function changeOf(measure: Pick<Measure, "changeKind">, values: (number |
   return ends ? ends.last - ends.first : null;
 }
 
-/**
- * 0.8 IGCSE subjects (follow-up 6): a change with its sign. `body` prints the unsigned magnitude from the
- * SIGNED change, exactly as each measure always rounded it (Math.abs(Math.round(d)): −6.5 stays 6); only
- * the sign is decided here, from what is printed -- a change that rounds to zero prints as zero does
- * ("+0.0", "+0pp"), never "−0.0".
- */
-export function signedDelta(d: number, body: (signed: number) => string): string {
-  const printed = body(d);
-  const zero = !/[1-9]/.test(printed);
-  return `${d < 0 && !zero ? "−" : "+"}${printed}`;
-}
+// 0.8 IGCSE subjects (follow-up 6): a change with its sign, never "−0". Lives in signed-delta.ts
+// (year rules leftovers) so every view shares it; re-exported for Teacher's imports.
+export { signedDelta };
 
 /**
  * 0.8 IGCSE subjects (follow-up 6): the biggest and smallest movers in words, from the changes as printed.

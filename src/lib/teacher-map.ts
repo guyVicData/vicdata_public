@@ -16,6 +16,7 @@
 // says which. The school itself wears a thick ring (white on dark, dark grey on light).
 // Pure: no React, no Leaflet.
 import { inlineRangeLabel, rangeLabel, type GradeRange } from "./subject-grades";
+import { signedDelta } from "./signed-delta";
 
 export type ColourStop = { t: number; hex: string };
 
@@ -286,7 +287,7 @@ export function changeMapFrom(
   }));
   const format =
     how === "honest" && s.measure.changeKind === "percent"
-      ? (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v))}%`
+      ? (v: number) => signedDelta(v, (x) => `${Math.abs(Math.round(x))}%`)
       : s.result.kind === "entries"
         ? (v: number) => `${signedCount(v)} entries`
         : s.measure.changeKind === "points"

@@ -7,7 +7,7 @@
 //   grade profile               the school's grade rows (fetchSubjectLevelDataForSchools, as Teacher)
 //   entries mix                 the subject rows' entries, year by year
 import { SUBJECT_AREA_MIN } from "@/catalogue/notes";
-import { HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
+import { HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, entriesFirstPeriod, periodLabel } from "@/catalogue/years";
 import { smtNote } from "@/catalogue/notes";
 import { cachedReference } from "../server-cache";
 import { fetchSubjectHeadlineForSchools, fetchSubjectLevelDataForSchools } from "../academic-data-view";
@@ -247,11 +247,13 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
     trend = { label: stage === "ks4" ? "Attainment 8" : "A level: points per entry", school: years.map((y) => ({ year: y, value: figure(pop, urn, y, headKey) })), band: middleHalf(pop, setUrns, headKey, years, exclude) };
   }
   // Entries mix: each area's share of the stage's entries (all areas), or each subject's share of
-  // the area's (an area chosen), year by year. From the subject rollup, which holds every year
-  // from 2021/22 (the modern subject sources start in 2023/24): change in entries counts from the
-  // first year with data (the year rules; R-SMT-VIEW-MIX).
+  // the area's (an area chosen), year by year. From the subject rollup (the modern subject sources
+  // start in 2023/24), drawn from its first year with entries (R-ENTRIES-FIRST-YEAR: 2020/21 at
+  // GCSE, the teacher-assessed year; R-SMT-VIEW-MIX).
   const head = (await cachedReference(`smt:subject-headline:${urn}:${stage}`, () => fetchSubjectHeadlineForSchools([urn], stage))).get(urn) ?? [];
-  const mixRows = head.filter((e) => e.period >= HISTORIC_GRADE_FROM && e.period <= period && (!area || e.familyId === area) && e.entriesTotal > 0);
+  const withEntries = head.filter((e) => e.period <= period && (!area || e.familyId === area) && e.entriesTotal > 0);
+  const mixFrom = entriesFirstPeriod(withEntries.map((e) => e.period));
+  const mixRows = withEntries.filter((e) => mixFrom !== null && e.period >= mixFrom);
   const keyOf = (e: { subject: string; familyId: string | null }) => (area ? e.subject : (e.familyId ?? "other"));
   const totals = new Map<string, number>();
   for (const e of mixRows) totals.set(keyOf(e), (totals.get(keyOf(e)) ?? 0) + e.entriesTotal);

@@ -536,7 +536,7 @@ What is counted, at what grain, where, with which honest number types. 23 measur
 | Honest number types | totals, points, change_points, rank |
 | Rules | R-SMT-SET-RANKS, R-SMT-SMALL-ENTRIES, R-ADM-FLAG-STRENGTHS, R-TREND-FROM-2223 |
 | Fetched by | - src/lib/smt/academic.ts:buildAcademic<br>- src/app/api/smt/academic/route.ts |
-| Known gaps | - The subject areas are the data's own families (8), not the spec's illustrative list.<br>- Entries before 2023/24 come from the historic sources; the mix draws the years both hold. |
+| Known gaps | - The subject areas are the data's own families (8), not the spec's illustrative list.<br>- Entries before 2023/24 come from the historic sources; the mix draws every year the subject rollup holds entries for, from its first (R-ENTRIES-FIRST-YEAR: 2020/21 at GCSE, entries only). |
 | Briefing | none |
 | Citation | DfE KS4 and KS5 subject tables |
 

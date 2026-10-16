@@ -5,6 +5,7 @@
 // One module so Column 1, Context and Comparisons all draw "each subject (or school)
 // individually" the same way. The charts render these; none of them re-derive them.
 import type { ChangeDirection } from "./trend-colours";
+import { signedDelta } from "./signed-delta";
 
 // ------------------------------------------------------------------ grey tints
 
@@ -139,5 +140,5 @@ export const DIRECTION_FILL: Record<Direction, string> = { up: "var(--dir-up)", 
 export const DIRECTION_COLOUR: Record<Direction, string> = { up: "var(--dir-up)", down: "var(--dir-down)", flat: "var(--dir-flat)" };
 
 export function signed(n: number, format: (v: number) => string): string {
-  return `${n > 0 ? "+" : n < 0 ? "−" : "±"}${format(Math.abs(n))}`;
+  return signedDelta(n, (x) => format(Math.abs(x)), { zero: "±" });
 }

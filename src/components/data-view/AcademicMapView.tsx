@@ -77,6 +77,7 @@ import {
   type KsStage,
   type Ks5Bucket,
 } from "@/lib/academic-data-view";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 
@@ -1068,8 +1069,8 @@ export default function AcademicMapView({
           // number.
           const wording = trendWordingFor(stage, data.avgValue, data.anchorValue);
           if (wording) {
-            const sign = wording.magnitude.value > 0 ? "+" : "";
-            lines.push(`${wording.label} <strong>${sign}${wording.magnitude.value.toFixed(0)}${wording.magnitude.unit}</strong> in ${TREND_STAT_LABEL[stage]} since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`);
+            const signed = signedDelta(wording.magnitude.value, (x) => Math.abs(x).toFixed(0), HYPHEN_SIGN);
+            lines.push(`${wording.label} <strong>${signed}${wording.magnitude.unit}</strong> in ${TREND_STAT_LABEL[stage]} since ${academicYearLabel(TREND_BASELINE_PERIOD[stage])}`);
           } else {
             lines.push(`No real ${academicYearLabel(TREND_BASELINE_PERIOD[stage])} comparison`);
           }

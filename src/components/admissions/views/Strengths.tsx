@@ -12,6 +12,7 @@ import { Empty, FlagPill, Muted, ordinal, yearLabel } from "../ui";
 import { DivergingBar } from "./charts";
 import { figuresOf } from "./Momentum";
 import { TREND_BASE_PERIOD } from "@/catalogue/years";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 export function overallLine(r: RivalsView): string | null {
   const o = r.overall;
@@ -57,10 +58,10 @@ export function Strengths({ r, explorerHref, fullscreen, order = "gap", showFlag
             <span>
               {ordinal(a.rank)} of {a.of}
             </span>
-            <span title={`You ${a.mine.toFixed(2)}; the rivals' average ${(a.mine - a.gap).toFixed(2)} (gap ${a.gap > 0 ? "+" : ""}${a.gap.toFixed(2)} pts)`}>
+            <span title={`You ${a.mine.toFixed(2)}; the rivals' average ${(a.mine - a.gap).toFixed(2)} (gap ${signedDelta(a.gap, (x) => Math.abs(x).toFixed(2), HYPHEN_SIGN)} pts)`}>
               <DivergingBar value={a.gap} max={max} />
             </span>
-            <span title={a.gapSince2223 === null ? `No ${yearLabel(TREND_BASE_PERIOD)} figure` : `The gap moved ${a.gapSince2223 > 0 ? "+" : ""}${a.gapSince2223.toFixed(2)} pts since ${yearLabel(TREND_BASE_PERIOD)}`}>{dir(a.gapSince2223)}</span>
+            <span title={a.gapSince2223 === null ? `No ${yearLabel(TREND_BASE_PERIOD)} figure` : `The gap moved ${signedDelta(a.gapSince2223, (x) => Math.abs(x).toFixed(2), HYPHEN_SIGN)} pts since ${yearLabel(TREND_BASE_PERIOD)}`}>{dir(a.gapSince2223)}</span>
             {showFlags && (
             <span className="flex flex-wrap gap-1">
               {a.flags

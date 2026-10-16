@@ -2,6 +2,7 @@
 // (VicData 0.6 S2). Lifted VERBATIM out of ComparisonsPanels so a Comparisons view moved
 // out of its panel keeps the same population rules. Pure and client-safe (the server-side
 // set building lives in teacher-view-comparator-series.ts and chooser-sets.ts).
+import { signedDelta } from "./signed-delta";
 
 /**
  * R-COMPARATOR-NO-FIGURE, R-FOCUS-NEVER-FILTERED: a comparator with no published figure
@@ -76,4 +77,4 @@ export function changeByUrn(
 }
 
 // The change map's own % format on a count: whole, signed, a true minus.
-export const signedPercent = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v))}%`;
+export const signedPercent = (v: number) => signedDelta(v, (x) => `${Math.abs(Math.round(x))}%`);

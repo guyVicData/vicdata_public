@@ -43,6 +43,7 @@ import { rankDescendingWithTies, trendBadge, chunkedRankingDisplay, percentile, 
 import type { AcademicRegionNationRankMetric } from "@/lib/academic-region-nation-rank";
 import { academicYearLabel } from "./TrendPill";
 import TrendBaseNote from "./TrendBaseNote";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 const EMPTY_EXCLUDED_SET: Set<string> = new Set();
 
@@ -256,8 +257,7 @@ export default function AcademicRankingsView({
           ) : targetTrendWording ? (
             <>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
-                {targetTrendWording.label} {targetTrendWording.magnitude.value > 0 ? "+" : ""}
-                {targetTrendWording.magnitude.value.toFixed(0)}
+                {targetTrendWording.label} {signedDelta(targetTrendWording.magnitude.value, (x) => Math.abs(x).toFixed(0), HYPHEN_SIGN)}
                 {targetTrendWording.magnitude.unit}
               </p>
               <p className="mt-1 text-xs text-neutral-500">
@@ -330,7 +330,7 @@ export default function AcademicRankingsView({
             ranked={growthRanked}
             targetRank={growthTargetRank}
             total={growthTotal}
-            format={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
+            format={(v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN)}
             cohortLabelByUrn={cohortLabelByUrn}
           />
         </>

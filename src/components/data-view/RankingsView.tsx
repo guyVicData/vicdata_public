@@ -30,6 +30,7 @@ import { academicYearLabel } from "./TrendPill";
 import Sparkline from "./Sparkline";
 import { FOCUS_SCHOOL_COLOUR } from "@/lib/school-series-colours";
 import { TAG_COLOURS } from "@/lib/tag-colours";
+import { HYPHEN_SIGN, signedDelta } from "@/lib/signed-delta";
 
 type Metric = { key: string; label: string; getValue: (p: DataViewSchoolProfile, filters: DataViewFilterState) => number | null; format: (v: number) => string };
 
@@ -184,7 +185,7 @@ export default function RankingsView({
         ranked={growthRanked}
         targetRank={growthTargetRank}
         total={growthTotal}
-        format={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
+        format={(v) => signedDelta(v, (x) => `${Math.abs(x).toFixed(0)}%`, HYPHEN_SIGN)}
       />
     </div>
   );

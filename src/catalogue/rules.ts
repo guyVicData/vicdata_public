@@ -310,7 +310,6 @@ export const RULES: Rule[] = [
       `${XP}:614-616, 649 (table only)`,
       `${CP}:284, 292`,
       `${SP}:789, 798`,
-      "src/lib/teacher-view-catalogue.ts:availableViews (the meetings slide picker's trend option, R-MEETINGS-TREND-4YR)",
     ],
     testCase: {
       urn: "100053",
@@ -326,16 +325,16 @@ export const RULES: Rule[] = [
   {
     id: "R-MEETINGS-TREND-4YR",
     statement:
-      "A meeting's trend follows R-TREND-LINE-4YR, as every other view does: a line only with 4 or more real years. The live slide picker (the S4 chooser) offers each view's 'Over time' form and the slide draws it through the host's own panels, so a 3-year series draws as per-year bars, never a line. The round-5 axis catalogue's 'N-year trend' gate (availableViews), no longer called by any page, uses the same 4 (MEETING_TREND_MIN_YEARS = TREND_LINE_MIN_YEARS in years.ts).",
+      "A meeting's trend follows R-TREND-LINE-4YR, as every other view does: a line only with 4 or more real years. The live slide picker (the S4 chooser) offers each view's 'Over time' form and the slide draws it through the host's own panels, so a 3-year series draws as per-year bars, never a line. (The round-5 axis catalogue and its 'N-year trend' gate, which no page called, were deleted in the year rules leftovers.)",
     why: "Guy, 13 Oct 2026 (year rules follow-ups, Y4 5): the round-5 picker was the last place still on R-TREND-3YR's 3 years.",
-    appliesTo: "/teacher/meetings: trend slides; the round-5 axis catalogue (availableViews)",
-    enforcedIn: ["src/catalogue/years.ts:MEETING_TREND_MIN_YEARS", "src/lib/teacher-view-catalogue.ts:TREND_MIN_YEARS, availableViews", `${TVP}:trendChartKind (the slide's drawing)`],
+    appliesTo: "/teacher/meetings: trend slides",
+    enforcedIn: [`${TVP}:TREND_LINE_MIN_YEARS, trendChartKind (the slide's drawing)`],
     testCase: {
       urn: "117037",
       school: "King's Worcester",
       phase: "ks4",
       subject: "Computer Science",
-      expect: "Computer Science (3 real years of points): the axis catalogue offers no trend and its series draws as bars; a subject with 4 or more real years is offered a trend, titled with its real span, and draws as a line.",
+      expect: "Computer Science (3 real years of points) draws as bars; a subject with 4 or more real years draws as a line.",
       check: "meetingsTrend4yr",
     },
     origin: "Year rules follow-ups (16 Oct 2026)",
@@ -1000,7 +999,7 @@ export const RULES: Rule[] = [
       "The subject ranking measures its change in entries from the first year with data (the earliest year any school in the ranking has a figure), in %; never from 2022/23. Points and rates keep 2022/23 (R-TREND-FROM-2223). The database function takes one start year, so for entries the app reads the years in its answer and asks again from the first; the app-side fallback applies the same rule (changeFrom).",
     why: "Guy, 13 Oct 2026 (year rules follow-ups, Y4 6): the 2022/23 start exists because 2021/22's grading was generous, which doesn't touch entry numbers; R-TREND-FROM-2223 never applies to Candidates.",
     appliesTo: "Comparisons' subject ranking on Candidates (entries): its change list, tiles and bars",
-    enforcedIn: ["src/lib/subject-ranking.ts:changeFrom, rankFigures, rankByFunction, rankRpcArgs"],
+    enforcedIn: ["src/catalogue/years.ts:changeStartFor (R-ENTRIES-FIRST-YEAR)", "src/lib/subject-ranking.ts:changeFrom, rankFigures, rankByFunction, rankRpcArgs"],
     testCase: {
       urn: "137625",
       school: "The Chase",
@@ -1010,6 +1009,47 @@ export const RULES: Rule[] = [
       check: "rankingEntriesChange",
     },
     origin: "Year rules follow-ups (16 Oct 2026)",
+    status: "active",
+  },
+  {
+    id: "R-ENTRIES-FIRST-YEAR",
+    statement:
+      "Every view that draws or measures entries (Candidates) starts at the first year with entries in the data, per phase and measure, read through one helper (years.ts entriesFirstPeriod / changeStartFor): 2020/21 for GCSE subjects, the teacher-assessed year (entry totals, no grades). Teacher's Candidates panels, the subject ranking's entries change, the Data View's 'Candidates, % change' (category and subject mode, and the set's average) and the SMT entries mix all start there. Grades and points keep R-TREND-FROM-2223 (change from 2022/23, drawn from 2021/22 with the note). Area comparisons (LA, region, England) start where the area entry totals do (2021/22).",
+    why: "Guy, 16 Oct 2026 (year rules leftovers, item 1): keep 2020/21 and extend every entries view to it, so every entries figure starts at the same year.",
+    appliesTo: "Teacher Candidates (year table, trend, % change, rankings); the Data View's Candidates figures; SMT's entries mix",
+    enforcedIn: [
+      "src/catalogue/years.ts:entriesFirstPeriod, changeStartFor",
+      "src/lib/subject-ranking.ts:changeFrom",
+      "src/components/data-view/SubjectAreaSection.tsx:entriesChange, buildCategoryRows, buildSubjectRows",
+      "src/lib/smt/academic.ts:mix",
+      `${TVP}:trimToData (Teacher's Candidates: every year the headline holds, trimmed to the data)`,
+    ],
+    testCase: {
+      urn: "137625",
+      school: "The Chase",
+      phase: "ks4",
+      subject: "History",
+      expect: "GCSE History: entries from 2020/21 (results from 2021/22); Teacher's Candidates draws 2020/21; the Data View's subject-mode change and the ranked list agree (+29% since 2020/21).",
+      check: "entriesFirstYear",
+    },
+    origin: "Year rules leftovers (16 Oct 2026)",
+    status: "active",
+  },
+  {
+    id: "R-NO-NEGATIVE-ZERO",
+    statement:
+      "A change that rounds to zero prints as an exact zero prints in that view, never '−0' or '-0' ('0%', '+0%' or '±0.0', each view's own). Every signed figure goes through the one formatter, src/lib/signed-delta.ts signedDelta, in its view's style (Teacher's true minus and '+0'; the hyphen and an unsigned zero where a view has always printed them).",
+    why: "Guy, 16 Oct 2026 (year rules leftovers, item 2): '−0%' reads as a fall that didn't happen. Teacher's 0.8 fix (signedDelta) hadn't reached the Data View or the other dashboards.",
+    appliesTo: "Every signed change or gap: Teacher, the Data View, SMT, Admissions, the group dashboards, the narrative",
+    enforcedIn: ["src/lib/signed-delta.ts:signedDelta, HYPHEN_SIGN, HYPHEN_SIGN_PLUS_ZERO", `${TVP}:formatChange, formatDelta`],
+    testCase: {
+      urn: "",
+      school: "(formatters)",
+      phase: "ks4",
+      expect: "−0.3% prints '+0%' (Teacher), '0%' (the Data View's bars, rendered), '±0.0 pp' (SMT), '±0.0%' (Admissions); −3% stays '-3%'; no hand-rolled sign-then-toFixed is left in src.",
+      check: "noNegativeZero",
+    },
+    origin: "Year rules leftovers (16 Oct 2026)",
     status: "active",
   },
   {
@@ -1953,11 +1993,11 @@ export const RULES: Rule[] = [
   {
     id: "R-SMT-VIEW-MIX",
     statement:
-      "The entries mix shows each area's (or subject's) share of the entries for every year the data has, from 2021/22 (the subject rollup), as the results trend beside it does; entries count from the first year (not graded, so no 2021/22 note).",
+      "The entries mix shows each area's (or subject's) share of the entries for every year the data has, from the subject rollup's first year with entries (R-ENTRIES-FIRST-YEAR: 2020/21 at GCSE, a year before the results trend beside it); entries count from the first year (not graded, so no 2021/22 note).",
     why: "A view says what it shows and why, as Admissions' views do.",
     appliesTo: "DV-SMT-A-MIX, DV-SMT-A-MIX-TABLE",
     enforcedIn: ["src/components/smt/SmtDashboard.tsx:ViewBody", "src/components/smt/views"],
-    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "The GCSE mix runs from 2021/22 to the latest year, as the results trend does; each year's shares add up to 100%.", check: "smtMix" },
+    testCase: { urn: "137625", school: "The Chase", phase: "ks4", expect: "The GCSE mix runs from the rollup's first year with entries (2020/21) to the latest year, a year before the results trend's 2021/22; each year's shares add up to 100%.", check: "smtMix" },
     origin: "0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md)",
     status: "active",
   },
