@@ -110,13 +110,16 @@ It says which source it read ("[R-GROUP] reading the production"). If a figure d
 | SMT parity (Overview, Academic, Pupils, Context and the Teacher home; The Chase and Leighton Park; both themes; 1440 and 390; every rail view) | **312 pairs: 301 identical, 11 render noise.** DOM identical in all 156; max channel difference 1–2 of 255 |
 | Public page (SSR, live data recorded, then replayed) | **identical** (137625, 117037) |
 
-## Screenshots (`docs/v0.8/groups_r2_screenshots/`, all fixture data)
+## Screenshots (`docs/v0.8/groups_r2_screenshots/`, real data)
 
-- Harris Overview with each "Compared against" choice: `harris_overview_compared_{peer_band,non_group,areas,england,mix_matched,peer_named}_fixture-data.png`.
-- Dukes Schools in light: `dukes_schools_light_1440_fixture-data.png`.
-- Both dashboards for both groups, both themes, 1440 and 390: `{harris,dukes}_{overview,schools}_{dark,light}_{1440,390}_fixture-data.png`.
-- The head-office home with live chips: `harris_home_live_chips_dark_fixture-data.png`.
-- The negative route ("Not found."): `negative_route_not_found_fixture-data.png`.
+Retaken on 16 Oct on production's lookups, after the promote and both merges. They replace the overnight fixture-data shots. The named groups in the peer_named shot are production's two nearest MATs (2064, 16821): the fixtures' pair isn't among production's candidates. Mix-matched now shows its one set, "Non-group schools, same regions and phases as Harris Federation".
+
+
+- Harris Overview with each "Compared against" choice: `harris_overview_compared_{peer_band,non_group,areas,england,mix_matched,peer_named}.png`.
+- Dukes Schools in light: `dukes_schools_light_1440.png`.
+- Both dashboards for both groups, both themes, 1440 and 390: `{harris,dukes}_{overview,schools}_{dark,light}_{1440,390}.png`.
+- The head-office home with live chips: `harris_home_live_chips_dark.png`.
+- The negative route ("Not found."): `negative_route_not_found.png`.
 - **Not taken overnight:**
   - **A member school's SMT and a non-member's public page, opened from the Schools table:** the pages themselves are round 1's and the public page's (unchanged here; round 1's screenshots show head office's read-only SMT). The table's links are tested by the builder: head office plus the school's VicData membership opens `/teacher/smt?headOffice=`, everything else `/schools/{urn}`. Take both live after the promote.
 

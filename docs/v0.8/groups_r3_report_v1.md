@@ -126,10 +126,10 @@ The `src/` diff of `v0.8-groups-r3` against `v0.8-groups-r2` is byte-identical t
 
 ## Screenshots (`docs/v0.8/groups_r3_screenshots/`)
 
-- **Fixture data:**
+- **The dashboards, real data** (retaken 16 Oct on production's lookups, after the promote and both merges; they replace the overnight fixture-data shots):
   - Harris Academic (Secondary) and Pupils;
   - Dukes Academic (Post-16) and Pupils;
-  - both themes, 1440 and 390.
+  - both themes, 1440 and 390: `{harris_academic_secondary,harris_pupils_all,dukes_academic_post16,dukes_pupils_all}_{dark,light}_{1440,390}.png`.
 - **Real data (round 1's lookups, live):**
   - a Dukes school's SMT with "All Dukes schools" chosen (`dukes_school_smt_all_dukes_schools_dark.png`, Radnor House);
   - the chooser's "Your groups" (`dukes_school_chooser_your_groups_dark.png`);
