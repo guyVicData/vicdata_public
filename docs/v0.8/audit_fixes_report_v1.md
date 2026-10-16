@@ -2,7 +2,7 @@
 
 Branch `v0.8-audit-fixes` (from `main` at `553ddfe`), 16 Oct 2026. Prompt: `docs/v0.8/vicdata_0_8_audit_fixes_claude_code_prompt_v1.md`. Calls logged under "2026-10-16 — 0.8 audit fixes" in `docs/OPEN_QUESTIONS.md`.
 
-**Not merged.** The prompt's stop condition: Leighton Park still shows a GCSE rank in one place, Teacher's Column 1 ("2nd of 4 in Sciences & Maths", its subject against its own other subjects, and "+0.6 above England average"). That was there on `main` too ("2nd of 3"); this round didn't add it, but it didn't remove it either, and whether Teacher should hide an IGCSE school's own GCSE subject figures is your call (question 1). Everything else is clean and every parity difference is traced to an item. The branch is pushed.
+**Merged** (after the stop). The first pass stopped on the prompt's condition: Leighton Park's Teacher Column 1 still showed a rank among its own subjects and a gap to England at GCSE. Your decision (16 Oct): only ranks against other schools count. So Column 1 keeps those figures, and an IGCSE school's category now says which subjects it takes as IGCSE ("Sciences & Maths (sciences only: maths taken as IGCSE)"). Two more follow-ups went in with it: the pipeline chart's feeder flags read one age, and SMT Context's "Population by age" header names the catchment radius. Everything is clean, and every parity difference is traced to an item.
 
 ## Commits
 
@@ -19,6 +19,11 @@ Branch `v0.8-audit-fixes` (from `main` at `553ddfe`), 16 Oct 2026. Prompt: `docs
 | 8 | `b793dc5` | Ties share a place ("=3rd"); set-average and feeder-flag wording |
 | 10 | `24e0c42` | The five rules read the latest year and a fixture per year; R-YEARS-ROLLOVER |
 | — | `e6e1dd9` | Catalogue docs regenerated |
+| — | `4bfe5ec` | Report, screenshots, calls (first pass) |
+| SMT | `392fe34` | Context's "Population by age" header names the catchment radius ("within 5 km"), not "within 5 miles" |
+| 8 | `1bdc96f` | The pipeline chart's feeder flags read one age (the age below entry), on the set without the school, as the feeder table does |
+| 1 | `a7c79f0` | An IGCSE school's Column 1 category says which subjects it takes as IGCSE (R-IGCSE-GROUP-LABEL) |
+| — | `57e841a` | Catalogue docs regenerated |
 
 Each item's commit can be reverted alone, with one exception: item 5's commit also carries item 4's two SMT title rows in the regenerated preset table (`docs/v0.6/views_preset_table.md`).
 
@@ -29,8 +34,8 @@ Each item's commit can be reverted alone, with one exception: item 5's commit al
 | tsc | clean |
 | eslint | 0 errors; 2 warnings, both in files this round doesn't touch (`PeerTrendChart.tsx`, `SchoolMap.tsx`), as on `main` |
 | build | clean; no server key in `.next/static` (searched by the key's signature) |
-| Unit | 455 / 455 |
-| Rules | **96 pass, 0 fail** (15 manual, 19 without a check, 4 superseded). The full run gave 93 pass: R-ADM-RIVAL-RANKS' own recount needed item 1's rule (fixed, `048206f`), and R-SMT-CONTEXT-PLACE and R-SMT-YEARS hit a statement timeout while the parity runs loaded the database; both pass alone. New: R-IGCSE-EVERYWHERE, R-ADM-SEX-FILTER, R-YEARS-ROLLOVER; R-RANK-TIES now has a check |
+| Unit | 460 / 460 (5 new for the IGCSE category label) |
+| Rules | **97 pass, 0 fail** after the follow-ups (R-SMT-YEARS failed once in the full run, a subprocess failing under load as in the first pass; it passes alone). New: R-IGCSE-GROUP-LABEL; R-ADM-FLAG-FEEDER now checks the pipeline view's own flags. First pass: 96 pass, 0 fail (15 manual, 19 without a check, 4 superseded). The full run gave 93 pass: R-ADM-RIVAL-RANKS' own recount needed item 1's rule (fixed, `048206f`), and R-SMT-CONTEXT-PLACE and R-SMT-YEARS hit a statement timeout while the parity runs loaded the database; both pass alone. New: R-IGCSE-EVERYWHERE, R-ADM-SEX-FILTER, R-YEARS-ROLLOVER; R-RANK-TIES now has a check |
 | RLS | v06 ALL PASS; v07 Admissions ALL PASS; catchment 31 / 31 (3 new head-office checks) |
 | Groups r1 | ALL PASS (102); server access rules in the unit run |
 | Usage log | ALL PASS |
@@ -43,7 +48,7 @@ Each item's commit can be reverted alone, with one exception: item 5's commit al
 | Product | Pairs | Identical | Different | Traced to |
 |---|---|---|---|---|
 | Teacher (c5 sets, with the (i) set aside) | 2,306 | **2,306** | 0 | Two Context bar charts drew short once (a layout flake, as in round 4); identical on rerun |
-| Teacher rankings (rka, rkb, fixtures recaptured) | 497 | 394 (+1 render noise) | 103 | 18 with different words: only "=" on a shared place (8) or the IGCSE line (1). 85 pixels only, all GCSE: the ranking's note above the Comparisons column gains "30 schools not ranked at GCSE (mostly IGCSE).", wraps a line and moves the panels below it 16.5 px (1). No Post-16 pair differs |
+| Teacher rankings (rka, rkb, fixtures recaptured) | 497 | 395 (+1 render noise) | 101 (after the follow-ups: the same pairs as the first pass less one map flake, and the branch's words unchanged on every pair) | 18 with different words: only "=" on a shared place (8) or the IGCSE line (1). 85 pixels only, all GCSE: the ranking's note above the Comparisons column gains "30 schools not ranked at GCSE (mostly IGCSE).", wraps a line and moves the panels below it 16.5 px (1). No Post-16 pair differs |
 | Teacher saved views (sv) | 72 | **72** | 0 | (a first run lost one case to a fixture that didn't load on main; identical on rerun) |
 | Admissions (3 schools × entries × themes × widths) | 328 | 166 | 162 | 1, 4, 5 (below) |
 | SMT (the routes' data, 3 schools) | 127 fields | — | 127 | 1, 3, 7 (below) |
@@ -139,7 +144,7 @@ Column 1's points gate now lets a GCSE Double Award through and reads the rows `
   - R-RANK-TIES now has a check. Category tiles already shared ties and show no "=".
 - **T7, kept:** the change in the yearly average, with the school out of its own set's average. The change-list method says both plainly.
 - **A6, kept as one age:** R-ADM-FLAG-FEEDER now says so.
-  - For you: the pipeline chart's own feeder flags still read every age the feeder set holds, so they can differ from the feeder table's for a set that spans ages. A one-line change if you want them to match.
+  - Follow-up (`1bdc96f`, your call): the pipeline chart's own feeder flags now read that one age too, on the same set without the school, so they equal the feeder table's. No Admissions page draws them (the Admissions parity is unchanged); R-ADM-FLAG-FEEDER checks the view's flags against the raw census at age 10 (The Chase: area +5.2%, 15 feeders).
 
 ### 9 — Head office sees the school's saved catchment
 
@@ -206,12 +211,13 @@ select (select change from ch where entity_id='137625'),
 | Teacher, a GCSE subject ranking | placed against the population | not placed; the window leaves it out |
 | Teacher, 10 nearest at GCSE | the 10 nearest less 5 dropped IGCSE schools (fewer than 10, unsaid) | 10 eligible schools, "17 schools not ranked at GCSE (mostly IGCSE); the 10 nearest eligible reach 21 km" |
 | Teacher, Comparisons map | drew the school itself | leaves it out ("1 not shown") |
-| Teacher, Column 1 | Biology 6.9, "2nd of 3 in Sciences & Maths", "+0.6 above England average" | the same, "2nd of **4**" (Combined Science now scored, item 2): **still a rank within its own subjects and a gap to England**, question 1 |
+| Teacher, Column 1 | Biology 6.9, "2nd of 3 in Sciences & Maths", "+0.6 above England average" | Biology 6.9, "2nd of **4** in **Sciences & Maths (sciences only: maths taken as IGCSE)**" (Combined Science now scored, item 2), "+0.6 above England average". Kept by your decision: these are its own subjects, not a rank against other schools. Latin's category reads "Languages & Literature (no English: taken as IGCSE)" |
 | Admissions | listed, "IGCSE", not ranked | the same; other schools' places leave it out |
 
-## Views whose method text changed (65 of 111)
+## Views whose method text changed (71 of 111)
 
-- **Teacher (26).**
+- **Teacher (32).**
+  - The IGCSE category label (follow-up): DV-C1-RES-CUR-TILES, -CUR-BAR, -CUR-TABLE, -TR-CHART, -TR-TABLE, and DV-C1-CAND-CUR-TILES, -TR-INDEXED, -TR-ACTUAL, -TR-TABLE, -TR-CHANGELIST, -TR-CHANGETABLE (the six Candidates views are new to this list).
   - Double Award, in sources and left out: DV-C1-RES-CUR-TILES (and its steps), DV-C1-RES-CUR-BAR, -CUR-TABLE, -TR-CHART, -TR-TABLE, -TR-MAP, DV-C1-RES-TR-GEO-CHART, -GEO-TABLE, every DV-C2 view, every DV-C3 view.
   - The IGCSE sentence, on those same views.
   - DV-C3-CUR-RANKING: the population caveat.
@@ -234,12 +240,14 @@ select (select change from ch where entity_id='137625'),
 - **`teacher_chase_column1_double_award_main.png`, `_br.png`:** The Chase with Combined Science on the bar.
 - **`smt_overview_chellaston_roll_indexed_2021.png`:** "2021/22 = 100".
 - **`admissions_girls_not_split_by_sex.png`:** Girls chosen; the Academic panel's "Not split by sex".
+- **`teacher_leighton_park_gcse_group_label.png`:** Leighton Park's Column 1, "2nd of 4 in Sciences & Maths (sciences only: maths taken as IGCSE)".
+- **`smt_context_population_by_age_radius.png`:** "Population by age · within 5 km".
 - **`smt_pupils_chase_gcse.png`, `smt_pupils_st_marks_primary.png`:** Y7–Y11 lit, and R–Y6 lit. St Mark's roll by phase also shows "2022/23 = 100".
 
 ## Questions for you
 
-1. **Leighton Park at GCSE in Teacher's Column 1.** It still shows its own GCSE subject figures, with a rank among its own subjects and a gap to England's average. These are real GCSE entries (Biology 6.9), not the headline the IGCSE rule withholds. Should an IGCSE school's own subject figures be hidden at GCSE as well, as SMT does? Or are in-school ranks fine, with "GCSE rank" meaning ranks against other schools? I stopped before merging on this, per the prompt.
-2. **A2, one note or two.** At 11+ and 16+ the births *are* scaled, so your wording appears at 4+ only. Keep two notes?
-3. **A6:** make the pipeline chart's feeder flags one age too?
-4. **T2:** "=" on category ranks as well?
-5. **Found, not fixed:** Context's "Population by age" header still says "within 5 miles" whatever the catchment (round 3 leftover).
+Resolved after the first pass: (1) Leighton Park's Column 1, kept with the category label; (3) the pipeline flags, now one age; (5) the "within 5 miles" header, fixed.
+
+1. **A2, one note or two.** At 11+ and 16+ the births *are* scaled, so your wording appears at 4+ only. Keep two notes?
+2. **T2:** "=" on category ranks as well?
+3. **The IGCSE category label** names only English and maths, the subjects the IGCSE rule rests on. Context's "Compare against: Sciences & Maths subjects" and England's lines keep the plain name. Extend the label to Context?
