@@ -16,18 +16,7 @@ import { useState, type ReactNode } from "react";
 import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
-import {
-  DIRECTION_ARROW,
-  DIRECTION_WORD,
-  ENTRIES_MEASURE,
-  percentChange,
-  periodsWithData,
-  sliceFrom,
-  trimToData,
-  trendSentence,
-  type PanelData,
-  type PanelId,
-} from "@/lib/teacher-view-panels";
+import { DIRECTION_ARROW, DIRECTION_WORD, ENTRIES_MEASURE, percentChange, periodsWithData, sliceFrom, trimToData, trendSentence, type PanelData, type PanelId, moversSentence, signedDelta } from "@/lib/teacher-view-panels";
 import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
@@ -436,10 +425,7 @@ export function CandidatesPanels({
     ) :
       best && worst && best.key !== worst.key ? (
         <PanelSummary>
-          {best.label} has grown the most ({best.value! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(best.value!))}%); {worst.label}{" "}
-          {worst.value! < 0 ? "has declined the most" : "has grown the least"} ({worst.value! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(worst.value!))}%) since {changeSince}.
+          {moversSentence({ label: best.label, printed: signedDelta(best.value!, (x) => `${Math.round(x)}%`) }, { label: worst.label, printed: signedDelta(worst.value!, (x) => `${Math.round(x)}%`) }, changeSince)}
         </PanelSummary>
       ) : (
         <PanelSummary>Not enough published years yet to compare subjects on change.</PanelSummary>

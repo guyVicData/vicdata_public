@@ -127,7 +127,7 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     changeLabel: "change in average points, in points",
     changeKind: "points",
     format: (v) => v.toFixed(1),
-    formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(1)}`,
+    formatDelta: (d) => signedDelta(d, (x) => x.toFixed(1)),
     axisStep: phase === "ks4" ? 0.5 : 5,
     aggregate: "mean",
     noun: "average points",
@@ -139,7 +139,7 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     changeLabel: `change in ${thresholdLabel(phase).toLowerCase()}, in percentage points`,
     changeKind: "pp",
     format: (v) => `${Math.round(v)}%`,
-    formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}pp`,
+    formatDelta: (d) => signedDelta(d, (x) => `${Math.round(x)}pp`),
     axisStep: 5,
     aggregate: "mean",
     noun: thresholdLabel(phase).toLowerCase(),
@@ -154,7 +154,7 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     changeLabel: "change in the share at the chosen grades, in percentage points",
     changeKind: "pp",
     format: (v) => `${Math.round(v)}%`,
-    formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}pp`,
+    formatDelta: (d) => signedDelta(d, (x) => `${Math.round(x)}pp`),
     axisStep: 5,
     aggregate: "mean",
     noun: "share of entries at the chosen grades",
@@ -166,7 +166,7 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     changeLabel: "% change in entries at each grade",
     changeKind: "percent",
     format: (v) => Math.round(v).toLocaleString(),
-    formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d)).toLocaleString()}`,
+    formatDelta: (d) => signedDelta(d, (x) => Math.round(x).toLocaleString()),
     axisStep: 10,
     aggregate: "sum",
     noun: "entries at each grade",
@@ -181,7 +181,7 @@ export const ENTRIES_MEASURE: Measure = {
   changeLabel: "% change in candidate numbers",
   changeKind: "percent",
   format: (v) => Math.round(v).toLocaleString(),
-  formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d)).toLocaleString()}`,
+  formatDelta: (d) => signedDelta(d, (x) => Math.round(x).toLocaleString()),
   axisStep: 10,
   aggregate: "sum",
   noun: "number of candidates",
@@ -205,7 +205,7 @@ export function headlineMeasure(phase: TeacherPhase, label: string): Measure {
     changeLabel: isPercent ? `change in ${label}, in percentage points` : `change in ${label}, in points`,
     changeKind: isPercent ? "pp" : "points",
     format: (v) => (isPercent ? `${Math.round(v)}%` : v.toFixed(1)),
-    formatDelta: (d) => `${d >= 0 ? "+" : "−"}${isPercent ? `${Math.abs(Math.round(d))}pp` : Math.abs(d).toFixed(1)}`,
+    formatDelta: (d) => signedDelta(d, (x) => (isPercent ? `${Math.round(x)}pp` : x.toFixed(1))),
     axisStep: 5,
     aggregate: "mean",
     noun: label,
@@ -487,13 +487,38 @@ export function changeOf(measure: Pick<Measure, "changeKind">, values: (number |
 }
 
 /**
+ * 0.8 IGCSE subjects (follow-up 6): a change with its sign, printed from its magnitude (`body`), with the
+ * sign taken from what is printed -- a change that rounds to zero prints as zero does ("+0.0", "+0pp"),
+ * never "−0.0".
+ */
+export function signedDelta(d: number, body: (magnitude: number) => string): string {
+  const printed = body(Math.abs(d));
+  const zero = !/[1-9]/.test(printed);
+  return `${d < 0 && !zero ? "−" : "+"}${printed}`;
+}
+
+/**
+ * 0.8 IGCSE subjects (follow-up 6): the biggest and smallest movers in words, from the changes as printed.
+ * The top mover "has grown the most" only when its change prints above zero: when every subject fell it
+ * "has fallen the least", and at zero it "has held steady". The bottom mover "has declined the most"
+ * when its change prints below zero, otherwise "has grown the least".
+ */
+export function moversSentence(best: { label: string; printed: string }, worst: { label: string; printed: string }, since: string): string {
+  const neg = (p: string) => p.startsWith("−");
+  const zero = (p: string) => !/[1-9]/.test(p);
+  const top = zero(best.printed) ? "has held steady" : neg(best.printed) ? "has fallen the least" : "has grown the most";
+  const bottom = neg(worst.printed) && !zero(worst.printed) ? "has declined the most" : "has grown the least";
+  return `${best.label} ${top} (${best.printed}); ${worst.label} ${bottom} (${worst.printed}) since ${since}.`;
+}
+
+/**
  * R-NUMBER-TYPE-HONESTY: a change printed with its sign, in the measure's own delta format:
  * "+5%" (a count, exactly as the % views always printed it), "+0.4" (points), "+3pp" (a
  * rate). A points or pp change that rounds to nothing prints unsigned ("0.0", "0pp"),
  * never "−0.0".
  */
 export function formatChange(measure: Pick<Measure, "changeKind" | "formatDelta">, value: number): string {
-  if (measure.changeKind === "percent") return `${value >= 0 ? "+" : "−"}${Math.abs(Math.round(value))}%`;
+  if (measure.changeKind === "percent") return signedDelta(value, (x) => `${Math.round(x)}%`);
   const printed = measure.formatDelta(value);
   return /^[+−]0(\.0+)?(pp)?$/.test(printed) ? printed.slice(1) : printed;
 }

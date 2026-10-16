@@ -16,27 +16,7 @@
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeMapFrom, type MapSeries } from "@/lib/teacher-map";
-import {
-  DIRECTION_ARROW,
-  DIRECTION_WORD,
-  currentRowsWithDelta,
-  changeOf,
-  latestYearFrom,
-  latestYearSeries,
-  statementSpan,
-  withTrendBase,
-  changePhrase,
-  changeTitle,
-  formatChange,
-  periodsWithData,
-  sliceFrom,
-  trimToData,
-  trendChartKind,
-  trendSentence,
-  type Measure,
-  type PanelData,
-  type PanelId,
-} from "@/lib/teacher-view-panels";
+import { DIRECTION_ARROW, DIRECTION_WORD, currentRowsWithDelta, changeOf, latestYearFrom, latestYearSeries, statementSpan, withTrendBase, changePhrase, changeTitle, formatChange, periodsWithData, sliceFrom, trimToData, trendChartKind, trendSentence, type Measure, type PanelData, type PanelId, moversSentence } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
@@ -1044,8 +1024,7 @@ export function SubjectPanels({
     summary:
       bestChange && worstChange && bestChange.key !== worstChange.key ? (
         <PanelSummary>
-          {bestChange.label} has grown the most ({fmtChange(bestChange.value!)}); {worstChange.label}{" "}
-          {worstChange.value! < 0 ? "has declined the most" : "has grown the least"} ({fmtChange(worstChange.value!)}) since {changeSince}.
+          {moversSentence({ label: bestChange.label, printed: fmtChange(bestChange.value!) }, { label: worstChange.label, printed: fmtChange(worstChange.value!) }, changeSince)}
         </PanelSummary>
       ) : (
         <PanelSummary>Not enough published years yet to compare on change.</PanelSummary>

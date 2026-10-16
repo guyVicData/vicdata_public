@@ -19,7 +19,7 @@ import { Fragment, createContext, useContext, useState, type ReactNode } from "r
 import { IconButton, TransposeIcon } from "./PanelIcons";
 import { windowCut } from "@/lib/subject-ranking-view";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
-import { countedValues, periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries } from "@/lib/teacher-view-panels";
+import { countedValues, periodsWithData, rankByValue, TREND_LINE_MIN_YEARS, type Measure, type PanelData, type PanelSeries, signedDelta } from "@/lib/teacher-view-panels";
 import {
   DIRECTION_FILL,
   DIRECTION_TEXT,
@@ -41,7 +41,7 @@ const INDEX_MEASURE: Measure = {
   changeLabel: "% change",
   changeKind: "percent",
   format: (v) => `${Math.round(v)}`,
-  formatDelta: (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}`,
+  formatDelta: (d) => signedDelta(d, (x) => String(Math.round(x))),
   axisStep: 10,
   aggregate: "mean",
   noun: "index",
