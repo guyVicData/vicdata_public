@@ -10,6 +10,8 @@
 // The entry point plays the subject's part: the chips (the school's admissions_entry_points, else
 // the defaults its age range gives) choose what every view follows. The top bar's filters pass
 // through to the routes. Every figure comes from /api/admissions/* (the browser recomputes none).
+import { ADM_SEX_FILTER } from "@/catalogue/admissions";
+import { indexedLabel } from "@/lib/index-base";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -553,9 +555,10 @@ function viewBody(dv: string, c: Ctx, o: ViewOpts): ReactNode {
     case "DV-ADM-P-ENTRY-TABLE":
       return readyPipe(c.pipeline, (p) => <EntryTable p={p} years={L.years as "down" | "across"} />);
     case "DV-ADM-P-POOL-INDEXED":
-      return readyPipe(c.pipeline, (p) => <PoolTrends p={p} fullscreen={fs} room={o.height} la={lines.has("la")} england={lines.has("england")} endLabels={L.endLabels as boolean} />);
+      // 0.8 audit fixes (6): the LA and England lines can't be split by sex; hidden while it is on.
+      return readyPipe(c.pipeline, (p) => <PoolTrends p={p} fullscreen={fs} room={o.height} la={lines.has("la") && c.filters.sex === "all"} england={lines.has("england") && c.filters.sex === "all"} endLabels={L.endLabels as boolean} />);
     case "DV-ADM-P-POOL-TABLE":
-      return readyPipe(c.pipeline, (p) => <PoolTable p={p} la={lines.has("la")} england={lines.has("england")} />);
+      return readyPipe(c.pipeline, (p) => <PoolTable p={p} la={lines.has("la") && c.filters.sex === "all"} england={lines.has("england") && c.filters.sex === "all"} />);
     case "DV-ADM-P-AREA-POP":
       return readyPipe(c.pipeline, (p) => <AreaPopulation p={p} la={lines.has("la")} region={lines.has("region")} />);
     case "DV-ADM-P-HOLD-LINE":
@@ -625,7 +628,9 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
   if (dv === "DV-ADM-M-SHAPE") return { tag: "Shape and size", context: `Data ${yearLabel(census)} · pupils by age` };
   if (panel.row === "now") return { tag: "Rivals", context: `Data ${yearLabel(census)} · pupils aged ${ep?.age ?? ""}` };
   if (dv.startsWith("DV-ADM-P-HOLD")) return { tag: "Forward", context: p ? `${p.ladder.future[0]?.entryYear}–${p.ladder.future[p.ladder.future.length - 1]?.entryYear}` : "" };
-  if (dv === "DV-ADM-P-POOL-INDEXED" || dv === "DV-ADM-M-VS-LINE") return { tag: "Trends", context: `indexed, ${yearLabel(CENSUS_FIRST_PERIOD)} = 100` };
+  // 0.8 audit fixes (4): the year the lines are actually indexed to (lib/index-base).
+  if (dv === "DV-ADM-P-POOL-INDEXED") return { tag: "Trends", context: p && p.poolTrends.feeders.length + p.poolTrends.la.length + p.poolTrends.england.length > 0 ? `indexed, ${indexedLabel(p.poolTrends.base)}` : "indexed" };
+  if (dv === "DV-ADM-M-VS-LINE") return { tag: "Trends", context: c.market.status === "ready" && !("empty" in c.market.data) ? `indexed, ${indexedLabel(c.market.data.summary.vsIndexed.base)}` : "indexed" };
   if (dv.startsWith("DV-ADM-M-ACAD")) return { tag: "Academic", context: r && ep ? `${ep.label.replace(/ \(.*\)$/, "")} → ${STAGE_WORD[r.stage]} · ${r.resultsPeriod ? resultsYearLabel(r) : ""}` : "" };
   return { tag: "Trends", context: `from ${yearLabel(CENSUS_FIRST_PERIOD)}` };
 }
@@ -646,8 +651,18 @@ function notesOf(dv: string, c: Ctx): { caption?: ReactNode; visible?: ReactNode
   if (dv.startsWith("DV-ADM-M-ACAD")) return { visible: <AcademicFooter explorerHref={explorerHref(c)} /> };
   if (dv === "DV-ADM-M-BARS" || dv === "DV-ADM-M-TABLE" || dv === "DV-ADM-M-DONUT" || dv === "DV-ADM-M-MAP")
     return { caption: "Cohort sizes from the census; shares are of this group; results ranks on the whole-school headline among all schools" };
-  if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "Roll trends sit on the same rail" };
+  if (dv.startsWith("DV-ADM-M-SHARE") || dv === "DV-ADM-M-ROLL-LINE") return { caption: "The entry age band's roll sits on the same rail" };
   return {};
+}
+
+/** 0.8 audit fixes (6, R-ADM-SEX-FILTER): while the girls/boys filter is on, a panel it doesn't split
+ * says so (ADM_SEX_FILTER), and Pool trends says its area lines are hidden. */
+function withSexNote(dv: string, c: Ctx, notes: { caption?: ReactNode; visible?: ReactNode }): { caption?: ReactNode; visible?: ReactNode } {
+  if (c.filters.sex === "all") return notes;
+  const line = ADM_SEX_FILTER[dv] === "not-split" ? ADMISSIONS_NOTES.notSplitBySex : dv.startsWith("DV-ADM-P-POOL") ? ADMISSIONS_NOTES.poolAreaNotSplit : null;
+  if (!line) return notes;
+  const note = <span data-sex-note="" className="text-[var(--muted)]">{line}</span>;
+  return { ...notes, visible: notes.visible ? <>{notes.visible} {note}</> : note };
 }
 
 /** The source note behind each panel's "i". */
@@ -656,7 +671,8 @@ function sourceOf(dv: string, vars: Record<string, string | number | null> = {})
   const m = d?.measures.join(", ");
   return (
     <>
-      {d?.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. {dv.startsWith("DV-ADM-P") ? ADMISSIONS_NOTES.pool : ADMISSIONS_NOTES.groupShare} <span className="opacity-70">({m})</span>
+      {/* 0.8 audit fixes (5, A1): the pool and group-share notes come with the view's method, only where they apply. */}
+      {d?.titleTemplate.replace(/\[[^\]]+\]/g, "…")}. <span className="opacity-70">({m})</span>
       {/* 0.8 SMT r4 (stage I): how it is calculated (src/catalogue/methods-admissions.ts). */}
       <MethodNote id={dv} vars={vars} />
     </>
@@ -795,7 +811,7 @@ function ConfigPanel({ panel, c, height, config }: { panel: PanelConfig; c: Ctx;
   const dv = dataviewOf(panel, active) ?? "";
   const h = headerOf(panel, dv, c);
   const title = dataviewById(dv)?.label ?? h.tag;
-  const notes = notesOf(dv, c);
+  const notes = withSexNote(dv, c, notesOf(dv, c));
   const onRailDv = (dvId: string) => {
     const inst = panel.dataviews.find((v) => v.kind === "view" && v.dataview === dvId);
     if (inst) setActive(inst.id);

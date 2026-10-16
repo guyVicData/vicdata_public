@@ -10,6 +10,9 @@
 //     and the column is given the top 15 and the ten schools either side of this one --
 //     a population of thousands cannot be drawn school by school, and the note says
 //     where the school actually stands in the whole of it.
+import { placeWord } from "./view-series/tiles";
+import { igcseEngland } from "./igcse";
+import { igcseNotRankedLine, igcseTargetLine } from "./igcse-words";
 import { lookupAcademicHeadline } from "./vicdata-reference";
 import { HEADLINE_MEASURE, type KsStage } from "./academic-data-view";
 import { rankFixedSets, type RankedRow, type SchoolSeries } from "./teacher-view-comparator-series";
@@ -60,6 +63,11 @@ export type RankingFigures = {
   // school's latest (the basis the rank is on), and per year (for the graphs).
   averageLatest: number | null;
   average: { period: number; value: number; schools: number }[];
+  // 0.8 audit fixes (1): at GCSE, the ranking's schools the IGCSE rule took out; the school is one.
+  igcseOut?: number;
+  targetIgcse?: boolean;
+  // 0.8 audit fixes (8): the school shares its place with another ("=3rd").
+  targetTied?: boolean;
 };
 
 // Comparator dropdown round (option A): what the Comparisons column shows until a teacher
@@ -76,20 +84,22 @@ export async function resolveDefaultNearest(targetUrn: string, phase: KsStage): 
     if (precomputed) return { ...(await resolveFixedSet(targetUrn, phase, precomputed)), count: precomputed.length };
   }
   // 0.6.5 S4: at Post-16, the 10 nearest with Post-16 provision (same rules, plus that filter).
-  const lists = await buildDefaultComparatorLists(targetUrn, { only: "nearest", post16: phase === "ks5" });
+  const lists = await buildDefaultComparatorLists(targetUrn, { only: "nearest", post16: phase === "ks5", gcse: phase === "ks4" });
   const chosen = resolveNearestOption(lists.list1, lists.boardingBand, lists.boardingRecipe, null);
   const urns = (chosen?.schools ?? []).map((s) => s.urn).filter((u) => u !== targetUrn);
-  return { ...(await resolveFixedSet(targetUrn, phase, urns)), count: urns.length };
+  const set = await resolveFixedSet(targetUrn, phase, urns);
+  // 0.8 audit fixes (1, T6): at GCSE the list filled past IGCSE schools; where it did, the caption
+  // says how many nearer schools aren't ranked at GCSE and the radius the ten reached.
+  const skipped = lists.igcseSkipped ? (chosen === lists.boardingRecipe ? lists.igcseSkipped.boardingRecipe : lists.igcseSkipped.list1) : [];
+  const reach = Math.max(0, ...(chosen?.schools ?? []).map((s) => s.distanceKm ?? 0));
+  const nearer = skipped.filter((s) => s.urn !== targetUrn && s.distanceKm !== null && s.distanceKm <= reach).length;
+  const note = nearer ? `${igcseNotRankedLine(nearer)}; the ${urns.length} nearest eligible reach ${Math.round(reach)} km.` : set.note;
+  return { ...set, note, count: urns.length };
 }
 
 const TOP = 15;
 const EITHER_SIDE = 5;
 
-const ordinal = (n: number) => {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
-};
 
 export async function resolveRankingSet(
   targetUrn: string,
@@ -100,12 +110,17 @@ export async function resolveRankingSet(
 ): Promise<ChooserSetResult & RankingFigures> {
   const population = await cachedRankingPopulation(filters.scope.kind === "region" ? filters.scope.code : null, phase, laName);
   const matched = population.filter((r) => matchesRanking(r, filters));
-  const urns = matched.map((r) => r[0]);
+  // 0.8 audit fixes (1, R-IGCSE-EVERYWHERE): at GCSE the IGCSE rule's schools leave the population
+  // (rank, "out of" and average), not only the listed sample; a line says how many.
+  const igcse = phase === "ks4" ? await igcseEngland() : new Set<string>();
+  const targetIgcse = igcse.has(targetUrn);
+  const urns = matched.map((r) => r[0]).filter((u) => !igcse.has(u));
+  const igcseOut = matched.length - urns.length;
   // A ranking can exclude the school itself (a state school looking at independent
   // girls' boarding schools). It is still placed against them -- that is the question
   // being asked -- and the note says it is not one of them.
   const inRanking = urns.includes(targetUrn);
-  if (!inRanking) urns.push(targetUrn);
+  if (!inRanking && !targetIgcse) urns.push(targetUrn);
 
   // Each school's latest published headline figure. Earlier years only as a fallback for a
   // school with no figure in the most recent one, the same "latest real value" rule
@@ -123,6 +138,11 @@ export async function resolveRankingSet(
     .filter((u) => latest.has(u))
     .sort((a, b) => latest.get(b)!.value - latest.get(a)!.value || a.localeCompare(b));
   const idx = order.indexOf(targetUrn);
+  // 0.8 audit fixes (8, T2): tied schools share a place (standard competition ranking: two at 3rd,
+  // then 5th), as subject rankings do; `idx` stays the position, for the schools listed around it.
+  const mine = idx >= 0 ? latest.get(targetUrn)!.value : null;
+  const place = mine === null ? null : 1 + order.filter((u) => latest.get(u)!.value > mine).length;
+  const tied = mine !== null && order.some((u) => u !== targetUrn && latest.get(u)!.value === mine);
   const shown = new Set(order.slice(0, TOP));
   if (idx >= 0) for (const u of order.slice(Math.max(0, idx - EITHER_SIDE), idx + EITHER_SIDE + 1)) shown.add(u);
   shown.delete(targetUrn);
@@ -130,12 +150,17 @@ export async function resolveRankingSet(
   const { rows, seriesByUrn } = await resolveFixedSet(targetUrn, phase, Array.from(shown));
   const others = order.length - (idx >= 0 ? 1 : 0);
   const showing = `Showing the top ${TOP} and the ${EITHER_SIDE} either side.`;
-  const note =
-    idx < 0
+  const igcseLine = igcseNotRankedLine(igcseOut);
+  const note = [
+    targetIgcse
+      ? `${igcseTargetLine(targetName)} Showing the top ${TOP} of ${order.length.toLocaleString()} with a published figure.`
+      : idx < 0
       ? `${targetName} has no published figure to rank. Showing the top ${TOP} of ${order.length.toLocaleString()} with one (${matched.length.toLocaleString()} in this ranking).`
       : inRanking
-        ? `${targetName} ranks ${ordinal(idx + 1)} of ${order.length.toLocaleString()} with a published figure (${matched.length.toLocaleString()} in this ranking). ${showing}`
-        : `${targetName} is not itself in this ranking. Placed against its ${others.toLocaleString()} schools with a published figure, it would be ${ordinal(idx + 1)}. ${showing}`;
+        ? `${targetName} ranks ${placeWord(place!, tied)} of ${order.length.toLocaleString()} with a published figure (${matched.length.toLocaleString()} in this ranking). ${showing}`
+        : `${targetName} is not itself in this ranking. Placed against its ${others.toLocaleString()} schools with a published figure, it would be ${placeWord(place!, tied)}. ${showing}`,
+    igcseLine ? `${igcseLine}.` : null,
+  ].filter(Boolean).join(" ");
   // The set's average -- the ranking's own schools only: the school itself counts where it
   // is in the ranking, and not where it has only been placed against it.
   const members = new Set(inRanking ? urns : urns.filter((u) => u !== targetUrn));
@@ -156,7 +181,10 @@ export async function resolveRankingSet(
     note,
     matched: matched.length,
     ranked: order.length,
-    targetRank: idx >= 0 ? idx + 1 : null,
+    igcseOut,
+    targetIgcse,
+    targetRank: place,
+    targetTied: tied,
     target: latest.get(targetUrn) ?? null,
     targetSeries: targetSeries.sort((a, b) => a.period - b.period),
     averageLatest: mean(memberLatest),

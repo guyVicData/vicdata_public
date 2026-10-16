@@ -190,7 +190,7 @@ export const ADMISSIONS_DATAVIEWS: Dataview[] = [
   // ------------------------------------------------------ Pipelines: row 2, trends
   dv({ id: "DV-ADM-P-ENTRY-LINE", label: "Your cohort", railIcon: "TrendLineIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "Your [entry-year] cohort, year by year", rules: ["R-ADM-VIEW-TRENDS", "R-ADM-POOL-NOT-INTAKE"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-ENTRY-BARS", label: "Your cohort, bars", railIcon: "VerticalBarsIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Bars.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-BARS", title: "Your [entry-year] cohort, year by year", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
-  dv({ id: "DV-ADM-P-ENTRY-TABLE", label: "Your cohort, table", railIcon: "TableIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "pct_change"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-TABLE", title: "Your [entry-year] cohort, year by year", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
+  dv({ id: "DV-ADM-P-ENTRY-TABLE", label: "Your cohort, table", railIcon: "TableIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals"], compare: [], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-TABLE", title: "Your [entry-year] cohort, year by year", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-POOL-INDEXED", label: "Pool trends", railIcon: "IndexedLineIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["index100"], compare: SETS_AREA, measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "[feeder-age]-year-olds: your feeders, [la] and England", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-POOL-TABLE", label: "Pool trends, table", railIcon: "TableIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "index100"], compare: SETS_AREA, measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-TABLE", title: "[feeder-age]-year-olds: your feeders, [la] and England", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS }),
   dv({ id: "DV-ADM-P-AREA-POP", label: "Area population", railIcon: "AdmPopulationIcon", data: "admissions.pupils", host: P, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "single", numberType: ["totals"], compare: ["averages"], measures: ["M-ADM-PUPILS"], renderer: "RD-ADM-BARS", title: "Population trends in the area (ages 5-15)", rules: ["R-ADM-VIEW-TRENDS"], audience: AUD_PUPILS, note: "The school page's Population trends in the area, as it draws them." }),
@@ -216,8 +216,8 @@ export const ADMISSIONS_DATAVIEWS: Dataview[] = [
   dv({ id: "DV-ADM-M-SHARE-LINE", label: "Market share", railIcon: "TrendLineIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["market_share"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-LINE", title: "Your market share at [entry], year by year", rules: ["R-ADM-VIEW-MARKET", "R-ADM-GROUP-SHARE"], audience: AUD_MARKET }),
   dv({ id: "DV-ADM-M-SHARE-NUM", label: "Market share numbers", railIcon: "AdmNumbersIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["totals", "market_share"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-TABLE", title: "Your market share at [entry], year by year", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
   dv({ id: "DV-ADM-M-SHARE-RANKS", label: "Market share ranks", railIcon: "HorizontalBarsIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Tables.tsx", viewType: "table", dateMode: "trend", numberType: ["rank"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-TABLE", title: "Your rank at [entry], year by year", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
-  dv({ id: "DV-ADM-M-SHARE-CHANGE", label: "Market share change", railIcon: "ChangeArrowIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Bars.tsx", viewType: "graph", dateMode: "trend", numberType: ["pct_change", "change_pp"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-BARS", title: `Change since ${periodLabel(CENSUS_FIRST_PERIOD)}: your pupils and share at [entry]`, rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
-  dv({ id: "DV-ADM-M-ROLL-LINE", label: "Roll trends", railIcon: "AdmRollIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: SETS, measures: ["M-ADM-MARKET", "M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "Pupils in the entry point's age band: you and the [rivals]", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
+  dv({ id: "DV-ADM-M-SHARE-CHANGE", label: "Change in share", railIcon: "ChangeArrowIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Bars.tsx", viewType: "graph", dateMode: "trend", numberType: ["pct_change", "change_pp"], compare: SETS, measures: ["M-ADM-MARKET"], renderer: "RD-ADM-BARS", title: `Change in share at [entry] since ${periodLabel(CENSUS_FIRST_PERIOD)}`, rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
+  dv({ id: "DV-ADM-M-ROLL-LINE", label: "Entry age band roll", railIcon: "AdmRollIcon", data: "admissions.market", host: M, panel: "trend", file: "views/Lines.tsx", viewType: "graph", dateMode: "trend", numberType: ["totals"], compare: SETS, measures: ["M-ADM-MARKET", "M-ADM-PUPILS"], renderer: "RD-ADM-LINE", title: "[entry age band] roll: you and the [rivals]", rules: ["R-ADM-VIEW-MARKET"], audience: AUD_MARKET }),
 ];
 
 // ------------------------------------------------------------------------------- presets
@@ -275,3 +275,44 @@ export const ADMISSIONS_FAMILIES: { id: AdmissionsDataId; label: string }[] = [
 ];
 export const isAdmissionsData = (d: string | undefined | null): d is AdmissionsDataId => !!d && d.startsWith("admissions.");
 export const isAdmissionsHost = (h: string | undefined | null): h is AdmissionsHostId => !!h && h.startsWith("admissions.");
+
+// 0.8 audit fixes (6, R-ADM-SEX-FILTER): how each view takes the girls/boys filter -- never on part of
+// a panel. "applies": every pupil figure it draws is girls' or boys' (Pool trends hides its LA and
+// England lines, which ONS and the census aggregates don't split, and says so). "not-split": nothing
+// on it is split, and it says "Not split by sex" while the filter is on (shapes, area population,
+// results, and momentum and flags, which set pupils against results).
+export const ADM_SEX_FILTER: Record<string, "applies" | "not-split"> = {
+  "DV-ADM-P-NOW": "applies",
+  "DV-ADM-P-PIPELINE": "applies",
+  "DV-ADM-P-FUNNEL": "applies",
+  "DV-ADM-P-MAP": "applies",
+  "DV-ADM-P-TABLE": "applies",
+  "DV-ADM-P-SHAPE": "not-split",
+  "DV-ADM-P-ENTRY-LINE": "applies",
+  "DV-ADM-P-ENTRY-BARS": "applies",
+  "DV-ADM-P-ENTRY-TABLE": "applies",
+  "DV-ADM-P-POOL-INDEXED": "applies",
+  "DV-ADM-P-POOL-TABLE": "applies",
+  "DV-ADM-P-AREA-POP": "not-split",
+  "DV-ADM-P-HOLD-LINE": "applies",
+  "DV-ADM-P-HOLD-TABLE": "applies",
+  "DV-ADM-M-NOW": "applies",
+  "DV-ADM-M-DONUT": "applies",
+  "DV-ADM-M-BARS": "applies",
+  "DV-ADM-M-MAP": "applies",
+  "DV-ADM-M-TABLE": "applies",
+  "DV-ADM-M-MOMENTUM": "not-split",
+  "DV-ADM-M-STRENGTHS": "not-split",
+  "DV-ADM-M-SHAPE": "not-split",
+  "DV-ADM-M-FLAGS": "not-split",
+  "DV-ADM-M-VS-LINE": "applies",
+  "DV-ADM-M-VS-BARS": "applies",
+  "DV-ADM-M-ACAD-RANK": "not-split",
+  "DV-ADM-M-ACAD-NUM": "not-split",
+  "DV-ADM-M-ACAD-CHANGE": "not-split",
+  "DV-ADM-M-SHARE-LINE": "applies",
+  "DV-ADM-M-SHARE-NUM": "applies",
+  "DV-ADM-M-SHARE-RANKS": "applies",
+  "DV-ADM-M-SHARE-CHANGE": "applies",
+  "DV-ADM-M-ROLL-LINE": "applies",
+};

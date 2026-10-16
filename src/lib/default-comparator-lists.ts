@@ -12,6 +12,7 @@
 // sidebar (see docs/vicdata_data_view_open_questions.md's §6.2 decision for why that
 // doesn't need a schema change).
 
+import { igcseEngland } from "./igcse";
 import { createServerAnonSupabaseClient } from "./supabase";
 import { findSurroundingSchools, genderMatches, type MatchedSchool } from "./surrounding-schools";
 import { findNearestFeColleges, findLocal16PlusProvision, type NamedFeCollege, type Local16PlusProvision } from "./surrounding-fe-colleges";
@@ -88,6 +89,9 @@ export type DefaultComparatorLists = {
   // purely additive -- null for an fe_college target (that branch's own list2
   // already covers this) and for any target with no real Post-16 provision.
   local16Plus: DefaultList | null;
+  // 0.8 audit fixes (1, T6): with `gcse`, the IGCSE schools passed over (with their distances), so
+  // a caption can say how many nearer schools aren't ranked at GCSE and how far the list reached.
+  igcseSkipped?: { list1: DefaultListEntry[]; boardingRecipe: DefaultListEntry[] };
   // Member Data View performance architecture v1 (2026-10-08): the target's own
   // region/nation membership (school_region_nation), fetched once here alongside
   // everything else this initial load already computes, rather than a separate
@@ -683,9 +687,22 @@ export async function buildBoardingQuintileList(urn: string, targetCount = 10): 
 // the school has Post-16 provision, read from real data (KS5 results in the latest two
 // published years, withKs5Results), not from a statutory age. A boarding recipe keeps only
 // its schools with KS5 results too. GCSE and the Data View never pass it.
-export async function buildDefaultComparatorLists(urn: string, opts: { only?: "nearest"; post16?: boolean } = {}): Promise<DefaultComparatorLists> {
+export async function buildDefaultComparatorLists(urn: string, opts: { only?: "nearest"; post16?: boolean; gcse?: boolean } = {}): Promise<DefaultComparatorLists> {
   const nearestOnly = opts.only === "nearest";
   const post16 = opts.post16 === true;
+  // 0.8 audit fixes (1, T6, R-IGCSE-EVERYWHERE): at GCSE the nearest lists pass over IGCSE schools
+  // and fill to 10 with the next nearest eligible ones, by the same engine (extraFilterUrns).
+  const gcse = opts.gcse === true && !post16;
+  const igcse = gcse ? await igcseEngland() : null;
+  const skipped = new Set<string>();
+  const notIgcse = async (candidates: string[]) => {
+    const keep = new Set<string>();
+    for (const c of candidates) {
+      if (igcse!.has(c)) skipped.add(c);
+      else keep.add(c);
+    }
+    return keep;
+  };
   const resolved = await resolveSchoolTypeCategory(urn);
   if (!resolved) {
     return { schoolTypeCategory: null, list1: null, list2: null, boardingBand: null, boardingRecipe: null, local16Plus: null, regionName: null, nation: null };
@@ -735,11 +752,12 @@ export async function buildDefaultComparatorLists(urn: string, opts: { only?: "n
   const boardingConfig = isBoardingCategory ? BOARDING_CATEGORY_CONFIG[schoolTypeCategory as keyof typeof BOARDING_CATEGORY_CONFIG] : null;
 
   const [matched, list2, local16PlusCandidates, boardingBand, boardingRecipe] = await Promise.all([
-    findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", ...(post16 ? { extraFilterUrns: withKs5Results, filterBeforeFacts: true } : {}) }),
+    findSurroundingSchools(urn, CURRENT_CENSUS_PERIOD, { genderMode: "relaxed", ...(post16 ? { extraFilterUrns: withKs5Results, filterBeforeFacts: true } : gcse ? { extraFilterUrns: notIgcse } : {}) }),
     target.la_name && !nearestOnly ? buildLaComparatorSet(target, [target.la_name], targetPhase, targetGender) : Promise.resolve(null),
     target.la_name && hasPost16Provision && !nearestOnly ? findLocal16PlusProvision(urn, target.la_name) : Promise.resolve<Local16PlusProvision[]>([]),
     isBoardingCategory ? resolveBoardingQuintileBand(urn) : Promise.resolve<BoardingQuintileBand | null>(null),
-    boardingConfig ? boardingQuintileListFast(target, schoolTypeCategory as "independent_boarding_senior" | "independent_boarding_prep" | "state_boarding", boardingConfig.quintileBasis, 10, boardingConfig.sectorGroups) : Promise.resolve<DefaultList | null>(null),
+    // At GCSE a few more, nearest first, so ten remain once IGCSE schools are passed over.
+    boardingConfig ? boardingQuintileListFast(target, schoolTypeCategory as "independent_boarding_senior" | "independent_boarding_prep" | "state_boarding", boardingConfig.quintileBasis, gcse ? 40 : 10, boardingConfig.sectorGroups) : Promise.resolve<DefaultList | null>(null),
   ]);
   const list1: DefaultList = {
     key: "nearest_10",
@@ -758,8 +776,18 @@ export async function buildDefaultComparatorLists(urn: string, opts: { only?: "n
         }
       : null;
 
-  const recipe = post16 && boardingRecipe ? await keepWithKs5Results(boardingRecipe) : boardingRecipe;
-  return { schoolTypeCategory, list1, list2, boardingBand, boardingRecipe: recipe, local16Plus, regionName, nation };
+  const recipe = post16 && boardingRecipe ? await keepWithKs5Results(boardingRecipe) : gcse && boardingRecipe ? { ...boardingRecipe, schools: boardingRecipe.schools.filter((s) => !igcse!.has(s.urn)).slice(0, 10) } : boardingRecipe;
+  if (!gcse) return { schoolTypeCategory, list1, list2, boardingBand, boardingRecipe: recipe, local16Plus, regionName, nation };
+  // The passed-over schools' distances (list1's come from the filter; the recipe's are listed).
+  const skippedList1: DefaultListEntry[] = [];
+  if (skipped.size && target.easting !== null && target.northing !== null) {
+    const { data } = await createServerAnonSupabaseClient().from("schools").select("urn, current_name, easting, northing").in("urn", Array.from(skipped));
+    for (const r of (data ?? []) as { urn: string; current_name: string; easting: number | null; northing: number | null }[]) {
+      skippedList1.push({ urn: r.urn, name: r.current_name, distanceKm: r.easting !== null && r.northing !== null ? distanceKm({ easting: target.easting, northing: target.northing }, { easting: r.easting, northing: r.northing }) : null });
+    }
+  }
+  const skippedRecipe = (boardingRecipe?.schools ?? []).filter((s) => igcse!.has(s.urn));
+  return { schoolTypeCategory, list1, list2, boardingBand, boardingRecipe: recipe, local16Plus, regionName, nation, igcseSkipped: { list1: skippedList1, boardingRecipe: skippedRecipe } };
 }
 
 // 0.6.5 S4: of these schools, the ones with Post-16 provision in real data -- KS5 results

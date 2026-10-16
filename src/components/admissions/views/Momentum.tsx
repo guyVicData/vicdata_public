@@ -61,7 +61,7 @@ export function FlagList({ m, r, limit, notPlotted = [], flaggedOnly = false }: 
                 )}
               </span>
               <span className="text-right tabular-nums" title={e ? `${e.entryBase ?? "—"} → ${e.entryNow ?? "—"} aged ${m.entry.age}, ${yearLabel(TREND_BASE_PERIOD)} to ${yearLabel(m.summary.latest)}` : undefined}>
-                {fmtSigned(e?.entryChangePct, 0)}
+                {fmtSigned(e?.entryChangePctAll, 0)}
               </span>
               <span className="text-right tabular-nums" title={rc ? `${rc.from ?? "—"} → ${rc.to ?? "—"}` : undefined}>
                 {x.results.note === "igcse_not_ranked" ? "IGCSE" : fmtSigned(rc?.points, 1, "")}
@@ -88,10 +88,10 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
   const [ref, w] = useWidth<HTMLDivElement>();
   const pts = r.rows
     .map((x) => ({ x, e: m.extras.find((q) => q.urn === x.urn), rc: r.resultsChange[x.urn] }))
-    .filter((p) => p.e?.entryChangePct != null && p.rc?.points != null);
+    .filter((p) => p.e?.entryChangePctAll != null && p.rc?.points != null);
   const left = r.rows.filter((x) => !pts.some((p) => p.x.urn === x.urn));
   const H = fullscreen ? fillHeight(room, 40, 480) : 360;
-  const maxX = Math.max(5, ...pts.map((p) => Math.abs(p.e!.entryChangePct!))) * 1.15;
+  const maxX = Math.max(5, ...pts.map((p) => Math.abs(p.e!.entryChangePctAll!))) * 1.15;
   const maxY = Math.max(1, ...pts.map((p) => Math.abs(p.rc!.points!))) * 1.15;
   const W = Math.max(w, 10);
   const sx = (v: number) => 12 + ((v + maxX) / (2 * maxX)) * (W - 24);
@@ -122,7 +122,7 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
                 const placed: { l: number; t: number; w: number }[] = [];
                 labelTop.clear();
                 for (const p of [...pts].sort((a, b) => sy(a.rc!.points!) - sy(b.rc!.points!))) {
-                  const l = sx(p.e!.entryChangePct!) + 10;
+                  const l = sx(p.e!.entryChangePctAll!) + 10;
                   const w = Math.min(150, (p.x.isSchool ? 3 : Math.min(22, p.x.name.length)) * 6 + 8);
                   let t = sy(p.rc!.points!) - 7;
                   while (placed.some((q) => Math.abs(q.t - t) < 12 && l < q.l + q.w && q.l < l + w)) t += 12;
@@ -137,13 +137,13 @@ export function Momentum({ m, r, fullscreen, room, labels = true, quadrantNames 
                 const down = x.momentum.some((f) => TONE[f.id] === "down");
                 const size = me ? 14 : 11;
                 return (
-                  <span key={x.urn} title={`${x.name}: pupils aged ${m.entry.age} ${fmtSigned(e!.entryChangePct, 1)}, ${results} ${fmtSigned(rc!.points, 1, " pts")} (since ${yearLabel(TREND_BASE_PERIOD)})${x.momentum.length ? `\n${x.momentum.map(flagText).join(" · ")}` : ""}`}>
+                  <span key={x.urn} title={`${x.name}: pupils aged ${m.entry.age} ${fmtSigned(e!.entryChangePctAll, 1)}, ${results} ${fmtSigned(rc!.points, 1, " pts")} (since ${yearLabel(TREND_BASE_PERIOD)})${x.momentum.length ? `\n${x.momentum.map(flagText).join(" · ")}` : ""}`}>
                     <span
                       className={cx("absolute rounded-full", me && "border-2 border-white")}
-                      style={{ left: sx(e!.entryChangePct!) - size / 2, top: sy(rc!.points!) - size / 2, width: size, height: size, boxSizing: "border-box", background: me ? "var(--accent)" : up ? "var(--adm-amber)" : down ? "var(--adm-down-fg)" : "var(--adm-grey-line)" }}
+                      style={{ left: sx(e!.entryChangePctAll!) - size / 2, top: sy(rc!.points!) - size / 2, width: size, height: size, boxSizing: "border-box", background: me ? "var(--accent)" : up ? "var(--adm-amber)" : down ? "var(--adm-down-fg)" : "var(--adm-grey-line)" }}
                     />
                     {(labels || me) && (
-                    <span className={cx("absolute whitespace-nowrap text-[10.5px]", me ? "font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")} style={{ left: sx(e!.entryChangePct!) + size / 2 + 3, top: labelTop.get(x.urn) ?? sy(rc!.points!) - 7 }}>
+                    <span className={cx("absolute whitespace-nowrap text-[10.5px]", me ? "font-bold text-[var(--fg)]" : "text-[var(--chip-fg)]")} style={{ left: sx(e!.entryChangePctAll!) + size / 2 + 3, top: labelTop.get(x.urn) ?? sy(rc!.points!) - 7 }}>
                       {me ? "You" : x.name.length > 22 ? `${x.name.slice(0, 21)}…` : x.name}
                     </span>
                     )}

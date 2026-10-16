@@ -4,6 +4,7 @@
 // size (described, never ranked), Entry points at a glance and Leaving at 16 (Admissions' figures,
 // read-only). Every figure is /api/smt/pupils'. R-SMT-VIEW-PUPILS-NOW, R-SMT-VIEW-SHAPE,
 // R-SMT-ADMISSIONS-READ-ONLY, R-SMT-VIEW-LEAVING, R-SMT-PUPILS-LEVEL.
+import { inLevelAges } from "@/lib/smt/levels";
 import Link from "next/link";
 import { SHAPE_LABELS } from "@/components/dashboard/ShapeIcon";
 import { comparisonCaption } from "@/components/dashboard/PhaseBreakdownCard";
@@ -17,7 +18,7 @@ import { Td, Th, fmt } from "../ui";
 import { SizeByPhase } from "./Now";
 
 export const shapeName = (s: string | null) => (s ? (SHAPE_LABELS[s as ShapeLabel] ?? s) : "—");
-const inLevel = (age: number, h: [number, number] | null) => !!h && age >= h[0] && age <= h[1];
+const inLevel = inLevelAges;
 
 export function PupilsNow({ p, school, compact = false }: { p: Pupils; school: SmtSchool; compact?: boolean }) {
   const n = p.now;
@@ -131,7 +132,7 @@ export function EntryPoints({ p }: { p: Pupils }) {
                 <tr key={r.entry} className="border-b border-[var(--panel-border)] last:border-0">
                   <Td className="font-bold text-[var(--fg)]">{r.label}</Td>
                   <Td>{fmt(r.cohort, "pupils")}</Td>
-                  <Td title={r.poolSource ? `${r.poolSource === "counted" ? ADMISSIONS_NOTES.counted : ADMISSIONS_NOTES.births}` : undefined}>
+                  <Td title={r.poolSource ? `${r.poolSource === "counted" ? ADMISSIONS_NOTES.counted : r.age <= 4 ? ADMISSIONS_NOTES.births : ADMISSIONS_NOTES.birthsScaled}` : undefined}>
                     {fmt(r.pool, "pupils")} {r.poolYear ? <span className="text-[var(--muted2)]">· {r.poolYear} entry{r.poolSource === "births" ? ", from births" : ""}</span> : null}
                   </Td>
                   <Td>

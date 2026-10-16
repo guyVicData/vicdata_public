@@ -5,6 +5,7 @@
 // year, highest first, ties share a rank; regional ranks among the schools of the school's own
 // region. A subject's rank comes from 0.6.6's subjectRanking itself. The populations are public
 // reference data, read once an hour per phase (server-cache.ts), never per user or school.
+import { igcseEngland } from "../igcse";
 import { cachedReference } from "../server-cache";
 import { HEADLINE_MEASURE, type KsStage } from "../academic-data-view";
 import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupReferenceData } from "../vicdata-reference";
@@ -103,10 +104,12 @@ export function rankIn(values: number[], value: number): { rank: number; of: num
 export type Place = { value: number | null; period: number | null; national: { rank: number; of: number } | null; regional: { rank: number; of: number; region: string } | null };
 
 // The population's values once per call; each school's national and regional place from them.
-function placesOf(urns: string[], period: number, figure: (u: string) => number | null, england: Map<string, SchoolPlace>, pool: Iterable<string>): Map<string, Place> {
+// `exclude` (the IGCSE rule's schools at GCSE, R-IGCSE-EVERYWHERE) is out of the population and unranked.
+function placesOf(urns: string[], period: number, figure: (u: string) => number | null, england: Map<string, SchoolPlace>, pool: Iterable<string>, exclude: Set<string> = new Set()): Map<string, Place> {
   const all: number[] = [];
   const byRegion = new Map<string, number[]>();
   for (const u of pool) {
+    if (exclude.has(u)) continue;
     const v = figure(u);
     if (v === null) continue;
     all.push(v);
@@ -115,7 +118,7 @@ function placesOf(urns: string[], period: number, figure: (u: string) => number 
   }
   return new Map<string, Place>(urns.map((urn): [string, Place] => {
     const value = figure(urn);
-    if (value === null) return [urn, { value: null, period, national: null, regional: null }];
+    if (value === null || exclude.has(urn)) return [urn, { value, period, national: null, regional: null }];
     const region = england.get(urn);
     return [urn, { value, period, national: rankIn(all, value), regional: region ? { ...rankIn(byRegion.get(region.regionCode) ?? [], value), region: region.regionName } : null }];
   }));
@@ -123,20 +126,20 @@ function placesOf(urns: string[], period: number, figure: (u: string) => number 
 
 /** Each school's place on the whole-school headline, nationally and in its region, in `period`. */
 export async function headlinePlaces(stage: KsStage, period: number, urns: string[]): Promise<Map<string, Place>> {
-  const [pop, england] = await Promise.all([headlinePopulation(stage, period), englandSchools()]);
+  const [pop, england, igcse] = await Promise.all([headlinePopulation(stage, period), englandSchools(), stage === "ks4" ? igcseEngland() : Promise.resolve(new Set<string>())]);
   const fig = (u: string) => pop.get(u)?.get(period) ?? null;
-  return placesOf(urns, period, fig, england, pop.keys());
+  return placesOf(urns, period, fig, england, pop.keys(), igcse);
 }
 
 /** Each school's place on one subject area (family average points; at least minEntries). */
 export async function familyPlaces(stage: "ks4" | "ks5", period: number, familyId: string, urns: string[], minEntries: number): Promise<Map<string, Place>> {
-  const [pop, england] = await Promise.all([headlinePopulation(stage, period), englandSchools()]);
+  const [pop, england, igcse] = await Promise.all([headlinePopulation(stage, period), englandSchools(), stage === "ks4" ? igcseEngland() : Promise.resolve(new Set<string>())]);
   const fam = await familyPopulation(stage, period, Array.from(pop.keys()).sort());
   const fig = (u: string) => {
     const f = fam.get(u)?.get(familyId)?.get(period);
     return f && f.avg !== null && f.entries >= minEntries ? f.avg : null;
   };
-  return placesOf(urns, period, fig, england, fam.keys());
+  return placesOf(urns, period, fig, england, fam.keys(), igcse);
 }
 
 export type SizePlace = Place & { band: AgeBandKey; badge: SizeBadge | null };

@@ -15,6 +15,7 @@
 //     dfe_fsm_geography).
 // The census still gives "pupils at schools within the radius", said beside the residents, never
 // divided by them (SMT_NOTES.wResidents). The map's neighbourhoods are context-map.ts.
+import { indexBaseWords } from "../index-base";
 import { smtNote } from "@/catalogue/notes";
 import { SMT_PROJECTION_TILE_AHEAD, periodLabel } from "@/catalogue/years";
 import { cachedReference } from "../server-cache";
@@ -445,7 +446,7 @@ export async function buildContext(school: SmtSchool, area: ContextArea, level: 
       projection: smtNote("projection", { ages: agesWord, where }),
       popByAge: byAgeAround ? smtNote("popByAgeAround", { radius, year: acLast.year }) : smtNote("popByAgeLa", { la: school.laName ?? "The LA", year: laLatest ?? "" }),
       shade: smtNote("shadeByDistrict"),
-      nearby: smtNote("nearbyOverTime", { ages: agesWord, radius, la: school.laName ?? "the LA", base: nix.base ?? "" }),
+      nearby: smtNote("nearbyOverTime", { ages: agesWord, radius, la: school.laName ?? "the LA", base: indexBaseWords(nix.base, "calendar") }),
       population: forward ? smtNote("populationProjected", { ages: agesWord, where, year: forward.latestYear, to: forward.horizonEnd }) : "",
       sources: smtNote("wSources", { lsoaYear: sources.lsoaYear ?? "", laYear: sources.laYear ?? "", settingsVersion: sources.settingsVersion ?? "", snppBase: snppBase ?? "", iodYear: iodYear ?? "", fsmYear: sources.fsmYear !== null ? periodLabel(sources.fsmYear) : "" }),
     },

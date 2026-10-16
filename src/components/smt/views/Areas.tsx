@@ -4,6 +4,7 @@
 // against the comparison set instead of the rivals: each area's rank among the set's schools with
 // that area, the gap to their average (diverging bars), its direction since 2022/23, and the flags
 // (R-ADM-FLAG-STRENGTHS). A row opens that area. R-SMT-VIEW-AREAS.
+import { smtNote, SUBJECT_AREA_MIN } from "@/catalogue/notes";
 import { Empty, FlagPill, Muted } from "@/components/admissions/ui";
 import { DivergingBar } from "@/components/admissions/views/charts";
 import { TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
@@ -16,7 +17,7 @@ const FLAG_WORD: Record<string, string> = { strength: "Strength", strength_growi
 export function SubjectAreas({ parts, setLabel, onArea, area }: { parts: StagePart[]; setLabel: string; onArea?: (stage: "ks4" | "ks5", id: string) => void; area: string | null }) {
   const shown = parts.filter((p) => p.areas.length);
   if (!parts.length) return <Empty>KS2 results have no subject areas.</Empty>;
-  if (!shown.length) return <Empty>No subject area has set schools to compare with (each needs at least two schools in the set with enough entries).</Empty>;
+  if (!shown.length) return <Empty>{smtNote("areasNone", { schools: SUBJECT_AREA_MIN.schools, entries: SUBJECT_AREA_MIN.entries })}</Empty>;
   return (
     <>
       <div className="text-[13px] font-bold text-[var(--fg)]">Where you lead and trail {setLabel}, by subject area</div>

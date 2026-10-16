@@ -75,7 +75,15 @@ export const ADMISSIONS_NOTES = {
   pool: "This is the pool, not an intake: the children in these schools, or born in these areas, who will reach this entry point. It does not say how many will come.",
   // R-ADM-LADDER: the certainty of each year, by its source
   counted: "Counted: children in these schools now (the January census), followed forward.",
-  births: "From births: the area's calendar-year births, scaled to these schools by how many of them have reached Reception in past years. A range, not a count.",
+  // 0.8 audit fixes (6, R-ADM-SEX-FILTER): a panel the girls/boys filter doesn't split, and Pool
+  // trends' area lines while it is on.
+  notSplitBySex: "Not split by sex: girls and boys together.",
+  poolAreaNotSplit: "The LA and England lines aren't split by sex, so they are hidden while girls or boys is chosen.",
+  // 0.8 audit fixes (5, A2): at 4+ (and younger) the births are not scaled to the schools; the ratio
+  // sets only the range. From 11+ the ladder does scale them (ladder.ts birthsPoint), so that entry
+  // keeps its own words (birthsScaled).
+  births: "Births in the local authority blend; the Reception-to-births ratio sets the range.",
+  birthsScaled: "From births: the local authority blend's births, scaled to these schools by the ratio of their Reception pupils to births in past years, then carried forward. A range, not a count.",
   projection: "From ONS projections (age 10, by local authority): a wider band, shown only on request.",
   // R-ADM-BIRTH-SPLIT
   birthSplit: "Births are counted by calendar year; a school year runs September to August, so each year's pool is 8/12 of one year's births plus 4/12 of the year before.",
@@ -151,7 +159,10 @@ export const SMT_NOTES = {
   marketNoEntry: "This school has no 11+ entry, so it has no market share at 11+.",
   marketShort: "A share of the rivals Admissions chose: not a share of the local market.",
   // Flags (R-SMT-FLAGS).
-  flagsRule: "Flags appear only when a change is large and lasting: three years of falling roll, results moving at least {gap} faster than the set's middle over two years, or an entry year shrinking past the national threshold. Hover a flag for the figures.",
+  // 0.8 audit fixes (3, S1): {gap} is the measure and its size ("2 Attainment 8 points"), filled by
+  // flagsRuleText only, so every filled form reads as a sentence.
+  flagsRule: "Flags appear only when a change is large and lasting: three years of falling roll, results whose two-year change differs from the set's middle change by at least {gap} (with at least {min} set schools to compare), or an entry year shrinking past the national threshold. Hover a flag for the figures.",
+  flagsRuleNoResults: "Flags appear only when a change is large and lasting: three years of falling roll, or an entry year shrinking past the national threshold. Hover a flag for the figures.",
   flagsNone: "No flags: nothing has moved far enough, for long enough.",
   // The size badges, as the school page says them.
   size: "XS to XL: this school's pupils in each phase against every school with that phase in England (fifths). The school page's Roll by phase.",
@@ -248,6 +259,9 @@ export const SMT_NOTES = {
   oneNeighbourhood: "One neighbourhood only: figures below 5 are not shown.",
   // Small numbers.
   smallEntries: "Subjects with fewer than {min} entries aren't ranked: one or two pupils would decide the rank.",
+  // 0.8 audit fixes (7): the one minimum for a subject area (SUBJECT_AREA_MIN), the rows and the rank tile alike.
+  areasNone: "No subject area to compare: each needs at least {schools} schools in the set with {entries} or more entries in it.",
+  areaRankNone: "fewer than {schools} set schools with {entries}+ entries in {area}",
 } as const;
 
 /** An SMT note with its {placeholders} filled. */
@@ -310,3 +324,8 @@ export const GROUP_SOURCE_LABELS: Record<string, string> = {
   companies_house: "Companies House",
   charity_commission: "the Charity Commission",
 };
+
+// 0.8 audit fixes (7): a subject area is compared with the set (a row in Strengths and weaknesses, and
+// the Academic board's rank tile) only when at least `schools` set schools have at least `entries`
+// entries in it, and the school does too.
+export const SUBJECT_AREA_MIN = { schools: 2, entries: 10 } as const;

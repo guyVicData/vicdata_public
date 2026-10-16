@@ -5,10 +5,12 @@
 //
 // Honest gaps: a school with no published results for the entry point's stage says "no
 // published results" (most preps at KS2); at 11+ an IGCSE-heavy independent school is listed
-// but not ranked (igcseExclusionLikely, the existing GCSE rule).
+// but not ranked (igcseExclusionLikely, the existing GCSE rule, through lib/igcse).
+import { SUBJECT_AREA_MIN } from "@/catalogue/notes";
 import { cachedReference } from "../server-cache";
-import { lookupAcademicHeadline, lookupAcademicLatestYears } from "../vicdata-reference";
-import { igcseExclusionLikely, type AcademicSchoolProfile, type KsStage } from "../academic-data-view";
+import { lookupAcademicLatestYears } from "../vicdata-reference";
+import type { KsStage } from "../academic-data-view";
+import { igcseAmong } from "../igcse";
 import { CURRENT_CENSUS_PERIOD, type AgeBandKey } from "../roll-data";
 import { TREND_BASE_PERIOD } from "@/catalogue/notes";
 import { cohortAt } from "./cohort";
@@ -23,7 +25,7 @@ import { cachedRankingPopulation } from "../chooser-sets";
 import { defaultRankingFilters, matchesRanking, NATIONAL } from "../comparator-chooser";
 import { entryYearShrinking, gainingPupils, losingPupils, newSixthForm, pointsChange, resultsRisingFast, shapeChanged, strengthFlags, type Flag } from "./flags";
 
-export const MIN_AREA_ENTRIES = 10; // a subject area needs this many entries to be ranked
+export const MIN_AREA_ENTRIES = SUBJECT_AREA_MIN.entries; // a subject area needs this many entries to be ranked (the one constant, 0.8 audit fixes 7)
 
 export const stageForEntry = (age: number): KsStage => (age <= 10 ? "ks2" : age <= 15 ? "ks4" : "ks5");
 const bandForEntry = (age: number): AgeBandKey => (age <= 4 ? "early_years" : age <= 10 ? "primary" : age <= 15 ? "secondary" : "sixth_form");
@@ -77,17 +79,8 @@ export async function buildRivals(urn: string, entry: EntryPoint, opts: { rivals
     period === null ? Promise.resolve(new Map<string, Map<number, number>>()) : headlinePopulation(stage, period),
   ]);
 
-  // At 11+, the existing IGCSE rule on each school's own GCSE rows.
-  const igcse = new Set<string>();
-  if (stage === "ks4") {
-    const key = [...urns].sort().join(",");
-    const rows = await cachedReference(`adm:ks4-headline:${key}`, () => lookupAcademicHeadline({ entityIds: urns, ksStage: "ks4" }));
-    for (const u of urns) {
-      const ks4 = rows.filter((r) => r.entity_id === u).map((r) => ({ period: r.period, measures: r.measures })).sort((a, b) => a.period - b.period);
-      const profile = { establishmentTypeGroup: (await groupOf(u)) ?? null, ks4 } as unknown as AcademicSchoolProfile;
-      if (igcseExclusionLikely(profile)) igcse.add(u);
-    }
-  }
+  // At 11+, the one IGCSE rule (lib/igcse, R-IGCSE-EVERYWHERE): listed, never ranked.
+  const igcse = stage === "ks4" ? await igcseAmong(urns) : new Set<string>();
 
   const rollOf = (u: string, y: number) => {
     const c = census.get(u)?.ageGenderByPeriod.get(y);
@@ -168,9 +161,4 @@ export async function subjectPlaces(urns: string[], phase: "ks4" | "ks5", subjec
     out.set(u, { national: { rank: nat.targetRank, of: nat.ranked }, regional, value: nat.target?.value ?? null });
   }
   return out;
-}
-
-async function groupOf(urn: string): Promise<string | null> {
-  const { englandSchools } = await import("./ranks");
-  return (await englandSchools()).get(urn)?.group ?? null;
 }

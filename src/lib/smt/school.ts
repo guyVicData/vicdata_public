@@ -4,8 +4,8 @@
 // areas it enters at GCSE and Post-16 (the second row). Server-only; public data, cached an hour.
 import { cachedReference } from "../server-cache";
 import { createServerAnonSupabaseClient } from "../supabase";
-import { lookupAcademicHeadline, lookupAcademicLatestYears, lookupAcademicSubjectFamily, lookupReferenceData } from "../vicdata-reference";
-import { igcseExclusionLikely, type AcademicSchoolProfile } from "../academic-data-view";
+import { lookupAcademicLatestYears, lookupAcademicSubjectFamily, lookupReferenceData } from "../vicdata-reference";
+import { igcseEngland, INDEPENDENT_GROUP } from "../igcse";
 import { buildRollTrend, type RollSnapshot } from "../roll-data";
 import { isBoardingSchool } from "../admissions/boarding";
 import { englandSchools } from "../admissions/ranks";
@@ -54,11 +54,9 @@ export function schoolCensus(urn: string): Promise<RollSnapshot[]> {
   return cachedReference(`smt:census:${urn}`, async () => buildRollTrend(await lookupReferenceData({ sourceId: "dfe_school_census", entityIds: [urn] }), urn));
 }
 
-/** R-IGCSE-EXCL on the school's own GCSE rows (the same test Teacher and Admissions run). */
+/** R-IGCSE-EXCL on the school's own GCSE rows: the one test, through lib/igcse (R-IGCSE-EVERYWHERE). */
 export async function sitsIgcse(urn: string, typeGroup: string | null): Promise<boolean> {
-  const rows = await cachedReference(`smt:ks4-headline:${urn}`, () => lookupAcademicHeadline({ entityIds: [urn], ksStage: "ks4" }));
-  const ks4 = rows.map((r) => ({ period: r.period, measures: r.measures })).sort((a, b) => a.period - b.period);
-  return igcseExclusionLikely({ establishmentTypeGroup: typeGroup, ks4 } as unknown as AcademicSchoolProfile);
+  return typeGroup === INDEPENDENT_GROUP && (await igcseEngland()).has(urn);
 }
 
 /** The subject areas the school entered in a year, largest first, as the family lookup names them. */

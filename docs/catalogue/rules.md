@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 135 rules: 131 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -10,7 +10,7 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | --- | --- | --- | --- | --- | --- |
 | R-ENTRIES-NOT-POINTS | active | Entries count every qualification; points come only from qualifications with a real challenge table, and a row with no points of its own shows none rather than borrowing another's. | lifted | manual | — |
 | R-POINTS-SAME-QUAL | active | A points figure is only comparable within one qualification type (KS4: qualification type; KS5: the exact qualification). Post-16 Context on points keeps to the focused item's qualification family on every group, All subjects included; a figure that could only be a blend is not shown. Since 0.6.5 (S3), Post-16 Comparisons and the maps (Column 3 Current and Trends, Column 1's Trend map) read every school's figure for the focus's EXACT qualification -- A level, AS level, each BTEC size, IB Higher or Standard level -- never the bucket's blend, so Column 1, Comparisons and the maps show one figure for the school and one rank; where no other school in the set has the qualification (or publishes its points), Comparisons says so. | lifted | auto: pointsSameQual | — |
-| R-KS4-POINTS-GCSE-FULL | active | KS4 points come only from GCSE (9-1) Full Course entries with a clean single grade. | lifted | manual | — |
+| R-KS4-POINTS-GCSE-FULL | active | KS4 points come only from GCSE (9-1) Full Course entries with a clean single grade, and from a GCSE Double Award scored from its own grades as two entries, each the average of its two grades (R-DOUBLE-AWARD-POINTS; Column 1 too since 0.8 audit fixes, 2). | lifted | manual | — |
 | R-KS5-ASAEA-EXCL | active | AS level and AEA are left out of comparison lists, group totals and averages at Post-16, never out of the focused item's own figure -- and a focused AS/AEA item counts itself into its own group. | lifted | auto: asAeaGroupTotal | — |
 | R-KS5-ENGLAND-EXACT | active | The Post-16 England figure is the exact subject × qualification figure or nothing; there is no bucket fallback. | no | auto: englandExact | — |
 | R-MIN-SCHOOLS | active | An LA or region benchmark row is suppressed below 5 schools. England is exempt (minimum 1) for points and entries geography and the England anchor, but not for grade-grain geography, where every grade row needs 5 schools. | no | auto: minSchools | — |
@@ -47,6 +47,8 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | R-GEO-APPLIES | active | The geography comparison is shown only where the area figure counts the same thing: at KS4 for GCSE (9-1) Full Course items only; on Results for points only. | lifted | manual | — |
 | R-GEO-POINTS-ELIGIBLE | active | The school's own row beside area entries is its points-eligible entries (entries × coverage), not its Candidates count. | lifted | none yet | — |
 | R-IGCSE-EXCL | active | At GCSE a comparator flagged by igcseExclusionLikely is dropped from every set; the target is kept but flagged and its results history withheld. | no | manual | — |
+| R-IGCSE-EVERYWHERE | active | One IGCSE rule in every product: a school igcseExclusionLikely flags (loaded for many schools only by lib/igcse) is left out of every GCSE ranking population -- national, regional, LA, set, '10 nearest', Teacher's headline and subject rankings, Admissions' places and SMT's ranks -- and is never silently dropped from a list: where a list would have shown it, a line says '{n} schools not ranked at GCSE (mostly IGCSE)'. The school itself shows 'not ranked at GCSE (IGCSE)', with no rank, 'out of' or gap. '10 nearest' at GCSE fills to 10 with the next nearest eligible schools and says how far it reached. | no | auto: igcseEverywhere | — |
+| R-IGCSE-GROUP-LABEL | active | Teacher's Column 1 keeps an IGCSE school's own GCSE subject figures (its rank among its own subjects, its gap to England): only ranks against other schools follow R-IGCSE-EVERYWHERE. Where the focused subject's category at the school lacks the subjects it takes as IGCSE (English and maths, the subjects the IGCSE rule rests on), Column 1 names the category with what it lacks: 'Sciences & Maths (sciences only: maths taken as IGCSE)' (or '(no Mathematics: taken as IGCSE)' when Statistics or Additional Maths is held), 'Languages & Literature (no English: taken as IGCSE)' or '(no English Language: taken as IGCSE)', judged on the subjects with entries in the school's latest GCSE year. Every other school, every other category, and England's lines keep the plain name. | no | auto: igcseGroupLabel | — |
 | R-COMPARATOR-NO-FIGURE | active | A comparator with no figure for the measure (or none in the latest year) is not listed and never ranked last. Not applied while loading. | lifted | manual | — |
 | R-COMPARATOR-RATE-PER-QUAL | active | Comparator rates are scored per subject and exact qualification, with the page's own rate function. | lifted | none yet | — |
 | R-COMPARATOR-GRADE-SHARE | active | Grade counts across schools (Column 1's grade spread, 'Add an average' across the 10 nearest / a saved set) is each grade's share of a school's graded entries, averaged (mean or median) over the set's other schools with graded entries that year, for the focused subject and exact qualification; drawn as ticks in place of England's, at the school's own scale in counts mode. Never a raw count, never weighted by entries. | no | none yet | — |
@@ -67,10 +69,12 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | R-ADM-RIVAL-RANKS | active | Each rival (and the school) carries its national rank and its rank in its own region, on the whole-school headline for the entry point's stage (4+ KS2, 11+ GCSE Attainment 8, 16+ A-level points per entry), on each subject area (family average points, at least 10 entries), on a subject in view (0.6.6 subjectRanking) and on size (roll in the entry point's age band, with the school page's XS-XL badge). Every school with a figure that year, ties share. A school with no published results for the stage says so; at 11+ an IGCSE-heavy independent school is listed but not ranked. | no | auto: admRivalRanks | — |
 | R-ADM-FLAG-MOMENTUM | active | Rivals' momentum flags, each from a two-year change (pupils in %, results in points) against the NATIONAL thresholds for the phase (top / bottom fifth; admissions_flag_thresholds), never from one small cohort, with the figures behind it: results rising fast (headline), gaining pupils (roll), losing pupils three years running (three falls in a row), the entry year shrinking (Year 7 at 11+), a new sixth form (no pupils at 16 until two years ago), shape changed (the same new shape two years running). Until the thresholds are applied the threshold flags don't fire (none guessed). | no | auto: admMomentum | — |
 | R-ADM-FLAG-STRENGTHS | active | By subject area, the school's rank among the rivals that have that area (at least 10 entries), the gap to their average and its change since 2022/23: Strength (top third, above the average), Strength growing (and the school's own two-year change in the national top fifth), Weakness (bottom third, below), Weakness widening (and in the national bottom fifth). Never against fewer than two rivals. | no | auto: admStrengths | — |
-| R-ADM-FLAG-FEEDER | active | A feeder whose pupils (across the rung ages it holds) fell more than the area's (the whole feeder set) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. | no | auto: admFeeders | — |
+| R-ADM-SEX-FILTER | active | Every Admissions panel either applies the girls/boys filter fully -- every pupil figure it draws is girls' or boys' -- or, while the filter is on, says 'Not split by sex'. Never part of a panel: Pool trends hides its LA and England lines (never split) and says so; momentum and flags, which set pupils against results, stay whole and say so. ADM_SEX_FILTER lists every view. | no | auto: admSexFilter | — |
+| R-ADM-FLAG-FEEDER | active | A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age; the feeder table, the map and the pipeline chart's flags all read that age, on the set without the school.) | no | auto: admFeeders | — |
 | R-PERIOD-TRIM | active | Leading and trailing periods with no published value are trimmed (2020/21 points are null nationally). | no | manual | — |
 | R-INDEX-HEADCOUNTS | active | Only sum measures (entries) are indexed to 100; points and rates are drawn at real levels. | no | none yet | — |
-| R-RANK-TIES | active | Ties share a rank; the next rank skips; a null is unranked. | no | none yet | — |
+| R-YEARS-ROLLOVER | active | A rule whose expected value moves with the latest results year reads that year from src/catalogue/years.ts (filled from academic_current_periods) and its value from scripts/rule-year-fixtures.ts, one row per year; or asserts a relationship with the year instead. When a new year arrives with no row, the rule fails saying 'no expected value for 2026/27', never with a wrong number; a release adds a row. | no | auto: yearsRollover | — |
+| R-RANK-TIES | active | Ties share a rank; the next rank skips; a null is unranked. A ranking's place reads '=3rd' where the school shares it (headline and subject rankings, and the whole-school tile). | no | auto: rankTies | — |
 | R-TREND-FLAT-4PCT | active | A trend is 'Broadly stable' within ±4%. | no | none yet | — |
 | R-NUMBER-TYPE-HONESTY | active | A measure is shown only in its honest number types (catalogue §3): counts as totals, % change, share or index; averages as points and change in points; rates as rate and change in percentage points. | no | none yet | — |
 | R-ROLLS-HEADCOUNT | active | Rolls are census headcounts, not FTE; part-time pupils count as one. | no | none yet | — |
@@ -98,7 +102,7 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | R-ADM-FUNNEL-SAME-AREA | active | The funnel's births and its pool bar cover the same area with the same weights: the school's own LA, or the lead's LA blend when one is set. The pool is every pupil a year below the entry age (Year 6 = age 10, Year 11 = age 15, at 31 August, the census a year before entry -- the ladder's own age mapping) in every mainstream school in that area: academies, LA-maintained, free and independent (age_profile_aggregates, scope la). The feeder set's pool is not a funnel bar; it stays in the Pipeline. | no | auto: admFunnelSameArea | — |
 | R-ADM-EDITOR-LOOKS-KEEP-NOTES | active | An Admissions view's look options and compare chips change how it draws, never what it must say: under every look and compare an editor can choose (src/catalogue/admissions-editor.ts), each view still renders every R-ADM wording from ADMISSIONS_NOTES that its preset renders (a pool, not an intake; a share of this group; the estimates; the requirement; the flags' rules; the undercount), and its rule-held styling and thresholds don't move. Options left at their defaults draw exactly the preset. A day school's view never draws a boarding feeder set, whatever its spec asks. | no | auto: admEditorLooks | — |
 | R-DOUBLE-AWARD-POINTS | active | A GCSE Double Award (grades published as pairs, "98" ... "11") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say "different grading scale, not ranked". | no | auto: doubleAwardPoints | — |
-| R-SMT-PUPILS-LEVEL | active | Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-16), Post-16 Years 12 and 13 (16-18), Primary Reception to Year 6 (4-11); Whole school highlights nothing. The figures don't change with the level; the year groups in focus do. | no | auto: smtPupilsLevel | — |
+| R-SMT-PUPILS-LEVEL | active | Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-15), Post-16 Years 12 and 13 (16-17), Primary Reception to Year 6 (4-10), first and last age inclusive; Whole school highlights nothing. The figures don't change with the level; the year groups in focus do. | no | auto: smtPupilsLevel | — |
 | R-SMT-VIEW-PUPILS-NOW | active | Your pupils now shows the census's roll and its change since 2019/20, girls and boys (mixed schools only), day and boarding (boarding schools only), Year 12 against Year 11 (Year 12 now against Year 11 a year before, where the school has both), the school page's XS-XL by phase and the LA context line. | no | auto: smtPupilsNow | — |
 | R-SMT-Y12-AGAINST-Y11 | active | The Year 11 to Year 12 figure is called "Year 12 against Year 11" wherever it appears (Your pupils now, the set's figure in Shape and size, the Leaving at 16 table), never "staying on", with SMT_NOTES.y12AgainstY11 as its caption; it compares the same cohort, Year 11 in year t-1 with Year 12 in year t. | no | auto: smtY12AgainstY11 | — |
 | R-SMT-VIEW-SHAPE | active | Shape and size draws pupils in each year group, the shape and since when, and the shapes around (the LA's schools of the same age range, the comparison set's shapes, Year 12 against Year 11 in the set's sixth forms) -- described, never ranked. | no | auto: smtShape | — |
@@ -178,8 +182,8 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | KS4 points come only from GCSE (9-1) Full Course entries with a clean single grade. |
-| Why | Short courses, Double Award and vocational qualifications have no place on the 9-1 points table; scoring them would invent figures. |
+| Statement | KS4 points come only from GCSE (9-1) Full Course entries with a clean single grade, and from a GCSE Double Award scored from its own grades as two entries, each the average of its two grades (R-DOUBLE-AWARD-POINTS; Column 1 too since 0.8 audit fixes, 2). |
+| Why | Short courses and vocational qualifications have no place on the 9-1 points table; scoring them would invent figures. A Double Award's pairs ("98") map onto it two grades at a time, as DfE scores it. |
 | Applies to | M-KS4-POINTS; Column 1 geography (applicability) |
 | Enforced in | - vicdata:ingest/academic_aggregates.py:139-140,285 (grade in points_table = single grades only)<br>- src/components/data-view/SubjectAreaSection.tsx:POINTS_BEARING_QUALIFICATION (151-155), imported by page.tsx:34<br>- src/app/teacher/[phase]/page.tsx:pointsAt (936), resultsFor (499)<br>- src/app/teacher/[phase]/page.tsx:geography applies (1729, 1857) |
 | Tagged at | - src/components/data-view/SubjectAreaSection.tsx<br>- src/lib/dfe-qualification-buckets.ts<br>- src/lib/teacher-view-geography.ts<br>- src/lib/teacher-view-measures.ts<br>- src/lib/view-series/compare-lines.ts<br>- src/lib/view-series/geography.ts |
@@ -343,7 +347,7 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | Applies to | Every over-time view |
 | Enforced in | - src/lib/teacher-view-panels.ts:TREND_LINE_MIN_YEARS, trendChartKind (311-315)<br>- src/components/teacher/SeriesViews.tsx:multiTrendHasLine (48-49), MultiTrend fallback (76-90)<br>- src/components/teacher/TrendChart.tsx:185<br>- src/components/teacher/ComparisonsPanels.tsx:614-616, 649 (table only)<br>- src/components/teacher/CandidatesPanels.tsx:284, 292<br>- src/components/teacher/SubjectPanels.tsx:789, 798 |
 | Tagged at | - src/lib/teacher-view-catalogue.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series.test.ts<br>- src/lib/view-series/comparisons.ts<br>- src/lib/view-series/series.ts<br>- src/lib/view-series/subjects.ts |
-| Test case | Acland Burghley School (100053), ks4, Mathematics: Average points has 4 real years (2021/22-2024/25) -> line; Grade 4+ has 4 too since 0.6.2 (2021/22-2024/25) -> line (it had 2, 2023/24-2024/25 -> bars / change list, before). [runner: trendLine] |
+| Test case | Acland Burghley School (100053), ks4, Mathematics: Average points and Grade 4+ each have the latest year's expected count of real years (rule-year-fixtures: 5 in 2025/26, 2021/22-2025/26; 4 in 2024/25) -> line (Grade 4+ had 2, 2023/24-2024/25 -> bars / change list, before 0.6.2). [runner: trendLine] |
 | Origin | Teacher view round 7 §4 |
 | Status | active |
 | Must lift | — |
@@ -471,7 +475,7 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | Applies to | M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS |
 | Enforced in | - src/app/teacher/[phase]/page.tsx:1112-1116, 1315-1320 |
 | Tagged at | - src/lib/teacher-view-measures.ts |
-| Test case | Acland Burghley School (100053), ks4: The school's grade rows cover exactly 2021/22-2024/25 (0.6.2; 2023/24 and 2024/25 before), so Results on Grade 4+ shows 4 years. [runner: thresholdPeriods] |
+| Test case | Acland Burghley School (100053), ks4: The school's grade rows run from HISTORIC_GRADE_FROM (2021/22) to the latest year (years.ts), every year (2025/26: five), and the Data View read from MODERN_GRADE_FROM (2023/24). [runner: thresholdPeriods] |
 | Origin | Teacher view round 6 §6.5 |
 | Status | active |
 | Must lift | src/app/teacher/[phase]/page.tsx:1112-1116, 1315-1320 → src/lib/teacher-view-measures.ts:periodsForMeasure (lifted). S2 lift, verbatim; 30,888 scenarios equal before and after (docs/v0.6/audit_scripts/lift_equality) |
@@ -758,9 +762,41 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | Why | Schools sitting IGCSEs show artificially low DfE GCSE figures; ranking them against GCSE schools misleads. |
 | Applies to | Comparisons (all GCSE measures); comparator maps |
 | Enforced in | - src/lib/teacher-view-comparator-series.ts:130, 143, 159, 175, 186, 199<br>- src/components/teacher/RankingsMap.tsx:90<br>- src/lib/academic-data-view.ts:igcseExclusionLikely (679) |
-| Tagged at | - src/components/admissions/views/Bars.tsx<br>- src/components/smt/views/Scorecard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/smt/levels.ts<br>- src/lib/smt/overview.ts<br>- src/lib/smt/school.ts<br>- src/lib/teacher-view-comparator-series.ts |
+| Tagged at | - src/components/admissions/views/Bars.tsx<br>- src/components/smt/views/Scorecard.tsx<br>- src/components/teacher/RankingsMap.tsx<br>- src/lib/igcse.ts<br>- src/lib/smt/levels.ts<br>- src/lib/smt/school.ts<br>- src/lib/teacher-view-comparator-series.ts |
 | Test case | The King's School Worcester (117037), ks4: Malvern College / Malvern St James absent from the set (unconfirmed, content round report :152). [manual] |
 | Origin | Commit 514e285; content round S4 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-IGCSE-EVERYWHERE
+
+| Field | Content |
+| --- | --- |
+| Statement | One IGCSE rule in every product: a school igcseExclusionLikely flags (loaded for many schools only by lib/igcse) is left out of every GCSE ranking population -- national, regional, LA, set, '10 nearest', Teacher's headline and subject rankings, Admissions' places and SMT's ranks -- and is never silently dropped from a list: where a list would have shown it, a line says '{n} schools not ranked at GCSE (mostly IGCSE)'. The school itself shows 'not ranked at GCSE (IGCSE)', with no rank, 'out of' or gap. '10 nearest' at GCSE fills to 10 with the next nearest eligible schools and says how far it reached. |
+| Why | The audit (0.8 SMT r4, T1, T4, T6, S4) found the national and regional populations kept IGCSE schools while the sample dropped them, the map's own check never fired, and '10 nearest' fell short. One rule, everywhere (Guy, 15 Oct 2026; Leighton Park is an IGCSE school). |
+| Applies to | Every GCSE rank, 'out of' and population in Teacher, Admissions and SMT; Teacher's '10 nearest' at GCSE; the comparator maps |
+| Enforced in | - src/lib/igcse.ts:igcseEngland, igcseAmong<br>- src/lib/igcse-words.ts<br>- src/lib/academic-data-view.ts:igcseExclusionLikely (ks4IgcseExcluded)<br>- src/lib/chooser-sets.ts:resolveRankingSet, resolveDefaultNearest<br>- src/lib/default-comparator-lists.ts:buildDefaultComparatorLists (gcse)<br>- src/lib/subject-ranking.ts:subjectRanking<br>- src/lib/admissions/ranks.ts:placesOf<br>- src/lib/admissions/rivals.ts<br>- src/lib/smt/overview.ts:igcseExcluded<br>- src/lib/teacher-comparator-profiles.ts |
+| Tagged at | - src/components/teacher/RankingsMap.tsx<br>- src/lib/admissions/ranks.ts<br>- src/lib/admissions/rivals.ts<br>- src/lib/chooser-sets.ts<br>- src/lib/default-comparator-lists.ts<br>- src/lib/igcse-words.ts<br>- src/lib/igcse.ts<br>- src/lib/smt/overview.ts<br>- src/lib/smt/school.ts<br>- src/lib/subject-ranking.ts |
+| Test case | Leighton Park; The Chase 137625; The King's School Worcester 117037 (also IGCSE) (110110), ks4: Leighton Park: no GCSE rank anywhere (Teacher's ranking and subject ranking, Admissions, SMT), 'not ranked at GCSE (IGCSE)'; no IGCSE school in any national or regional population or listed sample; 'out of' counts the population less the IGCSE schools; 10 nearest at GCSE has 10 with none IGCSE, and names its reach where it filled. [runner: igcseEverywhere] |
+| Origin | 0.8 audit fixes, item 1 (docs/v0.8/vicdata_0_8_audit_fixes_claude_code_prompt_v1.md) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
+### R-IGCSE-GROUP-LABEL
+
+| Field | Content |
+| --- | --- |
+| Statement | Teacher's Column 1 keeps an IGCSE school's own GCSE subject figures (its rank among its own subjects, its gap to England): only ranks against other schools follow R-IGCSE-EVERYWHERE. Where the focused subject's category at the school lacks the subjects it takes as IGCSE (English and maths, the subjects the IGCSE rule rests on), Column 1 names the category with what it lacks: 'Sciences & Maths (sciences only: maths taken as IGCSE)' (or '(no Mathematics: taken as IGCSE)' when Statistics or Additional Maths is held), 'Languages & Literature (no English: taken as IGCSE)' or '(no English Language: taken as IGCSE)', judged on the subjects with entries in the school's latest GCSE year. Every other school, every other category, and England's lines keep the plain name. |
+| Why | Leighton Park's Biology reads '2nd of 4 in Sciences & Maths', a category with no maths at the school; the name must say so (Guy, 16 Oct 2026: only ranks against other schools count). |
+| Applies to | Teacher Column 1 (Results and Candidates) at GCSE: the category rank tile and the 'Results / Entries in {category}' headings |
+| Enforced in | - src/lib/igcse-words.ts:igcseGroupLabel, igcseGroupLabelFor<br>- src/app/api/teacher/dashboard/route.ts (igcseExcluded)<br>- src/components/dashboard-config/TeacherDashboard.tsx:focusGroupLabel |
+| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/igcse-words.test.ts<br>- src/lib/igcse-words.ts |
+| Test case | Leighton Park; The Chase 137625 (110110), ks4: Leighton Park is IGCSE-excluded and has no Mathematics or English entries in its latest GCSE year: Biology's category reads 'Sciences & Maths (sciences only: maths taken as IGCSE)', Latin's 'Languages & Literature (no English: taken as IGCSE)'. The Chase's Biology reads 'Sciences & Maths'. [runner: igcseGroupLabel] |
+| Origin | 0.8 audit fixes, Guy's decision on the Leighton Park stop (16 Oct 2026) |
 | Status | active |
 | Must lift | — |
 | Open issue | — |
@@ -855,7 +891,7 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | Applies to | DV-C1-RES-TR-TABLE, DV-C2-TR-TABLE, DV-C2-TR-CHANGETABLE, DV-C3-TR-TABLE, DV-C3-TR-CHANGETABLE, DV-C1-CNT-TR-CHANGETABLE on grade measures |
 | Enforced in | - src/components/teacher/tableLayout.ts:yearColumnsShown<br>- src/components/teacher/SeriesViews.tsx:YearTable (the '+N more years' cue)<br>- src/lib/grade-spread.ts:gradeCounts (changeData)<br>- src/components/teacher/GradeCountsPanels.tsx:changeHalf gradingYears |
 | Tagged at | - src/components/teacher/SeriesViews.tsx<br>- src/components/teacher/tableLayout.ts<br>- src/lib/grade-spread.ts<br>- src/lib/trend-base.test.ts |
-| Test case | The Chase (and King's Worcester 117037 at Post-16) (137625), ks4, History (A level Mathematics), 2021/22-2024/25: For every trend table preset on Grade 4+ / A*-E, bands 9-4 / 9-7 / 9 (A*-A / A*) and Grade counts, built from real grade rows: the table's years equal its chart's (2021/22-2024/25); years down and fullscreen show them all; the card across shows 2022/23 and 2024/25 and names the other two as hidden. [runner: trendTableYears] |
+| Test case | The Chase (and King's Worcester 117037 at Post-16) (137625), ks4, History (A level Mathematics), 2021/22 to the stage's latest: For every trend table preset on Grade 4+ / A*-E, bands 9-4 / 9-7 / 9 (A*-A / A*) and Grade counts, built from real grade rows: the table's years equal its chart's (2021/22 to the stage's latest year, years.ts); years down and fullscreen show them all; the card across shows 2022/23 and the latest and names the rest as hidden. [runner: trendTableYears] |
 | Origin | 0.6.4 A (Guy's review, 7 Oct 2026) |
 | Status | active |
 | Must lift | — |
@@ -871,7 +907,7 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | Applies to | M-*-THRESHOLD, M-*-BANDS, M-*-COUNTS: latest-year views |
 | Enforced in | - src/lib/teacher-view-panels.ts:latestYearFrom, latestYearSeries<br>- src/components/teacher/SubjectPanels.tsx:currentSubjects, currentFrame<br>- src/components/teacher/ComparisonsPanels.tsx:currentFrom, currentFrame<br>- src/lib/grade-spread.ts:gradeCounts (latest)<br>- src/lib/view-series/grades.ts:earlierCounts, buildGrades<br>- src/components/dashboard-config/TeacherDashboard.tsx:focusScale (the band scale, since S2) |
 | Tagged at | - src/components/teacher/ComparisonsPanels.tsx<br>- src/components/teacher/SubjectPanels.tsx<br>- src/lib/grade-spread.ts<br>- src/lib/subject-ranking.test.ts<br>- src/lib/subject-ranking.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/trend-base.test.ts<br>- src/lib/view-series/grades.ts |
-| Test case | Acland Burghley School (100053), ks4: On Grade 4+ the Current subject lists match the 2023/24-on rows (no Turkish 'no figure' row), and Latin's 'vs last year' is '—' (no 2023/24), not 2024/25 against 2022/23 (src/lib/trend-base.test.ts). [runner: currentGradesFrom2324] |
+| Test case | Acland Burghley School (100053), ks4: On Grade 4+ the Current subject lists match the 2023/24-on rows (no Turkish 'no figure' row), and Latin's 'vs last year' is the latest year's expected value (rule-year-fixtures): '—' in 2024/25 (no 2023/24; never 2024/25 against 2022/23), -5.68 in 2025/26 (81.82% against 87.50%). [runner: currentGradesFrom2324] |
 | Origin | 0.6.2 S4b (Guy's decision A, 6 Oct 2026), after S5's first parity run |
 | Status | active |
 | Must lift | — |
@@ -1086,11 +1122,27 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | Open issue | — |
 | Fixed | — |
 
+### R-ADM-SEX-FILTER
+
+| Field | Content |
+| --- | --- |
+| Statement | Every Admissions panel either applies the girls/boys filter fully -- every pupil figure it draws is girls' or boys' -- or, while the filter is on, says 'Not split by sex'. Never part of a panel: Pool trends hides its LA and England lines (never split) and says so; momentum and flags, which set pupils against results, stay whole and say so. ADM_SEX_FILTER lists every view. |
+| Why | The audit (0.8 SMT r4, A9) found the filter applied to some figures on a panel and not others, unsaid. |
+| Applies to | Every DV-ADM view |
+| Enforced in | - src/catalogue/admissions.ts:ADM_SEX_FILTER<br>- src/components/admissions/AdmissionsDashboard.tsx:withSexNote<br>- src/lib/admissions/screens.ts:entryNow, feederTable, rivalExtras, rollOf<br>- src/lib/admissions/feeders.ts:feederFlags<br>- src/lib/admissions/views-api.ts |
+| Tagged at | - src/components/admissions/AdmissionsDashboard.tsx |
+| Test case | The Chase (137625), ks4: Every DV-ADM view is in ADM_SEX_FILTER; with girls chosen the entry tiles' cohort equals the girls figure and the roll is girls only, the entry trend is girls each year, the feeder pupils and the rivals' rolls are girls only; momentum's change is the same either way; the not-split note and Pool trends' hidden lines are wired. [runner: admSexFilter] |
+| Origin | 0.8 audit fixes, item 6 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
 ### R-ADM-FLAG-FEEDER
 
 | Field | Content |
 | --- | --- |
-| Statement | A feeder whose pupils (across the rung ages it holds) fell more than the area's (the whole feeder set) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. |
+| Statement | A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age; the feeder table, the map and the pipeline chart's flags all read that age, on the set without the school.) |
 | Why | Pipeline schools to watch and to court. |
 | Applies to | Admissions Pipelines |
 | Enforced in | - src/lib/admissions/feeders.ts<br>- src/lib/admissions/flags.ts:feederFlag |
@@ -1134,16 +1186,32 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | Open issue | — |
 | Fixed | — |
 
+### R-YEARS-ROLLOVER
+
+| Field | Content |
+| --- | --- |
+| Statement | A rule whose expected value moves with the latest results year reads that year from src/catalogue/years.ts (filled from academic_current_periods) and its value from scripts/rule-year-fixtures.ts, one row per year; or asserts a relationship with the year instead. When a new year arrives with no row, the rule fails saying 'no expected value for 2026/27', never with a wrong number; a release adds a row. |
+| Why | GCSE 2025/26's promote broke five rules whose expected values were written for 2024/25 (0.8 audit fixes, 10). |
+| Applies to | R-TREND-LINE-4YR, R-THRESHOLD-PERIODS, R-TREND-TABLE-YEARS, R-CURRENT-GRADES-FROM-2324, R-SMT-FLAGS |
+| Enforced in | - scripts/rule-year-fixtures.ts<br>- scripts/catalogue-rule-tests.ts:latestYearOf |
+| Tagged at | — |
+| Test case | The Chase; Acland Burghley 100053 (137625), ks4: With the latest KS4 year moved to 2026/27 (the data unchanged), each of the five rules passes or fails with 'no expected value for 2026/27'; none fails on a number. [runner: yearsRollover] |
+| Origin | 0.8 audit fixes, item 10 |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
 ### R-RANK-TIES
 
 | Field | Content |
 | --- | --- |
-| Statement | Ties share a rank; the next rank skips; a null is unranked. |
-| Why | Standard competition ranking; a missing figure is not a position. |
+| Statement | Ties share a rank; the next rank skips; a null is unranked. A ranking's place reads '=3rd' where the school shares it (headline and subject rankings, and the whole-school tile). |
+| Why | Standard competition ranking; a missing figure is not a position. 0.8 audit fixes (8, T2): headline rankings numbered by position, so tied schools didn't share a place. |
 | Applies to | Every rank |
-| Enforced in | - src/lib/teacher-view-panels.ts:rankByValue (325-333) |
-| Tagged at | - src/lib/admissions/ranks.ts<br>- src/lib/admissions/stats.ts<br>- src/lib/teacher-view-panels.ts |
-| Test case | — |
+| Enforced in | - src/lib/teacher-view-panels.ts:rankByValue<br>- src/lib/chooser-sets.ts:resolveRankingSet<br>- src/lib/subject-ranking.ts:subjectRanking (targetTied)<br>- src/lib/view-series/tiles.ts:placeWord |
+| Tagged at | - src/lib/admissions/ranks.ts<br>- src/lib/admissions/stats.ts<br>- src/lib/teacher-view-panels.ts<br>- src/lib/view-series/tiles.ts |
+| Test case | The Chase (137625), ks4: Nationally on Attainment 8 (one decimal, so ties are common) the place is 1 + the schools above, shared with every school on the same figure, and reads '=Nth' when shared; placeWord(3, true) is '=3rd'. [runner: rankTies] |
 | Origin | Teacher view round 7 §9 |
 | Status | active |
 | Must lift | — |
@@ -1572,10 +1640,10 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | --- | --- |
 | Statement | A GCSE Double Award (grades published as pairs, "98" ... "11") is scored on DfE's convention: two entries, each worth the average of its two grades (98 -> 8.5, U -> 0). The subject's average points and its ranks (in a set and in England) come from its own grade rows wherever the subject rollup holds no average for it; a scale that mixes pairs with anything else is never scored. Other qualifications on their own scale (an FSMQ's A-E, a BTEC's Distinction-Pass) get no GCSE points and say "different grading scale, not ranked". |
 | Why | The subject rollup scores single GCSE grades only, so Combined Science -- often a school's largest science entry -- read no average and was never ranked, in Teacher and SMT alike (SMT round 1 snag). |
-| Applies to | Teacher's subject points and rankings at GCSE; SMT's Subjects (DV-SMT-A-SUBJECTS) |
-| Enforced in | - src/lib/subject-grades.ts:doubleAwardPoints<br>- src/lib/academic-data-view.ts:fillDoubleAwardPoints<br>- src/lib/subject-ranking.ts:subjectRanking, figuresFor, rankByFunction |
+| Applies to | Teacher's subject points and rankings at GCSE, Column 1 included (0.8 audit fixes, 2); SMT's Subjects (DV-SMT-A-SUBJECTS) |
+| Enforced in | - src/lib/subject-grades.ts:doubleAwardPoints<br>- src/lib/academic-data-view.ts:fillDoubleAwardPoints<br>- src/lib/subject-ranking.ts:subjectRanking, figuresFor, rankByFunction<br>- src/lib/teacher-view-measures.ts:carriesOwnPoints |
 | Tagged at | - src/lib/smt/smt.test.ts |
-| Test case | The Chase; Acland Burghley 100053; Nunnery Wood 137051 (137625), ks4, Combined Science: Each school's Combined Science 2024/25 average equals the mean of its pair grades recomputed from the raw grade rows (each pair's two digits averaged, weighted by entries); the subject is ranked in its set and in England. [runner: doubleAwardPoints] |
+| Test case | The Chase; Acland Burghley 100053; Nunnery Wood 137051 (137625), ks4, Combined Science: Each school's Combined Science 2024/25 average equals the mean of its pair grades recomputed from the raw grade rows (each pair's two digits averaged, weighted by entries); the subject is ranked in its set and in England; Teacher's Column 1 shows the same latest and yearly average for the Double Award item, and a BTEC in the subject borrows none. [runner: doubleAwardPoints] |
 | Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -1586,12 +1654,12 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-16), Post-16 Years 12 and 13 (16-18), Primary Reception to Year 6 (4-11); Whole school highlights nothing. The figures don't change with the level; the year groups in focus do. |
+| Statement | Pupils follows the level chips by the ages it highlights: GCSE Years 7 to 11 (ages 11-15), Post-16 Years 12 and 13 (16-17), Primary Reception to Year 6 (4-10), first and last age inclusive; Whole school highlights nothing. The figures don't change with the level; the year groups in focus do. |
 | Why | The level is the dashboard's focus, as the subject is Teacher's (spec §2.2). |
 | Applies to | DV-SMT-P-SHAPE, DV-SMT-P-NOW |
 | Enforced in | - src/lib/smt/pupils.ts:LEVEL_AGES<br>- src/components/smt/views/Pupils.tsx:ShapeAndSize |
-| Tagged at | - src/components/smt/views/Pupils.tsx<br>- src/lib/smt/pupils.ts |
-| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase at GCSE: Y7-Y11 highlighted (ages 11-15 held), Y12-Y13 not; at Post-16 the reverse; Whole school none. [runner: smtPupilsLevel] |
+| Tagged at | - src/components/smt/views/Pupils.tsx<br>- src/lib/smt/levels.ts<br>- src/lib/smt/pupils.ts |
+| Test case | The Chase; Leighton Park 110110 (137625), ks4: The Chase at GCSE: exactly Y7-Y11 highlighted (ages 11-15), not Y6 or Y12; at Post-16 exactly Y12-Y13; Whole school none. [runner: smtPupilsLevel] |
 | Origin | 0.8 SMT round 2 (docs/v0.8/vicdata_0_8_smt_round2_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |
@@ -2039,7 +2107,7 @@ What a number is allowed to be. 131 rules: 127 active, 4 superseded; 22 must lif
 | Applies to | DV-SMT-O-FLAGS, DV-SMT-O-SCORECARD |
 | Enforced in | - src/lib/smt/flags.ts<br>- src/lib/smt/flags-rules.ts:SMT_FLAG_RULES<br>- src/lib/smt/overview.ts:buildOverview |
 | Tagged at | - src/components/smt/views/Flags.tsx<br>- src/lib/smt/flags-rules.ts<br>- src/lib/smt/flags.ts<br>- src/lib/smt/smt.test.ts |
-| Test case | The Chase (137625), ks4: GCSE results rising faster than the set: The Chase's 2022/23-2024/25 Attainment 8 change against the set's median change, recomputed from raw rows, past the threshold; no roll-falling flag (its roll rose). [runner: smtFlags] |
+| Test case | The Chase (137625), ks4: The Chase's two-year Attainment 8 change against the set's median change, recomputed from raw rows, flags exactly as the app does and as the latest year's fixture says: flagged in 2024/25; in 2025/26 +1.0 against -0.6, a gap of 1.6 under the 2-point threshold, not flagged. No roll-falling flag (its roll rose). [runner: smtFlags] |
 | Origin | 0.8 SMT round 1 (docs/v0.8/vicdata_0_8_shell_and_smt_round1_claude_code_prompt_v1.md) |
 | Status | active |
 | Must lift | — |

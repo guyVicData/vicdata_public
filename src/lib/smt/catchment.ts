@@ -74,3 +74,12 @@ export const milesToKm = (miles: number) => miles * KM_PER_MILE;
 
 /** "5 km" */
 export const kmWord = (km: number) => `${km} km`;
+
+// 0.8 audit fixes (9): who reads and who saves the school's catchment. Its members read it with their own
+// token (RLS decides); head office reading a member school's SMT reads it too, read-only, through the
+// server once smtCaller has checked its access (as Admissions' shared reads do). Only the school's
+// School-Admin or account holder saves it; head office never does, though it may change the radius
+// for its own view (?km=).
+export type CatchmentCaller = { headOffice: unknown | null };
+export const catchmentRights = (c: CatchmentCaller): { read: "own-token" | "server"; mayTrySave: boolean } =>
+  c.headOffice ? { read: "server", mayTrySave: false } : { read: "own-token", mayTrySave: true };

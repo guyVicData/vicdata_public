@@ -79,5 +79,8 @@ export function levelAges(phase: SmtPhase, low: number | null, high: number | nu
   return [Math.max(0, low), Math.min(18, high)];
 }
 
+/** Whether an age is one a level highlights (first and last inclusive; R-SMT-PUPILS-LEVEL). */
+export const inLevelAges = (age: number, h: [number, number] | null) => !!h && age >= h[0] && age <= h[1];
+
 /** "11–15", "16–17", "4" */
 export const agesWordOf = ([lo, hi]: [number, number]) => (lo === hi ? String(lo) : `${lo}–${hi}`);

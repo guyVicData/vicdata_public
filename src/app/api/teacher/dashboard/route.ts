@@ -4,6 +4,7 @@ import { lookupAcademicLatestYears, lookupAcademicSubjectGeography, lookupAcadem
 import { NATIONAL_GROUPING_KEY } from "@/lib/academic-aggregate-trends";
 import { createClient } from "@supabase/supabase-js";
 import { cachedReference } from "@/lib/server-cache";
+import { igcseAmong } from "@/lib/igcse";
 import {
   fetchSubjectLevelDataForSchools,
   fetchSubjectHeadlineForSchools,
@@ -189,6 +190,9 @@ export async function GET(request: NextRequest) {
   // 0.7 year rules: the latest year per key stage, from the data, with DfE's provisional flag
   // (src/catalogue/years.ts) -- what the page's catalogue titles and "Data" lines read.
   const latestYears = await cachedReference("years:latest", () => lookupAcademicLatestYears()).catch(() => null);
+  // 0.8 audit fixes (R-IGCSE-GROUP-LABEL): whether the IGCSE rule takes this school out of GCSE
+  // rankings, so Column 1 can say which subjects its groups lack (taken as IGCSE).
+  const igcseExcluded = phase === "ks4" ? (await igcseAmong([urn])).has(urn) : false;
 
   return NextResponse.json({
     phase,
@@ -207,5 +211,6 @@ export async function GET(request: NextRequest) {
     seriesByUrn,
     headlineLabel: HEADLINE_LABEL[phase],
     latestYears,
+    igcseExcluded,
   });
 }

@@ -116,7 +116,7 @@ export function DonutView({ m }: { m: MarketView }) {
   );
 }
 
-/** Change bars: each school's change since 2019/20 at the entry age (pupils %), diverging. */
+/** Change bars: each school's change in share since the first year held at the entry age (share points), diverging. */
 export function ShareChange({ m }: { m: MarketView }) {
   const first = m.summary.first;
   const rows = m.extras

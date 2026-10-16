@@ -5,12 +5,14 @@
 //
 // The comparison set arrives as URNs (the set Teacher's chooser resolved). Every set rank is
 // level-aware: only the set's schools with the figure are ranked, and the count says so.
+import { indexBaseWords } from "../index-base";
 import type { SmtAdmissionsReader } from "./auth-rules";
 import { CENSUS_FIRST_PERIOD, HISTORIC_GRADE_FROM, TREND_BASE_PERIOD, periodLabel } from "@/catalogue/years";
 import { smtNote } from "@/catalogue/notes";
 import { lookupAgeBandDistributions } from "../age-band-distributions";
 import { AGE_BANDS, CURRENT_CENSUS_PERIOD, type RollSnapshot } from "../roll-data";
 import { englandSchools, rankIn } from "../admissions/ranks";
+import { igcseEngland } from "../igcse";
 import { cachedCensus, fetchSchoolInfo } from "../admissions/data";
 import { cohortAt } from "../admissions/cohort";
 import { areaByAge, indexTo } from "../admissions/screens";
@@ -22,7 +24,7 @@ import { entryPoint } from "../admissions/entry-points";
 import { loadThresholds, phaseForEntryAge } from "../admissions/thresholds";
 import { percentile } from "../admissions/stats";
 import { figure, placesOn, population, setPlace, SMT_MEASURES, type Population } from "./population";
-import { sitsIgcse, type SmtSchool } from "./school";
+import type { SmtSchool } from "./school";
 import { entryShrinking, resultsAgainstSet, rollFalling, type SmtFlag } from "./flags";
 
 export type SmtSet = { kind: string; label: string; urns: string[] };
@@ -79,7 +81,8 @@ export type Overview = {
   flags: SmtFlag[];
   flagsLoaded: boolean;
   trends: {
-    roll: { lines: { key: string; label: string; pts: Pt[] }[]; base: number | null; laName: string | null };
+    // pts indexed to `base` = 100; actual the pupils behind them (the table shows both, 0.8 audit fixes, 3).
+    roll: { lines: { key: string; label: string; pts: Pt[]; actual: Pt[] }[]; base: number | null; laName: string | null };
     results: { stage: "ks4" | "ks5"; label: string; school: Pt[]; band: BandPt[] }[];
     market: { status: "ready"; school: Pt[]; rival: Pt[]; rivalName: string | null; rivals: number } | { status: "empty"; reason: string };
   };
@@ -126,15 +129,11 @@ export function middleHalf(pop: Population, urns: string[], key: string, years: 
   });
 }
 
-/** The set's IGCSE schools (R-IGCSE-EXCL), left out of every GCSE comparison. */
-export async function igcseIn(urns: string[]): Promise<Set<string>> {
-  const england = await englandSchools();
-  const out = new Set<string>();
-  await Promise.all(urns.map(async (u) => {
-    const group = england.get(u)?.group ?? null;
-    if (group === "Independent schools" && (await sitsIgcse(u, group))) out.add(u);
-  }));
-  return out;
+/** Every school the IGCSE rule takes out of GCSE rankings (R-IGCSE-EVERYWHERE): all of England's, so
+ * national and regional places leave them out as the set does (0.8 audit fixes, 1). A copy: callers add
+ * to it. */
+export async function igcseExcluded(): Promise<Set<string>> {
+  return new Set(await igcseEngland());
 }
 
 const STAGE_LABEL: Record<Stage, string> = { ks2: "KS2", ks4: "GCSE", ks5: "Post-16" };
@@ -146,7 +145,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
   const f = school.boarding ? filters : { ...filters, boarding: "all" as const };
   const ff: SmtFilters = school.mixed ? f : { ...f, sex: "all" };
   const noKs2: Population = new Map();
-  const [ks2, ks4, ks5, igcse, rolls, england] = await Promise.all([school.phases.primary && school.results.ks2 ? population("ks2") : Promise.resolve(noKs2), population("ks4"), population("ks5"), igcseIn(all), setRolls(all), englandSchools()]);
+  const [ks2, ks4, ks5, igcse, rolls, england] = await Promise.all([school.phases.primary && school.results.ks2 ? population("ks2") : Promise.resolve(noKs2), population("ks4"), population("ks5"), igcseExcluded(), setRolls(all), englandSchools()]);
   const schoolIgcse = !!school.phases.igcse;
   if (schoolIgcse) igcse.add(urn);
   const census = school.census;
@@ -277,7 +276,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
   const laPts = years.map((y) => ({ year: y, value: school.laName ? areaSum("la", school.laName, y) : null }));
   const engPts = years.map((y) => ({ year: y, value: areaSum("region", null, y) }));
   const ix = indexTo([...lines.map((l) => l.pts), laPts, engPts]);
-  const rollLines = [...lines.map((l, i) => ({ ...l, pts: ix.out[i] })), { key: "la", label: school.laName ?? "The LA", pts: ix.out[lines.length] }, { key: "england", label: "England", pts: ix.out[lines.length + 1] }];
+  const rollLines = [...lines.map((l, i) => ({ ...l, pts: ix.out[i], actual: l.pts })), { key: "la", label: school.laName ?? "The LA", pts: ix.out[lines.length], actual: laPts }, { key: "england", label: "England", pts: ix.out[lines.length + 1], actual: engPts }];
 
   const resultTrends: Overview["trends"]["results"] = [];
   for (const r of results.filter((x) => x.trend && x.stage !== "ks2") as { stage: "ks4" | "ks5"; key: string; label: string; pop: Population }[]) {
@@ -324,7 +323,7 @@ export async function buildOverview(school: SmtSchool, set: SmtSet, filters: Smt
     notes: {
       since: smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) }),
       middleHalf: smtNote("middleHalf", { setLabel }),
-      rollIndexed: smtNote("rollIndexed", { base: ix.base === null ? periodLabel(CENSUS_FIRST_PERIOD) : periodLabel(ix.base), la: school.laName ?? "The LA" }),
+      rollIndexed: smtNote("rollIndexed", { base: indexBaseWords(ix.base), la: school.laName ?? "The LA" }),
     },
   };
 }

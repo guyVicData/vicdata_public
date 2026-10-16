@@ -6,6 +6,7 @@
 // top CARD_TOP, a break, then CARD_AROUND either side of the school -- one continuous block
 // when the school is within the top CARD_BLOCK; full screen shows the whole window, a break
 // wherever positions jump (R-RANKING-WINDOW).
+import { igcseNotRankedLine, igcseTargetLine } from "./igcse-words";
 import type { RankMeasure, SubjectRanking } from "./subject-ranking";
 import type { RankingFilters } from "./comparator-chooser";
 
@@ -119,15 +120,18 @@ export function subjectTileDetails(d: SubjectRanking, noun: string, yearLabel: s
 /** The column's note under "Compared against": where the school stands, the population and who is left out. */
 export function subjectRankingNote(d: SubjectRanking, targetName: string, noun: string, yearLabel: string | null, minEntries: number): string {
   const inYear = yearLabel ? ` in ${yearLabel}` : "";
-  const lead = !d.target || d.targetRank === null
+  const lead = d.targetIgcse
+    ? igcseTargetLine(targetName)
+    : !d.target || d.targetRank === null
     ? `${targetName} has no ${noun.replace(/ (results|entries)$/, "")} figure${inYear} to rank.`
     : d.inRanking
-      ? `${targetName} ranks ${nth(d.targetRank)} of ${populationPhrase(d, noun)}${inYear}.`
-      : `${targetName} is not itself in this ranking. Placed against its ${populationPhrase(d, noun)}${inYear}, it would be ${nth(d.targetRank)}.`;
+      ? `${targetName} ranks ${d.targetTied ? "=" : ""}${nth(d.targetRank)} of ${populationPhrase(d, noun)}${inYear}.`
+      : `${targetName} is not itself in this ranking. Placed against its ${populationPhrase(d, noun)}${inYear}, it would be ${d.targetTied ? "=" : ""}${nth(d.targetRank)}.`;
   const left: string[] = [];
   if (d.noFigure) left.push(`${d.noFigure.toLocaleString()} have no figure that year`);
   if (d.belowMin) left.push(`${d.belowMin.toLocaleString()} have fewer than ${minEntries} entries`);
-  const tail = ` ${d.matched.toLocaleString()} schools are in this ranking${left.length ? `; ${left.join(" and ")}` : ""}.`;
+  const igcse = igcseNotRankedLine(d.igcseOut ?? 0);
+  const tail = ` ${d.matched.toLocaleString()} schools are in this ranking${left.length ? `; ${left.join(" and ")}` : ""}.${igcse ? ` ${igcse}.` : ""}`;
   return `${lead}${tail} The table shows the top and the schools around ${targetName}.`;
 }
 

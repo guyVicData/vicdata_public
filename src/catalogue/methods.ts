@@ -27,6 +27,8 @@ export type ViewMethod = {
   rounding: string[];
   // Set when the text is built from stored settings (the forward view): each value appears in it.
   settings?: Record<string, unknown>;
+  // 0.8 audit fixes (5, A1): the notes that describe this view (shown first in its (i)), only where they apply.
+  notes?: string[];
 };
 
 export const METHODS: Record<string, ViewMethod> = { ...METHODS_TEACHER, ...METHODS_ADMISSIONS, ...METHODS_SMT };
@@ -75,6 +77,7 @@ export function methodOf(id: string, given: Record<string, string | number | nul
     steps: m.steps.map((s) => fillOne(s, vars)),
     rounding: m.rounding.map((s) => fillOne(s, vars)),
     settings: m.settings,
+    ...(m.notes ? { notes: m.notes } : {}),
   };
 }
 

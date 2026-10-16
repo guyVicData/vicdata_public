@@ -7,6 +7,8 @@
 // this view…. Every view is a catalogue entry (src/catalogue/smt.ts) plus a component (./views).
 //
 // Wireframes: docs/wireframes/smt (Main, Academic, LeightonLight, Phone).
+import { indexBaseWords, indexedLabel } from "@/lib/index-base";
+import { flagsRuleText } from "@/lib/smt/flags-rules";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -602,7 +604,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
       return { tag: "Flags", context: "on the school itself" };
     case "DV-SMT-O-ROLL-LINE":
     case "DV-SMT-O-ROLL-TABLE":
-      return { tag: "Trends", context: `${periodLabel(CENSUS_FIRST_PERIOD)} = 100` };
+      return { tag: "Trends", context: c.overview.status === "ready" ? indexedLabel(c.overview.data.trends.roll.base) : "indexed" };
     case "DV-SMT-O-RESULTS-LINE":
     case "DV-SMT-O-RESULTS-TABLE": {
       const latest = c.school.latest.ks4?.period ?? c.school.latest.ks5?.period;
@@ -642,7 +644,7 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
       return { tag: "Market share", context: "from Admissions, read-only" };
     case "DV-SMT-P-PHASES":
     case "DV-SMT-P-PHASES-TABLE":
-      return { tag: "Trends", context: `${periodLabel(CENSUS_FIRST_PERIOD)} = 100` };
+      return { tag: "Trends", context: c.pupils.status === "ready" ? indexedLabel(c.pupils.data.trends.base) : "indexed" };
     case "DV-SMT-P-POOL":
       return { tag: "From Admissions", context: `${c.pupils.status === "ready" && c.pupils.data.trends.pool.status === "ready" ? c.pupils.data.trends.pool.entry : "main entry point"}, read-only` };
     case "DV-SMT-P-AREA":
@@ -653,14 +655,15 @@ function headerOf(panel: PanelConfig, dv: string, c: Ctx): { tag: string; contex
     case "DV-SMT-C-MAP":
       return { tag: "Map", context: c.context.status === "ready" && c.context.data.area === "la" ? (c.school.regionName ?? c.school.laName ?? "") : "the area around the school" };
     case "DV-SMT-C-BYAGE":
-      return { tag: "Population by age", context: c.context.status === "ready" && c.context.data.byAge.scope === "around" ? "within 5 miles" : (c.school.laName ?? "") };
+      return { tag: "Population by age", context: c.context.status === "ready" && c.context.data.byAge.scope === "around" ? `within ${c.context.data.radius}` : (c.school.laName ?? "") };
     case "DV-SMT-C-NEARBY":
       return { tag: "Children nearby", context: "residents, indexed" };
     case "DV-SMT-C-BIRTHS":
       return { tag: "Births and projections", context: c.school.laName ?? "" };
     case "DV-SMT-C-BIRTHS-INDEXED":
+      return { tag: "Trends", context: c.context.status === "ready" ? `births, ${indexedLabel(c.context.data.births.base, "calendar")}` : "births, indexed" };
     case "DV-SMT-C-BIRTHS-TABLE":
-      return { tag: "Trends", context: "births, 2012 = 100" };
+      return { tag: "Trends", context: "births, and indexed" };
     case "DV-SMT-C-PROJECTION":
       return { tag: "Forward", context: c.context.status === "ready" && c.context.data.forward ? `${c.context.data.forward.where}, to ${c.context.data.forward.horizonEnd}` : "" };
     case "DV-SMT-C-AGES":
@@ -739,7 +742,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
     case "DV-SMT-O-SCORECARD":
       return `${SMT_NOTES.ranks} ${smtNote("sinceBase", { base: periodLabel(TREND_BASE_PERIOD) })}${igcse}`;
     case "DV-SMT-O-FLAGS":
-      return SMT_NOTES.flagsRule.replace("{gap}", "the set's middle by a fixed margin");
+      return flagsRuleText(c.school.phases);
     case "DV-SMT-O-ROLL-LINE":
     case "DV-SMT-O-ROLL-TABLE":
       return c.overview.status === "ready" ? `${c.overview.data.notes.rollIndexed} ${SMT_NOTES.rollAreaUndercount}` : null;
@@ -775,7 +778,7 @@ function captionOf(dv: string, c: Ctx): ReactNode {
       return SMT_NOTES.marketShort;
     case "DV-SMT-P-PHASES":
     case "DV-SMT-P-PHASES-TABLE":
-      return smtNote("rollByPhase", { base: periodLabel(CENSUS_FIRST_PERIOD) });
+      return smtNote("rollByPhase", { base: c.pupils.status === "ready" ? indexBaseWords(c.pupils.data.trends.base) : "the first year every line shares" });
     case "DV-SMT-P-AREA":
       return c.pupils.status === "ready" ? smtNote("areaResidents", { la: c.school.laName ?? "The LA", ages: c.pupils.data.trends.area.agesWord }) : SMT_NOTES.areaResidentsCaption;
     case "DV-SMT-C-NOW":
@@ -857,7 +860,7 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-O-MAP":
           return <SetMap o={o} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-O-FLAGS":
-          return <SchoolFlags o={o} />;
+          return <SchoolFlags o={o} phases={c.school.phases} />;
         case "DV-SMT-O-ROLL-LINE":
           return <RollIndexed o={o} fullscreen={fullscreen} room={room} />;
         case "DV-SMT-O-ROLL-TABLE":
@@ -908,7 +911,7 @@ export function ViewBody({ dv, c, fullscreen, room }: { dv: string; c: Ctx; full
         case "DV-SMT-P-PHASES":
           return <IndexedLines title="Roll by phase, indexed" lines={p.trends.phases} fullscreen={fullscreen} room={room} caption={smtNote("rollByPhase", { base: periodLabel(p.trends.base ?? CENSUS_FIRST_PERIOD) })} />;
         case "DV-SMT-P-PHASES-TABLE":
-          return <RollTable o={{ trends: { roll: { lines: p.trends.phases, base: p.trends.base, laName: c.school.laName } } } as never} />;
+          return <RollTable title="Roll by phase" o={{ trends: { roll: { lines: p.trends.phases, base: p.trends.base, laName: c.school.laName } } } as never} />;
         case "DV-SMT-P-POOL":
           return <PoolLine pool={p.trends.pool} fullscreen={fullscreen} room={room} caption={SMT_NOTES.pool} />;
         case "DV-SMT-P-AREA":

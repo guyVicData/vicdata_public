@@ -7,6 +7,7 @@
 // (DfE), and the projection. Every figure is /api/smt/context's or /api/smt/context/map's; every caveat
 // is SMT_NOTES' (the wording rules, R-SMT-CONTEXT-WORDING, R-SMT-NOT-A-FORECAST).
 // R-SMT-CONTEXT-RESIDENTS, -DEPRIVATION, -FSM, -GEOGRAPHY, R-SMT-VIEW-CONTEXT-NOW, R-SMT-VIEW-BIRTHS.
+import { indexedLabel } from "@/lib/index-base";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import type { ConsortiumMapArea, ConsortiumMapMarker, ConsortiumMapMember } from "@/components/ConsortiumMap";
@@ -463,17 +464,22 @@ export function BirthsIndexed({ c, fullscreen, room }: { c: Context; fullscreen:
   );
 }
 
+// 0.8 audit fixes (3, S3): the births chart is indexed, so its table shows the births and the
+// index, each in its own labelled column (the header no longer says "= 100" over actual births).
 export function BirthsTable({ c }: { c: Context }) {
+  const ix = (v: number | null | undefined) => (v === null || v === undefined ? "—" : v.toFixed(0));
   return (
     <>
-      <div className="text-[12.5px] font-bold text-[var(--fg)]">Births, year by year</div>
+      <div className="text-[12.5px] font-bold text-[var(--fg)]">Births, and indexed ({indexedLabel(c.births.base, "calendar")})</div>
       <div className="min-h-0 overflow-y-auto rounded-[9px] border border-[var(--panel-border)]">
         <table className="w-full border-collapse text-[12px]">
           <thead className="border-b border-[var(--panel-border)] text-[10.5px] uppercase tracking-[0.05em] text-[var(--muted2)]">
             <tr>
               <th className="px-2 py-[6px] text-left">Year</th>
-              <th className="px-2 py-[6px] text-left">{c.births.laName}</th>
-              <th className="px-2 py-[6px] text-left">England</th>
+              <th className="px-2 py-[6px] text-left">{c.births.laName}: births</th>
+              <th className="px-2 py-[6px] text-left">{c.births.laName}: index</th>
+              <th className="px-2 py-[6px] text-left">England: births</th>
+              <th className="px-2 py-[6px] text-left">England: index</th>
             </tr>
           </thead>
           <tbody>
@@ -481,7 +487,9 @@ export function BirthsTable({ c }: { c: Context }) {
               <tr key={p.year} className="border-b border-[var(--panel-border)] text-[var(--chip-fg)] last:border-0">
                 <td className="px-2 py-[6px]">{p.year}</td>
                 <td className="px-2 py-[6px] font-bold text-[var(--fg)]">{fmt(p.value, "pupils")}</td>
+                <td className="px-2 py-[6px]">{ix(c.births.indexed.la[i]?.value)}</td>
                 <td className="px-2 py-[6px]">{fmt(c.births.england[i]?.value, "pupils")}</td>
+                <td className="px-2 py-[6px]">{ix(c.births.indexed.england[i]?.value)}</td>
               </tr>
             ))}
           </tbody>

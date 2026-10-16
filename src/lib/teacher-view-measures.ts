@@ -10,6 +10,7 @@
 // S3b (Guy's decisions after night 1) fixed the Post-16 Context points blend: points are
 // now compared within the focused item's qualification family only (contextKeepsToFamily,
 // contextGroupValue). % change on points and rates is still offered elsewhere.
+import { isDoubleAward } from "./subject-grades";
 import type { AcademicSubjectHeadlineEntry, SubjectGradeCount } from "./academic-data-view";
 import { POINTS_BEARING_QUALIFICATION, displayBucketFor } from "./dfe-qualification-buckets";
 import { ENTRIES_MEASURE, headlineMeasure, measuresFor, type Measure, type MeasureId } from "./teacher-view-panels";
@@ -44,10 +45,12 @@ export function ownHeadlineRows(
  * R-KS4-POINTS-GCSE-FULL, R-ENTRIES-NOT-POINTS: at GCSE only "GCSE (9-1) Full Course"
  * carries points. Headline rows there are keyed by subject alone, so without this gate an
  * OCR or BTEC row for the same subject shows the GCSE score as its own. Suppress rather
- * than borrow.
+ * than borrow. 0.8 audit fixes (2): a GCSE Double Award carries its own points too -- its rows are
+ * scored from its own grades (two entries, each the average of its two grades: doubleAwardPoints,
+ * fillDoubleAwardPoints), as Comparisons, the subject ranking and Context already score it.
  */
 export function carriesOwnPoints(phase: TeacherPhase | null, item: MeasureItem): boolean {
-  return !(phase === "ks4" && item.qualificationType !== POINTS_BEARING_QUALIFICATION.ks4);
+  return !(phase === "ks4" && item.qualificationType !== POINTS_BEARING_QUALIFICATION.ks4 && !isDoubleAward(item.qualificationType));
 }
 
 /**

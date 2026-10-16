@@ -82,7 +82,11 @@ export function ShapeAndSize({ s, entryAge, showLocal = true, fullscreen, column
             {label(s.localShape.shape)} <Muted size={13}>&middot; your feeders&rsquo; area</Muted>
           </div>
           <Muted className="leading-[1.4]">
-            All pupils aged 4&ndash;{Math.max(4, entryAge - 1)} in your {s.localShape.schools} feeder schools, together. {ADMISSIONS_NOTES.localShape}
+            {/* 0.8 audit fixes (5, A8): at 16+ the set counted is the primaries unless a list is saved; say which, and the ages it holds. */}
+            {entryAge >= 16 && local.length > 0
+              ? <>All pupils aged {local[0].age}&ndash;{local[local.length - 1].age} in {s.localShape.saved ? `the ${s.localShape.schools} schools on your saved list` : `the ${s.localShape.schools} nearest primaries`}, together.</>
+              : <>All pupils aged 4&ndash;{Math.max(4, entryAge - 1)} in your {s.localShape.schools} feeder schools, together.</>}{" "}
+            {ADMISSIONS_NOTES.localShape}
           </Muted>
           {local.length > 0 && <Bars rows={s.localProfile} highlight={[]} colour="var(--adm-grey-2)" ages={[Math.max(4, local[0].age), Math.max(4, Math.min(local[local.length - 1].age, entryAge - 1))]} />}
         </div>

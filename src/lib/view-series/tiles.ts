@@ -25,6 +25,10 @@ export function ordinal(n: number): string {
   return `${n.toLocaleString()}${suffix}`;
 }
 
+// 0.8 audit fixes (8, T2): a ranking's place, "=3rd" where the school shares it (standard competition
+// ranking: two schools tied at 3rd, then 5th). R-RANK-TIES.
+export const placeWord = (rank: number, tied?: boolean) => `${tied ? "=" : ""}${ordinal(rank)}`;
+
 type Built = { title: string | null; main: { figure: string; label: string } | null; tiles: TileData[]; vars: TileVars; note?: string };
 
 export function buildNumbers(f: SeriesFrame, ctx: BuildContext): ViewSeries | null {
@@ -139,7 +143,7 @@ function rankingTiles(f: ComparisonsFrame): Built | null {
   // 0.6.5 S5: no figure on the ranking's measure for a known reason: the note, not empty tiles.
   if (rs.noFigureNote && !rs.target) return { title: `${f.targetName}'s rank in the ${f.setLabel.toLowerCase()}: ${rs.measureName}`, main: null, tiles: [], vars: {}, note: rs.noFigureNote };
   const tiles: TileData[] = [];
-  if (rs.targetRank) tiles.push({ key: "rank", icon: "PodiumIcon", figure: ordinal(rs.targetRank), detail: rs.rankDetail ?? `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
+  if (rs.targetRank) tiles.push({ key: "rank", icon: "PodiumIcon", figure: placeWord(rs.targetRank, rs.targetTied), detail: rs.rankDetail ?? `of ${rs.ranked.toLocaleString()} in this set`, vars: { total: rs.ranked } });
   // The set's average for the SAME year as the main figure; the latest-of-each average the
   // rank is on only where that year has none.
   const avg = (rs.target ? f.ranking.averageAt(rs.target.period) : null) ?? rs.averageLatest;
@@ -157,6 +161,6 @@ function rankingTiles(f: ComparisonsFrame): Built | null {
 
 /** 0.6.6: "Whole school: 843rd of 2,545 on A-level points per entry", the headline ranking's
  * own rank beside a subject ranking (ComparisonsPanels builds the same tile). */
-export function wholeSchoolTile(w: { rank: number; total: number; measureName: string }): TileData {
-  return { key: "whole-school", icon: "SchoolIcon", figure: ordinal(w.rank), detail: `whole school: of ${w.total.toLocaleString()} on ${w.measureName}`, vars: { total: w.total } };
+export function wholeSchoolTile(w: { rank: number; total: number; measureName: string; tied?: boolean }): TileData {
+  return { key: "whole-school", icon: "SchoolIcon", figure: placeWord(w.rank, w.tied), detail: `whole school: of ${w.total.toLocaleString()} on ${w.measureName}`, vars: { total: w.total } };
 }

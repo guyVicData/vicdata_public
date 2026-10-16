@@ -16,6 +16,7 @@
 // The schools query is fetchAcademicProfiles' own (same table, same columns, same filter),
 // so for the same schools the profiles come back in the same order. The Data View is not
 // in this module's graph: it keeps calling academic-schools, unchanged.
+import { igcseAmong } from "./igcse";
 import { fetchSubjectHeadlineForSchools, type AcademicSchoolProfile, type AcademicSubjectHeadlineEntry } from "./academic-data-view";
 import { createServerAnonSupabaseClient } from "./supabase";
 
@@ -37,10 +38,13 @@ const leanRow = (r: AcademicSubjectHeadlineEntry): AcademicSubjectHeadlineEntry 
 export async function fetchTeacherComparatorProfiles(urns: string[], phase: "ks4" | "ks5"): Promise<AcademicSchoolProfile[]> {
   if (urns.length === 0) return [];
   const supabase = createServerAnonSupabaseClient();
-  const [{ data: rows }, subjectsByUrn] = await Promise.all([
+  const [{ data: rows }, subjectsByUrn, igcse] = await Promise.all([
     supabase.from("schools").select("urn, current_name, town, easting, northing, establishment_type_group").in("urn", urns),
     // The same subject lookups fetchAcademicProfiles makes, for this phase only.
     phase === "ks4" ? fetchSubjectHeadlineForSchools(urns, "ks4") : fetchSubjectHeadlineForSchools(urns, "ks5", undefined, null),
+    // 0.8 audit fixes (1, T4): these profiles carry no headline years, so the IGCSE rule's answer
+    // comes with them (the map's own check read an empty ks4 and never fired).
+    phase === "ks4" ? igcseAmong(urns) : Promise.resolve(null),
   ]);
   const byBucket = (urn: string): Record<string, AcademicSubjectHeadlineEntry[]> => {
     const out: Record<string, AcademicSubjectHeadlineEntry[]> = {};
@@ -58,6 +62,7 @@ export async function fetchTeacherComparatorProfiles(urns: string[], phase: "ks4
     easting: row.easting,
     northing: row.northing,
     establishmentTypeGroup: row.establishment_type_group,
+    ...(igcse ? { ks4IgcseExcluded: igcse.has(row.urn) } : {}),
     ks5QualTypes: { ib: false, preU: false },
     ks2: [],
     ks4: [],

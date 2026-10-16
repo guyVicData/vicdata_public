@@ -57,12 +57,13 @@ export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList
     }
   }
   const p = await buildPipeline(urn, ep, { sets, laBlend: blendFromLists(lists), sex, includeProjection: !!o.projection, today: o.today });
-  // Feeder flags on the youngest counted rung's set, across the ages it holds (round 1, unchanged).
+  // Feeder flags at one age, the age below entry, on that rung's set without the school: the same
+  // flags as the feeder table and map (R-ADM-FLAG-FEEDER; 0.8 audit fixes, follow-up to 8).
   const thresholds = await loadThresholds();
   const minCohort = thresholds?.get(phaseForEntryAge(ep.age), "entry_cohort")?.minCohort ?? 10;
-  const feederAge = p.sets.find((s) => s.age < 11)?.age ?? p.sets[0]?.age;
-  const feederSet = p.sets.find((s) => s.age === feederAge)?.urns ?? [];
-  const ages = p.sets.filter((s) => s.urns === feederSet || s.urns.join() === feederSet.join()).map((s) => s.age);
+  const feederAge = p.sets.find((s) => s.age === Math.max(4, ep.age - 1))?.age ?? p.sets[0]?.age;
+  const feederSet = (p.sets.find((s) => s.age === feederAge)?.urns ?? []).filter((u) => u !== urn);
+  const ages = feederAge === undefined ? [] : [feederAge];
   const census = await cachedCensus(feederSet);
   const flags = feederFlags(new Map(feederSet.map((u) => [u, census.get(u)?.table ?? new Map()])), ages, CURRENT_CENSUS_PERIOD, minCohort);
 
@@ -73,8 +74,8 @@ export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList
   const me = traits.get(urn);
   const listMembers = (kind: string) => all.filter((l) => l.kind === kind).flatMap((l) => l.members ?? []);
   const [now, table, stages, trends, area, fe] = await Promise.all([
-    entryNow(urn, ep, own),
-    feederTable(urn, ep, p.sets, traits, minCohort, { day: listMembers("day_feeders"), boarding: listMembers("boarding_feeders") }),
+    entryNow(urn, ep, own, sex),
+    feederTable(urn, ep, p.sets, traits, minCohort, { day: listMembers("day_feeders"), boarding: listMembers("boarding_feeders") }, sex),
     funnelArea(p.blend, p.blendSource === "override", me).then((area) => funnel(urn, ep, area, own?.table ?? new Map(), sex)),
     poolTrends(ep, p.ladder, me?.laName ?? null),
     cachedReference(`adm:area-pop:${me?.laCode ?? ""}:${CURRENT_CENSUS_PERIOD}`, () => lookupPopulationTrend(me?.laName ?? null, me?.laCode ?? null, CURRENT_CENSUS_PERIOD)),
@@ -118,7 +119,7 @@ export async function marketView(urn: string, ep: EntryPoint, lists: SavedList[]
   const latest = Math.max(...m.entryAge.periods);
   const first = Math.min(...m.entryAge.periods);
   const mine = (y: number) => m.entryAge.rows.find((r) => r.urn === urn && r.period === y) ?? null;
-  const extras = rivalExtras(urn, urns, census, traits, ep);
+  const extras = rivalExtras(urn, urns, census, traits, ep, o.sex ?? "all");
   const summary = {
     latest,
     first,
@@ -206,8 +207,13 @@ const bandForEntry = (age: number): AgeBandKey => (age <= 4 ? "early_years" : ag
 
 export async function shapeView(urn: string, ep: EntryPoint, lists: SavedList[], o: { filters?: AdmissionsFilters } = {}) {
   const candidates = await nearbyCandidates(urn);
-  const sets = rungSetsFromLists(ep, lists, defaultRungSets(urn, ep, candidates));
-  const feeders = Array.from(new Set(sets.get(Math.min(...sets.keys())) ?? []));
+  const defaults = defaultRungSets(urn, ep, candidates);
+  const sets = rungSetsFromLists(ep, lists, defaults);
+  const youngest = Math.min(...sets.keys());
+  const feeders = Array.from(new Set(sets.get(youngest) ?? []));
+  // 0.8 audit fixes (5, A8): which set the local shape counts -- a saved list, or the defaults (at 16+
+  // the youngest rung's defaults are primaries) -- so the caption can name it.
+  const localFromSaved = sets.get(youngest) !== defaults.get(youngest);
   const { rivals } = await rivalSet(urn, ep, lists, o.filters ?? DEFAULT_FILTERS);
   const all = Array.from(new Set([urn, ...feeders, ...rivals]));
   const [census, info] = await Promise.all([cachedCensus(all), fetchSchoolInfo(all)]);
@@ -221,7 +227,7 @@ export async function shapeView(urn: string, ep: EntryPoint, lists: SavedList[],
     entry: ep,
     shapeByYear: byYear,
     size: own ? sizeByBand(own.ageGender, dist) : [],
-    localShape: { schools: feeders.length, shape: localShape(feederCounts) },
+    localShape: { schools: feeders.length, shape: localShape(feederCounts), saved: localFromSaved },
     // Described, not ranked (R-ADM-SHAPE-NOT-RANKED): the rivals in the set's own order.
     rivals: rivals.map((u) => ({ urn: u, name: info.get(u)?.name ?? u, shape: census.get(u) ? shapeOf(census.get(u)!.ageGender) : null, profile: profileOf(census.get(u)?.ageGender), size: sizes.get(u)?.badge ?? null })),
     note: ADMISSIONS_NOTES.shape,

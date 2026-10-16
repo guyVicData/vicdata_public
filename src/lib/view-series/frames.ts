@@ -231,6 +231,7 @@ export type FrameSchool = {
 export type FrameRankingFigures = {
   ranked: number;
   targetRank: number | null;
+  targetTied?: boolean; // 0.8 audit fixes (8): "=3rd"
   target: { period: number; value: number } | null;
   averageLatest: number | null;
   measure: Measure;
@@ -242,7 +243,7 @@ export type FrameRankingFigures = {
   // results, 2024/25"), and the whole-school headline rank as a second tile.
   rankDetail?: string;
   averageDetail?: string;
-  wholeSchool?: { rank: number; total: number; measureName: string } | null;
+  wholeSchool?: { rank: number; total: number; measureName: string; tied?: boolean } | null;
 };
 
 // 0.6.6: a national / regional ranking on the measure in view (src/lib/subject-ranking-view.ts):

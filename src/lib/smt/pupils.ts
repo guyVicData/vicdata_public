@@ -23,8 +23,11 @@ import { laAreaProjection, laPopulation } from "./area-data";
 import type { SmtSchool } from "./school";
 import { marketAt11, rollAt, type Overview, type Pt, type SmtFilters, type SmtSet } from "./overview";
 
-// The ages each level highlights (R-SMT-PUPILS-LEVEL): GCSE 11-16, Post-16 16-18, Primary 4-11.
-export const LEVEL_AGES: Record<SmtLevel["phase"], [number, number] | null> = { whole: null, primary: [4, 11], gcse: [11, 16], post16: [16, 18] };
+// The ages each level highlights (R-SMT-PUPILS-LEVEL), first and last inclusive, as Context counts
+// them (levelAges): GCSE 11-15 (Years 7 to 11), Post-16 16-17 (Years 12 and 13), Primary 4-10
+// (Reception to Year 6). 0.8 audit fixes (3, S2): these were the ages each level ends at (11-16,
+// 16-18, 4-11), read as inclusive, so GCSE lit Year 12 and Primary Year 7.
+export const LEVEL_AGES: Record<SmtLevel["phase"], [number, number] | null> = { whole: null, primary: levelAges("primary", null, null), gcse: levelAges("gcse", null, null), post16: levelAges("post16", null, null) };
 
 export type YearGroup = { age: number; label: string; female: number; male: number; total: number };
 export type EntrySummary = { entry: string; label: string; age: number; cohort: number | null; pool: number | null; poolYear: number | null; poolSource: string | null };
@@ -58,7 +61,7 @@ export type Pupils = {
   leaving: { year: number; year11: number | null; year12: number | null; leaving: number | null; stayingPct: number | null }[];
   market: Overview["trends"]["market"];
   trends: {
-    phases: { key: string; label: string; pts: Pt[] }[];
+    phases: { key: string; label: string; pts: Pt[]; actual: Pt[] }[]; // pts indexed; actual the pupils
     base: number | null;
     pool: { status: "ready"; entry: string; counted: Pt[]; births: Pt[] } | { status: "empty"; reason: string };
     // 0.8 SMT r3 (K5): the LA's residents of the ages (ONS mid-year estimates), not census pupils.
@@ -196,7 +199,7 @@ export async function buildPupils(school: SmtSchool, set: SmtSet, filters: SmtFi
     return { year: y, value: t };
   });
   const ix = indexTo([...phaseLines.map((l) => l.pts), engPts]);
-  const phases = [...phaseLines.map((l, i) => ({ ...l, pts: ix.out[i] })), { key: "england", label: "England", pts: ix.out[phaseLines.length] }];
+  const phases = [...phaseLines.map((l, i) => ({ ...l, pts: ix.out[i], actual: l.pts })), { key: "england", label: "England", pts: ix.out[phaseLines.length], actual: engPts }];
 
   // The pool for the main entry point: Admissions' ladder -- counted, then from births.
   const mainEntry = school.phases.gcse && (school.low ?? 11) <= 11 ? "11+" : school.phases.primary ? "4+" : school.phases.post16 ? "16+" : null;
