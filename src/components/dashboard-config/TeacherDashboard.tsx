@@ -77,7 +77,7 @@ import type { FrameSetGrades } from "@/lib/view-series/frames";
 import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
-import { SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
+import { SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf, uniqueChipLabels } from "@/lib/teacher-view-theme";
 import { fetchComparatorQualifications, seriesFromQualificationRows, type ComparatorQualificationRow } from "@/lib/teacher-view-comparator-quals";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
@@ -1996,11 +1996,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // "GCSE — {school}" once, so "· GCSE" on every chip was noise. The one exception is a
   // subject ticked under two qualifications (GCSE and BTEC Art), where two identical
   // chips could not be told apart; those two keep their qualification.
+  // 0.8 IGCSE subjects (follow-up 6): never two chips with one label (uniqueChipLabels).
+  const chipLabels = phase === "ks2" ? new Map<string, string>() : uniqueChipLabels(phase, tickedItems);
   const focusSubjects: FocusSubject[] = phase === "ks2" ? [] : tickedItems.map((i) => ({
     key: i.key,
-    label: tickedItems.some((o) => o.key !== i.key && o.subject === i.subject)
-      ? `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`
-      : i.subject,
+    label: chipLabels.get(i.key) ?? i.subject,
     colour: colourOf(i),
   }));
   const onSharedMeasure = (next: SharedMeasure) => setColumnSetting(SHARED_MEASURE_KEY, next);
