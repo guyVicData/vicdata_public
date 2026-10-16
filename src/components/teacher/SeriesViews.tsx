@@ -41,7 +41,7 @@ const INDEX_MEASURE: Measure = {
   changeLabel: "% change",
   changeKind: "percent",
   format: (v) => `${Math.round(v)}`,
-  formatDelta: (d) => signedDelta(d, (x) => String(Math.round(x))),
+  formatDelta: (d) => signedDelta(d, (x) => String(Math.abs(Math.round(x)))),
   axisStep: 10,
   aggregate: "mean",
   noun: "index",

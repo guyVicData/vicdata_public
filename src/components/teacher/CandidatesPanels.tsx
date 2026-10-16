@@ -425,7 +425,7 @@ export function CandidatesPanels({
     ) :
       best && worst && best.key !== worst.key ? (
         <PanelSummary>
-          {moversSentence({ label: best.label, printed: signedDelta(best.value!, (x) => `${Math.round(x)}%`) }, { label: worst.label, printed: signedDelta(worst.value!, (x) => `${Math.round(x)}%`) }, changeSince)}
+          {moversSentence({ label: best.label, printed: signedDelta(best.value!, (x) => `${Math.abs(Math.round(x))}%`) }, { label: worst.label, printed: signedDelta(worst.value!, (x) => `${Math.abs(Math.round(x))}%`) }, changeSince)}
         </PanelSummary>
       ) : (
         <PanelSummary>Not enough published years yet to compare subjects on change.</PanelSummary>

@@ -127,7 +127,7 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     changeLabel: "change in average points, in points",
     changeKind: "points",
     format: (v) => v.toFixed(1),
-    formatDelta: (d) => signedDelta(d, (x) => x.toFixed(1)),
+    formatDelta: (d) => signedDelta(d, (x) => Math.abs(x).toFixed(1)),
     axisStep: phase === "ks4" ? 0.5 : 5,
     aggregate: "mean",
     noun: "average points",
@@ -139,7 +139,7 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     changeLabel: `change in ${thresholdLabel(phase).toLowerCase()}, in percentage points`,
     changeKind: "pp",
     format: (v) => `${Math.round(v)}%`,
-    formatDelta: (d) => signedDelta(d, (x) => `${Math.round(x)}pp`),
+    formatDelta: (d) => signedDelta(d, (x) => `${Math.abs(Math.round(x))}pp`),
     axisStep: 5,
     aggregate: "mean",
     noun: thresholdLabel(phase).toLowerCase(),
@@ -154,7 +154,7 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     changeLabel: "change in the share at the chosen grades, in percentage points",
     changeKind: "pp",
     format: (v) => `${Math.round(v)}%`,
-    formatDelta: (d) => signedDelta(d, (x) => `${Math.round(x)}pp`),
+    formatDelta: (d) => signedDelta(d, (x) => `${Math.abs(Math.round(x))}pp`),
     axisStep: 5,
     aggregate: "mean",
     noun: "share of entries at the chosen grades",
@@ -166,7 +166,7 @@ export function measuresFor(phase: TeacherPhase): Measure[] {
     changeLabel: "% change in entries at each grade",
     changeKind: "percent",
     format: (v) => Math.round(v).toLocaleString(),
-    formatDelta: (d) => signedDelta(d, (x) => Math.round(x).toLocaleString()),
+    formatDelta: (d) => signedDelta(d, (x) => Math.abs(Math.round(x)).toLocaleString()),
     axisStep: 10,
     aggregate: "sum",
     noun: "entries at each grade",
@@ -181,7 +181,7 @@ export const ENTRIES_MEASURE: Measure = {
   changeLabel: "% change in candidate numbers",
   changeKind: "percent",
   format: (v) => Math.round(v).toLocaleString(),
-  formatDelta: (d) => signedDelta(d, (x) => Math.round(x).toLocaleString()),
+  formatDelta: (d) => signedDelta(d, (x) => Math.abs(Math.round(x)).toLocaleString()),
   axisStep: 10,
   aggregate: "sum",
   noun: "number of candidates",
@@ -205,7 +205,7 @@ export function headlineMeasure(phase: TeacherPhase, label: string): Measure {
     changeLabel: isPercent ? `change in ${label}, in percentage points` : `change in ${label}, in points`,
     changeKind: isPercent ? "pp" : "points",
     format: (v) => (isPercent ? `${Math.round(v)}%` : v.toFixed(1)),
-    formatDelta: (d) => signedDelta(d, (x) => (isPercent ? `${Math.round(x)}pp` : x.toFixed(1))),
+    formatDelta: (d) => signedDelta(d, (x) => (isPercent ? `${Math.abs(Math.round(x))}pp` : Math.abs(x).toFixed(1))),
     axisStep: 5,
     aggregate: "mean",
     noun: label,
@@ -487,12 +487,13 @@ export function changeOf(measure: Pick<Measure, "changeKind">, values: (number |
 }
 
 /**
- * 0.8 IGCSE subjects (follow-up 6): a change with its sign, printed from its magnitude (`body`), with the
- * sign taken from what is printed -- a change that rounds to zero prints as zero does ("+0.0", "+0pp"),
- * never "−0.0".
+ * 0.8 IGCSE subjects (follow-up 6): a change with its sign. `body` prints the unsigned magnitude from the
+ * SIGNED change, exactly as each measure always rounded it (Math.abs(Math.round(d)): −6.5 stays 6); only
+ * the sign is decided here, from what is printed -- a change that rounds to zero prints as zero does
+ * ("+0.0", "+0pp"), never "−0.0".
  */
-export function signedDelta(d: number, body: (magnitude: number) => string): string {
-  const printed = body(Math.abs(d));
+export function signedDelta(d: number, body: (signed: number) => string): string {
+  const printed = body(d);
   const zero = !/[1-9]/.test(printed);
   return `${d < 0 && !zero ? "−" : "+"}${printed}`;
 }
@@ -518,7 +519,7 @@ export function moversSentence(best: { label: string; printed: string }, worst: 
  * never "−0.0".
  */
 export function formatChange(measure: Pick<Measure, "changeKind" | "formatDelta">, value: number): string {
-  if (measure.changeKind === "percent") return signedDelta(value, (x) => `${Math.round(x)}%`);
+  if (measure.changeKind === "percent") return signedDelta(value, (x) => `${Math.abs(Math.round(x))}%`);
   const printed = measure.formatDelta(value);
   return /^[+−]0(\.0+)?(pp)?$/.test(printed) ? printed.slice(1) : printed;
 }

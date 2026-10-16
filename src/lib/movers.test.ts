@@ -5,12 +5,16 @@ import assert from "node:assert/strict";
 import { ENTRIES_MEASURE, formatChange, headlineMeasure, measuresFor, moversSentence, signedDelta } from "./teacher-view-panels";
 
 test("a change that rounds to zero prints as zero does, never −0", () => {
-  assert.equal(signedDelta(-0.04, (x) => x.toFixed(1)), "+0.0");
-  assert.equal(signedDelta(0, (x) => x.toFixed(1)), "+0.0");
-  assert.equal(signedDelta(-0.06, (x) => x.toFixed(1)), "−0.1");
-  assert.equal(signedDelta(-0.4, (x) => `${Math.round(x)}pp`), "+0pp");
-  assert.equal(signedDelta(-0.4, (x) => `${Math.round(x)}%`), "+0%");
-  assert.equal(signedDelta(2.25, (x) => x.toFixed(1)), "+2.3");
+  const f1 = (x: number) => Math.abs(x).toFixed(1);
+  const pp = (x: number) => `${Math.abs(Math.round(x))}pp`;
+  assert.equal(signedDelta(-0.04, f1), "+0.0");
+  assert.equal(signedDelta(0, f1), "+0.0");
+  assert.equal(signedDelta(-0.06, f1), "−0.1");
+  assert.equal(signedDelta(-0.4, pp), "+0pp");
+  assert.equal(signedDelta(-0.4, (x) => `${Math.abs(Math.round(x))}%`), "+0%");
+  // The rounding is each measure's own, unchanged: −6.5pp prints "−6pp" as it always did.
+  assert.equal(signedDelta(-6.5, pp), "−6pp");
+  assert.equal(signedDelta(6.5, pp), "+7pp");
   const all = [...measuresFor("ks4"), ...measuresFor("ks5"), ENTRIES_MEASURE, headlineMeasure("ks4", "Attainment 8"), headlineMeasure("ks2", "RWM")];
   for (const m of all) assert.ok(!m.formatDelta(-0.0001).startsWith("−"), `${m.id}: ${m.formatDelta(-0.0001)}`);
   assert.ok(!formatChange({ changeKind: "percent", formatDelta: String }, -0.3).startsWith("−"));
