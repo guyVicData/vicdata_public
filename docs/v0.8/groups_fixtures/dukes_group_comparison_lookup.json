@@ -7158,59 +7158,59 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 789964,
+      "entries": 816766,
       "family_id": "humanities_social",
-      "n_schools": 3481,
-      "points_per_entry": 5.11
+      "n_schools": 3817,
+      "points_per_entry": 5.18
      },
      {
       "shown": true,
-      "entries": 400251,
+      "entries": 418751,
       "family_id": "arts_media_design",
-      "n_schools": 3400,
-      "points_per_entry": 5.35
+      "n_schools": 3755,
+      "points_per_entry": 5.46
      },
      {
       "shown": true,
-      "entries": 1441750,
+      "entries": 1468475,
       "family_id": "languages_literature",
-      "n_schools": 3611,
-      "points_per_entry": 5.12
+      "n_schools": 3762,
+      "points_per_entry": 5.15
      },
      {
       "shown": true,
-      "entries": 213270,
+      "entries": 221829,
       "family_id": "technology_eng_construction",
-      "n_schools": 3135,
-      "points_per_entry": 5.03
+      "n_schools": 3377,
+      "points_per_entry": 5.14
      },
      {
       "shown": true,
-      "entries": 1898119,
+      "entries": 1914496,
       "family_id": "sciences_maths",
-      "n_schools": 3649,
-      "points_per_entry": 5.05
+      "n_schools": 3751,
+      "points_per_entry": 5.06
      },
      {
       "shown": true,
-      "entries": 264272,
+      "entries": 271364,
       "family_id": "enterprise_applied",
-      "n_schools": 3314,
-      "points_per_entry": 5.23
+      "n_schools": 3566,
+      "points_per_entry": 5.32
      },
      {
       "shown": false,
-      "entries": 71845,
+      "entries": 71856,
       "family_id": "health_care",
-      "n_schools": 1949,
+      "n_schools": 1950,
       "points_per_entry": null
      },
      {
       "shown": true,
-      "entries": 149416,
+      "entries": 152916,
       "family_id": "business_law",
-      "n_schools": 2530,
-      "points_per_entry": 5.22
+      "n_schools": 2628,
+      "points_per_entry": 5.25
      }
     ],
     "ks5": [
@@ -7532,59 +7532,59 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 789964,
+      "entries": 816766,
       "family_id": "humanities_social",
-      "n_schools": 3481,
-      "points_per_entry": 5.11
+      "n_schools": 3817,
+      "points_per_entry": 5.18
      },
      {
       "shown": true,
-      "entries": 400251,
+      "entries": 418751,
       "family_id": "arts_media_design",
-      "n_schools": 3400,
-      "points_per_entry": 5.35
+      "n_schools": 3755,
+      "points_per_entry": 5.46
      },
      {
       "shown": true,
-      "entries": 1441750,
+      "entries": 1468475,
       "family_id": "languages_literature",
-      "n_schools": 3611,
-      "points_per_entry": 5.12
+      "n_schools": 3762,
+      "points_per_entry": 5.15
      },
      {
       "shown": true,
-      "entries": 213270,
+      "entries": 221829,
       "family_id": "technology_eng_construction",
-      "n_schools": 3135,
-      "points_per_entry": 5.03
+      "n_schools": 3377,
+      "points_per_entry": 5.14
      },
      {
       "shown": true,
-      "entries": 1898119,
+      "entries": 1914496,
       "family_id": "sciences_maths",
-      "n_schools": 3649,
-      "points_per_entry": 5.05
+      "n_schools": 3751,
+      "points_per_entry": 5.06
      },
      {
       "shown": true,
-      "entries": 264272,
+      "entries": 271364,
       "family_id": "enterprise_applied",
-      "n_schools": 3314,
-      "points_per_entry": 5.23
+      "n_schools": 3566,
+      "points_per_entry": 5.32
      },
      {
       "shown": false,
-      "entries": 71845,
+      "entries": 71856,
       "family_id": "health_care",
-      "n_schools": 1949,
+      "n_schools": 1950,
       "points_per_entry": null
      },
      {
       "shown": true,
-      "entries": 149416,
+      "entries": 152916,
       "family_id": "business_law",
-      "n_schools": 2530,
-      "points_per_entry": 5.22
+      "n_schools": 2628,
+      "points_per_entry": 5.25
      }
     ]
    }
@@ -7723,38 +7723,38 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1483585,
+      "entries": 1513792,
       "family_id": "languages_literature",
-      "n_schools": 3643,
-      "points_per_entry": 4.83
+      "n_schools": 3800,
+      "points_per_entry": 4.87
      },
      {
       "shown": true,
-      "entries": 372800,
+      "entries": 393270,
       "family_id": "arts_media_design",
-      "n_schools": 3429,
-      "points_per_entry": 4.99
+      "n_schools": 3786,
+      "points_per_entry": 5.11
      },
      {
       "shown": true,
-      "entries": 1961224,
+      "entries": 1977826,
       "family_id": "sciences_maths",
-      "n_schools": 3680,
-      "points_per_entry": 4.82
+      "n_schools": 3783,
+      "points_per_entry": 4.84
      },
      {
       "shown": true,
-      "entries": 219850,
+      "entries": 230090,
       "family_id": "technology_eng_construction",
-      "n_schools": 3192,
-      "points_per_entry": 4.5
+      "n_schools": 3459,
+      "points_per_entry": 4.63
      },
      {
       "shown": true,
-      "entries": 820243,
+      "entries": 847404,
       "family_id": "humanities_social",
-      "n_schools": 3502,
-      "points_per_entry": 4.75
+      "n_schools": 3837,
+      "points_per_entry": 4.82
      },
      {
       "shown": false,
@@ -7765,17 +7765,17 @@
      },
      {
       "shown": true,
-      "entries": 164388,
+      "entries": 168476,
       "family_id": "business_law",
-      "n_schools": 2564,
-      "points_per_entry": 4.7
+      "n_schools": 2670,
+      "points_per_entry": 4.74
      },
      {
       "shown": true,
-      "entries": 261661,
+      "entries": 269365,
       "family_id": "enterprise_applied",
-      "n_schools": 3340,
-      "points_per_entry": 4.76
+      "n_schools": 3600,
+      "points_per_entry": 4.85
      }
     ],
     "ks5": [
@@ -8097,38 +8097,38 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1483585,
+      "entries": 1513792,
       "family_id": "languages_literature",
-      "n_schools": 3643,
-      "points_per_entry": 4.83
+      "n_schools": 3800,
+      "points_per_entry": 4.87
      },
      {
       "shown": true,
-      "entries": 372800,
+      "entries": 393270,
       "family_id": "arts_media_design",
-      "n_schools": 3429,
-      "points_per_entry": 4.99
+      "n_schools": 3786,
+      "points_per_entry": 5.11
      },
      {
       "shown": true,
-      "entries": 1961224,
+      "entries": 1977826,
       "family_id": "sciences_maths",
-      "n_schools": 3680,
-      "points_per_entry": 4.82
+      "n_schools": 3783,
+      "points_per_entry": 4.84
      },
      {
       "shown": true,
-      "entries": 219850,
+      "entries": 230090,
       "family_id": "technology_eng_construction",
-      "n_schools": 3192,
-      "points_per_entry": 4.5
+      "n_schools": 3459,
+      "points_per_entry": 4.63
      },
      {
       "shown": true,
-      "entries": 820243,
+      "entries": 847404,
       "family_id": "humanities_social",
-      "n_schools": 3502,
-      "points_per_entry": 4.75
+      "n_schools": 3837,
+      "points_per_entry": 4.82
      },
      {
       "shown": false,
@@ -8139,17 +8139,17 @@
      },
      {
       "shown": true,
-      "entries": 164388,
+      "entries": 168476,
       "family_id": "business_law",
-      "n_schools": 2564,
-      "points_per_entry": 4.7
+      "n_schools": 2670,
+      "points_per_entry": 4.74
      },
      {
       "shown": true,
-      "entries": 261661,
+      "entries": 269365,
       "family_id": "enterprise_applied",
-      "n_schools": 3340,
-      "points_per_entry": 4.76
+      "n_schools": 3600,
+      "points_per_entry": 4.85
      }
     ]
    }
@@ -8288,52 +8288,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1537730,
+      "entries": 1563370,
       "family_id": "languages_literature",
-      "n_schools": 3680,
+      "n_schools": 3823,
+      "points_per_entry": 4.88
+     },
+     {
+      "shown": true,
+      "entries": 388331,
+      "family_id": "arts_media_design",
+      "n_schools": 3808,
+      "points_per_entry": 5.11
+     },
+     {
+      "shown": true,
+      "entries": 2041824,
+      "family_id": "sciences_maths",
+      "n_schools": 3822,
       "points_per_entry": 4.85
      },
      {
       "shown": true,
-      "entries": 367105,
-      "family_id": "arts_media_design",
-      "n_schools": 3448,
-      "points_per_entry": 4.99
-     },
-     {
-      "shown": true,
-      "entries": 2025947,
-      "family_id": "sciences_maths",
-      "n_schools": 3723,
+      "entries": 866849,
+      "family_id": "humanities_social",
+      "n_schools": 3875,
       "points_per_entry": 4.84
      },
      {
       "shown": true,
-      "entries": 839669,
-      "family_id": "humanities_social",
-      "n_schools": 3531,
-      "points_per_entry": 4.77
-     },
-     {
-      "shown": true,
-      "entries": 223890,
+      "entries": 234670,
       "family_id": "technology_eng_construction",
-      "n_schools": 3225,
-      "points_per_entry": 4.66
+      "n_schools": 3489,
+      "points_per_entry": 4.8
      },
      {
       "shown": true,
-      "entries": 170824,
+      "entries": 175266,
       "family_id": "business_law",
-      "n_schools": 2579,
-      "points_per_entry": 4.7
+      "n_schools": 2694,
+      "points_per_entry": 4.74
      },
      {
       "shown": true,
-      "entries": 264840,
+      "entries": 273368,
       "family_id": "enterprise_applied",
-      "n_schools": 3367,
-      "points_per_entry": 4.76
+      "n_schools": 3634,
+      "points_per_entry": 4.85
      },
      {
       "shown": false,
@@ -8662,52 +8662,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1537730,
+      "entries": 1563370,
       "family_id": "languages_literature",
-      "n_schools": 3680,
+      "n_schools": 3823,
+      "points_per_entry": 4.88
+     },
+     {
+      "shown": true,
+      "entries": 388331,
+      "family_id": "arts_media_design",
+      "n_schools": 3808,
+      "points_per_entry": 5.11
+     },
+     {
+      "shown": true,
+      "entries": 2041824,
+      "family_id": "sciences_maths",
+      "n_schools": 3822,
       "points_per_entry": 4.85
      },
      {
       "shown": true,
-      "entries": 367105,
-      "family_id": "arts_media_design",
-      "n_schools": 3448,
-      "points_per_entry": 4.99
-     },
-     {
-      "shown": true,
-      "entries": 2025947,
-      "family_id": "sciences_maths",
-      "n_schools": 3723,
+      "entries": 866849,
+      "family_id": "humanities_social",
+      "n_schools": 3875,
       "points_per_entry": 4.84
      },
      {
       "shown": true,
-      "entries": 839669,
-      "family_id": "humanities_social",
-      "n_schools": 3531,
-      "points_per_entry": 4.77
-     },
-     {
-      "shown": true,
-      "entries": 223890,
+      "entries": 234670,
       "family_id": "technology_eng_construction",
-      "n_schools": 3225,
-      "points_per_entry": 4.66
+      "n_schools": 3489,
+      "points_per_entry": 4.8
      },
      {
       "shown": true,
-      "entries": 170824,
+      "entries": 175266,
       "family_id": "business_law",
-      "n_schools": 2579,
-      "points_per_entry": 4.7
+      "n_schools": 2694,
+      "points_per_entry": 4.74
      },
      {
       "shown": true,
-      "entries": 264840,
+      "entries": 273368,
       "family_id": "enterprise_applied",
-      "n_schools": 3367,
-      "points_per_entry": 4.76
+      "n_schools": 3634,
+      "points_per_entry": 4.85
      },
      {
       "shown": false,
@@ -8853,52 +8853,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 359776,
+      "entries": 380047,
       "family_id": "arts_media_design",
-      "n_schools": 3447,
-      "points_per_entry": 5.01
+      "n_schools": 3799,
+      "points_per_entry": 5.14
      },
      {
       "shown": true,
-      "entries": 1524971,
+      "entries": 1544057,
       "family_id": "languages_literature",
-      "n_schools": 3695,
-      "points_per_entry": 4.89
+      "n_schools": 3824,
+      "points_per_entry": 4.91
      },
      {
       "shown": true,
-      "entries": 218259,
+      "entries": 228683,
       "family_id": "technology_eng_construction",
-      "n_schools": 3247,
-      "points_per_entry": 4.73
+      "n_schools": 3514,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 820101,
+      "entries": 845435,
       "family_id": "humanities_social",
-      "n_schools": 3540,
-      "points_per_entry": 4.79
-     },
-     {
-      "shown": true,
-      "entries": 1999317,
-      "family_id": "sciences_maths",
-      "n_schools": 3744,
+      "n_schools": 3874,
       "points_per_entry": 4.85
      },
      {
       "shown": true,
-      "entries": 168146,
-      "family_id": "business_law",
-      "n_schools": 2597,
-      "points_per_entry": 4.66
+      "entries": 2011231,
+      "family_id": "sciences_maths",
+      "n_schools": 3832,
+      "points_per_entry": 4.86
      },
      {
       "shown": true,
-      "entries": 270339,
+      "entries": 173012,
+      "family_id": "business_law",
+      "n_schools": 2721,
+      "points_per_entry": 4.71
+     },
+     {
+      "shown": true,
+      "entries": 279494,
       "family_id": "enterprise_applied",
-      "n_schools": 3387,
-      "points_per_entry": 4.81
+      "n_schools": 3668,
+      "points_per_entry": 4.91
      },
      {
       "shown": false,
@@ -9227,52 +9227,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 359776,
+      "entries": 380047,
       "family_id": "arts_media_design",
-      "n_schools": 3447,
-      "points_per_entry": 5.01
+      "n_schools": 3799,
+      "points_per_entry": 5.14
      },
      {
       "shown": true,
-      "entries": 1524971,
+      "entries": 1544057,
       "family_id": "languages_literature",
-      "n_schools": 3695,
-      "points_per_entry": 4.89
+      "n_schools": 3824,
+      "points_per_entry": 4.91
      },
      {
       "shown": true,
-      "entries": 218259,
+      "entries": 228683,
       "family_id": "technology_eng_construction",
-      "n_schools": 3247,
-      "points_per_entry": 4.73
+      "n_schools": 3514,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 820101,
+      "entries": 845435,
       "family_id": "humanities_social",
-      "n_schools": 3540,
-      "points_per_entry": 4.79
-     },
-     {
-      "shown": true,
-      "entries": 1999317,
-      "family_id": "sciences_maths",
-      "n_schools": 3744,
+      "n_schools": 3874,
       "points_per_entry": 4.85
      },
      {
       "shown": true,
-      "entries": 168146,
-      "family_id": "business_law",
-      "n_schools": 2597,
-      "points_per_entry": 4.66
+      "entries": 2011231,
+      "family_id": "sciences_maths",
+      "n_schools": 3832,
+      "points_per_entry": 4.86
      },
      {
       "shown": true,
-      "entries": 270339,
+      "entries": 173012,
+      "family_id": "business_law",
+      "n_schools": 2721,
+      "points_per_entry": 4.71
+     },
+     {
+      "shown": true,
+      "entries": 279494,
       "family_id": "enterprise_applied",
-      "n_schools": 3387,
-      "points_per_entry": 4.81
+      "n_schools": 3668,
+      "points_per_entry": 4.91
      },
      {
       "shown": false,
@@ -9418,52 +9418,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 358748,
+      "entries": 378074,
       "family_id": "arts_media_design",
-      "n_schools": 3476,
-      "points_per_entry": 5.01
+      "n_schools": 3817,
+      "points_per_entry": 5.13
      },
      {
       "shown": true,
-      "entries": 1528939,
+      "entries": 1541952,
       "family_id": "languages_literature",
-      "n_schools": 3702,
-      "points_per_entry": 4.91
+      "n_schools": 3793,
+      "points_per_entry": 4.92
      },
      {
       "shown": true,
-      "entries": 820768,
+      "entries": 845493,
       "family_id": "humanities_social",
-      "n_schools": 3541,
-      "points_per_entry": 4.81
+      "n_schools": 3865,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 210540,
+      "entries": 220653,
       "family_id": "technology_eng_construction",
-      "n_schools": 3232,
-      "points_per_entry": 4.75
+      "n_schools": 3486,
+      "points_per_entry": 4.9
      },
      {
       "shown": true,
-      "entries": 2020305,
+      "entries": 2030799,
       "family_id": "sciences_maths",
-      "n_schools": 3753,
-      "points_per_entry": 4.87
+      "n_schools": 3820,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 174147,
+      "entries": 179183,
       "family_id": "business_law",
-      "n_schools": 2598,
-      "points_per_entry": 4.63
+      "n_schools": 2723,
+      "points_per_entry": 4.68
      },
      {
       "shown": true,
-      "entries": 275040,
+      "entries": 284556,
       "family_id": "enterprise_applied",
-      "n_schools": 3402,
-      "points_per_entry": 4.82
+      "n_schools": 3683,
+      "points_per_entry": 4.93
      },
      {
       "shown": false,
@@ -9678,52 +9678,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 358748,
+      "entries": 378074,
       "family_id": "arts_media_design",
-      "n_schools": 3476,
-      "points_per_entry": 5.01
+      "n_schools": 3817,
+      "points_per_entry": 5.13
      },
      {
       "shown": true,
-      "entries": 1528939,
+      "entries": 1541952,
       "family_id": "languages_literature",
-      "n_schools": 3702,
-      "points_per_entry": 4.91
+      "n_schools": 3793,
+      "points_per_entry": 4.92
      },
      {
       "shown": true,
-      "entries": 820768,
+      "entries": 845493,
       "family_id": "humanities_social",
-      "n_schools": 3541,
-      "points_per_entry": 4.81
+      "n_schools": 3865,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 210540,
+      "entries": 220653,
       "family_id": "technology_eng_construction",
-      "n_schools": 3232,
-      "points_per_entry": 4.75
+      "n_schools": 3486,
+      "points_per_entry": 4.9
      },
      {
       "shown": true,
-      "entries": 2020305,
+      "entries": 2030799,
       "family_id": "sciences_maths",
-      "n_schools": 3753,
-      "points_per_entry": 4.87
+      "n_schools": 3820,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 174147,
+      "entries": 179183,
       "family_id": "business_law",
-      "n_schools": 2598,
-      "points_per_entry": 4.63
+      "n_schools": 2723,
+      "points_per_entry": 4.68
      },
      {
       "shown": true,
-      "entries": 275040,
+      "entries": 284556,
       "family_id": "enterprise_applied",
-      "n_schools": 3402,
-      "points_per_entry": 4.82
+      "n_schools": 3683,
+      "points_per_entry": 4.93
      },
      {
       "shown": false,
@@ -10427,59 +10427,59 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 789964,
+      "entries": 816766,
       "family_id": "humanities_social",
-      "n_schools": 3481,
-      "points_per_entry": 5.11
+      "n_schools": 3817,
+      "points_per_entry": 5.18
      },
      {
       "shown": true,
-      "entries": 400251,
+      "entries": 418751,
       "family_id": "arts_media_design",
-      "n_schools": 3400,
-      "points_per_entry": 5.35
+      "n_schools": 3755,
+      "points_per_entry": 5.46
      },
      {
       "shown": true,
-      "entries": 1441750,
+      "entries": 1468475,
       "family_id": "languages_literature",
-      "n_schools": 3611,
-      "points_per_entry": 5.12
+      "n_schools": 3762,
+      "points_per_entry": 5.15
      },
      {
       "shown": true,
-      "entries": 213270,
+      "entries": 221829,
       "family_id": "technology_eng_construction",
-      "n_schools": 3135,
-      "points_per_entry": 5.03
+      "n_schools": 3377,
+      "points_per_entry": 5.14
      },
      {
       "shown": true,
-      "entries": 1898119,
+      "entries": 1914496,
       "family_id": "sciences_maths",
-      "n_schools": 3649,
-      "points_per_entry": 5.05
+      "n_schools": 3751,
+      "points_per_entry": 5.06
      },
      {
       "shown": true,
-      "entries": 264272,
+      "entries": 271364,
       "family_id": "enterprise_applied",
-      "n_schools": 3314,
-      "points_per_entry": 5.23
+      "n_schools": 3566,
+      "points_per_entry": 5.32
      },
      {
       "shown": false,
-      "entries": 71845,
+      "entries": 71856,
       "family_id": "health_care",
-      "n_schools": 1949,
+      "n_schools": 1950,
       "points_per_entry": null
      },
      {
       "shown": true,
-      "entries": 149416,
+      "entries": 152916,
       "family_id": "business_law",
-      "n_schools": 2530,
-      "points_per_entry": 5.22
+      "n_schools": 2628,
+      "points_per_entry": 5.25
      }
     ],
     "ks5": [
@@ -10801,59 +10801,59 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 789964,
+      "entries": 816766,
       "family_id": "humanities_social",
-      "n_schools": 3481,
-      "points_per_entry": 5.11
+      "n_schools": 3817,
+      "points_per_entry": 5.18
      },
      {
       "shown": true,
-      "entries": 400251,
+      "entries": 418751,
       "family_id": "arts_media_design",
-      "n_schools": 3400,
-      "points_per_entry": 5.35
+      "n_schools": 3755,
+      "points_per_entry": 5.46
      },
      {
       "shown": true,
-      "entries": 1441750,
+      "entries": 1468475,
       "family_id": "languages_literature",
-      "n_schools": 3611,
-      "points_per_entry": 5.12
+      "n_schools": 3762,
+      "points_per_entry": 5.15
      },
      {
       "shown": true,
-      "entries": 213270,
+      "entries": 221829,
       "family_id": "technology_eng_construction",
-      "n_schools": 3135,
-      "points_per_entry": 5.03
+      "n_schools": 3377,
+      "points_per_entry": 5.14
      },
      {
       "shown": true,
-      "entries": 1898119,
+      "entries": 1914496,
       "family_id": "sciences_maths",
-      "n_schools": 3649,
-      "points_per_entry": 5.05
+      "n_schools": 3751,
+      "points_per_entry": 5.06
      },
      {
       "shown": true,
-      "entries": 264272,
+      "entries": 271364,
       "family_id": "enterprise_applied",
-      "n_schools": 3314,
-      "points_per_entry": 5.23
+      "n_schools": 3566,
+      "points_per_entry": 5.32
      },
      {
       "shown": false,
-      "entries": 71845,
+      "entries": 71856,
       "family_id": "health_care",
-      "n_schools": 1949,
+      "n_schools": 1950,
       "points_per_entry": null
      },
      {
       "shown": true,
-      "entries": 149416,
+      "entries": 152916,
       "family_id": "business_law",
-      "n_schools": 2530,
-      "points_per_entry": 5.22
+      "n_schools": 2628,
+      "points_per_entry": 5.25
      }
     ]
    }
@@ -10992,38 +10992,38 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1483585,
+      "entries": 1513792,
       "family_id": "languages_literature",
-      "n_schools": 3643,
-      "points_per_entry": 4.83
+      "n_schools": 3800,
+      "points_per_entry": 4.87
      },
      {
       "shown": true,
-      "entries": 372800,
+      "entries": 393270,
       "family_id": "arts_media_design",
-      "n_schools": 3429,
-      "points_per_entry": 4.99
+      "n_schools": 3786,
+      "points_per_entry": 5.11
      },
      {
       "shown": true,
-      "entries": 1961224,
+      "entries": 1977826,
       "family_id": "sciences_maths",
-      "n_schools": 3680,
-      "points_per_entry": 4.82
+      "n_schools": 3783,
+      "points_per_entry": 4.84
      },
      {
       "shown": true,
-      "entries": 219850,
+      "entries": 230090,
       "family_id": "technology_eng_construction",
-      "n_schools": 3192,
-      "points_per_entry": 4.5
+      "n_schools": 3459,
+      "points_per_entry": 4.63
      },
      {
       "shown": true,
-      "entries": 820243,
+      "entries": 847404,
       "family_id": "humanities_social",
-      "n_schools": 3502,
-      "points_per_entry": 4.75
+      "n_schools": 3837,
+      "points_per_entry": 4.82
      },
      {
       "shown": false,
@@ -11034,17 +11034,17 @@
      },
      {
       "shown": true,
-      "entries": 164388,
+      "entries": 168476,
       "family_id": "business_law",
-      "n_schools": 2564,
-      "points_per_entry": 4.7
+      "n_schools": 2670,
+      "points_per_entry": 4.74
      },
      {
       "shown": true,
-      "entries": 261661,
+      "entries": 269365,
       "family_id": "enterprise_applied",
-      "n_schools": 3340,
-      "points_per_entry": 4.76
+      "n_schools": 3600,
+      "points_per_entry": 4.85
      }
     ],
     "ks5": [
@@ -11366,38 +11366,38 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1483585,
+      "entries": 1513792,
       "family_id": "languages_literature",
-      "n_schools": 3643,
-      "points_per_entry": 4.83
+      "n_schools": 3800,
+      "points_per_entry": 4.87
      },
      {
       "shown": true,
-      "entries": 372800,
+      "entries": 393270,
       "family_id": "arts_media_design",
-      "n_schools": 3429,
-      "points_per_entry": 4.99
+      "n_schools": 3786,
+      "points_per_entry": 5.11
      },
      {
       "shown": true,
-      "entries": 1961224,
+      "entries": 1977826,
       "family_id": "sciences_maths",
-      "n_schools": 3680,
-      "points_per_entry": 4.82
+      "n_schools": 3783,
+      "points_per_entry": 4.84
      },
      {
       "shown": true,
-      "entries": 219850,
+      "entries": 230090,
       "family_id": "technology_eng_construction",
-      "n_schools": 3192,
-      "points_per_entry": 4.5
+      "n_schools": 3459,
+      "points_per_entry": 4.63
      },
      {
       "shown": true,
-      "entries": 820243,
+      "entries": 847404,
       "family_id": "humanities_social",
-      "n_schools": 3502,
-      "points_per_entry": 4.75
+      "n_schools": 3837,
+      "points_per_entry": 4.82
      },
      {
       "shown": false,
@@ -11408,17 +11408,17 @@
      },
      {
       "shown": true,
-      "entries": 164388,
+      "entries": 168476,
       "family_id": "business_law",
-      "n_schools": 2564,
-      "points_per_entry": 4.7
+      "n_schools": 2670,
+      "points_per_entry": 4.74
      },
      {
       "shown": true,
-      "entries": 261661,
+      "entries": 269365,
       "family_id": "enterprise_applied",
-      "n_schools": 3340,
-      "points_per_entry": 4.76
+      "n_schools": 3600,
+      "points_per_entry": 4.85
      }
     ]
    }
@@ -11557,52 +11557,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1537730,
+      "entries": 1563370,
       "family_id": "languages_literature",
-      "n_schools": 3680,
+      "n_schools": 3823,
+      "points_per_entry": 4.88
+     },
+     {
+      "shown": true,
+      "entries": 388331,
+      "family_id": "arts_media_design",
+      "n_schools": 3808,
+      "points_per_entry": 5.11
+     },
+     {
+      "shown": true,
+      "entries": 2041824,
+      "family_id": "sciences_maths",
+      "n_schools": 3822,
       "points_per_entry": 4.85
      },
      {
       "shown": true,
-      "entries": 367105,
-      "family_id": "arts_media_design",
-      "n_schools": 3448,
-      "points_per_entry": 4.99
-     },
-     {
-      "shown": true,
-      "entries": 2025947,
-      "family_id": "sciences_maths",
-      "n_schools": 3723,
+      "entries": 866849,
+      "family_id": "humanities_social",
+      "n_schools": 3875,
       "points_per_entry": 4.84
      },
      {
       "shown": true,
-      "entries": 839669,
-      "family_id": "humanities_social",
-      "n_schools": 3531,
-      "points_per_entry": 4.77
-     },
-     {
-      "shown": true,
-      "entries": 223890,
+      "entries": 234670,
       "family_id": "technology_eng_construction",
-      "n_schools": 3225,
-      "points_per_entry": 4.66
+      "n_schools": 3489,
+      "points_per_entry": 4.8
      },
      {
       "shown": true,
-      "entries": 170824,
+      "entries": 175266,
       "family_id": "business_law",
-      "n_schools": 2579,
-      "points_per_entry": 4.7
+      "n_schools": 2694,
+      "points_per_entry": 4.74
      },
      {
       "shown": true,
-      "entries": 264840,
+      "entries": 273368,
       "family_id": "enterprise_applied",
-      "n_schools": 3367,
-      "points_per_entry": 4.76
+      "n_schools": 3634,
+      "points_per_entry": 4.85
      },
      {
       "shown": false,
@@ -11931,52 +11931,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 1537730,
+      "entries": 1563370,
       "family_id": "languages_literature",
-      "n_schools": 3680,
+      "n_schools": 3823,
+      "points_per_entry": 4.88
+     },
+     {
+      "shown": true,
+      "entries": 388331,
+      "family_id": "arts_media_design",
+      "n_schools": 3808,
+      "points_per_entry": 5.11
+     },
+     {
+      "shown": true,
+      "entries": 2041824,
+      "family_id": "sciences_maths",
+      "n_schools": 3822,
       "points_per_entry": 4.85
      },
      {
       "shown": true,
-      "entries": 367105,
-      "family_id": "arts_media_design",
-      "n_schools": 3448,
-      "points_per_entry": 4.99
-     },
-     {
-      "shown": true,
-      "entries": 2025947,
-      "family_id": "sciences_maths",
-      "n_schools": 3723,
+      "entries": 866849,
+      "family_id": "humanities_social",
+      "n_schools": 3875,
       "points_per_entry": 4.84
      },
      {
       "shown": true,
-      "entries": 839669,
-      "family_id": "humanities_social",
-      "n_schools": 3531,
-      "points_per_entry": 4.77
-     },
-     {
-      "shown": true,
-      "entries": 223890,
+      "entries": 234670,
       "family_id": "technology_eng_construction",
-      "n_schools": 3225,
-      "points_per_entry": 4.66
+      "n_schools": 3489,
+      "points_per_entry": 4.8
      },
      {
       "shown": true,
-      "entries": 170824,
+      "entries": 175266,
       "family_id": "business_law",
-      "n_schools": 2579,
-      "points_per_entry": 4.7
+      "n_schools": 2694,
+      "points_per_entry": 4.74
      },
      {
       "shown": true,
-      "entries": 264840,
+      "entries": 273368,
       "family_id": "enterprise_applied",
-      "n_schools": 3367,
-      "points_per_entry": 4.76
+      "n_schools": 3634,
+      "points_per_entry": 4.85
      },
      {
       "shown": false,
@@ -12122,52 +12122,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 359776,
+      "entries": 380047,
       "family_id": "arts_media_design",
-      "n_schools": 3447,
-      "points_per_entry": 5.01
+      "n_schools": 3799,
+      "points_per_entry": 5.14
      },
      {
       "shown": true,
-      "entries": 1524971,
+      "entries": 1544057,
       "family_id": "languages_literature",
-      "n_schools": 3695,
-      "points_per_entry": 4.89
+      "n_schools": 3824,
+      "points_per_entry": 4.91
      },
      {
       "shown": true,
-      "entries": 218259,
+      "entries": 228683,
       "family_id": "technology_eng_construction",
-      "n_schools": 3247,
-      "points_per_entry": 4.73
+      "n_schools": 3514,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 820101,
+      "entries": 845435,
       "family_id": "humanities_social",
-      "n_schools": 3540,
-      "points_per_entry": 4.79
-     },
-     {
-      "shown": true,
-      "entries": 1999317,
-      "family_id": "sciences_maths",
-      "n_schools": 3744,
+      "n_schools": 3874,
       "points_per_entry": 4.85
      },
      {
       "shown": true,
-      "entries": 168146,
-      "family_id": "business_law",
-      "n_schools": 2597,
-      "points_per_entry": 4.66
+      "entries": 2011231,
+      "family_id": "sciences_maths",
+      "n_schools": 3832,
+      "points_per_entry": 4.86
      },
      {
       "shown": true,
-      "entries": 270339,
+      "entries": 173012,
+      "family_id": "business_law",
+      "n_schools": 2721,
+      "points_per_entry": 4.71
+     },
+     {
+      "shown": true,
+      "entries": 279494,
       "family_id": "enterprise_applied",
-      "n_schools": 3387,
-      "points_per_entry": 4.81
+      "n_schools": 3668,
+      "points_per_entry": 4.91
      },
      {
       "shown": false,
@@ -12496,52 +12496,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 359776,
+      "entries": 380047,
       "family_id": "arts_media_design",
-      "n_schools": 3447,
-      "points_per_entry": 5.01
+      "n_schools": 3799,
+      "points_per_entry": 5.14
      },
      {
       "shown": true,
-      "entries": 1524971,
+      "entries": 1544057,
       "family_id": "languages_literature",
-      "n_schools": 3695,
-      "points_per_entry": 4.89
+      "n_schools": 3824,
+      "points_per_entry": 4.91
      },
      {
       "shown": true,
-      "entries": 218259,
+      "entries": 228683,
       "family_id": "technology_eng_construction",
-      "n_schools": 3247,
-      "points_per_entry": 4.73
+      "n_schools": 3514,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 820101,
+      "entries": 845435,
       "family_id": "humanities_social",
-      "n_schools": 3540,
-      "points_per_entry": 4.79
-     },
-     {
-      "shown": true,
-      "entries": 1999317,
-      "family_id": "sciences_maths",
-      "n_schools": 3744,
+      "n_schools": 3874,
       "points_per_entry": 4.85
      },
      {
       "shown": true,
-      "entries": 168146,
-      "family_id": "business_law",
-      "n_schools": 2597,
-      "points_per_entry": 4.66
+      "entries": 2011231,
+      "family_id": "sciences_maths",
+      "n_schools": 3832,
+      "points_per_entry": 4.86
      },
      {
       "shown": true,
-      "entries": 270339,
+      "entries": 173012,
+      "family_id": "business_law",
+      "n_schools": 2721,
+      "points_per_entry": 4.71
+     },
+     {
+      "shown": true,
+      "entries": 279494,
       "family_id": "enterprise_applied",
-      "n_schools": 3387,
-      "points_per_entry": 4.81
+      "n_schools": 3668,
+      "points_per_entry": 4.91
      },
      {
       "shown": false,
@@ -12687,52 +12687,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 358748,
+      "entries": 378074,
       "family_id": "arts_media_design",
-      "n_schools": 3476,
-      "points_per_entry": 5.01
+      "n_schools": 3817,
+      "points_per_entry": 5.13
      },
      {
       "shown": true,
-      "entries": 1528939,
+      "entries": 1541952,
       "family_id": "languages_literature",
-      "n_schools": 3702,
-      "points_per_entry": 4.91
+      "n_schools": 3793,
+      "points_per_entry": 4.92
      },
      {
       "shown": true,
-      "entries": 820768,
+      "entries": 845493,
       "family_id": "humanities_social",
-      "n_schools": 3541,
-      "points_per_entry": 4.81
+      "n_schools": 3865,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 210540,
+      "entries": 220653,
       "family_id": "technology_eng_construction",
-      "n_schools": 3232,
-      "points_per_entry": 4.75
+      "n_schools": 3486,
+      "points_per_entry": 4.9
      },
      {
       "shown": true,
-      "entries": 2020305,
+      "entries": 2030799,
       "family_id": "sciences_maths",
-      "n_schools": 3753,
-      "points_per_entry": 4.87
+      "n_schools": 3820,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 174147,
+      "entries": 179183,
       "family_id": "business_law",
-      "n_schools": 2598,
-      "points_per_entry": 4.63
+      "n_schools": 2723,
+      "points_per_entry": 4.68
      },
      {
       "shown": true,
-      "entries": 275040,
+      "entries": 284556,
       "family_id": "enterprise_applied",
-      "n_schools": 3402,
-      "points_per_entry": 4.82
+      "n_schools": 3683,
+      "points_per_entry": 4.93
      },
      {
       "shown": false,
@@ -12947,52 +12947,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 358748,
+      "entries": 378074,
       "family_id": "arts_media_design",
-      "n_schools": 3476,
-      "points_per_entry": 5.01
+      "n_schools": 3817,
+      "points_per_entry": 5.13
      },
      {
       "shown": true,
-      "entries": 1528939,
+      "entries": 1541952,
       "family_id": "languages_literature",
-      "n_schools": 3702,
-      "points_per_entry": 4.91
+      "n_schools": 3793,
+      "points_per_entry": 4.92
      },
      {
       "shown": true,
-      "entries": 820768,
+      "entries": 845493,
       "family_id": "humanities_social",
-      "n_schools": 3541,
-      "points_per_entry": 4.81
+      "n_schools": 3865,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 210540,
+      "entries": 220653,
       "family_id": "technology_eng_construction",
-      "n_schools": 3232,
-      "points_per_entry": 4.75
+      "n_schools": 3486,
+      "points_per_entry": 4.9
      },
      {
       "shown": true,
-      "entries": 2020305,
+      "entries": 2030799,
       "family_id": "sciences_maths",
-      "n_schools": 3753,
-      "points_per_entry": 4.87
+      "n_schools": 3820,
+      "points_per_entry": 4.88
      },
      {
       "shown": true,
-      "entries": 174147,
+      "entries": 179183,
       "family_id": "business_law",
-      "n_schools": 2598,
-      "points_per_entry": 4.63
+      "n_schools": 2723,
+      "points_per_entry": 4.68
      },
      {
       "shown": true,
-      "entries": 275040,
+      "entries": 284556,
       "family_id": "enterprise_applied",
-      "n_schools": 3402,
-      "points_per_entry": 4.82
+      "n_schools": 3683,
+      "points_per_entry": 4.93
      },
      {
       "shown": false,
@@ -20178,58 +20178,58 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 11018,
+      "entries": 26902,
       "family_id": "humanities_social",
-      "n_schools": 203,
-      "points_per_entry": 6.52
+      "n_schools": 397,
+      "points_per_entry": 6.88
      },
      {
       "shown": true,
-      "entries": 5480,
+      "entries": 16096,
       "family_id": "arts_media_design",
-      "n_schools": 131,
-      "points_per_entry": 6.84
+      "n_schools": 339,
+      "points_per_entry": 7.2
      },
      {
       "shown": true,
-      "entries": 23629,
+      "entries": 39240,
       "family_id": "languages_literature",
-      "n_schools": 249,
-      "points_per_entry": 6.22
+      "n_schools": 339,
+      "points_per_entry": 6.5
      },
      {
       "shown": true,
-      "entries": 2713,
+      "entries": 7439,
       "family_id": "technology_eng_construction",
-      "n_schools": 98,
-      "points_per_entry": 6.43
+      "n_schools": 236,
+      "points_per_entry": 6.81
      },
      {
       "shown": true,
-      "entries": 26775,
+      "entries": 35799,
       "family_id": "sciences_maths",
-      "n_schools": 249,
-      "points_per_entry": 6.17
+      "n_schools": 307,
+      "points_per_entry": 6.31
      },
      {
       "shown": true,
-      "entries": 2894,
+      "entries": 6749,
       "family_id": "enterprise_applied",
-      "n_schools": 117,
-      "points_per_entry": 6.19
+      "n_schools": 260,
+      "points_per_entry": 6.63
      },
      {
       "shown": true,
-      "entries": 1652,
+      "entries": 3708,
       "family_id": "business_law",
-      "n_schools": 62,
-      "points_per_entry": 5.92
+      "n_schools": 119,
+      "points_per_entry": 6.18
      },
      {
       "shown": false,
-      "entries": 131,
+      "entries": 142,
       "family_id": "health_care",
-      "n_schools": 4,
+      "n_schools": 5,
       "points_per_entry": null
      }
     ],
@@ -20552,58 +20552,58 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 11018,
+      "entries": 26902,
       "family_id": "humanities_social",
-      "n_schools": 203,
-      "points_per_entry": 6.52
+      "n_schools": 397,
+      "points_per_entry": 6.88
      },
      {
       "shown": true,
-      "entries": 5480,
+      "entries": 16096,
       "family_id": "arts_media_design",
-      "n_schools": 131,
-      "points_per_entry": 6.84
+      "n_schools": 339,
+      "points_per_entry": 7.2
      },
      {
       "shown": true,
-      "entries": 23629,
+      "entries": 39240,
       "family_id": "languages_literature",
-      "n_schools": 249,
-      "points_per_entry": 6.22
+      "n_schools": 339,
+      "points_per_entry": 6.5
      },
      {
       "shown": true,
-      "entries": 2713,
+      "entries": 7439,
       "family_id": "technology_eng_construction",
-      "n_schools": 98,
-      "points_per_entry": 6.43
+      "n_schools": 236,
+      "points_per_entry": 6.81
      },
      {
       "shown": true,
-      "entries": 26775,
+      "entries": 35799,
       "family_id": "sciences_maths",
-      "n_schools": 249,
-      "points_per_entry": 6.17
+      "n_schools": 307,
+      "points_per_entry": 6.31
      },
      {
       "shown": true,
-      "entries": 2894,
+      "entries": 6749,
       "family_id": "enterprise_applied",
-      "n_schools": 117,
-      "points_per_entry": 6.19
+      "n_schools": 260,
+      "points_per_entry": 6.63
      },
      {
       "shown": true,
-      "entries": 1652,
+      "entries": 3708,
       "family_id": "business_law",
-      "n_schools": 62,
-      "points_per_entry": 5.92
+      "n_schools": 119,
+      "points_per_entry": 6.18
      },
      {
       "shown": false,
-      "entries": 131,
+      "entries": 142,
       "family_id": "health_care",
-      "n_schools": 4,
+      "n_schools": 5,
       "points_per_entry": null
      }
     ]
@@ -20743,52 +20743,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 24542,
+      "entries": 40730,
       "family_id": "languages_literature",
-      "n_schools": 249,
-      "points_per_entry": 6.03
+      "n_schools": 340,
+      "points_per_entry": 6.31
      },
      {
       "shown": true,
-      "entries": 5719,
+      "entries": 17196,
       "family_id": "arts_media_design",
-      "n_schools": 132,
-      "points_per_entry": 6.44
+      "n_schools": 342,
+      "points_per_entry": 6.85
      },
      {
       "shown": true,
-      "entries": 28313,
+      "entries": 38307,
       "family_id": "sciences_maths",
-      "n_schools": 255,
-      "points_per_entry": 5.92
+      "n_schools": 318,
+      "points_per_entry": 6.08
      },
      {
       "shown": true,
-      "entries": 3085,
+      "entries": 8639,
       "family_id": "technology_eng_construction",
-      "n_schools": 109,
-      "points_per_entry": 5.78
+      "n_schools": 262,
+      "points_per_entry": 6.37
      },
      {
       "shown": true,
-      "entries": 11526,
+      "entries": 27513,
       "family_id": "humanities_social",
-      "n_schools": 200,
-      "points_per_entry": 6.2
+      "n_schools": 394,
+      "points_per_entry": 6.61
      },
      {
       "shown": true,
-      "entries": 2958,
+      "entries": 7027,
       "family_id": "enterprise_applied",
-      "n_schools": 118,
-      "points_per_entry": 5.71
+      "n_schools": 261,
+      "points_per_entry": 6.12
      },
      {
       "shown": true,
-      "entries": 1957,
+      "entries": 4347,
       "family_id": "business_law",
-      "n_schools": 71,
-      "points_per_entry": 5.39
+      "n_schools": 135,
+      "points_per_entry": 5.74
      },
      {
       "shown": false,
@@ -21117,52 +21117,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 24542,
+      "entries": 40730,
       "family_id": "languages_literature",
-      "n_schools": 249,
-      "points_per_entry": 6.03
+      "n_schools": 340,
+      "points_per_entry": 6.31
      },
      {
       "shown": true,
-      "entries": 5719,
+      "entries": 17196,
       "family_id": "arts_media_design",
-      "n_schools": 132,
-      "points_per_entry": 6.44
+      "n_schools": 342,
+      "points_per_entry": 6.85
      },
      {
       "shown": true,
-      "entries": 28313,
+      "entries": 38307,
       "family_id": "sciences_maths",
-      "n_schools": 255,
-      "points_per_entry": 5.92
+      "n_schools": 318,
+      "points_per_entry": 6.08
      },
      {
       "shown": true,
-      "entries": 3085,
+      "entries": 8639,
       "family_id": "technology_eng_construction",
-      "n_schools": 109,
-      "points_per_entry": 5.78
+      "n_schools": 262,
+      "points_per_entry": 6.37
      },
      {
       "shown": true,
-      "entries": 11526,
+      "entries": 27513,
       "family_id": "humanities_social",
-      "n_schools": 200,
-      "points_per_entry": 6.2
+      "n_schools": 394,
+      "points_per_entry": 6.61
      },
      {
       "shown": true,
-      "entries": 2958,
+      "entries": 7027,
       "family_id": "enterprise_applied",
-      "n_schools": 118,
-      "points_per_entry": 5.71
+      "n_schools": 261,
+      "points_per_entry": 6.12
      },
      {
       "shown": true,
-      "entries": 1957,
+      "entries": 4347,
       "family_id": "business_law",
-      "n_schools": 71,
-      "points_per_entry": 5.39
+      "n_schools": 135,
+      "points_per_entry": 5.74
      },
      {
       "shown": false,
@@ -21308,52 +21308,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 24928,
+      "entries": 37803,
       "family_id": "languages_literature",
-      "n_schools": 255,
-      "points_per_entry": 5.99
+      "n_schools": 331,
+      "points_per_entry": 6.25
      },
      {
       "shown": true,
-      "entries": 5868,
+      "entries": 17821,
       "family_id": "arts_media_design",
-      "n_schools": 133,
-      "points_per_entry": 6.5
+      "n_schools": 346,
+      "points_per_entry": 6.87
      },
      {
       "shown": true,
-      "entries": 30397,
+      "entries": 38356,
       "family_id": "sciences_maths",
-      "n_schools": 261,
-      "points_per_entry": 6.02
-     },
-     {
-      "shown": true,
-      "entries": 12080,
-      "family_id": "humanities_social",
-      "n_schools": 203,
-      "points_per_entry": 6.26
-     },
-     {
-      "shown": true,
-      "entries": 3150,
-      "family_id": "technology_eng_construction",
-      "n_schools": 103,
+      "n_schools": 317,
       "points_per_entry": 6.14
      },
      {
       "shown": true,
-      "entries": 3095,
-      "family_id": "enterprise_applied",
-      "n_schools": 117,
-      "points_per_entry": 5.75
+      "entries": 28104,
+      "family_id": "humanities_social",
+      "n_schools": 400,
+      "points_per_entry": 6.64
      },
      {
       "shown": true,
-      "entries": 2144,
+      "entries": 9111,
+      "family_id": "technology_eng_construction",
+      "n_schools": 254,
+      "points_per_entry": 6.66
+     },
+     {
+      "shown": true,
+      "entries": 7647,
+      "family_id": "enterprise_applied",
+      "n_schools": 264,
+      "points_per_entry": 6.16
+     },
+     {
+      "shown": true,
+      "entries": 4667,
       "family_id": "business_law",
-      "n_schools": 70,
-      "points_per_entry": 5.52
+      "n_schools": 138,
+      "points_per_entry": 5.79
      },
      {
       "shown": false,
@@ -21682,52 +21682,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 24928,
+      "entries": 37803,
       "family_id": "languages_literature",
-      "n_schools": 255,
-      "points_per_entry": 5.99
+      "n_schools": 331,
+      "points_per_entry": 6.25
      },
      {
       "shown": true,
-      "entries": 5868,
+      "entries": 17821,
       "family_id": "arts_media_design",
-      "n_schools": 133,
-      "points_per_entry": 6.5
+      "n_schools": 346,
+      "points_per_entry": 6.87
      },
      {
       "shown": true,
-      "entries": 30397,
+      "entries": 38356,
       "family_id": "sciences_maths",
-      "n_schools": 261,
-      "points_per_entry": 6.02
-     },
-     {
-      "shown": true,
-      "entries": 12080,
-      "family_id": "humanities_social",
-      "n_schools": 203,
-      "points_per_entry": 6.26
-     },
-     {
-      "shown": true,
-      "entries": 3150,
-      "family_id": "technology_eng_construction",
-      "n_schools": 103,
+      "n_schools": 317,
       "points_per_entry": 6.14
      },
      {
       "shown": true,
-      "entries": 3095,
-      "family_id": "enterprise_applied",
-      "n_schools": 117,
-      "points_per_entry": 5.75
+      "entries": 28104,
+      "family_id": "humanities_social",
+      "n_schools": 400,
+      "points_per_entry": 6.64
      },
      {
       "shown": true,
-      "entries": 2144,
+      "entries": 9111,
+      "family_id": "technology_eng_construction",
+      "n_schools": 254,
+      "points_per_entry": 6.66
+     },
+     {
+      "shown": true,
+      "entries": 7647,
+      "family_id": "enterprise_applied",
+      "n_schools": 264,
+      "points_per_entry": 6.16
+     },
+     {
+      "shown": true,
+      "entries": 4667,
       "family_id": "business_law",
-      "n_schools": 70,
-      "points_per_entry": 5.52
+      "n_schools": 138,
+      "points_per_entry": 5.79
      },
      {
       "shown": false,
@@ -21873,52 +21873,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5637,
+      "entries": 17066,
       "family_id": "arts_media_design",
-      "n_schools": 129,
-      "points_per_entry": 6.52
+      "n_schools": 335,
+      "points_per_entry": 6.91
      },
      {
       "shown": true,
-      "entries": 23365,
+      "entries": 32821,
       "family_id": "languages_literature",
-      "n_schools": 246,
-      "points_per_entry": 6.03
+      "n_schools": 314,
+      "points_per_entry": 6.23
      },
      {
       "shown": true,
-      "entries": 3076,
+      "entries": 8849,
       "family_id": "technology_eng_construction",
-      "n_schools": 106,
+      "n_schools": 256,
+      "points_per_entry": 6.72
+     },
+     {
+      "shown": true,
+      "entries": 26199,
+      "family_id": "humanities_social",
+      "n_schools": 386,
+      "points_per_entry": 6.7
+     },
+     {
+      "shown": true,
+      "entries": 35432,
+      "family_id": "sciences_maths",
+      "n_schools": 304,
       "points_per_entry": 6.04
      },
      {
       "shown": true,
-      "entries": 11028,
-      "family_id": "humanities_social",
-      "n_schools": 197,
-      "points_per_entry": 6.28
-     },
-     {
-      "shown": true,
-      "entries": 28697,
-      "family_id": "sciences_maths",
-      "n_schools": 252,
-      "points_per_entry": 5.98
-     },
-     {
-      "shown": true,
-      "entries": 3139,
+      "entries": 7928,
       "family_id": "enterprise_applied",
-      "n_schools": 116,
-      "points_per_entry": 5.84
+      "n_schools": 272,
+      "points_per_entry": 6.25
      },
      {
       "shown": true,
-      "entries": 1944,
+      "entries": 4633,
       "family_id": "business_law",
-      "n_schools": 68,
-      "points_per_entry": 5.52
+      "n_schools": 138,
+      "points_per_entry": 5.82
      },
      {
       "shown": false,
@@ -22247,52 +22247,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5637,
+      "entries": 17066,
       "family_id": "arts_media_design",
-      "n_schools": 129,
-      "points_per_entry": 6.52
+      "n_schools": 335,
+      "points_per_entry": 6.91
      },
      {
       "shown": true,
-      "entries": 23365,
+      "entries": 32821,
       "family_id": "languages_literature",
-      "n_schools": 246,
-      "points_per_entry": 6.03
+      "n_schools": 314,
+      "points_per_entry": 6.23
      },
      {
       "shown": true,
-      "entries": 3076,
+      "entries": 8849,
       "family_id": "technology_eng_construction",
-      "n_schools": 106,
+      "n_schools": 256,
+      "points_per_entry": 6.72
+     },
+     {
+      "shown": true,
+      "entries": 26199,
+      "family_id": "humanities_social",
+      "n_schools": 386,
+      "points_per_entry": 6.7
+     },
+     {
+      "shown": true,
+      "entries": 35432,
+      "family_id": "sciences_maths",
+      "n_schools": 304,
       "points_per_entry": 6.04
      },
      {
       "shown": true,
-      "entries": 11028,
-      "family_id": "humanities_social",
-      "n_schools": 197,
-      "points_per_entry": 6.28
-     },
-     {
-      "shown": true,
-      "entries": 28697,
-      "family_id": "sciences_maths",
-      "n_schools": 252,
-      "points_per_entry": 5.98
-     },
-     {
-      "shown": true,
-      "entries": 3139,
+      "entries": 7928,
       "family_id": "enterprise_applied",
-      "n_schools": 116,
-      "points_per_entry": 5.84
+      "n_schools": 272,
+      "points_per_entry": 6.25
      },
      {
       "shown": true,
-      "entries": 1944,
+      "entries": 4633,
       "family_id": "business_law",
-      "n_schools": 68,
-      "points_per_entry": 5.52
+      "n_schools": 138,
+      "points_per_entry": 5.82
      },
      {
       "shown": false,
@@ -22438,52 +22438,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5323,
+      "entries": 15957,
       "family_id": "arts_media_design",
-      "n_schools": 128,
-      "points_per_entry": 6.58
+      "n_schools": 323,
+      "points_per_entry": 6.95
      },
      {
       "shown": true,
-      "entries": 22986,
+      "entries": 28106,
       "family_id": "languages_literature",
-      "n_schools": 242,
-      "points_per_entry": 5.98
+      "n_schools": 288,
+      "points_per_entry": 6.02
      },
      {
       "shown": true,
-      "entries": 10814,
+      "entries": 25525,
       "family_id": "humanities_social",
-      "n_schools": 193,
-      "points_per_entry": 6.24
+      "n_schools": 377,
+      "points_per_entry": 6.68
      },
      {
       "shown": true,
-      "entries": 2834,
+      "entries": 8486,
       "family_id": "technology_eng_construction",
-      "n_schools": 95,
-      "points_per_entry": 6.2
+      "n_schools": 239,
+      "points_per_entry": 6.82
      },
      {
       "shown": true,
-      "entries": 29202,
+      "entries": 35847,
       "family_id": "sciences_maths",
-      "n_schools": 241,
-      "points_per_entry": 5.93
+      "n_schools": 287,
+      "points_per_entry": 6.05
      },
      {
       "shown": true,
-      "entries": 3346,
+      "entries": 8367,
       "family_id": "enterprise_applied",
-      "n_schools": 124,
-      "points_per_entry": 5.85
+      "n_schools": 278,
+      "points_per_entry": 6.27
      },
      {
       "shown": true,
-      "entries": 2084,
+      "entries": 5061,
       "family_id": "business_law",
-      "n_schools": 67,
-      "points_per_entry": 5.45
+      "n_schools": 142,
+      "points_per_entry": 5.74
      },
      {
       "shown": false,
@@ -22698,52 +22698,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5323,
+      "entries": 15957,
       "family_id": "arts_media_design",
-      "n_schools": 128,
-      "points_per_entry": 6.58
+      "n_schools": 323,
+      "points_per_entry": 6.95
      },
      {
       "shown": true,
-      "entries": 22986,
+      "entries": 28106,
       "family_id": "languages_literature",
-      "n_schools": 242,
-      "points_per_entry": 5.98
+      "n_schools": 288,
+      "points_per_entry": 6.02
      },
      {
       "shown": true,
-      "entries": 10814,
+      "entries": 25525,
       "family_id": "humanities_social",
-      "n_schools": 193,
-      "points_per_entry": 6.24
+      "n_schools": 377,
+      "points_per_entry": 6.68
      },
      {
       "shown": true,
-      "entries": 2834,
+      "entries": 8486,
       "family_id": "technology_eng_construction",
-      "n_schools": 95,
-      "points_per_entry": 6.2
+      "n_schools": 239,
+      "points_per_entry": 6.82
      },
      {
       "shown": true,
-      "entries": 29202,
+      "entries": 35847,
       "family_id": "sciences_maths",
-      "n_schools": 241,
-      "points_per_entry": 5.93
+      "n_schools": 287,
+      "points_per_entry": 6.05
      },
      {
       "shown": true,
-      "entries": 3346,
+      "entries": 8367,
       "family_id": "enterprise_applied",
-      "n_schools": 124,
-      "points_per_entry": 5.85
+      "n_schools": 278,
+      "points_per_entry": 6.27
      },
      {
       "shown": true,
-      "entries": 2084,
+      "entries": 5061,
       "family_id": "business_law",
-      "n_schools": 67,
-      "points_per_entry": 5.45
+      "n_schools": 142,
+      "points_per_entry": 5.74
      },
      {
       "shown": false,
@@ -23447,58 +23447,58 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 11018,
+      "entries": 26902,
       "family_id": "humanities_social",
-      "n_schools": 203,
-      "points_per_entry": 6.52
+      "n_schools": 397,
+      "points_per_entry": 6.88
      },
      {
       "shown": true,
-      "entries": 5480,
+      "entries": 16096,
       "family_id": "arts_media_design",
-      "n_schools": 131,
-      "points_per_entry": 6.84
+      "n_schools": 339,
+      "points_per_entry": 7.2
      },
      {
       "shown": true,
-      "entries": 23629,
+      "entries": 39240,
       "family_id": "languages_literature",
-      "n_schools": 249,
-      "points_per_entry": 6.22
+      "n_schools": 339,
+      "points_per_entry": 6.5
      },
      {
       "shown": true,
-      "entries": 2713,
+      "entries": 7439,
       "family_id": "technology_eng_construction",
-      "n_schools": 98,
-      "points_per_entry": 6.43
+      "n_schools": 236,
+      "points_per_entry": 6.81
      },
      {
       "shown": true,
-      "entries": 26775,
+      "entries": 35799,
       "family_id": "sciences_maths",
-      "n_schools": 249,
-      "points_per_entry": 6.17
+      "n_schools": 307,
+      "points_per_entry": 6.31
      },
      {
       "shown": true,
-      "entries": 2894,
+      "entries": 6749,
       "family_id": "enterprise_applied",
-      "n_schools": 117,
-      "points_per_entry": 6.19
+      "n_schools": 260,
+      "points_per_entry": 6.63
      },
      {
       "shown": true,
-      "entries": 1652,
+      "entries": 3708,
       "family_id": "business_law",
-      "n_schools": 62,
-      "points_per_entry": 5.92
+      "n_schools": 119,
+      "points_per_entry": 6.18
      },
      {
       "shown": false,
-      "entries": 131,
+      "entries": 142,
       "family_id": "health_care",
-      "n_schools": 4,
+      "n_schools": 5,
       "points_per_entry": null
      }
     ],
@@ -23821,58 +23821,58 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 11018,
+      "entries": 26902,
       "family_id": "humanities_social",
-      "n_schools": 203,
-      "points_per_entry": 6.52
+      "n_schools": 397,
+      "points_per_entry": 6.88
      },
      {
       "shown": true,
-      "entries": 5480,
+      "entries": 16096,
       "family_id": "arts_media_design",
-      "n_schools": 131,
-      "points_per_entry": 6.84
+      "n_schools": 339,
+      "points_per_entry": 7.2
      },
      {
       "shown": true,
-      "entries": 23629,
+      "entries": 39240,
       "family_id": "languages_literature",
-      "n_schools": 249,
-      "points_per_entry": 6.22
+      "n_schools": 339,
+      "points_per_entry": 6.5
      },
      {
       "shown": true,
-      "entries": 2713,
+      "entries": 7439,
       "family_id": "technology_eng_construction",
-      "n_schools": 98,
-      "points_per_entry": 6.43
+      "n_schools": 236,
+      "points_per_entry": 6.81
      },
      {
       "shown": true,
-      "entries": 26775,
+      "entries": 35799,
       "family_id": "sciences_maths",
-      "n_schools": 249,
-      "points_per_entry": 6.17
+      "n_schools": 307,
+      "points_per_entry": 6.31
      },
      {
       "shown": true,
-      "entries": 2894,
+      "entries": 6749,
       "family_id": "enterprise_applied",
-      "n_schools": 117,
-      "points_per_entry": 6.19
+      "n_schools": 260,
+      "points_per_entry": 6.63
      },
      {
       "shown": true,
-      "entries": 1652,
+      "entries": 3708,
       "family_id": "business_law",
-      "n_schools": 62,
-      "points_per_entry": 5.92
+      "n_schools": 119,
+      "points_per_entry": 6.18
      },
      {
       "shown": false,
-      "entries": 131,
+      "entries": 142,
       "family_id": "health_care",
-      "n_schools": 4,
+      "n_schools": 5,
       "points_per_entry": null
      }
     ]
@@ -24012,52 +24012,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 24542,
+      "entries": 40730,
       "family_id": "languages_literature",
-      "n_schools": 249,
-      "points_per_entry": 6.03
+      "n_schools": 340,
+      "points_per_entry": 6.31
      },
      {
       "shown": true,
-      "entries": 5719,
+      "entries": 17196,
       "family_id": "arts_media_design",
-      "n_schools": 132,
-      "points_per_entry": 6.44
+      "n_schools": 342,
+      "points_per_entry": 6.85
      },
      {
       "shown": true,
-      "entries": 28313,
+      "entries": 38307,
       "family_id": "sciences_maths",
-      "n_schools": 255,
-      "points_per_entry": 5.92
+      "n_schools": 318,
+      "points_per_entry": 6.08
      },
      {
       "shown": true,
-      "entries": 3085,
+      "entries": 8639,
       "family_id": "technology_eng_construction",
-      "n_schools": 109,
-      "points_per_entry": 5.78
+      "n_schools": 262,
+      "points_per_entry": 6.37
      },
      {
       "shown": true,
-      "entries": 11526,
+      "entries": 27513,
       "family_id": "humanities_social",
-      "n_schools": 200,
-      "points_per_entry": 6.2
+      "n_schools": 394,
+      "points_per_entry": 6.61
      },
      {
       "shown": true,
-      "entries": 2958,
+      "entries": 7027,
       "family_id": "enterprise_applied",
-      "n_schools": 118,
-      "points_per_entry": 5.71
+      "n_schools": 261,
+      "points_per_entry": 6.12
      },
      {
       "shown": true,
-      "entries": 1957,
+      "entries": 4347,
       "family_id": "business_law",
-      "n_schools": 71,
-      "points_per_entry": 5.39
+      "n_schools": 135,
+      "points_per_entry": 5.74
      },
      {
       "shown": false,
@@ -24386,52 +24386,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 24542,
+      "entries": 40730,
       "family_id": "languages_literature",
-      "n_schools": 249,
-      "points_per_entry": 6.03
+      "n_schools": 340,
+      "points_per_entry": 6.31
      },
      {
       "shown": true,
-      "entries": 5719,
+      "entries": 17196,
       "family_id": "arts_media_design",
-      "n_schools": 132,
-      "points_per_entry": 6.44
+      "n_schools": 342,
+      "points_per_entry": 6.85
      },
      {
       "shown": true,
-      "entries": 28313,
+      "entries": 38307,
       "family_id": "sciences_maths",
-      "n_schools": 255,
-      "points_per_entry": 5.92
+      "n_schools": 318,
+      "points_per_entry": 6.08
      },
      {
       "shown": true,
-      "entries": 3085,
+      "entries": 8639,
       "family_id": "technology_eng_construction",
-      "n_schools": 109,
-      "points_per_entry": 5.78
+      "n_schools": 262,
+      "points_per_entry": 6.37
      },
      {
       "shown": true,
-      "entries": 11526,
+      "entries": 27513,
       "family_id": "humanities_social",
-      "n_schools": 200,
-      "points_per_entry": 6.2
+      "n_schools": 394,
+      "points_per_entry": 6.61
      },
      {
       "shown": true,
-      "entries": 2958,
+      "entries": 7027,
       "family_id": "enterprise_applied",
-      "n_schools": 118,
-      "points_per_entry": 5.71
+      "n_schools": 261,
+      "points_per_entry": 6.12
      },
      {
       "shown": true,
-      "entries": 1957,
+      "entries": 4347,
       "family_id": "business_law",
-      "n_schools": 71,
-      "points_per_entry": 5.39
+      "n_schools": 135,
+      "points_per_entry": 5.74
      },
      {
       "shown": false,
@@ -24577,52 +24577,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 24928,
+      "entries": 37803,
       "family_id": "languages_literature",
-      "n_schools": 255,
-      "points_per_entry": 5.99
+      "n_schools": 331,
+      "points_per_entry": 6.25
      },
      {
       "shown": true,
-      "entries": 5868,
+      "entries": 17821,
       "family_id": "arts_media_design",
-      "n_schools": 133,
-      "points_per_entry": 6.5
+      "n_schools": 346,
+      "points_per_entry": 6.87
      },
      {
       "shown": true,
-      "entries": 30397,
+      "entries": 38356,
       "family_id": "sciences_maths",
-      "n_schools": 261,
-      "points_per_entry": 6.02
-     },
-     {
-      "shown": true,
-      "entries": 12080,
-      "family_id": "humanities_social",
-      "n_schools": 203,
-      "points_per_entry": 6.26
-     },
-     {
-      "shown": true,
-      "entries": 3150,
-      "family_id": "technology_eng_construction",
-      "n_schools": 103,
+      "n_schools": 317,
       "points_per_entry": 6.14
      },
      {
       "shown": true,
-      "entries": 3095,
-      "family_id": "enterprise_applied",
-      "n_schools": 117,
-      "points_per_entry": 5.75
+      "entries": 28104,
+      "family_id": "humanities_social",
+      "n_schools": 400,
+      "points_per_entry": 6.64
      },
      {
       "shown": true,
-      "entries": 2144,
+      "entries": 9111,
+      "family_id": "technology_eng_construction",
+      "n_schools": 254,
+      "points_per_entry": 6.66
+     },
+     {
+      "shown": true,
+      "entries": 7647,
+      "family_id": "enterprise_applied",
+      "n_schools": 264,
+      "points_per_entry": 6.16
+     },
+     {
+      "shown": true,
+      "entries": 4667,
       "family_id": "business_law",
-      "n_schools": 70,
-      "points_per_entry": 5.52
+      "n_schools": 138,
+      "points_per_entry": 5.79
      },
      {
       "shown": false,
@@ -24951,52 +24951,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 24928,
+      "entries": 37803,
       "family_id": "languages_literature",
-      "n_schools": 255,
-      "points_per_entry": 5.99
+      "n_schools": 331,
+      "points_per_entry": 6.25
      },
      {
       "shown": true,
-      "entries": 5868,
+      "entries": 17821,
       "family_id": "arts_media_design",
-      "n_schools": 133,
-      "points_per_entry": 6.5
+      "n_schools": 346,
+      "points_per_entry": 6.87
      },
      {
       "shown": true,
-      "entries": 30397,
+      "entries": 38356,
       "family_id": "sciences_maths",
-      "n_schools": 261,
-      "points_per_entry": 6.02
-     },
-     {
-      "shown": true,
-      "entries": 12080,
-      "family_id": "humanities_social",
-      "n_schools": 203,
-      "points_per_entry": 6.26
-     },
-     {
-      "shown": true,
-      "entries": 3150,
-      "family_id": "technology_eng_construction",
-      "n_schools": 103,
+      "n_schools": 317,
       "points_per_entry": 6.14
      },
      {
       "shown": true,
-      "entries": 3095,
-      "family_id": "enterprise_applied",
-      "n_schools": 117,
-      "points_per_entry": 5.75
+      "entries": 28104,
+      "family_id": "humanities_social",
+      "n_schools": 400,
+      "points_per_entry": 6.64
      },
      {
       "shown": true,
-      "entries": 2144,
+      "entries": 9111,
+      "family_id": "technology_eng_construction",
+      "n_schools": 254,
+      "points_per_entry": 6.66
+     },
+     {
+      "shown": true,
+      "entries": 7647,
+      "family_id": "enterprise_applied",
+      "n_schools": 264,
+      "points_per_entry": 6.16
+     },
+     {
+      "shown": true,
+      "entries": 4667,
       "family_id": "business_law",
-      "n_schools": 70,
-      "points_per_entry": 5.52
+      "n_schools": 138,
+      "points_per_entry": 5.79
      },
      {
       "shown": false,
@@ -25142,52 +25142,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5637,
+      "entries": 17066,
       "family_id": "arts_media_design",
-      "n_schools": 129,
-      "points_per_entry": 6.52
+      "n_schools": 335,
+      "points_per_entry": 6.91
      },
      {
       "shown": true,
-      "entries": 23365,
+      "entries": 32821,
       "family_id": "languages_literature",
-      "n_schools": 246,
-      "points_per_entry": 6.03
+      "n_schools": 314,
+      "points_per_entry": 6.23
      },
      {
       "shown": true,
-      "entries": 3076,
+      "entries": 8849,
       "family_id": "technology_eng_construction",
-      "n_schools": 106,
+      "n_schools": 256,
+      "points_per_entry": 6.72
+     },
+     {
+      "shown": true,
+      "entries": 26199,
+      "family_id": "humanities_social",
+      "n_schools": 386,
+      "points_per_entry": 6.7
+     },
+     {
+      "shown": true,
+      "entries": 35432,
+      "family_id": "sciences_maths",
+      "n_schools": 304,
       "points_per_entry": 6.04
      },
      {
       "shown": true,
-      "entries": 11028,
-      "family_id": "humanities_social",
-      "n_schools": 197,
-      "points_per_entry": 6.28
-     },
-     {
-      "shown": true,
-      "entries": 28697,
-      "family_id": "sciences_maths",
-      "n_schools": 252,
-      "points_per_entry": 5.98
-     },
-     {
-      "shown": true,
-      "entries": 3139,
+      "entries": 7928,
       "family_id": "enterprise_applied",
-      "n_schools": 116,
-      "points_per_entry": 5.84
+      "n_schools": 272,
+      "points_per_entry": 6.25
      },
      {
       "shown": true,
-      "entries": 1944,
+      "entries": 4633,
       "family_id": "business_law",
-      "n_schools": 68,
-      "points_per_entry": 5.52
+      "n_schools": 138,
+      "points_per_entry": 5.82
      },
      {
       "shown": false,
@@ -25516,52 +25516,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5637,
+      "entries": 17066,
       "family_id": "arts_media_design",
-      "n_schools": 129,
-      "points_per_entry": 6.52
+      "n_schools": 335,
+      "points_per_entry": 6.91
      },
      {
       "shown": true,
-      "entries": 23365,
+      "entries": 32821,
       "family_id": "languages_literature",
-      "n_schools": 246,
-      "points_per_entry": 6.03
+      "n_schools": 314,
+      "points_per_entry": 6.23
      },
      {
       "shown": true,
-      "entries": 3076,
+      "entries": 8849,
       "family_id": "technology_eng_construction",
-      "n_schools": 106,
+      "n_schools": 256,
+      "points_per_entry": 6.72
+     },
+     {
+      "shown": true,
+      "entries": 26199,
+      "family_id": "humanities_social",
+      "n_schools": 386,
+      "points_per_entry": 6.7
+     },
+     {
+      "shown": true,
+      "entries": 35432,
+      "family_id": "sciences_maths",
+      "n_schools": 304,
       "points_per_entry": 6.04
      },
      {
       "shown": true,
-      "entries": 11028,
-      "family_id": "humanities_social",
-      "n_schools": 197,
-      "points_per_entry": 6.28
-     },
-     {
-      "shown": true,
-      "entries": 28697,
-      "family_id": "sciences_maths",
-      "n_schools": 252,
-      "points_per_entry": 5.98
-     },
-     {
-      "shown": true,
-      "entries": 3139,
+      "entries": 7928,
       "family_id": "enterprise_applied",
-      "n_schools": 116,
-      "points_per_entry": 5.84
+      "n_schools": 272,
+      "points_per_entry": 6.25
      },
      {
       "shown": true,
-      "entries": 1944,
+      "entries": 4633,
       "family_id": "business_law",
-      "n_schools": 68,
-      "points_per_entry": 5.52
+      "n_schools": 138,
+      "points_per_entry": 5.82
      },
      {
       "shown": false,
@@ -25707,52 +25707,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5323,
+      "entries": 15957,
       "family_id": "arts_media_design",
-      "n_schools": 128,
-      "points_per_entry": 6.58
+      "n_schools": 323,
+      "points_per_entry": 6.95
      },
      {
       "shown": true,
-      "entries": 22986,
+      "entries": 28106,
       "family_id": "languages_literature",
-      "n_schools": 242,
-      "points_per_entry": 5.98
+      "n_schools": 288,
+      "points_per_entry": 6.02
      },
      {
       "shown": true,
-      "entries": 10814,
+      "entries": 25525,
       "family_id": "humanities_social",
-      "n_schools": 193,
-      "points_per_entry": 6.24
+      "n_schools": 377,
+      "points_per_entry": 6.68
      },
      {
       "shown": true,
-      "entries": 2834,
+      "entries": 8486,
       "family_id": "technology_eng_construction",
-      "n_schools": 95,
-      "points_per_entry": 6.2
+      "n_schools": 239,
+      "points_per_entry": 6.82
      },
      {
       "shown": true,
-      "entries": 29202,
+      "entries": 35847,
       "family_id": "sciences_maths",
-      "n_schools": 241,
-      "points_per_entry": 5.93
+      "n_schools": 287,
+      "points_per_entry": 6.05
      },
      {
       "shown": true,
-      "entries": 3346,
+      "entries": 8367,
       "family_id": "enterprise_applied",
-      "n_schools": 124,
-      "points_per_entry": 5.85
+      "n_schools": 278,
+      "points_per_entry": 6.27
      },
      {
       "shown": true,
-      "entries": 2084,
+      "entries": 5061,
       "family_id": "business_law",
-      "n_schools": 67,
-      "points_per_entry": 5.45
+      "n_schools": 142,
+      "points_per_entry": 5.74
      },
      {
       "shown": false,
@@ -25967,52 +25967,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 5323,
+      "entries": 15957,
       "family_id": "arts_media_design",
-      "n_schools": 128,
-      "points_per_entry": 6.58
+      "n_schools": 323,
+      "points_per_entry": 6.95
      },
      {
       "shown": true,
-      "entries": 22986,
+      "entries": 28106,
       "family_id": "languages_literature",
-      "n_schools": 242,
-      "points_per_entry": 5.98
+      "n_schools": 288,
+      "points_per_entry": 6.02
      },
      {
       "shown": true,
-      "entries": 10814,
+      "entries": 25525,
       "family_id": "humanities_social",
-      "n_schools": 193,
-      "points_per_entry": 6.24
+      "n_schools": 377,
+      "points_per_entry": 6.68
      },
      {
       "shown": true,
-      "entries": 2834,
+      "entries": 8486,
       "family_id": "technology_eng_construction",
-      "n_schools": 95,
-      "points_per_entry": 6.2
+      "n_schools": 239,
+      "points_per_entry": 6.82
      },
      {
       "shown": true,
-      "entries": 29202,
+      "entries": 35847,
       "family_id": "sciences_maths",
-      "n_schools": 241,
-      "points_per_entry": 5.93
+      "n_schools": 287,
+      "points_per_entry": 6.05
      },
      {
       "shown": true,
-      "entries": 3346,
+      "entries": 8367,
       "family_id": "enterprise_applied",
-      "n_schools": 124,
-      "points_per_entry": 5.85
+      "n_schools": 278,
+      "points_per_entry": 6.27
      },
      {
       "shown": true,
-      "entries": 2084,
+      "entries": 5061,
       "family_id": "business_law",
-      "n_schools": 67,
-      "points_per_entry": 5.45
+      "n_schools": 142,
+      "points_per_entry": 5.74
      },
      {
       "shown": false,
@@ -26716,52 +26716,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 217,
+      "entries": 489,
       "family_id": "arts_media_design",
-      "n_schools": 6,
-      "points_per_entry": 7.03
+      "n_schools": 12,
+      "points_per_entry": 6.67
      },
      {
       "shown": true,
-      "entries": 839,
-      "family_id": "sciences_maths",
-      "n_schools": 7,
-      "points_per_entry": 6.17
-     },
-     {
-      "shown": true,
-      "entries": 538,
-      "family_id": "languages_literature",
-      "n_schools": 7,
-      "points_per_entry": 6.34
-     },
-     {
-      "shown": true,
-      "entries": 275,
+      "entries": 579,
       "family_id": "humanities_social",
-      "n_schools": 6,
-      "points_per_entry": 6.5
-     },
-     {
-      "shown": false,
-      "entries": 17,
-      "family_id": "enterprise_applied",
-      "n_schools": 1,
-      "points_per_entry": null
+      "n_schools": 12,
+      "points_per_entry": 6.7
      },
      {
       "shown": true,
-      "entries": 43,
-      "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.47
+      "entries": 127,
+      "family_id": "technology_eng_construction",
+      "n_schools": 5,
+      "points_per_entry": 6.65
      },
      {
-      "shown": false,
-      "entries": 16,
-      "family_id": "technology_eng_construction",
-      "n_schools": 1,
-      "points_per_entry": null
+      "shown": true,
+      "entries": 125,
+      "family_id": "enterprise_applied",
+      "n_schools": 5,
+      "points_per_entry": 6.39
+     },
+     {
+      "shown": true,
+      "entries": 1457,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
+      "points_per_entry": 6.15
+     },
+     {
+      "shown": true,
+      "entries": 1231,
+      "family_id": "languages_literature",
+      "n_schools": 12,
+      "points_per_entry": 6.36
+     },
+     {
+      "shown": true,
+      "entries": 174,
+      "family_id": "business_law",
+      "n_schools": 7,
+      "points_per_entry": 5.93
      }
     ],
     "ks5": [
@@ -27069,52 +27069,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 217,
+      "entries": 489,
       "family_id": "arts_media_design",
-      "n_schools": 6,
-      "points_per_entry": 7.03
+      "n_schools": 12,
+      "points_per_entry": 6.67
      },
      {
       "shown": true,
-      "entries": 839,
-      "family_id": "sciences_maths",
-      "n_schools": 7,
-      "points_per_entry": 6.17
-     },
-     {
-      "shown": true,
-      "entries": 538,
-      "family_id": "languages_literature",
-      "n_schools": 7,
-      "points_per_entry": 6.34
-     },
-     {
-      "shown": true,
-      "entries": 275,
+      "entries": 579,
       "family_id": "humanities_social",
-      "n_schools": 6,
-      "points_per_entry": 6.5
-     },
-     {
-      "shown": false,
-      "entries": 17,
-      "family_id": "enterprise_applied",
-      "n_schools": 1,
-      "points_per_entry": null
+      "n_schools": 12,
+      "points_per_entry": 6.7
      },
      {
       "shown": true,
-      "entries": 43,
-      "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.47
+      "entries": 127,
+      "family_id": "technology_eng_construction",
+      "n_schools": 5,
+      "points_per_entry": 6.65
      },
      {
-      "shown": false,
-      "entries": 16,
-      "family_id": "technology_eng_construction",
-      "n_schools": 1,
-      "points_per_entry": null
+      "shown": true,
+      "entries": 125,
+      "family_id": "enterprise_applied",
+      "n_schools": 5,
+      "points_per_entry": 6.39
+     },
+     {
+      "shown": true,
+      "entries": 1457,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
+      "points_per_entry": 6.15
+     },
+     {
+      "shown": true,
+      "entries": 1231,
+      "family_id": "languages_literature",
+      "n_schools": 12,
+      "points_per_entry": 6.36
+     },
+     {
+      "shown": true,
+      "entries": 174,
+      "family_id": "business_law",
+      "n_schools": 7,
+      "points_per_entry": 5.93
      }
     ]
    }
@@ -27253,52 +27253,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 636,
-      "family_id": "languages_literature",
-      "n_schools": 8,
-      "points_per_entry": 6.21
+      "entries": 162,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 5.75
      },
      {
       "shown": true,
-      "entries": 227,
+      "entries": 544,
       "family_id": "arts_media_design",
-      "n_schools": 7,
-      "points_per_entry": 6.33
+      "n_schools": 13,
+      "points_per_entry": 6.17
      },
      {
       "shown": true,
-      "entries": 879,
-      "family_id": "sciences_maths",
+      "entries": 579,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.3
+     },
+     {
+      "shown": true,
+      "entries": 168,
+      "family_id": "enterprise_applied",
       "n_schools": 8,
+      "points_per_entry": 5.14
+     },
+     {
+      "shown": true,
+      "entries": 1415,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
       "points_per_entry": 5.76
      },
      {
       "shown": true,
-      "entries": 270,
-      "family_id": "humanities_social",
-      "n_schools": 7,
-      "points_per_entry": 6.19
+      "entries": 1344,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.17
      },
      {
       "shown": true,
-      "entries": 51,
-      "family_id": "enterprise_applied",
-      "n_schools": 4,
-      "points_per_entry": 4.83
-     },
-     {
-      "shown": true,
-      "entries": 56,
+      "entries": 173,
       "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.2
-     },
-     {
-      "shown": false,
-      "entries": 15,
-      "family_id": "technology_eng_construction",
-      "n_schools": 1,
-      "points_per_entry": null
+      "n_schools": 6,
+      "points_per_entry": 5.57
      }
     ],
     "ks5": [
@@ -27606,52 +27606,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 636,
-      "family_id": "languages_literature",
-      "n_schools": 8,
-      "points_per_entry": 6.21
+      "entries": 162,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 5.75
      },
      {
       "shown": true,
-      "entries": 227,
+      "entries": 544,
       "family_id": "arts_media_design",
-      "n_schools": 7,
-      "points_per_entry": 6.33
+      "n_schools": 13,
+      "points_per_entry": 6.17
      },
      {
       "shown": true,
-      "entries": 879,
-      "family_id": "sciences_maths",
+      "entries": 579,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.3
+     },
+     {
+      "shown": true,
+      "entries": 168,
+      "family_id": "enterprise_applied",
       "n_schools": 8,
+      "points_per_entry": 5.14
+     },
+     {
+      "shown": true,
+      "entries": 1415,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
       "points_per_entry": 5.76
      },
      {
       "shown": true,
-      "entries": 270,
-      "family_id": "humanities_social",
-      "n_schools": 7,
-      "points_per_entry": 6.19
+      "entries": 1344,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.17
      },
      {
       "shown": true,
-      "entries": 51,
-      "family_id": "enterprise_applied",
-      "n_schools": 4,
-      "points_per_entry": 4.83
-     },
-     {
-      "shown": true,
-      "entries": 56,
+      "entries": 173,
       "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.2
-     },
-     {
-      "shown": false,
-      "entries": 15,
-      "family_id": "technology_eng_construction",
-      "n_schools": 1,
-      "points_per_entry": null
+      "n_schools": 6,
+      "points_per_entry": 5.57
      }
     ]
    }
@@ -27790,45 +27790,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 658,
-      "family_id": "languages_literature",
-      "n_schools": 8,
-      "points_per_entry": 6.02
-     },
-     {
-      "shown": true,
-      "entries": 233,
+      "entries": 581,
       "family_id": "arts_media_design",
-      "n_schools": 6,
-      "points_per_entry": 5.74
+      "n_schools": 12,
+      "points_per_entry": 5.92
      },
      {
       "shown": true,
-      "entries": 917,
-      "family_id": "sciences_maths",
-      "n_schools": 8,
-      "points_per_entry": 5.79
-     },
-     {
-      "shown": true,
-      "entries": 283,
-      "family_id": "humanities_social",
-      "n_schools": 7,
-      "points_per_entry": 5.91
-     },
-     {
-      "shown": true,
-      "entries": 40,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 5.71
-     },
-     {
-      "shown": true,
-      "entries": 83,
+      "entries": 262,
       "family_id": "business_law",
-      "n_schools": 5,
-      "points_per_entry": 5.11
+      "n_schools": 11,
+      "points_per_entry": 5.5
+     },
+     {
+      "shown": true,
+      "entries": 134,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.06
+     },
+     {
+      "shown": true,
+      "entries": 170,
+      "family_id": "enterprise_applied",
+      "n_schools": 8,
+      "points_per_entry": 6.13
+     },
+     {
+      "shown": true,
+      "entries": 563,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.4
+     },
+     {
+      "shown": true,
+      "entries": 1436,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
+      "points_per_entry": 6.03
+     },
+     {
+      "shown": true,
+      "entries": 1319,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.25
      }
     ],
     "ks5": [
@@ -28136,45 +28143,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 658,
-      "family_id": "languages_literature",
-      "n_schools": 8,
-      "points_per_entry": 6.02
-     },
-     {
-      "shown": true,
-      "entries": 233,
+      "entries": 581,
       "family_id": "arts_media_design",
-      "n_schools": 6,
-      "points_per_entry": 5.74
+      "n_schools": 12,
+      "points_per_entry": 5.92
      },
      {
       "shown": true,
-      "entries": 917,
-      "family_id": "sciences_maths",
-      "n_schools": 8,
-      "points_per_entry": 5.79
-     },
-     {
-      "shown": true,
-      "entries": 283,
-      "family_id": "humanities_social",
-      "n_schools": 7,
-      "points_per_entry": 5.91
-     },
-     {
-      "shown": true,
-      "entries": 40,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 5.71
-     },
-     {
-      "shown": true,
-      "entries": 83,
+      "entries": 262,
       "family_id": "business_law",
-      "n_schools": 5,
-      "points_per_entry": 5.11
+      "n_schools": 11,
+      "points_per_entry": 5.5
+     },
+     {
+      "shown": true,
+      "entries": 134,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.06
+     },
+     {
+      "shown": true,
+      "entries": 170,
+      "family_id": "enterprise_applied",
+      "n_schools": 8,
+      "points_per_entry": 6.13
+     },
+     {
+      "shown": true,
+      "entries": 563,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.4
+     },
+     {
+      "shown": true,
+      "entries": 1436,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
+      "points_per_entry": 6.03
+     },
+     {
+      "shown": true,
+      "entries": 1319,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.25
      }
     ]
    }
@@ -28313,52 +28327,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 280,
+      "entries": 600,
       "family_id": "arts_media_design",
-      "n_schools": 8,
-      "points_per_entry": 6.09
+      "n_schools": 14,
+      "points_per_entry": 6.13
      },
      {
       "shown": true,
-      "entries": 1074,
-      "family_id": "sciences_maths",
-      "n_schools": 9,
-      "points_per_entry": 5.79
-     },
-     {
-      "shown": true,
-      "entries": 50,
-      "family_id": "technology_eng_construction",
-      "n_schools": 4,
-      "points_per_entry": 6.26
-     },
-     {
-      "shown": true,
-      "entries": 730,
-      "family_id": "languages_literature",
-      "n_schools": 9,
-      "points_per_entry": 6.01
-     },
-     {
-      "shown": true,
-      "entries": 292,
-      "family_id": "humanities_social",
-      "n_schools": 8,
-      "points_per_entry": 6.32
-     },
-     {
-      "shown": true,
-      "entries": 44,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 4.89
-     },
-     {
-      "shown": true,
-      "entries": 64,
+      "entries": 191,
       "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.55
+      "n_schools": 7,
+      "points_per_entry": 5.77
+     },
+     {
+      "shown": true,
+      "entries": 151,
+      "family_id": "technology_eng_construction",
+      "n_schools": 9,
+      "points_per_entry": 6.17
+     },
+     {
+      "shown": true,
+      "entries": 166,
+      "family_id": "enterprise_applied",
+      "n_schools": 9,
+      "points_per_entry": 5.82
+     },
+     {
+      "shown": true,
+      "entries": 589,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.6
+     },
+     {
+      "shown": true,
+      "entries": 1443,
+      "family_id": "sciences_maths",
+      "n_schools": 12,
+      "points_per_entry": 5.94
+     },
+     {
+      "shown": true,
+      "entries": 1364,
+      "family_id": "languages_literature",
+      "n_schools": 14,
+      "points_per_entry": 6.3
      }
     ],
     "ks5": [
@@ -28666,52 +28680,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 280,
+      "entries": 600,
       "family_id": "arts_media_design",
-      "n_schools": 8,
-      "points_per_entry": 6.09
+      "n_schools": 14,
+      "points_per_entry": 6.13
      },
      {
       "shown": true,
-      "entries": 1074,
-      "family_id": "sciences_maths",
-      "n_schools": 9,
-      "points_per_entry": 5.79
-     },
-     {
-      "shown": true,
-      "entries": 50,
-      "family_id": "technology_eng_construction",
-      "n_schools": 4,
-      "points_per_entry": 6.26
-     },
-     {
-      "shown": true,
-      "entries": 730,
-      "family_id": "languages_literature",
-      "n_schools": 9,
-      "points_per_entry": 6.01
-     },
-     {
-      "shown": true,
-      "entries": 292,
-      "family_id": "humanities_social",
-      "n_schools": 8,
-      "points_per_entry": 6.32
-     },
-     {
-      "shown": true,
-      "entries": 44,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 4.89
-     },
-     {
-      "shown": true,
-      "entries": 64,
+      "entries": 191,
       "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.55
+      "n_schools": 7,
+      "points_per_entry": 5.77
+     },
+     {
+      "shown": true,
+      "entries": 151,
+      "family_id": "technology_eng_construction",
+      "n_schools": 9,
+      "points_per_entry": 6.17
+     },
+     {
+      "shown": true,
+      "entries": 166,
+      "family_id": "enterprise_applied",
+      "n_schools": 9,
+      "points_per_entry": 5.82
+     },
+     {
+      "shown": true,
+      "entries": 589,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.6
+     },
+     {
+      "shown": true,
+      "entries": 1443,
+      "family_id": "sciences_maths",
+      "n_schools": 12,
+      "points_per_entry": 5.94
+     },
+     {
+      "shown": true,
+      "entries": 1364,
+      "family_id": "languages_literature",
+      "n_schools": 14,
+      "points_per_entry": 6.3
      }
     ]
    }
@@ -28850,52 +28864,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 241,
+      "entries": 121,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.05
+     },
+     {
+      "shown": true,
+      "entries": 543,
       "family_id": "arts_media_design",
-      "n_schools": 8,
-      "points_per_entry": 6.39
+      "n_schools": 14,
+      "points_per_entry": 6.24
      },
      {
       "shown": true,
-      "entries": 969,
-      "family_id": "sciences_maths",
-      "n_schools": 10,
-      "points_per_entry": 5.81
-     },
-     {
-      "shown": true,
-      "entries": 607,
-      "family_id": "languages_literature",
+      "entries": 185,
+      "family_id": "enterprise_applied",
       "n_schools": 9,
+      "points_per_entry": 5.97
+     },
+     {
+      "shown": true,
+      "entries": 557,
+      "family_id": "humanities_social",
+      "n_schools": 15,
+      "points_per_entry": 6.41
+     },
+     {
+      "shown": true,
+      "entries": 1248,
+      "family_id": "sciences_maths",
+      "n_schools": 12,
       "points_per_entry": 5.86
      },
      {
       "shown": true,
-      "entries": 296,
-      "family_id": "humanities_social",
-      "n_schools": 9,
-      "points_per_entry": 6.09
+      "entries": 1030,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.21
      },
      {
       "shown": true,
-      "entries": 111,
+      "entries": 207,
       "family_id": "business_law",
-      "n_schools": 6,
-      "points_per_entry": 5.85
-     },
-     {
-      "shown": true,
-      "entries": 48,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 6.48
-     },
-     {
-      "shown": true,
-      "entries": 22,
-      "family_id": "technology_eng_construction",
-      "n_schools": 2,
-      "points_per_entry": 5.29
+      "n_schools": 9,
+      "points_per_entry": 5.99
      }
     ],
     "ks5": []
@@ -29103,52 +29117,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 241,
+      "entries": 121,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.05
+     },
+     {
+      "shown": true,
+      "entries": 543,
       "family_id": "arts_media_design",
-      "n_schools": 8,
-      "points_per_entry": 6.39
+      "n_schools": 14,
+      "points_per_entry": 6.24
      },
      {
       "shown": true,
-      "entries": 969,
-      "family_id": "sciences_maths",
-      "n_schools": 10,
-      "points_per_entry": 5.81
-     },
-     {
-      "shown": true,
-      "entries": 607,
-      "family_id": "languages_literature",
+      "entries": 185,
+      "family_id": "enterprise_applied",
       "n_schools": 9,
+      "points_per_entry": 5.97
+     },
+     {
+      "shown": true,
+      "entries": 557,
+      "family_id": "humanities_social",
+      "n_schools": 15,
+      "points_per_entry": 6.41
+     },
+     {
+      "shown": true,
+      "entries": 1248,
+      "family_id": "sciences_maths",
+      "n_schools": 12,
       "points_per_entry": 5.86
      },
      {
       "shown": true,
-      "entries": 296,
-      "family_id": "humanities_social",
-      "n_schools": 9,
-      "points_per_entry": 6.09
+      "entries": 1030,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.21
      },
      {
       "shown": true,
-      "entries": 111,
+      "entries": 207,
       "family_id": "business_law",
-      "n_schools": 6,
-      "points_per_entry": 5.85
-     },
-     {
-      "shown": true,
-      "entries": 48,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 6.48
-     },
-     {
-      "shown": true,
-      "entries": 22,
-      "family_id": "technology_eng_construction",
-      "n_schools": 2,
-      "points_per_entry": 5.29
+      "n_schools": 9,
+      "points_per_entry": 5.99
      }
     ]
    }
@@ -29845,52 +29859,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 217,
+      "entries": 489,
       "family_id": "arts_media_design",
-      "n_schools": 6,
-      "points_per_entry": 7.03
+      "n_schools": 12,
+      "points_per_entry": 6.67
      },
      {
       "shown": true,
-      "entries": 839,
-      "family_id": "sciences_maths",
-      "n_schools": 7,
-      "points_per_entry": 6.17
-     },
-     {
-      "shown": true,
-      "entries": 538,
-      "family_id": "languages_literature",
-      "n_schools": 7,
-      "points_per_entry": 6.34
-     },
-     {
-      "shown": true,
-      "entries": 275,
+      "entries": 579,
       "family_id": "humanities_social",
-      "n_schools": 6,
-      "points_per_entry": 6.5
-     },
-     {
-      "shown": false,
-      "entries": 17,
-      "family_id": "enterprise_applied",
-      "n_schools": 1,
-      "points_per_entry": null
+      "n_schools": 12,
+      "points_per_entry": 6.7
      },
      {
       "shown": true,
-      "entries": 43,
-      "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.47
+      "entries": 127,
+      "family_id": "technology_eng_construction",
+      "n_schools": 5,
+      "points_per_entry": 6.65
      },
      {
-      "shown": false,
-      "entries": 16,
-      "family_id": "technology_eng_construction",
-      "n_schools": 1,
-      "points_per_entry": null
+      "shown": true,
+      "entries": 125,
+      "family_id": "enterprise_applied",
+      "n_schools": 5,
+      "points_per_entry": 6.39
+     },
+     {
+      "shown": true,
+      "entries": 1457,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
+      "points_per_entry": 6.15
+     },
+     {
+      "shown": true,
+      "entries": 1231,
+      "family_id": "languages_literature",
+      "n_schools": 12,
+      "points_per_entry": 6.36
+     },
+     {
+      "shown": true,
+      "entries": 174,
+      "family_id": "business_law",
+      "n_schools": 7,
+      "points_per_entry": 5.93
      }
     ],
     "ks5": [
@@ -30198,52 +30212,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 217,
+      "entries": 489,
       "family_id": "arts_media_design",
-      "n_schools": 6,
-      "points_per_entry": 7.03
+      "n_schools": 12,
+      "points_per_entry": 6.67
      },
      {
       "shown": true,
-      "entries": 839,
-      "family_id": "sciences_maths",
-      "n_schools": 7,
-      "points_per_entry": 6.17
-     },
-     {
-      "shown": true,
-      "entries": 538,
-      "family_id": "languages_literature",
-      "n_schools": 7,
-      "points_per_entry": 6.34
-     },
-     {
-      "shown": true,
-      "entries": 275,
+      "entries": 579,
       "family_id": "humanities_social",
-      "n_schools": 6,
-      "points_per_entry": 6.5
-     },
-     {
-      "shown": false,
-      "entries": 17,
-      "family_id": "enterprise_applied",
-      "n_schools": 1,
-      "points_per_entry": null
+      "n_schools": 12,
+      "points_per_entry": 6.7
      },
      {
       "shown": true,
-      "entries": 43,
-      "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.47
+      "entries": 127,
+      "family_id": "technology_eng_construction",
+      "n_schools": 5,
+      "points_per_entry": 6.65
      },
      {
-      "shown": false,
-      "entries": 16,
-      "family_id": "technology_eng_construction",
-      "n_schools": 1,
-      "points_per_entry": null
+      "shown": true,
+      "entries": 125,
+      "family_id": "enterprise_applied",
+      "n_schools": 5,
+      "points_per_entry": 6.39
+     },
+     {
+      "shown": true,
+      "entries": 1457,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
+      "points_per_entry": 6.15
+     },
+     {
+      "shown": true,
+      "entries": 1231,
+      "family_id": "languages_literature",
+      "n_schools": 12,
+      "points_per_entry": 6.36
+     },
+     {
+      "shown": true,
+      "entries": 174,
+      "family_id": "business_law",
+      "n_schools": 7,
+      "points_per_entry": 5.93
      }
     ]
    }
@@ -30382,52 +30396,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 636,
-      "family_id": "languages_literature",
-      "n_schools": 8,
-      "points_per_entry": 6.21
+      "entries": 162,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 5.75
      },
      {
       "shown": true,
-      "entries": 227,
+      "entries": 544,
       "family_id": "arts_media_design",
-      "n_schools": 7,
-      "points_per_entry": 6.33
+      "n_schools": 13,
+      "points_per_entry": 6.17
      },
      {
       "shown": true,
-      "entries": 879,
-      "family_id": "sciences_maths",
+      "entries": 579,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.3
+     },
+     {
+      "shown": true,
+      "entries": 168,
+      "family_id": "enterprise_applied",
       "n_schools": 8,
+      "points_per_entry": 5.14
+     },
+     {
+      "shown": true,
+      "entries": 1415,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
       "points_per_entry": 5.76
      },
      {
       "shown": true,
-      "entries": 270,
-      "family_id": "humanities_social",
-      "n_schools": 7,
-      "points_per_entry": 6.19
+      "entries": 1344,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.17
      },
      {
       "shown": true,
-      "entries": 51,
-      "family_id": "enterprise_applied",
-      "n_schools": 4,
-      "points_per_entry": 4.83
-     },
-     {
-      "shown": true,
-      "entries": 56,
+      "entries": 173,
       "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.2
-     },
-     {
-      "shown": false,
-      "entries": 15,
-      "family_id": "technology_eng_construction",
-      "n_schools": 1,
-      "points_per_entry": null
+      "n_schools": 6,
+      "points_per_entry": 5.57
      }
     ],
     "ks5": [
@@ -30735,52 +30749,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 636,
-      "family_id": "languages_literature",
-      "n_schools": 8,
-      "points_per_entry": 6.21
+      "entries": 162,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 5.75
      },
      {
       "shown": true,
-      "entries": 227,
+      "entries": 544,
       "family_id": "arts_media_design",
-      "n_schools": 7,
-      "points_per_entry": 6.33
+      "n_schools": 13,
+      "points_per_entry": 6.17
      },
      {
       "shown": true,
-      "entries": 879,
-      "family_id": "sciences_maths",
+      "entries": 579,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.3
+     },
+     {
+      "shown": true,
+      "entries": 168,
+      "family_id": "enterprise_applied",
       "n_schools": 8,
+      "points_per_entry": 5.14
+     },
+     {
+      "shown": true,
+      "entries": 1415,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
       "points_per_entry": 5.76
      },
      {
       "shown": true,
-      "entries": 270,
-      "family_id": "humanities_social",
-      "n_schools": 7,
-      "points_per_entry": 6.19
+      "entries": 1344,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.17
      },
      {
       "shown": true,
-      "entries": 51,
-      "family_id": "enterprise_applied",
-      "n_schools": 4,
-      "points_per_entry": 4.83
-     },
-     {
-      "shown": true,
-      "entries": 56,
+      "entries": 173,
       "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.2
-     },
-     {
-      "shown": false,
-      "entries": 15,
-      "family_id": "technology_eng_construction",
-      "n_schools": 1,
-      "points_per_entry": null
+      "n_schools": 6,
+      "points_per_entry": 5.57
      }
     ]
    }
@@ -30919,45 +30933,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 658,
-      "family_id": "languages_literature",
-      "n_schools": 8,
-      "points_per_entry": 6.02
-     },
-     {
-      "shown": true,
-      "entries": 233,
+      "entries": 581,
       "family_id": "arts_media_design",
-      "n_schools": 6,
-      "points_per_entry": 5.74
+      "n_schools": 12,
+      "points_per_entry": 5.92
      },
      {
       "shown": true,
-      "entries": 917,
-      "family_id": "sciences_maths",
-      "n_schools": 8,
-      "points_per_entry": 5.79
-     },
-     {
-      "shown": true,
-      "entries": 283,
-      "family_id": "humanities_social",
-      "n_schools": 7,
-      "points_per_entry": 5.91
-     },
-     {
-      "shown": true,
-      "entries": 40,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 5.71
-     },
-     {
-      "shown": true,
-      "entries": 83,
+      "entries": 262,
       "family_id": "business_law",
-      "n_schools": 5,
-      "points_per_entry": 5.11
+      "n_schools": 11,
+      "points_per_entry": 5.5
+     },
+     {
+      "shown": true,
+      "entries": 134,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.06
+     },
+     {
+      "shown": true,
+      "entries": 170,
+      "family_id": "enterprise_applied",
+      "n_schools": 8,
+      "points_per_entry": 6.13
+     },
+     {
+      "shown": true,
+      "entries": 563,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.4
+     },
+     {
+      "shown": true,
+      "entries": 1436,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
+      "points_per_entry": 6.03
+     },
+     {
+      "shown": true,
+      "entries": 1319,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.25
      }
     ],
     "ks5": [
@@ -31265,45 +31286,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 658,
-      "family_id": "languages_literature",
-      "n_schools": 8,
-      "points_per_entry": 6.02
-     },
-     {
-      "shown": true,
-      "entries": 233,
+      "entries": 581,
       "family_id": "arts_media_design",
-      "n_schools": 6,
-      "points_per_entry": 5.74
+      "n_schools": 12,
+      "points_per_entry": 5.92
      },
      {
       "shown": true,
-      "entries": 917,
-      "family_id": "sciences_maths",
-      "n_schools": 8,
-      "points_per_entry": 5.79
-     },
-     {
-      "shown": true,
-      "entries": 283,
-      "family_id": "humanities_social",
-      "n_schools": 7,
-      "points_per_entry": 5.91
-     },
-     {
-      "shown": true,
-      "entries": 40,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 5.71
-     },
-     {
-      "shown": true,
-      "entries": 83,
+      "entries": 262,
       "family_id": "business_law",
-      "n_schools": 5,
-      "points_per_entry": 5.11
+      "n_schools": 11,
+      "points_per_entry": 5.5
+     },
+     {
+      "shown": true,
+      "entries": 134,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.06
+     },
+     {
+      "shown": true,
+      "entries": 170,
+      "family_id": "enterprise_applied",
+      "n_schools": 8,
+      "points_per_entry": 6.13
+     },
+     {
+      "shown": true,
+      "entries": 563,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.4
+     },
+     {
+      "shown": true,
+      "entries": 1436,
+      "family_id": "sciences_maths",
+      "n_schools": 11,
+      "points_per_entry": 6.03
+     },
+     {
+      "shown": true,
+      "entries": 1319,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.25
      }
     ]
    }
@@ -31442,52 +31470,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 280,
+      "entries": 600,
       "family_id": "arts_media_design",
-      "n_schools": 8,
-      "points_per_entry": 6.09
+      "n_schools": 14,
+      "points_per_entry": 6.13
      },
      {
       "shown": true,
-      "entries": 1074,
-      "family_id": "sciences_maths",
-      "n_schools": 9,
-      "points_per_entry": 5.79
-     },
-     {
-      "shown": true,
-      "entries": 50,
-      "family_id": "technology_eng_construction",
-      "n_schools": 4,
-      "points_per_entry": 6.26
-     },
-     {
-      "shown": true,
-      "entries": 730,
-      "family_id": "languages_literature",
-      "n_schools": 9,
-      "points_per_entry": 6.01
-     },
-     {
-      "shown": true,
-      "entries": 292,
-      "family_id": "humanities_social",
-      "n_schools": 8,
-      "points_per_entry": 6.32
-     },
-     {
-      "shown": true,
-      "entries": 44,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 4.89
-     },
-     {
-      "shown": true,
-      "entries": 64,
+      "entries": 191,
       "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.55
+      "n_schools": 7,
+      "points_per_entry": 5.77
+     },
+     {
+      "shown": true,
+      "entries": 151,
+      "family_id": "technology_eng_construction",
+      "n_schools": 9,
+      "points_per_entry": 6.17
+     },
+     {
+      "shown": true,
+      "entries": 166,
+      "family_id": "enterprise_applied",
+      "n_schools": 9,
+      "points_per_entry": 5.82
+     },
+     {
+      "shown": true,
+      "entries": 589,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.6
+     },
+     {
+      "shown": true,
+      "entries": 1443,
+      "family_id": "sciences_maths",
+      "n_schools": 12,
+      "points_per_entry": 5.94
+     },
+     {
+      "shown": true,
+      "entries": 1364,
+      "family_id": "languages_literature",
+      "n_schools": 14,
+      "points_per_entry": 6.3
      }
     ],
     "ks5": [
@@ -31795,52 +31823,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 280,
+      "entries": 600,
       "family_id": "arts_media_design",
-      "n_schools": 8,
-      "points_per_entry": 6.09
+      "n_schools": 14,
+      "points_per_entry": 6.13
      },
      {
       "shown": true,
-      "entries": 1074,
-      "family_id": "sciences_maths",
-      "n_schools": 9,
-      "points_per_entry": 5.79
-     },
-     {
-      "shown": true,
-      "entries": 50,
-      "family_id": "technology_eng_construction",
-      "n_schools": 4,
-      "points_per_entry": 6.26
-     },
-     {
-      "shown": true,
-      "entries": 730,
-      "family_id": "languages_literature",
-      "n_schools": 9,
-      "points_per_entry": 6.01
-     },
-     {
-      "shown": true,
-      "entries": 292,
-      "family_id": "humanities_social",
-      "n_schools": 8,
-      "points_per_entry": 6.32
-     },
-     {
-      "shown": true,
-      "entries": 44,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 4.89
-     },
-     {
-      "shown": true,
-      "entries": 64,
+      "entries": 191,
       "family_id": "business_law",
-      "n_schools": 3,
-      "points_per_entry": 5.55
+      "n_schools": 7,
+      "points_per_entry": 5.77
+     },
+     {
+      "shown": true,
+      "entries": 151,
+      "family_id": "technology_eng_construction",
+      "n_schools": 9,
+      "points_per_entry": 6.17
+     },
+     {
+      "shown": true,
+      "entries": 166,
+      "family_id": "enterprise_applied",
+      "n_schools": 9,
+      "points_per_entry": 5.82
+     },
+     {
+      "shown": true,
+      "entries": 589,
+      "family_id": "humanities_social",
+      "n_schools": 13,
+      "points_per_entry": 6.6
+     },
+     {
+      "shown": true,
+      "entries": 1443,
+      "family_id": "sciences_maths",
+      "n_schools": 12,
+      "points_per_entry": 5.94
+     },
+     {
+      "shown": true,
+      "entries": 1364,
+      "family_id": "languages_literature",
+      "n_schools": 14,
+      "points_per_entry": 6.3
      }
     ]
    }
@@ -31979,52 +32007,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 241,
+      "entries": 121,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.05
+     },
+     {
+      "shown": true,
+      "entries": 543,
       "family_id": "arts_media_design",
-      "n_schools": 8,
-      "points_per_entry": 6.39
+      "n_schools": 14,
+      "points_per_entry": 6.24
      },
      {
       "shown": true,
-      "entries": 969,
-      "family_id": "sciences_maths",
-      "n_schools": 10,
-      "points_per_entry": 5.81
-     },
-     {
-      "shown": true,
-      "entries": 607,
-      "family_id": "languages_literature",
+      "entries": 185,
+      "family_id": "enterprise_applied",
       "n_schools": 9,
+      "points_per_entry": 5.97
+     },
+     {
+      "shown": true,
+      "entries": 557,
+      "family_id": "humanities_social",
+      "n_schools": 15,
+      "points_per_entry": 6.41
+     },
+     {
+      "shown": true,
+      "entries": 1248,
+      "family_id": "sciences_maths",
+      "n_schools": 12,
       "points_per_entry": 5.86
      },
      {
       "shown": true,
-      "entries": 296,
-      "family_id": "humanities_social",
-      "n_schools": 9,
-      "points_per_entry": 6.09
+      "entries": 1030,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.21
      },
      {
       "shown": true,
-      "entries": 111,
+      "entries": 207,
       "family_id": "business_law",
-      "n_schools": 6,
-      "points_per_entry": 5.85
-     },
-     {
-      "shown": true,
-      "entries": 48,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 6.48
-     },
-     {
-      "shown": true,
-      "entries": 22,
-      "family_id": "technology_eng_construction",
-      "n_schools": 2,
-      "points_per_entry": 5.29
+      "n_schools": 9,
+      "points_per_entry": 5.99
      }
     ],
     "ks5": []
@@ -32232,52 +32260,52 @@
     "ks4": [
      {
       "shown": true,
-      "entries": 241,
+      "entries": 121,
+      "family_id": "technology_eng_construction",
+      "n_schools": 6,
+      "points_per_entry": 6.05
+     },
+     {
+      "shown": true,
+      "entries": 543,
       "family_id": "arts_media_design",
-      "n_schools": 8,
-      "points_per_entry": 6.39
+      "n_schools": 14,
+      "points_per_entry": 6.24
      },
      {
       "shown": true,
-      "entries": 969,
-      "family_id": "sciences_maths",
-      "n_schools": 10,
-      "points_per_entry": 5.81
-     },
-     {
-      "shown": true,
-      "entries": 607,
-      "family_id": "languages_literature",
+      "entries": 185,
+      "family_id": "enterprise_applied",
       "n_schools": 9,
+      "points_per_entry": 5.97
+     },
+     {
+      "shown": true,
+      "entries": 557,
+      "family_id": "humanities_social",
+      "n_schools": 15,
+      "points_per_entry": 6.41
+     },
+     {
+      "shown": true,
+      "entries": 1248,
+      "family_id": "sciences_maths",
+      "n_schools": 12,
       "points_per_entry": 5.86
      },
      {
       "shown": true,
-      "entries": 296,
-      "family_id": "humanities_social",
-      "n_schools": 9,
-      "points_per_entry": 6.09
+      "entries": 1030,
+      "family_id": "languages_literature",
+      "n_schools": 13,
+      "points_per_entry": 6.21
      },
      {
       "shown": true,
-      "entries": 111,
+      "entries": 207,
       "family_id": "business_law",
-      "n_schools": 6,
-      "points_per_entry": 5.85
-     },
-     {
-      "shown": true,
-      "entries": 48,
-      "family_id": "enterprise_applied",
-      "n_schools": 3,
-      "points_per_entry": 6.48
-     },
-     {
-      "shown": true,
-      "entries": 22,
-      "family_id": "technology_eng_construction",
-      "n_schools": 2,
-      "points_per_entry": 5.29
+      "n_schools": 9,
+      "points_per_entry": 5.99
      }
     ]
    }
