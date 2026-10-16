@@ -50,7 +50,7 @@ export function Subjects({ parts, setUrns, setLabel, phase }: { parts: StagePart
                 </Td>
                 <Td>{fmt(s.entries, "pupils")}</Td>
                 <Td className="font-bold text-[var(--fg)]">{s.ranked ? fmt(s.avg, unit) : "—"}</Td>
-                <Td title={s.reason === "small" ? smtNote("smallEntries", { min: MIN_SUBJECT_ENTRIES_UI }) : s.reason === "scale" ? `${s.qualification}: no GCSE or A-level points scale` : undefined}>{s.set ? `${s.set.rank} of ${s.set.of}` : <i className="text-[var(--muted2)]">{s.reason === "scale" ? SMT_NOTES.differentScale : "not ranked"}</i>}</Td>
+                <Td title={s.reason === "small" ? smtNote("smallEntries", { min: MIN_SUBJECT_ENTRIES_UI }) : s.reason === "scale" ? `${s.qualification}: no GCSE or A-level points scale` : undefined}>{s.set ? `${s.set.tied ? "=" : ""}${s.set.rank} of ${s.set.of}` : <i className="text-[var(--muted2)]">{s.reason === "scale" ? SMT_NOTES.differentScale : "not ranked"}</i>}</Td>
                 <Td>{s.england ? rankText(s.england) : "—"}</Td>
                 <Td className={`font-bold ${dirClass(s.since)}`}>{s.since === null ? "—" : `${s.since > 0.05 ? "▲" : s.since < -0.05 ? "▼" : "▬"} ${Math.abs(s.since).toFixed(2)}`}</Td>
                 <Td>

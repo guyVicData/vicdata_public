@@ -24,6 +24,8 @@ import { areaSetPlace, figure, placesOn, population, setPlace, SMT_MEASURES, VA_
 import type { SmtSchool } from "./school";
 import { igcseExcluded, middleHalf, p8Of, type BandPt, type P8, type Pt, type Rank, type SmtSet } from "./overview";
 import { igcseFamilyOut } from "../igcse";
+import { schoolSyncStamp } from "../school-sync-stamp";
+import { subjectPlace, type SubjectPlace } from "./subject-place";
 
 export const MIN_SUBJECT_ENTRIES = MIN_SUBJECT_ENTRIES_UI; // R-SMT-SMALL-ENTRIES: a subject needs this many to be ranked
 export const MAX_SUBJECTS = 16;
@@ -36,8 +38,9 @@ export type SubjectRow = {
   familyId: string | null;
   entries: number;
   avg: number | null; // Teacher's average points for the subject (GCSE grade points; A-level points)
-  set: Rank | null;
-  england: Rank | null;
+  // A shared place carries tied (printed "=851st", as Teacher prints it).
+  set: SubjectPlace | null;
+  england: SubjectPlace | null;
   since: number | null; // the change in avg since 2022/23
   ranked: boolean; // false below MIN_SUBJECT_ENTRIES or where the subject has no ranking
   // Why it isn't ranked: too few entries, or a grading scale with no points (an FSMQ, a BTEC).
@@ -193,7 +196,7 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
   let overall: string | null = null;
   if (setUrns.length) {
     const ep = entryPoint(stage === "ks4" ? "11+" : "16+")!;
-    const r = await cachedReference(`smt:strengths:${urn}:${stage}:${setUrns.slice().sort().join(",")}`, () => buildRivals(urn, ep, { rivals: setUrns }));
+    const r = await cachedReference(`smt:strengths:${urn}:${stage}:${setUrns.slice().sort().join(",")}:sync:${await schoolSyncStamp()}`, () => buildRivals(urn, ep, { rivals: setUrns }));
     const labels = r.resultsPeriod !== null ? await familyLabels(urn, stage, r.resultsPeriod) : {};
     // 0.8 audit fixes (7): a row needs SUBJECT_AREA_MIN.schools set schools with enough entries (Admissions'
     // builder counts every set school with 10+; `of` includes the school).
@@ -207,10 +210,12 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
   const latestRows = mine.entries.filter((e) => e.period === period && inArea(e.subject)).sort((a, b) => b.entries - a.entries).slice(0, MAX_SUBJECTS);
   const nation = await nationPop(stage);
   const setKey = setUrns.slice().sort().join(",");
+  // The last school sync keys these ranks as it keys the population (school-sync-stamp.ts).
+  const sync = await schoolSyncStamp();
   const subjects = await pool(latestRows, 4, async (e): Promise<SubjectRow> => {
     const base = { targetUrn: urn, phase: stage, subject: e.subject, familyId: famOf(e.subject), qualificationType: e.qualificationType, measure: { kind: "points" as const }, period: null };
     if (e.entries < MIN_SUBJECT_ENTRIES) return { subject: e.subject, qualification: e.qualificationType, familyId: famOf(e.subject), entries: e.entries, avg: null, set: null, england: null, since: null, ranked: false, reason: "small" };
-    const [s, n] = await cachedReference(`smt:subject:${urn}:${stage}:${e.subject}:${e.qualificationType}:${setKey}`, () => Promise.all([subjectRanking({ ...base, urns: all }, `smt:set:${urn}:${setKey}`), subjectRanking({ ...base, urns: nation }, `smt:nation:${stage}`)]));
+    const [s, n] = await cachedReference(`smt:subject:${urn}:${stage}:${e.subject}:${e.qualificationType}:${setKey}:sync:${sync}`, () => Promise.all([subjectRanking({ ...base, urns: all }, `smt:set:${urn}:${setKey}|sync:${sync}`), subjectRanking({ ...base, urns: nation }, `smt:nation:${stage}|sync:${sync}`)]));
     const series = s.targetSeries.length ? s.targetSeries : n.targetSeries;
     const now = s.target?.value ?? n.target?.value ?? null;
     const then = series.find((p) => p.period === TREND_BASE_PERIOD)?.value ?? null;
@@ -220,8 +225,8 @@ async function stagePart(school: SmtSchool, stage: "ks4" | "ks5", area: string |
       familyId: famOf(e.subject),
       entries: e.entries,
       avg: now,
-      set: s.targetRank !== null ? { rank: s.targetRank, of: s.ranked } : null,
-      england: n.targetRank !== null ? { rank: n.targetRank, of: n.ranked } : null,
+      set: subjectPlace(s),
+      england: subjectPlace(n),
       since: now !== null && then !== null && period > TREND_BASE_PERIOD ? now - then : null,
       ranked: s.targetRank !== null || n.targetRank !== null,
       reason: now === null ? "scale" : null,

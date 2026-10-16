@@ -60,7 +60,8 @@ export const ord = (n: number) => {
   const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
   return `${n.toLocaleString("en-GB")}${s}`;
 };
-export const rankText = (r: { rank: number; of: number } | null | undefined) => (r ? `${ord(r.rank)} of ${r.of.toLocaleString("en-GB")}` : "—");
+// A shared place reads "=851st", as Teacher's rankings print it (subject-ranking-view.ts).
+export const rankText = (r: { rank: number; of: number; tied?: boolean } | null | undefined) => (r ? `${r.tied ? "=" : ""}${ord(r.rank)} of ${r.of.toLocaleString("en-GB")}` : "—");
 
 /** A results year, "(provisional)" where the data says so (years.ts). */
 export const yearOf = (p: number | null | undefined, family?: YearFamily | null) => (p === null || p === undefined ? "" : withProvisional(periodLabel(p), family ?? null, p));
