@@ -2,7 +2,7 @@
 
 # Rules
 
-What a number is allowed to be. 134 rules: 130 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
+What a number is allowed to be. 135 rules: 131 active, 4 superseded; 22 must lift (enforced only in UI code before 0.6).
 
 ## Summary
 
@@ -48,6 +48,7 @@ What a number is allowed to be. 134 rules: 130 active, 4 superseded; 22 must lif
 | R-GEO-POINTS-ELIGIBLE | active | The school's own row beside area entries is its points-eligible entries (entries × coverage), not its Candidates count. | lifted | none yet | — |
 | R-IGCSE-EXCL | active | At GCSE a comparator flagged by igcseExclusionLikely is dropped from every set; the target is kept but flagged and its results history withheld. | no | manual | — |
 | R-IGCSE-EVERYWHERE | active | One IGCSE rule in every product: a school igcseExclusionLikely flags (loaded for many schools only by lib/igcse) is left out of every GCSE ranking population -- national, regional, LA, set, '10 nearest', Teacher's headline and subject rankings, Admissions' places and SMT's ranks -- and is never silently dropped from a list: where a list would have shown it, a line says '{n} schools not ranked at GCSE (mostly IGCSE)'. The school itself shows 'not ranked at GCSE (IGCSE)', with no rank, 'out of' or gap. '10 nearest' at GCSE fills to 10 with the next nearest eligible schools and says how far it reached. | no | auto: igcseEverywhere | — |
+| R-IGCSE-GROUP-LABEL | active | Teacher's Column 1 keeps an IGCSE school's own GCSE subject figures (its rank among its own subjects, its gap to England): only ranks against other schools follow R-IGCSE-EVERYWHERE. Where the focused subject's category at the school lacks the subjects it takes as IGCSE (English and maths, the subjects the IGCSE rule rests on), Column 1 names the category with what it lacks: 'Sciences & Maths (sciences only: maths taken as IGCSE)' (or '(no Mathematics: taken as IGCSE)' when Statistics or Additional Maths is held), 'Languages & Literature (no English: taken as IGCSE)' or '(no English Language: taken as IGCSE)', judged on the subjects with entries in the school's latest GCSE year. Every other school, every other category, and England's lines keep the plain name. | no | auto: igcseGroupLabel | — |
 | R-COMPARATOR-NO-FIGURE | active | A comparator with no figure for the measure (or none in the latest year) is not listed and never ranked last. Not applied while loading. | lifted | manual | — |
 | R-COMPARATOR-RATE-PER-QUAL | active | Comparator rates are scored per subject and exact qualification, with the page's own rate function. | lifted | none yet | — |
 | R-COMPARATOR-GRADE-SHARE | active | Grade counts across schools (Column 1's grade spread, 'Add an average' across the 10 nearest / a saved set) is each grade's share of a school's graded entries, averaged (mean or median) over the set's other schools with graded entries that year, for the focused subject and exact qualification; drawn as ticks in place of England's, at the school's own scale in counts mode. Never a raw count, never weighted by entries. | no | none yet | — |
@@ -69,7 +70,7 @@ What a number is allowed to be. 134 rules: 130 active, 4 superseded; 22 must lif
 | R-ADM-FLAG-MOMENTUM | active | Rivals' momentum flags, each from a two-year change (pupils in %, results in points) against the NATIONAL thresholds for the phase (top / bottom fifth; admissions_flag_thresholds), never from one small cohort, with the figures behind it: results rising fast (headline), gaining pupils (roll), losing pupils three years running (three falls in a row), the entry year shrinking (Year 7 at 11+), a new sixth form (no pupils at 16 until two years ago), shape changed (the same new shape two years running). Until the thresholds are applied the threshold flags don't fire (none guessed). | no | auto: admMomentum | — |
 | R-ADM-FLAG-STRENGTHS | active | By subject area, the school's rank among the rivals that have that area (at least 10 entries), the gap to their average and its change since 2022/23: Strength (top third, above the average), Strength growing (and the school's own two-year change in the national top fifth), Weakness (bottom third, below), Weakness widening (and in the national bottom fifth). Never against fewer than two rivals. | no | auto: admStrengths | — |
 | R-ADM-SEX-FILTER | active | Every Admissions panel either applies the girls/boys filter fully -- every pupil figure it draws is girls' or boys' -- or, while the filter is on, says 'Not split by sex'. Never part of a panel: Pool trends hides its LA and England lines (never split) and says so; momentum and flags, which set pupils against results, stay whole and say so. ADM_SEX_FILTER lists every view. | no | auto: admSexFilter | — |
-| R-ADM-FLAG-FEEDER | active | A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age, as the feeder table and map compare it; the pipeline chart's own flags still read every age the feeder set holds, listed for him.) | no | auto: admFeeders | — |
+| R-ADM-FLAG-FEEDER | active | A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age; the feeder table, the map and the pipeline chart's flags all read that age, on the set without the school.) | no | auto: admFeeders | — |
 | R-PERIOD-TRIM | active | Leading and trailing periods with no published value are trimmed (2020/21 points are null nationally). | no | manual | — |
 | R-INDEX-HEADCOUNTS | active | Only sum measures (entries) are indexed to 100; points and rates are drawn at real levels. | no | none yet | — |
 | R-YEARS-ROLLOVER | active | A rule whose expected value moves with the latest results year reads that year from src/catalogue/years.ts (filled from academic_current_periods) and its value from scripts/rule-year-fixtures.ts, one row per year; or asserts a relationship with the year instead. When a new year arrives with no row, the rule fails saying 'no expected value for 2026/27', never with a wrong number; a release adds a row. | no | auto: yearsRollover | — |
@@ -785,6 +786,22 @@ What a number is allowed to be. 134 rules: 130 active, 4 superseded; 22 must lif
 | Open issue | — |
 | Fixed | — |
 
+### R-IGCSE-GROUP-LABEL
+
+| Field | Content |
+| --- | --- |
+| Statement | Teacher's Column 1 keeps an IGCSE school's own GCSE subject figures (its rank among its own subjects, its gap to England): only ranks against other schools follow R-IGCSE-EVERYWHERE. Where the focused subject's category at the school lacks the subjects it takes as IGCSE (English and maths, the subjects the IGCSE rule rests on), Column 1 names the category with what it lacks: 'Sciences & Maths (sciences only: maths taken as IGCSE)' (or '(no Mathematics: taken as IGCSE)' when Statistics or Additional Maths is held), 'Languages & Literature (no English: taken as IGCSE)' or '(no English Language: taken as IGCSE)', judged on the subjects with entries in the school's latest GCSE year. Every other school, every other category, and England's lines keep the plain name. |
+| Why | Leighton Park's Biology reads '2nd of 4 in Sciences & Maths', a category with no maths at the school; the name must say so (Guy, 16 Oct 2026: only ranks against other schools count). |
+| Applies to | Teacher Column 1 (Results and Candidates) at GCSE: the category rank tile and the 'Results / Entries in {category}' headings |
+| Enforced in | - src/lib/igcse-words.ts:igcseGroupLabel, igcseGroupLabelFor<br>- src/app/api/teacher/dashboard/route.ts (igcseExcluded)<br>- src/components/dashboard-config/TeacherDashboard.tsx:focusGroupLabel |
+| Tagged at | - src/app/api/teacher/dashboard/route.ts<br>- src/components/dashboard-config/TeacherDashboard.tsx<br>- src/lib/igcse-words.test.ts<br>- src/lib/igcse-words.ts |
+| Test case | Leighton Park; The Chase 137625 (110110), ks4: Leighton Park is IGCSE-excluded and has no Mathematics or English entries in its latest GCSE year: Biology's category reads 'Sciences & Maths (sciences only: maths taken as IGCSE)', Latin's 'Languages & Literature (no English: taken as IGCSE)'. The Chase's Biology reads 'Sciences & Maths'. [runner: igcseGroupLabel] |
+| Origin | 0.8 audit fixes, Guy's decision on the Leighton Park stop (16 Oct 2026) |
+| Status | active |
+| Must lift | — |
+| Open issue | — |
+| Fixed | — |
+
 ### R-COMPARATOR-NO-FIGURE
 
 | Field | Content |
@@ -1125,7 +1142,7 @@ What a number is allowed to be. 134 rules: 130 active, 4 superseded; 22 must lif
 
 | Field | Content |
 | --- | --- |
-| Statement | A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age, as the feeder table and map compare it; the pipeline chart's own flags still read every age the feeder set holds, listed for him.) |
+| Statement | A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age; the feeder table, the map and the pipeline chart's flags all read that age, on the set without the school.) |
 | Why | Pipeline schools to watch and to court. |
 | Applies to | Admissions Pipelines |
 | Enforced in | - src/lib/admissions/feeders.ts<br>- src/lib/admissions/flags.ts:feederFlag |
