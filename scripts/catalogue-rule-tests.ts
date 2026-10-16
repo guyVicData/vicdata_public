@@ -521,10 +521,15 @@ const RUNNERS: Record<string, Runner> = {
     const { feederFlags } = await import("../src/lib/admissions/feeders");
     const { cachedCensus } = await import("../src/lib/admissions/data");
     const p = await buildPipeline("137625", entryPoint("11+")!);
-    const set = p.sets.find((s) => s.age === 10)!.urns;
-    const ages = p.sets.filter((s) => s.urns === set).map((s) => s.age);
+    // One age, the age below entry (Year 6 at 11+), as the feeder table and the pipeline chart read it.
+    const set = p.sets.find((s) => s.age === 10)!.urns.filter((u) => u !== "137625");
+    const ages = [10];
     const census = await cachedCensus(set);
     const flags = feederFlags(new Map(set.map((u) => [u, census.get(u)!.table])), ages, 2025, 10);
+    const { pipelineView } = await import("../src/lib/admissions/views-api");
+    const view = await pipelineView("137625", entryPoint("11+")!, []);
+    if (!("feeders" in view)) return { pass: false, detail: "pipeline view empty" };
+    const sameAsView = JSON.stringify(view.feeders.map((f) => [f.urn, f.flag?.id ?? null])) === JSON.stringify(flags.map((f) => [f.urn, f.flag?.id ?? null]));
     // Raw: full-time pupils at those ages, 2023 and 2025.
     // Each year asked for on its own, so a converted school reads its predecessor's year (the
     // reference lookup's lineage rule), as the admissions census read does.
@@ -545,7 +550,7 @@ const RUNNERS: Record<string, Runner> = {
       if ((f.flag?.id ?? null) !== want) ok = false;
       out.push(`${f.urn}:${ch.toFixed(0)}%${f.flag ? "=" + f.flag.id.replace("feeder_", "") : ""}`);
     }
-    return { pass: ok && flags.length === set.length, detail: fmt({ area: area.toFixed(1) + "%", feeders: out.join(" ") }) };
+    return { pass: ok && sameAsView && flags.length === set.length, detail: fmt({ area: area.toFixed(1) + "%", sameAsView, feeders: out.join(" ") }) };
   },
 
   // R-POST16-DEFAULT-SET (0.6.5 S4): the Post-16 default set has Post-16 provision and shares

@@ -57,12 +57,13 @@ export async function pipelineView(urn: string, ep: EntryPoint, saved: SavedList
     }
   }
   const p = await buildPipeline(urn, ep, { sets, laBlend: blendFromLists(lists), sex, includeProjection: !!o.projection, today: o.today });
-  // Feeder flags on the youngest counted rung's set, across the ages it holds (round 1, unchanged).
+  // Feeder flags at one age, the age below entry, on that rung's set without the school: the same
+  // flags as the feeder table and map (R-ADM-FLAG-FEEDER; 0.8 audit fixes, follow-up to 8).
   const thresholds = await loadThresholds();
   const minCohort = thresholds?.get(phaseForEntryAge(ep.age), "entry_cohort")?.minCohort ?? 10;
-  const feederAge = p.sets.find((s) => s.age < 11)?.age ?? p.sets[0]?.age;
-  const feederSet = p.sets.find((s) => s.age === feederAge)?.urns ?? [];
-  const ages = p.sets.filter((s) => s.urns === feederSet || s.urns.join() === feederSet.join()).map((s) => s.age);
+  const feederAge = p.sets.find((s) => s.age === Math.max(4, ep.age - 1))?.age ?? p.sets[0]?.age;
+  const feederSet = (p.sets.find((s) => s.age === feederAge)?.urns ?? []).filter((u) => u !== urn);
+  const ages = feederAge === undefined ? [] : [feederAge];
   const census = await cachedCensus(feederSet);
   const flags = feederFlags(new Map(feederSet.map((u) => [u, census.get(u)?.table ?? new Map()])), ages, CURRENT_CENSUS_PERIOD, minCohort);
 

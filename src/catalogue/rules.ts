@@ -1062,7 +1062,7 @@ export const RULES: Rule[] = [
   {
     id: "R-ADM-FLAG-FEEDER",
     statement:
-      "A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age, as the feeder table and map compare it; the pipeline chart's own flags still read every age the feeder set holds, listed for him.)",
+      "A feeder whose pupils at one age -- the age below entry (Year 6 at 11+; Reception's schools at 4+) -- fell more than the area's (the whole feeder set, at that age) by at least 5 points over two years is a red flag; rising or stable numbers (no worse than -2%) mark a school to focus on. Never from a cohort under the minimum. (Guy's call, 0.8 audit fixes 8, A6: one age; the feeder table, the map and the pipeline chart's flags all read that age, on the set without the school.)",
     why: "Pipeline schools to watch and to court.",
     appliesTo: "Admissions Pipelines",
     enforcedIn: ["src/lib/admissions/feeders.ts", "src/lib/admissions/flags.ts:feederFlag"],
