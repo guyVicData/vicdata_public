@@ -2258,3 +2258,17 @@ The round for `docs/v0.8/vicdata_0_8_igcse_subject_rankings_claude_code_prompt_v
     - Six concurrent rehearsals: all failed before, all pass after.
     - No timeout was raised.
 11. **The ingest's group subject areas follow the rule** (`~/dev/vicdata` `feat/igcse-subject-areas`): a dry run, not promoted. Guy's command is in the ingest report.
+12. **Follow-ups 5–7** (added to the prompt at 10:26, after this round had started; built in the same round):
+    - **Group legends (5):**
+      - a set's legend entry stays on one line, truncated, with the full name as its tooltip;
+      - Results' title does the same; Against others clamps a long set name to two lines;
+      - the trends' (i) names the set in full.
+      - Tested with the longest real set label: mix-matched for "Christ Church (Church of England) Infant School and Nursery and Christ Church (Church of England) Junior School Federation", 168 characters, the longest of 3,733 group names. Checked in headless Chrome at 1440 and 390.
+    - **Negative zero (6a):** every measure's delta takes its sign from the printed figure, so a change that rounds to zero prints as zero does ("+0.0", not "−0.0").
+    - **"Has grown the most" (6a):** the summary says "has fallen the least" when every subject fell, and "has held steady" at zero.
+    - **Duplicate chips (6b):** chips that would read alike take the exact qualification ("Business Studies · BTEC Extended Diploma"), then DfE's name. Not merged: each chip is its own qualification's figures.
+    - **`engmath_97_percent` (6c): not built.** No view in the app shows it (no measure, headline or table reads it), so there is no trend or change line to remove. Showing it, current year only, is a new figure that needs a place chosen. For Guy.
+    - **BTEC historic points (7): cured.**
+      - Croydon College (130432) has no zero-point BTEC rows in 2021/22 or 2022/23: each has real points or null.
+      - Across every school, BTEC and OCR rows with zero points: 2021/22 none, 2022/23 one, 2023/24 one.
+      - The two remaining (132779 Construction Extended Diploma 2022/23, 8 entries; 130681 Computer Architecture Certificate 2023/24, 6 entries) look like genuine all-fail results, not the old bug. Not changed.
