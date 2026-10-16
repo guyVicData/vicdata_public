@@ -177,3 +177,27 @@ Two commits on `v0.8-groups-r3`, after `3258c7f`:
 | SMT parity | **156 / 156 DOM identical**; 308 of 312 PNGs identical, 4 antialiasing noise (max 1–2 of 255) |
 
 The Admissions and SMT bundles of the two commits differ only in the `mixMatched` note string.
+
+## 16 Oct: rebased onto `main` after the audit fixes merged
+
+- **The rebase:** `v0.8-groups-r2` onto `main` @ `66c6a4d`, then `v0.8-groups-r3` onto it. The one conflict was `docs/OPEN_QUESTIONS.md`: main's "After the stop" notes are kept, then the groups sections. The `src/`, `supabase/` and `scripts/` diffs are byte-identical to before the rebase.
+- **Separate commit:** `supabase/tests/v08_subject_latest_names_pglite.mjs` checks the migration's map against the app's, less the 16 KS5 rows `c65acfd` added without a migration. It had failed on `main` since then (31 vs 47). A GCSE row planted in the app's map still fails it.
+- **Fixtures refreshed from the ingest (vicdata `8e17f2c`):**
+  - each group's comparisons are 392 rows, not 448: only the `mix_matched:england` rows went, and every other row is the same by key and value;
+  - in the aggregate files only `computed_at` changed.
+- **Production after Guy's re-promote:**
+  - the comparisons match the fixtures by key and value, now in the same order;
+  - the aggregates match in every figure (only the build's metadata differs).
+
+**Checks, with the fixture switch off:**
+
+| Check | r2 alone | r3 |
+|---|---|---|
+| tsc, eslint, `next build` (no fixture flag or service key in `.next/static`) | clean | clean |
+| Unit tests | 477 / 477 | 483 / 483 |
+| R-GROUP on production | 6 / 6 | 13 / 13 (and 13 / 13 on the refreshed fixtures) |
+| Rule tests on production | — | **97 pass, 0 fail** |
+| PGlite, `supabase/tests/*.mjs` | — | **16 / 16** |
+| Teacher parity against `main` | — | 2,875 pairs: 2,872 identical, 2 noise, 1 unexpected (the known `rk-137625-nat-pending` Trends map flake). Its case set rerun: 228 identical, 1 noise, 0 unexpected. Public page SSR identical |
+| Admissions parity against `main` | — | **328 / 328 identical** |
+| SMT parity against `main` | — | **DOM 156 / 156 identical**; 11 PNGs differ by antialiasing only (max 1 of 255) |
