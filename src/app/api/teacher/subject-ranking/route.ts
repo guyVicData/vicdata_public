@@ -8,6 +8,7 @@ import { GRADE_SCALES } from "@/lib/subject-grades";
 import { subjectRanking, type RankMeasure, type SubjectRanking } from "@/lib/subject-ranking";
 import type { SubjectRankingBody, SubjectRankingPayload } from "@/lib/subject-ranking-view";
 import { latestSubjectName } from "@/lib/subject-latest-names";
+import { schoolSyncStamp } from "@/lib/school-sync-stamp";
 
 // VicData 0.6.6: a national or regional ranking on the measure in view -- the focused subject
 // (the exact qualification at Post-16), points / entries / Grade 4+ / A*-E / a band or a
@@ -85,7 +86,9 @@ export async function POST(request: NextRequest) {
   const familyId = typeof body.familyId === "string" ? body.familyId : null;
   const qualificationType = typeof body.qualificationType === "string" ? body.qualificationType : null;
   const period = body.period ?? null;
-  const popKey = populationKey(phase, filters);
+  // The last school sync is part of the population's key, so a sync clears this route's answers and
+  // the fallback's figures with the population itself (school-sync-stamp.ts).
+  const popKey = `${populationKey(phase, filters)}|sync:${await schoolSyncStamp()}`;
   const key = `subject-ranking:${popKey}|${urn}|${body.subject}|${familyId ?? ""}|${qualificationType ?? ""}|${JSON.stringify(measure)}|${period ?? "latest"}`;
 
   const started = Date.now();
