@@ -134,8 +134,9 @@ export const SMT_NOTES = {
   ranks: "Ranks are among the schools with that result: highest first, ties share a place. The count says how many were ranked.",
   setRank: "{rank} of {of} {setLabel} with {stage} results",
   // R-IGCSE-EXCL, said for SMT.
-  igcseChip: "No published GCSE results: this school sits IGCSEs, which DfE's tables don't count, so its GCSE figures aren't comparable.",
-  igcseView: "{school} sits IGCSEs, which DfE's GCSE tables don't count. Its GCSE figures would read near zero, so it isn't compared or ranked at GCSE. Post-16 results are compared as usual.",
+  igcseChip: "No comparable whole-school GCSE results: this school sits IGCSEs, which DfE's tables don't count. Its GCSE subjects are ranked like any other school's.",
+  igcseView: "{school} sits IGCSEs, which DfE's GCSE tables don't count. Its whole-school GCSE figures (Attainment 8, English and maths) would read near zero, so they aren't compared or ranked. Each subject it entered as GCSE is ranked like any other school's, and each subject area where it took no subject as IGCSE. Post-16 results are compared as usual.",
+  igcseAreaNotRanked: "not ranked against other schools: {area}",
   igcseRow: "not ranked: IGCSE",
   // Progress 8 (R-SMT-P8-REASON): which reason applies, never a blank.
   p8Independent: "Progress 8 is not published for independent schools.",
@@ -318,6 +319,7 @@ export const GROUP_NOTES = {
   comparesOnly: "Compares only groups of the same type and a similar size band. A self-declared group is never ranked against official groups.",
   missingListed: "Schools without published results (IGCSE-heavy schools, preps with no KS2, schools outside England) are listed and labelled, never left out silently.",
   likelyWhyCh: "“Likely” means Companies House shows {group} controlling the school’s company, not yet confirmed by a second source.",
+  comparedAgainst: "Compared against: {set}.",
   mixMatched: "Mix-matched: non-group schools in the same regions and phases as {group}, reweighted to its mix, so the gap isn’t just geography.",
   likeForLike: "Like for like: each year’s change over the schools with a roll in both years, so a school joining or leaving doesn’t move the line.",
   outsideEngland: "{n} outside England: no DfE data, counted and listed, never added up.",

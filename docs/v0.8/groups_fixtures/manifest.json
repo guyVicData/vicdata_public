@@ -1,7 +1,7 @@
 {
  "note": "Dry-run results in the exact shape the production lookups return (PostgREST: jsonb as is; table functions as json_agg of the rows). For the app's tests, parity harnesses and screenshots until the promote; the same tests then run against production unchanged.",
- "ingest_commit": "7c4b423",
- "inputs_fetched_at": "2026-10-15 23:35:20",
+ "ingest_commit": "bf1671c",
+ "inputs_fetched_at": "2026-10-16 09:44:18",
  "migrations": [
   "20261017090000_group_aggregates.sql",
   "20261017100000_group_comparison_lookup_order.sql"

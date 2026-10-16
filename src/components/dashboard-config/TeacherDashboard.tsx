@@ -22,7 +22,7 @@
 // unlocks the dashboard, once, per person, per phase. §14: every heading is the real
 // question it answers, and the onboarding live-count moment is protected -- ticking a
 // subject moves a real count immediately, which is the first thing a new user feels.
-import { igcseGroupLabelFor, igcseTargetLine } from "@/lib/igcse-words";
+import { igcseGroupLabelFor, igcseGroupNoteFor, igcseTargetLine } from "@/lib/igcse-words";
 import { loadDraftVicData, loadPublishedVicData } from "@/lib/published-vicdata";
 import { editorWritesSettled, setEditOn, useInPlaceEdit } from "@/lib/edit-mode";
 import type { InPlaceHost } from "@/components/editor/EditorScreen";
@@ -77,7 +77,7 @@ import type { FrameSetGrades } from "@/lib/view-series/frames";
 import { MODERN_GRADE_FROM } from "@/lib/grade-rows";
 import { shortSubjectLabels } from "@/lib/subject-short-labels";
 import { shortQualificationLabel } from "@/components/data-view/SubjectAreaSection";
-import { SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf } from "@/lib/teacher-view-theme";
+import { SOURCE_NAME, academicYearLabel, colourByGroup, exactQualificationLabel, qualificationShortLabel, QUALIFICATION_FAMILIES, qualificationFamilyOf, uniqueChipLabels } from "@/lib/teacher-view-theme";
 import { fetchComparatorQualifications, seriesFromQualificationRows, type ComparatorQualificationRow } from "@/lib/teacher-view-comparator-quals";
 import { comparabilityKey, familyFor, familyLabelFor } from "@/lib/teacher-view-catalogue";
 import { QualificationFamilyTiles } from "@/components/teacher/QualificationFamilyTiles";
@@ -259,7 +259,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Snagging round 1 Part 4: a ranking also brings its rank-in-the-whole-population and
   // population-average figures (RankingFigures), which a list of schools does not have.
   // 0.6.7 B1: `profiles` -- the set's lean school details, at GCSE and Post-16 (chooser-set).
-  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; ranking: RankingFigures | null; profiles?: WireAcademicSchoolProfile[] } | null>(null);
+  const [chooserSet, setChooserSet] = useState<{ key: string; rows: ComparatorSchool[]; subjectRows?: ComparatorSchool[]; subjectNote?: string | null; seriesByUrn: Record<string, SchoolSeries>; note: string | null; ranking: RankingFigures | null; profiles?: WireAcademicSchoolProfile[] } | null>(null);
   // The Results card's anchor -- see englandAverages in the dashboard route: the subject
   // itself at GCSE; at Post-16 the subject in its exact qualification, with no fallback.
   const [englandAvg, setEnglandAvg] = useState<{
@@ -503,9 +503,18 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     };
   }, [savedSets, storedSet, chooserRaw, chooserSet]);
   const { storedSaved, chooserChoice, activeChoiceKey } = activeComparison(storedSet, chooserRaw, savedSets);
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): the same sets for a subject view at GCSE -- with the IGCSE schools
+  // the whole-school rows leave out, where the server sent them (subjectRows). Only subject views read it.
+  const subjectComparatorSets = useMemo<Record<string, ComparatorSchool[] | undefined>>(() => {
+    const key = activeComparison(storedSet, chooserRaw, savedSets).activeChoiceKey;
+    return {
+      ...Object.fromEntries((savedSets?.sets ?? []).map((set) => [savedSetKey(set.id), set.subjectRows ?? set.rows])),
+      ...(key ? { [CHOOSER_SET_ID]: chooserSet?.key === key ? chooserSet.subjectRows ?? chooserSet.rows : [] } : {}),
+    };
+  }, [savedSets, storedSet, chooserRaw, chooserSet]);
   const comparatorUrns = useMemo(
-    () => Array.from(new Set(Object.values(allComparatorSets).flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
-    [allComparatorSets],
+    () => Array.from(new Set([...Object.values(allComparatorSets), ...Object.values(subjectComparatorSets)].flatMap((set) => (set ?? []).map((r) => r.urn)))).sort(),
+    [allComparatorSets, subjectComparatorSets],
   );
 
   // Resolve the chooser's unsaved choice whenever it changes (and once on load).
@@ -519,7 +528,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
       const token = data.session?.access_token;
       if (!token) return;
       // Shared for 5 minutes with every other view of this school (fetch-cache.ts).
-      const res = await cachedFetchJson<{ rows: ComparatorSchool[]; seriesByUrn: Record<string, SchoolSeries>; note: string | null; profiles?: WireAcademicSchoolProfile[] } & Partial<RankingFigures>>("/api/teacher/chooser-set", {
+      const res = await cachedFetchJson<{ rows: ComparatorSchool[]; subjectRows?: ComparatorSchool[]; subjectNote?: string | null; seriesByUrn: Record<string, SchoolSeries>; note: string | null; profiles?: WireAcademicSchoolProfile[] } & Partial<RankingFigures>>("/api/teacher/chooser-set", {
         token,
         method: "POST",
         body: JSON.stringify({
@@ -545,7 +554,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
               targetTied: body.targetTied ?? false,
             }
           : null;
-      if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, seriesByUrn: body.seriesByUrn, note: body.note, ranking, ...(body.profiles ? { profiles: body.profiles } : {}) });
+      if (!cancelled) setChooserSet({ key: activeChoiceKey, rows: body.rows, ...(body.subjectRows ? { subjectRows: body.subjectRows, subjectNote: body.subjectNote ?? null } : {}), seriesByUrn: body.seriesByUrn, note: body.note, ranking, ...(body.profiles ? { profiles: body.profiles } : {}) });
     })();
     return () => { cancelled = true; };
   }, [activeChoiceKey, schoolUrn, phase, supabase]);
@@ -595,7 +604,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     const forPhase = phase;
     const lean = forPhase === "ks4" || forPhase === "ks5";
     const wanted = comparatorUrns.includes(schoolUrn) ? comparatorUrns : [...comparatorUrns, schoolUrn];
-    const covered = new Set((chooserProfiles?.rows ?? []).map((r) => r.urn).concat(schoolUrn));
+    const covered = new Set([...(chooserProfiles?.rows ?? []), ...(chooserProfiles?.subjectRows ?? [])].map((r) => r.urn).concat(schoolUrn));
     const fromChooser = lean && chooserProfiles?.profiles && covered.size === wanted.length && wanted.every((u) => covered.has(u)) ? chooserProfiles.profiles : null;
     let cancelled = false;
     (async () => {
@@ -1437,10 +1446,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // no qualifications, so everything matches there.
   const { focusQualFamily, inFocusQualFamily } = focusQualificationFamily(phase, focusItem);
   const focusFamilyLabel = focusItem ? familyLabelFor(headline, focusItem.subject) ?? "its category" : null;
-  // 0.8 audit fixes (R-IGCSE-GROUP-LABEL): Column 1 names the school's own group, so at an IGCSE school
-  // a group without the subjects it takes as IGCSE says so ("Sciences & Maths (sciences only: maths
-  // taken as IGCSE)"). England's lines keep the plain name: theirs is the whole group.
-  const focusGroupLabel = focusItem && phase === "ks4" ? igcseGroupLabelFor(headline, focusItem.subject, igcseOwn) ?? focusFamilyLabel : focusFamilyLabel;
+  // 0.8 audit fixes (R-IGCSE-GROUP-LABEL), shortened in 0.8 IGCSE subjects (follow-up 1): everywhere the
+  // school's own category is named (tiles, tables, chips, Context, "Add an average"), an IGCSE school's
+  // category without a subject it takes as IGCSE reads "Sciences & Maths · no maths (IGCSE)", and the
+  // full sentence ("sciences only: maths taken as IGCSE") is in Column 1's and Context's (i). England's
+  // lines keep the plain name: theirs is the whole group.
+  const focusCategoryLabel = focusItem && phase === "ks4" ? igcseGroupLabelFor(headline, focusItem.subject, igcseOwn) ?? focusFamilyLabel : focusFamilyLabel;
+  const focusCategoryNote = focusItem && phase === "ks4" ? igcseGroupNoteFor(headline, focusItem.subject, igcseOwn) : null;
+  // A category name in a lower-case sentence keeps "IGCSE" in capitals.
+  const lowerName = (label: string) => label.toLowerCase().replace(/\(igcse\)/g, "(IGCSE)");
   const categoryItems: SubjectItem[] = categoryItemsOf(focusItem, items, headline, inFocusQualFamily);
   // The peers are context, not the teacher's own subjects, so they take one muted colour
   // and the focused subject keeps its qualification colour.
@@ -1504,7 +1518,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
     resultsSeries.length < 2
       ? []
       : [
-          { label: `${focusFamilyLabel} average`, values: memberMeans(resultsPeriods, resultsSeries) },
+          { label: `${focusCategoryLabel} average`, values: memberMeans(resultsPeriods, resultsSeries) },
           ...(hasEnglandPointsBenchmark(resultsMeasure.id)
             ? [{
                 label: `England ${focusFamilyLabel} average`,
@@ -1601,11 +1615,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // Live review Part B: shown as "All subjects" (the id stays "whole"). This one label feeds
   // the panel tag, the Trend/% change sentences, the benchmark and the donut.
   const contextGroupLabel =
-    contextAgainst === "category" ? focusFamilyLabel ?? "Subject category" : contextAgainst === "selected" ? "Selected subjects" : "All subjects";
+    contextAgainst === "category" ? focusCategoryLabel ?? "Subject category" : contextAgainst === "selected" ? "Selected subjects" : "All subjects";
   // Current panel rework round 1: the same group as a title reads it (the brief's own
   // phrases): the category's name, "all subjects" or "your selected subjects".
   const contextGroupPhrase =
-    contextAgainst === "category" ? focusFamilyLabel ?? "its subject category" : contextAgainst === "selected" ? "your selected subjects" : "all subjects";
+    contextAgainst === "category" ? focusCategoryLabel ?? "its subject category" : contextAgainst === "selected" ? "your selected subjects" : "all subjects";
 
   // Two different group figures, and they are not interchangeable:
   //   - the TOTAL, which the donut's share is a share of;
@@ -1704,6 +1718,9 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // it. Nothing new is fetched here; subjectYearsFor reads the profiles already loaded.
   // 0.6.5 S3: at Post-16, the set's exact-qualification rows (null while they load; rows null
   // if the request failed). `urns` is the set and the school, as Comparisons draws them.
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): every view of the focused subject reads the set with its IGCSE
+  // schools kept (at GCSE; the same sets elsewhere): they are ranked in the subjects they entered as GCSE.
+  const subjectSets = phase === "ks4" ? subjectComparatorSets : allComparatorSets;
   const exactQuals = (() => {
     if (phase !== "ks5" || !focusItem || !schoolUrn || !activeMapChip) return null;
     const urns = Array.from(new Set([schoolUrn, ...(allComparatorSets[comparisonsSet] ?? []).map((sc) => sc.urn)])).sort();
@@ -1750,14 +1767,14 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           : contextMembers;
       const its = contextItemsOf({ focusItem, against, candidateItems, items, contextMembers: members, inFamily: inContextFamily, keepToFamily: contextKeepsToFamily(phase, measureId) });
       return {
-        label: kind === "category" ? focusFamilyLabel ?? "Subject category" : kind === "allSubjects" ? "All subjects" : "Selected subjects",
+        label: kind === "category" ? focusCategoryLabel ?? "Subject category" : kind === "allSubjects" ? "All subjects" : "Selected subjects",
         members: keepFocusOrFigured(its.map((i) => ({ key: i.key, values: periods.map((p) => valueAt(i, p)), counts: periods.map((p) => entriesAt(i, p)) })), focusKey),
       };
     };
   const schoolSetOn = (figure: "results" | "candidates", periods: number[]) => () => {
     if (!activeMapChip || !mapProfiles) return null;
     if (comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking") return null;
-    const others = (allComparatorSets[comparisonsSet] ?? []).filter((s) => !s.isTarget && s.urn !== schoolUrn);
+    const others = (subjectSets[comparisonsSet] ?? []).filter((s) => !s.isTarget && s.urn !== schoolUrn);
     const at = (rows: { period: number; value: number }[] | undefined, p: number) => rows?.find((r) => r.period === p)?.value ?? null;
     return {
       label: activeSetLabel,
@@ -1776,7 +1793,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const setGradeRowsFor = (): FrameSetGrades | null => {
     if (!focusItem || !schoolUrn || (phase !== "ks4" && phase !== "ks5")) return null;
     if (comparisonsSet === CHOOSER_SET_ID && chooserChoice?.kind === "ranking") return null;
-    const all = allComparatorSets[comparisonsSet] ?? [];
+    const all = subjectSets[comparisonsSet] ?? [];
     const others = all.filter((s) => !s.isTarget && s.urn !== schoolUrn);
     if (!others.length) return null;
     // Comparisons' own request, to the letter (its gradeUrns), so the two share one fetch.
@@ -1821,7 +1838,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // page's own rate function; the school's own from its own grade rows.
   const column1MapSeries = (): MapSeries | null => {
     if (!focusItem || !schoolUrn || !activeMapChip) return null;
-    const set = allComparatorSets[comparisonsSet] ?? [];
+    const set = subjectSets[comparisonsSet] ?? [];
     const urns = Array.from(new Set([schoolUrn, ...set.map((sc) => sc.urn)]));
     const onRate = usingThreshold || (usingBands && !!bandRange);
     const measure = resultsMeasureShown;
@@ -1891,7 +1908,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   const comparatorSetNote =
     comparisonsSet === CHOOSER_SET_ID
       ? chooserSet && chooserSet.key === activeChoiceKey
-        ? chooserSet.note ?? undefined
+        ? (activeMapChip && chooserSet.subjectRows ? chooserSet.subjectNote : chooserSet.note) ?? undefined
         : "Loading these schools…"
       : storedSaved === "pending"
         ? "Loading these schools…"
@@ -1962,6 +1979,15 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         <Link href="/sources" className="text-[var(--muted)] underline">Sources</Link>
       </>
     );
+  // 0.8 IGCSE subjects (follow-up 1): the panels that name the school's own category carry the IGCSE
+  // label's full sentence in their (i) ("Sciences & Maths (sciences only: maths taken as IGCSE). ...").
+  const categorySource = (span?: string) =>
+    focusCategoryNote ? (
+      <>
+        {panelSource(span)}
+        <span className="mt-1.5 block" data-igcse-category-note="">{focusCategoryNote}</span>
+      </>
+    ) : panelSource(span);
 
   // What both nav layouts read -- computed once here so the desktop pair and the phone nav
   // cannot disagree about which phases, subjects or icons there are.
@@ -1970,11 +1996,11 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
   // "GCSE — {school}" once, so "· GCSE" on every chip was noise. The one exception is a
   // subject ticked under two qualifications (GCSE and BTEC Art), where two identical
   // chips could not be told apart; those two keep their qualification.
+  // 0.8 IGCSE subjects (follow-up 6): never two chips with one label (uniqueChipLabels).
+  const chipLabels = phase === "ks2" ? new Map<string, string>() : uniqueChipLabels(phase, tickedItems);
   const focusSubjects: FocusSubject[] = phase === "ks2" ? [] : tickedItems.map((i) => ({
     key: i.key,
-    label: tickedItems.some((o) => o.key !== i.key && o.subject === i.subject)
-      ? `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`
-      : i.subject,
+    label: chipLabels.get(i.key) ?? i.subject,
     colour: colourOf(i),
   }));
   const onSharedMeasure = (next: SharedMeasure) => setColumnSetting(SHARED_MEASURE_KEY, next);
@@ -2110,7 +2136,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // category averages) leave the per-subject Trend, as they did for Context.
         changeScope="individual"
         spaciousBars
-        categoryLabel={focusGroupLabel ?? undefined}
+        categoryLabel={focusCategoryLabel ?? undefined}
         theme={theme}
         // % change: the focused subject's average point score against its LA, region
         // and England (the shared GeographyView), on average point score only -- no
@@ -2198,7 +2224,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           trend: "How have my subjects' results moved, year on year?",
           change: "Which of my subjects' results have moved most?",
         }}
-        source={panelSource}
+        source={categorySource}
         panels={panelsOf(COL1)}
         onPanelsChange={(next) => setPanels(COL1, next)}
         notes={notesFor(COL1)}
@@ -2231,8 +2257,8 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         // per subject at GCSE, exactly as candidateItems counts its category.
         schoolSubjects={schoolSubjectsOf(items, focusItem, focusKey, phase)
           .map((i) => ({ key: i.key, values: categoryPeriods.map((p) => entriesAt(i, p)) }))}
-        groupLabel={`${focusFamilyLabel} average`}
-        categoryLabel={focusGroupLabel ?? undefined}
+        groupLabel={`${focusCategoryLabel} average`}
+        categoryLabel={focusCategoryLabel ?? undefined}
         // Live review Part 5: the % Change table compares the focused subject with its
         // LA, region and England. At GCSE only where the focused item is the
         // points-bearing qualification -- the area figures count GCSE points-eligible
@@ -2256,7 +2282,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         panels={panelsOf(COL1)}
         onPanelsChange={(next) => setPanels(COL1, next)}
         question={q.howMany}
-        source={panelSource}
+        source={categorySource}
         notes={notesFor(COL1)}
         currentLabel={COLUMN_TITLE.candidates}
       />
@@ -2346,7 +2372,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           />
         }
         benchmarkLabel={contextGroupLabel}
-        benchmarkNoun={contextAgainst === "category" ? `the ${contextGroupLabel} average` : `the ${contextGroupLabel.toLowerCase()} average`}
+        benchmarkNoun={contextAgainst === "category" ? `the ${contextGroupLabel} average` : `the ${lowerName(contextGroupLabel)} average`}
         groups={[{ label: `${contextGroupLabel} average`, values: atContextPeriod(contextGroupAverage) }]}
         donut={{
           // §4.2: a share of an average point score is not a meaningful percentage,
@@ -2378,10 +2404,10 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         }}
         questions={{
           current: q.nearMe,
-          trend: `How have my subjects moved against ${contextGroupLabel.toLowerCase()}?`,
-          change: `Which of my subjects have moved most, against ${contextGroupLabel.toLowerCase()}?`,
+          trend: `How have my subjects moved against ${lowerName(contextGroupLabel)}?`,
+          change: `Which of my subjects have moved most, against ${lowerName(contextGroupLabel)}?`,
         }}
-        source={panelSource}
+        source={categorySource}
         panels={panelsOf("context")}
         onPanelsChange={(next) => setPanels("context", next)}
         notes={notesFor("context")}
@@ -2483,7 +2509,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         activeSet={activeSetOption}
         setLabel={activeSetLabel}
         setNote={comparatorSetNote}
-        schools={allComparatorSets[comparisonsSet] ?? []}
+        schools={(activeMapChip ? subjectSets : allComparatorSets)[comparisonsSet] ?? []}
         seriesByUrn={activeMapChip ? comparatorSubjectSeries : { ...seriesByUrn, ...(savedSets?.seriesByUrn ?? {}), ...(chooserSet?.seriesByUrn ?? {}) }}
         // Part 3: "Choose schools…" / "Edit" open the chooser. A new set starts from
         // whichever set is selected now.
@@ -2600,7 +2626,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
           results: resultsMeasure.id as ResultsMeasureId,
           focus: focusItem ? { key: focusItem.key, label: phase === "ks5" ? focusItem.label : focusItem.subject } : null,
           focusSubject: focusItem ? { subject: focusItem.subject, qualificationType: focusItem.qualificationType } : null,
-          category: focusFamilyLabel,
+          category: focusCategoryLabel,
           contextAgainst,
           contextGroupLabel,
           setId: comparisonsSet ?? null,
@@ -2688,7 +2714,7 @@ export function TeacherDashboard(props: TeacherDashboardProps) {
         labels: {
           results: resultsMeasure.id as ResultsMeasureId,
           subject: focusItem ? { label: phase === "ks5" ? focusItem.label : focusItem.subject, key: focusItem.key } : null,
-          ...(focusFamilyLabel ? { category: focusFamilyLabel } : {}),
+          ...(focusCategoryLabel ? { category: focusCategoryLabel } : {}),
         },
         states: {
           compareAgainst: contextAgainst,

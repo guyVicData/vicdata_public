@@ -24,7 +24,6 @@
 //   R-TREND-FROM-2223  the change list measures from 2022/23.
 //   R-NUMBER-TYPE-HONESTY  entries change in %, points and rates in points / pp.
 //   Ties share a rank; higher is better (entries: more entries rank higher).
-import { igcseEngland } from "./igcse";
 import { callReferenceRpc, type AcademicSubjectHeadlineRow, type AcademicSubjectQualificationHeadlineRow } from "./vicdata-reference";
 import { gradeRowsFromRollup, mapHistoricKs5Grade, starIsAStar, MODERN_GRADE_FROM, HISTORIC_GRADE_FROM, type GradeRollupRow } from "./grade-rows";
 import { DOUBLE_AWARD_QUALIFICATION, GRADE_SCALES, NON_GRADE_VALUES, BOTTOM_RANK, bandRate, doubleAwardPoints, inRange, isDoubleAward, thresholdRate, type GradeRange } from "./subject-grades";
@@ -427,21 +426,11 @@ export async function subjectRanking(req: SubjectRankingRequest, popKey: string)
 }
 
 async function rankedWithIgcse(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {
-  if (req.phase !== "ks4") return rankAnswered(req, popKey);
-  // 0.8 audit fixes (1, R-IGCSE-EVERYWHERE): at GCSE the IGCSE rule's schools leave the population,
-  // nationally, regionally and in any set; an IGCSE school itself is never placed.
-  const igcse = await igcseEngland();
-  const urns = req.urns.filter((u) => !igcse.has(u));
-  const out = await rankAnswered({ ...req, urns }, `${popKey}|no-igcse`);
-  const targetIgcse = igcse.has(req.targetUrn);
-  const unplaced = (w: WindowRow[]) => (targetIgcse ? w.filter((r) => r.urn !== req.targetUrn) : w);
-  return {
-    ...out,
-    ...(targetIgcse ? { inRanking: false, targetRank: null, target: null, change: out.change ? { ...out.change, targetRank: null, target: null, window: unplaced(out.change.window) } : null } : {}),
-    window: unplaced(out.window),
-    igcseOut: req.urns.length - urns.length,
-    targetIgcse,
-  };
+  // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): a single subject a school entered as GCSE 9-1 ranks it like any
+  // other school, IGCSE school or not -- DfE's subject figures are GCSE entries only, so a school with a
+  // figure took that subject as GCSE. (The audit fixes had taken IGCSE schools out of every GCSE subject
+  // ranking; only whole-school measures and incomplete subject groups leave them out now.)
+  return { ...(await rankAnswered(req, popKey)), igcseOut: 0, targetIgcse: false };
 }
 
 async function rankAnswered(req: SubjectRankingRequest, popKey: string): Promise<SubjectRanking> {

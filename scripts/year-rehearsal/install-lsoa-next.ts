@@ -25,15 +25,22 @@ export function installLsoaNext(): () => void {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const m = url.startsWith(api) ? /\/rest\/v1\/rpc\/(school_context_lookup|lsoa_context_lookup|area_context)\b/.exec(url) : null;
     if (!m || typeof init?.body !== "string") return real(input, init);
+    // A failed answer (a statement timeout under load) passes through untouched, so the app's own retry
+    // (smt/area-data.ts rpcRetrying) sees it as in production. Reading it as data threw a TypeError
+    // here, which the app can't retry: R-SMT-YEARS failed whenever the database was busy.
     if (m[1] === "area_context") {
-      const j = (await (await real(input, init)).json()) as { urn: string; lsoa_year: number | null; years: { year: number; children: (number | null)[] }[] } | null;
+      const res = await real(input, init);
+      if (!res.ok) return res;
+      const j = (await res.json()) as { urn: string; lsoa_year: number | null; years: { year: number; children: (number | null)[] }[] } | null;
       if (!j || !j.years.length) return Response.json(j);
       const last = j.years[j.years.length - 1];
       const next = { year: last.year + 1, children: last.children.map((v, a) => (v === null ? null : Math.round(v * factorOf(`${j.urn}|${a}`)))) };
       return Response.json({ ...j, lsoa_year: next.year, years: [...j.years, next] });
     }
     if (m[1] === "school_context_lookup") {
-      const rows = (await (await real(input, init)).json()) as Row[];
+      const res = await real(input, init);
+      if (!res.ok) return res;
+      const rows = (await res.json()) as Row[];
       const byUrn = new Map<string, Row>();
       for (const r of rows) if (!byUrn.has(String(r.urn)) || (byUrn.get(String(r.urn))!.year as number) < r.year) byUrn.set(String(r.urn), r);
       const added = [...byUrn.values()].map((r) => ({ ...r, year: r.year + 1, children: (r.children ?? []).map((v, a) => Math.round(v * factorOf(`${r.urn}|${a}`))) }));
@@ -41,10 +48,14 @@ export function installLsoaNext(): () => void {
     }
     const body = JSON.parse(init.body) as { p_lsoas: string[]; p_year: number };
     // A year the ingest doesn't hold yet answers with the year below's rows, relabelled.
-    const probe = async (y: number) => (await (await real(input, { ...init, body: JSON.stringify({ ...body, p_year: y }) })).json()) as Row[];
-    const direct = await probe(body.p_year);
+    const probe = (y: number) => real(input, { ...init, body: JSON.stringify({ ...body, p_year: y }) });
+    const directRes = await probe(body.p_year);
+    if (!directRes.ok) return directRes;
+    const direct = (await directRes.json()) as Row[];
     if (direct.length) return Response.json(direct);
-    const prev = await probe(body.p_year - 1);
+    const prevRes = await probe(body.p_year - 1);
+    if (!prevRes.ok) return prevRes;
+    const prev = (await prevRes.json()) as Row[];
     return Response.json(prev.map((r) => ({ ...r, year: body.p_year, children: (r.children ?? []).map((v, a) => Math.round(v * factorOf(`${r.lsoa21_code}|${a}`))) })));
   };
   return () => {

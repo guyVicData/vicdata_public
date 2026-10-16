@@ -1,3 +1,4 @@
+import { competitionRanks } from "../rank";
 // VicData 0.7 admissions (A1): small shared statistics. Pure.
 
 /** Percentile with linear interpolation between order statistics (numpy's default, "type 7"). */
@@ -12,8 +13,5 @@ export function percentile(values: number[], p: number): number | null {
 
 /** Ranks, highest first; ties share a rank and the next skips (R-RANK-TIES). */
 export function ranksOf<K>(items: { key: K; value: number | null }[]): Map<K, number> {
-  const out = new Map<K, number>();
-  const real = items.filter((i) => i.value !== null).sort((a, b) => b.value! - a.value!);
-  real.forEach((it, i) => out.set(it.key, i > 0 && it.value === real[i - 1].value ? out.get(real[i - 1].key)! : i + 1));
-  return out;
+  return new Map(Array.from(competitionRanks(items), ([k, p]) => [k, p.rank]));
 }

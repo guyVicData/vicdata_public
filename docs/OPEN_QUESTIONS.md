@@ -2231,3 +2231,44 @@ Group round 3: Academic and Pupils, and a school's group as a comparison set (`d
     - **The areas set stays**, under its own label ("All schools in the group's regions"; the LA set is the one the pill offers).
     - **R-GROUP-SETS-DISTINCT** checks that no two offered sets have identical figures in every year of any phase, both readings, Harris and Dukes. It fails if `mix_matched:england` is offered again.
     - **For the ingest (optional):** `mix_matched_england` can stop being computed and stored. The app ignores it either way.
+
+## 2026-10-16 — 0.8 IGCSE subjects
+
+The round for `docs/v0.8/vicdata_0_8_igcse_subject_rankings_claude_code_prompt_v1.md`, on `v0.8-igcse-subjects`. Calls made, for Guy to confirm:
+
+1. **"10 nearest" for a subject is the same build with the IGCSE filter off:** the 10 nearest by the same rules (sector, phase, gender, boarding recipe), IGCSE schools in. It isn't "the 10 nearest that have the subject". The whole-school ten is unchanged, and a subject view reads the other list only where the two differ. Its caption then says "The 10 nearest schools, including 5 not ranked at GCSE overall (mostly IGCSE): each is ranked in the subjects it entered as GCSE."
+2. **Saved sets, a school's group as a set, and the chooser's own lists** carry their IGCSE members for subject views (`subjectRows`), only where the whole-school rows left one out. Every other set's answer is unchanged.
+3. **The rank tile names the category by what it is at the school:** "of 4 in Sciences (maths: IGCSE)", "of 7 in Languages (English: IGCSE)".
+   - The prompt's "Sciences & Maths · no maths (IGCSE)" took three to six lines of the 11 px tile, measured in headless Chrome with the app's CSS; the plain name already fills two.
+   - Every other place uses the prompt's short form, and the (i) keeps the full sentence.
+4. **SMT Academic for an IGCSE school at GCSE now draws its subject areas, subjects, grade profile and entries mix**, each ranked under the new rule. Only value added (Progress 8) and the whole-school results trend keep the IGCSE note.
+   - Its GCSE area chips are offered, an incomplete area under its short label.
+   - The Attainment 8 and English and maths tiles stay the IGCSE tile.
+5. **Admissions' rivals' subject areas:**
+   - an IGCSE rival is out only of its incomplete areas;
+   - an IGCSE school's own incomplete area isn't ranked against its rivals. Before, it was ranked against rivals that excluded every IGCSE school, which was inconsistent.
+6. **The data view's family map** leaves out only IGCSE schools whose family is incomplete. The data view still has no GCSE tab for an IGCSE school itself (unchanged: its whole-school figures aren't comparable).
+7. **No family has required subjects** (`subject_families`: family id, label, SSA tier-1 areas, sort order). The mechanism is there and empty (`FAMILY_REQUIRED_SUBJECTS`), so a family is incomplete only where it lacks English Language or maths.
+8. **"English" is English Language:** a school with GCSE English Literature but no English Language has Languages & Literature incomplete.
+9. **Ties:** one ranking function, `src/lib/rank.ts`. Teacher's within-category and at-school tiles now say "=3rd" for a shared place.
+   - `rankFigures` (subject-ranking.ts, mirrored by the SQL function), `resolveRankingSet`'s inline rank and `teacherMapFills` already used standard competition ranking and are left as they are.
+   - Legacy `rankOf` (teacher-view-rankings.ts, no ties) is a position, not a place, and isn't shown as one.
+10. **The flaky rule test (R-SMT-YEARS)** was the rehearsal's fetch wrapper, not a timeout. Under load, `area_context` answered with a statement-timeout error; the wrapper read it as data and threw a TypeError, which the app's own retry can't see.
+    - Failed answers now pass through untouched, and `synthetic-year.ts` had the same gap.
+    - Six concurrent rehearsals: all failed before, all pass after.
+    - No timeout was raised.
+11. **The ingest's group subject areas follow the rule** (`~/dev/vicdata` `feat/igcse-subject-areas`): a dry run, not promoted. Guy's command is in the ingest report.
+12. **Follow-ups 5–7** (added to the prompt at 10:26, after this round had started; built in the same round):
+    - **Group legends (5):**
+      - a set's legend entry stays on one line, truncated, with the full name as its tooltip;
+      - Results' title does the same; Against others clamps a long set name to two lines;
+      - the trends' (i) names the set in full.
+      - Tested with the longest real set label: mix-matched for "Christ Church (Church of England) Infant School and Nursery and Christ Church (Church of England) Junior School Federation", 168 characters, the longest of 3,733 group names. Checked in headless Chrome at 1440 and 390.
+    - **Negative zero (6a):** every measure's delta takes its sign from the printed figure, so a change that rounds to zero prints as zero does ("+0.0", not "−0.0").
+    - **"Has grown the most" (6a):** the summary says "has fallen the least" when every subject fell, and "has held steady" at zero.
+    - **Duplicate chips (6b):** chips that would read alike take the exact qualification ("Business Studies · BTEC Extended Diploma"), then DfE's name. Not merged: each chip is its own qualification's figures.
+    - **`engmath_97_percent` (6c): not built.** No view in the app shows it (no measure, headline or table reads it), so there is no trend or change line to remove. Showing it, current year only, is a new figure that needs a place chosen. For Guy.
+    - **BTEC historic points (7): cured.**
+      - Croydon College (130432) has no zero-point BTEC rows in 2021/22 or 2022/23: each has real points or null.
+      - Across every school, BTEC and OCR rows with zero points: 2021/22 none, 2022/23 one, 2023/24 one.
+      - The two remaining (132779 Construction Extended Diploma 2022/23, 8 entries; 130681 Computer Architecture Certificate 2023/24, 6 entries) look like genuine all-fail results, not the old bug. Not changed.

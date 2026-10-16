@@ -8,6 +8,7 @@ import { shapeOf } from "../admissions/shape";
 import { SHAPE_LABELS } from "../data-view-cards";
 import type { AgeGenderCounts } from "../roll-data";
 import type { ComparisonKind, ComparisonRow, Excluded, Figures, GroupAggregate, MeasureFig, Phase, Place, Reading, SchoolYearRow } from "./aggregates";
+import { competitionRanks } from "../rank";
 
 export type Focus = Phase;
 export const FOCI: Focus[] = ["all", "primary", "secondary", "post16"];
@@ -136,14 +137,7 @@ export function ordinal(n: number, tied = false): string {
 
 /** Standard competition ranking, highest first: two tied at 3rd, then 5th (the audit-fixes rule). */
 export function rankWithin(values: { key: string; value: number | null }[]): Map<string, Place> {
-  const have = values.filter((v): v is { key: string; value: number } => v.value !== null && Number.isFinite(v.value));
-  const out = new Map<string, Place>();
-  for (const v of have) {
-    const above = have.filter((x) => x.value > v.value).length;
-    const same = have.filter((x) => x.value === v.value).length;
-    out.set(v.key, { rank: above + 1, of: have.length, tied: same > 1 });
-  }
-  return out;
+  return competitionRanks(values);
 }
 
 /** Chain-linked like-for-like index: each year moves by that year's same-schools change (schools with

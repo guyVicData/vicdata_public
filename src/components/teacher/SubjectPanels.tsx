@@ -16,28 +16,7 @@
 import { useState, type ReactNode } from "react";
 import { academicYearLabel } from "@/lib/teacher-view-theme";
 import { changeMapFrom, type MapSeries } from "@/lib/teacher-map";
-import {
-  DIRECTION_ARROW,
-  DIRECTION_WORD,
-  currentRowsWithDelta,
-  changeOf,
-  latestYearFrom,
-  latestYearSeries,
-  statementSpan,
-  withTrendBase,
-  changePhrase,
-  changeTitle,
-  formatChange,
-  rankByValue,
-  periodsWithData,
-  sliceFrom,
-  trimToData,
-  trendChartKind,
-  trendSentence,
-  type Measure,
-  type PanelData,
-  type PanelId,
-} from "@/lib/teacher-view-panels";
+import { DIRECTION_ARROW, DIRECTION_WORD, currentRowsWithDelta, changeOf, latestYearFrom, latestYearSeries, statementSpan, withTrendBase, changePhrase, changeTitle, formatChange, periodsWithData, sliceFrom, trimToData, trendChartKind, trendSentence, type Measure, type PanelData, type PanelId, moversSentence } from "@/lib/teacher-view-panels";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import { shouldIndex } from "@/lib/teacher-view-trend-styles";
@@ -54,7 +33,10 @@ import { GradeDistribution } from "./GradeDistribution";
 import { bandDistribution } from "@/lib/grade-spread";
 import { bandRate, inlineRangeLabel, type GradeRange } from "@/lib/subject-grades";
 import { useSubjectGradeGeography, withEnglandBandBenchmark, type GradeGeographyInput } from "@/lib/teacher-view-grade-geography";
-import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, type NumberTile } from "./NumberTiles";
+import { igcseTileName } from "@/lib/igcse-words";
+import { competitionRanks } from "@/lib/rank";
+import { placeWord } from "@/lib/view-series/tiles";
 import { RankingsMap } from "./RankingsMap";
 import type { AcademicSchoolProfile, KsStage } from "@/lib/academic-data-view";
 import { ShareDonut } from "./ShareDonut";
@@ -474,10 +456,10 @@ export function SubjectPanels({
       tileRow.push({ key: "england", icon: FlagIcon, figure: measure.formatDelta(gap), detail: dir === "flat" ? "level with England" : `${dir === "up" ? "above" : "below"} England`, direction: dir, vars: { direction: dir === "flat" ? "level with" : dir === "up" ? "above" : "below" } });
     }
   } else if (tiles && tileFocus && tileFocus.value !== null) {
-    const inCategory = rankByValue(rows.map((r) => ({ key: r.s.key, value: r.value })));
-    const rank = inCategory.get(tileFocus.s.key);
-    if (rank && inCategory.size > 1) {
-      tileRow.push({ key: "category", icon: PodiumIcon, figure: ordinal(rank), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+    const inCategory = competitionRanks(rows.map((r) => ({ key: r.s.key, value: r.value })));
+    const place = inCategory.get(tileFocus.s.key);
+    if (place && inCategory.size > 1) {
+      tileRow.push({ key: "category", icon: PodiumIcon, figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${igcseTileName(categoryLabel ?? "its category")}`, vars: { total: inCategory.size } });
     }
     // The middle tile: England's own figure for this subject, a benchmark beside the main
     // one -- the same England anchor the next tile's gap is taken from.
@@ -1042,8 +1024,7 @@ export function SubjectPanels({
     summary:
       bestChange && worstChange && bestChange.key !== worstChange.key ? (
         <PanelSummary>
-          {bestChange.label} has grown the most ({fmtChange(bestChange.value!)}); {worstChange.label}{" "}
-          {worstChange.value! < 0 ? "has declined the most" : "has grown the least"} ({fmtChange(worstChange.value!)}) since {changeSince}.
+          {moversSentence({ label: bestChange.label, printed: fmtChange(bestChange.value!) }, { label: worstChange.label, printed: fmtChange(worstChange.value!) }, changeSince)}
         </PanelSummary>
       ) : (
         <PanelSummary>Not enough published years yet to compare on change.</PanelSummary>

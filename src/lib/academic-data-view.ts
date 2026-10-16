@@ -28,6 +28,7 @@ import {
 import { fetchCensusFactsBatched, CENSUS_AGE_GENDER_BOARDING_BREAKDOWNS } from "./data-view-profiles";
 import { singleAgeGenderCountsForPeriod, type AgeGenderCounts } from "./roll-data";
 import { trendBadge } from "./data-view-cards";
+import { igcseFamilyIncomplete } from "./igcse-words";
 import { TREND_LABELS, PP_TREND_LABELS, classifyPpTrend } from "./trend-labels";
 import {
   KS5_BUCKETS,
@@ -78,6 +79,9 @@ export type AcademicSchoolProfile = {
   // headline years (the Teacher comparator profiles, whose ks4 is empty), so igcseExclusionLikely
   // reads the same answer there as everywhere else (lib/igcse).
   ks4IgcseExcluded?: boolean;
+  // 0.8 IGCSE subjects: an IGCSE school's incomplete families by year ("2025" -> ["sciences_maths"]), from
+  // the server (lib/igcse withIgcseFamilies) where a view has no subject rows to judge them from.
+  ks4IgcseFamiliesOut?: Record<string, string[]>;
   // KS5 qualification-type-awareness round: real, ground-truth flags from
   // dfe_ks5_subject_results' own qualification_detailed field (see
   // academic_ks5_qualification_flags_lookup's own migration comment for the exact
@@ -702,6 +706,33 @@ export function igcseExclusionLikely(profile: AcademicSchoolProfile): boolean {
   const engmath94 = headlineValueAt(profile.ks4, y.period, "engmath_94_percent");
   const attainment8 = headlineValueAt(profile.ks4, y.period, "attainment8_average");
   return engmath94 === 0 && attainment8 !== null && attainment8 > 5;
+}
+
+// 0.8 IGCSE subjects (R-IGCSE-SUBJECT): which GCSE schools a view leaves out under the IGCSE rule
+// depends on what it shows. A whole-school figure: every IGCSE school, as before. A single subject: none
+// (a school with a figure entered it as GCSE 9-1). A subject family: an IGCSE school only where its family
+// is incomplete that year (igcseFamilyIncomplete, on its subjects with GCSE entries in the family's latest
+// year at the school).
+export function igcseOutFor(
+  profiles: readonly AcademicSchoolProfile[],
+  stage: KsStage,
+  view: { subject?: string | null; familyId?: string | null },
+): Set<string> {
+  if (stage !== "ks4" || view.subject) return new Set();
+  const igcse = profiles.filter(igcseExclusionLikely);
+  if (!view.familyId) return new Set(igcse.map((p) => p.urn));
+  const familyId = view.familyId;
+  return new Set(
+    igcse
+      .filter((p) => {
+        const year = latestFamilyYear(p, stage, familyId)?.period ?? null;
+        if (year === null) return false;
+        if (p.ks4IgcseFamiliesOut) return (p.ks4IgcseFamiliesOut[String(year)] ?? []).includes(familyId);
+        const subjects = p.ks4Subjects.filter((r) => r.period === year && r.entriesTotal > 0).map((r) => r.subject);
+        return igcseFamilyIncomplete(familyId, true, subjects);
+      })
+      .map((p) => p.urn),
+  );
 }
 
 // GCSE exclusion round, Part 2 -- the three real note shapes from vicdata's own

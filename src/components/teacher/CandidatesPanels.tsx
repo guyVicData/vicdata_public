@@ -16,25 +16,16 @@ import { useState, type ReactNode } from "react";
 import { GeographyView, frameGeography, useSubjectGeography, type GeographyInput } from "./GeographyComparison";
 import type { TeacherPhase } from "@/lib/teacher-view-phases";
 import { PHASE_ACCENT, academicYearLabel } from "@/lib/teacher-view-theme";
-import {
-  DIRECTION_ARROW,
-  DIRECTION_WORD,
-  ENTRIES_MEASURE,
-  percentChange,
-  rankByValue,
-  periodsWithData,
-  sliceFrom,
-  trimToData,
-  trendSentence,
-  type PanelData,
-  type PanelId,
-} from "@/lib/teacher-view-panels";
+import { DIRECTION_ARROW, DIRECTION_WORD, ENTRIES_MEASURE, percentChange, periodsWithData, sliceFrom, trimToData, trendSentence, type PanelData, type PanelId, moversSentence, signedDelta } from "@/lib/teacher-view-panels";
 import { ColumnPanels, DataDate, PanelSummary, type PanelNotes, type PanelRender } from "./ColumnPanels";
 import { FromYearMenu } from "./FromYearMenu";
 import { TrendLineToggle } from "./PanelFooter";
 import { type ChangeBar } from "./ChangeChart";
 import { ChangeArrowIcon, HorizontalBarsIcon, IconButton, IndexedLineIcon, PodiumIcon, SchoolIcon, TableIcon, TrendLineIcon } from "./PanelIcons";
-import { ConfiguredNumberTiles, ordinal, type NumberTile } from "./NumberTiles";
+import { ConfiguredNumberTiles, type NumberTile } from "./NumberTiles";
+import { igcseTileName } from "@/lib/igcse-words";
+import { competitionRanks } from "@/lib/rank";
+import { placeWord } from "@/lib/view-series/tiles";
 import { CentredOnTarget } from "./CentredOnTarget";
 import { ChangeList, MultiTrend, TrendScaleTitle, ViewTitle, YearTable, multiTrendHasLine } from "./SeriesViews";
 import { DIRECTION_COLOUR, FOCUS_COLOUR, changeOver, directionOf, paletteInOrder, signed, tintInOrder } from "@/lib/teacher-view-trend-styles";
@@ -206,15 +197,15 @@ export function CandidatesPanels({
     : null;
   const tiles: NumberTile[] = [];
   if (focused && focusedNow !== null && latestIdx >= 0) {
-    const inCategory = rankByValue(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
-    const r = inCategory.get(focused.key);
-    if (r && inCategory.size > 1) {
-      tiles.push({ key: "category", icon: PodiumIcon, figure: ordinal(r), detail: `of ${inCategory.size} in ${categoryLabel ?? "its category"}`, vars: { total: inCategory.size } });
+    const inCategory = competitionRanks(subjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+    const place = inCategory.get(focused.key);
+    if (place && inCategory.size > 1) {
+      tiles.push({ key: "category", icon: PodiumIcon, figure: placeWord(place.rank, place.tied), detail: `of ${inCategory.size} in ${igcseTileName(categoryLabel ?? "its category")}`, vars: { total: inCategory.size } });
     }
     if (schoolSubjects?.length) {
-      const inSchool = rankByValue(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
+      const inSchool = competitionRanks(schoolSubjects.map((s) => ({ key: s.key, value: s.values[latestIdx] ?? null })));
       const rs = inSchool.get(focused.key);
-      if (rs) tiles.push({ key: "school", icon: SchoolIcon, figure: ordinal(rs), detail: `of ${inSchool.size} subjects at school`, vars: { total: inSchool.size } });
+      if (rs) tiles.push({ key: "school", icon: SchoolIcon, figure: placeWord(rs.rank, rs.tied), detail: `of ${inSchool.size} subjects at school`, vars: { total: inSchool.size } });
     }
     const change = changeOver(focused.values);
     const firstIdx = focused.values.findIndex((v) => v !== null);
@@ -434,10 +425,7 @@ export function CandidatesPanels({
     ) :
       best && worst && best.key !== worst.key ? (
         <PanelSummary>
-          {best.label} has grown the most ({best.value! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(best.value!))}%); {worst.label}{" "}
-          {worst.value! < 0 ? "has declined the most" : "has grown the least"} ({worst.value! >= 0 ? "+" : "−"}
-          {Math.abs(Math.round(worst.value!))}%) since {changeSince}.
+          {moversSentence({ label: best.label, printed: signedDelta(best.value!, (x) => `${Math.abs(Math.round(x))}%`) }, { label: worst.label, printed: signedDelta(worst.value!, (x) => `${Math.abs(Math.round(x))}%`) }, changeSince)}
         </PanelSummary>
       ) : (
         <PanelSummary>Not enough published years yet to compare subjects on change.</PanelSummary>

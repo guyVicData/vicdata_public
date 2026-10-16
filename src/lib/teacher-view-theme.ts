@@ -183,3 +183,26 @@ export const SOURCE_NAME: Record<TeacherPhase, string> = {
 export function academicYearLabel(period: number): string {
   return `${period}/${String(period + 1).slice(2)}`;
 }
+
+/**
+ * 0.8 IGCSE subjects (follow-up 6): the focus chips' labels, unique. A chip is the subject's name; a
+ * subject ticked under two qualifications adds the qualification's short name ("Art · GCSE", "Art ·
+ * BTEC"). At Post-16 the short name is the bucket, so two qualifications in one bucket (Croydon's two
+ * Business Studies BTECs) read alike: those take the exact qualification ("BTEC Extended Diploma"),
+ * and DfE's own name if even that matches.
+ */
+export function uniqueChipLabels(phase: TeacherPhase, items: { key: string; subject: string; qualificationType: string }[]): Map<string, string> {
+  const twice = (i: { key: string; subject: string }) => items.some((o) => o.key !== i.key && o.subject === i.subject);
+  const steps: ((i: { subject: string; qualificationType: string }) => string)[] = [
+    (i) => `${i.subject} · ${qualificationShortLabel(phase, i.qualificationType)}`,
+    (i) => `${i.subject} · ${exactQualificationLabel(i.qualificationType)}`,
+    (i) => `${i.subject} · ${i.qualificationType}`,
+  ];
+  const out = new Map(items.map((i) => [i.key, twice(i) ? steps[0](i) : i.subject]));
+  for (const step of steps.slice(1)) {
+    const seen = new Map<string, number>();
+    for (const l of out.values()) seen.set(l, (seen.get(l) ?? 0) + 1);
+    for (const i of items) if ((seen.get(out.get(i.key)!) ?? 0) > 1) out.set(i.key, step(i));
+  }
+  return out;
+}

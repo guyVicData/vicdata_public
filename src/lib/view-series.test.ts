@@ -610,6 +610,8 @@ test("looks.ts arithmetic", () => {
 
 const rankOf = (vals: (number | null)[], v: number) => 1 + real(vals).filter((x) => x > v).length;
 const ordinalOf = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
+// 0.8 IGCSE subjects (follow-up 2): a shared place reads "=3rd" in the tiles too (R-RANK-TIES).
+const placeOf = (vals: (number | null)[], v: number) => `${vals.filter((x) => x === v).length > 1 ? "=" : ""}${ordinalOf(rankOf(vals, v))}`;
 const results = ofHost((r) => r.kind === "subjects" && r.host === "teacher.c1.results");
 const context = ofHost((r) => r.kind === "subjects" && r.host === "teacher.c2.context");
 const candidates = ofHost((r) => r.kind === "candidates");
@@ -653,7 +655,7 @@ test("Results' number tiles: the focused subject's figure; rank in the category,
       assert.ok(!keys.includes("category"));
     } else {
       const vals = f.subjects.map((x) => x.values[i]);
-      if (real(vals).length > 1) assert.equal(leaf.tiles.find((t) => t.key === "category")?.figure, ordinalOf(rankOf(vals, v)), raw.name);
+      if (real(vals).length > 1) assert.equal(leaf.tiles.find((t) => t.key === "category")?.figure, placeOf(vals, v), raw.name);
     }
     if (raw.measureId === "threshold") assert.ok(!keys.includes("england") && !keys.includes("england-average"), "no England on a rate (R-NO-GRADE-RATE-GEO)");
     else if (bench !== null) {
@@ -676,9 +678,9 @@ test("Candidates' number tiles: entries this year; rank in the category and amon
     const v = focus.values[last]!;
     assert.equal(leaf.main?.figure, Math.round(v).toLocaleString(), raw.name);
     const cat = f.subjects.map((x) => x.values[last]);
-    assert.deepEqual(leaf.tiles.find((t) => t.key === "category"), { key: "category", icon: "PodiumIcon", figure: ordinalOf(rankOf(cat, v)), detail: `of ${real(cat).length} in ${f.categoryLabel}`, vars: { total: real(cat).length } });
+    assert.deepEqual(leaf.tiles.find((t) => t.key === "category"), { key: "category", icon: "PodiumIcon", figure: placeOf(cat, v), detail: `of ${real(cat).length} in ${f.categoryLabel}`, vars: { total: real(cat).length } });
     const sch = f.schoolSubjects!.map((x) => x.values[last]);
-    assert.equal(leaf.tiles.find((t) => t.key === "school")?.figure, ordinalOf(rankOf(sch, v)));
+    assert.equal(leaf.tiles.find((t) => t.key === "school")?.figure, placeOf(sch, v));
     const pct = Math.round(honest(ENTRIES_MEASURE, focus.values)!);
     assert.equal(leaf.tiles.find((t) => t.key === "change")?.figure, `${pct > 0 ? "+" : pct < 0 ? "−" : "±"}${Math.abs(pct)}%`);
     assert.deepEqual(leaf.tiles.map((t) => t.key), ["category", "school", "change"]);

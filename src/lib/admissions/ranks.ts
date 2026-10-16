@@ -5,7 +5,7 @@
 // year, highest first, ties share a rank; regional ranks among the schools of the school's own
 // region. A subject's rank comes from 0.6.6's subjectRanking itself. The populations are public
 // reference data, read once an hour per phase (server-cache.ts), never per user or school.
-import { igcseEngland } from "../igcse";
+import { igcseEngland, igcseFamilyOut } from "../igcse";
 import { cachedReference } from "../server-cache";
 import { HEADLINE_MEASURE, type KsStage } from "../academic-data-view";
 import { lookupAcademicHeadline, lookupAcademicSubjectFamily, lookupReferenceData } from "../vicdata-reference";
@@ -16,6 +16,7 @@ import { lookupAgeBandDistributions, sizeBadgeForValue, type SizeBadge } from ".
 import { AGE_BANDS, CURRENT_CENSUS_PERIOD, type AgeBandKey, type AgeGenderCounts } from "../roll-data";
 import type { RegionNationRow } from "../region-nation-comparator";
 import { TREND_BASE_PERIOD } from "../../catalogue/years";
+import { placeAmong } from "../rank";
 
 export const KS2_HEADLINE = HEADLINE_MEASURE.ks2;
 const FIGURE_YEARS = 3; // the latest year and the two before (two-year changes)
@@ -98,7 +99,8 @@ export function englandSchools(): Promise<Map<string, SchoolPlace>> {
 
 /** 1-based rank of `value` among `values` (ties share; higher first), and how many there are. */
 export function rankIn(values: number[], value: number): { rank: number; of: number } {
-  return { rank: 1 + values.filter((v) => v > value).length, of: values.length };
+  const { rank, of } = placeAmong(values, value);
+  return { rank, of };
 }
 
 export type Place = { value: number | null; period: number | null; national: { rank: number; of: number } | null; regional: { rank: number; of: number; region: string } | null };
@@ -131,9 +133,10 @@ export async function headlinePlaces(stage: KsStage, period: number, urns: strin
   return placesOf(urns, period, fig, england, pop.keys(), igcse);
 }
 
-/** Each school's place on one subject area (family average points; at least minEntries). */
+/** Each school's place on one subject area (family average points; at least minEntries). At GCSE an
+ * IGCSE school is out only where this family is incomplete at it that year (0.8 IGCSE subjects). */
 export async function familyPlaces(stage: "ks4" | "ks5", period: number, familyId: string, urns: string[], minEntries: number): Promise<Map<string, Place>> {
-  const [pop, england, igcse] = await Promise.all([headlinePopulation(stage, period), englandSchools(), stage === "ks4" ? igcseEngland() : Promise.resolve(new Set<string>())]);
+  const [pop, england, igcse] = await Promise.all([headlinePopulation(stage, period), englandSchools(), stage === "ks4" ? igcseFamilyOut(familyId, period) : Promise.resolve(new Set<string>())]);
   const fam = await familyPopulation(stage, period, Array.from(pop.keys()).sort());
   const fig = (u: string) => {
     const f = fam.get(u)?.get(familyId)?.get(period);

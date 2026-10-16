@@ -10,7 +10,7 @@
 // map and the "N of M" beside it are always about the same schools.
 import { lazy, Suspense } from "react";
 import type { TeacherMapSpec } from "@/lib/teacher-map";
-import { igcseExclusionLikely, type AcademicSchoolProfile, type KsStage } from "@/lib/academic-data-view";
+import { igcseOutFor, type AcademicSchoolProfile, type KsStage } from "@/lib/academic-data-view";
 
 // 0.6.4 C2: the map's code (AcademicMapView, ~300 KB) loads when a map is first drawn, not
 // with the page; its card box (below) holds the space meanwhile. Leaflet itself was already
@@ -98,7 +98,8 @@ export function RankingsMap({
         changeValues={changeValues}
         teacherMap={teacherMap}
         // Same GCSE exclusion the advanced dashboard's map applies, with its own note. R-IGCSE-EXCL, R-IGCSE-EVERYWHERE: the profiles carry the server's answer (ks4IgcseExcluded), so this fires.
-        ks4ExcludedUrns={stage === "ks4" ? new Set(profiles.filter(igcseExclusionLikely).map((p) => p.urn)) : undefined}
+        // 0.8 IGCSE subjects (R-IGCSE-SUBJECT): by what the map shows -- none on a subject, only incomplete families on a family.
+        ks4ExcludedUrns={stage === "ks4" ? igcseOutFor(profiles, stage, { subject, familyId }) : undefined}
       />
       </Suspense>
     </div>
